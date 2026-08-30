@@ -11,10 +11,9 @@
   "@common.attachEmailInvalid": {
     "sourceHash": "515c7cf"
   },
-  "common.attachEmailPlaceholder": "you@example.com",
+  "common.attachEmailPlaceholder": "te@example.com",
   "@common.attachEmailPlaceholder": {
-    "sourceHash": "53e6cdc",
-    "sameAsSourceJustification": "'you@example.com' is a literal example-email placeholder, kept verbatim everywhere per the cross-file reconciliation (style.md) - 'te@pelda.hu' broke parity and was reverted."
+    "sourceHash": "53e6cdc"
   },
   "common.attachEmailPrompt": "Csatold az e-mail-címemet, hogy vissza tudj jelezni",
   "@common.attachEmailPrompt": {

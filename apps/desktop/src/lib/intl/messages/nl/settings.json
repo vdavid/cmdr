@@ -454,7 +454,7 @@
   },
   "settings.indexing.enabled.description": "Indexeer je schijf op de achtergrond voor directe mapgroottes.",
   "@settings.indexing.enabled.description": {
-    "sourceHash": "559ec69"
+    "sourceHash": "32966c5"
   },
   "settings.mediaIndex.card": "Afbeeldingen doorzoeken",
   "@settings.mediaIndex.card": {
@@ -2107,7 +2107,7 @@
   "@settings.network.customTimeoutUnit": {
     "sourceHash": "59f006d"
   },
-  "settings.updates.emailPlaceholder": "jij@voorbeeld.com",
+  "settings.updates.emailPlaceholder": "jij@example.com",
   "@settings.updates.emailPlaceholder": {
     "sourceHash": "53e6cdc"
   },

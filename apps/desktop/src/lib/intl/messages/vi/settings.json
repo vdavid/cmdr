@@ -449,7 +449,7 @@
   },
   "settings.indexing.enabled.description": "Lập chỉ mục ổ đĩa của bạn ở chế độ nền để có ngay kích cỡ thư mục.",
   "@settings.indexing.enabled.description": {
-    "sourceHash": "559ec69"
+    "sourceHash": "32966c5"
   },
   "settings.mediaIndex.card": "Tìm kiếm hình ảnh",
   "@settings.mediaIndex.card": {
@@ -2096,10 +2096,9 @@
   "@settings.network.customTimeoutUnit": {
     "sourceHash": "59f006d"
   },
-  "settings.updates.emailPlaceholder": "you@example.com",
+  "settings.updates.emailPlaceholder": "ban@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc",
-    "sameAsSourceJustification": "Literal example email address 'you@example.com'; kept exactly as a placeholder (locale-neutral)."
+    "sourceHash": "53e6cdc"
   },
   "settings.updates.checkForUpdates": "Kiểm tra cập nhật",
   "@settings.updates.checkForUpdates": {

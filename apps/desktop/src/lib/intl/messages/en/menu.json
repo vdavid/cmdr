@@ -89,14 +89,14 @@
     "description": "VERB. macOS app-menu item that hides all of Cmdr's windows (⌘H). \"Cmdr\" is the app name and must stay verbatim, capital C included. Match how macOS phrases \"Hide Finder\" in this language."
   },
 
-  "menu.app.hideOthers": "Hide Others",
+  "menu.app.hideOthers": "Hide others",
   "@menu.app.hideOthers": {
-    "description": "VERB. macOS app-menu item that hides every OTHER app's windows, leaving only Cmdr visible (⌥⌘H). \"Others\" means the other applications. Match macOS's own wording for this item in this language, capitalization included; these three items sit in the block macOS users read as system-standard."
+    "description": "VERB. macOS app-menu item that hides every OTHER app's windows, leaving only Cmdr visible (⌥⌘H). \"Others\" means the other applications. Use macOS's own WORDING for this item in your language, but Cmdr's own capitalization: this menu bar is sentence case throughout (English says \"Hide others\", where Apple writes \"Hide Others\"). Must match commands.appHideOthers.label, which names the same command in the palette and the shortcuts list."
   },
 
-  "menu.app.showAll": "Show All",
+  "menu.app.showAll": "Show all",
   "@menu.app.showAll": {
-    "description": "VERB. macOS app-menu item that unhides every hidden app. \"All\" means all applications, NOT all files. Match macOS's own wording for this item in this language, capitalization included."
+    "description": "VERB. macOS app-menu item that unhides every hidden app. \"All\" means all applications, NOT all files. Use macOS's own WORDING for this item in your language, but Cmdr's own capitalization: this menu bar is sentence case throughout (English says \"Show all\", where Apple writes \"Show All\"). Must match commands.appShowAll.label, which names the same command in the palette and the shortcuts list."
   },
 
   "menu.app.quit": "Quit Cmdr",

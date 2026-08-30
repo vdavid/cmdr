@@ -449,9 +449,9 @@
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
   },
-  "settings.indexing.enabled.description": "在后台为你的驱动器建立索引，从而即时显示目录大小。",
+  "settings.indexing.enabled.description": "在后台为你的驱动器建立索引，从而即时显示文件夹大小。",
   "@settings.indexing.enabled.description": {
-    "sourceHash": "559ec69"
+    "sourceHash": "32966c5"
   },
   "settings.mediaIndex.card": "图像搜索",
   "@settings.mediaIndex.card": {

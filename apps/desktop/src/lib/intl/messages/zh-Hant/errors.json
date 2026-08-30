@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "開啟 **系統設定 > 隱私權與安全性 > 檔案與資料夾**，授予 Cmdr 這個資料夾的存取權。",
+  "errors.git.permissionDenied.suggestion": "開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 這個資料夾的存取權。",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "還不支援 bare 存放庫",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "開啟 **系統設定 > 隱私權與安全性 > 檔案與資料夾**，授予 Cmdr 存取權。在終端機裡，`ls -la .git` 會顯示目前的擁有者和權限模式。",
+  "errors.git.gitDirPermissionDenied.suggestion": "開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權。在終端機裡，`ls -la .git` 會顯示目前的擁有者和權限模式。",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 檢查你的網際網路連線\n- 確認你已經在系統設定裡登入 iCloud\n- 再次進入這裡重試",
+  "errors.provider.iCloud.transient": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 檢查你的網際網路連線\n- 確認你已經在 {system_settings} 裡登入 iCloud\n- 再次進入這裡重試",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 在 **系統設定 > Apple 帳號 > iCloud** 裡確認 iCloud 雲碟已啟用\n- 確認你登入的是正確的 Apple 帳號\n- 看看你的 iCloud 儲存空間是不是滿了",
+  "errors.provider.iCloud.needsAction": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 在 **{system_settings} > Apple 帳號 > iCloud** 裡確認 iCloud 雲碟已啟用\n- 確認你登入的是正確的 Apple 帳號\n- 看看你的 iCloud 儲存空間是不是滿了",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 在系統設定裡登出 iCloud 再重新登入\n- 查看 Apple 的[系統狀態頁面](https://www.apple.com/support/systemstatus/)",
+  "errors.provider.iCloud.serious": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 在 {system_settings} 裡登出 iCloud 再重新登入\n- 查看 Apple 的[系統狀態頁面](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "這是一個 **macFUSE** 裝載點。遠端伺服器可能很慢或連不上。可以這樣試試：\n- 檢查你的網路連線\n- 確認遠端伺服器正在執行\n- 再次進入這裡重試",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "這是一個 **macFUSE** 裝載點。可以這樣試試：\n- 確認支撐這個裝載點的 FUSE 程序還在執行\n- 有需要的話，強制卸除再重新裝載這個卷宗\n- 在 **系統設定 > 一般 > 登入項目與延伸功能**裡，確認 macFUSE 是最新版本",
+  "errors.provider.macFuse.needsAction": "這是一個 **macFUSE** 裝載點。可以這樣試試：\n- 確認支撐這個裝載點的 FUSE 程序還在執行\n- 有需要的話，強制卸除再重新裝載這個卷宗\n- 在 **{system_settings} > 一般 > 登入項目與延伸功能**裡，確認 macFUSE 是最新版本",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "這是一個 **macFUSE** 裝載點。撐著它的 FUSE 程序很可能已經當掉或斷線了。可以這樣試試：\n- 強制卸除這個卷宗：在終端機裡執行 `umount -f /Volumes/<name>`\n- 用原本的裝載指令重新裝載\n- 如果一直這樣，確認 macFUSE 是最新版本",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "這個資料夾在 **pCloud** 的虛擬磁碟機上。可以這樣試試：\n- 確認 pCloud App 正在執行，而且你已經登入\n- 檢查你的網際網路連線\n- macOS 更新之後，到 **系統設定 > 一般 > 登入項目與延伸功能**裡重新允許 pCloud 的系統延伸功能",
+  "errors.provider.pCloudFuse.needsAction": "這個資料夾在 **pCloud** 的虛擬磁碟機上。可以這樣試試：\n- 確認 pCloud App 正在執行，而且你已經登入\n- 檢查你的網際網路連線\n- macOS 更新之後，到 **{system_settings} > 一般 > 登入項目與延伸功能**裡重新允許 pCloud 的系統延伸功能",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "這個資料夾在 **pCloud** 的虛擬磁碟機上。pCloud 的 FUSE 程序可能已經當掉了。可以這樣試試：\n- 結束 pCloud App 再重新開啟\n- 如果磁碟機沒有回來，強制卸除它：在終端機裡執行 `umount -f /Volumes/pCloudDrive`\n- macOS 更新之後，到 **系統設定 > 一般 > 登入項目與延伸功能**裡重新允許 pCloud 的系統延伸功能",
+  "errors.provider.pCloudFuse.serious": "這個資料夾在 **pCloud** 的虛擬磁碟機上。pCloud 的 FUSE 程序可能已經當掉了。可以這樣試試：\n- 結束 pCloud App 再重新開啟\n- 如果磁碟機沒有回來，強制卸除它：在終端機裡執行 `umount -f /Volumes/pCloudDrive`\n- macOS 更新之後，到 **{system_settings} > 一般 > 登入項目與延伸功能**裡重新允許 pCloud 的系統延伸功能",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "這是一個 **{name}** 加密卷宗。可以這樣試試：\n- 確認這個 VeraCrypt 卷宗仍然裝載著\n- 再次進入這裡重試",
   "@errors.provider.veraCrypt.transient": {

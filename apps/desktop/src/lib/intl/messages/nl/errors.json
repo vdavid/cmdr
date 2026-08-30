@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "Open **System Settings > Privacy & Security > Files and Folders** en geef Cmdr toegang tot de map.",
+  "errors.git.permissionDenied.suggestion": "Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang tot de map.",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "Bare repo's worden nog niet ondersteund",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Open **System Settings > Privacy & Security > Files and Folders** en geef Cmdr toegang. In Terminal toont `ls -la .git` de huidige eigenaar en modus.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang. In Terminal toont `ls -la .git` de huidige eigenaar en modus.",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Controleer je internetverbinding\n- Zorg dat je bent ingelogd bij iCloud in System Settings\n- Navigeer hier opnieuw heen om het nog eens te proberen",
+  "errors.provider.iCloud.transient": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Controleer je internetverbinding\n- Zorg dat je bent ingelogd bij iCloud in {system_settings}\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Controleer of iCloud Drive is ingeschakeld in **System Settings > Apple Account > iCloud**\n- Zorg dat je bent ingelogd bij het juiste Apple-account\n- Controleer of je iCloud-opslag niet vol is",
+  "errors.provider.iCloud.needsAction": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Controleer of iCloud Drive is ingeschakeld in **{system_settings} > Apple Account > iCloud**\n- Zorg dat je bent ingelogd bij het juiste Apple-account\n- Controleer of je iCloud-opslag niet vol is",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Log uit en weer in bij iCloud in System Settings\n- Bekijk Apples [systeemstatuspagina](https://www.apple.com/support/systemstatus/)",
+  "errors.provider.iCloud.serious": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Log uit en weer in bij iCloud in {system_settings}\n- Bekijk Apples [systeemstatuspagina](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "Dit is een **macFUSE**-koppeling. De externe server is misschien traag of onbereikbaar. Dit kun je proberen:\n- Controleer je netwerkverbinding\n- Controleer of de externe server draait\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "Dit is een **macFUSE**-koppeling. Dit kun je proberen:\n- Controleer of het FUSE-proces achter deze koppeling nog draait\n- Forceer indien nodig het loskoppelen en koppel het volume opnieuw\n- Zorg dat macFUSE up-to-date is in **System Settings > General > Login Items & Extensions**",
+  "errors.provider.macFuse.needsAction": "Dit is een **macFUSE**-koppeling. Dit kun je proberen:\n- Controleer of het FUSE-proces achter deze koppeling nog draait\n- Forceer indien nodig het loskoppelen en koppel het volume opnieuw\n- Zorg dat macFUSE up-to-date is in **{system_settings} > Algemeen > Inlogonderdelen en extensies**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "Dit is een **macFUSE**-koppeling. Het FUSE-proces erachter is waarschijnlijk vastgelopen of de verbinding verbroken. Dit kun je proberen:\n- Forceer het loskoppelen van het volume: voer `umount -f /Volumes/<name>` uit in Terminal\n- Koppel opnieuw met het oorspronkelijke mount-commando\n- Als dit blijft gebeuren, controleer dan of macFUSE up-to-date is",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Deze map staat op de virtuele schijf van **pCloud**. Dit kun je proberen:\n- Zorg dat de pCloud-app draait en dat je bent ingelogd\n- Controleer je internetverbinding\n- Keur na een macOS-update de systeemextensie van pCloud opnieuw goed in **System Settings > General > Login Items & Extensions**",
+  "errors.provider.pCloudFuse.needsAction": "Deze map staat op de virtuele schijf van **pCloud**. Dit kun je proberen:\n- Zorg dat de pCloud-app draait en dat je bent ingelogd\n- Controleer je internetverbinding\n- Keur na een macOS-update de systeemextensie van pCloud opnieuw goed in **{system_settings} > Algemeen > Inlogonderdelen en extensies**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Deze map staat op de virtuele schijf van **pCloud**. Het FUSE-proces van pCloud is misschien vastgelopen. Dit kun je proberen:\n- Stop en heropen de pCloud-app\n- Als de schijf niet terugkomt, forceer dan het loskoppelen: voer `umount -f /Volumes/pCloudDrive` uit in Terminal\n- Keur na een macOS-update de systeemextensie van pCloud opnieuw goed in **System Settings > General > Login Items & Extensions**",
+  "errors.provider.pCloudFuse.serious": "Deze map staat op de virtuele schijf van **pCloud**. Het FUSE-proces van pCloud is misschien vastgelopen. Dit kun je proberen:\n- Stop en heropen de pCloud-app\n- Als de schijf niet terugkomt, forceer dan het loskoppelen: voer `umount -f /Volumes/pCloudDrive` uit in Terminal\n- Keur na een macOS-update de systeemextensie van pCloud opnieuw goed in **{system_settings} > Algemeen > Inlogonderdelen en extensies**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "Dit is een versleuteld **{name}**-volume. Dit kun je proberen:\n- Controleer of het VeraCrypt-volume nog gekoppeld is\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.veraCrypt.transient": {

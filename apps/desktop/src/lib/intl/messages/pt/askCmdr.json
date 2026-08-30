@@ -615,13 +615,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {arquivo restaurado} many {arquivos restaurados} other {arquivos restaurados}}.",
+  "askCmdr.renameUndo.undone": "{count, plural, one {O nome anterior de {countText} arquivo foi restaurado} many {Os nomes anteriores de {countText} arquivos foram restaurados} other {Os nomes anteriores de {countText} arquivos foram restaurados}}.",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {arquivo restaurado} many {arquivos restaurados} other {arquivos restaurados}}.",
+  "askCmdr.renameUndo.partial": "{count, plural, one {O nome anterior de {countText} arquivo foi restaurado} many {Os nomes anteriores de {countText} arquivos foram restaurados} other {Os nomes anteriores de {countText} arquivos foram restaurados}}.",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {arquivo ficou} many {arquivos ficaram} other {arquivos ficaram}} como {count, plural, one {está} many {estão} other {estão}}: {count, plural, one {mudou} many {mudaram} other {mudaram}} depois da renomeação, ou o nome anterior está ocupado de novo.",
   "@askCmdr.renameUndo.skipped": {

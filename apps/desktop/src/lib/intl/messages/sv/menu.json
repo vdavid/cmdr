@@ -73,11 +73,11 @@
   },
   "menu.app.hideOthers": "Göm övriga",
   "@menu.app.hideOthers": {
-    "sourceHash": "1753e22"
+    "sourceHash": "74376e4"
   },
   "menu.app.showAll": "Visa alla",
   "@menu.app.showAll": {
-    "sourceHash": "e1c3264"
+    "sourceHash": "2150d8d"
   },
   "menu.app.quit": "Avsluta Cmdr",
   "@menu.app.quit": {

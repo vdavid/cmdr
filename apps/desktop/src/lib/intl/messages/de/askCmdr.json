@@ -614,13 +614,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {Datei} other {Dateien}} zurückgesetzt.",
+  "askCmdr.renameUndo.undone": "{count, plural, one {Den alten Namen} other {Die alten Namen}} von {countText} {count, plural, one {Datei} other {Dateien}} zurückgesetzt.",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {Datei} other {Dateien}} zurückgesetzt.",
+  "askCmdr.renameUndo.partial": "{count, plural, one {Den alten Namen} other {Die alten Namen}} von {countText} {count, plural, one {Datei} other {Dateien}} zurückgesetzt.",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {Datei} other {Dateien}} unverändert gelassen: {count, plural, one {sie hat sich} other {sie haben sich}} seit dem Umbenennen geändert, oder der alte Name ist wieder belegt.",
   "@askCmdr.renameUndo.skipped": {

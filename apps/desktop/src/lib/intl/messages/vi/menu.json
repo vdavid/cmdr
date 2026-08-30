@@ -72,13 +72,13 @@
   "@menu.app.hide": {
     "sourceHash": "8f86f89"
   },
-  "menu.app.hideOthers": "Ẩn các ứng dụng khác",
+  "menu.app.hideOthers": "Ẩn các mục khác",
   "@menu.app.hideOthers": {
-    "sourceHash": "1753e22"
+    "sourceHash": "74376e4"
   },
   "menu.app.showAll": "Hiển thị tất cả",
   "@menu.app.showAll": {
-    "sourceHash": "e1c3264"
+    "sourceHash": "2150d8d"
   },
   "menu.app.quit": "Thoát Cmdr",
   "@menu.app.quit": {

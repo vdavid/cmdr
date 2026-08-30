@@ -100,7 +100,7 @@ describe('the result', () => {
   it('reports a clean undo', () => {
     const target = render(line({ status: 'undone', restored: 1234 }))
 
-    expect(target.textContent).toContain('Put back 1,234 files.')
+    expect(target.textContent).toContain('Put the old names back on 1,234 files.')
     expect(buttons(target)).toHaveLength(0)
   })
 
@@ -115,7 +115,7 @@ describe('the result', () => {
       }),
     )
 
-    expect(target.textContent).toContain('Put back 19 files.')
+    expect(target.textContent).toContain('Put the old names back on 19 files.')
     // The whole point of the per-item reason: this file, this reason.
     expect(target.textContent).toContain('Left invoice-2026.pdf alone: it changed since the rename.')
     // And NOT the vague either/or class line it replaces.
@@ -152,7 +152,7 @@ describe('the result', () => {
   it('names refused batches separately, since they carry no per-file numbers', () => {
     const target = render(line({ status: 'partial', restored: 12, skipped: 0, refusedBatches: 2, skips: [] }))
 
-    expect(target.textContent).toContain('Put back 12 files.')
+    expect(target.textContent).toContain('Put the old names back on 12 files.')
     expect(target.textContent).toContain('Cmdr couldn’t undo 2 batches.')
     // Nothing was skipped per file, so that line stays away.
     expect(target.textContent).not.toContain('alone')
@@ -162,7 +162,7 @@ describe('the result', () => {
     const target = render(line({ status: 'unavailable' }))
 
     expect(target.textContent).toContain('Nothing to put back.')
-    expect(target.textContent).not.toContain('Put back 0')
+    expect(target.textContent).not.toContain('Put the old name')
   })
 })
 

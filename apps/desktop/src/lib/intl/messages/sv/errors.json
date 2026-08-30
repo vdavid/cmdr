@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "Öppna **Systeminställningar > Integritet och säkerhet > Filer och mappar** och ge Cmdr åtkomst till mappen.",
+  "errors.git.permissionDenied.suggestion": "Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst till mappen.",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "Bare-repon stöds inte än",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Öppna **Systeminställningar > Integritet och säkerhet > Filer och mappar** och ge Cmdr åtkomst. I Terminal visar `ls -la .git` aktuell ägare och rättigheter.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst. I Terminal visar `ls -la .git` aktuell ägare och rättigheter.",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Kontrollera din internetanslutning\n- Se till att du är inloggad på iCloud i Systeminställningar\n- Gå hit igen för att försöka på nytt",
+  "errors.provider.iCloud.transient": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Kontrollera din internetanslutning\n- Se till att du är inloggad på iCloud i {system_settings}\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Kontrollera att iCloud Drive är aktiverat i **Systeminställningar > Apple-konto > iCloud**\n- Se till att du är inloggad på rätt Apple-konto\n- Kontrollera att din iCloud-lagring inte är full",
+  "errors.provider.iCloud.needsAction": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Kontrollera att iCloud Drive är aktiverat i **{system_settings} > Apple-konto > iCloud**\n- Se till att du är inloggad på rätt Apple-konto\n- Kontrollera att din iCloud-lagring inte är full",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Logga ut och in igen på iCloud i Systeminställningar\n- Kolla Apples [systemstatussida](https://www.apple.com/support/systemstatus/)",
+  "errors.provider.iCloud.serious": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Logga ut och in igen på iCloud i {system_settings}\n- Kolla Apples [systemstatussida](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "Det här är en **macFUSE**-montering. Fjärrservern kan vara långsam eller onåbar. Så här kan du prova:\n- Kontrollera din nätverksanslutning\n- Kontrollera att fjärrservern är igång\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "Det här är en **macFUSE**-montering. Så här kan du prova:\n- Kontrollera att FUSE-processen bakom monteringen fortfarande är igång\n- Tvinga fram en avmontering och montera om volymen vid behov\n- Se till att macFUSE är uppdaterat i **Systeminställningar > Allmänt > Inloggningsobjekt och tillägg**",
+  "errors.provider.macFuse.needsAction": "Det här är en **macFUSE**-montering. Så här kan du prova:\n- Kontrollera att FUSE-processen bakom monteringen fortfarande är igång\n- Tvinga fram en avmontering och montera om volymen vid behov\n- Se till att macFUSE är uppdaterat i **{system_settings} > Allmänt > Startobjekt och tillägg**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "Det här är en **macFUSE**-montering. FUSE-processen bakom den har troligen kraschat eller kopplats från. Så här kan du prova:\n- Tvinga fram en avmontering av volymen: kör `umount -f /Volumes/<name>` i Terminal\n- Montera om med det ursprungliga monteringskommandot\n- Om det här fortsätter, kontrollera att macFUSE är uppdaterat",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Den här mappen ligger på **pCloud**s virtuella enhet. Så här kan du prova:\n- Se till att pCloud-appen är igång och att du är inloggad\n- Kontrollera din internetanslutning\n- Efter en macOS-uppdatering, godkänn pClouds systemtillägg på nytt i **Systeminställningar > Allmänt > Inloggningsobjekt och tillägg**",
+  "errors.provider.pCloudFuse.needsAction": "Den här mappen ligger på **pCloud**s virtuella enhet. Så här kan du prova:\n- Se till att pCloud-appen är igång och att du är inloggad\n- Kontrollera din internetanslutning\n- Efter en macOS-uppdatering, godkänn pClouds systemtillägg på nytt i **{system_settings} > Allmänt > Startobjekt och tillägg**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Den här mappen ligger på **pCloud**s virtuella enhet. pClouds FUSE-process kan ha kraschat. Så här kan du prova:\n- Avsluta och öppna pCloud-appen igen\n- Om enheten inte dyker upp igen, tvinga fram en avmontering: kör `umount -f /Volumes/pCloudDrive` i Terminal\n- Efter en macOS-uppdatering, godkänn pClouds systemtillägg på nytt i **Systeminställningar > Allmänt > Inloggningsobjekt och tillägg**",
+  "errors.provider.pCloudFuse.serious": "Den här mappen ligger på **pCloud**s virtuella enhet. pClouds FUSE-process kan ha kraschat. Så här kan du prova:\n- Avsluta och öppna pCloud-appen igen\n- Om enheten inte dyker upp igen, tvinga fram en avmontering: kör `umount -f /Volumes/pCloudDrive` i Terminal\n- Efter en macOS-uppdatering, godkänn pClouds systemtillägg på nytt i **{system_settings} > Allmänt > Startobjekt och tillägg**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "Det här är en krypterad **{name}**-volym. Så här kan du prova:\n- Kontrollera att VeraCrypt-volymen fortfarande är monterad\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.veraCrypt.transient": {

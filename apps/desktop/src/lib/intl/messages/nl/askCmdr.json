@@ -616,13 +616,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {bestand} other {bestanden}} teruggezet.",
+  "askCmdr.renameUndo.undone": "{count, plural, one {De oude naam van {countText} bestand is teruggezet} other {De oude namen van {countText} bestanden zijn teruggezet}}.",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {bestand} other {bestanden}} teruggezet.",
+  "askCmdr.renameUndo.partial": "{count, plural, one {De oude naam van {countText} bestand is teruggezet} other {De oude namen van {countText} bestanden zijn teruggezet}}.",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {bestand} other {bestanden}} ongemoeid gelaten: {count, plural, one {het is} other {ze zijn}} na het hernoemen gewijzigd, of de oude naam is weer in gebruik.",
   "@askCmdr.renameUndo.skipped": {

@@ -54,6 +54,18 @@ Suggestions that name localized macOS panes (e.g. "Full Disk Access") use placeh
 templates; `expandSystemStrings` substitutes the live localized labels from `lib/system-strings.svelte.ts` (the
 `get_localized_system_strings` backend snapshot). This mirrors the Rust `system_strings::expand`.
 
+ALL THREE factories run the expansion (listing, git, provider), and `system-string-expansion.test.ts` is the invariant:
+it sweeps every git kind and every provider × category and fails on any token that survives into rendered copy. It has
+to be all three, because a token that reaches a user is a literal `{system_settings}` on screen. The git and provider
+copy earns it: `errors.git.{permissionDenied,gitDirPermissionDenied}.suggestion` name three panes, and the `iCloud`,
+`macFuse`, and `pCloudFuse` suggestions name System Settings.
+
+The tokens exist so a pane name follows the SYSTEM's language while the rest of the sentence follows the app's. Pane
+names the snapshot doesn't resolve ("General", "Login Items & Extensions", "Apple Account", "Storage") stay ordinary
+catalog copy, so they follow the APP's language: right whenever the two languages match, and the residue this seam
+hasn't reached. Widening it means adding a `StringSource` to the `CATALOG` in `system_strings.rs`, whose loctable keys
+are undocumented and version-sensitive, which is why the residue is still copy.
+
 Finder labels the same copy quotes (`Get Info`, the `Locked` checkbox, `Sharing & Permissions`) do NOT go through this
 seam: Apple localizes them too, but they're translated in the message catalogs instead. That's right whenever the app
 language matches the system language and wrong when it doesn't, since Finder follows the system. Why they aren't

@@ -772,9 +772,9 @@
   "@askCmdr.renameUndo.undoing": {
     "description": "Replaces the Undo button while the undo is running. Renaming files back can take a moment on a network drive, so this is a progress state, not a result. Sentence case; the character at the end is an ellipsis (U+2026)."
   },
-  "askCmdr.renameUndo.undone": "Put back {countText} {count, plural, one {file} other {files}}.",
+  "askCmdr.renameUndo.undone": "Put the old {count, plural, one {name} other {names}} back on {countText} {count, plural, one {file} other {files}}.",
   "@askCmdr.renameUndo.undone": {
-    "description": "Result line shown when an undo put every file's previous name back. Sentence case.",
+    "description": "Result line shown when an undo put every file's previous NAME back. The files never moved: only their names changed back, so use your language's verb for restoring a name, which is often not the verb for restoring a file from the Trash (fileOperations.trash.undone). Sentence case.",
     "placeholders": {
       "countText": {
         "content": "How many files got their previous name back, ready to drop into the sentence (e.g. 1,234)."
@@ -784,9 +784,9 @@
       }
     }
   },
-  "askCmdr.renameUndo.partial": "Put back {countText} {count, plural, one {file} other {files}}.",
+  "askCmdr.renameUndo.partial": "Put the old {count, plural, one {name} other {names}} back on {countText} {count, plural, one {file} other {files}}.",
   "@askCmdr.renameUndo.partial": {
-    "description": "First of two lines shown when an undo could only put SOME files back; the second line is askCmdr.renameUndo.skipped. Same wording as askCmdr.renameUndo.undone, kept as its own key because it is followed by the explanation line and translators may want to pair the two. Sentence case.",
+    "description": "First of two lines shown when an undo could only put SOME files' previous NAMES back; the second line is askCmdr.renameUndo.skipped. Same wording as askCmdr.renameUndo.undone, kept as its own key because it is followed by the explanation line and translators may want to pair the two. Restoring a name, not restoring a file from the Trash (fileOperations.trash.undone). Sentence case.",
     "placeholders": {
       "countText": {
         "content": "How many files got their previous name back, ready to drop into the sentence (e.g. 1,234)."

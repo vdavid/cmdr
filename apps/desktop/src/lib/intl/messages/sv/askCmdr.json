@@ -613,13 +613,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {fil} other {filer}} återställdes.",
+  "askCmdr.renameUndo.undone": "{count, plural, one {Det gamla namnet återställdes} other {De gamla namnen återställdes}} på {countText} {count, plural, one {fil} other {filer}}.",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {fil} other {filer}} återställdes.",
+  "askCmdr.renameUndo.partial": "{count, plural, one {Det gamla namnet återställdes} other {De gamla namnen återställdes}} på {countText} {count, plural, one {fil} other {filer}}.",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {fil} other {filer}} lämnades som {count, plural, one {den är} other {de är}}: {count, plural, one {den ändrades} other {de ändrades}} efter namnbytet, eller så är det gamla namnet taget igen.",
   "@askCmdr.renameUndo.skipped": {

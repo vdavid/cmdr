@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "Öffne **System Settings > Privacy & Security > Files and Folders** und gewähre Cmdr Zugriff auf den Ordner.",
+  "errors.git.permissionDenied.suggestion": "Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff auf den Ordner.",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "Bare-Repos werden noch nicht unterstützt",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Öffne **System Settings > Privacy & Security > Files and Folders** und gewähre Cmdr Zugriff. Im Terminal zeigt `ls -la .git` den aktuellen Eigentümer und Modus.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff. Im Terminal zeigt `ls -la .git` den aktuellen Eigentümer und Modus.",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Prüfe deine Internetverbindung\n- Stelle sicher, dass du in den Systemeinstellungen bei iCloud angemeldet bist\n- Navigiere erneut hierher, um es noch einmal zu versuchen",
+  "errors.provider.iCloud.transient": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Prüfe deine Internetverbindung\n- Öffne {system_settings} und stelle sicher, dass du bei iCloud angemeldet bist\n- Navigiere erneut hierher, um es noch einmal zu versuchen",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Prüfe, ob iCloud Drive unter **Systemeinstellungen > Apple-Account > iCloud** aktiviert ist\n- Stelle sicher, dass du beim richtigen Apple-Account angemeldet bist\n- Prüfe, ob dein iCloud-Speicher nicht voll ist",
+  "errors.provider.iCloud.needsAction": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Prüfe, ob iCloud Drive unter **{system_settings} > Apple Account > iCloud** aktiviert ist\n- Stelle sicher, dass du beim richtigen Apple Account angemeldet bist\n- Prüfe, ob dein iCloud-Speicher nicht voll ist",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Melde dich in den Systemeinstellungen bei iCloud ab und wieder an\n- Prüfe Apples [Seite zum Systemstatus](https://www.apple.com/support/systemstatus/)",
+  "errors.provider.iCloud.serious": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Öffne {system_settings} und melde dich bei iCloud ab und wieder an\n- Prüfe Apples [Seite zum Systemstatus](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "Das ist ein **macFUSE**-Mount. Der entfernte Server ist vielleicht langsam oder nicht erreichbar. Das kannst du versuchen:\n- Prüfe deine Netzwerkverbindung\n- Prüfe, ob der entfernte Server läuft\n- Navigiere erneut hierher, um es noch einmal zu versuchen",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "Das ist ein **macFUSE**-Mount. Das kannst du versuchen:\n- Prüfe, ob der FUSE-Prozess hinter diesem Mount noch läuft\n- Hänge das Volume bei Bedarf zwangsweise aus und binde es erneut ein\n- Stelle sicher, dass macFUSE unter **Systemeinstellungen > Allgemein > Anmeldeobjekte & Erweiterungen** aktuell ist",
+  "errors.provider.macFuse.needsAction": "Das ist ein **macFUSE**-Mount. Das kannst du versuchen:\n- Prüfe, ob der FUSE-Prozess hinter diesem Mount noch läuft\n- Hänge das Volume bei Bedarf zwangsweise aus und binde es erneut ein\n- Stelle sicher, dass macFUSE unter **{system_settings} > Allgemein > Anmeldeobjekte & Erweiterungen** aktuell ist",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "Das ist ein **macFUSE**-Mount. Der FUSE-Prozess dahinter ist wahrscheinlich abgestürzt oder getrennt. Das kannst du versuchen:\n- Hänge das Volume zwangsweise aus: führe im Terminal `umount -f /Volumes/<name>` aus\n- Binde es mit dem ursprünglichen Mount-Befehl erneut ein\n- Wenn das immer wieder passiert, prüfe, ob macFUSE aktuell ist",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Dieser Ordner liegt auf **pCloud**s virtuellem Laufwerk. Das kannst du versuchen:\n- Stelle sicher, dass die pCloud-App läuft und du angemeldet bist\n- Prüfe deine Internetverbindung\n- Genehmige nach einem macOS-Update die Systemerweiterung von pCloud erneut unter **Systemeinstellungen > Allgemein > Anmeldeobjekte & Erweiterungen**",
+  "errors.provider.pCloudFuse.needsAction": "Dieser Ordner liegt auf **pCloud**s virtuellem Laufwerk. Das kannst du versuchen:\n- Stelle sicher, dass die pCloud-App läuft und du angemeldet bist\n- Prüfe deine Internetverbindung\n- Genehmige nach einem macOS-Update die Systemerweiterung von pCloud erneut unter **{system_settings} > Allgemein > Anmeldeobjekte & Erweiterungen**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Dieser Ordner liegt auf **pCloud**s virtuellem Laufwerk. Der pCloud-FUSE-Prozess ist vielleicht abgestürzt. Das kannst du versuchen:\n- Beende die pCloud-App und öffne sie erneut\n- Wenn das Laufwerk nicht wieder erscheint, hänge es zwangsweise aus: führe im Terminal `umount -f /Volumes/pCloudDrive` aus\n- Genehmige nach einem macOS-Update die Systemerweiterung von pCloud erneut unter **Systemeinstellungen > Allgemein > Anmeldeobjekte & Erweiterungen**",
+  "errors.provider.pCloudFuse.serious": "Dieser Ordner liegt auf **pCloud**s virtuellem Laufwerk. Der pCloud-FUSE-Prozess ist vielleicht abgestürzt. Das kannst du versuchen:\n- Beende die pCloud-App und öffne sie erneut\n- Wenn das Laufwerk nicht wieder erscheint, hänge es zwangsweise aus: führe im Terminal `umount -f /Volumes/pCloudDrive` aus\n- Genehmige nach einem macOS-Update die Systemerweiterung von pCloud erneut unter **{system_settings} > Allgemein > Anmeldeobjekte & Erweiterungen**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "Das ist ein verschlüsseltes **{name}**-Volume. Das kannst du versuchen:\n- Prüfe, ob das VeraCrypt-Volume noch eingebunden ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen",
   "@errors.provider.veraCrypt.transient": {

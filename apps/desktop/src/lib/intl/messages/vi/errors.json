@@ -55,7 +55,7 @@
   "@errors.listing.networkDown.explanation": {
     "sourceHash": "e2106be"
   },
-  "errors.listing.networkDown.suggestion": "Đây là những cách để thử:\n- Kiểm tra trạng thái Wi-Fi hoặc Ethernet trong **{system_settings} > Network**\n- Nếu bạn đang dùng Wi-Fi, thử tắt rồi bật lại\n- Trong Terminal, chạy `ping google.com` để kiểm tra kết nối\n- Mở lại nơi này khi bạn đã trực tuyến lại",
+  "errors.listing.networkDown.suggestion": "Đây là những cách để thử:\n- Kiểm tra trạng thái Wi-Fi hoặc Ethernet trong **{system_settings} > Mạng**\n- Nếu bạn đang dùng Wi-Fi, thử tắt rồi bật lại\n- Trong Terminal, chạy `ping google.com` để kiểm tra kết nối\n- Mở lại nơi này khi bạn đã trực tuyến lại",
   "@errors.listing.networkDown.suggestion": {
     "sourceHash": "3fe671d"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.diskFullErrno.suggestion": "Đây là những cách để thử:\n- Giải phóng dung lượng bằng cách di chuyển hoặc xóa các tệp bạn không cần nữa\n- Dọn Thùng rác (bấm chuột phải vào biểu tượng Thùng rác trên Dock)\n- Trong Terminal, chạy `df -h` để xem mỗi ổ đĩa còn bao nhiêu dung lượng\n- Xem **{system_settings} > General > Storage** để biết chi tiết những gì đang chiếm dung lượng",
+  "errors.listing.diskFullErrno.suggestion": "Đây là những cách để thử:\n- Giải phóng dung lượng bằng cách di chuyển hoặc xóa các tệp bạn không cần nữa\n- Dọn Thùng rác (bấm chuột phải vào biểu tượng Thùng rác trên Dock)\n- Trong Terminal, chạy `df -h` để xem mỗi ổ đĩa còn bao nhiêu dung lượng\n- Xem **{system_settings} > Cài đặt chung > Dung lượng** để biết chi tiết những gì đang chiếm dung lượng",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "bf54d66"
   },
@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "Mở **System Settings > Privacy & Security > Files and Folders** và cấp cho Cmdr quyền truy cập thư mục.",
+  "errors.git.permissionDenied.suggestion": "Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp cho Cmdr quyền truy cập thư mục.",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "Bare repo chưa được hỗ trợ",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Mở **System Settings > Privacy & Security > Files and Folders** và cấp quyền truy cập cho Cmdr. Trong Terminal, `ls -la .git` cho thấy chủ sở hữu và chế độ hiện tại.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Mở **{system_settings} > {privacy_and_security} > {files_and_folders}** và cấp quyền truy cập cho Cmdr. Trong Terminal, `ls -la .git` cho thấy chủ sở hữu và chế độ hiện tại.",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Kiểm tra kết nối internet của bạn\n- Đảm bảo bạn đã đăng nhập vào iCloud trong System Settings\n- Mở lại nơi này để thử lại",
+  "errors.provider.iCloud.transient": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Kiểm tra kết nối internet của bạn\n- Đảm bảo bạn đã đăng nhập vào iCloud trong {system_settings}\n- Mở lại nơi này để thử lại",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Kiểm tra xem iCloud Drive đã được bật trong **System Settings > Apple Account > iCloud** chưa\n- Đảm bảo bạn đã đăng nhập đúng tài khoản Apple\n- Kiểm tra xem dung lượng iCloud của bạn có đầy không",
+  "errors.provider.iCloud.needsAction": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Kiểm tra xem iCloud Drive đã được bật trong **{system_settings} > Tài khoản Apple > iCloud** chưa\n- Đảm bảo bạn đã đăng nhập đúng tài khoản Apple\n- Kiểm tra xem dung lượng iCloud của bạn có đầy không",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Đăng xuất rồi đăng nhập lại iCloud trong System Settings\n- Xem [trang trạng thái hệ thống](https://www.apple.com/support/systemstatus/) của Apple",
+  "errors.provider.iCloud.serious": "Thư mục này do **{name}** quản lý. Đây là những cách để thử:\n- Đăng xuất rồi đăng nhập lại iCloud trong {system_settings}\n- Xem [trang trạng thái hệ thống](https://www.apple.com/support/systemstatus/) của Apple",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "Đây là một mục gắn kết **macFUSE**. Máy chủ từ xa có thể chậm hoặc không tới được. Đây là những cách để thử:\n- Kiểm tra kết nối mạng của bạn\n- Kiểm tra xem máy chủ từ xa có đang chạy không\n- Mở lại nơi này để thử lại",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "Đây là một mục gắn kết **macFUSE**. Đây là những cách để thử:\n- Kiểm tra xem tiến trình FUSE đứng sau mục gắn kết này có còn chạy không\n- Buộc bỏ gắn kết rồi gắn kết lại ổ đĩa nếu cần\n- Đảm bảo macFUSE đã được cập nhật trong **System Settings > General > Login Items & Extensions**",
+  "errors.provider.macFuse.needsAction": "Đây là một mục gắn kết **macFUSE**. Đây là những cách để thử:\n- Kiểm tra xem tiến trình FUSE đứng sau mục gắn kết này có còn chạy không\n- Buộc bỏ gắn kết rồi gắn kết lại ổ đĩa nếu cần\n- Đảm bảo macFUSE đã được cập nhật trong **{system_settings} > Cài đặt chung > Mục đăng nhập & Phần mở rộng**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "Đây là một mục gắn kết **macFUSE**. Tiến trình FUSE đứng sau nó có khả năng đã sập hoặc ngắt kết nối. Đây là những cách để thử:\n- Buộc bỏ gắn kết ổ đĩa: chạy `umount -f /Volumes/<name>` trong Terminal\n- Gắn kết lại bằng lệnh gắn kết ban đầu\n- Nếu việc này cứ tiếp diễn, hãy kiểm tra xem macFUSE đã được cập nhật chưa",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Thư mục này nằm trên ổ đĩa ảo của **pCloud**. Đây là những cách để thử:\n- Đảm bảo ứng dụng pCloud đang chạy và bạn đã đăng nhập\n- Kiểm tra kết nối internet của bạn\n- Sau khi cập nhật macOS, hãy phê duyệt lại phần mở rộng hệ thống của pCloud trong **System Settings > General > Login Items & Extensions**",
+  "errors.provider.pCloudFuse.needsAction": "Thư mục này nằm trên ổ đĩa ảo của **pCloud**. Đây là những cách để thử:\n- Đảm bảo ứng dụng pCloud đang chạy và bạn đã đăng nhập\n- Kiểm tra kết nối internet của bạn\n- Sau khi cập nhật macOS, hãy phê duyệt lại phần mở rộng hệ thống của pCloud trong **{system_settings} > Cài đặt chung > Mục đăng nhập & Phần mở rộng**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Thư mục này nằm trên ổ đĩa ảo của **pCloud**. Tiến trình FUSE của pCloud có thể đã sập. Đây là những cách để thử:\n- Thoát rồi mở lại ứng dụng pCloud\n- Nếu ổ đĩa không xuất hiện lại, hãy buộc bỏ gắn kết: chạy `umount -f /Volumes/pCloudDrive` trong Terminal\n- Sau khi cập nhật macOS, hãy phê duyệt lại phần mở rộng hệ thống của pCloud trong **System Settings > General > Login Items & Extensions**",
+  "errors.provider.pCloudFuse.serious": "Thư mục này nằm trên ổ đĩa ảo của **pCloud**. Tiến trình FUSE của pCloud có thể đã sập. Đây là những cách để thử:\n- Thoát rồi mở lại ứng dụng pCloud\n- Nếu ổ đĩa không xuất hiện lại, hãy buộc bỏ gắn kết: chạy `umount -f /Volumes/pCloudDrive` trong Terminal\n- Sau khi cập nhật macOS, hãy phê duyệt lại phần mở rộng hệ thống của pCloud trong **{system_settings} > Cài đặt chung > Mục đăng nhập & Phần mở rộng**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "Đây là một ổ đĩa được mã hóa **{name}**. Đây là những cách để thử:\n- Kiểm tra xem ổ đĩa VeraCrypt có còn được gắn kết không\n- Mở lại nơi này để thử lại",
   "@errors.provider.veraCrypt.transient": {

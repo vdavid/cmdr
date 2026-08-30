@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "Ouvrez **System Settings > Privacy & Security > Files and Folders** et accordez à Cmdr l'accès au dossier.",
+  "errors.git.permissionDenied.suggestion": "Ouvrez **{system_settings} > {privacy_and_security} > {files_and_folders}** et accordez à Cmdr l'accès au dossier.",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "Les dépôts nus ne sont pas encore pris en charge",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Ouvrez **System Settings > Privacy & Security > Files and Folders** et accordez l'accès à Cmdr. Dans Terminal, `ls -la .git` affiche le propriétaire et le mode actuels.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Ouvrez **{system_settings} > {privacy_and_security} > {files_and_folders}** et accordez l'accès à Cmdr. Dans Terminal, `ls -la .git` affiche le propriétaire et le mode actuels.",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez votre connexion internet\n- Assurez-vous d'être connecté à iCloud dans Réglages Système\n- Revenez ici pour réessayer",
+  "errors.provider.iCloud.transient": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez votre connexion internet\n- Assurez-vous d'être connecté à iCloud dans {system_settings}\n- Revenez ici pour réessayer",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez qu'iCloud Drive est activé dans **Réglages Système > Compte Apple > iCloud**\n- Assurez-vous d'être connecté au bon compte Apple\n- Vérifiez que votre stockage iCloud n'est pas plein",
+  "errors.provider.iCloud.needsAction": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez qu'iCloud Drive est activé dans **{system_settings} > Compte Apple > iCloud**\n- Assurez-vous d'être connecté au bon compte Apple\n- Vérifiez que votre stockage iCloud n'est pas plein",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Déconnectez-vous puis reconnectez-vous à iCloud dans Réglages Système\n- Consultez la [page d'état des systèmes](https://www.apple.com/support/systemstatus/) d'Apple",
+  "errors.provider.iCloud.serious": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Déconnectez-vous puis reconnectez-vous à iCloud dans {system_settings}\n- Consultez la [page d'état des systèmes](https://www.apple.com/support/systemstatus/) d'Apple",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "Ceci est un montage **macFUSE**. Le serveur distant est peut-être lent ou injoignable. Voici ce que vous pouvez essayer :\n- Vérifiez votre connexion réseau\n- Vérifiez que le serveur distant est en marche\n- Revenez ici pour réessayer",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "Ceci est un montage **macFUSE**. Voici ce que vous pouvez essayer :\n- Vérifiez que le processus FUSE qui sous-tend ce montage est toujours en marche\n- Forcez le démontage et remontez le volume si nécessaire\n- Assurez-vous que macFUSE est à jour dans **Réglages Système > Général > Ouverture et extensions**",
+  "errors.provider.macFuse.needsAction": "Ceci est un montage **macFUSE**. Voici ce que vous pouvez essayer :\n- Vérifiez que le processus FUSE qui sous-tend ce montage est toujours en marche\n- Forcez le démontage et remontez le volume si nécessaire\n- Assurez-vous que macFUSE est à jour dans **{system_settings} > Général > Ouverture et extensions**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "Ceci est un montage **macFUSE**. Le processus FUSE qui le sous-tend a probablement planté ou s'est déconnecté. Voici ce que vous pouvez essayer :\n- Forcez le démontage du volume : lancez `umount -f /Volumes/<name>` dans Terminal\n- Remontez avec la commande de montage d'origine\n- Si cela continue, vérifiez que macFUSE est à jour",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Ce dossier est sur le disque virtuel de **pCloud**. Voici ce que vous pouvez essayer :\n- Assurez-vous que l'app pCloud est en marche et que vous êtes connecté\n- Vérifiez votre connexion internet\n- Après une mise à jour de macOS, réapprouvez l'extension système de pCloud dans **Réglages Système > Général > Ouverture et extensions**",
+  "errors.provider.pCloudFuse.needsAction": "Ce dossier est sur le disque virtuel de **pCloud**. Voici ce que vous pouvez essayer :\n- Assurez-vous que l'app pCloud est en marche et que vous êtes connecté\n- Vérifiez votre connexion internet\n- Après une mise à jour de macOS, réapprouvez l'extension système de pCloud dans **{system_settings} > Général > Ouverture et extensions**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Ce dossier est sur le disque virtuel de **pCloud**. Le processus FUSE de pCloud a peut-être planté. Voici ce que vous pouvez essayer :\n- Quittez et rouvrez l'app pCloud\n- Si le disque ne réapparaît pas, forcez son démontage : lancez `umount -f /Volumes/pCloudDrive` dans Terminal\n- Après une mise à jour de macOS, réapprouvez l'extension système de pCloud dans **Réglages Système > Général > Ouverture et extensions**",
+  "errors.provider.pCloudFuse.serious": "Ce dossier est sur le disque virtuel de **pCloud**. Le processus FUSE de pCloud a peut-être planté. Voici ce que vous pouvez essayer :\n- Quittez et rouvrez l'app pCloud\n- Si le disque ne réapparaît pas, forcez son démontage : lancez `umount -f /Volumes/pCloudDrive` dans Terminal\n- Après une mise à jour de macOS, réapprouvez l'extension système de pCloud dans **{system_settings} > Général > Ouverture et extensions**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "Ceci est un volume chiffré **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez que le volume VeraCrypt est toujours monté\n- Revenez ici pour réessayer",
   "@errors.provider.veraCrypt.transient": {

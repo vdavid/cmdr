@@ -449,9 +449,9 @@
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
   },
-  "settings.indexing.enabled.description": "A háttérben indexeli a meghajtót az azonnali könyvtárméretekért.",
+  "settings.indexing.enabled.description": "A háttérben indexeli a meghajtót az azonnali mappaméretekért.",
   "@settings.indexing.enabled.description": {
-    "sourceHash": "559ec69"
+    "sourceHash": "32966c5"
   },
   "settings.mediaIndex.card": "Képkeresés",
   "@settings.mediaIndex.card": {
@@ -2099,10 +2099,9 @@
   "@settings.network.customTimeoutUnit": {
     "sourceHash": "59f006d"
   },
-  "settings.updates.emailPlaceholder": "you@example.com",
+  "settings.updates.emailPlaceholder": "te@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc",
-    "sameAsSourceJustification": "'you@example.com' is a literal example-email placeholder, kept verbatim everywhere per the cross-file reconciliation (style.md)."
+    "sourceHash": "53e6cdc"
   },
   "settings.updates.checkForUpdates": "Frissítések keresése",
   "@settings.updates.checkForUpdates": {

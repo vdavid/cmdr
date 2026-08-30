@@ -98,8 +98,9 @@ macOS Finder/AppKit zh-CN as Tier 1, Microsoft zh-Hans cross-check. Reuses setti
 - **Technical details (error-panel section)** · `技术详情` · descriptive, no macOS source · `tentative`
 - **App (application, in cloud-provider copy)** · `App` · Apple zh-CN keeps "App" verbatim · `high`
 - **System Settings panes via tokens** · rendered by `{system_settings}`/`{privacy_and_security}`/`{files_and_folders}`/
-  `{full_disk_access}`, OS-localized at runtime; never hand-translate. The git-suggestion strings use plain literals
-  instead (matching the original git copy): `系统设置` / `隐私与安全性` / `文件和文件夹` (all macOS labels). · `high`
+  `{full_disk_access}`, OS-localized at runtime; never hand-translate. Every `errors.*` suggestion uses the tokens,
+  including the git and provider ones; no `errors.*` string writes a pane name as a literal. Spacing rules and the pane
+  names the tokens don't cover: § Shared `en` fixes (2026-08-30) at the end of this file. · `high`
 
 ### File explorer catalog (first pass, 2026-06-21)
 
@@ -1611,3 +1612,39 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 `license key 许可证密钥`、`remove 移除` / `delete 删除`、`folder 文件夹` / `dir 目录`、 `cancel 取消` /
 `stop 停止`、`open 打开` / `go to 前往` —— 全目录逐键对照，除上面那条 `verbCopy`
 外没有互串。下次复审可以从这份清单接着往下走。
+
+## Shared `en` fixes: menu wording, System Settings tokens, name-restore verb (2026-08-30)
+
+Fallout from four `en` self-inconsistency fixes. Evidence is macOS 26.6.2 (build 25G83), read live off the installed
+bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference-pile/how-to-mine.md`, 2026-08-30, plus
+`zh-Hans/microsoft-terminology/CHINESE (SIMPLIFIED).tbx` from the pile.
+
+- **`Show all` / `Hide others` (app menu) → `全部显示` / `隐藏其他`** · Tier 1, three independent bundles agree: Finder
+  `MenuBar.strings` `300730.title`/`300729.title`, TextEdit `Edit.loctable` `517.title`/`515.title`, Preview
+  `MainMenu.loctable` `150.title`/`145.title`. Both already shipped and both already match `commands.appShowAll.label` /
+  `commands.appHideOthers.label`, so the `en` sentence-case fix was a restamp: Chinese has no capitalization, and the
+  wording was right. · `confirmed`
+- **System Settings panes via tokens, now in the git and provider errors too** · the eight `errors.git.*` /
+  `errors.provider.*` suggestions carry `{system_settings}` / `{privacy_and_security}` / `{files_and_folders}`, so the
+  literals `系统设置` / `隐私与安全性` / `文件和文件夹` are gone from them. (This supersedes the "the git-suggestion
+  strings use plain literals" carve-out in the settings-pass entry above.) Spacing: the runtime value can arrive CJK or
+  Latin, so keep a space on both sides of a bare token (`在 {system_settings} 里`), and inside a bold path keep the
+  existing shape `在 **{system_settings} > 通用 > 登录项与扩展**里` — the trailing 里 attaches to the last CJK pane
+  name, never to the token. · `high`
+- **Pane names the tokens don't cover** · `Apple Account` → `Apple 账户` (`ClassKitSettings.loctable` `APPLE_ID` says
+  `Apple账户`; Cmdr adds the Latin/CJK space per style.md), `General` → `通用`, `Login Items & Extensions` →
+  `登录项与扩展` (`LoginItems.appex/Localizable.loctable`). All three were already correct. · `confirmed`
+- **`settings.indexing.enabled.description`: `目录大小` → `文件夹大小`** · English switched "directory sizes" → "folder
+  sizes" because `folder` is the app's user-facing word. The glossary already splits `folder 文件夹` / `dir 目录` (see
+  the near-synonym sweep at the end of this file); this string is user-facing help text, so it takes `文件夹`. · `high`
+- **"Put the old names back on N files" → `已恢复 {countText} 个文件原来的名称。`** (`askCmdr.renameUndo.undone` /
+  `.partial`) · English used to share one sentence with `fileOperations.trash.undone` and now names the OBJECT (the old
+  name). The old Chinese (`已恢复 … 个文件。`) said the FILES were restored, which is the trash action, not this one:
+  nothing moves here, only the name changes back. Reuses `原来的名称` from the family's own `undoing`
+  ("正在恢复原来的名称…") and `skipReason.*`. `fileOperations.trash.undone` keeps `已将 … 放回原处。` · `high`
+- **Email placeholder stays `you@example.com`** (`settings.updates.emailPlaceholder`, `common.attachEmailPlaceholder`,
+  `onboarding.stepBeta.emailPlaceholder`) · Microsoft Simplified Chinese keeps the sample address verbatim: in
+  `CHINESE (SIMPLIFIED).tbx` the `en-US` term `someone@example.com` maps to a `zh-Hans` term that is the same literal
+  string (`user@example.com` likewise). Compare Vietnamese, where the same source DOES localize the local part. So a
+  Latin-script local part is the Chinese convention, all three keys already agree, and the existing
+  `sameAsSourceJustification` stands. `example.com` is RFC 2606's reserved domain. · `high`

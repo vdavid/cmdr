@@ -21,7 +21,7 @@
 
   "common.attachEmailPlaceholder": "you@example.com",
   "@common.attachEmailPlaceholder": {
-    "description": "Placeholder inside the email field in the crash-report, error-report, and feedback dialogs, showing the expected shape. A standard example address; keep it as a recognizable placeholder address, matching whatever onboarding.stepBeta.emailPlaceholder uses in this language."
+    "description": "Placeholder inside the email field in the crash-report, error-report, and feedback dialogs, showing the expected shape. Localize the LOCAL part to your language's natural word for \"you\" (German \"du@\", French \"vous@\"), and keep the \"example.com\" domain: it's the domain reserved for examples (RFC 2606), so it can never be someone's real address. All three email placeholders (settings.updates.emailPlaceholder, common.attachEmailPlaceholder, onboarding.stepBeta.emailPlaceholder) must use the SAME address in your language."
   },
 
   "common.attachEmailPrompt": "Attach my email address so you can follow up",

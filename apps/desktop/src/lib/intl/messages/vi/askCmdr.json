@@ -613,13 +613,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "Đã đưa trở lại {countText} {count, plural, other {tệp}}.",
+  "askCmdr.renameUndo.undone": "Đã đặt lại tên cũ cho {countText} {count, plural, other {tệp}}.",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "Đã đưa trở lại {countText} {count, plural, other {tệp}}.",
+  "askCmdr.renameUndo.partial": "Đã đặt lại tên cũ cho {countText} {count, plural, other {tệp}}.",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "Giữ nguyên {countText} {count, plural, other {tệp}}: đã thay đổi sau khi đổi tên, hoặc tên cũ đã có thứ khác dùng.",
   "@askCmdr.renameUndo.skipped": {

@@ -705,3 +705,42 @@ around them.
   counts in `style.md` § Spacing: put a space between Chinese and Latin.
 - **Terms genuinely absent from every source**: breadcrumb, mount point, USB device, and "pane" in the two-pane sense
   (Apple only). Each is marked `tentative` or composed above, with what it was built from.
+
+## Shared `en` fixes: menu wording, System Settings tokens, name-restore verb (2026-08-30)
+
+Fallout from four `en` self-inconsistency fixes. Evidence is macOS 26.6.2 (build 25G83), read live off the installed
+bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference-pile/how-to-mine.md`, 2026-08-30, plus
+`zh-Hant/microsoft-terminology/CHINESE (TRADITIONAL).tbx` from the pile. (The `zh-Hant` pile folder has no macOS tier,
+so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.loctable`.)
+
+- **`Show all` / `Hide others` (app menu) → `顯示全部` / `隱藏其他`** · Tier 1, three independent bundles agree: Finder
+  `MenuBar.strings` `300730.title`/`300729.title`, TextEdit `Edit.loctable` `517.title`/`515.title`, Preview
+  `MainMenu.loctable` `150.title`/`145.title`. Both already shipped and both already match `commands.appShowAll.label` /
+  `commands.appHideOthers.label`, so the `en` sentence-case fix was a restamp: Chinese has no capitalization, and the
+  wording was right. · `confirmed`
+- **System Settings panes via tokens in the git and provider errors** · the eight `errors.git.*` / `errors.provider.*`
+  suggestions now carry `{system_settings}` / `{privacy_and_security}` / `{files_and_folders}`, the same
+  runtime-resolved placeholders the `errors.listing.*` family already used, so the literals `系統設定` /
+  `隱私權與安全性` / `檔案與資料夾` are gone from them. The app substitutes the pane names as the USER'S Mac shows them,
+  so never hand-translate a token. Spacing: the value can arrive CJK or Latin, so keep a space on both sides of a bare
+  token (`在 {system_settings} 裡`), and inside a bold path keep
+  `在 **{system_settings} > 一般 > 登入項目與延伸功能**裡` — the trailing 裡 attaches to the last CJK pane name, never
+  to the token. · `high`
+- **Pane names the tokens don't cover** · `Apple Account` → `Apple 帳號` (`ClassKitSettings.loctable` `APPLE_ID` says
+  `Apple帳號`; Cmdr adds the Latin/CJK space per style.md § Spacing), `General` → `一般`, `Login Items & Extensions` →
+  `登入項目與延伸功能` (`LoginItems.appex/Localizable.loctable`). All three were already correct. · `confirmed`
+- **`settings.indexing.enabled.description`: `目錄大小` → `資料夾大小`** · English switched "directory sizes" → "folder
+  sizes" because `folder` is the app's user-facing word. Matches this file's own rule: prefer `資料夾` in user-facing
+  copy, keep `目錄` only where the English deliberately says "directory" in a technical/path sense. · `high`
+- **"Put the old names back on N files" → `已把 {countText} 個檔案原本的名稱改回去。`** (`askCmdr.renameUndo.undone` /
+  `.partial`) · English used to share one sentence with `fileOperations.trash.undone` and now names the OBJECT (the old
+  name). The old Chinese (`已還原 … 個檔案。`) said the FILES were restored, which is the trash action, not this one:
+  nothing moves here, only the name changes back. Reuses the family's own phrasing `把原本的名稱改回去` from
+  `askCmdr.renameUndo.undoing` and the `skipReason.failed.*` pair. `fileOperations.trash.undone` keeps
+  `已把 … 放回原處。` · `high`
+- **Email placeholder stays `you@example.com`** (`settings.updates.emailPlaceholder`, `common.attachEmailPlaceholder`,
+  `onboarding.stepBeta.emailPlaceholder`) · Microsoft Traditional Chinese keeps the sample address verbatim: in
+  `CHINESE (TRADITIONAL).tbx` the `en-US` term `someone@example.com` maps to a `zh-Hant` term that is the same literal
+  string (`user@example.com` likewise). Compare Vietnamese, where the same source DOES localize the local part. So a
+  Latin-script local part is the Chinese convention, all three keys already agree, and the existing
+  `sameAsSourceJustification` stands. `example.com` is RFC 2606's reserved domain. · `high`

@@ -349,7 +349,7 @@
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"
   },
-  "onboarding.stepBeta.emailPlaceholder": "jij@voorbeeld.com",
+  "onboarding.stepBeta.emailPlaceholder": "jij@example.com",
   "@onboarding.stepBeta.emailPlaceholder": {
     "sourceHash": "53e6cdc"
   },

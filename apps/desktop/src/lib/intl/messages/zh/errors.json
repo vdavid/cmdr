@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "打开 **系统设置 > 隐私与安全性 > 文件和文件夹**，授予 Cmdr 对这个文件夹的访问权限。",
+  "errors.git.permissionDenied.suggestion": "打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 对这个文件夹的访问权限。",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "暂不支持裸仓库",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "打开 **系统设置 > 隐私与安全性 > 文件和文件夹**，授予 Cmdr 访问权限。在终端里，`ls -la .git` 会显示当前的所有者和权限模式。",
+  "errors.git.gitDirPermissionDenied.suggestion": "打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限。在终端里，`ls -la .git` 会显示当前的所有者和权限模式。",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 检查你的互联网连接\n- 确认你已在系统设置里登录 iCloud\n- 再次进入这里重试",
+  "errors.provider.iCloud.transient": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 检查你的互联网连接\n- 确认你已在 {system_settings} 里登录 iCloud\n- 再次进入这里重试",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 在 **系统设置 > Apple 账户 > iCloud** 里确认 iCloud 云盘已启用\n- 确认你登录的是正确的 Apple 账户\n- 检查你的 iCloud 储存空间没满",
+  "errors.provider.iCloud.needsAction": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 在 **{system_settings} > Apple 账户 > iCloud** 里确认 iCloud 云盘已启用\n- 确认你登录的是正确的 Apple 账户\n- 检查你的 iCloud 储存空间没满",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 在系统设置里退出 iCloud 再重新登录\n- 查看 Apple 的[系统状态页](https://www.apple.com/support/systemstatus/)",
+  "errors.provider.iCloud.serious": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 在 {system_settings} 里退出 iCloud 再重新登录\n- 查看 Apple 的[系统状态页](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "这是一个 **macFUSE** 挂载。远程服务器可能速度慢或无法连到。可以这样试试：\n- 检查你的网络连接\n- 确认远程服务器在运行\n- 再次进入这里重试",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "这是一个 **macFUSE** 挂载。可以这样试试：\n- 确认支撑这个挂载的 FUSE 进程仍在运行\n- 如有需要，强制卸载并重新挂载这个宗卷\n- 在 **系统设置 > 通用 > 登录项与扩展**里，确认 macFUSE 是最新版本",
+  "errors.provider.macFuse.needsAction": "这是一个 **macFUSE** 挂载。可以这样试试：\n- 确认支撑这个挂载的 FUSE 进程仍在运行\n- 如有需要，强制卸载并重新挂载这个宗卷\n- 在 **{system_settings} > 通用 > 登录项与扩展**里，确认 macFUSE 是最新版本",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "这是一个 **macFUSE** 挂载。支撑它的 FUSE 进程很可能已崩溃或断开。可以这样试试：\n- 强制卸载这个宗卷：在终端里运行 `umount -f /Volumes/<name>`\n- 用原来的挂载命令重新挂载\n- 如果一直这样，确认 macFUSE 是最新版本",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "这个文件夹在 **pCloud** 的虚拟驱动器上。可以这样试试：\n- 确认 pCloud App 在运行且你已登录\n- 检查你的互联网连接\n- macOS 更新后，在 **系统设置 > 通用 > 登录项与扩展**里重新批准 pCloud 的系统扩展",
+  "errors.provider.pCloudFuse.needsAction": "这个文件夹在 **pCloud** 的虚拟驱动器上。可以这样试试：\n- 确认 pCloud App 在运行且你已登录\n- 检查你的互联网连接\n- macOS 更新后，在 **{system_settings} > 通用 > 登录项与扩展**里重新批准 pCloud 的系统扩展",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "这个文件夹在 **pCloud** 的虚拟驱动器上。pCloud 的 FUSE 进程可能已崩溃。可以这样试试：\n- 退出并重新打开 pCloud App\n- 如果驱动器没有重新出现，强制卸载它：在终端里运行 `umount -f /Volumes/pCloudDrive`\n- macOS 更新后，在 **系统设置 > 通用 > 登录项与扩展**里重新批准 pCloud 的系统扩展",
+  "errors.provider.pCloudFuse.serious": "这个文件夹在 **pCloud** 的虚拟驱动器上。pCloud 的 FUSE 进程可能已崩溃。可以这样试试：\n- 退出并重新打开 pCloud App\n- 如果驱动器没有重新出现，强制卸载它：在终端里运行 `umount -f /Volumes/pCloudDrive`\n- macOS 更新后，在 **{system_settings} > 通用 > 登录项与扩展**里重新批准 pCloud 的系统扩展",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "这是一个 **{name}** 加密宗卷。可以这样试试：\n- 确认这个 VeraCrypt 宗卷仍处于挂载状态\n- 再次进入这里重试",
   "@errors.provider.veraCrypt.transient": {

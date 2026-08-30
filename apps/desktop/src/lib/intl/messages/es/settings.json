@@ -452,7 +452,7 @@
   },
   "settings.indexing.enabled.description": "Indexa tu unidad en segundo plano para obtener tamaños de carpeta al instante.",
   "@settings.indexing.enabled.description": {
-    "sourceHash": "559ec69"
+    "sourceHash": "32966c5"
   },
   "settings.mediaIndex.card": "Búsqueda de imágenes",
   "@settings.mediaIndex.card": {
@@ -2099,10 +2099,9 @@
   "@settings.network.customTimeoutUnit": {
     "sourceHash": "59f006d"
   },
-  "settings.updates.emailPlaceholder": "you@example.com",
+  "settings.updates.emailPlaceholder": "tu@example.com",
   "@settings.updates.emailPlaceholder": {
-    "sourceHash": "53e6cdc",
-    "sameAsSourceJustification": "'you@example.com' is a literal example email address; kept exactly per the @key description."
+    "sourceHash": "53e6cdc"
   },
   "settings.updates.checkForUpdates": "Buscar actualizaciones",
   "@settings.updates.checkForUpdates": {

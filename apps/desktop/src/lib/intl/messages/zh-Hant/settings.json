@@ -449,9 +449,9 @@
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
   },
-  "settings.indexing.enabled.description": "在背景為你的磁碟機建立索引，以便即時顯示目錄大小。",
+  "settings.indexing.enabled.description": "在背景為你的磁碟機建立索引，以便即時顯示資料夾大小。",
   "@settings.indexing.enabled.description": {
-    "sourceHash": "559ec69"
+    "sourceHash": "32966c5"
   },
   "settings.mediaIndex.card": "影像搜尋",
   "@settings.mediaIndex.card": {

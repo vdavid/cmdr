@@ -612,13 +612,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "已還原 {countText} 個{count, plural, other {檔案}}。",
+  "askCmdr.renameUndo.undone": "已把 {countText} 個{count, plural, other {檔案}}原本的名稱改回去。",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "已還原 {countText} 個{count, plural, other {檔案}}。",
+  "askCmdr.renameUndo.partial": "已把 {countText} 個{count, plural, other {檔案}}原本的名稱改回去。",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "有 {countText} 個{count, plural, other {檔案}}維持原樣：它們在重新命名之後有過更動，或是原本的名稱又被佔走了。",
   "@askCmdr.renameUndo.skipped": {

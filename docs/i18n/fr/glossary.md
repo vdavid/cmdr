@@ -128,8 +128,8 @@ Phrasing notes for this catalog:
   content renders in English at runtime. Flagged for review; matches how the `de` sibling handled it.
 - The OS-pane placeholders (`{system_settings}`, `{privacy_and_security}`, `{files_and_folders}`, `{full_disk_access}`)
   are substituted with OS-localized names at runtime — left as tokens, not translated. The git `permissionDenied` and
-  `gitDirPermissionDenied` suggestions intentionally keep the pane names as English literals ("System Settings > Privacy
-  & Security > Files and Folders") to match the original git copy, NOT placeholders; preserved verbatim.
+  `gitDirPermissionDenied` suggestions carry them too, since 2026-08-30 (see the dated section on pane names near the
+  end of this file).
 
 Settled during the `licensing` + `ai` + `viewer` pass (2026-06-21):
 
@@ -2109,8 +2109,10 @@ vérificateur) et sont décrites plus bas pour que la prochaine passe ne les « 
   les boutons, mais une sous-section de la barre latérale des réglages est un nom · `high`.
 - **`Put back …` : `restauré` concerne des NOMS, `remis en place` concerne des EMPLACEMENTS** · l'anglais réutilise une
   phrase pour deux annulations différentes · `high`.
-- **`you@example.com` : les réglages gardent l'adresse telle quelle, les dialogues la traduisent** ·
-  `@settings.updates.emailPlaceholder` dit « keep it exactly » (avec un `sameAsSourceJustification` à l'appui) · `high`.
+- **`you@example.com` → `vous@example.com`, la même dans les trois champs** · `settings.updates.emailPlaceholder`,
+  `common.attachEmailPlaceholder` et `onboarding.stepBeta.emailPlaceholder` portent la même adresse, et leurs `@key`
+  l'exigent · `high`. La partie locale se traduit (`vous@`), le domaine reste `example.com`. ❌ Pas `exemple.com` : ce
+  domaine est réel et enregistrable, alors que `example.com` est réservé aux exemples (RFC 2606).
 - **Sept « divergences » n'en sont pas, et voici pourquoi elles reviendront** : `AI suggestions` / `AI suggestions:`,
   `Connected` / `Connected!`, `Copied` / `Copied!`, `On disk` / `On disk:`, `Preview` / `Preview:`, `Send report` /
   `Send report?` et `Start using Cmdr` / `Start using Cmdr!` ont un anglais DIFFÉRENT. `i18n-terms` les regroupe quand
@@ -2163,3 +2165,34 @@ seule la passe manuelle les trouve. Toutes sont corrigées.
 - **`Roll back` : `revenir en arrière` est le verbe, `retour en arrière` le nom** · le bouton et le titre de la
   confirmation prennent le verbe (`fileOperations.rollbackConfirm.rollBack`/`.title`), les pastilles de statut et le
   titre de progression prennent le nom · `high`. Détail du choix de famille : § « La famille `rollback` ».
+
+## Les noms de sous-fenêtres viennent du Mac de la personne (`errors.git.*`, `errors.provider.*`, 2026-08-30)
+
+Huit valeurs écrivaient les noms de sous-fenêtres à la main, et les deux valeurs `errors.git.*` les gardaient même en
+anglais (« System Settings > Privacy & Security > Files and Folders »). Elles portent désormais les jetons
+`{system_settings}`, `{privacy_and_security}` et `{files_and_folders}`, que l'app remplace à l'exécution par les noms
+tels que le Mac de la personne les affiche. Ces valeurs sont RAW (pas d'ICU), donc pas d'apostrophes doublées.
+
+- **Une préposition simple passe, une élision ou un accord non** · la valeur est inconnue à l'écriture, donc
+  `dans {system_settings}` va bien, et tout ce qui devrait s'élider ou s'accorder avec elle est interdit. Les six
+  valeurs gardent toutes `dans` ou la forme chemin `**… > … > …**` · `high`.
+- **`Apple Account` → `Compte Apple`, `General` → `Général`, `Login Items & Extensions` → `Ouverture et extensions`** ·
+  aucun jeton ne les couvre, ce sont donc du texte ordinaire ; macOS 26 `fr` (`AppleIDSettings.appex`,
+  `InfoPlist.loctable`, `CFBundleDisplayName` ; `LoginItems.appex`, `Localizable.loctable` ; vérifié sur macOS 26.6.2,
+  build 25G83, 2026-08-30) · `high`. Cohérent avec `errors.listing.diskFullErrno.suggestion`
+  (`**{system_settings} > Général > Stockage**`).
+
+## `Restaurer` nomme maintenant l'objet : l'ancien nom (`askCmdr.renameUndo.undone` / `.partial`, 2026-08-30)
+
+L'anglais partageait une phrase avec l'annulation de la corbeille (« Put back {countText} {files}. ») et dit maintenant
+CE QUI revient : l'ancien nom.
+
+- **`Put the old names back on N files.` → « Anciens noms restaurés pour N fichiers. »** · `restaurer` est ce que le
+  catalogue réserve à l'annulation d'un renommage (`askCmdr.renameUndo.undoing`, « Restauration des anciens noms… » ;
+  `askCmdr.renameUndo.unavailable`, « Rien à restaurer. »), et `remettre en place` reste celui de la corbeille
+  (`fileOperations.trash.undone`) · `high`. La phrase garde le participe sans verbe conjugué des clés sœurs
+  (`askCmdr.renameUndo.applied`, « {countText} fichiers renommés. »), et l'accord suit le nom, pas le fichier.
+- **`menu.app.showAll` / `menu.app.hideOthers` étaient déjà justes** · « Tout afficher » et « Masquer les autres » sont
+  mot pour mot ce qu'affiche le menu de l'app sur macOS 26 `fr` (Finder `MenuBar.strings`, `300730.title` /
+  `300729.title`, vérifié sur macOS 26.6.2, build 25G83, 2026-08-30), et ils correspondent à `commands.appShowAll.label`
+  / `commands.appHideOthers.label` · `high`.

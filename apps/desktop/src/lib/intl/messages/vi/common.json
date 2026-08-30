@@ -11,10 +11,9 @@
   "@common.attachEmailInvalid": {
     "sourceHash": "515c7cf"
   },
-  "common.attachEmailPlaceholder": "you@example.com",
+  "common.attachEmailPlaceholder": "ban@example.com",
   "@common.attachEmailPlaceholder": {
-    "sourceHash": "53e6cdc",
-    "sameAsSourceJustification": "Literal example email address 'you@example.com'; kept exactly as a recognizable placeholder address (locale-neutral)."
+    "sourceHash": "53e6cdc"
   },
   "common.attachEmailPrompt": "Đính kèm địa chỉ email của tôi để bạn có thể phản hồi",
   "@common.attachEmailPrompt": {

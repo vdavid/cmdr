@@ -444,7 +444,7 @@
     "category": "needs_action",
     "explanation": "The OS denied access to the `.git` folder, even though the working tree is readable.",
     "retryHint": false,
-    "suggestion": "Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access. In Terminal, `ls -la .git` shows the current owner and mode.",
+    "suggestion": "Open **System Settings > Privacy & Security > Files & Folders** and grant Cmdr access. In Terminal, `ls -la .git` shows the current owner and mode.",
     "title": "Cmdr can't open the `.git` folder"
   },
   "git:IndexLocked": {
@@ -484,7 +484,7 @@
     "category": "needs_action",
     "explanation": "The OS won't let Cmdr open the `.git` folder, so git info isn't available.",
     "retryHint": false,
-    "suggestion": "Open **System Settings > Privacy & Security > Files and Folders** and grant Cmdr access to the folder.",
+    "suggestion": "Open **System Settings > Privacy & Security > Files & Folders** and grant Cmdr access to the folder.",
     "title": "Cmdr can't read this repo"
   },
   "git:ShallowBoundary": {

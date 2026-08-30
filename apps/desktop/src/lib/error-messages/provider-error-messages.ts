@@ -16,8 +16,13 @@
  * strings carry markdown and bypass ICU. The shared app-backed template carries
  * `{name}` / `{app}` tokens substituted here; provider names are static
  * (trusted), so no escaping is needed.
+ *
+ * `expandSystemStrings(...)` then swaps the `{system_settings}`-family tokens for
+ * the pane names the user's OWN Mac shows, which is a different language from the
+ * app's whenever the two are set differently.
  */
 
+import { expandSystemStrings } from './compose'
 import { getMessage } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
@@ -103,10 +108,14 @@ export function getProviderSuggestion(provider: Provider, category: ProviderCate
         ? 'transient'
         : 'nonTransient'
       : categoryLeaf(category)
-    return fillTemplate(getMessage(`errors.provider.${provider}.${leaf}` as MessageKey), name, name)
+    return expandSystemStrings(
+      fillTemplate(getMessage(`errors.provider.${provider}.${leaf}` as MessageKey), name, name),
+    )
   }
 
   // App-backed providers share one template keyed only on category.
   const app = appName(provider) ?? name
-  return fillTemplate(getMessage(`errors.provider.appBased.${categoryLeaf(category)}` as MessageKey), name, app)
+  return expandSystemStrings(
+    fillTemplate(getMessage(`errors.provider.appBased.${categoryLeaf(category)}` as MessageKey), name, app),
+  )
 }

@@ -1660,11 +1660,11 @@ nächste Durchgang sie nicht „vereinheitlicht“.
 - **`Put back …`: `zurückgesetzt` sind NAMEN, `zurückgelegt` sind ORTE** · schon im Papierkorb-Abschnitt (2026-08-27)
   entschieden: macOS Finder `N153.1` gibt „Put Back“ als „Zurücklegen“, und der Katalog benutzt „zurücksetzen“ für das
   Umbenennen-Widerrufen. Englisch teilt sich einen Satz für zwei verschiedene Rücknahmen · `high`.
-- **`you@example.com`: Einstellungen halten die Adresse wörtlich, die Dialoge übersetzen sie** ·
-  `@settings.updates.emailPlaceholder` sagt ausdrücklich „keep it exactly“, `@common.attachEmailPlaceholder` und
-  `@onboarding.stepBeta.emailPlaceholder` erlauben eine sprachtypische Beispieladresse. Deshalb „you@example.com“ dort
-  und „du@example.com“ hier · `high`. ❌ Kein „du@beispiel.de“: `beispiel.de` ist eine echte registrierte Domain,
-  `example.com` ist von der IANA für Beispiele reserviert.
+- **`you@example.com` → „du@example.com“, in allen drei Feldern gleich** · `settings.updates.emailPlaceholder`,
+  `common.attachEmailPlaceholder` und `onboarding.stepBeta.emailPlaceholder` tragen dieselbe Adresse; ihre
+  `@key`-Beschreibungen schreiben das vor · `high`. Der lokale Teil wird übersetzt („du@“), die Domain bleibt
+  `example.com`. ❌ Kein „du@beispiel.de“: `beispiel.de` ist eine echte registrierbare Domain, `example.com` ist per RFC
+  2606 für Beispiele reserviert.
 
 ## Wörter, die auseinandergelaufen sind, ohne dass ein Check es sehen konnte (2026-08-30)
 
@@ -1687,3 +1687,38 @@ sind deshalb nur beim Handdurchgang aufgefallen. Alle sind behoben.
 Nicht angefasst, weil bereits als Grenze dokumentiert und korrekt angewendet: `Recent` → „Zuletzt verwendet“ nur als
 Gruppentitel der Befehlspalette (sonst „Letzte“), und `notification` → „Hinweis“, wenn es Cmdrs eigener Toast ist,
 gegenüber „Benachrichtigung“ für die Einstellungskategorie.
+
+## Die Bereichsnamen kommen jetzt vom Mac des Nutzers (`errors.git.*`, `errors.provider.*`, 2026-08-30)
+
+Acht Werte trugen die macOS-Bereichsnamen noch als Text, in den beiden `errors.git.*`-Werten sogar englisch („System
+Settings > Privacy & Security > Files and Folders“). Sie tragen jetzt die Platzhalter `{system_settings}`,
+`{privacy_and_security}` und `{files_and_folders}`, die die App zur Laufzeit durch die Namen ersetzt, die der Mac des
+Nutzers zeigt. Die Werte sind RAW (kein ICU), also keine verdoppelten Apostrophe.
+
+- **Eine Präposition darf davor stehen, ein Artikel nicht** · „in den Systemeinstellungen“ geht nicht mehr: der Artikel
+  müsste sich an einen unbekannten Wert anpassen. `errors.provider.iCloud.serious` und `.transient` beginnen die Zeile
+  jetzt mit „Öffne {system_settings} und …“; die Pfadzeilen behalten „unter **{system_settings} > … > …**“, weil dort
+  kein Artikel steht · `high`.
+- **`Apple Account` bleibt englisch und ohne Bindestrich** · macOS 26 `de` nennt den Bereich „Apple Account“
+  (`AppleIDSettings.appex`, `InfoPlist.loctable`, `CFBundleDisplayName`) und schreibt auch im Fließtext „mit deinem
+  Apple Account“ (`Localizable.loctable`, `SPYGLASS_DESCRIPTION_SIGN_IN_REBRAND`; geprüft auf macOS 26.6.2, Build 25G83,
+  2026-08-30) · `high`. ❌ Nicht „Apple-Account“, auch wenn die deutsche Kompositumsregel es nahelegt.
+- **`General` → „Allgemein“, `Login Items & Extensions` → „Anmeldeobjekte & Erweiterungen“** · beide deckt kein
+  Platzhalter ab, sie sind also gewöhnlicher Text; macOS 26 `de` (`LoginItems.appex`, `Localizable.loctable`) · `high`.
+  Passt zu `errors.listing.diskFullErrno.suggestion`, das „**{system_settings} > Allgemein > Speicher**“ schon so
+  schreibt.
+
+## „Zurücksetzen“ nennt jetzt das Objekt: den alten Namen (`askCmdr.renameUndo.undone` / `.partial`, 2026-08-30)
+
+Englisch teilte sich einen Satz mit dem Papierkorb-Widerruf („Put back {countText} {files}.“) und sagt jetzt, WAS
+zurückkommt: der alte Name.
+
+- **`Put the old names back on N files.` → „Die alten Namen von N Dateien zurückgesetzt.“** · `zurücksetzen` ist im
+  Katalog das Verb fürs Umbenennen-Widerrufen (`askCmdr.renameUndo.undoing` = „Alte Namen werden zurückgesetzt…“,
+  `askCmdr.renameUndo.skipReason.failed.named` = „… den alten Namen nicht zurücksetzen“); `zurücklegen` bleibt dem
+  Papierkorb vorbehalten (`fileOperations.trash.undone`) · `high`. Der Satz behält den Partizip-Schluss der Geschwister
+  (`askCmdr.renameUndo.applied` = „… umbenannt.“).
+- **`menu.app.showAll` / `menu.app.hideOthers` waren schon richtig** · „Alle einblenden“ und „Andere ausblenden“ sind
+  wörtlich das, was macOS 26 `de` im Programm-Menü zeigt (Finder `MenuBar.strings`, `300730.title` / `300729.title`,
+  geprüft auf macOS 26.6.2, Build 25G83, 2026-08-30), und sie stimmen mit `commands.appShowAll.label` /
+  `commands.appHideOthers.label` überein · `high`.

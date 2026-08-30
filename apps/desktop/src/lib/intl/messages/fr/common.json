@@ -11,7 +11,7 @@
   "@common.attachEmailInvalid": {
     "sourceHash": "515c7cf"
   },
-  "common.attachEmailPlaceholder": "vous@exemple.com",
+  "common.attachEmailPlaceholder": "vous@example.com",
   "@common.attachEmailPlaceholder": {
     "sourceHash": "53e6cdc"
   },

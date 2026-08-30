@@ -453,7 +453,7 @@
   },
   "settings.indexing.enabled.description": "Indexera din enhet i bakgrunden för omedelbara mappstorlekar.",
   "@settings.indexing.enabled.description": {
-    "sourceHash": "559ec69"
+    "sourceHash": "32966c5"
   },
   "settings.mediaIndex.card": "Bildsökning",
   "@settings.mediaIndex.card": {

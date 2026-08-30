@@ -74,11 +74,11 @@
   },
   "menu.app.hideOthers": "Andere ausblenden",
   "@menu.app.hideOthers": {
-    "sourceHash": "1753e22"
+    "sourceHash": "74376e4"
   },
   "menu.app.showAll": "Alle einblenden",
   "@menu.app.showAll": {
-    "sourceHash": "e1c3264"
+    "sourceHash": "2150d8d"
   },
   "menu.app.quit": "Cmdr beenden",
   "@menu.app.quit": {

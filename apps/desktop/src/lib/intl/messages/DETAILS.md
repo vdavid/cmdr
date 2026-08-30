@@ -60,8 +60,8 @@ runtime `../CLAUDE.md`). The apostrophe-doubling rule above is the OPPOSITE here
 The unit on which this raw/ICU split is decided is the KEY PREFIX (`errors.`), single-sourced as `isRawKey()` in
 `apps/desktop/src/lib/error-messages/CLAUDE.md`. The locale checks honor it: the message-syntax check
 (`desktop-i18n-icu`) doesn't ICU-parse a raw value (so valid raw copy isn't flagged as invalid ICU) and instead holds it
-to the mirror rule, no ICU escaping (a doubled `''` renders verbatim here), and the parity check
-(`desktop-i18n-parity`) compares the raw `{token}` set instead of an ICU placeholder set for these keys. Translator-facing version of this note:
+to the mirror rule, no ICU escaping (a doubled `''` renders verbatim here), and the parity check (`desktop-i18n-parity`)
+compares the raw `{token}` set instead of an ICU placeholder set for these keys. Translator-facing version of this note:
 `docs/guides/i18n.md` § Error pipeline.
 
 ## `@key` metadata schema
@@ -146,17 +146,18 @@ The shape:
   a unit symbol (`GB`), a placeholder-only string (`{width} × {height}`), or a word the locale genuinely shares with
   English (German `Server`, Swedish `Smart`, Portuguese `token`). "Still English" covers a byte-identical value AND one
   whose only difference is its plural/select branch SET, since a Portuguese counter reading
-  `one {token} many {tokens} other {tokens}` is English text under a correct Portuguese branch set. Present and non-empty → the `desktop-i18n-coverage` check
-  stops flagging that key as "possibly untranslated" (see `i18n-check-coverage.ts`). It is a per-LOCALE judgment (German
-  keeps `Server`; Spanish translates it to `Servidor`), so it lives in the locale catalog, never in `en`, and is
-  repeated per locale even for universal brands (the repetition is accepted: each translator vouches for each identical
-  key in their language). It only suppresses the IDENTICAL signal — a MISSING key still reports. Tie it to the source
-  like `reviewed`: the stale check flags a stale key that still carries it, because a justification vouched for the OLD
-  English value must be re-confirmed once the source changes. Write it as the translator's reason, sourced where the
-  term came from (e.g. "brand name; do not translate" or "macOS Swedish Finder uses 'Smart'"). It applies to FULL
-  translations only: on an overlay a value identical to what it overrides is dead weight, the fix is always to delete
-  the key, and the coverage check ignores the field there (`docs/guides/i18n.md` § Overlay catalogs). Full translator
-  workflow: `docs/guides/i18n-translation.md` § Deliberately-identical strings.
+  `one {token} many {tokens} other {tokens}` is English text under a correct Portuguese branch set. Present and
+  non-empty → the `desktop-i18n-coverage` check stops flagging that key as "possibly untranslated" (see
+  `i18n-check-coverage.ts`). It is a per-LOCALE judgment (German keeps `Server`; Spanish translates it to `Servidor`),
+  so it lives in the locale catalog, never in `en`, and is repeated per locale even for universal brands (the repetition
+  is accepted: each translator vouches for each identical key in their language). It only suppresses the IDENTICAL
+  signal — a MISSING key still reports. Tie it to the source like `reviewed`: the stale check flags a stale key that
+  still carries it, because a justification vouched for the OLD English value must be re-confirmed once the source
+  changes. Write it as the translator's reason, sourced where the term came from (e.g. "brand name; do not translate" or
+  "macOS Swedish Finder uses 'Smart'"). It applies to FULL translations only: on an overlay a value identical to what it
+  overrides is dead weight, the fix is always to delete the key, and the coverage check ignores the field there
+  (`docs/guides/i18n.md` § Overlay catalogs). Full translator workflow: `docs/guides/i18n-translation.md` §
+  Deliberately-identical strings.
 
 `reviewed` and `sameAsSourceJustification` are SOURCE-BOUND: each vouches for one specific English value. So the stale
 check reports both as no-longer-applicable on a stale key, and `--restamp` deletes them from the keys it refreshes

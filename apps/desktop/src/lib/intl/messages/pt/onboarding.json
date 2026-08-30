@@ -347,7 +347,7 @@
   "@onboarding.stepBeta.emailTitle": {
     "sourceHash": "cf691fa"
   },
-  "onboarding.stepBeta.emailPlaceholder": "voce@exemplo.com",
+  "onboarding.stepBeta.emailPlaceholder": "voce@example.com",
   "@onboarding.stepBeta.emailPlaceholder": {
     "sourceHash": "53e6cdc"
   },

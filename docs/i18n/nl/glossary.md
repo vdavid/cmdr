@@ -2001,3 +2001,54 @@ meeste gevallen beslecht stond al in `style.md`: **knoppen en menu-items krijgen
 `bewaren` en `opslaan` staan allebei in de catalogus (24 resp. 31 waarden). Dat is grotendeels een terecht verschil —
 macOS' knop is `Bewaar`, terwijl `opgeslagen` het gangbare bijvoeglijke deelwoord is ("Opgeslagen wachtwoord") — maar
 niet overal. Een aparte ronde moet dit uitzoeken; het is te groot om er in een driftronde half doorheen te lopen.
+
+## Wat het Engels over zichzelf rechtzette, en wat dat voor `nl` betekende (2026-08-30)
+
+Het `en`-bestand haalde vijf tegenstrijdigheden uit zichzelf. Dit is wat daarvan in het Nederlands is beslist.
+
+### Het voorbeeldmailadres: `jij@example.com`
+
+- **Lokaal deel vertaald, domein blijft `example.com`** · MS-terminologie nl (`iemand@example.com`, `user@example.com`),
+  RFC 2606 · high. Alle drie de velden dragen dezelfde waarde: `settings.updates.emailPlaceholder`,
+  `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`.
+- `jij@` volgt het `je`/`jij`-register uit `style.md`; het is de directe tegenhanger van het Engelse `you@`. De
+  Microsoft-terminologie vertaalt het lokale deel ook (`iemand@`), dus dat is de gangbare praktijk.
+- ❌ NIET `voorbeeld.com`: dat is een echt registreerbaar domein en kan dus iemands echte adres zijn. `example.com` is
+  het domein dat RFC 2606 voor voorbeelden reserveert.
+
+### De naam-terugzetzin noemt nu haar object
+
+- `askCmdr.renameUndo.undone` / `.partial` →
+  **`{count, plural, one {De oude naam van {countText} bestand is teruggezet} other {De oude namen van {countText} bestanden zijn teruggezet}}.`**
+  · zelfde stam als de zusters (`.undoing` = "De oude namen worden teruggezet…", `.skipReason.failed.*` = "kon de oude
+  naam niet terugzetten") · high.
+- Het Engels gaf de naam-undo en de prullenmand-undo één zin ("Put back {countText} {files}."); dat is nu gesplitst
+  doordat het Engels het OBJECT noemt. `nl` houdt de vastgelegde stam `terugzetten` / `teruggezet` voor allebei, want
+  Finder `PE130_V2` levert die stam, en de dubbelzinnigheid verdwijnt zodra `de oude naam` in de zin staat.
+- Nederlands congrueert hier op twee plekken tegelijk (`naam`/`namen` én `is`/`zijn`), dus de hele zin gaat de
+  plural-takken in en `{countText}` staat binnenin, precies zoals bij `fileOperations.trash.undonePartial`.
+- `fileOperations.trash.undone` blijft ongewijzigd.
+
+### macOS-paneelnamen in de foutteksten
+
+Acht `errors.*`-sleutels droegen Engelse paneelnamen. Die zijn nu runtime-tokens of Nederlandse Apple-woorden.
+
+- `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` blijven **letterlijk staan**: de app vult ze met
+  de paneelnaam zoals die op de Mac van de GEBRUIKER heet.
+- De paneelnamen die géén token hebben, gaan in Apple's eigen Nederlands:
+  - **Apple Account → `Apple Account`** (onvertaald!) · macOS 26.6.2 (25G83),
+    `AppleIDSettings.appex/Contents/Resources/InfoPlist.loctable` `nl.CFBundleDisplayName`, 2026-08-30 · high. Apple
+    laat deze paneelnaam in het Nederlands Engels. In lopende tekst blijft het gewone zelfstandig naamwoord wél
+    Nederlands: `het juiste Apple-account`.
+  - **General → `Algemeen`** · `nl/macOS/SystemSettings/Localizable.json` `GENERAL` · high.
+  - **Login Items & Extensions → `Inlogonderdelen en extensies`** · macOS 26.6.2 (25G83),
+    `LoginItems.appex/Contents/Resources/Localizable.loctable` `nl["Login Items & Extensions"]`, 2026-08-30 · high. ❌
+    NIET `Inloggen`: dat is de oudere, kortere paneelnaam uit `InfoPlist.loctable`.
+
+### De twee Apple-items in de menubalk
+
+`menu.app.showAll` / `menu.app.hideOthers` (en hun tweelingen `commands.appShowAll.label` /
+`commands.appHideOthers.label`) → **`Toon alles`** / **`Verberg andere`** · macOS 26.6.2 (25G83),
+`Finder.app/Contents/Resources/nl.lproj/MenuBar.strings` `300730.title` / `300729.title`, 2026-08-30 · high. Apple's
+eigen woorden, en meteen ook de kale gebiedende wijs die `style.md` voor knoppen en menu-items voorschrijft. De
+`menu.*`-familie rendert zonder ICU, dus een apostrof schrijf je daar één keer.

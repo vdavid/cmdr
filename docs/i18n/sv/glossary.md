@@ -1730,11 +1730,12 @@ källsträngen står i parentes.
   `fileExplorer.columns.modified` och syskonen beskriver EN fils datum; `shortcuts.section.filterModified` står bredvid
   `Alla` och `Konflikter` och filtrerar en mängd kommandon, så pluralen kongruerar med mängden. Radmärket intill heter
   fortfarande `Ändrad från förval`, singular, för att det gäller en rad.
-- **`Put back …` → `Lade tillbaka …` ur papperskorgen, `… återställdes` för namn**
-  (`"Put back {countText} {count, plural, one {file} other {files}}"`) · `high`. Redan satt i § Papperskorgs-toasten:
-  `lägga tillbaka` är Finders `Put Back` (`N153.1`), och `återställa` är reserverat för `askCmdr.renameUndo.*`, där de
-  gamla NAMNEN kommer tillbaka och ingenting flyttas. Engelskan använder en sträng för två olika handlingar; svenskan
-  får inte.
+- **`Put back …` → `Lade tillbaka …` ur papperskorgen, `De gamla namnen återställdes …` för namn**
+  (`fileOperations.trash.undone` respektive `askCmdr.renameUndo.undone`/`.partial`) · `high`. Redan satt i §
+  Papperskorgs-toasten: `lägga tillbaka` är Finders `Put Back` (`N153.1`), och `återställa` är reserverat för
+  `askCmdr.renameUndo.*`, där de gamla NAMNEN kommer tillbaka och ingenting flyttas. Engelskan delade en gång en enda
+  sträng mellan de två handlingarna och har nu skilt dem åt; svenskan höll dem isär hela tiden. Exakt lydelse: § Shared
+  `en` fixes (2026-08-30) sist i filen.
 - **`File` → `Arkiv` som menyradsrubrik, `Fil` överallt annars** (`"File"`) · `high`. Redan satt i § Inbyggda menyer
   (Finder `300764.title`/`83.title`, AppKit `MenuCommands`). `suggestedOps.columnFile` är en kolumnrubrik, inte en meny.
 - **`View` → `Innehåll` som menyradsrubrik, `Visa` som åtgärd** (`"View"`) · `high`. Redan satt i § Inbyggda menyer
@@ -1786,3 +1787,39 @@ Kontrollerade och redan rätt: `Systeminställningar > AI`, `Indexering > Enhets
 **Regel:** varje gång en sträng skriver ut ett menyalternativ, en inställningspanel eller ett Apple-funktionsnamn, slå
 upp det i det körande systemet (`how-to-mine.md` § "Menu-bar labels" och `.loctable`-receptet) och datera fyndet. Ett
 namn som "låter rätt" är den enda sortens fel användaren kan följa rakt in i en återvändsgränd.
+
+## Shared `en` fixes: menu wording, System Settings tokens, name-restore verb (2026-08-30)
+
+Fallout from four `en` self-inconsistency fixes. Evidence is macOS 26.6.2 (build 25G83), read live off the installed
+bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference-pile/how-to-mine.md`, 2026-08-30.
+
+- **`Hide others` (app menu) → `Göm övriga`** · Tier 1, three independent bundles agree: Finder `MenuBar.strings`
+  `300729.title`, TextEdit `Edit.loctable` `515.title`, Preview `MainMenu.loctable` `145.title`. `menu.app.hideOthers`
+  already said this; `commands.appHideOthers.label` said `Göm andra` and now matches, since the two name the same
+  command (menu bar vs palette and shortcuts list). ❌ Not `Göm andra`: the OS word is `övriga`. · `confirmed`
+- **`Show all` (app menu) → `Visa alla`** · same three bundles (`300730.title` / `517.title` / `150.title`), plus AppKit
+  `Common.loctable`. Already shipped, unchanged. Swedish sentence case is native, so Cmdr's sentence-case menu bar needs
+  no deviation from Apple's wording here. · `confirmed`
+- **`Login Items & Extensions` (System Settings pane) → `Startobjekt och tillägg`** · macOS
+  `LoginItems.appex/Contents/Resources/Localizable.loctable`, English-keyed `Login Items & Extensions`. ❌ Not
+  `Inloggningsobjekt och tillägg`, which the catalog shipped: that string isn't in the OS, so a user following the path
+  would hunt for a pane that doesn't exist. `General` → `Allmänt` (SystemSettings `GENERAL`) and `Apple Account` →
+  `Apple-konto` (`ClassKitSettings.loctable` `APPLE_ID`) were already right. · `confirmed`
+- **System Settings panes via tokens in the git and provider errors** · the eight `errors.git.*` / `errors.provider.*`
+  suggestions now carry `{system_settings}` / `{privacy_and_security}` / `{files_and_folders}`, the same
+  runtime-resolved placeholders the `errors.listing.*` family already used. Never hand-translate them, and never hang a
+  suffix or preposition off one: write `i {system_settings}`, never `{system_settings}en`. The literals
+  `Systeminställningar`, `Integritet och säkerhet`, and `Filer och mappar` are gone from those strings. · `high`
+- **"Put the old names back on N files" → `De gamla namnen återställdes på {countText} filer.`**
+  (`askCmdr.renameUndo.undone` / `.partial`) · the English now names the OBJECT (the old name), so the old Swedish
+  ("{countText} filer återställdes.") no longer said what came back. Keeps the split already settled in §
+  Papperskorgs-toasten: `återställa` for restoring a NAME, `lägga tillbaka` for Finder's `Put Back` out of the trash
+  (`fileOperations.trash.undone` is untouched and still says `Lade tillbaka …`). Both plural branches are spelled out
+  because the noun and the participle agree: `Det gamla namnet återställdes … fil` /
+  `De gamla namnen återställdes … filer`. Passive `-s` matches the sibling `undoing` ("De gamla namnen återställs…"). ·
+  `high`
+- **`settings.indexing.enabled.description`** · English switched "directory sizes" → "folder sizes"; Swedish already
+  said `mappstorlekar`, so this was a restamp only. · `high`
+- **Email placeholder** · `du@example.com` on all three keys (`settings.updates.emailPlaceholder`,
+  `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`), already consistent. `du` is the catalog's
+  pronoun; `example.com` is the RFC 2606 reserved domain and stays. · `high`

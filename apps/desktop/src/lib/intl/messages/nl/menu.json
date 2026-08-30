@@ -75,11 +75,11 @@
   },
   "menu.app.hideOthers": "Verberg andere",
   "@menu.app.hideOthers": {
-    "sourceHash": "1753e22"
+    "sourceHash": "74376e4"
   },
   "menu.app.showAll": "Toon alles",
   "@menu.app.showAll": {
-    "sourceHash": "e1c3264"
+    "sourceHash": "2150d8d"
   },
   "menu.app.quit": "Stop Cmdr",
   "@menu.app.quit": {

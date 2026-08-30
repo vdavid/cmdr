@@ -614,13 +614,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {fichier restauré} many {fichiers restaurés} other {fichiers restaurés}}.",
+  "askCmdr.renameUndo.undone": "{count, plural, one {Ancien nom restauré} many {Anciens noms restaurés} other {Anciens noms restaurés}} pour {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}.",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {fichier restauré} many {fichiers restaurés} other {fichiers restaurés}}.",
+  "askCmdr.renameUndo.partial": "{count, plural, one {Ancien nom restauré} many {Anciens noms restaurés} other {Anciens noms restaurés}} pour {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}.",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {fichier laissé} many {fichiers laissés} other {fichiers laissés}} tel {count, plural, one {quel} many {quels} other {quels}} : {count, plural, one {il a changé} many {ils ont changé} other {ils ont changé}} depuis le renommage, ou l''ancien nom est de nouveau pris.",
   "@askCmdr.renameUndo.skipped": {

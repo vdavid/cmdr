@@ -1262,8 +1262,10 @@ Microsoft lo que Apple no nombra. Familia RAW: **apóstrofos simples**, un `''` 
   y Safari `es` · high.
 - **Menú Select (selección de archivos) → `Seleccionar`** · Nautilus/Thunar/Dolphin `es` · high. El Finder no tiene
   equivalente; el infinitivo encaja con `Seleccionar todo` del mismo menú.
-- **Hide Others → `Ocultar otras apps`** · macOS Finder (`300729.title`) · high. Más claro que el `Ocultar los demás`
-  del catálogo, y es lo que el usuario ve en su Mac.
+- **Hide Others → `Ocultar otras apps`** · macOS Finder (`300729.title`, macOS 26.6.2, build 25G83, 2026-08-30) · high.
+  Es lo que el usuario ve en su Mac, y más claro que `Ocultar los demás`. Va en las DOS claves del mismo comando:
+  `menu.app.hideOthers` (barra de menús) y `commands.appHideOthers.label` (paleta y lista de atajos), que se habían
+  separado.
 - **Quick Look → `Vista rápida`** · macOS Finder (`TL14`) · high. Apple sí localiza este nombre de función, por eso no
   está en la lista de no-traducir.
 - **Get Info → `Obtener información`, Enclosing Folder → `Carpeta contenedora`, Go > Home → `Inicio`, Sort By →
@@ -1730,9 +1732,10 @@ están; las trece restantes son fronteras DELIBERADAS y quedan anotadas abajo pa
   `Buscar` ahí se leería como una orden · `high`.
 - **`Put back …`: `restaurar` son NOMBRES, `devolver a su sitio` son SITIOS** · el inglés reutiliza una frase para dos
   deshacer distintos; macOS Finder `es` llama `Devolver` al Put Back de la papelera · `high`.
-- **`you@example.com`: Ajustes la deja literal, los diálogos la traducen** · `@settings.updates.emailPlaceholder` dice
-  "keep it exactly" (y lo respalda un `sameAsSourceJustification`), mientras `@common.attachEmailPlaceholder` y
-  `@onboarding.stepBeta.emailPlaceholder` permiten una dirección de ejemplo local · `high`.
+- **`you@example.com` → `tu@example.com`, la misma en los tres campos** · `settings.updates.emailPlaceholder`,
+  `common.attachEmailPlaceholder` y `onboarding.stepBeta.emailPlaceholder` llevan la misma dirección, y sus `@key` lo
+  exigen · `high`. Se traduce la parte local (`tu@`) y se conserva el dominio `example.com`. ❌ Nada de `ejemplo.com`:
+  es un dominio real y registrable, mientras que `example.com` está reservado para ejemplos (RFC 2606).
 - **Cuatro "divergencias" que no lo son, y por qué siguen apareciendo**: `Connected` / `Connected!`, `Copied` /
   `Copied!`, `Send report` / `Send report?` y `Start using Cmdr` / `Start using Cmdr!` tienen inglés DISTINTO (la
   exclamación o la interrogación está en el original, y los `@key` la piden). `i18n-terms` las agrupa igual porque su
@@ -1780,3 +1783,30 @@ solo aparecen en la pasada manual. Todas están corregidas.
 Revisado y NO tocado a propósito: `Queued` → `Esperando` (`operationLog.status.queued`) concuerda con la rama `queued`
 de `queue.row.status`, así que las dos superficies que muestran ese estado ya dicen lo mismo; `Cola` traduce el
 sustantivo `Queue`, que es otra cosa.
+
+## Los nombres de los paneles salen ahora del Mac de quien usa Cmdr (`errors.git.*`, `errors.provider.*`, 2026-08-30)
+
+Ocho valores llevaban los nombres de los paneles escritos a mano. Ahora llevan los marcadores `{system_settings}`,
+`{privacy_and_security}` y `{files_and_folders}`, que la app sustituye en tiempo de ejecución por los nombres tal como
+los muestra el Mac de quien la usa. Los valores son RAW (no ICU), así que las comillas simples no se duplican.
+
+- **Una preposición puede ir delante; un artículo o una contracción, no** · el valor es desconocido al escribir, así que
+  `en {system_settings}` está bien y cualquier cosa que tuviera que concordar con él, no.
+  `errors.provider.iCloud.serious` y `.transient` evitan además el `en … en …` doble: ahora abren con
+  `Abre {system_settings}, …` · `high`.
+- **`Apple Account` → `Cuenta de Apple`, `General` → `General`, `Login Items & Extensions` →
+  `Ítems de inicio y extensiones`** · ningún marcador los cubre, así que son texto normal; macOS 26 `es`
+  (`AppleIDSettings.appex`, `InfoPlist.loctable`, `CFBundleDisplayName`; `LoginItems.appex`, `Localizable.loctable`;
+  verificado en macOS 26.6.2, build 25G83, 2026-08-30) · `high`. Coincide con lo que ya dice
+  `errors.listing.diskFullErrno.suggestion` (`**{system_settings} > General > Almacenamiento**`).
+
+## `Restaurar` nombra ahora el objeto: el nombre anterior (`askCmdr.renameUndo.undone` / `.partial`, 2026-08-30)
+
+El inglés compartía una frase con el deshacer de la papelera ("Put back {countText} {files}.") y ahora dice QUÉ vuelve:
+el nombre anterior.
+
+- **`Put the old names back on N files.` → `Se restauraron los nombres anteriores de N archivos.`** · `restaurar` es lo
+  que el catálogo reserva para deshacer un renombrado (`askCmdr.renameUndo.undoing`, "Restaurando los nombres
+  anteriores…"; `askCmdr.renameUndo.unavailable`, "No hay nada que restaurar."), y `devolver … a su sitio` sigue siendo
+  el de la papelera (`fileOperations.trash.undone`) · `high`. El verbo concuerda con el nombre, no con el archivo, así
+  que la rama `one` dice `Se restauró el nombre anterior de 1 archivo.`

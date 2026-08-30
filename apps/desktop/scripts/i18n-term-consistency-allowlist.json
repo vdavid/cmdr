@@ -28,10 +28,6 @@
         "reason": "`修改日期` is the Finder column header and the date filters, where `Modified` abbreviates `Date modified`. The keyboard-shortcuts filter chip means `commands whose shortcut YOU changed`, with no date involved, so it takes `已修改`."
       },
       {
-        "source": "Put back {countText} {count, plural, one {file} other {files}}",
-        "reason": "English reuses one sentence for two undos. Ask Cmdr's is undoing a RENAME, so `已還原` (restored the previous names). The file-operations one is restoring items from the Trash, which macOS Traditional names `放回原處` (put back where it came from). Swapping either would describe the wrong action."
-      },
-      {
         "source": "Regex",
         "reason": "Total Commander, the source the glossary already cites for the full `正規表示式`, ships its own short chip `正規式` (WCMD.LNG IDs 5615/6626). The search-mode chips are tight and take it; `viewer.search.regex` is an aria label plus tooltip whose visible text is the fixed `.*` glyph, so it has room for the full form and a screen reader wants it. Bare `正規` is banned in both: it's a bound morpheme, and Microsoft's only `正規*` entries are `正規化` = normalization."
       },
@@ -66,14 +62,14 @@
     ]
   },
   "notYetReviewed": {
-    "de": 10,
-    "es": 9,
-    "fr": 17,
-    "hu": 12,
+    "de": 8,
+    "es": 7,
+    "fr": 15,
+    "hu": 11,
     "nl": 17,
-    "pt": 8,
-    "sv": 10,
+    "pt": 7,
+    "sv": 9,
     "vi": 3,
-    "zh": 13
+    "zh": 12
   }
 }

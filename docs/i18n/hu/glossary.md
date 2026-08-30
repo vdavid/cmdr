@@ -110,7 +110,7 @@ Developer = `Fejlesztői`, MCP server = `MCP-szerver`, Logging = `Naplózás`, U
 - token (AI) → `token` · kept (standard AI term) · high; context window → `Kontextusablak`.
 
 Brand/units kept verbatim (so legitimately identical-to-English): App, Lime, Port (label), AI, Git, ISO 8601, kB, MB,
-GB, the `{placeholder}`-only path strings (`{systemSettings} > {appearance}`, the permission path), you@example.com.
+GB, the `{placeholder}`-only path strings (`{systemSettings} > {appearance}`, the permission path).
 
 Settled while translating `queryUi.json` + `commands.json` (2026-06-21):
 
@@ -333,8 +333,8 @@ rendered differently across files). Decisions, so they don't get relitigated:
   `Összes kijelölése`), **`Go to latest download` → `Ugrás a legutóbbi letöltéshez`**, **`Press Enter to search` →
   `Nyomd meg az Entert a kereséshez`**, **`Tab limit reached` → `Elérted a lapok korlátját`**, **`Something went wrong`
   → `Valami nem sikerült`** (matches the `nem sikerült` calm-voice rule). All unified to one form across files.
-- **Example email placeholder → `you@example.com`** verbatim everywhere (the en `@key` calls it a literal example;
-  `te@pelda.hu` was a one-file localization that broke parity).
+- **Example email placeholder → `te@example.com`** (see § A példa e-mail-cím lentebb; a helyi rész magyar, a domain
+  marad `example.com`).
 
 Forward-references confirmed resolved against the final files:
 
@@ -1980,3 +1980,61 @@ parancspaletta a régi szót vitte tovább. A határvonalakat ez a szakasz írja
   Ask Cmdr „végigmegy egy gyűjteményen” sorai, `keresés` maga a keresés funkció. Három fogalom, három szó.
 - **memory**: `memória` a RAM (`ai.local.*`), `jegyzet` az Ask Cmdr emlékezete (`settings.askCmdr.memory.*`,
   `askCmdr.tool.memory*`).
+
+## Az angol önellentmondásainak magyar utóélete (2026-08-30)
+
+Az `en` katalógus öt helyen javította ki önmagát; itt az, amit ez magyarul eldöntött.
+
+### A példa e-mail-cím: `te@example.com`
+
+- **Helyi rész magyarul, domain `example.com`** · ms terminológia hu (`valaki@example.com`, `user@example.com`), RFC
+  2606 · high. Mind a három mező ugyanezt viseli: `settings.updates.emailPlaceholder`, `common.attachEmailPlaceholder`,
+  `onboarding.stepBeta.emailPlaceholder`.
+- `te@` a `te`-regiszterből jön (`style.md` § Formality), az angol `you@` közvetlen párja. A Microsoft hu terminológia a
+  „someone” mintát viszi (`valaki@example.com`), tehát a helyi rész LEFORDÍTÁSA a bevett gyakorlat.
+- ❌ NEM `pelda.hu` vagy `example.hu`: azok valóban regisztrálható domainek, tehát valakinek az igazi címe lehet. Az
+  `example.com` az RFC 2606 példacélra fenntartott domainje, ezért soha nem lesz senkié.
+- Ez felülírja a korábbi „you@example.com verbatim mindenhol” bejegyzést: az `en` `@key` most kifejezetten a helyi rész
+  lokalizálását kéri.
+
+### A régi NÉV visszaadása mondat most megnevezi a tárgyát
+
+- `askCmdr.renameUndo.undone` / `.partial` →
+  **`{countText} {count, plural, one {fájl} other {fájl}} régi neve visszaállítva.`** · a család már meglévő
+  szóhasználata (`.undoing` = „A régi nevek visszaállítása…”, `.skipReason.failed.*` = „a régi nevét”) · high.
+- Az angol korábban ugyanazt a „Put back {countText} {files}.” mondatot adta a NÉV-visszaállításnak és a Kukából való
+  visszahelyezésnek; magyarul ez a kettő már addig is külön volt (`visszaállítva` vs `visszahelyezve`), most az angol is
+  megnevezi a tárgyat. A magyar tárgymegnevezés a birtokos szerkezet (`… fájl régi neve`), mert számnév után a magyar se
+  a főnevet, se a birtokot nem többesíti (`style.md` § Plurals).
+- `fileOperations.trash.undone` változatlan: ott `visszahelyezve` a helyes, és marad.
+
+### `mappa`, nem `könyvtár`, az indexelés súgószövegében
+
+- `settings.indexing.enabled.description` → **`azonnali mappaméretekért`** (volt: `könyvtárméretekért`) · a glossary már
+  előírja, hogy a `könyvtár` csak technikai értelemben járja, a UI szava a `mappa` · high. Az angol is „directory
+  sizes”-ról „folder sizes”-ra váltott.
+
+### A macOS-panelnevek magyarul, a futásidejű tokenek mellett
+
+Nyolc `errors.*` kulcs angolul beégetett panelneveket hordozott; ezek most vagy futásidejű tokenek, vagy magyar
+Apple-szóhasználat.
+
+- `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` **szó szerint marad**: a futásidőben a
+  FELHASZNÁLÓ Mac-jén látható panelnevet kapja.
+- ❌ **Soha ne ragassz esetragot, névelőt vagy toldalékot közvetlenül egy tokenre.** A régi „a System Settingsben” alak
+  `{system_settings}ben`-t adna, ami a `Rendszerbeállítások` mellé rossz (a hangrend `-ban`-t kér). A katalógus máshol
+  is használt `itt: {system_settings}` szerkezet a kiút (`style.md` § Agglutination).
+- A tokenek által NEM fedett panelnevek magyarul mennek, ahogy az Apple írja őket:
+  - **Apple Account → `Apple-fiók`** · macOS 26.6.2 (25G83),
+    `AppleIDSettings.appex/Contents/Resources/InfoPlist.loctable` `hu.CFBundleDisplayName`, 2026-08-30 · high.
+  - **General → `Általános`** · `hu/macOS/SystemSettings/Localizable.json` `GENERAL` · high.
+  - **Login Items & Extensions → `Indítóelemek és bővítmények`** · macOS 26.6.2 (25G83),
+    `LoginItems.appex/Contents/Resources/Localizable.loctable` `hu["Login Items & Extensions"]`, 2026-08-30 · high.
+
+### A natív menüsor két Apple-tétele
+
+`menu.app.showAll` / `menu.app.hideOthers` (és a párjuk, `commands.appShowAll.label` / `commands.appHideOthers.label`) →
+**`Összes megjelenítése`** / **`Többi elrejtése`** · macOS 26.6.2 (25G83),
+`Finder.app/Contents/Resources/hu.lproj/MenuBar.strings` `300730.title` / `300729.title`, 2026-08-30 · high. Az Apple
+szóhasználata, a magyar mondatkezdő nagybetűvel (ami itt egybeesik az Apple alakjával). A `menu.*` család natív, ICU
+nélkül renderelődik: aposztróf ott EGYSZER írandó.

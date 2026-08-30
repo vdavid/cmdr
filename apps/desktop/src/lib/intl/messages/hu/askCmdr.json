@@ -613,13 +613,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {fájl} other {fájl}} visszaállítva.",
+  "askCmdr.renameUndo.undone": "{countText} {count, plural, one {fájl} other {fájl}} régi neve visszaállítva.",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {fájl} other {fájl}} visszaállítva.",
+  "askCmdr.renameUndo.partial": "{countText} {count, plural, one {fájl} other {fájl}} régi neve visszaállítva.",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {fájl} other {fájl}} változatlan maradt: az átnevezés után módosult, vagy a régi nevet már más használja.",
   "@askCmdr.renameUndo.skipped": {

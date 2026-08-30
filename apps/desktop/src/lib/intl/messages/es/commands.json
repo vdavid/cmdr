@@ -7,7 +7,7 @@
   "@commands.appHide.label": {
     "sourceHash": "8f86f89"
   },
-  "commands.appHideOthers.label": "Ocultar los demás",
+  "commands.appHideOthers.label": "Ocultar otras apps",
   "@commands.appHideOthers.label": {
     "sourceHash": "74376e4"
   },

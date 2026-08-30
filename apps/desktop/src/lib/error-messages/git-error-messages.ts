@@ -10,9 +10,14 @@
  * The literal English lives in the `errors.git.*` message catalog and is pulled
  * via `getMessage()` (a RAW catalog lookup, never ICU `t()`): these strings carry
  * markdown and bypass ICU's brace/apostrophe grammar. See `$lib/intl`'s docs.
+ *
+ * `expandSystemStrings(...)` then swaps the `{system_settings}`-family tokens for
+ * the pane names the user's OWN Mac shows, which is a different language from the
+ * app's whenever the two are set differently.
  */
 
 import type { FriendlyErrorMessage } from './friendly-error-message'
+import { expandSystemStrings } from './compose'
 import { getMessage } from '$lib/intl/messages.svelte'
 
 /** Serialized camelCase from Rust `FriendlyGitErrorKind`. */
@@ -32,7 +37,7 @@ export type FriendlyGitErrorKind =
 export function getGitErrorMessage(kind: FriendlyGitErrorKind): FriendlyErrorMessage {
   return {
     title: getMessage(`errors.git.${kind}.title`),
-    message: getMessage(`errors.git.${kind}.message`),
-    suggestion: getMessage(`errors.git.${kind}.suggestion`),
+    message: expandSystemStrings(getMessage(`errors.git.${kind}.message`)),
+    suggestion: expandSystemStrings(getMessage(`errors.git.${kind}.suggestion`)),
   }
 }

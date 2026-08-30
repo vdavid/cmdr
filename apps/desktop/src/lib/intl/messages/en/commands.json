@@ -11,12 +11,12 @@
   },
   "commands.appHideOthers.label": "Hide others",
   "@commands.appHideOthers.label": {
-    "description": "Command name for hiding every OTHER app's windows (a standard macOS app-menu action). Appears in the macOS app menu and the keyboard-shortcuts list.",
+    "description": "Command name for hiding every OTHER app's windows (a standard macOS app-menu action). Appears in the command palette and the keyboard-shortcuts list; menu.app.hideOthers is the menu-bar item for the same command and must read the same.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.appShowAll.label": "Show all",
   "@commands.appShowAll.label": {
-    "description": "Command name for un-hiding all apps' windows (a standard macOS app-menu action). Appears in the macOS app menu and the keyboard-shortcuts list.",
+    "description": "Command name for un-hiding all apps' windows (a standard macOS app-menu action). Appears in the command palette and the keyboard-shortcuts list; menu.app.showAll is the menu-bar item for the same command and must read the same.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.appAbout.label": "About Cmdr",

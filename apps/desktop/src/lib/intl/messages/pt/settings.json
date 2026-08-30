@@ -452,7 +452,7 @@
   },
   "settings.indexing.enabled.description": "Indexa seu disco em segundo plano para tamanhos de pasta instantâneos.",
   "@settings.indexing.enabled.description": {
-    "sourceHash": "559ec69"
+    "sourceHash": "32966c5"
   },
   "settings.mediaIndex.card": "Busca de imagens",
   "@settings.mediaIndex.card": {
@@ -2100,7 +2100,7 @@
   "@settings.network.customTimeoutUnit": {
     "sourceHash": "59f006d"
   },
-  "settings.updates.emailPlaceholder": "voce@exemplo.com",
+  "settings.updates.emailPlaceholder": "voce@example.com",
   "@settings.updates.emailPlaceholder": {
     "sourceHash": "53e6cdc"
   },

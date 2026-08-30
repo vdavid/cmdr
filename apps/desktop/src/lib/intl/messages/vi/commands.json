@@ -7,7 +7,7 @@
   "@commands.appHide.label": {
     "sourceHash": "8f86f89"
   },
-  "commands.appHideOthers.label": "Ẩn các ứng dụng khác",
+  "commands.appHideOthers.label": "Ẩn các mục khác",
   "@commands.appHideOthers.label": {
     "sourceHash": "74376e4"
   },

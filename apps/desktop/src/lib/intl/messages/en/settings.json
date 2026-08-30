@@ -563,9 +563,9 @@
     "description": "Label for the background drive-indexing toggle. In Settings > Behavior > File system watching.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
-  "settings.indexing.enabled.description": "Index your drive in the background for instant directory sizes.",
+  "settings.indexing.enabled.description": "Index your drive in the background for instant folder sizes.",
   "@settings.indexing.enabled.description": {
-    "description": "Help text for the drive-indexing toggle. \"directory sizes\" = folder sizes; indexing precomputes them so they show instantly.",
+    "description": "Help text for the drive-indexing toggle. Indexing precomputes each folder's total size so it shows instantly. \"Folder\" is the user-facing word for this all over the app (indexing.step.computeFolderSizes, the drive-index tooltips); \"directory\" is the internal term and never appears in UI copy.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
 
@@ -2622,7 +2622,7 @@
 
   "settings.updates.emailPlaceholder": "you@example.com",
   "@settings.updates.emailPlaceholder": {
-    "description": "Placeholder text in the beta-contact email field. \"you@example.com\" is a literal example email address; keep it exactly.",
+    "description": "Placeholder inside the beta-contact email field in Settings, showing the expected shape. Localize the LOCAL part to your language's natural word for \"you\" (German \"du@\", French \"vous@\"), and keep the \"example.com\" domain: it's the domain reserved for examples (RFC 2606), so it can never be someone's real address. All three email placeholders (settings.updates.emailPlaceholder, common.attachEmailPlaceholder, onboarding.stepBeta.emailPlaceholder) must use the SAME address in your language.",
     "screenshot": "settings-updates.png"
   },
   "settings.updates.checkForUpdates": "Check for updates",

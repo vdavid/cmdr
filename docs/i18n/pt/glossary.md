@@ -1597,3 +1597,59 @@ por isso que uma varredura automática nunca poderá decidir sozinha em portugu�
 
 O guarda contra o português europeu continua valendo: esta rodada não empurrou nenhuma forma brasileira na direção de
 pt-PT. Varredura pt-PT dos valores alterados (`ficheiro`, `estar a` + infinitivo, `ecrã`, `Rever`): zero ocorrências.
+
+## O que o inglês corrigiu em si mesmo, e o que isso decidiu em `pt` (2026-08-30)
+
+O catálogo `en` tirou cinco incoerências de si mesmo. Aqui fica o que isso assentou em português.
+
+### O e-mail de exemplo: `voce@example.com`
+
+- **Parte local em português, domínio `example.com`** · terminologia MS pt-BR (`nome@example.com`, `user@example.com`),
+  RFC 2606 · high. Os três campos carregam o mesmo valor: `settings.updates.emailPlaceholder`,
+  `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`.
+- `voce@` (sem cedilha, como todo endereço) é a contrapartida direta do `you@` inglês e do registro `você` do
+  `style.md`. A terminologia da Microsoft também traduz a parte local (`nome@`), então traduzir é a prática corrente.
+- ❌ NÃO `exemplo.com`: esse é um domínio de verdade, registrável, e pode ser o endereço real de alguém. `example.com` é
+  o domínio que a RFC 2606 reserva para exemplos.
+
+### A frase de devolver o NOME agora nomeia o objeto
+
+- `askCmdr.renameUndo.undone` / `.partial` →
+  **`{count, plural, one {O nome anterior de {countText} arquivo foi restaurado} many {Os nomes anteriores de {countText} arquivos foram restaurados} other {Os nomes anteriores de {countText} arquivos foram restaurados}}.`**
+  · o vocabulário que a própria família já usa (`.undoing` = "Restaurando os nomes anteriores…", `.skipReason.failed.*`
+  = "devolver o nome anterior") · high.
+- O inglês dava a mesma frase ("Put back {countText} {files}.") para devolver o NOME e para tirar um arquivo do Lixo;
+  `pt` já separava os dois (`restaurado` vs `colocado de volta`), e agora o inglês também nomeia o objeto. A separação
+  registrada acima continua valendo.
+- Como o particípio e o artigo concordam, a frase inteira entra nos ramos de plural e `{countText}` fica DENTRO deles,
+  igual a `fileOperations.trash.undone`. `many` continua obrigatório em `pt`.
+- `fileOperations.trash.undone` não mudou.
+
+### Os nomes dos painéis do macOS nas mensagens de erro
+
+Oito chaves `errors.*` traziam os nomes dos painéis escritos à mão. Agora são tokens de runtime ou o português da
+própria Apple.
+
+- `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}` ficam **literais**: o app troca cada um pelo nome
+  do painel como ele aparece no Mac do USUÁRIO.
+- ❌ **Nunca contraia uma preposição com um token** (`nos {system_settings}`): o valor em tempo de execução é
+  desconhecido, então não dá para fazer o artigo concordar. Use `em {system_settings}`, que funciona com qualquer
+  palavra.
+- Os nomes de painel que os tokens não cobrem seguem a Apple pt-BR:
+  - **Apple Account → `Conta Apple`** · macOS 26.6.2 (25G83),
+    `AppleIDSettings.appex/Contents/Resources/InfoPlist.loctable` `pt_BR.CFBundleDisplayName`, 2026-08-30 · high. ❌ NÃO
+    `Conta da Apple` (o que o catálogo dizia antes). Em texto corrido, o substantivo comum continua minúsculo:
+    `a conta Apple certa`.
+  - **General → `Geral`** · `pt-BR/macOS/SystemSettings/Localizable.json` `GENERAL` · high.
+  - **Login Items & Extensions → `Itens de Início de Sessão e Extensões`** · macOS 26.6.2 (25G83),
+    `LoginItems.appex/Contents/Resources/Localizable.loctable` `pt_BR["Login Items & Extensions"]`, 2026-08-30 · high.
+    ❌ NÃO `Itens de Início e Extensões` (o que o catálogo dizia antes): esse é o nome curto e antigo do painel.
+
+### Os dois itens da Apple na barra de menus
+
+`menu.app.showAll` / `menu.app.hideOthers` (e os gêmeos `commands.appShowAll.label` / `commands.appHideOthers.label`) →
+**`Mostrar tudo`** / **`Ocultar outros`** · macOS 26.6.2 (25G83),
+`Finder.app/Contents/Resources/pt_BR.lproj/MenuBar.strings` `300730.title` / `300729.title`, 2026-08-30 · high. As
+palavras da Apple (`Mostrar Tudo` / `Ocultar Outros`), com a capitalização do Cmdr: a barra de menus é toda em sentence
+case, então só a primeira letra fica maiúscula. A família `menu.*` é nativa e não passa pelo ICU: um apóstrofo ali se
+escreve uma vez só.

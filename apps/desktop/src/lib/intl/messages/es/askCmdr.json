@@ -615,13 +615,13 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "Se {count, plural, one {restauró} many {restauraron} other {restauraron}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "askCmdr.renameUndo.undone": "Se {count, plural, one {restauró el nombre anterior} many {restauraron los nombres anteriores} other {restauraron los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.undone": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "Se {count, plural, one {restauró} many {restauraron} other {restauraron}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "askCmdr.renameUndo.partial": "Se {count, plural, one {restauró el nombre anterior} many {restauraron los nombres anteriores} other {restauraron los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.partial": {
-    "sourceHash": "a76ffee"
+    "sourceHash": "d38b563"
   },
   "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {archivo se quedó} many {archivos se quedaron} other {archivos se quedaron}} como {count, plural, one {está} many {están} other {están}}: {count, plural, one {cambió} many {cambiaron} other {cambiaron}} después del cambio de nombre, o el nombre anterior vuelve a estar ocupado.",
   "@askCmdr.renameUndo.skipped": {

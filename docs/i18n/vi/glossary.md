@@ -1813,3 +1813,50 @@ các `*.loctable` của AppKit / các app hệ thống (macOS 26 đã chuyển p
   `shortcuts.section.filterModified` không nói về ngày: nó lọc ra những lệnh mà người dùng đã đổi phím tắt · `high`.
   Tiếng Anh dùng lại một chữ cho hai khái niệm; tiếng Việt tách ra thì rõ hơn, và gộp lại sẽ khiến bộ lọc phím tắt đọc
   như một bộ lọc theo ngày.
+
+## Shared `en` fixes: menu wording, System Settings panes, email placeholder (2026-08-30)
+
+Fallout from four `en` self-inconsistency fixes. Evidence is macOS 26.6.2 (build 25G83), read live off the installed
+bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference-pile/how-to-mine.md`, 2026-08-30, plus
+`vi/microsoft-terminology/VIETNAMESE.tbx` from the pile.
+
+- **`Hide others` (app menu) → `Ẩn các mục khác`** · Tier 1, three independent bundles agree: Finder `MenuBar.strings`
+  `300729.title`, TextEdit `Edit.loctable` `515.title`, Preview `MainMenu.loctable` `145.title`. ❌ Not
+  `Ẩn các ứng dụng khác`, which the catalog shipped: it's a fair gloss of the English, but the user's own menu bar says
+  `mục`, and this item must read exactly like the one macOS puts one row above it. Applies to both `menu.app.hideOthers`
+  and `commands.appHideOthers.label`. · `confirmed`
+- **`Show all` (app menu) → `Hiển thị tất cả`** · Finder `300730.title` and TextEdit `517.title`; already shipped,
+  unchanged. Preview's `150.title` title-cases it (`Hiển thị Tất cả`), but Cmdr's menu bar is sentence case and two of
+  three sources agree with that. · `high`
+- **System Settings pane names macOS does localize** · `General` → `Cài đặt chung` (SystemSettings `GENERAL`),
+  `Login Items & Extensions` → `Mục đăng nhập & Phần mở rộng` (`LoginItems.appex/Localizable.loctable`), `Apple Account`
+  → `Tài khoản Apple` (`ClassKitSettings.loctable` `APPLE_ID`). The catalog left all three in English inside the
+  provider errors; a Vietnamese-language Mac shows the Vietnamese names, so the English ones sent the user looking for
+  panes that aren't there. · `confirmed`
+- **System Settings panes via tokens in the git and provider errors** · the eight `errors.git.*` / `errors.provider.*`
+  suggestions now carry `{system_settings}` / `{privacy_and_security}` / `{files_and_folders}`, the same
+  runtime-resolved placeholders the `errors.listing.*` family already used. Never hand-translate them, and never attach
+  a suffix to one; write `trong {system_settings}`. · `high`
+- **Example email placeholder → `ban@example.com`** (all three of `settings.updates.emailPlaceholder`,
+  `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`) · Microsoft Vietnamese both TRANSLATES and
+  ASCII-folds the local part of a sample address: `someone@example.com` → `ai_do@example.com` and `user@example.com` →
+  `nguoi_dung@example.com` (`VIETNAMESE.tbx`, entries `6613_114525_1684760` and `6613_114525_1939170`, both
+  `geographicalUsage VNM`). Cmdr's English says `you@`, and `bạn` is this catalog's pronoun for "you", so the Vietnamese
+  form is `ban@` under the same diacritic-folding convention Microsoft uses. `example.com` stays: RFC 2606 reserves it,
+  so it can never be a real person's address. The old `sameAsSourceJustification` ("locale-neutral") is dropped, since
+  the pile shows Vietnamese does localize these. · `high`
+- **"Put the old names back on N files" → `Đã đặt lại tên cũ cho {countText} tệp.`** (`askCmdr.renameUndo.undone` /
+  `.partial`) · English used to share one sentence with `fileOperations.trash.undone` and now names the OBJECT (the old
+  name), so the old Vietnamese (`Đã đưa trở lại …`, the trash verb) said the wrong thing: nothing moves, only the name
+  changes back. Reuses `đặt lại tên cũ`, already the family's verb in `askCmdr.renameUndo.undoing` ("Đang đặt lại tên
+  cũ…") and `skipReason.failed.*` ("Cmdr không đặt lại được tên cũ"). `fileOperations.trash.undone` keeps
+  `Đã đưa trở lại …`. One `other` branch, as Vietnamese has no plural split. · `high`
+- **`settings.indexing.enabled.description`** · English switched "directory sizes" → "folder sizes"; Vietnamese says
+  `thư mục` for both senses and already read `kích cỡ thư mục`, so this was a restamp only. · `high`
+
+- **Two `errors.listing.*` pane paths joined the same pass** · `errors.listing.networkDown.suggestion` wrote `Network`
+  and `errors.listing.diskFullErrno.suggestion` wrote `General > Storage` in English, which left `General` reading two
+  different ways inside one file once the provider errors were localized. Now `Mạng` (System Settings
+  `Localizable.loctable`, `SECTION_NETWORK`), `Cài đặt chung` (same table, `GENERAL_SECTION`), and `Dung lượng`
+  (`StorageSettingsIntentsExtension.appex/AppIntents.loctable`, `SETTINGS_DEEPLINKS.ROOT.TITLE`), all on macOS 26.6.2
+  (build 25G83), verified 2026-08-30. No restamp: `en` didn't change, the Vietnamese was just incomplete. · `high`

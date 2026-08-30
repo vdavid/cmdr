@@ -63,7 +63,7 @@
 
   "fileOperations.trash.undone": "Put back {countText} {count, plural, one {file} other {files}}.",
   "@fileOperations.trash.undone": {
-    "description": "Result toast when an undo put every trashed item back where it came from. Sentence case.",
+    "description": "Result toast when an undo put every trashed item back where it came from. This is Finder's \"Put Back\": the items come back OUT of the Trash to their old folder, a different action from putting a file's old NAME back (askCmdr.renameUndo.undone), so use the verb your language uses for restoring from the Trash. Sentence case.",
     "placeholders": {
       "countText": "how many items came back, formatted for display (e.g. 1,234)",
       "count": "the same number (drives the singular/plural form of the noun)"

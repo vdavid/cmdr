@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "Nyisd meg a **System Settings > Privacy & Security > Files and Folders** menüt, és adj a Cmdrnek hozzáférést a mappához.",
+  "errors.git.permissionDenied.suggestion": "Adj a Cmdrnek hozzáférést a mappához itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**.",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "A csupasz repók még nem támogatottak",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Nyisd meg a **System Settings > Privacy & Security > Files and Folders** menüt, és adj a Cmdrnek hozzáférést. A Terminálban az `ls -la .git` mutatja a jelenlegi tulajdonost és módot.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Adj a Cmdrnek hozzáférést itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**. A Terminálban az `ls -la .git` mutatja a jelenlegi tulajdonost és módot.",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Győződj meg róla, hogy be vagy jelentkezve az iCloudba a System Settingsben\n- Lépj ide újra az ismételt próbához",
+  "errors.provider.iCloud.transient": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Győződj meg róla, hogy be vagy jelentkezve az iCloudba itt: {system_settings}\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd, hogy az iCloud Drive engedélyezve van itt: **System Settings > Apple Account > iCloud**\n- Győződj meg róla, hogy a megfelelő Apple-fiókba vagy bejelentkezve\n- Ellenőrizd, hogy nincs tele az iCloud-tárhelyed",
+  "errors.provider.iCloud.needsAction": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd, hogy az iCloud Drive engedélyezve van itt: **{system_settings} > Apple-fiók > iCloud**\n- Győződj meg róla, hogy a megfelelő Apple-fiókba vagy bejelentkezve\n- Ellenőrizd, hogy nincs tele az iCloud-tárhelyed",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Jelentkezz ki, majd vissza az iCloudba a System Settingsben\n- Nézd meg az Apple [rendszerállapot-oldalát](https://www.apple.com/support/systemstatus/)",
+  "errors.provider.iCloud.serious": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Jelentkezz ki, majd vissza az iCloudba itt: {system_settings}\n- Nézd meg az Apple [rendszerállapot-oldalát](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "Ez egy **macFUSE** csatolás. Lehet, hogy a távoli szerver lassú vagy nem elérhető. Ezeket próbálhatod:\n- Ellenőrizd a hálózati kapcsolatodat\n- Ellenőrizd, hogy a távoli szerver fut\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "Ez egy **macFUSE** csatolás. Ezeket próbálhatod:\n- Ellenőrizd, hogy a csatolást kiszolgáló FUSE-folyamat még fut\n- Ha szükséges, kényszerítsd a kötet leválasztását, majd csatold újra\n- Győződj meg róla, hogy a macFUSE naprakész itt: **System Settings > General > Login Items & Extensions**",
+  "errors.provider.macFuse.needsAction": "Ez egy **macFUSE** csatolás. Ezeket próbálhatod:\n- Ellenőrizd, hogy a csatolást kiszolgáló FUSE-folyamat még fut\n- Ha szükséges, kényszerítsd a kötet leválasztását, majd csatold újra\n- Győződj meg róla, hogy a macFUSE naprakész itt: **{system_settings} > Általános > Indítóelemek és bővítmények**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "Ez egy **macFUSE** csatolás. A kiszolgáló FUSE-folyamat valószínűleg összeomlott vagy lekapcsolódott. Ezeket próbálhatod:\n- Kényszerítsd a kötet leválasztását: add ki a `umount -f /Volumes/<name>` parancsot a Terminálban\n- Csatold újra az eredeti csatolási paranccsal\n- Ha ez folyamatosan előfordul, ellenőrizd, hogy a macFUSE naprakész",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Ez a mappa a **pCloud** virtuális meghajtóján van. Ezeket próbálhatod:\n- Győződj meg róla, hogy a pCloud app fut, és be vagy jelentkezve\n- Ellenőrizd az internetkapcsolatodat\n- Egy macOS-frissítés után hagyd jóvá újra a pCloud rendszerbővítményét itt: **System Settings > General > Login Items & Extensions**",
+  "errors.provider.pCloudFuse.needsAction": "Ez a mappa a **pCloud** virtuális meghajtóján van. Ezeket próbálhatod:\n- Győződj meg róla, hogy a pCloud app fut, és be vagy jelentkezve\n- Ellenőrizd az internetkapcsolatodat\n- Egy macOS-frissítés után hagyd jóvá újra a pCloud rendszerbővítményét itt: **{system_settings} > Általános > Indítóelemek és bővítmények**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Ez a mappa a **pCloud** virtuális meghajtóján van. Lehet, hogy a pCloud FUSE-folyamata összeomlott. Ezeket próbálhatod:\n- Lépj ki a pCloud appból, és nyisd meg újra\n- Ha a meghajtó nem jelenik meg újra, kényszerítsd a leválasztását: add ki a `umount -f /Volumes/pCloudDrive` parancsot a Terminálban\n- Egy macOS-frissítés után hagyd jóvá újra a pCloud rendszerbővítményét itt: **System Settings > General > Login Items & Extensions**",
+  "errors.provider.pCloudFuse.serious": "Ez a mappa a **pCloud** virtuális meghajtóján van. Lehet, hogy a pCloud FUSE-folyamata összeomlott. Ezeket próbálhatod:\n- Lépj ki a pCloud appból, és nyisd meg újra\n- Ha a meghajtó nem jelenik meg újra, kényszerítsd a leválasztását: add ki a `umount -f /Volumes/pCloudDrive` parancsot a Terminálban\n- Egy macOS-frissítés után hagyd jóvá újra a pCloud rendszerbővítményét itt: **{system_settings} > Általános > Indítóelemek és bővítmények**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "Ez egy **{name}** titkosított kötet. Ezeket próbálhatod:\n- Ellenőrizd, hogy a VeraCrypt-kötet még csatolva van\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.veraCrypt.transient": {

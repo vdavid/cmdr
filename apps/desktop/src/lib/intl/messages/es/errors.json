@@ -739,9 +739,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "0a9e8f1"
   },
-  "errors.git.permissionDenied.suggestion": "Abre **Ajustes del Sistema > Privacidad y seguridad > Archivos y carpetas** y concede a Cmdr acceso a la carpeta.",
+  "errors.git.permissionDenied.suggestion": "Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede a Cmdr acceso a la carpeta.",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "a3be51a"
+    "sourceHash": "7396b5a"
   },
   "errors.git.bareRepo.title": "Los repos bare aún no se admiten",
   "@errors.git.bareRepo.title": {
@@ -799,9 +799,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Abre **Ajustes del Sistema > Privacidad y seguridad > Archivos y carpetas** y concede acceso a Cmdr. En la Terminal, `ls -la .git` muestra el propietario y el modo actuales.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede acceso a Cmdr. En la Terminal, `ls -la .git` muestra el propietario y el modo actuales.",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "42f2c07"
+    "sourceHash": "b091738"
   },
   "errors.provider.dropbox.displayName": "Dropbox",
   "@errors.provider.dropbox.displayName": {
@@ -973,25 +973,25 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Esta carpeta la gestiona **{name}**. Esto es lo que puedes probar:\n- Comprueba tu conexión a internet\n- Asegúrate de haber iniciado sesión en iCloud en Ajustes del Sistema\n- Vuelve a abrir esta carpeta para reintentarlo",
+  "errors.provider.iCloud.transient": "Esta carpeta la gestiona **{name}**. Esto es lo que puedes probar:\n- Comprueba tu conexión a internet\n- Abre {system_settings} y asegúrate de haber iniciado sesión en iCloud\n- Vuelve a abrir esta carpeta para reintentarlo",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "57bec3c"
+    "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Esta carpeta la gestiona **{name}**. Esto es lo que puedes probar:\n- Comprueba que iCloud Drive esté activado en **Ajustes del Sistema > Cuenta de Apple > iCloud**\n- Asegúrate de haber iniciado sesión con la cuenta de Apple correcta\n- Comprueba que tu almacenamiento de iCloud no esté lleno",
+  "errors.provider.iCloud.needsAction": "Esta carpeta la gestiona **{name}**. Esto es lo que puedes probar:\n- Comprueba que iCloud Drive esté activado en **{system_settings} > Cuenta de Apple > iCloud**\n- Asegúrate de haber iniciado sesión con la cuenta de Apple correcta\n- Comprueba que tu almacenamiento de iCloud no esté lleno",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "241cd65"
+    "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "Esta carpeta la gestiona **{name}**. Esto es lo que puedes probar:\n- Cierra sesión y vuelve a iniciarla en iCloud en Ajustes del Sistema\n- Consulta la [página de estado del sistema](https://www.apple.com/support/systemstatus/) de Apple",
+  "errors.provider.iCloud.serious": "Esta carpeta la gestiona **{name}**. Esto es lo que puedes probar:\n- Abre {system_settings}, cierra sesión en iCloud y vuelve a iniciarla\n- Consulta la [página de estado del sistema](https://www.apple.com/support/systemstatus/) de Apple",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "0a32a1b"
+    "sourceHash": "3276e42"
   },
   "errors.provider.macFuse.transient": "Es un montaje de **macFUSE**. Puede que el servidor remoto vaya lento o no sea accesible. Esto es lo que puedes probar:\n- Comprueba tu conexión de red\n- Comprueba que el servidor remoto esté en marcha\n- Vuelve a abrir esta carpeta para reintentarlo",
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "Es un montaje de **macFUSE**. Esto es lo que puedes probar:\n- Comprueba que el proceso FUSE que respalda este montaje siga en marcha\n- Fuerza el desmontaje y vuelve a montar el volumen si hace falta\n- Asegúrate de que macFUSE esté actualizado en **Ajustes del Sistema > General > Ítems de inicio y extensiones**",
+  "errors.provider.macFuse.needsAction": "Es un montaje de **macFUSE**. Esto es lo que puedes probar:\n- Comprueba que el proceso FUSE que respalda este montaje siga en marcha\n- Fuerza el desmontaje y vuelve a montar el volumen si hace falta\n- Asegúrate de que macFUSE esté actualizado en **{system_settings} > General > Ítems de inicio y extensiones**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "65457a8"
+    "sourceHash": "60e836a"
   },
   "errors.provider.macFuse.serious": "Es un montaje de **macFUSE**. El proceso FUSE que lo respalda probablemente se ha cerrado o desconectado. Esto es lo que puedes probar:\n- Fuerza el desmontaje del volumen: ejecuta `umount -f /Volumes/<name>` en la Terminal\n- Vuelve a montarlo con el comando de montaje original\n- Si sigue pasando, comprueba que macFUSE esté actualizado",
   "@errors.provider.macFuse.serious": {
@@ -1001,13 +1001,13 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Esta carpeta está en la unidad virtual de **pCloud**. Esto es lo que puedes probar:\n- Asegúrate de que la app de pCloud esté en marcha y de haber iniciado sesión\n- Comprueba tu conexión a internet\n- Tras una actualización de macOS, vuelve a aprobar la extensión del sistema de pCloud en **Ajustes del Sistema > General > Ítems de inicio y extensiones**",
+  "errors.provider.pCloudFuse.needsAction": "Esta carpeta está en la unidad virtual de **pCloud**. Esto es lo que puedes probar:\n- Asegúrate de que la app de pCloud esté en marcha y de haber iniciado sesión\n- Comprueba tu conexión a internet\n- Tras una actualización de macOS, vuelve a aprobar la extensión del sistema de pCloud en **{system_settings} > General > Ítems de inicio y extensiones**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "afea03d"
+    "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Esta carpeta está en la unidad virtual de **pCloud**. Puede que el proceso FUSE de pCloud se haya cerrado. Esto es lo que puedes probar:\n- Sal de la app de pCloud y vuelve a abrirla\n- Si la unidad no reaparece, fuerza su desmontaje: ejecuta `umount -f /Volumes/pCloudDrive` en la Terminal\n- Tras una actualización de macOS, vuelve a aprobar la extensión del sistema de pCloud en **Ajustes del Sistema > General > Ítems de inicio y extensiones**",
+  "errors.provider.pCloudFuse.serious": "Esta carpeta está en la unidad virtual de **pCloud**. Puede que el proceso FUSE de pCloud se haya cerrado. Esto es lo que puedes probar:\n- Sal de la app de pCloud y vuelve a abrirla\n- Si la unidad no reaparece, fuerza su desmontaje: ejecuta `umount -f /Volumes/pCloudDrive` en la Terminal\n- Tras una actualización de macOS, vuelve a aprobar la extensión del sistema de pCloud en **{system_settings} > General > Ítems de inicio y extensiones**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "d7e6926"
+    "sourceHash": "cba0026"
   },
   "errors.provider.veraCrypt.transient": "Es un volumen cifrado de **{name}**. Esto es lo que puedes probar:\n- Comprueba que el volumen de VeraCrypt siga montado\n- Vuelve a abrir esta carpeta para reintentarlo",
   "@errors.provider.veraCrypt.transient": {
