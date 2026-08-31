@@ -43,6 +43,17 @@ that lives beside the code, and git holds the history.
       `/data` listing on a non-rooted phone), then three deliberate deferrals (`sendrecv_v2` compression off until
       measured, wireless pairing left to the server, a settings switch for the `adb` binary path).
 
+- [ ] 2026-08-31 `smb-foreground-lease-plan.md` - **A background SMB upload stands aside for the folder you're actually
+      waiting on.** Browsing a share during a local → SMB transfer is sluggish in the two cases that matter most. The
+      foreground signal is a timestamp stamped once at listing-command entry and decayed after 500 ms, so a slow listing
+      (the whole complaint) outlives its own busy window and the upload resumes mid-wait; and the destination yield is
+      gated on a per-file 4 MiB floor, so files under it never yield once, which is every photo and document. Three
+      milestones: a listing holds an RAII lease so "busy" is a fact rather than an estimate, the parked upload wakes on
+      that lease instead of polling every 50 ms, and the floor is narrowed away from the single-shot write path where the
+      handle it protects is not yet open. ❌ Explicitly NOT the pre-file yield gate for the 1 MiB–4 MiB band (a real
+      throughput trade, needs benchmarking) and NOT foreground stamping in `path_exists` / `get_file_range` /
+      `refresh_listing` (background callers would pin a share permanently busy).
+
 - [ ] 2026-08-31 `rollback-recheck-plan.md` - **Cancelling an operation deletes files it no longer wrote, and the move
       case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and
       refuses to touch anything that changed; the in-flight rollbacks (the transfer dialog's button) verify nothing and
