@@ -132,10 +132,11 @@ mod tests {
                 .credentials("volume-host-detached.local", None)
                 .is_none()
         );
-        assert!(
-            host.activity()
-                .volume_idle_for("test://volume-host/detached", std::time::Duration::from_millis(1))
-        );
+        assert!(cmdr_fs::volume::host::activity::volume_idle_for(
+            host.activity(),
+            "test://volume-host/detached",
+            std::time::Duration::from_millis(1)
+        ));
         assert!(host.settings().max_concurrent_operations("ftp") >= 1);
     }
 

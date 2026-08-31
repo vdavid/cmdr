@@ -11,7 +11,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use cmdr_fs::volume::host::activity::{UserActivity, volume_busy_for_user};
+use cmdr_fs::volume::host::activity::{ActivityWatch, UserActivity, volume_busy_for_user};
 use cmdr_index::host::policy::{HostPolicy, OpenListing, WorkClearance};
 
 use super::{foreground, roots, transfers};
@@ -58,17 +58,23 @@ impl HostPolicy for AppHostPolicy {
 pub struct AppUserActivity;
 
 impl UserActivity for AppUserActivity {
-    fn volume_idle_for(&self, volume_id: &str, threshold: Duration) -> bool {
-        foreground::global().idle_for_volume(volume_id, threshold)
+    fn volume_quiet_for(&self, volume_id: &str) -> Option<Duration> {
+        foreground::global().volume_quiet_for(volume_id)
     }
 
     fn volume_foreground_leases(&self, volume_id: &str) -> usize {
         foreground::global().volume_lease_count(volume_id)
     }
+
+    fn watch_volume(&self, volume_id: &str) -> ActivityWatch {
+        ActivityWatch::on(foreground::global().watch_volume(volume_id))
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use cmdr_fs::volume::host::activity::{volume_idle_for, wait_until_volume_free};
+
     use super::*;
 
     /// The adapter has to carry BOTH foreground scopes through, not collapse them.
@@ -121,9 +127,9 @@ mod tests {
 
         foreground::note_foreground_activity_on(browsed);
 
-        assert!(!AppUserActivity.volume_idle_for(browsed, window));
+        assert!(!volume_idle_for(&AppUserActivity, browsed, window));
         assert!(
-            AppUserActivity.volume_idle_for(quiet, window),
+            volume_idle_for(&AppUserActivity, quiet, window),
             "a volume nobody browsed is one nobody is waiting on"
         );
     }
@@ -144,7 +150,7 @@ mod tests {
 
         let listing = foreground::lease_foreground_on(listed);
         assert!(
-            AppUserActivity.volume_idle_for(listed, decayed),
+            volume_idle_for(&AppUserActivity, listed, decayed),
             "the timestamp half is idle at a zero window, which is what isolates the lease"
         );
         assert_eq!(AppUserActivity.volume_foreground_leases(listed), 1);
@@ -161,6 +167,31 @@ mod tests {
         );
     }
 
+    /// The adapter carries the WATCH through too, which is what a parked SMB
+    /// transfer resumes on. An adapter that handed back a watch nothing bumps
+    /// would compile, pass every other test here, and leave an upload asleep until
+    /// its hard cap; this hangs instead.
+    #[tokio::test]
+    async fn a_listing_ending_wakes_a_wait_through_the_adapter() {
+        let listed = "test://host_policy/waited_on";
+        let listing = foreground::lease_foreground_on(listed);
+
+        let waiting = tokio::spawn(async move {
+            // A zero window isolates the lease: the moment it comes back, the
+            // volume is free with no debounce to sit through.
+            wait_until_volume_free(&AppUserActivity, listed, Duration::ZERO).await;
+        });
+        // Let the wait reach its park before the listing ends, so what wakes it is
+        // the release and not a condition that was already true.
+        tokio::task::yield_now().await;
+
+        drop(listing);
+        tokio::time::timeout(Duration::from_secs(5), waiting)
+            .await
+            .expect("the release has to wake the wait through the adapter")
+            .expect("the waiting task must not panic");
+    }
+
     /// A lease is per volume, so a listing on one share leaves another share's scan
     /// and transfers at full speed.
     #[test]
@@ -169,7 +200,7 @@ mod tests {
         let quiet = "test://host_policy/untouched";
         let _listing = foreground::lease_foreground_on(listed);
         assert!(AppHostPolicy.clearance(quiet, Duration::ZERO).volume_idle);
-        assert!(AppUserActivity.volume_idle_for(quiet, Duration::ZERO));
+        assert!(volume_idle_for(&AppUserActivity, quiet, Duration::ZERO));
         assert_eq!(AppUserActivity.volume_foreground_leases(quiet), 0);
     }
 }

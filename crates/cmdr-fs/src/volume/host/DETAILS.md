@@ -192,12 +192,21 @@ backend wants them.
 
 ### `UserActivity`
 
-⇐ `priority::foreground::global().idle_for_volume(...)`, via `crates/cmdr-smb/src/volume/foreground_yield.rs`. The seam
-reports the raw signal; the threshold stays at the call site, because how long counts as "busy" belongs to the work
-standing aside — a transfer that parks outright wants 500 ms, an index scan that merely narrows wants far longer, and
-each writes its constant beside its reasoning.
+⇐ `priority::foreground::global()`, via `crates/cmdr-smb/src/volume/foreground_yield.rs`. The seam reports three raw
+signals and no decisions: how many foreground operations are in flight on the volume, how long it has been quiet, and a
+subscription that fires whenever either moves. The threshold stays at the call site, because how long counts as "busy"
+belongs to the work standing aside — a transfer that parks outright wants 500 ms, an index scan that merely narrows
+wants far longer, and each writes its constant beside its reasoning.
 
 The scope is per volume, and that's the whole point: browsing a local folder must never slow a copy off a NAS.
+
+The decisions are free functions over the seam, so no consumer can compose its own and be wrong in a case it never
+tests: `volume_busy_for_user` (the rule), `volume_idle_for` (the decaying half alone), and `wait_until_volume_free`.
+That wait is the shape worth knowing: a lease has an owner, so its end is an event to sleep on; a timestamp going stale
+has nobody to announce it, so the leftover window is ONE sleep to a computed deadline. It takes its subscription BEFORE
+reading the signals, which is what makes a release landing in between impossible to lose (the subscription carries a
+version, not a permit), and it re-reads both halves on every wake, so a second listing starting or a navigation landing
+mid-window simply re-parks with a new deadline.
 
 ### `AnalyticsSink`
 

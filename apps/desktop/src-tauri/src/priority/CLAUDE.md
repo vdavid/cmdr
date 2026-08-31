@@ -22,12 +22,13 @@ take. This module owns the SIGNALS and pure decisions; consumers compose them at
 - **Feed the transfer gauge ONLY from `write_operations::state::register_operation_status` /
   `unregister_operation_status`** (the one lifecycle choke point, shared with the eject busy set). A second feed site
   desyncs the count.
-- **A missing foreground entry means "never browsed" = idle.** ❌ Don't collapse it to a `0` timestamp — `0` is a real
-  clock point, and every background user would stall for the app's first threshold window.
+- **A foreground timestamp of `None` means "never browsed" = idle.** ❌ Don't collapse it to `0`, a real clock point:
+  every background user would stall for the app's first threshold. An ENTRY says nothing; subscribing creates one.
 - **The foreground signal is a LEASE plus a timestamp, composed only by
   `cmdr_fs::volume::host::activity::volume_busy_for_user`.** ❌ Reading `idle_for_volume` alone re-opens the bug the
   lease closed. The lease is released by DROP alone (❌ no manual release, ❌ never bind it to `_`) and restamps on the
-  way out, which is what starts the debounce.
+  way out, which starts the debounce. Every write also bumps the volume's change counter (`watch_volume`), which is how
+  a parked transfer wakes; ❌ never skip it.
 - **Consumers pick their own scope on purpose** (listed in `foreground.rs` + `DETAILS.md`): enrichment reads APP-WIDE
   foreground + per-volume transfers; scan pacing and transfer-yield read PER-VOLUME. ❌ Don't "unify" them.
 - **The index reads these through `AppHostPolicy`, never directly**: it lives in a Tauri-free crate that can't reach

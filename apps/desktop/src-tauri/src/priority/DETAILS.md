@@ -43,6 +43,15 @@ cancellation machinery for no behavior we need. The priority order is enforced b
     app-wide scope stays timestamp-only: a lease names a volume, and there is no app-wide claim to hold.
   - **Both halves move under one write lock**, so no reader can see the count drop before the timestamp that has to
     carry the debounce.
+  - **Both halves are an EVENT too.** Every write bumps the volume's change counter (`ForegroundActivity::watch_volume`
+    hands out a subscription to it), so a background user standing aside sleeps until the signal actually moves rather
+    than asking again on a tick. Waiting is composed once, next to the rule:
+    `cmdr_fs::volume::host::activity::wait_until_volume_free` sleeps on the lease coming back and spends ONE computed
+    sleep on whatever is left of the quiet window, since nothing announces a timestamp going stale. A wake means
+    "something moved", never "you are free", so it re-reads both halves every time. The SMB transfer yield
+    (`crates/cmdr-smb/src/volume/foreground_yield.rs`) is its consumer, on both the source and destination arms.
+  - Subscribing creates the volume's map entry, so an entry means nothing on its own: `last_millis: None` is what
+    "never browsed" means.
 
 **Composing the two is `cmdr_fs::volume::host::activity::volume_busy_for_user`, and only that.** Both background
 consumers (a storage backend through `UserActivity`, the index through `AppHostPolicy::clearance`'s `volume_idle`) go

@@ -10,7 +10,10 @@
 //! The share is busy while a foreground operation HOLDS A LEASE on it (a directory
 //! listing takes one for its real duration), and for
 //! [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`] after the last one ended. The two halves
-//! are composed once, in `cmdr_fs::volume::host::activity::volume_busy_for_user`.
+//! are composed once, in `cmdr_fs::volume::host::activity::volume_busy_for_user`,
+//! and waited on once, in its `wait_until_volume_free`: the lease ending is an
+//! event to sleep on, and the leftover quiet window is one sleep to a computed
+//! deadline. Neither is a tick.
 //!
 //! ❗ **The lease is what makes this exact, and it is not the connection.** The SMB
 //! connection has no holder — every `SmbVolume` clone multiplexes frames over one
@@ -35,12 +38,12 @@
 //! `min_progress_floor` bytes since its last resume, so continuous browsing slows a
 //! copy but can never stop it.
 //!
-//! [`foreground_pending`] serves BOTH directions: a DOWNLOAD off this share
-//! (source arm) and an UPLOAD to it (destination arm, gated by
-//! `SmbVolume::supports_foreground_yield_as_destination`). The upload arm reads
-//! `foreground_pending` but NOT [`wait_until_foreground_idle`]: it can't park
-//! unbounded, because it holds an open write handle across the pause, so it caps
-//! each park itself (`write_operations/transfer/checkpoint_stream.rs`).
+//! Both functions serve BOTH directions: a DOWNLOAD off this share (source arm)
+//! and an UPLOAD to it (destination arm, gated by
+//! `SmbVolume::supports_foreground_yield_as_destination`). The difference is the
+//! BOUND, and it belongs to the caller: an upload holds an open write handle across
+//! the pause, so it caps every park (`write_operations/transfer/checkpoint_stream.rs`)
+//! where a download parks for as long as the user needs.
 
 use std::time::Duration;
 
@@ -57,11 +60,6 @@ use cmdr_fs::volume::host::activity;
 /// would compound into a visibly stalled copy for a single arrow-key press.
 pub(crate) const TRANSFER_FOREGROUND_IDLE_THRESHOLD: Duration = Duration::from_millis(500);
 
-/// How often [`wait_until_foreground_idle`] re-checks. The signal is polled state,
-/// not an event, so there's nothing to wake on; a tick well under the threshold
-/// keeps the resume latency a small fraction of the window.
-const POLL_INTERVAL: Duration = Duration::from_millis(100);
-
 /// Whether the user is currently using `volume_id` in the foreground, so a
 /// background transfer on it should stand aside.
 ///
@@ -74,12 +72,13 @@ pub(crate) fn foreground_pending(host: &VolumeHost, volume_id: &str) -> bool {
 /// Park until `volume_id` has been quiet for [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`].
 /// Returns immediately when it already is.
 ///
-/// The caller (`CheckpointStream::auto_yield_to_foreground`) races this against
-/// cancellation, so it never needs its own cancel awareness.
+/// Wakes on the LEASE coming back rather than on a tick, so an upload standing
+/// aside for a listing resumes the moment that listing ends instead of up to a tick
+/// later. Serves both arms of `CheckpointStream`: the source arm races it against
+/// cancellation and the destination arm races it against cancellation AND its hard
+/// cap, so it never needs awareness of either itself.
 pub(crate) async fn wait_until_foreground_idle(host: &VolumeHost, volume_id: &str) {
-    while foreground_pending(host, volume_id) {
-        tokio::time::sleep(POLL_INTERVAL).await;
-    }
+    activity::wait_until_volume_free(host.activity(), volume_id, TRANSFER_FOREGROUND_IDLE_THRESHOLD).await;
 }
 
 #[cfg(test)]
@@ -123,8 +122,7 @@ mod tests {
         let listing = Arc::new(BusyVolumes::new().holds_a_lease(browsed));
         let host = host_watching(Arc::clone(&listing));
         assert!(
-            host.activity()
-                .volume_idle_for(browsed, TRANSFER_FOREGROUND_IDLE_THRESHOLD),
+            activity::volume_idle_for(host.activity(), browsed, TRANSFER_FOREGROUND_IDLE_THRESHOLD),
             "the timestamp half has already decayed, which is the case this covers"
         );
         assert!(foreground_pending(&host, browsed), "the listing is still running");
