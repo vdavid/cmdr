@@ -15,8 +15,6 @@
 use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
-use super::reversal::{ReversalGuard, ReversalTally, remove_local_dir_if_empty, remove_local_file};
-
 /// One destination path this operation put on disk, with the identity a reversal
 /// rechecks before removing it or renaming it back.
 ///
@@ -248,31 +246,34 @@ impl CopyTransaction {
         self.created_files.pop()
     }
 
-    /// Rolls back all created files and directories, and reports what it left.
+    /// Removes everything this ledger still claims, no questions asked.
     ///
-    /// `guard` decides whether an entry something else has changed since is
-    /// removed anyway; see [`ReversalGuard`]. The files go newest-first, draining
-    /// the ledger as they go, then the created directories deepest-first and
-    /// empty-only — a directory still holding something (a file the user dropped
-    /// in, or one this reversal declined to remove) stays.
+    /// **The panic net's body, and nothing else's.** Every reversal a person can
+    /// observe goes through `reversal::reverse_copy_transaction`, which rechecks
+    /// each entry and leaves anything that changed since. This one runs because a
+    /// thread died mid-copy, where a destination is as likely half-written as
+    /// complete and nobody is left to read a report about what got left behind.
+    /// ❌ Don't "fix" the inconsistency by teaching it to skip on drift: that
+    /// strands partials after a crash, which is the failure the net exists to
+    /// prevent. Keeping it here is also what keeps the vocabulary free of the
+    /// policy built on top of it.
     ///
-    /// Intentional: rollback removes the files THIS operation created; it does
-    /// NOT restore an original that an Overwrite replaced (we keep no per-file
+    /// Intentional: it removes the files THIS operation created; it does NOT
+    /// restore an original that an Overwrite replaced (we keep no per-file
     /// backup — see `overwrite::safe_overwrite_file` step 4). Keeping backups for
     /// the whole operation risks unexpectedly filling the user's drive on a
     /// large Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
     /// § "Overwrite isn't reversible".
-    pub fn rollback(&mut self, guard: ReversalGuard) -> ReversalTally {
-        let mut tally = ReversalTally::default();
+    fn remove_everything(&mut self) {
         while let Some(file) = self.pop_file() {
-            tally.record(remove_local_file(&file, guard), &file.path);
+            let _ = std::fs::remove_file(&file.path);
         }
         // Deepest first: `created_dirs` is in creation order, so reversing it
-        // empties leaves before their parents are tried.
+        // empties leaves before their parents are tried. `remove_dir` refuses a
+        // non-empty one, so a directory holding anything else survives.
         for dir in self.created_dirs.iter().rev() {
-            tally.record(remove_local_dir_if_empty(dir), dir);
+            let _ = std::fs::remove_dir(dir);
         }
-        tally
     }
 
     /// Marks the transaction as committed, preventing rollback on drop.
@@ -289,13 +290,7 @@ impl Drop for CopyTransaction {
                 self.created_files.len(),
                 self.created_dirs.len()
             );
-            // The panic net, and the ONE reversal that removes everything on the
-            // ledger without rechecking it. It runs because a thread died
-            // mid-copy, so the destinations it holds are as likely to be
-            // half-written as complete, and there is nobody left to read a report
-            // about what got left behind. ❌ Don't align it with the guarded
-            // reversals: skipping on drift here strands partials after a crash.
-            self.rollback(ReversalGuard::Unconditional);
+            self.remove_everything();
         }
     }
 }

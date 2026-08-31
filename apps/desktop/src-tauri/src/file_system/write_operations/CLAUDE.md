@@ -24,7 +24,7 @@ Copy, move, delete, trash, and zip edits as managed background ops.
 - **A spawned op reserves every lane it touches or waits Queued**; the next admits on `on_settled`, ❌ not `Drop`.
 - **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it. Cancel keeps copied files, Rollback removes the
   ones it still recognizes: a reversal VERIFIES before each destructive act (`reversal.rs`, sharing `verify_snapshot` +
-  `SkipReason` with the history engine — ❌ never a batch, ❌ never a fork; only the `Drop` net is unconditional).
+  `SkipReason` with the history engine — ❌ never a batch, ❌ never a fork; only the `Drop` net is unconditional, sweeping from `ledger.rs`).
   `PauseGate` is orthogonal; cancel wins. ❌ A REVERSAL never asks `is_cancelled`: `RollingBack` means
   "reverse" to the cleanup running under it, so it names its reading (`StopMeans`, and
   `PauseGate::wait_while_paused_until`). `rollback.rs` is also the operation-log engine's injected executor.

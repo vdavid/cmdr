@@ -14,7 +14,7 @@ fn a_file_still_as_the_copy_wrote_it_is_removed() {
     fs::write(&file, b"0123456789").unwrap();
     let recorded = WrittenFile::local(file.clone());
 
-    let result = remove_local_file(&recorded, ReversalGuard::SkipDrifted);
+    let result = remove_local_file(&recorded);
 
     assert!(matches!(result, ItemResult::Reversed));
     assert!(!file.exists());
@@ -34,7 +34,7 @@ fn a_same_size_replacement_is_left_alone() {
     fs::write(&incoming, b"after!").unwrap();
     fs::rename(&incoming, &file).unwrap();
 
-    let result = remove_local_file(&recorded, ReversalGuard::SkipDrifted);
+    let result = remove_local_file(&recorded);
 
     assert!(matches!(result, ItemResult::Skipped(SkipReason::Drift)));
     assert!(file.exists(), "somebody else's file must survive");
@@ -51,7 +51,7 @@ fn a_file_edited_in_place_is_left_alone() {
     fs::write(&file, b"one line\nand another\n").unwrap();
 
     assert!(matches!(
-        remove_local_file(&recorded, ReversalGuard::SkipDrifted),
+        remove_local_file(&recorded),
         ItemResult::Skipped(SkipReason::Drift)
     ));
     assert!(file.exists());
@@ -68,7 +68,7 @@ fn a_file_already_gone_counts_as_done_rather_than_a_skip() {
     fs::remove_file(&file).unwrap();
 
     let mut tally = ReversalTally::default();
-    tally.record(remove_local_file(&recorded, ReversalGuard::SkipDrifted), &file);
+    tally.record(remove_local_file(&recorded), &file);
     let report = tally.into_cancel_rollback();
 
     assert_eq!(report.reversed, 1, "the desired end state already held");
@@ -85,7 +85,7 @@ fn a_partial_this_operation_was_writing_goes_without_a_recheck() {
     let partial = tmp.path().join("half-written.mov");
     fs::write(&partial, b"the first megabyte").unwrap();
 
-    let result = remove_local_file(&WrittenFile::own_partial(partial.clone()), ReversalGuard::SkipDrifted);
+    let result = remove_local_file(&WrittenFile::own_partial(partial.clone()));
 
     assert!(matches!(result, ItemResult::Reversed));
     assert!(!partial.exists(), "a partial must never be left behind");
@@ -101,31 +101,13 @@ fn an_entry_with_no_identity_is_left_alone() {
     fs::write(&file, b"whose is this?").unwrap();
     let recorded = WrittenFile::local_stat(file.clone(), None);
 
-    let result = remove_local_file(&recorded, ReversalGuard::SkipDrifted);
+    let result = remove_local_file(&recorded);
 
     assert!(matches!(
         result,
         ItemResult::Skipped(SkipReason::UnverifiablePrecondition)
     ));
     assert!(file.exists());
-}
-
-/// The panic net removes everything the ledger claims, drift and all: it runs
-/// because a thread died mid-copy, where a destination is as likely half-written
-/// as complete.
-#[test]
-fn the_panic_net_removes_even_a_file_that_changed() {
-    let tmp = tempfile::tempdir().unwrap();
-    let file = tmp.path().join("mid-copy.bin");
-    fs::write(&file, b"as recorded").unwrap();
-    let recorded = WrittenFile::local(file.clone());
-    fs::write(&file, b"a very different length now").unwrap();
-
-    assert!(matches!(
-        remove_local_file(&recorded, ReversalGuard::Unconditional),
-        ItemResult::Reversed
-    ));
-    assert!(!file.exists());
 }
 
 /// The recheck stats the way the ledger recorded: a copied symlink whose target
@@ -139,11 +121,8 @@ fn a_copied_symlink_that_dangles_is_still_recognized() {
     std::os::unix::fs::symlink(tmp.path().join("nothing-here"), &link).unwrap();
     let recorded = WrittenFile::local(link.clone());
 
-    assert_eq!(recheck_local(&recorded, ReversalGuard::SkipDrifted), Recheck::Act);
-    assert!(matches!(
-        remove_local_file(&recorded, ReversalGuard::SkipDrifted),
-        ItemResult::Reversed
-    ));
+    assert_eq!(recheck_local(&recorded), Recheck::Act);
+    assert!(matches!(remove_local_file(&recorded), ItemResult::Reversed));
 }
 
 /// A directory this copy created that somebody has since put a file into stays,

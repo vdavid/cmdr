@@ -5,7 +5,7 @@
 
 use super::ledger::WrittenFile;
 use super::*;
-use crate::file_system::write_operations::reversal::ReversalGuard;
+use crate::file_system::write_operations::reversal::reverse_copy_transaction;
 use crate::file_system::write_operations::types::{CancelRollback, CancelRollbackOutcome};
 use crate::test_support::TestDir;
 use std::fs;
@@ -161,7 +161,7 @@ fn test_copy_transaction_rollback_deletes_files() {
     transaction.record_dir(temp_dir.join("subdir"));
 
     // Rollback should delete all recorded files and directories
-    transaction.rollback(ReversalGuard::SkipDrifted);
+    reverse_copy_transaction(&mut transaction);
 
     // Verify files are deleted
     assert!(!file1.exists(), "file1 should be deleted after rollback");
@@ -217,7 +217,7 @@ fn test_copy_transaction_rollback_handles_already_deleted_files() {
     fs::remove_file(&file1).expect("Failed to delete file1");
 
     // Rollback should not panic even if files are already gone
-    transaction.rollback(ReversalGuard::SkipDrifted); // Should not panic
+    reverse_copy_transaction(&mut transaction); // Should not panic
 }
 
 #[test]

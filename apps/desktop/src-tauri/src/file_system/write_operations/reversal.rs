@@ -24,25 +24,8 @@ use std::path::Path;
 use crate::operation_log::rollback::{ItemResult, SkipTally, SnapshotVerdict, verify_snapshot};
 use crate::operation_log::types::SkipReason;
 
-use super::ledger::{WrittenFile, WrittenIdentity};
+use super::ledger::{CopyTransaction, WrittenFile, WrittenIdentity};
 use super::types::{CancelRollback, CancelRollbackOutcome};
-
-/// Whether a reversal may leave an entry alone.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ReversalGuard {
-    /// Recheck every entry and skip anything that changed since this operation
-    /// wrote it. Every reversal a person can observe uses this.
-    SkipDrifted,
-    /// Remove everything the ledger still claims, no questions asked.
-    ///
-    /// Only the `CopyTransaction` `Drop` net holds this, and it holds it on
-    /// purpose: it runs when a thread panicked mid-copy, where the destination
-    /// files are as likely to be half-written as complete and nobody is left to
-    /// read a skip report. ❌ Don't "fix" the inconsistency by making the panic
-    /// net skip on drift — that leaves partials behind after a crash, which is
-    /// the failure the net exists to prevent.
-    Unconditional,
-}
 
 /// What a reversal found at a path its ledger claims.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,10 +55,7 @@ impl Recheck {
 /// Read with `symlink_metadata`, matching how the ledger recorded it: a copied
 /// symlink that dangles has to be FOUND here, and `metadata` would follow it to
 /// its missing target and call the link absent.
-pub(crate) fn recheck_local(file: &WrittenFile, guard: ReversalGuard) -> Recheck {
-    if guard == ReversalGuard::Unconditional {
-        return Recheck::Act;
-    }
+pub(crate) fn recheck_local(file: &WrittenFile) -> Recheck {
     // A partial has no complete file to recognize and, by construction, no size
     // either — and nothing but this operation can plausibly own a destination
     // path that never held a complete file. See [`WrittenIdentity::OwnPartial`].
@@ -140,8 +120,8 @@ pub(crate) fn recheck_volume(file: &WrittenFile, live_size: Option<u64>) -> Rech
 }
 
 /// Remove one local file this operation wrote, if it's still that file.
-pub(crate) fn remove_local_file(file: &WrittenFile, guard: ReversalGuard) -> ItemResult {
-    match recheck_local(file, guard) {
+pub(crate) fn remove_local_file(file: &WrittenFile) -> ItemResult {
+    match recheck_local(file) {
         Recheck::AlreadyGone => ItemResult::Skipped(SkipReason::AlreadyGone),
         Recheck::Skip(reason) => ItemResult::Skipped(reason),
         Recheck::Act => match fs::remove_file(&file.path) {
@@ -153,6 +133,29 @@ pub(crate) fn remove_local_file(file: &WrittenFile, guard: ReversalGuard) -> Ite
             }
         },
     }
+}
+
+/// Reverse a local copy's whole ledger: every file it still claims, newest
+/// first, then the directories it created deepest-first and empty-only.
+///
+/// The error-cleanup path's reversal. It rechecks like the Rollback button does
+/// — deleting a file somebody else has modified is wrong whatever brought Cmdr
+/// here — while everything this operation actually wrote still goes, so the
+/// half-copied tree the cleanup exists to remove is removed. ❌ Not the panic
+/// net: `CopyTransaction`'s `Drop` runs its own unconditional sweep, for the
+/// reason written there.
+///
+/// The caller must still commit the transaction; this has already removed
+/// whatever it removed.
+pub(crate) fn reverse_copy_transaction(transaction: &mut CopyTransaction) -> ReversalTally {
+    let mut tally = ReversalTally::default();
+    while let Some(file) = transaction.pop_file() {
+        tally.record(remove_local_file(&file), &file.path);
+    }
+    for dir in transaction.created_dirs.iter().rev() {
+        tally.record(remove_local_dir_if_empty(dir), dir);
+    }
+    tally
 }
 
 /// Remove a directory this operation created, but only once it's empty.

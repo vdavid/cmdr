@@ -16,7 +16,7 @@ use super::super::conflict::ApplyToAll;
 use super::super::durability::flush_created_destinations;
 use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::CopyTransaction;
-use super::super::reversal::ReversalGuard;
+use super::super::reversal::reverse_copy_transaction;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
@@ -564,7 +564,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                     // Error cleanup, and it rechecks like the Rollback button
                     // does: deleting a file somebody else has modified is wrong
                     // whatever brought Cmdr here.
-                    transaction.rollback(ReversalGuard::SkipDrifted);
+                    reverse_copy_transaction(&mut transaction);
                     events.emit_error(WriteErrorEvent::new(
                         operation_id.to_string(),
                         WriteOperationType::Copy,
@@ -671,7 +671,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 operation_id,
                 e,
             );
-            transaction.rollback(ReversalGuard::SkipDrifted);
+            reverse_copy_transaction(&mut transaction);
             events.emit_error(WriteErrorEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Copy,

@@ -1,7 +1,7 @@
 //! Integration tests for CopyTransaction rollback behavior.
 
 use crate::file_system::write_operations::ledger::WrittenFile;
-use crate::file_system::write_operations::reversal::ReversalGuard;
+use crate::file_system::write_operations::reversal::reverse_copy_transaction;
 use crate::test_support::TestDir;
 use std::fs;
 
@@ -75,7 +75,7 @@ fn test_copy_transaction_rollback_removes_files() {
     assert!(file2.exists());
 
     // Rollback
-    tx.rollback(ReversalGuard::SkipDrifted);
+    reverse_copy_transaction(&mut tx);
 
     // Verify files deleted
     assert!(!file1.exists());
@@ -103,7 +103,7 @@ fn test_copy_transaction_rollback_removes_dirs() {
     assert!(dir2.exists());
 
     // Rollback (should remove in reverse order)
-    tx.rollback(ReversalGuard::SkipDrifted);
+    reverse_copy_transaction(&mut tx);
 
     // Verify dirs deleted
     assert!(!dir2.exists());
@@ -132,7 +132,7 @@ fn test_copy_transaction_rollback_mixed() {
     assert!(file1.exists());
 
     // Rollback
-    tx.rollback(ReversalGuard::SkipDrifted);
+    reverse_copy_transaction(&mut tx);
 
     // Files should be deleted first, then directories
     assert!(!file1.exists());
@@ -187,7 +187,7 @@ fn a_destination_changed_since_the_copy_wrote_it_survives_the_reversal() {
     fs::write(&incoming, b"what somebody else").unwrap();
     fs::rename(&incoming, &theirs).unwrap();
 
-    tx.rollback(ReversalGuard::SkipDrifted);
+    reverse_copy_transaction(&mut tx);
 
     assert!(
         theirs.exists(),

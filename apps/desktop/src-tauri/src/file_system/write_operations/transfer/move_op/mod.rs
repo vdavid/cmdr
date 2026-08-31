@@ -22,7 +22,7 @@ use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::{WrittenFile, WrittenIdentity};
 use super::super::overwrite::safe_overwrite_dir;
-use super::super::reversal::{Recheck, ReversalGuard, ReversalTally, recheck_local};
+use super::super::reversal::{Recheck, ReversalTally, recheck_local};
 use super::super::scan::handle_dry_run;
 use super::super::state::{WriteOperationState, is_cancelled};
 use super::super::types::{
@@ -105,7 +105,7 @@ impl MoveTransaction {
 /// without a word, and there is no backup to put back afterwards. Either refusal
 /// leaves the item where it landed, which is recoverable; the alternative isn't.
 fn restore_moved_item(item: &MovedItem) -> ItemResult {
-    match recheck_local(&item.landed, ReversalGuard::SkipDrifted) {
+    match recheck_local(&item.landed) {
         // Something took the moved item away. The end state a restore wanted
         // (nothing of ours at the destination) holds, so this is idempotent.
         Recheck::AlreadyGone => return ItemResult::Skipped(SkipReason::AlreadyGone),

@@ -6,7 +6,7 @@ use std::time::Instant;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::ledger::CopyTransaction;
 use crate::file_system::write_operations::reversal::{
-    ReversalGuard, ReversalTally, drained, remove_local_dir_if_empty, remove_local_file,
+    ReversalTally, drained, remove_local_dir_if_empty, remove_local_file,
 };
 use crate::file_system::write_operations::state::{
     OperationIntent, WriteOperationState, load_intent, update_operation_status,
@@ -98,7 +98,7 @@ pub(super) fn rollback_with_progress(
         };
         // Rechecked here, one item before the act — ❌ never in a batch, where a
         // verification would age while other items were processed.
-        tally.record(remove_local_file(&entry, ReversalGuard::SkipDrifted), &entry.path);
+        tally.record(remove_local_file(&entry), &entry.path);
 
         // Throttled progress events with decreasing values. The counters advance
         // for every entry the reversal walked past, removed or not.

@@ -78,7 +78,7 @@ Three ledgers say what an operation currently has at the destination, and each o
 
 ### What a reversal does with that identity
 
-`reversal.rs` holds the decision, and all four in-flight reversals route through it: `CopyTransaction::rollback` (the error-cleanup arms and the `Drop` net), `copy/rollback.rs::rollback_with_progress` (the Rollback button), `move_op/mod.rs::MoveTransaction::rollback`, and `volume/cleanup.rs::volume_rollback_with_progress`.
+`reversal.rs` holds the decision, and every reversal a person can observe routes through it: `reverse_copy_transaction` (the copy's error-cleanup arms), `copy/rollback.rs::rollback_with_progress` (the Rollback button), `move_op/mod.rs::MoveTransaction::rollback`, and `volume/cleanup.rs::volume_rollback_with_progress`.
 
 **Recheck immediately before acting, one item at a time.** ❌ Never verify a batch and then act on it: a verification that aged while other items were processed no longer authorizes anything. `operation_log/DETAILS.md` explains why the history engine's loop has the same shape.
 
@@ -88,7 +88,7 @@ Three ledgers say what an operation currently has at the destination, and each o
 
 **The move path carries a SECOND guard**, the one the history engine pins alongside the recheck: the restore is non-destructive. `fs::rename` replaces its target silently and there is no backup to put back, so an original source somebody has since filled skips with `RestoreTargetOccupied`. The carve-out is the case-only self-collision — a case-insensitive filesystem folds `dog.jpg` and `DOG.jpg` onto one entry, so a case-only move finds its own destination sitting at the source. Same node id ⇒ the same entry ⇒ the rename back is a case correction. One local filesystem means `(dev, ino)` settles it exactly, with no path folding needed.
 
-**The `Drop` net stays unconditional** (`ReversalGuard::Unconditional`, and it is the only holder). It runs because a thread panicked mid-copy, where a destination is as likely half-written as complete and nobody is left to read a report. ❌ Aligning it with the guarded reversals strands partials after a crash.
+**The `Drop` net stays unconditional**, and it keeps its own sweep in `ledger.rs` (`CopyTransaction::remove_everything`) rather than routing through `reversal.rs`. It runs because a thread panicked mid-copy, where a destination is as likely half-written as complete and nobody is left to read a report. ❌ Aligning it with the guarded reversals strands partials after a crash. Keeping it there is also what keeps the direction one-way: `ledger.rs` is the vocabulary, `reversal.rs` is the policy over it, and `module-cycles` notices the moment that reverses.
 
 **The bar always reaches its end.** Both progress-reporting reversals advance for every item they walk past — removed, left alone, or refused — and interpolate both axes over the ledger's own length, landing on zero whatever they managed. A bar stranded partway reads as a crash, and a user who thinks the app crashed never reads the summary that explains what stayed. The created-directory prune establishes emptiness itself, so a directory a left-behind file keeps alive reports `DirNotEmpty` rather than a bare failure.
 

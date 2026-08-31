@@ -22,8 +22,9 @@ run through `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
   `(dev,ino)`, volume = size, a partial marked as ITS OWN. Ledgers POP as they reverse. `DETAILS.md` § "What the
   in-flight ledgers record".
 - **A reversal RECHECKS each entry right before acting, ❌ never a batch** (`../reversal.rs`): changed or unprovable ⇒
-  leave it and report it; an own-partial goes on sight; only the `Drop` net is unconditional. A move-back never
-  overwrites an occupied source (case-only self-collision aside). § "What a reversal does with that identity".
+  leave it, report it; an own-partial goes on sight; a move-back never overwrites an occupied source (case-only
+  self-collision aside). Only the `Drop` net is unconditional, sweeping from `../ledger.rs` — ❌ don't route it through
+  `reversal.rs`, that direction is a module cycle. § "What a reversal does with that identity".
 - **A MERGED move is NOT rollbackable, and a cross-FS move journals FINAL paths, never staging ones**
   (`note_not_rollbackable` at every merge and phase-3 conflict; `JournalDestUnder` rebases, created-dir rows included).
   All easy to drop in a refactor. `operation_log/DETAILS.md` § "Why a directory merge isn't reversible".

@@ -1,7 +1,6 @@
 //! What the in-flight ledger vocabulary records, and what it refuses to record.
 
 use super::*;
-use crate::file_system::write_operations::reversal::ReversalGuard;
 
 /// A local file is snapshotted with both halves of its identity, and the size is
 /// the file's own.
@@ -140,7 +139,7 @@ fn copy_transaction_rollback_deletes_files_and_dirs_in_reverse() {
     tx.record_dir(inner.clone());
     tx.record_file(WrittenFile::local(file.clone()));
 
-    tx.rollback(ReversalGuard::SkipDrifted);
+    crate::file_system::write_operations::reversal::reverse_copy_transaction(&mut tx);
 
     assert!(!file.exists(), "file must be removed on rollback");
     assert!(!inner.exists(), "inner dir must be removed (leaf-first)");
@@ -205,4 +204,24 @@ fn copy_transaction_pops_the_newest_file_first() {
     assert_eq!(tx.pop_file().map(|f| f.path), Some(PathBuf::from("/a")));
     assert!(tx.pop_file().is_none(), "an emptied ledger claims nothing");
     tx.commit();
+}
+
+/// The panic net removes everything the ledger claims, drift and all. It runs
+/// because a thread died mid-copy, where a destination is as likely half-written
+/// as complete and nobody is left to read a report about what stayed — so ❌ it
+/// must NOT grow the guarded reversals' recheck.
+#[test]
+fn the_panic_net_removes_even_a_file_that_changed() {
+    let tmp = tempfile::tempdir().unwrap();
+    let file = tmp.path().join("mid-copy.bin");
+    std::fs::write(&file, b"as recorded").unwrap();
+
+    let mut tx = CopyTransaction::new();
+    tx.record_file(WrittenFile::local(file.clone()));
+    // Somebody else replaces it while the copy is still running, and then the
+    // copy's thread panics.
+    std::fs::write(&file, b"a very different length now").unwrap();
+    drop(tx);
+
+    assert!(!file.exists(), "a panic net that leaves partials behind is not a net");
 }
