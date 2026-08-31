@@ -30,7 +30,8 @@ Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`.
 The full top-level inventory is here:
 
 - `mod.rs` (public API + the `start_write_operation` lifecycle), `manager.rs` (registry + lane admission), `state.rs`
-  (`WriteOperationRegistry`, `WriteOperationState`, `CopyTransaction`, the settle guard, the cancel/abort commands),
+  (`WriteOperationRegistry`, `WriteOperationState`, `CopyTransaction`, the settle guard, plus `state/controls.rs`:
+  the by-id cancel / abort / pause / resume / conflict-answer entry points, re-exported through `state`),
   `status_cache.rs` (the status cache, the busy-volumes set it derives, the external drag-out seam, and
   `list_active_operations` / `get_operation_status`), `operation_intent.rs` (`OperationIntent`, `PauseGate`), `human_wait.rs` (how long a person has kept the operation waiting),
   `archive_edit/` (the zip-edit driver).
