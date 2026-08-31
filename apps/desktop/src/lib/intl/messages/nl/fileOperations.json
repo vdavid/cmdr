@@ -666,9 +666,9 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Dit verwijdert elk bestand dat de bewerking tot nu toe heeft geschreven. Wat daarbij is vervangen, komt niet terug.",
+  "fileOperations.rollbackConfirm.body": "Dit verwijdert elk bestand dat de bewerking tot nu toe heeft geschreven. Wat daarbij is vervangen, komt niet terug. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat achterblijven.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Het terugdraaien van deze bewerking voltooien?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -701,6 +701,74 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Voltooi terugdraaien",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "Alles wat Cmdr had geschreven, is verwijderd: {countText} {count, plural, one {onderdeel} other {onderdelen}}.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "5851ac6"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "Alles is teruggezet: {countText} {count, plural, one {onderdeel} other {onderdelen}}.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "0126d51"
+  },
+  "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} verwijderd.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "{countText} {count, plural, one {onderdeel} other {onderdelen}} teruggezet.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "Gestopt na het verwijderen van {countText} {count, plural, one {onderdeel} other {onderdelen}}. De rest staat er nog.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "Gestopt na het terugzetten van {countText} {count, plural, one {onderdeel} other {onderdelen}}. De rest staat nog op de nieuwe plek.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr laat alles ongemoeid waar het niet zeker van is, dus deze zijn blijven staan:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "6b0d9e8"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "{name} ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} laten staan: op de oude plek staat nu iets anders.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} laten staan: op de oude plek staat nu iets anders.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Map {name} ongemoeid gelaten: er staat nu iets in.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {map} other {mappen}} ongemoeid gelaten: er staat nu iets in.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "{name} terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische details",
   "@fileOperations.errorDialog.technicalDetails": {

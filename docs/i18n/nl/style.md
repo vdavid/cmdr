@@ -96,6 +96,12 @@ Straightforward (sources agree, `high`):
   feedback-pass row `note → bericht` is that surface only; don't mix the two words in one dialog · high
 - the Help menu → het Help-menu · the Dutch macOS menu bar keeps `Help` (see the glossary's native-menu pass); hyphen
   after the English proper name, like `SMB-share` · high
+- leave alone (Cmdr deliberately doesn't touch something) → ongemoeid laten / ongemoeid gelaten · the shipped
+  `askCmdr.renameUndo.skipReason.*` family renders this exact English sentence that way, and two rollback-toast keys
+  carry byte-identical English with it · high. Keep it apart from `overslaan` (`skip`), which the confirmation before
+  the rollback uses. See the glossary's terugdraaimelding pass
+- left where it is (a move that doesn't travel back) → laten staan · follows the settled `blijven staan`
+  (`rollbackConfirm.bodyUndoByMovingBack`) · high
 
 Add rows as terms come up, each with sources and a confidence.
 
@@ -150,6 +156,14 @@ second half is now a normal plural with a real verb
   `4x zo snel als …`, not `4x langzamer dan`, which leaves open whether the factor applies to the difference or the
   whole. The Microsoft style guide prescribes digits for units and percentages; the shape itself has no pile precedent,
   so it's a judgment call (see the glossary's `osMountFallback` pass).
+- **An uncontrolled `{name}` NEVER takes a pronoun.** The name can be a file (`het`) or a folder (`de`), so any pronoun
+  is wrong half the time. Reach for the pronominal adverb, which works for both genders AND both numbers:
+  `daar is iets aan gewijzigd`, `daar staat nu iets in`, `nadat Cmdr er klaar mee was`. Bonus: with no pronoun left, a
+  `.named` and a `.counted` sibling can share one sentence, and the counted one keeps a single `plural` block instead of
+  three. Worked example: `glossary.md` § De terugdraaimelding.
+- **No definite article in front of a numeral.** English's "the {countText} items" has no Dutch counterpart
+  (`De 1 onderdeel` is wrong), so put the completeness first and the number in an apposition after a colon:
+  `Alles is teruggezet: {countText} onderdelen.` That reads correctly at every count, 1 included.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -194,6 +208,16 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   `beveiligd`. Evidence: `glossary.md` § Get Info en Beveiligd.
 - **"The transfer has stopped moving" → "De overdracht komt niet meer vooruit"**: picked over the more idiomatic
   standstill phrase "ligt stil", which sits too close to the neighbouring "Gepauzeerd" state. Confirm the tradeoff.
+- **"leave alone" → "ongemoeid gelaten"** (`fileOperations.cancelRollback.reason.*`, `askCmdr.renameUndo.skipReason.*`):
+  nothing in the pile carries this register for files, so the shipped sibling family is the source. Confirm the register
+  reads right in a toast, and that `Map {name} ongemoeid gelaten` (no article, inherited byte-for-byte from the askCmdr
+  sibling the consistency check ties it to) doesn't read as clipped.
+- **`controleren` vs `nagaan` for "couldn't check whether it changed"**: the rollback toast says `kon niet controleren`,
+  the near-identical askCmdr line says `kon niet nagaan`, and no check catches it because the English differs only in
+  the apostrophe. Confirm a sweep to `controleren`, which is this catalog's settled word for a check.
+- **"after Cmdr put it there" → "nadat Cmdr er klaar mee was"**: the English place adverbial goes, so the line can stay
+  gender- and number-neutral (see § Notes and decisions). Confirm the trade, and whether "De rest staat nog op de nieuwe
+  plek" is the best rendering of "where the move put them".
 - **"View or add notes to the report" → "Bekijk het rapport of voeg notities toe"** (`autoSentToast.viewOrAddNotes`): 39
   characters against the English 31, on a toast next to the short "Wijzig instellingen". Dutch can't hang one shared
   object in front of both verbs, so each verb carries its own half. The compact "Bekijk of vul het rapport aan" fits

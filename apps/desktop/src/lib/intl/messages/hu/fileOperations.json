@@ -665,9 +665,9 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Ez törli az összes fájlt, amit a művelet eddig kiírt. Amit felülírt, az nem jön vissza.",
+  "fileOperations.rollbackConfirm.body": "Ez törli az összes fájlt, amit a művelet eddig kiírt. Amit felülírt, az nem jön vissza. Amiben a Cmdr nem biztos, azt kihagyja, szóval maradhat belőlük egy-kettő.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Befejezed a művelet visszagörgetését?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -700,6 +700,74 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Visszagörgetés befejezése",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "A Cmdr mindent eltávolított, amit létrehozott: {countText} {count, plural, one {elem} other {elem}}.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "5851ac6"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "A Cmdr mindent visszahelyezett: {countText} {count, plural, one {elem} other {elem}}.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "0126d51"
+  },
+  "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {elem} other {elem}} eltávolítva.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "{countText} {count, plural, one {elem} other {elem}} visszahelyezve.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "{countText} {count, plural, one {elem} other {elem}} eltávolítása után leállítva. A többi ott maradt.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "{countText} {count, plural, one {elem} other {elem}} visszahelyezése után leállítva. A többi ott maradt, ahová az áthelyezés vitte.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Amiben a Cmdr nem biztos, azt kihagyja, ezért ezek a helyükön maradtak:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "6b0d9e8"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "A(z) „{name}” változatlan maradt: módosult, miután a Cmdr odatette.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {elem} other {elem}} változatlan maradt: módosultak, miután a Cmdr odatette őket.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "A(z) „{name}” változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {elem} other {elem}} változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosultak-e.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "A(z) „{name}” változatlan maradt: már valami más van ott, ahonnan jött.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {elem} other {elem}} változatlan maradt: már valami más van ott, ahonnan jöttek.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "A(z) „{name}” mappa változatlan maradt: már van benne valami.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {mappa} other {mappa}} változatlan maradt: már van bennük valami.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "A(z) „{name}” visszagörgetése nem sikerült. Lehet, hogy a meghajtója nincs csatlakoztatva, vagy csak olvasható.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "{countText} {count, plural, one {elem} other {elem}} visszagörgetése nem sikerült. Lehet, hogy a meghajtójuk nincs csatlakoztatva, vagy csak olvasható.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
   },
   "fileOperations.errorDialog.technicalDetails": "Technikai részletek",
   "@fileOperations.errorDialog.technicalDetails": {

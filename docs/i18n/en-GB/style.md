@@ -140,6 +140,10 @@ Considered and deliberately NOT forked, so nobody re-litigates them:
   `IconCollectionGroupHeaderView.json:Y6z-b0-II4.title`); the single flip, `show less options` → `show fewer options`
   (`:FI8.1`), is `fewer` in front of a countable plural noun, which is a grammar rule both dialects share. Cmdr's
   `whatsNew.dialog.showLess` is a bare button, so it inherits base `en`.
+- **The cancelled-rollback toast (`fileOperations.cancelRollback.*`, 17 keys).** Nothing forks. Its whole vocabulary is
+  dialect-neutral: `removed`, `item`, `folder`, `drive`, `read-only`, `disconnected`, `put back`, `changed`, `check`.
+  The one word worth a look, `drive`, is what British Finder calls a drive too; `disk` is a different object in both
+  dialects. Checked against the pile when the strings landed, 2026-08-31.
 - **`Forward` → `Forwards` on the Go menu.** The adverbial `-s` rides the verb phrase only. `en-GB` writes `Forward` on
   the menu item (`Finder/MenuBar.json:249.title`, `SystemSettings/MainMenu.json:448.title`) while writing `go forwards`
   in the accessibility description, so `menu.go.forward` inherits and `commands.navForward.label` forks.

@@ -2229,3 +2229,76 @@ CE QUI revient : l'ancien nom.
   laisse croire que le dossier lui-même va disparaître, et c'est le bug que cette clé corrige.
 - Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais. Seul l'avis contient des apostrophes,
   doublées comme le veut l'ICU ; le `{folder}` est inchangé.
+
+## La notification après un retour en arrière interrompu (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`, 2026-08-31)
+
+Nouvelle surface : l'utilisateur a lancé une copie ou un déplacement, a demandé le retour en arrière, et cette
+notification dit ce que le retour a pu défaire. Elle empile jusqu'à trois parties : un titre (une seule des six clés),
+la ligne `leftBehind`, puis la liste à puces des `reason.*`. Le ton est « Cmdr a fait attention », jamais une excuse ni
+une alerte.
+
+- **Le moule des `reason.*` est celui d'`askCmdr.renameUndo.skipReason.*`, repris tel quel** : « {name} laissé tel quel
+  : <raison>. » et « {countText} {count, plural, …} tels quels : <raison>. » · le catalogue lui-même · high. C'est la
+  même mécanique produit (Cmdr refuse de toucher ce qu'il ne peut pas rapprocher de ce qu'il a écrit), donc les deux
+  listes doivent se lire pareil. **Quatre clés ont un anglais mot pour mot identique à leur sœur `renameUndo`**
+  (`unverifiable.named`, `folderNotEmpty.named`, `folderNotEmpty.counted`, et le moule commun) : leurs valeurs `fr` sont
+  strictement identiques, sinon `i18n-terms` le signale, à juste titre.
+- **`item` → `élément`, pas `fichier`.** Les sœurs `renameUndo` disent `fichier` parce que leur anglais dit « file » ;
+  ici l'anglais dit « item » et couvre les dossiers créés par l'opération · `élément` du glossaire (macOS Tier 1) ·
+  high. Ne pas uniformiser les deux familles sur un seul nom.
+- **`laissé` reste au masculin singulier devant un `{name}` inconnu**, comme dans `renameUndo.skipReason.drift.named`.
+  Ce n'est pas un accord au petit bonheur : `fichier`, `dossier` et `élément` sont tous masculins, donc le nom implicite
+  est masculin quel que soit le nom de fichier qui arrive · high.
+- **Les titres « complets » (`doneDeleting`, `doneMovingBack`) portent la totalité par `tout`, jamais par un article
+  devant le nombre.** « Cmdr a supprimé tout ce qu'il avait écrit : {countText} éléments. » et « Cmdr a tout remis en
+  place : {countText} éléments. » ❌ Pas `les {countText} éléments` : la branche `one` donnerait « les 1 élément »
+  (l'anglais s'en accommode avec « the 1 item », le français non). Le deux-points suivi du décompte garde le nombre hors
+  de portée de l'article · high. `remettre en place` est bien le verbe de `fileOperations.trash.undone`, comme le
+  demande la description de la clé.
+- **Les titres « partiels » (`someDeleted`, `someMovedBack`) reprennent le moule participial du catalogue** («
+  {countText} éléments supprimés. », « {countText} éléments remis en place. »), celui de `trash.undone` et de
+  `askCmdr.renameUndo.applied` · high. Le contraste complet/partiel passe donc par `Cmdr a tout …` contre un simple
+  décompte, ce qui rend exactement le `the` / pas de `the` de l'anglais sans rien promettre de trop.
+- **« Stopped after … » → `Retour en arrière arrêté après …`** · reprend les pastilles du journal
+  (`operationLog.rollback.partiallyRolledBack` « Retour en arrière partiel ») · high. ❌ Écarté : « Cmdr s'est arrêté
+  après avoir supprimé … », plus court et plus actif, mais « Cmdr s'est arrêté » se lit une demi-seconde comme « Cmdr a
+  quitté », ce qu'une notification calme ne peut pas se permettre. Nommer le retour en arrière coûte quelques caractères
+  et lève l'ambiguïté.
+- **« The rest are still there. » → `Les autres sont toujours là.` ; « The rest stayed where the move put them. » →
+  `Les autres sont restés là où le déplacement les avait mis.`** · `déplacement` du glossaire · high. `Les autres`
+  plutôt que `Le reste` : le décompte qui précède fournit l'antécédent pluriel et le participe s'accorde normalement.
+- **`leftBehind` recycle mot pour mot la promesse des confirmations** : « Cmdr laisse de côté tout ce dont il n'est pas
+  sûr » (`rollbackConfirm.bodyUndoByDeleting` et sœurs) · high. La notification répète ainsi la phrase que l'utilisateur
+  venait de lire avant de lancer le retour, ce que demande la description de la clé. La liste des `reason.*` garde
+  `laissé tel quel` : `laisser de côté` (la règle) et `laisser tel quel` (le constat, ligne par ligne) sont assez
+  proches pour ne pas dérouter et assez distincts pour que la ligne d'annonce ne se confonde pas avec ses puces.
+- **« so these stayed where they are: » → `donc voici ce qui n'a pas bougé :`** · high. `voici` annonce la liste à puces
+  qui suit, comme le fait `these` en anglais. ❌ Pas `ce qui est resté en place` : `en place` est déjà pris par
+  `remettre en place` (revenir à l'emplacement d'origine), et ces éléments-là sont justement restés à la DESTINATION.
+- **`spotTaken` : « where it is » → `sur place`, « where it came from » → `sa place d'origine`** · high. `sur place`
+  évite une seconde structure de pluriel dans la version comptée (« … laissés sur place : … leur place d'origine. »), et
+  `place d'origine` fait écho à `remettre en place` : ce qui empêche la remise en place, c'est que la place est prise.
+  Le sujet reste `quelque chose d'autre`, aussi vague que l'anglais, et jamais un pronom qui pourrait renvoyer à Cmdr.
+- **`drift` : « after Cmdr put it there » → `depuis que Cmdr l'a mis là`** · high. `depuis que` calque le
+  `depuis le renommage` de la sœur `renameUndo.skipReason.drift.named` et dit mieux qu'`après que` qu'un changement est
+  survenu entre-temps. Le participe reste invariable à l'oreille (`mis` / `mis`), donc aucun accord ne dépend du
+  `{name}`.
+- **`failed` : « Couldn't undo {name}. » → `Cmdr n'a pas pu revenir en arrière sur {name}.`** · même moule que
+  `operationLog.rollback.refusalUnexpected` (« Cmdr n'a pas pu lancer le retour en arrière. ») et
+  `askCmdr.renameUndo.refusedBatches` · high. Deux pistes écartées : `Retour en arrière impossible pour {name}`, le
+  moule `<nom verbal> impossible` de `style.md`, qui redirait mot pour mot la pastille
+  `operationLog.rollback.notRollbackable` (« pas éligible ») alors qu'ici Cmdr a essayé ; et
+  `Cmdr n'a pas pu annuler {name}`, qui rouvrirait la collision `Annuler` = Cancel que toute la famille
+  `retour en arrière` existe pour éviter.
+- **« Its drive may be disconnected or read-only. » → `Son disque est peut-être déconnecté ou en lecture seule.`** ·
+  macOS Finder `fr` (« Cet emplacement est en lecture seule. », « un volume en lecture seule », vérifié dans le corpus
+  de référence `fr/macOS/Finder/`, 2026-08-31) et le catalogue (`fileExplorer.navigation.locationUnreachableToast`, « Il
+  est peut-être déconnecté. ») · high.
+- **`rollbackConfirm.body` remis à jour** : la première moitié existante est conservée et les deux phrases sont soudées
+  par `, et` comme en anglais ; la phrase ajoutée est reprise mot pour mot de la sœur `bodyUndoByDeleting` (« Cmdr
+  laisse de côté tout ce dont il n'est pas sûr, il peut donc en rester quelques-uns. »), dont l'anglais est identique.
+- Branches CLDR `fr` `one` / `many` / `other`, `many` identique à `other`. Les clés `.counted` comptent toujours au
+  moins deux éléments, donc `tels quels` et `leur place d'origine` restent hors des branches, exactement comme les sœurs
+  `renameUndo.skipReason.*.counted`.
+- Espace ASCII avant chaque `:` , apostrophes ASCII doublées (ICU), aucun U+2019 ni U+202F. Aucun
+  `sameAsSourceJustification` : les 18 valeurs diffèrent de l'anglais.

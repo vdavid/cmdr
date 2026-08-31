@@ -2075,3 +2075,99 @@ nélkül renderelődik: aposztróf ott EGYSZER írandó.
   Ezt a hibát javítja a kulcs.
 - Mind az öt érték eltér az angoltól, tehát nincs szükség `sameAsSourceJustification`-re. Egyetlen új értékben sincs
   aposztróf, így az ICU `''` szabálya nem lép be; a `{folder}` változatlan.
+
+## A megszakított visszagörgetés eredményértesítése (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`, 2026-08-31)
+
+Tizenhét új kulcs: a felhasználó `Visszagörgetés`-t nyomott egy futó másoláson vagy áthelyezésen, a visszacsinálás
+lefutott, és ez az értesítés mondja el, mi sikerült belőle. Legfeljebb három rész, ebben az olvasási sorrendben: egy
+címsor (`doneDeleting` / `doneMovingBack` / `someDeleted` / `someMovedBack` / `stoppedDeleting` / `stoppedMovingBack`,
+mindig csak egy), a `leftBehind` bevezető sor, és alatta felsorolásban a `reason.*` indokok, mindegyik vagy MEGNEVEZI az
+egy elemet (`*.named`), vagy MEGSZÁMOLJA őket (`*.counted`). Plusz a `rollbackConfirm.body`, aminek az angolja bővült.
+Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
+
+- **"Left X alone: …" → a szállított `askCmdr.renameUndo.skipReason.*` keret: `<alany> változatlan maradt: <indok>.`** ·
+  `high`, és két okból kötelező. (1) A `reason.folderNotEmpty.named`/`.counted` angolja BETŰ SZERINT azonos az
+  `askCmdr.renameUndo.skipReason.folderNotEmpty.named`/`.counted` angoljával, tehát a `desktop-i18n-term-consistency`
+  egyetlen magyar alakot vár rájuk; a két kulcs értéke szó szerint a szállított testvéré. (2) Ha csak az a két sor
+  igazodna, a felsorolásban négy `kimaradt` mellett állna egy `változatlan maradt`, amit a felhasználó EGY pillantással
+  lát; a két funkció eltérése viszont sosem kerül egymás mellé. Az értesítés belső egyöntetűsége erősebb szempont, ezért
+  a `drift` / `unverifiable` / `spotTaken` / `folderNotEmpty` mind a nyolc sora ugyanazt a keretet viszi.
+  - **A `leftBehind` bevezető sora marad `kihagyja`**, szó szerint a testvér `rollbackConfirm.bodyUndoByDeleting`-ből
+    (`Amiben a Cmdr nem biztos, azt kihagyja`) · high. A munkamegosztás így is megvan: a bevezető mondja ki az ÍGÉRETET
+    és a következményt (`ezek a helyükön maradtak`), a sorok pedig elemenként az ÁLLAPOTOT (`változatlan maradt`).
+  - **A `drift` sor látszólagos ellentmondása (`változatlan maradt: módosult…`) örökölt, és feloldható**: a
+    `változatlan` a VISSZAGÖRGETÉSRE vonatkozik (a Cmdr nem nyúlt hozzá), a `módosult` pedig arra, ami korábban történt
+    vele. Pontosan így él a szállított `askCmdr.renameUndo.skipReason.drift.named` is
+    (`A {name} változatlan maradt: az átnevezés után módosult.`), tehát a keret ezt az olvasatot már elbírja.
+  - ❌ NEM `békén hagyja` / `érintetlenül hagyja`: mindkettő értelmes magyar, de a `hu` pile egyikre sem ad egyetlen
+    találatot sem.
+- **A visszatétel igéje az EREDMÉNY-sorokban `visszahelyez`, a FOLYAMAT-sorokban marad `visszavitel`** · macOS Finder
+  `PE130` Tier 1 (`^0 elem visszahelyezése nem sikerült.`), a testvér `fileOperations.trash.undone`
+  (`{countText} fájl visszahelyezve.`), és az en `@key` kifejezetten ezt a testvért kéri · high. A katalógus
+  folyamatszövegei ugyanennek a visszagörgetésnek a futása közben `visszavitel`-t mondanak
+  (`transferProgress.titleReversalMovingBack` = `A fájl visszavitele…`, `queue.row.reversalMovingBack`,
+  `rollbackConfirm.bodyUndoByMovingBack` = `Ez visszaviszi a fájlokat oda, ahonnan jöttek.`), és ez a kettősség
+  MEGMARAD: a `visz` a mozgásra utal (miközben tart), a `helyez` a végállapotra (amikor megérkezett), és a magyar ezt a
+  két aspektust külön szóval mondja. Gyakorlati bizonyíték is van rá: a `visszavisz` `-va/-ve` igeneve (`visszavíve`)
+  egy értesítésben olvashatatlan, a `visszahelyezve` viszont pont a katalógus bevett eredményalakja.
+  - Ezzel a „Put back” családnak három tagja van, mindegyik más művelet: `visszaállítva` = a RÉGI NÉV visszaadása
+    (`askCmdr.renameUndo.*`), `visszahelyezve` = a Kukából és a visszagörgetésből való visszatétel
+    (`fileOperations.trash.undone`, `cancelRollback.*`), `visszavitel` = a visszagörgetés futó folyamata. Lásd fentebb:
+    § A Kuka-értesítés két gombja.
+- **"Removed" → `eltávolítva`, sosem `törölve`** · a szótár `remove → eltávolítás` sora, és ugyanaz az érv, ami a
+  kilépés-visszaszámláló "clears away" → `eltávolít` döntésénél: az értesítés megnyugtatás, nem szabad, hogy „a Cmdr
+  fájlt töröl” villanjon fel benne · high. Az angol is szándékosan `Removed`-et mond, miközben a megerősítő párbeszéd
+  `deletes`-t.
+- **A „the N items” (teljes) kontra „N items” (részleges) szembeállítást a MONDATSZERKEZET hordozza, nem névelő** ·
+  high. A `done*` pár `A Cmdr mindent eltávolított, amit létrehozott: {countText} elem.` /
+  `A Cmdr mindent visszahelyezett: {countText} elem.` alakot kap (kimondott `mindent` = véglegesség, plusz a cselekvő
+  megnevezése), a `some*` pár puszta igeneves számlálás: `{countText} elem eltávolítva.` /
+  `{countText} elem visszahelyezve.`
+  - ❌ NEM `Mind a(z) {countText} elem eltávolítva`: `count = 1` esetén `Mind az 1 elem …` lesz belőle, ami nem magyar.
+    A `mind a(z)` + `{countText}` szerkezet minden ilyen kulcsban ez a csapda; a `mindent` + kettőspontos szám elkerüli.
+  - A `done*` sorok megtartják a minősítést (`amit létrehozott`): a puszta `A Cmdr mindent eltávolított.` ijesztő, mert
+    nem mondja meg, MIT.
+- **"Stopped after …ing" → `{countText} elem <művelet>e után leállítva.`** · a `leállítás` a szótár stop-szava
+  (`transferProgress.rollbackTooltip` = `Leállítás, és minden eddig kiírt fájl törlése`), a birtokos igenévi szerkezet
+  pedig a macOS `^0 elem visszahelyezése` mintája · high. `The rest are still there.` → `A többi ott maradt.`;
+  `The rest stayed where the move put them.` → `A többi ott maradt, ahová az áthelyezés vitte.` (`áthelyezés` = a szótár
+  `move` szava).
+- **"it changed" → `módosult`** · macOS Tier 1 (`A(z) „%@” fájl nem módosult a közelmúltban.`) · high. NEM
+  `megváltozott`: a pile-ban a fájlra vonatkozó alak a `módosul`.
+- **"Cmdr couldn''t check whether …" → `a Cmdr nem tudta ellenőrizni, hogy …`** · az `ellenőriz` a katalógus szava
+  (`transferProgress.scanTitleCopy` = `Ellenőrzés a másolás előtt…`), a `nem sikerült`/`nem tudta` a nyugodt hangnem
+  bevett alakja · high. Szándékosan NEM a `Nem sikerült megerősíteni, hogy …` család
+  (`fileOperations.mkdir.timeoutMessage`): az angol itt `check`-et mond, nem `confirm`-ot, és a két fogalom külön él a
+  katalógusban.
+- **"something else now sits where it came from" → `már valami más van ott, ahonnan jött.`** · a `valami más` a testvér
+  `transferProgress.foregroundBusyToast` szava (`Itt valami más van nyitva.`), az `ott, ahonnan jött` pedig szó szerint
+  a `rollbackConfirm.bodyUndoByMovingBack` fordulata (`oda, ahonnan jöttek`) · high.
+- **"Couldn''t undo {name}" → `A(z) „{name}” visszagörgetése nem sikerült.`** · macOS Finder `PE130` Tier 1 a
+  mondatformára (`A(z) „^1” visszahelyezése nem sikerült.` / `^0 elem visszahelyezése nem sikerült.`) · high. Az angol
+  itt a köznyelvibb `undo`-t mondja, a magyar mégis a szótár `visszagörgetés` szavát viszi: a katalógus per-ELEM
+  kimenetele már `Visszagörgetve` (`operationLog.outcome.rolledBack`), tehát az egy elemre vonatkozó visszagörgetés már
+  bevett, a `visszavonás` pedig a katalógusban egy MŰVELETRE vonatkozik, nem egy fájlra. A második mondat a testvér
+  `fileOperations.trash.undoUnavailable` szerkezetét viszi (`Lehet, hogy … a meghajtójuk nincs csatlakoztatva`), a
+  `csak olvasható` pedig a szótár szava, macOS Tier 1 (`egy csak olvasható köteten van`).
+- **A `named` és a `counted` ág UGYANAZT a szerkezetet viszi, csak az alany más** · high. A `{countText} elem` alany
+  magyarul EGYES számban egyeztet, ezért az állítmány mindkét ágban `változatlan maradt`; a kettőspont utáni indoklás
+  viszont TÖBBES számú igét kaphat a számláló ágban (`… változatlan maradt: módosultak, …`), mert ott már a halmazra
+  utalunk vissza. Ez nem lazaság: pontosan ezt csinálja a szállított `askCmdr.renameUndo.skipReason.drift.counted`
+  (`… változatlan maradt: az átnevezés után módosultak.`). Így a számláló ágnak nincs szüksége kitett `ezek` névmásra
+  sem.
+- **Mérlegelés, nem forrás: `put it there` → `odatette`** · tentative. A pile egyik forrásában sincs erre alak. Az
+  `odatesz` azért nyert, mert MÁSOLÁSRA és ÁTHELYEZÉSRE is igaz (az `odamásolta` csak az egyikre), és a `kiírta`
+  (`transferProgress.rollbackTooltip` `kiírt fájl`) mappára nem áll, az `item` pedig itt mappát is jelent.
+- **`{name}` sosem kap ragot**: alanyi pozícióban áll, ahol a magyar nem kér toldalékot, és ahol az angol köznevet is
+  mond (`the folder {name}`), a köznév áll utána és az visel minden ragot (`A {name} mappa változatlan maradt`). Ugyanaz
+  az elv, mint a `queue.row.reversalInFolder` `a(z) {folder} mappában` sorában.
+  - **Örökölt eltérés a házi formától**: ez a keret `A {name}`-et ír, nem a katalógus szokásos `A(z) „{name}”` alakját
+    (névelőválasztás + idézőjel). A `folderNotEmpty` pár betű szerint kötött a szállított
+    `askCmdr.renameUndo.skipReason.*`-hoz, tehát az `A(z)`-re javítás csak a KÉT család EGYÜTTES átírásával mehet,
+    különben a `desktop-i18n-term-consistency` figyelmeztet. Amíg ez nem történik meg, itt a szállított alak marad.
+- **`rollbackConfirm.body`**: az angol egy harmadik mondattal bővült, ami betű szerint azonos a `bodyUndoByDeleting`
+  záró mondatával (`Cmdr skips anything it isn''t sure about, so a few may stay behind.`), ezért a magyar is szó szerint
+  annak a farkát veszi át (`Amiben a Cmdr nem biztos, azt kihagyja, szóval maradhat belőlük egy-kettő.`). Az első két
+  mondat változatlan marad. Így a négy `rollbackConfirm` törzsszöveg egyetlen ígéretet mond, egyetlen megfogalmazásban.
+- Mind a tizennyolc érték eltér az angoltól, tehát nincs szükség `sameAsSourceJustification`-re. Egyetlen új értékben
+  sincs aposztróf, így az ICU `''` szabálya nem lép be; a `{name}`, `{countText}` és `{count}` mind változatlan.

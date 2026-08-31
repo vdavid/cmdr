@@ -663,9 +663,9 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "这会删除这项操作已经写入的所有文件。被覆盖掉的文件找不回来了。",
+  "fileOperations.rollbackConfirm.body": "这会删除这项操作已经写入的所有文件。被覆盖掉的文件找不回来了。Cmdr 会跳过没有把握的部分，所以可能会剩下一些。",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
   },
   "fileOperations.rollbackConfirm.titleFinish": "要完成这项操作的回滚吗？",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -698,6 +698,74 @@
   "fileOperations.rollbackConfirm.finishRollBack": "完成回滚",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "已删除 Cmdr 写入的全部 {countText} {count, plural, other {个项目}}。",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "5851ac6"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "已将全部 {countText} {count, plural, other {个项目}}放回原处。",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "0126d51"
+  },
+  "fileOperations.cancelRollback.someDeleted": "已删除 {countText} {count, plural, other {个项目}}。",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "已将 {countText} {count, plural, other {个项目}}放回原处。",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "删除 {countText} {count, plural, other {个项目}}后停止了。其余的都还在。",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "把 {countText} {count, plural, other {个项目}}放回原处后停止了。其余的还留在这次移动把它们放到的地方。",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr 会跳过没有把握的部分，所以这些都保持了原样：",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "6b0d9e8"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "保留了 {name}：Cmdr 放好之后它有改动。",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 放好之后它们有改动。",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "保留了 {name}：Cmdr 无法确认它有没有改动。",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 无法确认它们有没有改动。",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "保留了 {name}：它原来的位置现在被别的东西占用了。",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "保留了 {countText} {count, plural, other {个项目}}：它们原来的位置现在被别的东西占用了。",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "保留了文件夹 {name}：里面现在有东西了。",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "保留了 {countText} {count, plural, other {个文件夹}}：里面现在有东西了。",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "Cmdr 没能撤销 {name} 的改动。它所在的驱动器可能未连接，或者是只读的。",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "Cmdr 没能撤销 {countText} {count, plural, other {个项目}}的改动。它们所在的驱动器可能未连接，或者是只读的。",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
   },
   "fileOperations.errorDialog.technicalDetails": "技术详情",
   "@fileOperations.errorDialog.technicalDetails": {

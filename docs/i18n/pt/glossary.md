@@ -1683,3 +1683,103 @@ escreve uma vez só.
 - Não faz falta `sameAsSourceJustification`: os cinco valores se diferenciam do inglês.
 - Varredura pt-PT do lote (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
   `alterar o nome`): zero ocorrências.
+
+## O aviso do que a reversão conseguiu, e o que ela deixou (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`, 2026-08-31)
+
+Depois que a pessoa aperta `Reverter` numa cópia ou movimentação em andamento, um aviso conta o que o desfazer
+conseguiu. Ele tem até três partes: uma manchete, a linha `leftBehind`, e uma lista de motivos (`reason.*`), cada um em
+duas versões: uma que NOMEIA o único item (`*.named`) e outra que os CONTA (`*.counted`). O tom é sempre "o Cmdr fez o
+cuidadoso", nunca desculpa nem alarme.
+
+### As linhas de motivo usam o molde `{name} ficou como está: <motivo>.`
+
+- **Toda linha de motivo tem de satisfazer as TRÊS coisas ao mesmo tempo**: o molde `ficou como está`, a marca `Cmdr`
+  onde o inglês a escreve, e zero concordância com `{name}`. Satisfazer duas e esquecer a terceira é o erro fácil aqui,
+  e `drift.*` é onde as três se apertam mais.
+- **O molde vem inteiro de `askCmdr.renameUndo.skipReason.*`**, que já publica essas mesmas linhas para o desfazer da
+  renomeação · confirmed. O sujeito é o ITEM, e não o Cmdr, então a linha não precisa de sujeito explícito e não cai no
+  indício pt-PT do `você` omitido (§ Variant do `style.md`): quem "ficou" é o arquivo. Começar a linha pelo `{name}` já
+  é prática da casa (`fileExplorer.rename.chainKeptOriginalName`).
+- **`folderNotEmpty.named` e `.counted` TÊM de ser byte a byte iguais às gêmeas do `askCmdr`**
+  (`A pasta {name} ficou como está: agora tem algo dentro.` /
+  `{countText} {count, plural, one {pasta} many {pastas} other {pastas}} ficaram como estão: agora têm algo dentro.`): o
+  inglês das duas famílias é idêntico nessas duas chaves, e o `desktop-i18n-term-consistency` acusa qualquer diferença.
+  ❗ Mexeu numa, mexa na outra. O ramo `one` delas diz `1 pasta ficaram como estão` (o verbo ficou fora do plural na
+  chave original), o que nunca aparece porque `*.counted` só renderiza com contagem ≥ 2; copiar o valor como está vale
+  mais do que consertar a concordância e quebrar o par.
+- **As outras `*.counted` põem a oração inteira nos ramos**, do jeito que o `style.md` § Plurals manda: o verbo
+  (`ficou`/`ficaram`, `mudou`/`mudaram`, `está`/`estão`) concorda com o contado, então tudo se duplica nos três ramos
+  CLDR e `{countText}` vai DENTRO. O ramo `one` é código morto (o inglês garante ≥ 2), mas é obrigatório.
+- **`spotTaken` troca uma palavra só: `ficou ONDE está`** · o inglês também troca de fórmula ali
+  (`Left {name} where it is`, não `alone`), porque esse motivo é sobre o LUGAR (o item não voltou), e não sobre o estado
+  (o item não foi tocado) · high. À primeira vista as cinco linhas continuam o mesmo molde.
+- **`it changed after Cmdr put it there` → `mudou depois que o Cmdr colocou lá`** · high. Três exigências se cruzam
+  nessa oração, e ela é a mais apertada da lista:
+  - **A marca fica.** `Cmdr` é palavra que não se traduz nem se omite (`desktop-i18n-dont-translate` acusa), e aqui ela
+    carrega o sentido: o que segura a mão do Cmdr é o item ter mudado depois que ELE gravou. Sem a marca, a linha só diz
+    que o arquivo mudou em algum momento, e o motivo evapora.
+  - **Nada concorda com `{name}`.** Por isso o objeto de `colocou` fica nulo (objeto nulo é corrente no pt-BR, e o
+    tópico da frase já é o item): um clítico `o`/`a` ou um particípio (`foi colocado`) escolheria um gênero
+    desconhecido. A mesma forma serve ao singular e ao plural, só o verbo do item muda (`mudou`/`mudaram`).
+  - **O molde continua o mesmo** (`{name} ficou como está: …`), como nas irmãs. A irmã `unverifiable` mostra que o molde
+    comporta a marca sem ficar pesado (`o Cmdr não conseguiu verificar se mudou`).
+- **`Cmdr couldn''t check whether it changed` → `o Cmdr não conseguiu verificar se mudou`** · valor já publicado em
+  `askCmdr.renameUndo.skipReason.unverifiable.named` · confirmed. As duas famílias dizem a mesma frase porque o inglês
+  também diz (só o apóstrofo difere entre os arquivos, então o `desktop-i18n-term-consistency` não as pareia sozinho).
+- **`something else now sits where it came from` → `já existe outra coisa no lugar de onde veio`** · `Já existe` é a
+  abertura Tier 1 do Finder pt-BR para o lugar ocupado (`NE73` "An item with the same name already exists in this
+  location." → "Já existe um item com o mesmo nome nesta localização.") e o catálogo já a publica ("Já existe um arquivo
+  com este nome no destino.") · high. O Finder também tem `localização original` (`BU37_V1`/`BU37_V2`), mas o inglês
+  aqui é de propósito coloquial ("where it came from"), então fica `o lugar de onde veio`.
+- **`reason.failed.*` fica FORA do molde**, como no inglês (`Couldn''t undo {name}.` em vez de `Left … alone`): esse
+  motivo não é uma escolha do Cmdr, é o disco recusando, e a linha convida a tentar de novo. `Couldn''t undo` →
+  **`Não foi possível reverter`** (a voz de "couldn't" da seção Error-copy-phrasings + o `reverter` do glossário; o
+  desfazer de UM item é `Revertido` em `operationLog.outcome.rolledBack`, então o verbo é `reverter`, não `desfazer`) ·
+  high. `Its drive` vira **`O disco`** sem possessivo: `dele`/`dela` concordaria com o gênero de `{name}`, que é
+  desconhecido.
+- **`{name}` nunca leva concordância.** Pode ser arquivo ou pasta, então nenhum particípio, adjetivo ou possessivo pode
+  se apoiar nele. Só verbos (que não flexionam em gênero) e preposições sem artigo. A única linha que sabe o gênero é
+  `folderNotEmpty.named`, e só porque o próprio valor escreve `a pasta {name}`.
+
+### As manchetes e a linha que abre a lista
+
+- **O sujeito das manchetes é explícito (`O Cmdr` / `A reversão`).** Sem sujeito, `Apagou {countText} itens…` também se
+  lê como `você apagou`, que é justamente o indício pt-PT listado no `style.md` § Variant. As linhas de motivo não
+  precisam disso porque o sujeito delas é o próprio item.
+- **`removed` e `deleted` viram os dois `apagar`** · `apagar` é o `delete` fixado no glossário e o verbo que a família
+  da reversão já publica (`queue.row.reversalDeleting` "Apagando o que foi criado", `transferProgress.rollbackTooltip`)
+  · high. A terminologia da Microsoft dá `remove` → `remover`, mas no catálogo `Remover` já é tirar uma entrada de uma
+  lista (`Remover {hostName} da lista de servidores?`): usá-lo para arquivos abriria uma costura. O inglês varia
+  (`deletes` no diálogo, `Removed` no aviso); o português não precisa.
+- **`put back` na reversão de uma movimentação → `levar de volta`, não `colocar de volta`** · é o que a própria família
+  já publica: `queue.row.reversalMovingBack` ("Levando os arquivos de volta") e `rollbackConfirm.bodyUndoByMovingBack`
+  ("Isso leva os arquivos de volta para onde estavam") · high. A `@key` do inglês manda usar o mesmo verbo de
+  `fileOperations.trash.undone`, mas isso pressupõe que a língua tenha um verbo só. Em `pt` já são três, e a fronteira
+  agora é de três lados:
+  - `colocar de volta` = tirar do Lixo (macOS Finder `N153.1`, `fileOperations.trash.*`),
+  - `restaurar` = devolver o NOME anterior (`askCmdr.renameUndo.*`),
+  - `levar de volta` = a reversão levar o arquivo ao lugar de origem (`queue.row.reversalMovingBack`,
+    `cancelRollback.doneMovingBack`/`someMovedBack`/`stoppedMovingBack`). Como os ingleses das três famílias são
+    diferentes, o `desktop-i18n-term-consistency` não acusa. ❌ Não achate.
+- **`Stopped after …` → `A reversão parou depois de …`** · `parar` é o verbo do catálogo para interromper trabalho em
+  curso (`queryUi` "Parar a busca", `transferProgress.rollbackTooltip` "Parar e apagar…") e `a reversão` é o substantivo
+  já publicado (`refusalUnexpected`, `rollbackConfirm.finishRollBack`) · high. O sujeito é a reversão, e não a pessoa: o
+  inglês omite o sujeito de propósito para não soar como cobrança.
+- **`The rest` → `O resto`** · já publicado em `operationLog.rollback.partiallyRolledBackNotice` ("deixou o resto como
+  estava") · high. O inglês fecha vago ("still there"); o português nomeia o lugar, porque sem antecedente `lá` fica
+  solto: `O resto continua no destino.` (cópia) e `O resto ficou onde a movimentação deixou.` (movimentação), com
+  `destino` e `movimentação` nos termos da casa.
+- **`leftBehind` repete a promessa dos diálogos, palavra por palavra**: `O Cmdr pula tudo aquilo de que não tem certeza`
+  sai de `rollbackConfirm.bodyUndoByDeleting`, e o fecho é `então estes ficaram onde estão:` (demonstrativo solto, como
+  o inglês, porque a lista abaixo mistura arquivos e pastas) · high. O inglês troca `skips` por `leaves alone` entre o
+  diálogo e o aviso; o português mantém `pular` nos dois, porque a lista embaixo já diz `ficou como está` e um terceiro
+  verbo só somaria ruído.
+- **`rollbackConfirm.body` ganhou a terceira frase dos irmãos, palavra por palavra**:
+  `O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar para trás.`, idêntica a
+  `rollbackConfirm.bodyUndoByDeleting`, porque o inglês das duas é idêntico nessa frase. As duas primeiras frases não
+  mudaram.
+- Varredura pt-PT do lote (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
+  `alterar o nome`, `você` omitido onde o verbo é ambíguo): zero ocorrências. Marcas brasileiras: `arquivos`, `gravou`,
+  `tem certeza`.
+- Nenhum valor leva apóstrofo, então não há `''` no lote. Nenhum `sameAsSourceJustification` é necessário: os 18 valores
+  diferem do inglês.

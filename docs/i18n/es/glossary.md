@@ -1835,3 +1835,91 @@ el nombre anterior.
   artículo ni concordancia, así que cualquier nombre encaja; `en la carpeta {folder}` diría lo mismo pero ocupa más en
   una línea que el label ya comparte con el progreso.
 - No hace falta `sameAsSourceJustification`: los cinco valores se diferencian del inglés.
+
+## El aviso de una reversión que no lo pudo todo (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`, 2026-08-31)
+
+Superficie nueva: el usuario para una copia o un movimiento con `Revertir`, y cuando la reversión termina aparece un
+aviso de hasta tres partes: un titular (lo que la reversión sí consiguió), la línea `leftBehind` (que prepara al
+usuario), y una lista de motivos, cada uno en dos versiones, una que NOMBRA el elemento (`*.named`) y otra que los
+CUENTA (`*.counted`). El tono es siempre "Cmdr hizo lo prudente", nunca una disculpa ni una alarma.
+
+- **La familia calca el molde ya asentado de `askCmdr.renameUndo.skipReason.*`** · las dos superficies son el mismo
+  gesto (deshacer algo y omitir lo que no se puede verificar), y el usuario puede ver las dos, así que los motivos
+  comparten fórmula: `{name} se quedó como está: <motivo>.` / `{countText} elementos se quedaron como están: <motivo>.`
+  · high. Las dos claves de `folderNotEmpty` tienen el MISMO inglés que sus hermanas de `askCmdr`, así que el valor es
+  idéntico palabra por palabra (o salta `i18n-terms`).
+- **"Left {name} alone" → `{name} se quedó como está`; "Left {name} where it is" → `{name} se quedó donde está`** · el
+  inglés distingue los dos casos (no lo tocamos / no lo movimos de sitio) y el español los distingue igual. `se quedó`
+  pone el elemento de sujeto, que es lo que evita el clítico con género · high.
+- **Dos restricciones a la vez: la marca se queda Y nada concuerda con `{name}`.** El elemento puede ser un archivo
+  (masculino) o una carpeta (femenino), y `{name}` llega tal cual del disco, así que ningún clítico, artículo ni
+  participio puede referirse a él; y `Cmdr` es palabra de marca, así que tiene que aparecer literal en el valor
+  (`desktop-i18n-dont-translate` avisa si se cae). Por eso `it changed after Cmdr put it there` no admite ni
+  `lo dejara ahí` (concuerda) ni una reescritura sin la marca (`cambió después de llegar ahí`, que deja la frase
+  diciendo solo que el archivo cambió en algún momento, y ahí se pierde el motivo por el que Cmdr no lo toca). La
+  solución deja el elemento de sujeto del cambio y mete a Cmdr en una subordinada con lugar en vez de objeto:
+  **`cambió después de que Cmdr terminara de escribir ahí`** · `escribir` es el verbo que la familia ya usa para lo que
+  Cmdr deja en el destino (`transferProgress.rollbackTooltip`, "los archivos escritos hasta ahora") y `terminar de` +
+  infinitivo ya está asentado en `operationLog.dialog.finishRollBack` ("Terminar de revertir") · high. La versión
+  `counted` repite la misma fórmula aunque ahí sí se conozca el género (`elementos`), porque las dos se leen seguidas.
+- **"something else now sits where it came from" → `ahora hay otra cosa en su sitio`** · `su sitio` es justo lo que el
+  catálogo ya usa para "el lugar al que pertenece" (`fileOperations.trash.undone`, "devolver … a su sitio"), y sirve
+  igual para uno que para varios, que es lo que permite que `named` y `counted` compartan la segunda mitad. La
+  alternativa `en el lugar del que salió` (de `rollbackConfirm.bodyUndoByMovingBack`) dice lo mismo pero ocupa el doble
+  en una línea de lista · high.
+- **"Couldn't undo {name}" → `Cmdr no pudo revertir {name}`** · este motivo es el único de la lista que NO es una
+  decisión de Cmdr (la unidad dijo que no), y el inglés lo marca rompiendo el molde: frase propia, sin
+  `se quedó como está`. El español rompe igual. `revertir` es el verbo de la función (`operationLog.rollback.*`), y
+  nombrar a Cmdr como sujeto es lo que ya hace `refusalUnexpected` ("Cmdr no pudo iniciar la reversión") · high por
+  consistencia, pero el objeto es nuevo: hasta ahora se revertía una OPERACIÓN, y aquí se revierte un elemento suelto,
+  igual que el inglés estira su "undo {name}". Si una revisión nativa lo ve forzado, la alternativa es
+  `Cmdr no pudo deshacer lo hecho con {name}`, más larga y más vaga.
+- **"Its drive may be disconnected or read-only." → `Puede que su unidad no esté conectada o sea de solo lectura.`** ·
+  la primera mitad es literal de `fileOperations.trash.undoUnavailable` ("que su unidad no esté conectada");
+  `de solo lectura` es macOS `es` (Finder PE45, "el disco es de solo lectura"; AppKit "un volumen de solo lectura") ·
+  high.
+- **"Stopped after …" → `La reversión se detuvo después de …`** · el inglés no tiene sujeto y el español lo necesita, y
+  el sujeto natural es `la reversión`, la palabra que el catálogo ya usa para esta operación
+  (`transferProgress.rollbackUnavailableTooltip`). `detener` es el verbo de macOS `es` para parar una operación
+  ("Detener copia", "Detener"), y Double Commander traduce "Stopped" por "Detenido" · high. macOS `es` no usa `tras` en
+  ninguna de sus 11.676 cadenas, así que la subordinada va con `después de` (2026-08-31).
+- **"The rest are still there." → `El resto sigue ahí.`** y **"The rest stayed where the move put them." →
+  `El resto se quedó donde lo dejó el movimiento.`** · `el resto` (macOS `es`, "el resto de la frase", "Cerrar el resto
+  de pestañas") en vez de `los demás`, que en macOS `es` casi siempre son PERSONAS ("los demás ya no tendrán acceso").
+  El sustantivo de la operación es `el movimiento`, el que ya usa el catálogo (`errors.write.cancelled.title.move`,
+  "Movimiento cancelado"; `queue.failureToast.title`), no `traslado` · high.
+- **"the {countText} items" (titular con artículo determinado) pierde el numeral en la rama `one`.** `el 1 elemento` es
+  agramatical en español, así que la rama `one` dice `Se eliminó el elemento que Cmdr había creado.` y el numeral solo
+  aparece en `many`/`other`. Precedente en el propio catálogo: `transferProgress.titleReversalDeleting` ("Deleting the
+  file it created" → "Eliminando el archivo creado") · high. `desktop-i18n-parity` compara el CONJUNTO de placeholders
+  del valor entero, así que `{countText}` sigue presente y la comprobación pasa.
+- **El artículo determinado es lo único que separa `done*` de `some*`, y hay que conservarlo.** `doneDeleting` /
+  `doneMovingBack` dicen "los {countText} elementos" (fueron todos) y `someDeleted` / `someMovedBack` dicen "{countText}
+  elementos" (solo esos), igual que el inglés con su "the". Si se pierde el artículo, el aviso parcial promete que el
+  destino quedó limpio, que es justo lo que la clave no debe decir · high.
+- **"Cmdr had written" (elementos, no solo archivos) → `que Cmdr había creado`** · aquí `item` incluye las carpetas que
+  la operación hizo, y en español no se "escribe" una carpeta. El catálogo ya usa `crear` para esto
+  (`rollbackConfirm.bodyUndoByDeleting`, "los archivos y carpetas que creó la operación";
+  `transferProgress.titleReversalDeleting`, "los {countText} archivos creados") · high. `escrito` se queda para cuando
+  la fuente habla solo de archivos (`transferProgress.rollbackTooltip`, "los archivos escritos hasta ahora").
+- **Los dos verbos de la reversión no se mezclan nunca**: la reversión de una COPIA `elimina`
+  (`Se eliminaron los … elementos`) y la de un MOVIMIENTO `devuelve … a su sitio`
+  (`Se devolvieron los … elementos a su sitio`). Son los verbos ya asentados (`operationLog.summary.delete`,
+  `fileOperations.trash.undone`), y el aviso nunca los intercambia: el usuario tiene que poder leer del titular si algo
+  se borró o solo volvió a su carpeta · high.
+- **`leftBehind` cierra con dos puntos y nombra el sustantivo**: "Cmdr omite todo aquello de lo que no está seguro, así
+  que estos elementos se quedaron donde están:". La primera mitad es literal de `rollbackConfirm.bodyUndoByDeleting`, y
+  el español añade `elementos` porque un `estos` a secas queda desnudo delante de una lista · high.
+- **`rollbackConfirm.body` recupera la tercera promesa.** El inglés cambió y ahora admite que la reversión puede dejar
+  cosas, así que el valor termina con la misma frase que sus hermanas `bodyUndo*`: "Cmdr omite todo aquello de lo que no
+  está seguro, así que puede que quede alguno." Las tres frases van sueltas (el inglés une las dos primeras con "and");
+  en español se leen mejor separadas · high. `ha escrito` se queda en perfecto compuesto porque la operación sigue en
+  marcha, que es la excepción a la regla del pretérito del `style.md`.
+- **En las claves `*.counted` el verbo va en plural FUERA de las ramas, y la rama `one` no se usa.** Una clave `counted`
+  solo aparece con dos o más (lo dice su `@key.description`), así que el único contenido que cambia por rama es el
+  sustantivo contado, igual que en las hermanas de `askCmdr.renameUndo.skipReason.*`. Es la excepción consciente a la
+  regla del `style.md` de meter la frase entera en las ramas: `folderNotEmpty.counted` tiene que ser idéntica a su
+  hermana de `askCmdr` (mismo inglés), así que arreglar la concordancia de una rama muerta rompería la simetría de la
+  familia sin cambiar ni un píxel en pantalla. Si algún día una `counted` puede valer 1, hay que rehacer las cinco a la
+  vez.
+- No hace falta `sameAsSourceJustification`: los 18 valores difieren del inglés.

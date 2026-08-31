@@ -2083,3 +2083,82 @@ eigen woorden, en meteen ook de kale gebiedende wijs die `style.md` voor knoppen
 - **Overloop nakijken in het bewerkingslogboek.** De dialoogtitel is 45 tekens tegen 25 in het Engels, en de knop
   `Voltooi terugdraaien` is 20 tegen 19, maar die knop vervangt in een lijstrij het veel kortere `Terugdraaien` (12),
   naast het label `Gedeeltelijk teruggedraaid`. Controleer beide tegen de pseudolocale voordat de locale meegaat.
+
+## De terugdraaimelding: wat er weg is, en wat Cmdr met rust liet (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`, 2026-08-31)
+
+Achttien sleutels. De gebruiker heeft een lopende kopie of verplaatsing met `Terugdraaien` afgebroken, en deze melding
+vertelt wat het terugdraaien heeft gered. Cmdr weigert bewust iets te verwijderen of terug te zetten wat het niet kan
+herkennen als het bestand dat het zelf schreef, dus een terugdraaiing mag eerlijk gedeeltelijk uitvallen. De toon is
+overal **Cmdr heeft de zorgvuldige keuze gemaakt**: nooit verontschuldigend, nooit alarmerend, nooit "er ging iets mis".
+
+- **"leave alone" (als Cmdr iets bewust niet aanraakt) → `ongemoeid laten` / `ongemoeid gelaten`** · de al verzonden
+  `askCmdr.renameUndo.skipReason.*`-familie zegt precies dit voor precies deze Engelse zin, en twee van de acht
+  redenregels hieronder dragen zelfs BYTE-IDENTIEK Engels met die familie · high. Niets in de pile kent het register
+  (gecontroleerd op `macOS/`, `gnome-nautilus`, `kde-dolphin`, `xfce-thunar`, `double-commander` en
+  `microsoft-terminology`, 2026-08-31), dus de al verzonden zus is hier de hoogste beschikbare bron.
+  - ❌ NIET `overgeslagen`: dat is in deze catalogus al `Skipped` (`operationLog.outcome.skipped`) én het woord van de
+    bevestiging vooraf (`Cmdr slaat alles over waar het niet zeker van is`). De twee woorden naast elkaar houden is
+    precies wat het Engels doet: `skips` vooraf, `leaves alone` achteraf.
+  - ❌ NIET `met rust gelaten`: warmer, maar gemunt én het zou de melding uiteen laten vallen. Vier bullets met de ene
+    vorm en één met de andere staan in ÉÉN melding onder elkaar; het verschil tussen de twee features ziet niemand ooit
+    naast elkaar. De interne consistentie van de melding wint dus, en dat kan alleen met één vorm overal.
+- **`reason.folderNotEmpty.named`/`.counted` moeten LETTERLIJK gelijk blijven aan
+  `askCmdr.renameUndo.skipReason.folderNotEmpty.named`/`.counted`**
+  (`Map {name} ongemoeid gelaten: er staat nu iets in.` en de getelde zus): het Engels is byte-identiek, dus
+  `desktop-i18n-term-consistency` eist één Nederlandse weergave. Daarom draagt `named` hier `Map {name}` zonder lidwoord
+  en `er staat nu iets in` in plaats van `daar staat nu iets in`. Wijzig ze samen of geen van beide.
+- **"Left {name} where it is" → `{name} laten staan`**, dus NIET `met rust gelaten` · het Engels gebruikt hier een
+  andere vorm dan bij de drie `alone`-redenen, omdat het onderdeel bij een verplaatsing juist op de BESTEMMING blijft in
+  plaats van terug te gaan. `blijven staan` is het gevestigde beeld in deze familie
+  (`rollbackConfirm.bodyUndoByMovingBack`: "dus er kan wat blijven staan") · high.
+- **Elke redenregel is genderloos en getalloos gebouwd, want `{name}` kan een bestand (`het`) of een map (`de`) zijn.**
+  Een voornaamwoord zou dus in de helft van de gevallen fout staan. De uitweg is steeds het voornaamwoordelijk bijwoord,
+  dat voor beide geslachten én beide getallen werkt: `daar is iets aan gewijzigd`, `daar staat nu iets in`,
+  `of daar iets aan gewijzigd is`. ❌ Schrijf hier nooit `het is gewijzigd` of `er staat iets in hem`.
+  - Daarom dragen de `.named`- en de `.counted`-variant van elke reden EXACT dezelfde redenzin en verschillen ze alleen
+    in de kop: zonder voornaamwoord is er niets meer dat met het getal hoeft mee te buigen, dus houdt de getelde variant
+    één `plural`-blok over (het getelde zelfstandig naamwoord) in plaats van drie.
+  - `folderNotEmpty.named` mag wél een lidwoord dragen (`De map {name}`), want het Engels noemt daar zelf het soort
+    onderdeel, en `map` is een de-woord.
+- **"after Cmdr put it there" → `nadat Cmdr er klaar mee was`** · `er … mee` is genderloos en getalloos, waar
+  `nadat Cmdr het daar had neergezet` een geslacht zou kiezen · `tentative`. De plaatsbepaling ("there") valt weg; wat
+  telt is dat de wijziging ná Cmdrs werk kwam, en dat blijft staan.
+- **"Cmdr couldn't check whether it changed" → `Cmdr kon niet controleren of daar iets aan gewijzigd is`** ·
+  `controleren` is het gevestigde werkwoord voor een controle in deze catalogus (`Controleren op wijzigingen`,
+  `Bezig met controleren op conflicten`) en `gewijzigd` het gevestigde deelwoord voor een veranderd bestand
+  (`Laatst gewijzigd`) · high.
+- **"Couldn't undo {name}" → `{name} terugdraaien lukte niet`** · de catalogusbrede weergave van "couldn't X" is
+  `X lukte niet` (`Bundel bewaren lukte niet`, `{volumeName} uitwerpen lukte niet`, `Je notitie toevoegen lukte niet`),
+  en `terugdraaien` is het vastgelegde werkwoord van deze hele familie (Microsoft bevestigt `roll back` →
+  `terugdraaien`) · high. Geen `fout` en geen `mislukt`, volgens de stemregel.
+  - `Its drive may be …` → `De schijf is misschien niet verbonden of alleen-lezen.` · `hun schijf is niet verbonden`
+    staat al in `fileOperations.trash.undoUnavailable`, en `alleen-lezen` is macOS + Microsoft · high. Het lidwoord
+    vervangt het Engelse bezittelijk voornaamwoord, zodat de enkelvouds- en de meervoudsvariant dezelfde zin delen.
+- **De kop van een volledige terugdraaiing begint met `Alles`, niet met het getal.** Het Engels zegt "the {countText}
+  items", maar het Nederlands kan geen bepaald lidwoord vóór een telwoord zetten (`De 1 onderdeel` is fout), dus staat
+  het getal in een bijstelling achter de dubbele punt: `Alles wat Cmdr had geschreven, is verwijderd: {countText} …` en
+  `Alles is teruggezet: {countText} …`. Zo klopt de zin bij élk getal en blijft de belofte ("dit was alles") overeind.
+  De `some*`-broers dragen juist géén `Alles` en beginnen met het deelwoord (`{countText} onderdelen verwijderd.`),
+  precies zoals `operationLog.summary.delete` · high.
+- **`verwijderen` (weghalen) en `terugzetten` (op de oude plek terugbrengen) blijven strikt uit elkaar**, ook in de
+  `Gestopt na het …`-koppen. `terugzetten` is Finders `Put Back` (`fileOperations.trash.undone` gebruikt het al) en
+  `verwijderen` is macOS' `Delete`. ❌ Gebruik `terugdraaien` nooit voor één onderdeel, behalve in `reason.failed.*`,
+  waar het Engels zelf van redenzin naar handelingszin overschakelt.
+- **"The rest are still there" → `De rest staat er nog.`** en **"The rest stayed where the move put them" →
+  `De rest staat nog op de nieuwe plek.`** · `de rest` is enkelvoud in het Nederlands, dus `staat` · high op `de rest`,
+  `tentative` op `op de nieuwe plek`. `waar de verplaatsing ze had neergezet` viel af: een verplaatsing als handelend
+  onderwerp is geen Nederlandse UI-vorm, en `de bestemming` zou technischer klinken dan het Engels.
+- **`rollbackConfirm.body` erft de derde zin letterlijk van `bodyUndoByDeleting`** ("Cmdr slaat alles over waar het niet
+  zeker van is, dus er kan wat achterblijven."), zoals de `@key` vraagt. De eerste twee zinnen blijven ongewijzigd; die
+  waren in de terugdraaironde van 2026-08-13 al beslist.
+- Geen `sameAsSourceJustification` nodig: alle achttien waarden verschillen van het Engels.
+
+REVIEW FLAGS: `nadat Cmdr er klaar mee was` ruilt de plaatsbepaling van het Engels in voor genderneutraliteit; dat is de
+eerste regel om aan een moedertaalspreker voor te leggen. En let op een divergentie die geen check ziet:
+`reason.unverifiable.*` zegt hier `Cmdr kon niet controleren of …`, terwijl de bijna gelijkluidende zus
+`askCmdr.renameUndo.skipReason.unverifiable.*` `Cmdr kon niet nagaan of …` zegt. Het Engels verschilt alleen in de
+apostrof (`couldn''t` tegen `couldn’t`), dus `desktop-i18n-term-consistency` legt de twee nooit naast elkaar. Eén ronde
+die dit paar op `controleren` (het gevestigde woord in deze catalogus) trekt, zou het opruimen.
+
+**Overloop nakijken op de melding.** De redenregels lopen 75–90 tekens tegen 50–60 in het Engels, en
+`reason.failed.counted` is de langste van de achttien. Controleer ze tegen de pseudolocale in een smalle melding.

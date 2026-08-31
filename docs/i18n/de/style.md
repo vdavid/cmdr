@@ -193,6 +193,12 @@ Dateien".
   "Cmdrs" also trips `desktop-i18n-dont-translate` (it scans for the verbatim token "Cmdr").
 - **Length: German is the worst overflow risk of the three** (often 20–35% longer than English, plus long compounds).
   Overflow-check the layout hard against the pseudolocale (`en-XA`); look for clipped buttons, labels, and toasts.
+- **Ein Rückverweis auf `{name}` nimmt das Katalogwort, nie ein Pronomen.** `{name}` trägt einen fremden Dateinamen,
+  also kein Genus, auf das sich „es“/„sie“ stützen könnte. Wo der zweite Satzteil auf das Objekt zurückkommt, steht das
+  Nomen: „Habe {name} unverändert gelassen: **das Objekt** hat sich geändert …“
+  (`fileOperations.cancelRollback.reason.*`), „… ob sich **die Datei** geändert hat“
+  (`askCmdr.renameUndo.skipReason.*`). Possessive („sein alter Ort“) fallen aus demselben Grund weg; nimm den Artikel
+  („am alten Ort“). Belege und die Wortwahl: `glossary.md` § Der Toast nach einem abgebrochenen Vorgang.
 - **Case-marked placeholders are a trap.** A `{name}` that lands in a genitive/dative slot can't be inflected by the
   catalog. Restructure the sentence so the placeholder stays nominative, or carries its own preposition.
 - **German case marking is what breaks aria containment** (the shared rule: `../../guides/i18n-translation.md` § An

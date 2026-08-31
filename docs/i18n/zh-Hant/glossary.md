@@ -737,6 +737,70 @@ already ships; nothing was coined.
 - All five values differ from English, so none needs a `sameAsSourceJustification`. No apostrophes in the batch, so
   ICU's `''` rule doesn't bite here.
 
+### What a cancelled rollback reports (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`, 2026-08-31)
+
+The toast shown after a Rollback finishes: a headline, then `leftBehind`, then a bulleted list of `reason.*` lines. It
+is written as **Cmdr did the careful thing**, never as an apology, so no `失敗` and no `錯誤` anywhere in the batch
+(`style.md` § Voice and tone). The whole family is anchored on `askCmdr.renameUndo.skipReason.*`, which already solved
+this exact shape for the rename undo.
+
+- **"Left … alone" (a skipped item)** · `維持原樣` · lifted from `fileOperations.rollbackConfirm.leaveAsIs` and the
+  whole `askCmdr.renameUndo.skipReason.*` family · `high`. It carries "Left {name} alone" AND "Left {name} where it is"
+  (`spotTaken`), because Chinese needs no separate word for the second: staying put IS 維持原樣.
+- **The named-vs-counted pair shape** · `{name} 維持原樣：它…。` and
+  `有 {countText} 個{count, plural, other {項目}}維持原樣：它們…。` · `high`. Copied verbatim from
+  `askCmdr.renameUndo.skipReason.*.named` / `.counted`, so the two reason lists read as one feature. The leading `有`
+  and the switch from `它` to `它們` are the only differences between the halves; keep it that way, and never collapse
+  the pair into one plural (Chinese has only `other`, so the display choice can't live in the plural).
+- **`folderNotEmpty.named` / `.counted` must stay byte-identical with their `askCmdr.renameUndo.skipReason` twins** ·
+  `資料夾 {name} 維持原樣：它裡面現在有東西了。` and
+  `有 {countText} 個{count, plural, other {資料夾}}維持原樣：它們裡面現在有東西了。` · `high`. The English of all four
+  is one and the same string, so `i18n-terms` would warn on two renderings inside the locale. Reword neither alone.
+- **"it changed after Cmdr put it there" (`drift`)** · `它在 Cmdr 放好之後有過更動` · `high`. Same frame as the rename
+  twin's `它在重新命名之後有過更動`, with the rename swapped for `Cmdr 放好`. `放好` covers both branches this key
+  serves (a copy WROTE the file, a move CARRIED it there) with one verb, which no more literal rendering does.
+- **"something else now sits where it came from" (`spotTaken`)** · `它原本的位置已經被別的東西佔走了` · `high`.
+  Deliberately parallel to `askCmdr.renameUndo.skipReason.nameTaken` (`它原本的名稱又被佔走了`): the two reasons are the
+  same event on different axes, a taken NAME and a taken PLACE, so they share the `原本的…被…佔走了` frame with `名稱` →
+  `位置`. `佔走` is not in the pile (Apple's only `佔` is `佔用空間`, disk usage), but it is already shipped in this
+  catalog for the name case, and the sibling catalog outranks the pile on which rendering this app uses (`style.md` §
+  "This is NOT a character conversion").
+- **"Couldn't undo {name}" (`failed`)** · `無法復原 {name}。` · `high`. English says "undo", but the act is the
+  ROLLBACK, so it takes `復原`, not the `還原` this catalog spends on Undo (see § Progress, rollback, and destructive
+  actions). `無法` + verb is the house failure shape. **"Its drive may be disconnected or read-only"** →
+  `它所在的磁碟機可能沒有連接，或是唯讀的。`, reusing the drive clause `fileOperations.trash.undoUnavailable` already
+  ships (`它們所在的磁碟機沒有連接`) and the catalog's `唯讀` (`errors.listing.readOnly.*`).
+- **`leftBehind`** · `Cmdr 沒有把握的東西都會維持原樣，所以這些留了下來：` · `high`. Keeps the promise the Rollback
+  confirmations make, word for word where it can: `沒有把握` and `留下` both come from
+  `fileOperations.rollbackConfirm.bodyUndoByDeleting` (`Cmdr 會略過沒有把握的部分，所以可能會留下一些。`). Full-width
+  colon, because a bulleted list follows.
+- **"Removed …" in the headlines** · `刪除`, never `移除` · `high`. Apple splits them (`移除` = take out of a list or a
+  container, `刪除` = destroy), and this really destroys files. It also has to agree with what the user was just
+  promised and just watched: `fileOperations.rollbackConfirm.bodyUndoByDeleting` (`這會刪除…`),
+  `transferProgress.rollbackTooltip` (`停止，並刪除…`), and `queue.row.reversalDeleting` (`正在刪除這項操作建立的東西`).
+- **"Put … back"** · `放回原處` · `high`. The verb `fileOperations.trash.undone` already uses (`已把 … 放回原處。`), and
+  `queue.row.reversalMovingBack` (`正在把檔案放回原處`), so the toast closes the sentence its own progress row opened.
+- ⚠️ **English's definite article is what tells `doneX` from `someX`, and Chinese has no article.** `doneDeleting` /
+  `doneMovingBack` (the undo managed everything) differ from `someDeleted` / `someMovedBack` (some things stayed) only
+  by "the" in English. Rendered literally both pairs collapse into one Chinese sentence, and the clean-case toast would
+  stop promising the destination is clear. The fix: the `done*` pair names the SET by who made it, the `some*` pair just
+  counts. `已刪除 Cmdr 寫入的 {countText} 個項目。` and `已把 Cmdr 移動過的 {countText} 個項目放回原處。` against
+  `已刪除 {countText} 個項目。` and `已把 {countText} 個項目放回原處。` `Cmdr 寫入的` is English's own wording in
+  `doneDeleting`; `Cmdr 移動過的` extends the same device to the move headline, which English didn't need. ❌ Don't
+  "simplify" the `done*` pair down to the `some*` wording: that erases the distinction the four keys exist for.
+- **"The rest are still there"** · `其餘的還留在目標位置。` (after a cancelled copy) and **"The rest stayed where the
+  move put them"** · `其餘的還留在移動過去的地方。` · `high`. `其餘的` is Apple's own word in almost this sentence
+  (`無法拷貝一個或多個項目。是否要略過並拷貝其餘的項目？`, Finder zh-TW). ❗ Both need an explicit PLACE, because a bare
+  "still there" has no Chinese equivalent that couldn't be read as `原處` = _back where they came from_, which is the
+  opposite of what happened. `目標位置` is the glossary's destination term and already user-facing
+  (`transferProgress.stallWaitingDestination`).
+- **`fileOperations.rollbackConfirm.body` gained the family's third sentence** ·
+  `這會刪除這項操作到目前為止寫入的每一個檔案。被它取代掉的檔案回不來了。Cmdr 會略過沒有把握的部分，所以可能會留下一些。`
+  · `high`. The added sentence is `bodyUndoByDeleting`'s verbatim, which is the point: all four `rollbackConfirm.body*`
+  keys make one promise in one wording, and `leftBehind` echoes it when the promise pays out.
+- All 18 values differ from English, so none needs a `sameAsSourceJustification`. Chinese needs no apostrophe, so the
+  doubled `''` in the English sources has no counterpart here.
+
 ## Notes
 
 - **AP-TW's ellipsis glyph is `⋯` (U+22EF)** in strings quoted throughout this file (`連接伺服器⋯`). That's Apple's

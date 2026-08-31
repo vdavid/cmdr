@@ -666,9 +666,9 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Isso apaga todos os arquivos que a operação gravou até agora. O que foi substituído não volta.",
+  "fileOperations.rollbackConfirm.body": "Isso apaga todos os arquivos que a operação gravou até agora. O que foi substituído não volta. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar para trás.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Concluir esta reversão?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -701,6 +701,74 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Concluir a reversão",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {O Cmdr apagou o {countText} item que tinha gravado} many {O Cmdr apagou os {countText} itens que tinha gravado} other {O Cmdr apagou os {countText} itens que tinha gravado}}.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "5851ac6"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {O Cmdr levou o {countText} item de volta} many {O Cmdr levou os {countText} itens de volta} other {O Cmdr levou os {countText} itens de volta}}.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "0126d51"
+  },
+  "fileOperations.cancelRollback.someDeleted": "O Cmdr apagou {countText} {count, plural, one {item} many {itens} other {itens}}.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "O Cmdr levou {countText} {count, plural, one {item} many {itens} other {itens}} de volta.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "A reversão parou depois de apagar {countText} {count, plural, one {item} many {itens} other {itens}}. O resto continua no destino.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "A reversão parou depois de levar {countText} {count, plural, one {item} many {itens} other {itens}} de volta. O resto ficou onde a movimentação deixou.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.leftBehind": "O Cmdr pula tudo aquilo de que não tem certeza, então estes ficaram onde estão:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "6b0d9e8"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "{name} ficou como está: mudou depois que o Cmdr colocou lá.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {{countText} item ficou como está: mudou depois que o Cmdr colocou lá} many {{countText} itens ficaram como estão: mudaram depois que o Cmdr colocou lá} other {{countText} itens ficaram como estão: mudaram depois que o Cmdr colocou lá}}.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} ficou como está: o Cmdr não conseguiu verificar se mudou.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {{countText} item ficou como está: o Cmdr não conseguiu verificar se mudou} many {{countText} itens ficaram como estão: o Cmdr não conseguiu verificar se mudaram} other {{countText} itens ficaram como estão: o Cmdr não conseguiu verificar se mudaram}}.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} ficou onde está: já existe outra coisa no lugar de onde veio.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {{countText} item ficou onde está: já existe outra coisa no lugar de onde veio} many {{countText} itens ficaram onde estão: já existe outra coisa no lugar de onde vieram} other {{countText} itens ficaram onde estão: já existe outra coisa no lugar de onde vieram}}.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "A pasta {name} ficou como está: agora tem algo dentro.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {pasta} many {pastas} other {pastas}} ficaram como estão: agora têm algo dentro.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "Não foi possível reverter {name}. O disco pode estar desconectado ou ser somente leitura.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "Não foi possível reverter {countText} {count, plural, one {item} many {itens} other {itens}}. O disco pode estar desconectado ou ser somente leitura.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
   },
   "fileOperations.errorDialog.technicalDetails": "Detalhes técnicos",
   "@fileOperations.errorDialog.technicalDetails": {

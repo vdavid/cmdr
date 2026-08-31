@@ -634,9 +634,19 @@ tests. Use the two-helper API in `helpers.ts`:
 - **`dismissOverlay(tauriPage)`** — close the topmost open overlay.
 - **`escapeOverlayUntilGone(tauriPage, selector)`** — close ONE named overlay, re-pressing Escape until it unmounts.
 - **`expectAndDismissToast(tauriPage, substring)`** — assert a toast containing `substring` appeared, then dismiss it.
+- **`dismissAllToasts(tauriPage)`** — clear every open toast without asserting anything.
 
-There is no separate "just dismiss toasts" helper on purpose: tests that trigger a user-facing toast should care that it
-appeared (the wording IS the contract), not just clean up after it.
+**Reach for `expectAndDismissToast` by default**: a test that triggers a user-facing toast should care that it appeared,
+because the wording IS the contract. `dismissAllToasts` is the narrow exception, for a toast whose CONTENT the test
+deliberately doesn't pin. `conflict-move.spec.ts`'s move-rollback spec is the worked example: how many items the
+reversal carries home depends on what the move had processed before the clash paused it, and it may be none, in which
+case there is no toast at all. Asserting there would pin a number the test's own comment says isn't pinnable. When you
+use it, say in a comment which spec DOES own the wording assertion (`conflict-edge-cases.spec.ts`, for that pair).
+
+**A cancelled transfer now raises a toast, so any spec that presses Rollback on a running one owes the guard
+something.** The reversal summarizes itself (`$lib/file-operations/transfer/cancel-rollback-toast.ts`), so a spec that
+cancels with Rollback and then ends leaks a toast into the `afterEach`. Match the CLEAN wording's stable half
+(`Cmdr had written`) rather than its count, which varies with how far the copy got.
 
 **A SOFT SHEET is not covered by either helper, and neither is the leak guard.** `dismissOverlay` walks a fixed list
 (`.ui-popover`, `.palette-overlay`, `.search-overlay`, `.modal-overlay`, `.volume-dropdown`) and the `afterEach` leak

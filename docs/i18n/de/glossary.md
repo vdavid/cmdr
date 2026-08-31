@@ -1753,3 +1753,62 @@ zurückkommt: der alte Name.
   Breite in einer Zeile, die sich das Label schon mit dem Fortschritt teilt. Kein Artikel, kein Kasus am Namen, also
   passt jeder Name.
 - Kein `sameAsSourceJustification` nötig: alle fünf Werte unterscheiden sich vom Englischen.
+
+## Der Toast nach einem abgebrochenen Vorgang: was die Rücknahme geschafft hat (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`, 2026-08-31)
+
+Neue Oberfläche: Der Nutzer hat ein Kopieren oder Bewegen mit `Rollback` abgebrochen, die Rücknahme ist durch, und ein
+Toast berichtet. Er besteht aus bis zu drei Teilen: einer Überschrift, der Erwartungszeile `leftBehind` und einer
+Aufzählung von `reason.*`-Zeilen. Grundton: Cmdr hat das Umsichtige getan. Nie entschuldigend, nie alarmierend.
+
+- **`Left {name} alone` → `Habe {name} unverändert gelassen`** · `unverändert lassen` ist macOS-Wortlaut (AppKit
+  `Document.json`, „Wenn du die Datei unverändert lassen und mit einer Kopie arbeiten möchtest …“), und der Katalog
+  fährt es schon in der Schwesterfamilie `askCmdr.renameUndo.skipReason.*` · `high`. Die ganze Aufzählung erbt damit
+  eine Stimme von der Umbenennen-Rücknahme, die derselbe Nutzer schon kennt.
+- **Ein Satz, der auf `{name}` zurückverweist, nimmt das Katalogwort, nie ein Pronomen** · „das Objekt hat sich
+  geändert“, „ob sich das Objekt geändert hat“. `{name}` trägt kein Genus, das der Katalog kennen könnte, also wäre „es
+  hat sich geändert“ eine Wette auf den Dateinamen. Die Umbenennen-Familie löst es genauso, dort mit „die Datei“ ·
+  `high`. Konvention steht auch in `style.md` § Notes.
+- **`item` → `Objekt`, auch wo die Umbenennen-Familie `Datei` sagt** · die Rücknahme entfernt auch angelegte Ordner, und
+  `Objekt` ist das Katalogwort für „Datei oder Ordner“ (Glossar `item → Objekt`, macOS Finder „Ausgewählte Objekte“) ·
+  `high`.
+- **Löschen und Zurücklegen bleiben zwei Wörter** · `Removed …` → `… entfernt` (Katalog `remove → entfernen`,
+  durchgehend: „Aus Liste entfernen“, „entfernt Cmdr zuerst die ältesten Vorgänge“), `Put … back` → `… zurückgelegt`
+  (macOS Finder `N153.1` „Zurücklegen“, wie `fileOperations.trash.undone`) · `high`. `löschen` bleibt dem englischen
+  `delete` in den Bestätigungstexten (`rollbackConfirm.body`, `bodyUndoByDeleting`); so trennt das Deutsche die drei
+  Verben genauso wie die Quelle.
+- **Das bestimmte „the N items“ trägt im Deutschen ein Doppelpunkt-Anhang, kein Artikel** · „1.234 Objekte entfernt:
+  alles, was Cmdr geschrieben hatte.“ gegenüber dem Geschwister „1.234 Objekte entfernt.“ Ein Artikel scheidet aus, weil
+  die `one`-Verzweigung „Das 1 Objekt“ ergäbe; der Anhang sagt die Vollständigkeit, um die es geht · `high`. Ebenso
+  `doneMovingBack`: „… zurückgelegt: alles ist wieder da, wo es war.“, im Ton von `refusalAlreadyRolledBack` („Das ist
+  schon wieder so wie vorher.“).
+- **`Stopped after removing …` → `Gestoppt, nachdem Cmdr … entfernt hat`** · verbal, nicht nominal („Nach 12 entfernten
+  Objekten gestoppt“ wäre die substantivlastige Fassung, vor der `style.md` § Voice and tone warnt); `stoppen` ist das
+  gesetzte Wort für `stop` (macOS Finder „Kopieren stoppen“), nie `anhalten` (= Pause) · `high`. Die Zählphrase steht im
+  Nominativ („12 Objekte“), weil keine Präposition ein Dativ-`-n` verlangt.
+- **`Left {name} where it is` → `Habe {name} am neuen Ort gelassen`, und der Grund heißt
+  `am alten Ort liegt jetzt etwas anderes`** · `Ort` statt `Platz`: im Katalog und im Finder ist `Platz` der
+  SPEICHERPLATZ („nicht genügend freier Platz“, „Kein Platz mehr“), während macOS für den Ablageort `Ort` sagt (Finder
+  `PE24`, „an spezielle Orte innerhalb des Zieles abgelegt“) · `high`. Das Paar neuer/alter Ort kommt ohne Possessiv
+  aus, also ohne Genus-Wette auf `{name}`.
+- **`after Cmdr put it there` → `seit Cmdr es dort abgelegt hat`** · `ablegen`/`legen` ist Finders Verb fürs Hinlegen an
+  einen Ort (`PE24`; „Legt Objekte in den Papierkorb“) · `high`. `seit` statt „nachdem“, passend zum Geschwister
+  `askCmdr.renameUndo.skipReason.drift.*` („seit dem Umbenennen“).
+- **Die beiden `folderNotEmpty`-Werte sind WORTGLEICH mit
+  `askCmdr.renameUndo.skipReason.folderNotEmpty.named`/`.counted`** · das Englische ist bei diesem Paar zeichengleich,
+  also würde jede andere Formulierung `desktop-i18n-term-consistency` als neue Divergenz zählen (`de` steht bei
+  `notYetReviewed: 8`, und die Zahl geht nur runter) · `high`. Wer eine der beiden Familien anfasst, ändert beide oder
+  keine.
+- **`leftBehind` sagt `lässt alles unverändert`, die Bestätigungstexte sagen `überspringt alles`** · Absicht: das
+  Englische wechselt hier selbst von `skips` (Dialog vor dem Rollback) zu `leaves alone` (Toast danach), und im
+  Deutschen bindet `lässt … unverändert` die Zeile an ihre eigenen Aufzählungspunkte („Habe … unverändert gelassen“) ·
+  `high`.
+- **`rollbackConfirm.body` bekommt den dritten Satz ohne `davon`** · die Schwester `bodyUndoByDeleting` endet auf „also
+  bleibt womöglich einiges davon übrig“, hier aber stünde direkt davor „ersetzte Dateien kommen nicht zurück“, und
+  `davon` würde sich an die ersetzten Dateien hängen und das Gegenteil versprechen. Also „… also bleibt womöglich
+  einiges übrig.“ · `high`.
+- **`Couldn''t undo {name}` → `Cmdr konnte {name} nicht rückgängig machen`** · `rückgängig machen` ist das gesetzte
+  Prosa-Verb fürs Zurücknehmen eines Vorgangs (§ Operation log), und das Deutsche braucht ein Subjekt, wo das Englische
+  keins hat; `Cmdr` steht schon in `refusalUnexpected` („Cmdr konnte das Rollback nicht starten.“) · `high`. Der Hinweis
+  danach nennt das Laufwerk ohne Possessiv („Vielleicht ist das Laufwerk nicht verbunden oder schreibgeschützt.“,
+  Glossar `read-only → schreibgeschützt`), im Ton von `trash.undoUnavailable`.
+- Kein `sameAsSourceJustification` nötig: alle 18 Werte unterscheiden sich vom Englischen.

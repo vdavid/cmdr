@@ -663,9 +663,9 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "這會刪除這項操作到目前為止寫入的每一個檔案。被它取代掉的檔案回不來了。",
+  "fileOperations.rollbackConfirm.body": "這會刪除這項操作到目前為止寫入的每一個檔案。被它取代掉的檔案回不來了。Cmdr 會略過沒有把握的部分，所以可能會留下一些。",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
   },
   "fileOperations.rollbackConfirm.titleFinish": "要完成這項操作的復原嗎？",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -698,6 +698,74 @@
   "fileOperations.rollbackConfirm.finishRollBack": "完成復原",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "已刪除 Cmdr 寫入的 {countText} 個{count, plural, other {項目}}。",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "5851ac6"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "已把 Cmdr 移動過的 {countText} 個{count, plural, other {項目}}放回原處。",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "0126d51"
+  },
+  "fileOperations.cancelRollback.someDeleted": "已刪除 {countText} 個{count, plural, other {項目}}。",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "已把 {countText} 個{count, plural, other {項目}}放回原處。",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "刪除 {countText} 個{count, plural, other {項目}}之後停止了。其餘的還留在目標位置。",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "把 {countText} 個{count, plural, other {項目}}放回原處之後停止了。其餘的還留在移動過去的地方。",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr 沒有把握的東西都會維持原樣，所以這些留了下來：",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "6b0d9e8"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "{name} 維持原樣：它在 Cmdr 放好之後有過更動。",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們在 Cmdr 放好之後有過更動。",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} 維持原樣：Cmdr 無法確認它有沒有更動過。",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：Cmdr 無法確認它們有沒有更動過。",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} 維持原樣：它原本的位置已經被別的東西佔走了。",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們原本的位置已經被別的東西佔走了。",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "資料夾 {name} 維持原樣：它裡面現在有東西了。",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "有 {countText} 個{count, plural, other {資料夾}}維持原樣：它們裡面現在有東西了。",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "無法復原 {name}。它所在的磁碟機可能沒有連接，或是唯讀的。",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "無法復原 {countText} 個{count, plural, other {項目}}。它們所在的磁碟機可能沒有連接，或是唯讀的。",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
   },
   "fileOperations.errorDialog.technicalDetails": "技術詳細資訊",
   "@fileOperations.errorDialog.technicalDetails": {

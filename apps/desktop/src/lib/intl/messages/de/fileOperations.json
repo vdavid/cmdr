@@ -668,9 +668,9 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Das löscht alle Dateien, die der Vorgang bisher geschrieben hat. Ersetzte Dateien kommen nicht zurück.",
+  "fileOperations.rollbackConfirm.body": "Das löscht alle Dateien, die der Vorgang bisher geschrieben hat, und ersetzte Dateien kommen nicht zurück. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges übrig.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Rollback abschließen?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -703,6 +703,74 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Rollback abschließen",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "{countText} {count, plural, one {Objekt} other {Objekte}} entfernt: alles, was Cmdr geschrieben hatte.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "5851ac6"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "{countText} {count, plural, one {Objekt} other {Objekte}} zurückgelegt: alles ist wieder da, wo es war.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "0126d51"
+  },
+  "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {Objekt} other {Objekte}} entfernt.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "{countText} {count, plural, one {Objekt} other {Objekte}} zurückgelegt.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "Gestoppt, nachdem Cmdr {countText} {count, plural, one {Objekt} other {Objekte}} entfernt hat. Der Rest ist noch da.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "Gestoppt, nachdem Cmdr {countText} {count, plural, one {Objekt} other {Objekte}} zurückgelegt hat. Der Rest liegt noch dort, wohin der Vorgang ihn bewegt hat.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr lässt alles unverändert, bei dem es sich nicht sicher ist. Das hier ist deshalb geblieben, wo es ist:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "6b0d9e8"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "Habe {name} unverändert gelassen: das Objekt hat sich geändert, seit Cmdr es dort abgelegt hat.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: sie haben sich geändert, seit Cmdr sie dort abgelegt hat.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "Habe {name} unverändert gelassen: Cmdr konnte nicht prüfen, ob sich das Objekt geändert hat.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: Cmdr konnte nicht prüfen, ob sie sich geändert haben.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "Habe {name} am neuen Ort gelassen: am alten Ort liegt jetzt etwas anderes.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} am neuen Ort gelassen: an ihren alten Orten liegt jetzt etwas anderes.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Habe den Ordner {name} unverändert gelassen: es liegt jetzt etwas darin.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Habe {countText} {count, plural, one {Ordner} other {Ordner}} unverändert gelassen: es liegt jetzt etwas darin.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "Cmdr konnte {name} nicht rückgängig machen. Vielleicht ist das Laufwerk nicht verbunden oder schreibgeschützt.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "Cmdr konnte {countText} {count, plural, one {Objekt} other {Objekte}} nicht rückgängig machen. Vielleicht ist ihr Laufwerk nicht verbunden oder schreibgeschützt.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische Details",
   "@fileOperations.errorDialog.technicalDetails": {

@@ -142,6 +142,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   slots (`msgstr[0]` = "%'d mappa kijelölve" AND `msgstr[1]` = "%'d mappa kijelölve", never "mappák"). This is the
   single biggest plural gotcha for Hungarian.
 - No grammatical gender, which removes a whole class of agreement problems.
+- **A numeral subject takes a SINGULAR predicate; a later clause may go plural.** `3 elem változatlan maradt`, never
+  `3 elem változatlanok maradtak`. Once the sentence moves past the colon (or into a second clause) it refers to the
+  set, so a plural verb is fine and idiomatic there: `3 elem változatlan maradt: módosultak, …`. Shipped example:
+  `askCmdr.renameUndo.skipReason.drift.counted`.
 
 ## Notes and decisions
 
@@ -199,6 +203,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Menübe irányításkor a `-ból/-ből` alak a természetes**: `küldj új jelentést a Súgó menüből`. A macOS ugyanezt önöző
   felszólításként írja (`válassza az Apple menü > Rendszerbeállítások elemet`), a menü NEVE onnan jön, a MONDAT a miénk,
   tehát tegező marad.
+- **Ha két funkció ANGOLJA betű szerint azonos, a magyarnak is egynek kell lennie** (`desktop-i18n-term-consistency`),
+  és ilyenkor a szállított alak nyer, még ha egy újabb kulcscsalád szebb keretet találna is. Ha a kényszerített alak
+  csak a család EGY sorát érintené, az egész családot igazítsd hozzá: az olvasó egy felsorolásban látja őket egyszerre,
+  a két funkció eltérését viszont soha. Eset és érvelés: `glossary.md` § A megszakított visszagörgetés
+  eredményértesítése.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

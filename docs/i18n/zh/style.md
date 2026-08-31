@@ -205,6 +205,13 @@ inflection.
   brand words (Cmdr, macOS) as-is.
 - **Each script is its own pass.** Never machine-convert Simplified↔Traditional (one-to-many mappings + divergent
   terms); cross-check each variant against its own macOS source.
+- **Undo/skip reason lists share one sentence shape: `保留了 X：原因。`** Every family that undoes something and then
+  reports what it deliberately left alone (`askCmdr.renameUndo.skipReason.*`, `fileOperations.cancelRollback.reason.*`)
+  renders its bulleted reasons this way, with a bare `{name}` (no `“…”`, unlike prose strings) and a full-width colon.
+  Break the shape only for a reason that is NOT a deliberate choice (the `failed.*` arms, where the drive turned the
+  undo down). Some of these keys carry byte-identical English across families, so `desktop-i18n-term-consistency`
+  requires identical values; per-key evidence and the pairs that are locked together: `glossary.md`
+  § 回滚结束后的提示条.
 - **Quotation marks:** this catalog quotes filenames with `“…”`, following macOS zh-CN. Traditional uses corner brackets
   instead, which is one more reason a converted catalog reads wrong; its rule is in `../zh-Hant/style.md`.
 

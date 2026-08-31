@@ -1898,3 +1898,61 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   Việt không biến hình nên tên thư mục nào cũng vừa, và không cần thêm dấu ngoặc kép.
 - Cả năm giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
   không phát sinh `''` của ICU; `{folder}` giữ nguyên.
+
+## Toast sau khi hoàn tác thao tác đang chạy (`fileOperations.cancelRollback.*` + `rollbackConfirm.body`, 2026-08-31)
+
+Người dùng bấm `Hoàn tác` trên một lần sao chép/di chuyển đang chạy, lượt hoàn tác chạy xong, và toast này báo nó làm
+được tới đâu. Toast xếp tối đa ba phần: một dòng tiêu đề (`doneDeleting` / `doneMovingBack` / `someDeleted` /
+`someMovedBack` / `stoppedDeleting` / `stoppedMovingBack`), rồi `leftBehind`, rồi danh sách gạch đầu dòng `reason.*`.
+Giọng xuyên suốt: **Cmdr đã làm phần cẩn thận**, không xin lỗi, không báo động.
+
+- **Cả bộ `reason.*` đi theo họ `Giữ nguyên` của `askCmdr.renameUndo.skipReason.*`** · tiếng Anh của hai bộ gần như
+  trùng nhau ("Left {name} alone: …"), cùng một khái niệm (Cmdr từ chối động vào thứ nó không đối chiếu được), nên hai
+  bộ phải đọc như một tính năng · `high`. Hai khóa `folderNotEmpty.*` có chuỗi tiếng Anh **giống hệt** bên `renameUndo`,
+  nên giá trị vi dùng lại **nguyên văn**: `Giữ nguyên thư mục {name}: bây giờ trong đó đã có thứ gì.` và
+  `Giữ nguyên {countText} {count, plural, other {thư mục}}: bây giờ trong đó đã có thứ gì.` Sửa thì sửa cả hai bộ.
+- **`mục`, không phải `tệp`, trong bộ này** · tiếng Anh của `cancelRollback` đếm "item" (lượt hoàn tác xóa cả thư mục nó
+  đã tạo), còn `renameUndo` đếm "file". Đây là khác biệt duy nhất giữa hai bộ, đừng san phẳng · `high`.
+- **`Left X where it is` gộp vào `Giữ nguyên`, không tách riêng** · tiếng Anh đổi "alone" → "where it is" ở
+  `spotTaken.*` để nhắc rằng mục vẫn nằm ở đích. `Giữ nguyên` trong tiếng Việt đã mang sẵn nghĩa "để yên tại chỗ", nên
+  tách ra sẽ dựng lên một phân biệt tiếng Việt không cần; vế sau (`nơi nó xuất phát bây giờ đã có thứ khác`) đã nói rõ
+  chỗ nào bị chiếm · `high`.
+- **"something else now sits where it came from" → `nơi nó xuất phát bây giờ đã có thứ khác`** · `nơi … xuất phát` lấy
+  nguyên của `fileOperations.rollbackConfirm.bodyUndoByMovingBack` (`đưa các tệp về lại nơi chúng xuất phát`), còn
+  `đã có thứ khác` là cách nói của `renameUndo.skipReason.nameTaken` (`tên cũ đã có thứ khác dùng`). Finder `vi` có đúng
+  tình huống này ở `PE1.1` (`Vị trí mà bạn đang khôi phục “^0” đến đã có một mục với cùng tên.`), nhưng tiếng Anh của
+  Cmdr cố tình nói mơ hồ ("something else"), nên giữ `thứ khác` thay vì `một mục với cùng tên` · `high`.
+- **"after Cmdr put it there" → `sau khi Cmdr đưa nó tới đó`** · động từ `đưa` là gốc chung của cả họ hoàn tác trong
+  catalog (`đưa trở lại`, `Đang đưa các tệp về chỗ cũ`), và nó phủ được cả hai thao tác mà câu này dùng chung: bản sao
+  thì Cmdr ghi tệp tới đó, bản di chuyển thì Cmdr mang tệp tới đó. ❌ Đừng viết `ghi nó vào đó`: chỉ đúng cho lượt sao
+  chép · `high`.
+- **`failed.*` cố ý ra khỏi họ `Giữ nguyên`** · năm lý do kia là lựa chọn có chủ ý, riêng lý do này thì không (ổ đĩa từ
+  chối), nên tiếng Anh đổi khung câu và tiếng Việt cũng đổi: `Không hoàn tác được {name}.` Bỏ chủ ngữ đúng như tiếng
+  Anh, và `không … được` giữ giọng nhẹ, tránh hẳn `lỗi`/`thất bại` · `high`. Vế sau lấy chữ có sẵn: `chưa được kết nối`
+  (`fileOperations.trash.undoUnavailable`) và `chỉ đọc` (`errors.volume.readOnly` = `Ổ đĩa này là chỉ đọc.`), nên viết
+  `Ổ đĩa của nó có thể chưa được kết nối hoặc là chỉ đọc.`
+- **`leftBehind` mở bằng `giữ nguyên`, không bằng `bỏ qua`** · ba khóa `rollbackConfirm.bodyUndo*` hứa
+  `Cmdr bỏ qua những gì nó không chắc chắn`, và tiếng Anh ở đây đổi "skips" → "leaves alone". Tiếng Việt đổi theo, giữ
+  nguyên phần lõi `những gì nó không chắc chắn` để hai bề mặt vẫn là một lời hứa, còn `giữ nguyên` thì nối thẳng vào các
+  gạch đầu dòng bên dưới (mỗi dòng cũng mở bằng `Giữ nguyên`) · `high`. Trọn câu:
+  `Cmdr giữ nguyên những gì nó không chắc chắn, nên những mục sau vẫn ở nguyên chỗ:`
+- **Mạo từ "trọn vẹn" của tiếng Anh → `cả`** · `doneDeleting`/`doneMovingBack` nói "the N items" để hàm ý tất cả, còn
+  `someDeleted`/`someMovedBack` cố tình bỏ mạo từ vì còn sót lại. Tiếng Việt không có mạo từ, nên khác biệt đó nằm ở
+  `cả`: `Đã đưa trở lại cả {countText} mục.` (trọn vẹn) so với `Đã đưa trở lại {countText} mục.` (một phần). Catalog đã
+  dùng đúng chữ này cho "all N" ở `askCmdr.renameUndo.undoJob` (`Hoàn tác cả {countText} lô`) · `high`. ❌ Đừng thêm
+  `tất cả`: dài hơn và đọc như một nút chọn hết.
+- **"put back" (bộ move) → `đưa trở lại`**, đúng động từ Tier 1 của `fileOperations.trash.undone` · `high`. Nó cùng gốc
+  `đưa` với tiêu đề đang chạy mà người dùng vừa nhìn (`Đang đưa các tệp về chỗ cũ`), nên hai màn hình khớp nhau.
+- **"Stopped after …" → `Đã dừng sau khi …`** · `Dừng` là động từ dừng của macOS `vi` (Finder `Dừng xóa`, `Dừng nén`,
+  `MT14`/`AR30`) · `high`. Đây là trần thuật một việc đã xảy ra nên dùng `Đã dừng`, khác với nhãn nút `Dừng lại` đã chốt
+  cho tooltip hoàn tác. Không đụng `Đã hủy` (Cancel).
+- **"The rest" → `Các mục còn lại`** · Finder `vi` có đúng cụm này (`bỏ qua chúng và sao chép các mục còn lại`), AppKit
+  có `phần còn lại của câu` · `high`. `stoppedMovingBack` nói rõ chúng nằm đâu:
+  `Các mục còn lại vẫn ở nơi thao tác di chuyển đã đưa chúng tới.`
+- **`rollbackConfirm.body` viết lại** · tiếng Anh nay thêm lời hứa thứ ba, nên bản vi nối vế "ghi đè" vào câu đầu và
+  mượn **nguyên văn** câu đuôi của `bodyUndoByDeleting`:
+  `Cmdr bỏ qua những gì nó không chắc chắn, nên có thể còn sót lại vài thứ.` Bốn khóa `body*` là bốn biến thể của một
+  hộp thoại, nên phần đuôi chung phải giống nhau từng chữ · `high`.
+- Cả 18 giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
+  không phát sinh `''` của ICU; mọi `{countText}` / `{count}` / `{name}` giữ nguyên, và mỗi `plural` chỉ có một nhánh
+  `other`.

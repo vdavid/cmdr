@@ -215,6 +215,11 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   `fileOperations.trash.undonePartial` gained a `{skipped}` driver for exactly this reason, so its second half now
   accords normally : « … ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other
   {éléments sont restés}} dans la corbeille. »
+- **❌ Jamais d'article défini devant `{countText}`.** L'anglais écrit sans broncher « the {countText} items », y
+  compris quand la branche `one` donne « the 1 item » ; « les 1 élément » est simplement faux. Quand la source marque la
+  totalité par `the`, portez-la par `tout` et sortez le nombre de la portée de l'article : « Cmdr a supprimé tout ce
+  qu'il avait écrit : {countText} éléments. » Exemple travaillé : `glossary.md` § La notification après un retour en
+  arrière interrompu.
 - Write `many` identical to `other` unless the message really formats compact/large values: plain integers never select
   `many`, but parity and the plural check both want the branch. This is what the whole `fr` set does.
 

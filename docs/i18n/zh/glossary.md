@@ -1682,3 +1682,72 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   有意不同**，那两个 locale 写的是 `in „{folder}“` / `en “{folder}”`。以后若决定各 locale 统一加引号，简体按 style
   guide 用 `“…”`。
 - 五条值都与英文不同，无需 `sameAsSourceJustification`。这批里没有撇号，ICU 的 `''` 规则用不上。
+
+## 回滚结束后的提示条
+
+覆盖 `fileOperations.cancelRollback.*` 与改写后的 `fileOperations.rollbackConfirm.body`（2026-08-31）。
+
+用户在拷贝／移动进行中按了「回滚」，撤销跑完后弹出的提示条：一句标题 + `leftBehind` 铺垫 + 一串 `reason.*`
+项目符号。全批的调子是「Cmdr 做了稳妥的处理」，不道歉、不报警。词汇全部锚在目录已有的回滚家族和
+`askCmdr.renameUndo.skipReason.*` 上，没有新造词。
+
+- **`reason.*` 整组照搬 `askCmdr.renameUndo.skipReason.*` 的句式 `保留了 X：原因。`**
+  ·两个家族是同一个东西的两次实现（撤销重命名 / 撤销传输），英文的句式也一模一样，中文跟着走，读者一眼就认出是同一类清单 ·
+  `high`。`{name}` **不加引号**，与孪生家族一致（目录别处的 `“{name}”` 用在散文句子里，这里是项目符号清单）。
+- ⚠️ **`reason.folderNotEmpty.named` / `.counted` 必须与 `askCmdr.renameUndo.skipReason.folderNotEmpty.*` 逐字相同**
+  （`保留了文件夹 {name}：里面现在有东西了。` /
+  `保留了 {countText} {count, plural, other {个文件夹}}：里面现在有东西了。`）·这两条的**英文原串完全相同**，`desktop-i18n-term-consistency`
+  会把同串异译报成分歧，而 `zh` 现在只有 `notYetReviewed` 计数（只降不升）·
+  `confirmed`。改一条就要同时改另一条。其余几条英文的撇号写法不同（`’` vs
+  `''`），归一化后不同组，所以不受这条约束，但仍然照抄了同一句式。
+- **「item」→ `个项目`**（不是
+  `个文件`）· 撤销会连同新建的文件夹一起删，所以这一批数的是「项目」；孪生的 renameUndo 只动文件，才写 `个文件` ·
+  `high`。沿用目录里 `{countText} {count, plural, other {个项目}}`
+  的量词写法（`fileOperations.trash.undonePartial`、`fileOperations.delete.overflowMore`）。
+- **「remove / delete the files it wrote」→ `删除`，不是 `移除`** · 整个回滚家族已经定死了 `删除`
+  （`rollbackConfirm.bodyUndoByDeleting`「这会删除这项操作创建的文件和文件夹」、`queue.row.reversalDeleting`
+  「正在删除新建的内容」、`transferProgress.rollbackTooltip`）· `confirmed`。`移除`
+  留给「从列表／压缩包里拿掉」（`fileOperations.delete.archiveWarningRest`）。
+- **「Put … back」→ `放回原处`** · 按 `fileOperations.trash.undone`（`已将 … 放回原处。`）走，macOS Finder `Put Back` →
+  `放回原处` 是 Tier 1，而且英文这里和废纸篓提示条用的是同一个动词 · `high`。
+- ⚠️ **待收敛：`挪回` vs `放回`。** 同一次移动回滚里，队列行写
+  `正在把文件挪回原处`（`queue.row.reversalMovingBack`），确认框写
+  `这会把文件挪回原来的位置`（`rollbackConfirm.bodyUndoByMovingBack`），而这批提示条写
+  `放回原处`。两者中文都通顺，语义也一样，英文那边三处也都是 "put/move
+  back"，所以检查抓不到。下一次做这个家族时建议统一到 `放回原处`（它是 Finder 的 Tier
+  1 词，而且明说「回到原来的位置」）· `tentative`。
+- **「the …」（doneDeleting／doneMovingBack 里那个定冠词）→ `全部`** ·英文靠 `the` 把「干净收场」和只报部分的
+  `someDeleted`／`someMovedBack` 分开，中文没有冠词，用 `全部` 扛这个对比：`已删除 Cmdr 写入的全部 …` vs `已删除 …` ·
+  `high`。⚠️ 别给 `some*` 那两条加 `全部`，它们后面紧跟着 `leftBehind`，说「全部」就是撒谎。
+- **「The rest are still there」→ `其余的都还在。`**
+  · 有意不点地点：这一条同时服务拷贝和压缩，说「目标位置」会把压缩包的情形讲拧；`都还在` 已经把「没被删掉」说清楚了 ·
+  `high`。macOS Finder 的 `剩下的项目`（「你要跳过它们并拷贝剩下的项目吗？」）是「the rest」的 Tier
+  1 依据，这里取了目录自己的 `其余的`（`operationLog.rollback.partiallyRolledBackNotice`
+  「其余的保持原样」）以保持家族一致。
+- **「The rest stayed where the move put them」→ `其余的还留在这次移动把它们放到的地方。`**
+  ·这一条必须点地点（移动的目的地），否则和「回到原处」混淆；`这次移动` 取自
+  `operationLog.rollback.refusalDirectoryMerge`（「这次移动把文件夹并入了…」）· `high`
+- **「Stopped after …ing N items」→ `…N 个项目后停止了。`**
+  · 中文把从句放前面是常规语序，英文的 "Stopped" 前置只是英文的重心习惯；`停止` 是回滚家族已定的词（macOS Finder `PE107`
+  = `停止`，见本文件回滚确认框一节）· `high`
+- **`leftBehind` 逐字复用 `跳过没有把握的部分`** · `Cmdr 会跳过没有把握的部分，所以这些都保持了原样：` ·前半句取自
+  `rollbackConfirm.bodyUndoByDeleting`，后半句的 `保持原样` 取自 `rollbackConfirm.leaveAsIs` ·
+  `confirmed`。这句的作用是**先给期待再列原因**，所以承诺必须和确认框一字不差，否则用户会觉得是两回事。结尾用全角冒号
+  `：`，因为下面接的是项目符号清单。
+- **「something else now sits where it came from」→ `它原来的位置现在被别的东西占用了。`** · `已被占用` 是 macOS Finder
+  Tier 1（`名称“^0”已被占用，请选取其他名称。`），`位置` 也是 Finder 的词（`此位置是只读的。`）· `high`。与孪生的
+  `renameUndo.skipReason.nameTaken`（`它原来的名称已被占用。`）形成 `名称`／`位置` 的对照，正是两个家族的差别所在。保留
+  `别的东西` 是为了跟英文一样具体、口语。
+- **「Couldn't undo {name}」→ `Cmdr 没能撤销 {name} 的改动。`** · 这一条**有意跳出** `保留了 X：`
+  的句式，因为它不是 Cmdr 的主动选择，而是驱动器不给写 · `high`。`撤销` 而不是 `回滚`：英文写的是 undo，而且 `回滚`
+  在目录里是**整项操作**的动作，安到单个文件上不通（见本文件近义词排查 `undo 撤销` / `roll back 回滚`）。加 `的改动`
+  是因为「撤销一个文件」在中文里不成话。`没能` 而不是 `无法`：英文暗示重试可能成功，`没能` 说的是这一次没做成，目录里
+  `fileOperations.archivePassword.retryMessage`（`这个密码没能解锁 …`）已经是这个用法。全句不出现「错误」「失败」。
+- **「Its drive may be disconnected or read-only」→ `它所在的驱动器可能未连接，或者是只读的。`** ·
+  `它们所在的驱动器未连接` 逐字取自 `fileOperations.trash.undoUnavailable`；`只读` 是 macOS
+  Finder 的词（`此位置是只读的。`）· `high`
+- **`rollbackConfirm.body` 重译**（英文加了第三句，并改口称 `Cmdr`）· 前两句保留原有译文，第三句逐字接上
+  `bodyUndoByDeleting` 的 `Cmdr 会跳过没有把握的部分，所以可能会剩下一些。`
+  —— 英文那一句在两个键里**完全相同**，中文也就必须相同 · `confirmed`
+- 18 条值都与英文不同，无需 `sameAsSourceJustification`。中文侧没有撇号，ICU 的 `''` 规则用不上； `{count}` 只写 `other`
+  分支（中文 CLDR 只有这一类）。

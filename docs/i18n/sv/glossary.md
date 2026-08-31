@@ -1866,3 +1866,68 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   Inga citattecken behövs: svenskan sätter ingen kasusändelse på namnet, så vilket mappnamn som helst passar.
 - Inga `sameAsSourceJustification` · alla fem värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
   så ICU:s dubblering `''` blir aldrig aktuell. `{folder}` står oförändrad.
+
+## Toasten efter en ångrad kopia eller flytt (2026-08-31; de 18 `fileOperations.cancelRollback.*` + omskrivna `rollbackConfirm.body`)
+
+Toasten som rapporterar vad ångringen hann med: en rubrik (hel, delvis, eller stoppad ångring), raden som sätter
+förväntan, och en punktlista med ett skäl per rad. Raderna är nästan en kopia av `askCmdr.renameUndo.skipReason.*`, och
+tre av dem har teckenidentisk engelska, så `i18n-terms` kräver identisk svenska. Nya beslut:
+
+- **”Left {name} alone” → `{name} lämnades som den är`** · redan satt i katalogen
+  (`askCmdr.renameUndo.skipReason.drift`/`.unverifiable`/`.folderNotEmpty`), och `folderNotEmpty.named`/`.counted` samt
+  `unverifiable.named` har dessutom exakt samma engelska sträng som sina renameUndo-syskon, så de värdena är kopierade
+  tecken för tecken. macOS `sv` belägger verbet i samma betydelse: ”Om du vill lämna filen orörd och jobba med en kopia
+  klickar du på Duplicera” · `high`. ❌ Inte `Lät {name} vara` (som annars hade knutit an till knappen `Låt det vara`):
+  det hade gett en engelsk mening två svenska namn.
+- **”Left {name} where it is” (`spotTaken`) → `{name} lämnades där den ligger`** · engelskan byter medvetet ram just
+  här, eftersom ”lämna i fred” vid en flytt betyder att objektet blir kvar på det NYA stället; svenskan byter med ·
+  `high`.
+- **”something else now sits where it came from” → `något annat finns nu där den kom ifrån`** · `kom ifrån` är
+  katalogens egen formulering för ursprungsplatsen (`rollbackConfirm.bodyUndoByMovingBack`: ”dit de kom ifrån”) ·
+  `high`. ❌ Inte `platsen den kom ifrån är upptagen`, trots att macOS `sv` belägger `upptaget` om ett taget namn
+  (”minst ett av dem med namnet ”^0” är upptaget”): den formen låter likadant som grannskälet `nameTaken` i
+  `askCmdr.renameUndo` (”det gamla namnet är taget igen”), och två olika skäl ska gå att skilja åt. `finns nu` i stället
+  för `ligger nu` bara för att inte säga `ligger` två gånger i samma rad.
+- **”it changed after Cmdr put it there” → `den ändrades efter att Cmdr lade den där`** · systerraden
+  `askCmdr.renameUndo.skipReason.drift.named` säger `den ändrades efter namnbytet`, så bara bestämningen byts ut.
+  `lade den där` håller sig i `lägga`-familjen (`Lade tillbaka …`) och täcker både kopian som skrev filen och flytten
+  som bar den dit · `high`.
+- **”Removed …” (det ångringen tar bort) → `Raderade …`** · `radera` är katalogens ord för att ta bort filer från disk
+  (style.md § delete), och alla tre `rollbackConfirm.bodyUndo*` säger redan `raderar` om exakt den här handlingen ·
+  `high`. ❌ Inte `Tog bort`: `ta bort` är reserverat för att plocka bort något ur en lista. Samma svenska som
+  `operationLog.summary.delete` (”Raderade {countText} objekt”), fast engelskan där säger `Deleted`: svenskan skiljer
+  inte på `remove` och `delete` när det gäller filer på disk.
+- **”Put … back” → `Lade tillbaka …`** · `fileOperations.trash.undone` säger redan `Lade tillbaka` om samma handling,
+  och Finders menypost `Lägg tillbaka` är källan (§ Papperskorgs-toasten) · `high`.
+- **Bestämd totalitet (”the {countText} items”) → `allt …: {countText} objekt`** · svenskan kan inte sätta bestämd
+  artikel framför en `*Text`-placeholder, så hela och delvisa rubriker skiljs åt med `allt` plus kolon:
+  `Raderade allt Cmdr hade skrivit: {countText} objekt` mot `Raderade {countText} objekt`, och
+  `Lade tillbaka allt: {countText} objekt` mot `Lade tillbaka {countText} objekt`. Konventionen och varför artikeln inte
+  går: style.md § Plurals · `high`.
+- **”Stopped after removing …” → `Stoppade efter att ha raderat …`** · `Stoppa` är det satta verbet för att stoppa
+  själva ångringen (§ Frågan som stoppar en kö-rad; macOS Finder ”stoppa processen och behålla en delvis kopia”) ·
+  `high`. Subjektslöst preteritum som resten av toastfamiljen.
+- **”The rest are still there.” → `Resten ligger kvar.`, ”The rest stayed where the move put them.” →
+  `Resten ligger kvar där flytten lade dem.`** · `ligga kvar` är katalogens ord för något som blir stående
+  (`fileExplorer.pane.directConnection*`, `trash.undonePartial`), och `flytten` är katalogens substantiv för själva
+  flyttåtgärden (”Enheten kopplades från under flytten”) · `high`. Den korta varianten räcker för kopian: `ligga kvar`
+  säger redan ”där de är”, och det är bara flytten som behöver peka ut vilken plats.
+- **`leftBehind`: ”so these stayed where they are:” → `så det här blev kvar:`** · första halvan är ordagrant
+  `rollbackConfirm.body`/`bodyUndo*` (`Cmdr hoppar över allt som är osäkert`) och andra halvan är deras egen svans
+  (`så en del kan bli kvar`) i preteritum, så toasten läses som samma utfästelse som dialogen användaren nyss läste ·
+  `high`. ❌ Inte `så det här ligger kvar där det är:` — pleonasm, och raden står direkt under `Resten ligger kvar`.
+- **”Couldn't undo {name}.” → `Det gick inte att ångra {name}.`** · katalogens standardram för något som inte gick
+  igenom (`errors.eject.*`, `fileExplorer.pane.directConnection*`), och den lägger inte skulden på Cmdr när det är
+  enheten som sa nej · `high`. `Cmdr kunde inte ångra …` (som `askCmdr.renameUndo.refusedBatches`) är också gångbart,
+  men där har engelskan `Cmdr` utsatt och här inte.
+- **”Its drive may be disconnected or read-only.” → `Enheten den ligger på kan vara frånkopplad eller skrivskyddad.`** ·
+  `enhet`, `koppla från` → `frånkopplad` och `skrivskyddad` är alla satta sedan tidigare · `high`. `dess enhet` finns i
+  katalogen (`trash.undoUnavailable`), men blir styltigt först i en mening.
+- **`rollbackConfirm.body` fick engelskans nya tredje löfte** · andra meningen är nu teckenidentisk med
+  `bodyUndoByDeleting` (”Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.”), enligt style.md § Notes and
+  decisions om att syskonvarianter delar ram. Kommat före `och` står kvar: båda satserna är långa nog att läsaren
+  behöver pausen.
+- `item` → `objekt` och `folder` → `mapp`/`mappar` oförändrat. `objekt` och verben böjs inte för numerus, så båda
+  ICU-grenarna blir identiska; de skrivs ut ändå.
+- Inga `sameAsSourceJustification` · alla 18 värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
+  så ICU:s dubblering `''` blir aldrig aktuell.

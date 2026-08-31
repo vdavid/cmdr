@@ -216,6 +216,17 @@ Vietnamese has no grammatical number, so one form covers all counts.
   side by side; Cmdr does.
 - **"Error" as a bare status cell is `Sự cố`; as a diagnostic prefix it's `Lỗi:`.** The `@key.description` of each key
   says which surface it is. Both are deliberate; see `glossary.md`.
+- **An English article that means "all of them" becomes `cả`.** English separates "Removed **the** N items" (everything)
+  from "Removed N items" (only some) with an article alone; Vietnamese has no article, so two sibling strings collapse
+  into one. Put `cả` in the complete one (`Đã đưa trở lại cả {countText} mục.`) and leave the partial one bare. ❌ Not
+  `tất cả`: longer, and it reads like a select-all button. Example: `fileOperations.cancelRollback.done*` against
+  `.some*`.
+- **A named/counted reason set shares one sentence frame with its sibling set in another feature.** When two features
+  list the same reasons (the item changed, Cmdr couldn't check, the folder has contents now, the drive turned it down),
+  English writes them nearly identically, so Vietnamese has to read as one feature: reuse the `Giữ nguyên {name}: …` /
+  `Giữ nguyên {countText} … : …` frame, and where the English strings are IDENTICAL the Vietnamese values must match
+  word for word. The two sets today: `askCmdr.renameUndo.skipReason.*` and `fileOperations.cancelRollback.reason.*`;
+  details and the `mục` vs `tệp` line: `glossary.md` § Toast sau khi hoàn tác thao tác đang chạy.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

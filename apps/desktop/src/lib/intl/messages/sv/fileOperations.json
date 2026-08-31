@@ -665,9 +665,9 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Det här raderar alla filer som åtgärden har skrivit hittills. Filer som den har skrivit över kommer inte tillbaka.",
+  "fileOperations.rollbackConfirm.body": "Det här raderar alla filer som åtgärden har skrivit hittills, och filer som den har skrivit över kommer inte tillbaka. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Ångra klart den här åtgärden?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -700,6 +700,74 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Ångra klart",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "Raderade allt Cmdr hade skrivit: {countText} {count, plural, one {objekt} other {objekt}}.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "5851ac6"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "Lade tillbaka allt: {countText} {count, plural, one {objekt} other {objekt}}.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "0126d51"
+  },
+  "fileOperations.cancelRollback.someDeleted": "Raderade {countText} {count, plural, one {objekt} other {objekt}}.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "Lade tillbaka {countText} {count, plural, one {objekt} other {objekt}}.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "Stoppade efter att ha raderat {countText} {count, plural, one {objekt} other {objekt}}. Resten ligger kvar.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "Stoppade efter att ha lagt tillbaka {countText} {count, plural, one {objekt} other {objekt}}. Resten ligger kvar där flytten lade dem.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr hoppar över allt som är osäkert, så det här blev kvar:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "6b0d9e8"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "{name} lämnades som den är: den ändrades efter att Cmdr lade den där.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades som de är: de ändrades efter att Cmdr lade dem där.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} lämnades som den är: Cmdr kunde inte kontrollera om den ändrats.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades som de är: Cmdr kunde inte kontrollera om de ändrats.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} lämnades där den ligger: något annat finns nu där den kom ifrån.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades där de ligger: något annat finns nu där de kom ifrån.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Mappen {name} lämnades som den är: det ligger något i den nu.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {mapp} other {mappar}} lämnades som de är: det ligger något i dem nu.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "Det gick inte att ångra {name}. Enheten den ligger på kan vara frånkopplad eller skrivskyddad.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "Det gick inte att ångra {countText} {count, plural, one {objekt} other {objekt}}. Enheten de ligger på kan vara frånkopplad eller skrivskyddad.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
   },
   "fileOperations.errorDialog.technicalDetails": "Tekniska detaljer",
   "@fileOperations.errorDialog.technicalDetails": {
