@@ -853,9 +853,7 @@ test.describe('Rolling an operation back from the history dialog', () => {
     // ❌ A parked reversal must not read as a finished one: the row says so, and
     // the button has turned into its own undo.
     expect(await rowControlLabels(page, opId)).toContain('Resume')
-    await expect
-      .poll(() => rowStatusText(page, opId), { timeout: 5000 })
-      .toContain('Paused')
+    await expect.poll(() => rowStatusText(page, opId), { timeout: 5000 }).toContain('Paused')
 
     await pressRowControl(page, opId, 'Resume')
 

@@ -95,10 +95,7 @@ function journalRow(over: Partial<JournalRow> = {}): JournalRow {
 
 /** The registry row for the reversal itself: a real managed operation that
  *  reverses the copy above. */
-function reversalSnapshot(
-  operationId: string,
-  status: OperationSnapshot['status'] = 'running',
-): OperationSnapshot {
+function reversalSnapshot(operationId: string, status: OperationSnapshot['status'] = 'running'): OperationSnapshot {
   return {
     operationId,
     operationType: 'delete',
@@ -144,9 +141,8 @@ async function mountDialog(entries: JournalRow[]): Promise<void> {
 /** A control by its visible words, scoped to the row's action area. */
 function control(label: string): HTMLButtonElement | null {
   return (
-    [...target.querySelectorAll<HTMLButtonElement>('.op-row button')].find(
-      (b) => b.textContent.trim() === label,
-    ) ?? null
+    [...target.querySelectorAll<HTMLButtonElement>('.op-row button')].find((b) => b.textContent.trim() === label) ??
+    null
   )
 }
 
@@ -218,9 +214,8 @@ describe('a rolling-back row offers to pause and to stop', () => {
       event: {
         operationId: 'inv-1',
         operationType: 'delete',
-        filesDone: 2,
-        bytesDone: 0,
-        rolledBack: 'no',
+        filesProcessed: 2,
+        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
       },
     })
     emitSnapshot([])

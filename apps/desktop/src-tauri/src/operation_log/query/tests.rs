@@ -413,13 +413,19 @@ fn a_row_names_the_newest_operation_that_rolls_it_back() {
     journal_inverse_of(&writer, "inv-second", "op-copy", 4);
 
     let feed = recent_operations(store.conn(), 10, 0).expect("feed");
-    let copy = feed.iter().find(|o| o.op_id == "op-copy").expect("the copy is in the feed");
+    let copy = feed
+        .iter()
+        .find(|o| o.op_id == "op-copy")
+        .expect("the copy is in the feed");
     assert_eq!(copy.inverse_op_id.as_deref(), Some("inv-second"));
     let untouched = feed
         .iter()
         .find(|o| o.op_id == "op-untouched")
         .expect("the untouched op is in the feed");
-    assert_eq!(untouched.inverse_op_id, None, "nothing reverses it, so it names nothing");
+    assert_eq!(
+        untouched.inverse_op_id, None,
+        "nothing reverses it, so it names nothing"
+    );
 
     // The detail read answers the same, so a surface can't learn one thing from
     // the feed and another from the row it expanded.

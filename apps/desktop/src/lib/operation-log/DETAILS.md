@@ -64,20 +64,20 @@ pause gate once per item — so this is buttons, not machinery.
 **What they command.** The REVERSAL, which is its own managed operation, never the finished operation the row names.
 Pausing a row's own `op_id` would be a no-op at best; on the wrong id it would park something else entirely.
 
-**Where the id comes from.** `OperationRow.inverseOpId`, filled by every journal read (backend `DETAILS.md` §
-`inverse_op_id`) and by the dispatch's own answer in step 4. ❌ Not two sources: both carry the same journal fact, which
-is why a reversal started in another window, by an agent over MCP, or before this dialog opened gets the same buttons as
-one started under the user's cursor.
+**Where the id comes from.** `OperationRow.inverseOpId`, filled by every journal read (the backend's own
+`src-tauri/src/operation_log/DETAILS.md` holds why every reader fills it) and by the dispatch's own answer in step 4. ❌
+Not two sources: both carry the same journal fact, which is why a reversal started in another window, by an agent over
+MCP, or before this dialog opened gets the same buttons as one started under the user's cursor.
 
 **Through the session, so they're the queue window's buttons.** `bindOperationSession` on the inverse id, then
-`togglePause()` / `cancel()`. The in-flight guards live on the shared session, so a press here disables the button
-there and the other way round. ❌ Never call `pause_operation` / `cancel_operation` from a view.
+`togglePause()` / `cancel()`. The in-flight guards live on the shared session, so a press here disables the button there
+and the other way round. ❌ Never call `pause_operation` / `cancel_operation` from a view.
 
 **What decides whether they show.** The session's SNAPSHOT status, not the journal row: `running` or `paused` earns
 Pause/Resume, and those plus `queued` earn Cancel. That's also what makes a stale `rolling_back` row safe — the dialog
 reads the journal once, on open, so a reversal that has since ended leaves a row still badged "Rolling back", and the
-absent live status is what stops it offering a press with nothing to press. A settled session (from the terminal
-EVENTS, never from leaving the snapshot) does the same.
+absent live status is what stops it offering a press with nothing to press. A settled session (from the terminal EVENTS,
+never from leaving the snapshot) does the same.
 
 **A paused reversal must not read as finished.** The badge stays "Rolling back", because that's what the journal says
 and it's true. The controls add the queue window's own status word, "Paused", off the same lifecycle status, so the two
@@ -145,9 +145,9 @@ out partial, which is the honest read today.
   `rowStandingNotice`), so the component tests don't re-enumerate every state.
 - `RollbackControls.svelte.test.ts` mounts the dialog over a REAL session registry, fed the way the backend feeds one,
   and pins which control shows for which lifecycle status, that each press names the INVERSE operation, that a second
-  press is refused while the first is out, and that a paused reversal says so. Two ordering traps it documents in
-  place: a session claimed while the registry is empty seeds as `gone` and stays settled (so a test emits the snapshot
-  BEFORE mounting), and the controls go away on the terminal EVENT, never on the operation leaving the snapshot.
+  press is refused while the first is out, and that a paused reversal says so. Two ordering traps it documents in place:
+  a session claimed while the registry is empty seeds as `gone` and stays settled (so a test emits the snapshot BEFORE
+  mounting), and the controls go away on the terminal EVENT, never on the operation leaving the snapshot.
 - `apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts` drives the same flow against the REAL engine and
   real files, which is what pins the things a mock can't: that a real move is journaled as a move (so the question
   really does word itself as a restore), that a wire value like `alreadyRolledBack` is one the backend actually emits,
@@ -198,8 +198,8 @@ Item rows are fetched once per operation on first expand and kept for the dialog
 operation, so they don't drift. The operation HEADERS do drift (a rollback anywhere changes `rollbackState`), and
 nothing refreshes them while the dialog is open beyond the local flip in step 4. So a reversal that ends while the
 dialog is open leaves the row badged "Rolling back" until it's reopened; its controls go on their own, off the live
-session. Reopening the dialog re-reads page one.
-That's the alpha's accepted limit; a live feed would subscribe rather than poll.
+session. Reopening the dialog re-reads page one. That's the alpha's accepted limit; a live feed would subscribe rather
+than poll.
 
 ## Where the copy lives
 
