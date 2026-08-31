@@ -2159,22 +2159,22 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
 - **Mérlegelés, nem forrás: `put it there` → `odatette`** · tentative. A pile egyik forrásában sincs erre alak. Az
   `odatesz` azért nyert, mert MÁSOLÁSRA és ÁTHELYEZÉSRE is igaz (az `odamásolta` csak az egyikre), és a `kiírta`
   (`transferProgress.rollbackTooltip` `kiírt fájl`) mappára nem áll, az `item` pedig itt mappát is jelent.
-- **Névelő + `{name}` MINDIG `A(z) „{name}”`** · macOS Tier 1 (`A(z) „^0” elemet…`, `A(z) „^1” visszahelyezése nem
-  sikerült.`) és a `hu` katalógus 22 olyan kulcsa, ahol névelő áll egy név előtt · high. A névelő `a`/`az` alakja a név
-  ELSŐ HANGJÁN múlik, amit írás közben senki nem tud (`alma.txt` → `az`, `beszámoló.pdf` → `a`), tehát a puszta
-  `A {name}` minden magánhangzóval kezdődő fájlnévnél hibás magyar. Az idézőjel ugyanabból a forrásból jön, és a hosszú
-  vagy szóközös neveket is elhatárolja.
+- **Névelő + `{name}` MINDIG `A(z) „{name}”`** · macOS Tier 1 (`A(z) „^0” elemet…`,
+  `A(z) „^1” visszahelyezése nem sikerült.`) és a `hu` katalógus 22 olyan kulcsa, ahol névelő áll egy név előtt · high.
+  A névelő `a`/`az` alakja a név ELSŐ HANGJÁN múlik, amit írás közben senki nem tud (`alma.txt` → `az`, `beszámoló.pdf`
+  → `a`), tehát a puszta `A {name}` minden magánhangzóval kezdődő fájlnévnél hibás magyar. Az idézőjel ugyanabból a
+  forrásból jön, és a hosszú vagy szóközös neveket is elhatárolja.
   - **A névelő NÉLKÜLI helyeket nem érinti**: kettőspont vagy birtokos szerkezet után a placeholder csupaszon marad
     (`Letöltve: {fileName}`, `{name} megnyitása`), mert ott nincs mit egyeztetni.
   - **A `{name}` továbbra sem kap RAGOT.** Ahol az angol köznevet is mond (`the folder {name}`), a köznév áll utána, és
-    az visel minden ragot: `A(z) „{name}” mappa változatlan maradt`. Ugyanaz az elv, mint a
-    `queue.row.reversalInFolder` `a(z) {folder} mappában` sorában.
+    az visel minden ragot: `A(z) „{name}” mappa változatlan maradt`. Ugyanaz az elv, mint a `queue.row.reversalInFolder`
+    `a(z) {folder} mappában` sorában.
   - **Ehhez KÉT család mozdult együtt** (2026-08-31): a négy új `cancelRollback.reason.*.named` sor, és a szállított
     `askCmdr.renameUndo.skipReason.*.named` mind az öt sora (`drift`, `nameTaken`, `unverifiable`, `folderNotEmpty`,
     `failed`), ami addig `A {name}`-et írt. Együtt kellett menniük, mert a `folderNotEmpty` pár angolja betű szerint
     azonos, tehát a `desktop-i18n-term-consistency` egyetlen magyar alakot vár rájuk; és mert egy félig javított család
-    rosszabb bármelyik végállapotnál (a rename-undo értesítésben is egyszerre látszanak a sorok). Az öt szállított
-    kulcs ANGOLJA nem változott, tehát a `sourceHash`-ük érintetlen: ez fordítási minőségjavítás, nem újrafordítás.
+    rosszabb bármelyik végállapotnál (a rename-undo értesítésben is egyszerre látszanak a sorok). Az öt szállított kulcs
+    ANGOLJA nem változott, tehát a `sourceHash`-ük érintetlen: ez fordítási minőségjavítás, nem újrafordítás.
   - **Nyitott, más családokban**: az `errors.provider.appBased.transient`/`.needsAction`/`.serious` ugyanezt hozza egy
     szolgáltatónévre (`Ezt a mappát a **{name}** kezeli`, ahol a `{name}` iCloud/Dropbox/pCloud), az
     `askCmdr.renameUndo.undoJob` pedig egy SZÁMRA (`Mind a {countText} csomag…`: az `1` és az `5` más névelőt kér).
