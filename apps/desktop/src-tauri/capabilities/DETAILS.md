@@ -60,8 +60,7 @@ lanes. Two invocations with different features then race over one file, and `pnp
 
 **⚠️ `build.removeUnusedCommands` interacts with this.** Cmdr doesn't set it. It strips plugin commands that no
 capability grants, and each build script computes its own list: `tauri-build` passes the custom-globbed capabilities for
-the app's own commands, but `tauri-plugin`'s build script passes `None` and falls back to the default
-`capabilities/**/*` (`tauri-plugin/src/build/mod.rs`). A capability outside `capabilities/` is therefore invisible to
-plugin build scripts. Turning the option on would strip the playwright plugin's commands from the E2E build; production
+the app's own commands, but the `tauri-plugin` crate's build script passes `None` and falls back to the default
+`capabilities/**/*` glob. A capability outside `capabilities/` is therefore invisible to plugin build scripts. Turning the option on would strip the playwright plugin's commands from the E2E build; production
 is unaffected, since every production capability is in `capabilities/`. The fix would be merging
 `removeUnusedCommands: false` into the E2E build through its own `--config`.
