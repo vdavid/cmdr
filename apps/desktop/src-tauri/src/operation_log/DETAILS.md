@@ -417,7 +417,14 @@ what running a reversal under the original operation's own wind-down would have 
 ### The two data-safety guards
 
 Every item passes two independent guards before anything is touched; failing either SKIPS the item (never operates on
-it), feeding a `partially_rolled_back` result:
+it), feeding a `partially_rolled_back` result.
+
+**Both guards, and this vocabulary, are shared with the IN-FLIGHT reversals** a cancel runs over a transfer's own
+ledger (`file_system/write_operations/reversal.rs`, and `transfer/DETAILS.md` § "What a reversal does with that
+identity"). `verify_snapshot`, `SnapshotVerdict`, `SkipReason`, and `SkipTally` have one definition each: a user
+shouldn't meet two answers to "did this file change". The in-flight side reports its verdicts on the `write-cancelled`
+event rather than storing them, and adds a local-only node-id check that this path has no equivalent for (no `Volume`
+backend offers one). ❌ Don't fork any of them.
 
 1. **Snapshot recheck** (`verify_snapshot`). The item must still match the size/mtime the journal recorded. Every
    recorded field must have a present, equal live value; a recorded field whose live counterpart is absent (an MTP/SMB

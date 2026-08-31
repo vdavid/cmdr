@@ -76,6 +76,24 @@ Three ledgers say what an operation currently has at the destination, and each o
 
 **The ledgers are stacks.** Each entry is popped as it's reversed, before the destructive call, so at every instant the ledger claims exactly what this operation still has on disk — which is what lets a reversal the user stops halfway report honestly on what stayed. The intent is read BEFORE the pop, or a stopped reversal would drop an entry it never reversed. `CopyTransaction`'s created-DIRS list is not a stack: `commit_journaling_created_dirs` journals it after a reversal runs, so it has to survive one.
 
+### What a reversal does with that identity
+
+`reversal.rs` holds the decision, and all four in-flight reversals route through it: `CopyTransaction::rollback` (the error-cleanup arms and the `Drop` net), `copy/rollback.rs::rollback_with_progress` (the Rollback button), `move_op/mod.rs::MoveTransaction::rollback`, and `volume/cleanup.rs::volume_rollback_with_progress`.
+
+**Recheck immediately before acting, one item at a time.** ❌ Never verify a batch and then act on it: a verification that aged while other items were processed no longer authorizes anything. `operation_log/DETAILS.md` explains why the history engine's loop has the same shape.
+
+**One vocabulary with the history path.** `operation_log::rollback::verify_snapshot` decides what "the size changed" means for both, and the verdicts are `SkipReason`s (`Drift`, `UnverifiablePrecondition`, `RestoreTargetOccupied`, `DirNotEmpty`, `AlreadyGone`, `Failed`). ❌ Don't fork either: a user shouldn't meet two answers to one question. Locally the node id is checked first (exact), then the size through `verify_snapshot`; on a volume the size is all there is.
+
+**`AlreadyGone` counts as reversed**, not as a skip: the end state the reversal wanted already holds, and a person doesn't need telling about it.
+
+**The move path carries a SECOND guard**, the one the history engine pins alongside the recheck: the restore is non-destructive. `fs::rename` replaces its target silently and there is no backup to put back, so an original source somebody has since filled skips with `RestoreTargetOccupied`. The carve-out is the case-only self-collision — a case-insensitive filesystem folds `dog.jpg` and `DOG.jpg` onto one entry, so a case-only move finds its own destination sitting at the source. Same node id ⇒ the same entry ⇒ the rename back is a case correction. One local filesystem means `(dev, ino)` settles it exactly, with no path folding needed.
+
+**The `Drop` net stays unconditional** (`ReversalGuard::Unconditional`, and it is the only holder). It runs because a thread panicked mid-copy, where a destination is as likely half-written as complete and nobody is left to read a report. ❌ Aligning it with the guarded reversals strands partials after a crash.
+
+**The bar always reaches its end.** Both progress-reporting reversals advance for every item they walk past — removed, left alone, or refused — and interpolate both axes over the ledger's own length, landing on zero whatever they managed. A bar stranded partway reads as a crash, and a user who thinks the app crashed never reads the summary that explains what stayed. The created-directory prune establishes emptiness itself, so a directory a left-behind file keeps alive reports `DirNotEmpty` rather than a bare failure.
+
+**What comes back** is a `ReversalTally`, folded into the `CancelRollback` the `write-cancelled` event carries: a three-state outcome plus the reversed count and the per-reason `SkipBreakdown` groups (complete counts, one example name each) the history dialog's report already uses.
+
 ### The partials carve-out
 
 `volume/cleanup.rs::append_own_partials` folds the writes still in flight when the user clicked into the rollback ledger, marked `WrittenIdentity::OwnPartial`.
@@ -90,7 +108,7 @@ The local path needs no equivalent: `chunked_copy.rs` removes its own partial an
 
 **Empty directories land via the scanned-dirs pass (`copy/scanned_dirs.rs::create_scanned_dirs_at_destination`).** The per-file loop creates directories only as FILE parents, so an empty directory — or a branch holding nothing but empty directories — has no file to hang its creation on and used to complete "successfully" while never arriving (and on a cross-FS move, Phase 4 then deleted the source: the empty dir was destroyed without ever landing). The pass runs over `ScanResult.dirs` on the local copy's Completed arm and after the move's staging loop (destination = the staging dir, so empty dirs ride the normal Phase-3 rename + cleanup). Mapping mirrors `FileInfo::dest_path`; created dirs are recorded for rollback. Data-safety: a dest path that already holds anything (dir = merge, file = type clash) is left untouched — an empty source dir never replaces user data. Pinned by `copy_tests.rs::{copy_creates_empty_directory_at_destination, copy_creates_nested_empty_directories, copy_empty_directory_does_not_clobber_same_named_dest_file}` and `move_op_tests.rs::cross_fs_move_preserves_empty_directories`. The volume (MTP/SMB) pipeline doesn't share the hole — `copy_directory_streaming` creates each dir before walking its children.
 
-**Move rollback (same-FS).** `MoveTransaction` in `move_op/mod.rs` tracks `(source, dest)` pairs for each rename. On cancellation, renames are reversed in reverse order. Same-FS rename rollback is instant (just another rename), so it runs synchronously. Cross-FS move rollback is handled by `CopyTransaction` (deletes the staging directory).
+**Move rollback (same-FS).** `MoveTransaction` in `move_op/mod.rs` tracks `(original_source, landed)` pairs for each rename and reverses them newest-first, under both guards above. Same-FS rename rollback is instant (just another rename), so it runs synchronously. Cross-FS move rollback is handled by `CopyTransaction` (removes the staging directory).
 
 **Intentional duplication: `merge_move_directory` vs `copy_single_item`.** Both implement recursive merge with conflict resolution, but differ in every detail: copy has progress tracking, symlink handling, byte counting, strategy selection, and `CopyTransaction` recording. Move uses simple `fs::rename`. A shared abstraction would be forced and fragile. Cross-references are in the doc comments of both functions.
 

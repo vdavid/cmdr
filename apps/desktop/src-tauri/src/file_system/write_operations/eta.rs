@@ -34,13 +34,19 @@
 //! Resetting on phase change (scanning → copying, copying → rolling_back) is
 //! required because the counters reset too. Otherwise an EWMA fed
 //! `bytes_done = 0` after `bytes_done = 5_000_000_000` would emit garbage.
-//! Rollback flips the sign: `bytes_done` decreases. The estimator treats
-//! "progress toward the phase target" as positive (target is `bytes_total`
-//! during forward phases, `0` during rollback).
+//!
+//! **A reversal is told which way its counters run, ❌ never asked to infer it
+//! from the phase.** Both reversals report `RollingBack` and they count in
+//! OPPOSITE directions on purpose: an in-flight cancel drains the bar the user
+//! watched fill, while a reversal started from the history dialog opens a fresh
+//! bar and fills it. `ReversalBar` rides on every sample, and it decides both the
+//! sign of a delta and which end of the phase the remaining work is measured to.
+//! Reading a filling reversal as a draining one reports a finish it has barely
+//! started, then grows the estimate as it progresses.
 
 use std::time::{Duration, Instant};
 
-use super::types::{ReversalBar, WriteOperationPhase};
+use super::types::WriteOperationPhase;
 
 /// Half-life-ish time constant for the EWMA. 3 s feels live but not jittery;
 /// short enough that walking 20 m from the router visibly drops the speed
@@ -56,6 +62,18 @@ const MIN_SAMPLES_FOR_ETA: u32 = 2;
 /// current phase (wall time minus every human wait). Catches the "200 ms in,
 /// rate is 50 MB/s" → "ETA = 0 s" footgun before the EWMA settles.
 const MIN_ELAPSED_FOR_ETA: Duration = Duration::from_millis(800);
+
+/// Which way a `RollingBack` phase's counters run. Set by whoever drives the
+/// reversal, ❌ never inferred from the phase (see the module doc).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReversalBar {
+    /// Counts UP toward the total: the history dialog's reversal, a fresh
+    /// operation opening a fresh bar.
+    Fills,
+    /// Counts DOWN toward zero: an in-flight cancel draining the bar the user
+    /// watched fill.
+    Drains,
+}
 
 /// Computed rates + ETA emitted to the frontend.
 #[derive(Debug, Clone, Copy, PartialEq)]

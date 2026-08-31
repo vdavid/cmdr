@@ -367,29 +367,11 @@ pub struct WriteSourceItemDoneEvent {
     pub outcome: SourceItemOutcome,
 }
 
-/// Which way a `RollingBack` phase's counters run.
-///
-/// The two reversals differ on purpose, so the estimator has to be told rather
-/// than assume. ❌ Don't "fix" the inconsistency: each direction is the honest
-/// motion for the bar it draws.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ReversalBar {
-    /// Counts UP toward the total. A reversal started from the history dialog is
-    /// a fresh operation opening a fresh bar, so filling one is what a person
-    /// reads as progress.
-    Fills,
-    /// Counts DOWN toward zero. An in-flight cancel drains the bar the user has
-    /// been watching fill; resetting it to fill a second time would read as a new
-    /// operation starting.
-    Drains,
-}
-
 /// How much of what a cancelled operation had written got undone.
 ///
-/// Three states, because two can't tell "the user cancelled without asking for a
-/// reversal" from "the reversal ran and left things behind". A reversal leaves
-/// things behind whenever it meets a file something else changed since this
-/// operation wrote it, which it refuses to delete.
+/// Three states, because two can't tell "no reversal ran" from "the reversal ran
+/// and left things behind" — which it does whenever it meets a file something
+/// else changed since.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 #[allow(
@@ -397,14 +379,12 @@ pub enum ReversalBar {
     reason = "The shared postfix is the point: these are the same words `RollbackState` uses for a history reversal, so one vocabulary describes both."
 )]
 pub enum CancelRollbackOutcome {
-    /// No reversal ran, or it was stopped before it reached a single item.
-    /// Everything the operation wrote is still where it landed.
+    /// No reversal ran, or it stopped before reaching a single item: everything
+    /// the operation wrote is still where it landed.
     NotRolledBack,
     /// Everything the operation still claimed is undone.
     RolledBack,
-    /// The reversal ran but left items behind: the user stopped it partway, or
-    /// the recheck refused items that changed since. See
-    /// [`CancelRollback::skips`] for which and why.
+    /// The reversal ran but left items behind — see [`CancelRollback::skips`].
     PartiallyRolledBack,
 }
 
@@ -416,11 +396,9 @@ pub enum CancelRollbackOutcome {
 #[serde(rename_all = "camelCase")]
 pub struct CancelRollback {
     pub outcome: CancelRollbackOutcome,
-    /// Items the reversal undid, counting the ones already in the desired end
-    /// state.
+    /// Items undone, counting the ones already in the desired end state.
     pub reversed: u32,
-    /// What it left alone, one group per reason with the complete count and one
-    /// example file name. Empty when nothing was left behind.
+    /// One group per reason, with the complete count and one example file name.
     pub skips: Vec<SkipBreakdown>,
 }
 

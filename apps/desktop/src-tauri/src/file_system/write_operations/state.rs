@@ -10,11 +10,11 @@ use std::sync::{Arc, LazyLock, RwLock};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
-use super::eta::{EtaEstimator, EtaSample};
+use super::eta::{EtaEstimator, EtaSample, ReversalBar};
 use super::event_sinks::OperationEventSink;
 use super::human_wait::HumanWaitClock;
 use super::types::{
-    ConflictId, ConflictResolution, ConflictResolutionOutcome, ReversalBar, TransferActivity, TransferWaitReason,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, TransferActivity, TransferWaitReason,
     WriteConflictEvent, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
 };
 
@@ -89,10 +89,8 @@ pub struct WriteOperationState {
     /// child alike — so `enrich_progress` can do the subtraction in ONE place.
     skipped_files: AtomicUsize,
     skipped_bytes: AtomicU64,
-    /// `true` once a reversal that DRAINS the progress bar has started, so
-    /// `enrich_progress` can tell the estimator which end of the phase is the
-    /// target. Set by the in-flight reversals (a cancel undoing what the user
-    /// just watched); left `false` for the history dialog's reversal, whose bar
+    /// `true` once a reversal that DRAINS the progress bar has started. Set by
+    /// the in-flight reversals; left `false` for the history dialog's, whose bar
     /// fills. See [`ReversalBar`].
     reversal_drains: AtomicBool,
     /// How long this operation has spent waiting on a PERSON: the pause the user
@@ -229,9 +227,9 @@ impl WriteOperationState {
         }
     }
 
-    /// Declare that the reversal starting now DRAINS the progress bar rather
-    /// than filling one. Call it before the first `RollingBack` frame: the
-    /// estimator reseeds on the phase change and reads the direction from there.
+    /// Declare that the reversal starting now DRAINS the progress bar. Call it
+    /// before the first `RollingBack` frame, which is where the estimator
+    /// reseeds and reads the direction.
     pub(super) fn reversal_drains_the_bar(&self) {
         self.reversal_drains.store(true, Ordering::Relaxed);
     }

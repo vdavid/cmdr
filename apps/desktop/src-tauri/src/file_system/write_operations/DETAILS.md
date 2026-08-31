@@ -194,9 +194,9 @@ Frontend
               → throttled write-progress events (200ms default)
           → success (copy/move): flush_created_destinations() → emit write-progress (phase: flushing) → fdatasync dests → CopyTransaction::commit(), emit write-complete
           → success (delete/trash): emit write-complete (no sync)
-          → cancel (Stopped): CopyTransaction::commit(), emit write-cancelled (rolled_back: false)
-          → cancel (RollingBack): rollback_with_progress() → emit write-progress (phase: rolling_back) → emit write-cancelled
-          → error: CopyTransaction::rollback(), emit write-error
+          → cancel (Stopped): CopyTransaction::commit(), emit write-cancelled (rollback: notRolledBack)
+          → cancel (RollingBack): rollback_with_progress() → emit write-progress (phase: rolling_back) → emit write-cancelled (rollback: what the reversal managed)
+          → error: CopyTransaction::rollback(SkipDrifted), emit write-error
       → safety net: start_write_operation emits write-error for unhandled handler errors
   → state removed from both caches
 ```
@@ -257,8 +257,8 @@ An operation waiting on a person emits nothing: it is holding still on purpose, 
 **`OperationIntent` state machine.** Replaces the old `cancelled: AtomicBool` + `skip_rollback: AtomicBool` pair with a single `AtomicU8`-backed enum: `Running → RollingBack` (user clicks Rollback), `Running → Stopped` (user clicks Cancel or teardown), `RollingBack → Stopped` (user cancels the rollback). `Stopped` is terminal. The `is_cancelled()` helper returns true for both `RollingBack` and `Stopped`, so the 40+ cancellation check sites just call `is_cancelled(&state.intent)`.
 
 **Cancel vs Rollback: distinct behaviors:**
-- **Cancel (`Stopped`)**: Stop immediately. Keep all fully-copied files. Delete only the last *partial* file (a half-written file is corrupted data, not useful to keep). `rolled_back: false`.
-- **Rollback (`RollingBack`)**: Stop copying, then delete ALL files copied so far in reverse order with progress events (`phase: RollingBack`). The progress bars go backwards. User can cancel the rollback (→ `Stopped`), which keeps whatever hasn't been deleted yet. `rolled_back: true`.
+- **Cancel (`Stopped`)**: Stop immediately. Keep all fully-copied files. Delete only the last *partial* file (a half-written file is corrupted data, not useful to keep). Reports `rollback.outcome: notRolledBack`.
+- **Rollback (`RollingBack`)**: Stop copying, then reverse what this operation wrote, newest first, with progress events (`phase: RollingBack`). Each entry is rechecked before it goes, and one something else changed since is left alone and reported (`transfer/DETAILS.md` § "What a reversal does with that identity"). The progress bars drain, and reach zero whatever the reversal managed. The user can cancel the rollback (→ `Stopped`), which keeps whatever hasn't been reversed yet. Reports `rolledBack` or `partiallyRolledBack`.
 - Both are triggered from the same `cancel_write_operation` IPC call, distinguished by the `rollback` parameter.
 
 **Two-layer cancellation.** `AtomicU8` (`OperationIntent`) for fast in-loop checks in local file operations. Volume operations (MTP, SMB) use the same `AtomicU8` checks but run on the async executor (no `spawn_blocking`). `run_cancellable` wraps blocking local operations (for example, network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100 ms via `mpsc::channel`.
@@ -370,7 +370,7 @@ See also: `apps/desktop/src-tauri/src/downloads/CLAUDE.md` for the watcher archi
 - **`write-progress`**: Every ~200 ms during copy/move/delete/trash
 - **`write-conflict`**: Stop mode hit a conflicting destination file
 - **`write-complete`**: Operation finished successfully
-- **`write-cancelled`**: Operation cancelled (includes `rolled_back` flag)
+- **`write-cancelled`**: Operation cancelled. Carries `rollback: CancelRollback` — the three-state outcome (`notRolledBack` / `rolledBack` / `partiallyRolledBack`), how many items the reversal undid, and what it left behind grouped by `SkipReason`.
 - **`write-error`**: Operation could not complete. Carries only `error: WriteOperationError` (typed, word-free); no rendered prose crosses IPC. The FE renders the title/explanation/suggestion + category from this typed error via `transfer-error-messages.ts` in `TransferErrorDialog` and applies category-based colors.
 - **`write-settled`**: Emitted once per op after the spawned background task fully returns. See [Settle contract](#settle-contract).
 - **`volumes-busy-changed`**: The set of volume IDs with an in-flight op changed (an op started or finished). Payload is `string[]`. See [Busy-volumes set](#busy-volumes-set).
@@ -483,7 +483,7 @@ Every construction site states its own verdict (a struct literal, so a new spawn
   `MoveTransaction` renames them back), and volume copy (`volume/cleanup.rs` deletes the destination copies).
 - **`false`** — delete and trash (the files are already gone; there's nothing to put back); a SAME-volume move (a
   server-side rename-merge that stops without reversing); a CROSS-volume move, which copies and deletes the source per
-  file and whose driver treats `RollingBack` exactly like `Stopped`, reporting `rolled_back: false`; archive edits (an
+  file and whose driver treats `RollingBack` exactly like `Stopped`, reporting `notRolledBack`; archive edits (an
   all-or-nothing temp+rename rewrite); instant metadata ops; and the operation-log rollback's own inverse op (rolling
   back a rollback would re-apply what the person just undid).
 

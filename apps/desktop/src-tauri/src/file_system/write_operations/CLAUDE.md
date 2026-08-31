@@ -5,7 +5,8 @@ Copy, move, delete, trash, and zip edits as managed background ops.
 ## Module map
 
 - Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, cancel/abort),
-  `ledger.rs` (`CopyTransaction` and what a reversal rechecks a destination against), `status_cache.rs` (status + the busy-volume set behind
+  `ledger.rs` (`CopyTransaction` + what a reversal rechecks a destination against), `reversal.rs` (that recheck),
+  `status_cache.rs` (status + the busy-volume set behind
   Eject; reach it through `state::`), `types.rs`, `mod.rs` (public API). Also
   `scan_{preview,cache,bridge,watchdog}.rs`, `routing.rs`, `source_binding.rs`, `mutation_error.rs`. Own docs:
   `transfer/`, `delete/`, `archive_edit/`, plus `apps/desktop/src/lib/file-operations/CLAUDE.md`.
@@ -21,8 +22,10 @@ Copy, move, delete, trash, and zip edits as managed background ops.
   `docs/guides/error-handling.md`.
 
 - **A spawned op reserves every lane it touches or waits Queued**; the next admits on `on_settled`, ❌ not `Drop`.
-- **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it. Cancel keeps copied files, Rollback deletes them
-  in reverse. `PauseGate` is orthogonal; cancel wins. ❌ A REVERSAL never asks `is_cancelled`: `RollingBack` means
+- **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it. Cancel keeps copied files, Rollback removes the
+  ones it still recognizes: a reversal VERIFIES before each destructive act (`reversal.rs`, sharing `verify_snapshot` +
+  `SkipReason` with the history engine — ❌ never a batch, ❌ never a fork; only the `Drop` net is unconditional).
+  `PauseGate` is orthogonal; cancel wins. ❌ A REVERSAL never asks `is_cancelled`: `RollingBack` means
   "reverse" to the cleanup running under it, so it names its reading (`StopMeans`, and
   `PauseGate::wait_while_paused_until`). `rollback.rs` is also the operation-log engine's injected executor.
 - **Parking on a PERSON owes two calls** on both edges: the `human_wait.rs` clock AND

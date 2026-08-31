@@ -38,6 +38,8 @@ MCP tools live in `mcp/executor/operation_log.rs`; UI surfaces are frontend-only
   freed. Callers pass ids in APPLY order.
 - **Rollback FAILS SAFE** (data-safety-critical): recheck each item against its snapshot AND its restore target; drift,
   unverifiable, or occupied target ⇒ SKIP (→ `partially_rolled_back`), never operate. A restore-move never overwrites.
+  `verify_snapshot` + `SkipReason` + `SkipTally` are SHARED with the in-flight reversals
+  (`file_system/write_operations/reversal.rs`); ❌ don't fork them.
   `rolling_back` guards double-rollback and the retention race.
 - **The engine PLANS; an injected `RollbackRunner` acts.** ❌ Never import `write_operations` from here to perform an
   act. Pause parks BEFORE the item is verified (a stale verification must never authorize a destructive act), and a
