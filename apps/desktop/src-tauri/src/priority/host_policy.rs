@@ -11,7 +11,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use cmdr_fs::volume::host::activity::UserActivity;
+use cmdr_fs::volume::host::activity::{UserActivity, volume_busy_for_user};
 use cmdr_index::host::policy::{HostPolicy, OpenListing, WorkClearance};
 
 use super::{foreground, roots, transfers};
@@ -23,7 +23,12 @@ impl HostPolicy for AppHostPolicy {
     fn clearance(&self, volume_id: &str, idle_threshold: Duration) -> WorkClearance {
         WorkClearance {
             app_idle: foreground::global().idle_for(idle_threshold),
-            volume_idle: foreground::global().idle_for_volume(volume_id, idle_threshold),
+            // Through the same composed rule the storage backends read, so the two
+            // background consumers can never disagree about whether the user is
+            // waiting on a volume. A listing in flight counts, which is why a scan
+            // now narrows for the listing's whole duration and not just for the
+            // idle window after it started.
+            volume_idle: !volume_busy_for_user(&AppUserActivity, volume_id, idle_threshold),
             transfer_active: transfers::transfer_active(volume_id),
         }
     }
@@ -55,6 +60,10 @@ pub struct AppUserActivity;
 impl UserActivity for AppUserActivity {
     fn volume_idle_for(&self, volume_id: &str, threshold: Duration) -> bool {
         foreground::global().idle_for_volume(volume_id, threshold)
+    }
+
+    fn volume_foreground_leases(&self, volume_id: &str) -> usize {
+        foreground::global().volume_lease_count(volume_id)
     }
 }
 
@@ -117,5 +126,50 @@ mod tests {
             AppUserActivity.volume_idle_for(quiet, window),
             "a volume nobody browsed is one nobody is waiting on"
         );
+    }
+
+    /// The lease reaches BOTH consumers through this adapter: a listing in flight
+    /// makes the volume busy for a storage backend AND un-clear for the index, even
+    /// once the timestamp half has decayed.
+    ///
+    /// This is the whole of the scan's behavior change. The rest of its guarantee is
+    /// pinned where it belongs: `scan_pace::tests::the_budget_is_never_zero_for_any_input`
+    /// proves no `WorkClearance` (this one included) can stop the walk.
+    #[test]
+    fn a_listing_in_flight_makes_the_volume_busy_for_both_consumers() {
+        let listed = "test://host_policy/leased";
+        // A window of zero means the timestamp half reads idle immediately, so
+        // whatever answers "busy" below can only be the lease.
+        let decayed = Duration::ZERO;
+
+        let listing = foreground::lease_foreground_on(listed);
+        assert!(
+            AppUserActivity.volume_idle_for(listed, decayed),
+            "the timestamp half is idle at a zero window, which is what isolates the lease"
+        );
+        assert_eq!(AppUserActivity.volume_foreground_leases(listed), 1);
+        assert!(
+            !AppHostPolicy.clearance(listed, decayed).volume_idle,
+            "the index must narrow for the listing's whole duration"
+        );
+
+        drop(listing);
+        assert_eq!(AppUserActivity.volume_foreground_leases(listed), 0);
+        assert!(
+            !AppHostPolicy.clearance(listed, Duration::from_secs(30)).volume_idle,
+            "the listing stamped the volume, so the debounce keeps the index narrowed after it"
+        );
+    }
+
+    /// A lease is per volume, so a listing on one share leaves another share's scan
+    /// and transfers at full speed.
+    #[test]
+    fn a_lease_on_one_volume_leaves_another_clear() {
+        let listed = "test://host_policy/leased_elsewhere";
+        let quiet = "test://host_policy/untouched";
+        let _listing = foreground::lease_foreground_on(listed);
+        assert!(AppHostPolicy.clearance(quiet, Duration::ZERO).volume_idle);
+        assert!(AppUserActivity.volume_idle_for(quiet, Duration::ZERO));
+        assert_eq!(AppUserActivity.volume_foreground_leases(quiet), 0);
     }
 }

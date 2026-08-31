@@ -19,6 +19,9 @@ where credentials live, which runtime to spawn on, who to tell when a watch brea
   every English word stay app-side. A seam carries a typed value (`VolumeConnection::NeedsCredentials`), never prose.
 - **❌ Nothing identifying in an analytics property**: no host, path, share, bucket, filename, or username, not hashed,
   not truncated. The `&[(&str, &str)]` shape exists so a struct can't slip in.
+- **"Is the user busy on this volume?" has TWO halves and one composer.** `UserActivity` reports in-flight foreground
+  leases AND a last-activity timestamp; ❌ never read either alone — `activity::volume_busy_for_user` is the rule, and a
+  timestamp-only read stops counting an operation while the user is still waiting on it.
 - **Connection parameters are constructor arguments, not settings.** `settings` is only for what the user changes while
   a volume is mounted, which is why it's read per dispatch.
 - **A trust seam degrades to trusting NOTHING.** `HostKeys` under `VolumeHost::detached()` answers every key unknown; ❌

@@ -110,12 +110,13 @@ on", not by watching a number.
   splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct from its trait
   impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching into another's
   internals.
-- **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" WITHOUT a per-device gate.** MTP
-  has an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so the signal
-  here is time-based instead: the share counts as busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last
-  navigation on it. Scope is PER VOLUME on purpose, so browsing a local folder never slows a NAS copy.
-  `CheckpointStream`'s auto-yield parks on these two functions and `SmbVolume`'s `Volume` foreground-yield methods
-  delegate to them.
+- **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" from the WORK, not the transport.**
+  MTP has an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so there is
+  nothing on the transport to count. A foreground LISTING is a scoped operation, though, so it holds a per-volume lease
+  for its real duration, and the share stays busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last one ends. The
+  two halves are composed once, in `cmdr_fs::volume::host::activity::volume_busy_for_user`. Scope is PER VOLUME on
+  purpose, so browsing a local folder never slows a NAS copy. `CheckpointStream`'s auto-yield parks on these two
+  functions and `SmbVolume`'s `Volume` foreground-yield methods delegate to them.
 - **`SmbVolumeInner` is private to `volume/`**, and nothing outside it may name the type. What the app gets is
   `SmbVolume`, `SmbConnectionParams`, `ConnectionState`, and `connect_smb_volume`.
 

@@ -123,6 +123,11 @@ bulk writes via `BulkReconcileGuard`. The remaining lever is fewer round trips p
 
 ## Yielding to navigation and transfers (`scan_pace.rs`)
 
+The host's per-volume "is the user waiting on this share?" answer combines a LEASE held for the real duration of a
+foreground listing with a quiet window after it ends, so this walk narrows for as long as the user is genuinely waiting
+rather than for a fixed window after a navigation started. The signal and both halves live in the app's
+`priority/DETAILS.md`; the never-zero budget below is what keeps that safe however long a lease is held.
+
 The walk's listing budget isn't a constant: at every top-up it asks `ScanPacer::listing_budget()`, which returns
 `FULL_LISTING_BUDGET` (64) while the share is quiet and `YIELDING_LISTING_BUDGET` (1) while a higher-priority claim
 holds it — the user browsing it, OR a user-initiated transfer touching it (the host's order: interactive > transfers >

@@ -11,12 +11,16 @@ between images, between chunks) where it polls cheap state; a central scheduler 
 cancellation machinery for no behavior we need. The priority order is enforced by three pairwise edges:
 
 1. **Transfers yield to interactive** — `SmbVolume`'s foreground-yield methods
-   (`crates/cmdr-smb/src/volume/foreground_yield.rs`) park `CheckpointStream` between chunks while the share's
-   per-volume foreground timestamp is fresh. MTP answers the same question from its own per-device gate (a PTP session
-   has an explicit holder; time-based signals aren't needed there).
+   (`crates/cmdr-smb/src/volume/foreground_yield.rs`) park `CheckpointStream` between chunks while a foreground
+   operation holds a lease on the share, and for the quiet window after the last one ends. MTP answers the same question
+   from its own per-device gate (a PTP session has an explicit holder, so it never needed the timestamp half).
 2. **Drive indexing yields to both** — `indexing/network_scanner/scan_pace.rs` drops the walk's listing budget to ONE
    while the share is browsed OR a transfer touches it. Throttle, never stop: the budget is never zero, so forward
-   progress is structural (no starvation quota to get wrong).
+   progress is structural (no starvation quota to get wrong). Since the lease landed, "browsed" covers a listing's whole
+   duration and not just the 2 s window after it started, so a folder that takes ten seconds to come back holds the scan
+   at one listing in flight for those ten seconds. Intended, and safe by the same structural property:
+   `scan_pace::tests::the_budget_is_never_zero_for_any_input` proves no clearance value the lease can produce stops the
+   walk.
 3. **Image enrichment yields to both** — the network pass's between-images gate
    (`media_index/network/policy.rs::volume_clear_for_enrichment`) pauses the pass (`PauseReason::NotIdle` →
    `PassOutcome::RetryWhenIdle`) while the app is foreground-busy or a transfer touches the volume, and the resume wait
@@ -25,15 +29,47 @@ cancellation machinery for no behavior we need. The priority order is enforced b
 
 ## The signals
 
-- **`foreground`** — "when did the user last do foreground work", app-wide (one atomic) and per volume (a tiny map).
-  Stamped by the hot listing IPC (`commands/file_system/listing.rs`), which knows the volume; a scoped note also stamps
-  the app-wide slot so an app-wide reader never misses activity. The decision is the pure `is_idle(now, last,
-  threshold)` over millis from a monotonic base.
+- **`foreground`** — "is the user waiting on this volume?", in two halves per volume plus an app-wide timestamp.
+  - **The LEASE** is the exact half: a `ForegroundLease` guard held for the real duration of a foreground operation,
+    counted per volume. The spawned directory-listing task (`file_system/listing/streaming.rs`) takes one, so a folder
+    that takes ten seconds to come back reads as busy for ten seconds. Release is by DROP only, which is what makes the
+    error path, a panic, and a dropped task all correct with nothing to remember.
+  - **The TIMESTAMP** is the decaying half: stamped by the hot listing IPC (`commands/file_system/listing.rs`), which
+    knows the volume, and refreshed whenever a lease is taken OR released. Refreshing at RELEASE is load-bearing: it is
+    what starts the post-operation debounce when the operation ENDED, so a burst of arrow-key presses is one suspension
+    rather than one per keystroke. The decision is the pure `is_idle(now, last, threshold)` over millis from a monotonic
+    base.
+  - A scoped note or lease stamp also writes the app-wide slot, so an app-wide reader never misses activity. The
+    app-wide scope stays timestamp-only: a lease names a volume, and there is no app-wide claim to hold.
+  - **Both halves move under one write lock**, so no reader can see the count drop before the timestamp that has to
+    carry the debounce.
+
+**Composing the two is `cmdr_fs::volume::host::activity::volume_busy_for_user`, and only that.** Both background
+consumers (a storage backend through `UserActivity`, the index through `AppHostPolicy::clearance`'s `volume_idle`) go
+through it, so they cannot drift on what "the user is waiting on this volume" means. A consumer reading
+`idle_for_volume` alone would silently lose the whole point: the operation stops counting while the user is still
+waiting on it.
 - **`transfers`** — a per-volume COUNT of in-flight user-initiated write operations. Fed from the one write-op
   lifecycle choke point (`write_operations::state::register_operation_status` / `unregister_operation_status`, the
   same pair that maintains the eject busy set, so the two can't drift and the finish rides the manager's panic-safe
   guard). A count, not a flag: overlapping ops keep the volume busy until the LAST ends. Deletes, trash, and drag-out
   promises count too — they all contend on the same device connection a copy does.
+
+### How long a lease can be held
+
+A lease lives exactly as long as the listing task that took it, and a listing cannot run forever:
+
+- **Every SMB round trip is deadlined by the transport.** `smb2` 0.20.1 enforces a 30 s response deadline and a 20 s
+  send deadline per request, and only `CHANGE_NOTIFY` is exempt (`is_long_poll`), so a `QUERY_DIRECTORY` that gets no
+  answer errors out rather than hanging. A large directory is many such round trips, each individually bounded and each
+  making progress; the total is bounded by the directory's size, not by a hang. (Verified by reading the `smb2` 0.20.1
+  client connection module's `RESPONSE_TIMEOUT`, `SEND_TIMEOUT`, and `is_long_poll`, 2026-08-31.)
+- **The user cancels.** Navigating away or pressing ESC cancels the listing's token, and the `select!` cancel arm
+  returns immediately, dropping the lease while the backend unwinds behind it. That is the right answer: the pane has
+  moved on, so nobody is waiting on that listing any more.
+- **Even a lease that somehow persisted cannot stop background work.** The index scan's budget floor is one listing in
+  flight, never zero, and an upload's destination park is hard-capped at `DEST_FOREGROUND_YIELD_HARD_CAP` (1 s) per
+  park. A held lease therefore SLOWS a transfer and a scan; it can never stop either.
 
 ## The walk order (`roots.rs`)
 

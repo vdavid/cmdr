@@ -7,13 +7,20 @@
 //! probe it parks on, and they're what `SmbVolume`'s `Volume` foreground-yield
 //! methods delegate to.
 //!
-//! MTP answers the same question from a per-device gate ("a foreground op is in
-//! flight on the USB pipe RIGHT NOW"), because a PTP session is a single scarce
-//! resource with an explicit holder. SMB has no such holder — frames just
-//! interleave — so the signal here is time-based instead: the share counts as busy
-//! for [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`] after the last navigation on it.
+//! The share is busy while a foreground operation HOLDS A LEASE on it (a directory
+//! listing takes one for its real duration), and for
+//! [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`] after the last one ended. The two halves
+//! are composed once, in `cmdr_fs::volume::host::activity::volume_busy_for_user`.
 //!
-//! The host reports the raw signal; the threshold stays here, because how long
+//! ❗ **The lease is what makes this exact, and it is not the connection.** The SMB
+//! connection has no holder — every `SmbVolume` clone multiplexes frames over one
+//! session, so there is nothing there to count, which is why this was time-based
+//! alone and why a slow listing used to stop counting halfway through the user's
+//! wait. A LISTING, though, is a scoped operation with a beginning and an end, so
+//! it can hold a lease exactly the way an MTP foreground op holds its per-device
+//! gate.
+//!
+//! The host reports the raw signals; the threshold stays here, because how long
 //! counts as "busy" belongs to the work standing aside. A transfer parks outright,
 //! so its window is short; an index scan that merely narrows wants far longer.
 //!
@@ -38,8 +45,11 @@
 use std::time::Duration;
 
 use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::host::activity;
 
-/// How long after a navigation the share still counts as in use by the user.
+/// How long after a foreground operation ENDS the share still counts as in use by
+/// the user. The window that debounces a burst of navigations into one park; the
+/// operations themselves are covered exactly, by their leases.
 ///
 /// Deliberately SHORT, unlike the index scan's window. A yield here PARKS the
 /// transfer outright (the scan merely drops to one listing in flight), and
@@ -54,10 +64,11 @@ const POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 /// Whether the user is currently using `volume_id` in the foreground, so a
 /// background transfer on it should stand aside.
+///
+/// True while any foreground operation holds a lease on the share, and for
+/// [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`] after the last one ends.
 pub(crate) fn foreground_pending(host: &VolumeHost, volume_id: &str) -> bool {
-    !host
-        .activity()
-        .volume_idle_for(volume_id, TRANSFER_FOREGROUND_IDLE_THRESHOLD)
+    activity::volume_busy_for_user(host.activity(), volume_id, TRANSFER_FOREGROUND_IDLE_THRESHOLD)
 }
 
 /// Park until `volume_id` has been quiet for [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`].
@@ -100,6 +111,26 @@ mod tests {
             foreground_pending(&host_watching(busy), browsed),
             "the user is browsing this share"
         );
+    }
+
+    /// The gap the lease closes: a listing that outlives the idle threshold keeps
+    /// the share busy for its whole duration. With the timestamp alone, a 10 s
+    /// listing was protected for its first half-second and the upload then
+    /// competed for the rest of the user's wait.
+    #[test]
+    fn a_listing_in_flight_keeps_a_transfer_yielding_however_long_it_takes() {
+        let browsed = "test://smb_yield/slow_listing";
+        let listing = Arc::new(BusyVolumes::new().holds_a_lease(browsed));
+        let host = host_watching(Arc::clone(&listing));
+        assert!(
+            host.activity()
+                .volume_idle_for(browsed, TRANSFER_FOREGROUND_IDLE_THRESHOLD),
+            "the timestamp half has already decayed, which is the case this covers"
+        );
+        assert!(foreground_pending(&host, browsed), "the listing is still running");
+
+        listing.releases_a_lease(browsed);
+        assert!(!foreground_pending(&host, browsed), "the listing finished");
     }
 
     /// THE scope guarantee for transfers: a copy from the NAS must not park because
