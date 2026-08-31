@@ -410,6 +410,17 @@ pub(crate) async fn read_directory_with_progress(
     sort_order: SortOrder,
     dir_sort_mode: DirectorySortMode,
 ) -> Result<(), VolumeError> {
+    // Hold the volume busy for the REAL duration of this listing. The command
+    // entry point's timestamp seeds the debounce but decays in half a second,
+    // while an SMB listing of a big folder can take ten; without the lease a
+    // background upload or index scan resumes and competes for the rest of the
+    // user's wait. Released by drop on every exit — error, cancel, panic, or the
+    // task being dropped at shutdown — so no path can leak it and pin the share
+    // busy. Cancel releases it deliberately: the pane has moved on, so the user
+    // is no longer waiting on this listing even while the backend unwinds behind
+    // it. `priority/foreground.rs` owns the signal.
+    let _foreground_lease = crate::priority::foreground::lease_foreground_on(volume_id);
+
     benchmark::log_event("read_directory_with_progress START");
     log::debug!(
         "read_directory_with_progress: listing_id={}, volume_id={}, path={}",

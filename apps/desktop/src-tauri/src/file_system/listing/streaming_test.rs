@@ -19,6 +19,7 @@ use crate::file_system::listing::streaming::{
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{InMemoryVolume, ListingProgress, LocalPosixVolume, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
+use crate::priority::foreground;
 use crate::test_support::{TestDir, wait_until_async};
 
 /// Creates a test file entry under the root directory.
@@ -499,6 +500,207 @@ async fn a_local_directory_read_emits_progress_events() {
         Some(5_000),
         "read-complete reports the full count"
     );
+
+    cleanup(volume_id);
+}
+
+/// A listing holds a foreground lease for as long as it actually runs, not for the
+/// half-second the entry-point timestamp survives. That is what keeps a background
+/// SMB upload and the index scan standing aside for a folder that takes seconds to
+/// come back, instead of resuming while the user is still watching a spinner.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_listing_holds_a_foreground_lease_for_its_whole_duration() {
+    let volume_id = &format!("test-lease-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-lease"));
+
+    let volume = Arc::new(CooperativeCancelVolume::new());
+    let started = Arc::clone(&volume.started);
+    get_volume_manager().register(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
+
+    assert_eq!(
+        foreground::global().volume_lease_count(volume_id),
+        0,
+        "nobody has listed this volume yet"
+    );
+
+    let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
+    let state = new_state();
+    let read = {
+        let events = Arc::clone(&events);
+        let state = Arc::clone(&state);
+        let volume_id = volume_id.clone();
+        let listing_id = listing.id().to_string();
+        tokio::spawn(async move {
+            read_directory_with_progress(
+                &events,
+                &listing_id,
+                &state,
+                &volume_id,
+                Path::new("/"),
+                true,
+                SortColumn::Name,
+                SortOrder::Ascending,
+                DirectorySortMode::LikeFiles,
+            )
+            .await
+        })
+    };
+
+    wait_until_async(FLAG_FLIPS_WITHIN, "the listing to reach the backend", || {
+        started.load(Ordering::SeqCst)
+    })
+    .await;
+    assert_eq!(
+        foreground::global().volume_lease_count(volume_id),
+        1,
+        "the share must read busy while the listing is still on the wire"
+    );
+
+    state.cancel.cancel();
+    read.await
+        .expect("listing task must not panic")
+        .expect("a cancelled listing still returns Ok");
+
+    assert_eq!(
+        foreground::global().volume_lease_count(volume_id),
+        0,
+        "a cancelled listing gives its lease back: the pane moved on, so nobody is waiting on it"
+    );
+    assert!(
+        !foreground::global().idle_for_volume(volume_id, std::time::Duration::from_secs(30)),
+        "the listing stamped the share, so the debounce keeps background work off it afterwards"
+    );
+
+    cleanup(volume_id);
+}
+
+/// The error path gives the lease back too. A volume that isn't there returns
+/// before any of the happy-path exits run, so a lease released only on success
+/// would pin the share busy for the rest of the session.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_listing_that_fails_gives_its_lease_back() {
+    let volume_id = &format!("test-lease-missing-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-lease-error"));
+
+    let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
+    let state = new_state();
+    let result = read_directory_with_progress(
+        &events,
+        listing.id(),
+        &state,
+        volume_id,
+        Path::new("/"),
+        true,
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+    )
+    .await;
+
+    assert!(result.is_err(), "an unregistered volume can't be listed");
+    assert_eq!(foreground::global().volume_lease_count(volume_id), 0);
+}
+
+/// Two panes listing one share: the volume stays busy until the LAST listing ends.
+/// A flag instead of a count would free the share the moment either one finished.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn two_concurrent_listings_on_one_volume_both_have_to_finish() {
+    let volume_id = &format!("test-lease-pair-{}", uuid::Uuid::new_v4());
+    let left = TestListingGuard::adopt(unique_test_id("streaming-lease-left"));
+    let right = TestListingGuard::adopt(unique_test_id("streaming-lease-right"));
+
+    let volume = Arc::new(CooperativeCancelVolume::new());
+    get_volume_manager().register(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
+
+    let spawn_listing = |listing_id: String, state: Arc<StreamingListingState>| {
+        let volume_id = volume_id.clone();
+        tokio::spawn(async move {
+            let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
+            read_directory_with_progress(
+                &events,
+                &listing_id,
+                &state,
+                &volume_id,
+                Path::new("/"),
+                true,
+                SortColumn::Name,
+                SortOrder::Ascending,
+                DirectorySortMode::LikeFiles,
+            )
+            .await
+        })
+    };
+
+    let left_state = new_state();
+    let right_state = new_state();
+    let left_read = spawn_listing(left.id().to_string(), Arc::clone(&left_state));
+    let right_read = spawn_listing(right.id().to_string(), Arc::clone(&right_state));
+
+    wait_until_async(FLAG_FLIPS_WITHIN, "both listings to take their leases", || {
+        foreground::global().volume_lease_count(volume_id) == 2
+    })
+    .await;
+
+    left_state.cancel.cancel();
+    left_read.await.expect("the first listing task must not panic").ok();
+    assert_eq!(
+        foreground::global().volume_lease_count(volume_id),
+        1,
+        "the second pane is still waiting on this share"
+    );
+
+    right_state.cancel.cancel();
+    right_read.await.expect("the second listing task must not panic").ok();
+    assert_eq!(foreground::global().volume_lease_count(volume_id), 0);
+
+    cleanup(volume_id);
+}
+
+/// The listing task being DROPPED (app shutdown tears the runtime down mid-listing)
+/// must return the lease too. Nothing runs on that path except destructors, which
+/// is the whole reason the lease is RAII rather than a pair of calls.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn dropping_the_listing_task_mid_flight_gives_the_lease_back() {
+    let volume_id = &format!("test-lease-dropped-{}", uuid::Uuid::new_v4());
+    let listing = TestListingGuard::adopt(unique_test_id("streaming-lease-dropped"));
+
+    let volume = Arc::new(CooperativeCancelVolume::new());
+    let started = Arc::clone(&volume.started);
+    get_volume_manager().register(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
+
+    let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
+    let state = new_state();
+    let read = {
+        let volume_id = volume_id.clone();
+        let listing_id = listing.id().to_string();
+        tokio::spawn(async move {
+            read_directory_with_progress(
+                &events,
+                &listing_id,
+                &state,
+                &volume_id,
+                Path::new("/"),
+                true,
+                SortColumn::Name,
+                SortOrder::Ascending,
+                DirectorySortMode::LikeFiles,
+            )
+            .await
+        })
+    };
+
+    wait_until_async(FLAG_FLIPS_WITHIN, "the listing to reach the backend", || {
+        started.load(Ordering::SeqCst)
+    })
+    .await;
+    assert_eq!(foreground::global().volume_lease_count(volume_id), 1);
+
+    // The one thing that drops a running task's future where it stands.
+    read.abort();
+    wait_until_async(FLAG_FLIPS_WITHIN, "the dropped task's lease to come back", || {
+        foreground::global().volume_lease_count(volume_id) == 0
+    })
+    .await;
 
     cleanup(volume_id);
 }

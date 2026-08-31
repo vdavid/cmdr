@@ -436,6 +436,29 @@ file is never half-written; a multi-file toggle that fails mid-loop leaves earli
 error (the IPC command logs it rather than surfacing a hard failure — tags are low-stakes and the panes still reflect
 what's on disk).
 
+## The foreground lease a listing holds
+
+`read_directory_with_progress` takes a `priority::foreground` lease on the volume as its FIRST statement and holds it
+for the whole body. That is what tells a background SMB upload and the index scan that the user is waiting on this
+share right now, for however long the folder actually takes to come back. The command entry point
+(`commands/file_system/listing.rs`) still stamps the volume's timestamp on the way in: it covers the non-streaming path
+and seeds the debounce, and the lease covers the listing itself. Design, both halves, and what bounds a held lease:
+`priority/DETAILS.md`.
+
+**It is RAII and nothing else.** Every exit gives it back with no code on the path: the error return, the three
+cancellation returns, the restricted-empty-root return, a panic inside the task, and the task's future being dropped
+when the runtime shuts down. The two things that would break it are binding the guard to `_` (which drops it
+immediately) and adding a manual release beside the drop.
+
+**Cancel releases it, deliberately.** The `select!` cancel arm returns while the detached backend task is still
+unwinding, so the lease goes back before the wire work has finished. That is the right answer, not a leak: the pane has
+already moved on, so nobody is waiting on that listing any more, and the transfer it was holding off should resume.
+
+**The lease keys on the volume id the frontend asked with**, so a `.zip` opened on a share leases the SHARE (the
+archive's own volume is resolved below this point and contends for nothing). Pinned by
+`streaming_test::{a_listing_holds_a_foreground_lease_for_its_whole_duration, a_listing_that_fails_gives_its_lease_back,
+two_concurrent_listings_on_one_volume_both_have_to_finish, dropping_the_listing_task_mid_flight_gives_the_lease_back}`.
+
 ## Cancelling a listing detaches, never aborts
 
 `StreamingListingState.cancel` is ONE `CancellationToken` serving three roles: the sync cancellation checks, the
