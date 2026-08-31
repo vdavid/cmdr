@@ -57,6 +57,13 @@ pub trait UserActivity: Send + Sync {
     /// from its first byte to its last however long that takes. `0` is the honest
     /// answer for a host that tracks nothing, and the same one an untouched volume
     /// gives. Same cost rule as above: it sits between a transfer's chunks.
+    ///
+    /// ❗ A host that hands out a lease must also refresh what
+    /// [`volume_idle_for`](Self::volume_idle_for) reads, both when it takes one and
+    /// when it gives one back. Taking is what keeps an app-wide reader in the loop;
+    /// giving back is what starts the quiet window at the moment the operation
+    /// ENDED, and it's what [`volume_busy_for_user`] leans on to read the two
+    /// halves separately without ever reporting free mid-operation.
     fn volume_foreground_leases(&self, volume_id: &str) -> usize;
 }
 
@@ -65,6 +72,14 @@ pub trait UserActivity: Send + Sync {
 /// One rule in one place, because the two halves aren't interchangeable and a
 /// consumer that picked either alone would be wrong in a case it never tests. The
 /// lease covers an operation WHILE it runs; `quiet_window` covers the gap after it.
+///
+/// The two halves are read one after the other, so state can move between them,
+/// and the ORDER is what makes that harmless: a lease taken in the gap leaves a
+/// fresh timestamp for the second read to find, and a lease released in the gap
+/// has already short-circuited to "busy". There is no ordering that reports free
+/// while the user is waiting. That leans on an implementor refreshing its
+/// timestamp whenever it hands out a lease, which is the contract
+/// [`volume_foreground_leases`](UserActivity::volume_foreground_leases) states.
 pub fn volume_busy_for_user(activity: &dyn UserActivity, volume_id: &str, quiet_window: Duration) -> bool {
     activity.volume_foreground_leases(volume_id) > 0 || !activity.volume_idle_for(volume_id, quiet_window)
 }
