@@ -232,7 +232,12 @@ describe('seeding', () => {
       fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 900 }) })
       fanout._testEmit({
         kind: 'cancelled',
-        event: { operationId: 'a', operationType: 'copy', filesProcessed: 4, rolledBack: false },
+        event: {
+          operationId: 'a',
+          operationType: 'copy',
+          filesProcessed: 4,
+          rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+        },
       })
     })
 
@@ -281,7 +286,12 @@ describe('derived read state', () => {
     })
     fanout._testEmit({
       kind: 'cancelled',
-      event: { operationId: 'a', operationType: 'copy', filesProcessed: 2, rolledBack: false },
+      event: {
+        operationId: 'a',
+        operationType: 'copy',
+        filesProcessed: 2,
+        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+      },
     })
 
     expect(session.outcome?.kind).toBe('complete')

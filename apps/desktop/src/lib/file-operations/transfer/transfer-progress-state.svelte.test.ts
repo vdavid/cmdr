@@ -526,7 +526,12 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
     expect(state.settleSlow).toBe(true)
 
     if (!cancelledCb || !settledCb) throw new Error('cancel/settle subscribers never registered')
-    cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 4, rolledBack: false })
+    cancelledCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      filesProcessed: 4,
+      rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+    })
     flushSync()
     expect(state.operationSettled).toBe(true)
     expect(config.onCancelled).not.toHaveBeenCalled()
@@ -601,7 +606,12 @@ describe('createTransferProgressState: rollback', () => {
     expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', true)
 
     if (!cancelledCb || !settledCb) throw new Error('cancel/settle subscribers never registered')
-    cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 2, rolledBack: true })
+    cancelledCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      filesProcessed: 2,
+      rollback: { outcome: 'rolledBack', reversed: 2, skips: [] },
+    })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
     flushSync()
     vi.advanceTimersByTime(450)
@@ -790,7 +800,12 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     void state.handleCancel(false)
     await settle()
     if (!cancelledCb || !settledCb) throw new Error('cancel subscribers never registered')
-    cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 0, rolledBack: false })
+    cancelledCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      filesProcessed: 0,
+      rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+    })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
     state.destroy()
     expect(getForegroundOperationId()).toBeNull()

@@ -386,11 +386,12 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       case 'cancelled': {
         if (!settleEventReceived) return
         const event = settled.event
-        log.info('{op} cancelled after {filesProcessed} {filesNoun}, rolledBack={rolledBack}', {
+        log.info('{op} cancelled after {filesProcessed} {filesNoun}, rollback={rollback} ({left} left behind)', {
           op: operationLabel,
           filesProcessed: event.filesProcessed,
           filesNoun: pluralize(event.filesProcessed, 'file'),
-          rolledBack: event.rolledBack,
+          rollback: event.rollback.outcome,
+          left: event.rollback.skips.reduce((total, group) => total + group.count, 0),
         })
         close(() => {
           config.onCancelled(event.filesProcessed)

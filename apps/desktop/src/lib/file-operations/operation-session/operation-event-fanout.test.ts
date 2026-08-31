@@ -68,7 +68,12 @@ function complete(id: string, over: Partial<WriteCompleteEvent> = {}): WriteComp
 }
 
 function cancelled(id: string): WriteCancelledEvent {
-  return { operationId: id, operationType: 'copy', filesProcessed: 1, rolledBack: false }
+  return {
+    operationId: id,
+    operationType: 'copy',
+    filesProcessed: 1,
+    rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+  }
 }
 
 function settled(id: string): WriteSettledEvent {

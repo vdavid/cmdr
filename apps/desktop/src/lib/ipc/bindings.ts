@@ -4790,6 +4790,49 @@ export type BundleWriteBlocker =
   | 'readOnlyVolume'
 
 /**
+ *  What the reversal after a cancel managed to undo, and what it left alone.
+ *
+ *  Reuses [`SkipBreakdown`] so a cancelled transfer and a Roll back from history
+ *  report their leftovers in one vocabulary.
+ */
+export type CancelRollback = {
+  outcome: CancelRollbackOutcome
+  /**
+   *  Items the reversal undid, counting the ones already in the desired end
+   *  state.
+   */
+  reversed: number
+  /**
+   *  What it left alone, one group per reason with the complete count and one
+   *  example file name. Empty when nothing was left behind.
+   */
+  skips: SkipBreakdown[]
+}
+
+/**
+ *  How much of what a cancelled operation had written got undone.
+ *
+ *  Three states, because two can't tell "the user cancelled without asking for a
+ *  reversal" from "the reversal ran and left things behind". A reversal leaves
+ *  things behind whenever it meets a file something else changed since this
+ *  operation wrote it, which it refuses to delete.
+ */
+export type CancelRollbackOutcome =
+  /**
+   *  No reversal ran, or it was stopped before it reached a single item.
+   *  Everything the operation wrote is still where it landed.
+   */
+  | 'notRolledBack'
+  // Everything the operation still claimed is undone.
+  | 'rolledBack'
+  /**
+   *  The reversal ran but left items behind: the user stopped it partway, or
+   *  the recheck refused items that changed since. See
+   *  [`CancelRollback::skips`] for which and why.
+   */
+  | 'partiallyRolledBack'
+
+/**
  *  Logical-pixel rectangle. `f64` mirrors what Tauri's `LogicalPosition` /
  *  `LogicalSize` use on the wire.
  */
@@ -10705,6 +10748,12 @@ export type SkipBreakdown = {
  *  engine's per-item verdict, and the vocabulary of the nullable
  *  `operation_items.rollback_skip_reason` column.
  *
+ *  It is also the vocabulary the IN-FLIGHT reversals speak — the one a cancel
+ *  runs over a transfer's own ledger (`file_system::write_operations::reversal`),
+ *  which reports its verdicts on the `write-cancelled` event rather than storing
+ *  them. ❌ Don't add a parallel enum for those; the two reversals answer the same
+ *  question and a user shouldn't meet two vocabularies for it.
+ *
  *  Stored ONLY by the rollback engine, ONLY on the original op's item rows, and
  *  ONLY alongside [`ItemOutcome::Skipped`]. Everything else reads NULL, which means
  *  "reason not recorded" and never a default: a pre-v2 row, a mutation path that
@@ -12166,8 +12215,8 @@ export type WriteCancelledEvent = {
   operationId: string
   operationType: WriteOperationType
   filesProcessed: number
-  // Whether partial files were rolled back (deleted).
-  rolledBack: boolean
+  // What the reversal undid, if one ran at all.
+  rollback: CancelRollback
 }
 
 /**
