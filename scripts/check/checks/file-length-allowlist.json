@@ -32,7 +32,6 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/safety_grid_tests.rs": 818,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/strategy.rs": 940,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/strategy_test_support.rs": 1245,
-    "apps/desktop/src-tauri/src/file_system/write_operations/types.rs": 987,
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 1459,
     "apps/desktop/src-tauri/src/file_viewer/session_test.rs": 1777,
     "apps/desktop/src-tauri/src/lib.rs": 830,

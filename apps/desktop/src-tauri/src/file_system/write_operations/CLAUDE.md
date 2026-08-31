@@ -42,7 +42,8 @@ Copy, move, delete, trash, and zip edits, as managed background ops.
 - **Scans report `total_bytes` (copy/move) and `dedup_bytes` (delete)**: ❌ never point copy at the dedup'd one.
 - **Every managed mutation journals by `op_id`**; a VOLUME op passes its REAL volume id. Bulk rename journals each hop
   as it lands: ❌ never batch to the end, nor put a rotation temp in `in_flight_temps`, whose sweep DELETES it.
-- **`types.rs` is the vocabulary floor: ❌ it `use`s no sibling** (one upward import re-welds 11 modules). It holds
+- **❌ The `types` vocabulary floor `use`s no sibling**, `types/events.rs` included (one upward import re-welds 11
+  modules). It holds
   `LifecycleStatus`, the ONE lifecycle answer: ❌ never re-derive that from a presence test, no new variant.
 - **Every preview runs under a `ScanWatchdog`**; whoever settles it CLAIMS the outcome, and it bounds by INACTIVITY:
   feed the progress callback.

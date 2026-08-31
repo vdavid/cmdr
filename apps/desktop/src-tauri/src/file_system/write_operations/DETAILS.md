@@ -38,7 +38,8 @@ The full top-level inventory is here:
   `conflict.rs` (policy), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
   `resolve_write_conflict`), `overwrite.rs`. Cancellation and durability: `cancellable.rs`, `rollback.rs`, `durability.rs`.
   `rollback.rs` wears two hats: the history dialog's reversal, and the executor the operation-log engine injects.
-- Vocabulary and edges: `types.rs`, `event_sinks.rs`, `error_classification.rs`, `validation.rs`, `analytics.rs`,
+- Vocabulary and edges: `types.rs` (+ `types/events.rs`, every `#[tauri_specta(event_name)]` payload, re-exported
+  through `types`), `event_sinks.rs`, `error_classification.rs`, `validation.rs`, `analytics.rs`,
   `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. Remote archive I/O: `archive_remote_edit.rs`,
   `scratch_dir.rs`. Entry points: `create/` + `create.rs`, `rename/` + `rename.rs`, `paste_clipboard.rs`. Fixtures:
   `test_support.rs`.
@@ -55,9 +56,13 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   vocabulary floor (§ "Why `types` imports nothing"), so a sink, a classifier, or a lifecycle name is imported from the
   module that DEFINES it. `OperationEventSink` and `TauriEventSink` are re-exported at the `write_operations` module
   root (and up through `file_system`) for the IPC edge.
-- **Event structs and their builders live apart on purpose**: the struct definitions in `types.rs`, the
+- **Event structs and their builders live apart on purpose**: the struct definitions in `types/events.rs`, the
   `WriteProgressEvent` (`new` / `with_scan_meta`) and `WriteErrorEvent` (`new`) impls in `event_sinks.rs` beside the
   sinks that emit them.
+- **What splits `types.rs` from `types/events.rs` is one rule**: a struct carrying `#[tauri_specta(event_name = ...)]`
+  goes in `events.rs`, and so does an enum whose only carrier is one of them (`SourceItemOutcome`,
+  `CancelRollbackOutcome`). A name two homes speak stays in `types.rs`, which is why `TransferActivity` sits there:
+  `WriteProgressEvent` carries it AND so does `OperationStatus`, a snapshot nobody emits.
 - **`analytics.rs` is `pub(super)` and reached ONLY from `TauriEventSink::emit_complete`.** Every property is
   categorical (op kind, a count bucket, a bool): no names, no paths ever. Copy/Move → `file_transfer_completed`,
   Delete/Trash → `delete_used`.
@@ -141,7 +146,9 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
 ## Why `types` imports nothing
 
 `types.rs` is the vocabulary floor: every other module here speaks its enums, event structs, error types, and
-configuration, and it speaks nobody else's. Nothing in it may `use` a sibling (the `CLAUDE.md` rule).
+configuration, and it speaks nobody else's. Nothing in it may `use` a sibling (the `CLAUDE.md` rule), and that covers
+`types/events.rs` too: a child of the floor is still the floor, so it imports from `super` and from outside
+`write_operations`, never sideways.
 
 **Why the rule is absolute.** The dependency graph under `write_operations` is a fan-in: 30-odd modules point at
 `types`, and `types` is the sink. A single upward import from the sink closes a circle through everything that fans in
