@@ -46,7 +46,41 @@ facts that none of those carry live here:
 
 ## Copy + move semantics
 
-**`CopyTransaction` rollback: sync with progress.** `rollback()` (synchronous, for error paths) and tracked `rollback_with_progress()` in `copy.rs` (for user-initiated rollback, emits `write-progress` events with `phase: RollingBack`, checks for `Stopped` between file deletions so the user can cancel the rollback). Auto-rollback via `Drop` remains as a panic safety net.
+**`CopyTransaction` rollback: sync with progress.** `rollback()` (synchronous, for error paths) and tracked `rollback_with_progress()` in `copy/rollback.rs` (for user-initiated rollback, emits `write-progress` events with `phase: RollingBack`, checks for `Stopped` between file deletions so the user can cancel the rollback). Auto-rollback via `Drop` remains as a panic safety net.
+
+### What the in-flight ledgers record
+
+Three ledgers say what an operation currently has at the destination, and each one feeds a reversal that deletes or renames back: `CopyTransaction` (local copy, `state.rs`), `MoveTransaction` (local move, `move_op/mod.rs`), and the volume path's `copied_paths` (`volume/copy.rs`, fed from `CreatedPaths.files`). They share one vocabulary, `ledger.rs`'s `WrittenFile`: a destination path plus the identity it landed with.
+
+**Why an identity at all.** A reversal acts destructively at a path the operation may have written hours ago. A bare path can only answer "is something here", and "something is here" is what deletes the file a sync client, another app, or the user replaced in the meantime.
+
+**The identity differs by backend, and the cases are separate variants** so no call site can record half of one:
+
+- **Local: size plus `(dev, ino)`.** The node id is what makes the check exact. Size alone passes a file swapped for a DIFFERENT file of the same size, which is exactly what an editor's write-temp-then-rename produces (the most common real drift there is); a rename-into-place preserves no node id, so the check correctly refuses. Nothing changes a node id without someone touching the file, so it adds no false alarms of its own.
+- **Volume (SMB, MTP, archive): size only.** No backend but the local filesystem offers a stable node id, so these carry the same-size exposure the operation log's own reversal has always carried.
+- **A partial is its own case**, not "a file whose identity we don't know". See below.
+- **Unverifiable** is the honest answer when the stat that would have snapshotted an entry failed, and the only route to it.
+
+**❌ No mtime, on any path.** The obvious rule — mtime locally, since local copies preserve it deliberately, size only on volumes — keys on how Cmdr WRITES, while the failure keys on what the destination filesystem STORES. Snapshots are whole seconds; FAT32 stores mtime at 2-second granularity and network mounts round too, so copy to a USB stick, cancel, roll back, and every preserved mtime reads back truncated: every file "drifted", the whole copy left on the stick. Symlinks are worse, and unconditionally: the snapshot is the link's, but `copy_symlink` creates a fresh link with no mtime preservation, so every copied link would be left behind.
+
+**Where each snapshot comes from.**
+
+- **Local copy** (`copy/single_item.rs`): one `symlink_metadata` of the destination after the write lands. It describes the file that actually arrived, which is what a recheck compares against, and `symlink_metadata` is why a copied symlink describes ITSELF (a `metadata` snapshot of a link whose target is missing reads as absent, and the link gets left behind). **A recheck must stat the same way.**
+- **Same-FS move** (`move_op/same_fs.rs`): the source's own metadata, taken before the rename for the journal row. A rename carries the node id across untouched, so the pre-rename snapshot IS the landed item's identity.
+- **The directory-merge move branch** (`move_op/mod.rs::merge_move_directory`): one `symlink_metadata` per child, added for this. It's the case that matters most — the journal marks a merge `not_rollbackable`, so the in-memory ledger is the ONLY thing a cancelled folder-into-folder move can reverse from. Recording nothing there would mean a later "leave anything I can't verify" rule reverses nothing at all, which is worse than the drift it guards against.
+- **Volume** (`volume/strategy.rs::CreatedPaths`): the byte count the leaf copier reports, which the journal row for the same leaf already carries. `copied_paths` and `CreatedPaths.files` are the same entries, so the size rides through instead of being dropped at the hand-off.
+
+**A local directory records its node and no size.** A directory's reported size changes as children come and go, so it proves nothing about identity and would report a folder as changed for nothing more than a file dropped into it.
+
+**The ledgers are stacks.** Each entry is popped as it's reversed, before the destructive call, so at every instant the ledger claims exactly what this operation still has on disk — which is what lets a reversal the user stops halfway report honestly on what stayed. The intent is read BEFORE the pop, or a stopped reversal would drop an entry it never reversed. `CopyTransaction`'s created-DIRS list is not a stack: `commit_journaling_created_dirs` journals it after a reversal runs, so it has to survive one.
+
+### The partials carve-out
+
+`volume/cleanup.rs::append_own_partials` folds the writes still in flight when the user clicked into the rollback ledger, marked `WrittenIdentity::OwnPartial`.
+
+**They are NOT entries whose identity is unknown.** A partial has no size and no complete file to recognize, by construction, so a uniform "can't verify it, leave it alone" rule would strand a truncated file at the destination — the exact failure the mid-file-cancel work exists to prevent, pinned by `test/e2e-playwright/operation-log-rollback.spec.ts` ("cancelling inside one large file leaves no partial behind"). Nothing but this operation can plausibly own a destination path that never held a complete file, so a reversal removes one on sight. The type keeps the two apart so the distinction can't be lost in a later pass.
+
+The local path needs no equivalent: `chunked_copy.rs` removes its own partial and never records it, and every local write stages (§ "Local copies stage"), so an abandoned one wears a `.cmdr-tmp-*` name instead of the destination's.
 
 **Move strategy.** Same filesystem detected via device ID comparison (`MetadataExt::dev`). Cross-filesystem move uses a `.cmdr-staging-<uuid>` dir at the destination root, then atomic `rename` into place, then source deletion.
 

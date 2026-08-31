@@ -5,9 +5,10 @@ Copy, move, delete, trash, and zip edits as managed background ops.
 ## Module map
 
 - Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, `CopyTransaction`, cancel/abort),
-  `status_cache.rs` (status + the busy-volume set behind Eject; reach it through `state::`), `types.rs`, `mod.rs`
-  (public API). Also `scan_{preview,cache,bridge,watchdog}.rs`, `routing.rs`, `source_binding.rs`, `mutation_error.rs`. Own
-  docs: `transfer/`, `delete/`, `archive_edit/`, plus `apps/desktop/src/lib/file-operations/CLAUDE.md`.
+  `ledger.rs` (what a reversal rechecks a destination against), `status_cache.rs` (status + the busy-volume set behind
+  Eject; reach it through `state::`), `types.rs`, `mod.rs` (public API). Also
+  `scan_{preview,cache,bridge,watchdog}.rs`, `routing.rs`, `source_binding.rs`, `mutation_error.rs`. Own docs:
+  `transfer/`, `delete/`, `archive_edit/`, plus `apps/desktop/src/lib/file-operations/CLAUDE.md`.
 
 ## Must-knows
 
@@ -16,8 +17,8 @@ Copy, move, delete, trash, and zip edits as managed background ops.
 - **An instant op produces no `WriteCompleteEvent`**, so its driver is WRAPPED to report analytics (`analytics.rs`).
   ❌ Never emit inside one: the in-archive early return would drop every in-zip op.
 - **An instant mutation refuses with a typed `MutationError` (`mutation_error.rs`), ❌ never a sentence.** The frontend
-  words it in ten locales; the `Volume` variant carries the whole `VolumeError`, and only `Unexpected` holds free
-  text. `docs/guides/error-handling.md`.
+  words it in ten locales; `Volume` carries the whole `VolumeError`, and only `Unexpected` holds free text.
+  `docs/guides/error-handling.md`.
 
 - **A spawned op reserves every lane it touches or waits Queued**; the next admits on `on_settled`, ❌ not `Drop`.
 - **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it. Cancel keeps copied files, Rollback deletes them
