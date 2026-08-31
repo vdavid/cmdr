@@ -19,7 +19,9 @@
 //! source arm is inert and only the destination arm can fire.
 //! `AutoYieldTuningGuard::with_dest_cap` injects a tiny floor and a short cap so
 //! the arm is deterministic over the small synthetic file (production uses ~4 MiB
-//! / 1 s).
+//! / 1 s). The floor-exemption tests are the exception: they run against the
+//! PRODUCTION floor, because a file that can never reach it is their whole
+//! subject.
 //!
 //! The wait itself (no lost wakeup, one sleep for the quiet window's tail) is
 //! pinned against a frozen clock in `cmdr_fs::volume::host::activity`; these tests
@@ -250,6 +252,105 @@ async fn dest_yield_waits_on_the_share_instead_of_re_asking_it() {
 }
 
 #[tokio::test(flavor = "current_thread")]
+async fn single_shot_upload_stands_aside_even_below_the_min_progress_floor() {
+    // A small file, at the PRODUCTION floor. `REL_TOTAL` (200 KiB) is ~20x under
+    // `MIN_PROGRESS_FLOOR_BYTES`, so the floor can never be satisfied anywhere
+    // inside this file — the shape of every photo and document copied to a NAS,
+    // and the reason a folder of them used to yield exactly zero times.
+    //
+    // The floor exists to keep an open write handle warm. A single-shot write has
+    // no handle open during the drain (the destination buffers the whole source
+    // and only then lands one frame), so the floor has nothing to protect here and
+    // must not gate the arm. The cap still races the park; this test leaves it
+    // long so the park is governed by the listing alone.
+    let _tuning = AutoYieldTuningGuard::with_dest_cap(
+        Duration::from_millis(0),
+        MIN_PROGRESS_FLOOR_BYTES,
+        Duration::from_secs(10),
+    );
+
+    let (source, _source_log) = releasing_source();
+    let written = Arc::new(StdMutex::new(Vec::<u8>::new()));
+    let (busy_dest, share) = ForegroundBusyDest::quiet_with_max_write(Arc::clone(&written), REL_TOTAL as u64);
+    let waits = Arc::clone(&busy_dest.waits);
+    let dest: Arc<dyn Volume> = busy_dest;
+    assert!(
+        dest.write_is_single_shot(REL_TOTAL as u64).await,
+        "the double must land this file in ONE compound frame; otherwise the test proves nothing"
+    );
+
+    // The user's listing is already running when the upload starts, so the very
+    // first checkpoint (before a single byte has moved) is the one that must park.
+    share.takes_a_lease(BUSY_DEST_SHARE);
+
+    let state = make_state();
+    let bytes_seen = Arc::new(AtomicU64::new(0));
+
+    let local = tokio::task::LocalSet::new();
+    local
+        .run_until(async {
+            let source_drv = Arc::clone(&source);
+            let dest_drv = Arc::clone(&dest);
+            let state_drv = Arc::clone(&state);
+            let bytes_seen_drv = Arc::clone(&bytes_seen);
+            let op = tokio::task::spawn_local(async move {
+                let bytes_ref = &bytes_seen_drv;
+                copy_single_path(
+                    &source_drv,
+                    Path::new("/photo.jpg"),
+                    Some(false),
+                    None,
+                    &dest_drv,
+                    Path::new("photo.jpg"),
+                    &state_drv,
+                    &CreatedPaths::default(),
+                    &|bytes_done, _total| {
+                        bytes_ref.store(bytes_done, Ordering::SeqCst);
+                        ControlFlow::Continue(())
+                    },
+                    &|_| {},
+                    None,
+                    WriteStaging::Stage,
+                )
+                .await
+            });
+
+            let frozen = park_holds_at(
+                &bytes_seen,
+                "a single-shot upload must stand aside for the listing however small the file; a file under the floor used to run straight through it",
+            )
+            .await;
+            assert_eq!(frozen, 0, "the park lands before the first byte, so nothing has moved");
+            assert_eq!(
+                waits.load(Ordering::SeqCst),
+                1,
+                "the arm must have entered the share's wait; one gated by the floor never reaches it"
+            );
+            assert!(!op.is_finished(), "the upload must still be standing aside for the listing");
+            assert!(
+                written.lock().unwrap().is_empty(),
+                "nothing may land on the share while the user's listing runs"
+            );
+
+            // The listing ends: the upload resumes and lands the file byte-exact.
+            share.releases_a_lease(BUSY_DEST_SHARE);
+            let bytes = tokio::time::timeout(Duration::from_secs(10), op)
+                .await
+                .expect("the upload must resume once the listing ends")
+                .expect("copy task must not panic")
+                .expect("resumed upload must succeed");
+
+            assert_eq!(bytes, REL_TOTAL as u64, "the resumed upload reports the full byte count");
+            assert_eq!(
+                *written.lock().unwrap(),
+                rel_expected_bytes(),
+                "a small file that stood aside must land exactly the bytes it would have without the park"
+            );
+        })
+        .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
 async fn dest_yield_hard_cap_bounds_the_park_under_continuous_browsing() {
     // THE data-safety test. The share stays busy for the WHOLE upload (the user
     // never stops browsing). With an UNBOUNDED park (the source-arm path) the
@@ -315,6 +416,129 @@ async fn dest_yield_hard_cap_bounds_the_park_under_continuous_browsing() {
             );
         })
         .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn single_shot_dest_yield_is_still_hard_capped_under_continuous_browsing() {
+    // The floor exemption must not become an unbounded park. A single-shot write
+    // is exempt because nothing is open on the server DURING the drain, but the
+    // write that follows it is a separate moment: a reconnect in between can
+    // renegotiate `max_write_size` and put the file on the streaming path, which
+    // does hold a handle. The cap makes that race harmless, so it races the park
+    // here exactly as it does for a streaming write.
+    let hard_cap = Duration::from_millis(40);
+    let _tuning = AutoYieldTuningGuard::with_dest_cap(Duration::from_millis(0), MIN_PROGRESS_FLOOR_BYTES, hard_cap);
+
+    let (source, _source_log) = releasing_source();
+    let written = Arc::new(StdMutex::new(Vec::<u8>::new()));
+    let (busy_dest, share) = ForegroundBusyDest::quiet_with_max_write(Arc::clone(&written), REL_TOTAL as u64);
+    // A listing that never ends: the share stays busy for the WHOLE upload, so
+    // only the cap can end a park.
+    share.takes_a_lease(BUSY_DEST_SHARE);
+    let dest: Arc<dyn Volume> = busy_dest;
+
+    let state = make_state();
+    let local = tokio::task::LocalSet::new();
+    local
+        .run_until(async {
+            let source_drv = Arc::clone(&source);
+            let dest_drv = Arc::clone(&dest);
+            let state_drv = Arc::clone(&state);
+            let started = Instant::now();
+            let op = tokio::task::spawn_local(async move {
+                copy_single_path(
+                    &source_drv,
+                    Path::new("/photo.jpg"),
+                    Some(false),
+                    None,
+                    &dest_drv,
+                    Path::new("photo.jpg"),
+                    &state_drv,
+                    &CreatedPaths::default(),
+                    &|_, _| ControlFlow::Continue(()),
+                    &|_| {},
+                    None,
+                    WriteStaging::Stage,
+                )
+                .await
+            });
+
+            let bytes = tokio::time::timeout(Duration::from_secs(10), op)
+                .await
+                .expect("a floor-exempt park must still be capped, so the upload COMPLETES under continuous browsing")
+                .expect("copy task must not panic")
+                .expect("upload must succeed");
+            let elapsed = started.elapsed();
+
+            assert_eq!(bytes, REL_TOTAL as u64);
+            assert_eq!(
+                *written.lock().unwrap(),
+                rel_expected_bytes(),
+                "byte-exact even when every chunk was preceded by a capped park"
+            );
+            assert!(
+                elapsed >= Duration::from_millis(200),
+                "the small file must have repeatedly stood aside for the busy share; elapsed={elapsed:?}"
+            );
+        })
+        .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn a_streaming_upload_below_the_floor_still_does_not_yield() {
+    // The other half of the exemption: it NARROWS the floor to the writes it was
+    // written for, it doesn't lift it. This upload is the same small file, to the
+    // same busy share, but the destination lands it through the streaming writer,
+    // which holds a handle open across every checkpoint. The floor still applies,
+    // so the upload runs straight through the user's listing.
+    //
+    // That is a real gap, deliberately left: files between one compound write
+    // (~1 MiB negotiated) and the 4 MiB floor still never stand aside. Closing it
+    // needs a pre-file yield gate, which trades throughput for responsiveness and
+    // wants benchmarking on real hardware first. See `transfer/DETAILS.md`.
+    let _tuning = AutoYieldTuningGuard::with_dest_cap(
+        Duration::from_millis(0),
+        MIN_PROGRESS_FLOOR_BYTES,
+        Duration::from_secs(10),
+    );
+
+    let (source, _source_log) = releasing_source();
+    let written = Arc::new(StdMutex::new(Vec::<u8>::new()));
+    // `quiet` reports nothing as single-shot, so this file takes the streaming path.
+    let (busy_dest, share) = ForegroundBusyDest::quiet(Arc::clone(&written));
+    let waits = Arc::clone(&busy_dest.waits);
+    let dest: Arc<dyn Volume> = busy_dest;
+    assert!(
+        !dest.write_is_single_shot(REL_TOTAL as u64).await,
+        "the double must take the STREAMING path; otherwise the test proves nothing"
+    );
+    share.takes_a_lease(BUSY_DEST_SHARE);
+
+    let state = make_state();
+    let bytes = copy_single_path(
+        &source,
+        Path::new("/photo.jpg"),
+        Some(false),
+        None,
+        &dest,
+        Path::new("photo.jpg"),
+        &state,
+        &CreatedPaths::default(),
+        &|_, _| ControlFlow::Continue(()),
+        &|_| {},
+        None,
+        WriteStaging::Stage,
+    )
+    .await
+    .expect("copy must succeed");
+
+    assert_eq!(bytes, REL_TOTAL as u64);
+    assert_eq!(*written.lock().unwrap(), rel_expected_bytes());
+    assert_eq!(
+        waits.load(Ordering::SeqCst),
+        0,
+        "the floor still gates a write that holds a handle open; only the single-shot drain is exempt"
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]

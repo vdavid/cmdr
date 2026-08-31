@@ -473,6 +473,12 @@ file's final name (`WriteStaging::SingleShot`). The destination answers `Volume:
 safe-replace temp keeps the ORIGINAL alive until the new bytes are complete, which is strictly stronger). Today SMB is
 the only backend that answers `true`; MTP, local FS, archives, and in-memory keep the trait default of `false`.
 
+The answer has a SECOND consumer that is not about staging: the destination-side foreground yield exempts a single-shot
+write from its min-progress floor, because such a write holds nothing open on the server while it drains
+(`../DETAILS.md` § "Foreground auto-yield"). So `stream_pipe_file` probes once and passes the raw boolean to both,
+rather than reading the resolved enum — which under-reports, since it stays `AlreadyStaged` for a caller-staged write
+however single-shot it is.
+
 **Why it's safe**: staging buys exactly one property — no window in which the final name holds a byte-incomplete file.
 A single SMB2 compound frame has no such window. The client sends one length-prefixed frame carrying
 CREATE+WRITE+FLUSH+CLOSE; the server either receives it whole and runs all four ops or discards it and creates nothing,

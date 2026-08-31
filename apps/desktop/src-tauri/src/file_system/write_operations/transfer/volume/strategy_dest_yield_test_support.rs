@@ -1,7 +1,7 @@
 //! Test doubles for the DESTINATION-side foreground yield (the upload path,
 //! local → SMB), used by `strategy_dest_yield_tests.rs`.
 //!
-//! Both doubles are write destinations that drain the source stream chunk-by-chunk
+//! Both doubles are write destinations that pull the source stream chunk-by-chunk
 //! the way `SmbVolume::write_from_stream` does, which is what drives the wrapping
 //! `CheckpointStream`'s per-chunk checkpoint and so the destination arm. They
 //! differ in one thing: whether they opt into the yield at all.
@@ -37,9 +37,9 @@ const BUSY_DEST_QUIET_WINDOW: Duration = Duration::from_millis(500);
 /// A write destination that opts into `supports_foreground_yield_as_destination`
 /// and answers both foreground questions through the SAME composed rule and
 /// event-driven wait `SmbVolume` uses. The test-double of an `SmbVolume` upload
-/// target: its `write_from_stream` pulls chunks in a loop (driving the wrapping
+/// target: its `write_from_stream` pulls chunks (driving the wrapping
 /// `CheckpointStream`'s per-chunk checkpoint, hence the destination arm) and
-/// appends them to `written`, so a test can check the assembled bytes equal a
+/// lands them in `written`, so a test can check the assembled bytes equal a
 /// non-yielded upload exactly.
 ///
 /// A test drives the share with `becomes_busy` / `goes_quiet` (a navigation) or
@@ -58,17 +58,39 @@ pub(super) struct ForegroundBusyDest {
     pub(super) waits: Arc<AtomicUsize>,
     /// Everything `write_from_stream` has written, in order: the assembled file.
     pub(super) written: Arc<StdMutex<Vec<u8>>>,
+    /// The most bytes this double lands in ONE compound frame, standing in for
+    /// `SmbVolume`'s negotiated `max_write_size`. `0` ⇒ nothing is single-shot.
+    max_write: u64,
+}
+
+/// The double's copy of `cmdr-smb`'s `fits_one_compound_write` (private there).
+/// Both `write_is_single_shot` and `write_from_stream` below branch on it, which
+/// is the contract every real backend owes: disagreement would leave a truncated
+/// file under the user's real filename.
+fn fits_one_compound_write(max_write: u64, size: u64) -> bool {
+    size > 0 && size <= max_write
 }
 
 impl ForegroundBusyDest {
-    /// A quiet share, ready for a test to make busy.
+    /// A quiet share whose writes are never single-shot: every upload takes the
+    /// streaming shape, holding a write handle open across the whole transfer.
     pub(super) fn quiet(written: Arc<StdMutex<Vec<u8>>>) -> (Arc<Self>, Arc<BusyVolumes>) {
+        Self::quiet_with_max_write(written, 0)
+    }
+
+    /// A quiet share that lands any write up to `max_write` bytes in one compound
+    /// frame, the way `SmbVolume` does below its negotiated `max_write_size`.
+    pub(super) fn quiet_with_max_write(
+        written: Arc<StdMutex<Vec<u8>>>,
+        max_write: u64,
+    ) -> (Arc<Self>, Arc<BusyVolumes>) {
         let share = Arc::new(BusyVolumes::new());
         let dest = Arc::new(Self {
             share: Arc::clone(&share),
             probes: Arc::new(AtomicUsize::new(0)),
             waits: Arc::new(AtomicUsize::new(0)),
             written,
+            max_write,
         });
         (dest, share)
     }
@@ -140,6 +162,10 @@ impl Volume for ForegroundBusyDest {
             BUSY_DEST_QUIET_WINDOW,
         ))
     }
+    fn write_is_single_shot<'a>(&'a self, size: u64) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        let single_shot = fits_one_compound_write(self.max_write, size);
+        Box::pin(async move { single_shot })
+    }
     fn write_from_stream<'a>(
         &'a self,
         _dest: &'a Path,
@@ -148,18 +174,31 @@ impl Volume for ForegroundBusyDest {
         on_progress: &'a (dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
         let written = Arc::clone(&self.written);
+        let single_shot = fits_one_compound_write(self.max_write, size);
         Box::pin(async move {
-            // Mirror the SMB streaming write loop: pull a chunk (this drives the
-            // wrapping `CheckpointStream`'s checkpoint, where the destination arm
-            // parks), append it, then fire progress and honor cancellation.
+            // Mirror the SMB write loop: pull a chunk (this drives the wrapping
+            // `CheckpointStream`'s checkpoint, where the destination arm parks),
+            // then fire progress and honor cancellation. The compound path drains
+            // the whole source into a buffer and lands it in one frame at the end,
+            // so nothing is open on the destination during the drain; the
+            // streaming path lands each chunk as it arrives, holding a handle open
+            // across every checkpoint.
+            let mut buffered = Vec::new();
             let mut bytes_written = 0u64;
             while let Some(chunk) = stream.next_chunk().await {
                 let chunk = chunk?;
-                written.lock_ignore_poison().extend_from_slice(&chunk);
                 bytes_written += chunk.len() as u64;
+                if single_shot {
+                    buffered.extend_from_slice(&chunk);
+                } else {
+                    written.lock_ignore_poison().extend_from_slice(&chunk);
+                }
                 if on_progress(bytes_written, size).is_break() {
                     return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
                 }
+            }
+            if single_shot {
+                written.lock_ignore_poison().extend_from_slice(&buffered);
             }
             Ok(bytes_written)
         })

@@ -130,7 +130,8 @@ pub(super) async fn extract_sequential_subtree(
         // final name. Same contract as `stream_pipe_file`; unlike it, a sequential
         // source can't be re-read, so a destination that can't land a staged write
         // fails the extract instead of falling back.
-        let staging = resolve_staging(staging_for(&planned.replace_after_write), dest_volume, file.size).await;
+        let single_shot = dest_volume.write_is_single_shot(file.size).await;
+        let staging = resolve_staging(staging_for(&planned.replace_after_write), single_shot);
         let staged = StagedWrite::begin(state, &planned.dest_path, staging);
         // Register the destination before the write, exactly as `stream_pipe_file`
         // does (covers a Downloads-landing local dest; a no-op for MTP/SMB).

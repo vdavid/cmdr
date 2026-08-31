@@ -55,12 +55,19 @@ const FOREGROUND_YIELD_DEBOUNCE: Duration = Duration::from_millis(400);
 ///
 /// ⚠️ Don't naively raise this to a "big" number to make it look meaningful: the
 /// gate SKIPS the yield until this many bytes have moved since the last resume,
-/// so a floor ≥ a typical file size means the copy would NEVER yield to a
-/// foreground op for files smaller than the floor — i.e. it would disable
-/// navigate-during-transfer for normal files. If you want it to read as a real
-/// multi-window guard, raise it to a small multiple of `MTP_READ_WINDOW` (e.g.
-/// 2-4× = "N windows between yields"); that changes behavior, so re-verify on a
-/// real device.
+/// and the count starts at zero for EVERY file, so a floor ≥ a typical file size
+/// means the copy never yields at all for files smaller than the floor — i.e. it
+/// would disable navigate-during-transfer for normal files. If you want it to
+/// read as a real multi-window guard, raise it to a small multiple of
+/// `MTP_READ_WINDOW` (e.g. 2-4× = "N windows between yields"); that changes
+/// behavior, so re-verify on a real device.
+///
+/// The destination arm exempts a SINGLE-SHOT write from the floor for exactly
+/// that reason: such a write holds nothing open on the server while it drains, so
+/// the floor has nothing to protect, and without the exemption a folder of photos
+/// uploaded to a NAS stood aside for the user zero times. A streaming write under
+/// the floor still never yields; that gap is deferred, see `transfer/DETAILS.md`
+/// § "Foreground auto-yield".
 const MIN_PROGRESS_FLOOR_BYTES: u64 = 4 * 1024 * 1024;
 
 /// Hard cap on a SINGLE destination-side foreground park (uploads to SMB). Unlike
@@ -456,17 +463,24 @@ pub(super) fn staging_for(replace_after_write: &Option<PathBuf>) -> WriteStaging
 /// one frame; on a 10k-tiny-file copy to a NAS that is the whole difference).
 ///
 /// ❌ The question is single-shot-ness, never smallness, and only the
-/// destination can answer it: `size` goes to `Volume::write_is_single_shot` (the
-/// same number `write_from_stream` gets, off the same stream) and the backend
-/// answers with the very condition its one-shot path branches on. A caller-side
-/// size threshold would drift from that condition the day a backend retunes it,
-/// and drifting apart means truncated files at real names again.
+/// destination can answer it: the caller asks `Volume::write_is_single_shot`
+/// about the same `size` `write_from_stream` gets, off the same stream, and the
+/// backend answers with the very condition its one-shot path branches on. A
+/// caller-side size threshold would drift from that condition the day a backend
+/// retunes it, and drifting apart means truncated files at real names again.
+///
+/// The answer arrives as a plain `bool` rather than being probed here, because
+/// `stream_pipe_file`'s OTHER consumer needs the raw fact: the destination-side
+/// foreground yield exempts a single-shot write from the min-progress floor, and
+/// the returned enum can't tell it apart from a staged one. ❗ Ask ONCE per
+/// write and share the answer; two probes could straddle a reconnect and
+/// disagree.
 ///
 /// `AlreadyStaged` is never touched: the caller's temp keeps the ORIGINAL file
 /// in place until the new bytes are complete, which is a stronger guarantee than
 /// single-shot-ness and the caller's to land.
-pub(super) async fn resolve_staging(requested: WriteStaging, dest_volume: &Arc<dyn Volume>, size: u64) -> WriteStaging {
-    if requested == WriteStaging::Stage && dest_volume.write_is_single_shot(size).await {
+pub(super) fn resolve_staging(requested: WriteStaging, write_is_single_shot: bool) -> WriteStaging {
+    if requested == WriteStaging::Stage && write_is_single_shot {
         WriteStaging::SingleShot
     } else {
         requested
@@ -610,7 +624,11 @@ pub(super) async fn stream_pipe_file(
             opened = source_volume.open_read_stream_with_hint(source_path, source_size_hint) => opened?,
         };
         let size = stream.total_size();
-        let resolved_staging = resolve_staging(staging, dest_volume, size).await;
+        // ONE probe, two consumers: the staging decision below and the
+        // destination-side foreground yield's floor exemption (handed to the
+        // `CheckpointStream`). See `resolve_staging`.
+        let write_is_single_shot = dest_volume.write_is_single_shot(size).await;
+        let resolved_staging = resolve_staging(staging, write_is_single_shot);
         let staged = StagedWrite::begin(state, dest_path, resolved_staging);
         note_pending_for_local_dest(dest_volume, staged.target());
         // Wrap so a paused op parks (and a long copy yields to foreground)
@@ -629,6 +647,7 @@ pub(super) async fn stream_pipe_file(
             foreground_debounce,
             min_progress_floor,
             dest_yield_hard_cap,
+            write_is_single_shot,
         ));
         set_task_phase(TaskPhase::Streaming);
         set_task_bytes(0, size);
