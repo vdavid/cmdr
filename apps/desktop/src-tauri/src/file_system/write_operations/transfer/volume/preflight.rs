@@ -34,8 +34,8 @@ use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::scan_cache::take_cached_scan_result;
 use super::super::super::state::{WriteOperationState, is_cancelled};
 use super::super::super::types::{
-    VolumeCopyConfig, WriteCancelledEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
-    WriteProgressEvent,
+    CancelRollback, VolumeCopyConfig, WriteCancelledEvent, WriteOperationError, WriteOperationPhase,
+    WriteOperationType, WriteProgressEvent,
 };
 use super::transfer_error::{PathRole, WriteFailure};
 use crate::file_system::volume::{ListingProgress, Volume};
@@ -400,7 +400,7 @@ fn cancelled_failure(
         operation_id: operation_id.to_string(),
         operation_type,
         files_processed: 0,
-        rolled_back: false,
+        rollback: CancelRollback::none(),
     });
     WriteFailure::synthetic(WriteOperationError::Cancelled {
         message: "Operation cancelled by user".to_string(),

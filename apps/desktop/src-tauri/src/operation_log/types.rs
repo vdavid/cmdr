@@ -206,6 +206,12 @@ token_enum! {
     /// engine's per-item verdict, and the vocabulary of the nullable
     /// `operation_items.rollback_skip_reason` column.
     ///
+    /// It is also the vocabulary the IN-FLIGHT reversals speak — the one a cancel
+    /// runs over a transfer's own ledger (`file_system::write_operations::reversal`),
+    /// which reports its verdicts on the `write-cancelled` event rather than storing
+    /// them. ❌ Don't add a parallel enum for those; the two reversals answer the same
+    /// question and a user shouldn't meet two vocabularies for it.
+    ///
     /// Stored ONLY by the rollback engine, ONLY on the original op's item rows, and
     /// ONLY alongside [`ItemOutcome::Skipped`]. Everything else reads NULL, which means
     /// "reason not recorded" and never a default: a pre-v2 row, a mutation path that

@@ -16,7 +16,7 @@ use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, Operati
 use super::super::operation_intent::is_cancelled;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::types::{
-    WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationError,
+    CancelRollback, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::engine::{MutatorHooks, PlanError, run_managed_edit, to_write_error};
@@ -196,7 +196,7 @@ pub(crate) async fn route_archive_move_out(
                     operation_id: op_id.clone(),
                     operation_type: WriteOperationType::Move,
                     files_processed: files_extracted,
-                    rolled_back: false,
+                    rollback: CancelRollback::none(),
                 });
                 task_guard.disarm();
                 manager::manager().on_settled(&op_id);
@@ -294,7 +294,7 @@ pub(crate) async fn route_archive_move_out(
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::Move,
                         files_processed: files_extracted,
-                        rolled_back: false,
+                        rollback: CancelRollback::none(),
                     });
                 }
                 Err(PlanError::Op(err)) => {

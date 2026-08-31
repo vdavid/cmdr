@@ -26,8 +26,8 @@ use crate::file_system::write_operations::state::{
     OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
 use crate::file_system::write_operations::types::{
-    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationType, WriteSourceItemDoneEvent,
+    CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::validation::path_exists_or_is_symlink;
 use crate::file_system::write_operations::{journal, journal_search};
@@ -243,19 +243,16 @@ pub(super) fn move_with_rename(
     // The outer start_write_operation wrapper treats Cancelled as "already handled",
     // so we must emit the event here.
     if let Err(WriteOperationError::Cancelled { .. }) = &result {
-        let rolled_back = match load_intent(&state.intent) {
-            OperationIntent::RollingBack => {
-                move_tx.rollback();
-                true
-            }
-            _ => false,
+        let rollback = match load_intent(&state.intent) {
+            OperationIntent::RollingBack => move_tx.rollback().into_cancel_rollback(),
+            _ => CancelRollback::none(),
         };
 
         events.emit_cancelled(WriteCancelledEvent {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Move,
             files_processed: files_done,
-            rolled_back,
+            rollback,
         });
         return result;
     }

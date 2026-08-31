@@ -27,7 +27,7 @@ use super::manager;
 use super::scan_cache::{PREVIEW_SETTLED, ScanOutcome, abandon_claim, finish_claim, poll_claim};
 use super::state::WriteOperationState;
 use super::types::{
-    WriteCancelledEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    CancelRollback, WriteCancelledEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent,
 };
 
@@ -99,7 +99,7 @@ pub(super) async fn await_claimed_preview(
                 operation_id: operation_id.to_string(),
                 operation_type,
                 files_processed: 0,
-                rolled_back: false,
+                rollback: CancelRollback::none(),
             });
             ScanWait::Stopped
         }

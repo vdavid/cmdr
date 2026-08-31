@@ -33,7 +33,7 @@ use crate::file_system::write_operations::scan::{SourceItemTracker, scan_sources
 use crate::file_system::write_operations::scan_cache::take_cached_scan_result;
 use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled, update_operation_status};
 use crate::file_system::write_operations::types::{
-    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
+    CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::validation::validate_file_sizes_for_filesystem;
@@ -470,7 +470,7 @@ fn delete_sources_after_move(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_done,
-                rolled_back: false, // Source deletion phase - nothing to rollback
+                rollback: CancelRollback::none(), // Source deletion phase - nothing to rollback
             });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),

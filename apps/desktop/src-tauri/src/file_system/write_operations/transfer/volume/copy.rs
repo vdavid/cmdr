@@ -32,8 +32,9 @@ use super::super::super::state::{
     OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
 use super::super::super::types::{
-    VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
+    CancelRollback, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    WriteProgressEvent,
 };
 use super::super::dest_name_index::DestNameIndex;
 use super::super::transfer_driver::build_pre_skip_set;
@@ -1075,7 +1076,7 @@ pub(crate) async fn copy_volumes_with_progress(
             copied_paths.len()
         );
 
-        let rollback_completed = volume_rollback_with_progress(
+        let reversal = volume_rollback_with_progress(
             &dest_volume,
             &mut copied_paths,
             &created_dirs,
@@ -1093,7 +1094,7 @@ pub(crate) async fn copy_volumes_with_progress(
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Copy,
             files_processed: files_done,
-            rolled_back: rollback_completed,
+            rollback: reversal.into_cancel_rollback(),
         });
     } else {
         // Stopped or error: keep completed files, clean up partial files.
@@ -1122,7 +1123,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Copy,
                 files_processed: files_done,
-                rolled_back: false,
+                rollback: CancelRollback::none(),
             });
         }
     }

@@ -20,8 +20,8 @@ use super::super::super::manager;
 use super::super::super::source_binding::{ExpectedSources, retain_bound_sources_on};
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
-    VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    CancelRollback, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
 };
 use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
@@ -866,7 +866,7 @@ pub(crate) async fn move_volumes_with_progress(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_done,
-                rolled_back: false,
+                rollback: CancelRollback::none(),
             });
             Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),

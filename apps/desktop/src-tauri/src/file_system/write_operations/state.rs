@@ -5,7 +5,7 @@
 use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
@@ -14,7 +14,7 @@ use super::eta::{EtaEstimator, EtaSample};
 use super::event_sinks::OperationEventSink;
 use super::human_wait::HumanWaitClock;
 use super::types::{
-    ConflictId, ConflictResolution, ConflictResolutionOutcome, TransferActivity, TransferWaitReason,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, ReversalBar, TransferActivity, TransferWaitReason,
     WriteConflictEvent, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
 };
 
@@ -89,6 +89,12 @@ pub struct WriteOperationState {
     /// child alike — so `enrich_progress` can do the subtraction in ONE place.
     skipped_files: AtomicUsize,
     skipped_bytes: AtomicU64,
+    /// `true` once a reversal that DRAINS the progress bar has started, so
+    /// `enrich_progress` can tell the estimator which end of the phase is the
+    /// target. Set by the in-flight reversals (a cancel undoing what the user
+    /// just watched); left `false` for the history dialog's reversal, whose bar
+    /// fills. See [`ReversalBar`].
+    reversal_drains: AtomicBool,
     /// How long this operation has spent waiting on a PERSON: the pause the user
     /// pressed, and the conflict prompts they haven't answered yet. The
     /// [`pause_gate`](Self::pause_gate) and the
@@ -210,6 +216,7 @@ impl WriteOperationState {
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
             skipped_files: AtomicUsize::new(0),
             skipped_bytes: AtomicU64::new(0),
+            reversal_drains: AtomicBool::new(false),
             backend_cancel: CancellationToken::new(),
             backend_abort: CancellationToken::new(),
             pause_gate: PauseGate::new(Arc::clone(&human_wait)),
@@ -219,6 +226,22 @@ impl WriteOperationState {
             last_progress: std::sync::Mutex::new(None),
             liveness: std::sync::Mutex::new(Some(Arc::new(()))),
             claimed_names: super::unique_name::ClaimedNames::default(),
+        }
+    }
+
+    /// Declare that the reversal starting now DRAINS the progress bar rather
+    /// than filling one. Call it before the first `RollingBack` frame: the
+    /// estimator reseeds on the phase change and reads the direction from there.
+    pub(super) fn reversal_drains_the_bar(&self) {
+        self.reversal_drains.store(true, Ordering::Relaxed);
+    }
+
+    /// Which way this operation's `RollingBack` frames run.
+    fn reversal_bar(&self) -> ReversalBar {
+        if self.reversal_drains.load(Ordering::Relaxed) {
+            ReversalBar::Drains
+        } else {
+            ReversalBar::Fills
         }
     }
 
@@ -292,6 +315,7 @@ impl WriteOperationState {
                 // so the rate window doesn't get to count them.
                 human_wait_total: self.human_wait.total_at(now),
                 phase: event.phase,
+                reversal_bar: self.reversal_bar(),
                 bytes_done: event.bytes_done.saturating_sub(skipped_bytes),
                 bytes_total: event.bytes_total.saturating_sub(skipped_bytes),
                 files_done: event.files_done.saturating_sub(skipped_files),

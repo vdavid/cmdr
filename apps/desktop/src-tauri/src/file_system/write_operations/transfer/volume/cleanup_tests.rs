@@ -11,18 +11,28 @@ use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::ledger::WrittenIdentity;
 use crate::file_system::write_operations::state::cancel_write_operation;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
+use crate::file_system::write_operations::types::CancelRollbackOutcome;
 
 fn make_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(50)))
 }
 
 /// Runs a rollback over the given ledger of complete volume files, and reports
-/// whether it finished.
-async fn roll_back(volume: &Arc<dyn Volume>, copied_paths: &[PathBuf], created_dirs: &[PathBuf]) -> bool {
-    let mut ledger: Vec<WrittenFile> = copied_paths
-        .iter()
-        .map(|path| WrittenFile::volume(path.clone(), 0))
-        .collect();
+/// what it managed.
+///
+/// Each entry is recorded with the size the backend reports right now, which is
+/// what a copy that just wrote the file would have recorded — so the reversal's
+/// recheck sees an undisturbed destination.
+async fn roll_back(
+    volume: &Arc<dyn Volume>,
+    copied_paths: &[PathBuf],
+    created_dirs: &[PathBuf],
+) -> crate::file_system::write_operations::types::CancelRollback {
+    let mut ledger: Vec<WrittenFile> = Vec::new();
+    for path in copied_paths {
+        let size = volume.get_metadata(path).await.ok().and_then(|e| e.size).unwrap_or(0);
+        ledger.push(WrittenFile::volume(path.clone(), size));
+    }
     let events = CollectorEventSink::new();
     let state = make_state();
     volume_rollback_with_progress(
@@ -38,6 +48,7 @@ async fn roll_back(volume: &Arc<dyn Volume>, copied_paths: &[PathBuf], created_d
         1,
     )
     .await
+    .into_cancel_rollback()
 }
 
 /// **The destructive one.** A directory that reaches the partial sweep must
@@ -82,9 +93,13 @@ async fn rollback_leaves_a_directory_in_copied_paths_alone() {
         .unwrap();
     let volume: Arc<dyn Volume> = vol.clone();
 
-    let completed = roll_back(&volume, &[PathBuf::from("/album")], &[]).await;
+    let report = roll_back(&volume, &[PathBuf::from("/album")], &[]).await;
 
-    assert!(completed, "rollback runs to the end even when a path refuses");
+    assert_eq!(
+        report.outcome,
+        CancelRollbackOutcome::PartiallyRolledBack,
+        "rollback runs to the end even when a path refuses, and says so"
+    );
     assert!(
         vol.exists(Path::new("/album/keep-me.jpg")).await,
         "rollback must delete the files this op wrote, never a directory's contents"
@@ -117,6 +132,113 @@ async fn rollback_removes_the_files_the_copy_wrote() {
 
     assert!(!vol.exists(Path::new("/album/ours.jpg")).await);
     assert!(vol.exists(Path::new("/album/keep-me.jpg")).await);
+}
+
+/// A destination the backend now reports at a different size is left where it
+/// is, while its unchanged neighbour still goes. On a volume the size IS the
+/// identity: no backend but the local filesystem offers a node id.
+///
+/// The wrong size comes from `InMemoryVolume::set_reported_size`, the named
+/// fixture for exactly this, ❌ never a hand-rolled forwarder.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn rollback_leaves_a_file_the_backend_now_reports_at_another_size() {
+    let vol = Arc::new(InMemoryVolume::new("Dest"));
+    vol.create_directory(Path::new("/album")).await.unwrap();
+    vol.create_file(Path::new("/album/ours.jpg"), b"we wrote this")
+        .await
+        .unwrap();
+    vol.create_file(Path::new("/album/theirs.jpg"), b"we wrote this too")
+        .await
+        .unwrap();
+    let volume: Arc<dyn Volume> = vol.clone();
+
+    // The ledger as the copy left it: each file with the size it landed with.
+    let mut ledger = Vec::new();
+    for name in ["ours.jpg", "theirs.jpg"] {
+        let path = PathBuf::from(format!("/album/{name}"));
+        let size = volume.get_metadata(&path).await.unwrap().size.unwrap();
+        ledger.push(WrittenFile::volume(path, size));
+    }
+    // Something else changes one of them while the copy was running.
+    vol.set_reported_size(Path::new("/album/theirs.jpg"), 4096);
+
+    let events = CollectorEventSink::new();
+    let state = make_state();
+    let report = volume_rollback_with_progress(
+        &volume,
+        &mut ledger,
+        &[],
+        &events,
+        "cleanup-tests-op",
+        &state,
+        2,
+        30,
+        2,
+        30,
+    )
+    .await
+    .into_cancel_rollback();
+
+    assert!(
+        vol.exists(Path::new("/album/theirs.jpg")).await,
+        "a file the backend reports differently must survive the reversal"
+    );
+    assert!(
+        !vol.exists(Path::new("/album/ours.jpg")).await,
+        "one changed file must not stop the reversal removing its neighbours"
+    );
+    assert_eq!(report.outcome, CancelRollbackOutcome::PartiallyRolledBack);
+    assert_eq!(report.reversed, 1);
+    assert_eq!(report.skips.len(), 1);
+    assert_eq!(report.skips[0].reason, SkipReason::Drift);
+    assert_eq!(report.skips[0].example_name, "theirs.jpg");
+}
+
+/// A write that was still in flight goes even though nothing about it can be
+/// verified, while a complete file that changed stays. The two must never fold
+/// together: a partial left at the destination is a truncated file.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_partial_still_goes_while_a_changed_file_stays() {
+    let vol = Arc::new(InMemoryVolume::new("Dest"));
+    vol.create_directory(Path::new("/album")).await.unwrap();
+    vol.create_file(Path::new("/album/half.mov"), b"the first chunk")
+        .await
+        .unwrap();
+    vol.create_file(Path::new("/album/done.jpg"), b"complete")
+        .await
+        .unwrap();
+    let volume: Arc<dyn Volume> = vol.clone();
+
+    let done = PathBuf::from("/album/done.jpg");
+    let size = volume.get_metadata(&done).await.unwrap().size.unwrap();
+    let mut ledger = vec![WrittenFile::volume(done, size)];
+    append_own_partials(&mut ledger, Some(PathBuf::from("/album/half.mov")), &[]);
+    vol.set_reported_size(Path::new("/album/done.jpg"), 999_999);
+
+    let events = CollectorEventSink::new();
+    let state = make_state();
+    volume_rollback_with_progress(
+        &volume,
+        &mut ledger,
+        &[],
+        &events,
+        "cleanup-tests-op",
+        &state,
+        2,
+        30,
+        2,
+        30,
+    )
+    .await;
+
+    assert!(
+        !vol.exists(Path::new("/album/half.mov")).await,
+        "a partial must never be left at the destination"
+    );
+    assert!(
+        vol.exists(Path::new("/album/done.jpg")).await,
+        "a complete file that changed must never be deleted"
+    );
 }
 
 /// **The second destructive one, against a backend that lies.** The created-dirs
@@ -243,10 +365,15 @@ async fn a_stopped_volume_reversal_leaves_the_ledger_claiming_what_is_still_ther
     cancel_write_operation(guard.id(), true);
     cancel_write_operation(guard.id(), false);
     let events = CollectorEventSink::new();
-    let completed =
-        volume_rollback_with_progress(&volume, &mut ledger, &[], &events, guard.id(), &state, 4, 28, 4, 28).await;
+    let report = volume_rollback_with_progress(&volume, &mut ledger, &[], &events, guard.id(), &state, 4, 28, 4, 28)
+        .await
+        .into_cancel_rollback();
 
-    assert!(!completed, "the user stopped it");
+    assert_eq!(
+        report.outcome,
+        CancelRollbackOutcome::NotRolledBack,
+        "the user stopped it before it reached an item"
+    );
     assert_eq!(ledger.len(), 4, "nothing was reversed, so nothing left the ledger");
     for entry in &ledger {
         assert!(

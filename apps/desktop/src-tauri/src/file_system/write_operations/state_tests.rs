@@ -288,7 +288,7 @@ fn cancel_all_wakes_a_paused_parked_op() {
     let state = registered_in(&registry, "cancel-all-paused", OperationIntent::Running);
     state.pause_gate.pause();
 
-    let woke = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let woke = Arc::new(AtomicBool::new(false));
     let state_t = Arc::clone(&state);
     let woke_t = Arc::clone(&woke);
     let handle = std::thread::spawn(move || {

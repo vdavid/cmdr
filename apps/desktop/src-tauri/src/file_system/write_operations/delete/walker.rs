@@ -12,7 +12,7 @@ use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::transfer::volume::{PathRole, map_volume_error};
 use super::super::types::{
-    DryRunResult, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    CancelRollback, DryRunResult, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::listing::caching::try_get_authoritative_listing;
@@ -132,7 +132,7 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
                 files_processed: files_done,
-                rolled_back: false, // Delete operations can't be rolled back
+                rollback: CancelRollback::none(), // Delete operations can't be rolled back
             });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
@@ -222,7 +222,7 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
                 files_processed: files_done,
-                rolled_back: false, // Delete operations can't be rolled back
+                rollback: CancelRollback::none(), // Delete operations can't be rolled back
             });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
@@ -562,7 +562,7 @@ fn emit_cancelled_if_aborted(
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Delete,
             files_processed: tracker.files_so_far.load(std::sync::atomic::Ordering::Relaxed),
-            rolled_back: false,
+            rollback: CancelRollback::none(),
         });
     }
 }
@@ -629,7 +629,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Delete,
                     files_processed: 0,
-                    rolled_back: false,
+                    rollback: CancelRollback::none(),
                 });
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
@@ -838,7 +838,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
                 files_processed: files_done,
-                rolled_back: false,
+                rollback: CancelRollback::none(),
             });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
@@ -877,7 +877,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Delete,
                     files_processed: files_done,
-                    rolled_back: false,
+                    rollback: CancelRollback::none(),
                 });
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
@@ -943,7 +943,7 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
                 files_processed: files_done,
-                rolled_back: false,
+                rollback: CancelRollback::none(),
             });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),

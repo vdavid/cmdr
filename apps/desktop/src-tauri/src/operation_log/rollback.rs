@@ -86,13 +86,14 @@ pub enum RollbackRefusal {
 impl SkipReason {
     /// `AlreadyGone` means the end state we wanted already holds (idempotent
     /// re-issue), so it counts as reversed, not as a partial-blocking skip.
-    fn counts_as_reversed(self) -> bool {
+    pub(crate) fn counts_as_reversed(self) -> bool {
         matches!(self, SkipReason::AlreadyGone)
     }
 }
 
-/// The outcome of reversing one item.
-enum ItemResult {
+/// The outcome of reversing one item. Shared with the in-flight reversals
+/// (`file_system::write_operations::reversal`) so both report the same verdicts.
+pub(crate) enum ItemResult {
     /// Reversed (or already in the desired end state).
     Reversed,
     /// Skipped, with the typed reason.
@@ -186,8 +187,12 @@ fn inverse_action(kind: OpKind, entry_type: EntryType) -> Option<InverseAction> 
 }
 
 /// The verdict of rechecking an item against its recorded snapshot.
+///
+/// Shared with the in-flight reversals in `file_system::write_operations`, so a
+/// cancel-and-roll-back and a Roll back from history agree on what "this file
+/// changed" means. ❌ Don't fork a second definition of that.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SnapshotVerdict {
+pub(crate) enum SnapshotVerdict {
     /// Every recorded field verified equal against a present live value.
     Match,
     /// A recorded field's live counterpart differs — the file changed.
@@ -204,10 +209,20 @@ enum SnapshotVerdict {
 /// identity on ⇒ Unverifiable. So a copy leaf that recorded only size (volume
 /// transfers don't carry mtime) still verifies on size, while an item whose only
 /// recorded field (mtime) is absent live (MTP/SMB) is Unverifiable and skipped.
-fn verify_snapshot(snap_size: Option<i64>, snap_mtime: Option<i64>, live: &FileEntry) -> SnapshotVerdict {
+///
+/// Takes the two live fields rather than a `FileEntry`: it reads exactly these
+/// two of that type's 28 fields, and the local in-flight reversals hold a
+/// `std::fs::Metadata` they'd otherwise have to inflate into a serde/specta
+/// struct just to ask this question.
+pub(crate) fn verify_snapshot(
+    snap_size: Option<i64>,
+    snap_mtime: Option<i64>,
+    live_size: Option<u64>,
+    live_mtime: Option<u64>,
+) -> SnapshotVerdict {
     let mut verified_any = false;
     if let Some(sm) = snap_mtime {
-        match live.modified_at {
+        match live_mtime {
             None => return SnapshotVerdict::Unverifiable,
             Some(lm) => {
                 if lm as i64 != sm {
@@ -218,7 +233,7 @@ fn verify_snapshot(snap_size: Option<i64>, snap_mtime: Option<i64>, live: &FileE
         }
     }
     if let Some(ss) = snap_size {
-        match live.size {
+        match live_size {
             None => return SnapshotVerdict::Unverifiable,
             Some(ls) => {
                 if ls as i64 != ss {
@@ -558,7 +573,7 @@ async fn remove_file_if_unchanged(vm: &VolumeManager, runner: &dyn RollbackRunne
         Err(VolumeError::NotFound(_)) => return ItemResult::Skipped(SkipReason::AlreadyGone),
         Err(_) => return ItemResult::Skipped(SkipReason::Failed),
     };
-    match verify_snapshot(unit.size, unit.mtime, &live) {
+    match verify_snapshot(unit.size, unit.mtime, live.size, live.modified_at) {
         SnapshotVerdict::Match => match runner
             .perform(InverseAct::RemoveFile {
                 volume: &volume,
@@ -635,7 +650,7 @@ async fn restore_move(vm: &VolumeManager, runner: &dyn RollbackRunner, unit: &Ro
     // a subtree isn't cheaply verifiable, so existence + a clear target is the
     // contract). Drift / unverifiable ⇒ skip.
     if unit.entry_type == EntryType::File {
-        match verify_snapshot(unit.size, unit.mtime, &from_entry) {
+        match verify_snapshot(unit.size, unit.mtime, from_entry.size, from_entry.modified_at) {
             SnapshotVerdict::Match => {}
             SnapshotVerdict::Drift => return ItemResult::Skipped(SkipReason::Drift),
             SnapshotVerdict::Unverifiable => return ItemResult::Skipped(SkipReason::UnverifiablePrecondition),
@@ -858,6 +873,7 @@ pub use order::undo_order;
 use runner::ProgressStand;
 pub use runner::{InverseAct, RollbackProgress, RollbackRunner};
 pub use skips::SkipBreakdown;
+pub(crate) use skips::SkipTally;
 
 #[cfg(test)]
 mod control_tests;

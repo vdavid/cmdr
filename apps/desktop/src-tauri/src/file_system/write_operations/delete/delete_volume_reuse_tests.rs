@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use super::super::event_sinks::CollectorEventSink;
 use super::super::state::{CachedScanResult, OperationIntent, WriteOperationState, insert_scan_result};
-use super::super::types::{WriteOperationConfig, WriteOperationError};
+use super::super::types::{CancelRollbackOutcome, WriteOperationConfig, WriteOperationError};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
@@ -480,7 +480,7 @@ async fn delete_cancel_during_scan_emits_write_cancelled() {
         "write-cancelled must be emitted before Cancelled propagates from scan",
     );
     assert!(
-        !cancelled.first().unwrap().rolled_back,
+        cancelled.first().unwrap().rollback.outcome == CancelRollbackOutcome::NotRolledBack,
         "scan-time cancel is a Stopped (not RollingBack) outcome"
     );
 

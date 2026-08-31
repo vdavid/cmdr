@@ -1,6 +1,7 @@
 //! What the in-flight ledger vocabulary records, and what it refuses to record.
 
 use super::*;
+use crate::file_system::write_operations::reversal::ReversalGuard;
 
 /// A local file is snapshotted with both halves of its identity, and the size is
 /// the file's own.
@@ -139,7 +140,7 @@ fn copy_transaction_rollback_deletes_files_and_dirs_in_reverse() {
     tx.record_dir(inner.clone());
     tx.record_file(WrittenFile::local(file.clone()));
 
-    tx.rollback();
+    tx.rollback(ReversalGuard::SkipDrifted);
 
     assert!(!file.exists(), "file must be removed on rollback");
     assert!(!inner.exists(), "inner dir must be removed (leaf-first)");
@@ -204,14 +205,4 @@ fn copy_transaction_pops_the_newest_file_first() {
     assert_eq!(tx.pop_file().map(|f| f.path), Some(PathBuf::from("/a")));
     assert!(tx.pop_file().is_none(), "an emptied ledger claims nothing");
     tx.commit();
-}
-
-impl WrittenIdentity {
-    /// The node id, for tests that compare two snapshots of the same entry.
-    fn node(&self) -> Option<NodeId> {
-        match self {
-            Self::LocalFile { node, .. } | Self::LocalDir { node } => Some(*node),
-            Self::VolumeFile { .. } | Self::OwnPartial | Self::Unverifiable => None,
-        }
-    }
 }

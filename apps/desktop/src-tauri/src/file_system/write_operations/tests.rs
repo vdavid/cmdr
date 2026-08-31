@@ -5,6 +5,8 @@
 
 use super::ledger::WrittenFile;
 use super::*;
+use crate::file_system::write_operations::reversal::ReversalGuard;
+use crate::file_system::write_operations::types::{CancelRollback, CancelRollbackOutcome};
 use crate::test_support::TestDir;
 use std::fs;
 use std::sync::Arc;
@@ -159,7 +161,7 @@ fn test_copy_transaction_rollback_deletes_files() {
     transaction.record_dir(temp_dir.join("subdir"));
 
     // Rollback should delete all recorded files and directories
-    transaction.rollback();
+    transaction.rollback(ReversalGuard::SkipDrifted);
 
     // Verify files are deleted
     assert!(!file1.exists(), "file1 should be deleted after rollback");
@@ -215,7 +217,7 @@ fn test_copy_transaction_rollback_handles_already_deleted_files() {
     fs::remove_file(&file1).expect("Failed to delete file1");
 
     // Rollback should not panic even if files are already gone
-    transaction.rollback(); // Should not panic
+    transaction.rollback(ReversalGuard::SkipDrifted); // Should not panic
 }
 
 #[test]
@@ -298,20 +300,20 @@ fn test_cancel_during_directory_deletion_phase() {
     );
 }
 
+/// A delete can't be undone, so its cancel always reports that nothing came back.
 #[test]
-fn test_delete_cancelled_event_has_no_rollback() {
-    // Delete operations set rolled_back: false because deletions can't be undone
+fn a_cancelled_delete_reports_no_reversal() {
     let event = WriteCancelledEvent {
         operation_id: "delete-test".to_string(),
         operation_type: WriteOperationType::Delete,
         files_processed: 3,
-        rolled_back: false,
+        rollback: CancelRollback::none(),
     };
 
     let json = serde_json::to_string(&event).unwrap();
     assert!(
-        json.contains("\"rolledBack\":false"),
-        "Delete cancelled events should always have rolledBack:false"
+        json.contains("\"outcome\":\"notRolledBack\""),
+        "a cancelled delete reverses nothing, got {json}"
     );
     assert!(
         json.contains("\"operationType\":\"delete\""),
@@ -319,34 +321,35 @@ fn test_delete_cancelled_event_has_no_rollback() {
     );
 }
 
+/// The cancelled event carries the three-state reversal outcome over the wire,
+/// so the dialog can tell "nothing was undone" from "some of it was".
 #[test]
-fn test_cancelled_event_rolled_back_field_serialization() {
-    // Test that WriteCancelledEvent serializes correctly with rolled_back field
-    let event_with_rollback = WriteCancelledEvent {
+fn a_cancelled_event_carries_what_the_reversal_managed() {
+    let fully_reversed = WriteCancelledEvent {
         operation_id: "test-123".to_string(),
         operation_type: WriteOperationType::Copy,
         files_processed: 5,
-        rolled_back: true,
+        rollback: CancelRollback {
+            outcome: CancelRollbackOutcome::RolledBack,
+            reversed: 5,
+            skips: Vec::new(),
+        },
     };
 
-    let json = serde_json::to_string(&event_with_rollback).unwrap();
-    assert!(
-        json.contains("\"rolledBack\":true"),
-        "JSON should contain rolledBack:true"
-    );
+    let json = serde_json::to_string(&fully_reversed).unwrap();
+    assert!(json.contains("\"outcome\":\"rolledBack\""), "got {json}");
+    assert!(json.contains("\"reversed\":5"), "got {json}");
 
-    let event_without_rollback = WriteCancelledEvent {
+    let nothing_reversed = WriteCancelledEvent {
         operation_id: "test-456".to_string(),
         operation_type: WriteOperationType::Copy,
         files_processed: 3,
-        rolled_back: false,
+        rollback: CancelRollback::none(),
     };
 
-    let json = serde_json::to_string(&event_without_rollback).unwrap();
-    assert!(
-        json.contains("\"rolledBack\":false"),
-        "JSON should contain rolledBack:false"
-    );
+    let json = serde_json::to_string(&nothing_reversed).unwrap();
+    assert!(json.contains("\"outcome\":\"notRolledBack\""), "got {json}");
+    assert!(json.contains("\"skips\":[]"), "got {json}");
 }
 
 // ============================================================================

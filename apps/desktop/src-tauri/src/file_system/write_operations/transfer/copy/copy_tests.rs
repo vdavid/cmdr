@@ -573,7 +573,11 @@ fn a_stopped_reversal_leaves_the_ledger_claiming_what_is_still_on_disk() {
         0,
     );
 
-    assert!(!completed, "the user stopped it, so it didn't finish");
+    assert_eq!(
+        completed.into_cancel_rollback().outcome,
+        crate::file_system::write_operations::types::CancelRollbackOutcome::PartiallyRolledBack,
+        "the user stopped it partway, so some of what the copy wrote is still there"
+    );
     let still_claimed = transaction.created_files();
     assert!(
         !still_claimed.is_empty() && still_claimed.len() < files.len(),

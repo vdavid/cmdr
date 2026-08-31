@@ -1,6 +1,7 @@
 //! Integration tests for CopyTransaction rollback behavior.
 
 use crate::file_system::write_operations::ledger::WrittenFile;
+use crate::file_system::write_operations::reversal::ReversalGuard;
 use crate::test_support::TestDir;
 use std::fs;
 
@@ -74,7 +75,7 @@ fn test_copy_transaction_rollback_removes_files() {
     assert!(file2.exists());
 
     // Rollback
-    tx.rollback();
+    tx.rollback(ReversalGuard::SkipDrifted);
 
     // Verify files deleted
     assert!(!file1.exists());
@@ -102,7 +103,7 @@ fn test_copy_transaction_rollback_removes_dirs() {
     assert!(dir2.exists());
 
     // Rollback (should remove in reverse order)
-    tx.rollback();
+    tx.rollback(ReversalGuard::SkipDrifted);
 
     // Verify dirs deleted
     assert!(!dir2.exists());
@@ -131,7 +132,7 @@ fn test_copy_transaction_rollback_mixed() {
     assert!(file1.exists());
 
     // Rollback
-    tx.rollback();
+    tx.rollback(ReversalGuard::SkipDrifted);
 
     // Files should be deleted first, then directories
     assert!(!file1.exists());
@@ -157,4 +158,43 @@ fn test_copy_transaction_commit_preserves_files() {
 
     // File should still exist
     assert!(file1.exists());
+}
+
+// ============================================================================
+// What a reversal refuses to touch
+// ============================================================================
+
+/// A destination file something else replaced after the copy wrote it is NOT
+/// deleted when the copy is reversed. The reversal removes what this operation
+/// put on disk; the file sitting there now is somebody else's.
+#[test]
+fn a_destination_changed_since_the_copy_wrote_it_survives_the_reversal() {
+    use super::CopyTransaction;
+
+    let temp_dir = create_temp_dir("reversal_drift");
+    let ours = temp_dir.join("ours.txt");
+    let theirs = temp_dir.join("theirs.txt");
+    fs::write(&ours, b"what the copy wrote").unwrap();
+    fs::write(&theirs, b"what the copy wrote").unwrap();
+
+    let mut tx = CopyTransaction::new();
+    tx.record_file(WrittenFile::local(ours.clone()));
+    tx.record_file(WrittenFile::local(theirs.clone()));
+
+    // Somebody else saves over one of them the way an editor does: write a temp,
+    // rename it into place. Same length, different file.
+    let incoming = temp_dir.join("theirs.incoming");
+    fs::write(&incoming, b"what somebody else").unwrap();
+    fs::rename(&incoming, &theirs).unwrap();
+
+    tx.rollback(ReversalGuard::SkipDrifted);
+
+    assert!(
+        theirs.exists(),
+        "a file replaced since the copy wrote it must survive the reversal"
+    );
+    assert!(
+        !ours.exists(),
+        "one drifted file must not stop the reversal removing its unchanged neighbours"
+    );
 }

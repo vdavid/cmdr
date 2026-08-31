@@ -15,6 +15,8 @@
 use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
+use super::reversal::{ReversalGuard, ReversalTally, remove_local_dir_if_empty, remove_local_file};
+
 /// One destination path this operation put on disk, with the identity a reversal
 /// rechecks before removing it or renaming it back.
 ///
@@ -121,24 +123,14 @@ impl WrittenIdentity {
         let Some(meta) = meta else {
             return Self::Unverifiable;
         };
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::MetadataExt;
-            let node = NodeId {
-                dev: meta.dev(),
-                ino: meta.ino(),
-            };
-            if meta.is_dir() {
-                Self::LocalDir { node }
-            } else {
-                Self::LocalFile { size: meta.len(), node }
-            }
-        }
         // No node id off Unix, and size alone isn't an identity worth deleting on.
-        #[cfg(not(unix))]
-        {
-            let _ = meta;
-            Self::Unverifiable
+        let Some(node) = Self::node_of_stat(meta) else {
+            return Self::Unverifiable;
+        };
+        if meta.is_dir() {
+            Self::LocalDir { node }
+        } else {
+            Self::LocalFile { size: meta.len(), node }
         }
     }
 
@@ -147,6 +139,34 @@ impl WrittenIdentity {
     /// must stat the same way, or a copied link that dangles reads as absent.
     pub(crate) fn at_local_path(path: &Path) -> Self {
         Self::of_stat(std::fs::symlink_metadata(path).ok().as_ref())
+    }
+
+    /// The node id this entry was recorded with, if it carries one. `None`
+    /// wherever a node id was never part of the identity — every volume backend,
+    /// and any entry whose stat failed.
+    pub(crate) fn node(&self) -> Option<NodeId> {
+        match self {
+            Self::LocalFile { node, .. } | Self::LocalDir { node } => Some(*node),
+            Self::VolumeFile { .. } | Self::OwnPartial | Self::Unverifiable => None,
+        }
+    }
+
+    /// The node id of an entry the caller already stat'd. `None` off Unix, where
+    /// there is none to read.
+    pub(crate) fn node_of_stat(meta: &Metadata) -> Option<NodeId> {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            Some(NodeId {
+                dev: meta.dev(),
+                ino: meta.ino(),
+            })
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = meta;
+            None
+        }
     }
 
     /// The size this entry was recorded with, for the journal row that mirrors
@@ -228,7 +248,13 @@ impl CopyTransaction {
         self.created_files.pop()
     }
 
-    /// Rolls back all created files and directories.
+    /// Rolls back all created files and directories, and reports what it left.
+    ///
+    /// `guard` decides whether an entry something else has changed since is
+    /// removed anyway; see [`ReversalGuard`]. The files go newest-first, draining
+    /// the ledger as they go, then the created directories deepest-first and
+    /// empty-only — a directory still holding something (a file the user dropped
+    /// in, or one this reversal declined to remove) stays.
     ///
     /// Intentional: rollback removes the files THIS operation created; it does
     /// NOT restore an original that an Overwrite replaced (we keep no per-file
@@ -236,15 +262,17 @@ impl CopyTransaction {
     /// the whole operation risks unexpectedly filling the user's drive on a
     /// large Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
     /// § "Overwrite isn't reversible".
-    pub fn rollback(&mut self) {
-        // Delete files first (newest first), draining the ledger as they go.
+    pub fn rollback(&mut self, guard: ReversalGuard) -> ReversalTally {
+        let mut tally = ReversalTally::default();
         while let Some(file) = self.pop_file() {
-            let _ = std::fs::remove_file(&file.path);
+            tally.record(remove_local_file(&file, guard), &file.path);
         }
-        // Then directories (deepest first, already in reverse due to creation order)
+        // Deepest first: `created_dirs` is in creation order, so reversing it
+        // empties leaves before their parents are tried.
         for dir in self.created_dirs.iter().rev() {
-            let _ = std::fs::remove_dir(dir);
+            tally.record(remove_local_dir_if_empty(dir), dir);
         }
+        tally
     }
 
     /// Marks the transaction as committed, preventing rollback on drop.
@@ -261,7 +289,13 @@ impl Drop for CopyTransaction {
                 self.created_files.len(),
                 self.created_dirs.len()
             );
-            self.rollback();
+            // The panic net, and the ONE reversal that removes everything on the
+            // ledger without rechecking it. It runs because a thread died
+            // mid-copy, so the destinations it holds are as likely to be
+            // half-written as complete, and there is nobody left to read a report
+            // about what got left behind. ❌ Don't align it with the guarded
+            // reversals: skipping on drift here strands partials after a crash.
+            self.rollback(ReversalGuard::Unconditional);
         }
     }
 }

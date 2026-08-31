@@ -17,6 +17,7 @@ use super::test_support::{
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::types::CancelRollbackOutcome;
 
 /// Cancellation between sources stops further transfers and emits `write-cancelled`.
 /// This was a latent bug pre-M1-step-4: the cancel path returned `Err(Cancelled)`
@@ -71,7 +72,11 @@ async fn cross_volume_move_cancel_between_sources_emits_cancelled_event() {
     // be empty.
     let cancelled = events.cancelled.lock().unwrap();
     assert_eq!(cancelled.len(), 1, "expected exactly one write-cancelled event");
-    assert!(!cancelled[0].rolled_back, "move has no rollback");
+    assert_eq!(
+        cancelled[0].rollback.outcome,
+        CancelRollbackOutcome::NotRolledBack,
+        "move has no rollback"
+    );
     assert_eq!(cancelled[0].operation_type, WriteOperationType::Move);
 }
 
@@ -185,5 +190,5 @@ async fn same_volume_move_cancel_emits_cancelled_event() {
 
     let cancelled = events.cancelled.lock().unwrap();
     assert_eq!(cancelled.len(), 1, "expected exactly one write-cancelled event");
-    assert!(!cancelled[0].rolled_back);
+    assert_eq!(cancelled[0].rollback.outcome, CancelRollbackOutcome::NotRolledBack);
 }

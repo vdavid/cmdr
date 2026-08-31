@@ -22,7 +22,7 @@ use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::transfer::volume::pull_path_to_local;
 use super::super::transfer::volume::{TreeRemoval, remove_tree};
 use super::super::types::{
-    ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
+    CancelRollback, ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType,
 };
 use super::conflicts::{ConflictMode, conditional_overwrites, find_unique_inner, resolve_effective};
@@ -714,7 +714,7 @@ async fn archive_copy_into_start(
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,
                         files_processed: final_progress.entries_done,
-                        rolled_back: false,
+                        rollback: CancelRollback::none(),
                     });
                 }
                 Err(PlanError::Op(err)) => {

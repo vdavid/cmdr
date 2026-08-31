@@ -40,7 +40,7 @@
 
 use std::time::{Duration, Instant};
 
-use super::types::WriteOperationPhase;
+use super::types::{ReversalBar, WriteOperationPhase};
 
 /// Half-life-ish time constant for the EWMA. 3 s feels live but not jittery;
 /// short enough that walking 20 m from the router visibly drops the speed
@@ -89,6 +89,9 @@ pub struct EtaSample {
     /// subtracts what accrued since the last sample from the elapsed wall time.
     pub human_wait_total: Duration,
     pub phase: WriteOperationPhase,
+    /// Which way this operation's `RollingBack` frames run. Meaningless in any
+    /// other phase, and read only there.
+    pub reversal_bar: ReversalBar,
     pub bytes_done: u64,
     pub bytes_total: u64,
     pub files_done: usize,
@@ -99,6 +102,12 @@ pub struct EtaSample {
 #[derive(Debug)]
 struct PhaseState {
     phase: WriteOperationPhase,
+    /// `true` while the counters run DOWN toward zero: a cancel's reversal
+    /// draining the bar the user watched fill. The direction decides both the
+    /// sign of every delta and which end of the phase the remaining work is
+    /// measured to, so it can't be inferred from the phase alone — a reversal
+    /// started from the history dialog reports the same phase while counting UP.
+    counters_drain: bool,
     last_t: Instant,
     /// The human-wait reading at `last_t`, so the next sample can tell working
     /// time from time somebody spent deciding.
@@ -136,22 +145,25 @@ impl EtaEstimator {
             now,
             human_wait_total,
             phase,
+            reversal_bar,
             bytes_done,
             bytes_total,
             files_done,
             files_total,
         } = sample;
+        let counters_drain = phase == WriteOperationPhase::RollingBack && reversal_bar == ReversalBar::Drains;
 
         // On phase change (or first call), reseed and emit zero stats.
         // The next call's Δt will be measured against this seed.
         let needs_reset = match &self.state {
             None => true,
-            Some(s) => s.phase != phase,
+            Some(s) => s.phase != phase || s.counters_drain != counters_drain,
         };
 
         if needs_reset {
             self.state = Some(PhaseState {
                 phase,
+                counters_drain,
                 last_t: now,
                 last_human_wait: human_wait_total,
                 working_elapsed: Duration::ZERO,
@@ -187,10 +199,10 @@ impl EtaEstimator {
             return compute_stats(state, bytes_done, bytes_total, files_done, files_total);
         }
 
-        // Δ toward the phase target. Forward phases grow the counters; rollback
-        // shrinks them. `saturating_sub` neutralizes spurious regressions (a
+        // Δ toward the phase target. A filling bar grows the counters; a draining
+        // one shrinks them. `saturating_sub` neutralizes spurious regressions (a
         // late event arriving after a counter reset, etc.).
-        let (delta_bytes, delta_files) = if phase == WriteOperationPhase::RollingBack {
+        let (delta_bytes, delta_files) = if counters_drain {
             (
                 state.last_bytes.saturating_sub(bytes_done) as f64,
                 state.last_files.saturating_sub(files_done) as f64,
@@ -253,8 +265,11 @@ fn compute_stats(
 
     let warmed_up = state.samples >= MIN_SAMPLES_FOR_ETA && state.working_elapsed >= MIN_ELAPSED_FOR_ETA;
 
-    // Remaining work toward the phase target.
-    let (remaining_bytes, remaining_files) = if state.phase == WriteOperationPhase::RollingBack {
+    // Remaining work toward the phase target: zero for a draining bar, the totals
+    // for a filling one. ❌ Don't key this on the phase — a reversal started from
+    // the history dialog reports `RollingBack` while counting UP, and reading its
+    // counters as "distance from zero" makes the ETA grow as it progresses.
+    let (remaining_bytes, remaining_files) = if state.counters_drain {
         (bytes_done, files_done)
     } else {
         (

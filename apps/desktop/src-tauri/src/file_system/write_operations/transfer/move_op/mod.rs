@@ -20,14 +20,17 @@ use std::sync::Arc;
 use super::super::conflict::{ApplyToAll, resolve_conflict};
 use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
-use super::super::ledger::WrittenFile;
+use super::super::ledger::{WrittenFile, WrittenIdentity};
 use super::super::overwrite::safe_overwrite_dir;
+use super::super::reversal::{Recheck, ReversalGuard, ReversalTally, recheck_local};
 use super::super::scan::handle_dry_run;
 use super::super::state::{WriteOperationState, is_cancelled};
 use super::super::types::{
     SourceItemOutcome, WriteOperationConfig, WriteOperationError, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use super::super::validation::{is_same_file, is_same_filesystem, path_exists_or_is_symlink};
+use crate::operation_log::rollback::ItemResult;
+use crate::operation_log::types::SkipReason;
 
 mod cross_fs;
 mod same_fs;
@@ -72,8 +75,9 @@ impl MoveTransaction {
         self.renames.pop()
     }
 
-    /// Reverses all recorded renames (dest → source) in reverse order.
-    /// Same-FS rename is instant, so this runs synchronously.
+    /// Reverses all recorded renames (dest → source) in reverse order, and
+    /// reports what it left alone. Same-FS rename is instant, so this runs
+    /// synchronously.
     ///
     /// Intentional: this reverses the moves THIS op made; it does NOT restore a
     /// destination that an Overwrite-with-rename replaced (no per-file backup is
@@ -81,17 +85,74 @@ impl MoveTransaction {
     /// whole operation risks unexpectedly filling the user's drive on a large
     /// Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
     /// § "Overwrite isn't reversible".
-    fn rollback(&mut self) {
+    fn rollback(&mut self) -> ReversalTally {
+        let mut tally = ReversalTally::default();
         while let Some(item) = self.pop() {
-            if let Err(e) = fs::rename(&item.landed.path, &item.original_source) {
-                log::warn!(
-                    "move rollback: failed to rename {} back to {}: {}",
-                    item.landed.path.display(),
-                    item.original_source.display(),
-                    e
-                );
-            }
+            tally.record(restore_moved_item(&item), &item.landed.path);
         }
+        tally
+    }
+}
+
+/// Put one moved item back where it came from — if what sits at the landed path
+/// is still the item this move put there, AND nothing new has taken its original
+/// place.
+///
+/// **Two guards, the pair the history engine pins.** The recheck stops the move
+/// back from carrying off a file something else replaced at the destination. The
+/// non-destructive restore stops the rename from silently destroying whatever the
+/// user has since created at the original source — `rename(2)` replaces its target
+/// without a word, and there is no backup to put back afterwards. Either refusal
+/// leaves the item where it landed, which is recoverable; the alternative isn't.
+fn restore_moved_item(item: &MovedItem) -> ItemResult {
+    match recheck_local(&item.landed, ReversalGuard::SkipDrifted) {
+        // Something took the moved item away. The end state a restore wanted
+        // (nothing of ours at the destination) holds, so this is idempotent.
+        Recheck::AlreadyGone => return ItemResult::Skipped(SkipReason::AlreadyGone),
+        Recheck::Skip(reason) => return ItemResult::Skipped(reason),
+        Recheck::Act => {}
+    }
+    if let Ok(occupant) = fs::symlink_metadata(&item.original_source)
+        && !occupant_is_the_item_itself(item, &occupant)
+    {
+        log::info!(
+            "move rollback: leaving {} where it is, something else now sits at {}",
+            item.landed.path.display(),
+            item.original_source.display()
+        );
+        return ItemResult::Skipped(SkipReason::RestoreTargetOccupied);
+    }
+    match fs::rename(&item.landed.path, &item.original_source) {
+        Ok(()) => ItemResult::Reversed,
+        Err(e) => {
+            log::warn!(
+                "move rollback: couldn't rename {} back to {}: {}",
+                item.landed.path.display(),
+                item.original_source.display(),
+                e
+            );
+            ItemResult::Skipped(SkipReason::Failed)
+        }
+    }
+}
+
+/// Is the entry occupying the original source actually the item being restored,
+/// rather than a real collision?
+///
+/// A case-insensitive filesystem folds `dog.jpg` and `dog.JPG` onto one entry, so
+/// a move that only changed a name's case finds its own destination sitting at the
+/// source. Same node id ⇒ same entry, and the rename back is then a case
+/// correction, not an overwrite. This is one local filesystem, so `(dev, ino)`
+/// settles it exactly and no path folding is needed.
+///
+/// The recorded node id is the right side to compare: the recheck above just
+/// proved the entry still at the landed path carries it.
+fn occupant_is_the_item_itself(item: &MovedItem, occupant: &fs::Metadata) -> bool {
+    match (item.landed.identity.node(), WrittenIdentity::node_of_stat(occupant)) {
+        (Some(recorded), Some(live)) => recorded == live,
+        // Nothing to compare, so nothing is proven — and an unproven restore that
+        // might overwrite is one we don't make.
+        _ => false,
     }
 }
 
@@ -381,6 +442,10 @@ mod test_support;
 mod tests;
 
 /// What each ledger entry records about the rename it stands for.
+#[cfg(test)]
+#[path = "move_reversal_tests.rs"]
+mod move_reversal_tests;
+
 #[cfg(test)]
 #[path = "move_ledger_tests.rs"]
 mod move_ledger_tests;

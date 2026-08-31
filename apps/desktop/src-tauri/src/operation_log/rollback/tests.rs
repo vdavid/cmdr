@@ -31,28 +31,34 @@ fn verify_snapshot_match_drift_unverifiable() {
     let live = entry("f", None, Some(10), Some(MT));
     // Both fields recorded and equal ⇒ Match.
     assert_eq!(
-        verify_snapshot(Some(10), Some(MT as i64), &live),
+        verify_snapshot(Some(10), Some(MT as i64), live.size, live.modified_at),
         SnapshotVerdict::Match
     );
     // A recorded field differs ⇒ Drift.
     assert_eq!(
-        verify_snapshot(Some(10), Some(MT as i64 + 1), &live),
+        verify_snapshot(Some(10), Some(MT as i64 + 1), live.size, live.modified_at),
         SnapshotVerdict::Drift
     );
     assert_eq!(
-        verify_snapshot(Some(11), Some(MT as i64), &live),
+        verify_snapshot(Some(11), Some(MT as i64), live.size, live.modified_at),
         SnapshotVerdict::Drift
     );
     // Only size recorded (volume transfers carry no mtime), and it matches ⇒ Match.
-    assert_eq!(verify_snapshot(Some(10), None, &live), SnapshotVerdict::Match);
+    assert_eq!(
+        verify_snapshot(Some(10), None, live.size, live.modified_at),
+        SnapshotVerdict::Match
+    );
     // A recorded field whose live counterpart is absent ⇒ Unverifiable (fail safe).
     let no_mtime = entry("f", None, Some(10), None);
     assert_eq!(
-        verify_snapshot(Some(10), Some(MT as i64), &no_mtime),
+        verify_snapshot(Some(10), Some(MT as i64), no_mtime.size, no_mtime.modified_at),
         SnapshotVerdict::Unverifiable
     );
     // Nothing recorded ⇒ nothing to prove identity on ⇒ Unverifiable.
-    assert_eq!(verify_snapshot(None, None, &live), SnapshotVerdict::Unverifiable);
+    assert_eq!(
+        verify_snapshot(None, None, live.size, live.modified_at),
+        SnapshotVerdict::Unverifiable
+    );
 }
 
 #[test]

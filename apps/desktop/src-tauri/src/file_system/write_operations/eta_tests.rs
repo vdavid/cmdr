@@ -21,6 +21,9 @@ impl EtaEstimator {
         self.update(EtaSample {
             now,
             human_wait_total: Duration::ZERO,
+            // The in-flight reversal's direction: the cases here that reach
+            // `RollingBack` all model a cancel draining the bar it filled.
+            reversal_bar: ReversalBar::Drains,
             phase,
             bytes_done,
             bytes_total,
@@ -433,6 +436,7 @@ fn steady_copy_across_a_five_minute_wait(human_wait: bool) -> EtaStats {
         est.update(EtaSample {
             now: at(start, i * 1000),
             human_wait_total: Duration::ZERO,
+            reversal_bar: ReversalBar::Drains,
             phase: WriteOperationPhase::Copying,
             bytes_done: i * 100_000_000,
             bytes_total,
@@ -452,6 +456,7 @@ fn steady_copy_across_a_five_minute_wait(human_wait: bool) -> EtaStats {
     est.update(EtaSample {
         now: at(start, 5_000 + PARK_MS + 1_000),
         human_wait_total: waited,
+        reversal_bar: ReversalBar::Drains,
         phase: WriteOperationPhase::Copying,
         bytes_done: 600_000_000,
         bytes_total,
@@ -512,6 +517,7 @@ fn the_warm_up_gate_measures_working_time_not_wall_time() {
     est.update(EtaSample {
         now: at(start, 0),
         human_wait_total: Duration::ZERO,
+        reversal_bar: ReversalBar::Drains,
         phase: WriteOperationPhase::Copying,
         bytes_done: 0,
         bytes_total: 10_000_000,
@@ -521,6 +527,7 @@ fn the_warm_up_gate_measures_working_time_not_wall_time() {
     let stats = est.update(EtaSample {
         now: at(start, 10_200),
         human_wait_total: Duration::from_secs(10),
+        reversal_bar: ReversalBar::Drains,
         phase: WriteOperationPhase::Copying,
         bytes_done: 2_000_000,
         bytes_total: 10_000_000,
@@ -666,4 +673,33 @@ fn first_post_seed_sample_initializes_rate_directly() {
         (99.0..=101.0).contains(&fps),
         "files_per_second after first post-seed sample = {fps}, expected ~100",
     );
+}
+
+/// A reversal started from the history dialog reports the same `RollingBack`
+/// phase while its bar COUNTS UP, so the estimator has to measure remaining work
+/// toward the total. Reading its counters as distance-from-zero would report a
+/// finish it has barely started and then grow the estimate as it progressed.
+#[test]
+fn a_reversal_whose_bar_fills_measures_remaining_toward_the_total() {
+    let start = Instant::now();
+    let mut est = EtaEstimator::new();
+    let filling = |now: Instant, bytes_done: u64, files_done: usize| EtaSample {
+        now,
+        human_wait_total: Duration::ZERO,
+        reversal_bar: ReversalBar::Fills,
+        phase: WriteOperationPhase::RollingBack,
+        bytes_done,
+        bytes_total: 1_000_000_000,
+        files_done,
+        files_total: 100,
+    };
+
+    est.update(filling(at(start, 0), 0, 0));
+    est.update(filling(at(start, 1000), 100_000_000, 10));
+    let stats = est.update(filling(at(start, 2000), 200_000_000, 20));
+
+    // 100 MB/s, 800 MB still to undo → ~8 s.
+    let eta = stats.eta_seconds.expect("warmed up");
+    assert!((7..=9).contains(&eta), "eta = {eta}, expected ~8 s");
+    assert!(stats.bytes_per_second >= 90_000_000, "the rate reads forward too");
 }

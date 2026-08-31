@@ -15,8 +15,8 @@ use super::super::OperationEventSink;
 use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::types::{
-    WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError, WriteOperationStartResult,
-    WriteOperationType,
+    CancelRollback, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
+    WriteOperationStartResult, WriteOperationType,
 };
 use super::engine::{MutatorHooks, PlanError, delete_move_sources, run_managed_edit, to_write_error};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
@@ -226,7 +226,7 @@ pub(crate) async fn archive_edit_start(
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,
                         files_processed: final_progress.entries_done,
-                        rolled_back: false,
+                        rollback: CancelRollback::none(),
                     });
                 }
                 Err(PlanError::Op(err)) => {
