@@ -26,6 +26,15 @@
      * the reversal ends — which is also what keeps a stale `rolling_back` row (the
      * dialog reads the journal once, on open) from offering a press with nothing
      * left to press.
+     *
+     * ## The words are the queue's, on purpose
+     *
+     * `queue.row.*` for all four ("Pause", "Resume", "Cancel", and the "Paused"
+     * status word): these are the same controls on the same operation, so ❌ don't
+     * mint `operationLog.*` twins — a copy edit would then move one surface and
+     * not the other. The accessible name is the visible word plus the
+     * `aria-describedby` naming the row, the way the row's Roll back button
+     * already works.
      */
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
