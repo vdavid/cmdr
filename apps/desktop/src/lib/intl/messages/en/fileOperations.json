@@ -1161,9 +1161,9 @@
     "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
 
-  "fileOperations.rollbackConfirm.body": "This deletes every file the operation has written so far. Any file it replaced won''t come back.",
+  "fileOperations.rollbackConfirm.body": "This deletes every file the operation has written so far, and any file it replaced won''t come back. Cmdr skips anything it isn''t sure about, so a few may stay behind.",
   "@fileOperations.rollbackConfirm.body": {
-    "description": "Body of the Rollback confirmation. Two facts, both load-bearing: it removes everything written so far (not only the half-written file that a plain Cancel drops), and a file that was overwritten during the operation is gone for good, because no copy of the original was kept. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong.",
+    "description": "Body of the Rollback confirmation shown on a copy or move that is still RUNNING. Three facts, all load-bearing: it removes everything written so far (not only the half-written file that a plain Cancel drops), a file that was overwritten during the operation is gone for good because no copy of the original was kept, and Cmdr leaves alone every file it can''t match against what it wrote, so the reversal can come out partial. Keep the last sentence parallel with the bodyUndo* siblings, which make the same promise. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong.",
     "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Finish rolling this back?",
@@ -1205,6 +1205,152 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Finish rolling back",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "description": "The confirming button on the same dialog when the operation is already PARTLY rolled back: carry on from where the rollback stopped. Word it exactly like the \"Finish rolling back\" button in the Operation log that opened this dialog (operationLog.dialog.finishRollBack), so the two read as the same action."
+  },
+
+  "fileOperations.cancelRollback.doneDeleting": "Removed the {countText} {count, plural, one {item} other {items}} Cmdr had written.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "description": "Toast shown after the user cancels a copy (or a compress) with Rollback and the undo removed everything that operation had written. Reassuring and final: nothing of the cancelled copy is left at the destination. \"Item\" covers both files and folders, because the undo removes the folders it made as well. Sentence case.",
+    "placeholders": {
+      "countText": "how many items the undo removed, already formatted for display (e.g. 1,234)",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.doneMovingBack": "Put the {countText} {count, plural, one {item} other {items}} back.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "description": "Toast shown after the user cancels a MOVE with Rollback and the undo carried everything back to where it started. Nothing was deleted here, so keep the tone calm rather than a warning. Use the verb your language uses for putting a file back where it came from, the same one as fileOperations.trash.undone. \"Item\" covers both files and folders. Sentence case.",
+    "placeholders": {
+      "countText": "how many items travelled back, already formatted for display (e.g. 1,234)",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.someDeleted": "Removed {countText} {count, plural, one {item} other {items}}.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "description": "First line of the toast shown after the user cancels a copy (or a compress) with Rollback and the undo left some things behind. It reports only what WAS removed; the line after it (fileOperations.cancelRollback.leftBehind) explains the rest, so this one must not claim the destination is clear. Sibling of fileOperations.cancelRollback.doneDeleting, which covers the clean case and says \"the\" because there it really was everything. \"Item\" covers both files and folders. Sentence case.",
+    "placeholders": {
+      "countText": "how many items the undo removed, already formatted for display (e.g. 1,234)",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.someMovedBack": "Put {countText} {count, plural, one {item} other {items}} back.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "description": "First line of the toast shown after the user cancels a MOVE with Rollback and the undo left some things behind. It reports only what DID travel back; the line after it (fileOperations.cancelRollback.leftBehind) explains the rest, so this one must not claim everything is home. Sibling of fileOperations.cancelRollback.doneMovingBack, which covers the clean case. \"Item\" covers both files and folders. Sentence case.",
+    "placeholders": {
+      "countText": "how many items travelled back, already formatted for display (e.g. 1,234)",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.stoppedDeleting": "Stopped after removing {countText} {count, plural, one {item} other {items}}. The rest are still there.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "description": "Toast shown when the user cancels a copy with Rollback and then stops the undo partway through, so some of the copied items were removed and the others are still sitting at the destination. The user chose this, so state it plainly with no hint of a warning. \"The rest are still there\" means still at the place the copy wrote them. Sentence case.",
+    "placeholders": {
+      "countText": "how many items the undo removed before it stopped, already formatted for display (e.g. 1,234)",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.stoppedMovingBack": "Stopped after putting {countText} {count, plural, one {item} other {items}} back. The rest stayed where the move put them.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "description": "Toast shown when the user cancels a MOVE with Rollback and then stops the undo partway through, so some items travelled home and the others are still at the destination the move had carried them to. The user chose this, so state it plainly with no hint of a warning. Sentence case.",
+    "placeholders": {
+      "countText": "how many items travelled back before the undo stopped, already formatted for display (e.g. 1,234)",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.leftBehind": "Cmdr leaves alone anything it isn''t sure about, so these stayed where they are:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "description": "Middle line of the toast after a cancelled copy or move whose undo left things behind. It sets the expectation BEFORE the reasons, so the user reads the leftovers as care rather than as something going wrong: Cmdr refuses to remove or move anything it can''t match against what it wrote. The lines under it (fileOperations.cancelRollback.reason.*) each name one reason and are shown as a bulleted list, which is why this line ends in a colon. Keep the same promise as the Rollback confirmations (fileOperations.rollbackConfirm.body and its bodyUndo* siblings), which say Cmdr skips anything it isn''t sure about. Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "screenshot": "transfer-complete-toast.png",
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is one of the lines inside a toast like it."
+  },
+
+  "fileOperations.cancelRollback.reason.drift.named": "Left {name} alone: it changed after Cmdr put it there.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "description": "One line in the bulleted list of what a cancelled copy or move''s undo left behind. This version is used when the reason applies to exactly ONE item, so the line names it. This reason: something edited or replaced that item after Cmdr wrote it, so removing it (or moving it away) would take away work the user has done since. Say it as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "name": "the item''s own name as it is on disk right now, e.g. invoice-2026.pdf. Uncontrolled text of any length, in any script, so keep the sentence readable whatever lands here, and never translate it."
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.drift.counted": "Left {countText} {count, plural, one {item} other {items}} alone: they changed after Cmdr put them there.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "description": "The same line as fileOperations.cancelRollback.reason.drift.named, used when the reason applies to two or more items, so it counts them instead of naming one. Two keys rather than one plural, because naming versus counting is a display choice your language''s plural categories can''t express. Sentence case.",
+    "placeholders": {
+      "countText": "how many items this reason applies to, already formatted for display (e.g. 1,234). Always two or more",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.unverifiable.named": "Left {name} alone: Cmdr couldn''t check whether it changed.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "description": "One line in the bulleted list of what a cancelled copy or move''s undo left behind. This version is used when the reason applies to exactly ONE item, so the line names it. This reason: the drive couldn''t tell Cmdr whether the item is still the one it wrote (some network drives and phones can''t), and Cmdr never removes or moves a file it can''t check first. Say it as caution, not as a fault of the drive or the user. Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "placeholders": {
+      "name": "the item''s own name as it is on disk right now, e.g. invoice-2026.pdf. Uncontrolled text of any length, in any script, so keep the sentence readable whatever lands here, and never translate it."
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "Left {countText} {count, plural, one {item} other {items}} alone: Cmdr couldn''t check whether they changed.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "description": "The same line as fileOperations.cancelRollback.reason.unverifiable.named, used when the reason applies to two or more items, so it counts them instead of naming one. Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "placeholders": {
+      "countText": "how many items this reason applies to, already formatted for display (e.g. 1,234). Always two or more",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.spotTaken.named": "Left {name} where it is: something else now sits where it came from.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "description": "One line in the bulleted list of what a cancelled MOVE''s undo left behind. This version is used when the reason applies to exactly ONE item, so the line names it. This reason: the undo would have carried the item back to the folder it started in, but something else is at that spot now, and Cmdr would rather leave the item where it is than write over the newcomer. Say it as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "name": "the item''s own name as it is on disk right now, e.g. invoice-2026.pdf. Uncontrolled text of any length, in any script, so keep the sentence readable whatever lands here, and never translate it."
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "Left {countText} {count, plural, one {item} other {items}} where they are: something else now sits where they came from.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "description": "The same line as fileOperations.cancelRollback.reason.spotTaken.named, used when the reason applies to two or more items, so it counts them instead of naming one. Sentence case.",
+    "placeholders": {
+      "countText": "how many items this reason applies to, already formatted for display (e.g. 1,234). Always two or more",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Left the folder {name} alone: it has something in it now.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "description": "One line in the bulleted list of what a cancelled copy or move''s undo left behind, about a FOLDER rather than a file. This version is used when the reason applies to exactly ONE folder, so the line names it. This reason: the undo would have removed a folder the operation created, but something has been put inside it since, so Cmdr keeps the folder and everything in it. Say it as a considered choice, not as something going wrong. Sentence case.",
+    "placeholders": {
+      "name": "the folder''s own name as it is on disk right now, e.g. Scans. Uncontrolled text of any length, in any script, so keep the sentence readable whatever lands here, and never translate it."
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Left {countText} {count, plural, one {folder} other {folders}} alone: they have something in them now.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "description": "The same line as fileOperations.cancelRollback.reason.folderNotEmpty.named, used when the reason applies to two or more folders, so it counts them instead of naming one. Sentence case.",
+    "placeholders": {
+      "countText": "how many folders this reason applies to, already formatted for display (e.g. 1,234). Always two or more",
+      "count": "the same number of folders (drives the singular/plural form of the noun)"
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.failed.named": "Couldn''t undo {name}. Its drive may be disconnected or read-only.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "description": "One line in the bulleted list of what a cancelled copy or move''s undo left behind. This version is used when the reason applies to exactly ONE item, so the line names it. Unlike the other reasons on that list this one is NOT a deliberate choice: the drive turned the undo down, so it may be worth trying again once the drive is back or writable. Stay conversational and never use the words \"error\" or \"failed\". Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "placeholders": {
+      "name": "the item''s own name as it is on disk right now, e.g. invoice-2026.pdf. Uncontrolled text of any length, in any script, so keep the sentence readable whatever lands here, and never translate it."
+    }
+  },
+
+  "fileOperations.cancelRollback.reason.failed.counted": "Couldn''t undo {countText} {count, plural, one {item} other {items}}. Their drive may be disconnected or read-only.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "description": "The same line as fileOperations.cancelRollback.reason.failed.named, used when the reason applies to two or more items, so it counts them instead of naming one. Stay conversational and never use the words \"error\" or \"failed\". Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "placeholders": {
+      "countText": "how many items this reason applies to, already formatted for display (e.g. 1,234). Always two or more",
+      "count": "the same number of items (drives the singular/plural form of the noun)"
+    }
   },
 
   "fileOperations.errorDialog.technicalDetails": "Technical details",

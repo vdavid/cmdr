@@ -73,6 +73,7 @@ import type { BytesPerSecond, Seconds } from '$lib/units'
 import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
 import type { OperationOutcome, ScanReadout } from '../operation-session/operation-session.svelte'
 import { dispatchTransferOperation, type TransferDispatchConfig } from './transfer-dispatch'
+import { raiseCancelRollbackToast } from './cancel-rollback-toast'
 
 export interface TransferProgressStateConfig extends TransferDispatchConfig {
   /** An operation already running that this view ADOPTS instead of starting one
@@ -393,6 +394,11 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
           rollback: event.rollback.outcome,
           left: event.rollback.skips.reduce((total, group) => total + group.count, 0),
         })
+        // Said here rather than by the parent: the reversal's report rides the
+        // cancelled event, and both the started and the adopted arms reach this
+        // one place. Raised before the close so the summary is already up when
+        // the dialog gets out of the way.
+        raiseCancelRollbackToast(event.rollback, event.operationType)
         close(() => {
           config.onCancelled(event.filesProcessed)
         })

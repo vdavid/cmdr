@@ -615,8 +615,8 @@ non-prompting policy: that would turn "nobody looked" into a silent overwrite.
   three-state `outcome` (`notRolledBack` / `rolledBack` / `partiallyRolledBack`), how many items came back, and what the
   reversal left behind grouped by reason with one example name each. A reversal leaves things behind on purpose — it
   refuses to delete a destination something else changed since the transfer wrote it (BE doc:
-  `write_operations/transfer/DETAILS.md` § "What a reversal does with that identity"). Only the cancel log line reads it
-  today; the dialog that words it for a person is still to come.
+  `write_operations/transfer/DETAILS.md` § "What a reversal does with that identity"). § "What a cancelled transfer's
+  reversal says afterwards" is what turns it into a sentence.
 - **Cancel close is two-condition: `write-cancelled` + `write-settled`.** When the user clicks Cancel (without
   rollback), `TransferProgressDialog` does NOT close immediately. It keeps the "Canceling…" label up until both events
   have arrived for this `operationId`, then applies the existing `MIN_DISPLAY_MS` floor and closes via
@@ -641,6 +641,59 @@ non-prompting policy: that would turn "nobody looked" into a silent overwrite.
   re-scan. ❌ The dialog must never cancel the preview on teardown: the operation owns it, and a viewer detaching is not
   a cancel. The scan-error and scan-cancelled listeners also flip `started = true` as a terminal signal, so a late
   `scan-preview-complete` event can't dispatch an operation after we've errored or cancelled.
+
+## What a cancelled transfer's reversal says afterwards
+
+`cancel-rollback-toast.ts` reads `event.rollback` and raises the toast the user reads a second after the progress dialog
+closes. `readCancelRollback` is pure and returns the already-localized lines; `raiseCancelRollbackToast` is the only
+impure half. `CancelRollbackToastContent.svelte` stacks them: a headline, the expectation-setting line, then one bullet
+per typed reason.
+
+**Why this exists at all.** The in-flight reversal's bar DRAINS, and every item it walks past advances it, so it always
+lands on zero (BE doc: `write_operations/transfer/DETAILS.md`). Zero therefore means "this reversal is finished", not
+"everything came off the disk" — and without a summary, a bar hitting zero on a reversal that deliberately left four
+files behind is a lie the user has no way to catch. The bar completing and the summary telling the truth are ONE design,
+not two features: a bar stranded at 94% reads as a crash, and a user who thinks the app crashed never reads the line
+that would have explained things.
+
+**Raised here, not by the parent.** The completion toast is composed up in `pane/dialog-state.svelte.ts` because it
+needs birth context (the selection's file/folder split) that only the parent holds. This one needs nothing but the
+event, and raising it where the event lands means the started arm and the ADOPTED arm both get it without
+`onCancelled`'s signature having to carry a report the parent would only pass through.
+
+**Two deliberate silences.** `notRolledBack` says nothing: everything the transfer wrote is still where it landed, which
+is exactly what a plain Cancel asks for and what stopping a reversal before its first item leaves. A clean reversal with
+`reversed === 0` says nothing either — the transfer had written nothing to undo, and "Removed 0 items" is noise.
+
+**How a stopped reversal is told apart from a skipping one**, with no extra field on the wire: a full pass that skipped
+nothing lands `rolledBack`, so `partiallyRolledBack` with an EMPTY `skips` can only be a reversal the user stopped, and
+it gets its own wording. When a stop DOES carry skip groups the partial wording covers it, because every line that
+wording prints is true either way and none of them claims the ledger was walked to the end. ❌ Don't "fix" this with a
+`stoppedEarly` flag on the event: the wire already answers the question, and the partial wording is written so it can't
+overclaim.
+
+**The verb comes off the EVENT's operation type, never a view's config.** Only a same-volume move carries items home;
+every other in-flight reversal deletes what the transfer wrote, and a cross-volume move can't be reversed at all
+(`notRolledBack`, so it never reaches here). A dialog that ADOPTED a running operation was handed no birth context, so
+its config's operation type is inert there — reading it would word a move's reversal as a delete on exactly the path
+where nobody could see it coming.
+
+**Level is decided by whether Cmdr CHOSE the leftover.** Drift, an unverifiable snapshot, an occupied spot, and a
+non-empty folder are all Cmdr protecting something, which is `info`. `failed` is the drive turning the undo down, which
+is `warn` and may be worth retrying. ❌ Never colour a deliberate skip as a warning: the whole point of the copy is that
+the user finishes reading it feeling Cmdr did the careful thing.
+
+**The reason lines are two keys per reason, named and counted**, for the reason `$lib/ask-cmdr/`'s rename-undo rail
+already found: "name the one file" vs "count them" is a display decision, not a plural category, and a locale with only
+`other` (Chinese, Vietnamese) can't express both from one message. `alreadyGone` maps to `null` — the backend counts it
+as reversed, so it never arrives as a skip — and it stays in the map so a NEW `SkipReason` is a compile error here
+rather than a count silently dropped off the list.
+
+**The confirmation was updated in the same pass.** `fileOperations.rollbackConfirm.body` now ends with the same "Cmdr
+skips anything it isn't sure about, so a few may stay behind" clause its three `bodyUndo*` siblings already carried,
+because the recheck made "this deletes every file the operation has written so far" an over-promise. The Rollback
+TOOLTIP is deliberately left alone: its job is telling Rollback apart from Cancel, the confirmation two clicks later
+carries the detail, and hedging a five-word tooltip would blunt the warning it exists to deliver.
 
 ## The dialog is a view
 

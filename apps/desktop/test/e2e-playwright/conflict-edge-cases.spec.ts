@@ -155,6 +155,89 @@ test.describe('Cancel and rollback', () => {
       await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null })`)
     }
   })
+
+  test('Rollback leaves a destination something else changed, and the toast says which', async ({ tauriPage }) => {
+    // The one place the whole chain is proved against real files: a real
+    // destination really drifts, the backend's recheck really refuses to delete
+    // it, and the toast the user reads really names it. Unit tests cover each
+    // half against a mock, and neither can show that the values on the wire are
+    // the ones the backend emits at cancel time.
+    //
+    // Determinism comes from the same signal the sibling test above uses (a
+    // `write-progress` event proving a file has landed while others haven't),
+    // plus an `existsSync` on the file we're about to change, so we never edit
+    // a destination the copy hasn't written yet.
+    const fixtureRoot = getFixtureRoot()
+    recreateFixtures(fixtureRoot)
+    const driftedLeft = path.join(fixtureRoot, 'left', 'drifted')
+    fs.mkdirSync(driftedLeft, { recursive: true })
+    for (let i = 0; i < 8; i++) {
+      fs.writeFileSync(path.join(driftedLeft, `file-${String(i)}.txt`), 'x'.repeat(1024))
+    }
+
+    await ensureAppReady(tauriPage)
+    await flushFileWatcher(tauriPage)
+    await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: 200 })`)
+
+    const firstDest = path.join(fixtureRoot, 'right', 'drifted', 'file-0.txt')
+    try {
+      await tauriPage.evaluate(`(async function() {
+        window.__driftCopyTestEvents = [];
+        const handler = (event) => { window.__driftCopyTestEvents.push(event.payload); };
+        const handlerId = window.__TAURI_INTERNALS__.transformCallback(handler);
+        window.__driftCopyTestEventId = await window.__TAURI_INTERNALS__.invoke('plugin:event|listen', {
+          event: 'write-progress',
+          target: { kind: 'Any' },
+          handler: handlerId,
+        });
+      })()`)
+
+      expect(await moveCursorToFile(tauriPage, 'drifted')).toBe(true)
+      await dispatchMenuCommand(tauriPage, 'file.copy')
+      await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+      await clickTransferStart(tauriPage)
+
+      await expect
+        .poll(
+          async () =>
+            (await tauriPage.evaluate<boolean>(
+              `(window.__driftCopyTestEvents ?? []).some(p => p.phase === 'copying' && p.filesDone >= 1 && p.filesDone < p.filesTotal)`,
+            )) && fs.existsSync(firstDest),
+          { timeout: 10000, intervals: [25] },
+        )
+        .toBeTruthy()
+
+      // Something else edits a file the copy already wrote. A different SIZE is
+      // what the recheck reads, so this is the drift the reversal must respect.
+      fs.writeFileSync(firstDest, 'edited by someone else')
+
+      await clickButtonByText(tauriPage, '[data-dialog-id="transfer-progress"] button', 'Rollback')
+      await confirmRollback(tauriPage)
+      await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+
+      // The drifted file survives, with the edit intact: deleting it would have
+      // taken away work Cmdr never wrote.
+      expect(fs.existsSync(firstDest)).toBe(true)
+      expect(fs.readFileSync(firstDest, 'utf8')).toBe('edited by someone else')
+      // Its unmodified neighbours still go, so one drifted file doesn't abort
+      // the reversal.
+      expect(fs.existsSync(path.join(fixtureRoot, 'right', 'drifted', 'file-7.txt'))).toBe(false)
+      // And the user is told, by name.
+      await expectAndDismissToast(tauriPage, 'file-0.txt', { timeout: 8000 })
+    } finally {
+      await tauriPage.evaluate(`(async function() {
+        const id = window.__driftCopyTestEventId;
+        if (id !== undefined) {
+          await window.__TAURI_INTERNALS__.invoke('plugin:event|unlisten', { event: 'write-progress', eventId: id });
+        }
+        delete window.__driftCopyTestEvents;
+        delete window.__driftCopyTestEventId;
+      })()`)
+      await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null })`)
+      fs.rmSync(path.join(fixtureRoot, 'right', 'drifted'), { recursive: true, force: true })
+      fs.rmSync(driftedLeft, { recursive: true, force: true })
+    }
+  })
 })
 
 test.describe('Edge cases', () => {

@@ -238,7 +238,11 @@ alone cannot tell you.
   clash that was ANSWERED, whichever surface asked. A newer clash that arrived mid-answer stays (see below).
 - `outcome` / `settled` / `settleEventReceived`: how it ended, whether it ended, and whether the backend task has torn
   down. The last is separate because `write-settled` says the task is gone, not how it finished. `outcome` is
-  write-once, so a cancel racing a completion cannot flip an answer a view already rendered.
+  write-once, so a cancel racing a completion cannot flip an answer a view already rendered. A `cancelled` outcome
+  carries the whole `write-cancelled` event, so the reversal's report (`event.rollback`: the three-state outcome, how
+  many items came back, and what it left behind by reason) rides along with it. The session doesn't word any of that;
+  `$lib/file-operations/transfer/cancel-rollback-toast.ts` does, off this one event, which is why both the started and
+  the adopted progress views get the summary without either owning it.
 
 **"A person is deciding" is `awaitingHuman()`**, and it takes TWO signals because the two waits report differently: a
 user pause shows up as `snapshot.status === 'paused'`, while an operation parked on a clash is still `running` and says
