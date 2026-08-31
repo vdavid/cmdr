@@ -71,6 +71,15 @@ All four are overridable via `CARGO_VOLUME`, `TARGET_VOLUME`, `ROOT_NODE_MODULES
 CI sets them to host bind-mount paths (`/tmp/cmdr-docker-cache/...`) so `actions/cache` can persist them (it can't cache
 Docker named volumes).
 
+**Gotcha: the volume names are FIXED, so every worktree shares one `/target`.** The repo root is bind-mounted at `/app`,
+but `cmdr-target-cache` is not keyed on which clone mounted it. A run from another worktree can therefore leave an rlib
+whose mtime is NEWER than your worktree's sources for the same crate, and cargo then reports it fresh: only the top
+`cmdr` crate recompiles, against a `crates/` build from someone else's branch. It surfaces as a build failure naming API
+your branch legitimately has (`no volume_busy_for_user in volume::host::activity`, with `Compiling cmdr` as the ONLY
+compile line), so ❌ don't read it as a real break in your code. `touch` the crate's sources (or
+`docker volume rm cmdr-target-cache`) and rerun. Hit while two sessions ran `pnpm check --include-slow` against
+different worktrees (2026-08-31).
+
 ## SMB E2E networking
 
 The E2E container joins the `smb-consumer_default` Docker network so it can reach the four SMB containers by name on
