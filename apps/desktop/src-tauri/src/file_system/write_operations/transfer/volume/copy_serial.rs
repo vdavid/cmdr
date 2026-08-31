@@ -27,6 +27,7 @@ use std::time::{Duration, Instant};
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::journal;
+use super::super::super::ledger::WrittenFile;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{VolumeCopyConfig, WriteOperationError, WriteOperationPhase, WriteOperationType};
 use super::super::transfer_driver::{
@@ -83,7 +84,7 @@ pub(super) struct SerialCopy<'a> {
     pub(super) journal_volumes: &'a Option<(String, String)>,
     pub(super) op_probe: &'a Option<Arc<OperationProbe>>,
     pub(super) apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>>,
-    pub(super) copied_paths: Arc<std::sync::Mutex<Vec<PathBuf>>>,
+    pub(super) copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
     pub(super) created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
     pub(super) deep_skipped_files: Arc<AtomicUsize>,
     pub(super) deep_skipped_bytes: Arc<AtomicU64>,
@@ -525,9 +526,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                         source_overwrote,
                                     );
                                 }
-                                copied_paths
-                                    .lock_ignore_poison()
-                                    .extend(files.into_iter().map(|f| f.path));
+                                copied_paths.lock_ignore_poison().extend(files);
                                 created_dirs.lock_ignore_poison().extend(dirs);
                             } else {
                                 if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
@@ -543,7 +542,9 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                         source_overwrote,
                                     );
                                 }
-                                copied_paths.lock_ignore_poison().push(landed_path);
+                                copied_paths
+                                    .lock_ignore_poison()
+                                    .push(WrittenFile::volume(landed_path, bytes_copied));
                             }
                             // Fold this source's deep-merge skips into the op-wide
                             // tally; a source that landed with ZERO skips is fully
@@ -602,9 +603,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                         created.any_overwrote(),
                                     );
                                 }
-                                copied_paths
-                                    .lock_ignore_poison()
-                                    .extend(files.into_iter().map(|f| f.path));
+                                copied_paths.lock_ignore_poison().extend(files);
                                 created_dirs.lock_ignore_poison().extend(dirs);
                             }
                             // Report the path the walker actually failed on (for a

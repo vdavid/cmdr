@@ -8,18 +8,26 @@
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::ledger::WrittenIdentity;
+use crate::file_system::write_operations::state::cancel_write_operation;
+use crate::file_system::write_operations::test_support::TestOperationGuard;
 
 fn make_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(50)))
 }
 
-/// Runs a rollback over the given ledger and reports whether it finished.
+/// Runs a rollback over the given ledger of complete volume files, and reports
+/// whether it finished.
 async fn roll_back(volume: &Arc<dyn Volume>, copied_paths: &[PathBuf], created_dirs: &[PathBuf]) -> bool {
+    let mut ledger: Vec<WrittenFile> = copied_paths
+        .iter()
+        .map(|path| WrittenFile::volume(path.clone(), 0))
+        .collect();
     let events = CollectorEventSink::new();
     let state = make_state();
     volume_rollback_with_progress(
         volume,
-        copied_paths,
+        &mut ledger,
         created_dirs,
         &events,
         "cleanup-tests-op",
@@ -157,4 +165,102 @@ async fn created_dir_prune_still_removes_an_empty_directory() {
 
     assert!(!inner.exists(Path::new("/album/raw")).await);
     assert!(!inner.exists(Path::new("/album")).await);
+}
+
+// ── The in-flight partials this operation owns ─────────────────────────────
+
+/// A write that was still in flight goes into the ledger as this operation's own
+/// partial, which is a different thing from a file whose identity is unknown.
+///
+/// A partial has no size and no complete file to recognize, by construction, so
+/// a reversal that skipped whatever it couldn't verify would leave a truncated
+/// file at the destination. Nothing else can own a destination path that never
+/// held a complete file, so these are removed on sight.
+#[test]
+fn in_flight_writes_join_the_ledger_as_this_operation_s_own_partials() {
+    let mut ledger = vec![WrittenFile::volume(PathBuf::from("/album/done.jpg"), 4096)];
+
+    append_own_partials(
+        &mut ledger,
+        Some(PathBuf::from("/album/half.jpg")),
+        &[PathBuf::from("/album/also-half.jpg")],
+    );
+
+    assert_eq!(ledger[0].identity, WrittenIdentity::VolumeFile { size: 4096 });
+    for partial in &ledger[1..] {
+        assert_eq!(
+            partial.identity,
+            WrittenIdentity::OwnPartial,
+            "{} was still being written",
+            partial.path.display()
+        );
+        assert_ne!(
+            partial.identity,
+            WrittenIdentity::Unverifiable,
+            "a partial that reads as merely unverifiable gets left at the destination"
+        );
+    }
+    assert_eq!(ledger.len(), 3);
+}
+
+/// A path the ledger already carries isn't added twice: the completed write is
+/// the better record, and a second entry would walk the same path twice.
+#[test]
+fn a_partial_the_ledger_already_carries_is_not_added_twice() {
+    let mut ledger = vec![WrittenFile::volume(PathBuf::from("/album/one.jpg"), 10)];
+
+    append_own_partials(
+        &mut ledger,
+        Some(PathBuf::from("/album/one.jpg")),
+        &[PathBuf::from("/album/two.jpg"), PathBuf::from("/album/two.jpg")],
+    );
+
+    let paths: Vec<&PathBuf> = ledger.iter().map(|entry| &entry.path).collect();
+    assert_eq!(paths, vec![&PathBuf::from("/album/one.jpg"), &PathBuf::from("/album/two.jpg")]);
+    assert_eq!(ledger[0].identity, WrittenIdentity::VolumeFile { size: 10 });
+}
+
+/// The volume ledger is a stack too: a reversal the user stops halfway leaves it
+/// claiming exactly what's still on the volume.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_stopped_volume_reversal_leaves_the_ledger_claiming_what_is_still_there() {
+    let vol = Arc::new(InMemoryVolume::new("Dest"));
+    vol.create_directory(Path::new("/album")).await.unwrap();
+    let mut ledger = Vec::new();
+    for i in 0..4 {
+        let path = PathBuf::from(format!("/album/file{i}.bin"));
+        vol.create_file(&path, b"payload").await.unwrap();
+        ledger.push(WrittenFile::volume(path, 7));
+    }
+    let volume: Arc<dyn Volume> = vol.clone();
+
+    let state = make_state();
+    let guard = TestOperationGuard::register_state("volume-ledger-stop", Arc::clone(&state));
+    // Rolling back, and the user stops the reversal before it starts deleting.
+    cancel_write_operation(guard.id(), true);
+    cancel_write_operation(guard.id(), false);
+    let events = CollectorEventSink::new();
+    let completed = volume_rollback_with_progress(
+        &volume,
+        &mut ledger,
+        &[],
+        &events,
+        guard.id(),
+        &state,
+        4,
+        28,
+        4,
+        28,
+    )
+    .await;
+
+    assert!(!completed, "the user stopped it");
+    assert_eq!(ledger.len(), 4, "nothing was reversed, so nothing left the ledger");
+    for entry in &ledger {
+        assert!(
+            vol.exists(&entry.path).await,
+            "{} is still claimed, so it must still be on the volume",
+            entry.path.display()
+        );
+    }
 }

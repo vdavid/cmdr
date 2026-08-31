@@ -22,7 +22,7 @@ use std::time::{Duration, Instant};
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
-use super::super::super::journal::CreatedFile;
+use super::super::super::ledger::WrittenFile;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{VolumeCopyConfig, WriteOperationType};
 use super::super::transfer_driver::make_concurrent_per_file_progress;
@@ -52,7 +52,7 @@ pub(super) struct CopyTaskSuccess {
     /// safe-replace, or a deep-merge child overwrite). Feeds the operation-log
     /// eligibility: a copy that overwrote isn't rollbackable (the original is gone).
     pub(super) overwrote: bool,
-    pub(super) created_files: Vec<CreatedFile>,
+    pub(super) created_files: Vec<WrittenFile>,
     pub(super) created_dirs: Vec<PathBuf>,
     /// The top-level source this task copied, and how many children a deep
     /// merge skipped in its subtree. `skipped_count == 0` means the whole
@@ -95,7 +95,7 @@ pub(super) struct CopyTaskFailure {
     pub(super) cleanup_temp: bool,
     pub(super) source_is_dir: bool,
     pub(super) overwrote: bool,
-    pub(super) created_files: Vec<CreatedFile>,
+    pub(super) created_files: Vec<WrittenFile>,
     pub(super) created_dirs: Vec<PathBuf>,
 }
 

@@ -16,6 +16,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::super::event_sinks::OperationEventSink;
+use super::super::super::ledger::WrittenFile;
 use super::super::super::state::{StopMeans, WriteOperationState, update_operation_status};
 use super::super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::transfer_error::{AtPath, PathedVolumeError};
@@ -39,10 +40,13 @@ const STALE_TEMP_MIN_AGE: Duration = Duration::from_secs(60 * 60);
 /// directories are removed before the directories themselves.
 ///
 /// `copied_paths` are the individual destination FILES the operation wrote (never a merged
-/// directory root). After deleting them, `created_dirs` — the directories this operation
-/// NEWLY created — are pruned deepest-first, empty-only. A directory that still holds a
-/// pre-existing sibling (a dest-only file the user already had, or a kept-partial under
-/// cancel) is left in place, so rollback never destroys data this operation didn't write.
+/// directory root), each with the identity it landed with. It's a **stack**: every entry is
+/// popped as it's reversed, so a reversal the user stops halfway leaves a ledger that
+/// claims exactly what's still on the volume. After the files, `created_dirs` — the
+/// directories this operation NEWLY created — are pruned deepest-first, empty-only. A
+/// directory that still holds a pre-existing sibling (a dest-only file the user already
+/// had, or a kept-partial under cancel) is left in place, so rollback never destroys data
+/// this operation didn't write.
 ///
 /// Neither loop can recurse: they call [`delete_written_file`] and
 /// [`prune_created_dir_if_empty`], so a directory that reaches this ledger by mistake costs
@@ -55,7 +59,7 @@ const STALE_TEMP_MIN_AGE: Duration = Duration::from_secs(60 * 60);
 )]
 pub(super) async fn volume_rollback_with_progress(
     volume: &Arc<dyn Volume>,
-    copied_paths: &[PathBuf],
+    copied_paths: &mut Vec<WrittenFile>,
     created_dirs: &[PathBuf],
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -93,8 +97,10 @@ pub(super) async fn volume_rollback_with_progress(
         bytes_total,
     );
 
-    // Delete in reverse order (newest first)
-    for path in copied_paths.iter().rev() {
+    // Delete newest first, draining the ledger as they go. The intent is read
+    // BEFORE the pop: an entry taken off the ledger and then left standing would
+    // be a file on the volume nothing claims any more.
+    loop {
         // Check if the user cancelled the rollback itself. This runs UNDER an
         // operation whose intent already reads `RollingBack`, so only `Stopped`
         // means stop (see `StopMeans`).
@@ -106,6 +112,11 @@ pub(super) async fn volume_rollback_with_progress(
             );
             return false;
         }
+
+        let Some(entry) = copied_paths.pop() else {
+            break;
+        };
+        let path = &entry.path;
 
         // One node each: these are the FILES this operation wrote.
         if let Err(e) = delete_written_file(volume, path).await {
@@ -167,6 +178,35 @@ pub(super) async fn volume_rollback_with_progress(
     }
 
     true
+}
+
+/// Folds the writes that were still in flight into the rollback ledger, marked as
+/// this operation's OWN partials: the serial driver's single `last_dest_path`
+/// plus the concurrent driver's one-per-in-flight-task set.
+///
+/// **They go in as `WrittenIdentity::OwnPartial`, never as files whose identity
+/// is unknown.** A partial has no size and no complete file to recognize, by
+/// construction — so a reversal that treated "can't verify it" as "leave it
+/// alone" would strand a truncated file at the destination, which is the exact
+/// outcome cancelling mid-file exists to avoid. Nothing but this operation can
+/// plausibly own a destination path that never held a complete file, so these are
+/// removed on sight. Pinned by the E2E "cancelling inside one large file leaves
+/// no partial behind".
+///
+/// A path the ledger already carries stays as it is: the completed write it
+/// describes is the better record of the two, and pushing a second entry would
+/// make the reversal walk the same path twice.
+pub(super) fn append_own_partials(
+    ledger: &mut Vec<WrittenFile>,
+    last_dest_path: Option<PathBuf>,
+    in_flight_partials: &[PathBuf],
+) {
+    for partial in last_dest_path.into_iter().chain(in_flight_partials.iter().cloned()) {
+        if ledger.iter().any(|entry| entry.path == partial) {
+            continue;
+        }
+        ledger.push(WrittenFile::own_partial(partial));
+    }
 }
 
 /// Removes the destination partials a Stopped or errored copy left behind: the

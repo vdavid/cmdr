@@ -566,7 +566,7 @@ checkpointing for the whole file-I/O duration) — it's the `rolling_back` state
 Every leaf of a volume (SMB/MTP) copy records its **size**, top-level and inner alike, so a cross-volume directory
 rollback reverses the whole tree rather than skipping its contents. The byte count costs nothing extra: `copy_leaf`
 returns what it piped, off a size hint the walker's `list_directory` already paid for, and `CreatedPaths` carries a
-`CreatedFile { path, size }` per destination so it rides through to the row (`journal.rs`).
+`WrittenFile` per destination (`write_operations/ledger.rs`) so it rides through to the row (`journal.rs`).
 
 ❌ **A volume leaf records NO mtime, and adding one would make things worse.** The volume write path doesn't preserve
 the source's, so the live value would differ from anything captured at read time — flipping every leaf from

@@ -39,6 +39,7 @@ use futures_util::stream::FuturesUnordered;
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::journal;
+use super::super::super::ledger::WrittenFile;
 use super::super::super::state::{WriteOperationState, is_cancelled, load_intent, update_operation_status};
 use super::super::super::types::{VolumeCopyConfig, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::super::dest_name_index::DestNameIndex;
@@ -95,7 +96,7 @@ pub(super) struct ConcurrentCopy<'a> {
     pub(super) bytes_skipped_atomic: Arc<AtomicU64>,
     pub(super) last_progress_mutex: Arc<std::sync::Mutex<Instant>>,
     pub(super) apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>>,
-    pub(super) copied_paths: Arc<std::sync::Mutex<Vec<PathBuf>>>,
+    pub(super) copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
     pub(super) created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
     pub(super) in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>>,
     pub(super) deep_skipped_files: Arc<AtomicUsize>,
@@ -372,12 +373,12 @@ impl<'a> ConcurrentDriver<'a> {
         // original after a safe-replace finalize, else the dest); `created_*`
         // are empty.
         if source_is_dir {
-            ctx.copied_paths
-                .lock_ignore_poison()
-                .extend(created_files.into_iter().map(|f| f.path));
+            ctx.copied_paths.lock_ignore_poison().extend(created_files);
             ctx.created_dirs.lock_ignore_poison().extend(task_created_dirs);
         } else {
-            ctx.copied_paths.lock_ignore_poison().push(recorded_path);
+            ctx.copied_paths
+                .lock_ignore_poison()
+                .push(WrittenFile::volume(recorded_path, bytes));
         }
         // Per-file milestone emit. The task's `on_file_complete` bumped
         // `files_done_atomic`; the FE's files-axis needs a Copying event that
@@ -457,9 +458,7 @@ impl<'a> ConcurrentDriver<'a> {
                     overwrote,
                 );
             }
-            ctx.copied_paths
-                .lock_ignore_poison()
-                .extend(created_files.into_iter().map(|f| f.path));
+            ctx.copied_paths.lock_ignore_poison().extend(created_files);
             ctx.created_dirs.lock_ignore_poison().extend(task_created_dirs);
         } else if cleanup_temp {
             // FILE source stream failure: `failed_dest` is the single

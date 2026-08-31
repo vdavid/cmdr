@@ -42,6 +42,7 @@ use crate::file_system::volume::{DirectoryCreation, SourceItemInfo, SpaceInfo, V
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
+use super::super::super::ledger::WrittenFile;
 use super::cleanup::{clean_partial_writes, volume_rollback_with_progress};
 use super::conflict::is_the_same_item;
 use super::transfer_error::{PathRole, WriteFailure, write_error_event_from};
@@ -858,7 +859,7 @@ pub(crate) async fn copy_volumes_with_progress(
     // into the (possibly pre-existing) dest directory — NOT the directory root
     // — so rollback never recursively deletes a merged directory and destroys
     // dest-only files the user already had there.
-    let copied_paths: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
     // Destination directories this operation NEWLY created (create_directory
     // returned Ok, not AlreadyExists), in creation order (shallowest first).
     // Rollback removes these AFTER the files, deepest first, with a
@@ -990,7 +991,7 @@ pub(crate) async fn copy_volumes_with_progress(
     bytes_skipped += deep_skipped_bytes.load(Ordering::Relaxed);
 
     // Unwrap shared containers for post-loop logic.
-    let mut copied_paths: Vec<PathBuf> = Arc::try_unwrap(copied_paths)
+    let mut copied_paths: Vec<WrittenFile> = Arc::try_unwrap(copied_paths)
         .map(|m| m.into_inner().unwrap_or_default())
         .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
     let created_dirs: Vec<PathBuf> = Arc::try_unwrap(created_dirs)
@@ -1063,19 +1064,9 @@ pub(crate) async fn copy_volumes_with_progress(
 
     // Decide between rollback and cancel.
     if intent == OperationIntent::RollingBack {
-        // Include the last in-progress item in rollback (it was partially created)
-        if let Some(partial_path) = last_dest_path.take() {
-            copied_paths.push(partial_path);
-        }
-        // Under concurrency there can be multiple partials. The tasks we
-        // dropped on abort each left a .cmdr-tmp-<uuid> that the backend's
-        // writer.abort() cleaned up, but the destination path itself may have
-        // an already-renamed file. Roll those back too.
-        for partial in in_flight_partials.iter() {
-            if !copied_paths.contains(partial) {
-                copied_paths.push(partial.clone());
-            }
-        }
+        // The writes still in flight when the user clicked go into the ledger as
+        // this operation's OWN partials, which the reversal removes on sight.
+        super::cleanup::append_own_partials(&mut copied_paths, last_dest_path.take(), &in_flight_partials);
 
         // User requested rollback: delete all copied files in reverse order with progress
         log::info!(
@@ -1086,7 +1077,7 @@ pub(crate) async fn copy_volumes_with_progress(
 
         let rollback_completed = volume_rollback_with_progress(
             &dest_volume,
-            &copied_paths,
+            &mut copied_paths,
             &created_dirs,
             &*events,
             operation_id,
