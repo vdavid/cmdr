@@ -691,9 +691,9 @@ rather than a count silently dropped off the list.
 
 **The confirmation ends where its siblings do.** `fileOperations.rollbackConfirm.body` carries the same "Cmdr skips
 anything it isn't sure about, so a few may stay behind" clause as its three `bodyUndo*` siblings, because the recheck
-makes "this deletes every file the operation has written so far" an over-promise. The Rollback
-TOOLTIP is deliberately left alone: its job is telling Rollback apart from Cancel, the confirmation two clicks later
-carries the detail, and hedging a five-word tooltip would blunt the warning it exists to deliver.
+makes "this deletes every file the operation has written so far" an over-promise. The Rollback TOOLTIP is deliberately
+left alone: its job is telling Rollback apart from Cancel, the confirmation two clicks later carries the detail, and
+hedging a five-word tooltip would blunt the warning it exists to deliver.
 
 ## The dialog is a view
 

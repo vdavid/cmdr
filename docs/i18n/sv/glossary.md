@@ -1877,9 +1877,10 @@ två av dem har teckenidentisk engelska, så `i18n-terms` kräver identisk svens
   (`askCmdr.renameUndo.skipReason.drift`/`.unverifiable`/`.folderNotEmpty`), och `folderNotEmpty.named`/`.counted` har
   dessutom exakt samma engelska sträng som sina renameUndo-syskon, så de två värdena är kopierade tecken för tecken.
   `unverifiable.named` är nästan identisk men inte riktigt (apostrofen är böjd i `renameUndo`, dubblerad i
-  `cancelRollback`), så `i18n-terms` binder den inte — svenskan är ändå densamma, för det är samma mening. macOS `sv` belägger verbet i samma betydelse: ”Om du vill lämna filen orörd och jobba med en kopia
-  klickar du på Duplicera” · `high`. ❌ Inte `Lät {name} vara` (som annars hade knutit an till knappen `Låt det vara`):
-  det hade gett en engelsk mening två svenska namn.
+  `cancelRollback`), så `i18n-terms` binder den inte — svenskan är ändå densamma, för det är samma mening. macOS `sv`
+  belägger verbet i samma betydelse: ”Om du vill lämna filen orörd och jobba med en kopia klickar du på Duplicera” ·
+  `high`. ❌ Inte `Lät {name} vara` (som annars hade knutit an till knappen `Låt det vara`): det hade gett en engelsk
+  mening två svenska namn.
 - **”Left {name} where it is” (`spotTaken`) → `{name} lämnades där den ligger`** · engelskan byter medvetet ram just
   här, eftersom ”lämna i fred” vid en flytt betyder att objektet blir kvar på det NYA stället; svenskan byter med ·
   `high`.

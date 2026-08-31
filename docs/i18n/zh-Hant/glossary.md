@@ -772,10 +772,10 @@ this exact shape for the rename undo.
   ships (`它們所在的磁碟機沒有連接`) and the catalog's `唯讀` (`errors.listing.readOnly.*`).
 - **`leftBehind`** · `Cmdr 會略過沒有把握的部分，所以這些留了下來：` · `high`. Repeats the Rollback confirmations'
   promise verb for verb, because the English does the same (`Cmdr skips anything it isn''t sure about`, in the dialog
-  and in the toast): `會略過沒有把握的部分` is lifted straight from
-  `fileOperations.rollbackConfirm.bodyUndoByDeleting` (`Cmdr 會略過沒有把握的部分，所以可能會留下一些。`). Full-width
-  colon, because a bulleted list follows. ❌ Not `維持原樣` here: that is the reason lines' word below, and this line has
-  to reconnect with the dialog the user just read.
+  and in the toast): `會略過沒有把握的部分` is lifted straight from `fileOperations.rollbackConfirm.bodyUndoByDeleting`
+  (`Cmdr 會略過沒有把握的部分，所以可能會留下一些。`). Full-width colon, because a bulleted list follows. ❌ Not
+  `維持原樣` here: that is the reason lines' word below, and this line has to reconnect with the dialog the user just
+  read.
 - **"Removed …" in the headlines** · `刪除`, never `移除` · `high`. Apple splits them (`移除` = take out of a list or a
   container, `刪除` = destroy), and this really destroys files. It also has to agree with what the user was just
   promised and just watched: `fileOperations.rollbackConfirm.bodyUndoByDeleting` (`這會刪除…`),

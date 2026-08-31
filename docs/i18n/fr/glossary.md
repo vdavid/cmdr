@@ -2256,8 +2256,8 @@ une alerte.
   place : {countText} éléments. » ❌ Pas `les {countText} éléments` : la branche `one` donnerait « les 1 élément ».
   L'anglais a le même problème et le règle autrement, en passant la phrase entière dans le pluriel pour que sa branche
   `one` puisse dire « the item » sans le nombre ; le deux-points suivi du décompte met le nombre hors de portée de
-  l'article, et les deux branches françaises restent identiques · high. `remettre en place` est bien le verbe de `fileOperations.trash.undone`, comme le
-  demande la description de la clé.
+  l'article, et les deux branches françaises restent identiques · high. `remettre en place` est bien le verbe de
+  `fileOperations.trash.undone`, comme le demande la description de la clé.
 - **Les titres « partiels » (`someDeleted`, `someMovedBack`) reprennent le moule participial du catalogue** («
   {countText} éléments supprimés. », « {countText} éléments remis en place. »), celui de `trash.undone` et de
   `askCmdr.renameUndo.applied` · high. Le contraste complet/partiel passe donc par `Cmdr a tout …` contre un simple

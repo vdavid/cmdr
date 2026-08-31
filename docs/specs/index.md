@@ -16,9 +16,9 @@ that lives beside the code, and git holds the history.
       act on a bare list of paths, so a copy that ran for hours deletes a destination something else has since touched,
       and a move-back renames over whatever now sits at the source. Four milestones: the in-memory ledgers grow an
       identity, all six reversal entry points verify first through the same helper the history path uses (plus the
-      non-destructive-restore guard the move path lacks), the reversal gains a way to report what it left and why, and
-      a rollback started from the history dialog gets the Pause and Cancel buttons its engine already supported.
-      ❌ Explicitly NOT the unification that was considered and rejected. David reviewed and confirmed the snapshot
+      non-destructive-restore guard the move path lacks), the reversal gains a way to report what it left and why, and a
+      rollback started from the history dialog gets the Pause and Cancel buttons its engine already supported. ❌
+      Explicitly NOT the unification that was considered and rejected. David reviewed and confirmed the snapshot
       decision the plan rests on: a local snapshot is size plus inode, a volume snapshot is size only, and mtime is
       recorded nowhere, because a 2-second-granularity destination (FAT32, a network mount) would otherwise drift every
       file and strand a whole copy on the stick.
