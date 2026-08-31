@@ -77,47 +77,63 @@
 </script>
 
 {#if isLive && op !== null}
-    {#if isPaused}
-        <!-- ❌ A paused reversal must not read as a finished one. The row's own badge
-             still says "Rolling back" (journal truth: it is), so this is the word
-             that says it isn't moving — the same status word the queue row shows for
-             the same operation, off the same lifecycle status. -->
-        <span class="paused-badge">{tString('queue.row.status', { status: 'paused' })}</span>
-    {/if}
-    {#if isRunning || isPaused}
-        <!-- One button, two words, steered by the snapshot the session already
-             holds, never by a round trip. Pause parks at the next item boundary. -->
+    <!-- One flex item for the whole set, and one that never shrinks. The row it
+         sits in gives its head `flex: 1 1 auto`, so without this the buttons are
+         the ones squeezed — at the dialog's fixed 620 px down to 73, narrower
+         than "Resume" and every longer translation of it. -->
+    <div class="rollback-controls">
+        {#if isPaused}
+            <!-- ❌ A paused reversal must not read as a finished one. The row's own badge
+                 still says "Rolling back" (journal truth: it is), so this is the word
+                 that says it isn't moving — the same status word the queue row shows for
+                 the same operation, off the same lifecycle status. -->
+            <span class="paused-badge">{tString('queue.row.status', { status: 'paused' })}</span>
+        {/if}
+        {#if isRunning || isPaused}
+            <!-- One button, two words, steered by the snapshot the session already
+                 holds, never by a round trip. Pause parks at the next item boundary. -->
+            <Button
+                size="mini"
+                variant="secondary"
+                disabled={op.pauseInFlight}
+                aria-describedby={describedBy}
+                onclick={() => void op.togglePause()}
+            >
+                <span class="btn-inner">
+                    <Icon name={isPaused ? 'play' : 'pause'} size={13} />
+                    {isPaused ? tString('queue.row.resume') : tString('queue.row.pause')}
+                </span>
+            </Button>
+        {/if}
+        <!-- Cancel keeps what has already come back. What it leaves behind is what the
+             journal then calls "partly rolled back", which the row already words and
+             already offers to finish — ❌ no second sentence here saying it differently. -->
         <Button
             size="mini"
             variant="secondary"
-            disabled={op.pauseInFlight}
+            disabled={op.cancelling}
             aria-describedby={describedBy}
-            onclick={() => void op.togglePause()}
+            onclick={() => void op.cancel()}
         >
             <span class="btn-inner">
-                <Icon name={isPaused ? 'play' : 'pause'} size={13} />
-                {isPaused ? tString('queue.row.resume') : tString('queue.row.pause')}
+                <Icon name="x" size={13} />
+                {tString('queue.row.cancel')}
             </span>
         </Button>
-    {/if}
-    <!-- Cancel keeps what has already come back. What it leaves behind is what the
-         journal then calls "partly rolled back", which the row already words and
-         already offers to finish — ❌ no second sentence here saying it differently. -->
-    <Button
-        size="mini"
-        variant="secondary"
-        disabled={op.cancelling}
-        aria-describedby={describedBy}
-        onclick={() => void op.cancel()}
-    >
-        <span class="btn-inner">
-            <Icon name="x" size={13} />
-            {tString('queue.row.cancel')}
-        </span>
-    </Button>
+    </div>
 {/if}
 
 <style>
+    /* The whole set is ONE flex item of `.op-row`, and it keeps its natural width:
+       the row's head is the `flex: 1 1 auto` part and is what gives way. Spaced
+       like the row spaces its own children, so wrapping them changes no gap. */
+    .rollback-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        flex-shrink: 0;
+    }
+
     /* Matches the row's own badges (`OperationLogDialog.svelte`), which are scoped
        to that component and can't reach in here. */
     .paused-badge {
@@ -130,10 +146,14 @@
         flex-shrink: 0;
     }
 
-    /* Icon + label inside one mini button, like the queue window's row controls. */
+    /* Icon + label inside one mini button, like the queue window's row controls.
+       `nowrap` because a word broken across two lines ("Resu/me") is never the
+       right answer to a narrow row: the label keeps its width and the wrapper
+       above refuses to give it up. */
     .btn-inner {
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
+        white-space: nowrap;
     }
 </style>

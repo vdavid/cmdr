@@ -59,6 +59,9 @@ vi.mock('$lib/logging/logger', () => ({
 }))
 
 import OperationLogDialog from './OperationLogDialog.svelte'
+// The component's own text, for the two style rules the unit environment can't
+// evaluate (no CSS in happy-dom).
+import rollbackControlsSource from './RollbackControls.svelte?raw'
 import { operationLogState, closeOperationLog } from './operation-log-trigger.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import {
@@ -222,6 +225,26 @@ describe('a rolling-back row offers to pause and to stop', () => {
 
     expect(control('Pause')).toBeNull()
     expect(control('Cancel')).toBeNull()
+  })
+
+  it('gives every control label its full width, whatever the row wants', async () => {
+    emitSnapshot([reversalSnapshot('inv-1', 'paused')])
+    await mountDialog([journalRow()])
+    // The set is one element, so the row has one thing to leave alone rather
+    // than three to squeeze.
+    expect(target.querySelector('.rollback-controls')).not.toBeNull()
+    expect(requireControl('Resume').closest('.rollback-controls')).not.toBeNull()
+    expect(requireControl('Cancel').closest('.rollback-controls')).not.toBeNull()
+
+    // And the two rules that keep the labels whole. Read off the component's own
+    // stylesheet because the unit environment carries no CSS at all (happy-dom,
+    // `css` off in `vitest.config.ts`), so `getComputedStyle` can't answer here.
+    // The dialog is a fixed 620 px and the row's head takes `flex: 1 1 auto`, so
+    // a shrinkable control set is squeezed to ~73 px — narrower than "Resume",
+    // let alone "Szüneteltetés" or "Fortsetzen" — and a wrappable label then
+    // breaks mid-word ("Resu/me").
+    expect(rollbackControlsSource).toMatch(/\.rollback-controls\s*\{[^}]*flex-shrink:\s*0/)
+    expect(rollbackControlsSource).toMatch(/\.btn-inner\s*\{[^}]*white-space:\s*nowrap/)
   })
 
   it('only offers Cancel while the reversal waits its turn on the drive', async () => {

@@ -79,6 +79,11 @@ reads the journal once, on open, so a reversal that has since ended leaves a row
 absent live status is what stops it offering a press with nothing to press. A settled session (from the terminal EVENTS,
 never from leaving the snapshot) does the same.
 
+**They keep their labels whole.** The set is ONE flex item of `.op-row` (`.rollback-controls`) and it doesn't shrink,
+because the row's head takes `flex: 1 1 auto` and would otherwise squeeze three buttons into ~73 px at the dialog's fixed
+620 — narrower than "Resume", let alone "Szüneteltetés". `.btn-inner` is `white-space: nowrap` on top of that, so a
+label that still doesn't fit keeps its width rather than breaking mid-word. The row's head is what gives way.
+
 **A paused reversal must not read as finished.** The badge stays "Rolling back", because that's what the journal says
 and it's true. The controls add the queue window's own status word, "Paused", off the same lifecycle status, so the two
 surfaces can't word one park differently.
