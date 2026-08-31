@@ -87,6 +87,12 @@ non-obvious choices:
   `search_coverage_reason`, and an optional dev-only `dev_summary`. **No stored rendered summary**: the UI label is
   formatted client-side from the typed fields so it localizes per viewer; `dev_summary` is dev-only and never shown
   in the alpha dialog.
+- **`OperationRow.inverse_op_id` is read-side only, and every reader fills it.** It's the mirror of the stored
+  `rolls_back_op_id` (the newest operation reversing THIS one), resolved through the partial `operations_rolls_back`
+  index by `store::fill_inverse_op_ids` right after the mapper runs, because the mapper holds a `Row` and not the
+  connection. Every reader that hands an `OperationRow` out calls it, so a `None` always means "nothing reverses this"
+  rather than "this reader did not look". While a row reads `rolling_back` the field names the LIVE reversal, which is
+  what lets the history dialog offer it Pause and Cancel without a second round trip.
 - **`operation_items` — per-item rows.** `seq` (order within the op, for grouped display and reverse-order rollback),
   typed `entry_type` (file/dir) and `row_role` (`rollback_unit` / `search_only`), interned `source_dir_id` +
   `source_name` (+ folded) and nullable dest equivalents, `size`, `mtime`, typed `outcome`, `overwrote`, and the nullable

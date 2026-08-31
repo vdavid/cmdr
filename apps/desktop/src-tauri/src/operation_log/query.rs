@@ -31,8 +31,8 @@ use rusqlite::Connection;
 
 use super::store::fold_name;
 use super::store::{
-    ITEM_COLUMNS, OPERATION_COLUMNS, OperationItemRow, OperationLogStoreError, OperationRow, join_leaf, map_item_row,
-    map_operation_row, resolve_dir,
+    ITEM_COLUMNS, OPERATION_COLUMNS, OperationItemRow, OperationLogStoreError, OperationRow, fill_inverse_op_ids,
+    join_leaf, map_item_row, map_operation_row, resolve_dir,
 };
 use super::types::{
     EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind, RollbackState, RowRole, SearchCoverage, SkipReason,
@@ -146,12 +146,15 @@ pub fn recent_operations(
 ) -> Result<Vec<OperationRow>, OperationLogStoreError> {
     let sql =
         format!("SELECT {OPERATION_COLUMNS} FROM operations ORDER BY started_at DESC, op_id DESC LIMIT ?1 OFFSET ?2");
-    let mut stmt = conn.prepare_cached(&sql)?;
-    let mut rows = stmt.query(rusqlite::params![limit, offset])?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next()? {
-        out.push(map_operation_row(row)?);
+    {
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let mut rows = stmt.query(rusqlite::params![limit, offset])?;
+        while let Some(row) = rows.next()? {
+            out.push(map_operation_row(row)?);
+        }
     }
+    fill_inverse_op_ids(conn, &mut out)?;
     Ok(out)
 }
 
@@ -165,12 +168,16 @@ pub fn get_operation(
 ) -> Result<Option<OperationDetail>, OperationLogStoreError> {
     let op_sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE op_id = ?1");
     let operation = {
-        let mut stmt = conn.prepare_cached(&op_sql)?;
-        let mut rows = stmt.query(rusqlite::params![op_id])?;
-        match rows.next()? {
-            Some(row) => map_operation_row(row)?,
-            None => return Ok(None),
-        }
+        let mut header = {
+            let mut stmt = conn.prepare_cached(&op_sql)?;
+            let mut rows = stmt.query(rusqlite::params![op_id])?;
+            match rows.next()? {
+                Some(row) => vec![map_operation_row(row)?],
+                None => return Ok(None),
+            }
+        };
+        fill_inverse_op_ids(conn, &mut header)?;
+        header.pop().expect("the header row was just mapped")
     };
 
     let total_items: u32 = conn.query_row(
@@ -214,12 +221,15 @@ pub fn search_operations(
 ) -> Result<Vec<OperationRow>, OperationLogStoreError> {
     let (sql, params) = build_search_query(filters, limit, offset);
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
-    let mut stmt = conn.prepare_cached(&sql)?;
-    let mut rows = stmt.query(param_refs.as_slice())?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next()? {
-        out.push(map_operation_row(row)?);
+    {
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let mut rows = stmt.query(param_refs.as_slice())?;
+        while let Some(row) = rows.next()? {
+            out.push(map_operation_row(row)?);
+        }
     }
+    fill_inverse_op_ids(conn, &mut out)?;
     Ok(out)
 }
 

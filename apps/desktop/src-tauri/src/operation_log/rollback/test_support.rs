@@ -170,6 +170,7 @@ pub(super) fn blank_op_row() -> OperationRow {
         rollback_state: RollbackState::Rollbackable,
         not_rollbackable_reason: None,
         rolls_back_op_id: None,
+        inverse_op_id: None,
         source_volume_id: Some("v".to_string()),
         dest_volume_id: Some("v".to_string()),
         started_at: 0,

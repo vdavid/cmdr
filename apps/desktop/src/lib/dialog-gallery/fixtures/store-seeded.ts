@@ -377,6 +377,7 @@ function operation(row: Partial<OperationRow> & Pick<OperationRow, 'opId' | 'kin
     rollbackState: 'rollbackable',
     notRollbackableReason: null,
     rollsBackOpId: null,
+    inverseOpId: null,
     sourceVolumeId: 'root',
     destVolumeId: 'root',
     startedAt: hoursAgo(1),

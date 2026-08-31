@@ -8687,6 +8687,17 @@ export type OperationRow = {
   rollbackState: RollbackState
   notRollbackableReason: NotRollbackableReason | null
   rollsBackOpId: string | null
+  /**
+   *  The newest operation that rolls THIS one back, the mirror of
+   *  [`Self::rolls_back_op_id`]. `None` until something reverses this operation.
+   *
+   *  Not a stored column: every reader resolves it through the partial
+   *  `operations_rolls_back` index right after mapping (see
+   *  [`fill_inverse_op_ids`]), so no reader can hand out a `None` that means
+   *  "I didn't look". While the row reads `rolling_back` this is the id of the
+   *  live reversal, which is how the history dialog offers it Pause and Cancel.
+   */
+  inverseOpId: string | null
   sourceVolumeId: string | null
   destVolumeId: string | null
   startedAt: number
