@@ -272,8 +272,10 @@ the button reads the same on every surface.
 
 **What it says depends on what the reversal DOES** (`variant`, in `reversal-wording.ts`):
 
-- `stopAndDelete`, for a copy or move still RUNNING. Two facts: it removes everything written so far (not only the
-  half-written file a plain Cancel drops), and a file it replaced won't come back.
+- `stopAndDelete`, for a copy or move still RUNNING. Three facts: it deletes the files the operation has written (not
+  only the half-written one a plain Cancel drops), a file it replaced won't come back, and Cmdr skips anything it isn't
+  sure about, so the reversal can come out partial. ❌ Don't restore the old "removes everything written so far": the
+  recheck makes that an over-promise, and the third sentence is what keeps it parallel with the `bodyUndo*` siblings.
 - `undoByDeleting` / `undoByMovingBack` / `undoByRenamingBack`, for undoing a FINISHED operation from the history
   dialog. Each names the inverse action, then admits the reversal may come out partial. They mirror the backend's
   `inverse_kind`; the picker is `rollbackConfirmVariant` in `reversal-wording.ts`, and the reasoning behind the wording

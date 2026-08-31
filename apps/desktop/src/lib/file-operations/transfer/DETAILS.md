@@ -689,9 +689,9 @@ already found: "name the one file" vs "count them" is a display decision, not a 
 as reversed, so it never arrives as a skip — and it stays in the map so a NEW `SkipReason` is a compile error here
 rather than a count silently dropped off the list.
 
-**The confirmation was updated in the same pass.** `fileOperations.rollbackConfirm.body` now ends with the same "Cmdr
-skips anything it isn't sure about, so a few may stay behind" clause its three `bodyUndo*` siblings already carried,
-because the recheck made "this deletes every file the operation has written so far" an over-promise. The Rollback
+**The confirmation ends where its siblings do.** `fileOperations.rollbackConfirm.body` carries the same "Cmdr skips
+anything it isn't sure about, so a few may stay behind" clause as its three `bodyUndo*` siblings, because the recheck
+makes "this deletes every file the operation has written so far" an over-promise. The Rollback
 TOOLTIP is deliberately left alone: its job is telling Rollback apart from Cancel, the confirmation two clicks later
 carries the detail, and hedging a five-word tooltip would blunt the warning it exists to deliver.
 

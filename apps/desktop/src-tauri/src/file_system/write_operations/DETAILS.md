@@ -30,19 +30,26 @@ Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`.
 The full top-level inventory is here:
 
 - `mod.rs` (public API + the `start_write_operation` lifecycle), `manager.rs` (registry + lane admission), `state.rs`
-  (`WriteOperationRegistry`, `WriteOperationState`, `CopyTransaction`, the settle guard, plus `state/controls.rs`:
+  (`WriteOperationRegistry`, `WriteOperationState`, the settle guard, plus `state/controls.rs`:
   the by-id cancel / abort / pause / resume / conflict-answer entry points, re-exported through `state`),
   `status_cache.rs` (the status cache, the busy-volumes set it derives, the external drag-out seam, and
   `list_active_operations` / `get_operation_status`), `operation_intent.rs` (`OperationIntent`, `PauseGate`), `human_wait.rs` (how long a person has kept the operation waiting),
   `archive_edit/` (the zip-edit driver).
-- Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `compress_estimate.rs`. Conflicts and overwrite:
+- The in-flight ledgers and what reverses them: `ledger.rs` (`CopyTransaction` and `WrittenFile`, the vocabulary of what
+  an operation currently has at the destination, plus the `Drop` panic net) and `reversal.rs` (the policy over it: the
+  recheck before each destructive act, and `ReversalTally`). `in_flight_temps.rs` registers every `.cmdr-` temp so a
+  startup sweep can find one an abandoned run left behind.
+- Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs` (the scan-progress seam the drivers
+  feed), `scan_watchdog.rs` (the inactivity bound on a preview), `compress_estimate.rs`. Conflicts and overwrite:
   `conflict.rs` (policy), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
   `resolve_write_conflict`), `overwrite.rs`. Cancellation and durability: `cancellable.rs`, `rollback.rs`, `durability.rs`.
   `rollback.rs` wears two hats: the history dialog's reversal, and the executor the operation-log engine injects.
 - Vocabulary and edges: `types.rs` (+ `types/events.rs`, every `#[tauri_specta(event_name)]` payload, re-exported
-  through `types`), `event_sinks.rs`, `error_classification.rs`, `validation.rs`, `analytics.rs`,
-  `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. Remote archive I/O: `archive_remote_edit.rs`,
-  `scratch_dir.rs`. Entry points: `create/` + `create.rs`, `rename/` + `rename.rs`, `paste_clipboard.rs`. Fixtures:
+  through `types`), `event_sinks.rs`, `error_classification.rs`, `mutation_error.rs` (the typed refusal an instant
+  mutation returns), `validation.rs`, `analytics.rs`, `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. Remote
+  archive I/O: `archive_remote_edit.rs`, `scratch_dir.rs`. Entry points: `create/` + `create.rs`, `rename/` +
+  `rename.rs`, `paste_clipboard.rs`, `routing.rs` (the one routing every cross-volume transfer takes:
+  `start_volume_{copy,move,compress}`). `source_binding.rs` is the optional set of sources an op may touch. Fixtures:
   `test_support.rs`.
 
 What the mechanisms DO is in the sections below: the registry, lanes, and `run_instant` in § "Operation manager";
@@ -205,7 +212,7 @@ Frontend
           → success (delete/trash): emit write-complete (no sync)
           → cancel (Stopped): CopyTransaction::commit(), emit write-cancelled (rollback: notRolledBack)
           → cancel (RollingBack): rollback_with_progress() → emit write-progress (phase: rolling_back) → emit write-cancelled (rollback: what the reversal managed)
-          → error: CopyTransaction::rollback(SkipDrifted), emit write-error
+          → error: reverse_copy_transaction() (rechecks each entry, leaves a drifted one standing), emit write-error
       → safety net: start_write_operation emits write-error for unhandled handler errors
   → state removed from both caches
 ```

@@ -14,12 +14,14 @@ that lives beside the code, and git holds the history.
       case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and
       refuses to touch anything that changed; the in-flight rollbacks (the transfer dialog's button) verify nothing and
       act on a bare list of paths, so a copy that ran for hours deletes a destination something else has since touched,
-      and a move-back renames over whatever now sits at the source. Three milestones: the in-memory ledgers grow a size,
-      all six reversal entry points verify first through the same helper the history path uses (plus the
-      non-destructive-restore guard the move path lacks), and the reversal gains a way to report what it left and why.
-      ❌ Explicitly NOT the unification that was considered and rejected. **One call for David before it starts**: the
-      plan drops mtime from local snapshots too, because a 2-second-granularity destination (FAT32, a network mount)
-      would otherwise drift every file and strand a whole copy on the stick.
+      and a move-back renames over whatever now sits at the source. Four milestones: the in-memory ledgers grow an
+      identity, all six reversal entry points verify first through the same helper the history path uses (plus the
+      non-destructive-restore guard the move path lacks), the reversal gains a way to report what it left and why, and
+      a rollback started from the history dialog gets the Pause and Cancel buttons its engine already supported.
+      ❌ Explicitly NOT the unification that was considered and rejected. David reviewed and confirmed the snapshot
+      decision the plan rests on: a local snapshot is size plus inode, a volume snapshot is size only, and mtime is
+      recorded nowhere, because a 2-second-granularity destination (FAT32, a network mount) would otherwise drift every
+      file and strand a whole copy on the stick.
 
 - [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
       rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit
