@@ -13,6 +13,7 @@ use tokio_util::sync::CancellationToken;
 use super::eta::{EtaEstimator, EtaSample};
 use super::event_sinks::OperationEventSink;
 use super::human_wait::HumanWaitClock;
+use super::ledger::WrittenFile;
 use super::types::{
     ConflictId, ConflictResolution, ConflictResolutionOutcome, TransferActivity, TransferWaitReason,
     WriteConflictEvent, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
@@ -801,9 +802,15 @@ pub fn pending_write_conflict(operation_id: &str) -> Option<WriteConflictEvent> 
 /// even if a thread panics during the copy loop.
 #[cfg_attr(test, derive(Debug))]
 pub(crate) struct CopyTransaction {
-    /// In creation order.
-    pub created_files: Vec<PathBuf>,
-    /// In creation order.
+    /// The destination files this operation wrote, in creation order, each with
+    /// the identity it landed with. A **stack**: [`CopyTransaction::pop_file`]
+    /// takes the newest one off as it's reversed, so at every instant the ledger
+    /// claims exactly what this operation still has on disk. A reversal that
+    /// stops halfway can then report honestly on what it left.
+    created_files: Vec<WrittenFile>,
+    /// In creation order. Not a stack: these rows are also what
+    /// `commit_journaling_created_dirs` journals after a reversal, so the list
+    /// has to survive one. Rollback prunes them empty-only, deepest first.
     pub created_dirs: Vec<PathBuf>,
     /// Set to `true` by `commit()` to prevent rollback on drop.
     committed: bool,
@@ -818,12 +825,31 @@ impl CopyTransaction {
         }
     }
 
-    pub fn record_file(&mut self, path: PathBuf) {
-        self.created_files.push(path);
+    pub fn record_file(&mut self, file: WrittenFile) {
+        self.created_files.push(file);
     }
 
     pub fn record_dir(&mut self, path: PathBuf) {
         self.created_dirs.push(path);
+    }
+
+    /// The files this operation still claims to have on disk, newest last.
+    pub fn created_files(&self) -> &[WrittenFile] {
+        &self.created_files
+    }
+
+    /// The destination paths, for the passes that only need to name them (the
+    /// closing `fdatasync`, the cross-FS move's staging→final rebase).
+    pub fn created_file_paths(&self) -> Vec<PathBuf> {
+        self.created_files.iter().map(|f| f.path.clone()).collect()
+    }
+
+    /// Take the newest file off the ledger, to reverse it. Popping BEFORE the
+    /// delete is deliberate: an entry this operation has stopped claiming is one
+    /// nothing will try to remove twice, whether the delete succeeded, was
+    /// refused, or found the file already gone.
+    pub fn pop_file(&mut self) -> Option<WrittenFile> {
+        self.created_files.pop()
     }
 
     /// Rolls back all created files and directories.
@@ -834,10 +860,10 @@ impl CopyTransaction {
     /// the whole operation risks unexpectedly filling the user's drive on a
     /// large Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
     /// § "Overwrite isn't reversible".
-    pub fn rollback(&self) {
-        // Delete files first (in reverse order)
-        for file in self.created_files.iter().rev() {
-            let _ = std::fs::remove_file(file);
+    pub fn rollback(&mut self) {
+        // Delete files first (newest first), draining the ledger as they go.
+        while let Some(file) = self.pop_file() {
+            let _ = std::fs::remove_file(&file.path);
         }
         // Then directories (deepest first, already in reverse due to creation order)
         for dir in self.created_dirs.iter().rev() {

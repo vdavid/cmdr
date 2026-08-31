@@ -9,6 +9,7 @@
 //! collide with concurrent test runs in the same process. `WRITE_OPERATION_STATE`
 //! entries go through `TestOperationGuard`, which also removes them on unwind.
 use super::*;
+use crate::file_system::write_operations::ledger::WrittenFile;
 use crate::file_system::write_operations::test_support::{TestOperationGuard, placeholder_conflict};
 use crate::file_system::write_operations::types::{
     ConflictId, ConflictResolution, ConflictResolutionOutcome, TransferActivity, TransferWaitReason,
@@ -599,7 +600,7 @@ fn copy_transaction_rollback_deletes_files_and_dirs_in_reverse() {
     let mut tx = CopyTransaction::new();
     tx.record_dir(outer.clone());
     tx.record_dir(inner.clone());
-    tx.record_file(file.clone());
+    tx.record_file(WrittenFile::local(file.clone()));
 
     tx.rollback();
 
@@ -618,7 +619,7 @@ fn copy_transaction_commit_prevents_drop_rollback() {
 
     {
         let mut tx = CopyTransaction::new();
-        tx.record_file(file.clone());
+        tx.record_file(WrittenFile::local(file.clone()));
         tx.commit();
     } // Drop runs here.
 
@@ -634,7 +635,7 @@ fn copy_transaction_drop_rolls_back_when_not_committed() {
 
     {
         let mut tx = CopyTransaction::new();
-        tx.record_file(file.clone());
+        tx.record_file(WrittenFile::local(file.clone()));
         // No commit; Drop should roll back.
     }
 
@@ -645,12 +646,27 @@ fn copy_transaction_drop_rolls_back_when_not_committed() {
 fn copy_transaction_record_methods_push_in_order() {
     // Kills: replace record_file/record_dir with ().
     let mut tx = CopyTransaction::new();
-    tx.record_file(PathBuf::from("/a"));
-    tx.record_file(PathBuf::from("/b"));
+    tx.record_file(WrittenFile::local(PathBuf::from("/a")));
+    tx.record_file(WrittenFile::local(PathBuf::from("/b")));
     tx.record_dir(PathBuf::from("/d1"));
-    assert_eq!(tx.created_files, vec![PathBuf::from("/a"), PathBuf::from("/b")]);
+    assert_eq!(tx.created_file_paths(), vec![PathBuf::from("/a"), PathBuf::from("/b")]);
     assert_eq!(tx.created_dirs, vec![PathBuf::from("/d1")]);
     tx.commit(); // suppress Drop rollback (paths don't exist anyway, but be tidy)
+}
+
+#[test]
+fn copy_transaction_pops_the_newest_file_first() {
+    // The ledger is a stack: a reversal takes the newest entry off as it undoes
+    // it, so what's left is exactly what this operation still has on disk.
+    let mut tx = CopyTransaction::new();
+    tx.record_file(WrittenFile::local(PathBuf::from("/a")));
+    tx.record_file(WrittenFile::local(PathBuf::from("/b")));
+
+    assert_eq!(tx.pop_file().map(|f| f.path), Some(PathBuf::from("/b")));
+    assert_eq!(tx.created_file_paths(), vec![PathBuf::from("/a")]);
+    assert_eq!(tx.pop_file().map(|f| f.path), Some(PathBuf::from("/a")));
+    assert!(tx.pop_file().is_none(), "an emptied ledger claims nothing");
+    tx.commit();
 }
 
 // ── Busy-volumes set (drives "disable Eject while an op touches a device") ──

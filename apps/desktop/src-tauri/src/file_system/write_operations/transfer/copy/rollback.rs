@@ -25,7 +25,7 @@ use crate::file_system::write_operations::types::{WriteOperationPhase, WriteOper
     reason = "Needs the full progress state at cancellation time to emit reverse progress"
 )]
 pub(super) fn rollback_with_progress(
-    transaction: &CopyTransaction,
+    transaction: &mut CopyTransaction,
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -35,7 +35,7 @@ pub(super) fn rollback_with_progress(
     files_total: usize,
     bytes_total: u64,
 ) -> bool {
-    let files_to_delete = transaction.created_files.len();
+    let files_to_delete = transaction.created_files().len();
     let mut files_deleted = 0usize;
     let mut last_progress_time = Instant::now();
 
@@ -63,8 +63,11 @@ pub(super) fn rollback_with_progress(
         bytes_total,
     );
 
-    // Delete files in reverse order (newest first), checking for cancellation
-    for file in transaction.created_files.iter().rev() {
+    // Delete files newest first, draining the ledger as they go and checking for
+    // cancellation before each. The intent is read BEFORE the pop: an entry taken
+    // off the ledger and then left standing would be a file on disk nothing
+    // claims any more.
+    loop {
         // Check if user cancelled the rollback (RollingBack → Stopped)
         if load_intent(&state.intent) == OperationIntent::Stopped {
             log::info!(
@@ -74,6 +77,11 @@ pub(super) fn rollback_with_progress(
             );
             return false;
         }
+
+        let Some(entry) = transaction.pop_file() else {
+            break;
+        };
+        let file = &entry.path;
 
         if let Err(e) = fs::remove_file(file) {
             log::warn!("rollback: failed to remove {}: {}", file.display(), e);

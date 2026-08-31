@@ -513,10 +513,10 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 log::info!(
                     "copy_files_with_progress: rollback requested after loop completion op={}, {} files",
                     operation_id,
-                    transaction.created_files.len()
+                    transaction.created_files().len()
                 );
                 let rollback_completed = rollback_with_progress(
-                    &transaction,
+                    &mut transaction,
                     events,
                     operation_id,
                     state,
@@ -585,7 +585,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 file_count,
                 bytes_done,
                 total_bytes,
-                &transaction.created_files,
+                &transaction.created_file_paths(),
                 &already_synced,
             );
             commit_journaling_created_dirs(transaction, operation_id);
@@ -618,10 +618,10 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                     log::info!(
                         "copy_files_with_progress: rolling back op={}, {} files",
                         operation_id,
-                        transaction.created_files.len()
+                        transaction.created_files().len()
                     );
                     let rollback_completed = rollback_with_progress(
-                        &transaction,
+                        &mut transaction,
                         events,
                         operation_id,
                         state,
@@ -646,7 +646,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                     log::info!(
                         "copy_files_with_progress: cancelled op={}, keeping {} partial files",
                         operation_id,
-                        transaction.created_files.len()
+                        transaction.created_files().len()
                     );
                     commit_journaling_created_dirs(transaction, operation_id);
                     events.emit_cancelled(WriteCancelledEvent {

@@ -1,5 +1,6 @@
 //! Integration tests for CopyTransaction rollback behavior.
 
+use crate::file_system::write_operations::ledger::WrittenFile;
 use crate::test_support::TestDir;
 use std::fs;
 
@@ -25,12 +26,12 @@ fn test_copy_transaction_records_files() {
     let file1 = temp_dir.join("file1.txt");
     let file2 = temp_dir.join("file2.txt");
 
-    tx.record_file(file1.clone());
-    tx.record_file(file2.clone());
+    tx.record_file(WrittenFile::local(file1.clone()));
+    tx.record_file(WrittenFile::local(file2.clone()));
 
-    assert_eq!(tx.created_files.len(), 2);
-    assert!(tx.created_files.contains(&file1));
-    assert!(tx.created_files.contains(&file2));
+    assert_eq!(tx.created_files().len(), 2);
+    assert!(tx.created_files().iter().any(|f| f.path == file1));
+    assert!(tx.created_files().iter().any(|f| f.path == file2));
 }
 
 #[test]
@@ -65,8 +66,8 @@ fn test_copy_transaction_rollback_removes_files() {
 
     // Record them in transaction
     let mut tx = CopyTransaction::new();
-    tx.record_file(file1.clone());
-    tx.record_file(file2.clone());
+    tx.record_file(WrittenFile::local(file1.clone()));
+    tx.record_file(WrittenFile::local(file2.clone()));
 
     // Verify files exist
     assert!(file1.exists());
@@ -123,7 +124,7 @@ fn test_copy_transaction_rollback_mixed() {
     // Record them in creation order
     let mut tx = CopyTransaction::new();
     tx.record_dir(dir1.clone());
-    tx.record_file(file1.clone());
+    tx.record_file(WrittenFile::local(file1.clone()));
 
     // Verify everything exists
     assert!(dir1.exists());
@@ -149,7 +150,7 @@ fn test_copy_transaction_commit_preserves_files() {
 
     // Record in transaction
     let mut tx = CopyTransaction::new();
-    tx.record_file(file1.clone());
+    tx.record_file(WrittenFile::local(file1.clone()));
 
     // Commit (should NOT delete)
     tx.commit();

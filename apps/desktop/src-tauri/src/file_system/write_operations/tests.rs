@@ -4,6 +4,7 @@
 //! We keep deserialization tests as they verify the API contract with the frontend.
 
 use super::*;
+use super::ledger::WrittenFile;
 use crate::test_support::TestDir;
 use std::fs;
 use std::sync::Arc;
@@ -152,9 +153,9 @@ fn test_copy_transaction_rollback_deletes_files() {
 
     // Record files in transaction
     let mut transaction = CopyTransaction::new();
-    transaction.record_file(file1.clone());
-    transaction.record_file(file2.clone());
-    transaction.record_file(file3.clone());
+    transaction.record_file(WrittenFile::local(file1.clone()));
+    transaction.record_file(WrittenFile::local(file2.clone()));
+    transaction.record_file(WrittenFile::local(file3.clone()));
     transaction.record_dir(temp_dir.join("subdir"));
 
     // Rollback should delete all recorded files and directories
@@ -183,8 +184,8 @@ fn test_copy_transaction_commit_keeps_files() {
 
     // Record files in transaction
     let mut transaction = CopyTransaction::new();
-    transaction.record_file(file1.clone());
-    transaction.record_file(file2.clone());
+    transaction.record_file(WrittenFile::local(file1.clone()));
+    transaction.record_file(WrittenFile::local(file2.clone()));
 
     // Commit should NOT delete files (they are kept)
     transaction.commit();
@@ -208,7 +209,7 @@ fn test_copy_transaction_rollback_handles_already_deleted_files() {
 
     // Record in transaction
     let mut transaction = CopyTransaction::new();
-    transaction.record_file(file1.clone());
+    transaction.record_file(WrittenFile::local(file1.clone()));
 
     // Delete file before rollback (simulates external deletion)
     fs::remove_file(&file1).expect("Failed to delete file1");
@@ -364,8 +365,8 @@ fn test_copy_transaction_drop_without_commit_rolls_back() {
     // Create a transaction, record files, then drop without committing
     {
         let mut transaction = CopyTransaction::new();
-        transaction.record_file(file1.clone());
-        transaction.record_file(file2.clone());
+        transaction.record_file(WrittenFile::local(file1.clone()));
+        transaction.record_file(WrittenFile::local(file2.clone()));
         // transaction drops here without commit()
     }
 
@@ -383,7 +384,7 @@ fn test_copy_transaction_commit_prevents_drop_rollback() {
 
     {
         let mut transaction = CopyTransaction::new();
-        transaction.record_file(file1.clone());
+        transaction.record_file(WrittenFile::local(file1.clone()));
         transaction.commit(); // should prevent Drop from rolling back
     }
 

@@ -1,4 +1,5 @@
-//! Unit tests for `copy_files_with_progress_inner` (local-FS copy).
+//! Unit tests for `copy_files_with_progress_inner` (local-FS copy), plus what
+//! the copy's rollback ledger records about each file it writes.
 //!
 //! Drives the sink-based inner function directly with a `CollectorEventSink`
 //! against a real tempdir, the same shape `volume/copy_tests.rs` uses against
@@ -6,6 +7,9 @@
 
 use super::*;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::ledger::{WrittenFile, WrittenIdentity};
+use crate::file_system::write_operations::state::cancel_write_operation;
+use crate::file_system::write_operations::test_support::TestOperationGuard;
 
 fn make_state(progress_interval_ms: u64) -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)))
@@ -424,4 +428,220 @@ fn a_bulk_skipped_source_reports_itself_as_skipped() {
         "a copy leaves every source where it was, skipped or not"
     );
     assert_eq!(fs::read(dst_dir.join("collide.bin")).unwrap(), b"dest", "the skip held");
+}
+
+// ── What the copy's rollback ledger records ────────────────────────────────
+
+/// Copies one file through `copy_single_item` and hands back the ledger it
+/// recorded into, so a test can ask what the copy claims to have written.
+fn copy_one_file(source: &Path, dest_dir: &Path) -> CopyTransaction {
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(200);
+    let config = WriteOperationConfig::default();
+    let mut transaction = CopyTransaction::new();
+    let mut files_done = 0usize;
+    let mut bytes_done = 0u64;
+    let write_weight = fs::symlink_metadata(source).unwrap().len();
+    let is_symlink = fs::symlink_metadata(source).unwrap().file_type().is_symlink();
+
+    copy_single_item(
+        source,
+        dest_dir.join(source.file_name().unwrap()),
+        None,
+        is_symlink,
+        write_weight,
+        &mut files_done,
+        &mut bytes_done,
+        1,
+        write_weight,
+        &state,
+        &*events,
+        "op-ledger-identity",
+        WriteOperationType::Copy,
+        &Duration::from_millis(200),
+        &config,
+        &mut transaction,
+        &mut ApplyToAll::default(),
+        &mut HashSet::new(),
+        &mut HashMap::new(),
+        &mut HashSet::new(),
+    )
+    .expect("the copy should land");
+
+    transaction
+}
+
+/// The ledger entry for a copied file identifies the file that landed: the same
+/// node id and size a fresh stat of the destination reports. Without that, a
+/// reversal can only check that something is there, and "something is there" is
+/// what deletes a file someone else replaced.
+#[test]
+fn a_copied_file_is_recorded_with_the_identity_it_landed_with() {
+    let tmp = tempfile::tempdir().unwrap();
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    let source = src_dir.join("report.pdf");
+    fs::write(&source, vec![7u8; 2048]).unwrap();
+
+    let transaction = copy_one_file(&source, &dst_dir);
+
+    let landed = dst_dir.join("report.pdf");
+    let recorded = transaction.created_files();
+    assert_eq!(recorded.len(), 1, "one file copied, one ledger entry");
+    assert_eq!(recorded[0].path, landed);
+    assert_eq!(
+        recorded[0].identity,
+        WrittenIdentity::at_local_path(&landed),
+        "the ledger has to describe the file that actually landed"
+    );
+    assert_eq!(
+        recorded[0].identity.recorded_size(),
+        Some(2048),
+        "the size the ledger records is the one the journal row carries"
+    );
+    transaction.commit();
+}
+
+/// A copied symlink is recorded as the LINK, not as whatever it points at — the
+/// one snapshot that survives a dangling target.
+#[test]
+fn a_copied_symlink_is_recorded_as_the_link() {
+    let tmp = tempfile::tempdir().unwrap();
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    let target = src_dir.join("target.bin");
+    fs::write(&target, vec![3u8; 999]).unwrap();
+    let link = src_dir.join("shortcut");
+    std::os::unix::fs::symlink(&target, &link).unwrap();
+
+    let transaction = copy_one_file(&link, &dst_dir);
+
+    let landed = dst_dir.join("shortcut");
+    let recorded = transaction.created_files();
+    assert_eq!(recorded.len(), 1);
+    assert_eq!(
+        recorded[0].identity,
+        WrittenIdentity::at_local_path(&landed),
+        "a link's snapshot is its own, taken with symlink_metadata"
+    );
+    assert_ne!(
+        recorded[0].identity.recorded_size(),
+        Some(999),
+        "the link's size is the link's, never the target's"
+    );
+    transaction.commit();
+}
+
+/// The ledger is a stack: a reversal the user stops halfway leaves it claiming
+/// exactly the files still on disk, so what stayed behind can be reported
+/// honestly (and a second pass can't try to delete the same file twice).
+#[test]
+fn a_stopped_reversal_leaves_the_ledger_claiming_what_is_still_on_disk() {
+    let tmp = tempfile::tempdir().unwrap();
+    let state = make_state(0);
+    let guard = TestOperationGuard::register_state("ledger-stop", Arc::clone(&state));
+
+    let mut transaction = CopyTransaction::new();
+    let files: Vec<PathBuf> = (0..4)
+        .map(|i| {
+            let path = tmp.path().join(format!("file{i}.bin"));
+            fs::write(&path, b"payload").unwrap();
+            transaction.record_file(WrittenFile::local(path.clone()));
+            path
+        })
+        .collect();
+
+    // Rolling back, and the user stops the reversal once it reports progress.
+    cancel_write_operation(guard.id(), true);
+    let events = StopTheReversalSink {
+        inner: CollectorEventSink::new(),
+        operation_id: guard.id().to_string(),
+    };
+    let completed = rollback_with_progress(
+        &mut transaction,
+        &events,
+        guard.id(),
+        &state,
+        WriteOperationType::Copy,
+        files.len(),
+        0,
+        files.len(),
+        0,
+    );
+
+    assert!(!completed, "the user stopped it, so it didn't finish");
+    let still_claimed = transaction.created_files();
+    assert!(
+        !still_claimed.is_empty() && still_claimed.len() < files.len(),
+        "the reversal should have stopped partway, got {}/{} still claimed",
+        still_claimed.len(),
+        files.len()
+    );
+    for entry in still_claimed {
+        assert!(
+            entry.path.exists(),
+            "{} is still claimed, so it must still be on disk",
+            entry.path.display()
+        );
+    }
+    let claimed: HashSet<&Path> = still_claimed.iter().map(|f| f.path.as_path()).collect();
+    for file in &files {
+        assert_eq!(
+            file.exists(),
+            claimed.contains(file.as_path()),
+            "{} is on disk exactly when the ledger still claims it",
+            file.display()
+        );
+    }
+    transaction.commit();
+}
+
+/// Stops the reversal at its first progress report, the way a user clicking
+/// Cancel mid-rollback does.
+struct StopTheReversalSink {
+    inner: CollectorEventSink,
+    operation_id: String,
+}
+
+impl OperationEventSink for StopTheReversalSink {
+    fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+        self.inner.emit_settled(e);
+    }
+    fn emit_progress(&self, event: WriteProgressEvent) {
+        if event.phase == WriteOperationPhase::RollingBack && event.current_file.is_some() {
+            cancel_write_operation(&self.operation_id, false);
+        }
+        self.inner.emit_progress(event);
+    }
+    fn emit_complete(&self, e: WriteCompleteEvent) {
+        self.inner.emit_complete(e);
+    }
+    fn emit_cancelled(&self, e: WriteCancelledEvent) {
+        self.inner.emit_cancelled(e);
+    }
+    fn emit_error(&self, e: WriteErrorEvent) {
+        self.inner.emit_error(e);
+    }
+    fn emit_conflict(&self, e: crate::file_system::write_operations::types::WriteConflictEvent) {
+        self.inner.emit_conflict(e);
+    }
+    fn emit_conflict_resolved(&self, e: crate::file_system::write_operations::types::WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(e);
+    }
+    fn emit_source_item_done(&self, e: WriteSourceItemDoneEvent) {
+        self.inner.emit_source_item_done(e);
+    }
+    fn emit_scan_progress(&self, e: crate::file_system::write_operations::types::ScanProgressEvent) {
+        self.inner.emit_scan_progress(e);
+    }
+    fn emit_scan_conflict(&self, c: crate::file_system::write_operations::types::ConflictInfo) {
+        self.inner.emit_scan_conflict(c);
+    }
+    fn emit_dry_run_complete(&self, r: crate::file_system::write_operations::types::DryRunResult) {
+        self.inner.emit_dry_run_complete(r);
+    }
 }

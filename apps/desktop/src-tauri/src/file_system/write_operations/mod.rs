@@ -33,6 +33,7 @@ mod human_wait;
 mod in_flight_temps;
 mod journal;
 mod journal_search;
+mod ledger;
 mod manager;
 mod mutation_error;
 mod operation_intent;

@@ -18,6 +18,7 @@ use super::super::copy_strategy::copy_file_with_strategy;
 use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
+use crate::file_system::write_operations::ledger::WrittenFile;
 use crate::file_system::write_operations::overwrite::safe_overwrite_dir;
 use crate::file_system::write_operations::state::{
     CopyTransaction, WriteOperationState, is_cancelled, update_operation_status,
@@ -434,7 +435,9 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             needs_safe_overwrite,
             crate::operation_log::types::ItemOutcome::Done,
         );
-        transaction.record_file(actual_dest);
+        // Snapshot the link that landed, so a reversal can tell it apart from
+        // anything that replaced it since. One `lstat` on a path just written.
+        transaction.record_file(WrittenFile::local(actual_dest));
         record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
     } else {
         // Handle regular file
@@ -571,7 +574,9 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             needs_safe_overwrite,
             crate::operation_log::types::ItemOutcome::Done,
         );
-        transaction.record_file(actual_dest.clone());
+        // Snapshot the file that landed, so a reversal can tell it apart from
+        // anything that replaced it since. One `lstat` on a path just written.
+        transaction.record_file(WrittenFile::local(actual_dest.clone()));
         record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
     }
 
