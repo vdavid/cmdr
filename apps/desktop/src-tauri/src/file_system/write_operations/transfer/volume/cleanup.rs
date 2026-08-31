@@ -17,7 +17,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::ledger::{WrittenFile, WrittenIdentity};
-use super::super::super::reversal::{Recheck, ReversalTally, recheck_volume};
+use super::super::super::reversal::{Recheck, ReversalTally, drained, recheck_volume};
 use super::super::super::state::{StopMeans, WriteOperationState, update_operation_status};
 use super::super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::transfer_error::{AtPath, PathedVolumeError};
@@ -138,12 +138,8 @@ pub(super) async fn volume_rollback_with_progress(
         // Throttled progress events with decreasing values. The counters advance
         // for every entry the reversal walked past, removed or not.
         if last_progress_time.elapsed() >= state.progress_interval {
-            let (files_left, bytes_left) = drained(
-                files_at_cancel,
-                bytes_at_cancel,
-                tally.processed() as usize,
-                paths_to_process,
-            );
+            let (files_left, bytes_left) =
+                drained(files_at_cancel, bytes_at_cancel, tally.processed(), paths_to_process);
             let current_file_name = entry
                 .path
                 .file_name()
@@ -169,21 +165,6 @@ pub(super) async fn volume_rollback_with_progress(
     // throttle window still ends where it ended.
     emit(None, 0, 0);
     tally
-}
-
-/// Where the two draining counters stand after `processed` of `total` ledger
-/// entries. Both are interpolated over the ledger rather than decremented, so
-/// they reach zero together at the end of the walk however many entries the
-/// reversal actually removed.
-fn drained(files_at_cancel: usize, bytes_at_cancel: u64, processed: usize, total: usize) -> (usize, u64) {
-    if total == 0 || processed >= total {
-        return (0, 0);
-    }
-    let left = 1.0 - processed as f64 / total as f64;
-    (
-        (files_at_cancel as f64 * left) as usize,
-        (bytes_at_cancel as f64 * left) as u64,
-    )
 }
 
 /// Remove ONE destination file this operation wrote, if the backend still reports

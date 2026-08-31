@@ -611,6 +611,12 @@ non-prompting policy: that would turn "nobody looked" into a silent overwrite.
   and Rollback buttons must be disabled (`disabled={isCancelling || operationSettled}`); a click here hits a backend
   whose operation state was already removed, so it's a no-op but briefly flashes "Rolling back..." giving false
   feedback. `operationSettled` reads the session's `settled`, which flips the moment a terminal event lands.
+- **`write-cancelled` carries what the REVERSAL managed, not a boolean.** `event.rollback` is a `CancelRollback`: a
+  three-state `outcome` (`notRolledBack` / `rolledBack` / `partiallyRolledBack`), how many items came back, and what the
+  reversal left behind grouped by reason with one example name each. A reversal leaves things behind on purpose — it
+  refuses to delete a destination something else changed since the transfer wrote it (BE doc:
+  `write_operations/transfer/DETAILS.md` § "What a reversal does with that identity"). Only the cancel log line reads it
+  today; the dialog that words it for a person is still to come.
 - **Cancel close is two-condition: `write-cancelled` + `write-settled`.** When the user clicks Cancel (without
   rollback), `TransferProgressDialog` does NOT close immediately. It keeps the "Canceling…" label up until both events
   have arrived for this `operationId`, then applies the existing `MIN_DISPLAY_MS` floor and closes via

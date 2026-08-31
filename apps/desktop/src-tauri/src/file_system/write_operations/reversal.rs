@@ -178,11 +178,29 @@ pub(crate) fn remove_local_dir_if_empty(dir: &Path) -> ItemResult {
     }
 }
 
+/// Where the two draining counters stand after `processed` of `total` ledger
+/// entries. Both are interpolated over the ledger rather than decremented, so
+/// they reach zero together at the end of the walk however many entries the
+/// reversal actually removed — the bar lands on its end whether an entry was
+/// removed, left alone, or refused to go.
+pub(crate) fn drained(files_at_cancel: usize, bytes_at_cancel: u64, processed: u32, total: usize) -> (usize, u64) {
+    if total == 0 || processed as usize >= total {
+        return (0, 0);
+    }
+    let left = 1.0 - f64::from(processed) / total as f64;
+    (
+        (files_at_cancel as f64 * left) as usize,
+        (bytes_at_cancel as f64 * left) as u64,
+    )
+}
+
 /// What one reversal did, accumulated item by item.
 ///
 /// Mirrors the history engine's accumulator, minus the journal writes: an
 /// in-flight reversal has no rows to update, it reports on the
 /// `write-cancelled` event instead.
+// DEFAULT-OK: a tally nobody has recorded into is a reversal that has processed
+// nothing, which is exactly what every zero here says.
 #[derive(Debug, Default)]
 pub(crate) struct ReversalTally {
     reversed: u32,

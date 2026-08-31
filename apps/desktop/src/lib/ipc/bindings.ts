@@ -4797,39 +4797,28 @@ export type BundleWriteBlocker =
  */
 export type CancelRollback = {
   outcome: CancelRollbackOutcome
-  /**
-   *  Items the reversal undid, counting the ones already in the desired end
-   *  state.
-   */
+  // Items undone, counting the ones already in the desired end state.
   reversed: number
-  /**
-   *  What it left alone, one group per reason with the complete count and one
-   *  example file name. Empty when nothing was left behind.
-   */
+  // One group per reason, with the complete count and one example file name.
   skips: SkipBreakdown[]
 }
 
 /**
  *  How much of what a cancelled operation had written got undone.
  *
- *  Three states, because two can't tell "the user cancelled without asking for a
- *  reversal" from "the reversal ran and left things behind". A reversal leaves
- *  things behind whenever it meets a file something else changed since this
- *  operation wrote it, which it refuses to delete.
+ *  Three states, because two can't tell "no reversal ran" from "the reversal ran
+ *  and left things behind" — which it does whenever it meets a file something
+ *  else changed since.
  */
 export type CancelRollbackOutcome =
   /**
-   *  No reversal ran, or it was stopped before it reached a single item.
-   *  Everything the operation wrote is still where it landed.
+   *  No reversal ran, or it stopped before reaching a single item: everything
+   *  the operation wrote is still where it landed.
    */
   | 'notRolledBack'
   // Everything the operation still claimed is undone.
   | 'rolledBack'
-  /**
-   *  The reversal ran but left items behind: the user stopped it partway, or
-   *  the recheck refused items that changed since. See
-   *  [`CancelRollback::skips`] for which and why.
-   */
+  // The reversal ran but left items behind — see [`CancelRollback::skips`].
   | 'partiallyRolledBack'
 
 /**
