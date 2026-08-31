@@ -2088,10 +2088,11 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
 - **"Left X alone: …" → a szállított `askCmdr.renameUndo.skipReason.*` keret: `<alany> változatlan maradt: <indok>.`** ·
   `high`, és két okból kötelező. (1) A `reason.folderNotEmpty.named`/`.counted` angolja BETŰ SZERINT azonos az
   `askCmdr.renameUndo.skipReason.folderNotEmpty.named`/`.counted` angoljával, tehát a `desktop-i18n-term-consistency`
-  egyetlen magyar alakot vár rájuk; a két kulcs értéke szó szerint a szállított testvéré. (2) Ha csak az a két sor
-  igazodna, a felsorolásban négy `kimaradt` mellett állna egy `változatlan maradt`, amit a felhasználó EGY pillantással
-  lát; a két funkció eltérése viszont sosem kerül egymás mellé. Az értesítés belső egyöntetűsége erősebb szempont, ezért
-  a `drift` / `unverifiable` / `spotTaken` / `folderNotEmpty` mind a nyolc sora ugyanazt a keretet viszi.
+  egyetlen magyar alakot vár rájuk, és a két család értéke betű szerint együtt mozog (lásd a névelő-szabályt lentebb).
+  (2) Ha csak az a két sor igazodna, a felsorolásban négy `kimaradt` mellett állna egy `változatlan maradt`, amit a
+  felhasználó EGY pillantással lát; a két funkció eltérése viszont sosem kerül egymás mellé. Az értesítés belső
+  egyöntetűsége erősebb szempont, ezért a `drift` / `unverifiable` / `spotTaken` / `folderNotEmpty` mind a nyolc sora
+  ugyanazt a keretet viszi.
   - **A `leftBehind` bevezető sora marad `kihagyja`**, szó szerint a testvér `rollbackConfirm.bodyUndoByDeleting`-ből
     (`Amiben a Cmdr nem biztos, azt kihagyja`) · high. A munkamegosztás így is megvan: a bevezető mondja ki az ÍGÉRETET
     és a következményt (`ezek a helyükön maradtak`), a sorok pedig elemenként az ÁLLAPOTOT (`változatlan maradt`).
@@ -2158,13 +2159,26 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
 - **Mérlegelés, nem forrás: `put it there` → `odatette`** · tentative. A pile egyik forrásában sincs erre alak. Az
   `odatesz` azért nyert, mert MÁSOLÁSRA és ÁTHELYEZÉSRE is igaz (az `odamásolta` csak az egyikre), és a `kiírta`
   (`transferProgress.rollbackTooltip` `kiírt fájl`) mappára nem áll, az `item` pedig itt mappát is jelent.
-- **`{name}` sosem kap ragot**: alanyi pozícióban áll, ahol a magyar nem kér toldalékot, és ahol az angol köznevet is
-  mond (`the folder {name}`), a köznév áll utána és az visel minden ragot (`A {name} mappa változatlan maradt`). Ugyanaz
-  az elv, mint a `queue.row.reversalInFolder` `a(z) {folder} mappában` sorában.
-  - **Örökölt eltérés a házi formától**: ez a keret `A {name}`-et ír, nem a katalógus szokásos `A(z) „{name}”` alakját
-    (névelőválasztás + idézőjel). A `folderNotEmpty` pár betű szerint kötött a szállított
-    `askCmdr.renameUndo.skipReason.*`-hoz, tehát az `A(z)`-re javítás csak a KÉT család EGYÜTTES átírásával mehet,
-    különben a `desktop-i18n-term-consistency` figyelmeztet. Amíg ez nem történik meg, itt a szállított alak marad.
+- **Névelő + `{name}` MINDIG `A(z) „{name}”`** · macOS Tier 1 (`A(z) „^0” elemet…`, `A(z) „^1” visszahelyezése nem
+  sikerült.`) és a `hu` katalógus 22 olyan kulcsa, ahol névelő áll egy név előtt · high. A névelő `a`/`az` alakja a név
+  ELSŐ HANGJÁN múlik, amit írás közben senki nem tud (`alma.txt` → `az`, `beszámoló.pdf` → `a`), tehát a puszta
+  `A {name}` minden magánhangzóval kezdődő fájlnévnél hibás magyar. Az idézőjel ugyanabból a forrásból jön, és a hosszú
+  vagy szóközös neveket is elhatárolja.
+  - **A névelő NÉLKÜLI helyeket nem érinti**: kettőspont vagy birtokos szerkezet után a placeholder csupaszon marad
+    (`Letöltve: {fileName}`, `{name} megnyitása`), mert ott nincs mit egyeztetni.
+  - **A `{name}` továbbra sem kap RAGOT.** Ahol az angol köznevet is mond (`the folder {name}`), a köznév áll utána, és
+    az visel minden ragot: `A(z) „{name}” mappa változatlan maradt`. Ugyanaz az elv, mint a
+    `queue.row.reversalInFolder` `a(z) {folder} mappában` sorában.
+  - **Ehhez KÉT család mozdult együtt** (2026-08-31): a négy új `cancelRollback.reason.*.named` sor, és a szállított
+    `askCmdr.renameUndo.skipReason.*.named` mind az öt sora (`drift`, `nameTaken`, `unverifiable`, `folderNotEmpty`,
+    `failed`), ami addig `A {name}`-et írt. Együtt kellett menniük, mert a `folderNotEmpty` pár angolja betű szerint
+    azonos, tehát a `desktop-i18n-term-consistency` egyetlen magyar alakot vár rájuk; és mert egy félig javított család
+    rosszabb bármelyik végállapotnál (a rename-undo értesítésben is egyszerre látszanak a sorok). Az öt szállított
+    kulcs ANGOLJA nem változott, tehát a `sourceHash`-ük érintetlen: ez fordítási minőségjavítás, nem újrafordítás.
+  - **Nyitott, más családokban**: az `errors.provider.appBased.transient`/`.needsAction`/`.serious` ugyanezt hozza egy
+    szolgáltatónévre (`Ezt a mappát a **{name}** kezeli`, ahol a `{name}` iCloud/Dropbox/pCloud), az
+    `askCmdr.renameUndo.undoJob` pedig egy SZÁMRA (`Mind a {countText} csomag…`: az `1` és az `5` más névelőt kér).
+    Egyik sem ennek a két családnak a része, ezért ez a menet nem nyúlt hozzájuk; a szabály viszont rájuk is áll.
 - **`rollbackConfirm.body`**: az angol egy harmadik mondattal bővült, ami betű szerint azonos a `bodyUndoByDeleting`
   záró mondatával (`Cmdr skips anything it isn''t sure about, so a few may stay behind.`), ezért a magyar is szó szerint
   annak a farkát veszi át (`Amiben a Cmdr nem biztos, azt kihagyja, szóval maradhat belőlük egy-kettő.`). Az első két

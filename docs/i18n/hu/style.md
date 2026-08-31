@@ -158,7 +158,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   Restructure so a placeholder isn't suffixed: put it after a postposition or in a neutral slot ("itt: {path}", not
   "{path}-ban").
 - **Definite vs indefinite conjugation and the `a`/`az` article** depend on the following word, so phrasing around a
-  placeholder needs care; prefer constructions that don't hinge on the inserted value's first sound.
+  placeholder needs care; prefer constructions that don't hinge on the inserted value's first sound. **When an article
+  genuinely has to precede a name placeholder, write `A(z) „{name}”`** — the `a(z)` house form plus `„…”` quotes, both
+  macOS Tier 1 (`A(z) „^0” elemet…`) and the catalog's majority. ❌ Never a bare `A {name}`: it renders "A alma.txt" on
+  every vowel-initial name. Nothing is needed after a colon or in a possessive (`Letöltve: {fileName}`). Evidence and
+  the two families that were corrected to it: `glossary.md` § A megszakított visszagörgetés eredményértesítése.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
 - **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`.** `Cmdr` is pronounced "commander", so
