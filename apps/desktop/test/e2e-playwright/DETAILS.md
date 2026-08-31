@@ -566,10 +566,11 @@ needs a THIRD app-code gate, the mode is the cleaner shape. Consequence of the c
 from OUTSIDE, per shot, through System Events (`osascript`), because the harness cannot take the front position from
 inside.
 
-**Decision**: `build.rs` conditionally generates `capabilities/playwright.json`. **Why**: The plugin's IPC permissions
-(`playwright:default`) are only available when the `playwright-e2e` Cargo feature is enabled. Adding it to
-`default.json` breaks non-feature builds. So `build.rs` generates the capability file when the feature is active and
-removes it when the feature is not active. The file is gitignored.
+**Decision**: the plugin's capability is a committed file in `src-tauri/capabilities-e2e/`, which only `playwright-e2e`
+builds glob. **Why**: its IPC permissions (`playwright:default`) exist only when the Cargo feature is enabled, so
+putting the capability in `capabilities/` (which every build globs) breaks non-feature builds. `build.rs` widens its
+capability glob under the feature instead of writing anything to the source tree; see
+`src-tauri/capabilities/DETAILS.md` § The E2E capability.
 
 ## Pressing buttons
 
