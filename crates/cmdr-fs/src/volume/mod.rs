@@ -1209,6 +1209,13 @@ pub trait Volume: Send + Sync {
     /// `max_write_size` bytes), never the reason for it: a "small files are fine"
     /// answer silently brings back truncated files at real names.
     ///
+    /// ❌ A `true` answer promises a SECOND property: no write handle is open on
+    /// the far side while the source stream drains, so buffer the bytes first and
+    /// commit in the one operation. Opening a handle up front and streaming chunks
+    /// into it still lands all-or-nothing, and breaks this. The transfer layer's
+    /// foreground yield leans on it to let a small upload stand aside mid-drain;
+    /// `write_operations/transfer/volume/DETAILS.md` § "The single-shot exemption".
+    ///
     /// `false` (the default): every write to this volume stages.
     fn write_is_single_shot<'a>(&'a self, size: u64) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         let _ = size;
