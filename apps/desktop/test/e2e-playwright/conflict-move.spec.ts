@@ -10,6 +10,7 @@ import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   clickButtonByText,
+  dismissAllToasts,
   dispatchMenuCommand,
   drainOperations,
   ensureAppReady,
@@ -182,5 +183,11 @@ test.describe('Move rollback', () => {
     // The conflicting file (golf.txt) should still be in source since
     // we cancelled before resolving it.
     expect(fileExists(fixtureRoot, 'left/bravo/foxtrot/golf.txt')).toBe(true)
+
+    // The reversal summarizes itself in a toast. How many items it carried back
+    // depends on what the move had processed before the clash paused it, which
+    // this test deliberately doesn't pin, so clear it rather than assert a count.
+    // `conflict-edge-cases.spec.ts` owns the wording assertions.
+    await dismissAllToasts(tauriPage)
   })
 })

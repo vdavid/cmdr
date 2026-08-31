@@ -141,6 +141,11 @@ test.describe('Cancel and rollback', () => {
         const remaining = fs.readdirSync(rightPartial)
         expect(remaining.length).toBe(0)
       }
+      // The reversal says so, in the words a user reads. The count varies with
+      // how far the copy got, so match the part that doesn't: this wording is
+      // the CLEAN one, and it claiming completeness is what makes it the right
+      // sentence here.
+      await expectAndDismissToast(tauriPage, 'Cmdr had written')
     } finally {
       // Unlisten and clear test state, in that order so a partial failure can
       // still tear down cleanly.
