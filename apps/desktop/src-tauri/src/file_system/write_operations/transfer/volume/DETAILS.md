@@ -70,11 +70,14 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   `copy.rs`. Check which scope you are in before touching a `super::` chain here; a wrongly-deepened one can still
   compile against a same-named module at the other level.
 - **`copy_bench.rs` is `#[ignore]`d** and needs a QNAP NAS plus `SMB2_TEST_NAS_PASSWORD`, so it never runs in CI.
-- **Three test-support files, split by what they fake.** `faulty_volume_test_support.rs` holds `FaultyVolume` (wrap any
+- **Four test-support files, split by what they fake.** `faulty_volume_test_support.rs` holds `FaultyVolume` (wrap any
   volume, arm the Nth call to a named operation to fail) plus `forward_volume_methods!`, the macro every `Volume` double
   in this directory builds its boilerplate from — a new double lists the methods it forwards and hand-writes only what
   it lies about. `strategy_test_support.rs` holds the doubles whose lie is behavioral (`RecursiveDeleteVolume`,
-  `UndeletableSource`, `FlakyDest`, the yield/pause sources); `copy_wedge_test_support.rs` holds the STREAM doubles
+  `UndeletableSource`, `FlakyDest`, the yield/pause sources); `strategy_dest_yield_test_support.rs` holds the two upload
+  destinations the destination-yield suite drives (`ForegroundBusyDest`, whose share signal a test scripts through a
+  `BusyVolumes`, and `PanicIfProbedDest`, which fails loudly if a non-opting target is ever probed);
+  `copy_wedge_test_support.rs` holds the STREAM doubles
   (`GatedChunkStream`, `IncrementalDest`), which control WHEN bytes arrive and are a different axis entirely. ❌
   `FaultyVolume` over an `InMemoryVolume` can't show a half-written destination — the in-memory store buffers a whole
   file and creates it at the end — so partial-destination cells use `LocalPosixVolume`.

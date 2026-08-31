@@ -74,7 +74,7 @@ const MIN_PROGRESS_FLOOR_BYTES: u64 = 4 * 1024 * 1024;
 /// The share's OWN session stays warm regardless (the user's navigation rides it),
 /// so this cap protects only the write handle. ❌ Don't raise it toward any
 /// server idle-timeout; keep it a small, safe fraction. Data-safety bound; see
-/// `checkpoint_stream.rs::dest_park_continues`.
+/// `checkpoint_stream.rs::CheckpointStream::bounded_yield_to_dest_foreground`.
 const DEST_FOREGROUND_YIELD_HARD_CAP: Duration = Duration::from_secs(1);
 
 /// The (debounce, min-progress-floor, dest-yield-hard-cap) tuple a freshly-built
@@ -948,6 +948,11 @@ mod stale_handle_tests;
 #[cfg(test)]
 #[path = "strategy_test_support.rs"]
 pub(super) mod test_support;
+
+#[cfg(test)]
+#[path = "strategy_dest_yield_test_support.rs"]
+pub(super) mod dest_yield_test_support;
+
 #[cfg(test)]
 #[path = "strategy_yield_tests.rs"]
 mod yield_tests;
