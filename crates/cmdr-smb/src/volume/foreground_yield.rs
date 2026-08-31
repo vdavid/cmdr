@@ -57,7 +57,7 @@ use cmdr_fs::volume::host::activity;
 /// would compound into a visibly stalled copy for a single arrow-key press.
 pub(crate) const TRANSFER_FOREGROUND_IDLE_THRESHOLD: Duration = Duration::from_millis(500);
 
-/// How often [`wait_until_foreground_idle`] re-checks. The signal is a timestamp,
+/// How often [`wait_until_foreground_idle`] re-checks. The signal is polled state,
 /// not an event, so there's nothing to wake on; a tick well under the threshold
 /// keeps the resume latency a small fraction of the window.
 const POLL_INTERVAL: Duration = Duration::from_millis(100);

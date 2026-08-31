@@ -309,8 +309,8 @@ impl CheckpointStream {
         if self.bytes_yielded.saturating_sub(self.last_resume_offset) < self.min_progress_floor {
             return;
         }
-        // Cheap probe (a per-share timestamp read); skip the park when the share
-        // is quiet.
+        // Cheap probe (a per-share lease count plus a timestamp read); skip the
+        // park when the share is quiet.
         if !self.dest_volume.foreground_pending().await {
             return;
         }
