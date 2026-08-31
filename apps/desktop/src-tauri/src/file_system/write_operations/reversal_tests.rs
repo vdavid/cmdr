@@ -151,15 +151,15 @@ fn a_created_directory_someone_put_a_file_into_stays() {
 fn a_volume_file_the_backend_now_reports_at_another_size_is_left_alone() {
     let recorded = WrittenFile::volume(PathBuf::from("/share/report.pdf"), 4096);
 
-    assert_eq!(recheck_volume(&recorded, Some(4096)), Recheck::Act);
+    assert_eq!(recheck_volume(&recorded, Some(4096)), PresentRecheck::Act);
     assert_eq!(
         recheck_volume(&recorded, Some(9000)),
-        Recheck::Skip(SkipReason::Drift),
+        PresentRecheck::Skip(SkipReason::Drift),
         "a different size is a different file"
     );
     assert_eq!(
         recheck_volume(&recorded, None),
-        Recheck::Skip(SkipReason::UnverifiablePrecondition),
+        PresentRecheck::Skip(SkipReason::UnverifiablePrecondition),
         "a backend that won't say fails safe"
     );
 }
@@ -168,7 +168,7 @@ fn a_volume_file_the_backend_now_reports_at_another_size_is_left_alone() {
 #[test]
 fn a_volume_partial_goes_without_a_size() {
     let partial = WrittenFile::own_partial(PathBuf::from("/share/half.mov"));
-    assert_eq!(recheck_volume(&partial, None), Recheck::Act);
+    assert_eq!(recheck_volume(&partial, None), PresentRecheck::Act);
 }
 
 /// The three outcomes a cancel can report, and the boundary between them.

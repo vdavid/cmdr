@@ -17,7 +17,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::ledger::{WrittenFile, WrittenIdentity};
-use super::super::super::reversal::{Recheck, ReversalTally, drained, recheck_volume};
+use super::super::super::reversal::{PresentRecheck, ReversalTally, drained, recheck_volume};
 use super::super::super::state::{StopMeans, WriteOperationState, update_operation_status};
 use super::super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::transfer_error::{AtPath, PathedVolumeError};
@@ -188,9 +188,8 @@ async fn reverse_written_file(volume: &Arc<dyn Volume>, entry: &WrittenFile) -> 
             }
         };
         match recheck_volume(entry, live_size) {
-            Recheck::Act => {}
-            Recheck::AlreadyGone => return ItemResult::Skipped(SkipReason::AlreadyGone),
-            Recheck::Skip(reason) => {
+            PresentRecheck::Act => {}
+            PresentRecheck::Skip(reason) => {
                 log::info!(
                     "volume_rollback_with_progress: leaving {} alone ({reason:?})",
                     entry.path.display()

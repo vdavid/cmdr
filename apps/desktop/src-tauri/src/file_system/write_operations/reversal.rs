@@ -42,6 +42,30 @@ pub(crate) enum Recheck {
 impl Recheck {
     /// Translate a snapshot verdict into the reversal's decision.
     fn of(verdict: SnapshotVerdict) -> Self {
+        match PresentRecheck::of(verdict) {
+            PresentRecheck::Act => Self::Act,
+            PresentRecheck::Skip(reason) => Self::Skip(reason),
+        }
+    }
+}
+
+/// The same decision for an entry the caller has ALREADY found present, so
+/// "nothing is there" can't be one of the answers.
+///
+/// It's a separate type rather than a [`Recheck`] whose `AlreadyGone` never
+/// happens: a caller that fetched the entry itself has already answered that
+/// question, and an arm it can't reach reads to the next author as a case
+/// somebody forgot to think about.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PresentRecheck {
+    /// Still the entry this operation put here. Go ahead.
+    Act,
+    /// Leave it, and report this reason.
+    Skip(SkipReason),
+}
+
+impl PresentRecheck {
+    fn of(verdict: SnapshotVerdict) -> Self {
         match verdict {
             SnapshotVerdict::Match => Self::Act,
             SnapshotVerdict::Drift => Self::Skip(SkipReason::Drift),
@@ -99,13 +123,15 @@ pub(crate) fn recheck_local(file: &WrittenFile) -> Recheck {
 
 /// Is what the backend reports at a volume path still what this operation wrote?
 ///
-/// `live` is the entry the caller already fetched; a path the backend says is
-/// gone never reaches here (the caller answers that with [`Recheck::AlreadyGone`]
-/// so it doesn't pay a second round trip).
-pub(crate) fn recheck_volume(file: &WrittenFile, live_size: Option<u64>) -> Recheck {
+/// `live_size` comes off the entry the caller already fetched, which is why the
+/// answer is a [`PresentRecheck`]: a path the backend says is gone never reaches
+/// here, so nothing pays a second round trip to re-ask.
+pub(crate) fn recheck_volume(file: &WrittenFile, live_size: Option<u64>) -> PresentRecheck {
     match file.identity {
-        WrittenIdentity::OwnPartial => Recheck::Act,
-        WrittenIdentity::VolumeFile { size } => Recheck::of(verify_snapshot(Some(size as i64), None, live_size, None)),
+        WrittenIdentity::OwnPartial => PresentRecheck::Act,
+        WrittenIdentity::VolumeFile { size } => {
+            PresentRecheck::of(verify_snapshot(Some(size as i64), None, live_size, None))
+        }
         // No volume backend reports a node id, so a local identity can't be
         // rechecked here. Reaching this is a bookkeeping bug; fail safe.
         WrittenIdentity::LocalFile { .. } | WrittenIdentity::LocalDir { .. } => {
@@ -113,9 +139,9 @@ pub(crate) fn recheck_volume(file: &WrittenFile, live_size: Option<u64>) -> Rech
                 "reversal: {} was recorded as a local entry but is being rechecked through a volume, leaving it",
                 file.path.display()
             );
-            Recheck::Skip(SkipReason::UnverifiablePrecondition)
+            PresentRecheck::Skip(SkipReason::UnverifiablePrecondition)
         }
-        WrittenIdentity::Unverifiable => Recheck::Skip(SkipReason::UnverifiablePrecondition),
+        WrittenIdentity::Unverifiable => PresentRecheck::Skip(SkipReason::UnverifiablePrecondition),
     }
 }
 
