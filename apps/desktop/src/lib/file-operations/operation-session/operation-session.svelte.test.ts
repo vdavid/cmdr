@@ -537,7 +537,9 @@ describe('commands', () => {
 
 describe('leaving the registry', () => {
   it('says so once a snapshot arrives without the operation it held', () => {
-    const { session, fanout, dispose } = harness((f) => { f._testEmit({ kind: 'snapshot', operations: [snapshot('a')] }); })
+    const { session, fanout, dispose } = harness((f) => {
+      f._testEmit({ kind: 'snapshot', operations: [snapshot('a')] })
+    })
 
     expect(session.leftRegistry).toBe(false)
 
@@ -569,7 +571,9 @@ describe('leaving the registry', () => {
   })
 
   it('takes the operation back when the registry names it again', () => {
-    const { session, fanout, dispose } = harness((f) => { f._testEmit({ kind: 'snapshot', operations: [snapshot('a')] }); })
+    const { session, fanout, dispose } = harness((f) => {
+      f._testEmit({ kind: 'snapshot', operations: [snapshot('a')] })
+    })
 
     fanout._testEmit({ kind: 'snapshot', operations: [] })
     expect(session.leftRegistry).toBe(true)

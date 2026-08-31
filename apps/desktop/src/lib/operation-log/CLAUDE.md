@@ -22,11 +22,10 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
 - **Roll back dispatches and lets go. ❌ Don't grow a progress dialog here.** The user is reading history, not watching
   a transfer; the status corner and the queue window own the reversal from the moment the command returns. The row's
   Pause / Cancel are the one exception, and they're the queue's own commands, ❌ never a second path to the IPC.
-- **A rolling-back row commands the REVERSAL, on `inverseOpId`, ❌ never its own `opId`** (which names a finished
-  operation). The id is journal truth on every read AND on the dispatch's answer, so a reversal someone else started
-  gets the same buttons. Which control shows follows the SESSION's live status, ❌ not the journal row, which is a
-  read-on-open snapshot and goes stale. A reversal emits NO terminal event, so its liveness also reads
-  `session.leftRegistry`; without that the buttons outlive it and each press reaches nothing.
+- **A rolling-back row commands the REVERSAL, on `inverseOpId`, ❌ never its own `opId`** (a finished operation). The id
+  is journal truth on every read AND on the dispatch's answer, so a reversal someone else started gets the same buttons.
+  Which control shows follows the SESSION, ❌ not the read-on-open journal row. A reversal emits NO terminal event, so
+  liveness also reads `session.leftRegistry`, or the buttons outlive it and every press reaches nothing.
 - **The badge flip to "Rolling back" is journal truth, not optimism.** The backend gate writes `rolling_back`
   synchronously before the dispatch returns, so `markOperationRollingBack` repeats what the journal already says. ❌
   Don't turn it into a re-read.

@@ -79,16 +79,16 @@ reads the journal once, on open, so a reversal that has since ended leaves a row
 absent live status is what stops it offering a press with nothing to press.
 
 **And what says it has ended, for an operation that never says so itself.** Three readings, because a reversal ends more
-quietly than a transfer. `settled` catches the terminal events; a snapshot saying `done` catches the status. Neither ever
-lands here: the reversal emits `write-progress` and no terminal event at all, and its last word is dropping out of the
-registry. That's `session.leftRegistry` (`../file-operations/operation-session/DETAILS.md` § "Leaving the registry"), and
-it is the reading that actually fires in practice. ❌ Drop it and the buttons stay lit over a finished reversal, where
-Cancel disables itself forever on a press nothing receives and Pause stays live beside it.
+quietly than a transfer. `settled` catches the terminal events; a snapshot saying `done` catches the status. Neither
+ever lands here: the reversal emits `write-progress` and no terminal event at all, and its last word is dropping out of
+the registry. That's `session.leftRegistry` (`../file-operations/operation-session/DETAILS.md` § "Leaving the
+registry"), and it is the reading that actually fires in practice. ❌ Drop it and the buttons stay lit over a finished
+reversal, where Cancel disables itself forever on a press nothing receives and Pause stays live beside it.
 
 **They keep their labels whole.** The set is ONE flex item of `.op-row` (`.rollback-controls`) and it doesn't shrink,
-because the row's head takes `flex: 1 1 auto` and would otherwise squeeze three buttons into ~73 px at the dialog's fixed
-620 — narrower than "Resume", let alone "Szüneteltetés". `.btn-inner` is `white-space: nowrap` on top of that, so a
-label that still doesn't fit keeps its width rather than breaking mid-word. The row's head is what gives way.
+because the row's head takes `flex: 1 1 auto` and would otherwise squeeze three buttons into ~73 px at the dialog's
+fixed 620 — narrower than "Resume", let alone "Szüneteltetés". `.btn-inner` is `white-space: nowrap` on top of that, so
+a label that still doesn't fit keeps its width rather than breaking mid-word. The row's head is what gives way.
 
 **A paused reversal must not read as finished.** The badge stays "Rolling back", because that's what the journal says
 and it's true. The controls add the queue window's own status word, "Paused", off the same lifecycle status, so the two
