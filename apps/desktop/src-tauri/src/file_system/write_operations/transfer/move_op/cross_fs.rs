@@ -30,9 +30,8 @@ use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::journal;
 use crate::file_system::write_operations::scan::{SourceItemTracker, scan_sources};
 use crate::file_system::write_operations::scan_cache::take_cached_scan_result;
-use crate::file_system::write_operations::state::{
-    CopyTransaction, WriteOperationState, is_cancelled, update_operation_status,
-};
+use crate::file_system::write_operations::ledger::CopyTransaction;
+use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled, update_operation_status};
 use crate::file_system::write_operations::types::{
     SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,

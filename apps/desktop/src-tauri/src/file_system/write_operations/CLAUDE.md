@@ -4,8 +4,8 @@ Copy, move, delete, trash, and zip edits as managed background ops.
 
 ## Module map
 
-- Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, `CopyTransaction`, cancel/abort),
-  `ledger.rs` (what a reversal rechecks a destination against), `status_cache.rs` (status + the busy-volume set behind
+- Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, cancel/abort),
+  `ledger.rs` (`CopyTransaction` and what a reversal rechecks a destination against), `status_cache.rs` (status + the busy-volume set behind
   Eject; reach it through `state::`), `types.rs`, `mod.rs` (public API). Also
   `scan_{preview,cache,bridge,watchdog}.rs`, `routing.rs`, `source_binding.rs`, `mutation_error.rs`. Own docs:
   `transfer/`, `delete/`, `archive_edit/`, plus `apps/desktop/src/lib/file-operations/CLAUDE.md`.

@@ -17,9 +17,8 @@ use super::super::durability::flush_created_destinations;
 use super::super::event_sinks::OperationEventSink;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
-use super::super::state::{
-    CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
-};
+use super::super::ledger::CopyTransaction;
+use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::super::types::{
     ConflictResolution, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,

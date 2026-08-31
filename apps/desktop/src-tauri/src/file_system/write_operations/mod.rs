@@ -167,7 +167,9 @@ pub use types::{
 
 // Re-export for tests (these are pub(crate) in validation.rs and state.rs)
 #[cfg(test)]
-pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent};
+pub(crate) use ledger::CopyTransaction;
+#[cfg(test)]
+pub(crate) use state::{OperationIntent, WriteOperationState, is_cancelled, load_intent};
 #[cfg(test)]
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
 pub(crate) use validation::{

@@ -13,7 +13,6 @@ use tokio_util::sync::CancellationToken;
 use super::eta::{EtaEstimator, EtaSample};
 use super::event_sinks::OperationEventSink;
 use super::human_wait::HumanWaitClock;
-use super::ledger::WrittenFile;
 use super::types::{
     ConflictId, ConflictResolution, ConflictResolutionOutcome, TransferActivity, TransferWaitReason,
     WriteConflictEvent, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
@@ -789,105 +788,6 @@ pub fn resolve_write_conflict(
 /// clash is owed an answer, and answer that one by id rather than guessing.
 pub fn pending_write_conflict(operation_id: &str) -> Option<WriteConflictEvent> {
     WRITE_OPERATION_STATE.get(operation_id)?.conflict_slot.pending()
-}
-
-// ============================================================================
-// Copy transaction for rollback
-// ============================================================================
-
-/// Tracks created files/directories for rollback on failure.
-///
-/// If dropped without calling `commit()`, automatically rolls back
-/// (deletes) all recorded files and directories. This ensures cleanup
-/// even if a thread panics during the copy loop.
-#[cfg_attr(test, derive(Debug))]
-pub(crate) struct CopyTransaction {
-    /// The destination files this operation wrote, in creation order, each with
-    /// the identity it landed with. A **stack**: [`CopyTransaction::pop_file`]
-    /// takes the newest one off as it's reversed, so at every instant the ledger
-    /// claims exactly what this operation still has on disk. A reversal that
-    /// stops halfway can then report honestly on what it left.
-    created_files: Vec<WrittenFile>,
-    /// In creation order. Not a stack: these rows are also what
-    /// `commit_journaling_created_dirs` journals after a reversal, so the list
-    /// has to survive one. Rollback prunes them empty-only, deepest first.
-    pub created_dirs: Vec<PathBuf>,
-    /// Set to `true` by `commit()` to prevent rollback on drop.
-    committed: bool,
-}
-
-impl CopyTransaction {
-    pub fn new() -> Self {
-        Self {
-            created_files: Vec::new(),
-            created_dirs: Vec::new(),
-            committed: false,
-        }
-    }
-
-    pub fn record_file(&mut self, file: WrittenFile) {
-        self.created_files.push(file);
-    }
-
-    pub fn record_dir(&mut self, path: PathBuf) {
-        self.created_dirs.push(path);
-    }
-
-    /// The files this operation still claims to have on disk, newest last.
-    pub fn created_files(&self) -> &[WrittenFile] {
-        &self.created_files
-    }
-
-    /// The destination paths, for the passes that only need to name them (the
-    /// closing `fdatasync`, the cross-FS move's staging→final rebase).
-    pub fn created_file_paths(&self) -> Vec<PathBuf> {
-        self.created_files.iter().map(|f| f.path.clone()).collect()
-    }
-
-    /// Take the newest file off the ledger, to reverse it. Popping BEFORE the
-    /// delete is deliberate: an entry this operation has stopped claiming is one
-    /// nothing will try to remove twice, whether the delete succeeded, was
-    /// refused, or found the file already gone.
-    pub fn pop_file(&mut self) -> Option<WrittenFile> {
-        self.created_files.pop()
-    }
-
-    /// Rolls back all created files and directories.
-    ///
-    /// Intentional: rollback removes the files THIS operation created; it does
-    /// NOT restore an original that an Overwrite replaced (we keep no per-file
-    /// backup — see `overwrite::safe_overwrite_file` step 4). Keeping backups for
-    /// the whole operation risks unexpectedly filling the user's drive on a
-    /// large Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
-    /// § "Overwrite isn't reversible".
-    pub fn rollback(&mut self) {
-        // Delete files first (newest first), draining the ledger as they go.
-        while let Some(file) = self.pop_file() {
-            let _ = std::fs::remove_file(&file.path);
-        }
-        // Then directories (deepest first, already in reverse due to creation order)
-        for dir in self.created_dirs.iter().rev() {
-            let _ = std::fs::remove_dir(dir);
-        }
-    }
-
-    /// Marks the transaction as committed, preventing rollback on drop.
-    pub fn commit(mut self) {
-        self.committed = true;
-    }
-}
-
-impl Drop for CopyTransaction {
-    fn drop(&mut self) {
-        if !self.committed {
-            log::warn!(
-                "CopyTransaction dropped without commit, rolling back {} files and {} dirs",
-                self.created_files.len(),
-                self.created_dirs.len()
-            );
-            self.rollback();
-        }
-    }
 }
 
 #[cfg(test)]

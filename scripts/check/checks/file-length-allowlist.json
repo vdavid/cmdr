@@ -22,7 +22,6 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/scan.rs": 1064,
     "apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge_tests.rs": 826,
     "apps/desktop/src-tauri/src/file_system/write_operations/scan_preview.rs": 845,
-    "apps/desktop/src-tauri/src/file_system/write_operations/state.rs": 800,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/self_collision_tests.rs": 802,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/transfer_driver_async_tests.rs": 1144,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/transfer_probe.rs": 983,

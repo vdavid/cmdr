@@ -6,7 +6,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crate::file_system::write_operations::state::{CopyTransaction, WriteOperationState, is_cancelled};
+use crate::file_system::write_operations::ledger::CopyTransaction;
+use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled};
 use crate::file_system::write_operations::types::WriteOperationError;
 use crate::file_system::write_operations::validation::path_exists_or_is_symlink;
 
