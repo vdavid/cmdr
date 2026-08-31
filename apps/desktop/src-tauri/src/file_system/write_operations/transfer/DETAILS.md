@@ -46,7 +46,7 @@ facts that none of those carry live here:
 
 ## Copy + move semantics
 
-**`CopyTransaction` rollback: sync with progress.** `rollback()` (synchronous, for error paths) and tracked `rollback_with_progress()` in `copy/rollback.rs` (for user-initiated rollback, emits `write-progress` events with `phase: RollingBack`, checks for `Stopped` between file deletions so the user can cancel the rollback). Auto-rollback via `Drop` remains as a panic safety net.
+**A local copy's ledger has two reversals and one net.** `reversal.rs::reverse_copy_transaction` is the synchronous one the error-cleanup arms take; `copy/rollback.rs::rollback_with_progress` is the Rollback button's, emitting `write-progress` with `phase: RollingBack` and reading the intent between deletions so the user can stop the reversal itself. Both recheck each entry. `CopyTransaction`'s `Drop` is the panic net, and the only unconditional sweep.
 
 ### What the in-flight ledgers record
 
@@ -86,7 +86,7 @@ Three ledgers say what an operation currently has at the destination, and each o
 
 **`AlreadyGone` counts as reversed**, not as a skip: the end state the reversal wanted already holds, and a person doesn't need telling about it.
 
-**The move path carries a SECOND guard**, the one the history engine pins alongside the recheck: the restore is non-destructive. `fs::rename` replaces its target silently and there is no backup to put back, so an original source somebody has since filled skips with `RestoreTargetOccupied`. The carve-out is the case-only self-collision — a case-insensitive filesystem folds `dog.jpg` and `DOG.jpg` onto one entry, so a case-only move finds its own destination sitting at the source. Same node id ⇒ the same entry ⇒ the rename back is a case correction. One local filesystem means `(dev, ino)` settles it exactly, with no path folding needed.
+**The move path carries a SECOND guard**, the one the history engine pins alongside the recheck: the restore is non-destructive. `fs::rename` replaces its target silently and there is no backup to put back, so an original source somebody has since filled skips with `RestoreTargetOccupied`. **The stat that reports that is advisory; the refusal lives in the rename** (`move_op/mod.rs::restore_rename`), which goes through `overwrite::rename_no_replace` — the kernel's atomic no-replace flag, degrading to a check-then-rename only where the filesystem has neither. A stat can only say what was there when it looked, so a check-then-`fs::rename` pair would still destroy a file created in the window between them, silently and with nothing to restore from. The carve-out is the case-only self-collision — a case-insensitive filesystem folds `dog.jpg` and `DOG.jpg` onto one entry, so a case-only move finds its own destination sitting at the source. Same node id ⇒ the same entry ⇒ the rename back is a case correction. One local filesystem means `(dev, ino)` settles it exactly, with no path folding needed.
 
 **The `Drop` net stays unconditional**, and it keeps its own sweep in `ledger.rs` (`CopyTransaction::remove_everything`) rather than routing through `reversal.rs`. It runs because a thread panicked mid-copy, where a destination is as likely half-written as complete and nobody is left to read a report. ❌ Aligning it with the guarded reversals strands partials after a crash. Keeping it there is also what keeps the direction one-way: `ledger.rs` is the vocabulary, `reversal.rs` is the policy over it, and `module-cycles` notices the moment that reverses.
 

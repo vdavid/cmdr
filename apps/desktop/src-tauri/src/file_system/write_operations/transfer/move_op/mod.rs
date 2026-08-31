@@ -21,7 +21,7 @@ use super::super::conflict::{ApplyToAll, resolve_conflict};
 use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::{WrittenFile, WrittenIdentity};
-use super::super::overwrite::safe_overwrite_dir;
+use super::super::overwrite::{rename_no_replace, safe_overwrite_dir};
 use super::super::reversal::{Recheck, ReversalTally, recheck_local};
 use super::super::scan::handle_dry_run;
 use super::super::state::{WriteOperationState, is_cancelled};
@@ -112,23 +112,58 @@ fn restore_moved_item(item: &MovedItem) -> ItemResult {
         Recheck::Skip(reason) => return ItemResult::Skipped(reason),
         Recheck::Act => {}
     }
-    if let Ok(occupant) = fs::symlink_metadata(&item.original_source)
-        && !occupant_is_the_item_itself(item, &occupant)
-    {
-        log::info!(
-            "move rollback: leaving {} where it is, something else now sits at {}",
-            item.landed.path.display(),
-            item.original_source.display()
-        );
-        return ItemResult::Skipped(SkipReason::RestoreTargetOccupied);
+    // Advisory: this stat names the ordinary case with a log line, and it's the
+    // only thing that can tell a real collision from a case-only self-collision.
+    // The refusal itself lives in `restore_rename`, which is what makes the guard
+    // hold against an entry that appears after this stat.
+    let mut force = false;
+    if let Ok(occupant) = fs::symlink_metadata(&item.original_source) {
+        if occupant_is_the_item_itself(item, &occupant) {
+            force = true;
+        } else {
+            log::info!(
+                "move rollback: leaving {} where it is, something else now sits at {}",
+                item.landed.path.display(),
+                item.original_source.display()
+            );
+            return ItemResult::Skipped(SkipReason::RestoreTargetOccupied);
+        }
     }
-    match fs::rename(&item.landed.path, &item.original_source) {
+    restore_rename(&item.landed.path, &item.original_source, force)
+}
+
+/// The restore's own rename, which refuses to replace whatever is at
+/// `original_source` unless `force` says the entry there IS the item coming back.
+///
+/// This is where the non-destructive guarantee actually lives. The caller's stat
+/// only reports what was there when it looked; an entry created in the window
+/// between that stat and this rename would still be in the way, and a plain
+/// `rename(2)` would carry it off without a word. `rename_no_replace` closes the
+/// window with the kernel's atomic no-replace flag.
+///
+/// `force` is the case-only self-collision, where the entry the target reports IS
+/// the item being restored, so the rename has to be allowed to land on it.
+fn restore_rename(landed: &Path, original_source: &Path, force: bool) -> ItemResult {
+    let renamed = if force {
+        fs::rename(landed, original_source)
+    } else {
+        rename_no_replace(landed, original_source)
+    };
+    match renamed {
         Ok(()) => ItemResult::Reversed,
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            log::info!(
+                "move rollback: leaving {} where it is, something took {} while the reversal ran",
+                landed.display(),
+                original_source.display()
+            );
+            ItemResult::Skipped(SkipReason::RestoreTargetOccupied)
+        }
         Err(e) => {
             log::warn!(
                 "move rollback: couldn't rename {} back to {}: {}",
-                item.landed.path.display(),
-                item.original_source.display(),
+                landed.display(),
+                original_source.display(),
                 e
             );
             ItemResult::Skipped(SkipReason::Failed)

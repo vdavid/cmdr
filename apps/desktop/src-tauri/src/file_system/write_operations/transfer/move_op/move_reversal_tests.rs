@@ -161,3 +161,63 @@ fn a_landed_item_someone_removed_counts_as_done() {
     assert_eq!(report.reversed, 1);
     assert!(report.skips.is_empty());
 }
+
+/// The restore's own rename refuses to replace, so an entry that appears at the
+/// original source AFTER the pre-check stat'd it and found nothing is still
+/// safe. Driving `restore_rename` directly is what makes that window
+/// deterministic: it is exactly the state the reversal is in once the pre-check
+/// has passed.
+#[test]
+fn a_restore_rename_refuses_to_replace_an_entry_that_appeared_after_the_check() {
+    let tmp = tempfile::tempdir().unwrap();
+    let landed = tmp.path().join("landed.txt");
+    let original_source = tmp.path().join("notes.txt");
+    fs::write(&landed, b"the moved file").unwrap();
+    // Stands in for the file created in the window between the pre-check and
+    // the rename, which no stat of ours can see.
+    fs::write(&original_source, b"a new file the user just made").unwrap();
+
+    let result = restore_rename(&landed, &original_source, false);
+
+    assert!(
+        matches!(result, ItemResult::Skipped(SkipReason::RestoreTargetOccupied)),
+        "an occupied restore target reports itself as occupied, whenever it got occupied"
+    );
+    assert_eq!(
+        fs::read(&original_source).unwrap(),
+        b"a new file the user just made",
+        "and the entry in the way keeps its bytes"
+    );
+    assert!(landed.exists(), "the moved item stays where it landed");
+}
+
+/// Nothing is in the way, so the same non-replacing rename lands the item back.
+#[test]
+fn a_restore_rename_lands_when_the_original_source_is_clear() {
+    let tmp = tempfile::tempdir().unwrap();
+    let landed = tmp.path().join("landed.txt");
+    let original_source = tmp.path().join("notes.txt");
+    fs::write(&landed, b"the moved file").unwrap();
+
+    assert!(matches!(
+        restore_rename(&landed, &original_source, false),
+        ItemResult::Reversed
+    ));
+    assert_eq!(fs::read(&original_source).unwrap(), b"the moved file");
+}
+
+/// `force` is the case-only self-collision: the entry the target reports is the
+/// item itself, so the rename has to be allowed to land on it.
+#[test]
+fn a_forced_restore_rename_lands_on_the_item_itself() {
+    let tmp = tempfile::tempdir().unwrap();
+    let landed = tmp.path().join("DOG.jpg");
+    let original_source = tmp.path().join("dog.jpg");
+    fs::write(&landed, b"a good dog").unwrap();
+
+    assert!(matches!(
+        restore_rename(&landed, &original_source, true),
+        ItemResult::Reversed
+    ));
+    assert_eq!(fs::read(&original_source).unwrap(), b"a good dog");
+}

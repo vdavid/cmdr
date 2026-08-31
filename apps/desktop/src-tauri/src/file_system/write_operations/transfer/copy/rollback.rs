@@ -24,9 +24,8 @@ use crate::file_system::write_operations::types::{WriteOperationPhase, WriteOper
 ///
 /// Every entry is rechecked immediately before it's removed; one something else changed
 /// since is left alone and counted, never deleted. What got left, and why, comes back in
-/// the returned [`ReversalTally`]. Does NOT call `transaction.rollback()` or
-/// `transaction.commit()`. The caller must commit unconditionally (this function
-/// already deleted whatever it deleted).
+/// the returned [`ReversalTally`]. Does NOT call `transaction.commit()`: the caller must
+/// commit unconditionally, since this function already removed whatever it removed.
 #[allow(
     clippy::too_many_arguments,
     reason = "Needs the full progress state at cancellation time to emit reverse progress"

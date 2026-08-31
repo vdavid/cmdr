@@ -188,15 +188,16 @@ fn land_temp(temp: &Path, dest: &Path, replacing: bool) -> std::io::Result<()> {
 
 /// `rename(2)` that fails with `AlreadyExists` instead of clobbering `dest`.
 ///
-/// Staging moved the create off the destination name, and a plain POSIX rename
-/// replaces silently — so without this a non-overwrite copy would quietly
-/// destroy a file that appeared between the conflict check and the landing,
-/// where the old direct-create-with-`O_EXCL`/`COPYFILE_EXCL` refused. Uses the
+/// A plain POSIX rename replaces silently, so every rename that isn't meant to
+/// overwrite comes through here: a copy landing its temp on a name the conflict
+/// check found free, and a cancelled move renaming an item back to its original
+/// source. Both have a window between the check and the rename in which a file
+/// can appear, and destroying it would be silent and unrecoverable. Uses the
 /// kernel's atomic flag where there is one (`RENAME_EXCL` on macOS,
 /// `RENAME_NOREPLACE` on Linux) and degrades to a check-then-rename on a
 /// filesystem that doesn't support it, which is racy but still strictly better
 /// than an unconditional clobber.
-fn rename_no_replace(temp: &Path, dest: &Path) -> std::io::Result<()> {
+pub(super) fn rename_no_replace(temp: &Path, dest: &Path) -> std::io::Result<()> {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
         use std::ffi::CString;
