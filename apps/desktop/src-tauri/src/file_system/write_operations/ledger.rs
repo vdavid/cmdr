@@ -131,10 +131,7 @@ impl WrittenIdentity {
             if meta.is_dir() {
                 Self::LocalDir { node }
             } else {
-                Self::LocalFile {
-                    size: meta.len(),
-                    node,
-                }
+                Self::LocalFile { size: meta.len(), node }
             }
         }
         // No node id off Unix, and size alone isn't an identity worth deleting on.

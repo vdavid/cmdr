@@ -777,7 +777,10 @@ fn a_renamed_top_level_item_is_recorded_with_the_identity_it_kept() {
     fs::rename(&source, dst_dir.join("clip.mov")).unwrap();
 
     let landed = &move_tx.renames[0].landed;
-    assert_eq!(landed.identity, before, "the pre-rename snapshot IS the landed identity");
+    assert_eq!(
+        landed.identity, before,
+        "the pre-rename snapshot IS the landed identity"
+    );
     assert_eq!(landed.identity, WrittenIdentity::at_local_path(&landed.path));
 }
 

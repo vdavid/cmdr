@@ -3,8 +3,8 @@
 //! Note: Serialization tests were removed - serde derive macros are well-tested.
 //! We keep deserialization tests as they verify the API contract with the frontend.
 
-use super::*;
 use super::ledger::WrittenFile;
+use super::*;
 use crate::test_support::TestDir;
 use std::fs;
 use std::sync::Arc;

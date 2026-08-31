@@ -216,7 +216,10 @@ fn a_partial_the_ledger_already_carries_is_not_added_twice() {
     );
 
     let paths: Vec<&PathBuf> = ledger.iter().map(|entry| &entry.path).collect();
-    assert_eq!(paths, vec![&PathBuf::from("/album/one.jpg"), &PathBuf::from("/album/two.jpg")]);
+    assert_eq!(
+        paths,
+        vec![&PathBuf::from("/album/one.jpg"), &PathBuf::from("/album/two.jpg")]
+    );
     assert_eq!(ledger[0].identity, WrittenIdentity::VolumeFile { size: 10 });
 }
 
@@ -240,19 +243,8 @@ async fn a_stopped_volume_reversal_leaves_the_ledger_claiming_what_is_still_ther
     cancel_write_operation(guard.id(), true);
     cancel_write_operation(guard.id(), false);
     let events = CollectorEventSink::new();
-    let completed = volume_rollback_with_progress(
-        &volume,
-        &mut ledger,
-        &[],
-        &events,
-        guard.id(),
-        &state,
-        4,
-        28,
-        4,
-        28,
-    )
-    .await;
+    let completed =
+        volume_rollback_with_progress(&volume, &mut ledger, &[], &events, guard.id(), &state, 4, 28, 4, 28).await;
 
     assert!(!completed, "the user stopped it");
     assert_eq!(ledger.len(), 4, "nothing was reversed, so nothing left the ledger");

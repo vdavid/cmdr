@@ -1300,19 +1300,19 @@ Checks by app and tech:
   fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
   opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
   `CachedScanResult` / `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of
-  the shapes a named constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
-  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
-  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
-  `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
-  the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
-  `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
-  deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a function that
-  returns NOTHING while dropping a typed answer from the free function it delegates to; three of these shipped before it
-  existed, and each ended as an IPC command or MCP tool inventing a success. `Result` and `Option` returns are
-  deliberately out of scope: `Result` is `#[must_use]`, so the compiler already warns, and an `Option` discard is the
-  map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome type. Every
-  ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return type, a method
-  call — because a check people learn to ignore is worse than none. Opt out with
+  the shapes a named constructor actually builds; it ships with ZERO findings on purpose and is a regression fence
+  rather than a finder — the shapes are already clean, and the point is that the next test author can't undo that by
+  copy-pasting an old literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and
+  `cmdr-fs` carries a `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information",
+  it's a claim about the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in
+  production `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the
+  branch that deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a
+  function that returns NOTHING while dropping a typed answer from the free function it delegates to; three of these
+  shipped before it existed, and each ended as an IPC command or MCP tool inventing a success. `Result` and `Option`
+  returns are deliberately out of scope: `Result` is `#[must_use]`, so the compiler already warns, and an `Option`
+  discard is the map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome
+  type. Every ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return
+  type, a method call — because a check people learn to ignore is worse than none. Opt out with
   `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout, mtp-no-transport-reset,
   bindings-fresh, ipc-enum-camelcase, shipped-locales-fresh (regenerate-and-diff `intl/shipped_locales.gen.rs` from the
   message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
