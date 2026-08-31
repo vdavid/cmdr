@@ -164,7 +164,7 @@ describe('routing', () => {
     fanout.dispose()
   })
 
-  it('tells a session nothing when its operation is absent from a snapshot, because absence means "removed"', () => {
+  it('reports a snapshot that came without the operation as a bare absence, never as a row', () => {
     const fanout = createOperationEventFanout()
     const a = recorder()
     fanout.attach('a', a.sink)
@@ -172,7 +172,24 @@ describe('routing', () => {
     fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a')] })
     fanout._testEmit({ kind: 'snapshot', operations: [] })
 
-    expect(a.deliveries).toEqual([{ kind: 'snapshot', snapshot: snapshot('a') }])
+    // The fan-out reports the FACT and nothing more: this snapshot didn't name
+    // the operation. It carries no status, because absence can't tell a
+    // completed operation from a cancelled one from one nobody has heard of —
+    // the session decides what it means from what it already holds.
+    expect(a.deliveries).toEqual([{ kind: 'snapshot', snapshot: snapshot('a') }, { kind: 'absent' }])
+    fanout.dispose()
+  })
+
+  it('tells a session about an absence even before it has ever held a row', () => {
+    // Only the session can tell "it left" from "we haven't been told about it
+    // yet", so the fan-out doesn't try: it delivers both the same way.
+    const fanout = createOperationEventFanout()
+    const a = recorder()
+    fanout.attach('a', a.sink)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('b')] })
+
+    expect(a.deliveries).toEqual([{ kind: 'absent' }])
     fanout.dispose()
   })
 })

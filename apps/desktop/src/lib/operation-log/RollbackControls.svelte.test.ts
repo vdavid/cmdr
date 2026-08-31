@@ -227,6 +227,22 @@ describe('a rolling-back row offers to pause and to stop', () => {
     expect(control('Cancel')).toBeNull()
   })
 
+  it('drops the controls when the reversal leaves the registry without a terminal event', async () => {
+    emitSnapshot([reversalSnapshot('inv-1')])
+    await mountDialog([journalRow()])
+    expect(control('Pause')).not.toBeNull()
+
+    // The reversal engine emits progress and then NOTHING: no `write-complete`,
+    // no `write-cancelled`, no `write-settled`. All the frontend ever gets is an
+    // `operations-changed` that no longer names it. Pre-fix the buttons stayed
+    // lit here and every press reached an operation the backend had let go —
+    // Cancel disabling itself forever, Pause staying live.
+    emitSnapshot([])
+
+    expect(control('Pause')).toBeNull()
+    expect(control('Cancel')).toBeNull()
+  })
+
   it('gives every control label its full width, whatever the row wants', async () => {
     emitSnapshot([reversalSnapshot('inv-1', 'paused')])
     await mountDialog([journalRow()])

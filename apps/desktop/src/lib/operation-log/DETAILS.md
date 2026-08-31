@@ -76,8 +76,14 @@ and the other way round. ❌ Never call `pause_operation` / `cancel_operation` f
 **What decides whether they show.** The session's SNAPSHOT status, not the journal row: `running` or `paused` earns
 Pause/Resume, and those plus `queued` earn Cancel. That's also what makes a stale `rolling_back` row safe — the dialog
 reads the journal once, on open, so a reversal that has since ended leaves a row still badged "Rolling back", and the
-absent live status is what stops it offering a press with nothing to press. A settled session (from the terminal EVENTS,
-never from leaving the snapshot) does the same.
+absent live status is what stops it offering a press with nothing to press.
+
+**And what says it has ended, for an operation that never says so itself.** Three readings, because a reversal ends more
+quietly than a transfer. `settled` catches the terminal events; a snapshot saying `done` catches the status. Neither ever
+lands here: the reversal emits `write-progress` and no terminal event at all, and its last word is dropping out of the
+registry. That's `session.leftRegistry` (`../file-operations/operation-session/DETAILS.md` § "Leaving the registry"), and
+it is the reading that actually fires in practice. ❌ Drop it and the buttons stay lit over a finished reversal, where
+Cancel disables itself forever on a press nothing receives and Pause stays live beside it.
 
 **They keep their labels whole.** The set is ONE flex item of `.op-row` (`.rollback-controls`) and it doesn't shrink,
 because the row's head takes `flex: 1 1 auto` and would otherwise squeeze three buttons into ~73 px at the dialog's fixed

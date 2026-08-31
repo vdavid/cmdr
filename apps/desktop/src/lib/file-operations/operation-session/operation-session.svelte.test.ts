@@ -534,3 +534,48 @@ describe('commands', () => {
     dispose()
   })
 })
+
+describe('leaving the registry', () => {
+  it('says so once a snapshot arrives without the operation it held', () => {
+    const { session, fanout, dispose } = harness((f) => { f._testEmit({ kind: 'snapshot', operations: [snapshot('a')] }); })
+
+    expect(session.leftRegistry).toBe(false)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [] })
+
+    expect(session.leftRegistry).toBe(true)
+    // Membership, not an outcome. The backend let the operation go; nothing here
+    // knows HOW it ended, and claiming otherwise would let a removal that beat
+    // its own `write-complete` across the channels write the wrong ending.
+    expect(session.settled).toBe(false)
+    expect(session.outcome).toBeNull()
+    dispose()
+  })
+
+  it('ignores a snapshot that arrives before the operation ever appears in one', () => {
+    // The reversal is registered before its dispatch returns, but the
+    // `operations-changed` naming it can land after the view has already bound.
+    // A snapshot in that window doesn't carry the operation, and reading that as
+    // "it left" would take the controls off one about to start.
+    const { session, fanout, dispose } = harness()
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('someone-else')] })
+    expect(session.leftRegistry).toBe(false)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a')] })
+    expect(session.leftRegistry).toBe(false)
+    expect(session.status).toBe('running')
+    dispose()
+  })
+
+  it('takes the operation back when the registry names it again', () => {
+    const { session, fanout, dispose } = harness((f) => { f._testEmit({ kind: 'snapshot', operations: [snapshot('a')] }); })
+
+    fanout._testEmit({ kind: 'snapshot', operations: [] })
+    expect(session.leftRegistry).toBe(true)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
+    expect(session.leftRegistry).toBe(false)
+    dispose()
+  })
+})

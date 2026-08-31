@@ -22,10 +22,15 @@
      * queue window sees, and one there disables the button here. ❌ Never call the
      * pause / resume / cancel IPC directly from a view.
      *
-     * The controls follow the SNAPSHOT status, so they disappear on their own when
-     * the reversal ends — which is also what keeps a stale `rolling_back` row (the
-     * dialog reads the journal once, on open) from offering a press with nothing
-     * left to press.
+     * ## What tells them the reversal is over
+     *
+     * A stale `rolling_back` row (the dialog reads the journal once, on open) must
+     * never offer a press with nothing left to press, so the controls follow the
+     * live operation, not the row. A transfer would end with a terminal event; the
+     * reversal engine emits progress and then nothing at all, and the only word its
+     * end gets is dropping out of the registry. That's `session.leftRegistry`, and
+     * ❌ dropping it from the liveness test leaves the buttons lit over a finished
+     * reversal — Cancel disabling itself forever, Pause staying live.
      *
      * ## The words are the queue's, on purpose
      *
@@ -71,9 +76,17 @@
     const isQueued = $derived(status === 'queued')
 
     /** A reversal that has ended (or that this window never saw) leaves nothing to
-     *  command. `settled` comes from the terminal events, so it beats the snapshot
-     *  going quiet. */
-    const isLive = $derived(op !== null && !op.settled && (isRunning || isPaused || isQueued))
+     *  command.
+     *
+     *  Three readings, because a reversal ends more quietly than a transfer does.
+     *  `settled` catches the terminal events; the status catches a snapshot that
+     *  says `done`. Neither ever lands for the operation-log reversal: it emits
+     *  progress and no terminal event, and its last word is dropping out of the
+     *  registry — which is `leftRegistry`. Without that third reading the buttons
+     *  stay lit over a finished reversal and each press reaches nothing. */
+    const isLive = $derived(
+        op !== null && !op.settled && !op.leftRegistry && (isRunning || isPaused || isQueued),
+    )
 </script>
 
 {#if isLive && op !== null}

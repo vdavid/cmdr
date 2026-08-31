@@ -110,6 +110,18 @@ export interface OperationSession extends OperationSessionCommands {
   /** Whether `write-settled` has landed: the backend task is fully torn down.
    *  Separate from {@link settled}, which is about the outcome. */
   readonly settleEventReceived: boolean
+  /** The registry published a snapshot without this operation, having carried it
+   *  in an earlier one. Membership, not an outcome: it says the backend has let
+   *  the operation go, never HOW it ended, so a surface that reports an ending
+   *  reads {@link settled} and a surface that only offers CONTROLS reads this.
+   *
+   *  It exists for the operation-log reversal, which emits progress but no
+   *  terminal event of its own: leaving the registry is the only word its end
+   *  ever gets, and without this its Pause and Cancel stay live and do nothing.
+   *  ❌ Never fold it into `settled`: the two arrive on different Tauri channels,
+   *  so a removal can beat the `write-complete` it followed, and an outcome is
+   *  write-once. */
+  readonly leftRegistry: boolean
   /** Detach from the fan-out and stop updating. The registry calls this when
    *  the last view releases the operation. */
   dispose: () => void
@@ -123,6 +135,7 @@ export function createOperationSession(operationId: string, fanout: OperationEve
   let conflict = $state.raw<WriteConflictEvent | null>(null)
   let outcome = $state.raw<OperationOutcome | null>(null)
   let settleEventReceived = $state(false)
+  let leftRegistry = $state(false)
 
   let scanFilesFound = $state(0)
   let scanDirsFound = $state(0)
@@ -221,6 +234,13 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     switch (delivery.kind) {
       case 'snapshot':
         snapshot = delivery.snapshot
+        leftRegistry = false
+        break
+      case 'absent':
+        // Only a session that has HELD a row can read an absence as "it left".
+        // Before that, absence is the ordinary state of an operation this window
+        // has not been told about yet.
+        if (snapshot !== null) leftRegistry = true
         break
       case 'progress':
         applyProgress(delivery.event)
@@ -346,6 +366,9 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     },
     get settleEventReceived(): boolean {
       return settleEventReceived
+    },
+    get leftRegistry(): boolean {
+      return leftRegistry
     },
 
     pause: commands.pause,

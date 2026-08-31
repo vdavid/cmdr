@@ -104,9 +104,10 @@ The store DROPS a `write-progress` for an id it has no snapshot for; the fan-out
 correct, because the store's authority is snapshot membership and the fan-out's job is to hold what a session has not
 claimed yet. Whoever later tries to unify the two should start here.
 
-The fan-out never second-guesses the `operations-changed` snapshot about which ids exist, and it never tells a session
-its operation is ABSENT from a snapshot: "removed" is what a completed, a cancelled, and a never-existed operation all
-look like, so absence carries no information a session could act on.
+The fan-out never second-guesses the `operations-changed` snapshot about which ids exist. It does report an absence, as
+the bare fact `{ kind: 'absent' }` and never as a status: "removed" is what a completed, a cancelled, and a never-existed
+operation all look like, so what an absence MEANS is the session's to decide from what it already holds (§ "Leaving the
+registry").
 
 ## The buffer's bound
 
@@ -209,6 +210,27 @@ reports itself.
 null and whose first tick says `phase: 'scanning'` with both totals at 0, because the operation holds its record from
 the moment the user confirmed and its task is waiting on the scan preview. A session seeded that way presents as
 live-and-counting: `scan` carries the counts, and no ETA is invented from totals that do not exist yet.
+
+## Leaving the registry
+
+Absence carries no information about an ENDING, which is why `settled` never reads it: completed, cancelled, and
+never-existed all look the same from outside. But absence does carry one fact, and one surface needs exactly that fact.
+
+The operation-log reversal (`file_system/write_operations/rollback.rs`) is a managed operation that emits `write-progress`
+and no terminal event of its own: no `write-complete`, no `write-cancelled`, no `write-settled`. It finishes by calling
+`manager().on_settled(...)`, which removes its record and broadcasts `operations-changed`. So for that operation, leaving
+the registry is the only word its end ever gets, and a surface offering it Pause and Cancel has nothing else to read.
+
+`OperationSession.leftRegistry` is that fact and only that fact: **the registry published a snapshot without this
+operation, having carried it in an earlier one.** The fan-out delivers `{ kind: 'absent' }` to every attached sink a
+snapshot came without; the session promotes it only when it already holds a row, because before that, absence is the
+ordinary state of an operation this window hasn't been told about — and a reversal's `operations-changed` can land after
+the view that dispatched it has already bound. A later snapshot naming the operation clears it again.
+
+❌ Never fold it into `settled`. The two travel on different Tauri channels, so a removal can overtake the
+`write-complete` that preceded it on the backend, and an outcome is write-once: a transfer would then lose its ending and
+its completion toast. A surface that reports HOW something ended reads `settled`; a surface that only offers CONTROLS
+reads both (`operation-log/RollbackControls.svelte` is the one that does).
 
 ## Read surface
 
