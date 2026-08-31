@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ARIA-LABEL CONTAINMENT check (i18n a11y): WARN class.
+ * ARIA-LABEL CONTAINMENT check (i18n a11y): ERROR class, run in CI on every push.
  *
  * WCAG 2.5.3 (Label in Name): when a control's accessible name is one key and its
  * visible label is another, the name must CONTAIN the label verbatim. Voice-control
@@ -31,11 +31,10 @@
  * punctuation in both scripts, and folds the ICU doubled apostrophe: none of
  * those is what a voice-control user pronounces.
  *
- * WARN rather than an error only because violations ship today: `de` 3, `es` 1,
- * `pt` 1, `zh` 2 (for instance `zh`'s
- * `settings.mediaIndex.chosenFolders.removeAria` says `移出` where its button says
- * `移除`). Escalate to ERROR once those are fixed; no pair has a legitimate reason
- * to stay broken.
+ * A report fails the build, and CI runs this on every push. The English-containment
+ * gate above is what earns that: a reported pair is one English itself honours, so
+ * it's a real regression rather than a judgment call, and no pair has a legitimate
+ * reason to stay broken. ❌ Don't soften this to a warn.
  *
  * Run: `pnpm i18n:check-aria-label` (desktop). Pass `--messages-root <dir>` to
  * point at a fixture (used by the tests).
