@@ -20,6 +20,7 @@
     import { formatInteger } from '$lib/intl/number-format'
     import { formatDateTime } from '$lib/settings/reactive-settings.svelte'
     import RollbackConfirmDialog from '$lib/file-operations/RollbackConfirmDialog.svelte'
+    import RollbackControls from './RollbackControls.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import {
         getOperationLogDetail,
@@ -110,8 +111,8 @@
         if (dispatching.has(opId)) return
         dispatching.add(opId)
         try {
-            await rollbackOperation(opId)
-            markOperationRollingBack(opId)
+            const dispatch = await rollbackOperation(opId)
+            markOperationRollingBack(opId, dispatch.inverseOpId)
         } catch (e) {
             const refusal = asRollbackRefusal(e)
             refusals.set(opId, rollbackRefusalNotice(refusal))
@@ -227,6 +228,18 @@
                                     >
                                         {rowRollbackActionLabel(action)}
                                     </Button>
+                                {/if}
+
+                                <!-- The row's reversal is a live operation of its own, so it can be
+                                     parked and stopped from here. It commands that operation, never
+                                     this row's; `RollbackControls.svelte` holds the reasoning. The
+                                     id is journal truth on every read, so a reversal this dialog
+                                     didn't start gets the same buttons. -->
+                                {#if op.rollbackState === 'rollingBack' && op.inverseOpId !== null}
+                                    <RollbackControls
+                                        inverseOpId={op.inverseOpId}
+                                        describedBy="op-head-{op.opId}"
+                                    />
                                 {/if}
                             </div>
 

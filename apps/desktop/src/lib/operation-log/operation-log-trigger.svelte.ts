@@ -91,16 +91,23 @@ export async function loadMoreOperations(): Promise<void> {
 }
 
 /**
- * Flip a row to "rolling back" once its dispatch has landed.
+ * Flip a row to "rolling back" once its dispatch has landed, and record which
+ * operation is doing the rolling.
  *
  * Not a guess: the backend's gate records `rolling_back` in the journal
  * synchronously, before the dispatch returns, so this only repeats what the journal
  * already says. It's also the whole of the user's feedback that the press landed,
  * since the reversal belongs to the operation queue from that moment on: the row's
  * badge changes under their cursor, and the status corner picks the operation up.
+ *
+ * `inverseOpId` is the same field a fresh read fills (`OperationRow.inverse_op_id`),
+ * carrying the same journal fact, so the row's Pause and Cancel work whether the
+ * dialog started this reversal or found it already running. ❌ Not a second source
+ * of truth: a dispatch and a re-read can't disagree about which operation the
+ * backend just opened.
  */
-export function markOperationRollingBack(opId: string): void {
+export function markOperationRollingBack(opId: string, inverseOpId: string): void {
   operationLogState.entries = operationLogState.entries.map((entry) =>
-    entry.opId === opId ? { ...entry, rollbackState: 'rollingBack' } : entry,
+    entry.opId === opId ? { ...entry, rollbackState: 'rollingBack', inverseOpId } : entry,
   )
 }

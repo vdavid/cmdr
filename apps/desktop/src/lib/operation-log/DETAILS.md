@@ -15,6 +15,8 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
   label mappings, and `rollbackRefusalNotice`. `rollbackConfirmVariant` is NOT here: it lives in
   `$lib/file-operations/reversal-wording.ts` with the type it returns, so `queue/` and `$lib/status-corner/` (which name
   the running reversal off the same variant) can reach it without depending on this module, which depends on that one.
+- `RollbackControls.svelte`: the Pause / Resume and Cancel a row carries while its reversal runs. One per rolling-back
+  row, binding a session to the ROW'S `inverseOpId`.
 - `rollback-refusal.ts`: `RollbackRefusalFailure` / `throwRollbackRefusal` / `asRollbackRefusal`, the three-line
   `TypedFailure` family (`$lib/ipc/typed-failure.ts` is the pattern).
 - `operation-log-shortcut.test.ts` pins the ⌥⌘L route; `operation-log-trigger.test.ts` owns the paging assertions, so
@@ -30,10 +32,13 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
 3. `rollbackAsked` re-resolves the row out of `operationLogState.entries` on every read and yields `null` once it stops
    offering an action. A reversal started elsewhere while the question is up therefore takes the question down, the way
    `QueueRow` withdraws its own: there'd be nothing left for an answer to act on.
-4. Confirming calls `rollbackOperation(opId)` and, on the `Ok`, flips the row to `rollingBack`. The `dispatching` set
-   guards the window between the two so a double press can't double-dispatch.
+4. Confirming calls `rollbackOperation(opId)` and, on the `Ok`, flips the row to `rollingBack` AND records the
+   dispatch's `inverseOpId` on it. The `dispatching` set guards the window between the two so a double press can't
+   double-dispatch.
 5. A rejection lands in `refusals`, keyed by opId, and renders as a `role="status"` line under the row. The row keeps
    its button, because every refusal here is a race the user can respond to.
+6. While the row reads `rollingBack` and names an `inverseOpId`, it carries `RollbackControls.svelte`: Pause / Resume
+   and Cancel for the reversal.
 
 ### Decision: straight to the queue, no foreground dialog
 
@@ -49,6 +54,39 @@ round trip and a spinner for nothing.
 **The consequence to keep in mind.** The dialog never learns how the reversal ENDED. Reopening the log (or reading the
 queue) is how a user sees `rolledBack` versus `partiallyRolledBack`. If that ever needs to be live, subscribe to the
 operation's settle event rather than polling.
+
+### Decision: the row commands the reversal, and the id for it is journal truth
+
+A rollback over a slow mount can run for a long time, and the dialog that started it is where a person looks to stop it.
+The engine has always supported both — it polls its stop flag through `StopMeans::IntentLeavesRunning` and parks on its
+pause gate once per item — so this is buttons, not machinery.
+
+**What they command.** The REVERSAL, which is its own managed operation, never the finished operation the row names.
+Pausing a row's own `op_id` would be a no-op at best; on the wrong id it would park something else entirely.
+
+**Where the id comes from.** `OperationRow.inverseOpId`, filled by every journal read (backend `DETAILS.md` §
+`inverse_op_id`) and by the dispatch's own answer in step 4. ❌ Not two sources: both carry the same journal fact, which
+is why a reversal started in another window, by an agent over MCP, or before this dialog opened gets the same buttons as
+one started under the user's cursor.
+
+**Through the session, so they're the queue window's buttons.** `bindOperationSession` on the inverse id, then
+`togglePause()` / `cancel()`. The in-flight guards live on the shared session, so a press here disables the button
+there and the other way round. ❌ Never call `pause_operation` / `cancel_operation` from a view.
+
+**What decides whether they show.** The session's SNAPSHOT status, not the journal row: `running` or `paused` earns
+Pause/Resume, and those plus `queued` earn Cancel. That's also what makes a stale `rolling_back` row safe — the dialog
+reads the journal once, on open, so a reversal that has since ended leaves a row still badged "Rolling back", and the
+absent live status is what stops it offering a press with nothing to press. A settled session (from the terminal
+EVENTS, never from leaving the snapshot) does the same.
+
+**A paused reversal must not read as finished.** The badge stays "Rolling back", because that's what the journal says
+and it's true. The controls add the queue window's own status word, "Paused", off the same lifecycle status, so the two
+surfaces can't word one park differently.
+
+**Cancel lands on wording that already exists.** Stopping midway leaves the operation `partiallyRolledBack`, which the
+row already badges and already explains through `partiallyRolledBackNotice`, and already offers to finish (next
+section). ❌ No second sentence here saying it differently. The row won't SHOW that state until the dialog is reopened,
+per the staleness note below; that's the same accepted limit as every other header field.
 
 ### Decision: a partly-reversed operation offers to finish, and the engine is what makes that safe
 
@@ -105,6 +143,11 @@ out partial, which is the honest read today.
   which words, that nothing is dispatched on a "no", the kind-aware wording, the standing notices, and the refusal
   notice. `operation-log-labels.test.ts` owns the two exhaustive maps behind the rows (`rowRollbackAction`,
   `rowStandingNotice`), so the component tests don't re-enumerate every state.
+- `RollbackControls.svelte.test.ts` mounts the dialog over a REAL session registry, fed the way the backend feeds one,
+  and pins which control shows for which lifecycle status, that each press names the INVERSE operation, that a second
+  press is refused while the first is out, and that a paused reversal says so. Two ordering traps it documents in
+  place: a session claimed while the registry is empty seeds as `gone` and stays settled (so a test emits the snapshot
+  BEFORE mounting), and the controls go away on the terminal EVENT, never on the operation leaving the snapshot.
 - `apps/desktop/test/e2e-playwright/operation-log-rollback.spec.ts` drives the same flow against the REAL engine and
   real files, which is what pins the things a mock can't: that a real move is journaled as a move (so the question
   really does word itself as a restore), that a wire value like `alreadyRolledBack` is one the backend actually emits,
@@ -153,7 +196,9 @@ Two copy constraints that outlive any wording pass:
 
 Item rows are fetched once per operation on first expand and kept for the dialog's lifetime; they describe a finished
 operation, so they don't drift. The operation HEADERS do drift (a rollback anywhere changes `rollbackState`), and
-nothing refreshes them while the dialog is open beyond the local flip in step 4. Reopening the dialog re-reads page one.
+nothing refreshes them while the dialog is open beyond the local flip in step 4. So a reversal that ends while the
+dialog is open leaves the row badged "Rolling back" until it's reopened; its controls go on their own, off the live
+session. Reopening the dialog re-reads page one.
 That's the alpha's accepted limit; a live feed would subscribe rather than poll.
 
 ## Where the copy lives

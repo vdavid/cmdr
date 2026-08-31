@@ -278,6 +278,18 @@ function rowRollbackBadge(page: TauriPage, opId: string): Promise<string> {
   })()`)
 }
 
+/** The word a rolling-back row shows for its reversal's live state ("Paused"),
+ *  or `''` while it's moving. Beside the badge, which keeps saying "Rolling
+ *  back", because the journal is right: it still is. */
+function rowStatusText(page: TauriPage, opId: string): Promise<string> {
+  return page.evaluate<string>(`(function() {
+    var head = document.getElementById('op-head-' + ${JSON.stringify(opId)});
+    var row = head && head.closest('.op-row');
+    var badge = row && row.querySelector('.paused-badge');
+    return badge ? badge.textContent.trim() : '';
+  })()`)
+}
+
 /** The refusal line under the row for `opId`, or `''` when there is none. */
 function rowRefusalNotice(page: TauriPage, opId: string): Promise<string> {
   return page.evaluate<string>(`(function() {
@@ -310,9 +322,39 @@ function rollBackButtonFor(opId: string): string {
   return `${LOG_DIALOG} button[aria-describedby~="op-head-${opId}"]`
 }
 
-/** Whether the row for `opId` still offers a Roll back button. */
+/** Whether the row for `opId` still offers a Roll back button. By its WORDS as
+ *  well as its row: a rolling-back row's Pause and Cancel answer the same
+ *  selector, and "the row has some button" isn't the question. */
 async function rowHasRollBackButton(page: TauriPage, opId: string): Promise<boolean> {
-  return (await page.count(rollBackButtonFor(opId))) > 0
+  return (await rowControlLabels(page, opId)).includes('Roll back')
+}
+
+/** What every control on this row currently says, in DOM order. */
+function rowControlLabels(page: TauriPage, opId: string): Promise<string[]> {
+  const sel = JSON.stringify(rollBackButtonFor(opId))
+  return page.evaluate<string[]>(
+    `(function() {
+        var out = [];
+        var els = document.querySelectorAll(${sel});
+        for (var i = 0; i < els.length; i++) out.push((els[i].textContent || '').trim());
+        return out;
+    })()`,
+  )
+}
+
+/**
+ * Presses one of the row's controls by the word on it — the Pause / Resume /
+ * Cancel a rolling-back row carries for its reversal.
+ *
+ * Going through the real buttons rather than `pause_operation` over IPC is the
+ * point: it pins the whole chain the dialog depends on (the journal's
+ * `inverse_op_id` reaching the row, the row binding a session to the INVERSE
+ * operation rather than its own, and that session's command reaching the
+ * engine's item-boundary gate). An IPC poke would pass with every one of those
+ * links broken.
+ */
+async function pressRowControl(page: TauriPage, opId: string, label: string): Promise<void> {
+  await clickButtonByText(page, rollBackButtonFor(opId), label)
 }
 
 /**
@@ -797,12 +839,9 @@ test.describe('Rolling an operation back from the history dialog', () => {
     })()`)
     expect(reverses).toContain('copy')
 
-    await page.evaluate(`(async function() {
-      var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
-      for (var i = 0; i < ops.length; i++) {
-        await window.__TAURI_INTERNALS__.invoke('pause_operation', { operationId: ops[i].operationId });
-      }
-    })()`)
+    // From the ROW, which is the whole affordance: the dialog that started this
+    // reversal is where a person reaches for the brake.
+    await pressRowControl(page, opId, 'Pause')
 
     // Held: the count stops moving across several throttle windows. This is the one
     // place where waiting IS the assertion, so it's a generous multiple of the
@@ -811,12 +850,14 @@ test.describe('Rolling an operation back from the history dialog', () => {
     await new Promise((resolve) => setTimeout(resolve, PAUSE_THROTTLE_MS * 4))
     expect(goneCount(fixtureRoot, 'rb-pause', count)).toBe(held)
 
-    await page.evaluate(`(async function() {
-      var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
-      for (var i = 0; i < ops.length; i++) {
-        await window.__TAURI_INTERNALS__.invoke('resume_operation', { operationId: ops[i].operationId });
-      }
-    })()`)
+    // ❌ A parked reversal must not read as a finished one: the row says so, and
+    // the button has turned into its own undo.
+    expect(await rowControlLabels(page, opId)).toContain('Resume')
+    await expect
+      .poll(() => rowStatusText(page, opId), { timeout: 5000 })
+      .toContain('Paused')
+
+    await pressRowControl(page, opId, 'Resume')
 
     // Resumed from where it parked rather than restarted: it finishes the whole set.
     expect(await settledRollbackState(page, opId)).toBe('rolledBack')
