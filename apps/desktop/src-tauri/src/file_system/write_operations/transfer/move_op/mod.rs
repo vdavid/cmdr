@@ -20,6 +20,7 @@ use std::sync::Arc;
 use super::super::conflict::{ApplyToAll, resolve_conflict};
 use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
+use super::super::ledger::WrittenFile;
 use super::super::overwrite::safe_overwrite_dir;
 use super::super::scan::handle_dry_run;
 use super::super::state::{WriteOperationState, is_cancelled};
@@ -35,10 +36,23 @@ mod same_fs;
 // Move rollback tracking
 // ============================================================================
 
+/// One item this move renamed into place.
+struct MovedItem {
+    /// Where it was before the rename — where a reversal puts it back.
+    original_source: PathBuf,
+    /// Where it sits now, with the identity a reversal rechecks before touching
+    /// it. A rename carries the node id across untouched, so a snapshot taken of
+    /// the SOURCE just before the rename describes the landed item exactly.
+    landed: WrittenFile,
+}
+
 /// Tracks renames performed during same-FS move for rollback on cancellation.
-/// Each entry is `(original_source, moved_to_dest)`. Rollback reverses them.
+///
+/// A **stack**: [`MoveTransaction::pop`] takes the newest rename off as it's
+/// reversed, so the ledger claims exactly what this operation currently has
+/// sitting at the destination.
 struct MoveTransaction {
-    renames: Vec<(PathBuf, PathBuf)>,
+    renames: Vec<MovedItem>,
 }
 
 impl MoveTransaction {
@@ -46,8 +60,16 @@ impl MoveTransaction {
         Self { renames: Vec::new() }
     }
 
-    fn record(&mut self, source: PathBuf, dest: PathBuf) {
-        self.renames.push((source, dest));
+    fn record(&mut self, source: PathBuf, landed: WrittenFile) {
+        self.renames.push(MovedItem {
+            original_source: source,
+            landed,
+        });
+    }
+
+    /// Take the newest rename off the ledger, to reverse it.
+    fn pop(&mut self) -> Option<MovedItem> {
+        self.renames.pop()
     }
 
     /// Reverses all recorded renames (dest → source) in reverse order.
@@ -59,13 +81,13 @@ impl MoveTransaction {
     /// whole operation risks unexpectedly filling the user's drive on a large
     /// Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
     /// § "Overwrite isn't reversible".
-    fn rollback(&self) {
-        for (original_source, moved_to_dest) in self.renames.iter().rev() {
-            if let Err(e) = fs::rename(moved_to_dest, original_source) {
+    fn rollback(&mut self) {
+        while let Some(item) = self.pop() {
+            if let Err(e) = fs::rename(&item.landed.path, &item.original_source) {
                 log::warn!(
                     "move rollback: failed to rename {} back to {}: {}",
-                    moved_to_dest.display(),
-                    original_source.display(),
+                    item.landed.path.display(),
+                    item.original_source.display(),
                     e
                 );
             }
@@ -93,6 +115,10 @@ fn move_resolved_into_place(
     source: &Path,
     dest_path: &Path,
     resolved: &super::super::overwrite::ResolvedDestination,
+    // The source's own metadata, stat'd before the rename. The rename carries the
+    // node id across, so this IS the landed item's identity; `None` (the stat
+    // failed) leaves the ledger entry unverifiable.
+    source_stat: Option<&fs::Metadata>,
     move_tx: &mut MoveTransaction,
 ) -> Result<(), WriteOperationError> {
     let source_is_dir = source.is_dir();
@@ -106,7 +132,10 @@ fn move_resolved_into_place(
             let _ = fs::remove_file(&resolved.path);
         }
         fs::rename(source, &resolved.path).with_path(source)?;
-        move_tx.record(source.to_path_buf(), resolved.path.clone());
+        move_tx.record(
+            source.to_path_buf(),
+            WrittenFile::local_stat(resolved.path.clone(), source_stat),
+        );
         return Ok(());
     }
 
@@ -121,10 +150,16 @@ fn move_resolved_into_place(
                 message: format!("Failed to rename across types: {}", e),
             })
         })?;
-        move_tx.record(source.to_path_buf(), resolved.path.clone());
+        move_tx.record(
+            source.to_path_buf(),
+            WrittenFile::local_stat(resolved.path.clone(), source_stat),
+        );
     } else {
         fs::rename(source, &resolved.path).with_path(source)?;
-        move_tx.record(source.to_path_buf(), resolved.path.clone());
+        move_tx.record(
+            source.to_path_buf(),
+            WrittenFile::local_stat(resolved.path.clone(), source_stat),
+        );
     }
     Ok(())
 }
@@ -268,6 +303,12 @@ fn merge_move_directory(
             });
         }
 
+        // Snapshot the child before the rename carries it across. The rename
+        // preserves the node id, so this describes what lands at `dest_child` —
+        // and it's the ONLY identity a cancelled merge has to reverse from, since
+        // the journal marks a directory merge unreversible.
+        let child_stat = fs::symlink_metadata(&source_child).ok();
+
         if source_child.is_dir() && dest_child.exists() && dest_child.is_dir() {
             // Both are directories, recurse
             merge_move_directory(
@@ -298,7 +339,7 @@ fn merge_move_directory(
                     // halves of the rename; no-ops outside ~/Downloads.
                     crate::downloads::note_pending_write_for_cmdr(&source_child);
                     crate::downloads::note_pending_write_for_cmdr(&resolved.path);
-                    move_resolved_into_place(&source_child, &dest_child, &resolved, move_tx)?;
+                    move_resolved_into_place(&source_child, &dest_child, &resolved, child_stat.as_ref(), move_tx)?;
                 }
                 None => {
                     // Skip: source file stays in place. Record it so a cross-FS
@@ -315,7 +356,7 @@ fn merge_move_directory(
             crate::downloads::note_pending_write_for_cmdr(&source_child);
             crate::downloads::note_pending_write_for_cmdr(&dest_child);
             fs::rename(&source_child, &dest_child).with_path(&source_child)?;
-            move_tx.record(source_child, dest_child);
+            move_tx.record(source_child, WrittenFile::local_stat(dest_child, child_stat.as_ref()));
         }
     }
 

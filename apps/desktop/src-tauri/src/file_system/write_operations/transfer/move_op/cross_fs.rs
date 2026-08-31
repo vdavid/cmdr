@@ -332,7 +332,7 @@ pub(super) fn move_with_staging(
                                 crate::operation_log::types::NotRollbackableReason::StagedConflictResolved
                             },
                         );
-                        move_resolved_into_place(&staged_path, &final_path, &resolved, &mut throwaway_tx)?;
+                        move_resolved_into_place(&staged_path, &final_path, &resolved, None, &mut throwaway_tx)?;
                     }
                     None => {
                         // Skip: discard the staged copy and remember the original
@@ -399,7 +399,7 @@ pub(super) fn move_with_staging(
             Err(_) => p.to_path_buf(),
         }
     };
-    let final_dests: Vec<PathBuf> = transaction.created_files.iter().map(|p| remap(p)).collect();
+    let final_dests: Vec<PathBuf> = transaction.created_file_paths().iter().map(|p| remap(p)).collect();
     let final_already_synced: HashSet<PathBuf> = already_synced.iter().map(|p| remap(p)).collect();
     // Journal the destination directories this move created, under the paths they
     // LIVE at — the same staging→final rebase the leaf rows already got, since

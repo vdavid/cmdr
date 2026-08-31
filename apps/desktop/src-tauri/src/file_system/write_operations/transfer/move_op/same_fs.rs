@@ -15,6 +15,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use super::super::super::ledger::WrittenFile;
 use super::{MoveTransaction, merge_move_directory, move_resolved_into_place};
 
 use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
@@ -161,7 +162,7 @@ pub(super) fn move_with_rename(
                         // file; a rename-aside (different name) did not.
                         item_overwrote = resolved.path == dest_path;
                         landed_path = resolved.path.clone();
-                        move_resolved_into_place(source, &dest_path, &resolved, &mut move_tx)?;
+                        move_resolved_into_place(source, &dest_path, &resolved, source_meta.as_ref(), &mut move_tx)?;
                     }
                     None => {
                         // Skip this file
@@ -174,7 +175,10 @@ pub(super) fn move_with_rename(
                 crate::downloads::note_pending_write_for_cmdr(source);
                 crate::downloads::note_pending_write_for_cmdr(&dest_path);
                 fs::rename(source, &dest_path).with_path(source)?;
-                move_tx.record(source.clone(), dest_path.clone());
+                move_tx.record(
+                    source.clone(),
+                    WrittenFile::local_stat(dest_path.clone(), source_meta.as_ref()),
+                );
             }
 
             // Journal the top-level moved item as the rollback unit: one
@@ -265,7 +269,7 @@ pub(super) fn move_with_rename(
     // `fdatasync`s each moved file plus its parent directory, making the
     // rename-into-place durable. `already_synced` is empty: an `fdatasync` on
     // an already-durable file is cheap, and the parent-dir fsync is the point.
-    let renamed_dests: Vec<PathBuf> = move_tx.renames.iter().map(|(_, dest)| dest.clone()).collect();
+    let renamed_dests: Vec<PathBuf> = move_tx.renames.iter().map(|item| item.landed.path.clone()).collect();
     let empty_synced: HashSet<PathBuf> = HashSet::new();
     flush_created_destinations(
         events,
