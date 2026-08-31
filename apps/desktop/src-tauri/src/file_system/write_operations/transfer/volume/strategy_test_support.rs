@@ -489,9 +489,9 @@ impl Volume for UndeletableSource {
 /// deadline anywhere and cost a user a force-quit on 2026-07-31 — and whose
 /// second write works normally.
 ///
-/// It is the fixture for the M4.2 → M4.1 handoff: nothing about this write will
-/// ever produce an error on its own, so the only thing that can end it is the
-/// watchdog, and the only thing that can then save the file is the retry.
+/// It is the fixture for the watchdog → retry handoff: nothing about this write
+/// will ever produce an error on its own, so the only thing that can end it is
+/// the watchdog, and the only thing that can then save the file is the retry.
 pub(super) struct WedgedThenWorkingDest {
     pub(super) inner: Arc<crate::file_system::volume::InMemoryVolume>,
     pub(super) calls: AtomicUsize,

@@ -1,9 +1,8 @@
 //! Copy strategy routing for volume-to-volume operations.
 //!
-//! Since Phase 4, every cross-volume copy either (a) uses the APFS clonefile
-//! fast path when both sides are `LocalPosixVolume` on the same APFS volume, or
-//! (b) pipes bytes through `open_read_stream` + `write_from_stream`. The old
-//! `export_to_local` / `import_from_local` short-circuits are gone.
+//! Every cross-volume copy either (a) uses the APFS clonefile fast path when
+//! both sides are `LocalPosixVolume` on the same APFS volume, or (b) pipes bytes
+//! through `open_read_stream` + `write_from_stream`.
 //!
 //! Directories are walked here (recursively) so the user can cancel between
 //! files. Per-file transfers use the destination's `write_from_stream`.
@@ -633,7 +632,7 @@ pub(super) async fn stream_pipe_file(
         ));
         set_task_phase(TaskPhase::Streaming);
         set_task_bytes(0, size);
-        // The watchdog ACTING (M4.2): a task that sits inside a backend call with
+        // The watchdog ACTING: a task that sits inside a backend call with
         // zero byte movement for `STALL_ABORT_AFTER` has its wait ended here, and
         // the transport error that produces feeds straight back into the retry
         // above. It is the layer of last resort — every backend that can bound its

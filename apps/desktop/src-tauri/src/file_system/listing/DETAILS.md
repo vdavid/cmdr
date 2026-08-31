@@ -412,7 +412,7 @@ mtime touch, chmod) would blank a file's dots until the next enrich. `carry_forw
 the incoming entry already has tags), so it never masks a real change; clearing flows solely through the enrich path's
 unconditional replace.
 
-**Write path (Phase 2).** `tags.rs::set_tags(path, &[TagRef])` encodes the full desired set as a **binary** plist
+**Write path.** `tags.rs::set_tags(path, &[TagRef])` encodes the full desired set as a **binary** plist
 (`plist::Value::to_writer_binary` — `plist` defaults to XML, which is NOT Finder-compatible) of `"Name\nN"` strings
 (always with the `\nN` suffix, even color 0, matching Finder), and `xattr::set`s it. An empty set REMOVES the xattr
 (matching Finder clearing all tags), guarded so an already-untagged file doesn't surface a spurious ENOATTR. The

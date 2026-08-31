@@ -625,7 +625,7 @@ pub(crate) async fn read_directory_with_progress(
     let to_complete_emit_ms = emit_t.elapsed().as_millis();
     let total_ms = total_start.elapsed().as_millis();
 
-    // Consolidated INFO log for the listing pipeline (Phase 1 instrumentation).
+    // Consolidated INFO log for the listing pipeline.
     // Grepable single-line structured record. See stall_probe::listing target.
     log::info!(
         target: "stall_probe::listing",

@@ -640,8 +640,8 @@ naming the backoff; and `retries=N` (plus `stall-aborts=N`) on every task row in
 A file that exhausts its attempts still ends the operation, exactly as before. Skipping it and carrying on would need a
 terminal event shape that can say "finished, with N files missing", a frontend that shows which ones, and journal
 semantics for a partially-successful op — and, more importantly, a product decision about whether a user wants 700
-files copied with three quietly absent. That is a bigger change than M4.1 asked for and a worse default to guess at, so
-it is deliberately left for David to call.
+files copied with three quietly absent. That is a bigger change than the retry policy asked for and a worse default to
+guess at, so it is deliberately left for David to call.
 
 ## Two tiers of cancel
 
