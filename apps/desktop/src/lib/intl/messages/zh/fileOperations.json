@@ -701,11 +701,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "已删除 Cmdr 写入的全部 {countText} {count, plural, other {个项目}}。",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "已将全部 {countText} {count, plural, other {个项目}}放回原处。",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "已删除 {countText} {count, plural, other {个项目}}。",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -725,7 +725,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr 会跳过没有把握的部分，所以这些都保持了原样：",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "保留了 {name}：Cmdr 放好之后它有改动。",
   "@fileOperations.cancelRollback.reason.drift.named": {

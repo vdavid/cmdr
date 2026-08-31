@@ -1798,10 +1798,11 @@ Aufzählung von `reason.*`-Zeilen. Grundton: Cmdr hat das Umsichtige getan. Nie 
   also würde jede andere Formulierung `desktop-i18n-term-consistency` als neue Divergenz zählen (`de` steht bei
   `notYetReviewed: 8`, und die Zahl geht nur runter) · `high`. Wer eine der beiden Familien anfasst, ändert beide oder
   keine.
-- **`leftBehind` sagt `lässt alles unverändert`, die Bestätigungstexte sagen `überspringt alles`** · Absicht: das
-  Englische wechselt hier selbst von `skips` (Dialog vor dem Rollback) zu `leaves alone` (Toast danach), und im
-  Deutschen bindet `lässt … unverändert` die Zeile an ihre eigenen Aufzählungspunkte („Habe … unverändert gelassen“) ·
-  `high`.
+- **`leftBehind` sagt `überspringt alles`, genau wie die Bestätigungstexte davor** · beide Oberflächen geben dasselbe
+  Versprechen, also müssen sie dasselbe Verb tragen; das Englische tut es auch (`Cmdr skips anything it isn''t sure
+  about`, im Dialog wie im Toast) · `high`. ❌ Nicht `lässt alles unverändert`: das ist der Wortlaut der
+  Aufzählungspunkte darunter („Habe … unverändert gelassen“), und die Erwartungszeile soll an den Dialog anschließen,
+  den der Nutzer eben gelesen hat, nicht an die Liste, die sie einleitet.
 - **`rollbackConfirm.body` bekommt den dritten Satz ohne `davon`** · die Schwester `bodyUndoByDeleting` endet auf „also
   bleibt womöglich einiges davon übrig“, hier aber stünde direkt davor „ersetzte Dateien kommen nicht zurück“, und
   `davon` würde sich an die ersetzten Dateien hängen und das Gegenteil versprechen. Also „… also bleibt womöglich

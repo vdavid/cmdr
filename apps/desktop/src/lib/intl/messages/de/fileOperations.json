@@ -706,11 +706,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "{countText} {count, plural, one {Objekt} other {Objekte}} entfernt: alles, was Cmdr geschrieben hatte.",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "{countText} {count, plural, one {Objekt} other {Objekte}} zurückgelegt: alles ist wieder da, wo es war.",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {Objekt} other {Objekte}} entfernt.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -728,9 +728,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.leftBehind": "Cmdr lässt alles unverändert, bei dem es sich nicht sicher ist. Das hier ist deshalb geblieben, wo es ist:",
+  "fileOperations.cancelRollback.leftBehind": "Cmdr überspringt alles, bei dem es sich nicht sicher ist. Das hier ist deshalb geblieben, wo es ist:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "Habe {name} unverändert gelassen: das Objekt hat sich geändert, seit Cmdr es dort abgelegt hat.",
   "@fileOperations.cancelRollback.reason.drift.named": {

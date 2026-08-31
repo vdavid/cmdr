@@ -55,6 +55,17 @@ describe('readCancelRollback', () => {
       expect(readout?.headline).toBe('Put the 3 items back.')
     })
 
+    it('drops the number when there was only one item, on both verbs', () => {
+      // "Removed the 1 item" / "Put the 1 item back" is the shape the whole
+      // sentence sits inside the plural to avoid.
+      expect(readCancelRollback(rollback({ outcome: 'rolledBack', reversed: 1 }), 'copy')?.headline).toBe(
+        'Removed the item Cmdr had written.',
+      )
+      expect(readCancelRollback(rollback({ outcome: 'rolledBack', reversed: 1 }), 'move')?.headline).toBe(
+        'Put the item back.',
+      )
+    })
+
     it('reads as a success', () => {
       expect(readCancelRollback(rollback({ outcome: 'rolledBack', reversed: 1 }), 'copy')?.level).toBe('success')
     })
@@ -91,7 +102,7 @@ describe('readCancelRollback', () => {
       )
       expect(readout).toEqual({
         headline: 'Removed 9 items.',
-        leftBehind: "Cmdr leaves alone anything it isn't sure about, so these stayed where they are:",
+        leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
         reasons: ['Left invoice-2026.pdf alone: it changed after Cmdr put it there.'],
         level: 'info',
       })

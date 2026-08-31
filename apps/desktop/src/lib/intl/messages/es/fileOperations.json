@@ -703,11 +703,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Se eliminó el elemento que Cmdr había creado.} many {Se eliminaron los {countText} elementos que Cmdr había creado.} other {Se eliminaron los {countText} elementos que Cmdr había creado.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Se devolvió el elemento a su sitio.} many {Se devolvieron los {countText} elementos a su sitio.} other {Se devolvieron los {countText} elementos a su sitio.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "{count, plural, one {Se eliminó {countText} elemento.} many {Se eliminaron {countText} elementos.} other {Se eliminaron {countText} elementos.}}",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -727,7 +727,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr omite todo aquello de lo que no está seguro, así que estos elementos se quedaron donde están:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} se quedó como está: cambió después de que Cmdr terminara de escribir ahí.",
   "@fileOperations.cancelRollback.reason.drift.named": {

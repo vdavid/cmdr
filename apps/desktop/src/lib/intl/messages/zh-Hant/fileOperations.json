@@ -701,11 +701,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "已刪除 Cmdr 寫入的 {countText} 個{count, plural, other {項目}}。",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "已把 Cmdr 移動過的 {countText} 個{count, plural, other {項目}}放回原處。",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "已刪除 {countText} 個{count, plural, other {項目}}。",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -723,9 +723,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.leftBehind": "Cmdr 沒有把握的東西都會維持原樣，所以這些留了下來：",
+  "fileOperations.cancelRollback.leftBehind": "Cmdr 會略過沒有把握的部分，所以這些留了下來：",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} 維持原樣：它在 Cmdr 放好之後有過更動。",
   "@fileOperations.cancelRollback.reason.drift.named": {

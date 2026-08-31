@@ -705,11 +705,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "Cmdr a supprimé tout ce qu''il avait écrit : {countText} {count, plural, one {élément} many {éléments} other {éléments}}.",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "Cmdr a tout remis en place : {countText} {count, plural, one {élément} many {éléments} other {éléments}}.",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {élément supprimé} many {éléments supprimés} other {éléments supprimés}}.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -729,7 +729,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr laisse de côté tout ce dont il n''est pas sûr, donc voici ce qui n''a pas bougé :",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} laissé tel quel : il a changé depuis que Cmdr l''a mis là.",
   "@fileOperations.cancelRollback.reason.drift.named": {

@@ -1771,9 +1771,13 @@ cuidadoso", nunca desculpa nem alarme.
   `destino` e `movimentação` nos termos da casa.
 - **`leftBehind` repete a promessa dos diálogos, palavra por palavra**: `O Cmdr pula tudo aquilo de que não tem certeza`
   sai de `rollbackConfirm.bodyUndoByDeleting`, e o fecho é `então estes ficaram onde estão:` (demonstrativo solto, como
-  o inglês, porque a lista abaixo mistura arquivos e pastas) · high. O inglês troca `skips` por `leaves alone` entre o
-  diálogo e o aviso; o português mantém `pular` nos dois, porque a lista embaixo já diz `ficou como está` e um terceiro
-  verbo só somaria ruído.
+  o inglês, porque a lista abaixo mistura arquivos e pastas) · high. O inglês usa o mesmo verbo (`skips`) nos dois
+  lugares, e o português usa `pular` nos dois; a lista embaixo fica com `ficou como está`, porque um terceiro verbo só
+  somaria ruído.
+- **As manchetes "completas" tiram o número do braço `one`**: `O Cmdr apagou o item que tinha gravado.` e
+  `O Cmdr levou o item de volta.`, sem `{countText}` · high. O inglês passou a frase inteira para dentro do plural pelo
+  mesmo motivo (`o 1 item` não se diz), e o braço `one` do português já carrega o artigo, então o número ali só
+  atrapalha. Os braços `many`/`other` continuam contando.
 - **`rollbackConfirm.body` ganhou a terceira frase dos irmãos, palavra por palavra**:
   `O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar para trás.`, idêntica a
   `rollbackConfirm.bodyUndoByDeleting`, porque o inglês das duas é idêntico nessa frase. As duas primeiras frases não

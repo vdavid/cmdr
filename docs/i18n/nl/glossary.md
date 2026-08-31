@@ -2096,9 +2096,12 @@ overal **Cmdr heeft de zorgvuldige keuze gemaakt**: nooit verontschuldigend, noo
   redenregels hieronder dragen zelfs BYTE-IDENTIEK Engels met die familie · high. Niets in de pile kent het register
   (gecontroleerd op `macOS/`, `gnome-nautilus`, `kde-dolphin`, `xfce-thunar`, `double-commander` en
   `microsoft-terminology`, 2026-08-31), dus de al verzonden zus is hier de hoogste beschikbare bron.
-  - ❌ NIET `overgeslagen`: dat is in deze catalogus al `Skipped` (`operationLog.outcome.skipped`) én het woord van de
-    bevestiging vooraf (`Cmdr slaat alles over waar het niet zeker van is`). De twee woorden naast elkaar houden is
-    precies wat het Engels doet: `skips` vooraf, `leaves alone` achteraf.
+  - ❌ NIET `overgeslagen` in de redenregels: dat is in deze catalogus al `Skipped` (`operationLog.outcome.skipped`).
+    Het Engels splitst hier net zo: `Left {name} alone` in de lijst, `skips` in de belofte erboven.
+- **`leftBehind` zegt `slaat alles over`, net als de bevestiging ervoor** · beide oppervlakken doen dezelfde belofte,
+  dus dragen ze hetzelfde werkwoord, en het Engels doet het ook (`Cmdr skips anything it isn''t sure about`, in de
+  dialoog én in de melding) · high. Volledige zin:
+  `Cmdr slaat alles over waar het niet zeker van is, dus deze zijn blijven staan:`
   - ❌ NIET `met rust gelaten`: warmer, maar gemunt én het zou de melding uiteen laten vallen. Vier bullets met de ene
     vorm en één met de andere staan in ÉÉN melding onder elkaar; het verschil tussen de twee features ziet niemand ooit
     naast elkaar. De interne consistentie van de melding wint dus, en dat kan alleen met één vorm overal.

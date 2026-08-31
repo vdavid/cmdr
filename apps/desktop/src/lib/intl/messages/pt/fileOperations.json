@@ -702,13 +702,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {O Cmdr apagou o {countText} item que tinha gravado} many {O Cmdr apagou os {countText} itens que tinha gravado} other {O Cmdr apagou os {countText} itens que tinha gravado}}.",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {O Cmdr apagou o item que tinha gravado} many {O Cmdr apagou os {countText} itens que tinha gravado} other {O Cmdr apagou os {countText} itens que tinha gravado}}.",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {O Cmdr levou o {countText} item de volta} many {O Cmdr levou os {countText} itens de volta} other {O Cmdr levou os {countText} itens de volta}}.",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {O Cmdr levou o item de volta} many {O Cmdr levou os {countText} itens de volta} other {O Cmdr levou os {countText} itens de volta}}.",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "O Cmdr apagou {countText} {count, plural, one {item} many {itens} other {itens}}.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -728,7 +728,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "O Cmdr pula tudo aquilo de que não tem certeza, então estes ficaram onde estão:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} ficou como está: mudou depois que o Cmdr colocou lá.",
   "@fileOperations.cancelRollback.reason.drift.named": {

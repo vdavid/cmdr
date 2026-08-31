@@ -1871,12 +1871,13 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 
 Toasten som rapporterar vad ångringen hann med: en rubrik (hel, delvis, eller stoppad ångring), raden som sätter
 förväntan, och en punktlista med ett skäl per rad. Raderna är nästan en kopia av `askCmdr.renameUndo.skipReason.*`, och
-tre av dem har teckenidentisk engelska, så `i18n-terms` kräver identisk svenska. Nya beslut:
+två av dem har teckenidentisk engelska, så `i18n-terms` kräver identisk svenska. Nya beslut:
 
 - **”Left {name} alone” → `{name} lämnades som den är`** · redan satt i katalogen
-  (`askCmdr.renameUndo.skipReason.drift`/`.unverifiable`/`.folderNotEmpty`), och `folderNotEmpty.named`/`.counted` samt
-  `unverifiable.named` har dessutom exakt samma engelska sträng som sina renameUndo-syskon, så de värdena är kopierade
-  tecken för tecken. macOS `sv` belägger verbet i samma betydelse: ”Om du vill lämna filen orörd och jobba med en kopia
+  (`askCmdr.renameUndo.skipReason.drift`/`.unverifiable`/`.folderNotEmpty`), och `folderNotEmpty.named`/`.counted` har
+  dessutom exakt samma engelska sträng som sina renameUndo-syskon, så de två värdena är kopierade tecken för tecken.
+  `unverifiable.named` är nästan identisk men inte riktigt (apostrofen är böjd i `renameUndo`, dubblerad i
+  `cancelRollback`), så `i18n-terms` binder den inte — svenskan är ändå densamma, för det är samma mening. macOS `sv` belägger verbet i samma betydelse: ”Om du vill lämna filen orörd och jobba med en kopia
   klickar du på Duplicera” · `high`. ❌ Inte `Lät {name} vara` (som annars hade knutit an till knappen `Låt det vara`):
   det hade gett en engelsk mening två svenska namn.
 - **”Left {name} where it is” (`spotTaken`) → `{name} lämnades där den ligger`** · engelskan byter medvetet ram just

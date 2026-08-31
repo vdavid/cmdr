@@ -704,11 +704,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "Alles wat Cmdr had geschreven, is verwijderd: {countText} {count, plural, one {onderdeel} other {onderdelen}}.",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "Alles is teruggezet: {countText} {count, plural, one {onderdeel} other {onderdelen}}.",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} verwijderd.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -726,9 +726,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.leftBehind": "Cmdr laat alles ongemoeid waar het niet zeker van is, dus deze zijn blijven staan:",
+  "fileOperations.cancelRollback.leftBehind": "Cmdr slaat alles over waar het niet zeker van is, dus deze zijn blijven staan:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.",
   "@fileOperations.cancelRollback.reason.drift.named": {

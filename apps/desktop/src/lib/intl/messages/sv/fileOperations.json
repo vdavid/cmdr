@@ -703,11 +703,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "Raderade allt Cmdr hade skrivit: {countText} {count, plural, one {objekt} other {objekt}}.",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "Lade tillbaka allt: {countText} {count, plural, one {objekt} other {objekt}}.",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "Raderade {countText} {count, plural, one {objekt} other {objekt}}.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -727,7 +727,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr hoppar över allt som är osäkert, så det här blev kvar:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} lämnades som den är: den ändrades efter att Cmdr lade den där.",
   "@fileOperations.cancelRollback.reason.drift.named": {

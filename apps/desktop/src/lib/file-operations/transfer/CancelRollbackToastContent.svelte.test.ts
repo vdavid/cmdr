@@ -40,7 +40,7 @@ describe('CancelRollbackToastContent', () => {
   it('gives each leftover reason its own line', () => {
     render({
       headline: 'Removed 9 items.',
-      leftBehind: "Cmdr leaves alone anything it isn't sure about, so these stayed where they are:",
+      leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
       reasons: [
         'Left notes.md alone: it changed after Cmdr put it there.',
         'Left 3 folders alone: they have something in them now.',
@@ -56,19 +56,19 @@ describe('CancelRollbackToastContent', () => {
   it('sets the expectation BEFORE the reasons, so leftovers read as care rather than as a shortfall', () => {
     render({
       headline: 'Removed 9 items.',
-      leftBehind: "Cmdr leaves alone anything it isn't sure about, so these stayed where they are:",
+      leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
       reasons: ['Left notes.md alone: it changed after Cmdr put it there.'],
       level: 'info',
     })
     const rendered = target.textContent
-    expect(rendered.indexOf('leaves alone')).toBeGreaterThan(rendered.indexOf('Removed 9 items'))
-    expect(rendered.indexOf('leaves alone')).toBeLessThan(rendered.indexOf('Left notes.md'))
+    expect(rendered.indexOf('Cmdr skips')).toBeGreaterThan(rendered.indexOf('Removed 9 items'))
+    expect(rendered.indexOf('Cmdr skips')).toBeLessThan(rendered.indexOf('Left notes.md'))
   })
 
   it('opens on the explanation when the reversal undid nothing', () => {
     render({
       headline: null,
-      leftBehind: "Cmdr leaves alone anything it isn't sure about, so these stayed where they are:",
+      leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
       reasons: ['Left 2 items alone: they changed after Cmdr put them there.'],
       level: 'info',
     })

@@ -770,10 +770,12 @@ this exact shape for the rename undo.
   actions). `無法` + verb is the house failure shape. **"Its drive may be disconnected or read-only"** →
   `它所在的磁碟機可能沒有連接，或是唯讀的。`, reusing the drive clause `fileOperations.trash.undoUnavailable` already
   ships (`它們所在的磁碟機沒有連接`) and the catalog's `唯讀` (`errors.listing.readOnly.*`).
-- **`leftBehind`** · `Cmdr 沒有把握的東西都會維持原樣，所以這些留了下來：` · `high`. Keeps the promise the Rollback
-  confirmations make, word for word where it can: `沒有把握` and `留下` both come from
+- **`leftBehind`** · `Cmdr 會略過沒有把握的部分，所以這些留了下來：` · `high`. Repeats the Rollback confirmations'
+  promise verb for verb, because the English does the same (`Cmdr skips anything it isn''t sure about`, in the dialog
+  and in the toast): `會略過沒有把握的部分` is lifted straight from
   `fileOperations.rollbackConfirm.bodyUndoByDeleting` (`Cmdr 會略過沒有把握的部分，所以可能會留下一些。`). Full-width
-  colon, because a bulleted list follows.
+  colon, because a bulleted list follows. ❌ Not `維持原樣` here: that is the reason lines' word below, and this line has
+  to reconnect with the dialog the user just read.
 - **"Removed …" in the headlines** · `刪除`, never `移除` · `high`. Apple splits them (`移除` = take out of a list or a
   container, `刪除` = destroy), and this really destroys files. It also has to agree with what the user was just
   promised and just watched: `fileOperations.rollbackConfirm.bodyUndoByDeleting` (`這會刪除…`),

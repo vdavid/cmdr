@@ -702,11 +702,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "Đã xóa cả {countText} {count, plural, other {mục}} mà Cmdr đã ghi.",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "Đã đưa trở lại cả {countText} {count, plural, other {mục}}.",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "Đã xóa {countText} {count, plural, other {mục}}.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -724,9 +724,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.leftBehind": "Cmdr giữ nguyên những gì nó không chắc chắn, nên những mục sau vẫn ở nguyên chỗ:",
+  "fileOperations.cancelRollback.leftBehind": "Cmdr bỏ qua những gì nó không chắc chắn, nên những mục sau vẫn ở nguyên chỗ:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "Giữ nguyên {name}: mục này đã thay đổi sau khi Cmdr đưa nó tới đó.",
   "@fileOperations.cancelRollback.reason.drift.named": {

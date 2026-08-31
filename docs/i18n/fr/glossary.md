@@ -2240,9 +2240,11 @@ une alerte.
 - **Le moule des `reason.*` est celui d'`askCmdr.renameUndo.skipReason.*`, repris tel quel** : « {name} laissé tel quel
   : <raison>. » et « {countText} {count, plural, …} tels quels : <raison>. » · le catalogue lui-même · high. C'est la
   même mécanique produit (Cmdr refuse de toucher ce qu'il ne peut pas rapprocher de ce qu'il a écrit), donc les deux
-  listes doivent se lire pareil. **Quatre clés ont un anglais mot pour mot identique à leur sœur `renameUndo`**
-  (`unverifiable.named`, `folderNotEmpty.named`, `folderNotEmpty.counted`, et le moule commun) : leurs valeurs `fr` sont
-  strictement identiques, sinon `i18n-terms` le signale, à juste titre.
+  listes doivent se lire pareil. **Deux clés ont un anglais mot pour mot identique à leur sœur `renameUndo`**
+  (`folderNotEmpty.named` et `folderNotEmpty.counted`) : leurs valeurs `fr` sont strictement identiques, sinon
+  `i18n-terms` le signale, à juste titre. `unverifiable.named` s'en approche mais n'est pas identique (l'apostrophe est
+  courbe côté `renameUndo`, doublée côté `cancelRollback`), donc `i18n-terms` ne la contraint pas : le `fr` reste
+  identique quand même, parce que c'est la même phrase.
 - **`item` → `élément`, pas `fichier`.** Les sœurs `renameUndo` disent `fichier` parce que leur anglais dit « file » ;
   ici l'anglais dit « item » et couvre les dossiers créés par l'opération · `élément` du glossaire (macOS Tier 1) ·
   high. Ne pas uniformiser les deux familles sur un seul nom.
@@ -2251,9 +2253,10 @@ une alerte.
   est masculin quel que soit le nom de fichier qui arrive · high.
 - **Les titres « complets » (`doneDeleting`, `doneMovingBack`) portent la totalité par `tout`, jamais par un article
   devant le nombre.** « Cmdr a supprimé tout ce qu'il avait écrit : {countText} éléments. » et « Cmdr a tout remis en
-  place : {countText} éléments. » ❌ Pas `les {countText} éléments` : la branche `one` donnerait « les 1 élément »
-  (l'anglais s'en accommode avec « the 1 item », le français non). Le deux-points suivi du décompte garde le nombre hors
-  de portée de l'article · high. `remettre en place` est bien le verbe de `fileOperations.trash.undone`, comme le
+  place : {countText} éléments. » ❌ Pas `les {countText} éléments` : la branche `one` donnerait « les 1 élément ».
+  L'anglais a le même problème et le règle autrement, en passant la phrase entière dans le pluriel pour que sa branche
+  `one` puisse dire « the item » sans le nombre ; le deux-points suivi du décompte met le nombre hors de portée de
+  l'article, et les deux branches françaises restent identiques · high. `remettre en place` est bien le verbe de `fileOperations.trash.undone`, comme le
   demande la description de la clé.
 - **Les titres « partiels » (`someDeleted`, `someMovedBack`) reprennent le moule participial du catalogue** («
   {countText} éléments supprimés. », « {countText} éléments remis en place. »), celui de `trash.undone` et de

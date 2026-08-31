@@ -703,11 +703,11 @@
   },
   "fileOperations.cancelRollback.doneDeleting": "A Cmdr mindent eltávolított, amit létrehozott: {countText} {count, plural, one {elem} other {elem}}.",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "5851ac6"
+    "sourceHash": "ff786b9"
   },
   "fileOperations.cancelRollback.doneMovingBack": "A Cmdr mindent visszahelyezett: {countText} {count, plural, one {elem} other {elem}}.",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "0126d51"
+    "sourceHash": "c5e329e"
   },
   "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {elem} other {elem}} eltávolítva.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -727,7 +727,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Amiben a Cmdr nem biztos, azt kihagyja, ezért ezek a helyükön maradtak:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "6b0d9e8"
+    "sourceHash": "fb28a31"
   },
   "fileOperations.cancelRollback.reason.drift.named": "A(z) „{name}” változatlan maradt: módosult, miután a Cmdr odatette.",
   "@fileOperations.cancelRollback.reason.drift.named": {

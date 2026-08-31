@@ -1931,11 +1931,12 @@ Giọng xuyên suốt: **Cmdr đã làm phần cẩn thận**, không xin lỗi,
   Anh, và `không … được` giữ giọng nhẹ, tránh hẳn `lỗi`/`thất bại` · `high`. Vế sau lấy chữ có sẵn: `chưa được kết nối`
   (`fileOperations.trash.undoUnavailable`) và `chỉ đọc` (`errors.volume.readOnly` = `Ổ đĩa này là chỉ đọc.`), nên viết
   `Ổ đĩa của nó có thể chưa được kết nối hoặc là chỉ đọc.`
-- **`leftBehind` mở bằng `giữ nguyên`, không bằng `bỏ qua`** · ba khóa `rollbackConfirm.bodyUndo*` hứa
-  `Cmdr bỏ qua những gì nó không chắc chắn`, và tiếng Anh ở đây đổi "skips" → "leaves alone". Tiếng Việt đổi theo, giữ
-  nguyên phần lõi `những gì nó không chắc chắn` để hai bề mặt vẫn là một lời hứa, còn `giữ nguyên` thì nối thẳng vào các
-  gạch đầu dòng bên dưới (mỗi dòng cũng mở bằng `Giữ nguyên`) · `high`. Trọn câu:
-  `Cmdr giữ nguyên những gì nó không chắc chắn, nên những mục sau vẫn ở nguyên chỗ:`
+- **`leftBehind` mở bằng `bỏ qua`, đúng như các hộp thoại xác nhận** · `rollbackConfirm.body` và ba khóa
+  `bodyUndo*` đều hứa `Cmdr bỏ qua những gì nó không chắc chắn`, và tiếng Anh dùng cùng một động từ ở cả hai bề mặt, nên
+  tiếng Việt cũng vậy: một lời hứa thì một chữ · `high`. Trọn câu:
+  `Cmdr bỏ qua những gì nó không chắc chắn, nên những mục sau vẫn ở nguyên chỗ:` ❌ Đừng dùng `giữ nguyên` ở đây: đó là
+  chữ của các gạch đầu dòng bên dưới (`Giữ nguyên {name}: …`), còn dòng này phải nối lại với hộp thoại người dùng vừa
+  đọc.
 - **Mạo từ "trọn vẹn" của tiếng Anh → `cả`** · `doneDeleting`/`doneMovingBack` nói "the N items" để hàm ý tất cả, còn
   `someDeleted`/`someMovedBack` cố tình bỏ mạo từ vì còn sót lại. Tiếng Việt không có mạo từ, nên khác biệt đó nằm ở
   `cả`: `Đã đưa trở lại cả {countText} mục.` (trọn vẹn) so với `Đã đưa trở lại {countText} mục.` (một phần). Catalog đã

@@ -331,7 +331,7 @@ describe('CancelRollbackToastContent a11y', () => {
       props: {
         readout: {
           headline: 'Removed 9 items.',
-          leftBehind: "Cmdr leaves alone anything it isn't sure about, so these stayed where they are:",
+          leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
           reasons: [
             'Left notes.md alone: it changed after Cmdr put it there.',
             'Left 3 folders alone: they have something in them now.',
