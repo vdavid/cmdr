@@ -349,12 +349,13 @@ file weighs, which is what stalled a 300 GB copy of 4 MB files: 130 credits each
 seven of ten copy slots parked. The scan pool's prefetch (`scan_pool.rs::open_read_stream_for_scan_impl`) reads the same
 way, for the same reason.
 
-Sizing the read also moves smb2's anti-truncation guard: it refuses with `ErrorKind::TooLarge` when the server reports
-the file is bigger than the length asked for, so the refusal now trips at the HINT rather than at `max_read`. That makes
-the two size-drift arms in the fast path load-bearing, not decoration. A file that GREW since the scan comes back
-`TooLarge` and falls through to streaming, which serves it whole; one that SHRANK comes back short of the hint
-(`data.len() != size`) and falls through the same way. Neither ever hands the copy a prefix under the file's final name.
-❌ Never "simplify" either arm away, and never call the unsized `read_file_compound` from a path that knows the size.
+`expected_size` is a HARD bound, not a hint: smb2 compares the server's authoritative size (it rides the same compound
+frame, in the CREATE response) against the length asked for and refuses with `ErrorKind::TooLarge` rather than hand back
+a prefix. That splits the two size-drift arms in the fast path cleanly, and both are load-bearing. A file that GREW
+since the scan comes back `TooLarge` and falls through to streaming, which serves it whole; one that SHRANK comes back
+short of the hint (`data.len() != size`) and falls through the same way. Neither ever hands the copy a prefix under the
+file's final name. ❌ Never "simplify" either arm away, and never call the unsized `read_file_compound` from a path that
+knows the size: an 8 MB request against a 4 MB file is both the over-charge and a guard that can't fire.
 
 **`max_concurrent_ops` is clamped by what the window can carry.** The setting alone (`network.smbConcurrency`,
 default 10) says nothing about the connection, so the answer is `min(setting, credit_capacity_for(512 KB))`, floored at

@@ -384,14 +384,14 @@ impl Volume for SmbVolume {
             //
             // Falls through to the streaming path when the hint is missing or
             // bigger than one READ, or when the file changed size since the
-            // scan. Both drift directions stay safe, and TOGETHER they're what
-            // keeps a changed file from being copied truncated: a file that
-            // SHRANK comes back short of the hint (`data.len() != size`), and
-            // one that GREW past the hint comes back as a typed
-            // `ErrorKind::TooLarge` (smb2 refuses to hand back a prefix of a
-            // file that no longer fits the length asked for). Sizing the read
-            // makes that guard trip at the hint rather than at `max_read`, so
-            // it fires on drift it used to miss.
+            // scan. `expected_size` is a HARD bound, so the two drift arms split
+            // cleanly and TOGETHER are what keeps a changed file from being
+            // copied truncated: a file that SHRANK comes back short of the hint
+            // (`data.len() != size`), and one that GREW comes back as a typed
+            // `ErrorKind::TooLarge`, because smb2 compares the server's
+            // authoritative size against the length asked for and refuses rather
+            // than hand back a prefix. ❌ Neither arm is decoration; dropping
+            // either one copies a changed file under its final name, short.
             if let Some(size) = size_hint {
                 let (tree, mut conn) = self.clone_session().await?;
                 let max_read = conn.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
