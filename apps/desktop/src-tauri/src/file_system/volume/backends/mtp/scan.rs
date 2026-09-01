@@ -12,6 +12,7 @@ use super::MtpVolume;
 use super::mapping::map_mtp_error;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
+use crate::file_system::volume::conflicts_in_listing;
 use crate::mtp::connection::connection_manager;
 use log::debug;
 use std::future::Future;
@@ -213,26 +214,7 @@ impl MtpVolume {
         Box::pin(async move {
             // List destination directory to check for conflicts
             let entries = self.list_directory(dest_path, None).await?;
-            let mut conflicts = Vec::new();
-
-            for item in source_items {
-                // Check if a file with the same name exists at destination
-                if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
-                    let dest_modified = existing.modified_at.map(|s| s as i64);
-                    conflicts.push(ScanConflict {
-                        source_path: item.name.clone(),
-                        dest_path: existing.path.clone(),
-                        source_size: item.size,
-                        dest_size: existing.size.unwrap_or(0),
-                        source_modified: item.modified,
-                        dest_modified,
-                        source_is_directory: item.is_directory,
-                        dest_is_directory: existing.is_directory,
-                    });
-                }
-            }
-
-            Ok(conflicts)
+            Ok(conflicts_in_listing(source_items, &entries))
         })
     }
 }

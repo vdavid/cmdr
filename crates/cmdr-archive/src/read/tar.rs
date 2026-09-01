@@ -19,6 +19,7 @@
 
 use std::collections::HashMap;
 use std::io::Read;
+use std::ops::ControlFlow;
 use std::sync::Arc;
 
 use super::error::ArchiveError;
@@ -163,25 +164,37 @@ fn stream_compressed_member(
     total: u64,
     tx: &ChunkTx,
 ) {
-    let decoded = match open_tar_decoder(codec, Box::new(SourceReader::new(source))) {
-        Ok(d) => d,
-        Err(err) => return tx.send_err(err),
-    };
+    let walked = for_each_member(source, codec, |entry| {
+        if !entry_matches(entry, target) {
+            return ControlFlow::Continue(());
+        }
+        pump_read(entry, tx, Some(total), ArchiveError::from);
+        ControlFlow::Break(())
+    });
+    match walked {
+        Ok(ControlFlow::Break(())) => {}
+        Ok(ControlFlow::Continue(())) => tx.send_err(ArchiveError::NotFound(target.to_string())),
+        Err(err) => tx.send_err(err),
+    }
+}
+
+/// Opens the codec over `source` and hands every tar member to `visit`, in
+/// stream order, until it breaks. `Ok(Break)` means `visit` stopped the walk,
+/// `Ok(Continue)` that the stream ran out first; a decoder or header failure is
+/// the `Err`, so both streaming readers report it the same way.
+fn for_each_member(
+    source: Arc<dyn ArchiveByteSource>,
+    codec: TarCodec,
+    mut visit: impl FnMut(&mut tar::Entry<'_, Box<dyn Read + Send + '_>>) -> ControlFlow<()>,
+) -> Result<ControlFlow<()>, ArchiveError> {
+    let decoded = open_tar_decoder(codec, Box::new(SourceReader::new(source)))?;
     let mut archive = tar::Archive::new(decoded);
-    let entries = match archive.entries() {
-        Ok(e) => e,
-        Err(err) => return tx.send_err(ArchiveError::from(err)),
-    };
-    for entry in entries {
-        let mut entry = match entry {
-            Ok(e) => e,
-            Err(err) => return tx.send_err(ArchiveError::from(err)),
-        };
-        if entry_matches(&entry, target) {
-            return pump_read(&mut entry, tx, Some(total), ArchiveError::from);
+    for entry in archive.entries()? {
+        if visit(&mut entry?).is_break() {
+            return Ok(ControlFlow::Break(()));
         }
     }
-    tx.send_err(ArchiveError::NotFound(target.to_string()));
+    Ok(ControlFlow::Continue(()))
 }
 
 /// Whether `entry`'s sanitized inner path equals `target` (the same sanitization
@@ -207,43 +220,35 @@ pub(super) fn stream_subtree(
     if wanted.is_empty() {
         return;
     }
-    let decoded = match open_tar_decoder(codec, Box::new(SourceReader::new(source))) {
-        Ok(d) => d,
-        Err(err) => return tx.send_err(err),
-    };
-    let mut archive = tar::Archive::new(decoded);
-    let entries = match archive.entries() {
-        Ok(e) => e,
-        Err(err) => return tx.send_err(ArchiveError::from(err)),
-    };
-    for entry in entries {
-        let mut entry = match entry {
-            Ok(e) => e,
-            Err(err) => return tx.send_err(ArchiveError::from(err)),
-        };
+    let walked = for_each_member(source, codec, |entry| {
         let sanitized = match sanitize_entry_name(&String::from_utf8_lossy(&entry.path_bytes())) {
             SanitizedName::Accepted(path) => path,
             // Quarantined/unnameable entries never reach the tree, so they're
             // never wanted; skip (the iterator advances past their data).
-            _ => continue,
+            _ => return ControlFlow::Continue(()),
         };
         // `remove` (not `get`) so a duplicate archive entry with the same name
         // isn't delivered twice; the tree kept the last, but the first-in-stream
         // occurrence is what the per-entry reader also matches.
         let Some(size) = wanted.remove(&sanitized) else {
-            continue; // not in the subtree: skip, still one forward pass
+            return ControlFlow::Continue(()); // not in the subtree: skip, still one forward pass
         };
         if !tx.send_member(SubtreeMember {
             inner_path: sanitized,
             size,
         }) {
-            return; // consumer gone: stop decoding
+            return ControlFlow::Break(()); // consumer gone: stop decoding
         }
-        if let Err(err) = pump_chunks(&mut entry, Some(size), |chunk| tx.send_chunk(chunk), ArchiveError::from) {
-            return tx.send_err(err);
+        if let Err(err) = pump_chunks(entry, Some(size), |chunk| tx.send_chunk(chunk), ArchiveError::from) {
+            tx.send_err(err);
+            return ControlFlow::Break(());
         }
         if wanted.is_empty() {
-            return; // whole subtree delivered: don't decode the tail
+            return ControlFlow::Break(()); // whole subtree delivered: don't decode the tail
         }
+        ControlFlow::Continue(())
+    });
+    if let Err(err) = walked {
+        tx.send_err(err);
     }
 }

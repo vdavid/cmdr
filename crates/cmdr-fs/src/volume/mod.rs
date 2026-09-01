@@ -1337,6 +1337,7 @@ mod ids;
 mod in_memory;
 pub mod mtp_ids;
 mod retirement;
+mod scan_conflicts;
 mod scan_ticker;
 mod types;
 
@@ -1362,6 +1363,7 @@ pub use channel_stream::ChannelReadStream;
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
 pub use retirement::{Retirement, Retires, SelfHandle};
+pub use scan_conflicts::conflicts_in_listing;
 pub use scan_ticker::ScanTicker;
 pub use types::*;
 

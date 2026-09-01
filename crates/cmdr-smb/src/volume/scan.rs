@@ -8,6 +8,7 @@ use super::mapping::map_smb_error;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, ListingProgress, ScanConflict, ScanTicker, SourceItemInfo, VolumeError,
+    conflicts_in_listing,
 };
 use log::{debug, warn};
 use std::path::{Path, PathBuf};
@@ -401,25 +402,7 @@ impl SmbVolume {
         Box::pin(async move {
             // List destination directory to check for conflicts
             let entries = self.list_directory_impl(dest_path).await?;
-            let mut conflicts = Vec::new();
-
-            for item in source_items {
-                if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
-                    let dest_modified = existing.modified_at.map(|s| s as i64);
-                    conflicts.push(ScanConflict {
-                        source_path: item.name.clone(),
-                        dest_path: existing.path.clone(),
-                        source_size: item.size,
-                        dest_size: existing.size.unwrap_or(0),
-                        source_modified: item.modified,
-                        dest_modified,
-                        source_is_directory: item.is_directory,
-                        dest_is_directory: existing.is_directory,
-                    });
-                }
-            }
-
-            Ok(conflicts)
+            Ok(conflicts_in_listing(source_items, &entries))
         })
     }
 }
