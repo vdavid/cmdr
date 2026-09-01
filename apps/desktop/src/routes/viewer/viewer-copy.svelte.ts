@@ -38,6 +38,14 @@ export type CopyResult =
   | { ok: true; text: string }
   | { ok: false; reason: 'cancelled' | 'timedOut' | 'other'; error?: ViewerError }
 
+/** The resolved arguments every range IPC takes (one payload, since the two ends share a type). */
+interface RangeCall {
+  sessionId: string
+  readId: number
+  anchor: RangeEnd
+  focus: RangeEnd
+}
+
 interface CopyDeps {
   getSessionId: () => string
   /**
@@ -69,7 +77,14 @@ export function createViewerCopy(deps: CopyDeps) {
     return id
   }
 
-  async function performRead(): Promise<CopyResult> {
+  /**
+   * Shared plumbing for the two range IPCs: resolves the session and selection, holds
+   * the busy flag and in-flight `read_id` for the duration, and maps the typed
+   * `ViewerError` to a `CopyResult` reason.
+   */
+  async function runRangeIpc(
+    call: (range: RangeCall) => Promise<{ ok: true; text: string } | { ok: false; error: ViewerError }>,
+  ): Promise<CopyResult> {
     const sessionId = deps.getSessionId()
     const ends = deps.getRangeEnds()
     if (!sessionId || ends === null) {
@@ -79,7 +94,7 @@ export function createViewerCopy(deps: CopyDeps) {
     inFlightReadId = readId
     busy = true
     try {
-      const res = await viewerReadRange(sessionId, readId, ends.anchor, ends.focus)
+      const res = await call({ sessionId, readId, anchor: ends.anchor, focus: ends.focus })
       if (res.ok) return { ok: true, text: res.text }
       if (res.error.kind === 'cancelled') return { ok: false, reason: 'cancelled', error: res.error }
       if (res.error.kind === 'timedOut') return { ok: false, reason: 'timedOut', error: res.error }
@@ -88,6 +103,10 @@ export function createViewerCopy(deps: CopyDeps) {
       busy = false
       inFlightReadId = null
     }
+  }
+
+  function performRead(): Promise<CopyResult> {
+    return runRangeIpc(({ sessionId, readId, anchor, focus }) => viewerReadRange(sessionId, readId, anchor, focus))
   }
 
   /**
@@ -139,25 +158,11 @@ export function createViewerCopy(deps: CopyDeps) {
    * but the result is the typed write outcome rather than the read text. Uses the
    * same busy / cancel plumbing.
    */
-  async function saveAs(destPath: string): Promise<CopyResult> {
-    const sessionId = deps.getSessionId()
-    const ends = deps.getRangeEnds()
-    if (!sessionId || ends === null) {
-      return { ok: false, reason: 'other' }
-    }
-    const readId = allocateReadId()
-    inFlightReadId = readId
-    busy = true
-    try {
-      const res = await viewerWriteRangeToFile(sessionId, readId, ends.anchor, ends.focus, destPath)
-      if (res.ok) return { ok: true, text: '' }
-      if (res.error.kind === 'cancelled') return { ok: false, reason: 'cancelled', error: res.error }
-      if (res.error.kind === 'timedOut') return { ok: false, reason: 'timedOut', error: res.error }
-      return { ok: false, reason: 'other', error: res.error }
-    } finally {
-      busy = false
-      inFlightReadId = null
-    }
+  function saveAs(destPath: string): Promise<CopyResult> {
+    return runRangeIpc(async ({ sessionId, readId, anchor, focus }) => {
+      const res = await viewerWriteRangeToFile(sessionId, readId, anchor, focus, destPath)
+      return res.ok ? { ok: true, text: '' } : res
+    })
   }
 
   return {

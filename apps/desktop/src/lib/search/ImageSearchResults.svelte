@@ -304,6 +304,31 @@
     const moreCount = $derived(Math.max(0, totalHits - tiles.length))
 </script>
 
+<!-- The thumbnail + filename shared by both grids (plain results and "similar" results). -->
+{#snippet tileFace(tile: Tile)}
+    <span class="ir-thumb">
+        {#if tile.thumbUrl}
+            <!-- The filename is shown as visible text below (`.ir-name`), so the
+                 thumbnail is presentational — an empty alt avoids a redundant
+                 screen-reader announcement (axe image-redundant-alt). -->
+            <img src={tile.thumbUrl} alt="" loading="lazy" draggable="false" />
+        {:else}
+            <span class="ir-thumb-fallback">
+                <Icon name="file" size={24} aria-hidden="true" />
+            </span>
+        {/if}
+    </span>
+    <span
+        class="ir-name"
+        use:useShortenMiddle={{
+            text: tile.name,
+            preferBreakAt: '.',
+            startRatio: 0.7,
+            tooltipWhenTruncated: true,
+        }}
+    ></span>
+{/snippet}
+
 {#if showSection}
     <section class="image-results" aria-label={tString('search.imageResults.title')}>
         <header class="ir-header">
@@ -336,27 +361,7 @@
                     {#each tiles as tile (tile.path)}
                         <li class="ir-tile-wrap">
                             <button type="button" class="ir-tile" onclick={() => { onOpen(tile.path); }}>
-                                <span class="ir-thumb">
-                                    {#if tile.thumbUrl}
-                                        <!-- The filename is shown as visible text below (`.ir-name`), so the
-                                             thumbnail is presentational — an empty alt avoids a redundant
-                                             screen-reader announcement (axe image-redundant-alt). -->
-                                        <img src={tile.thumbUrl} alt="" loading="lazy" draggable="false" />
-                                    {:else}
-                                        <span class="ir-thumb-fallback">
-                                            <Icon name="file" size={24} aria-hidden="true" />
-                                        </span>
-                                    {/if}
-                                </span>
-                                <span
-                                    class="ir-name"
-                                    use:useShortenMiddle={{
-                                        text: tile.name,
-                                        preferBreakAt: '.',
-                                        startRatio: 0.7,
-                                        tooltipWhenTruncated: true,
-                                    }}
-                                ></span>
+                                {@render tileFace(tile)}
                             </button>
                         </li>
                     {/each}
@@ -389,27 +394,7 @@
                                     onOpen(tile.path)
                                 }}
                             >
-                                <span class="ir-thumb">
-                                    {#if tile.thumbUrl}
-                                        <!-- The filename is shown as visible text below (`.ir-name`), so the
-                                             thumbnail is presentational — an empty alt avoids a redundant
-                                             screen-reader announcement (axe image-redundant-alt). -->
-                                        <img src={tile.thumbUrl} alt="" loading="lazy" draggable="false" />
-                                    {:else}
-                                        <span class="ir-thumb-fallback">
-                                            <Icon name="file" size={24} aria-hidden="true" />
-                                        </span>
-                                    {/if}
-                                </span>
-                                <span
-                                    class="ir-name"
-                                    use:useShortenMiddle={{
-                                        text: tile.name,
-                                        preferBreakAt: '.',
-                                        startRatio: 0.7,
-                                        tooltipWhenTruncated: true,
-                                    }}
-                                ></span>
+                                {@render tileFace(tile)}
                                 {#if tile.reason === 'semantic'}
                                     <span class="ir-reason">{tString('search.imageResults.matchedDescription')}</span>
                                 {:else}
