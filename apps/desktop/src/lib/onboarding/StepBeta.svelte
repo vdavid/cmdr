@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte'
     import OnboardingStepShell from './OnboardingStepShell.svelte'
-    import SettingSwitch from '$lib/settings/components/SettingSwitch.svelte'
+    import OnboardingToggleCard from './OnboardingToggleCard.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
@@ -9,8 +9,8 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { setFooterOverride, nextStep, requestWizardComplete } from './onboarding-state.svelte'
     import { forceSave, getSetting, getSettingDefinition, setSetting } from '$lib/settings'
-    import { onSpecificSettingChange } from '$lib/settings/settings-store'
-    import { betaSignup, openExternalUrl } from '$lib/tauri-commands'
+    import { createBetaEmailSignup } from '$lib/settings/sections/beta-email-signup.svelte'
+    import { openExternalUrl } from '$lib/tauri-commands'
     import {
         GITHUB_REPO_URL,
         GITHUB_ISSUES_URL,
@@ -41,10 +41,10 @@
      * uses, so the Settings page and this onboarding page behave identically:
      *   - the opt-out switch is the registry-backed `<SettingSwitch id="analytics.enabled">`
      *     (default on; flipping it writes the setting immediately, like everywhere else),
-     *   - the email field persists to `analytics.email` on every keystroke (local only) and,
-     *     on commit of a valid address, calls the typed `betaSignup` wrapper, which POSTs
-     *     ONLY the email (never an install id) and returns a typed result we map to a gentle
-     *     inline note.
+     *   - the email field runs on the shared `createBetaEmailSignup()`: it persists to
+     *     `analytics.email` on every keystroke (local only) and, on commit of a valid address,
+     *     calls the typed `betaSignup` wrapper, which POSTs ONLY the email (never an install
+     *     id) and returns a typed result mapped to a gentle inline note.
      *
      * This page is non-skippable: the AI step's forward button lands the user here. The
      * footer offers two ways forward: a secondary "Start using Cmdr!" that finishes
@@ -181,62 +181,8 @@
         setFooterOverride(null)
     })
 
-    // The beta contact email persists to settings on every keystroke (local only). On commit
-    // (blur or Enter) with a valid address, we subscribe it to the beta mailing list via
-    // `betaSignup`, which sends ONLY the email (never an install id), so usage stats can't be
-    // tied back to it. This mirrors `UpdatesSection.svelte`'s logic exactly.
-    let email = $state(getSetting('analytics.email'))
-    onSpecificSettingChange('analytics.email', (value) => {
-        email = value
-    })
-
-    // The inline result under the field. A typed kind, not a parsed message.
-    type SignupFeedback = { kind: 'success' | 'failure' } | null
-    let signupFeedback = $state<SignupFeedback>(null)
-    // The last address we successfully submitted, so re-blurring an unchanged field doesn't resend.
-    let lastSubmittedEmail = $state('')
-    let signupInFlight = $state(false)
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-    function handleEmailInput(event: Event) {
-        const target = event.target as HTMLInputElement
-        email = target.value
-        setSetting('analytics.email', target.value)
-        // Clearing the field only clears the local copy. Unsubscribing from the list happens
-        // via Listmonk's own link.
-        if (target.value.trim() === '') {
-            signupFeedback = null
-            lastSubmittedEmail = ''
-        }
-    }
-
-    async function handleEmailCommit() {
-        const trimmed = email.trim()
-        if (trimmed === '' || trimmed === lastSubmittedEmail || !emailPattern.test(trimmed)) {
-            return
-        }
-
-        signupInFlight = true
-        try {
-            const result = await betaSignup(trimmed)
-            if (result.kind === 'subscribed') {
-                signupFeedback = { kind: 'success' }
-                lastSubmittedEmail = trimmed
-            } else {
-                // `invalidEmail` or `softFailure`: a gentle try-again either way.
-                signupFeedback = { kind: 'failure' }
-            }
-        } finally {
-            signupInFlight = false
-        }
-    }
-
-    function handleEmailKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            void handleEmailCommit()
-        }
-    }
+    // The beta contact email field, on the same logic as `UpdatesSection.svelte`.
+    const emailSignup = createBetaEmailSignup()
 </script>
 
 {#snippet david(children: Snippet)}<LinkButton
@@ -301,18 +247,14 @@
 
     <p class="lede analytics-lede">{tString('onboarding.stepBeta.analyticsLede')}</p>
 
-    <section class="toggle-block" aria-labelledby="toggle-analytics-title">
-        <header class="toggle-header">
-            <div class="toggle-text">
-                <h3 id="toggle-analytics-title" class="toggle-title">{tString('onboarding.stepBeta.analyticsTitle')}</h3>
-                <p class="toggle-desc">{analyticsDef.description}</p>
-            </div>
-            <div class="toggle-control">
-                <SettingSwitch id="analytics.enabled" />
-                <p class="toggle-caption">{tString('onboarding.stepBeta.analyticsCaption')}</p>
-            </div>
-        </header>
-    </section>
+    <OnboardingToggleCard
+        titleId="toggle-analytics-title"
+        title={tString('onboarding.stepBeta.analyticsTitle')}
+        settingId="analytics.enabled"
+        caption={tString('onboarding.stepBeta.analyticsCaption')}
+    >
+        <p class="toggle-desc">{analyticsDef.description}</p>
+    </OnboardingToggleCard>
 
     <!-- Crash reports default on too, and a default that sends something has to be disclosed
          where the analytics one is, not only in Settings. No toggle: the switch lives in
@@ -325,16 +267,16 @@
             type="email"
             containerStyle="margin-top: var(--spacing-sm)"
             placeholder={tString('onboarding.stepBeta.emailPlaceholder')}
-            value={email}
-            oninput={handleEmailInput}
-            onblur={handleEmailCommit}
-            onkeydown={handleEmailKeydown}
-            disabled={signupInFlight}
+            value={emailSignup.email}
+            oninput={emailSignup.handleInput}
+            onblur={emailSignup.handleCommit}
+            onkeydown={emailSignup.handleKeydown}
+            disabled={emailSignup.signupInFlight}
             ariaLabel={tString('onboarding.stepBeta.emailTitle')}
         />
-        {#if signupFeedback?.kind === 'success'}
+        {#if emailSignup.signupFeedback?.kind === 'success'}
             <p class="signup-feedback success" role="status">{tString('onboarding.stepBeta.signup.success')}</p>
-        {:else if signupFeedback?.kind === 'failure'}
+        {:else if emailSignup.signupFeedback?.kind === 'failure'}
             <p class="signup-feedback failure" role="status">{tString('onboarding.stepBeta.signup.failure')}</p>
         {/if}
         <p class="email-note">{tString('onboarding.stepBeta.emailNote')}</p>
@@ -408,42 +350,8 @@
         color: var(--color-text-primary);
     }
 
-    .toggle-block {
-        margin-bottom: var(--spacing-lg);
-        padding: var(--spacing-lg);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        background: var(--color-bg-primary);
-    }
-
-    .toggle-header {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--spacing-lg);
-    }
-
-    .toggle-text {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .toggle-control {
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: var(--spacing-xs);
-        padding-top: var(--spacing-xxs);
-    }
-
-    .toggle-caption {
-        margin: 0;
-        max-width: 14rem;
-        text-align: right;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-    }
-
+    /* `.toggle-title` / `.toggle-desc` match `OnboardingToggleCard`'s, so the email and terms
+       blocks below read as siblings of the analytics card. */
     .toggle-title {
         margin: 0 0 var(--spacing-xs);
         font-size: var(--font-size-md);
