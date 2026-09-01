@@ -5,8 +5,10 @@ rationale: `DETAILS.md`.
 
 ## Module map
 
-- `NewFileDialog.svelte`: dialog UI, name validation, async conflict check, then `createFile` and `onCreated(name)`.
-- `new-file-operations.ts`: `getInitialFileName()`, extracts the full filename (with extension) from the cursor entry.
+- `NewFileDialog.svelte`: dialog UI around the shared `../NewEntryNameField.svelte` + `../new-entry-name-check.svelte.ts`
+  (subtitle, name field, validation, async conflict check), then `createFile` and `onCreated(name)`.
+- `new-file-operations.ts`: `getInitialFileName()`, the full filename (with extension) of the `../cursor-entry.ts`
+  lookup.
 
 ## Must-knows
 
@@ -14,12 +16,12 @@ rationale: `DETAILS.md`.
   and stops. Opening the new file in the editor and landing the cursor on it happen in the parent's
   `handleNewFileCreated` (`file-explorer/pane/dialog-state.svelte.ts`, via `moveCursorToNewFolder` and
   `onOpenInEditor`). Editor-launch / cursor logic edits go there, not here.
-- **The pre-fill cursor offset matches `mkdir`.** `getInitialFileName` picks the backend index from
-  `paneRef.getCursorIndex()` using the same `..` + `hasParent` arithmetic as the folder dialog. Keep the two helpers in
-  lock-step, or the pre-fill reads the wrong entry.
-- **Validation uses the shared filename validators** (`validateDisallowedChars`, `validateNameLength`,
-  `validatePathLength` from `$lib/utils/filename-validation`), same as `NewFolderDialog`. Async conflict check via
-  `findFileIndex` + `getFileAt`.
+- **The pre-fill cursor offset is shared with `mkdir`.** Both `getInitialFileName` and `getInitialFolderName` read the
+  cursor entry through `getCursorEntry()` (`../cursor-entry.ts`), which applies the `..` + `hasParent` arithmetic once.
+  Don't re-derive the index here, or the pre-fill reads the wrong entry.
+- **The name field and its validation are shared with `NewFolderDialog`** (`../NewEntryNameField.svelte` +
+  `../new-entry-name-check.svelte.ts`): the `$lib/utils/filename-validation` validators, then the async conflict check
+  via `findFileIndex` + `getFileAt`. A validation change lands there, once.
 - **Extension is preserved on pre-fill** (unlike the folder dialog, which strips it): a cursor item `report.pdf` opens
   the dialog with `report.pdf` selected. Directories and `..` pre-fill empty.
 

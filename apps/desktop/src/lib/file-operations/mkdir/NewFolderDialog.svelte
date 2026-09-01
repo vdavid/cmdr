@@ -1,25 +1,20 @@
 <script lang="ts">
-    import { onDestroy, onMount, tick } from 'svelte'
+    import { onDestroy, onMount } from 'svelte'
     import {
         createDirectory,
-        findFileIndex,
         getAiStatus,
-        getFileAt,
-        onDirectoryDiff,
         refreshListing,
         streamFolderSuggestions,
         type FolderSuggestionsStream,
         type Initiator,
-        type UnlistenFn,
     } from '$lib/tauri-commands'
-    import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
     import { asMutationError } from '$lib/file-operations/mutation-error'
     import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
+    import { NewEntryNameCheck } from '$lib/file-operations/new-entry-name-check.svelte'
+    import NewEntryNameField from '$lib/file-operations/NewEntryNameField.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
-    import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -43,11 +38,11 @@
         $props()
 
     let folderName = $state(initialName)
-    let errorMessage = $state('')
     let timeoutError = $state(false)
-    let isChecking = $state(false)
     let nameInputRef: HTMLInputElement | undefined = $state()
-    let unlistenDiff: UnlistenFn | undefined
+
+    // Name validation + clash lookup; `NewEntryNameField` runs its lifecycle.
+    const check = new NewEntryNameCheck({ currentPath, listingId, showHiddenFiles, getName: () => folderName })
 
     // AI suggestions - start with null to indicate "checking", then true/false once known
     let aiAvailable = $state<boolean | null>(null)
@@ -55,91 +50,14 @@
     let aiStreaming = $state(false)
     let suggestionsStream: FolderSuggestionsStream | undefined
 
-    // Debounce timer for validation
-    let validateTimer: ReturnType<typeof setTimeout> | undefined
+    const isValid = $derived(folderName.trim().length > 0 && !check.errorMessage && !timeoutError)
 
-    const currentDirName = $derived(currentPath.split('/').pop() || currentPath)
-    const isValid = $derived(folderName.trim().length > 0 && !errorMessage && !timeoutError)
-
-    async function validateName(name: string) {
-        const trimmed = name.trim()
-        if (trimmed === '') {
-            errorMessage = ''
-            return
-        }
-
-        // Sync validators: chars, name length, full path length
-        const charCheck = validateDisallowedChars(trimmed, true)
-        if (charCheck.severity === 'error') {
-            errorMessage = charCheck.message
-            return
-        }
-        const nameLenCheck = validateNameLength(trimmed, true)
-        if (nameLenCheck.severity === 'error') {
-            errorMessage = nameLenCheck.message
-            return
-        }
-        const pathLenCheck = validatePathLength(currentPath, trimmed)
-        if (pathLenCheck.severity === 'error') {
-            errorMessage = pathLenCheck.message
-            return
-        }
-
-        // Sync checks passed: clear any previous error, then run async conflict check
-        errorMessage = ''
-
-        isChecking = true
-        try {
-            const index = await findFileIndex(listingId, trimmed, showHiddenFiles)
-            if (index !== null) {
-                const entry = await getFileAt(listingId, index, showHiddenFiles)
-                if (entry?.isDirectory) {
-                    errorMessage = tString('fileOperations.shared.conflictExistsFolder')
-                } else {
-                    errorMessage = tString('fileOperations.shared.conflictExistsFile')
-                }
-            } else {
-                errorMessage = ''
-            }
-        } catch {
-            // If lookup fails (listing gone), clear error and let the backend handle it
-            errorMessage = ''
-        } finally {
-            isChecking = false
-        }
-    }
-
-    function scheduleValidation() {
-        if (validateTimer) clearTimeout(validateTimer)
-        validateTimer = setTimeout(() => {
-            void validateName(folderName)
-        }, 100)
-    }
-
-    onMount(async () => {
-        await tick()
-        nameInputRef?.focus()
-        nameInputRef?.select()
-
-        // Validate initial name if pre-filled
-        if (folderName.trim()) {
-            void validateName(folderName)
-        }
-
+    onMount(() => {
         // Fetch AI suggestions if AI is available
         void fetchAiSuggestions()
-
-        // Listen for directory changes to re-validate.
-        // Small delay ensures the listing cache is fully consistent after the diff is applied.
-        unlistenDiff = await onDirectoryDiff((payload) => {
-            if (payload.listingId !== listingId) return
-            scheduleValidation()
-        })
     })
 
     onDestroy(() => {
-        if (validateTimer) clearTimeout(validateTimer)
-        unlistenDiff?.()
         // Cancel the in-flight stream. Tauri 2's `Channel::send` is fire-and-forget;
         // without this explicit signal the backend would keep streaming after the dialog
         // closes, billing cloud providers and pegging local-LLM compute.
@@ -184,13 +102,13 @@
 
     function selectSuggestion(name: string) {
         folderName = name
-        scheduleValidation()
+        check.schedule()
         nameInputRef?.focus()
     }
 
     async function handleConfirm() {
         const trimmed = folderName.trim()
-        if (!trimmed || errorMessage || timeoutError) return
+        if (!trimmed || check.errorMessage || timeoutError) return
         try {
             await createDirectory(currentPath, trimmed, volumeId, initiator)
             onCreated(trimmed)
@@ -198,9 +116,9 @@
             const failure = asMutationError(e)
             if (failure?.type === 'timedOut') {
                 timeoutError = true
-                errorMessage = ''
+                check.errorMessage = ''
             } else {
-                errorMessage = failure ? renderMutationError(failure, 'folder') : String(e)
+                check.errorMessage = failure ? renderMutationError(failure, 'folder') : String(e)
             }
         }
     }
@@ -222,17 +140,6 @@
         }
     }
 
-    function handleInputKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            event.preventDefault()
-            event.stopPropagation()
-            void handleConfirm()
-        }
-    }
-
-    function handleInput() {
-        scheduleValidation()
-    }
 </script>
 
 <ModalDialog
@@ -246,27 +153,14 @@
     {#snippet title()}{tString('fileOperations.mkdir.title')}{/snippet}
 
     <div class="dialog-body">
-        <p class="subtitle">
-            <Trans key="fileOperations.mkdir.createIn" params={{ name: currentDirName }} snippets={{ dir }} />
-        </p>
-
-        <div class="input-group">
-            <TextInput
-                bind:inputElement={nameInputRef}
-                bind:value={folderName}
-                invalid={!!errorMessage}
-                ariaLabel={tString('fileOperations.mkdir.nameAria')}
-                aria-describedby={errorMessage ? 'new-folder-error' : undefined}
-                spellcheck={false}
-                autocomplete="off"
-                placeholder={tString('fileOperations.mkdir.placeholder')}
-                onkeydown={handleInputKeydown}
-                oninput={handleInput}
-            />
-            {#if errorMessage}
-                <p id="new-folder-error" class="error-message" role="alert">{errorMessage}</p>
-            {/if}
-        </div>
+        <NewEntryNameField
+            kind="folder"
+            {currentPath}
+            {check}
+            bind:value={folderName}
+            bind:inputElement={nameInputRef}
+            onSubmit={() => void handleConfirm()}
+        />
 
         {#if timeoutError}
             <div class="timeout-warning" role="alert">
@@ -318,36 +212,13 @@
 
     {#snippet footer()}
         <Button variant="secondary" onclick={onCancel}>{tString('fileOperations.button.cancel')}</Button>
-        <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}
+        <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || check.isChecking}
             >{tString('fileOperations.button.ok')}</Button
         >
     {/snippet}
 </ModalDialog>
 
-{#snippet dir(children: import('svelte').Snippet)}<span class="dir-name">{@render children()}</span>{/snippet}
-
 <style>
-    .subtitle {
-        margin: 0 0 var(--spacing-lg);
-        font-size: var(--font-size-md);
-        color: var(--color-text-secondary);
-    }
-
-    .dir-name {
-        color: var(--color-text-primary);
-        font-weight: 500;
-    }
-
-    .input-group {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .error-message {
-        margin: var(--spacing-sm) 0 0;
-        font-size: var(--font-size-sm);
-        color: var(--color-error);
-    }
-
     .timeout-warning {
         margin-bottom: var(--spacing-lg);
         padding: var(--spacing-sm) var(--spacing-md);

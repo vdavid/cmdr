@@ -1,6 +1,6 @@
 /**
  * Tier 3 a11y tests for the file-operations chrome: the conflict dialog, the
- * rollback confirmation, and the progress readout.
+ * rollback confirmation, the progress readout, and the new-entry name field.
  *
  * One file per component would cost about three times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -37,6 +37,10 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
+  // The name field's clash lookup and its directory-diff re-validation.
+  findFileIndex: vi.fn(() => Promise.resolve(null)),
+  getFileAt: vi.fn(() => Promise.resolve(null)),
+  onDirectoryDiff: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', async (importOriginal) => ({
@@ -49,6 +53,8 @@ vi.mock('$lib/settings/reactive-settings.svelte', async (importOriginal) => ({
 import OperationConflictDialog from './OperationConflictDialog.svelte'
 import RollbackConfirmDialog from './RollbackConfirmDialog.svelte'
 import TransferProgressReadout from './TransferProgressReadout.svelte'
+import NewEntryNameField from './NewEntryNameField.svelte'
+import { NewEntryNameCheck } from './new-entry-name-check.svelte'
 
 // These components share one jsdom document, the dialogs portal into
 // `document.body`, and axe resolves ARIA id references document-wide. Clearing
@@ -210,5 +216,49 @@ describe('TransferProgressReadout a11y', () => {
         stall: { stillForSeconds: 45, reason: 'destination', inFlight: 2 },
       }),
     )
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `NewEntryNameField.svelte`, the subtitle plus name
+ * field the New folder and New file dialogs share. Both dialogs are audited
+ * whole in their own directories; this block covers what the field owns: the
+ * labelled input and the error line it points `aria-describedby` at.
+ */
+describe('NewEntryNameField a11y', () => {
+  async function mountField(kind: 'folder' | 'file', errorMessage = ''): Promise<HTMLElement> {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const check = new NewEntryNameCheck({
+      currentPath: '/Users/test/Projects',
+      listingId: 'listing-1',
+      showHiddenFiles: false,
+      getName: () => 'draft',
+    })
+    check.errorMessage = errorMessage
+    mount(NewEntryNameField, {
+      target: host,
+      props: { kind, currentPath: '/Users/test/Projects', check, value: 'draft', onSubmit: () => {} },
+    })
+    await tick()
+    return host
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('the folder variant has no a11y violations', async () => {
+    await expectNoA11yViolations(await mountField('folder'))
+  })
+
+  it('the file variant has no a11y violations', async () => {
+    await expectNoA11yViolations(await mountField('file'))
+  })
+
+  it('an error line the field describes itself by has no a11y violations', async () => {
+    const host = await mountField('folder', 'There is already a folder by this name in this folder.')
+    expect(host.querySelector('input')?.getAttribute('aria-describedby')).toBe('new-folder-error')
+    await expectNoA11yViolations(host)
   })
 })

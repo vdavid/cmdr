@@ -40,6 +40,12 @@ Umbrella-level files:
 - `RollbackConfirmDialog.svelte` + `reversal-wording.ts`: the question every Rollback goes through, the typed variant
   that decides what it says, and the same variant's catalog keys for the running bar (§ below).
 - `mutation-error.ts` + `mutation-error-messages.ts`: the rename / New Folder / New File refusal path (§ below).
+- `NewEntryNameField.svelte` + `new-entry-name-check.svelte.ts`: the "Create <kind> in <dir>" subtitle and name field
+  the New folder and New file dialogs share, and the rune-backed check behind it (sync validators, then the debounced
+  clash lookup against the listing, re-run on every `directory-diff`). The field runs the check's lifecycle; the dialog
+  reads `errorMessage` / `isChecking` and writes `errorMessage` back when the create is refused.
+- `cursor-entry.ts`: `getCursorEntry()`, the backend entry under the pane's cursor with the `..` row shift applied once,
+  so the two dialogs' pre-fills (`getInitialFolderName` / `getInitialFileName`) can't drift.
 
 ## Mutation refusals (rename, New Folder, New File, single trash)
 
