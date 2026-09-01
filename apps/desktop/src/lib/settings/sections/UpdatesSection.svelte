@@ -2,8 +2,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
-    import { getSetting, getSettingDefinition, setSetting } from '$lib/settings'
-    import { onSpecificSettingChange } from '$lib/settings/settings-store'
+    import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -11,7 +10,7 @@
     import { updateState, checkForUpdates } from '$lib/updates/updater.svelte'
     import { formatUpdateStatus } from '$lib/updates/update-status-text'
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
-    import { betaSignup } from '$lib/tauri-commands'
+    import { createBetaEmailSignup } from './beta-email-signup.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -32,61 +31,9 @@
     const statusText = $derived(formatUpdateStatus(updateState))
     const buttonDisabled = $derived(updateState.status !== 'idle')
 
-    // The beta contact email persists to settings on every keystroke (local only). On commit (blur
-    // or Enter) with a valid address, we subscribe it to the beta mailing list via `betaSignup`,
-    // which sends ONLY the email (never an install id), so usage stats can't be tied back to it.
-    let email = $state(getSetting('analytics.email'))
-    onSpecificSettingChange('analytics.email', (value) => {
-        email = value
-    })
-
-    // The inline result under the field. A typed kind, not a parsed message.
-    type SignupFeedback = { kind: 'success' | 'failure' } | null
-    let signupFeedback = $state<SignupFeedback>(null)
-    // The last address we successfully submitted, so re-blurring an unchanged field doesn't resend.
-    let lastSubmittedEmail = $state('')
-    let signupInFlight = $state(false)
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-    function handleEmailInput(event: Event) {
-        const target = event.target as HTMLInputElement
-        email = target.value
-        setSetting('analytics.email', target.value)
-        // Clearing the field only clears the local copy. Unsubscribing from the list happens via
-        // Listmonk's own link, per the field note.
-        if (target.value.trim() === '') {
-            signupFeedback = null
-            lastSubmittedEmail = ''
-        }
-    }
-
-    async function handleEmailCommit() {
-        const trimmed = email.trim()
-        if (trimmed === '' || trimmed === lastSubmittedEmail || !emailPattern.test(trimmed)) {
-            return
-        }
-
-        signupInFlight = true
-        try {
-            const result = await betaSignup(trimmed)
-            if (result.kind === 'subscribed') {
-                signupFeedback = { kind: 'success' }
-                lastSubmittedEmail = trimmed
-            } else {
-                // `invalidEmail` or `softFailure`: a gentle try-again either way.
-                signupFeedback = { kind: 'failure' }
-            }
-        } finally {
-            signupInFlight = false
-        }
-    }
-
-    function handleEmailKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            void handleEmailCommit()
-        }
-    }
+    // The beta contact email field: persists on every keystroke, subscribes on commit. The logic is
+    // shared with the onboarding sheet's `StepBeta`, so both surfaces behave identically.
+    const emailSignup = createBetaEmailSignup()
 
     function handleCheckForUpdates() {
         void checkForUpdates('settings')
@@ -163,19 +110,19 @@
                     <TextInput
                         type="email"
                         placeholder={tString('settings.updates.emailPlaceholder')}
-                        value={email}
-                        oninput={handleEmailInput}
-                        onblur={handleEmailCommit}
-                        onkeydown={handleEmailKeydown}
-                        disabled={signupInFlight}
+                        value={emailSignup.email}
+                        oninput={emailSignup.handleInput}
+                        onblur={emailSignup.handleCommit}
+                        onkeydown={emailSignup.handleKeydown}
+                        disabled={emailSignup.signupInFlight}
                         ariaLabel={emailDef.label}
                     />
                 </SettingRow>
-                {#if signupFeedback?.kind === 'success'}
+                {#if emailSignup.signupFeedback?.kind === 'success'}
                     <p class="signup-feedback success" role="status">
                         {tString('settings.updates.emailConfirmHint')}
                     </p>
-                {:else if signupFeedback?.kind === 'failure'}
+                {:else if emailSignup.signupFeedback?.kind === 'failure'}
                     <p class="signup-feedback failure" role="status">
                         {tString('settings.updates.emailSignupError')}
                     </p>

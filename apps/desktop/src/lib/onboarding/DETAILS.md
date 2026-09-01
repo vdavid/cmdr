@@ -34,6 +34,9 @@ finishes onboarding.
   email/`betaSignup` wiring.
 - **`StepOptional.svelte`**: Step 4 (optional): networking, indexing, updates, MTP toggles bound to existing registry
   settings.
+- **`OnboardingToggleCard.svelte`**: the bordered card of one registry-backed `<SettingSwitch>` (title, description
+  snippet, switch, caption) that `StepBeta`'s analytics opt-out and `StepOptional`'s four toggles render, so the two
+  steps stay pixel-identical. The description snippet is styled by the parent's own `.toggle-desc` / `.toggle-list`.
 - **`onboarding-state.svelte.ts`**: Wizard state machine: step cursor, step-1 variant, step-1 footer mode, step-2 banner
   mode, `openWizard()` / `resumeStepFor()` etc.
 
@@ -248,9 +251,10 @@ asks enough of a first launch. It IS, though, the only place a first launch hear
 install gets the CHANGELOG instead, and there's no in-app notice), so ❌ don't drop the caption without giving new users
 that disclosure somewhere else.
 
-The analytics and email blocks reuse `settings/sections/UpdatesSection.svelte`'s exact wiring (the same `betaSignup`
-call, the same email-pattern + `lastSubmittedEmail` resend guard, the same success/failure copy), so the onboarding page
-and Settings behave identically.
+The analytics and email blocks reuse `settings/sections/UpdatesSection.svelte`'s exact wiring: the email field runs on
+the shared `settings/sections/beta-email-signup.svelte.ts` (`createBetaEmailSignup()`: the `betaSignup` call, the
+email-pattern + `lastSubmittedEmail` resend guard, the typed success/failure feedback), so the onboarding page and
+Settings behave identically.
 
 The footer has two buttons: a secondary **Start using Cmdr!** that finishes onboarding right here (skipping the optional
 step, via `requestWizardComplete()`) and a primary **One more optional setup step** that `nextStep()`s to the Optional

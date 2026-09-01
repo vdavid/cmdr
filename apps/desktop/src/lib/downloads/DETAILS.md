@@ -31,7 +31,7 @@ mechanics, deep-link wiring, and the smoke-test guide.
   `setGlobalGoToLatestBinding` resets `acknowledged` to `false`.
 - **`global-shortcut-description.ts`**: pure builder for the on/off toggle's helper text, tracking the live binding.
 - **`GlobalShortcutRow.svelte`**: the go-to-latest hotkey as a `(global)`-marked row in Keyboard shortcuts. Recorder
-  pill + reset; writes via `setGlobalGoToLatestBinding` then `set_global_go_to_latest_shortcut` for live-apply.
+  pill (`$lib/settings/sections/ShortcutPill.svelte`, shared with the section's rows) + reset; writes via `setGlobalGoToLatestBinding` then `set_global_go_to_latest_shortcut` for live-apply.
 - **`LatestDownloadEmptyToastContent.svelte`**: INFO toast "Your Downloads folder is empty…" with "Go to Downloads".
 - **`LatestDownloadFdaToastContent.svelte`**: INFO toast "Cmdr needs Full Disk Access…" with "Open System Settings".
 

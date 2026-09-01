@@ -209,6 +209,12 @@ sections compose).
 - **`license-section-utils.ts`**: Pure label/status formatters extracted from `LicenseSection` for testability
 - **`ram-gauge-utils.ts`**: Pure stacked-bar segment math for `AiLocalSection`'s memory gauge (used → projected → free,
   plus warning thresholds)
+- **`beta-email-signup.svelte.ts`**: `createBetaEmailSignup()`, the beta contact email field's per-mount state and
+  handlers (persist on keystroke, `betaSignup` on commit of a valid address, typed success/failure feedback), shared by
+  `UpdatesSection` and `$lib/onboarding/StepBeta.svelte`
+- **`ShortcutPill.svelte`**: the shortcut chip of a `KeyboardShortcutsSection` row and of
+  `lib/downloads/GlobalShortcutRow.svelte` (editable button with `editing` / `pendingConflict` / `empty` states and the
+  hover-only × via `remove`, or a `readOnly` span), so the two rows look the same
 - **`keyboard-shortcuts-grouping.ts`**: Pure scope→group logic for `KeyboardShortcutsSection` (one titled group per
   `CommandScope`, fixed order). Tested by the set-equality regression guard
 - **`keyboard-shortcuts-banner.ts`**: Pure conflict-banner classification for `KeyboardShortcutsSection`
@@ -383,7 +389,7 @@ more state than the race is worth. Revisit only if it shows up in practice.
 ## macOS-native and fixed-key rows are read-only
 
 The four `nativeShortcut` commands (`app.quit`/`hide`/`hideOthers`/`showAll`) render read-only: their combos show as
-plain `.shortcut-pill.static` spans (no click-to-edit), with no `+` add, no `×` remove, no reset button, and never the
+plain read-only `ShortcutPill`s (`.shortcut-pill.static` spans) (no click-to-edit), with no `+` add, no `×` remove, no reset button, and never the
 add slot. Each native row also carries a small "macOS" badge (`.readonly-badge`) with a tooltip: "macOS handles this
 shortcut. Cmdr can't change it." (`Show all` has no default binding, so it renders its `(none)` unframed plus the
 badge.) The branch is keyed off `isNativeShortcutCommand(command.id)` from `$lib/shortcuts`. This is honest: AppKit owns

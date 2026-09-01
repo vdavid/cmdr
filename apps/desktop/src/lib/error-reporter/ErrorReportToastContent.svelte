@@ -3,6 +3,7 @@
     import Button from '$lib/ui/Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getLastSentReportId, getLastSentReportKind } from './error-report-toast-state.svelte'
+    import SentReportToastBody from './SentReportToastBody.svelte'
 
     const toastId = 'error-report-sent'
     let copied = $state(false)
@@ -26,47 +27,11 @@
     }
 </script>
 
-<div class="content">
-    <span class="message">
-        {tString(messageKey)}
-        <span class="id-badge">{getLastSentReportId()}</span>
-    </span>
-    <div class="actions">
-        <Button size="mini" variant="secondary" onclick={handleDismiss}
-            >{tString('errorReporter.sentToast.dismiss')}</Button
-        >
-        <Button size="mini" variant="primary" onclick={() => void handleCopy()}>
-            {copied ? tString('errorReporter.sentToast.copied') : tString('errorReporter.sentToast.copyId')}
-        </Button>
-    </div>
-</div>
+{#snippet actions()}
+    <Button size="mini" variant="secondary" onclick={handleDismiss}>{tString('errorReporter.sentToast.dismiss')}</Button>
+    <Button size="mini" variant="primary" onclick={() => void handleCopy()}>
+        {copied ? tString('errorReporter.sentToast.copied') : tString('errorReporter.sentToast.copyId')}
+    </Button>
+{/snippet}
 
-<style>
-    .content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-        font-size: var(--font-size-sm);
-    }
-
-    .message {
-        color: var(--color-text-primary);
-    }
-
-    .id-badge {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-primary);
-        background: var(--color-bg-tertiary);
-        padding: 0 var(--spacing-xs);
-        border-radius: var(--radius-sm);
-        white-space: nowrap;
-    }
-
-    .actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: var(--spacing-sm);
-        margin-top: var(--spacing-md);
-    }
-</style>
+<SentReportToastBody message={tString(messageKey)} reportId={getLastSentReportId()} {actions} />
