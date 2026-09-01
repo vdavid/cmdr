@@ -19,10 +19,10 @@ const classes = [
     // Cyan = stability signal (the yellow accent stays for brand/category). Alpha is the
     // solid, loudest pill; beta is the tinted sibling; stable is quiet; planned is an
     // outline (not filled yet). Light-mode token values keep all four at >= 4.5:1.
-    status === 'alpha' && 'bg-[var(--color-accent2)] text-[var(--color-accent2-contrast)]',
-    status === 'beta' && 'bg-[var(--color-accent2)]/15 text-[var(--color-accent2-text)]',
-    status === 'stable' && 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]',
-    status === 'planned' && 'border border-[var(--color-border)] text-[var(--color-text-secondary)]',
+    status === 'alpha' && 'bg-accent2 text-accent2-contrast',
+    status === 'beta' && 'bg-accent2/15 text-accent2-text',
+    status === 'stable' && 'bg-surface-elevated text-text-secondary',
+    status === 'planned' && 'border border-border text-text-secondary',
 ]
 ---
 

@@ -43,17 +43,17 @@
                     <table class="w-full text-left text-sm">
                         <thead>
                             <tr class="border-b border-border-subtle text-text-tertiary">
-                                <th class="pb-2 pr-4 font-medium">Date</th>
-                                <th class="pb-2 pr-4 font-medium">Status</th>
+                                <th class="pr-4 pb-2 font-medium">Date</th>
+                                <th class="pr-4 pb-2 font-medium">Status</th>
                                 <th class="pb-2 text-right font-medium">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
                             {#each p.transactions.slice(0, 10) as txn (txn.id)}
                                 <tr class="border-b border-border-subtle/50">
-                                    <td class="py-1.5 pr-4 tabular-nums text-text-primary">{txn.createdAt.split('T')[0]}</td>
+                                    <td class="py-1.5 pr-4 text-text-primary tabular-nums">{txn.createdAt.split('T')[0]}</td>
                                     <td class="py-1.5 pr-4 text-text-secondary">{txn.status}</td>
-                                    <td class="py-1.5 text-right tabular-nums text-text-secondary"
+                                    <td class="py-1.5 text-right text-text-secondary tabular-nums"
                                         >{formatCurrency(txn.total, txn.currencyCode)}</td
                                     >
                                 </tr>

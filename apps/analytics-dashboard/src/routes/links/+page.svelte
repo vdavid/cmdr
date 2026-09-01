@@ -58,7 +58,7 @@
         caveat="Unknown codes still pass through as their own source verbatim, so this map only exists to give a short code a friendlier meaning. Edits take up to about 5 minutes to reach visitors, since the public list is cached at the edge."
     />
 
-    <div class="mb-6 rounded-lg border border-border-subtle bg-surface-elevated/50 p-4 text-xs leading-relaxed text-text-secondary">
+    <div class="mb-6 rounded-lg border border-border-subtle bg-surface-elevated/50 p-4 text-xs/relaxed text-text-secondary">
         <p class="mb-1 font-medium text-text-primary">Adding a code before a post</p>
         <ul class="list-disc space-y-1 pl-4">
             <li>
@@ -201,10 +201,10 @@
             <table class="w-full text-left text-sm">
                 <thead>
                     <tr class="border-b border-border-subtle text-text-tertiary">
-                        <th class="pb-2 pr-4 font-medium">Code</th>
-                        <th class="pb-2 pr-4 font-medium">Source</th>
-                        <th class="pb-2 pr-4 font-medium">Medium</th>
-                        <th class="pb-2 pr-4 font-medium">Note</th>
+                        <th class="pr-4 pb-2 font-medium">Code</th>
+                        <th class="pr-4 pb-2 font-medium">Source</th>
+                        <th class="pr-4 pb-2 font-medium">Medium</th>
+                        <th class="pr-4 pb-2 font-medium">Note</th>
                         <th class="pb-2 text-right font-medium">Actions</th>
                     </tr>
                 </thead>

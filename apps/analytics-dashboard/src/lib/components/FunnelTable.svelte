@@ -83,17 +83,17 @@
                                         >(today, partial)</span
                                     >{/if}
                             </td>
-                            <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.visitors)}</td>
-                            <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.downloadClicks)}</td>
-                            <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.serverDownloads)}</td>
-                            <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.newInstalls)}</td>
-                            <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">
+                            <td class="py-1.5 pr-4 text-right text-text-secondary tabular-nums">{funnelCell(row.visitors)}</td>
+                            <td class="py-1.5 pr-4 text-right text-text-secondary tabular-nums">{funnelCell(row.downloadClicks)}</td>
+                            <td class="py-1.5 pr-4 text-right text-text-secondary tabular-nums">{funnelCell(row.serverDownloads)}</td>
+                            <td class="py-1.5 pr-4 text-right text-text-secondary tabular-nums">{funnelCell(row.newInstalls)}</td>
+                            <td class="py-1.5 pr-4 text-right text-text-secondary tabular-nums">
                                 {funnelPercent(row.d7Retention)}{#if row.d7Retained !== null}<span
                                         class="ml-1 text-xs text-text-tertiary">({row.d7Retained})</span
                                     >{/if}
                             </td>
-                            <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">{funnelCell(row.newsletterSignups)}</td>
-                            <td class="py-1.5 text-right tabular-nums text-text-secondary">{funnelCell(row.purchases)}</td>
+                            <td class="py-1.5 pr-4 text-right text-text-secondary tabular-nums">{funnelCell(row.newsletterSignups)}</td>
+                            <td class="py-1.5 text-right text-text-secondary tabular-nums">{funnelCell(row.purchases)}</td>
                         </tr>
                     {/each}
                 </tbody>
@@ -175,7 +175,7 @@
             {:else}
                 <p class="mb-2 text-sm text-text-secondary">
                     Human installs:
-                    <span class="font-semibold tabular-nums text-text-primary">{formatNumber(ua.humanInstalls)}</span>
+                    <span class="font-semibold text-text-primary tabular-nums">{formatNumber(ua.humanInstalls)}</span>
                     <span class="text-text-tertiary">of {formatNumber(ua.total)} raw server downloads</span>
                 </p>
                 <MetricTable

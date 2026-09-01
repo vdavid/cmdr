@@ -91,7 +91,7 @@
                 <div class="space-y-2">
                     {#each fe.feedback.slice(0, 15) as msg (msg.id)}
                         <div class="rounded-lg border border-border-subtle bg-surface-elevated px-3 py-2">
-                            <p class="whitespace-pre-wrap text-sm text-text-primary">{msg.feedback}</p>
+                            <p class="text-sm whitespace-pre-wrap text-text-primary">{msg.feedback}</p>
                             <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
                                 <span class="tabular-nums">{msg.createdAt.split(' ')[0]}</span>
                                 <span>v{msg.appVersion}</span>
@@ -120,9 +120,9 @@
                     <table class="w-full text-left text-sm">
                         <thead>
                             <tr class="border-b border-border-subtle text-text-tertiary">
-                                <th class="pb-2 pr-4 font-medium">ID</th>
-                                <th class="pb-2 pr-4 font-medium">Kind</th>
-                                <th class="pb-2 pr-4 font-medium">Version</th>
+                                <th class="pr-4 pb-2 font-medium">ID</th>
+                                <th class="pr-4 pb-2 font-medium">Kind</th>
+                                <th class="pr-4 pb-2 font-medium">Version</th>
                                 <th class="pb-2 text-right font-medium">Date</th>
                             </tr>
                         </thead>
@@ -131,8 +131,8 @@
                                 <tr class="border-b border-border-subtle/50">
                                     <td class="py-1.5 pr-4 font-mono text-text-primary">{report.id}</td>
                                     <td class="py-1.5 pr-4 text-text-secondary">{report.kind}</td>
-                                    <td class="py-1.5 pr-4 tabular-nums text-text-secondary">{report.appVersion}</td>
-                                    <td class="py-1.5 text-right tabular-nums text-text-tertiary">{report.date}</td>
+                                    <td class="py-1.5 pr-4 text-text-secondary tabular-nums">{report.appVersion}</td>
+                                    <td class="py-1.5 text-right text-text-tertiary tabular-nums">{report.date}</td>
                                 </tr>
                             {/each}
                         </tbody>

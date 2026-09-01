@@ -62,7 +62,7 @@
                 ]}
             />
 
-            <p class="mt-3 text-xs leading-relaxed text-text-tertiary">
+            <p class="mt-3 text-xs/relaxed text-text-tertiary">
                 The low end counts install ids we heard from, so those installs definitely ran Cmdr. The high end counts
                 the separate addresses that checked for updates, which catches people who turned analytics off.
                 {#if unseen !== null}
@@ -117,12 +117,12 @@
             <div class="mt-4 flex gap-6">
                 <div>
                     <p class="text-xs text-text-tertiary">Total activations</p>
-                    <p class="text-lg font-semibold tabular-nums text-text-primary">{formatNumber(lic.totalActivations)}</p>
+                    <p class="text-lg font-semibold text-text-primary tabular-nums">{formatNumber(lic.totalActivations)}</p>
                 </div>
                 {#if lic.activeDevices !== null}
                     <div>
                         <p class="text-xs text-text-tertiary">Active devices</p>
-                        <p class="text-lg font-semibold tabular-nums text-text-primary">{formatNumber(lic.activeDevices)}</p>
+                        <p class="text-lg font-semibold text-text-primary tabular-nums">{formatNumber(lic.activeDevices)}</p>
                     </div>
                 {/if}
             </div>

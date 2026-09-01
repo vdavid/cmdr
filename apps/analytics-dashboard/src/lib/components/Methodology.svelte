@@ -3,4 +3,4 @@
     const { text }: { text: string } = $props()
 </script>
 
-<p class="mt-2 text-xs leading-relaxed text-text-tertiary">{text}</p>
+<p class="mt-2 text-xs/relaxed text-text-tertiary">{text}</p>

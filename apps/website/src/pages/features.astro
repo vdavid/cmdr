@@ -111,46 +111,46 @@ const resolved = cards.map((card) => {
     <main class="mx-auto max-w-6xl px-6 pt-32 pb-24">
         <!-- Hero -->
         <header class="mb-14 text-center">
-            <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl lg:text-5xl">
+            <h1 class="mb-4 text-3xl font-bold tracking-tight text-text-primary md:text-4xl lg:text-5xl">
                 What Cmdr can do
             </h1>
-            <p class="mx-auto max-w-2xl text-lg text-[var(--color-text-secondary)]">
+            <p class="mx-auto max-w-2xl text-lg text-text-secondary">
                 Built in Rust, designed around your keyboard. Cmdr is in open beta: every feature carries an honest
                 status pill, and hovering a pill explains what the status means.
             </p>
         </header>
 
         <!-- Total Commander switcher callout -->
-        <p class="mb-10 text-center text-sm text-[var(--color-text-tertiary)]">
+        <p class="mb-10 text-center text-sm text-text-tertiary">
             Switching from Total Commander? See <a href="/blog/total-commander-for-macos" class="link-muted"
                 >how Cmdr compares</a
             >.
         </p>
 
         <!-- One bento: every feature, one card each -->
-        <div class="grid grid-cols-1 gap-4 [grid-auto-flow:dense] md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-flow-dense grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {
                 resolved.map((card) => (
                     <section
                         id={card.id}
                         class:list={[
-                            'flex scroll-mt-24 flex-col gap-2 rounded-2xl border bg-[var(--color-surface)] p-5',
+                            'flex scroll-mt-24 flex-col gap-2 rounded-2xl border bg-surface p-5',
                             card.flagship && 'md:col-span-2',
                             card.feature.status === 'planned'
-                                ? 'border-dashed border-[var(--color-border)]'
-                                : 'border-[var(--color-border)]',
+                                ? 'border-dashed border-border'
+                                : 'border-border',
                         ]}
                     >
                         <div class="flex items-center gap-2.5">
                             <Icon name={card.icon} size={24} />
-                            <h2 class="text-base font-semibold text-[var(--color-text-primary)]">{card.title}</h2>
+                            <h2 class="text-base font-semibold text-text-primary">{card.title}</h2>
                         </div>
-                        <p class="flex-1 text-sm text-[var(--color-text-secondary)]">
+                        <p class="flex-1 text-sm text-text-secondary">
                             {card.flagship ? card.blurb : card.feature.note}
                         </p>
                         <div class="mt-1 flex flex-wrap items-center gap-2">
                             <span
-                                class="rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-[var(--color-accent-text)]"
+                                class="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-accent-text"
                             >
                                 {card.category}
                             </span>
@@ -160,7 +160,7 @@ const resolved = cards.map((card) => {
                                     href={card.feature.issueUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="text-xs text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                                    class="text-xs text-accent-text underline underline-offset-2 hover:text-accent-hover"
                                 >
                                     Track on GitHub
                                 </a>
@@ -171,32 +171,32 @@ const resolved = cards.map((card) => {
             }
         </div>
 
-        <p class="mt-10 text-center text-sm text-[var(--color-text-tertiary)]">
+        <p class="mt-10 text-center text-sm text-text-tertiary">
             Found something rough that's not listed? <a
                 href="https://github.com/vdavid/cmdr/issues"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                class="text-accent-text underline underline-offset-2 hover:text-accent-hover"
                 >Report an issue</a
             > and it gets fixed faster. For timing, see the <a
                 href="/roadmap"
-                class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                class="text-accent-text underline underline-offset-2 hover:text-accent-hover"
                 >roadmap</a
             >.
         </p>
 
         <!-- Download CTA -->
         <div class="mt-20 text-center">
-            <h2 class="mb-4 text-2xl font-bold text-[var(--color-text-primary)]">
+            <h2 class="mb-4 text-2xl font-bold text-text-primary">
                 Wanna see it for yourself? Get Cmdr now.
             </h2>
-            <p class="mb-8 text-[var(--color-text-secondary)]">
+            <p class="mb-8 text-text-secondary">
                 Free forever for personal use. No signup, no trial period.
             </p>
             <div class="mx-auto max-w-xs">
                 <DownloadButton variant="card" class="w-full" />
             </div>
-            <p class="mt-3 text-sm text-[var(--color-text-tertiary)]">macOS only · Source-available (BSL 1.1)</p>
+            <p class="mt-3 text-sm text-text-tertiary">macOS only · Source-available (BSL 1.1)</p>
         </div>
 
         <!-- Newsletter -->

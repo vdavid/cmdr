@@ -53,7 +53,7 @@
     }
 </script>
 
-<div class="mx-auto max-w-[1800px] px-6 pb-8 pt-14">
+<div class="mx-auto max-w-[1800px] px-6 pt-14 pb-8">
     <!-- Header (sticky): brand, page nav, and the range/day picker -->
     <header
         class="fixed inset-x-0 top-0 z-40 flex items-center justify-between gap-4 border-b border-border bg-surface/90 px-6 py-2 backdrop-blur-sm"
