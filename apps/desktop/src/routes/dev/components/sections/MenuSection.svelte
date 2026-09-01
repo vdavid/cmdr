@@ -1,6 +1,7 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Menu, { type MenuItem } from '$lib/ui/Menu.svelte'
+    import DemoAnchor from '../DemoAnchor.svelte'
 
     let open = $state(false)
     let anchorPoint = $state<{ x: number; y: number } | null>(null)
@@ -36,15 +37,7 @@
             Presentational action menu: rendered at a point, mounted only while open. Click the anchor to open it at the
             cursor; click a row or outside to dismiss.
         </p>
-        <button
-            type="button"
-            class="demo-anchor"
-            onclick={(e) => {
-                openAt(e)
-            }}
-        >
-            Open menu here
-        </button>
+        <DemoAnchor onclick={openAt}>Open menu here</DemoAnchor>
         {#if lastChoice}
             <p class="caption">Last choice: {lastChoice}</p>
         {/if}
@@ -69,14 +62,5 @@
         margin: 0 0 var(--spacing-sm);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
-    }
-
-    .demo-anchor {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-sm);
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        color: var(--color-text-primary);
     }
 </style>
