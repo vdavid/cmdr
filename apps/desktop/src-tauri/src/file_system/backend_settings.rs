@@ -25,7 +25,7 @@ type ConcurrencySource = (BackendName, fn() -> usize);
 /// Where each backend's concurrency setting comes from, keyed by its namespace.
 ///
 /// ❗ **A row is where a backend's number comes from, not a promise that a user
-/// can change it.** Two rows today, and only one of them is a slider:
+/// can change it.** Three rows today, and only one of them is a slider:
 ///
 /// - `"smb"` reads `network.smbConcurrency` (Settings > Advanced, default 10,
 ///   clamped to `1..=32` by `set_smb_concurrency`), whose label and help text
@@ -39,11 +39,29 @@ type ConcurrencySource = (BackendName, fn() -> usize);
 ///   the design rather than something to tune. It still needs a row, because a
 ///   namespace without one silently gets
 ///   [`UNREGISTERED_MAX_CONCURRENT_OPERATIONS`].
+/// - `"adb"` reads the constant 1: the device's `adbd` serializes I/O, so more
+///   sockets buy nothing.
 ///
 /// Adding a backend means adding its row here next to its own accessor, whether
 /// or not the number is ever exposed.
 const MAX_CONCURRENT_OPERATIONS_SOURCES: &[ConcurrencySource] =
-    &[("smb", super::smb_concurrency), ("sftp", sftp_concurrency)];
+    &[
+    ("smb", super::smb_concurrency),
+    ("sftp", sftp_concurrency),
+    ("adb", adb_concurrency),
+];
+
+/// How many operations an ADB volume runs at once.
+///
+/// One, and not a knob: a phone's `adbd` serializes sync-socket I/O anyway, so
+/// a second socket only queues behind the first while holding a transport open.
+/// The row exists so the namespace doesn't silently get
+/// [`UNREGISTERED_MAX_CONCURRENT_OPERATIONS`], which is higher.
+const ADB_MAX_CONCURRENT_OPERATIONS: usize = 1;
+
+fn adb_concurrency() -> usize {
+    ADB_MAX_CONCURRENT_OPERATIONS
+}
 
 /// How many operations an SFTP volume runs at once.
 ///
@@ -137,6 +155,27 @@ mod tests {
         );
         assert_ne!(
             AppBackendSettings.max_concurrent_operations("sftp"),
+            UNREGISTERED_MAX_CONCURRENT_OPERATIONS,
+            "a missing row is invisible at runtime, so this is what says the row is there"
+        );
+
+        set_smb_concurrency(previous);
+    }
+
+    /// ADB's row is a constant of 1: the cautious default would let a second
+    /// socket queue behind the first on a phone whose `adbd` serializes I/O.
+    #[test]
+    fn adb_reads_its_own_constant_and_not_the_smb_slider() {
+        let _turn = one_writer_at_a_time();
+        let previous = smb_concurrency();
+
+        set_smb_concurrency(32);
+        assert_eq!(
+            AppBackendSettings.max_concurrent_operations("adb"),
+            ADB_MAX_CONCURRENT_OPERATIONS
+        );
+        assert_ne!(
+            AppBackendSettings.max_concurrent_operations("adb"),
             UNREGISTERED_MAX_CONCURRENT_OPERATIONS,
             "a missing row is invisible at runtime, so this is what says the row is there"
         );

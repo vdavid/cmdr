@@ -38,6 +38,12 @@ describe('volumeKindFor', () => {
     expect(volumeKindFor('mtp-336592896', undefined, 'mobile_device')).toBe('mtp')
   })
 
+  it('classifies an ADB volume as adb, by id or by fsType, ahead of the mobile_device category', () => {
+    expect(volumeKindFor('adb-pixel-7-a1b2c3d', 'adb', 'mobile_device')).toBe('adb')
+    expect(volumeKindFor('adb-pixel-7-a1b2c3d', undefined, undefined)).toBe('adb')
+    expect(volumeKindFor('some-id', 'adb', 'mobile_device')).toBe('adb')
+  })
+
   it('classifies favorites and synthetic browsers as other', () => {
     expect(volumeKindFor('network', undefined, 'favorite')).toBe('other')
   })

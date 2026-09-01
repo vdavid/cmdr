@@ -40,8 +40,9 @@ Everything re-exports from `mod.rs` (`LocationInfo` / `LocationCategory`, consts
 - **`LocationInfo` enrichment from `VolumeManager` lives only in `enrich_from_volume_registry`**; new enrichment fields
   go there once. It fills `capabilities` and `smb_connection_state`. ❌ Never fill `capabilities` from a discovery
   constructor: discovery knows the mount, the registry knows the backend.
-- **Assemble a published volume list through `volume_listing::complete`**: it holds the order (MTP storages appended,
-  then enrichment, or mobile devices publish with no capabilities) and owns the only `append_mtp_volumes`.
+- **Assemble a published volume list through `volume_listing::complete`**: it holds the order (device volumes
+  appended from every `device_volumes::DeviceVolumeProvider`, MTP and ADB, then enrichment, or mobile devices publish
+  with no capabilities) and owns the only `device_volumes::append_device_volumes` call.
 - **`get_main_volume` / `get_attached_volumes` / `get_volume_space` wrap their bodies in
   `objc2::rc::autoreleasepool`** (they run in `spawn_blocking`, so the per-call objc objects would leak), and
   `start_volume_watcher`'s observer block runs on the main thread: keep it cheap, no blocking I/O.

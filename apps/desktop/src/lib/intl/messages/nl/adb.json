@@ -1,0 +1,31 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
+  "@adb.volumeLabelWithSuffix": {
+    "sourceHash": "98d6c20",
+    "sameAsSourceJustification": "A placeholder plus the tool acronym ADB in parentheses; nothing to translate."
+  },
+  "adb.connect.adbNotInstalled": "Cmdr kon het adb-hulpprogramma niet vinden. Installeer de Android platform-tools of stel het pad in bij Instellingen.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "c29eed4"
+  },
+  "adb.connect.unauthorized": "Accepteer de USB-foutopsporingsprompt op het apparaat en probeer het opnieuw.",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "a7ce70a"
+  },
+  "adb.connect.deviceTooOld": "De Android-versie van dit apparaat is te oud voor de ADB-ondersteuning van Cmdr (Android 7 of nieuwer vereist).",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "c687896"
+  },
+  "adb.connect.deviceGone": "Het apparaat is niet meer verbonden.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ffa8f75"
+  },
+  "adb.connect.serverUnreachable": "Cmdr kon de adb-server niet bereiken.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "3fa5a73"
+  },
+  "adb.connect.timedOut": "Het apparaat antwoordde niet op tijd.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "bfa105c"
+  }
+}

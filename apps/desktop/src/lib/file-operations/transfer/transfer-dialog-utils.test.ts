@@ -124,6 +124,7 @@ describe('containingFolder', () => {
 
   it('answers for a virtual volume, where a clash is just as ambiguous', () => {
     expect(containingFolder('mtp://device/DCIM/Camera/IMG_0001.jpg')).toBe('mtp://device/DCIM/Camera')
+    expect(containingFolder('adb://R58M12345/sdcard/DCIM/IMG_0001.jpg')).toBe('adb://R58M12345/sdcard/DCIM')
   })
 
   it('says nothing rather than guessing at a path it cannot take a parent of', () => {

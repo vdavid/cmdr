@@ -27,6 +27,7 @@
 
 import { getSetting, onSpecificSettingChange, type VolumeTintColor } from '$lib/settings'
 import { isMtpVolumeId } from '$lib/mtp/mtp-path-utils'
+import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
 import type { LocationCategory } from '$lib/file-explorer/types'
 import { hasColorMix } from '$lib/utils/webkit-compat'
 import { mixSrgb } from '$lib/utils/srgb-mix'
@@ -84,7 +85,7 @@ export function cleanupVolumeTints(): void {
   initialized = false
 }
 
-export type VolumeKind = 'local' | 'smb' | 'mtp' | 'other'
+export type VolumeKind = 'local' | 'smb' | 'mtp' | 'adb' | 'other'
 
 /**
  * Pure classifier: pick the tint bucket for a volume.
@@ -92,12 +93,18 @@ export type VolumeKind = 'local' | 'smb' | 'mtp' | 'other'
  * `other` covers favorites and the synthetic "network" browser view, which
  * don't carry a meaningful "this is a real volume" identity. Those panes
  * stay untinted regardless of settings.
+ *
+ * `adb` is checked BEFORE `mtp`: both are `mobile_device` volumes, and the
+ * category alone can't tell the two transports apart. The two share the
+ * `tintMtp` setting (one "mobile device" tint), so the split only matters to
+ * callers that key behavior on the transport.
  */
 export function volumeKindFor(
   volumeId: string,
   fsType: string | undefined,
   category: LocationCategory | undefined,
 ): VolumeKind {
+  if (isAdbVolumeId(volumeId) || fsType === 'adb') return 'adb'
   if (isMtpVolumeId(volumeId) || category === 'mobile_device') return 'mtp'
   if (category === 'network' || fsType === 'smbfs') return 'smb'
   if (
@@ -115,7 +122,7 @@ export function volumeKindFor(
 function tintForKind(kind: VolumeKind): VolumeTintColor {
   if (kind === 'local') return tintLocal
   if (kind === 'smb') return tintSmb
-  if (kind === 'mtp') return tintMtp
+  if (kind === 'mtp' || kind === 'adb') return tintMtp
   return 'none'
 }
 

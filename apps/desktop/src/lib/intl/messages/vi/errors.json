@@ -1613,10 +1613,6 @@
   "@errors.eject.volumeNotFound": {
     "sourceHash": "62a3af2"
   },
-  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr không nhận ra đây là thiết bị nào, nên không ngắt kết nối được.",
-  "@errors.eject.mtpIdMissingDevicePrefix": {
-    "sourceHash": "d26b57b"
-  },
   "errors.eject.notEjectable": "Ổ đĩa này không phải loại có thể tháo, nên nó luôn kết nối.",
   "@errors.eject.notEjectable": {
     "sourceHash": "bb88249"
@@ -1625,8 +1621,8 @@
   "@errors.eject.notAnSmbVolume": {
     "sourceHash": "d49623e"
   },
-  "errors.eject.mtpDisconnectRefused": "Thiết bị đã từ chối đóng kết nối. Hãy rút nó ra khi không còn bận.",
-  "@errors.eject.mtpDisconnectRefused": {
+  "errors.eject.deviceDisconnectRefused": "Thiết bị đã từ chối đóng kết nối. Hãy rút nó ra khi không còn bận.",
+  "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "d49861f"
   },
   "errors.eject.unmountRefused": "Vẫn còn thứ gì đó đang sử dụng ổ đĩa này. Hãy đóng các tệp và ứng dụng đang mở, rồi tháo lại.",

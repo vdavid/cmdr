@@ -56,6 +56,12 @@
       "note": "Fast transfers on most devices, but macOS sometimes claims the device first and some phones need a reconnect."
     },
     {
+      "id": "android-adb",
+      "name": "Android devices (ADB)",
+      "status": "alpha",
+      "note": "The device's real filesystem over the adb tool, for developers. Needs Android platform-tools installed and USB debugging on; not yet tested on a wide range of phones."
+    },
+    {
       "id": "git-browser",
       "name": "Git browser",
       "status": "beta",

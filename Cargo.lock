@@ -1357,6 +1357,7 @@ dependencies = [
  "bytes",
  "chrono",
  "cmdr",
+ "cmdr-adb",
  "cmdr-archive",
  "cmdr-fs",
  "cmdr-index",
@@ -1447,6 +1448,19 @@ dependencies = [
  "zbus",
  "zbus-secret-service-keyring-store",
  "zip 8.6.0",
+]
+
+[[package]]
+name = "cmdr-adb"
+version = "0.0.0"
+dependencies = [
+ "cmdr-adb",
+ "cmdr-fs",
+ "log",
+ "serde",
+ "specta",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]
@@ -6077,9 +6091,9 @@ dependencies = [
 
 [[package]]
 name = "mtp-rs"
-version = "0.30.0"
+version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "101fdd60ac8bf39f698f257555f3920ec3ee0971e6fd05f73ec5d8d44d0f3b60"
+checksum = "5512a899d3ad31f804bd0f85108ad7256e6f5414030ee3c247c4ba2dffa116b0"
 dependencies = [
  "async-trait",
  "bytes",

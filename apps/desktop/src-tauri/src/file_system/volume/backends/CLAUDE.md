@@ -10,6 +10,8 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
   with the trait in `cmdr-fs`. MTP splits by concern the way both remote backends do: `volume_impl` is the whole
   `impl Volume`, with `streams`, `mapping`, and `scan` beside it (SMB carries the pattern further; see
   `crates/cmdr-smb/CLAUDE.md`).
+- The Android-over-ADB backend is `crates/cmdr-adb/` (its `CLAUDE.md` has the must-knows); the app-side tracker,
+  provider, and connect wiring live in `src-tauri/src/adb/`, not here.
 
 ## SMB is a crate now
 

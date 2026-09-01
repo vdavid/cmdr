@@ -46,6 +46,7 @@ testing = [
   "cmdr-index/testing",
   "cmdr-smb/testing",
   "cmdr-sftp/testing",
+  "cmdr-adb/testing",
 ]
 
 [[bin]]
@@ -83,6 +84,9 @@ cmdr-smb = { path = "../../../crates/cmdr-smb" }
 # `cargo check -p cmdr-sftp` verifies it without building the app. The trusted-key
 # store, the secret store, the server list, and every command stay here.
 cmdr-sftp = { path = "../../../crates/cmdr-sftp" }
+# The Android-over-ADB backend: a real-filesystem `Volume` per device behind the
+# ADB server, beside MTP. No `tauri`, no user-facing words; `docs/specs/android-adb-backend.md`.
+cmdr-adb = { path = "../../../crates/cmdr-adb" }
 # The index: the file index, the media index, and folder importance, behind one
 # `Index` handle. Tauri-free by design and enforced — the app is its host, which
 # is why every seam it needs is answered in `src/index_host.rs` and nowhere else.
@@ -234,7 +238,7 @@ mime_guess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation.
-mtp-rs = "0.30.0"
+mtp-rs = "0.32.0"
 bytes = "1"
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
 mdns-sd = { version = "0.20", features = ["logging"] }

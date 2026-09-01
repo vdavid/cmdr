@@ -207,6 +207,13 @@ wiring. Neither module could then be understood or moved alone, and MTP can't be
 app. This is the shape FTP, S3, and SFTP should copy: **the wiring knows the backend, the backend never knows the
 registry.**
 
+**The same module is also the listing's device seam.** `volume_wiring.rs` registers `MtpDeviceProvider`, MTP's
+`device_volumes::DeviceVolumeProvider`, at startup beside the registrar: `volume_listing::complete` folds over every
+registered provider rather than naming MTP, and eject and path resolution ask the registry which provider owns an id.
+`entries()` answers from `KNOWN_DEVICES`, never from USB, and `check_for_device_changes()` calls
+`device_volumes::notify_devices_changed("mtp")` on every diff. ADB (`adb/`) is the second provider; the seam's contract
+is the module doc of `device_volumes.rs`.
+
 **Gotcha: the attach must complete before the event loop starts, and the hook must not break that.** `connect()`
 attaches every storage and only then calls `start_event_loop`. Everything the loop reaches routes through the volume
 registry (open listings are looked up by volume id; the per-volume index routes by device id), so an event that arrived

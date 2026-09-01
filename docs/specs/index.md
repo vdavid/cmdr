@@ -10,6 +10,15 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-01 `android-adb-backend.md` - **MTP shows the tree a phone chooses to expose; developers want the real
+      one.** `crates/cmdr-adb` is a device-anchored `Volume` over the ADB server's sync service and `shell,v2`, beside
+      MTP rather than replacing it, and the development adds the seam MTP never had: `device_volumes.rs`, a provider
+      registry the volume list folds over, with `host:track-devices` as the first push-channel hotplug. The crate,
+      the seam, and the app wiring are documented beside the code (`crates/cmdr-adb/DETAILS.md`, `adb/DETAILS.md`).
+      What finishing costs: a real-device pass (authorize prompt, `unauthorized` → `device` mid-session, a 2 GB
+      transfer, a `/data` listing on a non-rooted phone), then three deliberate deferrals (`sendrecv_v2` compression
+      off until measured, wireless pairing left to the server, a settings switch for the `adb` binary path).
+
 - [ ] 2026-08-29 `unify-rollback-plan.md` - **Cmdr still carries three rollback implementations, and nobody has decided
       whether that stays.** The journal-driven engine (the safest, since it rechecks every item against its recorded
       snapshot before touching it) now runs behind a history-dialog button with progress, pause, and mid-file cancel;

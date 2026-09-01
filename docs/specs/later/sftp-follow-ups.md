@@ -13,7 +13,8 @@ discoverable by someone already reading the crate.
 nothing puts it on screen. `volume_listing::complete` has no SFTP arm, so the sidebar never shows one, and
 `resolve_path_volume` / `resolve_location` don't answer for a remote path — an SFTP path is a plain server-side absolute
 path with no scheme in front, spelled exactly like a local one, so whatever the sidebar decides about identity, path
-resolution has to agree with it.
+resolution has to agree with it. The device-provider seam the ADB development added (`device_volumes.rs`) is not the
+answer: SFTP is not device-anchored, so the sidebar arm stays a separate design question.
 
 **Why it isn't specced here**: David designs and builds this, and the build guide already exists as one file —
 `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend" carries every command, the connect outcomes a sign-in UI

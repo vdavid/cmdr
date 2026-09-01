@@ -1,0 +1,31 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
+  "@adb.volumeLabelWithSuffix": {
+    "sourceHash": "98d6c20",
+    "sameAsSourceJustification": "A placeholder plus the tool acronym ADB in parentheses; nothing to translate."
+  },
+  "adb.connect.adbNotInstalled": "Cmdr không tìm thấy công cụ adb. Hãy cài Android platform-tools hoặc đặt đường dẫn trong Cài đặt.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "c29eed4"
+  },
+  "adb.connect.unauthorized": "Hãy chấp nhận lời nhắc gỡ lỗi USB trên thiết bị rồi thử lại.",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "a7ce70a"
+  },
+  "adb.connect.deviceTooOld": "Phiên bản Android của thiết bị này quá cũ so với hỗ trợ ADB của Cmdr (cần Android 7 trở lên).",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "c687896"
+  },
+  "adb.connect.deviceGone": "Thiết bị không còn được kết nối.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ffa8f75"
+  },
+  "adb.connect.serverUnreachable": "Cmdr không kết nối được với máy chủ adb.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "3fa5a73"
+  },
+  "adb.connect.timedOut": "Thiết bị không phản hồi kịp thời.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "bfa105c"
+  }
+}

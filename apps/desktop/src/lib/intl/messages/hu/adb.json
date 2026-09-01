@@ -1,0 +1,31 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
+  "@adb.volumeLabelWithSuffix": {
+    "sourceHash": "98d6c20",
+    "sameAsSourceJustification": "A placeholder plus the tool acronym ADB in parentheses; nothing to translate."
+  },
+  "adb.connect.adbNotInstalled": "A Cmdr nem találja az adb eszközt. Telepítsd az Android platform-tools csomagot, vagy add meg az útvonalát a Beállításokban.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "c29eed4"
+  },
+  "adb.connect.unauthorized": "Fogadd el az USB-hibakeresési kérést az eszközön, majd próbáld újra.",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "a7ce70a"
+  },
+  "adb.connect.deviceTooOld": "Az eszköz Android-verziója túl régi a Cmdr ADB-támogatásához (Android 7 vagy újabb kell).",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "c687896"
+  },
+  "adb.connect.deviceGone": "Az eszköz már nincs csatlakoztatva.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ffa8f75"
+  },
+  "adb.connect.serverUnreachable": "A Cmdr nem éri el az adb-kiszolgálót.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "3fa5a73"
+  },
+  "adb.connect.timedOut": "Az eszköz nem válaszolt időben.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "bfa105c"
+  }
+}

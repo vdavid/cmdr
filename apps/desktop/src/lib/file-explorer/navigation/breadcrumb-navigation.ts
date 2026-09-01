@@ -9,6 +9,7 @@
  *   - `~`-rooted: the base is the home dir (`~` → `userHomePath`).
  *   - non-root volume: the base is the volume path (display is volume-relative).
  *   - MTP: rebuild the `mtp://device/storage/...` URL from the parsed current path.
+ *   - ADB: rebuild the `adb://serial/...` URL from the parsed current path.
  *   - root volume, absolute: no base; the leading `/` comes from the root marker.
  *
  * The last segment (the current folder) and the empty leading root marker are
@@ -17,10 +18,11 @@
  */
 
 import { isMtpVolumeId, parseMtpPath, constructMtpPath } from '$lib/mtp'
+import { constructAdbPath, isAdbVolumeId, parseAdbPath } from '$lib/adb/adb-path-utils'
 import type { PathSegment } from './path-segments'
 
 export interface BreadcrumbNavContext {
-  /** The pane's volume id (drives the MTP branch). */
+  /** The pane's volume id (drives the MTP and ADB branches). */
   volumeId: string
   /** The volume's root path (`/` for the root volume, `mtp://…`/`smb://…` for virtual). */
   volumePath: string
@@ -55,6 +57,12 @@ function targetFor(segments: PathSegment[], index: number, ctx: BreadcrumbNavCon
     const parsed = parseMtpPath(ctx.currentPath)
     if (!parsed) return null
     return constructMtpPath(parsed.deviceId, parsed.storageId, innerPath(segments, index))
+  }
+
+  if (isAdbVolumeId(ctx.volumeId)) {
+    const parsed = parseAdbPath(ctx.currentPath)
+    if (!parsed) return null
+    return constructAdbPath(parsed.serial, innerPath(segments, index))
   }
 
   const first = segments[0]?.text

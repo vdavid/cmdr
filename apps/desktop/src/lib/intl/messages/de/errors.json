@@ -1613,10 +1613,6 @@
   "@errors.eject.volumeNotFound": {
     "sourceHash": "62a3af2"
   },
-  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr konnte nicht erkennen, welches Gerät das ist, und kann es deshalb nicht trennen.",
-  "@errors.eject.mtpIdMissingDevicePrefix": {
-    "sourceHash": "d26b57b"
-  },
   "errors.eject.notEjectable": "Dieses Laufwerk ist kein Wechselmedium, es bleibt also verbunden.",
   "@errors.eject.notEjectable": {
     "sourceHash": "bb88249"
@@ -1625,8 +1621,8 @@
   "@errors.eject.notAnSmbVolume": {
     "sourceHash": "d49623e"
   },
-  "errors.eject.mtpDisconnectRefused": "Das Gerät wollte seine Verbindung nicht schließen. Zieh es ab, sobald es nicht mehr beschäftigt ist.",
-  "@errors.eject.mtpDisconnectRefused": {
+  "errors.eject.deviceDisconnectRefused": "Das Gerät wollte seine Verbindung nicht schließen. Zieh es ab, sobald es nicht mehr beschäftigt ist.",
+  "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "d49861f"
   },
   "errors.eject.unmountRefused": "Dieses Laufwerk ist noch in Verwendung. Schließe offene Dateien und beende laufende Apps, dann wirf es erneut aus.",

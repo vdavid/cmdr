@@ -1,0 +1,31 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
+  "@adb.volumeLabelWithSuffix": {
+    "sourceHash": "98d6c20",
+    "sameAsSourceJustification": "A placeholder plus the tool acronym ADB in parentheses; nothing to translate."
+  },
+  "adb.connect.adbNotInstalled": "Cmdr no encontró la herramienta adb. Instala las platform-tools de Android o indica la ruta en Ajustes.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "c29eed4"
+  },
+  "adb.connect.unauthorized": "Acepta la solicitud de depuración USB en el dispositivo y vuelve a intentarlo.",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "a7ce70a"
+  },
+  "adb.connect.deviceTooOld": "La versión de Android de este dispositivo es demasiado antigua para la compatibilidad ADB de Cmdr (necesita Android 7 o posterior).",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "c687896"
+  },
+  "adb.connect.deviceGone": "El dispositivo ya no está conectado.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ffa8f75"
+  },
+  "adb.connect.serverUnreachable": "Cmdr no pudo conectar con el servidor adb.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "3fa5a73"
+  },
+  "adb.connect.timedOut": "El dispositivo no respondió a tiempo.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "bfa105c"
+  }
+}

@@ -11,6 +11,7 @@
 import { showBreadcrumbContextMenu } from '$lib/tauri-commands'
 import type { VolumeInfo } from '../types'
 import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
+import { getAdbDisplayPath, isAdbVolumeId } from '$lib/adb/adb-path-utils'
 import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
 import { toDisplayShortcut } from '$lib/shortcuts/key-capture'
 import { isVolumeEjectable } from '../navigation/eject-predicate'
@@ -32,7 +33,7 @@ export interface BreadcrumbDisplayPathInput {
 /**
  * The path shown after the volume name. On the root volume the home prefix
  * becomes `~`; on any other volume the path is shown relative to its mount
- * point; MTP has its own display form.
+ * point; MTP and ADB have their own display forms.
  *
  * R3 B6: the search-results pane shows the snapshot's friendly label (the AI
  * title / filename pattern / regex pattern) AS the path. The volume selector
@@ -48,6 +49,7 @@ export function breadcrumbDisplayPath(input: BreadcrumbDisplayPathInput): string
     return input.searchLabel ?? 'Search'
   }
   if (isMtpVolumeId(volumeId)) return getMtpDisplayPath(currentPath)
+  if (isAdbVolumeId(volumeId)) return getAdbDisplayPath(currentPath)
 
   // For non-root volumes, strip the volume path prefix
   if (volumePath !== '/') {

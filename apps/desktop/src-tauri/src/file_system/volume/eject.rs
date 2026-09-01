@@ -1,9 +1,11 @@
-//! Volume eject: unmounts ejectable volumes (USB, SD, DMG, SMB, MTP).
+//! Volume eject: unmounts ejectable volumes (USB, SD, DMG, SMB, MTP, ADB).
 //!
 //! Dispatches by volume kind:
-//! - **MTP device** (volume ID shaped `{device_id}:{storage_id}`): closes the
-//!   MTP session via `mtp::connection_manager().disconnect`. The
-//!   `mtp-device-disconnected` event removes the volume from the picker.
+//! - **Device volume** (a `device_volumes::DeviceVolumeProvider` owns the id):
+//!   hands the eject to that provider. MTP closes the device session and the
+//!   `mtp-device-disconnected` event removes its storages from the picker; ADB
+//!   has nothing to detach (`adb` has no per-client detach), so it retires the
+//!   volume and hides the device until it re-enumerates.
 //! - **SMB volume** (registered `SmbVolume` in `VolumeManager`): runs `diskutil
 //!   unmount`. FSEvents fires `NSWorkspaceDidUnmount`, which calls
 //!   `Volume::on_unmount` (drops the smb2 session, stops the watcher) and the
@@ -28,8 +30,8 @@ pub enum EjectAction {
     DiskutilEject,
     /// Run `diskutil unmount <mount_path>`. SMB: FSEvents handles smb2 teardown.
     DiskutilUnmount,
-    /// Close the MTP session for this device.
-    MtpDisconnect { device_id: String },
+    /// Hand the eject to the device provider that owns the volume.
+    DeviceDisconnect { provider: &'static str, volume_id: String },
 }
 
 /// Reasons `decide_eject_action` can't pick an action. Kept as a typed enum so
@@ -37,10 +39,7 @@ pub enum EjectAction {
 /// matching a free-form message.
 #[derive(Debug, PartialEq, Eq)]
 pub enum EjectDecisionError {
-    /// MTP volume id is shaped wrong: missing the `{device_id}:{storage_id}`
-    /// separator. Carries the bad id verbatim for diagnostics / UI rendering.
-    MtpIdMissingDevicePrefix { volume_id: String },
-    /// Volume can't be ejected (not SMB, not MTP, and NSURL/`/sys/block`
+    /// Volume can't be ejected (not SMB, not a device, and NSURL/`/sys/block`
     /// reports `is_ejectable = false`). Typical for the boot volume or other
     /// internal disks.
     NotEjectable { volume_id: String },
@@ -49,9 +48,6 @@ pub enum EjectDecisionError {
 impl std::fmt::Display for EjectDecisionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::MtpIdMissingDevicePrefix { volume_id } => {
-                write!(f, "MTP volume id {} is missing a device prefix", volume_id)
-            }
             Self::NotEjectable { volume_id } => {
                 write!(f, "Volume {} isn't ejectable", volume_id)
             }
@@ -67,27 +63,23 @@ impl std::error::Error for EjectDecisionError {}
 pub struct EjectContext<'a> {
     pub volume_id: &'a str,
     /// NSURL-derived ejectability for physical/DMG volumes. Always `false` for
-    /// SMB and MTP (those route via their own branches).
+    /// SMB and device volumes (those route via their own branches).
     pub is_ejectable: bool,
     /// True if this is an SMB volume (any state: Direct, OsMount, Disconnected).
     pub is_smb: bool,
-    /// True if this is an MTP/mobile-device volume.
-    pub is_mtp: bool,
+    /// The device provider (`"mtp"`, `"adb"`) that owns this volume, if one does.
+    pub device_provider: Option<&'static str>,
 }
 
 /// Decides what to do for a given volume. Pure function; the impure parts
-/// (looking up the volume, running `diskutil`, calling MTP disconnect) live
-/// in [`eject`].
+/// (looking up the volume, running `diskutil`, calling the provider's eject)
+/// live in [`eject`].
 pub fn decide_eject_action(ctx: &EjectContext) -> Result<EjectAction, EjectDecisionError> {
-    if ctx.is_mtp {
-        // rsplit-based parse (identity) so a `:` inside a serial-based device id
-        // doesn't truncate it: the storage id is the trailing numeric component.
-        let device_id = cmdr_fs::volume::mtp_ids::device_id_of_volume(ctx.volume_id)
-            .map(str::to_string)
-            .ok_or_else(|| EjectDecisionError::MtpIdMissingDevicePrefix {
-                volume_id: ctx.volume_id.to_string(),
-            })?;
-        return Ok(EjectAction::MtpDisconnect { device_id });
+    if let Some(provider) = ctx.device_provider {
+        return Ok(EjectAction::DeviceDisconnect {
+            provider,
+            volume_id: ctx.volume_id.to_string(),
+        });
     }
     if ctx.is_smb {
         return Ok(EjectAction::DiskutilUnmount);
@@ -123,13 +115,7 @@ pub enum EjectError {
         /// The id that no longer resolves.
         volume_id: String,
     },
-    /// The MTP volume id is shaped wrong: missing the `{device_id}:{storage_id}`
-    /// separator.
-    MtpIdMissingDevicePrefix {
-        /// The malformed id, verbatim.
-        volume_id: String,
-    },
-    /// The volume can't be ejected at all: not SMB, not MTP, and the OS reports
+    /// The volume can't be ejected at all: not SMB, not a device, and the OS reports
     /// it as fixed. Typical for the boot volume and other internal disks.
     NotEjectable {
         /// The volume asked about.
@@ -142,9 +128,12 @@ pub enum EjectError {
         /// The volume asked about.
         volume_id: String,
     },
-    /// The device wouldn't close its MTP session.
-    MtpDisconnectRefused {
-        /// What the MTP layer reported, for the log and the details line.
+    /// The device provider wouldn't retire the volume (MTP: the device wouldn't
+    /// close its session).
+    DeviceDisconnectRefused {
+        /// Which provider refused (`"mtp"`, `"adb"`).
+        provider: String,
+        /// What the provider reported, for the log and the details line.
         detail: String,
     },
     /// `diskutil` / `umount` turned the unmount down. The overwhelmingly common
@@ -171,12 +160,11 @@ impl std::fmt::Display for EjectError {
         match self {
             Self::Busy => f.write_str("operations are in progress on this device"),
             Self::VolumeNotFound { volume_id } => write!(f, "volume not found: {volume_id}"),
-            Self::MtpIdMissingDevicePrefix { volume_id } => {
-                write!(f, "MTP volume id {volume_id} is missing a device prefix")
-            }
             Self::NotEjectable { volume_id } => write!(f, "volume {volume_id} isn't ejectable"),
             Self::NotAnSmbVolume { volume_id } => write!(f, "volume {volume_id} isn't an SMB volume"),
-            Self::MtpDisconnectRefused { detail } => write!(f, "MTP disconnect refused: {detail}"),
+            Self::DeviceDisconnectRefused { provider, detail } => {
+                write!(f, "{provider} disconnect refused: {detail}")
+            }
             Self::UnmountRefused { detail } => write!(f, "unmount refused: {detail}"),
             Self::TimedOut => f.write_str("timed out"),
             Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),
@@ -189,7 +177,6 @@ impl std::error::Error for EjectError {}
 impl From<EjectDecisionError> for EjectError {
     fn from(error: EjectDecisionError) -> Self {
         match error {
-            EjectDecisionError::MtpIdMissingDevicePrefix { volume_id } => Self::MtpIdMissingDevicePrefix { volume_id },
             EjectDecisionError::NotEjectable { volume_id } => Self::NotEjectable { volume_id },
         }
     }
@@ -213,11 +200,12 @@ pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
         return Err(EjectError::Busy);
     }
 
-    // MTP volumes use ID format `{device_id}:{storage_id}` and aren't
-    // registered in VolumeManager; check the live MTP device list first.
-    let is_mtp = is_mtp_volume_id(volume_id).await;
+    // A device provider answers for its own volumes from live state, so an id
+    // that merely looks device-shaped can't route an eject at nothing. Asked
+    // first: MTP storages aren't registered under a mount path at all.
+    let provider = crate::device_volumes::provider_for_volume_id(volume_id).await;
 
-    let (mount_path, is_smb) = if is_mtp {
+    let (mount_path, is_smb) = if provider.is_some() {
         (String::new(), false)
     } else {
         let volume = get_volume_manager()
@@ -233,7 +221,7 @@ pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
     // For physical volumes, ejectability comes from NSURL (macOS) /
     // `/sys/block/*/removable` (Linux). Look it up via the fast statfs-based
     // resolver instead of enumerating all volumes.
-    let is_ejectable = if is_mtp || is_smb {
+    let is_ejectable = if provider.is_some() || is_smb {
         false
     } else {
         resolve_is_ejectable(&mount_path).await
@@ -243,15 +231,26 @@ pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
         volume_id,
         is_ejectable,
         is_smb,
-        is_mtp,
+        device_provider: provider.as_ref().map(|p| p.id()),
     })
     .map_err(EjectError::from)?;
 
     match action {
-        EjectAction::MtpDisconnect { device_id } => mtp_disconnect(&device_id).await,
+        EjectAction::DeviceDisconnect { provider: id, volume_id } => {
+            let provider = provider.ok_or_else(|| EjectError::VolumeNotFound {
+                volume_id: volume_id.clone(),
+            })?;
+            provider
+                .eject(&volume_id)
+                .await
+                .map_err(|detail| EjectError::DeviceDisconnectRefused {
+                    provider: id.to_string(),
+                    detail,
+                })
+        }
         // For disk volumes, stop the index BEFORE the unmount (the wedge-safe point).
-        // MTP tears its index down through the disconnect hook, so it isn't stopped
-        // here.
+        // A device provider tears its index down through its own disconnect hook,
+        // so it isn't stopped here.
         EjectAction::DiskutilUnmount => {
             stop_index_then_unmount(volume_id, || diskutil_run("unmount", &mount_path)).await
         }
@@ -355,19 +354,6 @@ pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
     Ok(())
 }
 
-/// MTP volume IDs are shaped `{device_id}:{storage_id}` (see
-/// `commands/volumes.rs::append_mtp_volumes`). Confirm against the live device
-/// list so we don't false-positive on any future ID containing a colon.
-async fn is_mtp_volume_id(volume_id: &str) -> bool {
-    let Some(device_id) = cmdr_fs::volume::mtp_ids::device_id_of_volume(volume_id) else {
-        return false;
-    };
-    crate::mtp::connection_manager()
-        .get_device_info(device_id)
-        .await
-        .is_some()
-}
-
 /// Looks up `is_ejectable` for the volume at `mount_path` via the per-path
 /// statfs/NSURL fast resolver. Avoids the full volume enumeration.
 async fn resolve_is_ejectable(mount_path: &str) -> bool {
@@ -395,17 +381,6 @@ async fn resolve_is_ejectable(mount_path: &str) -> bool {
         .await
         .unwrap_or(false)
     }
-}
-
-async fn mtp_disconnect(device_id: &str) -> Result<(), EjectError> {
-    crate::mtp::connection_manager()
-        .disconnect(
-            device_id,
-            None::<&tauri::AppHandle>,
-            crate::mtp::MtpDisconnectReason::User,
-        )
-        .await
-        .map_err(|e| EjectError::MtpDisconnectRefused { detail: e.to_string() })
 }
 
 /// Runs a blocking eject subprocess with a 15 s timeout, mapping the outcome to
@@ -470,54 +445,37 @@ mod tests {
     use super::*;
 
     #[test]
-    fn mtp_volume_routes_to_mtp_disconnect() {
-        let ctx = EjectContext {
-            volume_id: "mtp-336592896:65537",
-            is_ejectable: false,
-            is_smb: false,
-            is_mtp: true,
-        };
-        assert_eq!(
-            decide_eject_action(&ctx).unwrap(),
-            EjectAction::MtpDisconnect {
-                device_id: "mtp-336592896".to_string()
-            }
-        );
-    }
-
-    #[test]
-    fn mtp_volume_with_colon_in_serial_keeps_the_full_device_id() {
-        // Regression for the identity fix: a serial-based device id can contain a
-        // `:`. The rsplit-based parse must keep the WHOLE device id, splitting
-        // only on the trailing numeric storage id.
+    fn device_volume_routes_to_its_provider() {
+        // The id is handed over whole: the provider owns its parse (MTP splits
+        // `{device_id}:{storage_id}` on the LAST colon, so a serial with `:` in
+        // it survives).
         let ctx = EjectContext {
             volume_id: "mtp-AA:BB:CC:65537",
             is_ejectable: false,
             is_smb: false,
-            is_mtp: true,
+            device_provider: Some("mtp"),
         };
         assert_eq!(
             decide_eject_action(&ctx).unwrap(),
-            EjectAction::MtpDisconnect {
-                device_id: "mtp-AA:BB:CC".to_string()
+            EjectAction::DeviceDisconnect {
+                provider: "mtp",
+                volume_id: "mtp-AA:BB:CC:65537".to_string()
             }
         );
     }
 
     #[test]
-    fn mtp_without_colon_errors() {
+    fn device_provider_wins_over_every_other_flag() {
         let ctx = EjectContext {
-            volume_id: "no-colon-id",
-            is_ejectable: false,
-            is_smb: false,
-            is_mtp: true,
+            volume_id: "adb-serial",
+            is_ejectable: true,
+            is_smb: true,
+            device_provider: Some("adb"),
         };
-        assert_eq!(
-            decide_eject_action(&ctx).unwrap_err(),
-            EjectDecisionError::MtpIdMissingDevicePrefix {
-                volume_id: "no-colon-id".to_string(),
-            }
-        );
+        assert!(matches!(
+            decide_eject_action(&ctx).unwrap(),
+            EjectAction::DeviceDisconnect { provider: "adb", .. }
+        ));
     }
 
     #[test]
@@ -526,7 +484,7 @@ mod tests {
             volume_id: "smb-naspolya-445-public",
             is_ejectable: false,
             is_smb: true,
-            is_mtp: false,
+            device_provider: None,
         };
         assert_eq!(decide_eject_action(&ctx).unwrap(), EjectAction::DiskutilUnmount);
     }
@@ -537,7 +495,7 @@ mod tests {
             volume_id: "volumes-usb-drive",
             is_ejectable: true,
             is_smb: false,
-            is_mtp: false,
+            device_provider: None,
         };
         assert_eq!(decide_eject_action(&ctx).unwrap(), EjectAction::DiskutilEject);
     }
@@ -548,7 +506,7 @@ mod tests {
             volume_id: "root",
             is_ejectable: false,
             is_smb: false,
-            is_mtp: false,
+            device_provider: None,
         };
         assert_eq!(
             decide_eject_action(&ctx).unwrap_err(),
@@ -604,7 +562,7 @@ mod tests {
             volume_id: "smb-foo",
             is_ejectable: true,
             is_smb: true,
-            is_mtp: false,
+            device_provider: None,
         };
         assert_eq!(decide_eject_action(&ctx).unwrap(), EjectAction::DiskutilUnmount);
     }
@@ -652,10 +610,14 @@ mod wire_tests {
         .into();
         assert!(matches!(err, EjectError::NotEjectable { ref volume_id } if volume_id == "root"));
 
-        let err: EjectError = EjectDecisionError::MtpIdMissingDevicePrefix {
-            volume_id: "no-colon".to_string(),
-        }
-        .into();
-        assert!(matches!(err, EjectError::MtpIdMissingDevicePrefix { .. }));
+        let json = serde_json::to_value(EjectError::DeviceDisconnectRefused {
+            provider: "mtp".to_string(),
+            detail: "PTP CloseSession timed out".to_string(),
+        })
+        .unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({ "type": "deviceDisconnectRefused", "provider": "mtp", "detail": "PTP CloseSession timed out" })
+        );
     }
 }

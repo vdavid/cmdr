@@ -2247,7 +2247,7 @@
     },
     {
       "name": "mtp-rs",
-      "version": "0.30.0",
+      "version": "0.32.0",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/vdavid/mtp-rs"
     },
@@ -4559,7 +4559,7 @@
     },
     {
       "name": "@typescript-eslint/types",
-      "version": "8.67.0",
+      "version": "8.68.0",
       "license": "MIT",
       "url": "https://typescript-eslint.io"
     },

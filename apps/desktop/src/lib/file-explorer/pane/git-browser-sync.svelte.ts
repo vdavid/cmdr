@@ -16,6 +16,7 @@
 import { lookupRepoInfo, subscribeToRepo, unsubscribeFromRepo, type RepoInfo } from '../git/git-store.svelte'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
 import { isMtpVolumeId } from '$lib/mtp'
+import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
 import { pathInsideArchive } from './volume-capabilities'
 
 export interface GitBrowserSyncDeps {
@@ -83,6 +84,7 @@ export function createGitBrowserSync(deps: GitBrowserSyncDeps): GitBrowserSync {
     if (
       !gitFeaturesNeeded ||
       isMtpVolumeId(deps.getVolumeId()) ||
+      isAdbVolumeId(deps.getVolumeId()) || // same reason: git can't run over the ADB transport
       !deps.getHasBackendListing() ||
       pathInsideArchive(path)
     ) {

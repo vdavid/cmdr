@@ -1,0 +1,30 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName}（ADB）",
+  "@adb.volumeLabelWithSuffix": {
+    "sourceHash": "98d6c20"
+  },
+  "adb.connect.adbNotInstalled": "Cmdr 找不到 adb 工具。請安裝 Android platform-tools，或在設定中指定路徑。",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "c29eed4"
+  },
+  "adb.connect.unauthorized": "請在裝置上接受 USB 偵錯提示，然後再試一次。",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "a7ce70a"
+  },
+  "adb.connect.deviceTooOld": "此裝置的 Android 版本過舊，Cmdr 的 ADB 支援無法使用（需要 Android 7 或更新版本）。",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "c687896"
+  },
+  "adb.connect.deviceGone": "裝置已中斷連線。",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "ffa8f75"
+  },
+  "adb.connect.serverUnreachable": "Cmdr 無法連線到 adb 伺服器。",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "3fa5a73"
+  },
+  "adb.connect.timedOut": "裝置未及時回應。",
+  "@adb.connect.timedOut": {
+    "sourceHash": "bfa105c"
+  }
+}

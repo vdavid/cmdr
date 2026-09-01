@@ -238,7 +238,7 @@ through `wordEjectRefusal(e)` in `eject-error-messages.ts`, which:
 - picks the one sentence for the variant from `errors.eject.*` through `getMessage()` (a RAW catalog lookup, never ICU
   `t()`: the `ejectFailedToast` around it interpolates uncontrolled volume names, whose apostrophes and braces collide
   with ICU grammar);
-- sends `ejectTechnicalDetail(error)` to the LOG. That's the `detail` field of `unmountRefused` / `mtpDisconnectRefused`
+- sends `ejectTechnicalDetail(error)` to the LOG. That's the `detail` field of `unmountRefused` / `deviceDisconnectRefused`
   / `unexpected`, usually `diskutil`'s own stderr naming the process still holding the drive. It never reaches the
   message: it's untranslated OS text;
 - answers a value that isn't an `EjectError` at all (the IPC transport itself broke) with the same honest

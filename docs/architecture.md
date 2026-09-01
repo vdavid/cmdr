@@ -152,6 +152,13 @@ All under `apps/desktop/src-tauri/src/`.
 - `secrets/`: Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. SMB creds +
   AI keys
 - `mtp/`: MTP device management, file ops, event-based watching
+- `adb/`: the app-side half of the Android-over-ADB backend (`crates/cmdr-adb/`): the `host:track-devices` task, the
+  `AdbDeviceProvider`, lazy connect on first navigation, eject (forget the device client-side), and the IPC commands.
+  See `adb/CLAUDE.md`
+- `device_volumes.rs`: the device-provider seam. A `DeviceVolumeProvider` per device backend (`MtpDeviceProvider`,
+  `AdbDeviceProvider`), a registry `volume_listing::complete` folds over, and `notify_devices_changed`, the one hotplug
+  push channel (it emits `volumes-changed`). Contract in the module doc; the checklist step in
+  `file_system/volume/DETAILS.md` § "Building a new volume"
 - `mcp/`: MCP server (tools, YAML resources, agent-centric API)
 - `ai/`: llama-server lifecycle, model download, inference client
 - `analytics/`: Anonymous beta usage analytics: hourly `/heartbeat` sender (true DAU + a PII-free config-shape snapshot
@@ -208,8 +215,8 @@ All under `apps/desktop/src-tauri/src/`.
   `file_system/volume/`. `get_favorites()` reads the `favorites/` store
 - `volumes_linux/`: Linux equivalent: location discovery + mount/unmount via `/proc/mounts` and GVFS
 - `volume_listing.rs`: the one volume-list pipeline. Aliases whichever discovery module the platform has, bounds it with
-  a timeout, appends the MTP storages, and enriches from the registry; `commands/volumes.rs` and `volume_broadcast.rs`
-  both publish what it returns. See `apps/desktop/src-tauri/src/volumes/CLAUDE.md`
+  a timeout, appends every device provider's storages (`device_volumes.rs`), and enriches from the registry;
+  `commands/volumes.rs` and `volume_broadcast.rs` both publish what it returns. See `apps/desktop/src-tauri/src/volumes/CLAUDE.md`
 - `space_poller.rs`: Live disk-space polling (per-volume-type intervals) plus the low-disk-space hysteresis warning
 - `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See
   the `tauri-apis` rule in `.claude/rules/`
@@ -248,8 +255,8 @@ All under `apps/desktop/src-tauri/src/`.
 
 ## Workspace crates
 
-All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` carry
-no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata`
+All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, and
+`cmdr-adb` carry no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata`
 graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` at the numbers their
 audits landed on. The two dev CLIs and the vendored fork are ordinary members.
 
@@ -276,6 +283,12 @@ audits landed on. The two dev CLIs and the vendored fork are ordinary members.
   `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend". Its guardrails, the two crate hazards it is shaped
   around, and which side a test lives on: `crates/cmdr-sftp/CLAUDE.md`. Which crate it is built on and why:
   `docs/notes/sftp-crate-evaluation-2026-08-22.md`. Its Docker servers: `apps/desktop/test/sftp-servers/README.md`.
+- `crates/cmdr-adb/`: everything Cmdr says to an Android device over ADB. `AdbVolume` per attached device, rooted at
+  the device's real `/`, spoken to the ADB server on loopback (the sync service for stat, list, and transfers, `shell,v2`
+  for the verbs it lacks, `host:track-devices` for hotplug), with a typed errno-based error policy and a fake ADB
+  server for its suites. The device-side twin of `cmdr-sftp`; the app-side half (tracker task, device provider, lazy
+  connect, eject, IPC) is `apps/desktop/src-tauri/src/adb/`. Wire contract, `Volume` answers, and gaps:
+  `crates/cmdr-adb/DETAILS.md`; guardrails: `crates/cmdr-adb/CLAUDE.md`
 - `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
   watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address
   building, `smb2::Error` classification, the share-listing vocabulary). The second backend in its own crate; what

@@ -1,0 +1,40 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
+  "@adb.volumeLabelWithSuffix": {
+    "description": "Volume switcher label for a phone reached over ADB when the same phone is also listed over MTP, so the two rows stay apart. ADB is the Android Debug Bridge tool name; keep it verbatim.",
+    "placeholders": {
+      "deviceName": "the device's model name, for example Pixel 7"
+    },
+    "screenshotNote": "Not captured yet: the ADB connect flow has no UI surface in the app yet."
+  },
+  "adb.connect.adbNotInstalled": "Cmdr couldn't find the adb tool. Install Android platform-tools, or set the path in Settings.",
+  "@adb.connect.adbNotInstalled": {
+    "description": "Toast when connecting an Android device over ADB and the adb command-line tool isn't on the machine. adb and platform-tools are tool names; keep them verbatim. Settings is the app's settings window.",
+    "screenshotNote": "Not captured yet: the ADB connect flow has no UI surface in the app yet."
+  },
+  "adb.connect.unauthorized": "Accept the USB debugging prompt on the device, then try again.",
+  "@adb.connect.unauthorized": {
+    "description": "Toast when the phone hasn't approved this computer for USB debugging yet; the person has to tap the prompt on the phone's screen.",
+    "screenshotNote": "Not captured yet: the ADB connect flow has no UI surface in the app yet."
+  },
+  "adb.connect.deviceTooOld": "This device's Android version is too old for Cmdr's ADB support (needs Android 7 or newer).",
+  "@adb.connect.deviceTooOld": {
+    "description": "Toast when the device runs an Android version older than 7 (2016), which Cmdr's ADB support doesn't cover. ADB is a tool name; keep it verbatim.",
+    "screenshotNote": "Not captured yet: the ADB connect flow has no UI surface in the app yet."
+  },
+  "adb.connect.deviceGone": "The device is no longer connected.",
+  "@adb.connect.deviceGone": {
+    "description": "Toast when the phone was unplugged or dropped off the ADB server between listing it and connecting to it.",
+    "screenshotNote": "Not captured yet: the ADB connect flow has no UI surface in the app yet."
+  },
+  "adb.connect.serverUnreachable": "Cmdr couldn't reach the adb server.",
+  "@adb.connect.serverUnreachable": {
+    "description": "Toast when the local adb server (the background process the adb tool starts) doesn't answer. adb is a tool name; keep it verbatim.",
+    "screenshotNote": "Not captured yet: the ADB connect flow has no UI surface in the app yet."
+  },
+  "adb.connect.timedOut": "The device didn't answer in time.",
+  "@adb.connect.timedOut": {
+    "description": "Toast when connecting a device over ADB takes longer than Cmdr waits for.",
+    "screenshotNote": "Not captured yet: the ADB connect flow has no UI surface in the app yet."
+  }
+}

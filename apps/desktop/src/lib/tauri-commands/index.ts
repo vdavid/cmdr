@@ -557,6 +557,10 @@ export {
   scanVolumeForCopy,
   scanVolumeForConflicts,
 } from './mtp'
+// Android devices over ADB (device list, connect)
+export { listAdbDevices, connectAdbDevice, AdbConnectFailure, asAdbConnectError } from './adb'
+export type { AdbDevice, AdbDeviceState, AdbConnectError } from './adb'
+
 // Archive-password commands (encrypted-archive unlock)
 export {
   setArchivePassword,

@@ -194,6 +194,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] If your backend holds a session that can drop (FTP, S3, SFTP, anything network-bound), emit `volume-connection-changed` (`network::VolumeConnectionChanged` + the `VolumeConnection` enum) on every transition and you inherit the whole frontend recovery story for free: the unreachable banner, the per-volume backoff cycle, and the "Sign in" prompt when saved credentials go stale. ❌ Don't add a backend-named connection event alongside it; the channel is backend-neutral on purpose. Map your internal state machine onto the wire enum the way `From<ConnectionState> for VolumeConnection` does in `crates/cmdr-smb/src/volume/state.rs`, and emit `NeedsCredentials` straight from your reconnect give-up path (no backend rests in it). Flow: `crates/cmdr-smb/DETAILS.md` § "SMB live-reconnect lifecycle".
 - [ ] If the volume needs async teardown (session close, handle drop), implement `on_unmount`. The default is a no-op.
 - [ ] If tearing that state down mid-flight would break a caller still holding an `Arc`, also implement `on_superseded` (it defaults to `on_unmount`).
+- [ ] If the volume is a DEVICE (a phone or a camera: something that appears and leaves on its own rather than being mounted or signed into), register a `device_volumes::DeviceVolumeProvider` at startup and call `device_volumes::notify_devices_changed(id)` on every hotplug edge. `volume_listing::complete` folds over every provider, and eject and path resolution ask the registry which provider owns an id or a path, so nothing outside `device_volumes.rs` names your backend. Answer `entries()` from cached state, ❌ never from the wire: the listing runs on every `volumes-changed`. `MtpDeviceProvider` (`mtp/volume_wiring.rs`) and `AdbDeviceProvider` (`adb/`) are the two; a network volume is not a device and stays out of it (the sidebar arm for one is its own design question, `docs/specs/later/sftp-follow-ups.md`).
 - [ ] Add a branch to `detect_provider` / `provider_suggestion` in `friendly_error/provider.rs` (see `friendly_error/CLAUDE.md`) if there's a recognizable path shape or fs type worth calling out in friendly errors.
 - [ ] Add a capability-matrix row below and update the `docs/architecture.md` volume line if the shape changes meaningfully.
 
@@ -336,19 +337,20 @@ trait it dispatches over. `commands::eject::eject_volume` is a thin delegate; th
 1. **Busy gate**: refuse (`EjectError::Busy`) if a write op is touching the volume (`file_system::busy_volume_ids`), so
    a transfer can't be truncated. The picker already disables Eject for busy volumes; this defends against a race or an
    MCP/automation caller.
-2. **Classify**: MTP (id shaped `{device_id}:{storage_id}`, confirmed against the live device list) → disconnect the
-   session; a registered `SmbVolume` (`smb_connection_state().is_some()`) → `diskutil unmount` (FSEvents drives smb2
+2. **Classify**: a device volume (a `device_volumes::DeviceVolumeProvider` answers `owns_volume_id` from live state;
+   MTP, ADB) → that provider's `eject`; a registered `SmbVolume` (`smb_connection_state().is_some()`) → `diskutil unmount` (FSEvents drives smb2
    teardown via `on_unmount`); otherwise NSURL/`/sys/block` ejectability → `diskutil eject` (powers down USB, detaches
    DMGs). The pure `decide_eject_action` makes this choice and is unit-tested without touching the FS.
-3. **Execute**: MTP disconnect, or a `diskutil`/`umount` subprocess under a 15 s timeout.
+3. **Execute**: the provider's eject (MTP closes the session; ADB only retires the volume, since `adb` has no
+   per-client detach), or a `diskutil`/`umount` subprocess under a 15 s timeout.
 
 The MCP `eject` tool wraps `eject::eject` directly (not the command), surfacing `Busy` / non-ejectable as honest tool errors; see `mcp/DETAILS.md`.
 
-Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `MtpIdMissingDevicePrefix`, `NotEjectable`,
-`NotAnSmbVolume`, `MtpDisconnectRefused`, `UnmountRefused`, `TimedOut`, `Unexpected`), and it IS the wire type:
+Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `NotEjectable`,
+`NotAnSmbVolume`, `DeviceDisconnectRefused`, `UnmountRefused`, `TimedOut`, `Unexpected`), and it IS the wire type:
 `commands::eject` passes it straight through, so nothing is flattened on the way out and the frontend words each
 variant from `errors.eject.*` (`src/lib/file-explorer/navigation/DETAILS.md` § "Eject button + row context menu").
-`diskutil`'s own stderr rides in the `detail` field of `UnmountRefused` / `MtpDisconnectRefused` and goes to the LOG,
+`diskutil`'s own stderr rides in the `detail` field of `UnmountRefused` / `DeviceDisconnectRefused` and goes to the LOG,
 never into the toast.
 Returns once teardown is *initiated* — `volume-unmounted` / `mtp-device-disconnected` fire
 shortly after and panes rooted at the volume redirect to root. `disconnect_smb_volume` (in `commands::network`) is the

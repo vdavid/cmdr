@@ -106,8 +106,8 @@ Rules for writing them:
 - `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker E2E,
   SMB fixtures), `scripts/`. The other three apps are listed above.
 - `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file index, media index, folder
-  importance), `cmdr-archive` (the zip/tar/7z backend, and the model a new backend crate copies), and `cmdr-smb` (the
-  SMB backend and its protocol layer) carry no `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a
+  importance), `cmdr-archive` (the zip/tar/7z backend, and the model a new backend crate copies), `cmdr-smb` (the SMB
+  backend and its protocol layer), and `cmdr-adb` (Android over ADB) carry no `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a
   vendored `fsevent-stream` fork. Details: `docs/architecture.md`.
 - `brand/`: tracked brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),

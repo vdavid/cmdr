@@ -62,6 +62,9 @@ use tauri_plugin_updater as _;
 // mtp-rs is used in mtp/ module for Android device support (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use mtp_rs as _;
+// cmdr-adb is used in the adb/ module for Android-over-ADB support (macOS + Linux)
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+use cmdr_adb as _;
 
 // These host primitives live in `cmdr-fs` so every crate in the workspace shares
 // one copy, and are re-exported here at their original paths: poison-free
@@ -127,6 +130,9 @@ mod mcp;
 mod menu;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod adb;
+mod device_volumes;
 #[cfg(target_os = "macos")]
 mod native_drag;
 mod net;
@@ -472,6 +478,12 @@ pub fn run() {
             // are the two things that can connect one.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::volume_wiring::install_volume_registrar();
+            // File MTP as a device provider, so the volume list, eject, and path
+            // resolution see its storages. `device_volumes` is the seam.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            mtp::volume_wiring::install_device_provider();
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            adb::volume_wiring::install_device_provider();
 
             // Wire the "busy volumes" emitter so write ops can broadcast
             // `volumes-busy-changed` (drives disabling Eject while a transfer touches a
@@ -570,6 +582,12 @@ pub fn run() {
             if !fda_gate::is_fda_pending_runtime() {
                 mtp::start_mtp_watcher(app.handle());
             }
+
+            // Follow the ADB server's device list (`host:track-devices`). Talks
+            // only to the local server socket, never to USB, so no TCC prompt and
+            // no FDA gate; with no `adb` installed it logs at debug and idles.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            adb::start_adb_tracker(app.handle());
 
             // Emit initial volume list (after watchers start so MTP devices can connect)
             volume_broadcast::emit_volumes_changed_now();
