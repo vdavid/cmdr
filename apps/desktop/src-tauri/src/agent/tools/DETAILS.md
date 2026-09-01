@@ -47,6 +47,12 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
 - **`folder_importance`** (`read/importance.rs`) — one folder's `PathImportance` (`snapshot_path`): Scored (score +
   `Explanation` breakdown + `stale` from asOf vs the volume's current `recompute_generation`), Floored (with reason), or
   Unscored. Offline-capable.
+- **`inspect_file`** (`read/inspect.rs`) — "what is this file?": metadata, a magic-byte `detected` format beside the
+  extension's `mime` (so a lying extension shows), and a typed `content` per kind. Text is a char window
+  (`offset`/`maxChars`, default 4,000, cap 16,000) with `totalChars`/`truncated`; images give dimensions and point at
+  `image_facts`; PDFs give the header version and a `pageCountEstimate` that is a lower bound (compressed object
+  streams hide pages) and say text extraction isn't wired. `folder`/`missing`/`unreadable`/`unreachable` are typed
+  statuses. Runs on a blocking thread under a 5 s timeout, the sole disk read among the handlers.
 - **`list_volumes`** (`read/volumes.rs`) — every volume with `indexStatus` (`fresh`/`scanning`/`stale`/`off`) and, for
   SMB, `smbConnectionState` (`direct`/`os_mount`/`disconnected`), straight from `snapshot_volumes` so tokens can't drift.
   Space rides along as `totalBytes` / `availableBytes` plus `totalHuman` / `availableHuman`, each pair present exactly

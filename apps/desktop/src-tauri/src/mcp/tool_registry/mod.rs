@@ -676,6 +676,18 @@ mcp_tools! {
         access: Access::Read,
         run: app_params crate::agent::tools::read::state::execute_app_state
     },
+    // The one tool that reads a user file's CONTENTS (bounded: one path, a paged text window,
+    // image/PDF header facts, never image bytes). Answers "what is this file?". PRIVACY: the
+    // window egresses to the agent's provider under the Ask Cmdr consent gate; see
+    // `agent/tools/read/inspect.rs`.
+    "inspect_file" => {
+        desc: "Inspect one file to describe it: size, modified, MIME, the format its bytes really are, and per kind a content window (text: paged by offset/maxChars; image: dimensions, then call image_facts for contents; PDF: version and page estimate). Folders, missing, unreadable, and unreachable paths answer typed statuses.",
+        schema: crate::agent::tools::read::inspect::inspect_file_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::read::inspect::execute_inspect_file
+    },
     "propose_rename_plan" => {
         desc: "Prepare a same-folder image-file rename plan for the user to review. It stages no filesystem change, never approves a proposal, and accepts at most 200 rows.",
         schema: crate::agent::tools::propose::rename::propose_rename_plan_schema(),

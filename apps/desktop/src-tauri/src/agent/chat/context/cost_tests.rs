@@ -34,7 +34,7 @@ const FILES: usize = 100;
 /// Every call: the system prompt plus the 17 tool declarations, before the user has said a word.
 const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
 const SYSTEM_PROMPT_TOKENS: usize = 1_636;
-const TOOL_DECLARATION_TOKENS: usize = 3_969;
+const TOOL_DECLARATION_TOKENS: usize = 4_100;
 
 /// One `image_facts` row at [`OCR_CHARS`] of recognized text: the dominant per-file cost, and
 /// the reason a window has to be sized for the facts rather than for the plan.
@@ -98,13 +98,13 @@ fn assert_near(measured: usize, documented: usize, what: &str) {
 #[test]
 fn every_call_pays_about_3_500_tokens_of_fixed_overhead() {
     let tools = crate::agent::tools::agent_tool_declarations();
-    assert_eq!(tools.len(), 17, "the overhead below is the cost of THESE declarations");
+    assert_eq!(tools.len(), 18, "the overhead below is the cost of THESE declarations");
 
     let system = estimate_prompt_tokens(crate::agent::chat::system_prompt::SYSTEM_PROMPT, &[], &[]);
     let declarations = estimate_prompt_tokens("", &tools, &[]);
 
     assert_near(system, SYSTEM_PROMPT_TOKENS, "the system prompt");
-    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 17 tool declarations");
+    assert_near(declarations, TOOL_DECLARATION_TOKENS, "the 18 tool declarations");
     assert_near(system + declarations, FIXED_OVERHEAD, "the fixed per-call overhead");
 }
 

@@ -52,7 +52,7 @@ pub fn refuse_unavailable(call_id: &str, tool: &ToolId) -> Option<AgentToolResul
         content: json!({
             "available": false,
             "requested": tool.as_wire_name(),
-            "reason": "That tool isn't available. Ask Cmdr can prepare a rename plan, suggest file operations for you to review, and save notes in its own memory folder. It can't touch your files, approve a proposal, or read file contents.",
+            "reason": "That tool isn't available. Ask Cmdr can prepare a rename plan, suggest file operations for you to review, and save notes in its own memory folder. It can't touch your files or approve a proposal, and it reads a file's contents only through inspect_file.",
         }),
         elided: false,
     })

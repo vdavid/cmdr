@@ -262,6 +262,8 @@ export type MessageKey =
   | 'askCmdr.tool.imageFacts.done'
   | 'askCmdr.tool.importantFolders.doing'
   | 'askCmdr.tool.importantFolders.done'
+  | 'askCmdr.tool.inspectFile.doing'
+  | 'askCmdr.tool.inspectFile.done'
   | 'askCmdr.tool.listDir.doing'
   | 'askCmdr.tool.listDir.done'
   | 'askCmdr.tool.listSuggestions.doing'

@@ -119,6 +119,14 @@
   "@askCmdr.tool.searchPhotos.done": {
     "description": "Past-tense label on the same tool line once the photo search finished. Pairs with askCmdr.tool.searchPhotos.doing; keep both the same length where the language allows."
   },
+  "askCmdr.tool.inspectFile.doing": "Looking at a file",
+  "@askCmdr.tool.inspectFile.doing": {
+    "description": "Present-tense label on a tool line while the assistant reads one file's details and a bounded slice of its contents (inspect_file). Pairs with askCmdr.tool.inspectFile.done."
+  },
+  "askCmdr.tool.inspectFile.done": "Looked at a file",
+  "@askCmdr.tool.inspectFile.done": {
+    "description": "Past-tense label on the same tool line once the assistant finished reading the file. Pairs with askCmdr.tool.inspectFile.doing."
+  },
   "askCmdr.tool.imageFacts.doing": "Reading what’s in your photos",
   "@askCmdr.tool.imageFacts.doing": {
     "description": "Present-tense status on a tool line in the Ask Cmdr chat rail, shown while the assistant reads the text and tags Cmdr recognized inside specific photos the user is looking at (not a search: it already knows which files). This line is a transparency surface, so the wording should make clear that image content is being read. The apostrophe is U+2019."
