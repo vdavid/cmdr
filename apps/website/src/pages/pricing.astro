@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro'
 import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import DownloadButton from '../components/DownloadButton.astro'
+import PageHeader from '../components/PageHeader.astro'
 
 // Paddle config - passed to client-side script
 const paddleToken = import.meta.env.PUBLIC_PADDLE_CLIENT_TOKEN ?? ''
@@ -74,21 +75,16 @@ const faq = [
 ]
 ---
 
-<Layout title="Pricing - Cmdr" description="Cmdr is free forever for personal use. Commercial licenses from $59/year.">
+<Layout title="Pricing - Cmdr" description="Cmdr is free for personal use. Commercial licenses from $59/year.">
     <Header />
     <main class="mx-auto max-w-5xl px-6 pt-32 pb-24">
         <!-- Hero -->
-        <header class="mb-16 text-center">
-            <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl lg:text-5xl">
-                Free forever for personal use
-            </h1>
-            <p class="text-lg text-[var(--color-text-secondary)]">
-                Use Cmdr at home without paying a cent. Less than a coffee a month for work.
-            </p>
-        </header>
+        <PageHeader title="Free for personal use" class="mb-10">
+            Use Cmdr at home without paying a cent. Less than a coffee a month for work.
+        </PageHeader>
 
         <!-- Download Button -->
-        <div class="mb-16 text-center">
+        <div class="mb-16">
             <DownloadButton variant="pricing" />
             <p class="mt-3 text-sm text-[var(--color-text-tertiary)]">macOS only · Source-available (BSL 1.1)</p>
         </div>
@@ -223,7 +219,7 @@ const faq = [
             })),
         })} />
         <section>
-            <h2 class="mb-8 text-center text-2xl font-bold text-[var(--color-text-primary)]">
+            <h2 class="mb-8 text-2xl font-bold text-[var(--color-text-primary)]">
                 Frequently asked questions
             </h2>
 
