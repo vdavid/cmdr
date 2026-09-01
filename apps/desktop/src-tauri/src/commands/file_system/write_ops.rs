@@ -156,6 +156,21 @@ fn expand_parent(volume_id: Option<&str>, parent_path: &str) -> String {
 // Write operations (copy, move, delete)
 // ============================================================================
 
+/// Turns a same-`root` copy or move request into backend arguments: tilde-expanded
+/// paths and the default config. A transfer INTO or OUT of an archive doesn't belong
+/// on the local fast-path (extract-out routes through `copy_between_volumes`; writing
+/// into a zip is read-only until mutation lands), so it is refused here.
+fn local_transfer_request(
+    sources: &[String],
+    destination: &str,
+    config: Option<WriteOperationConfig>,
+) -> Result<(Vec<PathBuf>, PathBuf, WriteOperationConfig), WriteOperationError> {
+    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
+    let destination = PathBuf::from(expand_tilde(destination));
+    reject_if_archive_inner(sources.iter().chain(std::iter::once(&destination)))?;
+    Ok((sources, destination, config.unwrap_or_default()))
+}
+
 /// Emits write-progress, write-complete, write-error, write-cancelled.
 #[tauri::command]
 #[specta::specta]
@@ -166,13 +181,7 @@ pub async fn copy_files(
     config: Option<WriteOperationConfig>,
     initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
-    let destination = PathBuf::from(expand_tilde(&destination));
-    let config = config.unwrap_or_default();
-
-    // A copy INTO or OUT of an archive doesn't belong on the local fast-path
-    // (extract-out routes through `copy_between_volumes`; write-in is read-only).
-    reject_if_archive_inner(sources.iter().chain(std::iter::once(&destination)))?;
+    let (sources, destination, config) = local_transfer_request(&sources, &destination, config)?;
 
     // The unified transfer dialog routes every cross-device copy through
     // `copy_between_volumes`; this plain command is the same-`root` local path,
@@ -203,13 +212,7 @@ pub async fn move_files(
     config: Option<WriteOperationConfig>,
     initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
-    let destination = PathBuf::from(expand_tilde(&destination));
-    let config = config.unwrap_or_default();
-
-    // A move touching an archive doesn't belong on the local fast-path (moving
-    // into or out of a zip is read-only until mutation lands).
-    reject_if_archive_inner(sources.iter().chain(std::iter::once(&destination)))?;
+    let (sources, destination, config) = local_transfer_request(&sources, &destination, config)?;
 
     // Same-`root` local move (the FE uses `move_between_volumes` whenever the
     // source and destination volumes differ), so no ejectable volume here.

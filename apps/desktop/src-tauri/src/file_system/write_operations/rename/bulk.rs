@@ -23,6 +23,7 @@ use super::super::types::{
     CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationStartResult,
     WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
+use super::same_local_file;
 use crate::file_system::volume::{LaneKey, Volume, rename_local_exclusive};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
 
@@ -196,6 +197,18 @@ impl BulkRenameRun {
         }
     }
 
+    /// The verdict once no further hop will land: journals the rows that never moved,
+    /// then hands the outcomes up.
+    fn settled(
+        rows: &[BulkRenameRow],
+        outcomes: Vec<BulkRenameOutcome>,
+        cancelled: bool,
+        recorder: &BulkRenameRecorder,
+    ) -> Self {
+        recorder.record_unmoved(rows, &outcomes);
+        Self { outcomes, cancelled }
+    }
+
     fn skipped(&self) -> usize {
         self.outcomes
             .iter()
@@ -299,21 +312,10 @@ fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8, recorder: &BulkR
         })
         .collect();
     settle_local_conflicts(rows, &mut active);
-    for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {
-        if row.source == row.destination {
-            outcomes[index] = BulkRenameOutcome::Done;
-            // A no-op rename still belongs in the log as a `Done` row, the way it did
-            // when journaling was one pass at the end.
-            recorder.record_hop(row, &row.source, &row.destination);
-        }
-    }
+    complete_noop_rows(rows, &active, &mut outcomes, recorder);
     for step in build_execution_plan(rows, &active) {
         if is_cancelled(intent) {
-            recorder.record_unmoved(rows, &outcomes);
-            return BulkRenameRun {
-                outcomes,
-                cancelled: true,
-            };
+            return BulkRenameRun::settled(rows, outcomes, true, recorder);
         }
         match step {
             RenamePlanStep::Direct(index) => rename_local_direct(&rows[index], &mut outcomes[index], recorder),
@@ -321,11 +323,7 @@ fn bulk_rename_local(rows: &[BulkRenameRow], intent: &AtomicU8, recorder: &BulkR
             RenamePlanStep::Cycle(indices) => rename_local_cycle(rows, &indices, &mut outcomes, recorder),
         }
     }
-    recorder.record_unmoved(rows, &outcomes);
-    BulkRenameRun {
-        outcomes,
-        cancelled: false,
-    }
+    BulkRenameRun::settled(rows, outcomes, false, recorder)
 }
 
 async fn bulk_rename_remote(
@@ -343,21 +341,10 @@ async fn bulk_rename_remote(
         active.push(remote_fingerprint_matches(volume.as_ref(), &row.source, &row.expected_fingerprint).await);
     }
     settle_remote_conflicts(rows, &mut active, volume.as_ref()).await;
-    for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {
-        if row.source == row.destination {
-            outcomes[index] = BulkRenameOutcome::Done;
-            // A no-op rename still belongs in the log as a `Done` row, the way it did
-            // when journaling was one pass at the end.
-            recorder.record_hop(row, &row.source, &row.destination);
-        }
-    }
+    complete_noop_rows(rows, &active, &mut outcomes, recorder);
     for step in build_execution_plan(rows, &active) {
         if is_cancelled(intent) {
-            recorder.record_unmoved(rows, &outcomes);
-            return BulkRenameRun {
-                outcomes,
-                cancelled: true,
-            };
+            return BulkRenameRun::settled(rows, outcomes, true, recorder);
         }
         match step {
             RenamePlanStep::Direct(index) => {
@@ -371,10 +358,22 @@ async fn bulk_rename_remote(
             }
         }
     }
-    recorder.record_unmoved(rows, &outcomes);
-    BulkRenameRun {
-        outcomes,
-        cancelled: false,
+    BulkRenameRun::settled(rows, outcomes, false, recorder)
+}
+
+/// Completes every active row whose destination is its source without touching the
+/// filesystem. A no-op rename still belongs in the log as a `Done` row.
+fn complete_noop_rows(
+    rows: &[BulkRenameRow],
+    active: &[bool],
+    outcomes: &mut [BulkRenameOutcome],
+    recorder: &BulkRenameRecorder,
+) {
+    for (index, row) in rows.iter().enumerate().filter(|(index, _)| active[*index]) {
+        if row.source == row.destination {
+            outcomes[index] = BulkRenameOutcome::Done;
+            recorder.record_hop(row, &row.source, &row.destination);
+        }
     }
 }
 
@@ -633,26 +632,19 @@ async fn restore_remote_cycle(
     }
 }
 
+/// Drops every active row whose destination is already taken by something outside the
+/// batch. Each pass frees the destinations of the rows it drops, so it repeats until a
+/// pass changes nothing.
 fn settle_local_conflicts(rows: &[BulkRenameRow], active: &mut [bool]) {
     loop {
-        let sources: HashSet<String> = rows
-            .iter()
-            .zip(active.iter())
-            .filter(|(_, active)| **active)
-            .map(|(row, _)| normalized_path(&row.source))
-            .collect();
         let mut changed = false;
-        for (row, active) in rows.iter().zip(active.iter_mut()) {
-            if !*active || row.source == row.destination {
-                continue;
-            }
-            if !sources.contains(&normalized_path(&row.destination))
-                && let Ok(destination_meta) = std::fs::symlink_metadata(&row.destination)
-            {
+        for index in rows_with_unclaimed_destination(rows, active) {
+            let row = &rows[index];
+            if let Ok(destination_meta) = std::fs::symlink_metadata(&row.destination) {
                 let destination_is_source = std::fs::symlink_metadata(&row.source)
                     .is_ok_and(|source_meta| same_local_file(&source_meta, &destination_meta));
                 if !destination_is_source {
-                    *active = false;
+                    active[index] = false;
                     changed = true;
                 }
             }
@@ -665,21 +657,10 @@ fn settle_local_conflicts(rows: &[BulkRenameRow], active: &mut [bool]) {
 
 async fn settle_remote_conflicts(rows: &[BulkRenameRow], active: &mut [bool], volume: &dyn Volume) {
     loop {
-        let sources: HashSet<String> = rows
-            .iter()
-            .zip(active.iter())
-            .filter(|(_, active)| **active)
-            .map(|(row, _)| normalized_path(&row.source))
-            .collect();
         let mut changed = false;
-        for (row, active) in rows.iter().zip(active.iter_mut()) {
-            if !*active || row.source == row.destination {
-                continue;
-            }
-            if !sources.contains(&normalized_path(&row.destination))
-                && volume.get_metadata(&row.destination).await.is_ok()
-            {
-                *active = false;
+        for index in rows_with_unclaimed_destination(rows, active) {
+            if volume.get_metadata(&rows[index].destination).await.is_ok() {
+                active[index] = false;
                 changed = true;
             }
         }
@@ -687,6 +668,23 @@ async fn settle_remote_conflicts(rows: &[BulkRenameRow], active: &mut [bool], vo
             return;
         }
     }
+}
+
+/// The active rows that change their name and whose destination no active row
+/// vacates, in row order. Whatever sits at such a destination is outside the batch.
+fn rows_with_unclaimed_destination(rows: &[BulkRenameRow], active: &[bool]) -> Vec<usize> {
+    let sources: HashSet<String> = rows
+        .iter()
+        .zip(active.iter())
+        .filter(|(_, active)| **active)
+        .map(|(row, _)| normalized_path(&row.source))
+        .collect();
+    rows.iter()
+        .enumerate()
+        .filter(|(index, row)| active[*index] && row.source != row.destination)
+        .filter(|(_, row)| !sources.contains(&normalized_path(&row.destination)))
+        .map(|(index, _)| index)
+        .collect()
 }
 
 fn unique_temporary_path(source: &Path, row_id: &str) -> Option<PathBuf> {
@@ -714,17 +712,6 @@ async fn unique_remote_temporary_path(volume: &dyn Volume, source: &Path, row_id
 fn note_rename_write(from: &Path, to: &Path) {
     crate::downloads::note_pending_write_for_cmdr(from);
     crate::downloads::note_pending_write_for_cmdr(to);
-}
-
-#[cfg(unix)]
-fn same_local_file(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
-    use std::os::unix::fs::MetadataExt;
-    left.dev() == right.dev() && left.ino() == right.ino()
-}
-
-#[cfg(not(unix))]
-fn same_local_file(_left: &std::fs::Metadata, _right: &std::fs::Metadata) -> bool {
-    false
 }
 
 /// Whether the row's source on `volume` is still the file the preflight recorded.
