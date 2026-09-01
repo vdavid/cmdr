@@ -4,6 +4,7 @@
 //! - [`listing`]: `list_dir` — drive-index listing, sortable by size (the disk-usage question).
 //! - [`importance`]: `important_folders` + `folder_importance` — the offline importance signal.
 //! - [`volumes`]: `list_volumes` — every volume with freshness + connectivity.
+//! - [`inspect`]: `inspect_file` — one file's metadata, sniffed format, and a bounded content window.
 //!
 //! The `operations_list` / `operations_get` family reuses the ai-client executors
 //! unchanged (shared registry entries), so it has no file here.
@@ -15,6 +16,7 @@
 //! reuse/honesty rules.
 
 pub mod importance;
+pub mod inspect;
 pub mod listing;
 pub mod pane_listing;
 pub mod state;

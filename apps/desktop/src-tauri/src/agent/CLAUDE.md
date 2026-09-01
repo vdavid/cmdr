@@ -27,18 +27,19 @@ the surface, so later proactive slices grow here too.
 
 ## Must-knows
 
-- **The agent can propose; only the user can approve** (invariant 7). No write tool for the user's files, no
-  arbitrary file-content-read tool: the agent view admits `Read`, `Propose`, and `Memory` entries, never `Write`. A
+- **The agent can propose; only the user can approve** (invariant 7). No write tool for the user's files; the one
+  file-content read is `inspect_file` (bounded, one path, typed): the agent view admits `Read`, `Propose`, and `Memory` entries, never `Write`. A
   `Propose` tool mutates nothing, approval originates in the frontend as a user action, and no tool approves one.
   **`Propose` doesn't touch consent** (proposals flow agent → user, never to the provider), so don't re-litigate that.
 - **`Access::Memory` is the one write, and it was a deliberate widening.** The promise is now "the agent writes only
   into its memory folder", held by `memory/`'s jail plus a hand-authored allowlist. ❌ Never tag a new tool `Memory`
   without adding its name there. Memory rides the prefix of every turn, so it is also an injection surface:
   `memory/DETAILS.md`.
-- **The egress line is structural.** Names, paths, and metadata reach the provider; the ONLY derived-content egress is
-  the photo pair, `search_photos` and `image_facts` — image-derived TEXT, never image bytes
-  (`mcp/executor/photos.rs`, `image_facts.rs`). The consent copy (`askCmdr.consent.*`) names it, so don't widen it
-  with a new tool without revisiting the whole consent story.
+- **The egress line is structural.** Names, paths, and metadata reach the provider; content egress is the photo pair,
+  `search_photos` and `image_facts` (image-derived TEXT, never image bytes; `mcp/executor/photos.rs`,
+  `image_facts.rs`) plus `inspect_file`'s bounded text window (`tools/read/inspect.rs`). The consent copy
+  (`askCmdr.consent.*`) names the photo pair; ❌ it must name `inspect_file` too before that ships. Don't widen the
+  line further without revisiting the whole consent story.
 - **The runtime drives the seams; the IPC is wired.** `agent::start` registers `ChatRuntime`; `../commands/agent/` is
   the thin frontend surface. `ask_cmdr_send_message` runs its turn on a worker thread (`run_turn` holds a non-`Send`
   connection across awaits) and streams over `chat::stream`, one conversation-keyed event a wake shares. Register a new

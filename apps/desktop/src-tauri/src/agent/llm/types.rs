@@ -159,6 +159,7 @@ pub enum ToolId {
     FolderImportance,
     /// The volume list with per-volume index freshness and SMB connectivity.
     ListVolumes,
+    InspectFile,
     /// Search the durable operation log (shared with the ai-client view).
     OperationsList,
     /// One logged operation's header plus a page of its item rows (shared).
@@ -198,13 +199,14 @@ impl ToolId {
     /// Every known read-only variant, in wire order. Excludes [`ToolId::Unrecognized`]
     /// by design (it's the refusal case, never a view entry). The 1:1 structural test
     /// asserts these map exactly onto `agent_tool_view()`.
-    pub const KNOWN: [ToolId; 17] = [
+    pub const KNOWN: [ToolId; 18] = [
         ToolId::AppState,
         ToolId::ListDir,
         ToolId::ListPaneFiles,
         ToolId::ImportantFolders,
         ToolId::FolderImportance,
         ToolId::ListVolumes,
+        ToolId::InspectFile,
         ToolId::OperationsList,
         ToolId::OperationsGet,
         ToolId::SearchPhotos,
@@ -228,6 +230,7 @@ impl ToolId {
             ToolId::ImportantFolders => "important_folders",
             ToolId::FolderImportance => "folder_importance",
             ToolId::ListVolumes => "list_volumes",
+            ToolId::InspectFile => "inspect_file",
             ToolId::OperationsList => "operations_list",
             ToolId::OperationsGet => "operations_get",
             ToolId::SearchPhotos => "search_photos",
@@ -255,6 +258,7 @@ impl ToolId {
             "important_folders" => ToolId::ImportantFolders,
             "folder_importance" => ToolId::FolderImportance,
             "list_volumes" => ToolId::ListVolumes,
+            "inspect_file" => ToolId::InspectFile,
             "operations_list" => ToolId::OperationsList,
             "operations_get" => ToolId::OperationsGet,
             "search_photos" => ToolId::SearchPhotos,
