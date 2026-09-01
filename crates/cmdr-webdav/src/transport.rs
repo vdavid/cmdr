@@ -16,10 +16,21 @@ use url::Url;
 use crate::errors::{WebdavConnectError, classify_connect_error};
 use crate::propfind::{PropfindEntry, parse_multistatus};
 
-/// The connect budget, per request. A listing on a slow NAS may legitimately
-/// take longer, so this is the PROBE's budget and the idle budget between
-/// body chunks; a transfer as a whole has no ceiling.
+/// The connect budget, per request: the PROBE's total budget and the idle
+/// budget between body chunks on a download (`streams.rs`). A transfer as a
+/// whole has no ceiling.
+///
+/// ❌ Never `ClientBuilder::read_timeout` (verified on reqwest 0.13.4,
+/// `PendingRequest::poll`, 2026-09-01): that sleep is armed when the request
+/// goes out and is not reset until the response HEADERS arrive, so it is a
+/// total budget for the whole upload phase. A PUT that takes longer than it
+/// to stream its body fails with `TimedOut`, and every upload past a few MB
+/// on a slow link is lost. Idle detection lives on the response body instead.
 pub(crate) const REQUEST_BUDGET: Duration = Duration::from_secs(10);
+
+/// A PROPFIND's total budget: bounded work, but a listing on a slow NAS may
+/// legitimately take a while.
+const PROPFIND_BUDGET: Duration = Duration::from_secs(60);
 
 /// Everything but the unreserved characters gets encoded in a path segment:
 /// spaces, `#`, `?`, `%`, and every other reserved byte included.
@@ -62,7 +73,6 @@ impl WebdavClient {
         let http = reqwest::Client::builder()
             .user_agent("Cmdr")
             .connect_timeout(REQUEST_BUDGET)
-            .read_timeout(REQUEST_BUDGET)
             .redirect(reqwest::redirect::Policy::none())
             .build()
             .map_err(|e| WebdavConnectError::Transport(e.to_string()))?;
@@ -137,6 +147,7 @@ impl WebdavClient {
             .header("Depth", if depth == Depth::Zero { "0" } else { "1" })
             .header(reqwest::header::CONTENT_TYPE, "application/xml; charset=utf-8")
             .body(PROPFIND_BODY)
+            .timeout(PROPFIND_BUDGET)
             .send()
             .await
     }

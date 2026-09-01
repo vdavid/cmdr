@@ -68,8 +68,14 @@ impl WebdavVolume {
         let inner = Arc::clone(&self.inner);
         let handle = inner.self_handle();
         let auto_reconnect = inner.auto_reconnect.load(Ordering::Relaxed);
+        // ❗ Dropped HERE when nothing holds the lock, so an `attempt_reconnect`
+        // the frontend fires on the event it just got doesn't find the dead
+        // client still installed and answer "fine" without probing.
+        let dropped = inner.client.try_write().map(|mut client| client.take()).is_ok();
         inner.host.runtime().spawn(async move {
-            inner.client.write().await.take();
+            if !dropped {
+                inner.client.write().await.take();
+            }
             drop(inner);
             if auto_reconnect {
                 run_reconnect_loop(handle).await;
@@ -114,6 +120,8 @@ impl WebdavVolumeInner {
             return Err(gone());
         }
         if !attended && self.client.read().await.is_some() {
+            // Still installed, so nothing to rebuild; the state may lag it.
+            self.emit_if_changed(ConnectionState::Connected);
             return Ok(());
         }
         if !attended {

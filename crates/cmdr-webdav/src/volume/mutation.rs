@@ -107,13 +107,17 @@ impl WebdavVolume {
         let remote = self.to_remote_path(path)?;
         let client = self.clone_client().await?;
         let listing = self.propfind(&client, &remote, false, Depth::One).await?;
-        let is_collection = listing.first().is_some_and(|p| p.is_collection);
-        if is_collection && listing.len() > 1 {
+        // ❗ Judged by COUNT, ❌ never by which entry comes first: RFC 4918
+        // promises no order, and a child read as "the resource" would send a
+        // recursive DELETE at a folder with things in it. A `Depth: 1` on a
+        // file or an empty collection answers exactly one response.
+        if listing.len() > 1 {
             return Err(VolumeError::IoError {
                 message: format!("{remote} still holds {} entries", listing.len() - 1),
                 raw_os_error: Some(ENOTEMPTY),
             });
         }
+        let is_collection = listing.first().is_some_and(|p| p.is_collection);
         let request = client.request(Method::DELETE, client.url_for(&remote, is_collection));
         self.send(request, &remote, Attempted::Reaching).await?;
         self.notify_deleted(path).await;
