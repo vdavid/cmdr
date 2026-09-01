@@ -389,13 +389,13 @@ more state than the race is worth. Revisit only if it shows up in practice.
 ## macOS-native and fixed-key rows are read-only
 
 The four `nativeShortcut` commands (`app.quit`/`hide`/`hideOthers`/`showAll`) render read-only: their combos show as
-plain read-only `ShortcutPill`s (`.shortcut-pill.static` spans) (no click-to-edit), with no `+` add, no `×` remove, no reset button, and never the
-add slot. Each native row also carries a small "macOS" badge (`.readonly-badge`) with a tooltip: "macOS handles this
-shortcut. Cmdr can't change it." (`Show all` has no default binding, so it renders its `(none)` unframed plus the
-badge.) The branch is keyed off `isNativeShortcutCommand(command.id)` from `$lib/shortcuts`. This is honest: AppKit owns
-both the behavior and the accelerator (see `lib/shortcuts/DETAILS.md` § "macOS-native commands are not customizable"),
-so an editable control here would be a double illusion. The store also refuses these writes as defense in depth, so the
-UI and the store agree.
+plain read-only `ShortcutPill`s (`.shortcut-pill.static` spans) (no click-to-edit), with no `+` add, no `×` remove, no
+reset button, and never the add slot. Each native row also carries a small "macOS" badge (`.readonly-badge`) with a
+tooltip: "macOS handles this shortcut. Cmdr can't change it." (`Show all` has no default binding, so it renders its
+`(none)` unframed plus the badge.) The branch is keyed off `isNativeShortcutCommand(command.id)` from `$lib/shortcuts`.
+This is honest: AppKit owns both the behavior and the accelerator (see `lib/shortcuts/DETAILS.md` § "macOS-native
+commands are not customizable"), so an editable control here would be a double illusion. The store also refuses these
+writes as defense in depth, so the UI and the store agree.
 
 The `FIXED_KEY_COMMAND_IDS` rows (nav arrows, palette navigation, modal Enter/Escape — `isFixedKeyCommand(command.id)`)
 get the same read-only treatment with a "Fixed" badge ("This key is built into Cmdr and can't be changed.") and share

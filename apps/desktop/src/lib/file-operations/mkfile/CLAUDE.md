@@ -5,8 +5,9 @@ rationale: `DETAILS.md`.
 
 ## Module map
 
-- `NewFileDialog.svelte`: dialog UI around the shared `../NewEntryNameField.svelte` + `../new-entry-name-check.svelte.ts`
-  (subtitle, name field, validation, async conflict check), then `createFile` and `onCreated(name)`.
+- `NewFileDialog.svelte`: dialog UI around the shared `../NewEntryNameField.svelte` +
+  `../new-entry-name-check.svelte.ts` (subtitle, name field, validation, async conflict check), then `createFile` and
+  `onCreated(name)`.
 - `new-file-operations.ts`: `getInitialFileName()`, the full filename (with extension) of the `../cursor-entry.ts`
   lookup.
 
