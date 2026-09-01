@@ -215,14 +215,17 @@
     overflow: hidden;
     outline: none;
     /* Checkerboard behind transparency, fixed in screen space (background-attachment
-       isn't needed since the stage itself doesn't scroll). Two layered gradients make
-       the classic 2-tone checker using design tokens. */
-    background-color: var(--color-bg-primary);
+       isn't needed since the stage itself doesn't scroll). Four layered hard-stop
+       gradients make the classic 2-tone checker. The colors are the dedicated
+       `--color-checkerboard-*` pair from `app.css`, never `--color-bg-primary` /
+       `--color-bg-tertiary`: that pair is ~1.2:1 apart and rendered as a flat white
+       surface, so transparent pixels looked opaque. */
+    background-color: var(--color-checkerboard-base);
     background-image:
-      linear-gradient(45deg, var(--color-bg-tertiary) 25%, transparent 25%),
-      linear-gradient(-45deg, var(--color-bg-tertiary) 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, var(--color-bg-tertiary) 75%),
-      linear-gradient(-45deg, transparent 75%, var(--color-bg-tertiary) 75%);
+      linear-gradient(45deg, var(--color-checkerboard-tile) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--color-checkerboard-tile) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--color-checkerboard-tile) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--color-checkerboard-tile) 75%);
     background-size: 20px 20px;
     background-position:
       0 0,
