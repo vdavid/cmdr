@@ -588,6 +588,14 @@
   "@commands.selectionDeselectAll.label": {
     "sourceHash": "9675494"
   },
+  "commands.selectionInvert.label": "Đảo ngược lựa chọn",
+  "@commands.selectionInvert.label": {
+    "sourceHash": "d2e128a"
+  },
+  "commands.selectionInvert.description": "Chọn tất cả các tệp chưa chọn và bỏ chọn các tệp đã chọn",
+  "@commands.selectionInvert.description": {
+    "sourceHash": "b63ce32"
+  },
   "commands.selectionSelectFiles.label": "Chọn tệp…",
   "@commands.selectionSelectFiles.label": {
     "sourceHash": "b7f202e"

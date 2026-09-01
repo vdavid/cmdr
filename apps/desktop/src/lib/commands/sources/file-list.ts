@@ -447,6 +447,17 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: ['⌘⇧A'],
   },
   {
+    id: 'selection.invert',
+    nameKey: 'commands.selectionInvert.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    // `⇧8` is `*` on a US layout (Total Commander's invert key). The combo is
+    // matched by physical key too (`eventMatchesCommand`'s digit fallback), so
+    // it works on layouts where Shift+8 types something else.
+    shortcuts: ['⇧8'],
+    descriptionKey: 'commands.selectionInvert.description',
+  },
+  {
     id: 'selection.selectFiles',
     nameKey: 'commands.selectionSelectFiles.label',
     scope: 'Main window/File list',

@@ -588,6 +588,14 @@
   "@commands.selectionDeselectAll.label": {
     "sourceHash": "9675494"
   },
+  "commands.selectionInvert.label": "Inverter seleção",
+  "@commands.selectionInvert.label": {
+    "sourceHash": "d2e128a"
+  },
+  "commands.selectionInvert.description": "Seleciona todos os arquivos não selecionados e desmarca os selecionados",
+  "@commands.selectionInvert.description": {
+    "sourceHash": "b63ce32"
+  },
   "commands.selectionSelectFiles.label": "Selecionar arquivos…",
   "@commands.selectionSelectFiles.label": {
     "sourceHash": "b7f202e"

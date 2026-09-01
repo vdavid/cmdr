@@ -118,6 +118,7 @@ describe('createPaneKeyRouter', () => {
       toggleSelectionAndMoveDown: vi.fn(),
       selectAll: vi.fn(),
       deselectAll: vi.fn(),
+      invertSelection: vi.fn(),
       clearRangeState: vi.fn(),
     }
   })
@@ -260,6 +261,12 @@ describe('createPaneKeyRouter', () => {
       onlyCommand('selection.deselectAll')
       router().handleKeyDown(keyEvent())
       expect(deps.deselectAll).toHaveBeenCalledTimes(1)
+    })
+
+    it('inverts the selection on ⇧8', () => {
+      onlyCommand('selection.invert')
+      router().handleKeyDown(keyEvent())
+      expect(deps.invertSelection).toHaveBeenCalledTimes(1)
     })
   })
 

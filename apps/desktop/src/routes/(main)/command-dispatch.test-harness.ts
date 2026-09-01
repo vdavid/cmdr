@@ -560,6 +560,12 @@ export const DELEGATE_ROWS: DelegateRow[] = [
     },
   },
   {
+    id: 'selection.invert',
+    expect: (e) => {
+      expect(e.handleSelectionAction).toHaveBeenCalledExactlyOnceWith({ action: 'invert' })
+    },
+  },
+  {
     id: 'selection.mcpSelect',
     args: { pane: 'left', start: 2, count: 5, mode: 'add' },
     expect: (e) => {

@@ -234,6 +234,10 @@
     "description": "VERB phrase (imperative). Clears the selection in the active pane, leaving nothing selected (⇧⌘A). The direct opposite of menu.select.all, and it should read as its mirror image."
   },
 
+  "menu.select.invert": "Invert selection",
+  "@menu.select.invert": {
+    "description": "VERB phrase (imperative). Flips the selection in the active pane: every selected file becomes unselected and every unselected one becomes selected (⇧8, the `*` key on a US keyboard). Sits right under menu.select.deselectAll. Total Commander and Double Commander have this exact item; use the wording their localized menus use in your language."
+  },
   "menu.select.files": "Select files…",
   "@menu.select.files": {
     "description": "VERB phrase (imperative). Opens a dialog that ADDS files to the selection by matching a pattern, like *.jpg. The trailing … is U+2026 and must stay: the pattern decides what gets selected. Its opposite is menu.select.deselectFiles, and the pair should read as mirror images."

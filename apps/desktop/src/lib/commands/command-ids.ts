@@ -197,6 +197,7 @@ export const COMMAND_IDS = [
   'selection.toggleAndDown',
   'selection.selectAll',
   'selection.deselectAll',
+  'selection.invert',
   'selection.selectFiles',
   'selection.deselectFiles',
   // Range/all selection carried by the MCP `select` tool (start + count + mode).

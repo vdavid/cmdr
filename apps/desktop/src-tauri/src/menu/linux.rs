@@ -17,10 +17,10 @@ use super::{
     EDIT_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_DUPLICATE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID,
     GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_HOME_ID, GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID,
-    HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID,
-    NEXT_TAB_ID, OPEN_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID,
-    REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
-    SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
+    HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, INVERT_SELECTION_ID,
+    MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
+    QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID,
+    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, ViewMode,
 };
 
 /// Linux menu: builds all menus from scratch, matching the macOS menu structure.
@@ -290,6 +290,15 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         Some("Cmd+Shift+A"),
     )?;
+    // No accelerator (same reason as on macOS): a bare `Shift+8` would swallow `*` in
+    // text fields. FilePane's keydown handler binds it.
+    let invert_selection_item = MenuItem::with_id(
+        app,
+        INVERT_SELECTION_ID,
+        select.assign(&menu_t("menu.select.invert")),
+        true,
+        None::<&str>,
+    )?;
     let select_files_item = MenuItem::with_id(
         app,
         SELECT_FILES_ID,
@@ -312,6 +321,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         &[
             &select_all_item,
             &deselect_all_item,
+            &invert_selection_item,
             &PredefinedMenuItem::separator(app)?,
             &select_files_item,
             &deselect_files_item,
@@ -699,14 +709,15 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     );
     register_item(&mut items, CHANGELOG_ID, &changelog_item, &edit_menu, 13);
 
-    // Select menu positions: select_all(0), deselect_all(1), sep(2), select_files(3),
-    // deselect_files(4). The two dialog openers carry no accelerator; bare `+` / `-` are
+    // Select menu positions: select_all(0), deselect_all(1), invert_selection(2), sep(3),
+    // select_files(4), deselect_files(5). The two dialog openers carry no accelerator; bare `+` / `-` are
     // bound in FilePane's keydown handler. The items are still registered so a future
     // user-customized shortcut could flow into the menu via the generic update path.
     register_item(&mut items, SELECT_ALL_ID, &select_all_item, &select_menu, 0);
     register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &select_menu, 1);
-    register_item(&mut items, SELECT_FILES_ID, &select_files_item, &select_menu, 3);
-    register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 4);
+    register_item(&mut items, INVERT_SELECTION_ID, &invert_selection_item, &select_menu, 2);
+    register_item(&mut items, SELECT_FILES_ID, &select_files_item, &select_menu, 4);
+    register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 5);
 
     // View menu positions: left_pane_submenu(0), right_pane_submenu(1), sep(2), hidden(3),
     // sort(4), zoom(5), sep(6), switch(7), swap(8), sep(9), palette(10), queue(11),

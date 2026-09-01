@@ -803,6 +803,10 @@
         selection.selectAll(hasParent, effectiveTotalCount)
     }
 
+    export function invertSelection(): void {
+        selection.invertSelection(hasParent, effectiveTotalCount)
+    }
+
     export function toggleSelectionAtCursor(): void {
         selection.toggleAt(cursorIndex, hasParent)
     }
@@ -1346,6 +1350,7 @@
         toggleSelectionAndMoveDown: toggleSelectionAndMoveDownAtCursor,
         selectAll: () => { selection.selectAll(hasParent, effectiveTotalCount); },
         deselectAll: () => { selection.deselectAll(); },
+        invertSelection: () => { selection.invertSelection(hasParent, effectiveTotalCount); },
         clearRangeState: () => { selection.clearRangeState(); },
     })
 

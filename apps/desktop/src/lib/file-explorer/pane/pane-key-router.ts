@@ -50,6 +50,7 @@ export interface PaneKeyRouterDeps {
   toggleSelectionAndMoveDown: () => void
   selectAll: () => void
   deselectAll: () => void
+  invertSelection: () => void
   /** End the mouse Shift+click anchor gesture. */
   clearRangeState: () => void
 }
@@ -106,6 +107,9 @@ export function createPaneKeyRouter(deps: PaneKeyRouterDeps): PaneKeyRouter {
         break
       case 'selection.deselectAll':
         deps.deselectAll()
+        break
+      case 'selection.invert':
+        deps.invertSelection()
         break
     }
     return true
