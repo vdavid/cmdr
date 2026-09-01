@@ -1,10 +1,10 @@
 //! Concurrency tests for `copy_volumes_with_progress`, split out of
-//! `volume/copy_tests.rs`. These exercise the `FuturesUnordered` batch path:
+//! `volume/copy_tests/`. These exercise the `FuturesUnordered` batch path:
 //! all-succeed, abort-on-first-error, and cancellation mid-batch. The
 //! `PoisonedReadVolume` double injects a read failure, and the local
 //! `CancelOnProgressSink` flips the operation's intent mid-flight.
 //!
-//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
+//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests/mod.rs`
 //! (`super::tests`).
 
 use super::super::super::conflict_responder_test_support::await_prompted_clash;

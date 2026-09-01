@@ -374,7 +374,7 @@ pub async fn copy_between_volumes(
 /// Both pre-flights go through here, so the tolerance can't drift between the
 /// dialog's preview and the transfer that follows it.
 /// `a_destination_that_cant_report_free_space_is_still_copyable_into` and its
-/// sibling in `copy_tests.rs` hold both sides.
+/// sibling in `copy_tests/destination.rs` hold both sides.
 async fn dest_space_if_known(dest_volume: &dyn Volume) -> Result<Option<SpaceInfo>, VolumeError> {
     match dest_volume.get_space_info().await {
         Ok(info) => Ok(Some(info)),
@@ -1145,7 +1145,7 @@ pub(crate) async fn copy_volumes_with_progress(
     }))
 }
 
-// The `volume/copy_tests.rs` suite was split for size. The crash-safety and
+// The `volume/copy_tests/` suite was split for size. The crash-safety and
 // rollback suites live in their own files; both share `make_state` /
 // `make_volumes` from `tests` (`super::tests`). The bench suite is a single
 // `#[ignore]`d, network-gated test.
@@ -1195,7 +1195,7 @@ mod source_hint_tests;
 #[path = "copy_staged_write_tests.rs"]
 mod staged_write_tests;
 #[cfg(test)]
-#[path = "copy_tests.rs"]
+#[path = "copy_tests/mod.rs"]
 mod tests;
 #[cfg(test)]
 #[path = "copy_wedge_test_support.rs"]
