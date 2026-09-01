@@ -16,6 +16,7 @@ use reqwest::{Method, Response, StatusCode};
 
 use super::WebdavVolume;
 use crate::errors::Attempted;
+use crate::transport::REQUEST_BUDGET;
 
 type BodyStream = Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>;
 
@@ -34,7 +35,12 @@ impl VolumeReadStream for WebdavReadStream {
     fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
         Box::pin(async move {
             loop {
-                let next = self.body.next().await?;
+                // The idle budget between chunks, ❗ per chunk and never for the
+                // whole body: a multi-GB download has no total ceiling.
+                let next = match tokio::time::timeout(REQUEST_BUDGET, self.body.next()).await {
+                    Ok(next) => next?,
+                    Err(_elapsed) => return Some(Err(VolumeError::ConnectionTimeout(self.path.clone()))),
+                };
                 let chunk = match next {
                     Ok(chunk) => chunk,
                     Err(e) => {

@@ -2,20 +2,20 @@
 
 The backend and its IPC surface are done: `crates/cmdr-webdav` connects to Nextcloud, ownCloud, Synology, Fastmail, and
 a generic NAS over `reqwest` + `quick-xml`, lists with PROPFIND, reads with ranged GETs, writes through a staged
-PUT+MOVE so a partial upload never wears the user's filename, handles MKCOL, DELETE, MOVE, and COPY, takes its Basic-auth
-password from the `CredentialStore` seam, holds a three-valued connection state with one unattended re-probe before it
-asks a person, and answers every connect with a typed outcome. TLS trust comes from the system roots; there are no host
-keys, no Digest auth, no watcher, and no locks. `crates/cmdr-webdav/DETAILS.md` is the canonical account of all of it,
-the app-side stores and wiring live in `apps/desktop/src-tauri/src/network/DETAILS.md` § "The WebDAV twin", the commands
-in `apps/desktop/src-tauri/src/commands/DETAILS.md`, and the Docker fixtures in
+PUT+MOVE so a partial upload never wears the user's filename, handles MKCOL, DELETE, MOVE, and COPY, takes its
+Basic-auth password from the `CredentialStore` seam, holds a three-valued connection state with one unattended re-probe
+before it asks a person, and answers every connect with a typed outcome. TLS trust comes from the system roots; there
+are no host keys, no Digest auth, no watcher, and no locks. `crates/cmdr-webdav/DETAILS.md` is the canonical account of
+all of it, the app-side stores and wiring live in `apps/desktop/src-tauri/src/network/DETAILS.md` § "The WebDAV twin",
+the commands in `apps/desktop/src-tauri/src/commands/DETAILS.md`, and the Docker fixtures in
 `apps/desktop/test/webdav-servers/README.md`. This file exists so what is left stays schedulable.
 
 ❌ Nothing here restates a mechanism. Every item points at the doc that owns it.
 
-## Before merge: three things David runs locally
+## Before merge: what David runs locally
 
 This branch was built in a cloud box without the app's system libraries, so three steps that need a full local toolchain
-are still open. Each is minutes, not hours.
+are still open. Each is minutes, not hours, except the Docker cells, which are a coffee.
 
 - [ ] **Regenerate `bindings.ts`.** The new `commands/webdav.rs` types are on the Rust side; the TS wrappers in
       `apps/desktop/src/lib/tauri-commands/webdav.ts` compile against the regenerated file. The procedure is the usual
@@ -24,22 +24,44 @@ are still open. Each is minutes, not hours.
       `write_operations/webdav_transfer_integration_test.rs`) need the `webdav` stack up, which only a Docker-capable
       machine gives. Ports 13480+ under the `cmdr-webdav.lock` + `cmdr-webdav-leases` lease namespace:
       `scripts/check/DETAILS.md` § "Two fixture stacks, two lease namespaces".
-- [ ] **Measure the public surface for `index-crate-isolation`.** The check caps each backend crate's public surface at
-      the number its audit landed on (`surfaceGuardedCrates` in `scripts/check/checks/index-crate-isolation.go`).
-      `cmdr-webdav` has no entry yet; run the count, review the surface once, and pin it.
+- [ ] **Bring the fixture stack up for the first time** (`apps/desktop/test/webdav-servers/start.sh`). The Apache config
+      was written without a Docker daemon in reach, so four things have never been observed: a `LOCK` on `hello.txt`
+      answers 200 rather than 500 (proves `DavLockDB` is writable by `daemon`), a `HEAD` on `large.bin` reports
+      `Content-Length: 4194304`, the Digest server answers 401 with only a `Digest realm="cmdr"` challenge and accepts
+      `curl --digest`, and `docker compose logs` shows no `AH00526` at startup.
+- [ ] **Confirm the two claims about real servers** that `crates/cmdr-webdav/DETAILS.md` makes from RFC reading rather
+      than observation: a 200 to a ranged GET (the slice-locally path), and sabre/dav's 411 on a chunked PUT (why
+      `Content-Length` is always sent). One Nextcloud and one Synology are enough; then evidence-anchor them.
+
+The public surface IS pinned (6 / 1 / 8, measured 2026-09-01), so widening it is the usual conversation.
+
+Four smaller things the review pass flagged and did not settle, each an hour at most:
+
+- [ ] **A budget for the non-streaming verbs.** `reqwest`'s `read_timeout` was removed because it counts from the
+      request's send and kills every upload over 10 s (verified in `reqwest` 0.13.4's `PendingRequest::poll`), so MOVE,
+      COPY, DELETE, and MKCOL now have only the connect timeout. A server that accepts the connection and hangs holds
+      the operation until the user cancels. A generous per-verb `.timeout()` (a few minutes) closes it.
+- [ ] **Self-entry skip behind a rewriting proxy.** `query.rs` skips the collection's own row by comparing its href with
+      the base path; a reverse proxy that rewrites hrefs would leave a phantom child named after the directory. Test
+      against a proxied Nextcloud.
+- [ ] **A file where an ancestor directory should be.** `create_directory_all` reads a 405 on an ancestor MKCOL as "it
+      exists", so a FILE in the way surfaces as the leaf's `NotFound` rather than a clear refusal.
+- [ ] **Double-unescape in `propfind.rs`.** `decode()` followed by `unescape` may decode an entity twice on this
+      `quick-xml`; a file named `a&amp;b` on the fixture settles it.
 
 ## 1. There is no WebDAV frontend (shared with SFTP, the bigger item)
 
-**The gap**: a connected WebDAV volume is registered and navigable by `volumeId`, and every write path can reach it,
-but nothing puts it on screen. `volume_listing::complete` has no WebDAV arm, so the sidebar never shows one, and
+**The gap**: a connected WebDAV volume is registered and navigable by `volumeId`, and every write path can reach it, but
+nothing puts it on screen. `volume_listing::complete` has no WebDAV arm, so the sidebar never shows one, and
 `resolve_path_volume` / `resolve_location` don't answer for a remote path. This is the same gap SFTP has
-(`docs/specs/later/sftp-follow-ups.md` § 1), and the two want one design: one "Servers" section, one sign-in dialog,
-one connect form that branches on the scheme. The WebDAV form is simpler (URL + username + password, no key file, no
+(`docs/specs/later/sftp-follow-ups.md` § 1), and the two want one design: one "Servers" section, one sign-in dialog, one
+connect form that branches on the scheme. The WebDAV form is simpler (URL + username + password, no key file, no
 host-key approval step), which makes it the easier first arm to build.
 
 **What already exists**: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend" carries every command, the
-connect outcomes a sign-in UI branches on, and the four lines that wire the cancel button; `getVolumeSignInState` answers
-live what a banner should ask for, and the `volume-connection-changed` event drives the reconnect banner unchanged.
+connect outcomes a sign-in UI branches on, and the four lines that wire the cancel button; `getVolumeSignInState`
+answers live what a banner should ask for, and the `volume-connection-changed` event drives the reconnect banner
+unchanged.
 
 **Cost**: the UI work, roughly a week for both backends together. David designs and builds it.
 
@@ -52,8 +74,8 @@ live what a banner should ask for, and the `volume-connection-changed` event dri
 app-side trusted-certificate store mirroring `apps/desktop/src-tauri/src/network/sftp_host_keys.rs` (keyed
 `(host, port)`, one entry per fingerprint, with `approve` / `forget` / `list` commands beside the WebDAV ones), and a
 `reqwest` client built with a custom root or verifier for that host. The tricky half is the verifier: `reqwest`'s
-`add_root_certificate` accepts a CA, not a leaf, so a self-signed leaf either goes in as its own root or the client
-uses a `rustls` verifier that compares the presented chain against the pinned fingerprint. Decide once, write it down in
+`add_root_certificate` accepts a CA, not a leaf, so a self-signed leaf either goes in as its own root or the client uses
+a `rustls` verifier that compares the presented chain against the pinned fingerprint. Decide once, write it down in
 `crates/cmdr-webdav/DETAILS.md`.
 
 **Cost**: two to three days, most of it the verifier and its tests against a fixture that serves a self-signed
@@ -67,8 +89,8 @@ only offers Digest" path is covered, and today it lands on `authentication_rejec
 **Two ways to close it**: implement RFC 7616 Digest in the client (a challenge round trip plus MD5 / SHA-256 hashing,
 about a day with the fixture already there), or add a typed `digest_only` connect outcome so the UI can say what the
 server wants rather than "wrong password" (an afternoon). Synology's default is Basic over HTTPS and Fastmail is Basic,
-so the refusal is enough for the servers the crate names; do the full implementation only when a real user's server needs
-it.
+so the refusal is enough for the servers the crate names; do the full implementation only when a real user's server
+needs it.
 
 **Cost**: an afternoon for the refusal, a day for Digest.
 
@@ -78,21 +100,21 @@ it.
 Nextcloud's own clients use the `remote.php/dav/uploads/<user>/<id>` chunking API (MKCOL a staging collection, PUT
 numbered chunks, MOVE the collection's `.file` to the destination) for anything over its chunk size.
 
-**The shape**: detect a Nextcloud server once per connect (the `OC-` response headers or the `/status.php` probe),
-and route writes above a threshold through the chunking API instead of the staged PUT+MOVE. The staged write already
-ends in a MOVE, so the assembly step is the same last line.
+**The shape**: detect a Nextcloud server once per connect (the `OC-` response headers or the `/status.php` probe), and
+route writes above a threshold through the chunking API instead of the staged PUT+MOVE. The staged write already ends in
+a MOVE, so the assembly step is the same last line.
 
 **Cost**: two days, including a Nextcloud container in the fixture stack (heavier than Apache; keep it out of the
 default lane).
 
 ## 5. Server-side quota via RFC 4331
 
-**The gap**: `quota-available-bytes` / `quota-used-bytes` on the root collection tell the free-space indicator what the
-server has. Without it a WebDAV volume reports no free space, and the copy preflight can't warn before a transfer that
-won't fit.
+**Shipped, unobserved**: `get_space_info` reads `quota-available-bytes` / `quota-used-bytes` off the root collection and
+answers `NotSupported` when the server omits them, polled every 60 s. Apache `mod_dav` omits them, so the fixture covers
+only the absent case.
 
-**Cost**: half a day. One extra property on the root PROPFIND, and a `None` when the server omits it (Apache `mod_dav`
-does, so the fixture covers the absent case only).
+**What's left**: one look at a Nextcloud and a Synology to confirm the numbers the free-space indicator shows are the
+account's quota rather than the disk's, and a fixture that carries the two properties. An hour.
 
 ## 6. WebDAV locks: deliberately not
 
