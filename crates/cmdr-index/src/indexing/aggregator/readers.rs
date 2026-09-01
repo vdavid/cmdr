@@ -133,7 +133,17 @@ pub(super) fn bulk_get_children_stats_by_id(conn: &Connection) -> Result<Childre
          FROM entries
          GROUP BY parent_id",
     )?;
-    let rows = stmt.query_map([], |row| {
+    collect_children_stats(&mut stmt, [])
+}
+
+/// Run a children-stats statement (one `parent_id, logical_sum, physical_sum,
+/// file_count, dir_count, has_symlinks` row per parent) and key the rows by
+/// parent. The bulk and scoped readers differ only in their `SELECT`.
+fn collect_children_stats(
+    stmt: &mut rusqlite::Statement<'_>,
+    params: impl rusqlite::Params,
+) -> Result<ChildrenStatsMap, IndexStoreError> {
+    let rows = stmt.query_map(params, |row| {
         Ok((
             row.get::<_, i64>(0)?,
             row.get::<_, u64>(1)?,
@@ -143,7 +153,6 @@ pub(super) fn bulk_get_children_stats_by_id(conn: &Connection) -> Result<Childre
             row.get::<_, i32>(5)? != 0,
         ))
     })?;
-
     let mut map = HashMap::new();
     for row in rows {
         let (parent_id, logical_size, physical_size, files, dirs, has_symlinks) = row?;
@@ -221,22 +230,7 @@ pub(super) fn scoped_get_children_stats_by_id(
         WHERE e.parent_id IN (SELECT id FROM subtree)
         GROUP BY e.parent_id",
     )?;
-    let rows = stmt.query_map(params![root_id], |row| {
-        Ok((
-            row.get::<_, i64>(0)?,
-            row.get::<_, u64>(1)?,
-            row.get::<_, u64>(2)?,
-            row.get::<_, u64>(3)?,
-            row.get::<_, u64>(4)?,
-            row.get::<_, i32>(5)? != 0,
-        ))
-    })?;
-    let mut map = HashMap::new();
-    for row in rows {
-        let (parent_id, logical_size, physical_size, files, dirs, has_symlinks) = row?;
-        map.insert(parent_id, (logical_size, physical_size, files, dirs, has_symlinks));
-    }
-    Ok(map)
+    collect_children_stats(&mut stmt, params![root_id])
 }
 
 /// Load child directory IDs scoped to a subtree via recursive CTE.
