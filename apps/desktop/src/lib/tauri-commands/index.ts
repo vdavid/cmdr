@@ -839,3 +839,26 @@ export type {
   SftpHostKeyIdentity,
   SftpTarget,
 } from './sftp'
+
+// WebDAV servers: connecting, secrets, and the saved-server list
+export {
+  connectWebdavVolume,
+  cancelWebdavConnect,
+  newWebdavAttemptId,
+  disconnectWebdavVolume,
+  saveWebdavCredentials,
+  hasWebdavCredentials,
+  deleteWebdavCredentials,
+  getKnownWebdavServers,
+  updateKnownWebdavServer,
+  forgetKnownWebdavServer,
+  getWebdavUnattendedReconnect,
+} from './webdav'
+export type {
+  ConnectedWebdavVolume,
+  KnownWebdavServer,
+  SavedWebdavServer,
+  WebdavConnectResult,
+  WebdavTarget,
+  WebdavUnattendedReconnect,
+} from './webdav'

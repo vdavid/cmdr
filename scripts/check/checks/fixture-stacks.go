@@ -29,4 +29,7 @@ var (
 	// servers, because the lane runs the whole `cmdr-sftp` package and each
 	// server exists for a cell in it.
 	SftpCore = StackMode{Stack: "sftp", Mode: "core"}
+	// WebdavCore is the WebDAV integration set: the Basic-auth server and the
+	// Digest-only one.
+	WebdavCore = StackMode{Stack: "webdav", Mode: "core"}
 )

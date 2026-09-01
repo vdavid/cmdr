@@ -5,6 +5,13 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Connect to WebDAV servers (Nextcloud, ownCloud, Synology, Fastmail, and any generic NAS) as a volume, with the same
+  reconnect and sign-in story as SFTP. No sidebar or sign-in UI yet.
+
 ## [0.41.0] - 2026-08-26
 
 Cmdr was borked on v0.39.0 and v0.40.0 on macOS 12 Monterey and 13 Ventura. This update fixes it. Also some update flow

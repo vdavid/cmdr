@@ -123,8 +123,8 @@ few seconds one directory buys. Measure the directory in isolation and read the 
   `emitBackendEvent(tauriPage, '<event>', payload)`. **Never** a timing-based assertion against the real work — emit the
   terminal event to clean up, and use an id nothing real can claim
 - **Cross-component flow (return-focus, dialog stack, navigation)**: E2E (Playwright)
-- **Storage volume operation (MTP, SMB)**: Integration test against a virtual fixture (virtual-mtp feature, Docker SMB
-  containers)
+- **Storage volume operation (MTP, SMB, SFTP, WebDAV)**: Integration test against a virtual fixture (virtual-mtp
+  feature, the Docker SMB, SFTP, and WebDAV stacks)
 
 ## Scratch directories (Rust)
 

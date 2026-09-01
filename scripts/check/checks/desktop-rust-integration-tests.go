@@ -10,7 +10,7 @@ import (
 )
 
 // RunRustIntegrationTests runs the Docker-backed Rust integration tests for
-// every network fixture (SMB and SFTP today). The lane's selection expression is built by
+// every network fixture (SMB, SFTP, and WebDAV today). The lane's selection expression is built by
 // `fixtureIntegrationFilter` (see `fixture-lane-coverage.go`), which also holds
 // the fixture table `desktop-fixture-lane-coverage` guards.
 //
@@ -74,6 +74,9 @@ func RunRustIntegrationTests(ctx *CheckContext) (CheckResult, error) {
 	// The SFTP stack's guard is derived from its port table rather than written
 	// out, so adding a server is one edit instead of three that can disagree.
 	if err := waitForContainers("sftp-fixture", SftpFixtureServices(), 120*time.Second); err != nil {
+		return CheckResult{}, err
+	}
+	if err := waitForContainers("webdav-fixture", WebdavFixtureServices(), 120*time.Second); err != nil {
 		return CheckResult{}, err
 	}
 

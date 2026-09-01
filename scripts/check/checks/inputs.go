@@ -62,7 +62,7 @@ var agentDocExclusions = []string{
 //     blocks, `fingerprint.go` + `cache.go` + `runner-sources.go` the cache
 //     itself, `common.go` the context and process handling every check runs
 //     through, and `test-log.go` the per-test record every lane records into.
-//     `fixture-stacks.go`, `smb_ports.go`, and `sftp_ports.go` are the fixture
+//     `fixture-stacks.go`, `smb_ports.go`, `sftp_ports.go`, and `webdav_ports.go` are the fixture
 //     vocabulary and the port env the orchestrator applies before any lane runs.
 //   - `go.mod` / `go.sum` and `check.sh` build and start the runner itself.
 //
@@ -87,6 +87,7 @@ var GlobalInputs = []string{
 	"scripts/check/checks/sftp_ports.go",
 	"scripts/check/checks/smb_ports.go",
 	"scripts/check/checks/test-log.go",
+	"scripts/check/checks/webdav_ports.go",
 }
 
 // A workspace member as the input sets see it: the package name cargo knows it
@@ -110,6 +111,7 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-index", Kind: KindApp, Glob: "crates/cmdr-index/**"},
 	{Pkg: "cmdr-sftp", Kind: KindApp, Glob: "crates/cmdr-sftp/**"},
 	{Pkg: "cmdr-smb", Kind: KindApp, Glob: "crates/cmdr-smb/**"},
+	{Pkg: "cmdr-webdav", Kind: KindApp, Glob: "crates/cmdr-webdav/**"},
 	{Pkg: "index-query", Kind: KindTool, Glob: "crates/index-query/**"},
 	{Pkg: "operation-log-dump", Kind: KindTool, Glob: "crates/operation-log-dump/**"},
 }
@@ -206,6 +208,7 @@ var rustCompileInputs = inputs(
 var rustFixtureServerInputs = []string{
 	"apps/desktop/test/sftp-servers/**",
 	"apps/desktop/test/smb-servers/**",
+	"apps/desktop/test/webdav-servers/**",
 }
 
 // frontendSourceRoots are the directories inside `svelteInputs` that hold code
@@ -319,6 +322,12 @@ const (
 	sftpEntrypointRel = "apps/desktop/test/sftp-servers/image/entrypoint.sh"
 )
 
+// The WebDAV fixture stack's host ports, the same way: Go decides them, the
+// compose file carries the `${…:-default}` for the runner-less path, and
+// `TestWebdavFixturePortsMatchComposeDefaults` keeps the two equal. No keys
+// dir: HTTP publishes no key material.
+const webdavComposeRel = "apps/desktop/test/webdav-servers/docker-compose.yml"
+
 // goTestsInputs is what `scripts-go-tests` reads, which is far more than the Go
 // trees. Fifteen tests in this package assert something about the REAL repo
 // rather than a fixture, and each can change verdict on a file no Go linter ever
@@ -333,7 +342,8 @@ const (
 //   - the frontend source roots (`TestNoFrontendSourceLoadsAgentDocs`, which is
 //     what makes `agentDocExclusions` safe),
 //   - `apps/desktop/package.json` (`TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes`),
-//   - the SFTP fixture quartet the fixture-path tests compare.
+//   - the SFTP fixture quartet the fixture-path tests compare, and the WebDAV
+//     compose file the port tests read.
 //
 // ❗ No `agentDocExclusions` here. An exclusion vetoes across the whole union, so
 // borrowing one from `rustCompileInputs` would take `scripts/check/CLAUDE.md`
@@ -348,7 +358,7 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel},
+	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

@@ -46,6 +46,7 @@ testing = [
   "cmdr-index/testing",
   "cmdr-smb/testing",
   "cmdr-sftp/testing",
+  "cmdr-webdav/testing",
 ]
 
 [[bin]]
@@ -83,6 +84,11 @@ cmdr-smb = { path = "../../../crates/cmdr-smb" }
 # `cargo check -p cmdr-sftp` verifies it without building the app. The trusted-key
 # store, the secret store, the server list, and every command stay here.
 cmdr-sftp = { path = "../../../crates/cmdr-sftp" }
+# The WebDAV backend: the `Volume` over one HTTP client, the credential lookup,
+# and the byte path. No `tauri` in its tree, so `cargo check -p cmdr-webdav`
+# verifies it without building the app. The secret store, the server list, and
+# every command stay here.
+cmdr-webdav = { path = "../../../crates/cmdr-webdav" }
 # The index: the file index, the media index, and folder importance, behind one
 # `Index` handle. Tauri-free by design and enforced — the app is its host, which
 # is why every seam it needs is answered in `src/index_host.rs` and nowhere else.
@@ -246,6 +252,8 @@ smb2 = { version = "0.20.1", features = ["serde"] }
 unicode-normalization = "0.1"
 # Percent-decoding for MCP resource URI query strings (cross-platform).
 urlencoding = "2.1.3"
+# Parsing the base URL a WebDAV sign-in form types, before the backend sees it.
+url = "2"
 # Semver comparison: the custom updater (macOS) and the cross-platform What's-new changelog slicer.
 semver = "1"
 

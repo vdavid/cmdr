@@ -23,8 +23,8 @@ Frontend: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`. Auth-flow back
 
 - **SFTP's two per-server switches are independent**: the Keychain entry IS "remember the secret", and
   `auto_reconnect` ❗ defaults to ON. `crates/cmdr-sftp/DETAILS.md`.
-- **SFTP keys everything by `(host, port, username)`** (volume id, saved server, secret store); ❌ never the host alone,
-  or two accounts share a secret and a reconnect retries the wrong one into a lockout. A trusted host KEY is keyed
+- **SFTP and WebDAV key everything by `(host, port, username)`** (volume id, saved server, secret store); ❌ never the
+  host alone, or two accounts share a secret and a reconnect retries the wrong one. A trusted host KEY is keyed
   `(host, port, algorithm)`. ❌ Never write `~/.ssh/known_hosts`. `crates/cmdr-sftp/DETAILS.md`.
 - **Credentials never go into argv** (`ps aux` / `/proc/<pid>/cmdline`): `smbclient` via a 0o600 `-A` file, `gio mount`
   via child stdin, `build_smbutil_url` only passwordless `//host` URLs.

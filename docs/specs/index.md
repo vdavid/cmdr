@@ -10,6 +10,14 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-01 `webdav-backend-follow-ups.md` - **The WebDAV backend ships without a way to reach it, and trusts
+      only what the system roots vouch for.** `crates/cmdr-webdav`, its IPC surface, and the Docker fixtures are done
+      and documented in `crates/cmdr-webdav/DETAILS.md`. Open: the sidebar and sign-in UI it shares with SFTP (the big
+      one), trust-on-first-use for the self-signed certificates most NAS boxes present, Digest auth or a typed refusal,
+      Nextcloud chunked uploads, RFC 4331 quota, and three things David runs locally because this branch was built in a
+      cloud box: `bindings.ts` regeneration, `pnpm check --include-slow`, and the surface counts for
+      `index-crate-isolation`.
+
 - [ ] 2026-08-29 `unify-rollback-plan.md` - **Cmdr still carries three rollback implementations, and nobody has decided
       whether that stays.** The journal-driven engine (the safest, since it rechecks every item against its recorded
       snapshot before touching it) now runs behind a history-dialog button with progress, pause, and mid-file cancel;

@@ -118,10 +118,44 @@ var SFTP = &Stack{
 	servicesWithoutHealthcheck: map[string]bool{},
 }
 
+// WEBDAV is the WebDAV fixture stack: two Apache httpd servers with `mod_dav`,
+// first-party like SFTP (one compose file in the fixture dir, one env-driven
+// image). It mounts no host state: HTTP has no key material to publish, so the
+// lock and the lease dir are its only machine-wide paths.
+//
+// ❗ `modeServices` has to stay in lock-step with the fixture's own case table
+// (`apps/desktop/test/webdav-servers/start.sh`). A drift between them shows up
+// as a cell with no server, which reads as a backend bug rather than as a
+// fixture one.
+var WEBDAV = &Stack{
+	Name:          "webdav",
+	ProjectName:   "webdav-fixture",
+	lockFile:      "cmdr-webdav.lock",
+	leaseDirName:  "cmdr-webdav-leases",
+	composeDirRel: "apps/desktop/test/webdav-servers",
+	composeDirEnv: "CMDR_WEBDAV_COMPOSE_DIR",
+	composeFiles:  []string{"docker-compose.yml"},
+	// First-party image, edited in this repo, so `up` rebuilds it and its
+	// contents fold into the config hash (same reasoning as SFTP's).
+	buildContextRel: "image",
+	// Host ports live in their own pinned range, 13480+, clear of SFTP's 12480+,
+	// SMB's 11480+, and smb2's 10480+.
+	portEnvPrefix: "WEBDAV_FIXTURE_",
+	modeServices: map[string][]string{
+		ModeMinimal: {"webdav-fixture-apache"},
+		ModeCore:    {"webdav-fixture-apache", "webdav-fixture-digest"},
+		ModeAll:     nil,
+	},
+	// Empty: the one image bakes a `/dev/tcp` HEALTHCHECK, so every service
+	// reports health.
+	servicesWithoutHealthcheck: map[string]bool{},
+}
+
 // registered is every stack this package leases, keyed by name.
 var registered = map[string]*Stack{
-	SMB.Name:  SMB,
-	SFTP.Name: SFTP,
+	SMB.Name:    SMB,
+	SFTP.Name:   SFTP,
+	WEBDAV.Name: WEBDAV,
 }
 
 // Lookup resolves a stack by name, listing the registered names when it can't.

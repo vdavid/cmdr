@@ -757,3 +757,5 @@ pub(crate) mod test_support;
 mod tests;
 #[cfg(test)]
 mod validation_integration_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod webdav_transfer_integration_test;

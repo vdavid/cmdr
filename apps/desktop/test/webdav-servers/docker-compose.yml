@@ -1,0 +1,53 @@
+# The WebDAV fixture stack: two real Apache httpd servers with `mod_dav`, one per
+# auth scheme a WebDAV client has to answer.
+#
+# ❗ The project is `webdav-fixture` and every service name carries that prefix.
+# `desktop-fixture-lane-coverage` identifies a WebDAV cell by an `#[ignore]`
+# reason naming `webdav-servers/start.sh` or `webdav-fixture`, so renaming a
+# service out of the prefix quietly drops it from the guard's view.
+#
+# Host ports are pinned to 13480+, a range of this stack's own: SFTP owns 12480+,
+# SMB's vendored consumer stack owns 11480+, and smb2's own harness defaults to
+# 10480+. Two stacks sharing a range made them mutually exclusive on one machine.
+# The check runner exports every `WEBDAV_FIXTURE_*_PORT` before bring-up
+# (`ApplyWebdavPortEnv`).
+#
+# ❗ Every port publishes to 127.0.0.1 via the `${WEBDAV_BIND_ADDR:-127.0.0.1}`
+# prefix. ❌ Never a bare `port:80` mapping: Docker then binds all interfaces, and
+# a writable DAV export whose credentials this repo documents in public (`ada` /
+# `openthedoor`) lands on the LAN and the tailnet of whoever runs the suite.
+# These containers routinely outlive the run that started them.
+# `TestWebdavFixturePortsBindToLoopback` fails the run if a mapping loses it.
+# Set `WEBDAV_BIND_ADDR=0.0.0.0` to reach the fixtures from a NAT'd VM or a
+# second machine, which hit the host by gateway IP and can't see loopback.
+#
+# Nothing here bind-mounts host state: HTTP has no key material to publish, so
+# there is no third machine-wide path beside the lock and the lease dir.
+#
+# One image, `image/`. What differs between services is env, so a scheme is a
+# line here rather than a Dockerfile to keep in sync.
+
+x-fixture: &fixture
+  build: ./image
+  image: cmdr-webdav-fixture:latest
+  restart: unless-stopped
+  # Principle 5 applies to CI too: two idle httpd containers should cost about
+  # what one does.
+  mem_limit: 256m
+  cpus: 0.5
+
+services:
+  # The stock server: Basic auth over a writable `/dav/` export. The default
+  # target for anything not testing an auth scheme.
+  webdav-fixture-apache:
+    <<: *fixture
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_APACHE_PORT:-13480}:80']
+
+  # Digest ONLY, realm `cmdr`: the same export behind a server that offers no
+  # Basic scheme at all. Its job is proving the client answers a typed refusal
+  # rather than looping or sending the password in the clear anyway.
+  webdav-fixture-digest:
+    <<: *fixture
+    environment:
+      AUTH: digest
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_DIGEST_PORT:-13481}:80']

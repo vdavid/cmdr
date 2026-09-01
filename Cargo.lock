@@ -1362,6 +1362,7 @@ dependencies = [
  "cmdr-index",
  "cmdr-sftp",
  "cmdr-smb",
+ "cmdr-webdav",
  "cocoon",
  "core-foundation 0.10.1",
  "core-services",
@@ -1439,6 +1440,7 @@ dependencies = [
  "tower-http 0.7.0",
  "trash",
  "unicode-normalization",
+ "url",
  "urlencoding",
  "uuid",
  "walkdir",
@@ -1589,6 +1591,24 @@ dependencies = [
  "tokio",
  "tokio-util",
  "unicode-normalization",
+]
+
+[[package]]
+name = "cmdr-webdav"
+version = "0.0.0"
+dependencies = [
+ "bytes",
+ "cmdr-fs",
+ "cmdr-webdav",
+ "futures-util",
+ "httpdate",
+ "log",
+ "percent-encoding",
+ "quick-xml 0.41.0",
+ "reqwest",
+ "tokio",
+ "tokio-util",
+ "url",
 ]
 
 [[package]]

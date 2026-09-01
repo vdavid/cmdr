@@ -57,6 +57,10 @@ commands, and notable non-obvious placements.
   approval sequence and the per-rung banner table: `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend". ❗
   Reconnecting an SFTP volume, and asking what a sign-in would want, use `networking.ts`'s `reconnectSmbVolume` /
   `reconnectSmbVolumeWithCredentials` / `getVolumeSignInState`, all three backend-neutral (two despite the name).
+- **`webdav.ts`**: WebDAV servers: connect (a tagged result, never a message to parse), cancel, disconnect, the saved-server list,
+  the password store, and the unattended-reconnect query. No host-key step. The contract:
+  `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend". Reconnect and sign-in use the same three
+  backend-neutral `networking.ts` commands SFTP does.
 - **`licensing.ts`**: license status, activation, expiry, server validation.
 - **`settings.ts`**: port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands.
 - **`tab.ts`**: tab context menu: `showTabContextMenu`, `onTabContextAction`.
@@ -115,6 +119,7 @@ commands, and notable non-obvious placements.
 - Network/SMB → `networking.ts`.
 - MTP/Android → `mtp.ts`.
 - SFTP servers → `sftp.ts`.
+- WebDAV servers → `webdav.ts`.
 - Licensing → `licensing.ts`.
 - Settings/AI → `settings.ts`.
 - Clipboard file operations (copy/cut/paste files via system clipboard) → `clipboard-files.ts`.

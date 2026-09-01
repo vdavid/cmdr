@@ -429,6 +429,8 @@ var realTreeReadingTests = map[string][]string{
 	"TestTheFixtureEntrypointRegeneratesAKeyItCanNoLongerBack": {sftpEntrypointRel},
 	"TestSftpFixturePortsBindToLoopback":                       {sftpComposeRel},
 	"TestSftpFixturePortsMatchComposeDefaults":                 {sftpComposeRel, sftpTestingRel},
+	"TestWebdavFixturePortsBindToLoopback":                     {webdavComposeRel},
+	"TestWebdavFixturePortsMatchComposeDefaults":               {webdavComposeRel},
 	"TestSiblingToolDirsAreFingerprintedByTheirCheck":          {"scripts/check-a11y-contrast", "scripts/check-css-unused", "scripts/check-btn-restyle"},
 }
 
