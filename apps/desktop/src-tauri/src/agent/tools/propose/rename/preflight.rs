@@ -22,6 +22,7 @@ use super::store::{
 };
 use crate::agent::AgentDb;
 use crate::agent::store::proposals::AcceptanceOutcome;
+use crate::file_system::write_operations::same_local_file;
 
 /// A row's user-action-time validation result. It deliberately contains no
 /// path or destination authority: the frontend retains only opaque row ids.
@@ -446,17 +447,6 @@ fn unavailable_preflight(proposal: &RenameProposal, allowed_row_ids: &[String]) 
         }
     }
     finish_preflight(rows, Vec::new())
-}
-
-#[cfg(unix)]
-fn same_local_file(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
-    use std::os::unix::fs::MetadataExt;
-    left.dev() == right.dev() && left.ino() == right.ino()
-}
-
-#[cfg(not(unix))]
-fn same_local_file(_left: &std::fs::Metadata, _right: &std::fs::Metadata) -> bool {
-    false
 }
 
 #[cfg(unix)]

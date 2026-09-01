@@ -531,19 +531,14 @@ pub(crate) async fn check_rename_validity_impl(
 
 /// Checks if a file with `new_path` exists and whether it's the same inode as `old_path`
 /// (case-only rename on case-insensitive FS).
-#[cfg(unix)]
 fn check_sibling_conflict(old_path: &Path, new_path: &Path) -> (bool, bool, Option<ConflictFileInfo>) {
-    use std::os::unix::fs::MetadataExt;
-
     let new_meta = match std::fs::symlink_metadata(new_path) {
         Ok(m) => m,
         Err(_) => return (false, false, None), // No conflict
     };
 
     // Check if it's the same inode (case-only rename)
-    let is_same_inode = std::fs::symlink_metadata(old_path)
-        .map(|old_meta| old_meta.dev() == new_meta.dev() && old_meta.ino() == new_meta.ino())
-        .unwrap_or(false);
+    let is_same_inode = std::fs::symlink_metadata(old_path).is_ok_and(|old_meta| same_local_file(&old_meta, &new_meta));
 
     let modified = new_meta
         .modified()
@@ -564,31 +559,19 @@ fn check_sibling_conflict(old_path: &Path, new_path: &Path) -> (bool, bool, Opti
     (true, is_same_inode, Some(conflict))
 }
 
+/// Whether two `symlink_metadata` results name one local file (same device and
+/// inode), which is how a case-only rename on a case-insensitive volume shows up.
+#[cfg(unix)]
+pub(crate) fn same_local_file(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    left.dev() == right.dev() && left.ino() == right.ino()
+}
+
+/// Without an inode to compare, two paths never count as one file, so a case-only
+/// rename is indistinguishable from a conflict here.
 #[cfg(not(unix))]
-fn check_sibling_conflict(_old_path: &Path, new_path: &Path) -> (bool, bool, Option<ConflictFileInfo>) {
-    let new_meta = match std::fs::symlink_metadata(new_path) {
-        Ok(m) => m,
-        Err(_) => return (false, false, None),
-    };
-
-    let modified = new_meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs() as i64);
-
-    let conflict = ConflictFileInfo {
-        name: new_path
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default(),
-        size: new_meta.len(),
-        modified,
-        is_directory: new_meta.is_dir(),
-    };
-
-    // Without inode comparison, we can't detect case-only renames
-    (true, false, Some(conflict))
+pub(crate) fn same_local_file(_left: &std::fs::Metadata, _right: &std::fs::Metadata) -> bool {
+    false
 }
 
 /// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's

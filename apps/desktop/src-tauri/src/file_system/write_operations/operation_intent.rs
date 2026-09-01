@@ -397,6 +397,30 @@ mod tests {
         gate.wait_while_paused_sync(&intent); // returns instantly or the test hangs
     }
 
+    /// Parks a worker thread on `wait_while_paused_sync` and proves it stays parked while
+    /// the gate is paused. Returns the worker's handle and its "woke" flag, so the test
+    /// can resume or cancel and watch the wake.
+    fn park_worker_on_gate(
+        gate: &Arc<PauseGate>,
+        intent: &Arc<AtomicU8>,
+    ) -> (std::thread::JoinHandle<()>, Arc<AtomicBool>) {
+        let woke = Arc::new(AtomicBool::new(false));
+        let gate_t = Arc::clone(gate);
+        let intent_t = Arc::clone(intent);
+        let woke_t = Arc::clone(&woke);
+        let handle = std::thread::spawn(move || {
+            gate_t.wait_while_paused_sync(&intent_t);
+            woke_t.store(true, Ordering::SeqCst);
+        });
+
+        // The condvar park exposes no "I am parked now" signal, so a window is the only way to
+        // establish the worker really stays blocked while paused.
+        // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
+        std::thread::sleep(Duration::from_millis(50));
+        assert!(!woke.load(Ordering::SeqCst), "worker must still be parked while paused");
+        (handle, woke)
+    }
+
     #[test]
     fn wait_while_paused_sync_unblocks_on_resume() {
         // Pause, park a worker thread on the gate, then resume from the main
@@ -405,21 +429,7 @@ mod tests {
         let gate = Arc::new(PauseGate::new(HumanWaitClock::shared()));
         let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
         gate.pause();
-
-        let woke = Arc::new(AtomicBool::new(false));
-        let gate_t = Arc::clone(&gate);
-        let intent_t = Arc::clone(&intent);
-        let woke_t = Arc::clone(&woke);
-        let handle = std::thread::spawn(move || {
-            gate_t.wait_while_paused_sync(&intent_t);
-            woke_t.store(true, Ordering::SeqCst);
-        });
-
-        // The condvar park exposes no "I am parked now" signal, so a window is the only way to
-        // establish the worker really stays blocked while paused before we resume it.
-        // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
-        std::thread::sleep(Duration::from_millis(50));
-        assert!(!woke.load(Ordering::SeqCst), "worker must still be parked while paused");
+        let (handle, woke) = park_worker_on_gate(&gate, &intent);
         gate.resume();
         handle.join().expect("worker thread joins");
         assert!(woke.load(Ordering::SeqCst), "resume must wake the parked worker");
@@ -432,21 +442,7 @@ mod tests {
         let gate = Arc::new(PauseGate::new(HumanWaitClock::shared()));
         let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
         gate.pause();
-
-        let woke = Arc::new(AtomicBool::new(false));
-        let gate_t = Arc::clone(&gate);
-        let intent_t = Arc::clone(&intent);
-        let woke_t = Arc::clone(&woke);
-        let handle = std::thread::spawn(move || {
-            gate_t.wait_while_paused_sync(&intent_t);
-            woke_t.store(true, Ordering::SeqCst);
-        });
-
-        // The condvar park has no "parked now" signal, so we hold a window to prove the worker
-        // stays blocked before the cancel lands.
-        // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
-        std::thread::sleep(Duration::from_millis(50));
-        assert!(!woke.load(Ordering::SeqCst), "still parked before cancel");
+        let (handle, woke) = park_worker_on_gate(&gate, &intent);
         // Mirror the production cancel path: flip intent to a non-Running state,
         // then `wake()` (NOT `resume()`) so the paused flag stays set. The
         // parked thread must still wake — cancellation wins over pause.

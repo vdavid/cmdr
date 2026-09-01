@@ -128,7 +128,7 @@ pub(crate) use create::{create_directory_managed, create_file_managed};
 pub(crate) use paste_clipboard::write_payload_to_dir;
 pub(crate) use rename::{
     BulkRenameRow, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
-    start_bulk_rename,
+    same_local_file, start_bulk_rename,
 };
 // The source-identity binding a reviewed batch may supply. `source_binding.rs`.
 // Volume + destination resolution and the three routed cross-volume entry points,
