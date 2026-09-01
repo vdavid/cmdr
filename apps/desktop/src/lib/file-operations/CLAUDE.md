@@ -8,9 +8,10 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
 - Subdirs with their own docs: `transfer/` (copy + move + the shared `TransferProgressDialog`), `delete/`, `mkdir/`,
   `mkfile/`, `operation-session/` (per-`operationId` event fan-out + the refcounted session registry), `queue/` (the
   standalone operation-queue window).
-- Umbrella-level files: `TransferProgressReadout.svelte`, `scan-throughput.ts`, `foreground-operation.svelte.ts`,
-  `foreground-request.ts`, `operation-conflict.svelte.ts`, `settled-operations.ts`, plus `mutation-error.ts` +
-  `mutation-error-messages.ts` (the mutation-refusal path). What each one is: DETAILS § File map.
+- Umbrella-level files (what each is: DETAILS § File map): `TransferProgressReadout.svelte`, `scan-throughput.ts`,
+  `foreground-operation.svelte.ts`, `foreground-request.ts`, `operation-conflict.svelte.ts`, `settled-operations.ts`,
+  `mutation-error.ts` + `mutation-error-messages.ts`, plus `NewEntryNameField.svelte` + `new-entry-name-check.svelte.ts`
+  and `cursor-entry.ts` (shared by `mkdir/` + `mkfile/`).
 
 ## Must-knows
 
@@ -49,5 +50,5 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
 
 Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 
-Mutation refusals, archive edits, the readout, the foreground slots, conflict prompts, and scan throughput:
-`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Depth on all of the above: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or
+advising.

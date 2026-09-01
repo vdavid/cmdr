@@ -10,7 +10,8 @@ in the section or registry, not here. Parent: `../CLAUDE.md` (registry, store, s
   `SettingsSection` (h2 + slot), `SectionSummary` (card grid into subsections).
 - Registry-driven rows: `SettingRow` (label + description + control + reset pip + restart badge) wrapping
   `SettingSwitch` / `Checkbox` / `Select` / `ToggleGroup` / `RadioGroup` / `Slider` / `NumberInput` / `PasswordInput` /
-  `ColorSwatchPicker`. Which one to reach for: DETAILS § Picking a control.
+  `ColorSwatchPicker`. Which one to reach for: DETAILS § Picking a control. `SettingSwitch` and `SettingCheckbox` share
+  their state via `boolean-setting.svelte.ts` (`useBooleanSetting(id)`).
 - Every `.svelte` here is axe-audited (tier 3) from one directory-level file, `setting-components.a11y.test.ts`. Adding
   a primitive means adding a `describe` block there, not a new file; `a11y-coverage` fails if it can't see the import.
 
