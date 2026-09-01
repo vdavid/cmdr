@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-BSL--1.1-blue)
 
-An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free forever for
+An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free for
 personal use. With fully optional, privacy-first AI features.
 
 Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026. Like Total

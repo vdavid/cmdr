@@ -16,7 +16,7 @@ values via IPC.
 
 ## License types
 
-- **Personal**: free forever. "Personal use only" in title bar. Commercial reminder every 30 days.
+- **Personal**: free. "Personal use only" in title bar. Commercial reminder every 30 days.
 - **Commercial subscription**: $59/year. Server validation every 7 days, 30-day offline grace on network failure.
 - **Commercial perpetual**: $199 one-time. No periodic validation. 3 years of updates.
 - **Expired**: reverts to Personal behavior (not locked out). Shows the modal once, then behaves as Personal.

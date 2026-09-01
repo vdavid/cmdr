@@ -42,12 +42,12 @@ sections above.
 
 ### One-liner — `AGENTS.md`
 
-> An extremely fast AI-native file manager written in Rust, free forever for personal use on macOS (BSL license).
+> An extremely fast AI-native file manager written in Rust, free for personal use on macOS (BSL license).
 > Downloadable at the website.
 
 ### Intro — `README.md`
 
-> An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free forever
+> An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free
 > for personal use. With fully optional, privacy-first AI features.
 >
 > Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026. Like Total
@@ -63,7 +63,7 @@ sections above.
 - Hero headline: "Finally, a file manager from {currentYear}!"
 - Hero subhead: "Indexes your whole drive in minutes. Instant search, visible folder sizes, keyboard-driven everything.
   Built in Rust, free for personal use."
-- Pricing hint: "Source-available · Free forever for personal use · Commercial from $59/year"
+- Pricing hint: "Source-available · Free for personal use · Commercial from $59/year"
 
 ### Meta description — `apps/website/src/layouts/Layout.astro`
 
@@ -75,7 +75,7 @@ sections above.
 > The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 >
 > Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS, built with Rust, Tauri 2, and Svelte 5.
-> It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search. Free forever for
+> It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search. Free for
 > personal use, source-available under BSL 1.1.
 
 ### Agent-facing summary (full) — `apps/website/src/pages/llms-full.txt.ts`
@@ -83,7 +83,7 @@ sections above.
 > Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri
 > 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search
 > and keyboard-driven everything. AI features (smart search, natural language rename, batch operations) are in active
-> development. Free forever for personal use, source-available under BSL 1.1.
+> development. Free for personal use, source-available under BSL 1.1.
 
 ### Feature list — `apps/website/src/pages/llms.txt.ts`
 
