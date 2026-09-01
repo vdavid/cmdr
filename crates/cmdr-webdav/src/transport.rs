@@ -32,6 +32,17 @@ pub(crate) const REQUEST_BUDGET: Duration = Duration::from_secs(10);
 /// legitimately take a while.
 const PROPFIND_BUDGET: Duration = Duration::from_secs(60);
 
+/// The total budget of one non-streaming verb (MOVE, COPY, DELETE, MKCOL, and
+/// `create_file`'s small in-memory PUT): a server that accepted the connection
+/// and then hangs is cut instead of holding the operation until the user
+/// cancels. Generous, because a server-side COPY of a large file or a
+/// recursive DELETE can legitimately take minutes.
+///
+/// ❌ Never on the streaming PUT or a GET: their bodies stream for as long as
+/// they take, and their stall detection lives elsewhere (`streams.rs`'s idle
+/// budget for downloads; the upload has none, see `REQUEST_BUDGET`).
+pub(crate) const MUTATION_BUDGET: Duration = Duration::from_secs(10 * 60);
+
 /// Everything but the unreserved characters gets encoded in a path segment:
 /// spaces, `#`, `?`, `%`, and every other reserved byte included.
 const SEGMENT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'-').remove(b'.').remove(b'_').remove(b'~');

@@ -35,19 +35,13 @@ are still open. Each is minutes, not hours, except the Docker cells, which are a
 
 The public surface IS pinned (6 / 1 / 8, measured 2026-09-01), so widening it is the usual conversation.
 
-Four smaller things the review pass flagged and did not settle, each an hour at most:
+Two smaller things the review pass flagged and did not settle, each an hour at most:
 
-- [ ] **A budget for the non-streaming verbs.** `reqwest`'s `read_timeout` was removed because it counts from the
-      request's send and kills every upload over 10 s (verified in `reqwest` 0.13.4's `PendingRequest::poll`), so MOVE,
-      COPY, DELETE, and MKCOL now have only the connect timeout. A server that accepts the connection and hangs holds
-      the operation until the user cancels. A generous per-verb `.timeout()` (a few minutes) closes it.
 - [ ] **Self-entry skip behind a rewriting proxy.** `query.rs` skips the collection's own row by comparing its href with
       the base path; a reverse proxy that rewrites hrefs would leave a phantom child named after the directory. Test
       against a proxied Nextcloud.
 - [ ] **A file where an ancestor directory should be.** `create_directory_all` reads a 405 on an ancestor MKCOL as "it
       exists", so a FILE in the way surfaces as the leaf's `NotFound` rather than a clear refusal.
-- [ ] **Double-unescape in `propfind.rs`.** `decode()` followed by `unescape` may decode an entity twice on this
-      `quick-xml`; a file named `a&amp;b` on the fixture settles it.
 
 ## 1. There is no WebDAV frontend (shared with SFTP, the bigger item)
 
