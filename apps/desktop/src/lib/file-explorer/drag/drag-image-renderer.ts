@@ -314,16 +314,8 @@ export async function renderDragImage(fileInfos: DragFileInfo[]): Promise<HTMLCa
   return canvas
 }
 
-/** Draws a filled rounded rectangle. */
-function drawRoundedRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-  fillColor: string,
-) {
+/** Traces a rounded-rectangle path (no fill or stroke) into the current path. */
+function traceRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
   ctx.lineTo(x + w - r, y)
@@ -335,6 +327,19 @@ function drawRoundedRect(
   ctx.lineTo(x, y + r)
   ctx.quadraticCurveTo(x, y, x + r, y)
   ctx.closePath()
+}
+
+/** Draws a filled rounded rectangle. */
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+  fillColor: string,
+) {
+  traceRoundedRect(ctx, x, y, w, h, r)
   ctx.fillStyle = fillColor
   ctx.fill()
 }
@@ -349,17 +354,7 @@ function drawRoundedRectStroke(
   r: number,
   strokeColor: string,
 ) {
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.lineTo(x + w - r, y)
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
-  ctx.lineTo(x + r, y + h)
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
-  ctx.lineTo(x, y + r)
-  ctx.quadraticCurveTo(x, y, x + r, y)
-  ctx.closePath()
+  traceRoundedRect(ctx, x, y, w, h, r)
   ctx.strokeStyle = strokeColor
   ctx.lineWidth = 1
   ctx.stroke()

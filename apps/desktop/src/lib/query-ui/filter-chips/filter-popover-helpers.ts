@@ -278,13 +278,6 @@ export function resolveDatePreset(key: string, now: Date = new Date()): string |
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const ms = 24 * 60 * 60 * 1000
 
-  function format(d: Date): string {
-    const yyyy = String(d.getFullYear()).padStart(4, '0')
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd}`
-  }
-
   /** Days back to Monday (ISO 8601 start-of-week). Sunday is 7 days back. */
   function daysBackToMonday(date: Date): number {
     const day = date.getDay() // 0..6, Sun=0
@@ -293,21 +286,21 @@ export function resolveDatePreset(key: string, now: Date = new Date()): string |
 
   switch (key) {
     case 'today':
-      return format(startOfDay)
+      return isoLocalDate(startOfDay)
     case 'yesterday':
-      return format(new Date(startOfDay.getTime() - ms))
+      return isoLocalDate(new Date(startOfDay.getTime() - ms))
     case 'thisWeek':
-      return format(new Date(startOfDay.getTime() - daysBackToMonday(startOfDay) * ms))
+      return isoLocalDate(new Date(startOfDay.getTime() - daysBackToMonday(startOfDay) * ms))
     case 'lastWeek': {
       const thisWeekStart = new Date(startOfDay.getTime() - daysBackToMonday(startOfDay) * ms)
-      return format(new Date(thisWeekStart.getTime() - 7 * ms))
+      return isoLocalDate(new Date(thisWeekStart.getTime() - 7 * ms))
     }
     case 'thisMonth':
-      return format(new Date(now.getFullYear(), now.getMonth(), 1))
+      return isoLocalDate(new Date(now.getFullYear(), now.getMonth(), 1))
     case 'lastMonth':
-      return format(new Date(now.getFullYear(), now.getMonth() - 1, 1))
+      return isoLocalDate(new Date(now.getFullYear(), now.getMonth() - 1, 1))
     case 'thisYear':
-      return format(new Date(now.getFullYear(), 0, 1))
+      return isoLocalDate(new Date(now.getFullYear(), 0, 1))
     default:
       return null
   }
