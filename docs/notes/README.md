@@ -208,3 +208,14 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   unreadable directory aborts the recursive watch, the `Cmd+` menu accelerators that bind to Super rather than Ctrl, and
   the 504 macOS-specific strings in the English catalog. Contributed alongside the Linux `.deb` bundling, and kept
   because Linux isn't advertised, so nothing here has an issue behind it.
+
+**An incident diagnosis kept for the lever it rules out:**
+
+- `smb-credit-stall-2026-09-01.md` — why a 300 GB SMB-to-SMB copy stopped moving bytes 30 seconds into its copy phase.
+  **The compound fast-path charged SMB credits for `max_read` (8 MB, 130 credits) rather than for the 4 MB file it was
+  reading**, which capped the connection at three concurrent reads against a 512-credit window while the transfer
+  launched 10, so seven tasks parked on credits that couldn't arrive. Read it before anyone raises `CREDIT_TARGET`,
+  widens the fast-path threshold, or adds adaptive concurrency backoff: the arithmetic says the charge was the lever and
+  the other three aren't. Carries the stall dump that confirmed the three-of-10 prediction exactly, the truncation guard
+  the fix had to move, and the two things it does NOT explain (the destination's independently slow send side, and a
+  Pi-class source ceiling of 7.4 MB/s).
