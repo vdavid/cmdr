@@ -157,6 +157,14 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing as the input to a job that hasn't been done yet:**
 
+- `adversarial-data-safety-hunt-2026-09-01.md` — a ranked ledger of 15 data-safety defects in the two transfer engines
+  and the write-ops umbrella, each verified against the cited code, none fixed yet. **Seven are rated high and all seven
+  are silent**: the cross-FS move deletes the live source tree rather than the set it staged, the deep merge misses a
+  case-differing destination name and replaces the file under Skip, two merge paths follow a directory symlink and empty
+  its target, "Overwrite all smaller/older" compares a file against a folder's inode and deletes the folder, a failed
+  batch auto-rolls back files that already replaced originals, and the stale-temp reaper deletes the only copy of new
+  data after a finalize failure. It also names the 14 subsystems the run never reached, in the order a second run should
+  take them. Work it before launch.
 - `flake-corpus-2026-08-08.md` — every test seen failing without a defect behind it, ranked over 48 E2E shard-runs and
   six `rust-tests` contention verdicts, with a cause hypothesis and confidence per entry, plus the structural levers a
   de-flaking pass should reach for. ⚠️ Its E2E counts come from `/tmp` logs that age out, so they can't be re-derived.
