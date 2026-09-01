@@ -1,25 +1,24 @@
 <script lang="ts">
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import LabeledRow from '../LabeledRow.svelte'
 
     const statuses = ['alpha', 'beta'] as const
 </script>
 
 <SectionCard id="components-status-badge" label="Status badge">
     <div class="rows">
-        <div class="row">
-            <span class="row-label">Statuses</span>
+        <LabeledRow label="Statuses">
             <div class="badges">
                 {#each statuses as status (status)}
                     <StatusBadge {status} />
                 {/each}
             </div>
-        </div>
+        </LabeledRow>
 
-        <div class="row">
-            <span class="row-label">Next to a title</span>
+        <LabeledRow label="Next to a title">
             <span class="title-sample">Search <StatusBadge status="alpha" /></span>
-        </div>
+        </LabeledRow>
     </div>
 </SectionCard>
 
@@ -28,19 +27,6 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-md);
-    }
-
-    .row {
-        display: flex;
-        gap: var(--spacing-lg);
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .row-label {
-        min-width: 140px;
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
     }
 
     .badges {

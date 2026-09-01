@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte'
-    import { openExternalUrl } from '$lib/tauri-commands'
+    import CatalogPage from '../CatalogPage.svelte'
     import IconsSection from './sections/IconsSection.svelte'
     import SpinnersSection from './sections/SpinnersSection.svelte'
     import StatusBadgesSection from './sections/StatusBadgesSection.svelte'
@@ -21,108 +20,26 @@
     // eslint-disable-next-line svelte/valid-prop-names-in-kit-pages
     const { targetAnchor = null, onSectionInView }: Props = $props()
 
-    /** Ordered sub-ids matching the sidebar order. Used for the IntersectionObserver wiring. */
+    /** Ordered sub-ids matching the sidebar order. */
     const SUB_IDS = ['icons', 'spinners', 'status-badges', 'illustrations', 'animations', 'drive-indexing'] as const
-
-    let rootEl: HTMLElement | undefined = $state()
-    let lastScrolledTo: string | null = null
-    let observer: IntersectionObserver | undefined
-    let suppressObserverUntil = 0
-
-    /** Walk up to the nearest scrollable ancestor (for IntersectionObserver `root`). */
-    function findScrollParent(el: HTMLElement | null): HTMLElement | null {
-        let current = el?.parentElement ?? null
-        while (current) {
-            const style = window.getComputedStyle(current)
-            if (/(auto|scroll)/.test(style.overflowY)) return current
-            current = current.parentElement
-        }
-        return null
-    }
-
-    function scrollToAnchor(subId: string) {
-        const el = document.getElementById(`graphics-${subId}`)
-        if (!el) return
-        suppressObserverUntil = Date.now() + 400
-        el.scrollIntoView({ block: 'start', behavior: 'auto' })
-    }
-
-    $effect(() => {
-        const next = targetAnchor
-        if (next === lastScrolledTo) return
-        lastScrolledTo = next
-        if (next === null) {
-            // Parent ("Graphics") clicked: scroll to top.
-            const scrollParent = findScrollParent(rootEl ?? null)
-            suppressObserverUntil = Date.now() + 400
-            scrollParent?.scrollTo({ top: 0, behavior: 'auto' })
-        } else {
-            scrollToAnchor(next)
-        }
-    })
-
-    onMount(() => {
-        if (!import.meta.env.DEV) return
-        const root = findScrollParent(rootEl ?? null)
-        observer = new IntersectionObserver(
-            (entries) => {
-                if (Date.now() < suppressObserverUntil) return
-                // Pick the entry closest to the top of the root.
-                const visible = entries.filter((e) => e.isIntersecting)
-                if (visible.length === 0) return
-                visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-                const first = visible[0]
-                const id = first.target.id.replace(/^graphics-/, '')
-                if (id !== lastScrolledTo) {
-                    lastScrolledTo = id
-                    onSectionInView?.(id)
-                }
-            },
-            { root, rootMargin: '0px 0px -60% 0px', threshold: 0 },
-        )
-        for (const subId of SUB_IDS) {
-            const el = document.getElementById(`graphics-${subId}`)
-            if (el) observer.observe(el)
-        }
-        // If a targetAnchor was set on mount, scroll there now (effect already
-        // ran but the elements may not have existed yet).
-        if (targetAnchor !== null) scrollToAnchor(targetAnchor)
-        return () => observer?.disconnect()
-    })
-
-    function browserUrl(): string {
-        if (typeof window === 'undefined') return ''
-        return `${window.location.origin}/dev/graphics`
-    }
-
-    async function openInBrowser(event: MouseEvent) {
-        event.preventDefault()
-        try {
-            await openExternalUrl(browserUrl())
-        } catch (error) {
-            // eslint-disable-next-line no-console -- dev-only catalog; surface failure to console when outside Tauri
-            console.warn('Catalog: openExternalUrl failed (likely outside Tauri):', error)
-        }
-    }
 </script>
 
 <!-- Renders in dev, and ALSO in the i18n screenshot-capture build (`__CMDR_I18N_CAPTURE__`,
      a Vite define true only there, dead-code-eliminated in prod) so the capture driver can
      screenshot the drive-indexing checklist tiles by their anchors. Zero shipping impact. -->
 {#if import.meta.env.DEV || __CMDR_I18N_CAPTURE__}
-    <div bind:this={rootEl} class="catalog">
-        <header class="catalog-header">
-            <h2>Graphics</h2>
-            <p>
-                Every visual asset the app renders: icons, spinners, status badges, illustrations, and animations. Each
-                item carries a tooltip describing where it shows up in the app, so a designer can review them for
-                consistency.
-            </p>
-            <p class="catalog-browser-link">
-                <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- href is decorative; onclick routes through openExternalUrl -->
-                <a href={browserUrl()} onclick={openInBrowser}>Open in browser ↗</a>
-            </p>
-        </header>
+    <CatalogPage
+        prefix="graphics"
+        subIds={SUB_IDS}
+        route="/dev/graphics"
+        title="Graphics"
+        {targetAnchor}
+        {onSectionInView}
+    >
+        {#snippet description()}
+            Every visual asset the app renders: icons, spinners, status badges, illustrations, and animations. Each item
+            carries a tooltip describing where it shows up in the app, so a designer can review them for consistency.
+        {/snippet}
 
         <IconsSection />
         <SpinnersSection />
@@ -130,35 +47,5 @@
         <IllustrationsSection />
         <AnimationsSection />
         <IndexingStatusSection />
-    </div>
+    </CatalogPage>
 {/if}
-
-<style>
-    .catalog {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .catalog-header {
-        margin-bottom: var(--spacing-xl);
-    }
-
-    .catalog-header h2 {
-        margin: 0 0 var(--spacing-xs);
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        color: var(--color-text-primary);
-    }
-
-    .catalog-header p {
-        margin: 0 0 var(--spacing-xs);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-    }
-
-    .catalog-browser-link a {
-        font-size: var(--font-size-sm);
-        color: var(--color-accent-text);
-        text-decoration: underline;
-    }
-</style>
