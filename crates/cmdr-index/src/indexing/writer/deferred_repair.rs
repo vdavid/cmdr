@@ -170,9 +170,10 @@ impl DeferredRepairs {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
+    use crate::indexing::store::{IndexStore, ROOT_ID};
     use crate::indexing::stress_test_helpers::check_db_consistency;
     use crate::indexing::writer::delta::propagate_delta_by_id;
+    use crate::indexing::writer::entry_fixtures::{dir_entry, file_entry};
     use crate::indexing::writer::tests::setup_db;
     use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
     use cmdr_fs::testing::wait_until;
@@ -194,34 +195,6 @@ mod tests {
     fn unblock_dir_stats_writes(conn: &rusqlite::Connection) {
         conn.execute_batch("DROP TRIGGER block_ds_insert; DROP TRIGGER block_ds_update;")
             .expect("drop blocking triggers");
-    }
-
-    fn dir_entry(id: i64, parent_id: i64, name: &str) -> EntryRow {
-        EntryRow {
-            id,
-            parent_id,
-            name: name.into(),
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: None,
-            inode: None,
-        }
-    }
-
-    fn file_entry(id: i64, parent_id: i64, name: &str, size: u64) -> EntryRow {
-        EntryRow {
-            id,
-            parent_id,
-            name: name.into(),
-            is_directory: false,
-            is_symlink: false,
-            logical_size: Some(size),
-            physical_size: Some(size),
-            modified_at: None,
-            inode: None,
-        }
     }
 
     /// Build ROOT → A(10) → B(20) → f21(700), aggregated correctly, and return a
