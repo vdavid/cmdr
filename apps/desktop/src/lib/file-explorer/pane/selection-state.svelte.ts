@@ -170,12 +170,13 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
   // `effectiveTotalCount` (stale after a refresh) are dropped rather than kept
   // inverted, so the result is always a subset of the visible rows.
   function invertSelection(hasParent: boolean, effectiveTotalCount: number) {
-    const previouslySelected = new Set(selectedIndices)
-    selectedIndices.clear()
     const startIndex = hasParent ? 1 : 0
+    const next: number[] = []
     for (let i = startIndex; i < effectiveTotalCount; i++) {
-      if (!previouslySelected.has(i)) selectedIndices.add(i)
+      if (!selectedIndices.has(i)) next.push(i)
     }
+    selectedIndices.clear()
+    for (const i of next) selectedIndices.add(i)
     clearRangeState()
     onChanged?.()
   }

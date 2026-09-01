@@ -179,6 +179,8 @@ export interface FilePaneAPI {
   setSelectedIndices(indices: number[]): void
   clearSelection(): void
   selectAll(): void
+  /** Flip every selectable row; `..` stays untouched. */
+  invertSelection(): void
   toggleSelectionAtCursor(): void
   toggleSelectionAndMoveDownAtCursor(): void
   selectRange(startIndex: number, endIndex: number): void
