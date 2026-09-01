@@ -85,6 +85,14 @@ impl SmbVolume {
             );
             c
         };
+        // Refresh what the credit window can carry, while a `Connection` is in
+        // hand: `Volume::max_concurrent_ops` is sync and can't reach one, and
+        // this is the single place every read and write passes through. See
+        // `REPRESENTATIVE_COPY_REQUEST_BYTES`.
+        self.inner.credit_copy_capacity.store(
+            conn.credit_capacity_for(super::REPRESENTATIVE_COPY_REQUEST_BYTES),
+            Ordering::Relaxed,
+        );
         Ok((tree, conn))
     }
 

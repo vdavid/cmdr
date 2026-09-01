@@ -33,7 +33,8 @@ Discovery, the keychain, mounts, upgrades, and every human-facing word stay in t
   pipeline: `write_chunk` returns on ACCEPTANCE, so a slow link diverges by `concurrency x window`. Size any test
   reaching this path off `negotiated_max_write()`, or it silently takes the compound path.
 - **A read that knows its size sends `read_file_compound_sized`**: unsized, it charges credits for a whole `max_read`
-  (130 for a 4 MB file), which parked seven of ten slots on a 300 GB copy.
+  (130 for a 4 MB file), which parked seven of ten slots on a 300 GB copy. `max_concurrent_ops` clamps by
+  `credit_capacity_for`, same reason.
 - **The batch scan keeps its own oracle short-circuit** (the watcher earns the `authoritative_listing` shortcut), but
   the conflict matcher and the batch fold are `cmdr_fs::volume::scan_walk`'s, so every backend hands a conflict dialog
   the same shape.
@@ -44,8 +45,8 @@ Discovery, the keychain, mounts, upgrades, and every human-facing word stay in t
   somewhere wrong.
 - **Watcher filenames need NFC→NFD normalizing and ❌ nothing else**: smb2 already decodes separators, so a `\` in a
   filename is part of its NAME; re-normalizing loses the entry.
-- **`SmbConnectionParams` carries NFC names; build it with `new`, ❌ never a struct literal off a raw `statfs` name**:
-  a decomposed share is answered `STATUS_BAD_NETWORK_NAME`.
+- **`SmbConnectionParams` carries NFC names; build it with `new`, ❌ never a struct literal off a raw `statfs` name**: a
+  decomposed share is answered `STATUS_BAD_NETWORK_NAME`.
 
 ## Crate must-knows
 

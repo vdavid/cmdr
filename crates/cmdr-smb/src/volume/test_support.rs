@@ -66,6 +66,7 @@ pub(super) fn make_test_volume_with(volume_id: &str, host: VolumeHost) -> SmbVol
             me: me.clone(),
             scan_pool: tokio::sync::RwLock::new(None),
             scan_session_refs: AtomicUsize::new(0),
+            credit_copy_capacity: AtomicUsize::new(0),
             active_mount_path: Arc::new(StdRwLock::new(mount_path)),
             host,
         }),

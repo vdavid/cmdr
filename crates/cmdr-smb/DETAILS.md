@@ -339,16 +339,15 @@ pinned to the old root would keep feeding paths that no longer name anything.
 
 Every SMB2 request spends credits from a budget the server grants (smb2 steers toward a ~512-credit window), and the
 charge follows the size of the RESPONSE the request asks for, one credit per 64 KB. Credits and in-flight bytes are
-therefore the same quantity seen twice, which decides both halves of how a copy is sized.
+therefore the same quantity seen twice, which decides both halves of how a copy is sized. The incident that established
+all of this, with the log extract and the arithmetic: `docs/notes/smb-credit-stall-2026-09-01.md`.
 
 **The hinted read asks for the file's size, never `max_read`.** `open_read_stream_with_hint` takes the compound
 fast-path (CREATE+READ+CLOSE in one frame) for any hint that fits one READ, and drives
 `Tree::read_file_compound_sized(conn, path, size)`. The unsized `read_file_compound` asks for `max_read` whatever the
-file weighs, so against a server negotiating 8 MB every small file booked 128 credits plus one each for CREATE and
-CLOSE: 130 credits for a 4 MB camera clip, of which three fit the window. A 119,204-file, 300 GB SMB-to-SMB copy
-launched ten concurrent reads, seven of them parked on credits holding a transfer slot and reporting no progress, and
-the copy stalled. Sized, the same read charges ~66 and the window carries seven. The scan pool's prefetch
-(`scan_pool.rs::open_read_stream_for_scan_impl`) reads the same way, for the same reason.
+file weighs, which is what stalled a 300 GB copy of 4 MB files: 130 credits each, three of them in a 512-credit window,
+seven of ten copy slots parked. The scan pool's prefetch (`scan_pool.rs::open_read_stream_for_scan_impl`) reads the same
+way, for the same reason.
 
 Sizing the read also moves smb2's anti-truncation guard: it refuses with `ErrorKind::TooLarge` when the server reports
 the file is bigger than the length asked for, so the refusal now trips at the HINT rather than at `max_read`. That makes
@@ -356,6 +355,26 @@ the two size-drift arms in the fast path load-bearing, not decoration. A file th
 `TooLarge` and falls through to streaming, which serves it whole; one that SHRANK comes back short of the hint
 (`data.len() != size`) and falls through the same way. Neither ever hands the copy a prefix under the file's final name.
 ❌ Never "simplify" either arm away, and never call the unsized `read_file_compound` from a path that knows the size.
+
+**`max_concurrent_ops` is clamped by what the window can carry.** The setting alone (`network.smbConcurrency`,
+default 10) says nothing about the connection, so the answer is `min(setting, credit_capacity_for(512 KB))`, floored at
+1 and never raised above what the user chose. `Connection::credit_capacity_for` is sync but the connection lives behind
+an async mutex, so `clone_session` stores the figure in `SmbVolumeInner::credit_copy_capacity` on its way through (every
+read and write passes there) and the sync method reads the atomic; `0` means nothing has measured it yet and the setting
+stands.
+
+The 512 KB question is the judgement call in it. There's no per-file knowledge at that seam, and the risk isn't
+symmetric: because charge and in-flight bytes are the same quantity, extra slots beyond what the window carries only
+park until a peer finishes (the wire is already full), while too FEW slots leave the window half empty and cost real
+throughput no retry gets back. So the figure has to sit at or below the typical copy request, not at the worst one:
+`max_read` would answer three or four slots and throttle a queue of 4 MB files the window carries seven of. One
+pipelined streaming READ (smb2 chunks a download at ~512 KB) is the smallest request a copy slot actually sends, so the
+cap stays clear of a healthy session and bites only where it must, on a server whose whole window can't carry the slots
+the setting asks for. Per-file sizing would be the accurate answer, and it belongs at the read, not here: it would need
+the transfer driver to budget slots by size rather than by count.
+
+Only the transfer driver reads `max_concurrent_ops` (`write_operations/transfer/volume/copy.rs`), so this clamp never
+slows a listing, a stat, or the watcher; those share the same window and are better off for the headroom.
 
 ## Decisions
 

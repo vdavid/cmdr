@@ -328,7 +328,21 @@ impl Volume for SmbVolume {
         // the slider and the next batch picks it up, with no remount. What the
         // host resolves the `"smb"` namespace to is its business (today the
         // `network.smbConcurrency` setting, default 10, clamped to 1..=32).
-        self.inner.host().settings().max_concurrent_operations(super::BACKEND)
+        let requested = self.inner.host().settings().max_concurrent_operations(super::BACKEND);
+        // Then bounded by what the session's credit window can actually carry:
+        // a slot the window can't serve parks on credits instead of copying,
+        // holding a transfer slot that reports no progress. Only copy slots read
+        // this method (the transfer driver is its sole caller), so listings,
+        // stats, and the watcher keep their own share of the window either way.
+        // The measurement is the connection's, refreshed by `clone_session`;
+        // `0` means no session has been cloned yet, so there's nothing to clamp
+        // with. `DETAILS.md` § "Copy concurrency and the credit window".
+        match self.inner.credit_copy_capacity.load(Ordering::Relaxed) {
+            0 => requested,
+            // `credit_capacity_for` never answers 0, and neither may this: a
+            // copy engine handed zero slots does nothing at all.
+            capacity => requested.clamp(1, capacity),
+        }
     }
 
     fn open_read_stream<'a>(

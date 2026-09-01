@@ -714,7 +714,7 @@ async fn smb_integration_write_progress_reports_confirmed_bytes_not_queued_ones(
 // ── The hinted read: one sized frame, and no truncation ─────────
 
 /// Drains a read stream to the end and hands back everything it produced.
-async fn drain(mut stream: Box<dyn cmdr_fs::volume::VolumeReadStream>) -> Vec<u8> {
+async fn drain(mut stream: Box<dyn VolumeReadStream>) -> Vec<u8> {
     let mut out = Vec::new();
     while let Some(chunk) = stream.next_chunk().await {
         out.extend_from_slice(&chunk.expect("no read error"));
@@ -826,7 +826,34 @@ async fn smb_integration_a_file_that_shrank_since_the_scan_is_read_in_full() {
         .unwrap();
     let got = drain(stream).await;
 
-    assert_eq!(got, data, "the reader must serve the file as it is now, whole and no longer");
+    assert_eq!(
+        got, data,
+        "the reader must serve the file as it is now, whole and no longer"
+    );
+
+    ensure_clean(&vol, &dir).await;
+}
+
+/// Against a real server, the copy-slot count stays inside its two bounds: never
+/// above what the user asked for (the detached host's default), and never `0` —
+/// a copy engine handed zero slots does nothing at all.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_copy_concurrency_stays_within_the_credit_window() {
+    let vol = make_docker_volume().await;
+    let requested = vol.inner.host().settings().max_concurrent_operations(BACKEND);
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.unwrap();
+
+    // Any op clones the session, which is where the window's capacity is measured.
+    let _ = vol.list_directory(Path::new(&dir), None).await.unwrap();
+
+    let slots = vol.max_concurrent_ops();
+    assert!(
+        (1..=requested).contains(&slots),
+        "copy slots must stay in 1..={requested} once the credit window is measured, got {slots}"
+    );
 
     ensure_clean(&vol, &dir).await;
 }
