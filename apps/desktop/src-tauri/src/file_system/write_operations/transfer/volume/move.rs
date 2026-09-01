@@ -448,12 +448,19 @@ pub(crate) async fn move_volumes_with_progress(
         &driver_config,
         {
             let dest_volume = Arc::clone(&dest_volume);
+            let op_probe_precheck = Arc::clone(&op_probe);
             move |p: &Path| -> FetchFut<'_> {
                 let dest_volume = Arc::clone(&dest_volume);
+                let op_probe_precheck = Arc::clone(&op_probe_precheck);
                 let p_owned = p.to_path_buf();
                 Box::pin(async move {
                     // Recorded BEFORE the await: a `get_metadata` on a wedged
                     // share returns to nobody, and a dump has to be able to name
+                    // it as the step in progress.
+                    op_probe_precheck.set_driver_phase(
+                        super::super::transfer_probe::DriverPhase::PreparingNext,
+                        &p_owned.display().to_string(),
+                    );
                     dest_volume
                         .get_metadata(&p_owned)
                         .await
@@ -471,6 +478,7 @@ pub(crate) async fn move_volumes_with_progress(
             let source_hints = Arc::clone(&source_hints);
             let config = config_owned.clone();
             let operation_id = operation_id_owned.clone();
+            let op_probe_conflict = Arc::clone(&op_probe);
             move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
@@ -480,6 +488,7 @@ pub(crate) async fn move_volumes_with_progress(
                 let source_hints = Arc::clone(&source_hints);
                 let config = config.clone();
                 let operation_id = operation_id.clone();
+                let op_probe_conflict = Arc::clone(&op_probe_conflict);
                 let source_path_owned = input.source_path.to_path_buf();
                 let initial_dest_owned = input.initial_dest_path.to_path_buf();
                 let dest_size_hint = input.dest_size_hint;
@@ -491,6 +500,11 @@ pub(crate) async fn move_volumes_with_progress(
                     // Parked on a PERSON, unbounded by design and with nothing
                     // else running. A dump that names it has explained the whole
                     // stall; `paused=` covers the pause gate and nothing else
+                    // covered this.
+                    op_probe_conflict.set_driver_phase(
+                        super::super::transfer_probe::DriverPhase::ResolvingConflict,
+                        &initial_dest_owned.display().to_string(),
+                    );
                     // Reuse the cached scan hint so the conflict dialog
                     // doesn't re-list the parent dir per conflict on MTP.
                     let source_hint = source_hints.get(&source_path_owned).copied();
@@ -669,6 +683,11 @@ pub(crate) async fn move_volumes_with_progress(
                     // the next iteration nothing else could be stuck: the phase
                     // points a reader straight at the rows below. It stands
                     // through the copy AND the source sweep after it, which the
+                    // row's own `Finalizing` phase separates.
+                    op_probe.set_driver_phase(
+                        super::super::transfer_probe::DriverPhase::TransferringSource,
+                        &format!("#{row_index} {}", source_path.display()),
+                    );
                     let task_probe = op_probe.begin_task(
                         row_index,
                         // A directory source walks and feeds the window; only a
@@ -845,6 +864,11 @@ pub(crate) async fn move_volumes_with_progress(
 
     // Every source is done (or the loop bailed); the abandoned-temp sweep and
     // the terminal emits below are all that is left. Mirrors
+    // `ConcurrentDriver::finish` and `copy_serial.rs`.
+    op_probe.set_driver_phase(
+        super::super::transfer_probe::DriverPhase::PostLoop,
+        "post-loop bookkeeping",
+    );
 
     let files_done = outcome.files_done;
     let bytes_done = outcome.bytes_done;

@@ -276,6 +276,16 @@ impl ConcurrentCopy<'_> {
         dest_size_hint: Option<u64>,
         source_is_dir: bool,
     ) -> Result<Option<ResolvedConflict>, WriteFailure> {
+        // Parked on a PERSON, with the whole batch behind it: the driver
+        // neither fills nor drains the window while a prompt is up, so a dump
+        // taken now has to say so rather than leave the pre-check's phase
+        // standing.
+        if let Some(probe) = self.op_probe.as_ref() {
+            probe.set_driver_phase(
+                super::super::transfer_probe::DriverPhase::ResolvingConflict,
+                &dest_item_path.display().to_string(),
+            );
+        }
         let mut latched = *self.apply_to_all_cell.lock_ignore_poison();
         let resolved = resolve_volume_conflict(
             &self.source_volume,

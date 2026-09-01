@@ -325,6 +325,22 @@ So the walker is reported apart (` walkers=1`, and a ` (walker)` marker on its o
 count. `activity.in_flight`, which the UI reads, still counts every row: it answers "how many things are open", not
 "how full is the window".
 
+**Every driver announces its own phase** through `OperationProbe::set_driver_phase`, and a driver that forgets reports
+the initial `starting` for the whole transfer, which tells a dump's reader nothing. What each phase means is on
+`DriverPhase`; where the two shapes set them:
+
+- **Concurrent** (`copy_concurrent*.rs`): `PreparingNext` before the destination pre-check, `ResolvingConflict` before
+  the resolver, `AwaitingTasks` on the window await, `PostLoop` in `finish`.
+- **Serial** (`copy_serial.rs`, `move.rs`): the same `PreparingNext` and `ResolvingConflict` inside the shared driver's
+  `dest_meta_fetcher` and `conflict_resolver` closures, then `TransferringSource` for the whole of `transfer_one`, then
+  `PostLoop` once `drive_transfer_serial_async` returns. There is no `AwaitingTasks` here: this driver streams the
+  source itself, so the phase's job is to tell a reader the wedge can only be in the rows below.
+
+A copy of ONE top-level folder is the commonest transfer there is and always lands on the serial driver, so an
+uninstrumented serial path leaves that entire class of stall unreadable: two real stall dumps said only
+`driver=starting()` at 113 s and at 33 s. `PreparingNext` and `ResolvingConflict` go in BEFORE their awaits, for the
+same reason the concurrent driver does it: the call they name is exactly the one that may never return.
+
 **The live progress bar under-reports transiently, by design.** Both per-file progress callbacks were written for one
 in-flight leaf: `SerialLeafProgress`'s `leaf_high_water` and `make_concurrent_per_file_progress`'s `last_file_bytes` are
 each one watermark shared by every file in a subtree. With `W` leaves reporting into one watermark the bar lags by up to

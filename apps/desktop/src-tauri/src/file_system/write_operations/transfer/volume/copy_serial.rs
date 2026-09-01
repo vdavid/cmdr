@@ -34,7 +34,7 @@ use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, drive_transfer_serial_async,
 };
-use super::super::transfer_probe::{OperationProbe, TaskRole};
+use super::super::transfer_probe::{DriverPhase, OperationProbe, TaskRole};
 use super::conflict::resolve_volume_conflict;
 use super::preflight::SourceHint;
 use super::strategy::copy_single_path;
@@ -182,13 +182,19 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
         &driver_config,
         {
             let dest_volume = Arc::clone(&dest_volume);
+            let op_probe_precheck = op_probe.clone();
             move |p: &Path| -> FetchFut<'_> {
                 let dest_volume = Arc::clone(&dest_volume);
+                let op_probe_precheck = op_probe_precheck.clone();
                 let p_owned = p.to_path_buf();
                 Box::pin(async move {
                     // Record the pre-check BEFORE awaiting it, exactly as the
                     // concurrent driver does: a `get_metadata` on a wedged share
                     // returns to nobody, so a dump has to name it as the step in
+                    // progress rather than leave the driver reading `starting`.
+                    if let Some(probe) = op_probe_precheck.as_ref() {
+                        probe.set_driver_phase(DriverPhase::PreparingNext, &p_owned.display().to_string());
+                    }
                     // `Some(_)` signals a conflict; preserve the existing
                     // "treat any successful stat as a conflict" semantics.
                     dest_volume
@@ -208,6 +214,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
             let source_hints = Arc::clone(&source_hints_arc);
             let config = config_owned.clone();
             let operation_id = operation_id_owned.clone();
+            let op_probe_conflict = op_probe.clone();
             move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
@@ -217,6 +224,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                 let source_hints = Arc::clone(&source_hints);
                 let config = config.clone();
                 let operation_id = operation_id.clone();
+                let op_probe_conflict = op_probe_conflict.clone();
                 let source_path_owned = input.source_path.to_path_buf();
                 let initial_dest_owned = input.initial_dest_path.to_path_buf();
                 let dest_size_hint = input.dest_size_hint;
@@ -240,6 +248,13 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     // to answer, with nothing else running. Naming that is what
                     // separates "the user has a prompt open" from a wedged
                     // share; `paused=` covers the pause gate, and nothing else
+                    // covered this.
+                    if let Some(probe) = op_probe_conflict.as_ref() {
+                        probe.set_driver_phase(
+                            DriverPhase::ResolvingConflict,
+                            &initial_dest_owned.display().to_string(),
+                        );
+                    }
                     // Take the apply-to-all latch into a stack local for
                     // the `&mut`-bounded resolver, then store it back.
                     // The serial driver guarantees single-threaded
@@ -438,6 +453,13 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     // there is nothing else it could be stuck in: whatever is
                     // wrong is in the rows below, and the phase says to go read
                     // them. It stays set through the whole of `copy_single_path`
+                    // — which for a directory source is the entire subtree.
+                    if let Some(probe) = op_probe_serial.as_ref() {
+                        probe.set_driver_phase(
+                            DriverPhase::TransferringSource,
+                            &format!("#{row_index} {}", source_path.display()),
+                        );
+                    }
                     // Held for this source's whole transfer; dropping it
                     // clears the row. Mirrors the concurrent path.
                     let task_probe = op_probe_serial.as_ref().map(|probe| {
@@ -645,6 +667,10 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
     // Every source is done (or the loop bailed). What runs from here is the
     // caller's cleanup, rollback, and finalize, which can be slow on its own —
     // a rollback re-verifies and deletes per file over the wire. Mirrors
+    // `ConcurrentDriver::finish`.
+    if let Some(probe) = op_probe.as_ref() {
+        probe.set_driver_phase(DriverPhase::PostLoop, "post-loop bookkeeping");
+    }
 
     // Pull mutable cells back into function-scope locals so the
     // post-loop branch sees the same shape as the legacy serial loop

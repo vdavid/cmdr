@@ -43,7 +43,8 @@ merge/staging engine (`strategy.rs`, `merge.rs`). File map: `DETAILS.md` § File
 ## Concurrency and failures
 
 - **A LOCAL `max_concurrent_ops` must ❌ NOT bound a REMOTE peer** (`copy.rs::transfer_concurrency`, ❌ never a
-  `min()`; a remote cap always binds, keeping MTP serial). The concurrent driver watches cancel/rollback ON ITS AWAIT.
+  `min()`; a remote cap always binds, keeping MTP serial). The concurrent driver watches cancel/rollback ON ITS AWAIT,
+  and EVERY driver sets its `DriverPhase`: one that forgets dumps `starting()`, which says nothing.
 - **ONE `FileWindow` per operation** (`strategy.rs`, on `MergeCtx`), taken by every merge leaf and top-level FILE task;
   width 1 keeps MTP serial. ❌ Never per level or per source: the driver already fans out `W` ways, so `W` per walker is
   `W²` on one connection. A walker ❌ never holds a permit while it recurses (deadlock at width 1) and ❌ never returns

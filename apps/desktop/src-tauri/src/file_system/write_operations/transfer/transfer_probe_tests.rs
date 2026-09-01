@@ -118,6 +118,25 @@ fn a_walker_row_is_counted_apart_from_the_window() {
     assert!(dump.contains("#0 (walker) walking"), "{dump}");
 }
 
+/// Every driver phase renders as its own name, and an unknown byte reads as
+/// `starting` rather than panicking. `from_u8` is the dump's only way back from
+/// the stored `AtomicU8`, so a variant missing from it silently reports the
+/// wrong phase — the exact failure this whole field exists to prevent.
+#[test]
+fn every_driver_phase_round_trips_through_the_stored_byte() {
+    for phase in [
+        DriverPhase::Starting,
+        DriverPhase::PreparingNext,
+        DriverPhase::AwaitingTasks,
+        DriverPhase::PostLoop,
+        DriverPhase::TransferringSource,
+        DriverPhase::ResolvingConflict,
+    ] {
+        assert_eq!(DriverPhase::from_u8(phase as u8), phase, "{}", phase.label());
+    }
+    assert_eq!(DriverPhase::from_u8(200), DriverPhase::Starting);
+}
+
 /// A task that is dropped mid-flight (abort, panic) must not linger in the
 /// table and make the next dump lie about what is in flight.
 #[test]

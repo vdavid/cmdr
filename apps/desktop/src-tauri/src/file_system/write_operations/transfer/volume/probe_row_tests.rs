@@ -170,6 +170,13 @@ fn folder_row(dump: &str) -> &str {
     row
 }
 
+/// The driver's phase and detail from a dump's `driver=<phase>(<detail>)` field.
+fn driver_field(dump: &str) -> &str {
+    dump.split_whitespace()
+        .find_map(|token| token.strip_prefix("driver="))
+        .unwrap_or_else(|| panic!("every dump carries a driver field, got:\n{dump}"))
+}
+
 /// The photo taken with the most leaves open at once.
 fn widest(dumps: &[String]) -> &String {
     dumps
@@ -238,6 +245,30 @@ fn assert_table_names_every_leaf(dumps: &[String], width: usize) {
     );
 }
 
+/// The question a stall dump has to answer first: what is the DRIVER doing?
+///
+/// A serial driver streams its source itself, so it stays here for the whole of
+/// a folder copy — which is the commonest transfer there is. Reporting the
+/// initial `starting` for all of it (as it did before the driver announced
+/// itself) tells a reader nothing at all, and left two real stall dumps
+/// unreadable.
+fn assert_driver_names_the_source_it_is_streaming(dumps: &[String]) {
+    let dump = widest(dumps);
+    let driver = driver_field(dump);
+    assert!(
+        !driver.starts_with("starting"),
+        "a driver 30 s into a transfer has moved past `starting`, got:\n{dump}"
+    );
+    assert_eq!(
+        driver, "transferring-source(#0",
+        "the driver names the source it is inside, so a reader knows to go read the rows, got:\n{dump}"
+    );
+    assert!(
+        dump.contains("transferring-source(#0 /album)"),
+        "the phase detail carries the source path and its row number, got:\n{dump}"
+    );
+}
+
 /// A cross-volume MOVE of one folder is the same single-source shape a copy is,
 /// and it opens the same window over the subtree. Its table has to say so.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -262,6 +293,7 @@ async fn a_folder_moves_leaves_each_get_a_row_and_the_dump_declares_the_real_wid
     assert!(result.is_ok(), "the move must succeed, got {result:?}");
 
     assert_table_names_every_leaf(&dest.dumps(), 4);
+    assert_driver_names_the_source_it_is_streaming(&dest.dumps());
 }
 
 /// The same table, from the SERIAL copy driver one folder also lands on. This is
@@ -289,4 +321,5 @@ async fn a_folder_copys_leaves_each_get_a_row_and_the_dump_declares_the_real_wid
     assert!(result.is_ok(), "the copy must succeed, got {result:?}");
 
     assert_table_names_every_leaf(&dest.dumps(), 4);
+    assert_driver_names_the_source_it_is_streaming(&dest.dumps());
 }

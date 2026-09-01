@@ -265,18 +265,29 @@ impl TaskPhase {
 /// doing. Distinguishing this from the tasks is the point: in the incident the
 /// driver stopped after a destination `get_metadata` pre-check with six of eight
 /// slots free, and nothing recorded that.
-
+///
+/// ❗ EVERY driver owes this, the two serial ones (`volume/copy_serial.rs`,
+/// `volume/move.rs`) as much as the concurrent one: a driver that never advances
+/// it reports `starting` for the whole transfer and its dump says nothing at
+/// all. Where each is set: `volume/DETAILS.md` § driver phases.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub(super) enum DriverPhase {
     Starting = 0,
-    /// Running the destination pre-check / conflict resolution for the next
-    /// source, before it can be spawned.
+    /// Running the destination pre-check for the next source, before it can be
+    /// spawned (concurrent) or streamed inline (serial).
     PreparingNext = 1,
     /// Window full or sources exhausted: awaiting the next task to finish.
     AwaitingTasks = 2,
     /// Loop finished; running cleanup, rollback, or finalize.
     PostLoop = 3,
+    /// A SERIAL driver is streaming one source itself, so unlike
+    /// [`Self::AwaitingTasks`] there is no window to drain: the wedge can only
+    /// be in the rows below, and a reader should go straight to them.
+    TransferringSource = 4,
+    /// Parked on a PERSON, with nothing else running until they answer.
+    /// Unbounded by design, so a dump naming it has explained the whole stall.
+    ResolvingConflict = 5,
 }
 
 impl DriverPhase {
@@ -286,6 +297,8 @@ impl DriverPhase {
             Self::PreparingNext => "preparing-next",
             Self::AwaitingTasks => "awaiting-tasks",
             Self::PostLoop => "post-loop",
+            Self::TransferringSource => "transferring-source",
+            Self::ResolvingConflict => "resolving-conflict",
         }
     }
 
@@ -294,6 +307,8 @@ impl DriverPhase {
             1 => Self::PreparingNext,
             2 => Self::AwaitingTasks,
             3 => Self::PostLoop,
+            4 => Self::TransferringSource,
+            5 => Self::ResolvingConflict,
             _ => Self::Starting,
         }
     }
