@@ -19,9 +19,11 @@ The WebDAV backend: a `Volume` over one `reqwest` client with one account's Basi
 - ❗ **`reqwest` stays in `transport.rs`, `errors.rs` (status codes, typed predicates), `streams.rs`, and `writes.rs`
   (the two streaming bodies), and `volume/mod.rs`'s `send`.** Everything else works in `Url`s, `StatusCode`s, and
   `PropfindEntry`s. Its features are EXACTLY a subset of the app's; a second configuration would enter the graph twice.
-- ❌ **Never classify by message.** A status is judged by number plus `Attempted` (what the request was trying to do);
-  a `reqwest::Error` by `is_timeout` / `is_connect` / `is_request`; a TLS refusal by the `io::ErrorKind::InvalidData`
-  in its source chain.
+- ❌ **Never classify by message.** A status is judged by number plus `Attempted` (what the request was trying to do); a
+  `reqwest::Error` by `is_timeout` / `is_connect` / `is_request`; a TLS refusal by the `io::ErrorKind::InvalidData` in
+  its source chain.
+- ❌ **No `read_timeout`, and no `.timeout()` on the streaming PUT or GET**: both would cut a long transfer. The
+  non-streaming verbs carry `MUTATION_BUDGET` (10 min), PROPFIND `PROPFIND_BUDGET` (60 s); `transport.rs` has why.
 - ❗ **Every wire-touching delegator wraps itself in `noting`.** There is no watcher and no session: the operations ARE
   the disconnect detector. A `DeviceDisconnected` flips the state once and starts the backoff loop.
 - ❌ **One unattended authentication attempt, never a loop.** A 401 on the re-probe moves to `NeedsCredentials` and

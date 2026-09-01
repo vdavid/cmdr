@@ -6,6 +6,7 @@
 //! resolved namespace decides what an element is.
 
 use percent_encoding::percent_decode_str;
+use quick_xml::escape::resolve_predefined_entity;
 use quick_xml::events::Event;
 use quick_xml::name::ResolveResult;
 use quick_xml::reader::NsReader;
@@ -88,11 +89,24 @@ pub(crate) fn parse_multistatus(body: &str) -> Result<Vec<PropfindEntry>, NotMul
                     pending.is_collection = true;
                 }
             }
+            // A text node never holds an entity: the reader splits `a&amp;b`
+            // into `Text(a)`, `GeneralRef(amp)`, `Text(b)`, and `decode` only
+            // handles the character encoding (verified on `quick-xml` 0.41.0,
+            // `reader/state.rs` + `events/mod.rs`, 2026-09-01). Unescaping the
+            // text would find nothing; resolving the reference is what keeps
+            // the `&`.
             Event::Text(t) => {
-                if let Ok(decoded) = t.decode()
-                    && let Ok(unescaped) = quick_xml::escape::unescape(&decoded)
+                if let Ok(decoded) = t.decode() {
+                    text.push_str(&decoded);
+                }
+            }
+            Event::GeneralRef(r) => {
+                if let Ok(Some(c)) = r.resolve_char_ref() {
+                    text.push(c);
+                } else if let Ok(name) = r.decode()
+                    && let Some(resolved) = resolve_predefined_entity(&name)
                 {
-                    text.push_str(&unescaped);
+                    text.push_str(resolved);
                 }
             }
             Event::CData(c) => {

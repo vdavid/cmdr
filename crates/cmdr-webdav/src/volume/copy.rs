@@ -12,7 +12,7 @@ use cmdr_fs::volume::VolumeError;
 
 use super::WebdavVolume;
 use crate::errors::Attempted;
-use crate::transport::method;
+use crate::transport::{MUTATION_BUDGET, method};
 
 impl WebdavVolume {
     /// Copies one resource inside this server.
@@ -31,7 +31,8 @@ impl WebdavVolume {
             .request(method("COPY"), client.url_for(&remote_from, source.is_collection))
             .header("Destination", client.url_for(&remote_to, source.is_collection).as_str())
             .header("Overwrite", "T")
-            .header("Depth", "infinity");
+            .header("Depth", "infinity")
+            .timeout(MUTATION_BUDGET);
         self.send(request, &remote_to, Attempted::Reaching).await?;
         if on_progress(total, total).is_break() {
             self.remove_best_effort(&remote_to).await;

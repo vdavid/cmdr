@@ -13,7 +13,7 @@ use reqwest::header::IF_NONE_MATCH;
 
 use super::WebdavVolume;
 use crate::errors::Attempted;
-use crate::transport::{Depth, WebdavClient, method};
+use crate::transport::{Depth, MUTATION_BUDGET, WebdavClient, method};
 
 /// `ENOTEMPTY`, which POSIX numbers differently per platform. The number is
 /// what the app renders "this folder still has something in it" from.
@@ -31,7 +31,8 @@ impl WebdavVolume {
         let request = client
             .request(Method::PUT, client.url_for(&remote, false))
             .header(IF_NONE_MATCH, "*")
-            .body(content.to_vec());
+            .body(content.to_vec())
+            .timeout(MUTATION_BUDGET);
         self.send(request, &remote, Attempted::TakingAName).await?;
         self.notify_created(path).await;
         Ok(())
@@ -47,7 +48,9 @@ impl WebdavVolume {
     }
 
     async fn mkcol(&self, client: &WebdavClient, remote: &str) -> Result<(), VolumeError> {
-        let request = client.request(method("MKCOL"), client.url_for(remote, true));
+        let request = client
+            .request(method("MKCOL"), client.url_for(remote, true))
+            .timeout(MUTATION_BUDGET);
         self.send(request, remote, Attempted::TakingAName).await.map(|_| ())
     }
 
@@ -118,7 +121,9 @@ impl WebdavVolume {
             });
         }
         let is_collection = listing.first().is_some_and(|p| p.is_collection);
-        let request = client.request(Method::DELETE, client.url_for(&remote, is_collection));
+        let request = client
+            .request(Method::DELETE, client.url_for(&remote, is_collection))
+            .timeout(MUTATION_BUDGET);
         self.send(request, &remote, Attempted::Reaching).await?;
         self.notify_deleted(path).await;
         Ok(())
@@ -135,7 +140,8 @@ impl WebdavVolume {
         let request = client
             .request(method("MOVE"), client.url_for(&remote_from, is_collection))
             .header("Destination", client.url_for(&remote_to, is_collection).as_str())
-            .header("Overwrite", if force { "T" } else { "F" });
+            .header("Overwrite", if force { "T" } else { "F" })
+            .timeout(MUTATION_BUDGET);
         let attempted = if force {
             Attempted::Reaching
         } else {

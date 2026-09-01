@@ -8,9 +8,9 @@ HTTP holds no session. "Connected" means the last request that reached the wire 
 failed with a transport error (`reqwest::Error::is_connect` / `is_request`, mapped to
 `VolumeError::DeviceDisconnected`). `connect_webdav_volume` reads the account's secret from the `CredentialStore`
 (service `scheme://host:port`, scope `username`; nothing stored is `NeedsCredentials`), builds a `WebdavClient`
-(`user_agent("Cmdr")`, connect and read timeouts of 10 s, redirects off, Basic auth on every request), and proves it
-with one `PROPFIND Depth: 0` on the root. The probe rides `tokio::select!` against the cancel token; a cancel leaves
-nothing behind. On success the backend records the PII-free analytics event `webdav_connected`.
+(`user_agent("Cmdr")`, a 10 s connect timeout and no `read_timeout`, redirects off, Basic auth on every request), and
+proves it with one `PROPFIND Depth: 0` on the root. The probe rides `tokio::select!` against the cancel token; a cancel
+leaves nothing behind. On success the backend records the PII-free analytics event `webdav_connected`.
 
 The probe's answers, in connect terms:
 
@@ -45,7 +45,12 @@ The probe's answers, in connect terms:
 
 The two path-carrying variants carry the path, never the server's wording (`crates/cmdr-sftp/DETAILS.md` § the error
 policy has the reasoning; it is the same here). Transport errors: timeout → `ConnectionTimeout(path)`; connection gone →
-`DeviceDisconnected(volume_id)`; body/decode → `IoError`.
+`DeviceDisconnected(volume_id)`; body/decode → `IoError`. Per-request budgets: 60 s on a PROPFIND (`PROPFIND_BUDGET`),
+10 min on MOVE, COPY, DELETE, MKCOL, and `create_file`'s in-memory PUT (`MUTATION_BUDGET`); the streaming PUT and GET
+have none (`transport.rs` has the `read_timeout` reasoning, `streams.rs` the download idle budget).
+
+A `multistatus` entity (`&amp;`) reaches the parser as its own `Event::GeneralRef`, never inside a text node, so
+`propfind.rs` resolves it there; a text-level `unescape` would silently drop the character.
 
 TLS: `tokio-rustls` surfaces every handshake refusal as an `io::Error` of kind `InvalidData`, so `CertificateUntrusted`
 covers any TLS refusal, of which a self-signed NAS is by far the commonest. Narrowing it to trust alone would need a

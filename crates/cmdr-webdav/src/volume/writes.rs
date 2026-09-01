@@ -23,7 +23,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::WebdavVolume;
 use crate::errors::Attempted;
-use crate::transport::method;
+use crate::transport::{MUTATION_BUDGET, method};
 
 /// How often the upload reports progress while the body is on its way.
 const PROGRESS_TICK: Duration = Duration::from_millis(200);
@@ -172,7 +172,8 @@ impl WebdavVolume {
         let request = client
             .request(method("MOVE"), client.url_for(&temp, false))
             .header("Destination", client.url_for(&remote, false).as_str())
-            .header("Overwrite", "T");
+            .header("Overwrite", "T")
+            .timeout(MUTATION_BUDGET);
         if let Err(e) = self.send(request, &remote, Attempted::Reaching).await {
             self.remove_best_effort(&temp).await;
             return Err(e);
@@ -184,7 +185,9 @@ impl WebdavVolume {
     /// got us here is the one worth reporting.
     pub(super) async fn remove_best_effort(&self, remote: &str) {
         if let Ok(client) = self.clone_client().await {
-            let request = client.request(Method::DELETE, client.url_for(remote, false));
+            let request = client
+                .request(Method::DELETE, client.url_for(remote, false))
+                .timeout(MUTATION_BUDGET);
             let _ = self.send(request, remote, Attempted::Reaching).await;
         }
     }

@@ -129,3 +129,38 @@ fn creation_dates_read_with_and_without_an_offset() {
     assert_eq!(parse_rfc3339("2024-03-01T12:34:56.123Z"), Some(STAMP));
     assert_eq!(parse_rfc3339("yesterday"), None);
 }
+
+/// `quick-xml` 0.41 hands an entity over as its own `GeneralRef` event, never
+/// inside a text node (so a text-level `unescape` finds nothing and the `&`
+/// used to vanish: `a&amp;b` came out as `ab`). Resolving the reference once
+/// gives exactly `a&b`. The name comes from the `href` (the parser never
+/// reads `displayname`); both ride the same text path.
+#[test]
+fn an_escaped_entity_is_unescaped_exactly_once() {
+    let body = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/dav/a&amp;b.txt</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:displayname>a&amp;b.txt</d:displayname>
+        <d:resourcetype/>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/c%26d&amp;amp;e&#x3C;f.txt</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype/></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+    let entries = parse_multistatus(body).expect("a multistatus");
+    assert_eq!(entries.len(), 2);
+    assert_eq!(entries[0].href, "/dav/a&b.txt");
+    // Percent-decoding is a separate, later step; `&amp;amp;` is exactly `&amp;`,
+    // and a numeric reference resolves too.
+    assert_eq!(entries[1].href, "/dav/c&d&amp;e<f.txt");
+}
