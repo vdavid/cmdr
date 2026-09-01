@@ -34,7 +34,7 @@ use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, drive_transfer_serial_async,
 };
-use super::super::transfer_probe::OperationProbe;
+use super::super::transfer_probe::{OperationProbe, TaskRole};
 use super::conflict::resolve_volume_conflict;
 use super::preflight::SourceHint;
 use super::strategy::copy_single_path;
@@ -186,6 +186,9 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                 let dest_volume = Arc::clone(&dest_volume);
                 let p_owned = p.to_path_buf();
                 Box::pin(async move {
+                    // Record the pre-check BEFORE awaiting it, exactly as the
+                    // concurrent driver does: a `get_metadata` on a wedged share
+                    // returns to nobody, so a dump has to name it as the step in
                     // `Some(_)` signals a conflict; preserve the existing
                     // "treat any successful stat as a conflict" semantics.
                     dest_volume
@@ -233,6 +236,10 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         initial_dest_owned.display(),
                         source_is_directory_hint,
                     );
+                    // The resolver can park on a PERSON for as long as they take
+                    // to answer, with nothing else running. Naming that is what
+                    // separates "the user has a prompt open" from a wedged
+                    // share; `paused=` covers the pause gate, and nothing else
                     // Take the apply-to-all latch into a stack local for
                     // the `&mut`-bounded resolver, then store it back.
                     // The serial driver guarantees single-threaded
@@ -425,11 +432,24 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
 
                     *last_dest_cell.lock_ignore_poison() = Some(dest_item_path.clone());
 
+                    let row_index = serial_source_index.fetch_add(1, Ordering::Relaxed);
+                    // This driver STREAMS the source itself rather than handing
+                    // it to a window, so from here until the next iteration
+                    // there is nothing else it could be stuck in: whatever is
+                    // wrong is in the rows below, and the phase says to go read
+                    // them. It stays set through the whole of `copy_single_path`
                     // Held for this source's whole transfer; dropping it
                     // clears the row. Mirrors the concurrent path.
                     let task_probe = op_probe_serial.as_ref().map(|probe| {
                         probe.begin_task(
-                            serial_source_index.fetch_add(1, Ordering::Relaxed),
+                            row_index,
+                            // A directory source walks and hands its files to
+                            // the window; only a FILE source copies bytes here.
+                            if source_is_dir {
+                                TaskRole::Walker
+                            } else {
+                                TaskRole::File
+                            },
                             &source_path.display().to_string(),
                             &dest_item_path.display().to_string(),
                         )
@@ -621,6 +641,10 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
         },
     )
     .await;
+
+    // Every source is done (or the loop bailed). What runs from here is the
+    // caller's cleanup, rollback, and finalize, which can be slow on its own —
+    // a rollback re-verifies and deletes per file over the wire. Mirrors
 
     // Pull mutable cells back into function-scope locals so the
     // post-loop branch sees the same shape as the legacy serial loop

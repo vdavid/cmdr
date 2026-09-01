@@ -452,6 +452,8 @@ pub(crate) async fn move_volumes_with_progress(
                 let dest_volume = Arc::clone(&dest_volume);
                 let p_owned = p.to_path_buf();
                 Box::pin(async move {
+                    // Recorded BEFORE the await: a `get_metadata` on a wedged
+                    // share returns to nobody, and a dump has to be able to name
                     dest_volume
                         .get_metadata(&p_owned)
                         .await
@@ -486,6 +488,9 @@ pub(crate) async fn move_volumes_with_progress(
                         "move_between_volumes: conflict detected at {}",
                         initial_dest_owned.display()
                     );
+                    // Parked on a PERSON, unbounded by design and with nothing
+                    // else running. A dump that names it has explained the whole
+                    // stall; `paused=` covers the pause gate and nothing else
                     // Reuse the cached scan hint so the conflict dialog
                     // doesn't re-list the parent dir per conflict on MTP.
                     let source_hint = source_hints.get(&source_path_owned).copied();
@@ -659,8 +664,20 @@ pub(crate) async fn move_volumes_with_progress(
                     // Held for this source's whole transfer, copy phase AND
                     // source sweep; dropping it clears the row. Mirrors
                     // `volume/copy_serial.rs`.
+                    let row_index = source_index.fetch_add(1, Ordering::Relaxed);
+                    // This driver streams the source ITSELF, so from here until
+                    // the next iteration nothing else could be stuck: the phase
+                    // points a reader straight at the rows below. It stands
+                    // through the copy AND the source sweep after it, which the
                     let task_probe = op_probe.begin_task(
-                        source_index.fetch_add(1, Ordering::Relaxed),
+                        row_index,
+                        // A directory source walks and feeds the window; only a
+                        // FILE source copies bytes on this row.
+                        if source_is_dir {
+                            super::super::transfer_probe::TaskRole::Walker
+                        } else {
+                            super::super::transfer_probe::TaskRole::File
+                        },
                         &source_path.display().to_string(),
                         &dest_item_path.display().to_string(),
                     );
@@ -825,6 +842,9 @@ pub(crate) async fn move_volumes_with_progress(
         },
     )
     .await;
+
+    // Every source is done (or the loop bailed); the abandoned-temp sweep and
+    // the terminal emits below are all that is left. Mirrors
 
     let files_done = outcome.files_done;
     let bytes_done = outcome.bytes_done;

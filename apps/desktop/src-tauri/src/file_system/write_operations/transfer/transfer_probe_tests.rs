@@ -62,10 +62,10 @@ fn dump_names_driver_phase_intent_and_every_parked_task() {
     let state = guard.state();
     let probe = probe_for(guard.id(), state);
 
-    let a = probe.begin_task(9, "/src/sms-0726.xml", "/dst/sms-0726.xml");
+    let a = probe.begin_task(9, TaskRole::File, "/src/sms-0726.xml", "/dst/sms-0726.xml");
     a.probe().set_phase(TaskPhase::ParkedDestYield);
     a.probe().set_bytes(0, 13_421_021);
-    let b = probe.begin_task(11, "/src/sms-0725.xml", "/dst/sms-0725.xml");
+    let b = probe.begin_task(11, TaskRole::File, "/src/sms-0725.xml", "/dst/sms-0725.xml");
     b.probe().set_phase(TaskPhase::Streaming);
     b.probe().set_bytes(4_194_304, 13_421_021);
 
@@ -80,6 +80,44 @@ fn dump_names_driver_phase_intent_and_every_parked_task() {
     assert!(dump.contains("4194304/13421021 bytes"), "{dump}");
 }
 
+/// The header's arithmetic has to add up. A directory walker holds no window
+/// slot, so a full window plus a walker is `in_flight=8/8 walkers=1`, ❌ never
+/// `9/8` — which reads as a limiter that stopped working and sends a reader
+/// looking for a bug that isn't there.
+#[test]
+fn a_walker_row_is_counted_apart_from_the_window() {
+    let guard = TestOperationGuard::register("probe-walker");
+    let state = guard.state();
+    let probe = probe_for(guard.id(), state);
+
+    let walker = probe.begin_task(0, TaskRole::Walker, "/src/album", "/dst/album");
+    walker.probe().set_phase(TaskPhase::Walking);
+    let leaves: Vec<_> = (0..8)
+        .map(|i| {
+            probe.begin_task(
+                i + 1,
+                TaskRole::File,
+                &format!("/src/album/f{i}"),
+                &format!("/dst/album/f{i}"),
+            )
+        })
+        .collect();
+
+    let dump = probe.render_dump("test");
+
+    assert!(dump.contains("in_flight=8/8 walkers=1"), "{dump}");
+    assert!(dump.contains("#0 (walker) walking"), "{dump}");
+    assert!(!dump.contains("#1 (walker)"), "a file copy is not a walker: {dump}");
+    drop(leaves);
+
+    // With nothing but the walker left, the window is genuinely empty — and the
+    // walker still has to show up, or the dump loses the only row there is.
+    let dump = probe.render_dump("test");
+    assert!(dump.contains("in_flight=0/8 walkers=1"), "{dump}");
+    assert!(!dump.contains("(no tasks in flight)"), "{dump}");
+    assert!(dump.contains("#0 (walker) walking"), "{dump}");
+}
+
 /// A task that is dropped mid-flight (abort, panic) must not linger in the
 /// table and make the next dump lie about what is in flight.
 #[test]
@@ -88,9 +126,9 @@ fn dropping_a_task_handle_removes_it_from_the_table() {
     let state = guard.state();
     let probe = probe_for(guard.id(), state);
 
-    let a = probe.begin_task(0, "/src/a", "/dst/a");
+    let a = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     {
-        let _b = probe.begin_task(1, "/src/b", "/dst/b");
+        let _b = probe.begin_task(1, TaskRole::File, "/src/b", "/dst/b");
         assert!(probe.render_dump("test").contains("in_flight=2/8"));
     }
     assert!(probe.render_dump("test").contains("in_flight=1/8"));
@@ -120,9 +158,9 @@ fn activity_names_what_the_transfer_is_waiting_on() {
     probe.still_for_seconds.store(12, Ordering::Relaxed);
 
     // Every task parked on the destination ⇒ that's what we're waiting on.
-    let a = probe.begin_task(0, "/src/a", "/dst/a");
+    let a = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::ParkedDestYield);
-    let b = probe.begin_task(1, "/src/b", "/dst/b");
+    let b = probe.begin_task(1, TaskRole::File, "/src/b", "/dst/b");
     b.probe().set_phase(TaskPhase::ParkedDestYield);
     let activity = probe.activity();
     assert_eq!(activity.in_flight, 2);
@@ -162,7 +200,7 @@ fn a_wedged_transfer_keeps_telling_the_ui_it_is_wedged() {
         900_000_000,
     );
     state.enrich_progress(&mut event);
-    let a = probe.begin_task(9, "/src/a", "/dst/a");
+    let a = probe.begin_task(9, TaskRole::File, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::ParkedDestYield);
 
     // Nothing emits for a while: every task is parked on the destination.
@@ -291,7 +329,7 @@ fn a_paused_transfer_reports_paused_not_stuck() {
     let guard = TestOperationGuard::register("probe-paused");
     let state = guard.state();
     let probe = probe_for(guard.id(), state);
-    let a = probe.begin_task(0, "/src/a", "/dst/a");
+    let a = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::ParkedPause);
     probe.still_for_seconds.store(30, Ordering::Relaxed);
     state.pause_gate.pause();
@@ -311,7 +349,7 @@ fn a_transfer_waiting_on_a_conflict_answer_is_not_stalled() {
     let state = guard.state();
     let probe = probe_for(guard.id(), state);
     // A task streaming normally: nothing here says "asking the human".
-    let a = probe.begin_task(0, "/src/a", "/dst/a");
+    let a = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::Streaming);
     probe.still_for_seconds.store(30, Ordering::Relaxed);
 
@@ -364,7 +402,7 @@ fn the_watchdog_ends_the_wait_on_a_task_that_stopped_moving() {
     let state = guard.state();
     let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
 
-    let task = probe.begin_task(0, "/src/a", "/dst/a");
+    let task = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     task.probe().set_bytes(4_194_304, 13_421_021);
     let signal = task.probe().arm_stall_abort();
@@ -404,7 +442,7 @@ fn a_task_that_keeps_moving_is_never_aborted() {
     let state = guard.state();
     let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
 
-    let task = probe.begin_task(0, "/src/a", "/dst/a");
+    let task = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let signal = task.probe().arm_stall_abort();
 
@@ -434,7 +472,7 @@ fn a_deliberately_parked_task_is_never_aborted() {
         let guard = TestOperationGuard::register("probe-abort-parked");
         let state = guard.state();
         let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
-        let task = probe.begin_task(0, "/src/a", "/dst/a");
+        let task = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
         task.probe().set_phase(phase);
         let signal = task.probe().arm_stall_abort();
 
@@ -458,7 +496,7 @@ fn time_spent_paused_does_not_count_toward_the_abort() {
     let guard = TestOperationGuard::register("probe-abort-paused");
     let state = guard.state();
     let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
-    let task = probe.begin_task(0, "/src/a", "/dst/a");
+    let task = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let signal = task.probe().arm_stall_abort();
 
@@ -482,7 +520,7 @@ fn the_watchdog_stands_down_once_the_operation_is_cancelling() {
     let guard = TestOperationGuard::register("probe-abort-cancelling");
     let state = guard.state();
     let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(2));
-    let task = probe.begin_task(0, "/src/a", "/dst/a");
+    let task = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let signal = task.probe().arm_stall_abort();
     crate::file_system::write_operations::state::cancel_write_operation(guard.id(), false);
@@ -503,7 +541,7 @@ fn a_new_attempt_gets_a_fresh_signal_and_a_fresh_budget() {
     let guard = TestOperationGuard::register("probe-abort-rearm");
     let state = guard.state();
     let probe = probe_with_abort_window(guard.id(), state, Duration::from_secs(5));
-    let task = probe.begin_task(0, "/src/a", "/dst/a");
+    let task = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let first = task.probe().arm_stall_abort();
 
@@ -535,8 +573,8 @@ fn two_rows_keep_their_own_stall_abort_signal_and_byte_count() {
     let state = guard.state();
     let probe = probe_for(guard.id(), state);
 
-    let wedged = probe.begin_task(0, "/src/a.bin", "/dst/a.bin");
-    let healthy = probe.begin_task(1, "/src/b.bin", "/dst/b.bin");
+    let wedged = probe.begin_task(0, TaskRole::File, "/src/a.bin", "/dst/a.bin");
+    let healthy = probe.begin_task(1, TaskRole::File, "/src/b.bin", "/dst/b.bin");
     let wedged_signal = wedged.probe().arm_stall_abort();
     let healthy_signal = healthy.probe().arm_stall_abort();
     wedged.probe().set_bytes(0, 66_476_516);
@@ -581,7 +619,7 @@ fn a_connection_with_no_liveness_verdict_is_never_aborted() {
     // No volumes ⇒ nobody answers `connection_liveness`, exactly like every
     // backend in the workspace today.
     let probe = probe_for(guard.id(), state);
-    let task = probe.begin_task(0, "/src/a", "/dst/a");
+    let task = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     task.probe().set_phase(TaskPhase::Streaming);
     let signal = task.probe().arm_stall_abort();
 
@@ -608,7 +646,7 @@ fn a_moving_transfer_reports_moving() {
     let guard = TestOperationGuard::register("probe-moving");
     let state = guard.state();
     let probe = probe_for(guard.id(), state);
-    let a = probe.begin_task(0, "/src/a", "/dst/a");
+    let a = probe.begin_task(0, TaskRole::File, "/src/a", "/dst/a");
     a.probe().set_phase(TaskPhase::ParkedDestYield);
     // The watchdog hasn't observed a still period, so bytes are moving.
     assert_eq!(probe.activity().waiting_on, TransferWaitReason::Moving);

@@ -18,7 +18,7 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/rename.rs": 19,
     "apps/desktop/src-tauri/src/file_system/write_operations/rename/bulk.rs": 44,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/linux_copy.rs ↔ apps/desktop/src-tauri/src/file_system/write_operations/transfer/macos_copy.rs": 14,
-    "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/copy_serial.rs ↔ apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/move.rs": 32,
+    "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/copy_serial.rs ↔ apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/move.rs": 26,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/move.rs ↔ apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/move_same.rs": 15,
     "apps/desktop/src-tauri/src/file_viewer/byte_seek.rs ↔ apps/desktop/src-tauri/src/file_viewer/full_load.rs": 16,
     "apps/desktop/src-tauri/src/file_viewer/byte_seek.rs ↔ apps/desktop/src-tauri/src/file_viewer/line_index.rs": 22,

@@ -265,6 +265,7 @@ impl TaskPhase {
 /// doing. Distinguishing this from the tasks is the point: in the incident the
 /// driver stopped after a destination `get_metadata` pre-check with six of eight
 /// slots free, and nothing recorded that.
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub(super) enum DriverPhase {
@@ -298,11 +299,27 @@ impl DriverPhase {
     }
 }
 
+/// What an in-flight row IS, which is what makes the dump's `in_flight=X/Y`
+/// arithmetic add up. Rationale: `volume/DETAILS.md` § task roles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum TaskRole {
+    /// One file's byte copy: a merge leaf, or a top-level FILE source. These are
+    /// what the `strategy.rs::FileWindow` width bounds, so they are what the
+    /// dump measures against it.
+    File,
+    /// A directory source's walker: it lists levels and hands each file to the
+    /// window, holding no slot of its own. Counted apart.
+    Walker,
+}
+
 /// One in-flight copy task's live state.
 pub(super) struct TaskProbe {
     /// Position of this source in the operation's source list, so a dump can be
     /// read against the spawn log.
     index: usize,
+    /// Whether this row holds one of the window's slots. Fixed for the row's
+    /// life: a walker never becomes a file copy or the reverse.
+    role: TaskRole,
     source: String,
     dest: String,
     phase: AtomicU8,
@@ -397,8 +414,13 @@ impl TaskProbe {
         let stall_aborts = self.stall_aborts.load(Ordering::Relaxed);
         format!(
             // allowed-pluralize-noun: a byte count in a diagnostic dump; the compact form is the point.
-            "#{idx} {phase} for {held}ms, {done}/{total} bytes, retries={retries}{aborted}, {source} -> {dest}",
+            "#{idx}{role} {phase} for {held}ms, {done}/{total} bytes, retries={retries}{aborted}, {source} -> {dest}",
             idx = self.index,
+            // Named here too, so the header's `walkers=` can be read back against the table.
+            role = match self.role {
+                TaskRole::File => "",
+                TaskRole::Walker => " (walker)",
+            },
             phase = phase.label(),
             held = now_ms.saturating_sub(since_ms),
             done = self.bytes_done.load(Ordering::Relaxed),
@@ -482,9 +504,20 @@ impl OperationProbe {
 
     /// Register a task entering the window. The returned handle removes it on
     /// drop, so a task that panics or is aborted still leaves the table clean.
-    pub(super) fn begin_task(self: &Arc<Self>, index: usize, source: &str, dest: &str) -> TaskProbeHandle {
+    ///
+    /// `role` says whether this row holds one of the window's slots
+    /// ([`TaskRole`]); a DIRECTORY source is always a walker and a file copy is
+    /// always a `File`, so it is `source_is_dir` at every real call site.
+    pub(super) fn begin_task(
+        self: &Arc<Self>,
+        index: usize,
+        role: TaskRole,
+        source: &str,
+        dest: &str,
+    ) -> TaskProbeHandle {
         let probe = Arc::new(TaskProbe {
             index,
+            role,
             source: source.to_owned(),
             dest: dest.to_owned(),
             phase: AtomicU8::new(TaskPhase::Spawned as u8),
@@ -801,9 +834,12 @@ impl OperationProbe {
             OperationIntent::RollingBack => "rolling-back",
             OperationIntent::Stopped => "stopped",
         };
+        // Only the file rows take a window slot, so only they may be measured against
+        // it: counting the walkers too rendered a healthy transfer as `in_flight=11/10`.
+        let walkers = tasks.iter().filter(|t| t.role == TaskRole::Walker).count();
         let mut out = format!(
             "transfer probe ({reason}): op={op} elapsed={elapsed}s bytes_done={bytes} files_total={files} \
-             driver={driver}({detail}) intent={intent} paused={paused} in_flight={in_flight}/{concurrency}",
+             driver={driver}({detail}) intent={intent} paused={paused} in_flight={in_flight}/{concurrency}{walkers}",
             op = self.operation_id,
             elapsed = self.started.elapsed().as_secs(),
             bytes = self.bytes_done(),
@@ -811,8 +847,13 @@ impl OperationProbe {
             driver = driver.label(),
             detail = self.driver_detail.lock_ignore_poison(),
             paused = self.state.pause_gate.is_paused(),
-            in_flight = tasks.len(),
+            in_flight = tasks.len() - walkers,
             concurrency = self.concurrency,
+            walkers = if walkers > 0 {
+                format!(" walkers={walkers}")
+            } else {
+                String::new()
+            },
         );
         if tasks.is_empty() {
             out.push_str("\n  (no tasks in flight)");

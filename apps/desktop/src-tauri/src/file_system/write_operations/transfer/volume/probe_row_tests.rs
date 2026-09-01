@@ -223,6 +223,19 @@ fn assert_table_names_every_leaf(dumps: &[String], width: usize) {
         folder.contains("walking"),
         "the folder's own row names the walk, and stays in a phase the watchdog never acts on, got:\n{dump}"
     );
+
+    // The walker holds no window slot (`strategy.rs::FileWindow`), so the header
+    // must not measure it against one. Counted in, a perfectly healthy transfer
+    // renders as `in_flight=5/4` and reads as a broken limiter — which is time
+    // spent chasing the wrong thing in the middle of an incident.
+    assert!(
+        dump.contains(&format!("in_flight={width}/{width} walkers=1")),
+        "the header must count only the window's writes and name the walker apart, got:\n{dump}"
+    );
+    assert!(
+        folder.contains("(walker)"),
+        "the walker's own row must say so, or the header's arithmetic can't be read back against the table, got:\n{dump}"
+    );
 }
 
 /// A cross-volume MOVE of one folder is the same single-source shape a copy is,

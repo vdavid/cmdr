@@ -157,6 +157,13 @@ impl ConcurrentCopy<'_> {
         let task_probe = self.op_probe.as_ref().map(|probe| {
             probe.begin_task(
                 source_index,
+                // A DIRECTORY source's task walks and feeds the window; only a
+                // FILE source takes a slot and copies bytes itself.
+                if source_is_dir {
+                    super::super::transfer_probe::TaskRole::Walker
+                } else {
+                    super::super::transfer_probe::TaskRole::File
+                },
                 &source_path.display().to_string(),
                 &dest_item_path.display().to_string(),
             )

@@ -305,7 +305,7 @@ the row's token per attempt and `set_bytes` STORES (never adds) that attempt's c
 row would clobber each other's stall-abort signal and keep resetting the watchdog's stillness clock, so each leaf gets
 its own `begin_task` row and runs inside its own `CURRENT_TASK_PROBE` scope. That also makes the dump name the leaf that
 wedged instead of the folder, and makes `WriteProgressEvent::activity.in_flight` a real measurement of how full the
-window got. The top-level source's own row stays alongside them at `Spawned` (a phase the watchdog never acts on).
+window got. The top-level source's own row stays alongside them, in a phase the watchdog never acts on.
 
 **Whoever builds a window owes the probe two things**, and both are one line each: `MergeCtx.op_probe`, so the leaves can
 open rows; and the SAME width to `register_operation`, so the dump's `in_flight=<open>/<width>` names the fan-out rather
@@ -315,6 +315,15 @@ declares a width nothing uses. The cross-volume move missed both while running a
 user's bundle shows what that costs: a 282-file folder to a NAS dumped `in_flight=1/1` with ten writes open, its one row
 the top-level directory carrying a leaf's byte count. Pinned for both drivers side by side in `probe_row_tests.rs`,
 which photographs the live table from inside a write.
+
+**A row declares whether it holds a window slot** (`TaskRole`), and the dump's `in_flight=<open>/<width>` counts only
+the ones that do. A DIRECTORY source's row is a `Walker`: it lists levels and hands files to the window, and holds no
+permit of its own (one held across a recursive descent deadlocks the operation at width 1, § "The N² trap"). Every other
+row is a `File` (a merge leaf, or a top-level FILE source). Counted together, a perfectly healthy 10-wide copy of one
+folder renders as `in_flight=11/10`, which reads as a limiter that stopped working and costs a reader time mid-incident.
+So the walker is reported apart (` walkers=1`, and a ` (walker)` marker on its own row) rather than folded into the
+count. `activity.in_flight`, which the UI reads, still counts every row: it answers "how many things are open", not
+"how full is the window".
 
 **The live progress bar under-reports transiently, by design.** Both per-file progress callbacks were written for one
 in-flight leaf: `SerialLeafProgress`'s `leaf_high_water` and `make_concurrent_per_file_progress`'s `last_file_bytes` are

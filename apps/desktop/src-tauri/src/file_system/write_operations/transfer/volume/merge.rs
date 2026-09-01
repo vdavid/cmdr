@@ -34,7 +34,9 @@ use futures_util::stream::FuturesUnordered;
 
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::WriteOperationError;
-use super::super::transfer_probe::{CURRENT_TASK_PROBE, OperationProbe, TaskPhase, TaskProbeHandle, set_task_phase};
+use super::super::transfer_probe::{
+    CURRENT_TASK_PROBE, OperationProbe, TaskPhase, TaskProbeHandle, TaskRole, set_task_phase,
+};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::strategy::{CreatedPaths, FileWindow, MergeCtx, note_pending_for_local_dest, staging_for, stream_pipe_file};
 use super::transfer_error::{AtPath, PathedVolumeError};
@@ -166,6 +168,9 @@ impl<'a> LeafPool<'a> {
         let table_row = self.op_probe.as_ref().map(|probe| {
             let handle = probe.begin_task(
                 self.next_row,
+                // Every row this walker opens is one leaf FILE's byte copy,
+                // holding the permit reserved just above.
+                TaskRole::File,
                 &row.source.display().to_string(),
                 &row.dest.display().to_string(),
             );
