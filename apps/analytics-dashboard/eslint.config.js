@@ -15,6 +15,7 @@ import prettierConfig from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 import svelte from 'eslint-plugin-svelte'
 import svelteParser from 'svelte-eslint-parser'
+import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import globals from 'globals'
 import noErrorStringMatch from '../../eslint-plugins/no-error-string-match.js'
 import noConfusableCallbackParams from '../../eslint-plugins/no-confusable-callback-params.js'
@@ -81,6 +82,21 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': unusedVarsRule,
       'no-console': 'warn',
       complexity: ['error', { max: 15 }],
+    },
+  },
+  {
+    // Tailwind class hygiene, the same rule set as the website (`apps/website/eslint.config.js` explains
+    // each choice).
+    files: ['src/**/*.{ts,svelte}'],
+    plugins: { 'better-tailwindcss': betterTailwindcss },
+    settings: { 'better-tailwindcss': { entryPoint: 'src/app.css' } },
+    rules: {
+      'better-tailwindcss/enforce-canonical-classes': 'error',
+      'better-tailwindcss/enforce-consistent-class-order': 'error',
+      'better-tailwindcss/no-conflicting-classes': 'error',
+      'better-tailwindcss/no-deprecated-classes': 'error',
+      'better-tailwindcss/no-duplicate-classes': 'error',
+      'better-tailwindcss/no-unnecessary-whitespace': 'error',
     },
   },
   {

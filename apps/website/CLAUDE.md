@@ -54,6 +54,9 @@ Color scheme.
 - Don't hardcode colors; use `global.css` CSS variables. (OG images excepted: Satori can't read them, so keep their
   hardcoded colors in sync.)
 - Accent buttons: text uses `--color-accent-contrast` (not `--color-background`) so it stays dark across modes.
+- Color utilities use the `@theme` names (`text-text-secondary`, `bg-accent/10`, `border-border`), never
+  `text-[var(--color-…)]` or `text-(--color-…)`. `pnpm check eslint` enforces it (`better-tailwindcss`), and
+  `pnpm lint:fix` rewrites the long forms. [DETAILS.md](DETAILS.md) § Tailwind class hygiene.
 
 ## Gotchas
 

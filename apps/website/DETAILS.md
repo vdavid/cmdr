@@ -169,7 +169,7 @@ How it's wired:
 Using it:
 
 - `<Icon name="rocket" size={40} />`. Default gold comes from `.icon { color: var(--color-accent) }` plus Lucide's
-  `currentColor` stroke; recolor by passing a `class` (e.g. a Tailwind `text-[…]`).
+  `currentColor` stroke; recolor by passing a `class` (e.g. a Tailwind `text-text-secondary`).
 - When a data array feeds `<Icon name={…}>` (the `Features.astro` / `features.astro` grids), type its `icon` field as
   `IconName` via `satisfies { …; icon: IconName }[]` so a bad name is a compile error at the data site.
 - **Size is applied as CSS `width`/`height`, never as width/height attributes.** Lucide glyphs already ship
@@ -209,6 +209,44 @@ All pages support both light and dark mode. Users can override their system pref
 
 **Decision/Why**: The dual-selector pattern (media query + `data-theme` attribute) ensures the site works correctly
 without JS (falls back to system preference) while supporting explicit overrides via the toggle.
+
+## Tailwind class hygiene
+
+`eslint-plugin-better-tailwindcss` runs on `src/**/*.astro` and `src/**/*.ts` from `eslint.config.js`, with
+`src/styles/global.css` as the Tailwind entry point so it knows every `@theme` token. Nothing else enforced class
+hygiene before it: IntelliSense's editor nudges never reached `pnpm check` or CI, and the site had drifted to some 255
+`text-[var(--color-…)]`-style utilities.
+
+- **The canonical form is the theme name.** `text-text-secondary`, `bg-accent/10`, `border-border`,
+  `hover:text-accent-hover`, `from-surface`, `outline-accent`. Tailwind's own canonicalizer sometimes stops at the
+  variable shorthand (`border-(--color-border)`, `bg-(--color-accent)/10`) and accepts both, so the sweep rewrote those
+  to the theme name by hand; new code should go straight to the theme name. Both forms compile to the same declaration
+  (`color: var(--color-…)` or the same `color-mix(…)`), verified by building the site before and after the sweep and
+  diffing the emitted CSS rule bodies: every color declaration was identical, and the only differences were the
+  collapsed utilities below (2026-09-01). Light-mode overrides in `global.css` keep applying because the utility still
+  references the variable.
+- **Rules on** (all as errors, all but two autofixable, so `pnpm lint:fix` does the work): `enforce-canonical-classes`
+  (the ESLint twin of IntelliSense's `suggestCanonicalClasses`; also collapses `h-6 w-6` into `size-6` and
+  `[grid-auto-flow:dense]` into `grid-flow-dense`), `enforce-consistent-class-order` (Tailwind's official order),
+  `no-conflicting-classes`, `no-deprecated-classes`, `no-duplicate-classes`, `no-unnecessary-whitespace`.
+- **Rules deliberately off.** `enforce-shorthand-classes`, `enforce-consistent-important-position`, and
+  `enforce-consistent-variable-syntax` are subsumed by `enforce-canonical-classes` and would double-report.
+  `no-unknown-classes` can't work here: the templates mix Tailwind with BEM classes (`split-btn__label`, `hero-frame`,
+  `link-muted`) styled in scoped `<style>` blocks or plain CSS in `global.css`, which the plugin can't see (it only
+  detects `@utility` and `@layer components` classes in the entry CSS). `enforce-consistent-line-wrapping` would fight
+  oxfmt.
+- **Where it looks.** The plugin's default selectors cover `class` and Astro's `class:list` (its string literals and
+  object keys, so the arrays and conditionals in `src/pages/features.astro` and `StatusPill.astro` are linted; verified
+  on 4.7.0 by reading `getDefaultSelectors()`). Class strings held in a plain `const` are only linted when the variable
+  is named `className`, `classNames`, or `classes`, so name them that way. HTML inside data strings (the `answerHtml`
+  fields in `src/pages/pricing.astro`) is invisible to it; keep those canonical by hand.
+- **Editor**: set `"tailwindCSS.lint.suggestCanonicalClasses": "ignore"` in your `.vscode/settings.json` (gitignored) so
+  IntelliSense stops reporting what ESLint now owns.
+- **Cost**: the canonical rule boots Tailwind, about one second per lint run.
+
+The analytics dashboard runs the same rule set from its `eslint.config.js` with `src/app.css` as the entry point; its
+sweep was class order plus a few collapses (`h-2 w-2` to `size-2`, `text-xs leading-relaxed` to `text-xs/relaxed`). The
+desktop app writes plain CSS and has no Tailwind.
 
 ## Analytics
 
