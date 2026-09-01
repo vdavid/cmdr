@@ -1,0 +1,63 @@
+[package]
+name = "cmdr-webdav"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# "This is a test build." It widens `volume::testing` (the Docker fixture
+# connection and the scratch-dir helper) from `#[cfg(test)]`-only to `pub`, so
+# the app's WebDAV suites share one set of fixtures with this crate's own
+# instead of growing a second, drifting copy. Forwards `cmdr-fs/testing` because
+# the fixtures are built on `InMemoryCredentials` and `RecordingVolumeEvents`.
+#
+# Never enable in a production build.
+testing = ["cmdr-fs/testing"]
+
+[dependencies]
+# The `Volume` trait, every type it exchanges, and the host seams this backend
+# asks the app through. The only crate below this one.
+cmdr-fs = { path = "../cmdr-fs" }
+# The HTTP transport. Everything that touches it lives in `transport.rs`, plus
+# the status-code and method vocabulary `errors.rs` classifies on. ❗ EXACTLY the
+# app's feature set (`apps/desktop/src-tauri/Cargo.toml`), minus the two it
+# needs and this crate doesn't, so no second reqwest configuration enters the
+# graph; `rustls` brings the platform verifier the app already ships with.
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
+# PROPFIND `multistatus` parsing, namespace-aware: servers prefix `DAV:` as `D:`,
+# `d:`, `a:`, or nothing at all.
+quick-xml = "0.41"
+url = "2"
+# Per-segment encoding of remote paths on their way into a URL.
+percent-encoding = "2"
+# RFC 1123 dates, which is what `getlastmodified` carries.
+httpdate = "1"
+bytes = "1"
+# `StreamExt` over the response body and the request body wrapper.
+futures-util = "0.3"
+# The backend's own async surface: `tokio::sync` for the client lock, `time`
+# for the reconnect backoff, `rt` for the handle background work spawns onto,
+# and `macros` for `select!`. Deliberately NOT `rt-multi-thread`: the runtime is
+# the app's, handed down through `VolumeHost::runtime`.
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+# `CancellationToken`, on the connect and listing paths. Default features off,
+# the same shape `cmdr-fs` pins, so no second copy enters the graph.
+tokio-util = { version = "0.7.18", default-features = false }
+log = "0.4"
+
+[dev-dependencies]
+# Depending on ourselves turns the `testing` feature on for every DEV target and
+# leaves it off for the lib, so a shipped build carries no fixtures.
+cmdr-webdav = { path = ".", features = ["testing"] }
+# The recording host-seam fakes this crate's tests assert against.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# The Docker-backed suites drive real concurrency, so their tests need a
+# multi-threaded runtime the lib deliberately can't build for itself.
+tokio = { version = "1", features = ["rt-multi-thread", "test-util"] }

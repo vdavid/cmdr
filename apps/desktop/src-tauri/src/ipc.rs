@@ -620,6 +620,23 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // WebDAV servers: connecting, secrets, and the server list. Same gate
+            // and same no-stub reasoning as the SFTP block above.
+            cfg(any(target_os = "macos", target_os = "linux")) {
+                typed: [
+                    crate::commands::webdav::connect_webdav_volume,
+                    crate::commands::webdav::cancel_webdav_connect,
+                    crate::commands::webdav::disconnect_webdav_volume,
+                    crate::commands::webdav::save_webdav_credentials,
+                    crate::commands::webdav::has_webdav_credentials,
+                    crate::commands::webdav::delete_webdav_credentials,
+                    crate::commands::webdav::get_known_webdav_servers,
+                    crate::commands::webdav::update_known_webdav_server,
+                    crate::commands::webdav::forget_known_webdav_server,
+                    crate::commands::webdav::get_webdav_unattended_reconnect,
+                ]
+                dispatch_only: []
+            }
             cfg(not(any(target_os = "macos", target_os = "linux"))) {
                 typed: [
                     crate::stubs::network::ensure_network_discovery_started,

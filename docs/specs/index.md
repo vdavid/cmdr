@@ -10,6 +10,14 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-01 `webdav-backend-follow-ups.md` - **The WebDAV backend ships without a way to reach it, and trusts
+      only what the system roots vouch for.** `crates/cmdr-webdav`, its IPC surface, and the Docker fixtures are done
+      and documented in `crates/cmdr-webdav/DETAILS.md`. Open: the sidebar and sign-in UI it shares with SFTP (the big
+      one), trust-on-first-use for the self-signed certificates most NAS boxes present, Digest auth or a typed refusal,
+      Nextcloud chunked uploads, RFC 4331 quota, and three things David runs locally because this branch was built in a
+      cloud box: `bindings.ts` regeneration, `pnpm check --include-slow`, and the surface counts for
+      `index-crate-isolation`.
+
 - [ ] 2026-08-31 `rollback-recheck-plan.md` - **Cancelling an operation deletes files it no longer wrote, and the move
       case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and
       refuses to touch anything that changed; the in-flight rollbacks (the transfer dialog's button) verify nothing and

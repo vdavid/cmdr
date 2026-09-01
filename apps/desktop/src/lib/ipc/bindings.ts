@@ -3808,6 +3808,150 @@ export const commands = {
    */
   cancelSftpConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_sftp_connect', { attemptId }),
   /**
+   *  Opens a WebDAV volume, or says what stands in the way.
+   *
+   *  On success the volume is registered under its id and the server is added to
+   *  the known-servers list, so a picker sees it next launch.
+   *
+   *  ❗ Secrets are ❌ NOT arguments. The password comes from the secret store
+   *  (`save_webdav_credentials`) at the moment the client is built and dies with
+   *  it.
+   *
+   *  ❗ `attempt_id` is the CALLER's own name for this attempt, and
+   *  `cancel_webdav_connect` takes the same one. A fresh value per call
+   *  (`crypto.randomUUID()`) is what a dialog wants, and it has to be made BEFORE
+   *  the call: this command doesn't answer until the connect is over, which is far
+   *  too late to arm a cancel button.
+   */
+  connectWebdavVolume: (
+    displayName: string,
+    url: string,
+    username: string,
+    remoteRoot: string,
+    autoReconnect: boolean,
+    attemptId: string,
+  ) =>
+    __TAURI_INVOKE<WebdavConnectResult>('connect_webdav_volume', {
+      displayName,
+      url,
+      username,
+      remoteRoot,
+      autoReconnect,
+      attemptId,
+    }),
+  /**
+   *  Calls off the connect running under `attempt_id`, answering whether one was.
+   *
+   *  ❗ The way out of a connect that is going nowhere. The probe stops where it
+   *  stands, and `connect_webdav_volume` answers `cancelled`.
+   *
+   *  ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
+   *  and ❌ no secret written.
+   *
+   *  An id nobody is connecting under answers `false`: a cancel racing a connect
+   *  that just finished is ordinary, and there is nothing wrong to report.
+   */
+  cancelWebdavConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_webdav_connect', { attemptId }),
+  /**
+   *  Drops a WebDAV volume's client and takes it out of the volume registry.
+   *
+   *  Answers whether there was a WebDAV volume under that id.
+   */
+  disconnectWebdavVolume: (volumeId: string) => __TAURI_INVOKE<boolean>('disconnect_webdav_volume', { volumeId }),
+  /**
+   *  Saves the secret for one account on one server.
+   *
+   *  ❗ **This command IS the "remember the secret" switch.** Its meaning is exactly
+   *  "put this in the Keychain" and ❌ nothing else: `has_webdav_credentials` reads
+   *  the switch back and `delete_webdav_credentials` turns it off, so there is no
+   *  second flag anywhere that could disagree with the store.
+   *
+   *  ❗ Remembering a secret is what makes unattended reconnects POSSIBLE; it
+   *  doesn't turn them on. That is the other switch
+   *  (`update_known_webdav_server`'s `auto_reconnect`), and
+   *  `get_webdav_unattended_reconnect` is what says whether the two add up.
+   *
+   *  ❗ On a blocking task: the store can put a Keychain prompt in front of this,
+   *  and a modal dialog on the async runtime stalls every other volume.
+   */
+  saveWebdavCredentials: (url: string, username: string, secret: string) =>
+    typedError<null, KeychainError>(__TAURI_INVOKE('save_webdav_credentials', { url, username, secret })),
+  /**
+   *  Whether a secret is stored for one account on one server.
+   *
+   *  ❗ There is deliberately no command that HANDS the secret to the frontend: the
+   *  backend reads the store itself at the moment it builds a client, and a secret
+   *  that crosses IPC is a secret in a renderer process.
+   *
+   *  A store that didn't answer in time reads as `false`, which is the one place
+   *  collapsing a timeout into its fallback is harmless: both answers send the
+   *  frontend to the same place, which is to ask.
+   */
+  hasWebdavCredentials: (url: string, username: string) =>
+    __TAURI_INVOKE<boolean>('has_webdav_credentials', { url, username }),
+  // Forgets the stored secret for one account on one server.
+  deleteWebdavCredentials: (url: string, username: string) =>
+    typedError<null, KeychainError>(__TAURI_INVOKE('delete_webdav_credentials', { url, username })),
+  // Every WebDAV server the user has connected to.
+  getKnownWebdavServers: () => __TAURI_INVOKE<KnownWebdavServer[]>('get_known_webdav_servers'),
+  /**
+   *  Adds a server, or replaces the entry for the same `(url, username)`.
+   *
+   *  `connect_webdav_volume` already does this on every successful connection;
+   *  this is for editing one without connecting (renaming it, changing its root).
+   */
+  updateKnownWebdavServer: (
+    url: string,
+    username: string,
+    displayName: string,
+    remoteRoot: string,
+    autoReconnect: boolean,
+  ) =>
+    __TAURI_INVOKE<void>('update_known_webdav_server', {
+      url,
+      username,
+      displayName,
+      remoteRoot,
+      autoReconnect,
+    }),
+  /**
+   *  Drops a server from the list, answering whether one was there.
+   *
+   *  ❌ Leaves the stored secret alone: forgetting a server from a list isn't the
+   *  same request as revoking its credential. `delete_webdav_credentials` is that.
+   */
+  forgetKnownWebdavServer: (url: string, username: string) =>
+    __TAURI_INVOKE<boolean>('forget_known_webdav_server', { url, username }),
+  /**
+   *  Whether a WebDAV volume can actually come back on its own as it stands.
+   *
+   *  ❗ **Ask this when a banner renders**: the answer depends on what is in the
+   *  secret store at that moment.
+   *
+   *  `null` when nothing WebDAV is registered under that id. That is the honest
+   *  answer rather than a guess: a saved server the user hasn't connected to yet
+   *  gets no warning, which is right — nothing is known to warn about.
+   *
+   *  ❗ May read the secret store (on a blocking task), so ❌ don't poll it.
+   */
+  getWebdavUnattendedReconnect: (volumeId: string) =>
+    __TAURI_INVOKE<
+      // On, and it works. Nothing to show.
+      | 'possible'
+      /**
+       *  The switch is off. Nothing redials on its own, whatever is remembered. A
+       *  person reconnects by hand, and that is the whole story.
+       */
+      | 'switch_off'
+      /**
+       *  ❗ On, and it can't do anything: this volume signs in from the secret store
+       *  and nothing is stored. **This is the state a UI warns about**, and the way
+       *  out is remembering the secret.
+       */
+      | 'no_stored_secret'
+      | null
+    >('get_webdav_unattended_reconnect', { volumeId }),
+  /**
    *  Tauri command: returns the current macOS accent color as a hex string.
    *
    *  `NSColor` is main-thread-only, so we hop to the AppKit main thread via
@@ -5051,6 +5195,16 @@ export type ConnectedSftpVolume = {
    *  live volume, at the moment a banner asks.
    */
   rung: SftpAuthRung
+}
+
+// A live WebDAV volume, as the connect that made it saw it.
+export type ConnectedWebdavVolume = {
+  /**
+   *  The id every listing, tab, saved path, and index entry is filed under.
+   *  Derived from `host:port:username`, so two accounts on one server are two
+   *  volumes.
+   */
+  volumeId: string
 }
 
 export type ConnectionDiagnosticsDto = {
@@ -7027,6 +7181,50 @@ export type KnownSftpServer = {
    *  infer the default from that `undefined`: `getKnownSftpServers` in
    *  `tauri-commands/sftp.ts` fills it in one place, and that is the only place
    *  the default is spelled on the frontend.
+   */
+  autoReconnect?: boolean
+  /**
+   *  When this server was last connected to, ISO 8601, so a picker can sort by
+   *  recency.
+   */
+  lastConnectedAt: string
+}
+
+// One WebDAV server the user has connected to, and how to reach it again.
+export type KnownWebdavServer = {
+  /**
+   *  The base URL, as the user typed it, with a trailing slash. Scheme, host,
+   *  port, and the path the server hangs its collections under.
+   */
+  url: string
+  /**
+   *  The account to sign in as. ❗ Part of the identity: two accounts on one
+   *  server see different files under the same paths.
+   */
+  username: string
+  /**
+   *  What to call it in the UI. The user's own label, falling back to the host
+   *  when they never gave one.
+   */
+  displayName: string
+  // The remote directory to open at, relative to the base URL's path.
+  remoteRoot: string
+  /**
+   *  Whether Cmdr may redial this server unattended when its session drops.
+   *
+   *  ❗ **Independent of whether a secret is remembered**, which is the OTHER
+   *  switch and lives in the Keychain rather than here
+   *  (`has_webdav_credentials` is how to read it). Their combination has a real
+   *  precondition: `get_webdav_unattended_reconnect` is what says so, per
+   *  volume.
+   *
+   *  ❗ Defaults to on, ❌ never to off, the same as SFTP's: reading a missing
+   *  field as `false` would switch reconnects off under every server saved
+   *  before the setting existed.
+   *  ⚠️ `serde(default)` makes specta type this `autoReconnect?: boolean`. ❌
+   *  Don't let a call site infer the default from that `undefined`:
+   *  `getKnownWebdavServers` in `tauri-commands/webdav.ts` fills it in one
+   *  place, and that is the only place the default is spelled on the frontend.
    */
   autoReconnect?: boolean
   /**
@@ -12191,6 +12389,81 @@ export type WatcherGateError =
   { kind: 'watcherStartFailed'; message: string }
 
 // One released version's user-facing notes.
+/**
+ *  What connecting produced.
+ *
+ *  ❗ Every outcome is a variant, including the ones that read as failures: the
+ *  sign-in UI branches on all of them, and ❌ none may be recovered from a
+ *  message.
+ */
+export type WebdavConnectResult =
+  // A live volume, already registered and already in the server list.
+  | ({ outcome: 'connected' } & ConnectedWebdavVolume)
+  /**
+   *  The URL didn't parse, or its scheme is neither `http` nor `https`. ❗ Typed
+   *  rather than a message: the form marks the field, and the user fixes it.
+   */
+  | { outcome: 'invalid_url' }
+  /**
+   *  The server refused the credential. ❗ Retrying with the same secret can
+   *  lock the account; only a freshly typed one moves this forward.
+   */
+  | { outcome: 'authentication_rejected' }
+  /**
+   *  The server wants a credential and nothing is stored. ❗ Not a rejection,
+   *  and saying "wrong password" to someone who has never entered one is what
+   *  collapsing the two does.
+   */
+  | { outcome: 'needs_credentials' }
+  /**
+   *  The server challenged with no scheme this backend speaks (a Digest-only
+   *  server). ❌ Don't offer "check your password" as the fix; the secret was
+   *  never offered.
+   */
+  | { outcome: 'auth_method_unsupported' }
+  /**
+   *  The TLS certificate isn't trusted by the OS store. ❌ Not approvable from
+   *  the app: the fix is trusting the CA where the OS keeps them.
+   */
+  | { outcome: 'certificate_untrusted' }
+  // The URL answers HTTP, but not WebDAV.
+  | { outcome: 'not_a_webdav_server' }
+  // The handshake didn't finish inside the connect budget.
+  | { outcome: 'timed_out' }
+  // No route, refused, DNS, or a transport-level breakdown.
+  | { outcome: 'unreachable' }
+  /**
+   *  `cancel_webdav_connect` was called for this attempt. ❗ Nothing was
+   *  registered, remembered, or stored, so there is nothing to say about it
+   *  beyond closing the dialog.
+   */
+  | { outcome: 'cancelled' }
+
+/**
+ *  Whether a WebDAV volume can actually come back on its own as it stands.
+ *
+ *  ❗ **The backend's answer to "the switch is on and nothing happens".** The two
+ *  switches are independent — "remember the secret" is exactly a Keychain entry
+ *  (`has_webdav_credentials` reads it, `save_webdav_credentials` / delete move
+ *  it), and "reconnect automatically" is exactly this one — but their
+ *  COMBINATION has a precondition, and this enum is where it's said out loud.
+ *  ❌ Never derive it in the frontend from a credential check.
+ */
+export type WebdavUnattendedReconnect =
+  // On, and it works. Nothing to show.
+  | 'possible'
+  /**
+   *  The switch is off. Nothing redials on its own, whatever is remembered. A
+   *  person reconnects by hand, and that is the whole story.
+   */
+  | 'switch_off'
+  /**
+   *  ❗ On, and it can't do anything: this volume signs in from the secret store
+   *  and nothing is stored. **This is the state a UI warns about**, and the way
+   *  out is remembering the secret.
+   */
+  | 'no_stored_secret'
+
 export type WhatsNewRelease = {
   // Semver string, for example `"0.26.0"`.
   version: string

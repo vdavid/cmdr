@@ -206,7 +206,9 @@ a `check.sh` plus a manual `start.sh`) now coexist: every bring-up and teardown 
 worktree's teardown no longer kills your live suite. If a leaked lease keeps the stack up after everything's idle, check
 state with `(cd scripts/check && go run ./stack-lease status)` and force it down with
 `rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`. See `apps/desktop/test/smb-servers/README.md` §
-"Shared stack across worktrees" for the full model.
+"Shared stack across worktrees" for the full model. The SFTP (`apps/desktop/test/sftp-servers/`, ports 12480+) and
+WebDAV (`apps/desktop/test/webdav-servers/`, ports 13480+, Apache `mod_dav` with one Basic and one Digest-only service)
+stacks lease the same way under their own `/tmp/cmdr-<stack>.lock` + `/tmp/cmdr-<stack>-leases` namespaces.
 
 ### MCP servers (for ad-hoc exploration during test writing)
 

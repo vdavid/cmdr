@@ -39,11 +39,17 @@ type ConcurrencySource = (BackendName, fn() -> usize);
 ///   the design rather than something to tune. It still needs a row, because a
 ///   namespace without one silently gets
 ///   [`UNREGISTERED_MAX_CONCURRENT_OPERATIONS`].
+/// - `"webdav"` reads a constant too: one in-flight request per HTTP/1.1
+///   connection, and a server's per-host connection limit is what an extra one
+///   would run into.
 ///
 /// Adding a backend means adding its row here next to its own accessor, whether
 /// or not the number is ever exposed.
-const MAX_CONCURRENT_OPERATIONS_SOURCES: &[ConcurrencySource] =
-    &[("smb", super::smb_concurrency), ("sftp", sftp_concurrency)];
+const MAX_CONCURRENT_OPERATIONS_SOURCES: &[ConcurrencySource] = &[
+    ("smb", super::smb_concurrency),
+    ("sftp", sftp_concurrency),
+    ("webdav", webdav_concurrency),
+];
 
 /// How many operations an SFTP volume runs at once.
 ///
@@ -55,6 +61,19 @@ const SFTP_MAX_CONCURRENT_OPERATIONS: usize = 4;
 
 fn sftp_concurrency() -> usize {
     SFTP_MAX_CONCURRENT_OPERATIONS
+}
+
+/// How many operations a WebDAV volume runs at once.
+///
+/// Not a user-facing knob. Each operation holds one HTTP/1.1 connection to the
+/// host while its request is in flight, and four is what keeps both the server
+/// (a per-client connection cap is common on a NAS) and the `reqwest` pool
+/// happy: enough to overlap a listing with a transfer, never enough to look like
+/// a flood.
+const WEBDAV_MAX_CONCURRENT_OPERATIONS: usize = 4;
+
+fn webdav_concurrency() -> usize {
+    WEBDAV_MAX_CONCURRENT_OPERATIONS
 }
 
 /// What a backend with no row above gets.
@@ -137,6 +156,27 @@ mod tests {
         );
         assert_ne!(
             AppBackendSettings.max_concurrent_operations("sftp"),
+            UNREGISTERED_MAX_CONCURRENT_OPERATIONS,
+            "a missing row is invisible at runtime, so this is what says the row is there"
+        );
+
+        set_smb_concurrency(previous);
+    }
+
+    /// WebDAV's row is a constant as well, and the same argument applies: a
+    /// missing row would silently halve every transfer.
+    #[test]
+    fn webdav_reads_its_own_constant_and_not_the_smb_slider() {
+        let _turn = one_writer_at_a_time();
+        let previous = smb_concurrency();
+
+        set_smb_concurrency(32);
+        assert_eq!(
+            AppBackendSettings.max_concurrent_operations("webdav"),
+            WEBDAV_MAX_CONCURRENT_OPERATIONS
+        );
+        assert_ne!(
+            AppBackendSettings.max_concurrent_operations("webdav"),
             UNREGISTERED_MAX_CONCURRENT_OPERATIONS,
             "a missing row is invisible at runtime, so this is what says the row is there"
         );

@@ -68,6 +68,12 @@ var laneFixtures = []laneFixture{
 		markers:        []string{"sftp-servers/start.sh", "sftp-fixture"},
 		backendPackage: "cmdr-sftp",
 	},
+	{
+		name:           "WebDAV",
+		lanePrefix:     "webdav_integration_",
+		markers:        []string{"webdav-servers/start.sh", "webdav-fixture"},
+		backendPackage: "cmdr-webdav",
+	},
 }
 
 // AllowOutOfLaneFixtureCellComment marks a gated cell that belongs OUTSIDE the

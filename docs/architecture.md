@@ -248,10 +248,10 @@ All under `apps/desktop/src-tauri/src/`.
 
 ## Workspace crates
 
-All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` carry
-no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata`
-graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` at the numbers their
-audits landed on. The two dev CLIs and the vendored fork are ordinary members.
+All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, and
+`cmdr-webdav` carry no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against the
+`cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, and
+`cmdr-webdav` at the numbers their audits landed on. The two dev CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -276,6 +276,16 @@ audits landed on. The two dev CLIs and the vendored fork are ordinary members.
   `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend". Its guardrails, the two crate hazards it is shaped
   around, and which side a test lives on: `crates/cmdr-sftp/CLAUDE.md`. Which crate it is built on and why:
   `docs/notes/sftp-crate-evaluation-2026-08-22.md`. Its Docker servers: `apps/desktop/test/sftp-servers/README.md`.
+- `crates/cmdr-webdav/`: everything Cmdr says to a WebDAV server (Nextcloud, ownCloud, Synology, Fastmail, a generic
+  NAS). `WebdavVolume` over `reqwest` + `quick-xml`: PROPFIND listings, ranged GET reads, staged PUT+MOVE writes so a
+  partial upload never wears the user's filename, Basic auth out of the `CredentialStore` seam, TLS trust from the
+  system roots (no host keys), and a three-valued connection state with one unattended re-probe before it asks a person.
+  No Digest auth, no watcher, no locks. The app-side halves are the saved-server list and the connect wiring
+  (`apps/desktop/src-tauri/src/network/webdav_*.rs`) plus the IPC surface
+  (`apps/desktop/src-tauri/src/commands/webdav.rs`); reconnect and sign-in ride the backend-neutral commands. What the
+  frontend calls and what each answer means: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend". Its
+  guardrails and which side a test lives on: `crates/cmdr-webdav/CLAUDE.md`. Its Docker servers:
+  `apps/desktop/test/webdav-servers/README.md`. What it still owes: `docs/specs/webdav-backend-follow-ups.md`.
 - `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
   watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address
   building, `smb2::Error` classification, the share-listing vocabulary). The second backend in its own crate; what

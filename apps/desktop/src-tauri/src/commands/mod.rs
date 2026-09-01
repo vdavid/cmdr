@@ -43,10 +43,13 @@ pub mod settings;
 // off on Linux, where the Docker E2E lane runs.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod sftp;
+// WebDAV: the same gate and the same reason as `sftp`. ❌ No stub counterpart.
 pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 mod util;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod volumes;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod webdav;
 pub mod whats_new;
 pub mod window_ordering;

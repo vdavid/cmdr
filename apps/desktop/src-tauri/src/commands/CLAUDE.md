@@ -1,15 +1,15 @@
 # Commands module
 
-Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` functions and delegates immediately.
-**No business logic here**: branching or transformation belongs in the subsystem module.
+Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` functions and delegates.
+**No business logic here**: branching or transformation belongs in the subsystem.
 
 ## Module map
 
-One file per domain (`network.rs`, `sftp.rs`, `mtp.rs`, `clipboard.rs`, …), plus `mod.rs` (re-exports + platform
-gates), `util.rs` (timeout, deadline, and budget helpers), `file_system/`, `media_index/`, and `importance.rs`. AI and
-space-poller commands register from their own modules; the index subsystems are the reverse, since they can't carry
-`tauri::`. Inventory and rationale: `DETAILS.md`; `sftp.rs`'s frontend contract is `crates/cmdr-sftp/DETAILS.md`
-§ "Connecting from the frontend".
+One file per domain (`network.rs`, `sftp.rs`, `webdav.rs`, `mtp.rs`, `clipboard.rs`, …), plus `mod.rs` (re-exports +
+platform gates), `util.rs` (timeout and budget helpers), `file_system/`, `media_index/`, and
+`importance.rs`. AI and space-poller commands register from their own modules; the index subsystems are the reverse,
+since they can't carry `tauri::`. Inventory and rationale: `DETAILS.md`; `sftp.rs`'s frontend contract is
+`crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend"; `webdav.rs`'s, `crates/cmdr-webdav/DETAILS.md`.
 
 ## Must-knows
 

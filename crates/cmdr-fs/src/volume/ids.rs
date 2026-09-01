@@ -25,6 +25,8 @@
 //! - `smb-`: an SMB mount keyed by (server, port, share) ([`smb_volume_id`]).
 //! - `sftp-`: an SFTP server keyed by (host, port, username)
 //!   ([`sftp_volume_id`]).
+//! - `webdav-`: a WebDAV server keyed by (host, port, username)
+//!   ([`webdav_volume_id`]).
 //! - `mtp-`: an MTP device keyed by its serial (`super::mtp_ids`).
 //! - `path-`: the fallback when nothing better exists ([`path_volume_id`]),
 //!   keyed by the mount path. Stable only as long as the mount path is.
@@ -209,6 +211,30 @@ pub fn sftp_volume_id(host: &str, port: u16, username: &str) -> String {
     derived_id("sftp", &format!("{host}-{port}-{username}"), &[&host, &port, username])
 }
 
+/// Build the ID for a WebDAV server from its (host, port, username) triple.
+///
+/// The same tuple and the same reasons as [`sftp_volume_id`]: two accounts on one
+/// server see different files under the same paths, so the username is part of
+/// the identity; the base URL's path (the remote root) is addressing rather than
+/// identity, so re-rooting the same account deeper into the same server keeps
+/// its index and saved paths. The scheme is NOT in the tuple either: `http` and
+/// `https` to one host and port are the same server, and the port already tells
+/// the two default listeners apart.
+///
+/// # Case folding
+///
+/// The host is lowercased (DNS hostnames are case-insensitive); the username is
+/// NOT (an account may be case-sensitive on the server). The port is literal.
+pub fn webdav_volume_id(host: &str, port: u16, username: &str) -> String {
+    let host = host.to_lowercase();
+    let port = port.to_string();
+    derived_id(
+        "webdav",
+        &format!("{host}-{port}-{username}"),
+        &[&host, &port, username],
+    )
+}
+
 /// Build the ID for an MTP device from its (opaque, verbatim) serial.
 ///
 /// Called by [`super::mtp_ids::device_id_for`], which owns the serial-vs-topology
@@ -311,6 +337,48 @@ mod id_tests {
         assert_ne!(
             sftp_volume_id("localhost", 12480, "ada"),
             sftp_volume_id("localhost", 12481, "ada")
+        );
+    }
+
+    #[test]
+    fn two_accounts_on_one_webdav_server_never_share_an_id() {
+        // Same rule as SFTP: two accounts see different files under the same
+        // paths, so one ID would hand one account's index and tab state to the
+        // other.
+        assert_ne!(
+            webdav_volume_id("dav.example.test", 443, "ada"),
+            webdav_volume_id("dav.example.test", 443, "grace")
+        );
+    }
+
+    #[test]
+    fn a_webdav_volume_keeps_its_id_across_remote_roots() {
+        // The root is addressing, not identity: the id is derived from the
+        // triple alone, so it is the same however deep the user browsed in.
+        assert_eq!(
+            webdav_volume_id("dav.example.test", 443, "ada"),
+            webdav_volume_id("dav.example.test", 443, "ada")
+        );
+    }
+
+    #[test]
+    fn webdav_volume_id_folds_the_host_but_not_the_account() {
+        assert_eq!(
+            webdav_volume_id("DAV.example.test", 443, "ada"),
+            webdav_volume_id("dav.example.test", 443, "ada")
+        );
+        assert_ne!(
+            webdav_volume_id("dav.example.test", 443, "Ada"),
+            webdav_volume_id("dav.example.test", 443, "ada")
+        );
+    }
+
+    #[test]
+    fn webdav_volume_id_distinguishes_ports() {
+        // Two Docker fixtures on localhost are two servers.
+        assert_ne!(
+            webdav_volume_id("localhost", 18080, "ada"),
+            webdav_volume_id("localhost", 18081, "ada")
         );
     }
 
@@ -457,6 +525,7 @@ mod id_tests {
             path_volume_id(&format!("/Volumes/{}", "x".repeat(500))),
             smb_volume_id("nas.local", 445, "Some Share/With Slash"),
             sftp_volume_id("nas.local", 22, "ada/with:punct"),
+            webdav_volume_id("nas.local", 443, "ada/with:punct"),
             mtp_device_id("SERIAL/WITH:PUNCT.uation"),
             local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"),
         ];
@@ -499,9 +568,17 @@ mod id_tests {
         // on (`is_mtp_volume_id`, the index's root check, the legacy sweep).
         let smb = smb_volume_id("localhost", 10494, "public");
         let sftp = sftp_volume_id("localhost", 12480, "ada");
+        let webdav = webdav_volume_id("localhost", 12480, "ada");
         let local = path_volume_id("/Volumes/Smb");
         let mtp = mtp_device_id("SERIAL");
         assert!(sftp.starts_with("sftp-"), "got: {sftp}");
+        // Same triple as the SFTP one above, and still a different volume: the
+        // scheme prefix is what keeps two backends on one host apart.
+        assert!(webdav.starts_with("webdav-"), "got: {webdav}");
+        assert_ne!(webdav, sftp);
+        assert_ne!(webdav, smb);
+        assert_ne!(webdav, local);
+        assert_ne!(webdav, mtp);
         assert_ne!(sftp, smb);
         assert_ne!(sftp, local);
         assert_ne!(sftp, mtp);
@@ -598,6 +675,7 @@ mod id_tests {
             path_volume_id("/…/·"),
             smb_volume_id("naspolya", 445, "naspi"),
             sftp_volume_id("naspolya", 22, "ada"),
+            webdav_volume_id("naspolya", 443, "ada"),
             local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"),
             mtp_device_id("SERIAL"),
             mtp_volume_id(&device_id_for(Some("SERIAL"), 0), 65537),

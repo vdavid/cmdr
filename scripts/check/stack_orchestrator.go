@@ -47,8 +47,9 @@ type StackOrchestrator struct {
 // so compose and every check that talks to the fixture inherit it. A stack with
 // no entry needs no pinning.
 var portEnvAppliers = map[string]func(){
-	"smb":  checks.ApplySmbPortEnv,
-	"sftp": checks.ApplySftpPortEnv,
+	"smb":    checks.ApplySmbPortEnv,
+	"sftp":   checks.ApplySftpPortEnv,
+	"webdav": checks.ApplyWebdavPortEnv,
 }
 
 // NewStackOrchestrator returns an orchestrator scoped to the given repo root. Its

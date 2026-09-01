@@ -21,6 +21,8 @@ pub mod mdns_discovery;
 pub mod sftp_host_keys;
 pub mod sftp_known_servers;
 pub mod sftp_volume_wiring;
+pub mod webdav_known_servers;
+pub mod webdav_volume_wiring;
 
 /// Reads both SFTP stores off disk: the host keys the user has approved and the
 /// servers they've connected to.
@@ -31,6 +33,12 @@ pub mod sftp_volume_wiring;
 pub fn load_sftp_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
     sftp_host_keys::load_trusted_host_keys(app);
     sftp_known_servers::load_known_sftp_servers(app);
+}
+
+/// Reads the WebDAV server list off disk. One call at startup, beside
+/// [`load_sftp_stores`].
+pub fn load_webdav_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
+    webdav_known_servers::load_known_webdav_servers(app);
 }
 
 #[cfg(target_os = "macos")]

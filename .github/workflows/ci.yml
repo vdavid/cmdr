@@ -55,6 +55,7 @@ jobs:
               - 'apps/desktop/src-tauri/**'
               - 'apps/desktop/test/sftp-servers/**'
               - 'apps/desktop/test/smb-servers/**'
+              - 'apps/desktop/test/webdav-servers/**'
               - 'crates/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
@@ -275,7 +276,7 @@ jobs:
       - name: Run Rust tests
         run: ./scripts/check/check --check desktop-rust-tests --ci
 
-      - name: Run the Docker fixture integration tests (SMB and SFTP)
+      - name: Run the Docker fixture integration tests (SMB, SFTP, and WebDAV)
         run: ./scripts/check/check --check desktop-rust-integration-tests --ci
 
   # ===========================================
