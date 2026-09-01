@@ -66,7 +66,7 @@ const BACKEND: BackendName = "smb";
 /// hold an `Arc<Tree>` without touching the client mutex. Concurrent copies
 /// on a single volume briefly lock the client to clone its `Connection` (a
 /// cheap `Arc::clone`), release the lock, and drive `Tree::download` /
-/// `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned
+/// `Tree::read_file_compound_sized` / `Tree::write_file_compound` on the cloned
 /// `Connection`, so N downloads run pipelined on one SMB session instead of
 /// serializing through the mutex. The `watcher_cancel` field uses
 /// `std::sync::Mutex` because it is only accessed briefly (no awaits while

@@ -710,3 +710,123 @@ async fn smb_integration_write_progress_reports_confirmed_bytes_not_queued_ones(
 
     ensure_clean(&vol, &dir).await;
 }
+
+// ── The hinted read: one sized frame, and no truncation ─────────
+
+/// Drains a read stream to the end and hands back everything it produced.
+async fn drain(mut stream: Box<dyn cmdr_fs::volume::VolumeReadStream>) -> Vec<u8> {
+    let mut out = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        out.extend_from_slice(&chunk.expect("no read error"));
+    }
+    out
+}
+
+/// A hinted read of a small file has to leave as ONE compound frame
+/// (CREATE+READ+CLOSE): that single round trip is the whole reason the fast path
+/// exists, and it's what a 100k-file copy multiplies.
+///
+/// The READ inside it is sized to the hint, which is invisible on the frame
+/// count and very visible on the connection's credit budget: an unsized READ
+/// books `max_read` (8 MB, 128 credits) whatever the file weighs, so ten
+/// concurrent 4 MB reads ask for 1,300 credits against a ~512-credit window and
+/// most of them park instead of copying.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_hinted_read_leaves_as_one_compound_frame() {
+    let vol = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.unwrap();
+
+    let data: Vec<u8> = (0..=255u8).cycle().take(128 * 1024).collect();
+    let path = format!("{}/hinted.bin", dir);
+    vol.create_file(Path::new(&path), &data).await.unwrap();
+
+    let (requests_before, compounds_before) = request_counts(&vol).await;
+    let stream = vol
+        .open_read_stream_with_hint(Path::new(&path), Some(data.len() as u64))
+        .await
+        .unwrap();
+    let got = drain(stream).await;
+    let (requests_after, compounds_after) = request_counts(&vol).await;
+
+    assert_eq!(got, data, "the fast path must serve the file byte for byte");
+    assert_eq!(
+        compounds_after - compounds_before,
+        1,
+        "a hinted small read must be one compound frame, not a 3-RTT streaming open"
+    );
+    assert_eq!(
+        requests_after - requests_before,
+        1,
+        "and that compound is the ONLY request the read sends"
+    );
+
+    ensure_clean(&vol, &dir).await;
+}
+
+/// A file that GREW between the scan and the copy must never come back
+/// truncated: the sized READ asks for the stale size, so smb2 refuses with
+/// `TooLarge` rather than handing back a prefix, and the streaming fallback
+/// serves the file as it is now.
+///
+/// This is the case sizing the read makes stricter: the refusal now trips at the
+/// hint instead of at `max_read`, so drift that used to slip through (a file that
+/// grew but still fits one 8 MB READ) is caught here.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_file_that_grew_since_the_scan_is_never_read_truncated() {
+    let vol = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.unwrap();
+
+    let data: Vec<u8> = (0..=255u8).cycle().take(256 * 1024).collect();
+    let path = format!("{}/grown.bin", dir);
+    vol.create_file(Path::new(&path), &data).await.unwrap();
+
+    // The hint is what the scan saw; the file on the server is four times that.
+    let stale_hint = (data.len() / 4) as u64;
+    let stream = vol
+        .open_read_stream_with_hint(Path::new(&path), Some(stale_hint))
+        .await
+        .unwrap();
+    let got = drain(stream).await;
+
+    assert_eq!(
+        got.len(),
+        data.len(),
+        "a stale hint must never shorten the copy: the reader has to serve the file as it is now"
+    );
+    assert_eq!(got, data);
+
+    ensure_clean(&vol, &dir).await;
+}
+
+/// The other drift direction: a file that SHRANK comes back short of the hint,
+/// which the fast path treats as "the scan is stale" and re-reads by streaming,
+/// so the caller gets today's bytes rather than a padded or partial buffer.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_file_that_shrank_since_the_scan_is_read_in_full() {
+    let vol = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.unwrap();
+
+    let data: Vec<u8> = (0..=255u8).cycle().take(64 * 1024).collect();
+    let path = format!("{}/shrunk.bin", dir);
+    vol.create_file(Path::new(&path), &data).await.unwrap();
+
+    let stale_hint = (data.len() * 4) as u64;
+    let stream = vol
+        .open_read_stream_with_hint(Path::new(&path), Some(stale_hint))
+        .await
+        .unwrap();
+    let got = drain(stream).await;
+
+    assert_eq!(got, data, "the reader must serve the file as it is now, whole and no longer");
+
+    ensure_clean(&vol, &dir).await;
+}

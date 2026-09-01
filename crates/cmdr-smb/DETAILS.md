@@ -335,6 +335,28 @@ notifications carry decide which cached listing they patch. So `SmbVolumeInner::
 `RwLock<PathBuf>`, shared with the watcher task and re-read once per event batch) is updated by a reroot; a watcher
 pinned to the old root would keep feeding paths that no longer name anything.
 
+## Copy concurrency and the credit window
+
+Every SMB2 request spends credits from a budget the server grants (smb2 steers toward a ~512-credit window), and the
+charge follows the size of the RESPONSE the request asks for, one credit per 64 KB. Credits and in-flight bytes are
+therefore the same quantity seen twice, which decides both halves of how a copy is sized.
+
+**The hinted read asks for the file's size, never `max_read`.** `open_read_stream_with_hint` takes the compound
+fast-path (CREATE+READ+CLOSE in one frame) for any hint that fits one READ, and drives
+`Tree::read_file_compound_sized(conn, path, size)`. The unsized `read_file_compound` asks for `max_read` whatever the
+file weighs, so against a server negotiating 8 MB every small file booked 128 credits plus one each for CREATE and
+CLOSE: 130 credits for a 4 MB camera clip, of which three fit the window. A 119,204-file, 300 GB SMB-to-SMB copy
+launched ten concurrent reads, seven of them parked on credits holding a transfer slot and reporting no progress, and
+the copy stalled. Sized, the same read charges ~66 and the window carries seven. The scan pool's prefetch
+(`scan_pool.rs::open_read_stream_for_scan_impl`) reads the same way, for the same reason.
+
+Sizing the read also moves smb2's anti-truncation guard: it refuses with `ErrorKind::TooLarge` when the server reports
+the file is bigger than the length asked for, so the refusal now trips at the HINT rather than at `max_read`. That makes
+the two size-drift arms in the fast path load-bearing, not decoration. A file that GREW since the scan comes back
+`TooLarge` and falls through to streaming, which serves it whole; one that SHRANK comes back short of the hint
+(`data.len() != size`) and falls through the same way. Neither ever hands the copy a prefix under the file's final name.
+❌ Never "simplify" either arm away, and never call the unsized `read_file_compound` from a path that knows the size.
+
 ## Decisions
 
 **Decision**: `SmbVolume::to_smb_path` returns `Result<String, VolumeError>` and refuses a path outside the mount root

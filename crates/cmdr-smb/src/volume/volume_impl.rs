@@ -360,12 +360,24 @@ impl Volume for SmbVolume {
             // send CREATE+READ+CLOSE as a single compound frame (1 RTT) instead
             // of the 3-RTT streaming open. Drives the compound on a cloned
             // `Connection` with no lock held, so N concurrent small reads
-            // pipeline over one SMB session. Falls through to the streaming
-            // path when the hint is missing or too large, or when the file
-            // changed size since the scan: shrunk files come back short
-            // (`data.len() != size`), grown-past-`max_read` files come back as
-            // a typed `ErrorKind::TooLarge` (smb2 refuses to truncate a file
-            // that no longer fits in one READ).
+            // pipeline over one SMB session.
+            //
+            // The READ is sized to the HINT, never to `max_read`: the credit
+            // charge follows the response size the request asks for, so an
+            // unsized read of a 4 MB file books the whole 8 MB window (128
+            // credits) and a handful of them exhaust the connection's budget
+            // while barely filling the wire.
+            //
+            // Falls through to the streaming path when the hint is missing or
+            // bigger than one READ, or when the file changed size since the
+            // scan. Both drift directions stay safe, and TOGETHER they're what
+            // keeps a changed file from being copied truncated: a file that
+            // SHRANK comes back short of the hint (`data.len() != size`), and
+            // one that GREW past the hint comes back as a typed
+            // `ErrorKind::TooLarge` (smb2 refuses to hand back a prefix of a
+            // file that no longer fits the length asked for). Sizing the read
+            // makes that guard trip at the hint rather than at `max_read`, so
+            // it fires on drift it used to miss.
             if let Some(size) = size_hint {
                 let (tree, mut conn) = self.clone_session().await?;
                 let max_read = conn.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
@@ -374,10 +386,10 @@ impl Volume for SmbVolume {
                         "SmbVolume::open_read_stream_with_hint: share={}, path={:?}, size={}; using compound fast-path",
                         self.inner.share_name, smb_path, size
                     );
-                    match tree.read_file_compound(&mut conn, &smb_path).await {
+                    match tree.read_file_compound_sized(&mut conn, &smb_path, size).await {
                         Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => {
                             debug!(
-                                "SmbVolume::open_read_stream_with_hint: file grew past max_read since the scan ({}); falling back to streaming",
+                                "SmbVolume::open_read_stream_with_hint: file grew past the hinted size since the scan ({}); falling back to streaming",
                                 e
                             );
                         }

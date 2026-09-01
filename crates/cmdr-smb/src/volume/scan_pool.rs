@@ -517,7 +517,12 @@ impl SmbVolume {
                     if size > max_read {
                         break; // too big for one compound READ ⇒ main-session streaming
                     }
-                    match tree.read_file_compound(&mut conn, &smb_path).await {
+                    // Sized to the hint, so the READ's credit charge follows the
+                    // file instead of booking a whole `max_read` window per
+                    // prefetch (see `volume_impl.rs`'s fast path). `TooLarge` now
+                    // means "grew past the hint", which the streaming fallback
+                    // below serves in full.
+                    match tree.read_file_compound_sized(&mut conn, &smb_path, size).await {
                         Ok(data) if data.len() as u64 == size => {
                             return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
                         }
@@ -529,7 +534,7 @@ impl SmbVolume {
                             pool.mark_member_dead(idx);
                             continue;
                         }
-                        Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => break, // grew past max_read
+                        Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => break, // grew past the hint
                         // A real per-file error (permission, not-found, …): the same
                         // on any connection; surface it typed, don't touch the main
                         // session's state (this wasn't its connection).
