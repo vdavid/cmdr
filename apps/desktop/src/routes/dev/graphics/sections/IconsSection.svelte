@@ -74,7 +74,13 @@
         x: 'Clear-field button in the go-to-path dialog, and the dismiss button on toasts.',
     }
 
-    const items = (Object.keys(ICON_COMPONENTS) as IconName[]).map((name) => ({
+    interface IconEntry {
+        id: IconName
+        caption: string
+        usage: string
+    }
+
+    const items: IconEntry[] = (Object.keys(ICON_COMPONENTS) as IconName[]).map((name) => ({
         id: name,
         caption: name,
         usage: USAGE[name],
@@ -88,7 +94,7 @@
             <code>lib/ui/icons/icon-map.ts</code>. They inherit <code>currentColor</code>, so each one tints to its
             surrounding text. Shown at a uniform 24px review size.
         {/snippet}
-        {#snippet glyph(item)}
+        {#snippet glyph(item: IconEntry)}
             <Icon name={item.id} size={24} aria-hidden="true" />
         {/snippet}
     </GlyphGrid>

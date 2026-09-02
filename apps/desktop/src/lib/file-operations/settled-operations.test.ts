@@ -304,7 +304,7 @@ describe('NewEntryNameCheck', () => {
   })
 
   it('disposes cleanly when it never scheduled or listened', () => {
-    expect(() => makeCheck().dispose()).not.toThrow()
+    expect(() => { makeCheck().dispose(); }).not.toThrow()
     expect(unlistenDiff).not.toHaveBeenCalled()
   })
 })
