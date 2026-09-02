@@ -33,7 +33,7 @@ pub use pane_state::PaneStateStore;
 // surface it needs — the dispatch entry, the agent view, the consumer/access tokens, and
 // the tool result types its handlers return. Deliberately narrow so the agent can't reach
 // the ai-client dispatch or the auth gate.
-pub(crate) use executor::{ToolError, ToolResult, fit_to_result_budget};
+pub(crate) use executor::{ToolError, ToolResult, fit_to_result_budget, is_virtual_path};
 pub use server::{
     McpServerOutcome, get_mcp_actual_port, is_mcp_running, rebind_interactive, start_mcp_server_background,
     stop_mcp_server, stop_mcp_server_and_wait,

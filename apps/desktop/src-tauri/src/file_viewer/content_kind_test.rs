@@ -209,3 +209,51 @@ fn media_mime_maps_each_kind() {
     assert_eq!(media_mime(b"<svg>", ViewerContentKind::Image), Some("image/svg+xml"));
     assert_eq!(media_mime(b"anything", ViewerContentKind::Text), None);
 }
+
+// --- looks_binary: the byte-level text-vs-binary answer the agent needs ---
+
+mod looks_binary {
+    use super::super::content_kind::looks_binary;
+    use super::super::encoding::FileEncoding;
+
+    #[test]
+    fn utf16_is_text_even_though_every_other_byte_is_nul() {
+        // "hi\n" in UTF-16 LE with a BOM: NULs are code-unit halves, not a binary tell.
+        let utf16 = [0xFF, 0xFE, b'h', 0, b'i', 0, b'\n', 0];
+        assert!(!looks_binary(&utf16, FileEncoding::Utf16Le));
+        assert!(!looks_binary(&utf16, FileEncoding::Utf16Be));
+    }
+
+    #[test]
+    fn a_nul_in_a_single_byte_encoding_means_binary() {
+        assert!(looks_binary(b"abc\0def", FileEncoding::Utf8));
+        assert!(looks_binary(b"caf\xE9\0", FileEncoding::Windows1252));
+    }
+
+    #[test]
+    fn plain_text_with_tabs_newlines_form_feeds_and_escapes_is_text() {
+        let text = b"col\tval\r\nnext\x0c\x1b[0mreset\n";
+        assert!(!looks_binary(text, FileEncoding::Utf8));
+        assert!(
+            !looks_binary(b"", FileEncoding::Utf8),
+            "an empty head has nothing binary in it"
+        );
+        assert!(!looks_binary("hello wörld".as_bytes(), FileEncoding::Utf8));
+    }
+
+    #[test]
+    fn control_bytes_over_five_percent_mean_binary() {
+        // 100 bytes, 6 of them C0 controls outside the allowed set: over the 5% line.
+        let mut head = vec![b'a'; 100];
+        for i in 0..6 {
+            head[i * 10] = 0x01;
+        }
+        assert!(looks_binary(&head, FileEncoding::Utf8));
+        // 5 of 100 is exactly 5%: still text (the threshold is "exceeds").
+        let mut head = vec![b'a'; 100];
+        for i in 0..5 {
+            head[i * 10] = 0x02;
+        }
+        assert!(!looks_binary(&head, FileEncoding::Utf8));
+    }
+}

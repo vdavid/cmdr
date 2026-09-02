@@ -676,12 +676,12 @@ mcp_tools! {
         access: Access::Read,
         run: app_params crate::agent::tools::read::state::execute_app_state
     },
-    // The one tool that reads a user file's CONTENTS (bounded: one path, a paged text window,
-    // image/PDF header facts, never image bytes). Answers "what is this file?". PRIVACY: the
-    // window egresses to the agent's provider under the Ask Cmdr consent gate; see
-    // `agent/tools/read/inspect.rs`.
+    // The one tool that reads user files' CONTENTS (bounded: up to 200 paths, a line window
+    // of text per file, image header facts, never bytes). Answers "what's in this file?".
+    // PRIVACY: the windows egress to the agent's provider under the Ask Cmdr consent gate;
+    // see `agent/tools/read/inspect/`.
     "inspect_file" => {
-        desc: "Inspect one file to describe it: size, modified, MIME, the format its bytes really are, and per kind a content window (text: paged by offset/maxChars; image: dimensions, then call image_facts for contents; PDF: version and page estimate). Folders, missing, unreadable, and unreachable paths answer typed statuses.",
+        desc: "Look inside files to say what they are: metadata, the format the bytes really are, and per kind the content: a line window of text (any encoding), or an image's dimensions (then image_facts for what's in it). Up to 200 paths; every cut is reported.",
         schema: crate::agent::tools::read::inspect::inspect_file_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],

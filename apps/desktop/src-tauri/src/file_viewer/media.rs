@@ -75,8 +75,15 @@ fn hex_encode(bytes: &[u8]) -> String {
 /// Reads an image's pixel dimensions from its header only (no full decode), best-effort.
 /// Returns `None` for formats the `image` crate can't parse (HEIC, SVG) or on any error.
 /// Must stay header-only so it can't extend the viewer open past a quick metadata read.
+/// The format is sniffed from the bytes, never the extension, so a PNG named `.txt`
+/// still answers (the classifier that got us here decided by magic too).
 pub fn read_image_dimensions(path: &std::path::Path) -> Option<(u32, u32)> {
-    image::image_dimensions(path).ok()
+    image::ImageReader::open(path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .into_dimensions()
+        .ok()
 }
 
 #[cfg(test)]
@@ -89,6 +96,19 @@ mod tests {
             kind: ViewerContentKind::Image,
             mime: "image/png".to_string(),
         }
+    }
+
+    #[test]
+    fn read_image_dimensions_sniffs_the_bytes_not_the_extension() {
+        let dir = crate::test_support::TestDir::new("media_dims");
+        let lying = dir.join("notes.txt");
+        image::RgbaImage::new(3, 2)
+            .save_with_format(&lying, image::ImageFormat::Png)
+            .unwrap();
+        assert_eq!(read_image_dimensions(&lying), Some((3, 2)));
+        let text = dir.join("real.txt");
+        std::fs::write(&text, "not a picture").unwrap();
+        assert_eq!(read_image_dimensions(&text), None);
     }
 
     #[test]

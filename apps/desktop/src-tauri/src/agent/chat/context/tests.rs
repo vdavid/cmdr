@@ -188,7 +188,7 @@ fn envelope_names_the_batch_size_the_prompt_points_at() {
     let rendered = render_envelope(&env, offset());
 
     assert!(
-        rendered.contains("rename batch: up to 25 files"),
+        rendered.contains("rename batch: up to 24 files"),
         "the envelope must carry the turn's batch size, got: {rendered}"
     );
 }

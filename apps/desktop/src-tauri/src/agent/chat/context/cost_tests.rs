@@ -31,10 +31,10 @@ const FILES: usize = 100;
 // them, and divides the reply's own ceiling by the plan row), so they're imported rather than
 // restated: this file is what keeps them honest against the real shapes.
 
-/// Every call: the system prompt plus the 17 tool declarations, before the user has said a word.
+/// Every call: the system prompt plus the 18 tool declarations, before the user has said a word.
 const FIXED_OVERHEAD: usize = FIXED_PROMPT_OVERHEAD_TOKENS;
 const SYSTEM_PROMPT_TOKENS: usize = 1_636;
-const TOOL_DECLARATION_TOKENS: usize = 4_100;
+const TOOL_DECLARATION_TOKENS: usize = 4_157;
 
 /// One `image_facts` row at [`OCR_CHARS`] of recognized text: the dominant per-file cost, and
 /// the reason a window has to be sized for the facts rather than for the plan.
@@ -47,7 +47,7 @@ const PLAN_ROW_PER_FILE: usize = PLAN_ROW_TOKENS_PER_FILE;
 const LISTING_PER_FILE: usize = LISTING_TOKENS_PER_FILE;
 
 /// The whole 100-file rename turn, prefix included.
-const HUNDRED_FILE_TURN: usize = 42_187;
+const HUNDRED_FILE_TURN: usize = 42_375;
 
 const SHOTS_DIR: &str = "/Users/me/Downloads/shots";
 

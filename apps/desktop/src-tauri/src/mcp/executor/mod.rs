@@ -366,7 +366,7 @@ fn user_path_param(params: &Value, key: &str) -> Result<String, ToolError> {
 
 /// True for scheme-prefixed virtual paths (`mtp://…`, `smb://…`) that don't live on the
 /// local filesystem and must skip local existence checks.
-fn is_virtual_path(path: &str) -> bool {
+pub(crate) fn is_virtual_path(path: &str) -> bool {
     path.split_once("://").is_some_and(|(scheme, _)| {
         !scheme.is_empty()
             && scheme.chars().next().is_some_and(|c| c.is_ascii_alphabetic())

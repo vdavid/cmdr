@@ -4,7 +4,8 @@
 //! - [`listing`]: `list_dir` — drive-index listing, sortable by size (the disk-usage question).
 //! - [`importance`]: `important_folders` + `folder_importance` — the offline importance signal.
 //! - [`volumes`]: `list_volumes` — every volume with freshness + connectivity.
-//! - [`inspect`]: `inspect_file` — one file's metadata, sniffed format, and a bounded content window.
+//! - [`inspect`]: `inspect_file` — up to 200 files' metadata, the kind their bytes really are, and a bounded
+//!   content window per kind, read through the viewer's own core.
 //!
 //! The `operations_list` / `operations_get` family reuses the ai-client executors
 //! unchanged (shared registry entries), so it has no file here.

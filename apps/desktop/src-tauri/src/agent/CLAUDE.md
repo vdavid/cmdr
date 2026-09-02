@@ -28,7 +28,7 @@ the surface, so later proactive slices grow here too.
 ## Must-knows
 
 - **The agent can propose; only the user can approve** (invariant 7). No write tool for the user's files; the one
-  file-content read is `inspect_file` (bounded, one path, typed): the agent view admits `Read`, `Propose`, and `Memory` entries, never `Write`. A
+  file-content read is `inspect_file` (bounded, typed): the agent view admits `Read`, `Propose`, and `Memory` entries, never `Write`. A
   `Propose` tool mutates nothing, approval originates in the frontend as a user action, and no tool approves one.
   **`Propose` doesn't touch consent** (proposals flow agent → user, never to the provider), so don't re-litigate that.
 - **`Access::Memory` is the one write, and it was a deliberate widening.** The promise is now "the agent writes only
@@ -37,7 +37,7 @@ the surface, so later proactive slices grow here too.
   `memory/DETAILS.md`.
 - **The egress line is structural.** Names, paths, and metadata reach the provider; content egress is the photo pair,
   `search_photos` and `image_facts` (image-derived TEXT, never image bytes; `mcp/executor/photos.rs`,
-  `image_facts.rs`) plus `inspect_file`'s bounded text window (`tools/read/inspect.rs`). The consent copy
+  `image_facts.rs`) plus `inspect_file`'s bounded text windows (`tools/read/inspect/`). The consent copy
   (`askCmdr.consent.*`) names the photo pair; ❌ it must name `inspect_file` too before that ships. Don't widen the
   line further without revisiting the whole consent story.
 - **The runtime drives the seams; the IPC is wired.** `agent::start` registers `ChatRuntime`; `../commands/agent/` is

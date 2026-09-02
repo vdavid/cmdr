@@ -11,12 +11,13 @@ mod byte_seek;
 pub mod content_kind;
 pub mod encoding;
 mod full_load;
+pub(crate) mod headless;
 mod line_index;
 pub mod media;
 mod media_backend;
 pub mod media_protocol;
 mod media_session;
-mod range_read;
+pub(crate) mod range_read;
 mod search_matcher;
 pub mod session;
 pub mod watcher;
@@ -33,6 +34,8 @@ mod content_kind_test;
 mod encoding_test;
 #[cfg(test)]
 mod full_load_test;
+#[cfg(test)]
+mod headless_test;
 #[cfg(test)]
 mod line_index_test;
 #[cfg(test)]

@@ -16,6 +16,8 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   `media_backend.rs`, `media_session.rs`. See `DETAILS.md` § "Media rendering".
 - `archive_extract.rs`: preview-in-zip (streams an archive-inner entry to a bounded temp). See
   `DETAILS.md` § "Preview inside an archive".
+- `headless.rs`: `open_text_backend`, the backend pick with no session around it (the agent's `inspect_file` reads
+  through it); `content_kind::looks_binary`, the byte-level text-vs-binary call. `DETAILS.md` § "Headless reads".
 - `analytics.rs`: `viewer_opened`; ❌ never a file name or extension.
 
 ## Must-knows

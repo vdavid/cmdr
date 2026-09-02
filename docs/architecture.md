@@ -189,7 +189,9 @@ All under `apps/desktop/src-tauri/src/`.
   plus the thread that owns the inbox, the timer, and the wakes it hands off. Its `agent/memory/` is the one place the
   agent writes: a jailed, capped Markdown folder under the app data dir, fed back into every turn's prefix. Its
   `agent/outcomes.rs` closes the loop, recording what the user did with each proposal on the two channels that reach
-  them and the agent. See its `apps/desktop/src-tauri/src/agent/CLAUDE.md`
+  them and the agent. Its `agent/tools/` is the in-process toolset the chat dispatches; `agent/tools/read/inspect/` is
+  the one tool that reads file contents, through `file_viewer`'s headless seam. See its
+  `apps/desktop/src-tauri/src/agent/CLAUDE.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
