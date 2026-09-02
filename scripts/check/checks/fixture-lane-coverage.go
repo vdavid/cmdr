@@ -52,6 +52,18 @@ type laneFixture struct {
 	// app around it. `package`, not `binary`: nextest matches a lib test target
 	// by binary id, which is not the crate name.
 	backendPackage string
+	// ownLaneTests is a `test()` atom this fixture's cells match but the SHARED
+	// lane must not select, because those cells need a stack the shared lane
+	// never brings up. Empty for a fixture whose whole package belongs in it.
+	//
+	// ❗ It is subtracted from the package clause, so a cell it names runs
+	// nowhere unless a check of its own selects it. `TestEveryOwnLaneFixtureHasALaneOfItsOwn`
+	// is what keeps that from being a way to quietly retire a cell.
+	ownLaneTests string
+	// ownLaneCheckID is the check that DOES select `ownLaneTests`. Named here so
+	// `TestEveryOwnLaneFixtureHasALaneOfItsOwn` can prove the subtraction hands
+	// the cells to a lane rather than dropping them.
+	ownLaneCheckID string
 }
 
 // laneFixtures are the Docker fixtures the integration lane covers.
@@ -73,6 +85,10 @@ var laneFixtures = []laneFixture{
 		lanePrefix:     "webdav_integration_",
 		markers:        []string{"webdav-servers/start.sh", "webdav-fixture"},
 		backendPackage: "cmdr-webdav",
+		// The sabre/dav cells: `desktop-rust-webdav-nextcloud` runs them against
+		// a Nextcloud the shared lane's `webdav/core` mode never starts.
+		ownLaneTests:   WebdavNextcloudTestAtom,
+		ownLaneCheckID: "desktop-rust-webdav-nextcloud",
 	},
 }
 
@@ -101,9 +117,17 @@ func fixtureIntegrationFilter(rootDir string) string {
 		clauses = append(clauses, "test("+f.lanePrefix+")")
 	}
 	for _, f := range laneFixtures {
-		if rootDir != "" && backendPackageExists(rootDir, f.backendPackage) {
-			clauses = append(clauses, "package("+f.backendPackage+")")
+		if rootDir == "" || !backendPackageExists(rootDir, f.backendPackage) {
+			continue
 		}
+		clause := "package(" + f.backendPackage + ")"
+		if f.ownLaneTests != "" {
+			// ❗ Parenthesised: `-` binds tighter than `+` in a nextest
+			// filterset, but writing the grouping out is what keeps a later
+			// clause from silently landing inside the subtraction.
+			clause = "(" + clause + " - test(" + f.ownLaneTests + "))"
+		}
+		clauses = append(clauses, clause)
 	}
 	return strings.Join(clauses, " + ")
 }

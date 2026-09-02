@@ -203,9 +203,11 @@ var rustCompileInputs = inputs(
 	agentDocExclusions,
 )
 
-// rustFixtureServerInputs are the Docker fixture configs the integration lane runs
-// against. Only that lane reads them: a change to one changes what it tests, and
-// changes nothing any other Rust lane compiles or scans.
+// rustFixtureServerInputs are the Docker fixture configs the container-backed
+// lanes run against (`desktop-rust-integration-tests` and, for the WebDAV
+// stack's Nextcloud service, `desktop-rust-webdav-nextcloud`). Only those lanes
+// read them: a change to one changes what it tests, and changes nothing any
+// other Rust lane compiles or scans.
 var rustFixtureServerInputs = []string{
 	"apps/desktop/test/sftp-servers/**",
 	"apps/desktop/test/smb-servers/**",
@@ -323,11 +325,15 @@ const (
 	sftpEntrypointRel = "apps/desktop/test/sftp-servers/image/entrypoint.sh"
 )
 
-// The WebDAV fixture stack's host ports, the same way: Go decides them, the
-// compose file carries the `${…:-default}` for the runner-less path, and
-// `TestWebdavFixturePortsMatchComposeDefaults` keeps the two equal. No keys
-// dir: HTTP publishes no key material.
-const webdavComposeRel = "apps/desktop/test/webdav-servers/docker-compose.yml"
+// The WebDAV fixture stack's host ports and mode table, the same way: Go decides
+// them, the compose file carries the `${…:-default}` for the runner-less path,
+// `start.sh` repeats the mode table for a bare bring-up, and
+// `TestWebdavFixturePortsMatchComposeDefaults` / `TestWebdavModeServicesAgree`
+// keep the copies equal. No keys dir: HTTP publishes no key material.
+const (
+	webdavComposeRel = "apps/desktop/test/webdav-servers/docker-compose.yml"
+	webdavStartRel   = "apps/desktop/test/webdav-servers/start.sh"
+)
 
 // goTestsInputs is what `scripts-go-tests` reads, which is far more than the Go
 // trees. Fifteen tests in this package assert something about the REAL repo
@@ -344,7 +350,7 @@ const webdavComposeRel = "apps/desktop/test/webdav-servers/docker-compose.yml"
 //     what makes `agentDocExclusions` safe),
 //   - `apps/desktop/package.json` (`TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes`),
 //   - the SFTP fixture quartet the fixture-path tests compare, and the WebDAV
-//     compose file the port tests read.
+//     compose file and start script the port and mode tests read.
 //
 // ❗ No `agentDocExclusions` here. An exclusion vetoes across the whole union, so
 // borrowing one from `rustCompileInputs` would take `scripts/check/CLAUDE.md`
@@ -359,7 +365,7 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel},
+	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

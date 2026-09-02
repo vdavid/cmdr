@@ -19,8 +19,20 @@ import (
 // table (`TestWebdavFixturePortsMatchComposeDefaults`), so a bare `start.sh`
 // with no runner around it lands on the same ports.
 var webdavServiceHostPorts = map[string]int{
-	"APACHE": 13480, "DIGEST": 13481,
+	"APACHE": 13480, "DIGEST": 13481, "NEXTCLOUD": 13482,
 }
+
+// webdavCoreServices are the services `core` mode brings up, which is the set
+// the integration lane waits on. NEXTCLOUD is outside it on purpose: it is a
+// ~1 GB image that installs itself before it binds a port, and only the
+// slow-lane `desktop-rust-webdav-nextcloud` asks for it. A lane that waited on
+// a container its own mode never started would spend its whole timeout doing
+// it. `TestWebdavModeServicesAgree` is what keeps these two lists and
+// `stacklease.WEBDAV`'s from drifting.
+var webdavCoreServices = []string{"APACHE", "DIGEST"}
+
+// webdavNextcloudServices are the services `nextcloud` mode brings up.
+var webdavNextcloudServices = []string{"NEXTCLOUD"}
 
 // webdavBindAddrEnv names the interface every fixture port publishes on. The
 // compose file defaults it to 127.0.0.1 so the stack is invisible to the LAN and
@@ -38,12 +50,18 @@ func ApplyWebdavPortEnv() {
 }
 
 // WebdavFixtureServices lists every service the WebDAV core mode brings up, for
-// the integration lane's readiness guard. Derived from the port table so the
-// two can't drift.
-func WebdavFixtureServices() []string {
-	services := make([]string, 0, len(webdavServiceHostPorts))
-	for service := range webdavServiceHostPorts {
-		services = append(services, "webdav-fixture-"+strings.ToLower(service))
+// the integration lane's readiness guard.
+func WebdavFixtureServices() []string { return webdavComposeServices(webdavCoreServices) }
+
+// WebdavNextcloudServices lists what the WebDAV nextcloud mode brings up, for
+// the sabre/dav lane's readiness guard.
+func WebdavNextcloudServices() []string { return webdavComposeServices(webdavNextcloudServices) }
+
+// webdavComposeServices turns port-table keys into compose service names.
+func webdavComposeServices(keys []string) []string {
+	services := make([]string, 0, len(keys))
+	for _, key := range keys {
+		services = append(services, "webdav-fixture-"+strings.ToLower(key))
 	}
 	return services
 }

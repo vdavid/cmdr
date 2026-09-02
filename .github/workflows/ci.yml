@@ -279,6 +279,16 @@ jobs:
       - name: Run the Docker fixture integration tests (SMB, SFTP, and WebDAV)
         run: ./scripts/check/check --check desktop-rust-integration-tests --ci
 
+      # The sabre/dav cells, against a real Nextcloud. Slow-lane locally (a ~1 GB
+      # pull plus a self-install before the container listens, so a default
+      # `pnpm check` never pays for it), but CI is where "does a real server
+      # still answer this way" has to be asked: the three claims these cells pin
+      # are the only ones in `crates/cmdr-webdav` that no Apache fixture can
+      # reach. Measured 2026-09-02: ~1 min of container, seconds of tests, on a
+      # build this job already warmed.
+      - name: Run the WebDAV cells against a real Nextcloud (sabre/dav)
+        run: ./scripts/check/check --check desktop-rust-webdav-nextcloud --ci
+
   # ===========================================
   # Desktop app - Svelte frontend
   # ===========================================

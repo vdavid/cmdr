@@ -617,6 +617,24 @@ var AllChecks = []CheckDefinition{
 		Run:             RunRustIntegrationTests,
 	},
 	{
+		ID:          "desktop-rust-webdav-nextcloud",
+		CpuWeight:   4,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "webdav-nextcloud",
+		DisplayName: "WebDAV cells against a real Nextcloud",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		// ❗ Slow-lane, and that IS the design: bringing a Nextcloud up costs
+		// a ~1 GB pull plus a self-install before it listens, which no default
+		// `pnpm check` should pay. `--include-slow` and `pnpm check
+		// webdav-nextcloud` are the two ways in, plus CI's own step.
+		IsSlow:          true,
+		NeedsContainers: []StackMode{WebdavNextcloud},
+		DependsOn:       []string{"desktop-rust-clippy"},
+		Inputs:          inputs(rustCompileInputs, rustFixtureServerInputs),
+		Run:             RunWebdavNextcloudTests,
+	},
+	{
 		ID:          "desktop-fixture-lane-coverage",
 		Nickname:    "fixture-lane-coverage",
 		DisplayName: "every Docker fixture cell is one CI runs",

@@ -205,11 +205,14 @@ func TestAnEditedFirstPartyImageReadsAsAStaleStack(t *testing.T) {
 func TestOnlyAFirstPartyImageIsRebuiltOnUp(t *testing.T) {
 	// SFTP's Dockerfile lives in this repo and is edited here; SMB's images come
 	// from a vendored harness, where a rebuild is somebody else's call.
-	if SFTP.buildContextRel == "" {
+	if len(SFTP.buildContextsRel) == 0 {
 		t.Error("the SFTP stack declares no build context, so an edited entrypoint would never reach a running container")
 	}
-	if SMB.buildContextRel != "" {
-		t.Errorf("the SMB stack declares a build context (%q); its images are vendored", SMB.buildContextRel)
+	if len(WEBDAV.buildContextsRel) != 2 {
+		t.Errorf("the WebDAV stack declares %v; it builds two first-party images (httpd and Nextcloud), and a context left out is an edit that never reaches a container", WEBDAV.buildContextsRel)
+	}
+	if len(SMB.buildContextsRel) != 0 {
+		t.Errorf("the SMB stack declares build contexts (%q); its images are vendored", SMB.buildContextsRel)
 	}
 	if got := (dockerComposer{stack: SFTP}).upArgs(nil, []string{"-f", "x.yml"}); !containsString(got, "--build") {
 		t.Errorf("`up` for the SFTP stack is %v, with no --build; the image would never be rebuilt", got)

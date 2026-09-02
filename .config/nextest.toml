@@ -317,6 +317,23 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2
 
 [[profile.default.overrides]]
+# The sabre/dav cells (`crates/cmdr-webdav/src/volume/nextcloud_test.rs`), which
+# `desktop-rust-webdav-nextcloud` runs against a real Nextcloud in Docker.
+#
+# Same contention signature as the arming-only block above: on 2026-09-02 they
+# timed out together during a run that overlapped four other worktrees' Rust
+# builds, and the check runner cleared two of them by re-running alone at the
+# SAME 8 s deadline — starvation, not a defect. What makes this class slower than
+# every other fixture cell is where the work happens: each request goes through
+# PHP and SQLite rather than `mod_dav`'s C, and a cell is tens of round trips
+# (MKCOL, a staged 1 MiB PUT, a MOVE, a read back, then a recursive clean-up).
+# ❌ Don't read 30 s as a runtime — idle they fit inside the global 8 s cap, which
+# is why they were only ever red under load. It is a hang backstop with enough
+# headroom that a busy host doesn't decide the verdict.
+filter = 'test(volume::nextcloud_test::)'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # The SFTP window measurements, read and write (`crates/cmdr-sftp/src/volume/streams_bench.rs`).
 # ❗ Deliberately NOT `#[ignore]`d — the integration lane runs `--run-ignored only`
 # over that whole package, so an ignored measurement would gate CI on a throughput

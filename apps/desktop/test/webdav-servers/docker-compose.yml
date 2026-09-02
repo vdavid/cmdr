@@ -51,3 +51,33 @@ services:
     environment:
       AUTH: digest
     ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_DIGEST_PORT:-13481}:80']
+
+  # A real Nextcloud (sabre/dav), and the ONLY service here that isn't Apache
+  # `mod_dav`. It exists so three claims about real servers are observations:
+  # what a ranged GET answers, what a chunked PUT answers, and whether RFC 4331
+  # quota reports the ACCOUNT's numbers. `crates/cmdr-webdav/src/volume/nextcloud_test.rs`
+  # holds the cells; `DETAILS.md` carries what they observed.
+  #
+  # ❗ NOT in `core`, so no default `pnpm check` and no `start.sh` without an
+  # argument brings it up: first boot installs Nextcloud before it binds a port
+  # (~25 s on a warm laptop), and the image is ~1 GB against httpd's ~60 MB.
+  # `./start.sh nextcloud` and `pnpm check desktop-rust-webdav-nextcloud` are the
+  # two ways in.
+  webdav-fixture-nextcloud:
+    build: ./image-nextcloud
+    image: cmdr-webdav-fixture-nextcloud:latest
+    restart: unless-stopped
+    # Roomier than the httpd pair's 256m/0.5: PHP installing Nextcloud is the
+    # heaviest moment of this stack's life, and starving it turns a 25 s first
+    # boot into a timeout.
+    mem_limit: 1g
+    cpus: 2.0
+    environment:
+      # SQLite keeps this to one container. Supplying the admin account here is
+      # what makes the image install itself unattended instead of waiting for a
+      # person in the setup wizard.
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: ada
+      NEXTCLOUD_ADMIN_PASSWORD: openthedoor
+      NEXTCLOUD_TRUSTED_DOMAINS: '127.0.0.1 localhost'
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_NEXTCLOUD_PORT:-13482}:80']

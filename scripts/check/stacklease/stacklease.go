@@ -709,7 +709,11 @@ func (s *Stack) computeConfigHash(mode string) string {
 	// A first-party image: its build context decides what the containers RUN, so
 	// an edited entrypoint has to read as staleness the same way an edited
 	// compose file does. Nothing else would notice.
-	if ctx := s.BuildContextDir(); ctx != "" {
+	//
+	// ❗ The context's own name goes into the hash beside each file's, so two
+	// contexts holding a same-named file (`Dockerfile`, say) can't cancel each
+	// other out and leave an edit invisible.
+	for _, ctx := range s.BuildContextDirs() {
 		var files []string
 		_ = filepath.WalkDir(ctx, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
@@ -721,7 +725,7 @@ func (s *Stack) computeConfigHash(mode string) string {
 		sort.Strings(files)
 		for _, f := range files {
 			rel, _ := filepath.Rel(ctx, f)
-			fmt.Fprintf(h, "build=%s\n", filepath.ToSlash(rel))
+			fmt.Fprintf(h, "build=%s/%s\n", filepath.Base(ctx), filepath.ToSlash(rel))
 			if b, err := os.ReadFile(f); err == nil {
 				h.Write(b)
 			}

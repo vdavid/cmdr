@@ -6,9 +6,10 @@
 # to re-sync when a dependency bumps.
 #
 # Usage:
-#   ./start.sh           # core: both servers the integration lane talks to
-#   ./start.sh minimal   # just the Basic-auth server
-#   ./start.sh all       # everything the compose file defines
+#   ./start.sh             # core: both servers the integration lane talks to
+#   ./start.sh minimal     # just the Basic-auth server
+#   ./start.sh nextcloud   # just the sabre/dav server (slow: it installs itself)
+#   ./start.sh all         # everything the compose file defines
 
 set -e
 
@@ -33,6 +34,13 @@ case "$mode" in
         echo "Starting the core WebDAV servers (Basic and Digest)..."
         services=(webdav-fixture-apache webdav-fixture-digest)
         ;;
+    nextcloud)
+        # Deliberately alone and deliberately not in `core`: a ~1 GB image that
+        # installs Nextcloud before it binds a port. `pnpm check
+        # desktop-rust-webdav-nextcloud` brings this up on its own.
+        echo "Starting the Nextcloud (sabre/dav) server; first boot installs it, which takes a while..."
+        services=(webdav-fixture-nextcloud)
+        ;;
     all)
         echo "Starting every WebDAV server the compose file defines..."
         # Empty means "all" to both `up` and the probe loop below, which resolves
@@ -40,7 +48,7 @@ case "$mode" in
         ;;
     *)
         echo "Unknown mode: $mode"
-        echo "Usage: $0 [minimal|core|all]"
+        echo "Usage: $0 [minimal|core|nextcloud|all]"
         exit 1
         ;;
 esac
@@ -75,17 +83,28 @@ fi
 # reaches "running", which is well before httpd has bound its port, and seeding
 # `large.bin` takes a moment.
 echo ""
-echo "Waiting for httpd to accept TCP on each container..."
-deadline=$((SECONDS + 120))
+echo "Waiting for each container to accept TCP..."
 for service in "${services[@]}"; do
     host_port=$(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" port "$service" 80 2>/dev/null | awk -F: '{print $NF}')
     if [ -z "$host_port" ]; then
         echo "  ! could not resolve the host port for $service (skipping the probe)" >&2
         continue
     fi
+    # ❗ Per service, because Nextcloud earns a budget the httpd pair doesn't:
+    # it runs its whole first-boot install BEFORE it binds a port, so an unbound
+    # port there means "still installing" rather than "broken". Keeping httpd at
+    # 120 s means a genuinely broken one still fails fast.
+    # ❗ An `if`, not `[ … ] && budget=300`: under `set -e` a one-liner whose
+    # test is false is a trap waiting for whoever edits around it.
+    if [ "$service" = "webdav-fixture-nextcloud" ]; then
+        budget=300
+    else
+        budget=120
+    fi
+    deadline=$((SECONDS + budget))
     while ! (exec 3<>"/dev/tcp/127.0.0.1/$host_port") 2>/dev/null; do
         if [ $SECONDS -ge $deadline ]; then
-            echo "ERROR: $service (port $host_port) did not accept TCP within 120s" >&2
+            echo "ERROR: $service (port $host_port) did not accept TCP within ${budget}s" >&2
             docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" logs --tail=50 "$service" >&2
             exit 1
         fi

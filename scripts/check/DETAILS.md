@@ -227,8 +227,8 @@ reserved cores went unused. Declaring it costs no wall clock and hands that weig
 `docs/notes/check-cpu-contention.md` § "Cargo's build-directory lock".
 
 **Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`,
-`desktop-e2e-playwright`). Naming a check (positionally or via `--check`) implicitly includes slow checks
-(`includeSlow = len(checkNames) > 0`); group/app selectors don't.
+`desktop-e2e-playwright`, `desktop-rust-webdav-nextcloud`). Naming a check (positionally or via `--check`) implicitly
+includes slow checks (`includeSlow = len(checkNames) > 0`); group/app selectors don't.
 
 **Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: ~28 checks that finish in roughly 10s
 on a warm cache, intended to run before every commit. It's an editorial pick, not a timing-derived list (see Key
@@ -718,9 +718,11 @@ teardown are one implementation over that value.
   So `Acquire` and `Reconcile` stat each leaf's private key before handing the stack over, restart exactly the services
   whose leaf is empty (re-running an entrypoint is the only thing that can put the two halves back in agreement), and
   wait for the pair to reappear. It reports rather than returning to a caller whose key-auth cells would all fail.
-- **A stack with a FIRST-PARTY image declares `buildContextRel`**, which folds the context's contents into the config
+- **A stack with FIRST-PARTY images declares `buildContextsRel`**, which folds every context's contents into the config
   hash and puts `--build` on `up`. ❗ Both, or an edited entrypoint never reaches a running container: `up -d` neither
-  rebuilds nor recreates a healthy one. SFTP declares it; SMB's images are vendored and don't.
+  rebuilds nor recreates a healthy one. SFTP declares one context, WebDAV two (its httpd image and its Nextcloud one);
+  SMB's images are vendored and it declares none. The hash carries each context's own name beside each file's, so two
+  contexts holding a `Dockerfile` can't cancel each other out.
 - **A check declares `NeedsContainers []StackMode`**, so it can ask for several stacks. Both strings resolve against the
   registry, and `TestEveryDeclaredStackModeResolves` (`stack_orchestrator_test.go`) turns a typo into a millisecond
   failure rather than one minutes into a run, after planning and `pnpm install`.

@@ -21,6 +21,10 @@ const (
 	// declares it and CI never brings it up: a throughput number measured under
 	// runner contention is a flake, not a gate.
 	ModeBench = "bench"
+	// ModeNextcloud is the WebDAV stack's sabre/dav server, alone. Its own mode
+	// because it is an order of magnitude heavier than the rest of that stack
+	// and only one check wants it.
+	ModeNextcloud = "nextcloud"
 )
 
 // SMB is the SMB fixture stack: smb2's consumer harness, vendored into
@@ -96,7 +100,7 @@ var SFTP = &Stack{
 	// contents fold into the config hash. The entrypoint is what provisions each
 	// key-auth server's pair, and an edit to it that never reaches a running
 	// container is a change that silently doesn't happen.
-	buildContextRel: "image",
+	buildContextsRel: []string{"image"},
 	// Host ports live in their own pinned range, clear of SMB's 11480+ and
 	// smb2's 10480+.
 	portEnvPrefix: "SFTP_FIXTURE_",
@@ -135,16 +139,23 @@ var WEBDAV = &Stack{
 	composeDirRel: "apps/desktop/test/webdav-servers",
 	composeDirEnv: "CMDR_WEBDAV_COMPOSE_DIR",
 	composeFiles:  []string{"docker-compose.yml"},
-	// First-party image, edited in this repo, so `up` rebuilds it and its
-	// contents fold into the config hash (same reasoning as SFTP's).
-	buildContextRel: "image",
+	// Two first-party images, edited in this repo, so `up` rebuilds them and
+	// their contents fold into the config hash (same reasoning as SFTP's):
+	// `image/` is the env-driven httpd both Apache services run, `image-nextcloud/`
+	// is the sabre/dav server plus the hook that provisions its two accounts.
+	buildContextsRel: []string{"image", "image-nextcloud"},
 	// Host ports live in their own pinned range, 13480+, clear of SFTP's 12480+,
 	// SMB's 11480+, and smb2's 10480+.
 	portEnvPrefix: "WEBDAV_FIXTURE_",
 	modeServices: map[string][]string{
 		ModeMinimal: {"webdav-fixture-apache"},
 		ModeCore:    {"webdav-fixture-apache", "webdav-fixture-digest"},
-		ModeAll:     nil,
+		// ❗ Its own mode, and deliberately NOT part of `core`: Nextcloud is a
+		// ~1 GB image that installs itself before it binds a port, against
+		// httpd's ~60 MB and instant start. `desktop-rust-webdav-nextcloud` is
+		// the only check that asks for it, and it is slow-lane.
+		ModeNextcloud: {"webdav-fixture-nextcloud"},
+		ModeAll:       nil,
 	},
 	// Empty: the one image bakes a `/dev/tcp` HEALTHCHECK, so every service
 	// reports health.
