@@ -16,8 +16,8 @@ for iterating by hand.
 
 - **Same shape, smaller.** First-party compose file in this directory, one env-driven image under `image/`, rebuilt on
   every bring-up (the lease declares `image/` as its build context, exactly like SFTP).
-- **Ports are 13480+**, this stack's own range: SFTP owns 12480+, SMB's vendored consumer stack owns 11480+, and `smb2`'s
-  own harness defaults to 10480+. Two stacks sharing a range made them mutually exclusive on one machine.
+- **Ports are 13480+**, this stack's own range: SFTP owns 12480+, SMB's vendored consumer stack owns 11480+, and
+  `smb2`'s own harness defaults to 10480+. Two stacks sharing a range made them mutually exclusive on one machine.
 - **Its own lease namespace** (`/tmp/cmdr-webdav.lock`, `/tmp/cmdr-webdav-leases`), so downing one stack at zero holders
   can never touch another. The model: `scripts/check/DETAILS.md` § "Two fixture stacks, two lease namespaces".
 - **No host state.** HTTP has no key pair to publish, so nothing bind-mounts a machine-wide directory and there is no
@@ -25,14 +25,14 @@ for iterating by hand.
 
 ## The servers
 
-| Service                 | Port  | What it's for                                                                |
-| ----------------------- | ----- | ---------------------------------------------------------------------------- |
-| `webdav-fixture-apache` | 13480 | Stock `mod_dav` behind Basic auth: the default target for every cell         |
+| Service                 | Port  | What it's for                                                               |
+| ----------------------- | ----- | --------------------------------------------------------------------------- |
+| `webdav-fixture-apache` | 13480 | Stock `mod_dav` behind Basic auth: the default target for every cell        |
 | `webdav-fixture-digest` | 13481 | `AuthType Digest` only, realm `cmdr`: proves the client refuses with a type |
 
 Both run as `ada` / `openthedoor` and export `/srv/data` at the URL path `/dav/`. Both carry the same landmarks
-(`hello.txt`, `docs/` holding a `readme.md`, `nested/deep/file.txt`, `many/` with 300 entries, `empty/`, `naïve name.txt`,
-`photos/2024 summer/`, `large.bin`), so a cell can assert on them whichever server it's pointed at.
+(`hello.txt`, `docs/` holding a `readme.md`, `nested/deep/file.txt`, `many/` with 300 entries, `empty/`,
+`naïve name.txt`, `photos/2024 summer/`, `large.bin`), so a cell can assert on them whichever server it's pointed at.
 
 `large.bin` is the byte path's file: 4 MiB by default (`LARGE_MB`), and every 16-byte line in it holds its own line
 number, so each position says where it belongs. That's what lets a cell assert byte-exactness without shipping a copy of

@@ -37,10 +37,10 @@ Authoring a check: `checks/CLAUDE.md`.
 - **Lane flags**: `--only-slow` needs a ~20 min timeout (1,200,000 ms); `--fast` errors out with `--include-slow` /
   `--only-slow`. Named checks bypass both. A `Disabled` reason drops a check from EVERY lane, runnable by name only
   (`invariant-density`). DETAILS § "Mothballing a check".
-- **A check names its Docker fixtures in `NeedsContainers []StackMode`** (`stacklease` registry: `smb`, `sftp`, `webdav`). One
-  machine-wide lease per stack lets worktrees coexist; the stack downs at its last holder. ❌ No per-check
-  teardown, ❌ never move SMB's frozen `/tmp` lease paths or its 11480+ ports. DETAILS § "Two fixture stacks, two lease
-  namespaces".
+- **A check names its Docker fixtures in `NeedsContainers []StackMode`** (`stacklease` registry: `smb`, `sftp`,
+  `webdav`). One machine-wide lease per stack lets worktrees coexist; the stack downs at its last holder. ❌ No
+  per-check teardown, ❌ never move SMB's frozen `/tmp` lease paths or its 11480+ ports. DETAILS § "Two fixture stacks,
+  two lease namespaces".
 - **The lane's filter comes from one fixture table** (`checks/fixture-lane-coverage.go`), guarded by
   `desktop-fixture-lane-coverage`. ❌ Never name a `package(x)` for a crate not yet on disk: nextest can't PARSE the
   filterset. An unmatched `test(prefix)` is fine.

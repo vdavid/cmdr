@@ -700,9 +700,9 @@ teardown are one implementation over that value.
   holders are invisible to the other and downing one at zero can never touch the other's containers. The runner uses the
   same holder-id (its `check.sh` PID) in each, which counts once per stack.
 - **SMB's `/tmp` paths are frozen** at `cmdr-smb.lock` and `cmdr-smb-leases`, pinned by a test. SFTP and WebDAV follow
-  the pattern (`cmdr-sftp.lock` + `cmdr-sftp-leases` on 12480+, `cmdr-webdav.lock` + `cmdr-webdav-leases` on 13480+). A sibling worktree on
-  older code holds its lease at those exact paths; moving them would make a live holder invisible and re-open the
-  teardown race the library exists to close.
+  the pattern (`cmdr-sftp.lock` + `cmdr-sftp-leases` on 12480+, `cmdr-webdav.lock` + `cmdr-webdav-leases` on 13480+). A
+  sibling worktree on older code holds its lease at those exact paths; moving them would make a live holder invisible
+  and re-open the teardown race the library exists to close.
 - **A stack's HOST state is machine-wide too, all of it.** SMB mounts nothing from the host; SFTP's two key-auth
   services bind-mount `/tmp/cmdr-sftp-keys/<service>`, a third machine-wide path beside the lock and the lease dir. ❌
   Never a path relative to the compose file: compose resolves a relative bind source against the compose file's own
