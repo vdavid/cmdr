@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { handleEmailPathProbe } from './index'
-import { EMAIL_PROBE_RECIPIENT } from './email'
+import { EMAIL_PROBE_RECIPIENT } from './email/send'
 import { createBaseEnv } from './cron-test-helpers'
 
 /** The fields of the Resend payload these tests read back. */

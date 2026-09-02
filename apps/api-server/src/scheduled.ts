@@ -1,13 +1,7 @@
-import {
-  humanReportRecipient,
-  sendCrashNotificationEmail,
-  sendDbSizeAlert,
-  sendEmailPathProbe,
-  sendFeedbackNotificationEmail,
-  type CrashEmailRow,
-  type CrashFate,
-  type FeedbackEmailRow,
-} from './email'
+import { humanReportRecipient, sendEmailPathProbe } from './email/send'
+import { sendCrashNotificationEmail, type CrashEmailRow, type CrashFate } from './email/crash'
+import { sendFeedbackNotificationEmail, type FeedbackEmailRow } from './email/feedback'
+import { sendDbSizeAlert } from './email/ops-alerts'
 import type { Bindings } from './types'
 import {
   recomputeTotal,

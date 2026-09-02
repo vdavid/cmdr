@@ -19,13 +19,29 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   `scheduleBackground`, `redactEmail`, `activationCountKey`, `formatBytes`. The last four live here rather than beside
   one route precisely so a second route can't reimplement them: a hand-rolled body read is how a size cap becomes
   decorative.
-- **`email.ts`**: Resend delivery (HTML + plain text, multi-seat), behind the single `sendViaResend` wrapper. Senders:
-  license keys, the crash digest, the feedback digest, one hand-written error report
-  (`sendErrorReportNotificationEmail`, sent at intake, not on cron: `src/telemetry/DETAILS.md` § Notification email),
-  the DB-size alert, the device-count alert, and `sendEmailPathProbe` (the daily liveness check, § Cron handler job 8).
-  `humanReportRecipient` is the one place the `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` rule lives,
-  shared by the feedback digest and error-report mail so neither needs a new secret. The card-shaped emails share one
-  page shell and one set of style constants, so feedback and error reports read as one family.
+- **`email/`**: Resend delivery, split one module per audience so a sender is read and changed without the other six in
+  view.
+  - **`send.ts`**: the only door out. `sendViaResend` (every sender goes through it), `humanReportRecipient` (the one
+    place the `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` rule lives, shared by the feedback digest and
+    error-report mail so neither needs a new secret), and `sendEmailPathProbe` (the daily liveness check, § Cron handler
+    job 8).
+  - **`layout.ts`**: the HTML vocabulary. `escapeHtml`, `documentShell` (the `<!DOCTYPE>`…`<body>` wrapper),
+    `bodyStyle`, the card constants, `notificationPage`, `replyToLine`, `envChip`, and the table cell styles
+    (`CELL_STYLE`, `headCellStyle`, `TABLE_STYLE`). Everything is inline style with explicit hex: mail clients strip
+    `<style>` blocks and their `prefers-color-scheme` support is a coin flip, so the pages commit to one light palette.
+  - **`crash.ts`**, **`feedback.ts`**, **`error-report.ts`** (the report, its amendments, and the daily-cap suppression
+    notice), **`ops-alerts.ts`** (DB size, device count), **`license.ts`** (key delivery).
+  - **Decision: two visual families, deliberately.** The human-facing channels (feedback, error reports) render cards on
+    `#1f2937` over an explicit white ground; the older ops alerts (crash digest, DB size, device count) render tables on
+    `#333` over the client's default ground. `bodyStyle` takes the color and width rather than hiding the difference,
+    because converging them changes what lands in a human inbox and so belongs to a copy-and-design pass, not a
+    refactor.
+  - **Decision: `license.ts` shares only `escapeHtml`.** It is the one email a customer receives, the one with a
+    plain-text alternative (it carries a key the reader has to copy, so it must survive an HTML-refusing client), and
+    the one styled by a `<head>` `<style>` block with class names. Forcing it onto the ops chrome would trade a real
+    difference for a false symmetry.
+  - There is no barrel file: importers name the module they need (`./email/crash`, `../email/ops-alerts`), so an import
+    says which family of mail a route touches.
 - **`discord.ts`**: Discord webhook client (single retry on 429, drop-on-failure). Carries the cron failure alert as
   well as the error-report, feedback, beta-signup, and eviction notifications.
 - **`cron-health.ts`**: `pingCronHealth`, the healthchecks.io dead-man's switch for the cron tick. § Cron alarms.

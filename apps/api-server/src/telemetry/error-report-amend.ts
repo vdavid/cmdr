@@ -27,7 +27,8 @@ import {
 import { constantTimeEqual } from '../licensing/paddle'
 import { amendSidecarKey } from './error-report-eviction'
 import { claimErrorReportEmailSlot, DAILY_ERROR_REPORT_EMAIL_CAP } from './error-report-intake'
-import { humanReportRecipient, sendErrorReportAmendmentEmail, sendErrorReportsSuppressedEmail } from '../email'
+import { humanReportRecipient } from '../email/send'
+import { sendErrorReportAmendmentEmail, sendErrorReportsSuppressedEmail } from '../email/error-report'
 
 const errorReportAmend = new Hono<{ Bindings: Bindings }>()
 

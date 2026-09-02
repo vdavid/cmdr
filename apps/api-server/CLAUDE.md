@@ -14,15 +14,19 @@ Four areas own their own code, tests, and `CLAUDE.md` + `DETAILS.md`; read an ar
 - `src/admin/` — the dashboard's read-only aggregations, including `/admin/funnel`.
 
 Root holds only the assembly and the shared leaves: `index.ts` (Hono mounting + cron wiring), `types.ts` (`Bindings`,
-`verifyAdminAuth`, `enforceIpRateLimit`, `hashCallerIp`), `email.ts`, `discord.ts`, `scheduled.ts` (cron),
-`cron-health.ts` (the cron dead-man's switch), `user-agent.ts`. ❌ Areas depend on root leaves, never on each other.
+`verifyAdminAuth`, `enforceIpRateLimit`, `hashCallerIp`), `email/` (a leaf directory, not a fifth area: it owns no
+routes), `discord.ts`, `scheduled.ts` (cron), `cron-health.ts` (the cron dead-man's switch), `user-agent.ts`. ❌ Areas
+depend on root leaves, never on each other.
+
+`email/` is one module per audience: `send.ts` (the Resend door), `layout.ts` (HTML chrome), then `crash.ts`,
+`feedback.ts`, `error-report.ts`, `ops-alerts.ts`, `license.ts`. Import the specific one; there's no barrel.
 
 ## Must-knows
 
 - **Secrets go in via `wrangler secret put`, ❌ never `wrangler.toml`.**
-- **Email through `sendViaResend` (`email.ts`), ❌ never `resend.emails.send`**: Resend reports a failed send in its
-  RESPONSE rather than throwing, so a raw call reads every failure as success (for a license mail, that means the buyer
-  pays and gets nothing).
+- **Email through `sendViaResend` (`src/email/send.ts`), ❌ never `resend.emails.send`**: Resend reports a failed send
+  in its RESPONSE rather than throwing, so a raw call reads every failure as success (for a license mail, that means the
+  buyer pays and gets nothing).
 - **Hash every stored IP through `types.ts::hashCallerIp` with the `IP_HASH_PEPPER` secret.** The salts are public (a
   UTC day for telemetry, a post slug for likes), so the pepper alone makes the hash one-way (IPv4 brute-forces in
   seconds) and the privacy policy's "we don't store your IP address" true. ❌ Never a second scheme, ❌ never an

@@ -84,7 +84,7 @@ support/audit trail (who got which codes, when).
 carry it, so the transaction id is the unit of fulfillment. `event_id` is stored on the row for debugging only.
 
 **Gotcha: Resend reports failures in its response, it doesn't throw.** All four senders go through `sendViaResend`
-(`../email.ts`), which turns an `error` into a thrown one. The app-wide rule is in `../../CLAUDE.md`; the money
+(`../email/send.ts`), which turns an `error` into a thrown one. The app-wide rule is in `../../CLAUDE.md`; the money
 consequence is here: an unchecked `await` marks the purchase delivered and stops Paddle retrying, so the buyer pays and
 gets nothing.
 
