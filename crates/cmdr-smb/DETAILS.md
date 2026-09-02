@@ -362,18 +362,36 @@ hint fits one READ", which asks about `max_read` and not about credits. A server
 firmware, a router's USB share, Samba built with a low `smb2 max credits`) can leave a 4 MB file's 66-credit chain
 unservable: smb2 refuses with `Error::CreditStarvation` rather than hanging, the fast path has no arm for it, and the
 file fails instead of falling through to a streaming read that would have worked at ~10 credits a chunk. Nothing has
-been observed hitting this — the reference servers grant 512 — which is exactly why no recovery branch was written: an
-untested error path in the copy engine is worse than a documented gap. Two shapes if it ever does show up: match
-`Error::CreditStarvation` in the fast path and fall through to streaming (cheap, but a genuinely dead server then pays
-the credit wait twice), or gate the fast path on the window up front, which needs smb2 to distinguish "one fits" from
-"none does" — `Connection::credit_capacity_for` floors its answer at 1 as of 0.21.0 and so cannot say it.
+been observed hitting this — both reference servers were measured granting 513 credits — which is exactly why no
+recovery branch was written: an untested error path in the copy engine is worse than a documented gap. The profile that
+would show it is specific: a LARGE `max_read` paired with a SMALL grant. A server with a small `max_read` is
+automatically safe, because `read_file_compound_sized` clamps `requested` to it and the charge falls with it.
 
-**`max_concurrent_ops` is clamped by what the window can carry.** The setting alone (`network.smbConcurrency`,
-default 10) says nothing about the connection, so the answer is `min(setting, credit_capacity_for(512 KB))`, floored at
-1 and never raised above what the user chose. `Connection::credit_capacity_for` is sync but the connection lives behind
-an async mutex, so `clone_session` stores the figure in `SmbVolumeInner::credit_copy_capacity` on its way through (every
-read and write passes there) and the sync method reads the atomic; `0` means nothing has measured it yet and the setting
-stands.
+The fix, if it ever does show up, is to REACT rather than predict: `reserve_credits` refuses before anything reaches the
+wire, so an unfundable compound read costs zero round trips and the fast path can fall through to streaming on the spot.
+That is correct on every server, including one whose window moves mid-connection. What blocks it today is that smb2
+can't tell "unfundable here" from "transient": `Error::CreditStarvation` reports `is_retryable() == true` and classifies
+as `ErrorKind::TimedOut`, so a generic retry loop would retry a request that can never succeed. ❌ Don't reach instead
+for a predictive gate on `credit_capacity_for` — it answers from a constant (see the clamp note above), so it cannot
+tell you whether THIS server can fund the read.
+
+**`max_concurrent_ops` is clamped by what the window can carry — and that clamp cannot bind today.** The answer is
+`min(setting, credit_capacity_for(512 KB))`, floored at 1 and never raised above what the user chose.
+`Connection::credit_capacity_for` is sync but the connection lives behind an async mutex, so `clone_session` stores the
+figure in `SmbVolumeInner::credit_copy_capacity` on its way through (every read and write passes there) and the sync
+method reads the atomic; `0` means nothing has measured it yet and the setting stands.
+
+❌ **Do not describe this as protecting a copy from a small credit window; measured, it protects nothing.**
+`credit_capacity_for` divides the CONSTANT `CREDIT_TARGET` (512) by the request's charge, so it reports what the client
+STEERS TOWARD, never what a server granted. The only server-dependent input is `max_read`, which merely clamps the
+`bytes` argument. That puts the answer between 51 (an 8 MB `max_read`) and 170 (a 64 KB one) for any real server, while
+`network.smbConcurrency` is clamped to 1..=32 — so `min(setting, capacity)` is `setting` for every input either can
+take. The plumbing is live and correct; the number it carries is inert until smb2 tracks the granted window (its
+`credits()` is unspent-right-now, not capacity). Both reference servers were measured at 513 granted credits, so the
+steer is honored in full there and the case this was written for did not occur. Reassess when a release can answer from
+the grant; until then, ❌ don't tune `REPRESENTATIVE_COPY_REQUEST_BYTES` expecting the cap to start biting, because a
+constant divisor makes any value a differently-written constant, and one small enough to bind would throttle a generous
+server on a guess.
 
 The 512 KB question is the judgement call in it. There's no per-file knowledge at that seam, and the risk isn't
 symmetric: because charge and in-flight bytes are the same quantity, extra slots beyond what the window carries only
