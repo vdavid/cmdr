@@ -250,9 +250,11 @@ So local handlers don't test raw key flags; they ask the registry:
   unreachable. `eventMatchesCommand` therefore retries with the digit `event.code` names (`Digit8` → `8`), which makes
   the default layout-independent. The retry is narrow on purpose: Shift must be held, the code must be `Digit<n>`, and
   every other modifier still has to match, so `⌘8` and `⇧7` stay misses. `selection.invert` (`⇧8`, Total Commander's
-  `*`) is the only user today. Pinned by the `eventMatchesCommand` cases in `shortcut-dispatch.test.ts`.
+  `*`) is the only user today. It carries a bare `*` as a SECOND default for the numpad key, which the retry can't
+  reach: `NumpadMultiply` is not a `Digit<n>` code, and it reports `*` with no Shift on every layout. Pinned by the
+  `eventMatchesCommand` cases in `shortcut-dispatch.test.ts`.
 
-Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A` / `⇧8`),
+Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A` / `⇧8` / `*`),
 `FilePane.handleOpenOrParentKey` (`nav.open` / `nav.parent` — and `⌘Backspace` falls through to `file.delete` for free,
 since it isn't `nav.parent`'s combo), `../file-explorer/pane/cursor-nav-keys.ts` (the ten cursor commands, as one gate
 in front of the per-view math), and `../file-explorer/network/ShareBrowser.svelte` (`share.back` / `share.selectShare`).

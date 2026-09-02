@@ -364,9 +364,10 @@ selected item would have to land in its own real folder, which one transfer can'
 `apps/desktop/src/lib/file-explorer/pane/DETAILS.md`.
 
 The **Select** submenu (between Edit and View) holds the five selection commands: `Select all` (⌘A), `Deselect all`
-(⌘⇧A), `Invert selection` (no menu accelerator: its `⇧8` default carries no ⌘, and a bare `Shift+8` accelerator would
-swallow `*` in every text field, so `FilePane`'s keydown handler binds it, matched by physical key via
-`eventMatchesCommand`), `Select files…` (no menu accelerator), and `Deselect files…` (no menu accelerator). The two `…` items open the
+(⌘⇧A), `Invert selection` (no menu accelerator: neither of its defaults, `⇧8` and the numpad `*`, carries ⌘, and a
+bare `Shift+8` or `*` accelerator would swallow `*` in every text field, so `FilePane`'s keydown handler binds them,
+`⇧8` matched by physical key via `eventMatchesCommand`), `Select files…` (no menu accelerator), and `Deselect files…`
+(no menu accelerator). The two `…` items open the
 Selection dialog (see `apps/desktop/src/lib/selection-dialog/CLAUDE.md`); their keystrokes (bare `+` / `-`) are bound in
 `FilePane`'s keydown handler because macOS menu accelerators always carry the ⌘ modifier and bare `+` / `-` aren't
 valid accelerator strings. The items are still registered in `MenuState.items` so a user-customized shortcut could flow

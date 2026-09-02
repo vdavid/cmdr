@@ -42,6 +42,12 @@ describe('classifySelectionKey', () => {
     expect(classifySelectionKey(keydown({ key: '(', code: 'Digit8', shiftKey: true }))).toBe('selection.invert')
   })
 
+  it('maps the numpad `*` to invert, the other way Total Commander users type it', () => {
+    // The numpad key reports `*` with NO Shift on every layout, so it needs its own
+    // default; the Digit8 fallback can't reach it (`NumpadMultiply` is not `Digit<n>`).
+    expect(classifySelectionKey(keydown({ key: '*', code: 'NumpadMultiply' }))).toBe('selection.invert')
+  })
+
   it('ignores an unshifted 8 and a ⌘-carrying ⇧8', () => {
     expect(classifySelectionKey(keydown({ key: '8', code: 'Digit8' }))).toBeNull()
     expect(classifySelectionKey(keydown({ key: '*', code: 'Digit8', shiftKey: true, metaKey: true }))).toBeNull()
