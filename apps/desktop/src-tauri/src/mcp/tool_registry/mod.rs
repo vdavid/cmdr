@@ -608,7 +608,7 @@ mcp_tools! {
 
     // ── Operation log ─────────────────────────────────────────────────────────
     "operations_list" => {
-        desc: "List past operations from the durable operation log (copy, move, delete, trash, rename, create, compress), newest first. Filter by time, item name, kind, initiator, status; paged. In-flight ops live in cmdr://state operations + the queue tool.",
+        desc: "List past operations (copy, move, delete, trash, rename, create, compress), newest first; filter by time, item name, kind, initiator, status; paged. In-flight ops: cmdr://state operations and the queue tool.",
         schema: schemas::operations_list_schema(),
         gate: TokenGate::Open,
         // Shared read: the agent runtime uses the same core (the schemas fit unchanged).
@@ -617,7 +617,7 @@ mcp_tools! {
         run: app_params operation_log::execute_operations_list
     },
     "operations_get" => {
-        desc: "Get one operation's header plus a page of its item rows (full source/dest paths, per-item outcome). Use after operations_list; poll this to watch a rollback settle (rollbackState leaves 'rollingBack').",
+        desc: "One operation's header plus a page of its item rows (source/dest paths, per-item outcome). Poll it to watch a rollback settle (rollbackState leaves 'rollingBack').",
         schema: schemas::operations_get_schema(),
         gate: TokenGate::Open,
         // Shared read: the agent runtime uses the same core (the schemas fit unchanged).
@@ -641,7 +641,7 @@ mcp_tools! {
     // image bytes (text-only DTO). PRIVACY: paths + the in-image OCR snippet / tag it returns
     // are image-derived text that egresses to the agent's provider — see `executor/photos.rs`.
     "search_photos" => {
-        desc: "Find the user's photos by content: a scene description, text inside the image (OCR), or a tag. Returns matching file paths plus a short reason, read from the on-device index (no uploads). Omit mode to combine description + OCR. Needs image indexing on.",
+        desc: "Find photos by content: a scene description, text inside the image (OCR), or a tag, from the on-device index (no uploads). Returns matching paths plus a short reason. Omit mode to combine description + OCR. Needs image indexing on.",
         schema: photos::search_photos_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient, Consumer::Agent],
@@ -654,7 +654,7 @@ mcp_tools! {
     // snippet — the most sensitive thing either photo tool emits. See
     // `executor/image_facts.rs`.
     "image_facts" => {
-        desc: "Look up what Cmdr's image index stored for images you already have: the full recognized text (OCR) plus Vision tags, per path. Use it to name or describe files you already know. Up to 200 paths; each answers indexed or notIndexed. Needs image indexing on.",
+        desc: "What the image index stored for given images: the recognized text (OCR) plus Vision tags, per path, to name or describe files you already know. Up to 200 paths; each answers indexed or notIndexed. Needs image indexing on.",
         schema: image_facts::image_facts_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient, Consumer::Agent],
@@ -669,7 +669,7 @@ mcp_tools! {
     // colocated in `crate::agent::tools::read` (feature-organized). `gate: Open` is inert here (the
     // agent never crosses the MCP auth boundary); it's the honest classification for a read.
     "app_state" => {
-        desc: "Snapshot the live app state: both panes (current folder, cursor item, selection, view mode, sort) and the mounted volumes with their index freshness and connectivity. Use this to ground an answer in what the user is looking at right now.",
+        desc: "Snapshot the live app state: both panes (folder, cursor item, selection, view mode, sort) and the mounted volumes with index freshness and connectivity: what the user is looking at right now.",
         schema: crate::agent::tools::read::state::app_state_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -681,7 +681,7 @@ mcp_tools! {
     // PRIVACY: the windows egress to the agent's provider under the Ask Cmdr consent gate;
     // see `agent/tools/read/inspect/`.
     "inspect_file" => {
-        desc: "Look inside files to say what they are: metadata, the format the bytes really are, and per kind the content: a line window of text (any encoding), or an image's dimensions (then image_facts for what's in it). Up to 200 paths; every cut is reported.",
+        desc: "Look inside files: metadata, the format the bytes really are, and per kind the content: a line window of text (any encoding), or an image's dimensions (then image_facts for what's in it). Up to 200 paths; every cut is reported.",
         schema: crate::agent::tools::read::inspect::inspect_file_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -689,7 +689,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::read::inspect::execute_inspect_file
     },
     "propose_rename_plan" => {
-        desc: "Prepare a same-folder image-file rename plan for the user to review. It stages no filesystem change, never approves a proposal, and accepts at most 200 rows.",
+        desc: "Stage a same-folder image-file rename plan for the user to review; it changes nothing and approves nothing. At most 200 rows.",
         schema: crate::agent::tools::propose::rename::propose_rename_plan_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -697,7 +697,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::propose::rename::execute_propose_rename_plan
     },
     "list_dir" => {
-        desc: "List a folder's children from the drive index, plus its own recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes. Index-only, never the disk.",
+        desc: "List a folder's children from the drive index (never the disk), plus its recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes.",
         schema: crate::agent::tools::read::listing::list_dir_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient, Consumer::Agent],
@@ -705,7 +705,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::read::listing::execute_list_dir
     },
     "list_pane_files" => {
-        desc: "List up to 200 entries from the focused pane's current backend listing cache, using the selection when one exists and otherwise the folder. Returns the exact volume ID and shared parent path needed for a rename proposal. It never reads the drive index or filesystem.",
+        desc: "List up to 200 entries of the focused pane (the selection when one exists, else the folder) from its listing cache, never the index or disk. Returns the volume ID and shared parent path a rename proposal needs.",
         schema: crate::agent::tools::read::pane_listing::list_pane_files_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -713,7 +713,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::read::pane_listing::execute_list_pane_files
     },
     "important_folders" => {
-        desc: "List the most important folders across scored volumes (top-N, or those at or above a score threshold), highest first. Importance is Cmdr's own offline signal, so it answers even for an unmounted-but-scored drive. Each row carries its volume and score.",
+        desc: "List the most important folders across scored volumes (top-N, or at or above a threshold), highest first, each with its volume and score. Importance is Cmdr's offline signal, so an unmounted-but-scored drive still answers.",
         schema: crate::agent::tools::read::importance::important_folders_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -721,7 +721,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::read::importance::execute_important_folders
     },
     "folder_importance" => {
-        desc: "Explain one folder's importance: scored (with its 0-1 score, the signal breakdown, and whether the score is stale relative to the latest scan), floored to zero by design (with the reason), or unscored. Offline-capable.",
+        desc: "Explain one folder's importance: scored (0-1 score, signal breakdown, and whether it is stale since the latest scan), floored to zero by design (with the reason), or unscored. Works offline.",
         schema: crate::agent::tools::read::importance::folder_importance_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -729,7 +729,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::read::importance::execute_folder_importance
     },
     "list_suggestions" => {
-        desc: "List the file operations Ask Cmdr has already proposed, as sweeps and groups with op COUNTS, never the ops themselves. Default status pending: what is still waiting on the user.",
+        desc: "List the operations Ask Cmdr already proposed, as sweeps and groups with op COUNTS, never the ops. Default status pending: what still waits on the user.",
         schema: crate::agent::tools::suggestions::list_suggestions_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -737,7 +737,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::suggestions::execute_list_suggestions
     },
     "get_suggestion_group" => {
-        desc: "Read one proposed group: its verb, target, reversibility, and a page of the files it would act on, with total / returned / truncated so you can page with offset. Its sizes and dates are what the index held when the group was proposed, not what the files are now.",
+        desc: "Read one proposed group: verb, target, reversibility, and a page of the files it would act on (total / returned / truncated; page with offset). Sizes and dates are what the index held when the group was proposed, not the files now.",
         schema: crate::agent::tools::suggestions::get_suggestion_group_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -745,7 +745,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::suggestions::execute_get_suggestion_group
     },
     "propose_suggestions" => {
-        desc: "Propose file operations (move, copy, trash, delete, rename, compress, extract) for the user to review, grouped so each group is approved or rejected on its own. It stages a proposal and changes nothing: only the user approves, and no tool can. Name up to 200 paths per group, or describe thousands with a selector, which Cmdr resolves against the drive index once, now. A whole folder is ONE op: give its path. Pass sweepId plus a groupId to replace a pending group you proposed earlier.",
+        desc: "Propose file operations (move, copy, trash, delete, rename, compress, extract) for the user to review, in groups each approved or rejected on its own. It stages a proposal and changes nothing: only the user approves. Name up to 200 paths per group, or describe thousands with a selector, resolved against the drive index once, now. A whole folder is ONE op: give its path. sweepId plus groupId replaces a pending group you proposed earlier.",
         schema: crate::agent::tools::suggestions::propose_suggestions_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -753,7 +753,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::suggestions::execute_propose_suggestions
     },
     "nothing_to_suggest" => {
-        desc: "Say that the activity you were shown is not worth telling the user about, and stop. Call it instead of proposing anything when nothing you found deserves a person's attention. It changes nothing and shows nothing.",
+        desc: "Say the activity you were shown is not worth telling the user about, and stop: call it instead of proposing when nothing deserves a person's attention. Changes nothing, shows nothing.",
         schema: crate::agent::tools::quiet::nothing_to_suggest_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -761,7 +761,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::quiet::execute_nothing_to_suggest
     },
     "memory_write" => {
-        desc: "Save a note about the user in your own memory folder, creating the file or replacing it whole. Facts about them and how they like things, never instructions to yourself. AGENTS.md is the file to use unless you have a reason not to.",
+        desc: "Save a note about the user in your memory folder, creating the file or replacing it whole: facts about them and how they like things, never instructions to yourself. Use AGENTS.md unless you have a reason not to.",
         schema: crate::agent::tools::memory::memory_write_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -769,7 +769,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::memory::execute_memory_write
     },
     "memory_edit" => {
-        desc: "Change or drop one part of a memory file: oldString must appear exactly once, and an empty newString deletes it. Use it to prune what has gone stale rather than rewriting the whole file.",
+        desc: "Change or drop one part of a memory file (oldString must appear exactly once; an empty newString deletes it): prune what went stale instead of rewriting the file.",
         schema: crate::agent::tools::memory::memory_edit_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],
@@ -777,7 +777,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::memory::execute_memory_edit
     },
     "list_volumes" => {
-        desc: "List every volume Cmdr can see (local disks, SMB shares, MTP devices, and the Network root) with each one's kind, index freshness (fresh / scanning / stale / off), and — for SMB — its connection state (direct / os_mount / disconnected).",
+        desc: "List every volume Cmdr can see (local disks, SMB shares, MTP devices, the Network root) with kind, index freshness (fresh / scanning / stale / off), and for SMB its connection state (direct / os_mount / disconnected).",
         schema: crate::agent::tools::read::volumes::list_volumes_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],

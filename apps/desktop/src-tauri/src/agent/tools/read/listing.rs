@@ -586,16 +586,16 @@ pub fn list_dir_schema() -> Value {
     serde_json::json!({
         "type": "object",
         "properties": {
-            "path": { "type": "string", "description": "Absolute or ~-relative folder path to list. To find where space is going, start at a volume root or ~ with sortBy 'size', then call again on the biggest child to drill in. Every answer carries a coverage block (index freshness) and marks any size that is only a lower bound, so report those caveats rather than stating a total the index can't back." },
+            "path": { "type": "string", "description": "Absolute or ~-relative folder. To find where space goes, start at a volume root or ~ with sortBy size and drill into the biggest child. Relay the coverage block and any lower-bound size rather than a total the index can't back." },
             "sortBy": {
                 "type": "string",
                 "enum": ["name", "size", "modified"],
-                "description": "Order the children. 'size' ranks files and folders together by the space they use (a folder by its recursive total), which is how you find where disk space is going. Default 'name'."
+                "description": "size ranks files and folders together by space used (a folder by its recursive total). Default name."
             },
-            "order": { "type": "string", "enum": ["asc", "desc"], "description": "Sort direction. Defaults to 'desc' for size and modified (biggest and newest first), 'asc' for name." },
-            "limit": { "type": "integer", "description": "How many children to return (default 50, max 1000). A page may still come back shorter if the rows wouldn't fit one tool result." },
-            "offset": { "type": "integer", "description": "Skip this many children before the page. Resume with offset + returned." },
-            "type": { "type": "string", "enum": ["file", "dir"], "description": "Keep only files or only folders. Omit for both." }
+            "order": { "type": "string", "enum": ["asc", "desc"], "description": "Default desc for size and modified, asc for name." },
+            "limit": { "type": "integer", "description": "Default 50, max 1000; a page may come back shorter to fit one result." },
+            "offset": { "type": "integer", "description": "Children to skip; resume with offset + returned." },
+            "type": { "type": "string", "enum": ["file", "dir"], "description": "Only files or only folders; omit for both." }
         },
         "required": ["path"],
         "additionalProperties": false

@@ -266,7 +266,7 @@ all. A persist problem is logged and dropped — a gauge is worth no turn.
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
 limits**:
 
-- what the PROMPT holds: `(budget − 10% headroom − 5,793 of prefix) / 349 per file`. The headroom exists because the
+- what the PROMPT holds: `(budget − 10% headroom − 5,179 of prefix) / 349 per file`. The headroom exists because the
   measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
   the user's sentence, JSON scaffolding).
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
@@ -302,21 +302,21 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and this section together.
 
-- **Fixed overhead: 5,793 tokens** on every single call — 1,636 for `SYSTEM_PROMPT` and 4,157 for the 18 tool
+- **Fixed overhead: 5,179 tokens** on every single call — 1,636 for `SYSTEM_PROMPT` and 3,543 for the 18 tool
   declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
-  12-file one did not. **It grows with the tool view**: the suggested-ops trio added ~1,100 tokens of schema, which every
+  12-file one did not. **It grows with the tool view**: the suggested-ops trio is ~1,000 tokens of schema, which every
   call pays whether or not it suggests anything, and which costs a 16k budget about four files of rename batch. Even
-  `nothing_to_suggest`, one string argument and a two-sentence description, is 105 of them, paid by every rail turn that
-  will never call it. `memory_write` + `memory_edit` cost 263 between them, and the prompt's memory section another 265.
+  `nothing_to_suggest`, one string argument and a two-sentence description, is 97 of them, paid by every rail turn that
+  will never call it. `memory_write` + `memory_edit` cost 252 between them, and the prompt's memory section another 265.
   A new tool's schema is prefix, so keep its descriptions terse and say the rest once, in the registry line or the
   prompt.
 - **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
   text-dense corpus costs up to ~2.2× more), **59 for a plan row**, **21 for a pane-listing entry**. The facts dominate
   by more than 3×, so a window has to be sized for them, not for the plan.
-- **A 100-file content-based rename: 42,375 tokens** for the whole turn. The parts above account for over 90% of it; the
+- **A 100-file content-based rename: 41,761 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
-- So **60k does 100 files, 16k does roughly 24** (`files_per_batch` says 101 and 24). A model's window must exceed the
+- So **60k does 100 files, 16k does roughly 26** (`files_per_batch` says 101 and 26). A model's window must exceed the
   whole turn, not one page of it: every page of facts is evidence the plan cites, so none of it may elide.
 - **Memory is priced as a SHARE, not a block**: `memory_slice_bytes` takes a tenth of what the budget has left after the
   overhead, so a 16k budget carries ~4 KB of notes and a 60k one ~21 KB. It has to be a share because the system string

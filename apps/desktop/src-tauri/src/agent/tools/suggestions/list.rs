@@ -120,7 +120,7 @@ pub fn list_suggestions_schema() -> Value {
             "status": {
                 "type": "string",
                 "enum": ["pending", "approved", "interrupted", "completed", "rejected", "all"],
-                "description": "Which groups to list. Default pending: what is still waiting on the user. interrupted means the app restarted mid-execution and the user has to decide again."
+                "description": "Default pending: still waiting on the user. interrupted: the app restarted mid-execution, so the user decides again."
             }
         },
         "additionalProperties": false

@@ -68,8 +68,8 @@ pub fn get_suggestion_group_schema() -> Value {
         "type": "object",
         "properties": {
             "groupId": { "type": "integer", "description": "The group id from list_suggestions." },
-            "offset": { "type": "integer", "description": "Skip this many ops. Resume with offset + returned." },
-            "limit": { "type": "integer", "description": "How many ops to return (default 100, at most 500). A page may still come back shorter when the paths are long." }
+            "offset": { "type": "integer", "description": "Ops to skip; resume with offset + returned." },
+            "limit": { "type": "integer", "description": "Default 100, max 500; a page may come back shorter when paths are long." }
         },
         "required": ["groupId"],
         "additionalProperties": false

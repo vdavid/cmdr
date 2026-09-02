@@ -313,10 +313,10 @@ pub fn search_photos_schema() -> Value {
     serde_json::json!({
         "type": "object",
         "properties": {
-            "query": { "type": "string", "description": "What to look for. In semantic mode, a natural description of the scene ('two people on a beach at sunset'); in ocr mode, words expected to appear IN the image (a receipt total, a sign, a passport field); in tag mode, a single object/scene label ('dog', 'sky')." },
-            "volumeId": { "type": "string", "description": "Restrict to one volume id (see list_volumes / cmdr://state). Omit to search every local and SMB volume that's indexed." },
-            "mode": { "type": "string", "enum": ["semantic", "ocr", "tag"], "description": "How to match. semantic: by visual description (needs the on-device model). ocr: by text recognized inside the image. tag: by a Vision object/scene tag. Omit to combine semantic + ocr (semantic leads), which is best for most 'find the photo of…' questions." },
-            "limit": { "type": "integer", "description": "Max hits to return (default 30, capped at 200). One answer also has a size ceiling, so a big page may come back with fewer hits plus returned, total, and truncated." }
+            "query": { "type": "string", "description": "What to look for: a scene description (semantic), words expected IN the image (ocr), or one object/scene label (tag)." },
+            "volumeId": { "type": "string", "description": "One volume id (see list_volumes); omit for every indexed local and SMB volume." },
+            "mode": { "type": "string", "enum": ["semantic", "ocr", "tag"], "description": "semantic: by visual description. ocr: by text recognized in the image. tag: by a Vision label. Omit to combine semantic + ocr, best for most photo questions." },
+            "limit": { "type": "integer", "description": "Max hits (default 30, max 200); a page may come back shorter, with returned, total, and truncated." }
         },
         "required": ["query"],
         "additionalProperties": false

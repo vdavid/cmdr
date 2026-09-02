@@ -1089,11 +1089,10 @@
       "name": "go_to_latest_download"
     },
     {
-      "description": "List past operations from the durable operation log (copy, move, delete, trash, rename, create, compress), newest first. Filter by time, item name, kind, initiator, status; paged. In-flight ops live in cmdr://state operations + the queue tool.",
+      "description": "List past operations (copy, move, delete, trash, rename, create, compress), newest first; filter by time, item name, kind, initiator, status; paged. In-flight ops: cmdr://state operations and the queue tool.",
       "inputSchema": {
         "properties": {
           "executionStatus": {
-            "description": "Filter by lifecycle status",
             "enum": [
               "queued",
               "running",
@@ -1104,7 +1103,6 @@
             "type": "string"
           },
           "initiator": {
-            "description": "Filter by who initiated the operation",
             "enum": [
               "user",
               "aiClient",
@@ -1113,7 +1111,6 @@
             "type": "string"
           },
           "kind": {
-            "description": "Filter by operation kind",
             "enum": [
               "copy",
               "move",
@@ -1127,15 +1124,15 @@
             "type": "string"
           },
           "limit": {
-            "description": "Max operations to return. Default 50, max 1000. One response also has a size ceiling, so a big page may come back with fewer rows plus returned, total, and truncated; use offset for the rest.",
+            "description": "Default 50, max 1000; a page may come back shorter, with returned, total, and truncated; use offset for the rest.",
             "type": "integer"
           },
           "name": {
-            "description": "Match operations that touched an item with this name (folded: case- and Unicode-normalized). Exact or prefix match on the item's source name (see nameMatch), NOT a substring search.",
+            "description": "Item name to match (case- and Unicode-folded), exact or prefix per nameMatch; not a substring search.",
             "type": "string"
           },
           "nameMatch": {
-            "description": "How 'name' matches: exact folded-name equality, or folded-name prefix. Default: prefix.",
+            "description": "Default prefix.",
             "enum": [
               "exact",
               "prefix"
@@ -1143,11 +1140,10 @@
             "type": "string"
           },
           "offset": {
-            "description": "Number of operations to skip, for paging",
+            "description": "Operations to skip.",
             "type": "integer"
           },
           "rollbackState": {
-            "description": "Filter by rollback state",
             "enum": [
               "notRollbackable",
               "rollbackable",
@@ -1158,11 +1154,11 @@
             "type": "string"
           },
           "since": {
-            "description": "Inclusive lower bound on the operation's start time (Unix milliseconds)",
+            "description": "Start time at or after this (Unix ms).",
             "type": "integer"
           },
           "until": {
-            "description": "Inclusive upper bound on the operation's start time (Unix milliseconds)",
+            "description": "Start time at or before this (Unix ms).",
             "type": "integer"
           }
         },
@@ -1172,19 +1168,19 @@
       "name": "operations_list"
     },
     {
-      "description": "Get one operation's header plus a page of its item rows (full source/dest paths, per-item outcome). Use after operations_list; poll this to watch a rollback settle (rollbackState leaves 'rollingBack').",
+      "description": "One operation's header plus a page of its item rows (source/dest paths, per-item outcome). Poll it to watch a rollback settle (rollbackState leaves 'rollingBack').",
       "inputSchema": {
         "properties": {
           "limit": {
-            "description": "Max item rows to return. Default 200, max 1000. One response also has a size ceiling, so a big page may come back with fewer rows plus returned, total, and truncated; use offset for the rest.",
+            "description": "Default 200, max 1000; a page may come back shorter, with returned, total, and truncated; use offset for the rest.",
             "type": "integer"
           },
           "offset": {
-            "description": "Number of item rows to skip, for paging",
+            "description": "Item rows to skip.",
             "type": "integer"
           },
           "operationId": {
-            "description": "The operation's id. The same id everywhere: from operations_list, a copy/move/delete response, cmdr://state operations, or the queue tool.",
+            "description": "The operation's id, as given by operations_list, a copy/move/delete response, cmdr://state operations, or the queue tool.",
             "type": "string"
           }
         },
@@ -1216,16 +1212,16 @@
       "name": "operations_rollback"
     },
     {
-      "description": "Find the user's photos by content: a scene description, text inside the image (OCR), or a tag. Returns matching file paths plus a short reason, read from the on-device index (no uploads). Omit mode to combine description + OCR. Needs image indexing on.",
+      "description": "Find photos by content: a scene description, text inside the image (OCR), or a tag, from the on-device index (no uploads). Returns matching paths plus a short reason. Omit mode to combine description + OCR. Needs image indexing on.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
           "limit": {
-            "description": "Max hits to return (default 30, capped at 200). One answer also has a size ceiling, so a big page may come back with fewer hits plus returned, total, and truncated.",
+            "description": "Max hits (default 30, max 200); a page may come back shorter, with returned, total, and truncated.",
             "type": "integer"
           },
           "mode": {
-            "description": "How to match. semantic: by visual description (needs the on-device model). ocr: by text recognized inside the image. tag: by a Vision object/scene tag. Omit to combine semantic + ocr (semantic leads), which is best for most 'find the photo of…' questions.",
+            "description": "semantic: by visual description. ocr: by text recognized in the image. tag: by a Vision label. Omit to combine semantic + ocr, best for most photo questions.",
             "enum": [
               "semantic",
               "ocr",
@@ -1234,11 +1230,11 @@
             "type": "string"
           },
           "query": {
-            "description": "What to look for. In semantic mode, a natural description of the scene ('two people on a beach at sunset'); in ocr mode, words expected to appear IN the image (a receipt total, a sign, a passport field); in tag mode, a single object/scene label ('dog', 'sky').",
+            "description": "What to look for: a scene description (semantic), words expected IN the image (ocr), or one object/scene label (tag).",
             "type": "string"
           },
           "volumeId": {
-            "description": "Restrict to one volume id (see list_volumes / cmdr://state). Omit to search every local and SMB volume that's indexed.",
+            "description": "One volume id (see list_volumes); omit for every indexed local and SMB volume.",
             "type": "string"
           }
         },
@@ -1250,19 +1246,19 @@
       "name": "search_photos"
     },
     {
-      "description": "Look up what Cmdr's image index stored for images you already have: the full recognized text (OCR) plus Vision tags, per path. Use it to name or describe files you already know. Up to 200 paths; each answers indexed or notIndexed. Needs image indexing on.",
+      "description": "What the image index stored for given images: the recognized text (OCR) plus Vision tags, per path, to name or describe files you already know. Up to 200 paths; each answers indexed or notIndexed. Needs image indexing on.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
           "paths": {
-            "description": "The absolute paths of the images to look up (at most 200 per call). Use this when you already know the files, for example everything in the folder the user is looking at. One answer holds only as many files as fit your context: check returned, total, and truncated, and ask about the remaining paths in a follow-up call.",
+            "description": "Absolute image paths, at most 200. A page may hold fewer than asked: check returned, total, and truncated, then ask for the rest.",
             "items": {
               "type": "string"
             },
             "type": "array"
           },
           "volumeId": {
-            "description": "Restrict the lookup to one volume id (see list_volumes / cmdr://state). Omit to check every local and SMB volume that's indexed.",
+            "description": "One volume id (see list_volumes); omit for every indexed local and SMB volume.",
             "type": "string"
           }
         },
@@ -1274,20 +1270,20 @@
       "name": "image_facts"
     },
     {
-      "description": "List a folder's children from the drive index, plus its own recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes. Index-only, never the disk.",
+      "description": "List a folder's children from the drive index (never the disk), plus its recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
           "limit": {
-            "description": "How many children to return (default 50, max 1000). A page may still come back shorter if the rows wouldn't fit one tool result.",
+            "description": "Default 50, max 1000; a page may come back shorter to fit one result.",
             "type": "integer"
           },
           "offset": {
-            "description": "Skip this many children before the page. Resume with offset + returned.",
+            "description": "Children to skip; resume with offset + returned.",
             "type": "integer"
           },
           "order": {
-            "description": "Sort direction. Defaults to 'desc' for size and modified (biggest and newest first), 'asc' for name.",
+            "description": "Default desc for size and modified, asc for name.",
             "enum": [
               "asc",
               "desc"
@@ -1295,11 +1291,11 @@
             "type": "string"
           },
           "path": {
-            "description": "Absolute or ~-relative folder path to list. To find where space is going, start at a volume root or ~ with sortBy 'size', then call again on the biggest child to drill in. Every answer carries a coverage block (index freshness) and marks any size that is only a lower bound, so report those caveats rather than stating a total the index can't back.",
+            "description": "Absolute or ~-relative folder. To find where space goes, start at a volume root or ~ with sortBy size and drill into the biggest child. Relay the coverage block and any lower-bound size rather than a total the index can't back.",
             "type": "string"
           },
           "sortBy": {
-            "description": "Order the children. 'size' ranks files and folders together by the space they use (a folder by its recursive total), which is how you find where disk space is going. Default 'name'.",
+            "description": "size ranks files and folders together by space used (a folder by its recursive total). Default name.",
             "enum": [
               "name",
               "size",
@@ -1308,7 +1304,7 @@
             "type": "string"
           },
           "type": {
-            "description": "Keep only files or only folders. Omit for both.",
+            "description": "Only files or only folders; omit for both.",
             "enum": [
               "file",
               "dir"

@@ -232,15 +232,15 @@ pub fn inspect_file_schema() -> Value {
             "paths": {
                 "type": "array",
                 "items": { "type": "string" },
-                "description": "Absolute file paths (~ ok), at most 200. Rows carry their path; check returned, total, truncated, and unanswered."
+                "description": "Absolute file paths (~ ok), at most 200; check returned, total, truncated, and unanswered."
             },
             "startLine": {
                 "type": "integer", "minimum": 1,
-                "description": "Text: first line of the window (1-based, default 1)."
+                "description": "Text: first window line (1-based, default 1)."
             },
             "maxLines": {
                 "type": "integer", "minimum": 1, "maximum": MAX_MAX_LINES,
-                "description": "Text: lines in the window (default 200)."
+                "description": "Text: window lines (default 200)."
             }
         },
         "required": ["paths"],

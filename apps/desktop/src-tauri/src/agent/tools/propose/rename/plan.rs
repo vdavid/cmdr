@@ -54,16 +54,16 @@ pub fn propose_rename_plan_schema() -> Value {
             "sourcePath": { "type": "string" }, "volumeId": { "type": "string" }, "destinationName": { "type": "string" },
             "evidence": {
                 "type": "object",
-                "description": "What this name is based on. The user sees it beside the name while reviewing, and a content claim is checked against what image_facts actually returned to you.",
+                "description": "What the name is based on; the user sees it, and a content claim is checked against what image_facts returned to you.",
                 "properties": {
                     "source": {
                         "type": "string",
                         "enum": ["imageText", "imageTags", "filename", "metadata", "userInstruction"],
-                        "description": "imageText or imageTags only when image_facts returned that content to you for this exact path in this conversation. Otherwise: filename (the old name), metadata (dates, size), or userInstruction (a naming rule the user gave)."
+                        "description": "imageText or imageTags only when image_facts returned that content for this exact path in this conversation; else filename (the old name), metadata (dates, size), or userInstruction (a rule the user gave)."
                     },
                     "detail": {
                         "type": "string",
-                        "description": "Up to 160 characters. For imageText a SHORT VERBATIM QUOTE of at least 12 characters from the text image_facts returned for this path (a whole phrase, not one word); for imageTags at least one tag it returned; otherwise the concrete detail you used, for example 'Taken 2026-07-20' or 'user asked for YYYY-MM-DD prefixes'."
+                        "description": "Up to 160 characters. imageText: a VERBATIM quote of at least 12 characters (a phrase, not one word) from what image_facts returned for this path; imageTags: a tag it returned; else the concrete detail used, like 'Taken 2026-07-20'."
                     }
                 },
                 "required": ["source", "detail"], "additionalProperties": false
