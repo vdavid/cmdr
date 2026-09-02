@@ -178,6 +178,10 @@ fn a_move_flushes_one_entry_per_directory_it_touched() {
         "one entry per DIRECTORY — 50 renames through 3 directories cost 3 fsyncs, not 50"
     );
     for dir in &touched {
-        assert!(dir.is_dir(), "{} has to be a directory, not a moved file", dir.display());
+        assert!(
+            dir.is_dir(),
+            "{} has to be a directory, not a moved file",
+            dir.display()
+        );
     }
 }
