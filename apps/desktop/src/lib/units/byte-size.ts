@@ -79,15 +79,16 @@ export function unitLabel(unit: 'kB' | 'MB' | 'GB', format: FileSizeFormat): str
  * `bytes` mode is not handled here — callers route raw-byte rendering through
  * `formatSizeTriads` for the colored triad treatment.
  *
- * `rounded` drops the fraction digits ("7 GB", not "7.09 GB"). It's for a
- * LIVE readout, where a number that changes several times a second is easier to
- * read coarse — the transfer progress bars are the case it exists for. A size
- * someone compares or copies keeps its decimals.
+ * `rounded` is the LIVE form: one fraction digit below ten and none above
+ * ("1.7 GB", "24 GB", not "1.70 GB" / "24.41 GB"). A number that changes several
+ * times a second is easier to read coarse, but not so coarse that two different
+ * sizes print the same — the transfer progress bars are the case it exists for.
+ * A size someone compares or copies keeps its two decimals.
  *
  * @param byteCount Number of bytes
  * @param format 'binary' uses 1024-based (KB/MB/GB), 'si' uses 1000-based (kB/MB/GB)
  * @param forceUnit Optional fixed unit to render in
- * @param rounded Render whole units, no fraction digits
+ * @param rounded Render the live form (a tenth below ten, whole units above)
  */
 export function formatFileSizeWithFormat(
   byteCount: number,
@@ -97,7 +98,7 @@ export function formatFileSizeWithFormat(
 ): string {
   const base = baseFor(format)
   const units = format === 'binary' ? binaryUnits : siUnits
-  const formatScaled = rounded ? formatSizeInteger : formatSizeDecimal
+  const formatScaled = rounded ? formatSizeLive : formatSizeDecimal
 
   if (forceUnit) {
     const power = forceUnit === 'kB' ? 1 : forceUnit === 'MB' ? 2 : 3
@@ -137,6 +138,32 @@ function formatSizeDecimal(value: number): string {
 /** Format an integer size value (bytes mode) with no grouping, matching the old `String(value)`. */
 function formatSizeInteger(value: number): string {
   return getNumberFormatter({ maximumFractionDigits: 0, useGrouping: false }).format(value)
+}
+
+/**
+ * The numeric part of a LIVE size: coarse enough not to flicker, precise enough
+ * to stay true. One fraction digit below ten ("1.7 GB"), none from ten up
+ * ("24 GB").
+ *
+ * ⚠️ Whole units alone are not coarse, they're WRONG: a 1.7 GB / 2.4 GB transfer
+ * renders as "2 GB / 2 GB" beside a percentage saying 70%, and every transfer in
+ * the 1-10 GB range steps a whole gigabyte at a time. The tenth is what keeps
+ * the two numbers and the percentage telling the same story. It costs no column
+ * width, because a single-digit value has a digit to spare against the "999 GB"
+ * worst case the readout is sized for.
+ *
+ * The digit count is decided on the value AS SHOWN, so 9.97 becomes "10", never
+ * "10.0". `minimumFractionDigits` matches the maximum below ten so the tenth
+ * doesn't appear and vanish as a live number crosses a whole unit.
+ */
+function formatSizeLive(value: number): string {
+  const shown = Math.round(value * 10) / 10
+  const fractionDigits = Math.abs(shown) < 10 ? 1 : 0
+  return getNumberFormatter({
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+    useGrouping: false,
+  }).format(shown)
 }
 
 /**

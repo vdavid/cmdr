@@ -52,17 +52,27 @@ describe('TransferProgressReadout', () => {
     expect(texts('.amount')).toEqual(['50 bytes / 200 bytes', '1 / 4'])
   })
 
-  it('rounds live sizes to whole units, so digits stop churning under the eye', () => {
-    // 7.61 GB / 22.66 GB, at 11.96 MB/s. A size column elsewhere keeps its
-    // decimals; a number that changes several times a second doesn't earn them.
+  it('coarsens live sizes so digits stop churning, without losing a whole gigabyte', () => {
+    // 7.61 GB / 22.66 GB, at 11.96 MB/s. A size column elsewhere keeps its two
+    // decimals; a number that changes several times a second doesn't earn them,
+    // but it doesn't get to round away the difference between the two either.
     render({ ...halfway, bytesDone: 7_610_000_000, bytesTotal: 22_660_000_000, bytesPerSecond: 11_960_000 })
-    expect(texts('.amount')[0]).toBe('8 GB / 23 GB')
+    expect(texts('.amount')[0]).toBe('7.6 GB / 23 GB')
     expect(texts('.rate')[0]).toBe('12 MB/s')
+  })
+
+  it('never prints the same number twice for two different sizes', () => {
+    // Pre-fix this read "2 GB / 2 GB (70%)": whole units at every scale, so a
+    // 1.7 GB / 2.4 GB transfer showed two identical numbers beside a percentage
+    // that contradicted them. Every transfer in the 1-10 GB range hit it.
+    render({ ...halfway, bytesDone: 1_700_000_000, bytesTotal: 2_400_000_000 })
+    expect(texts('.amount')[0]).toBe('1.7 GB / 2.4 GB')
+    expect(texts('.percent')[0]).toBe('(71%)')
   })
 
   it('shows both rates, and neither before the estimator warms up', () => {
     render({ ...halfway, bytesPerSecond: 1_500_000, filesPerSecond: 27 })
-    expect(texts('.rate')).toEqual(['2 MB/s', '27 files/s'])
+    expect(texts('.rate')).toEqual(['1.5 MB/s', '27 files/s'])
 
     document.body.innerHTML = ''
     render(halfway)

@@ -108,6 +108,49 @@ describe('formatFileSizeWithFormat', () => {
       expect(formatFileSizeWithFormat(tenGB, 'si', 'MB')).toBe('10000.00 MB')
     })
   })
+
+  describe('rounded (the LIVE readout)', () => {
+    // The transfer dialog's two numbers and its percentage have to agree. With
+    // whole units only, a 1.7 GB / 2.4 GB copy read "2 GB / 2 GB (70%)": two
+    // identical numbers beside a percentage that contradicts them, on every
+    // transfer in the 1-10 GB range. So a single-digit value keeps one decimal.
+    it('keeps a tenth on a single-digit value, so two different sizes read differently', () => {
+      const gb = 1000 ** 3
+      expect(formatFileSizeWithFormat(1.7 * gb, 'si', undefined, true)).toBe('1.7 GB')
+      expect(formatFileSizeWithFormat(2.4 * gb, 'si', undefined, true)).toBe('2.4 GB')
+    })
+
+    it('shows the tenth even when it is zero, so the number never gains and loses a digit', () => {
+      expect(formatFileSizeWithFormat(2 * 1000 ** 3, 'si', undefined, true)).toBe('2.0 GB')
+    })
+
+    it('drops to whole units from 10 up, where a tenth is noise a live number flickers on', () => {
+      const gb = 1000 ** 3
+      expect(formatFileSizeWithFormat(24.4 * gb, 'si', undefined, true)).toBe('24 GB')
+      expect(formatFileSizeWithFormat(250 * 1000 ** 2, 'si', undefined, true)).toBe('250 MB')
+    })
+
+    it('rounds up ACROSS the ten boundary rather than printing "10.0"', () => {
+      // 9.97 rounds to 10.0, which then wants the whole-unit form: the digit
+      // count is decided on the value as it will be shown, not before.
+      expect(formatFileSizeWithFormat(9.97 * 1000 ** 3, 'si', undefined, true)).toBe('10 GB')
+    })
+
+    it('leaves the bytes tier a bare integer, where a tenth of a byte means nothing', () => {
+      expect(formatFileSizeWithFormat(512, 'binary', undefined, true)).toBe('512 bytes')
+    })
+
+    it('is never wider than the readout column budgets for', () => {
+      // The readout's `--spacing-readout-amount` is 16ch, sized for
+      // "999 GB / 999 GB". A single-digit value spends its saved digits on the
+      // decimal instead, so the pair can't outgrow that.
+      const widest = formatFileSizeWithFormat(999 * 1000 ** 3, 'si', undefined, true)
+      expect(widest).toBe('999 GB')
+      expect(formatFileSizeWithFormat(9.9 * 1000 ** 3, 'si', undefined, true).length).toBeLessThanOrEqual(
+        widest.length,
+      )
+    })
+  })
 })
 
 describe('formatFileSizeWithFormat: locale-aware decimal', () => {
