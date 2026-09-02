@@ -508,6 +508,12 @@ mod test_support;
 #[path = "move_op_tests.rs"]
 mod tests;
 
+/// What a move REPORTS while it runs: the phases it announces and the counts
+/// under them. Its sibling above owns what a move does to the files.
+#[cfg(test)]
+#[path = "move_progress_tests.rs"]
+mod move_progress_tests;
+
 /// What a paused, rolled-back, or cancelled move does.
 #[cfg(test)]
 #[path = "move_interruption_tests.rs"]
