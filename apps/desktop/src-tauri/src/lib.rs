@@ -434,9 +434,12 @@ pub fn run() {
                 // Point the in-flight transfer-partial ledger at the data dir and
                 // clear the `.cmdr-tmp-*` partials an earlier run recorded and never
                 // finished (a quit or a crash mid-copy). Before any copy can start,
-                // so nothing we're about to write is in the list we sweep. See
+                // so nothing we're about to write is in the list we sweep. The
+                // returned handle is dropped on purpose: a recorded partial can
+                // sit on a dead mount where `unlink` blocks for minutes, and a
+                // launch must never wait on that. See
                 // `file_system/write_operations/in_flight_temps.rs`.
-                file_system::write_operations::init_and_sweep_in_flight_temps(&data_dir);
+                drop(file_system::write_operations::init_and_sweep_in_flight_temps(&data_dir));
             }
 
             // Initialize the volume manager with the root volume

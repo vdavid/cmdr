@@ -120,17 +120,56 @@ pub fn flush() {
     }
 }
 
+/// The background sweep [`init_and_sweep`] started, and the only way to learn
+/// that it has finished.
+///
+/// **The launch path drops it.** Waiting there is the one thing this must never
+/// do: a recorded partial can sit on a Finder-mounted NAS that is no longer
+/// answering, and `unlink` on a dead mount blocks for a minute or two, which
+/// reads to the user as an app that won't launch. Whoever can afford to wait —
+/// a test asserting on what the sweep removed — calls [`SweepHandle::wait`]
+/// instead of racing a wall-clock deadline it can only lose under load.
+///
+/// The handle stays in the signature on every build rather than behind a
+/// `cfg(test)`: a function whose shape changes between the app and its tests
+/// is a function the tests no longer describe.
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "the launch path drops the handle; only a caller that can wait joins it"
+    )
+)]
+pub struct SweepHandle(Option<std::thread::JoinHandle<()>>);
+
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "the launch path drops the handle; only a caller that can wait joins it"
+    )
+)]
+impl SweepHandle {
+    /// Blocks until the sweep has visited every path the ledger recorded.
+    ///
+    /// ❌ Never call this from a launch path; see the type docs for why.
+    pub fn wait(self) {
+        if let Some(handle) = self.0
+            && handle.join().is_err()
+        {
+            log::warn!(target: "copy", "the orphaned-partial sweep panicked; some partials may remain");
+        }
+    }
+}
+
 /// Points the persisted ledger at the app data dir and clears whatever an
 /// earlier run left behind. Call once at startup, before any copy can start.
 ///
 /// Only the app-data-dir work happens inline. **The deletes go to their own
-/// thread**, because a recorded partial can sit on a Finder-mounted NAS that is
-/// no longer answering, and `unlink` on a dead mount blocks for a minute or two
-/// — on the setup thread that reads to the user as an app that won't launch.
-/// Nothing waits on the sweep: it is cleanup, and the records it acts on were
-/// already retired from the log by the truncate below, so a new copy can start
-/// underneath it safely.
-pub fn init_and_sweep(data_dir: &Path) {
+/// thread** (see [`SweepHandle`] for why nothing on the launch path waits on
+/// it): the records it acts on were already retired from the log by the
+/// truncate below, so a new copy can start underneath it safely.
+pub fn init_and_sweep(data_dir: &Path) -> SweepHandle {
     let path = data_dir.join(STORE_FILENAME);
     let recorded = read_recorded(&path);
 
@@ -154,13 +193,17 @@ pub fn init_and_sweep(data_dir: &Path) {
     }
 
     if recorded.is_empty() {
-        return;
+        return SweepHandle(None);
     }
-    if let Err(e) = std::thread::Builder::new()
+    match std::thread::Builder::new()
         .name("cmdr-temp-sweep".to_string())
         .spawn(move || sweep_persisted_orphans(&recorded))
     {
-        log::warn!(target: "copy", "couldn't start the orphaned-partial sweep: {e}");
+        Ok(sweep) => SweepHandle(Some(sweep)),
+        Err(e) => {
+            log::warn!(target: "copy", "couldn't start the orphaned-partial sweep: {e}");
+            SweepHandle(None)
+        }
     }
 }
 
@@ -290,29 +333,74 @@ fn compact_if_large(store: &mut Store) {
 pub(super) mod test_support {
     use super::{File, PathBuf, STORE};
     use crate::ignore_poison::IgnorePoison;
+    use std::sync::{Mutex, MutexGuard};
 
-    /// Points the persisted ledger at `data_dir` for the length of the guard,
-    /// restoring the previous target on drop so one test can't leak its log
-    /// into another.
+    /// Serializes every test that installs its own ledger into [`STORE`].
+    ///
+    /// [`STORE`] is ONE singleton for the whole test binary, and installing a
+    /// log into it redirects every `register` in the process, from any thread,
+    /// into that file. Two tests doing it at once is how one test's records
+    /// land in another's log, and how a startup-sweep fixture ends up replaying
+    /// an empty log and never sweeping at all. Both shapes reproduced at
+    /// `--test-threads=2` (47 failures in 60 runs) before this lock existed.
+    static SINGLE_FILE: Mutex<()> = Mutex::new(());
+
+    /// Exclusive use of the process-wide ledger for the length of the guard.
+    ///
+    /// Hold it across the WHOLE test body, ❌ never just the part that writes:
+    /// the moment it drops, another test may install its log and take over
+    /// every `register` this one still had coming.
     pub(in crate::file_system::write_operations) struct StoreGuard {
         previous: Option<File>,
         previous_bytes: u64,
+        // Declared last so it's released after `Drop` has put the singleton
+        // back: the next test in line must never see this one's log.
+        _single_file: MutexGuard<'static, ()>,
     }
 
+    /// Takes the ledger for the length of the guard and leaves it EMPTY: no log
+    /// open, nothing in flight, which is exactly where a process begins.
+    pub(in crate::file_system::write_operations) fn take_store() -> StoreGuard {
+        // Poison here just means an earlier test panicked while holding it. The
+        // singleton was restored by that guard's `Drop` on the way out, so the
+        // state is sound and the next test deserves a real verdict, not an
+        // unwrap on someone else's failure.
+        let single_file = SINGLE_FILE.lock_ignore_poison();
+        let mut store = STORE.lock_ignore_poison();
+        let previous = store.log.take();
+        let previous_bytes = std::mem::take(&mut store.logged_bytes);
+        store.live.clear();
+        StoreGuard {
+            previous,
+            previous_bytes,
+            _single_file: single_file,
+        }
+    }
+
+    /// [`take_store`], then points the ledger at `data_dir` so [`super::register`]
+    /// records into a file this test can read back.
     pub(in crate::file_system::write_operations) fn use_store_in(data_dir: &std::path::Path) -> StoreGuard {
+        let guard = take_store();
         let log = File::options()
             .create(true)
             .append(true)
             .open(data_dir.join(super::STORE_FILENAME))
             .expect("open a test in-flight temp ledger");
         log.set_len(0).expect("start the test ledger empty");
-        let mut store = STORE.lock_ignore_poison();
-        let previous = store.log.replace(log);
-        let previous_bytes = std::mem::take(&mut store.logged_bytes);
-        store.live.clear();
-        StoreGuard {
-            previous,
-            previous_bytes,
+        STORE.lock_ignore_poison().log = Some(log);
+        guard
+    }
+
+    impl StoreGuard {
+        /// Drops the process's handle on the ledger without giving the
+        /// singleton back to the next test: what a crash looks like to the next
+        /// launch. The log on disk is left exactly as it was, which is the
+        /// whole point of the fixture.
+        pub(in crate::file_system::write_operations) fn simulate_process_exit(&self) {
+            let mut store = STORE.lock_ignore_poison();
+            store.log = None;
+            store.logged_bytes = 0;
+            store.live.clear();
         }
     }
 
@@ -326,23 +414,19 @@ pub(super) mod test_support {
     }
 
     /// The set the process currently believes is in flight.
+    ///
+    /// Process-wide, so a concurrent transfer test's staged write shows up here
+    /// too: ask whether it holds the path under test, ❌ never whether it's
+    /// empty.
     pub(in crate::file_system::write_operations) fn live_paths() -> Vec<PathBuf> {
         STORE.lock_ignore_poison().live.iter().cloned().collect()
-    }
-
-    /// Forgets everything, so a test starts from a clean process-wide state.
-    pub(in crate::file_system::write_operations) fn clear() {
-        let mut store = STORE.lock_ignore_poison();
-        store.live.clear();
-        store.log = None;
-        store.logged_bytes = 0;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{TestDir, wait_until};
+    use crate::test_support::TestDir;
     use cmdr_fs::staging::StagingTemp;
     use std::sync::Arc;
     use std::time::Duration;
@@ -361,41 +445,35 @@ mod tests {
         let dir = TestDir::new("in_flight_temps_startup_sweep");
         let data_dir = dir.join("data");
         std::fs::create_dir_all(&data_dir).unwrap();
-        test_support::clear();
+        let store = test_support::use_store_in(&data_dir);
 
         // A previous run: it registered a partial and then died.
-        let orphan = {
-            let guard = test_support::use_store_in(&data_dir);
-            let state = state();
-            let temp = StagingTemp::mint(&dir.join("holiday.raw"), None);
-            std::fs::write(temp.path(), b"half a photo").unwrap();
-            register(&state, temp.path());
-            drop(guard);
-            temp.path().to_path_buf()
-        };
+        let state = state();
+        let temp = StagingTemp::mint(&dir.join("holiday.raw"), None);
+        std::fs::write(temp.path(), b"half a photo").unwrap();
+        register(&state, temp.path());
+        let orphan = temp.path().to_path_buf();
         assert!(orphan.exists(), "the fixture partial must be on disk");
         // The process is gone: only the file in the data dir remembers it.
-        test_support::clear();
+        store.simulate_process_exit();
 
-        init_and_sweep(&data_dir);
+        // Joining the sweep is what keeps this honest. It runs off the startup
+        // thread (a partial can live on a dead mount), and a deadline racing it
+        // would fail on load rather than on a real break.
+        init_and_sweep(&data_dir).wait();
 
-        // The sweep runs off the startup thread (a partial can live on a dead
-        // mount), so wait for it rather than racing it.
-        wait_until(
-            Duration::from_secs(5),
-            "the recorded orphan to be swept at startup, with no age gate",
-            || !orphan.exists(),
+        assert!(
+            !orphan.exists(),
+            "the recorded orphan must be swept at startup, with no age gate"
         );
         assert!(
-            test_support::live_paths().is_empty(),
-            "and the ledger must start the new session empty"
+            !test_support::live_paths().contains(&orphan),
+            "and the new session must not start with the swept path in flight"
         );
-        assert_eq!(
-            std::fs::read_to_string(data_dir.join(STORE_FILENAME)).unwrap(),
-            "",
-            "the swept records must be retired on disk too, so the next launch has nothing to redo"
+        assert!(
+            !read_recorded(&data_dir.join(STORE_FILENAME)).contains(&orphan),
+            "the swept record must be retired on disk too, so the next launch has nothing to redo"
         );
-        test_support::clear();
     }
 
     /// A temp that landed is recorded as gone, so replaying the log doesn't
@@ -406,21 +484,17 @@ mod tests {
         let dir = TestDir::new("in_flight_temps_retired");
         let data_dir = dir.join("data");
         std::fs::create_dir_all(&data_dir).unwrap();
-        test_support::clear();
+        let _store = test_support::use_store_in(&data_dir);
 
-        {
-            let _guard = test_support::use_store_in(&data_dir);
-            let state = state();
-            let temp = dir.join("holiday.raw.cmdr-tmp-1234");
-            register(&state, &temp);
-            deregister(&state, &temp);
-        }
+        let state = state();
+        let temp = dir.join("holiday.raw.cmdr-tmp-1234");
+        register(&state, &temp);
+        deregister(&state, &temp);
 
         assert!(
-            read_recorded(&data_dir.join(STORE_FILENAME)).is_empty(),
+            !read_recorded(&data_dir.join(STORE_FILENAME)).contains(&temp),
             "a temp that came and went must replay as nothing in flight"
         );
-        test_support::clear();
     }
 
     /// Compaction runs on size alone, ❌ not on "nothing is in flight" — the
@@ -434,30 +508,34 @@ mod tests {
         let data_dir = dir.join("data");
         std::fs::create_dir_all(&data_dir).unwrap();
         let log_path = data_dir.join(STORE_FILENAME);
-        test_support::clear();
-        let _guard = test_support::use_store_in(&data_dir);
+        let _store = test_support::use_store_in(&data_dir);
 
         let state = state();
         let long_lived = dir.join("a-big-download.iso.cmdr-tmp-0000");
         register(&state, &long_lived);
 
         // Enough churn to cross the compaction threshold several times over.
-        for i in 0..400 {
-            let churn = dir.join(format!("small-file-{i:04}.txt.cmdr-tmp-{i:04}"));
-            register(&state, &churn);
-            deregister(&state, &churn);
+        let churned: Vec<PathBuf> = (0..400)
+            .map(|i| dir.join(format!("small-file-{i:04}.txt.cmdr-tmp-{i:04}")))
+            .collect();
+        for churn in &churned {
+            register(&state, churn);
+            deregister(&state, churn);
         }
 
         assert!(
             std::fs::metadata(&log_path).unwrap().len() < COMPACT_ABOVE_BYTES * 2,
             "the log must stay bounded while a long transfer churns through it"
         );
-        assert_eq!(
-            read_recorded(&log_path),
-            vec![long_lived],
+        let replayed = read_recorded(&log_path);
+        assert!(
+            replayed.contains(&long_lived),
             "compaction must keep the partial that is still being written"
         );
-        test_support::clear();
+        assert!(
+            churned.iter().all(|churn| !replayed.contains(churn)),
+            "and must forget every partial that already landed"
+        );
     }
 
     /// The log is a stream of appends, so the process can die mid-`write`. The
@@ -483,20 +561,22 @@ mod tests {
         let dir = TestDir::new("in_flight_temps_already_gone");
         let data_dir = dir.join("data");
         std::fs::create_dir_all(&data_dir).unwrap();
+        let gone = dir.join("gone.txt.cmdr-tmp-abc");
         std::fs::write(
             data_dir.join(STORE_FILENAME),
-            format!(
-                "+{}\n",
-                serde_json::to_string(&dir.join("gone.txt.cmdr-tmp-abc")).unwrap()
-            ),
+            format!("+{}\n", serde_json::to_string(&gone).unwrap()),
         )
         .unwrap();
-        test_support::clear();
+        let _store = test_support::take_store();
 
-        init_and_sweep(&data_dir);
+        // Joining also keeps the sweep from outliving `dir`, which would leave
+        // it walking a directory `TestDir` is deleting.
+        init_and_sweep(&data_dir).wait();
 
-        assert!(test_support::live_paths().is_empty());
-        test_support::clear();
+        assert!(
+            !test_support::live_paths().contains(&gone),
+            "a record whose file is already gone must not come back as in flight"
+        );
     }
 
     /// The sweep deletes files. It follows the ledger, so it checks that what
@@ -510,11 +590,11 @@ mod tests {
         std::fs::create_dir_all(&data_dir).unwrap();
         let precious = dir.join("taxes.pdf");
         std::fs::write(&precious, b"the user's own file").unwrap();
-        // A real temp the sweep visits AFTER the precious file, so the test has
-        // something to wait for: its removal means the sweep already had its
-        // chance at `taxes.pdf`. The `zz-` prefix is what puts it later — the
-        // sweep walks the replayed set in path order.
-        let real_temp = dir.join("zz-holiday.raw.cmdr-tmp-9999");
+        // A real temp recorded alongside it, as the positive control: with the
+        // sweep joined below, this one being gone proves the sweep ran and does
+        // delete, so `taxes.pdf` surviving is the marker check saving it rather
+        // than the sweep never getting that far.
+        let real_temp = dir.join("holiday.raw.cmdr-tmp-9999");
         std::fs::write(&real_temp, b"half a photo").unwrap();
         std::fs::write(
             data_dir.join(STORE_FILENAME),
@@ -525,18 +605,18 @@ mod tests {
             ),
         )
         .unwrap();
-        test_support::clear();
+        let _store = test_support::take_store();
 
-        init_and_sweep(&data_dir);
+        init_and_sweep(&data_dir).wait();
 
-        wait_until(Duration::from_secs(5), "the startup sweep to finish", || {
-            !real_temp.exists()
-        });
+        assert!(
+            !real_temp.exists(),
+            "the sweep must remove the recorded partial carrying our scratch marker"
+        );
         assert!(
             precious.exists(),
             "the sweep must only ever remove files carrying our scratch marker"
         );
-        test_support::clear();
     }
 
     /// Registering and deregistering keep both ledgers in step, so nothing
@@ -546,20 +626,19 @@ mod tests {
         let dir = TestDir::new("in_flight_temps_both_ledgers");
         let data_dir = dir.join("data");
         std::fs::create_dir_all(&data_dir).unwrap();
-        test_support::clear();
-        let _guard = test_support::use_store_in(&data_dir);
+        let _store = test_support::use_store_in(&data_dir);
 
         let state = state();
         let temp = dir.join("notes.txt.cmdr-tmp-1234");
         register(&state, &temp);
         assert_eq!(state.in_flight_temps.lock_ignore_poison().len(), 1);
-        assert_eq!(test_support::live_paths(), vec![temp.clone()]);
+        assert!(test_support::live_paths().contains(&temp));
 
         deregister(&state, &temp);
         assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
-        assert!(test_support::live_paths().is_empty());
+        assert!(!test_support::live_paths().contains(&temp));
         assert!(
-            read_recorded(&data_dir.join(STORE_FILENAME)).is_empty(),
+            !read_recorded(&data_dir.join(STORE_FILENAME)).contains(&temp),
             "the log must replay as nothing in flight"
         );
     }

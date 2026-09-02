@@ -38,7 +38,8 @@ The full top-level inventory is here:
 - The in-flight ledgers and what reverses them: `ledger.rs` (`CopyTransaction` and `WrittenFile`, the vocabulary of what
   an operation currently has at the destination, plus the `Drop` panic net) and `reversal.rs` (the policy over it: the
   recheck before each destructive act, and `ReversalTally`). `in_flight_temps.rs` registers every `.cmdr-` temp so a
-  startup sweep can find one an abandoned run left behind.
+  startup sweep can find one an abandoned run left behind; see § "Testing the in-flight temp ledger" for the two rules
+  its process-wide singleton imposes on tests.
 - Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs` (the scan-progress seam the drivers
   feed), `scan_watchdog.rs` (the inactivity bound on a preview), `compress_estimate.rs`. Conflicts and overwrite:
   `conflict.rs` (policy), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
@@ -966,3 +967,23 @@ the operation log stops claiming a smaller batch than the one that ran (they wer
 reach undo: `read_rollback_units_page` binds `ItemOutcome::Done`, which is why `restore_move`'s non-`Done` guard is
 defensive rather than reachable. Pinned by
 `a_skipped_row_is_logged_but_never_offered_to_undo_as_a_rollback_unit`.
+
+## Testing the in-flight temp ledger
+
+`in_flight_temps.rs` keeps ONE process-wide `STORE` for the whole test binary, and two rules follow from that. Ignore
+either and the tests fail on load rather than on a break, which is worse than not having them.
+
+- **Take `test_support::take_store()` (or `use_store_in`) for the WHOLE test body**, ❌ never for just the part that
+  writes. Installing a log into the singleton redirects every `register` in the process into that file, from any
+  thread, so two tests doing it at once put one test's records in the other's log — and leave a startup-sweep fixture
+  replaying an empty log, sweeping nothing. The guard holds a `SINGLE_FILE` mutex that serializes them; releasing it
+  early hands the singleton to the next test while this one is still recording. `simulate_process_exit()` is how a test
+  detaches the process's handle (the crash it's reproducing) without giving the singleton back.
+- **Assert about the path under test, ❌ never about the whole ledger.** `live_paths()` and the log file are shared with
+  every transfer test that stages a write without holding the guard, so `live_paths().is_empty()` and
+  `read_recorded(..).is_empty()` are assertions about the rest of the suite. Ask `contains(&subject)` instead; it pins
+  the same regression.
+
+**The sweep signals completion, so no test needs a deadline.** `init_and_sweep` returns a `SweepHandle`; the launch path
+drops it (waiting there would block on a dead mount for minutes), and a test calls `.wait()` to join the sweep thread.
+Joining also keeps the sweep from outliving the `TestDir` it is walking.
