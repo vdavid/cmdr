@@ -81,7 +81,6 @@
     "crates/cmdr-index/src/indexing/store/entries.rs": 803,
     "crates/cmdr-index/src/indexing/tests/integration_tests.rs": 1227,
     "crates/cmdr-index/src/indexing/tests/stress_tests_concurrency.rs": 1301,
-    "crates/cmdr-index/src/indexing/writer/entries/tests.rs": 2138,
     "crates/cmdr-index/src/indexing/writer/mod.rs": 1625,
     "crates/cmdr-index/src/indexing/writer/tests.rs": 923,
     "crates/cmdr-index/src/media_index/ann/tests.rs": 833,
