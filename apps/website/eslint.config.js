@@ -7,6 +7,7 @@ import js from '@eslint/js'
 import prettierConfig from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 import astro from 'eslint-plugin-astro'
+import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import globals from 'globals'
 import noConfusableCallbackParams from '../../eslint-plugins/no-confusable-callback-params.js'
 
@@ -118,6 +119,26 @@ export default tseslint.config(
     rules: {
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
+    },
+  },
+  {
+    // Tailwind class hygiene. `enforce-canonical-classes` is the ESLint twin of Tailwind IntelliSense's
+    // `suggestCanonicalClasses` (set `"tailwindCSS.lint.suggestCanonicalClasses": "ignore"` in your editor so
+    // it isn't reported twice). It subsumes `enforce-shorthand-classes`, `enforce-consistent-important-position`,
+    // and `enforce-consistent-variable-syntax`, so those stay off. `no-unknown-classes` stays off too: the site
+    // mixes Tailwind with BEM classes styled in scoped `<style>` blocks, which the plugin can't see. Boots
+    // Tailwind itself, so it adds ~1s of startup. Rationale and the canonical-form contract: `DETAILS.md`.
+    files: ['src/**/*.astro', 'src/**/*.ts'],
+    plugins: { 'better-tailwindcss': betterTailwindcss },
+    // The plugin's default selectors already cover Astro's `class:list` (strings and object keys).
+    settings: { 'better-tailwindcss': { entryPoint: 'src/styles/global.css' } },
+    rules: {
+      'better-tailwindcss/enforce-canonical-classes': 'error',
+      'better-tailwindcss/enforce-consistent-class-order': 'error',
+      'better-tailwindcss/no-conflicting-classes': 'error',
+      'better-tailwindcss/no-deprecated-classes': 'error',
+      'better-tailwindcss/no-duplicate-classes': 'error',
+      'better-tailwindcss/no-unnecessary-whitespace': 'error',
     },
   },
   {
