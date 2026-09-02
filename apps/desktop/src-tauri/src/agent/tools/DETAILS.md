@@ -55,15 +55,22 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   window. With `find: { query, regex?, caseSensitive? }` the window is replaced by `find`: the matching lines (up to
   50, each `{ line, matches, text }` with `text` a 300-char snippet around the first match), `totalMatches`,
   `matchesCapped` (the viewer's 10,000-match cap), `returnedLines` / `truncated`, and `scanIncomplete` with
-  `bytesScanned` / `totalBytes` when the deadline stopped the scan. One `find` applies to every text path in the call;
-  images give `format` + dimensions, the camera's `exif` when the container carries a block (`dateTaken`,
+  `bytesScanned` / `totalBytes` when the deadline stopped the scan. One `find` applies to every text and PDF path in
+  the call. A PDF gives `version`, the exact `pageCount`, the Info dictionary's `title` and `author`, and `pages`: a
+  page window (`pageStart` + `maxPages`, default 3, max 20; `{ page, text, truncated, unparseable? }` per page, each
+  page trimmed and cut at 8,000 chars, whole pages only up to the row's 16,000, with `returnedPages` / `truncated`),
+  or with `find` the matching lines each carrying `page` (`line` counts within the page; `scanIncomplete` +
+  `pagesScanned` when the deadline or the 50-line cap left pages undecoded). `hasTextLayer` is `false` when every
+  decoded page was whitespace (a scan), absent when none decoded; `textUnavailable` says `encrypted` (no strings read
+  either), `tooLarge` (over 64 MiB, never parsed), or `unparseable` (the parser refused or panicked, contained), with
+  the header `version` still answered. Images give `format` + dimensions, the camera's `exif` when the container carries a block (`dateTaken`,
   `cameraMake`, `cameraModel`, `lens`, `orientation { value, spoken }`, `exposureTime`, `fNumber`, `iso`,
   `focalLength`, and `gps { latitude, longitude }` in decimal degrees: a photo's coordinates are a home address, and
   they egress on request), and point at `image_facts`; an archive (`.zip`, tar, 7z), or a directory inside
   one, lists its immediate children (`format`, `inner`, up to 200 `entries` with `isDir`, `size` + `sizeHuman`,
   `modified` + `modifiedHuman`, `encrypted`, plus `total` / `returned` / `truncated` and `hasEncryptedEntries`), and a
-  FILE inside an archive is read as its own kind through the viewer's bounded temp; empty and binary (which today
-  includes PDFs) carry metadata only. Per-path statuses: `ok` / `folder` / `missing` /
+  FILE inside an archive is read as its own kind through the viewer's bounded temp; empty and binary carry metadata
+  only. Per-path statuses: `ok` / `folder` / `missing` /
   `unreadable { permission | io | encrypted | corrupt | unsupported | tooLargeToExtract }` / `unreachable` /
   `unsupportedVolume`. The call reports `total` / `returned` / `truncated` and names every path with no row in
   `unanswered`. The sole disk reader among the handlers; how it reads and how it times out: § Reading a
@@ -144,14 +151,14 @@ folder is for. It is also the mechanism behind the injection risk the prompt fen
 ## Reading a file the way the viewer does (`inspect_file`)
 
 The tool re-derives nothing the viewer already ships. Per behavior, the symbol it calls (`read/inspect/mod.rs`,
-`text.rs`, `archive.rs`):
+`text.rs`, `pdf.rs`, `archive.rs`):
 
 - **Head**: one 64 KB read per file. `encoding::detect_from_head` takes all of it; the classifier takes the first
   `content_kind::CLASSIFY_HEAD_LEN` bytes of the same buffer.
 - **Kind**: `file_viewer::content_kind::classify_viewer_content(head, None, true)`. `ext = None` keeps SVG on the text
   path (its markup says more to a model than "an image"); `is_local = true` because the row is already a local file.
   `Image` → `content_kind::media_mime` for the format and `media::read_image_dimensions` for the size (`None` for HEIC).
-  `Pdf` → `binary` (no text parser here).
+  `Pdf` → `pdf.rs` (below).
 - **EXIF** (`exif.rs`): for a JPEG / TIFF / HEIC / PNG / WebP row (by the format above; GIF and BMP carry none and are
   never opened for it), a second open through `exif::Reader::read_from_container` on a `BufReader<File>`
   (`kamadak-exif` needs a seekable reader: HEIF boxes point across the file), then the pure `exif_facts`. `dateTaken`
@@ -191,6 +198,25 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   scan that didn't reach the cap or the end (`bytesScanned` / `totalBytes` say where, spoken twins beside them). A
   `find` row never sets `lineNumbersApproximate` (nothing in it is estimated) and has `totalLines` only for a FullLoad
   file. Non-text rows are untouched by `find`.
+- **PDF** (`pdf.rs`): the one kind the viewer doesn't decode for us, so it rides `pdf-extract` 0.12.0 (which
+  re-exports `lopdf` 0.42, so page tree, header, and Info dict come through the same crate) with every parser call
+  inside `crash_reporter::contain_panics` (`crash_reporter/DETAILS.md` § The one exemption): the closures wrap the
+  foreign calls only, never our shapers. Order: `header_version` over the classifier's head bytes (ours, so the version
+  survives a refused file), the 64 MiB `MAX_PDF_BYTES` gate (over it, `tooLarge` and no read), `std::fs::read`,
+  `Document::load_mem`, `get_pages().len()` (exact; a tree that panics the parser is `unparseable`), `is_encrypted()`
+  (→ `encrypted`, page count kept, Info strings not read: they're ciphertext), then `Title` / `Author` through
+  `doc.dereference` + `decode_text_string` (PDFDocEncoding or UTF-16, trimmed, blank is absent). Page text is
+  `output_doc_page(&doc, &mut PlainTextOutput::new(&mut buf), n)`, one page at a time so a range never decodes the
+  rest; a refusal or a contained panic marks that page `unparseable` and the loop continues. `window_from_pages` and
+  `find_in_pages` are pure over an `extract(page)` closure (tests inject page texts): the window trims each page, cuts
+  at `MAX_PAGE_CHARS` (8,000: two dense pages per row; a whole page the model can re-ask for by number beats a slice
+  it can't, since there is no offset inside a page), carries whole pages until the next would break
+  `MAX_WINDOW_CHARS` (the first always fits), and stops on the cancel flag; `find` runs the call's `Matcher` per
+  trimmed line of each page in order, groups by line with the first match's byte offset feeding `snippet_around_byte`,
+  finishes the page that fills `MAX_FIND_LINES` and then stops (decoding a 300-page manual only to count is not worth
+  the deadline), which `scanIncomplete` + `pagesScanned` report; `matchesCapped` at the viewer's `MAX_SEARCH_MATCHES`
+  is its own reason to stop, as on text. `hasTextLayer` is a verdict over decoded pages only. The whole file is read
+  into memory (bounded by the gate); nothing is cached between calls.
 - **Not local**: `mcp::is_virtual_path` (`mtp://`, direct `smb://`) → `unsupportedVolume`, and so does a scheme-less
   path whose owning volume (`VolumeManager::mount_id_for_path`, else `root`) reports
   `!supports_local_fs_access()`. A `missing` there would be a lie the model relays. An OS-mounted share

@@ -198,6 +198,13 @@ with their own API key. Privacy posture:
   (`apps/desktop/src-tauri/src/agent/tools/read/inspect/exif.rs`) carries the camera's date taken, make and model, lens,
   exposure settings, and `gps { latitude, longitude }` when the photo has them: a photo's coordinates are a home
   address. Same consent gate, same text-only DTO (pinned by a test); the consent copy has to name it before this ships.
+- **`inspect_file` egresses PDF text, title, and author on request.** A PDF row
+  (`apps/desktop/src-tauri/src/agent/tools/read/inspect/pdf.rs`) carries the Info dictionary's title and author and the
+  text of the requested pages (three by default, at most 20 per call, 8,000 chars a page under the row's 16,000) or,
+  with `find`, the matching lines with their page. A contract's pages are the contract. Same consent gate, same
+  text-only DTO (pinned by a test); the parser runs inside `crash_reporter::contain_panics`, so a malformed PDF is a
+  `warn` line and an `unparseable` row, never a crash report carrying its bytes. The consent copy has to name it before
+  this ships.
 - **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
   to a local folder and is never transmitted.
 

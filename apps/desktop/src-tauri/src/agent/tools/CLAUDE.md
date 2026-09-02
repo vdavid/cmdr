@@ -7,7 +7,7 @@ and typed result shapes colocated here. Depth: `DETAILS.md`.
 ## Module map
 
 - `read/`: one file per family — `state`, `pane_listing`, `listing`, `importance`, `volumes` — plus `inspect/` (DTOs +
-  pipeline, `text.rs` the window, `find.rs` the search, `archive.rs` archives, `runner.rs` the timeouts). The
+  pipeline, `text.rs`, `find.rs`, `pdf.rs`, `archive.rs`, `exif.rs`, `runner.rs` the timeouts). The
   `operations_*`, `search_photos`, and `image_facts` handlers are shared with the ai-client view, in `mcp/executor/`.
 - `propose/`: server-owned rename proposals (`propose_rename_plan`) and the image-facts evidence ledger.
   `propose/CLAUDE.md`.
@@ -47,8 +47,8 @@ and typed result shapes colocated here. Depth: `DETAILS.md`.
   can't hang a tool. The one exception is `inspect_file`: up to 200 files per call on blocking threads (5 s per path,
   20 s per call); past a deadline the row is `unreachable`, the thread is ABANDONED, unanswered paths named. It
   rides `file_viewer`'s seams and the pane's archive routing, never its own (`DETAILS.md` § Reading a file the way the
-  viewer does), and alone egresses file CONTENTS (bounded text windows, `find` snippets, archive entry names; never
-  bytes). ❌ The consent copy must name it before release.
+  viewer does), and alone egresses file CONTENTS (bounded text windows, PDF pages, `find` snippets, archive entry
+  names, EXIF; never bytes). ❌ The consent copy must name it before release.
 - **The registry couples `mcp` ↔ `agent`** (D49, intended). New agent tool = one registry entry + handler/schema/result
   here + a `ToolId` variant + its name in `EXPECTED_AGENT_TOOL_NAMES` and `ToolId::KNOWN` + a rail label in
   `ask-cmdr-labels.ts` (miss it and the tool line shows "Working"; a test pins it). It also moves

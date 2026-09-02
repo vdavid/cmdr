@@ -25,13 +25,6 @@ thread_local! {
 /// Wrap ONLY the foreign parser calls, never our own shapers around them: a panic in our
 /// code is a bug and has to keep reporting. The mark is restored (not just cleared) on the
 /// way out, so a nested call can't unmark its caller.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the PDF reader in `agent/tools/read/inspect` is the first caller"
-    )
-)]
 pub fn contain_panics<T>(f: impl FnOnce() -> T) -> Option<T> {
     let outer = CONTAINED.replace(true);
     let outcome = catch_unwind(AssertUnwindSafe(f));

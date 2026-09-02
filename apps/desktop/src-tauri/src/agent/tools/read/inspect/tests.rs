@@ -16,7 +16,11 @@ use crate::test_support::TestDir;
 
 /// A fresh window request: the defaults the tool uses when the caller says nothing.
 fn opts(start_line: usize, max_lines: usize) -> WindowOpts {
-    WindowOpts { start_line, max_lines }
+    WindowOpts {
+        start_line,
+        max_lines,
+        ..WindowOpts::default()
+    }
 }
 
 fn inspect(path: &Path) -> FileRow {
@@ -194,7 +198,7 @@ fn nul_bytes_make_a_file_binary_and_an_svg_stays_text() {
 }
 
 #[test]
-fn an_empty_file_is_empty_and_a_pdf_is_binary() {
+fn an_empty_file_is_empty_and_a_pdf_is_a_pdf_row() {
     let dir = TestDir::new("inspect_empty_pdf");
     let empty = dir.join("nothing.txt");
     std::fs::write(&empty, b"").unwrap();
@@ -202,9 +206,14 @@ fn an_empty_file_is_empty_and_a_pdf_is_binary() {
     assert_eq!(file.content, Content::Empty {});
     assert_eq!((file.size_bytes, file.size_human.as_deref()), (Some(0), Some("0 B")));
 
+    // The kind comes from the bytes; what the parser makes of them is `pdf_tests.rs`.
     let pdf = dir.join("doc.pdf");
     std::fs::write(&pdf, b"%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj\n%%EOF\n").unwrap();
-    assert_eq!(content_of(&inspect(&pdf)), &Content::Binary {});
+    assert!(
+        matches!(content_of(&inspect(&pdf)), Content::Pdf(p) if p.version.as_deref() == Some("1.7")),
+        "{:?}",
+        content_of(&inspect(&pdf))
+    );
 }
 
 #[test]

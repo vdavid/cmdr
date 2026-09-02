@@ -107,10 +107,7 @@ fn write_bytes(dir: &TestDir, name: &str, bytes: &[u8]) -> PathBuf {
 fn inspect(path: &Path) -> FileRow {
     inspect_path(
         path.to_str().unwrap(),
-        &TextAsk::Window(WindowOpts {
-            start_line: 1,
-            max_lines: 200,
-        }),
+        &TextAsk::Window(WindowOpts::default()),
         &AtomicBool::new(false),
     )
 }
@@ -290,10 +287,7 @@ fn an_image_inside_a_zip_carries_its_exif() {
     };
     let row = inspect_path_with(
         zip.join("shot.jpg").to_str().unwrap(),
-        &TextAsk::Window(WindowOpts {
-            start_line: 1,
-            max_lines: 200,
-        }),
+        &TextAsk::Window(WindowOpts::default()),
         &AtomicBool::new(false),
         &extract,
     );

@@ -8,10 +8,22 @@
       "url": "https://github.com/oyvindln/adler2"
     },
     {
+      "name": "adobe-cmap-parser",
+      "version": "0.4.1",
+      "license": "MIT",
+      "url": "https://github.com/jrmuizel/adobe-cmap-parser"
+    },
+    {
       "name": "aead",
       "version": "0.6.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/RustCrypto/traits"
+    },
+    {
+      "name": "aes",
+      "version": "0.8.4",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/RustCrypto/block-ciphers"
     },
     {
       "name": "aes",
@@ -303,6 +315,12 @@
     },
     {
       "name": "block-padding",
+      "version": "0.3.3",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/RustCrypto/utils"
+    },
+    {
+      "name": "block-padding",
       "version": "0.4.2",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/RustCrypto/utils"
@@ -417,6 +435,12 @@
     },
     {
       "name": "cbc",
+      "version": "0.1.2",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/RustCrypto/block-modes"
+    },
+    {
+      "name": "cbc",
       "version": "0.2.1",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/RustCrypto/block-modes"
@@ -438,6 +462,12 @@
       "version": "0.7.3",
       "license": "MIT",
       "url": "https://github.com/mdsteele/rust-cfb"
+    },
+    {
+      "name": "cff-parser",
+      "version": "0.2.0",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/jrmuizel/cff-parser"
     },
     {
       "name": "cfg-if",
@@ -468,6 +498,12 @@
       "version": "0.4.45",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/chronotope/chrono"
+    },
+    {
+      "name": "cipher",
+      "version": "0.4.4",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/RustCrypto/traits"
     },
     {
       "name": "cipher",
@@ -920,6 +956,12 @@
       "url": "https://github.com/dtolnay/dyn-clone"
     },
     {
+      "name": "ecb",
+      "version": "0.1.2",
+      "license": "MIT",
+      "url": "https://github.com/magic-akari/ecb"
+    },
+    {
       "name": "ecdsa",
       "version": "0.17.0",
       "license": "Apache-2.0 OR MIT",
@@ -1002,6 +1044,12 @@
       "version": "0.3.14",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/lambda-fairy/rust-errno"
+    },
+    {
+      "name": "euclid",
+      "version": "0.20.14",
+      "license": "MIT  OR  Apache-2.0",
+      "url": "https://github.com/servo/euclid"
     },
     {
       "name": "eventsource-stream",
@@ -1935,6 +1983,12 @@
     },
     {
       "name": "inout",
+      "version": "0.1.4",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/RustCrypto/utils"
+    },
+    {
+      "name": "inout",
       "version": "0.2.2",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/RustCrypto/utils"
@@ -2090,6 +2144,12 @@
       "url": "https://gitlab.com/kornelski/loop9.git"
     },
     {
+      "name": "lopdf",
+      "version": "0.42.0",
+      "license": "MIT",
+      "url": "https://github.com/J-F-Liu/lopdf.git"
+    },
+    {
       "name": "lz4_flex",
       "version": "0.13.1",
       "license": "MIT",
@@ -2136,6 +2196,12 @@
       "version": "0.1.1",
       "license": "MIT",
       "url": "https://github.com/shssoichiro/maybe-rayon"
+    },
+    {
+      "name": "md-5",
+      "version": "0.10.6",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/RustCrypto/hashes"
     },
     {
       "name": "md-5",
@@ -2696,6 +2762,12 @@
       "url": "https://github.com/RustCrypto/password-hashes"
     },
     {
+      "name": "pdf-extract",
+      "version": "0.12.0",
+      "license": "MIT",
+      "url": "https://github.com/jrmuizel/pdf-extract"
+    },
+    {
       "name": "pem-rfc7468",
       "version": "1.0.0",
       "license": "Apache-2.0 OR MIT",
@@ -2822,10 +2894,22 @@
       "url": "https://github.com/RustCrypto/universal-hashes"
     },
     {
+      "name": "pom",
+      "version": "1.1.0",
+      "license": "MIT",
+      "url": "https://github.com/J-F-Liu/pom.git"
+    },
+    {
       "name": "positioned-io",
       "version": "0.3.5",
       "license": "MIT",
       "url": "https://github.com/vasi/positioned-io"
+    },
+    {
+      "name": "postscript",
+      "version": "0.14.1",
+      "license": "Apache-2.0 OR MIT",
+      "url": "https://github.com/bodoni/postscript"
     },
     {
       "name": "potential_utf",
@@ -2958,6 +3042,12 @@
       "version": "0.9.5",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/rust-random/rand"
+    },
+    {
+      "name": "rangemap",
+      "version": "1.8.0",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/jeffparsons/rangemap"
     },
     {
       "name": "rav1e",
@@ -3518,6 +3608,12 @@
       "url": "https://github.com/servo/string-cache"
     },
     {
+      "name": "stringprep",
+      "version": "0.1.5",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/sfackler/rust-stringprep"
+    },
+    {
       "name": "strsim",
       "version": "0.11.1",
       "license": "MIT",
@@ -3962,6 +4058,12 @@
       "url": "https://github.com/seanmonstar/try-lock"
     },
     {
+      "name": "ttf-parser",
+      "version": "0.25.1",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/harfbuzz/ttf-parser"
+    },
+    {
       "name": "tungstenite",
       "version": "0.28.0",
       "license": "MIT OR Apache-2.0",
@@ -3972,6 +4074,12 @@
       "version": "2.1.2",
       "license": "MIT",
       "url": "https://github.com/shepmaster/twox-hash"
+    },
+    {
+      "name": "type1-encoding-parser",
+      "version": "0.1.1",
+      "license": "MIT",
+      "url": "https://github.com/jrmuizel/type1-encoding-parser"
     },
     {
       "name": "typed-path",
@@ -4034,6 +4142,12 @@
       "url": "https://github.com/seanmonstar/unicase"
     },
     {
+      "name": "unicode-bidi",
+      "version": "0.3.18",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/servo/unicode-bidi"
+    },
+    {
       "name": "unicode-bom",
       "version": "2.0.3",
       "license": "Apache-2.0",
@@ -4050,6 +4164,12 @@
       "version": "0.1.25",
       "license": "MIT OR Apache-2.0",
       "url": "https://github.com/unicode-rs/unicode-normalization"
+    },
+    {
+      "name": "unicode-properties",
+      "version": "0.1.4",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://github.com/unicode-rs/unicode-properties"
     },
     {
       "name": "unicode-segmentation",

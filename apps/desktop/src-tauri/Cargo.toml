@@ -119,6 +119,13 @@ image = "0.25.10"
 # it used. 0.6.1 verified on crates.io and GitHub 2026-09-02 (published 2024-11-06; the
 # EXIF spec doesn't move).
 exif = { package = "kamadak-exif", version = "0.6.1" }
+# PDF text for `inspect_file`'s PDF rows (page text, page count, title and author): the
+# one mature pure-Rust extractor with CMap handling for CID fonts, MIT. It re-exports
+# `lopdf`, so page count, header version, and the Info dict come through it with no second
+# dependency line. Its parser carries ~100 panic sites on untrusted input, so every call
+# runs inside `crash_reporter::contain_panics`. 0.12.0 verified on crates.io and GitHub
+# 2026-09-02 (published 2026-06-25).
+pdf-extract = "0.12.0"
 mime_guess = "2"
 base64 = "0.23.0"
 rayon = "1.11.0"

@@ -48,10 +48,7 @@ fn inspect(path: &Path) -> FileRow {
     ensure_root_volume();
     inspect_path(
         path.to_str().unwrap(),
-        &TextAsk::Window(WindowOpts {
-            start_line: 1,
-            max_lines: 200,
-        }),
+        &TextAsk::Window(WindowOpts::default()),
         &AtomicBool::new(false),
     )
 }
@@ -64,10 +61,7 @@ fn inspect_extracting_to(path: &Path, extract_dir: &Path, cap: u64) -> FileRow {
         |requested: &Path, volume_id: &str| extract_if_archive_inner_with(requested, volume_id, extract_dir, cap);
     inspect_path_with(
         path.to_str().unwrap(),
-        &TextAsk::Window(WindowOpts {
-            start_line: 1,
-            max_lines: 200,
-        }),
+        &TextAsk::Window(WindowOpts::default()),
         &AtomicBool::new(false),
         &extract,
     )

@@ -28,6 +28,9 @@ pub(crate) const FIND_SNIPPET_CHARS: usize = 300;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FindLine {
+    /// 1-based page, on a PDF row only: `line` then counts within that page's text.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page: Option<usize>,
     /// 1-based, as the window's `startLine`, so "read around line 812" is `startLine: 812`.
     pub line: usize,
     /// Matches on this line.
@@ -52,12 +55,18 @@ pub struct FindHits {
     pub returned_lines: usize,
     /// `true` when matching lines exist past the carried ones.
     pub truncated: bool,
-    /// `true` when the path's deadline stopped the scan before the end of the file:
-    /// `totalMatches` covers only `bytesScanned` of `totalBytes`.
+    /// `true` when the scan stopped before the end of the file: the path's deadline, or,
+    /// on a PDF, the line cap (decoding pages past the fiftieth hit only to count is not
+    /// worth the deadline). `totalMatches` then covers only `bytesScanned` of `totalBytes`
+    /// (text) or `pagesScanned` of the row's `pageCount` (PDF).
     #[serde(skip_serializing_if = "is_false")]
     pub scan_incomplete: bool,
+    /// On a PDF row, how many pages the scan decoded before it stopped. Absent when the
+    /// scan finished, and on text rows.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pages_scanned: Option<usize>,
     /// Where an incomplete scan stopped, by the backend's own progress count. Absent
-    /// when the scan finished.
+    /// when the scan finished, and on PDF rows.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bytes_scanned: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -126,6 +135,7 @@ pub(crate) fn find_hits(
         // The backends keep `\r` on CRLF files; the model gains nothing from it.
         let line = raw.strip_suffix('\r').unwrap_or(raw);
         lines.push(FindLine {
+            page: None,
             line: group.line + 1,
             matches: group.matches,
             text: snippet_around(line, group.first_column, FIND_SNIPPET_CHARS),
@@ -140,6 +150,7 @@ pub(crate) fn find_hits(
         lines,
         returned_lines,
         scan_incomplete,
+        pages_scanned: None,
         bytes_scanned: scan_incomplete.then_some(scanned),
         bytes_scanned_human: scan_incomplete.then(|| format_size(scanned)),
         total_bytes: scan_incomplete.then_some(total_bytes),
@@ -156,12 +167,18 @@ pub(crate) fn find_hits(
 /// full. The column is converted through the UTF-16 clamp, never read as a char index:
 /// on a line of emoji those differ by a factor of two.
 pub(crate) fn snippet_around(line: &str, match_column_utf16: usize, max_chars: usize) -> String {
+    let match_byte = clamp_utf16_offset_to_byte(line, u32::try_from(match_column_utf16).unwrap_or(u32::MAX));
+    snippet_around_byte(line, match_byte, max_chars)
+}
+
+/// [`snippet_around`] for a match the caller already has as a byte index (what
+/// `Matcher::find_matches` reports). `match_byte` must sit on a char boundary.
+pub(crate) fn snippet_around_byte(line: &str, match_byte: usize, max_chars: usize) -> String {
     let total_chars = line.chars().count();
     if total_chars <= max_chars {
         return line.to_string();
     }
-    let match_byte = clamp_utf16_offset_to_byte(line, u32::try_from(match_column_utf16).unwrap_or(u32::MAX));
-    let match_char = line[..match_byte].chars().count();
+    let match_char = line[..match_byte.min(line.len())].chars().count();
     let start = match_char.saturating_sub(max_chars / 3).min(total_chars - max_chars);
     let end = start + max_chars;
 

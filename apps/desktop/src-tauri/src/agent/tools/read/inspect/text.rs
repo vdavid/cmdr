@@ -141,7 +141,7 @@ pub(crate) fn window_from_chunk(
 }
 
 /// Cut `line` to `max` chars (never mid-codepoint), reporting whether it was cut.
-fn cut_chars(line: &str, max: usize) -> (&str, bool) {
+pub(super) fn cut_chars(line: &str, max: usize) -> (&str, bool) {
     match line.char_indices().nth(max) {
         Some((byte_idx, _)) => (&line[..byte_idx], true),
         None => (line, false),

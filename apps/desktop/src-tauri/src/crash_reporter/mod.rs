@@ -23,13 +23,6 @@ mod tests;
 use crate::config;
 use crate::redact;
 use crate::settings;
-#[cfg_attr(
-    not(test),
-    expect(
-        unused_imports,
-        reason = "the PDF reader in `agent/tools/read/inspect` is the first caller"
-    )
-)]
 pub use contain::contain_panics;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};

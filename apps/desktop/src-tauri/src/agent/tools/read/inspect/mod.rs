@@ -17,8 +17,11 @@
 //!   one, listed through the same volume routing the pane browses with; a FILE inside an
 //!   archive is extracted to the viewer's bounded temp and read as its own kind
 //!   (`archive.rs`).
-//! - **empty** / **binary**: metadata only. PDFs are `binary` here: their text needs a
-//!   parser this tool doesn't carry.
+//! - **pdf**: the header version, the exact page count, title and author, and the text of
+//!   a page range (`pageStart` + `maxPages`, default three), or with `find` the matching
+//!   lines with their page (`pdf.rs`). A scan says `hasTextLayer: false`; an encrypted or
+//!   damaged file says why its text is missing.
+//! - **empty** / **binary**: metadata only.
 //!
 //! Every path gets a typed status (`ok` / `folder` / `missing` / `unreadable` /
 //! `unreachable` / `unsupportedVolume`), the whole answer is cut to the tool-result
@@ -47,6 +50,9 @@ mod exif_tests;
 mod find;
 #[cfg(test)]
 mod find_tests;
+mod pdf;
+#[cfg(test)]
+mod pdf_tests;
 mod runner;
 #[cfg(test)]
 mod tests;
@@ -78,6 +84,8 @@ pub use archive::{ArchiveContent, ArchiveEntry};
 use archive::{ExtractFn, Routed};
 pub use exif::{Degrees, ExifFacts, GpsCoordinates, Orientation};
 pub use find::{FindHits, FindLine};
+use pdf::{DEFAULT_MAX_PAGES, MAX_MAX_PAGES};
+pub use pdf::{PdfContent, PdfPage, PdfTextUnavailable, PdfWindow};
 use runner::{InspectFn, RunnerConfig};
 pub use text::TextWindow;
 
@@ -189,6 +197,7 @@ pub enum Content {
     Text(TextContent),
     Image(ImageContent),
     Archive(ArchiveContent),
+    Pdf(PdfContent),
 }
 
 /// A file that was read: its metadata and per-kind content. Boxed inside [`FileRow::Ok`]
@@ -300,7 +309,15 @@ pub fn inspect_file_schema() -> Value {
                     "caseSensitive": { "type": "boolean" }
                 },
                 "required": ["query"],
-                "description": "Search text files; matching lines replace the window."
+                "description": "Search text files and PDFs; matching lines replace the window."
+            },
+            "pageStart": {
+                "type": "integer", "minimum": 1,
+                "description": "PDF: first page to read (default 1)."
+            },
+            "maxPages": {
+                "type": "integer", "minimum": 1, "maximum": MAX_MAX_PAGES,
+                "description": "PDF: pages to read (default 3)."
             }
         },
         "required": ["paths"],
@@ -308,15 +325,32 @@ pub fn inspect_file_schema() -> Value {
     })
 }
 
-/// Which lines a text row's window covers. Copied into every path's read.
+/// Which lines a text row's window covers, and which pages a PDF row's. Copied into every
+/// path's read; a text file ignores the page half and a PDF the line half.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct WindowOpts {
     /// 1-based.
     pub start_line: usize,
     pub max_lines: usize,
+    /// 1-based.
+    pub page_start: usize,
+    pub max_pages: usize,
 }
 
-/// What every text row in the call carries: its window, or the lines matching `find`.
+impl Default for WindowOpts {
+    /// The window the tool reads when the caller says nothing.
+    fn default() -> Self {
+        Self {
+            start_line: 1,
+            max_lines: DEFAULT_MAX_LINES,
+            page_start: 1,
+            max_pages: DEFAULT_MAX_PAGES,
+        }
+    }
+}
+
+/// What every text and PDF row in the call carries: its window, or the lines matching
+/// `find`.
 #[derive(Debug, Clone)]
 pub(crate) enum TextAsk {
     Window(WindowOpts),
@@ -399,9 +433,29 @@ fn parse_params(params: &Value) -> Result<Params, ToolError> {
             .map(|n| (n as usize).min(MAX_MAX_LINES))
             .ok_or_else(|| ToolError::invalid_params("'maxLines' must be a positive integer"))?,
     };
+    let page_start =
+        match params.get("pageStart") {
+            None | Some(Value::Null) => 1,
+            Some(v) => v.as_u64().filter(|n| *n >= 1).map(|n| n as usize).ok_or_else(|| {
+                ToolError::invalid_params("'pageStart' must be a positive integer (pages are 1-based)")
+            })?,
+        };
+    let max_pages = match params.get("maxPages") {
+        None | Some(Value::Null) => DEFAULT_MAX_PAGES,
+        Some(v) => v
+            .as_u64()
+            .filter(|n| *n >= 1)
+            .map(|n| (n as usize).min(MAX_MAX_PAGES))
+            .ok_or_else(|| ToolError::invalid_params("'maxPages' must be a positive integer"))?,
+    };
     let ask = match parse_find(params)? {
         Some(matcher) => TextAsk::Find(matcher),
-        None => TextAsk::Window(WindowOpts { start_line, max_lines }),
+        None => TextAsk::Window(WindowOpts {
+            start_line,
+            max_lines,
+            page_start,
+            max_pages,
+        }),
     };
     Ok(Params { paths, ask })
 }
@@ -554,9 +608,7 @@ fn read_content(p: &Path, size: u64, ask: &TextAsk, cancel: &AtomicBool) -> Resu
     let classify_head = &head[..head.len().min(CLASSIFY_HEAD_LEN)];
     match classify_viewer_content(classify_head, None, true) {
         ViewerContentKind::Image => Ok(Content::Image(image_content(p, classify_head))),
-        // A PDF's text needs a parser this tool doesn't carry; `binary` is the honest
-        // kind rather than a section that says "not wired".
-        ViewerContentKind::Pdf => Ok(Content::Binary {}),
+        ViewerContentKind::Pdf => Ok(Content::Pdf(pdf::read_pdf(p, size, &head, ask, cancel)?)),
         ViewerContentKind::Text => {
             let encoding = detect_from_head(&head);
             if looks_binary(&head, encoding) {
