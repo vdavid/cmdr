@@ -19,9 +19,10 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 - **`viewer-indexing-poll.ts`**: `viewer_get_status` poll during line-index build.
 - **`viewer-keyboard.ts`**: pure key helpers + `createViewerKeyboard`, the keydown router (modifiers, Escape ladder, ⌘A,
   bare-key dispatch).
-- Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-pointer.ts`** (pure
-  caret math, surrogate-safe), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller),
-  **`viewer-word.ts`** (word-boundary via `Intl.Segmenter`).
+- Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-caret-geometry.ts`**
+  (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter: row hit-test + character
+  rects), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller), **`viewer-word.ts`**
+  (word-boundary via `Intl.Segmenter`).
 - **`viewer-search-scroll.ts`**: pure per-axis scroll-to-match centring (`recenterOffset`, rect-based).
 - Copy: **`viewer-copy.ts`** (pure silent/confirm/refuse policy + thresholds), **`viewer-copy.svelte.ts`**
   (`createViewerCopy` + `createViewerCopyOrchestrator`). Autoscroll: **`viewer-autoscroll.ts`** (curve) +
@@ -142,6 +143,35 @@ logical coordinates, independent of which lines happen to be rendered.
   so a plain unit test can't see this: `viewer-word.test.ts` stubs a JSC-shaped segmenter to hold the line. (Verified on
   macOS 26.5.2 WKWebView vs. Node 24 and Playwright WebKit 26.5, offscreen WKWebView probe, 2026-08-13.)
 
+### Pointer → caret
+
+Resolving `(clientX, clientY)` to a `LineOffset` is geometric, top to bottom: `viewer-pointer.ts` binary-searches the
+rendered `[data-line]` rows by `y` (they're in ascending order, so it reads ~log2(rendered rows) rects), then hands the
+hit row's `.line-text` to `findOffsetByGeometry` in `viewer-caret-geometry.ts`, which binary-searches the character
+boxes for the point. `measure(offset)` builds one `Range` per probe over the line's text nodes and reads
+`getClientRects()`, so a 100k-character line costs the same ~17 probes a short one does.
+
+Decision/Why: the browser's own `caretPositionFromPoint` / `caretRangeFromPoint` are deliberately unused. Both return a
+non-null, plausible-looking result on text under `user-select: none` (which `.file-content` is) while some WebKit builds
+silently answer offset 0 for every x. That's undetectable at runtime, so there's no safe fast path to be had: one
+geometric path serves every webview.
+
+What falls out of doing it ourselves, and what the tests pin:
+
+- **Every point over `.file-content` resolves; only points outside it return `null`.** Keep it that way:
+  `handlePointerDown` bails on a `null` caret before it arms the drag, so a dead zone (the gutter, the row padding, the
+  blank area under a short file) doesn't cost the anchor, it costs the whole gesture: nothing selected, and a silent
+  no-op ⌘C after it.
+- **Left of a row's text** (gutter, padding) → the start of that visual row. **Right of it** → the end of that visual
+  row, which on a wrapped line is the wrap point, not the end of the logical line.
+- **Below the last rendered row** → the end of that line. **Above the first** → offset 0.
+- **Word wrap**: character boxes run in reading order, so the search compares row (`y`) first and `x` only within a row.
+  A wrapped logical line spans several rows and each resolves independently.
+- **Offsets stay on codepoint boundaries.** `measure` snaps onto the start of the codepoint covering the probe and
+  reports its two-unit span, so an astral character is one box and the caret can't land between its surrogates.
+- **Drag and autoscroll aim through `caretFromPointClamped`.** Past the top or bottom edge it snaps horizontally to that
+  side too, so a drag out of the viewport sweeps whole visual rows as they scroll by instead of freezing.
+
 ## Title-bar overlay toolbar
 
 The viewer window opens with `titleBarStyle: 'overlay'` and `trafficLightPosition: { x: 9, y: 17 }` (see
@@ -244,12 +274,9 @@ the backend's own words. The wider split: `docs/guides/error-handling.md`.
   browser's native selection would render a competing-and-broken one on top of ours that loses its anchor as soon as the
   line scrolls out. `.status-bar` opts back in with `user-select: text` so users can still copy the file name or line
   count. `.line-number` keeps the global default (`none`), it's aria-hidden chrome.
-  - Trap: webkit2gtk 2.50.4 (Ubuntu 24.04) has a bug where `caretRangeFromPoint` returns `offset: 0` for every x-coord
-    inside `user-select: none` text, which breaks the pointer → caret path in `viewer-pointer.ts:resolveCaret`.
-    webkit2gtk 2.52.3 (Ubuntu 25.10+) doesn't have it. The Docker E2E image is pinned to `ubuntu:26.04` to avoid this;
-    see `apps/desktop/test/e2e-linux/DETAILS.md` § "webkit2gtk caret bug". If you ever need to support a webview version
-    that still has the bug (e.g. an older Linux distro target), replace this code path with a
-    `Range.getClientRects()`-based binary search that doesn't depend on the browser caret API.
+  - The browser's caret-from-point APIs are wrong on `user-select: none` text in some WebKit builds, so we don't use
+    them at all (§ "Pointer → caret"). ❌ Don't reintroduce one as a "fast path": the wrong answer looks exactly like a
+    right one.
 - **Selection offsets are UTF-16 code units, not bytes or grapheme clusters.** When you add features that compute
   offsets from a click position (caret math in `viewer-pointer.ts`) or accept them across the IPC boundary
   (`viewer_read_range`), preserve the UTF-16 convention. The backend handles the conversion to UTF-8 bytes, clamping

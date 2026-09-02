@@ -111,10 +111,15 @@ both OK to Cmdr-side SMB code, both FAIL to infra / Docker networking.
 ## webkit2gtk caret bug (why the base is `ubuntu:26.04`)
 
 webkit2gtk 2.50.4 (ships with Ubuntu 24.04) returns `startOffset: 0` from `document.caretRangeFromPoint(x, y)` for ALL
-x-coordinates inside text whose ancestor chain has `user-select: none`. Caret resolution is the first step in the
-viewer's pointer-drag → selection pipeline (`routes/viewer/viewer-pointer.ts:resolveCaret`), so `viewer.spec.ts` "drag
-within viewport selects the dragged range" failed on every E2E run: the drag produced an empty selection, `runCopy()`
-returned `{ kind: 'empty' }`, no toast appeared, the test timed out.
+x-coordinates inside text whose ancestor chain has `user-select: none`. It's what put this base image on 26.04:
+`viewer.spec.ts` "drag within viewport selects the dragged range" got an empty selection, `runCopy()` returned
+`{ kind: 'empty' }`, no toast appeared, the test timed out.
+
+The production caret path doesn't touch that API. `routes/viewer/viewer-pointer.ts` hit-tests the rendered rows and
+binary-searches `Range.getClientRects()` boxes; the reasoning is in `apps/desktop/src/routes/viewer/DETAILS.md` §
+"Pointer → caret". So this bug alone doesn't decide the base image any more, and the pin is a plain "26.04 is what the
+suite is green on". ❌ Still don't move it casually: the rest of the stack (Playwright's platform-registry workarounds
+below, the apt package set) is tuned to 26.04, and only a full suite run can tell you an older base is fine.
 
 How we know it's this: probed at x = 25, 35, 50, 75, 200, 500 on `.line-text` (`user-select: none`); all return offset 0
 on 2.50.4, but offset 1, 4, 7, 25, 68 (monotonic per-character) on 2.52.3 on the same Xvfb display server. Control:
@@ -125,8 +130,8 @@ probing the status-bar text (`user-select: text`) returns sensible offsets even 
   in both); GDK backend (Xwayland and Xvfb both work with 2.52.3). Real Linux users (Wayland or X11 with a real display
   server) were never affected, only the synthetic-pointer-event test path.
 
-To drop back to an older base image, skip this single test or replace the production caret-from-point with a JS-side
-`Range.getClientRects()`-based binary search that bypasses the buggy API.
+Kept because it's cheap evidence: if a future caret regression shows up only on Linux, this probe (offsets on
+`user-select: none` text vs. the `user-select: text` status bar) is how you tell a webview bug from ours.
 
 ## Playwright on the 26.04 base image (and bumping Playwright)
 

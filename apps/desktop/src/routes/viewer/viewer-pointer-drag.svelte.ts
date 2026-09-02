@@ -2,9 +2,9 @@
  * Pointer / drag / context-menu controller for the viewer.
  *
  * Owns the stateful side of text selection by pointer: the active drag's
- * `pointerId` + last `clientY`, the in-app context-menu position, and the
- * drag-autoscroll RAF loop. The pure caret-from-point math lives in
- * `viewer-pointer.ts`; the autoscroll speed curve and RAF driver live in
+ * `pointerId` + last pointer position, the in-app context-menu position, and the
+ * drag-autoscroll RAF loop. Point → caret resolution lives in `viewer-pointer.ts`
+ * (over `viewer-caret-geometry.ts`); the autoscroll speed curve and RAF driver live in
  * `viewer-autoscroll.ts` / `viewer-autoscroll.svelte.ts`. This controller wires
  * those together against the page's selection model and scroll composable.
  *
@@ -14,7 +14,7 @@
  * element and the `<svelte:window on:blur>` safety net.
  */
 
-import { caretFromPoint } from './viewer-pointer'
+import { caretFromPoint, caretFromPointClamped } from './viewer-pointer'
 import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
 import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
 import { findWordBoundsAt } from './viewer-word'
@@ -48,22 +48,23 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
    */
   let dragPointerId: number | null = null
 
-  /** The pointer's most-recent Y position, used by the autoscroll RAF loop. */
+  /** The pointer's most-recent position, used by the autoscroll RAF loop. */
+  let dragPointerX = 0
   let dragPointerY = 0
 
   /** Position of the in-app context menu while it's open, or `null`. */
   let contextMenuPos = $state<{ x: number; y: number } | null>(null)
 
   /**
-   * Re-resolves the caret after each autoscroll step. Uses the X position one px
-   * past the left edge of `.file-content` so the caret lands inside the line text
-   * (not the line-number gutter, which sits flush to the left edge).
+   * Re-resolves the caret after each autoscroll step. The pointer is past a viewport
+   * edge by definition here (that's what started the autoscroll), so the aim is clamped
+   * into `.file-content` and the selection sweeps whole rows of the newly-scrolled-in
+   * text.
    */
   function reAimAfterAutoscroll(pointerY: number): void {
     const content = deps.getContentRef()
     if (!content) return
-    const rect = content.getBoundingClientRect()
-    const caret = caretFromPoint(document, rect.left + 1, pointerY)
+    const caret = caretFromPointClamped(content, dragPointerX, pointerY)
     if (caret !== null) deps.setFocus(caret)
   }
 
@@ -84,7 +85,9 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
     // click in the document takes focus off any editor's find field.
     deps.takeFocus()
 
-    const caret = caretFromPoint(document, e.clientX, e.clientY)
+    const content = deps.getContentRef()
+    if (!content) return
+    const caret = caretFromPoint(content, e.clientX, e.clientY)
     if (caret === null) return
     e.preventDefault()
 
@@ -97,6 +100,7 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
     }
 
     dragPointerId = e.pointerId
+    dragPointerX = e.clientX
     dragPointerY = e.clientY
     // Capture so we keep receiving pointer events even if the cursor leaves the
     // webview (the user dragged past the edge into another macOS window or the
@@ -111,13 +115,17 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
 
   function handlePointerMove(e: PointerEvent): void {
     if (dragPointerId === null || e.pointerId !== dragPointerId) return
+    dragPointerX = e.clientX
     dragPointerY = e.clientY
-    const caret = caretFromPoint(document, e.clientX, e.clientY)
+
+    const content = deps.getContentRef()
+    if (!content) return
+    // Clamped: a drag that has left the viewport still extends the selection to the
+    // nearest edge of the rendered text instead of freezing where it crossed out.
+    const caret = caretFromPointClamped(content, e.clientX, e.clientY)
     if (caret !== null) deps.setFocus(caret)
 
     // Check whether the pointer is near a viewport edge; start/stop autoscroll as needed.
-    const content = deps.getContentRef()
-    if (!content) return
     const rect = content.getBoundingClientRect()
     const delta = computeAutoscrollPxPerFrame(e.clientY, rect.top, rect.bottom)
     if (delta !== 0) {
@@ -154,7 +162,9 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
    */
   function handleClick(e: MouseEvent): void {
     if (e.detail !== 2 && e.detail !== 3) return
-    const caret = caretFromPoint(document, e.clientX, e.clientY)
+    const content = deps.getContentRef()
+    if (!content) return
+    const caret = caretFromPoint(content, e.clientX, e.clientY)
     if (caret === null) return
     const lineText = deps.getLineText(caret.line) ?? ''
 
