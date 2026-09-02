@@ -1,9 +1,12 @@
 //! The SMB integration cells whose other half is this app, not the protocol.
 //!
 //! Everything asserting on the backend itself lives with it, in `cmdr-smb`'s
-//! `volume::integration_test` and `volume::streaming_integration_test`. What's
-//! left here is the two cells that need something only the app has: the pane-close
-//! IPC, and a second backend to stream from.
+//! `volume::integration_test` and its three byte-path suites, split by contract:
+//! `read_stream_integration_test` (what a read hands back),
+//! `write_stream_integration_test` (what a write does with a source), and
+//! `wire_shape_integration_test` (what an op costs on the wire). What's left here
+//! is the two cells that need something only the app has: the pane-close IPC, and
+//! a second backend to stream from.
 //!
 //! Same gating as every SMB integration cell: `#[ignore]`d by default, so start
 //! the containers with `./apps/desktop/test/smb-servers/start.sh` and run
