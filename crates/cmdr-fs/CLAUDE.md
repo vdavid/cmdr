@@ -9,8 +9,9 @@ original path; prefer that in app code (`crate::file_system::volume::VolumeError
 - `volume/`: the trait, its types, `InMemoryVolume`, `ids` + `canonical_root` (the ID funnel and double-mount collapse),
   `retirement.rs` (how background work learns it stopped being the live volume), `channel_stream.rs` (the consumer half
   a network backend's read path is built on), `scan_ticker.rs` (the running counts every remote scan reports),
-  `friendly_error/` (typed, word-free classification), and `host/` (what a backend needs from the app, as named traits;
-  read `src/volume/host/CLAUDE.md` before writing a backend).
+  `scan_conflicts.rs` (`conflicts_in_listing`, the one name-collision mapper every backend that scans by listing
+  shares), `friendly_error/` (typed, word-free classification), and `host/` (what a backend needs from the app, as named
+  traits; read `src/volume/host/CLAUDE.md` before writing a backend).
 - `entry.rs` + `icons/` (`FileEntry` and the classifiers behind `get_icon_id`), `sqlite_util.rs` (the ONE process-wide
   page-cache slab and the connection factories all five stores open through), `staging.rs` (`StagingTemp`, the ONLY way
   to name a scratch file).
