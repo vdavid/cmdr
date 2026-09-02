@@ -29,7 +29,7 @@ So: one implementation per quantity, and a lint that keeps it that way.
   SCAN phase only, where the backend emits no rate at all.
 - **A file rate** is the same split one axis over: `formatFilesPerSecond(rate)` owns the number (one decimal below
   three, a whole number above, `null` once it rounds to nothing so the caller can hide the cell) and hands back both the
-  `text` to show and the `value` the catalog pluralizes on; `fileOperations.shared.fileRate` owns the "file/s" marker
+  locale-formatted `text` and the `value` the catalog pluralizes on; `fileOperations.shared.fileRate` owns the "file/s" marker
   and its plural. ONE key serves all three surfaces that show it — the transfer bars, the transfer dialog's scan line,
   and the delete confirmation's — so the same rate can't read three ways. It used to be three: the noun was an English
   literal inside the formatter, and two near-identical `throughputFiles` keys sat beside it in the catalog.

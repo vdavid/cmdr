@@ -1,8 +1,9 @@
 /**
  * Duration and file-rate formatting. Byte sizes and rates are in `byte-size.test.ts`.
  */
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest'
 import { formatDuration, formatFilesPerSecond, formatMilliseconds, seconds } from './duration'
+import { _setLocaleForTests } from '$lib/intl/locale'
 
 describe('formatDuration', () => {
   it('renders sub-minute durations in whole seconds', () => {
@@ -70,8 +71,8 @@ describe('formatFilesPerSecond', () => {
       expect(formatFilesPerSecond(27.5)?.text).toBe('28')
     })
 
-    it('handles large rates', () => {
-      expect(formatFilesPerSecond(1500)?.text).toBe('1500')
+    it('groups a large rate for the locale rather than printing raw digits', () => {
+      expect(formatFilesPerSecond(1500)?.text).toBe('1,500')
     })
   })
 
@@ -88,6 +89,31 @@ describe('formatFilesPerSecond', () => {
     it('returns "0.1" at the 0.05 boundary', () => {
       expect(formatFilesPerSecond(0.05)?.text).toBe('0.1')
     })
+  })
+})
+describe('the locale owns the decimal mark, in every unit on the screen', () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  it('gives a file rate the same decimal mark the size beside it uses', () => {
+    // The defect: sizes went through Intl and read "250,00 MB" in Swedish while
+    // the rate beside them was built with `toFixed`, which always emits an ASCII
+    // dot, so one dialog showed two decimal conventions at once.
+    _setLocaleForTests('sv-SE')
+    expect(formatFilesPerSecond(2.3)?.text).toBe('2,3')
+  })
+
+  it('groups a big rate the way the locale groups', () => {
+    _setLocaleForTests('de-DE')
+    expect(formatFilesPerSecond(1500)?.text).toBe('1.500')
+  })
+
+  it('formats a sub-second duration through the locale too', () => {
+    // Diagnostics-only, and fixed anyway: two identical bugs in one file is how
+    // the next person finds the second one all over again.
+    _setLocaleForTests('de-DE')
+    expect(formatMilliseconds(1400)).toBe('1,4 s')
   })
 })
 

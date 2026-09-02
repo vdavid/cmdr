@@ -23,7 +23,7 @@ that bakes in the noun: `'files/s'` was a literal once and shipped English to al
 - `byte-size.ts`: the unit math with the base passed in (`formatFileSizeWithFormat`, `unitLabel`, `fixedUnitFor`,
   `dynamicTierIndex`, `baseFor`), plus the `ByteCount` / `BytesPerSecond` brands.
 - `duration.ts`: `formatDuration` (seconds), `formatMilliseconds` (sub-second precision), `formatFilesPerSecond` (the
-  rounding policy, plus the `value` the catalog pluralizes on), and the `Seconds` brand.
+  rounding policy plus a locale-formatted `text` and the `value` the catalog pluralizes on), and the `Seconds` brand.
 
 ## Must-knows
 
@@ -45,8 +45,9 @@ that bakes in the noun: `'files/s'` was a literal once and shipped English to al
   `file-explorer/selection/selection-info-utils.ts`, because the classes belong to the list views' stylesheet. It
   consumes this module's ladder; don't re-derive tiers from a threshold cascade.
 - **Dates are NOT here.** `settings/format-utils.ts` (pure) → `formattedDate()` (reactive) → `<DateLabel>`.
-- **Decimals and separators follow the active locale** via `$lib/intl`'s `getNumberFormatter`; the value↔unit ASCII
-  space is added by us, never by Intl (`colorizeSizeString` parses the unit by the last space).
+- **Decimals and separators follow the active locale** via `$lib/intl`'s `getNumberFormatter`, in EVERY unit. ❌ Never
+  `toFixed`, which always emits an ASCII dot and once put "2.3 files/s" beside a pane reading "250,00 MB". The
+  value↔unit ASCII space is added by us, never by Intl (`colorizeSizeString` parses the unit by the last space).
 - **`settings/types.ts::formatDurationSetting(ms)` is a deliberate second duration formatter** for rendering a duration
   SETTING's stored value in the settings UI ("500ms" / "5min"). Different surface, different shape; don't merge them.
 

@@ -1,6 +1,8 @@
 /**
- * Duration and file-rate formatting. Pure, no settings: unlike sizes, these
- * have no binary/SI choice to honor.
+ * Duration and file-rate formatting. No settings to honor: unlike sizes, these
+ * have no binary/SI choice. The numbers still go through `$lib/intl`'s locale
+ * formatter, because a decimal mark is the locale's business: a rate built with
+ * `toFixed` puts an ASCII dot beside a pane reading "250,00 MB".
  *
  * `$lib/settings/types.ts` has a same-named `formatDuration(ms)` for rendering
  * a duration SETTING's value in the settings UI (milliseconds in, "500ms" /
@@ -8,6 +10,8 @@
  * time and ETAs. Don't merge them; they format different things for different
  * surfaces.
  */
+
+import { formatInteger, getNumberFormatter } from '$lib/intl/number-format'
 
 /**
  * A duration in seconds, distinct from a byte count or a plain tally. Same
@@ -52,7 +56,7 @@ export function formatDuration(totalSeconds: Seconds): string {
  * `fileOperations.shared.byteRate` makes for transfer speed.
  */
 export interface FileRateReadout {
-  /** The rate as it will be shown ("0.4", "1500"). */
+  /** Grouped and decimal-separated for the active locale ("0.4", "1,500"). */
   text: string
   /** The SHOWN value, so the words the catalog picks match the digits beside them. */
   value: number
@@ -76,10 +80,10 @@ export function formatFilesPerSecond(rate: number): FileRateReadout | null {
   if (rate < 3) {
     const oneDecimal = Math.round(rate * 10) / 10
     if (oneDecimal === 0) return null
-    return { text: oneDecimal.toFixed(1), value: oneDecimal }
+    return { text: formatTenth(oneDecimal), value: oneDecimal }
   }
   const whole = Math.round(rate)
-  return { text: String(whole), value: whole }
+  return { text: formatInteger(whole), value: whole }
 }
 
 /**
@@ -88,7 +92,12 @@ export function formatFilesPerSecond(rate: number): FileRateReadout | null {
  * For timings and diagnostics; user-facing ETAs use `formatDuration`.
  */
 export function formatMilliseconds(ms: number): string {
-  if (ms < 1000) return `${String(Math.round(ms))} ms`
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)} s`
+  if (ms < 1000) return `${formatInteger(Math.round(ms))} ms`
+  if (ms < 60_000) return `${formatTenth(ms / 1000)} s`
   return formatDuration(seconds(ms / 1000))
+}
+
+/** One fraction digit, with the active locale's decimal mark. */
+function formatTenth(value: number): string {
+  return getNumberFormatter({ minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)
 }
