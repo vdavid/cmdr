@@ -3906,14 +3906,7 @@ export const commands = {
     displayName: string,
     remoteRoot: string,
     autoReconnect: boolean,
-  ) =>
-    __TAURI_INVOKE<void>('update_known_webdav_server', {
-      url,
-      username,
-      displayName,
-      remoteRoot,
-      autoReconnect,
-    }),
+  ) => __TAURI_INVOKE<void>('update_known_webdav_server', { url, username, displayName, remoteRoot, autoReconnect }),
   /**
    *  Drops a server from the list, answering whether one was there.
    *
@@ -12388,7 +12381,6 @@ export type WatcherGateError =
    */
   { kind: 'watcherStartFailed'; message: string }
 
-// One released version's user-facing notes.
 /**
  *  What connecting produced.
  *
@@ -12464,6 +12456,7 @@ export type WebdavUnattendedReconnect =
    */
   | 'no_stored_secret'
 
+// One released version's user-facing notes.
 export type WhatsNewRelease = {
   // Semver string, for example `"0.26.0"`.
   version: string

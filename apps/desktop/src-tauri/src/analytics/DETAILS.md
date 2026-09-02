@@ -186,6 +186,8 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   the managed edit STARTED (its completion rides `archive_edit_completed`).
 - `smb_connected` (backend, `crates/cmdr-smb/src/volume/mod.rs` `connect_smb_volume`): no host/share/credential props.
 - `sftp_connected` (backend, `crates/cmdr-sftp/src/volume/mod.rs`): no host/account/port/path props.
+- `webdav_connected` (backend, `crates/cmdr-webdav/src/volume/mod.rs` `connect_webdav_volume`): no host/account/port/path
+  props.
   Both connection events go through the `AnalyticsSink` seam rather than `capture` directly, since the backend crates
   can't see `tauri` (`volume_sink.rs`).
 - `mtp_connected` (backend, `mtp/connection/mod.rs` `connect`): no device/product props.

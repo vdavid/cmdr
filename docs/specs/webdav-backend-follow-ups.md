@@ -12,23 +12,16 @@ the commands in `apps/desktop/src-tauri/src/commands/DETAILS.md`, and the Docker
 
 ❌ Nothing here restates a mechanism. Every item points at the doc that owns it.
 
-## Before merge: what David runs locally
+## Still open before this is trusted against a real server
 
-This branch was built in a cloud box without the app's system libraries, so three steps that need a full local toolchain
-are still open. Each is minutes, not hours, except the Docker cells, which are a coffee.
+The local toolchain steps are done: `bindings.ts` is regenerated from the Rust types, `pnpm check` is green, and the
+Apache stack has been up (`LOCK` answers 200, `HEAD large.bin` reports 4,194,304, the Digest server challenges with
+`Digest realm="cmdr"` alone and accepts `curl --digest`, and startup logs no `AH00526`). The `webdav_integration_` lane
+runs 178 cells green on ports 13480+ under the `cmdr-webdav.lock` + `cmdr-webdav-leases` namespace
+(`scripts/check/DETAILS.md` § "Two fixture stacks, two lease namespaces").
 
-- [ ] **Regenerate `bindings.ts`.** The new `commands/webdav.rs` types are on the Rust side; the TS wrappers in
-      `apps/desktop/src/lib/tauri-commands/webdav.ts` compile against the regenerated file. The procedure is the usual
-      one in `apps/desktop/CLAUDE.md`.
-- [ ] **Run `pnpm check --include-slow`.** The `webdav_integration_` cells (the crate's Docker cells plus
-      `write_operations/webdav_transfer_integration_test.rs`) need the `webdav` stack up, which only a Docker-capable
-      machine gives. Ports 13480+ under the `cmdr-webdav.lock` + `cmdr-webdav-leases` lease namespace:
-      `scripts/check/DETAILS.md` § "Two fixture stacks, two lease namespaces".
-- [ ] **Bring the fixture stack up for the first time** (`apps/desktop/test/webdav-servers/start.sh`). The Apache config
-      was written without a Docker daemon in reach, so four things have never been observed: a `LOCK` on `hello.txt`
-      answers 200 rather than 500 (proves `DavLockDB` is writable by `daemon`), a `HEAD` on `large.bin` reports
-      `Content-Length: 4194304`, the Digest server answers 401 with only a `Digest realm="cmdr"` challenge and accepts
-      `curl --digest`, and `docker compose logs` shows no `AH00526` at startup.
+What no Apache fixture can answer:
+
 - [ ] **Confirm the two claims about real servers** that `crates/cmdr-webdav/DETAILS.md` makes from RFC reading rather
       than observation: a 200 to a ranged GET (the slice-locally path), and sabre/dav's 411 on a chunked PUT (why
       `Content-Length` is always sent). One Nextcloud and one Synology are enough; then evidence-anchor them.

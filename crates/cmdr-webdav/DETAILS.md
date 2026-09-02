@@ -14,17 +14,15 @@ leaves nothing behind. On success the backend records the PII-free analytics eve
 
 The probe's answers, in connect terms:
 
-| Answer                                           | `WebdavConnectError`     |
-| ------------------------------------------------ | ------------------------ |
-| transport, `is_timeout`                          | `TimedOut`               |
-| transport, `is_connect` + `InvalidData` in chain | `CertificateUntrusted`   |
-| transport, `is_connect` / `is_request`           | `Unreachable`            |
-| 207 with a `multistatus`                         | connected                |
-| 207 without one, 200, 404, 405, other 4xx        | `NotAWebdavServer`       |
-| 401 with a `Basic` challenge                     | `AuthenticationRejected` |
-| 401 without one (Digest-only)                    | `AuthMethodUnsupported`  |
-| 403                                              | `AuthenticationRejected` |
-| 5xx                                              | `Transport`              |
+- **A transport failure, `is_timeout`**: `TimedOut`.
+- **A transport failure, `is_connect` with an `InvalidData` `io::Error` in the source chain**: `CertificateUntrusted`.
+- **Any other transport failure, `is_connect` / `is_request`**: `Unreachable`.
+- **207 with a `multistatus`**: connected.
+- **207 without one, 200, 404, 405, any other 4xx**: `NotAWebdavServer`.
+- **401 carrying a `Basic` challenge**: `AuthenticationRejected`.
+- **401 carrying none (a Digest-only server)**: `AuthMethodUnsupported`.
+- **403**: `AuthenticationRejected`.
+- **5xx**: `Transport`.
 
 ## The error table
 
