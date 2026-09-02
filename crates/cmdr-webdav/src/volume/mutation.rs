@@ -6,6 +6,7 @@
 
 use std::path::Path;
 
+use cmdr_fs::pluralize::pluralize_with;
 use cmdr_fs::volume::{DirectoryCreation, MutationEvent, VolumeError};
 use log::debug;
 use reqwest::Method;
@@ -116,7 +117,10 @@ impl WebdavVolume {
         // file or an empty collection answers exactly one response.
         if listing.len() > 1 {
             return Err(VolumeError::IoError {
-                message: format!("{remote} still holds {} entries", listing.len() - 1),
+                message: format!(
+                    "{remote} still holds {}",
+                    pluralize_with((listing.len() - 1) as u64, "entry", "entries")
+                ),
                 raw_os_error: Some(ENOTEMPTY),
             });
         }

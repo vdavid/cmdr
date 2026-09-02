@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use cmdr_fs::ignore_poison::IgnorePoison;
+use cmdr_fs::pluralize::pluralize_grouped;
 use cmdr_fs::staging::STAGING_TEMP_MARKER;
 use cmdr_fs::volume::{VolumeError, VolumeReadStream};
 use log::debug;
@@ -45,7 +46,11 @@ fn staging_sibling(remote: &str) -> String {
 /// The source yielded a different byte count than `size` promised.
 fn size_mismatch(remote: &str, got: u64, size: u64) -> VolumeError {
     VolumeError::IoError {
-        message: format!("{remote}: the source yielded {got} bytes where {size} were promised"),
+        message: format!(
+            "{remote}: the source promised {} and yielded {}",
+            pluralize_grouped(size, "byte"),
+            pluralize_grouped(got, "byte")
+        ),
         raw_os_error: None,
     }
 }

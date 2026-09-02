@@ -58,12 +58,9 @@ pub(crate) enum Attempted {
     TakingAName,
 }
 
-/// `EBUSY`, which POSIX numbers differently per platform. The number is what
-/// the app renders "something else is using this" from.
-#[cfg(target_os = "linux")]
-pub(crate) const EBUSY: i32 = 16;
-/// `EBUSY` on everything else Cmdr builds for.
-#[cfg(not(target_os = "linux"))]
+/// `EBUSY`, which is 16 on every platform Cmdr builds for (unlike `ENOTEMPTY`,
+/// which `mutation.rs` has to split). The number is what the app renders
+/// "something else is using this" from.
 pub(crate) const EBUSY: i32 = 16;
 
 /// Turns a non-success status into the `Volume` vocabulary, for an operation on

@@ -47,8 +47,8 @@ pub enum WebdavConnection {
     /// The TLS handshake didn't trust the server's certificate. ❌ Not
     /// approvable from here: the fix is trusting the CA in the OS store.
     CertificateUntrusted,
-    /// The URL answers HTTP, but not WebDAV: `OPTIONS` carried no `DAV` header,
-    /// or `PROPFIND` isn't understood there.
+    /// The URL answers HTTP, but not WebDAV: the `PROPFIND` probe came back
+    /// without a `multistatus`, or isn't understood at that path.
     NotAWebdavServer,
     /// The handshake didn't finish inside the connect budget.
     TimedOut,
@@ -141,8 +141,9 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// nothing behind: no volume, no saved server, no secret.
 ///
 /// Every dial goes through `cmdr_webdav::connect_webdav_volume`, which is where
-/// the probe (`OPTIONS` then `PROPFIND`) and the credential lookup live. Calling
-/// one OFF goes through the token, which is what makes it answer `Cancelled`.
+/// the probe (one `PROPFIND Depth: 0` on the root) and the credential lookup
+/// live. Calling one OFF goes through the token, which is what makes it answer
+/// `Cancelled`.
 pub async fn connect_and_register(
     display_name: &str,
     params: WebdavConnectionParams,
