@@ -156,14 +156,15 @@ watch them go by. They need something only the seeded fixture has:
 
 The 26 cells that existed when this was measured all pass against the fixture's own Nextcloud through this path
 (2026-09-02), the conformance cells included — so the `Volume` contract those cells hold every backend to survives
-sabre/dav's verbs, not only Apache's. The four added since (the two `Range`-ignoring cells above and the two
-size-mismatch cells below) are outside that number.
+sabre/dav's verbs, not only Apache's. The six added since (the two `Range`-ignoring cells above, the three size-mismatch
+cells below, and the upload-cancel cell) are outside that number.
 
 Everything else is honest anywhere: the conformance cells, the write and rename and copy and delete cells, the
-cancellation cells, the two size-mismatch cells (`a_source_that_ends_early_never_reaches_the_users_filename`,
-`a_source_that_overruns_its_promise_never_reaches_the_users_filename`), and the two credential refusals all build their
-own scratch directory or assert something client-side. So do the two sabre/dav cells worth aiming at someone else's
-server, which is rather the point of aiming it: `a_ranged_get_is_answered_with_a_window_rather_than_the_whole_file` and
+cancellation cells (the crate's `a_cancelled_upload_leaves_neither_the_destination_nor_a_temp` included), the three
+size-mismatch cells (`a_source_that_ends_early_…`, `a_source_that_overruns_its_promise_…`, and
+`a_source_that_overruns_on_a_piece_boundary_…`), and the two credential refusals all build their own scratch directory
+or assert something client-side. So do the two sabre/dav cells worth aiming at someone else's server, which is rather
+the point of aiming it: `a_ranged_get_is_answered_with_a_window_rather_than_the_whole_file` and
 `a_put_with_no_content_length_is_accepted_rather_than_refused` ask a Synology or a proxied Nextcloud exactly what this
 fixture asked its own.
 

@@ -32,8 +32,11 @@ The WebDAV backend: a `Volume` over one `reqwest` client with one account's Basi
   PROPFIND on a slash-less collection that answers 3xx is retried once with the slash.
 - ❗ **PUT sends `Content-Length` from `size`**, never a body of unknown length. Every write lands on a `.cmdr-tmp-*`
   sibling and is MOVEd into place with `Overwrite: T`. ❌ A source whose byte count disagrees with `size` is never
-  MOVEd: hyper truncates a longer body and the server stores the prefix happily. `DETAILS.md` § "Write staging" has the
-  one shape that still slips through.
+  MOVEd: hyper truncates a longer body and the server stores the prefix happily.
+- ❗ **The upload body reads one piece AHEAD, and that is load-bearing.** hyper stops polling a body once
+  `Content-Length` is satisfied, so a source that pieces up exactly on `size` would otherwise look honest while the
+  server holds a prefix. The read-ahead is why there are two counters: `fetched` guards the size, `handed` (clamped)
+  drives progress. ❌ Never collapse them. `DETAILS.md` § "Write staging".
 - ❗ **`Range` may be ignored.** A 200 to a ranged GET is handled by skipping locally; `read_range` never returns more
   than `len` and drops the response as soon as the window is full. The server that makes that branch run is
   `webdav-fixture-norange`, port 13483. What a real server answers to that and to a chunked PUT, with dates:

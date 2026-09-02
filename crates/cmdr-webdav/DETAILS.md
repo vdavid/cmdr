@@ -76,27 +76,53 @@ request aborts, the temp is DELETEd), then MOVEs the temp onto `dest` with `Over
 best-effort. `copy_within` is one COPY with `Overwrite: T`, `Depth: infinity`, progress reported once with the source's
 PROPFIND size.
 
-**A byte count that disagrees with `size` is never MOVEd**, in either direction, and both arms are pinned by a cell in
-`volume/integration_test.rs`:
+**A byte count that disagrees with `size` is never MOVEd**, in either direction, and all three shapes are pinned by a
+cell in `volume/integration_test.rs`:
 
 - **A source that ends EARLY** ends the request from our side (hyper's `NotEof`), which `reqwest` reports with the same
   predicate a dropped connection answers. ❌ Reading it as `DeviceDisconnected` would flip the whole volume offline over
-  one stale `size`, so `source_ended` plus `total != size` turns it into an `IoError` naming both numbers.
+  one stale `size`, so `ended` plus `fetched != size` turns it into an `IoError` naming both numbers.
   `a_source_that_ends_early_never_reaches_the_users_filename` fails with `Err(DeviceDisconnected(…))` if that arm goes.
+  ❗ This arm has no alignment escape and cannot grow one: hyper's poll gate closes only once `Content-Length` is
+  SATISFIED, and a short source never satisfies it, so the body is polled until the source answers `None`.
 - **A source that yields MORE** is the sharper one: hyper TRUNCATES the body at `Content-Length` (verified on hyper
   1.10.1, in its HTTP/1 encoder's `Kind::Length` arm, 2026-09-01), the server stores the prefix and answers 201, and
   nothing on the wire is wrong. Only the count this side kept says the file is short.
   `a_source_that_overruns_its_promise_never_reaches_the_users_filename` fails with `Ok(150000)` if that arm goes: a
   truncated file wearing the user's name, reported as a success.
+- **A source that yields more on a PIECE BOUNDARY** is the same fault where a naive count cannot see it, and it is why
+  the body reads ahead. hyper stops POLLING the moment the promise is met, so a source whose pieces divide `size`
+  exactly is never asked again and every count agrees with the promise. Measured before the read-ahead existed: 200,000
+  bytes in 50,000-byte pieces against a promised 150,000 answered `Ok(150000)`, and the prefix went to the user's
+  filename (`webdav-fixture-apache`, 2026-09-02).
+  `a_source_that_overruns_on_a_piece_boundary_never_reaches_the_users_filename` is the cell.
 
-❗ **The over-long arm has a blind spot**, and it is the reason that cell's source hands its bytes over in pieces of
-70,001. hyper stops POLLING the body the moment `Content-Length` is satisfied, so an over-long source is only visible
-when the overshoot lands inside a piece it did poll. A source whose piece boundaries land exactly on `size` is never
-polled again, `total == size`, and the truncated prefix is MOVEd into place with an `Ok` (measured against
-`webdav-fixture-apache` by a throwaway cell, 200,000 bytes in 50,000-byte pieces against a promised 150,000, which
-answered `Ok(150000)`, 2026-09-02). A source reading in 1 MiB chunks against a file whose stale size is a MiB multiple
-hits it. Closing it means reading one piece ahead in the body's `unfold`, so the source's "I have more" is known before
-the PUT returns; open in `docs/specs/webdav-backend-follow-ups.md`.
+### The read-ahead, and its two counters
+
+The body's `unfold` pulls the NEXT piece out of the source before handing the current one over. That one line is the
+over-long guard: whether or not hyper polls again, "the source still had bytes" is already on record when the PUT
+returns. It costs one extra piece held in memory (the piece was going to be allocated anyway) and buys back the case
+above.
+
+It also splits one number into two, and ❗ they are not interchangeable:
+
+- **`fetched`** — bytes pulled OUT of the source. The guard's number, and what `write_from_stream` returns. Only this
+  one can count a piece hyper never asked for, which is the entire point.
+- **`handed`** — bytes given TO the body. What progress reports, clamped to `size`. This is the same quantity the bar
+  has always shown, so the read-ahead changes nothing a user sees. ❌ Reporting `fetched` would run the bar one piece
+  ahead of the wire and could show 100% before the last bytes are sent, which invites a cancel at the worst moment; the
+  clamp is there so an over-long source on its way to being refused cannot push it past 100% either.
+
+On every success the two are equal and both equal `size`.
+
+**Cancellation is unchanged.** The `unfold` answers a cancelled token before it pulls or hands over anything, so a
+cancelled upload puts no further byte on the wire; the piece read ahead is dropped with the stream state, having never
+been sent, and the temp is DELETEd on the way out as before.
+`a_cancelled_upload_leaves_neither_the_destination_nor_a_temp` holds that here, and the app's
+`webdav_integration_a_cancelled_upload_leaves_nothing_behind` holds it through the whole transfer pipeline. ❗ The crate
+cell's source is deliberately slow (16 pieces, 40 ms each): cancellation reaches this backend through the 200 ms
+progress tick, so a body that outruns one tick can only ever be cancelled before its first byte, which is not the case
+worth guarding.
 
 ## What a real server answers
 

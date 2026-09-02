@@ -14,6 +14,7 @@ use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
+use std::time::Duration;
 
 use cmdr_fs::staging::is_staging_temp_name;
 use cmdr_fs::volume::host::VolumeHost;
@@ -96,6 +97,14 @@ struct BufferSource {
     bytes: Vec<u8>,
     at: usize,
     chunk: usize,
+    /// How long the source takes to produce each piece.
+    ///
+    /// ❗ Zero everywhere but the cancellation cell, and there it is a PROPERTY
+    /// of the source rather than a wait on anything: cancellation reaches this
+    /// backend through the 200 ms progress tick, so a body that finishes sooner
+    /// than one tick can only ever be cancelled before its first byte. A source
+    /// that takes its time is what puts the cancel in the MIDDLE.
+    per_piece: Duration,
 }
 
 impl VolumeReadStream for BufferSource {
@@ -103,6 +112,10 @@ impl VolumeReadStream for BufferSource {
         Box::pin(async move {
             if self.at >= self.bytes.len() {
                 return None;
+            }
+            if !self.per_piece.is_zero() {
+                // allowed-test-sleep: the latency IS the subject. Cancellation reaches this backend through a 200 ms progress tick, so a body that outruns one tick can only be cancelled before its first byte; a source that takes its time is what puts the cancel mid-body.
+                tokio::time::sleep(self.per_piece).await;
             }
             let end = (self.at + self.chunk).min(self.bytes.len());
             let chunk = self.bytes[self.at..end].to_vec();
@@ -118,19 +131,35 @@ impl VolumeReadStream for BufferSource {
     }
 }
 
-/// The piece size every source here hands its bytes over in.
-///
-/// ❗ A number that divides nothing, and the size-mismatch cells lean on it:
-/// hyper stops polling a body the moment `Content-Length` is satisfied, so an
-/// over-long source is only visible when the overshoot lands INSIDE a piece it
-/// did poll. A round number that divided the promised size would hide it.
+/// The piece size a source here hands its bytes over in by default: a number
+/// that lines up with nothing, the way a real source's does.
 const SOURCE_CHUNK: usize = 70_001;
 
 fn source(bytes: Vec<u8>) -> Box<dyn VolumeReadStream> {
+    source_in_pieces(bytes, SOURCE_CHUNK)
+}
+
+/// A source that hands its bytes over in pieces of exactly `chunk`.
+///
+/// ❗ The piece size is the whole subject of one cell: where the pieces fall
+/// relative to the promised `size` used to decide whether an over-long source
+/// was noticed at all.
+fn source_in_pieces(bytes: Vec<u8>, chunk: usize) -> Box<dyn VolumeReadStream> {
     Box::new(BufferSource {
         bytes,
         at: 0,
-        chunk: SOURCE_CHUNK,
+        chunk,
+        per_piece: Duration::ZERO,
+    })
+}
+
+/// A source slow enough that the upload is still in flight at a progress tick.
+fn unhurried_source(bytes: Vec<u8>, chunk: usize, per_piece: Duration) -> Box<dyn VolumeReadStream> {
+    Box::new(BufferSource {
+        bytes,
+        at: 0,
+        chunk,
+        per_piece,
     })
 }
 
@@ -520,6 +549,82 @@ async fn a_source_that_overruns_its_promise_never_reaches_the_users_filename() {
         "a truncated body must never wear the user's filename"
     );
     assert_no_staging_leftovers(&volume, &dir, "a source that overran its promise").await;
+
+    clean(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_source_that_overruns_on_a_piece_boundary_never_reaches_the_users_filename() {
+    // ❗ The same overrun as above with the pieces moved, and that is the whole
+    // cell: hyper stops POLLING the body the moment `Content-Length` is
+    // satisfied, so a guard that only counts what it was ASKED for is blind to a
+    // source whose pieces land exactly on the promise. 150,000 bytes is three
+    // 50,000-byte pieces, so the fourth is never requested, and every count this
+    // side keeps agrees with the promise while the server holds a prefix.
+    //
+    // ❗ The read-ahead in `writes.rs` is what closes it: the body pulls the next
+    // piece BEFORE yielding the current one, so "the source still had bytes" is
+    // known by the time the PUT returns, whoever stopped asking.
+    let (volume, dir) = stock_with_scratch().await;
+    let path = dir.join("aligned-overrun.bin");
+    let bytes = fixture_large_bytes(200_000);
+    let promised = 150_000;
+
+    let refused = volume
+        .write_from_stream(&path, promised, source_in_pieces(bytes, 50_000), &|_, _| {
+            ControlFlow::Continue(())
+        })
+        .await;
+
+    assert!(
+        matches!(refused, Err(VolumeError::IoError { .. })),
+        "the source's pieces divide the promise, so nothing on the wire is wrong and only the read-ahead can tell; got {refused:?}"
+    );
+    assert!(
+        !volume.exists(&path).await,
+        "a truncated body must never wear the user's filename"
+    );
+    assert_no_staging_leftovers(&volume, &dir, "a source that overran on a piece boundary").await;
+
+    clean(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_cancelled_upload_leaves_neither_the_destination_nor_a_temp() {
+    // ❗ The cancel promise, held at the level the body stream lives at. The
+    // app's `webdav_integration_a_cancelled_upload_leaves_nothing_behind` holds
+    // the same promise through the transfer pipeline; this one holds it against
+    // `write_from_stream` directly, because the body reads one piece AHEAD and a
+    // piece fetched before the cancel was seen must change nothing about what
+    // the user is left with.
+    let (volume, dir) = stock_with_scratch().await;
+    let path = dir.join("cancelled.bin");
+    // 16 pieces at 40 ms each, so the body is still going at the 200 ms tick and
+    // the whole cell is a fraction of a second.
+    let bytes = fixture_large_bytes(4 * 1024 * 1024);
+    let size = bytes.len() as u64;
+    let source = unhurried_source(bytes, 256 * 1024, Duration::from_millis(40));
+
+    // The transfer engine's Cancel: `Break`, once bytes are actually moving, so
+    // the cancel lands mid-body rather than before the first one.
+    let cancelled = volume
+        .write_from_stream(&path, size, source, &|sent, _| {
+            if sent > 0 {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        })
+        .await;
+
+    assert!(
+        matches!(cancelled, Err(VolumeError::Cancelled(_))),
+        "a cancel is its own answer, never a transport failure; got {cancelled:?}"
+    );
+    assert!(!volume.exists(&path).await, "the destination was never created");
+    assert_no_staging_leftovers(&volume, &dir, "a cancelled upload").await;
 
     clean(&volume, &dir).await;
 }

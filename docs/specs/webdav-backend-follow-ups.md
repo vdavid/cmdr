@@ -38,20 +38,19 @@ What no Apache fixture can answer, and what a Nextcloud one now does:
 
 The public surface IS pinned (6 / 1 / 8, measured 2026-09-01), so widening it is the usual conversation.
 
-One thing writing those tests turned up, and it is a data-safety hole rather than a coverage gap:
+One thing writing those tests turned up, a data-safety hole rather than a coverage gap, now closed:
 
-- [ ] **`writes.rs`'s over-long guard has a blind spot.** hyper stops POLLING the body the moment `Content-Length` is
-      satisfied, so an over-long source is caught only when the overshoot lands inside a piece hyper did poll. A source
-      whose piece boundaries land exactly on `size` is never polled again, the counter agrees with the promise, and the
-      truncated prefix is MOVEd onto the user's filename and reported as a success. Measured by a throwaway cell against
-      `webdav-fixture-apache`: 200,000 bytes in 50,000-byte pieces against a promised 150,000 answered `Ok(150000)`
-      (2026-09-02). A source reading in 1 MiB chunks against a file whose stale size is a MiB multiple, that has since
-      grown, hits it. **The fix**: read one piece ahead in the body's `unfold` (carry a `pending: Option<Vec<u8>>`,
-      fetch the next piece before yielding the current one, count at fetch time), so the source's "I have more" is known
-      before the PUT returns and both arms land on the existing `total != size` guard. Care needed around cancellation
-      (a piece is fetched one poll before the cancel is seen) and progress reading one piece ahead of the wire. Plus a
-      third cell for the aligned case. Half a day. The unaligned arms are pinned today (`crates/cmdr-webdav/DETAILS.md`
-      § "Write staging").
+- [x] **`writes.rs` could MOVE a truncated file onto the user's filename.** hyper stops POLLING a body the moment
+      `Content-Length` is satisfied, so a source whose piece boundaries land exactly on `size` was never asked again:
+      every count agreed with the promise while the server held a prefix, and the write reported success. Measured
+      before the fix against `webdav-fixture-apache` — 200,000 bytes in 50,000-byte pieces against a promised 150,000
+      answered `Ok(150000)` (2026-09-02). Closed by reading one piece ahead in the body's `unfold`, so the source's "I
+      have more" is on record before the PUT returns; the mechanism, the two counters it splits the guard and progress
+      into, and the cancellation reasoning are in `crates/cmdr-webdav/DETAILS.md` § "Write staging". ❗
+      **Backend-specific, confirmed by reading rather than assumed**: the hole needs a transport that enforces a
+      promised length and then stops asking. `crates/cmdr-sftp` drains its source to `None` and writes every byte it
+      gets (`size` is progress only there), the app's `stream_pipe_file` passes `stream.total_size()` straight through
+      with no gate of its own, and `StagedWrite` never compares byte counts at all. None of the three can reproduce it.
 
 Two smaller things the review pass flagged and did not settle, each an hour at most:
 
