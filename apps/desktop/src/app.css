@@ -23,9 +23,9 @@
   --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e8e8e8;
   /* Checkerboard behind transparent image pixels (file viewer's image stage). A
-     dedicated pair, NOT primary/tertiary: those sit ~1.2:1 apart, which on 10px
-     cells reads as a flat surface, so transparency looked like solid white. Tile
-     vs base is ~1.6:1 here, the Preview.app / Photoshop "light" checker range. */
+     dedicated pair, not primary/tertiary: those sit ~1.2:1 apart, too faint to read
+     as a checker. Tile vs base is ~1.6:1 here, the Preview.app / Photoshop "light"
+     checker range. */
   --color-checkerboard-base: #ffffff;
   --color-checkerboard-tile: #cccccc;
   /* Inactive tab surface — slightly darker than `--color-bg-secondary` in
