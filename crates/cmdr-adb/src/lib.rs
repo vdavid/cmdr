@@ -45,5 +45,5 @@ pub use devices::{AdbDevice, AdbDeviceState, DeviceTracker, list_devices, track_
 pub use errors::{AdbConnectError, AdbError, volume_error_from_adb, volume_error_from_errno};
 pub use features::DeviceFeatures;
 pub use params::AdbConnectionParams;
-pub use server::AdbEndpoint;
+pub use server::{AdbEndpoint, forget_start_attempt, locate_adb_binary};
 pub use volume::{AdbVolume, connect_adb_volume};

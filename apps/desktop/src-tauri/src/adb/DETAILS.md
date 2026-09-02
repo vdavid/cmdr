@@ -21,9 +21,17 @@ seam both device backends register through is `device_volumes.rs`, whose module 
 ## Flows
 
 **Startup** (`lib.rs` setup): `install_device_provider` registers `AdbDeviceProvider` beside `MtpDeviceProvider`,
-then `start_adb_tracker` starts the one `host:track-devices` subscription for the process (a `OnceLock`; a second call
-is a no-op). The tracker talks only to the local server socket, never to USB. With no `adb` installed it logs at
-`debug` and idles, so a machine without the platform tools sees nothing and pays nothing.
+then `start_adb_tracker` starts the `host:track-devices` subscription (a second call while one is running is a
+no-op). The tracker talks only to the local server socket, never to USB. With no `adb` binary the tracker STOPS
+itself and says so at `debug`: there is nothing to reconnect to, and retrying would warn every 15 s for the whole
+session on the many machines that carry no Android tooling. A machine without the platform tools therefore sees
+nothing and pays nothing after startup.
+
+**Re-check** (`recheck_adb_install`): the one path allowed to retry `adb start-server`. It stands for a person saying
+"I installed it now", so it clears the crate's start-attempt memory (`cmdr_adb::forget_start_attempt`), starts a fresh
+tracker, and answers an `AdbInstallStatus` (`binaryPath`, `tracking`) for the settings screen to render.
+`get_adb_install_status` is the same answer without looking again. ❌ Nothing may poll either: one attempt per human
+action is what keeps the "never a retry loop that spawns processes" rule true.
 
 **Hotplug**: every push from `cmdr_adb::track_devices` (the full `host:devices-l` list, refetched by the crate on each
 short-format push) lands in `device_provider::apply_device_list`, synchronously on the runtime. It stores the list,
@@ -31,7 +39,7 @@ and for every serial that left and had a volume, calls the volume's `note_device
 `Disconnected` transition once) and `VolumeManager::unregister` (which retires it). Then
 `notify_devices_changed("adb")` → `volumes-changed` → the frontend refetches the list. When the server goes away the
 crate reconnects with backoff (1 s doubling to 15 s) and redelivers the list, so a change missed while it was down is
-caught up.
+caught up. That backoff is for a server that exists and went away; a MISSING `adb` binary ends the loop instead.
 
 **Connect**: `connect_adb_device(serial)` answers an already-dialed volume's id without a second dial; otherwise
 `cmdr_adb::connect_adb_volume(params, host, cancel)` runs the crate's four phases, the volume goes in through

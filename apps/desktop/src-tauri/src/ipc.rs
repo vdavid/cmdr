@@ -508,6 +508,8 @@ macro_rules! ipc_command_manifest {
                     // backend is macOS + Linux only.
                     crate::adb::commands::list_adb_devices,
                     crate::adb::commands::connect_adb_device,
+                    crate::adb::commands::get_adb_install_status,
+                    crate::adb::commands::recheck_adb_install,
                 ]
                 dispatch_only: []
             }

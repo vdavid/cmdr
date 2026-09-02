@@ -9,7 +9,8 @@ user-facing words.
 - `server.rs` (endpoint + the one `start-server` attempt), `transport.rs` (the ONLY module that knows the wire framing),
   `devices.rs` (`host:devices-l` + the `host:track-devices` hotplug stream), `features.rs` (read once per session),
   `sync.rs` (`STAT`/`LIST`/`RECV`/`SEND`), `shell.rs` (`mkdir`/`rm`/`mv`/`cp`/`df`), `errors.rs`, `params.rs`,
-  `testing.rs` (the fake ADB server).
+  `testing/` (the fake ADB server: `tree` the filesystem model, `server` the listener and wire, `shell` the device-shell
+  verbs).
 - `volume/`: the `Volume` impl by job: `paths`, `query`, `streams`, `writes`, `scan`, `mutation`, `mapping`, `state`,
   `volume_impl`, `testing`.
 
@@ -35,8 +36,10 @@ user-facing words.
   paused transfer would park every listing. `max_concurrent_ops` (1, the app's `"adb"` settings row) is what bounds
   transfers.
 - **❗ `host:track-devices` is the hotplug channel AND the retirement signal**: `track_devices` refetches the long list
-  on every push and reconnects with backoff; the app retires the volume of a serial that left. Operations remain the
-  liveness detector in between, like SFTP.
+  on every push and reconnects with backoff, but ENDS on `AdbNotInstalled` (no binary, nothing to reconnect to, and a
+  retry would warn all session on every machine without Android tooling); the app retires the volume of a serial that
+  left, and revives a stopped tracker through `forget_start_attempt`. Operations remain the liveness detector in
+  between, like SFTP.
 - **❗ Features are read once at connect** (`DeviceFeatures::fetch`). ❌ Never re-probe at a call site.
 - **❗ Report transitions, never states** (`volume/state.rs`); a retired volume reports nothing.
 - **❌ Never `cfg(test)`-gate a fixture; use `any(test, feature = "testing")`.** The app's ADB suites share

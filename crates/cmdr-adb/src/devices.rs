@@ -204,6 +204,12 @@ impl DeviceTracker {
         self.cancel.cancel();
         self.task.abort();
     }
+
+    /// Whether the subscription is still following the server. `false` once it
+    /// has been stopped, or once it gave up because no `adb` binary exists.
+    pub fn is_running(&self) -> bool {
+        !self.task.is_finished()
+    }
 }
 
 impl Drop for DeviceTracker {
@@ -245,6 +251,15 @@ pub(crate) fn track_devices_with(
                 Some(Ok(())) => {
                     debug!("adb track-devices socket closed; reconnecting");
                     wait = backoff.initial;
+                }
+                // ❗ No `adb` binary means there is nothing to reconnect TO, and no
+                // amount of waiting changes that. Retrying would warn every
+                // `cap` seconds for the whole session on the many machines that
+                // have no Android tooling. The app restarts this tracker when
+                // the user says they have installed it.
+                Some(Err(AdbConnectError::AdbNotInstalled)) => {
+                    debug!("no adb binary found; not following the device list until a re-check");
+                    return;
                 }
                 Some(Err(err)) => {
                     warn!("adb track-devices dropped ({err}); retrying in {wait:?}");

@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use log::{debug, info, warn};
 use tokio::net::TcpStream;
-use tokio::sync::OnceCell;
+use tokio::sync::Mutex;
 
 use crate::errors::AdbConnectError;
 use crate::transport::AdbConnection;
@@ -29,11 +29,23 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 /// How long `adb start-server` may take to come up.
 const START_SERVER_TIMEOUT: Duration = Duration::from_secs(15);
 
-/// The one start attempt this process makes. `true` if the binary reported
-/// success. A second refused connect after a start never starts again: either
-/// the server is there and something else is wrong, or the binary itself can't
-/// bring it up, and both are the user's to look at.
-static SERVER_STARTED: OnceCell<bool> = OnceCell::const_new();
+/// The outcome of the start attempt this process has made, if it has made one.
+/// `Some(true)` if the binary reported success. An automatic second refused
+/// connect never starts again: either the server is there and something else is
+/// wrong, or the binary itself can't bring it up, and both are the user's to
+/// look at. Holding the lock across the attempt also means N concurrent
+/// connects spawn ONE `adb`, never N.
+///
+/// [`forget_start_attempt`] clears it, so a person who just installed
+/// platform-tools gets a fresh attempt. That stays one attempt per human
+/// action, ❌ never a retry loop that spawns processes.
+static SERVER_STARTED: Mutex<Option<bool>> = Mutex::const_new(None);
+
+/// Drops the memory of this process's `adb start-server` attempt, so the next
+/// connect makes a new one. For an explicit user-driven re-check only.
+pub async fn forget_start_attempt() {
+    *SERVER_STARTED.lock().await = None;
+}
 
 /// One ADB server to talk to.
 #[derive(Debug, Clone)]
@@ -43,6 +55,10 @@ pub struct AdbEndpoint {
     /// means "locate lazily on first refused connect".
     binary: Option<PathBuf>,
     may_start_server: bool,
+    /// Whether a refused connect may go looking for a binary. Off only for the
+    /// test endpoint that has to reach `AdbNotInstalled` on a machine that does
+    /// have `adb` installed.
+    may_locate_binary: bool,
 }
 
 impl AdbEndpoint {
@@ -57,6 +73,7 @@ impl AdbEndpoint {
             addr: SocketAddr::from((Ipv4Addr::LOCALHOST, port)),
             binary: None,
             may_start_server: true,
+            may_locate_binary: true,
         }
     }
 
@@ -68,6 +85,20 @@ impl AdbEndpoint {
             addr,
             binary: None,
             may_start_server: false,
+            may_locate_binary: false,
+        }
+    }
+
+    /// An endpoint whose refused connect always answers
+    /// [`AdbConnectError::AdbNotInstalled`], whatever this machine has on its
+    /// `PATH`. The only way to exercise the no-binary path deterministically.
+    #[cfg(any(test, feature = "testing"))]
+    pub fn at_without_adb(addr: SocketAddr) -> Self {
+        Self {
+            addr,
+            binary: None,
+            may_start_server: true,
+            may_locate_binary: false,
         }
     }
 
@@ -85,11 +116,17 @@ impl AdbEndpoint {
         match self.dial().await {
             Ok(conn) => Ok(conn),
             Err(err) if err.kind() == std::io::ErrorKind::ConnectionRefused && self.may_start_server => {
-                let Some(binary) = self.binary.clone().or_else(locate_adb_binary) else {
+                let located = || self.may_locate_binary.then(locate_adb_binary).flatten();
+                let Some(binary) = self.binary.clone().or_else(located) else {
                     return Err(AdbConnectError::AdbNotInstalled);
                 };
                 let port = self.addr.port();
-                let started = SERVER_STARTED.get_or_init(|| start_server(binary, port)).await;
+                let mut attempt = SERVER_STARTED.lock().await;
+                let started = match *attempt {
+                    Some(started) => started,
+                    None => *attempt.insert(start_server(binary, port).await),
+                };
+                drop(attempt);
                 if !started {
                     return Err(AdbConnectError::ServerUnreachable(err.to_string()));
                 }

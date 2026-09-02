@@ -90,6 +90,41 @@ async fn next(rx: &mut mpsc::UnboundedReceiver<Vec<AdbDevice>>) -> Vec<AdbDevice
         .expect("channel open")
 }
 
+/// ❗ Pins the difference between "the server went away" (reconnect) and "there
+/// is no `adb` at all" (give up). Retrying the latter warns every `cap` seconds
+/// for the whole session on every machine without Android tooling, which is most
+/// of them.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_tracker_gives_up_when_no_adb_exists_instead_of_retrying_all_session() {
+    // A port nothing listens on any more, so every connect is refused.
+    let dead = FakeAdbServer::start(FakeTree::new()).await;
+    let addr = dead.addr();
+    dead.stop();
+
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let on_change: Arc<dyn Fn(Vec<AdbDevice>) + Send + Sync> = Arc::new(move |list| {
+        let _ = tx.send(list);
+    });
+    let tracker = track_devices_with(
+        AdbEndpoint::at_without_adb(addr),
+        tokio::runtime::Handle::current(),
+        on_change,
+        TrackerBackoff {
+            initial: Duration::from_millis(10),
+            cap: Duration::from_millis(20),
+        },
+    );
+
+    // Well past several backoff rounds: a retrying tracker is still running here.
+    cmdr_fs::testing::wait_until_async(
+        Duration::from_secs(5),
+        "a tracker with no adb binary ends its loop instead of reconnecting",
+        || !tracker.is_running(),
+    )
+    .await;
+    assert!(rx.try_recv().is_err(), "it never had a device list to deliver");
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn tracker_delivers_pushes_and_reconnects_after_a_drop() {
     let server = FakeAdbServer::start(FakeTree::new()).await;

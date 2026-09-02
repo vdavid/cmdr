@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use cmdr_adb::{AdbConnectError, AdbDevice};
 
+use super::volume_wiring::AdbInstallStatus;
+
 /// Why a connect didn't produce a volume, as the frontend branches on it.
 ///
 /// A typed mirror of `cmdr_adb::AdbConnectError`, ❌ never prose: the
@@ -65,6 +67,24 @@ impl From<AdbConnectError> for AdbConnectOutcomeError {
 #[specta::specta]
 pub async fn list_adb_devices() -> Vec<AdbDevice> {
     super::device_provider::cached_devices()
+}
+
+/// Where the `adb` binary is and whether the device list is live, as the
+/// settings screen renders it. Reads what is already known; ❌ no re-check.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_adb_install_status() -> AdbInstallStatus {
+    super::volume_wiring::adb_install_status()
+}
+
+/// Looks for `adb` again and restarts the device tracker if it turns up.
+///
+/// ❗ User-driven only ("I installed it now"): this is the one path allowed to
+/// retry `adb start-server`, and a caller must not poll it.
+#[tauri::command]
+#[specta::specta]
+pub async fn recheck_adb_install(app: tauri::AppHandle) -> AdbInstallStatus {
+    super::volume_wiring::recheck_adb_install(&app).await
 }
 
 /// Dials the device with `serial` and answers its volume id.

@@ -52,7 +52,10 @@ device list on every change (the SHORT `host:devices` format, `serial\tstate` pe
 `device` (`AdbDeviceState::Ready`) is usable; the enum carries the rest as typed values so the app can word them.
 `track_devices` refetches `host:devices-l` on every push (the long format carries `product`, `model`, `device`,
 `transport_id`), hands the callback the full list, and when the socket drops reconnects with backoff (1 s doubling,
-capped at 15 s), redelivering the list after each reconnect so a listener catches up.
+capped at 15 s), redelivering the list after each reconnect so a listener catches up. ❗ `AdbNotInstalled` ENDS the loop
+instead: no binary means no server to reconnect to, and a machine with no Android tooling would otherwise carry a
+warning every 15 s for the whole session. `forget_start_attempt` plus a fresh `track_devices` is how a caller revives it
+after the user installs the tools.
 
 **Sync service** (`sync.rs`): after `sync:` → `OKAY`, binary little-endian packets `[id: 4 ASCII][arg: u32 LE]`.
 
@@ -152,7 +155,8 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
 
 - **Here**: the framing, the sync and shell codecs, the errno table, path anchoring, the connect phases and calling one
   off, the state transitions, and the shared `cmdr_fs::volume::conformance` assertions. They run against the **fake ADB
-  server** in `src/testing.rs` (`FakeAdbServer`): a loopback `TcpListener` speaking the host framing, `host:transport`,
+  server** in `crates/cmdr-adb/src/testing/` (`FakeAdbServer` in `server.rs`, the filesystem model in `tree.rs`, the
+  shell verbs in `shell.rs`): a loopback `TcpListener` speaking the host framing, `host:transport`,
   `host-serial:<serial>:features`, `sync:` (both v1 and v2 verbs), and `shell,v2,raw:` over an in-memory `FakeTree`,
   plus `host:track-devices` with `push_devices` for scripted hotplug and `drop_connections` / `stop` for faults.
   `volume/testing.rs` holds the volume-level fixtures on top of it. No `adb` binary, no device, no Docker: every cell

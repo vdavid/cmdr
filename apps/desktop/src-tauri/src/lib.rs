@@ -585,7 +585,8 @@ pub fn run() {
 
             // Follow the ADB server's device list (`host:track-devices`). Talks
             // only to the local server socket, never to USB, so no TCC prompt and
-            // no FDA gate; with no `adb` installed it logs at debug and idles.
+            // no FDA gate; with no `adb` installed the tracker stops itself
+            // rather than retrying for the session (`recheck_adb_install` revives it).
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             adb::start_adb_tracker(app.handle());
 

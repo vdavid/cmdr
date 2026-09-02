@@ -3235,6 +3235,18 @@ export const commands = {
   connectAdbDevice: (serial: string) =>
     typedError<string, AdbConnectOutcomeError>(__TAURI_INVOKE('connect_adb_device', { serial })),
   /**
+   *  Where the `adb` binary is and whether the device list is live, as the
+   *  settings screen renders it. Reads what is already known; ❌ no re-check.
+   */
+  getAdbInstallStatus: () => __TAURI_INVOKE<AdbInstallStatus>('get_adb_install_status'),
+  /**
+   *  Looks for `adb` again and restarts the device tracker if it turns up.
+   *
+   *  ❗ User-driven only ("I installed it now"): this is the one path allowed to
+   *  retry `adb start-server`, and a caller must not poll it.
+   */
+  recheckAdbInstall: () => __TAURI_INVOKE<AdbInstallStatus>('recheck_adb_install'),
+  /**
    *  Lists all mounted volumes, including connected MTP devices, each enriched
    *  with what its registered backend can do.
    */
@@ -4368,6 +4380,20 @@ export type AdbDeviceState =
   | 'sideload'
   // A word this crate doesn't know.
   | 'unknown'
+
+/**
+ *  Where Cmdr found the `adb` binary, and whether it is following the server.
+ *
+ *  Both halves are what a settings screen renders: a path to show, and whether
+ *  the device list is live. `binary_path` is `None` exactly when
+ *  `AdbConnectError::AdbNotInstalled` is what a connect would answer.
+ */
+export type AdbInstallStatus = {
+  // The `adb` binary in use, if one was found.
+  binaryPath: string | null
+  // Whether the `host:track-devices` subscription is live.
+  tracking: boolean
+}
 
 // The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
 export type AgentErrorKindView =
