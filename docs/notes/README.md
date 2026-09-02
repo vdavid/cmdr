@@ -183,6 +183,17 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   and a Column-first vertical slice as the first build**, with MCP-shaped-against-bespoke and manifest-against-types
   flagged as the two calls expensive to get wrong. ⚠️ 84 KB, most of it the survey tables backing the priority stats.
 
+- `volume-plugin-api-2026-09-02.md` — the Volume-plugin-only companion to the note above: could we tell people to write
+  their own backend, and would anyone's fit. **The trait is ready and the surround isn't**: `Volume` is object-safe and
+  async, `VolumeHost` already names every seam a backend needs, and `volume::conformance` is a runnable data-safety
+  gate, but a backend is still compile-time (per-protocol wiring, a hand-written ID constructor, closed frontend unions,
+  and `cmdr-fs` is BSL and `publish = false`). Read it before proposing a plugin API, and read the gap sections
+  regardless: **two seams it names are worth building for first-party backends anyway** (OAuth, which nothing supports,
+  and path-triggered mounting, which only archives can do), and two others closed themselves during the analysis
+  (`device_volumes.rs`, `network/connect_wiring.rs`), which is why it records what those still can't carry. Carries the
+  five volume types a third party would plausibly bring, three of which fit today, and the two cheaper rungs (publish
+  the recipe, bridge to rclone) that deliver the message without the runtime.
+
 - `disk-cleanup-advice-process.md` — how to give disk-cleanup advice without losing the user's trust, from a session
   where an agent got it wrong three times. **The heuristic is to delete only what is BOTH filesystem-idle by mtime and
   process-idle by `pgrep`, and to present candidates with their signals rather than a "safe to delete" bucket**, which
