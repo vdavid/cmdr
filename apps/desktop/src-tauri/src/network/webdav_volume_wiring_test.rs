@@ -77,6 +77,7 @@ async fn cancelling_an_attempt_nobody_is_running_is_a_plain_no() {
 /// even a store that surprised us here could not reach a server.
 #[tokio::test]
 async fn a_connect_that_ends_takes_its_attempt_entry_with_it_and_registers_nothing() {
+    let _secrets = crate::test_support::isolate_secrets();
     const ATTEMPT: &str = "webdav-a-connect-that-ends";
     let base_url = url::Url::parse("https://192.0.2.1/dav/").expect("a literal");
     let params = WebdavConnectionParams::new(base_url.clone(), "nobody", "/");

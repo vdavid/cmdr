@@ -177,44 +177,18 @@ pub fn delete_ai_api_key(provider_id: String) -> Result<(), AiApiKeyError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
-
-    /// Per-test isolation: each test runs in its own data dir so the PlainFileStore's JSON file
-    /// doesn't race across nextest's per-test processes (which would share the prod app-support
-    /// dir otherwise: secrets `save` succeeds but the subsequent `get` sees another test's write).
-    /// The name is random, so no two runs can ever collide on it.
-    ///
-    /// **Bind the returned `TempDir` for the whole test** (`let _dir = isolate_secrets();`).
-    /// Dropping it deletes the directory, so `let _ = …` would pull the store out from under the
-    /// test. Holding it is also what keeps `$TMPDIR` clean: the dir goes away when the test ends,
-    /// instead of one surviving per test per run.
-    ///
-    /// Must be called BEFORE the first secret store access in the test: the secret store backend
-    /// is a `LazyLock` and reads these env vars exactly once.
-    #[must_use = "dropping the TempDir deletes the store's dir; bind it for the test's lifetime"]
-    fn isolate_secrets() -> TempDir {
-        let dir = TempDir::new().expect("create test data dir");
-        // SAFETY: `std::env::set_var` is unsound only under concurrent env access. Each nextest test
-        // runs in its own process, and `isolate_secrets` is called at the top of each test on that
-        // process's single (main) thread before any code reads these vars (the secret store samples
-        // them once via `LazyLock`), so no other thread can be touching the environment here.
-        unsafe {
-            std::env::set_var("CMDR_DATA_DIR", dir.path());
-            std::env::set_var("CMDR_SECRET_STORE", "file");
-        }
-        dir
-    }
+    use crate::test_support::isolate_secrets;
 
     #[test]
     fn save_and_get_roundtrip() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         save("openai", "sk-test-abc123").unwrap();
         assert_eq!(get("openai").unwrap(), "sk-test-abc123");
     }
 
     #[test]
     fn get_missing_returns_not_found() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         match get("openai") {
             Err(AiApiKeyError::NotFound(_)) => {}
             other => panic!("expected NotFound, got {other:?}"),
@@ -223,7 +197,7 @@ mod tests {
 
     #[test]
     fn status_reflects_save_and_delete() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         assert!(!status("openai").unwrap().is_set);
         save("openai", "sk-test").unwrap();
         assert!(status("openai").unwrap().is_set);
@@ -233,14 +207,14 @@ mod tests {
 
     #[test]
     fn delete_missing_is_idempotent() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         delete("openai").unwrap();
         delete("openai").unwrap();
     }
 
     #[test]
     fn save_overwrites_existing() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         save("openai", "sk-first").unwrap();
         save("openai", "sk-second").unwrap();
         assert_eq!(get("openai").unwrap(), "sk-second");
@@ -248,7 +222,7 @@ mod tests {
 
     #[test]
     fn status_reports_unset_without_a_fingerprint() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         let status = status("openai").unwrap();
         assert!(!status.is_set);
         assert_eq!(status.fingerprint, "");
@@ -256,7 +230,7 @@ mod tests {
 
     #[test]
     fn status_reports_set_with_a_fingerprint() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         save("openai", "sk-test-abc123").unwrap();
         let status = status("openai").unwrap();
         assert!(status.is_set);
@@ -267,7 +241,7 @@ mod tests {
     /// share one (a revoked-then-replaced key would otherwise serve the old model list).
     #[test]
     fn status_fingerprint_changes_with_the_key() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         save("openai", "sk-first").unwrap();
         let first = status("openai").unwrap().fingerprint;
         save("openai", "sk-second").unwrap();
@@ -278,7 +252,7 @@ mod tests {
     /// The whole point of the fingerprint: it goes to a renderer, so it must not be the key.
     #[test]
     fn status_fingerprint_does_not_contain_the_key() {
-        let _dir = isolate_secrets();
+        let _secrets = isolate_secrets();
         save("openai", "sk-test-abc123").unwrap();
         let fingerprint = status("openai").unwrap().fingerprint;
         assert!(!fingerprint.contains("sk-test-abc123"));

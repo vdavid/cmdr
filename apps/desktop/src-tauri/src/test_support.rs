@@ -11,6 +11,10 @@
 //! (`std::env::temp_dir().join("cmdr_foo_test")`): every process on the machine shares it. See
 //! [`TestDir`] for the three ways that bites.
 //!
+//! ❌ A test that reaches the secret store, however indirectly, must open with
+//! [`isolate_secrets`]. The store panics rather than falling back to the developer's real one, so
+//! forgetting is loud instead of silent.
+//!
 //! ## Why the live-bytes counter is duplicated here
 //!
 //! [`heap_bytes_held`] and the `#[global_allocator]` behind it also exist, nearly line for line,
@@ -34,6 +38,37 @@ use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{
     BatchScanResult, CopyScanResult, InMemoryVolume, ListingProgress, ScanConflict, SourceItemInfo, Volume, VolumeError,
 };
+
+/// Points the secret store at a scratch directory of this test's own, and returns it.
+///
+/// **Every test that reaches `crate::secrets::store()` needs this**, including the ones that get
+/// there through `network::keychain`, `ai::api_keys`, or a `#[tauri::command]` that wraps either.
+/// Without it the store has nowhere to go but the developer's real data dir
+/// (`~/Library/Application Support/com.veszelovszki.cmdr/secrets.json` on macOS): the suite would
+/// write live fixtures into someone's actual credentials, and reading them back on the next run
+/// would fail every "nothing is stored yet" assertion. The test store refuses to operate without
+/// `CMDR_DATA_DIR`, so a missing call panics at the first store access naming this helper.
+///
+/// **Bind the returned `TestDir` for the whole test** (`let _secrets = isolate_secrets();`).
+/// Dropping it deletes the directory, so `let _ = …` would pull the store out from under the test.
+/// Holding it is also what keeps `$TMPDIR` clean: the dir goes away when the test ends, instead of
+/// one surviving per test per run.
+///
+/// Call it BEFORE the first store access. The scratch path is random, so no two tests (or two
+/// concurrent suite runs) can collide on it.
+#[must_use = "dropping the TestDir deletes the store's dir; bind it for the test's lifetime"]
+pub(crate) fn isolate_secrets() -> TestDir {
+    let dir = TestDir::new("secrets");
+    // SAFETY: `std::env::set_var` is unsound only under concurrent env access. Each nextest test
+    // runs in its own process, and `isolate_secrets` is called at the top of each test on that
+    // process's single (main) thread before any code reads these vars, so no other thread can be
+    // touching the environment here.
+    unsafe {
+        std::env::set_var("CMDR_DATA_DIR", dir.as_ref());
+        std::env::set_var("CMDR_SECRET_STORE", "file");
+    }
+    dir
+}
 
 /// A volume that never answers: every read and scan future parks forever.
 ///

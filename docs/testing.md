@@ -107,6 +107,8 @@ few seconds one directory buys. Measure the directory in isolation and read the 
   crate), see § "Scratch directories (Rust)". **Never** `std::env::temp_dir().join("cmdr_something")`
 - **Wait for background work in a Rust test**: `crate::test_support::wait_until` (sync) / `wait_until_async`
   (`#[tokio::test]`), see § "Waiting for background work (Rust)". **Never** a hand-rolled poll loop or a fixed sleep
+- **A Rust test that stores a credential or an API key**: open it with `crate::test_support::isolate_secrets()`, see §
+  "Secret-store isolation (Rust)". **Never** let it run unisolated: the store panics rather than falling back
 - **`#[tauri::command]` boundary**: vitest IPC contract test using `installIpcMock()` from
   `apps/desktop/src/lib/ipc/test-helpers.ts`
 - **Frontend component logic**: vitest + svelte-testing-library in `*.test.ts`
@@ -125,6 +127,32 @@ few seconds one directory buys. Measure the directory in isolation and read the 
 - **Cross-component flow (return-focus, dialog stack, navigation)**: E2E (Playwright)
 - **Storage volume operation (MTP, SMB, SFTP, WebDAV)**: Integration test against a virtual fixture (virtual-mtp
   feature, the Docker SMB, SFTP, and WebDAV stacks)
+
+## Secret-store isolation (Rust)
+
+Any test that reaches `crate::secrets::store()` opens with `crate::test_support::isolate_secrets()` and keeps the
+returned `TestDir` bound for the whole test:
+
+```rust
+use crate::test_support::isolate_secrets;
+
+let _secrets = isolate_secrets();
+save_sftp_credentials(host, 22, "ada".into(), "pa55".into()).await.unwrap();
+```
+
+The reach is wider than it looks: `network::keychain`, `network::credential_store`, `ai::api_keys`, the
+`#[tauri::command]`s wrapping any of them, `sftp_volume_wiring` / `webdav_volume_wiring`'s connect paths, and
+`volume_host::host().credentials()` all land there.
+
+- **The helper points `CMDR_DATA_DIR` at a scratch dir**, which is the only thing that keeps the store off the
+  developer's real one (`~/Library/Application Support/com.veszelovszki.cmdr/secrets.json` on macOS). It also sets
+  `CMDR_SECRET_STORE=file`, so a target that reads the var directly agrees.
+- **Forgetting it panics** at the first store access, naming the helper: under `cfg(test)` the store is `TestStore`,
+  which refuses to resolve a directory without `CMDR_DATA_DIR`. `TestStore` exists only under `cfg(test)`, so no shipped
+  build can reach that panic.
+- **The point of the panic is the self-poisoning**, not just the mess: fixtures written to the real store come back on
+  the next run, and `commands::sftp` / `commands::webdav`'s "nothing is stored before anything is saved" opener goes red
+  on every run after the first, on any branch, looking exactly like a code regression.
 
 ## Scratch directories (Rust)
 

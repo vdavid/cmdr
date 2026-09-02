@@ -36,6 +36,10 @@ else macOS → Keychain; else Linux + Secret Service available → Keyring; else
   can't mix into prod credentials.
 - **File stores respect `CMDR_DATA_DIR`** so dev and prod credentials are isolated. Dev mode doesn't encrypt (developer's
   own machine, dev data dir).
+- **A Rust test that reaches `store()` opens with `crate::test_support::isolate_secrets()`.** Under `cfg(test)` the
+  backend is `TestStore`, which panics rather than resolve a directory when `CMDR_DATA_DIR` is unset: unisolated, it
+  would write fixtures into the developer's real `secrets.json` and make the next run's "nothing is stored yet"
+  assertions fail. `docs/testing.md` § "Secret-store isolation (Rust)".
 - **`EncryptedFileStore` and `PlainFileStore` have separate `Mutex` statics** (compiled on different platforms).
 - **`is_file_backed()`** drives a one-time frontend info toast about credential storage. It returns true in dev mode
   (PlainFileStore), but the toast isn't shown in dev.

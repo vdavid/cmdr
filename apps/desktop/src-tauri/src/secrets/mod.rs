@@ -90,8 +90,10 @@ fn init_store() -> Box<dyn SecretStore> {
     // developer's real Keychain entries (the flaky
     // `ai::api_keys::tests::has_reflects_save_and_delete` `!has("openai")` failure,
     // where the dev's real `openai` key made `has` true). `TestStore` resolves its
-    // backing dir fresh per operation from `CMDR_DATA_DIR`, so each test's
-    // `isolate_secrets()` takes effect regardless of the global's init order.
+    // backing dir fresh per operation from `CMDR_DATA_DIR`, so a test's
+    // `crate::test_support::isolate_secrets()` takes effect regardless of the global's
+    // init order, and it panics when that var is unset rather than falling back to the
+    // developer's real data dir.
     #[cfg(test)]
     {
         FILE_BACKED.store(true, std::sync::atomic::Ordering::Relaxed);
@@ -149,26 +151,44 @@ fn init_store() -> Box<dyn SecretStore> {
 }
 
 /// Test-only secret store: never touches the OS keychain, and resolves its backing
-/// dir fresh on every operation from `CMDR_DATA_DIR` (via `secret_store_dir()`), so a
-/// test's `isolate_secrets()` takes effect no matter when the global `STORE` was first
-/// initialized or which test ran first. Delegates to `PlainFileStore`, whose own
-/// static `Mutex` serializes file access across the per-op instances.
+/// dir fresh on every operation from `CMDR_DATA_DIR` (via `isolated_store_dir()`), so a
+/// test's `crate::test_support::isolate_secrets()` takes effect no matter when the global
+/// `STORE` was first initialized or which test ran first. Delegates to `PlainFileStore`,
+/// whose own static `Mutex` serializes file access across the per-op instances.
 #[cfg(test)]
 struct TestStore;
 
 #[cfg(test)]
 impl SecretStore for TestStore {
     fn set(&self, key: &str, value: &[u8]) -> Result<(), SecretStoreError> {
-        plain_file::PlainFileStore::new(secret_store_dir()).set(key, value)
+        plain_file::PlainFileStore::new(isolated_store_dir()).set(key, value)
     }
 
     fn get(&self, key: &str) -> Result<Vec<u8>, SecretStoreError> {
-        plain_file::PlainFileStore::new(secret_store_dir()).get(key)
+        plain_file::PlainFileStore::new(isolated_store_dir()).get(key)
     }
 
     fn delete(&self, key: &str) -> Result<(), SecretStoreError> {
-        plain_file::PlainFileStore::new(secret_store_dir()).delete(key)
+        plain_file::PlainFileStore::new(isolated_store_dir()).delete(key)
     }
+}
+
+/// `TestStore`'s backing dir, which only ever exists when `CMDR_DATA_DIR` names one.
+///
+/// The fallback `secret_store_dir()` takes when the var is unset is the developer's REAL data dir,
+/// and a test that lands there writes fixture credentials into their actual `secrets.json`. That
+/// also self-poisons the suite: `commands::sftp` and `commands::webdav` both open with "nothing is
+/// stored before anything is saved", true on a clean machine and false on every run after the
+/// first. Panicking makes the missing isolation loud at the first store access instead.
+#[cfg(test)]
+fn isolated_store_dir() -> PathBuf {
+    assert!(
+        std::env::var_os("CMDR_DATA_DIR").is_some_and(|dir| !dir.is_empty()),
+        "this test reaches the secret store without isolating it. Open it with \
+         `let _secrets = crate::test_support::isolate_secrets();` and keep that binding alive for \
+         the whole test."
+    );
+    secret_store_dir()
 }
 
 /// Returns the directory for file-based stores.
@@ -216,11 +236,26 @@ mod tests {
         assert!(matches!(parsed, SecretStoreError::NotFound(msg) if msg == "my-key"));
     }
 
+    /// `CMDR_DATA_DIR` is the whole isolation mechanism: if `secret_store_dir()` ever stopped
+    /// honouring it, every test's `isolate_secrets()` would silently point back at the
+    /// developer's real store.
     #[test]
-    fn test_secret_store_dir_respects_env() {
-        // When CMDR_DATA_DIR is set, secret_store_dir uses it directly
-        // (We can't easily test this without side effects, so just verify the function exists)
-        let dir = secret_store_dir();
-        assert!(!dir.as_os_str().is_empty());
+    fn secret_store_dir_respects_the_data_dir_env_var() {
+        let secrets = crate::test_support::isolate_secrets();
+        assert_eq!(secret_store_dir(), secrets.as_ref());
+    }
+
+    /// Forgetting `isolate_secrets()` has to fail loudly, because the alternative is writing
+    /// fixture credentials into the developer's real `secrets.json`.
+    #[test]
+    fn the_test_store_refuses_to_run_without_isolation() {
+        // SAFETY: `std::env::set_var` is unsound only under concurrent env access. Each nextest
+        // test runs in its own process, and this one is single-threaded, so nothing else can be
+        // reading the environment while it clears the var.
+        unsafe {
+            std::env::remove_var("CMDR_DATA_DIR");
+        }
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| store().get("anything"))).is_err();
+        assert!(panicked, "an unisolated store access has to panic, not fall back");
     }
 }
