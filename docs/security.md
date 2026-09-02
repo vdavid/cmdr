@@ -194,6 +194,10 @@ with their own API key. Privacy posture:
   names. A passport scan's OCR text IS the passport number, so this is sensitive derived content, gated by the same
   consent above and named in its copy. Image bytes and thumbnails NEVER egress: both result DTOs are text-only by
   construction (each pinned by a test).
+- **`inspect_file` egresses a photo's EXIF, GPS included, on request.** An image row
+  (`apps/desktop/src-tauri/src/agent/tools/read/inspect/exif.rs`) carries the camera's date taken, make and model, lens,
+  exposure settings, and `gps { latitude, longitude }` when the photo has them: a photo's coordinates are a home
+  address. Same consent gate, same text-only DTO (pinned by a test); the consent copy has to name it before this ships.
 - **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
   to a local folder and is never transmitted.
 

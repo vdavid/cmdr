@@ -112,6 +112,13 @@ serde_json = "1"
 notify = "8"
 dirs = "6"
 image = "0.25.10"
+# EXIF for `inspect_file`'s image rows (date taken, camera, lens, exposure, GPS): a
+# pure-Rust reader over the JPEG / TIFF / HEIF / PNG / WebP containers, one dependency
+# of its own, BSD-2-Clause. Declared under its lib name `exif` (the package is
+# `kamadak-exif`) so the key matches the `exif::` paths in code and `cargo-machete` sees
+# it used. 0.6.1 verified on crates.io and GitHub 2026-09-02 (published 2024-11-06; the
+# EXIF spec doesn't move).
+exif = { package = "kamadak-exif", version = "0.6.1" }
 mime_guess = "2"
 base64 = "0.23.0"
 rayon = "1.11.0"

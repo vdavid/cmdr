@@ -2006,6 +2006,12 @@
       "url": "https://github.com/chanced/jsonptr"
     },
     {
+      "name": "kamadak-exif",
+      "version": "0.6.1",
+      "license": "BSD-2-Clause",
+      "url": "https://github.com/kamadak/exif-rs"
+    },
+    {
       "name": "keccak",
       "version": "0.2.2",
       "license": "Apache-2.0 OR MIT",
@@ -2238,6 +2244,12 @@
       "version": "0.19.3",
       "license": "Apache-2.0 OR MIT",
       "url": "https://github.com/tauri-apps/muda"
+    },
+    {
+      "name": "mutate_once",
+      "version": "0.1.2",
+      "license": "BSD-2-Clause",
+      "url": "https://github.com/kamadak/mutate_once-rs"
     },
     {
       "name": "new_debug_unreachable",

@@ -9,8 +9,10 @@
 //!   viewer's own line backends and encoding detection, so a UTF-16 or Windows-1252 file
 //!   reads as text, exactly as the viewer shows it. Every cut is named. With `find`, the
 //!   matching lines take the window's place (`find.rs`), found with the viewer's search.
-//! - **image**: format and dimensions from the header, and a pointer to `image_facts` for
-//!   what's IN the picture. Image BYTES never cross (the DTO is text-only).
+//! - **image**: format and dimensions from the header, the camera's EXIF (date taken,
+//!   make and model, lens, exposure, orientation, GPS) when the container carries one
+//!   (`exif.rs`), and a pointer to `image_facts` for what's IN the picture. Image BYTES
+//!   never cross (the DTO is text-only).
 //! - **archive**: the immediate children of a `.zip` / tar / 7z, or of a directory inside
 //!   one, listed through the same volume routing the pane browses with; a FILE inside an
 //!   archive is extracted to the viewer's bounded temp and read as its own kind
@@ -39,6 +41,9 @@
 mod archive;
 #[cfg(test)]
 mod archive_tests;
+mod exif;
+#[cfg(test)]
+mod exif_tests;
 mod find;
 #[cfg(test)]
 mod find_tests;
@@ -71,6 +76,7 @@ use crate::search::{format_size, format_timestamp};
 
 pub use archive::{ArchiveContent, ArchiveEntry};
 use archive::{ExtractFn, Routed};
+pub use exif::{Degrees, ExifFacts, GpsCoordinates, Orientation};
 pub use find::{FindHits, FindLine};
 use runner::{InspectFn, RunnerConfig};
 pub use text::TextWindow;
@@ -142,6 +148,9 @@ pub struct ImageContent {
     pub width: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub height: Option<u32>,
+    /// What the camera wrote, when the container carries an EXIF block that parses.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exif: Option<ExifFacts>,
     pub hint: &'static str,
 }
 
@@ -560,12 +569,14 @@ fn read_content(p: &Path, size: u64, ask: &TextAsk, cancel: &AtomicBool) -> Resu
 
 fn image_content(p: &Path, head: &[u8]) -> ImageContent {
     let dims = read_image_dimensions(p);
+    let format = media_mime(head, ViewerContentKind::Image).unwrap_or("application/octet-stream");
     ImageContent {
-        format: media_mime(head, ViewerContentKind::Image)
-            .unwrap_or("application/octet-stream")
-            .to_string(),
+        format: format.to_string(),
         width: dims.map(|d| d.0),
         height: dims.map(|d| d.1),
+        exif: exif::container_carries_exif(format)
+            .then(|| exif::read_exif(p))
+            .flatten(),
         hint: IMAGE_HINT,
     }
 }

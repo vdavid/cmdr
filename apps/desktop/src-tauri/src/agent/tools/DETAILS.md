@@ -56,7 +56,10 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   50, each `{ line, matches, text }` with `text` a 300-char snippet around the first match), `totalMatches`,
   `matchesCapped` (the viewer's 10,000-match cap), `returnedLines` / `truncated`, and `scanIncomplete` with
   `bytesScanned` / `totalBytes` when the deadline stopped the scan. One `find` applies to every text path in the call;
-  images give `format` + dimensions and point at `image_facts`; an archive (`.zip`, tar, 7z), or a directory inside
+  images give `format` + dimensions, the camera's `exif` when the container carries a block (`dateTaken`,
+  `cameraMake`, `cameraModel`, `lens`, `orientation { value, spoken }`, `exposureTime`, `fNumber`, `iso`,
+  `focalLength`, and `gps { latitude, longitude }` in decimal degrees: a photo's coordinates are a home address, and
+  they egress on request), and point at `image_facts`; an archive (`.zip`, tar, 7z), or a directory inside
   one, lists its immediate children (`format`, `inner`, up to 200 `entries` with `isDir`, `size` + `sizeHuman`,
   `modified` + `modifiedHuman`, `encrypted`, plus `total` / `returned` / `truncated` and `hasEncryptedEntries`), and a
   FILE inside an archive is read as its own kind through the viewer's bounded temp; empty and binary (which today
@@ -149,6 +152,17 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   path (its markup says more to a model than "an image"); `is_local = true` because the row is already a local file.
   `Image` → `content_kind::media_mime` for the format and `media::read_image_dimensions` for the size (`None` for HEIC).
   `Pdf` → `binary` (no text parser here).
+- **EXIF** (`exif.rs`): for a JPEG / TIFF / HEIC / PNG / WebP row (by the format above; GIF and BMP carry none and are
+  never opened for it), a second open through `exif::Reader::read_from_container` on a `BufReader<File>`
+  (`kamadak-exif` needs a seekable reader: HEIF boxes point across the file), then the pure `exif_facts`. `dateTaken`
+  is `DateTimeOriginal`, else `DateTime`, the camera's own `YYYY:MM:DD HH:MM:SS` with no time zone invented (a blank
+  or malformed date is absent); the strings come from the raw ASCII value, not `display_value` (which quotes and
+  escapes); the numbers are `display_value().with_unit()` ("1/250 s", "f/2.8", "400", "50 mm"); `orientation`
+  is the 1–8 code plus a spoken twin from a fixed table (a code outside it is absent); `gps` needs BOTH coordinates
+  (three rationals each, signed by the `Ref`, a zero denominator or an out-of-range value drops it) and rounds to six
+  decimals so the JSON carries no float noise. No block, a block that doesn't parse, and a block with none of these
+  fields are all "no `exif` key", never an error row. Inside an archive the same branch runs on the extracted
+  temp, so a photo in a zip carries its EXIF too.
 - **Text vs binary**: `content_kind::looks_binary(head, encoding)`, the seam the viewer doesn't need (it leaves the
   warning to the FE's extension list). UTF-16 is never binary; a NUL or a control-byte share over 5% is.
 - **Encoding**: `encoding::detect_from_head` → `FileEncoding::label()` is the string the row carries. Never
