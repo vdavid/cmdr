@@ -93,19 +93,3 @@ unwrap_used = "warn"
 # symptom (one subsystem stops, the rest looks fine) reads as anything but a lock.
 # The tree is clean today, so this only has to stay clean.
 await_holding_lock = "deny"
-
-# ❌ LOCAL DEV WIRING — must never merge to `main`.
-#
-# Points `smb2` at David's local worktree so the credit-charge fix can be
-# exercised end to end (a 4 MB compound read charges 66 credits, not 130) before
-# it is released. The path is absolute and machine-specific, so CI cannot
-# resolve it and any branch carrying this line will fail there.
-#
-# The real path off this: release `smb2` (the fix is a minor bump, it renames
-# `Error::FileTooLargeForSingleRead`'s `max_read` field to `requested`), then
-# bump the pin in `crates/cmdr-smb/Cargo.toml` and delete this block.
-#
-# Until then the worktree it names has to stay on disk, or this workspace stops
-# resolving. Analysis behind the fix: `docs/notes/smb-credit-stall-2026-09-01.md`.
-[patch.crates-io]
-smb2 = { path = "/Users/veszelovszki/projects-git/vdavid/smb2/.claude/worktrees/sized-compound-read/crates/smb2" }
