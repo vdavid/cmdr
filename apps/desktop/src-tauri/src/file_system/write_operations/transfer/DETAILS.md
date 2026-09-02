@@ -307,6 +307,23 @@ Pinned by `volume/copy_staged_write_tests.rs` (abandon the copy future mid-strea
 force-quit — and assert nothing sits at a final name, for a fresh copy, an overwrite, and a merge child) and
 `staged_write::tests`.
 
+## Pause in the local move engine
+
+**Every per-item loop in `move_op/` parks on the `PauseGate`, right after its cancel check** (cancel wins; the park
+returns immediately once the intent stops being `Running`). Five loops, because a local move can spend all its time in
+any one of them: `same_fs.rs`'s top-level rename loop, `mod.rs`'s `merge_move_directory` child loop (a
+folder-into-folder move does ALL its renaming there, so the top-level gate never sees it), and `cross_fs.rs`'s Phase-2
+staging copy, Phase-3 rename-into-place, and Phase-4 source delete. The Phase-2 loop is the one a user who hits Pause
+usually means: it's the phase that moves bytes, and its cancel checks live one level down inside `copy_single_item`.
+
+A rename is a single syscall, so the item boundary is the only place a rename engine CAN park — there's no equivalent
+of the streaming path's between-chunks checkpoint below.
+
+**Why it matters**: `manager::set_paused` flips the record to `Paused` and `wait_reason` reports it, so the UI says
+"Paused" whether or not the engine parks. An engine that keeps renaming makes that a lie, and the person who paused
+because they picked the wrong destination is told they have time to intervene when they don't. Pinned by
+`move_op_tests.rs::a_paused_move_stops_renaming_until_it_resumes` and `a_paused_folder_merge_stops_renaming_its_children`.
+
 ## Pause reaches between chunks (cross-volume streaming path)
 
 **A paused cross-volume copy stops MID-FILE, between chunks — not only between files.** The per-source loop top in the serial drivers parks between files (after the `is_cancelled` check). But a single large file (e.g. an MTP→local import) is one source: gating only at the loop top would let it stream to completion while the UI shows "Paused" (the confirmed bug). The fix is `transfer/checkpoint_stream.rs`'s `CheckpointStream`, a `VolumeReadStream` decorator `volume::strategy`'s `stream_pipe_file` wraps the source stream in. Its `next_chunk()` runs a between-chunk checkpoint once per chunk before delegating: (1) `pause_gate.wait_while_paused_async(&intent)` parks while paused (returns the instant cancel is observed — cancellation wins), then (2) `tokio::task::yield_now()` so a long transfer doesn't starve foreground tasks (listings, navigation, progress) on the runtime.

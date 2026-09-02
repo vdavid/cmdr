@@ -425,6 +425,12 @@ fn merge_move_directory(
             });
         }
 
+        // Pause gate, after the cancel check like every other loop in the
+        // engine. A folder-into-folder move does ALL its renaming down here, so
+        // without this a paused merge would keep going while the UI says it
+        // stopped.
+        state.pause_gate.wait_while_paused_sync(&state.intent);
+
         // Snapshot the child before the rename carries it across. The rename
         // preserves the node id, so this describes what lands at `dest_child` —
         // and it's the ONLY identity a cancelled merge has to reverse from, since

@@ -808,3 +808,169 @@ fn a_rollback_clicked_as_the_last_item_lands_puts_the_move_back() {
     assert_eq!(cancelled[0].rollback.outcome, CancelRollbackOutcome::RolledBack);
     assert_eq!(cancelled[0].rollback.reversed, 1, "the one rename it made, reversed");
 }
+
+/// A paused same-FS move really stops renaming.
+///
+/// Pause is a promise: the UI says "Paused", and the person who hit it because
+/// they picked the wrong destination believes they have time to intervene. The
+/// rename loop has to park at its item boundary like every other driver
+/// (`sync_driver.rs`, `async_driver.rs`, `delete/walker.rs`,
+/// `archive_edit/engine.rs`), or the promise is empty and the files keep
+/// arriving at full speed.
+#[test]
+fn a_paused_move_stops_renaming_until_it_resumes() {
+    use crate::file_system::write_operations::types::{
+        ConflictInfo, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
+        WriteErrorEvent, WriteSourceItemDoneEvent,
+    };
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
+
+    /// Hits Pause the moment the first item has landed, the way a user would
+    /// the instant they see the wrong destination filling up.
+    struct PauseAfterTheFirstItem {
+        state: Arc<WriteOperationState>,
+        items_done: AtomicUsize,
+    }
+
+    impl OperationEventSink for PauseAfterTheFirstItem {
+        fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {
+            if self.items_done.fetch_add(1, Ordering::SeqCst) == 0 {
+                self.state.pause_gate.pause();
+            }
+        }
+        fn emit_settled(&self, _event: crate::file_system::write_operations::types::WriteSettledEvent) {}
+        fn emit_progress(&self, _event: WriteProgressEvent) {}
+        fn emit_complete(&self, _event: WriteCompleteEvent) {}
+        fn emit_cancelled(&self, _event: WriteCancelledEvent) {}
+        fn emit_error(&self, _event: WriteErrorEvent) {}
+        fn emit_conflict(&self, _event: WriteConflictEvent) {}
+        fn emit_conflict_resolved(
+            &self,
+            _event: crate::file_system::write_operations::types::WriteConflictResolvedEvent,
+        ) {
+        }
+        fn emit_scan_progress(&self, _event: ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _conflict: ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _result: DryRunResult) {}
+    }
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    let first = src_dir.join("first.txt");
+    let second = src_dir.join("second.txt");
+    fs::write(&first, b"one").unwrap();
+    fs::write(&second, b"two").unwrap();
+
+    let state = make_state(200);
+    let events = Arc::new(PauseAfterTheFirstItem {
+        state: Arc::clone(&state),
+        items_done: AtomicUsize::new(0),
+    });
+
+    let sources = vec![first.clone(), second.clone()];
+    let dst_for_move = dst_dir.clone();
+    let state_for_move = Arc::clone(&state);
+    let events_for_move = Arc::clone(&events);
+    let mover = std::thread::spawn(move || {
+        move_files_with_progress_inner(
+            &*events_for_move,
+            "op-same-fs-pause",
+            &state_for_move,
+            &sources,
+            &dst_for_move,
+            &WriteOperationConfig::default(),
+        )
+    });
+
+    crate::test_support::wait_until(Duration::from_secs(5), "the first item to land", || {
+        dst_dir.join("first.txt").exists()
+    });
+
+    // Parking has no "parked now" signal, so hold a window open: an ungated
+    // loop would have renamed the second file many times over inside it.
+    // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
+    std::thread::sleep(Duration::from_millis(150));
+    assert!(
+        second.exists(),
+        "a paused move must stop renaming: the second file is still at its source"
+    );
+    assert!(
+        !dst_dir.join("second.txt").exists(),
+        "and hasn't reached the destination"
+    );
+
+    state.pause_gate.resume();
+
+    let result = mover.join().expect("the move thread joins");
+    assert!(result.is_ok(), "the resumed move finishes, got {result:?}");
+    assert!(
+        dst_dir.join("second.txt").exists(),
+        "and the second file lands once the user resumes"
+    );
+}
+
+/// The same promise, one level down: a folder-into-folder move does all its
+/// renaming inside `merge_move_directory`, where the top-level gate never
+/// reaches. Without a gate on the child loop, pausing a merge stops nothing.
+#[test]
+fn a_paused_folder_merge_stops_renaming_its_children() {
+    use std::time::Duration;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let source_dir = tmp.path().join("from/album");
+    let dest_dir = tmp.path().join("into/album");
+    fs::create_dir_all(&source_dir).unwrap();
+    fs::create_dir_all(&dest_dir).unwrap();
+    let children = ["a.txt", "b.txt", "c.txt", "d.txt"];
+    for name in children {
+        fs::write(source_dir.join(name), b"pixels").unwrap();
+    }
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(200);
+    state.pause_gate.pause();
+
+    let source_for_merge = source_dir.clone();
+    let dest_for_merge = dest_dir.clone();
+    let state_for_merge = Arc::clone(&state);
+    let events_for_merge = Arc::clone(&events);
+    let merger = std::thread::spawn(move || {
+        let mut skipped = 0usize;
+        merge_move_directory(
+            &source_for_merge,
+            &dest_for_merge,
+            &WriteOperationConfig::default(),
+            &*events_for_merge,
+            "op-merge-pause",
+            &state_for_merge,
+            &mut ApplyToAll::default(),
+            &mut MoveTransaction::new(),
+            &mut skipped,
+            &mut None,
+        )
+    });
+
+    // Paused before the first child, so nothing may cross while the window is open.
+    // allowed-test-sleep: negative assertion over a window; the condvar park has nothing to await.
+    std::thread::sleep(Duration::from_millis(150));
+    for name in children {
+        assert!(
+            source_dir.join(name).exists(),
+            "a paused merge must not move {name} out of the source folder"
+        );
+    }
+
+    state.pause_gate.resume();
+    merger.join().expect("the merge thread joins").expect("the merge lands");
+
+    for name in children {
+        assert!(
+            dest_dir.join(name).exists(),
+            "{name} lands in the destination once the user resumes"
+        );
+    }
+}

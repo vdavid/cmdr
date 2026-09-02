@@ -160,6 +160,12 @@ pub(super) fn move_with_staging(
 
     let copy_result: Result<(), WriteOperationError> = (|| {
         for file_info in &scan_result.files {
+            // Pause gate at the file boundary. This is the phase that actually
+            // moves bytes, so it's the one a user who hits Pause means: the
+            // per-file cancel checks live inside `copy_single_item`, and this
+            // park returns immediately once one of them is due to fire.
+            state.pause_gate.wait_while_paused_sync(&state.intent);
+
             log::debug!(
                 "move_with_staging: copying file {} ({} bytes) to staging",
                 file_info.path.display(),
@@ -256,6 +262,10 @@ pub(super) fn move_with_staging(
     // Phase 3: Atomic rename from staging to final destination
     let rename_result: Result<(), WriteOperationError> = (|| {
         for source in sources {
+            // Pause gate at the item boundary, so every loop in the engine parks
+            // on the same promise. The recursive merge below carries its own.
+            state.pause_gate.wait_while_paused_sync(&state.intent);
+
             let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
                 path: source.display().to_string(),
                 message: "Invalid source path".to_string(),
@@ -476,6 +486,12 @@ fn delete_sources_after_move(
                 message: "Operation cancelled by user".to_string(),
             });
         }
+
+        // Pause gate, after the cancel check like every other loop in the
+        // engine. The destination is already durable by now, so parking here
+        // holds the originals in place, which is exactly what a paused move
+        // should look like.
+        state.pause_gate.wait_while_paused_sync(&state.intent);
 
         // A whole top-level source skipped on a file / type-mismatch conflict:
         // leave the original exactly where it is, and say so. The staging phase

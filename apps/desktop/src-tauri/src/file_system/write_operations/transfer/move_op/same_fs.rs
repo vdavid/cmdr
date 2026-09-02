@@ -74,6 +74,15 @@ pub(super) fn move_with_rename(
                 });
             }
 
+            // Pause gate: park here, between items, while the op is paused —
+            // AFTER the cancel check, so cancellation still wins and no
+            // destructive call runs before either is read. This is the whole
+            // pause story for a rename engine: a `rename(2)` is one syscall,
+            // so the item boundary is the only place to park. Returns
+            // immediately if cancelled; the next iteration's `is_cancelled`
+            // then bails.
+            state.pause_gate.wait_while_paused_sync(&state.intent);
+
             let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
                 path: source.display().to_string(),
                 message: "Invalid source path".to_string(),
