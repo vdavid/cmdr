@@ -323,3 +323,66 @@ async fn a_folder_copys_leaves_each_get_a_row_and_the_dump_declares_the_real_wid
     assert_table_names_every_leaf(&dest.dumps(), 4);
     assert_driver_names_the_source_it_is_streaming(&dest.dumps());
 }
+
+/// The number a row renders under: `#0` for a top-level source, `#0.7` for the
+/// eighth leaf under it. Always the first token of the line.
+fn row_number(row: &str) -> &str {
+    row.split_whitespace()
+        .next()
+        .unwrap_or_else(|| panic!("every row opens with its number, got:\n{row}"))
+}
+
+/// Two rows in one dump may never render under the same number.
+///
+/// A reader mid-incident matches a row against the driver's `transferring-source(#N …)`
+/// and against the other rows; a number that means two different things costs
+/// them exactly the time the table exists to save. A leaf's number also says
+/// which top-level source is producing it, which a globally unique counter
+/// wouldn't.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn every_row_in_one_dump_carries_its_own_number() {
+    let source = folder_of(12).await;
+    let dest = TablePhotographingDest::new("probe-rows-unique", 4, 4);
+    let dest_volume: Arc<dyn Volume> = Arc::clone(&dest) as Arc<dyn Volume>;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let result = super::super::copy::copy_volumes_with_progress(
+        events,
+        "probe-rows-unique",
+        &state,
+        source,
+        &[PathBuf::from("/album")],
+        Arc::clone(&dest_volume),
+        Path::new("/out"),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+    assert!(result.is_ok(), "the copy must succeed, got {result:?}");
+
+    let dumps = dest.dumps();
+    let dump = widest(&dumps);
+    let numbers: Vec<&str> = rows(dump).into_iter().map(row_number).collect();
+    let mut unique = numbers.clone();
+    unique.sort_unstable();
+    unique.dedup();
+    assert_eq!(
+        unique.len(),
+        numbers.len(),
+        "no two rows in one dump may share a number, got {numbers:?} in:\n{dump}"
+    );
+
+    // The shape that makes the numbers worth reading: the walker owns its
+    // source's number, and every leaf it hands to the window hangs off it.
+    assert_eq!(
+        row_number(folder_row(dump)),
+        "#0",
+        "the top-level source's row keeps its position in the source list, got:\n{dump}"
+    );
+    for leaf in leaf_rows(dump) {
+        assert!(
+            row_number(leaf).starts_with("#0."),
+            "a leaf names the source producing it, got:\n{dump}"
+        );
+    }
+}

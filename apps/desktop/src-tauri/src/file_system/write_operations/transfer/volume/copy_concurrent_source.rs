@@ -23,7 +23,7 @@ use super::super::dest_name_index::DestLookup;
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::copy_concurrent::ConcurrentCopy;
 use super::copy_concurrent_task::CopyTask;
-use super::strategy::resolve_source_is_directory;
+use super::strategy::{MergeProbe, resolve_source_is_directory};
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
 use crate::file_system::listing::FileEntry;
 use crate::ignore_poison::IgnorePoison;
@@ -154,9 +154,10 @@ impl ConcurrentCopy<'_> {
 
         // Register before the task is pushed, so a task that never gets
         // polled still shows up in a dump as `spawned`.
+        let source_row = super::super::transfer_probe::TaskRow::source(source_index);
         let task_probe = self.op_probe.as_ref().map(|probe| {
             probe.begin_task(
-                source_index,
+                source_row,
                 // A DIRECTORY source's task walks and feeds the window; only a
                 // FILE source takes a slot and copies bytes itself.
                 if source_is_dir {
@@ -183,7 +184,12 @@ impl ConcurrentCopy<'_> {
             replace_after_write,
             file_name,
             window: self.file_window.clone(),
-            op_probe: self.op_probe.clone(),
+            // Every leaf of a directory source's subtree numbers itself under
+            // this source's own row.
+            merge_probe: self.op_probe.as_ref().map(|probe| MergeProbe {
+                operation: Arc::clone(probe),
+                source_row,
+            }),
             task_probe,
             files_done: Arc::clone(&self.files_done_atomic),
             bytes_done: Arc::clone(&self.atomic_bytes_done),
@@ -250,7 +256,13 @@ impl ConcurrentCopy<'_> {
                 if let Some(probe) = self.op_probe.as_ref() {
                     probe.set_driver_phase(
                         super::super::transfer_probe::DriverPhase::PreparingNext,
-                        &format!("#{source_index} {}", dest_item_path.display()),
+                        // The same label the source's own row renders under, so a
+                        // reader can match the driver's step against the table.
+                        &format!(
+                            "{} {}",
+                            super::super::transfer_probe::TaskRow::source(source_index).label(),
+                            dest_item_path.display()
+                        ),
                     );
                 }
                 self.dest_volume.get_metadata(dest_item_path).await.ok()

@@ -34,7 +34,7 @@ use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
     TransferOutcome, drive_transfer_serial_async,
 };
-use super::super::transfer_probe::{DriverPhase, OperationProbe, TaskRole};
+use super::super::transfer_probe::{DriverPhase, OperationProbe, TaskRole, TaskRow};
 use super::conflict::resolve_volume_conflict;
 use super::preflight::SourceHint;
 use super::strategy::copy_single_path;
@@ -424,6 +424,10 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     // directory source.
                     let created = super::strategy::CreatedPaths::default();
 
+                    // This source's row in the in-flight table, and the number
+                    // every row below it hangs off.
+                    let source_row = TaskRow::source(serial_source_index.fetch_add(1, Ordering::Relaxed));
+
                     // Merge context: deep file clashes inside a merged
                     // directory honor the file policy via the resolver,
                     // sharing the op-wide apply-to-all latch with the
@@ -442,12 +446,16 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         // folder is one source, so without this the commonest
                         // copy there is stays strictly one file at a time.
                         window: file_window.clone(),
-                        op_probe: op_probe_serial.clone(),
+                        // Every leaf of this source's subtree numbers itself
+                        // under the source's own row, below.
+                        probe: op_probe_serial.as_ref().map(|probe| super::strategy::MergeProbe {
+                            operation: Arc::clone(probe),
+                            source_row,
+                        }),
                     };
 
                     *last_dest_cell.lock_ignore_poison() = Some(dest_item_path.clone());
 
-                    let row_index = serial_source_index.fetch_add(1, Ordering::Relaxed);
                     // This driver STREAMS the source itself rather than handing
                     // it to a window, so from here until the next iteration
                     // there is nothing else it could be stuck in: whatever is
@@ -457,14 +465,14 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     if let Some(probe) = op_probe_serial.as_ref() {
                         probe.set_driver_phase(
                             DriverPhase::TransferringSource,
-                            &format!("#{row_index} {}", source_path.display()),
+                            &format!("{} {}", source_row.label(), source_path.display()),
                         );
                     }
                     // Held for this source's whole transfer; dropping it
                     // clears the row. Mirrors the concurrent path.
                     let task_probe = op_probe_serial.as_ref().map(|probe| {
                         probe.begin_task(
-                            row_index,
+                            source_row,
                             // A directory source walks and hands its files to
                             // the window; only a FILE source copies bytes here.
                             if source_is_dir {

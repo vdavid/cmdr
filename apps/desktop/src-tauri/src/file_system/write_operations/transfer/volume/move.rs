@@ -651,6 +651,13 @@ pub(crate) async fn move_volumes_with_progress(
                     // the operation-log capture harvests it below for the per-leaf
                     // journal rows.
                     let created = super::strategy::CreatedPaths::default();
+                    // This source's row in the in-flight table, and the number
+                    // every leaf row below it hangs off. Sources run one at a
+                    // time here, so the counter labels the source rows in order.
+                    let source_row = super::super::transfer_probe::TaskRow::source(
+                        source_index.fetch_add(1, Ordering::Relaxed),
+                    );
+
                     // Merge context: when a source folder lands on a same-named
                     // dest folder, deep file clashes inside honor the file policy
                     // (Stop-wait, latch, conditional reduce, type mismatches) —
@@ -665,20 +672,20 @@ pub(crate) async fn move_volumes_with_progress(
                         on_file_skipped: &on_file_skipped,
                         window: file_window,
                         // ❗ Every leaf the window holds opens a row of its OWN
-                        // through this, the invariant every `TaskProbe` field is
-                        // built on: `arm_stall_abort` REPLACES the row's token
-                        // per attempt and `set_bytes` STORES (never adds) that
-                        // attempt's count. `None` here would leave every leaf
-                        // reporting into the enclosing SOURCE's row through the
-                        // task-local below, so concurrent writes would clobber
-                        // one row's stall-abort token and byte count and the dump
-                        // would name the folder instead of the file that wedged.
-                        op_probe: Some(Arc::clone(&op_probe)),
+                        // through this, numbered under `source_row`, and that is
+                        // the invariant every `TaskProbe` field is built on:
+                        // `arm_stall_abort` REPLACES the row's token per attempt
+                        // and `set_bytes` STORES (never adds) that attempt's
+                        // count. `None` here would leave every leaf reporting
+                        // into the enclosing SOURCE's row through the task-local
+                        // below, so concurrent writes would clobber one row's
+                        // stall-abort token and byte count and the dump would
+                        // name the folder instead of the file that wedged.
+                        probe: Some(super::strategy::MergeProbe {
+                            operation: Arc::clone(&op_probe),
+                            source_row,
+                        }),
                     };
-                    // Held for this source's whole transfer, copy phase AND
-                    // source sweep; dropping it clears the row. Mirrors
-                    // `volume/copy_serial.rs`.
-                    let row_index = source_index.fetch_add(1, Ordering::Relaxed);
                     // This driver streams the source ITSELF, so from here until
                     // the next iteration nothing else could be stuck: the phase
                     // points a reader straight at the rows below. It stands
@@ -686,10 +693,13 @@ pub(crate) async fn move_volumes_with_progress(
                     // row's own `Finalizing` phase separates.
                     op_probe.set_driver_phase(
                         super::super::transfer_probe::DriverPhase::TransferringSource,
-                        &format!("#{row_index} {}", source_path.display()),
+                        &format!("{} {}", source_row.label(), source_path.display()),
                     );
+                    // Held for this source's whole transfer, copy phase AND
+                    // source sweep; dropping it clears the row. Mirrors
+                    // `volume/copy_serial.rs`.
                     let task_probe = op_probe.begin_task(
-                        row_index,
+                        source_row,
                         // A directory source walks and feeds the window; only a
                         // FILE source copies bytes on this row.
                         if source_is_dir {

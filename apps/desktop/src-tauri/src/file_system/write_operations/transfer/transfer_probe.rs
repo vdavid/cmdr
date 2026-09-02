@@ -327,11 +327,51 @@ pub(super) enum TaskRole {
     Walker,
 }
 
+/// Which row of the in-flight table this is, and where it sits in the work.
+///
+/// A top-level source renders as `#<position in the source list>`; a leaf its
+/// walker hands to the window renders as `#<that source>.<leaf>`. So the number
+/// is unique within one dump AND says which source is producing the work, which
+/// a flat counter can't. Depth doesn't enter it: one walker numbers every leaf
+/// of its whole subtree from a single counter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct TaskRow {
+    source: usize,
+    /// `None` for the source's own row, whether that source is a file or a
+    /// walker.
+    leaf: Option<usize>,
+}
+
+impl TaskRow {
+    /// The row for the top-level source at `index` in the operation's source list.
+    pub(super) const fn source(index: usize) -> Self {
+        Self {
+            source: index,
+            leaf: None,
+        }
+    }
+
+    /// The row for the `nth` leaf this source's walker has handed to the window.
+    pub(super) const fn leaf(self, nth: usize) -> Self {
+        Self {
+            source: self.source,
+            leaf: Some(nth),
+        }
+    }
+
+    pub(super) fn label(self) -> String {
+        match self.leaf {
+            Some(leaf) => format!("#{}.{leaf}", self.source),
+            None => format!("#{}", self.source),
+        }
+    }
+}
+
 /// One in-flight copy task's live state.
 pub(super) struct TaskProbe {
-    /// Position of this source in the operation's source list, so a dump can be
-    /// read against the spawn log.
-    index: usize,
+    /// Where this row sits in the operation, so a dump can be read against the
+    /// spawn log and against the driver's phase detail.
+    row: TaskRow,
     /// Whether this row holds one of the window's slots. Fixed for the row's
     /// life: a walker never becomes a file copy or the reverse.
     role: TaskRole,
@@ -429,8 +469,8 @@ impl TaskProbe {
         let stall_aborts = self.stall_aborts.load(Ordering::Relaxed);
         format!(
             // allowed-pluralize-noun: a byte count in a diagnostic dump; the compact form is the point.
-            "#{idx}{role} {phase} for {held}ms, {done}/{total} bytes, retries={retries}{aborted}, {source} -> {dest}",
-            idx = self.index,
+            "{row}{role} {phase} for {held}ms, {done}/{total} bytes, retries={retries}{aborted}, {source} -> {dest}",
+            row = self.row.label(),
             // Named here too, so the header's `walkers=` can be read back against the table.
             role = match self.role {
                 TaskRole::File => "",
@@ -520,18 +560,20 @@ impl OperationProbe {
     /// Register a task entering the window. The returned handle removes it on
     /// drop, so a task that panics or is aborted still leaves the table clean.
     ///
-    /// `role` says whether this row holds one of the window's slots
-    /// ([`TaskRole`]); a DIRECTORY source is always a walker and a file copy is
-    /// always a `File`, so it is `source_is_dir` at every real call site.
+    /// `row` says where the row sits in the operation ([`TaskRow`]) and is what
+    /// the dump renders it under; `role` says whether it holds one of the
+    /// window's slots ([`TaskRole`]); a DIRECTORY source is always a walker and
+    /// a file copy is always a `File`, so it is `source_is_dir` at every real
+    /// call site.
     pub(super) fn begin_task(
         self: &Arc<Self>,
-        index: usize,
+        row: TaskRow,
         role: TaskRole,
         source: &str,
         dest: &str,
     ) -> TaskProbeHandle {
         let probe = Arc::new(TaskProbe {
-            index,
+            row,
             role,
             source: source.to_owned(),
             dest: dest.to_owned(),

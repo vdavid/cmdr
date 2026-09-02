@@ -26,7 +26,7 @@ use super::super::staged_write::StagedWrite;
 use super::super::retry;
 pub(super) use super::super::staged_write::WriteStaging;
 use super::super::transfer_probe::{
-    TaskPhase, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase,
+    OperationProbe, TaskPhase, TaskRow, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase,
 };
 use super::merge::copy_directory_streaming;
 use super::preflight::SourceHint;
@@ -206,13 +206,27 @@ pub(super) struct MergeCtx<'a> {
     /// walker's argument list because a deep skip can only happen when there IS
     /// a merge context — `merge: None` overwrites blindly and never declines.
     pub on_file_skipped: &'a (dyn Fn(u64) + Sync),
-    /// The operation's live in-flight table, so each leaf a walker overlaps gets
-    /// its OWN row (and its own stall-abort token). `None` in the tests that
-    /// register no probe. A leaf runs inside its row's
+    /// The operation's live in-flight table plus the row of the source whose
+    /// subtree this walk is, so each leaf a walker overlaps gets its OWN row
+    /// (and its own stall-abort token), numbered under that source. `None` in
+    /// the tests that register no probe. A leaf runs inside its row's
     /// `CURRENT_TASK_PROBE` scope, which is what keeps the invariant every
     /// `TaskProbe` field assumes — one row, one write attempt — true once a
     /// subtree streams several files at once.
-    pub op_probe: Option<Arc<super::super::transfer_probe::OperationProbe>>,
+    pub probe: Option<MergeProbe>,
+}
+
+/// The in-flight table as a merge walk sees it: the operation's probe, plus the
+/// row of the TOP-LEVEL source this walk descends from.
+///
+/// The two travel together because a leaf row can't be opened without both: the
+/// table to open it in, and the source to number it under. Handing a walker the
+/// probe alone is what let a walker and its own first leaf both render as `#0`.
+#[derive(Clone)]
+pub(super) struct MergeProbe {
+    pub operation: Arc<OperationProbe>,
+    /// The walker's own row. Every leaf of the subtree hangs off it.
+    pub source_row: TaskRow,
 }
 
 /// Records exactly what a single `copy_single_path` call wrote to the

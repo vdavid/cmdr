@@ -368,7 +368,7 @@ async fn the_watchdog_ends_a_wedged_write_and_the_file_runs_again() {
     );
     let task = op_probe
         .probe()
-        .begin_task(0, transfer_probe::TaskRole::File, "/a.txt", "/a.txt");
+        .begin_task(TaskRow::source(0), transfer_probe::TaskRole::File, "/a.txt", "/a.txt");
     let handle = task.probe();
 
     let bytes = transfer_probe::CURRENT_TASK_PROBE
@@ -409,7 +409,7 @@ async fn a_retry_shows_up_in_the_in_flight_table() {
     );
     let task = op_probe
         .probe()
-        .begin_task(0, transfer_probe::TaskRole::File, "/a.txt", "/a.txt");
+        .begin_task(TaskRow::source(0), transfer_probe::TaskRole::File, "/a.txt", "/a.txt");
     let handle = task.probe();
 
     transfer_probe::CURRENT_TASK_PROBE
