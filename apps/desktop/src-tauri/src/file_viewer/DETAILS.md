@@ -189,11 +189,19 @@ returns `ViewerError::Cancelled` because the caller's deadline flipped `cancel`,
 with `line_numbers_exact = false`. An approximate window beats no window, as long as the caller relays the flag. The
 encoding is the caller's (`encoding::detect_from_head` on a head it already read), so a file isn't sniffed twice.
 
+`open_scan_backend(path, encoding)` is the second opener, for a caller that will `search` rather than seek by line: the
+same FullLoad pick up to the threshold, else `ByteSeekBackend` with no index built. `search` streams from byte 0 on
+every backend and numbers lines exactly as it goes, and a hit's line is fetched back by `SeekTarget::ByteOffset`, which
+every backend seeks exactly (ByteSeek back-scans to the newline; a line-start offset is its own answer). So a scan has no
+use for a line index, and building one would read a large file twice; the viewer's own `search_start` runs on ByteSeek
+for the same reason. The only thing unknown past the threshold is `total_lines`.
+
 **Decision**: a separate seam rather than a flag on `open_session`. **Why**: the one caller today is the Ask Cmdr
 `inspect_file` tool (`agent/tools/read/inspect/`), which reads up to 200 files per call on blocking threads under a
 per-path deadline. A session per file would mean 200 `SESSIONS` entries, watcher subscriptions, and upgrade threads to
 tear down, for windows nobody scrolls. Kept free of session concerns on purpose so `open_session_core` could ride it too
-if it were ever split. Tests: `headless_test.rs` (the three picks, and that the fallback leaves the caller's flag set).
+if it were ever split. Tests: `headless_test.rs` (the three picks, that the fallback leaves the caller's flag set, and
+that the scan opener finds a line exactly with no index).
 
 ## Tauri commands
 

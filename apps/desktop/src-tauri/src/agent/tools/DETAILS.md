@@ -52,7 +52,11 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   extension shows), and a typed `content` per kind. Text is a line window (`startLine` + `maxLines`, default 200, max
   2,000, capped at 16,000 chars and 2,000 chars a line) read through the viewer's own backends, with `encoding`,
   `totalLines` when known, `lineNumbersApproximate` on the ByteSeek fallback, and `truncated` / `linesCut` on the
-  window; images give `format` + dimensions and point at `image_facts`; empty and binary (which today includes PDFs
+  window. With `find: { query, regex?, caseSensitive? }` the window is replaced by `find`: the matching lines (up to
+  50, each `{ line, matches, text }` with `text` a 300-char snippet around the first match), `totalMatches`,
+  `matchesCapped` (the viewer's 10,000-match cap), `returnedLines` / `truncated`, and `scanIncomplete` with
+  `bytesScanned` / `totalBytes` when the deadline stopped the scan. One `find` applies to every text path in the call;
+  images give `format` + dimensions and point at `image_facts`; empty and binary (which today includes PDFs
   and archives) carry metadata only. Per-path statuses: `ok` / `folder` / `missing` / `unreadable { reason }` /
   `unreachable` / `unsupportedVolume`. The call reports `total` / `returned` / `truncated` and names every path with
   no row in `unanswered`. The sole disk reader among the handlers; how it reads and how it times out: § Reading a
@@ -107,7 +111,7 @@ auto-dispatched ones the user never previews, and `redact::redact_line_salted` i
 sentence about which of the user's folders were boring. Log that a wake was quiet, never what it said.
 
 **What it costs everyone else.** The schema is prefix, so all 17 declarations are paid on every rail turn: this one is
-97 tokens of the 5,179 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
+97 tokens of the 5,241 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
 being able to stay silent, and it's why the description is two sentences.
 
 ## The two tools that write (`memory_write`, `memory_edit`)
@@ -155,6 +159,20 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   exact backends clamp such a target to the last line; the shaper must not present that line as line 50). `totalLines`
   counts the trailing empty line after a final newline, as the viewer's line numbers do, so "line 812" means the same
   thing in both places.
+- **`find`** (`find.rs`): `file_viewer::Matcher::build(query, SearchMode { use_regex, case_sensitive })` once per call
+  at param time (a `MatcherBuildError`, invalid or cross-line regex, is `INVALID_PARAMS` carrying the matcher's own
+  text), shared by every path through `TextAsk::Find(Arc<Matcher>)`. Per text row: `headless::open_scan_backend`
+  (FullLoad, or ByteSeek with no index: a scan streams from byte 0 and numbers lines exactly, so an index would only
+  read the file twice), then `backend.search(matcher, cancel, matches, progress)`, the viewer's own loop, capped at
+  `MAX_SEARCH_MATCHES`. Matches are grouped by line in arrival order, the first `MAX_FIND_LINES` (50) lines are fetched
+  by `SeekTarget::ByteOffset(match.byte_offset)` (exact on every backend; `Line(n)` is a guess on ByteSeek), `\r`
+  stripped, and cut by `snippet_around` to `FIND_SNIPPET_CHARS` (300) around the first match, a third before it, with
+  `…` at each cut end. The match column is UTF-16 (the viewer's JS-facing unit) and goes through
+  `range_read::clamp_utf16_offset_to_byte`, the one UTF-16→byte conversion in the tree; read as a char index it lands
+  twice as far along a line of emoji. `matchesCapped` is `totalMatches ≥ 10,000`; `scanIncomplete` is a flag-stopped
+  scan that didn't reach the cap or the end (`bytesScanned` / `totalBytes` say where, spoken twins beside them). A
+  `find` row never sets `lineNumbersApproximate` (nothing in it is estimated) and has `totalLines` only for a FullLoad
+  file. Non-text rows are untouched by `find`.
 - **Not local**: `mcp::is_virtual_path` (`mtp://`, direct `smb://`) → `unsupportedVolume`. A `missing` there would be
   a lie the model relays. An OS-mounted share (`/Volumes/share`) is a real path and flows through; the timeout is what
   protects the turn.

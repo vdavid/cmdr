@@ -7,8 +7,8 @@ and typed result shapes colocated here. Depth: `DETAILS.md`.
 ## Module map
 
 - `read/`: one file per family — `state`, `pane_listing`, `listing`, `importance`, `volumes` — plus `inspect/` (DTOs +
-  pipeline, `text.rs` the window, `runner.rs` the timeouts). The `operations_*`, `search_photos`, and `image_facts`
-  handlers are shared with the ai-client view, in `mcp/executor/`.
+  pipeline, `text.rs` the window, `find.rs` the search, `runner.rs` the timeouts). The `operations_*`,
+  `search_photos`, and `image_facts` handlers are shared with the ai-client view, in `mcp/executor/`.
 - `propose/`: server-owned rename proposals (`propose_rename_plan`) and the image-facts evidence ledger.
   `propose/CLAUDE.md`.
 - `suggestions/`: the suggested-ops trio over the proposal spine. `suggestions/CLAUDE.md`.
@@ -44,11 +44,11 @@ and typed result shapes colocated here. Depth: `DETAILS.md`.
   `ImageFactsLedger`, scoped to the thread; a plan citing content the ledger has no delivery for is refused whole, and
   whatever elides a result owes the ledger a `revoke_call`. `propose/DETAILS.md`.
 - **Handlers read Rust-side stores, pane caches, and SQLite only — never a live `statfs`/`readdir`**: a dead NAS
-  can't hang a tool. The one exception is `inspect_file`: up to 200 files per call on bounded blocking threads (5 s per
-  path, 20 s per call); past a deadline the row is `unreachable`, the thread is ABANDONED, and unanswered paths are
-  named. It rides `file_viewer`'s seams, never its own sniff (`DETAILS.md` § Reading a file the way the viewer does),
-  and it is the one tool that egresses file CONTENTS (bounded text windows, never bytes). ❌ The consent copy must name
-  it before release.
+  can't hang a tool. The one exception is `inspect_file`: up to 200 files per call on blocking threads (5 s per path,
+  20 s per call); past a deadline the row is `unreachable`, the thread is ABANDONED, and unanswered paths are named. It
+  rides `file_viewer`'s seams (backends, search, UTF-16 clamp), never its own (`DETAILS.md` § Reading a file the way
+  the viewer does), and is the one tool that egresses file CONTENTS (bounded text windows and `find` snippets, never
+  bytes). ❌ The consent copy must name it before release.
 - **The registry couples `mcp` ↔ `agent`** (D49, intended). New agent tool = one registry entry + handler/schema/result
   here + a `ToolId` variant + its name in `EXPECTED_AGENT_TOOL_NAMES` and `ToolId::KNOWN` + a rail label in
   `ask-cmdr-labels.ts` (miss it and the tool line shows "Working"; a test pins it). It also moves

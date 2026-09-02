@@ -1,19 +1,21 @@
-//! The text kind: a line window read through the viewer's own backends.
+//! The text kind: a line window read through the viewer's own backends, or, with `find`,
+//! the matching lines.
 //!
-//! `read_text` opens the backend the viewer would use (`file_viewer::headless`), asks it
-//! for the requested lines, and `window_from_chunk` shapes the chunk into the model-facing
-//! window: lines joined with `\n`, a trailing `\r` stripped, both caps applied, and every
-//! cut named. Never `range_read`: that stitches a selection by UTF-16 offsets for the copy
-//! flow, and a line window needs none of it.
+//! `read_text` opens the backend the viewer would use (`file_viewer::headless`) and either
+//! asks it for the requested lines, which `window_from_chunk` shapes into the model-facing
+//! window (lines joined with `\n`, a trailing `\r` stripped, both caps applied, every cut
+//! named), or hands it to `find::find_hits`. Never `range_read`: that stitches a selection
+//! by UTF-16 offsets for the copy flow, and a line window needs none of it.
 
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use super::{MAX_LINE_CHARS, MAX_WINDOW_CHARS, TextContent, WindowOpts};
+use super::find::find_hits;
+use super::{MAX_LINE_CHARS, MAX_WINDOW_CHARS, TextAsk, TextContent, WindowOpts};
 use crate::file_viewer::encoding::FileEncoding;
-use crate::file_viewer::headless::open_text_backend;
+use crate::file_viewer::headless::{open_scan_backend, open_text_backend};
 use crate::file_viewer::{LineChunk, SeekTarget, ViewerError};
 
 /// A window of lines from a text file, as the model reads it.
@@ -34,26 +36,45 @@ pub struct TextWindow {
     pub lines_cut: bool,
 }
 
-/// Open the viewer backend for `path` and read one window. The file is opened once per
-/// call; there is no per-page re-read because a call is one page.
+/// Open the viewer backend for `path` and answer `ask`. The file is opened once per call;
+/// there is no per-page re-read because a call is one page.
+///
+/// A window rides `open_text_backend` (the line index, for exact line seeking). A `find`
+/// rides `open_scan_backend`: the scan streams from byte 0 and numbers lines exactly as it
+/// goes, so it needs no index, and building one would read a large file twice.
 pub(super) fn read_text(
     path: &Path,
     encoding: FileEncoding,
-    opts: WindowOpts,
+    ask: &TextAsk,
     cancel: &AtomicBool,
 ) -> Result<TextContent, ViewerError> {
-    let opened = open_text_backend(path, encoding, cancel)?;
-    // One line more than the window tells us exactly whether more exist, on every
-    // backend, without leaning on `total_lines` (unknown on the ByteSeek fallback).
-    let chunk = opened
-        .backend
-        .get_lines(&SeekTarget::Line(opts.start_line - 1), opts.max_lines + 1)?;
-    Ok(TextContent {
-        encoding: encoding.label().to_string(),
-        total_lines: opened.backend.total_lines(),
-        line_numbers_approximate: !opened.line_numbers_exact,
-        window: window_from_chunk(&chunk, opts, MAX_WINDOW_CHARS, MAX_LINE_CHARS),
-    })
+    match ask {
+        TextAsk::Window(opts) => {
+            let opened = open_text_backend(path, encoding, cancel)?;
+            // One line more than the window tells us exactly whether more exist, on every
+            // backend, without leaning on `total_lines` (unknown on the ByteSeek fallback).
+            let chunk = opened
+                .backend
+                .get_lines(&SeekTarget::Line(opts.start_line - 1), opts.max_lines + 1)?;
+            Ok(TextContent {
+                encoding: encoding.label().to_string(),
+                total_lines: opened.backend.total_lines(),
+                line_numbers_approximate: !opened.line_numbers_exact,
+                window: Some(window_from_chunk(&chunk, *opts, MAX_WINDOW_CHARS, MAX_LINE_CHARS)),
+                find: None,
+            })
+        }
+        TextAsk::Find(matcher) => {
+            let backend = open_scan_backend(path, encoding)?;
+            Ok(TextContent {
+                encoding: encoding.label().to_string(),
+                total_lines: backend.total_lines(),
+                line_numbers_approximate: false,
+                window: None,
+                find: Some(find_hits(backend.as_ref(), matcher, cancel)?),
+            })
+        }
+    }
 }
 
 /// Shape a chunk (fetched with `opts.max_lines + 1` lines) into a window. Pure.

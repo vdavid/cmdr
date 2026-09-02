@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::FULL_LOAD_THRESHOLD;
 use super::encoding::FileEncoding;
-use super::headless::open_text_backend;
+use super::headless::{open_scan_backend, open_text_backend};
 use super::{SeekTarget, ViewerError};
 use crate::test_support::TestDir;
 
@@ -77,4 +77,47 @@ fn a_missing_file_is_a_typed_not_found() {
         panic!("a missing file must not open");
     };
     assert!(matches!(err, ViewerError::NotFound { .. }), "got {err:?}");
+}
+
+#[test]
+fn a_scan_backend_skips_the_index_and_still_finds_lines_exactly() {
+    use std::sync::Mutex;
+
+    use super::search_matcher::{Matcher, SearchMode};
+
+    let dir = TestDir::new("headless_scan");
+    let large = write_numbered(&dir, "large.txt", 50_000);
+    let backend = open_scan_backend(&large, FileEncoding::Utf8).unwrap();
+    assert_eq!(backend.total_lines(), None, "no index was built past the threshold");
+
+    let matcher = Matcher::build(
+        "line 040000",
+        SearchMode {
+            use_regex: false,
+            case_sensitive: true,
+        },
+    )
+    .unwrap();
+    let matches = Mutex::new(Vec::new());
+    let progress = Mutex::new(0u64);
+    let scanned = backend
+        .search(&matcher, &AtomicBool::new(false), &matches, &progress)
+        .unwrap();
+    assert_eq!(scanned, backend.total_bytes(), "the scan streams the whole file");
+    let found = matches.into_inner().unwrap();
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].line, 39_999, "0-based, exact, with no index");
+    // The line comes back by its byte offset, the one seek every backend does exactly.
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(found[0].byte_offset), 1)
+        .unwrap();
+    assert_eq!(chunk.lines[0], "line 040000 padding........");
+
+    let small = write_numbered(&dir, "small.txt", 10);
+    let backend = open_scan_backend(&small, FileEncoding::Utf8).unwrap();
+    assert_eq!(
+        backend.total_lines(),
+        Some(11),
+        "a small file is loaded whole, lines known"
+    );
 }

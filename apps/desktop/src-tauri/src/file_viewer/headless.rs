@@ -72,3 +72,31 @@ pub(crate) fn open_text_backend(
         Err(other) => Err(other),
     }
 }
+
+/// Open the backend a streaming scan wants: the whole file in memory when it is small,
+/// else `ByteSeekBackend` with no index built.
+///
+/// `search` streams from byte 0 on every backend and numbers lines exactly as it goes,
+/// and a hit's line is fetched back by the byte offset the scan reported, which every
+/// backend seeks exactly. So a scan has no use for a line index, and skipping it halves
+/// the I/O on a large file (the viewer's own search runs on `ByteSeekBackend` for the
+/// same reason). Nothing here is estimated; only `total_lines` is unknown past the
+/// threshold.
+pub(crate) fn open_scan_backend(
+    path: &Path,
+    encoding: FileEncoding,
+) -> Result<Box<dyn FileViewerBackend>, ViewerError> {
+    let size = std::fs::metadata(path)
+        .map_err(|e| match e.kind() {
+            std::io::ErrorKind::NotFound => ViewerError::NotFound {
+                path: path.display().to_string(),
+            },
+            _ => ViewerError::from(e),
+        })?
+        .len();
+    if size <= FULL_LOAD_THRESHOLD {
+        Ok(Box::new(FullLoadBackend::open_with_encoding(path, encoding)?))
+    } else {
+        Ok(Box::new(ByteSeekBackend::open_with_encoding(path, encoding)?))
+    }
+}

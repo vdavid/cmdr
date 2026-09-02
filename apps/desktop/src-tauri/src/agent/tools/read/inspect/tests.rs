@@ -20,11 +20,15 @@ fn opts(start_line: usize, max_lines: usize) -> WindowOpts {
 }
 
 fn inspect(path: &Path) -> FileRow {
-    inspect_path(path.to_str().unwrap(), opts(1, 200), &AtomicBool::new(false))
+    inspect_path(
+        path.to_str().unwrap(),
+        &TextAsk::Window(opts(1, 200)),
+        &AtomicBool::new(false),
+    )
 }
 
 fn inspect_with(path: &Path, window: WindowOpts, cancel: &AtomicBool) -> FileRow {
-    inspect_path(path.to_str().unwrap(), window, cancel)
+    inspect_path(path.to_str().unwrap(), &TextAsk::Window(window), cancel)
 }
 
 fn file_of(row: &FileRow) -> &InspectedFile {
@@ -39,6 +43,11 @@ fn text_of(row: &FileRow) -> &TextContent {
         Content::Text(t) => t,
         other => panic!("expected a text row, got {other:?}"),
     }
+}
+
+/// The window of a text row read without `find`.
+fn window_of(text: &TextContent) -> &TextWindow {
+    text.window.as_ref().expect("a window read carries its window")
 }
 
 fn content_of(row: &FileRow) -> &Content {
@@ -79,12 +88,11 @@ fn chunk(lines: &[&str], first_line_number: usize, total_lines: Option<usize>) -
 fn params_default_the_window_and_cap_max_lines() {
     let p = parse_params(&json!({ "paths": ["/a/b.txt"] })).unwrap();
     assert_eq!(p.paths, vec!["/a/b.txt".to_string()]);
-    assert_eq!(p.window, opts(1, DEFAULT_MAX_LINES));
+    assert!(matches!(p.ask, TextAsk::Window(w) if w == opts(1, DEFAULT_MAX_LINES)));
 
     let p = parse_params(&json!({ "paths": ["/a/b.txt"], "startLine": 812, "maxLines": 999_999 })).unwrap();
-    assert_eq!(
-        p.window,
-        opts(812, MAX_MAX_LINES),
+    assert!(
+        matches!(p.ask, TextAsk::Window(w) if w == opts(812, MAX_MAX_LINES)),
         "an oversized ask is clamped, visibly"
     );
 
@@ -141,9 +149,9 @@ fn a_utf16_le_file_with_a_bom_is_text_with_its_encoding_named() {
     let text = text_of(&row);
     assert_eq!(text.encoding, "UTF-16 LE");
     assert!(
-        text.window.content.starts_with("hello world\nsecond line"),
+        window_of(text).content.starts_with("hello world\nsecond line"),
         "{:?}",
-        text.window.content
+        window_of(text).content
     );
     assert!(!text.line_numbers_approximate);
 
@@ -157,7 +165,7 @@ fn a_utf16_le_file_with_a_bom_is_text_with_its_encoding_named() {
     std::fs::write(&path, bytes).unwrap();
     let text = text_of(&inspect(&path)).clone();
     assert_eq!(text.encoding, "UTF-16 BE");
-    assert_eq!(text.window.content, "grüße\nzwei");
+    assert_eq!(window_of(&text).content, "grüße\nzwei");
     assert_eq!(text.total_lines, Some(2));
 }
 
@@ -166,7 +174,7 @@ fn a_windows_1252_file_is_text_with_its_encoding_named() {
     let row = inspect(&fixture("windows-1252.txt"));
     let text = text_of(&row);
     assert_eq!(text.encoding, "Western (Windows-1252)");
-    assert_eq!(text.window.content, "café\nnaïveté\n");
+    assert_eq!(window_of(text).content, "café\nnaïveté\n");
 }
 
 #[test]
@@ -181,7 +189,7 @@ fn nul_bytes_make_a_file_binary_and_an_svg_stays_text() {
     std::fs::write(&svg, "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>\n").unwrap();
     let row = inspect(&svg);
     let text = text_of(&row);
-    assert!(text.window.content.starts_with("<svg"));
+    assert!(window_of(text).content.starts_with("<svg"));
     assert_eq!(file_of(&row).mime.as_deref(), Some("image/svg+xml"));
 }
 
@@ -334,9 +342,9 @@ fn total_lines_is_known_for_a_small_file_and_absent_on_the_byte_seek_fallback() 
     let text = text_of(&inspect_with(&large, opts(1, 3), &AtomicBool::new(true))).clone();
     assert_eq!(text.total_lines, None);
     assert!(text.line_numbers_approximate);
-    assert!(text.window.content.starts_with("line 000001"));
-    assert_eq!(text.window.returned_lines, 3);
-    assert!(text.window.truncated);
+    assert!(window_of(&text).content.starts_with("line 000001"));
+    assert_eq!(window_of(&text).returned_lines, 3);
+    assert!(window_of(&text).truncated);
 }
 
 #[test]
@@ -349,14 +357,14 @@ fn a_nine_megabyte_file_reads_from_the_requested_line_and_the_last_page_is_not_t
     assert!(std::fs::metadata(&path).unwrap().len() >= 9 * 1024 * 1024);
 
     let text = text_of(&inspect_with(&path, opts(100_000, 3), &AtomicBool::new(false))).clone();
-    assert_eq!(text.window.start_line, 100_000);
+    assert_eq!(window_of(&text).start_line, 100_000);
     assert!(
-        text.window.content.starts_with("line 100000 padding"),
+        window_of(&text).content.starts_with("line 100000 padding"),
         "{:?}",
-        text.window.content
+        window_of(&text).content
     );
-    assert_eq!(text.window.returned_lines, 3);
-    assert!(text.window.truncated);
+    assert_eq!(window_of(&text).returned_lines, 3);
+    assert!(window_of(&text).truncated);
     assert_eq!(text.total_lines, Some(lines + 1));
     assert!(
         !text.line_numbers_approximate,
@@ -367,15 +375,18 @@ fn a_nine_megabyte_file_reads_from_the_requested_line_and_the_last_page_is_not_t
     // trailing empty line after the final newline in `total_lines` but never returns it
     // from `get_lines`, unlike FullLoad; the window follows what the backend hands over.)
     let text = text_of(&inspect_with(&path, opts(lines, 200), &AtomicBool::new(false))).clone();
-    assert_eq!(text.window.start_line, lines);
-    assert_eq!(text.window.content, "line 360000 padding........");
-    assert_eq!(text.window.returned_lines, 1);
-    assert!(!text.window.truncated);
+    assert_eq!(window_of(&text).start_line, lines);
+    assert_eq!(window_of(&text).content, "line 360000 padding........");
+    assert_eq!(window_of(&text).returned_lines, 1);
+    assert!(!window_of(&text).truncated);
 
     // And past the end: empty, not truncated, no phantom last line.
     let text = text_of(&inspect_with(&path, opts(lines + 5, 200), &AtomicBool::new(false))).clone();
-    assert_eq!((text.window.returned_lines, text.window.truncated), (0, false));
-    assert_eq!(text.window.start_line, lines + 5);
+    assert_eq!(
+        (window_of(&text).returned_lines, window_of(&text).truncated),
+        (0, false)
+    );
+    assert_eq!(window_of(&text).start_line, lines + 5);
 }
 
 // ── Statuses ──────────────────────────────────────────────────────────────────
@@ -393,11 +404,11 @@ fn folder_missing_and_virtual_paths_answer_typed_statuses() {
     // `mtp://` and direct `smb://` have no local byte path; `missing` would be a lie.
     let cancel = AtomicBool::new(false);
     assert!(matches!(
-        inspect_path("mtp://phone/DCIM/a.jpg", opts(1, 1), &cancel),
+        inspect_path("mtp://phone/DCIM/a.jpg", &TextAsk::Window(opts(1, 1)), &cancel),
         FileRow::UnsupportedVolume { .. }
     ));
     assert!(matches!(
-        inspect_path("smb://nas/share/a.txt", opts(1, 1), &cancel),
+        inspect_path("smb://nas/share/a.txt", &TextAsk::Window(opts(1, 1)), &cancel),
         FileRow::UnsupportedVolume { .. }
     ));
 }
@@ -435,7 +446,7 @@ fn quick_config() -> RunnerConfig {
 }
 
 fn real_inspect() -> InspectFn {
-    Arc::new(|path, cancel| inspect_path(path, opts(1, 200), cancel))
+    Arc::new(|path, cancel| inspect_path(path, &TextAsk::Window(opts(1, 200)), cancel))
 }
 
 #[tokio::test]
@@ -518,13 +529,14 @@ async fn a_read_that_honours_the_cancel_flag_hands_back_its_partial_row() {
                 encoding: "UTF-8".into(),
                 total_lines: None,
                 line_numbers_approximate: true,
-                window: TextWindow {
+                window: Some(TextWindow {
                     start_line: 1,
                     returned_lines: 0,
                     content: String::new(),
                     truncated: false,
                     lines_cut: false,
-                },
+                }),
+                find: None,
             }),
         }))
     });
@@ -554,13 +566,14 @@ fn dense_row(index: usize) -> FileRow {
             encoding: "UTF-8".into(),
             total_lines: Some(20_000),
             line_numbers_approximate: false,
-            window: TextWindow {
+            window: Some(TextWindow {
                 start_line: 1,
                 returned_lines: 200,
                 content: "y".repeat(MAX_WINDOW_CHARS),
                 truncated: true,
                 lines_cut: false,
-            },
+            }),
+            find: None,
         }),
     }))
 }
@@ -634,7 +647,7 @@ fn a_call_that_fits_is_answered_whole_and_carries_no_unanswered_key() {
 // ── Text-only by construction ─────────────────────────────────────────────────
 
 /// Every leaf of `value` is a string, a number, or a flag: nowhere for bytes to hide.
-fn assert_text_only(value: &Value, at: &str) {
+pub(super) fn assert_text_only(value: &Value, at: &str) {
     match value {
         Value::Object(map) => {
             for (key, v) in map {
@@ -671,7 +684,7 @@ fn every_row_shape_is_text_only_no_byte_fields() {
         Some(inspect(&empty)),
         Some(inspect(&dir)),
         Some(inspect(&dir.join("missing"))),
-        Some(inspect_path("mtp://x/y", opts(1, 1), &cancel)),
+        Some(inspect_path("mtp://x/y", &TextAsk::Window(opts(1, 1)), &cancel)),
         Some(FileRow::Unreachable { path: "/u".into() }),
         Some(FileRow::Unreadable {
             path: "/r".into(),

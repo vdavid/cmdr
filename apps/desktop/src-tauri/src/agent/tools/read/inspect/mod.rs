@@ -7,7 +7,8 @@
 //!
 //! - **text**: a line window (`startLine` + `maxLines`, capped in chars) read through the
 //!   viewer's own line backends and encoding detection, so a UTF-16 or Windows-1252 file
-//!   reads as text, exactly as the viewer shows it. Every cut is named.
+//!   reads as text, exactly as the viewer shows it. Every cut is named. With `find`, the
+//!   matching lines take the window's place (`find.rs`), found with the viewer's search.
 //! - **image**: format and dimensions from the header, and a pointer to `image_facts` for
 //!   what's IN the picture. Image BYTES never cross (the DTO is text-only).
 //! - **empty** / **binary**: metadata only. PDFs and archives are `binary` here: their
@@ -31,6 +32,9 @@
 //! [`CALL_TIMEOUT`] for the call. A dead mount answers `unreachable`, never a wedged turn
 //! (principle 2, Rock solid). What the tool does with the thread it can't stop: `runner`.
 
+mod find;
+#[cfg(test)]
+mod find_tests;
 mod runner;
 #[cfg(test)]
 mod tests;
@@ -47,15 +51,16 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
-use crate::file_viewer::ViewerError;
 use crate::file_viewer::content_kind::{
     CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, looks_binary, media_mime,
 };
 use crate::file_viewer::encoding::detect_from_head;
 use crate::file_viewer::media::read_image_dimensions;
+use crate::file_viewer::{Matcher, SearchMode, ViewerError};
 use crate::mcp::{ToolError, ToolResult, fit_to_result_budget, is_virtual_path};
 use crate::search::{format_size, format_timestamp};
 
+pub use find::{FindHits, FindLine};
 use runner::{InspectFn, RunnerConfig};
 pub use text::TextWindow;
 
@@ -117,22 +122,30 @@ pub struct ImageContent {
     pub hint: &'static str,
 }
 
-/// A text file: its encoding, how many lines it has when that's known, and one window.
+/// A text file: its encoding, how many lines it has when that's known, and either one
+/// window or the lines matching `find`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextContent {
     /// `FileEncoding::label()`: "UTF-8", "UTF-16 LE", "Western (Windows-1252)", ...
     pub encoding: String,
     /// Known for a fully loaded file or a finished line index; absent on the ByteSeek
-    /// fallback. Counts the trailing empty line after a final newline, as the viewer's
-    /// line numbers do, so "line 812" here is line 812 in the viewer.
+    /// fallback and on a `find` over a large file (a scan builds no index). Counts the
+    /// trailing empty line after a final newline, as the viewer's line numbers do, so
+    /// "line 812" here is line 812 in the viewer.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_lines: Option<usize>,
     /// `true` only when the line index didn't finish in time and the window was read by
     /// byte estimate: `startLine` and `totalLines` are then not to be quoted as exact.
+    /// Never set on a `find` row: the scan numbers lines exactly on every backend.
     #[serde(skip_serializing_if = "super::is_false")]
     pub line_numbers_approximate: bool,
-    pub window: TextWindow,
+    /// The line window. Absent when `find` is present.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub window: Option<TextWindow>,
+    /// The matching lines. Present exactly when the call carried `find`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub find: Option<FindHits>,
 }
 
 /// The per-kind content section.
@@ -241,6 +254,16 @@ pub fn inspect_file_schema() -> Value {
             "maxLines": {
                 "type": "integer", "minimum": 1, "maximum": MAX_MAX_LINES,
                 "description": "Text: window lines (default 200)."
+            },
+            "find": {
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string" },
+                    "regex": { "type": "boolean" },
+                    "caseSensitive": { "type": "boolean" }
+                },
+                "required": ["query"],
+                "description": "Search text files; matching lines replace the window."
             }
         },
         "required": ["paths"],
@@ -256,10 +279,48 @@ pub(crate) struct WindowOpts {
     pub max_lines: usize,
 }
 
+/// What every text row in the call carries: its window, or the lines matching `find`.
+#[derive(Debug, Clone)]
+pub(crate) enum TextAsk {
+    Window(WindowOpts),
+    /// One matcher for the whole call, shared by every path, as the viewer builds one per
+    /// search: the regex compiles once.
+    Find(Arc<Matcher>),
+}
+
 #[derive(Debug)]
 struct Params {
     paths: Vec<String>,
-    window: WindowOpts,
+    ask: TextAsk,
+}
+
+/// `find`, when present, as one built matcher. A query the viewer's matcher rejects (an
+/// invalid regex, a pattern that would have to cross a newline) is `INVALID_PARAMS` with
+/// the matcher's own reason, before any file is opened.
+fn parse_find(params: &Value) -> Result<Option<Arc<Matcher>>, ToolError> {
+    let find = match params.get("find") {
+        None | Some(Value::Null) => return Ok(None),
+        Some(v) => v
+            .as_object()
+            .ok_or_else(|| ToolError::invalid_params("'find' must be an object with a 'query' string"))?,
+    };
+    let query = find
+        .get("query")
+        .and_then(Value::as_str)
+        .filter(|q| !q.is_empty())
+        .ok_or_else(|| ToolError::invalid_params("'find.query' must be a non-empty string"))?;
+    let flag = |name: &str| match find.get(name) {
+        None | Some(Value::Null) => Ok(false),
+        Some(v) => v
+            .as_bool()
+            .ok_or_else(|| ToolError::invalid_params(format!("'find.{name}' must be true or false"))),
+    };
+    let mode = SearchMode {
+        use_regex: flag("regex")?,
+        case_sensitive: flag("caseSensitive")?,
+    };
+    let matcher = Matcher::build(query, mode).map_err(|e| ToolError::invalid_params(format!("'find.query': {e}")))?;
+    Ok(Some(Arc::new(matcher)))
 }
 
 fn parse_params(params: &Value) -> Result<Params, ToolError> {
@@ -301,10 +362,11 @@ fn parse_params(params: &Value) -> Result<Params, ToolError> {
             .map(|n| (n as usize).min(MAX_MAX_LINES))
             .ok_or_else(|| ToolError::invalid_params("'maxLines' must be a positive integer"))?,
     };
-    Ok(Params {
-        paths,
-        window: WindowOpts { start_line, max_lines },
-    })
+    let ask = match parse_find(params)? {
+        Some(matcher) => TextAsk::Find(matcher),
+        None => TextAsk::Window(WindowOpts { start_line, max_lines }),
+    };
+    Ok(Params { paths, ask })
 }
 
 // ── One path, on a blocking thread ────────────────────────────────────────────
@@ -328,8 +390,8 @@ impl From<ViewerError> for ReadFailure {
 }
 
 /// Inspect one path. Blocking: runs on the pool under the runner's deadline, which flips
-/// `cancel` when the path is out of time (the line-index build checks it).
-pub(crate) fn inspect_path(path: &str, window: WindowOpts, cancel: &AtomicBool) -> FileRow {
+/// `cancel` when the path is out of time (the line-index build and the search check it).
+pub(crate) fn inspect_path(path: &str, ask: &TextAsk, cancel: &AtomicBool) -> FileRow {
     let owned = path.to_string();
     if is_virtual_path(path) {
         return FileRow::UnsupportedVolume { path: owned };
@@ -343,7 +405,7 @@ pub(crate) fn inspect_path(path: &str, window: WindowOpts, cancel: &AtomicBool) 
         return FileRow::Folder { path: owned };
     }
     let size = meta.len();
-    let content = match read_content(p, size, window, cancel) {
+    let content = match read_content(p, size, ask, cancel) {
         Ok(c) => c,
         Err(failure) => return status_for(owned, failure),
     };
@@ -397,7 +459,7 @@ fn status_for(path: String, failure: ReadFailure) -> FileRow {
 /// Read the head once, classify with the viewer's classifier, and shape the content for
 /// the kind. `ext = None` keeps SVG on the text path (its markup says more to a model
 /// than "an image"); `is_local = true` because the row is already a local file.
-fn read_content(p: &Path, size: u64, window: WindowOpts, cancel: &AtomicBool) -> Result<Content, ReadFailure> {
+fn read_content(p: &Path, size: u64, ask: &TextAsk, cancel: &AtomicBool) -> Result<Content, ReadFailure> {
     if size == 0 {
         return Ok(Content::Empty {});
     }
@@ -414,7 +476,7 @@ fn read_content(p: &Path, size: u64, window: WindowOpts, cancel: &AtomicBool) ->
             if looks_binary(&head, encoding) {
                 return Ok(Content::Binary {});
             }
-            Ok(Content::Text(text::read_text(p, encoding, window, cancel)?))
+            Ok(Content::Text(text::read_text(p, encoding, ask, cancel)?))
         }
     }
 }
@@ -457,10 +519,16 @@ pub(crate) fn shape_ok(paths: &[String], rows: Vec<Option<FileRow>>) -> InspectR
     }
 }
 
-/// Handler: inspect every path on the blocking pool, bounded per path and per call.
-pub async fn execute_inspect_file<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
-    let Params { paths, window } = parse_params(params)?;
-    let inspect: InspectFn = Arc::new(move |path, cancel| inspect_path(path, window, cancel));
+/// The call, minus the wire: parse, inspect every path on the blocking pool (bounded per
+/// path and per call), shape.
+pub(crate) async fn run(params: &Value) -> Result<InspectResult, ToolError> {
+    let Params { paths, ask } = parse_params(params)?;
+    let inspect: InspectFn = Arc::new(move |path, cancel| inspect_path(path, &ask, cancel));
     let rows = runner::run_paths(&paths, &RUNNER, inspect).await;
-    serde_json::to_value(shape_ok(&paths, rows)).map_err(|e| ToolError::internal(e.to_string()))
+    Ok(shape_ok(&paths, rows))
+}
+
+/// Handler.
+pub async fn execute_inspect_file<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
+    serde_json::to_value(run(params).await?).map_err(|e| ToolError::internal(e.to_string()))
 }

@@ -681,7 +681,7 @@ mcp_tools! {
     // PRIVACY: the windows egress to the agent's provider under the Ask Cmdr consent gate;
     // see `agent/tools/read/inspect/`.
     "inspect_file" => {
-        desc: "Look inside files: metadata, the format the bytes really are, and per kind the content: a line window of text (any encoding), or an image's dimensions (then image_facts for what's in it). Up to 200 paths; every cut is reported.",
+        desc: "Look inside files: metadata, the format the bytes really are, and per kind the content: a line window of text (any encoding), or an image's dimensions (then image_facts for what's in it). find searches text files. Up to 200 paths; every cut is reported.",
         schema: crate::agent::tools::read::inspect::inspect_file_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::Agent],

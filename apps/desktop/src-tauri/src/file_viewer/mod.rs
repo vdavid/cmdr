@@ -78,7 +78,7 @@ const MAX_BACKWARD_SCAN: usize = 8192;
 /// Maximum number of matches stored during search. Once reached, the search stops entirely.
 /// The frontend highlights additional matches client-side on visible lines, so stopping early
 /// doesn't lose highlighting: it only caps the prev/next navigation index.
-const MAX_SEARCH_MATCHES: usize = 10_000;
+pub(crate) const MAX_SEARCH_MATCHES: usize = 10_000;
 
 /// Which kind of seek the caller is asking for, as a value the wire enforces.
 ///
