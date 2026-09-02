@@ -1642,12 +1642,13 @@ clone or worktree) nothing else creates it before the checks run. Without it, ty
 build a program: every imported type resolves to "could not be resolved", type-aware rules go silent, their
 `eslint-disable` directives look unused, and the local `--fix` deletes them — this once stripped directives from 7
 source files in a fresh worktree. The sync check (~1 s) is the single serialized syncer: `eslint-typecheck-svelte`,
-`eslint-typecheck-ts`, and `svelte-check` depend on it. `RunSvelteCheck` calls `check:no-sync` (not `pnpm check`) so it
-doesn't rewrite `.svelte-kit/` while the parallel eslint passes read it; humans keep using `pnpm check`, which still
-syncs. As defense in depth, `runScopedESLintTypecheck` refuses to run when `.svelte-kit/tsconfig.json` is missing
-(relevant for targeted `--check eslint-typecheck-*` runs, where the dependency is treated as satisfied if not selected),
-so a degraded projectService can never strip directives again. `apps/desktop` also has `"prepare": "svelte-kit sync"` so
-plain installs and IDE flows generate the file.
+`eslint-typecheck-ts`, and `svelte-check` depend on it. `RunSvelteCheck` calls `typecheck:no-sync` so it doesn't rewrite
+`.svelte-kit/` while the parallel eslint passes read it; a human standing in `apps/desktop` runs `pnpm typecheck`, which
+still syncs. Those scripts are named `typecheck`, not `check`, so that a stray cwd can't make `pnpm check` mean this one
+narrow pass instead of the root runner. As defense in depth, `runScopedESLintTypecheck` refuses to run when
+`.svelte-kit/tsconfig.json` is missing (relevant for targeted `--check eslint-typecheck-*` runs, where the dependency is
+treated as satisfied if not selected), so a degraded projectService can never strip directives again. `apps/desktop`
+also has `"prepare": "svelte-kit sync"` so plain installs and IDE flows generate the file.
 
 **Decision**: Clippy runs the enforcing pass (`-D warnings`) first, and only invokes `cargo clippy --fix` if that fails
 (and we're not in CI). **Why**: Running `--fix` speculatively before every check doubled wall time on the happy path (no
