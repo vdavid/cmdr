@@ -372,6 +372,13 @@ green suite can hide the exact flake the retries exist to tolerate. `rust-tests`
 lines and downgrades such a run from pass to **warn**, naming each test and the attempt that rescued it. Adding retries
 without that reporting is the anti-pattern, not retries themselves.
 
+### ❌ `--lib` alongside `--all-targets`, which silently hides the test target
+
+`cargo clippy -p cmdr --lib --all-targets` reports clean while the test target fails to compile: the two target
+selectors don't union, and `--lib` wins. On 2026-09-02 that combination stayed green through eight `E0624` visibility
+errors introduced by moving module-private methods into a new `#[path]` child; only `cargo test` surfaced them. Pass
+`--all-targets` on its own, and treat a green clippy as saying nothing about whether the tests build.
+
 ### Reading a red `rust-tests` run
 
 Two different things produce a red run and they need opposite fixes, so `rust-tests` prints a **diagnosis** above the
