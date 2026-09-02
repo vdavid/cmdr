@@ -1812,3 +1812,49 @@ honesto e tranquilo, sem pedido de desculpas e sem alarme, porque o app funciona
   Deliberadamente não `melhor esforço`, que soa a contrato.
 - **`layout` fica `layout`** · empréstimo corrente no pt-BR de tecnologia; `disposição` soaria acadêmico aqui.
 - **A última frase é o David em primeira pessoa**, com `você`, como em `onboarding.stepBeta.greeting`.
+
+## O que o Ask Cmdr lê dentro de um arquivo (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+A ferramenta `inspect_file` lê uma parte limitada de um arquivo a pedido, e a tela de consentimento passou a dizer isso.
+Fontes: `_ignored/i18n/pt-BR/` (macOS Finder + SystemSettings, terminologia da Microsoft, Thunar).
+
+- **"Looking inside files" / "Looked inside files" → `Olhando dentro dos arquivos` / `Olhou dentro dos arquivos`** ·
+  `olhar dentro de` é o verbo que o catálogo já usa para o Cmdr espiar um conteúdo (`search.coverage.denied` "não teve
+  permissão para olhar dentro desta pasta", `search.coverage.declined` "não olha dentro de pastas de snapshot") · high.
+  Gerúndio + pretérito, o molde dos irmãos (`Buscando nas suas fotos` / `Buscou nas suas fotos`). O artigo definido
+  (`dos arquivos`) porque a linha aparece enquanto o assistente lê os arquivos da pergunta; a chamada cobre até 200, então
+  o plural fica neutro como no inglês.
+- **archive → `arquivo compactado`** · entrada já assentada (§ Archive-browsing terms) · high. `a lista dos arquivos
+  dentro de um arquivo compactado` repete `arquivo` de propósito: é a mesma repetição que a entrada original já aceita.
+- **thumbnail → `miniatura`** · macOS Finder pt-BR (`Tamanho da miniatura:`, `miniatura pequena/média/grande` nas
+  descrições de acessibilidade das visualizações), terminologia da Microsoft (id 121524 `miniatura`), Thunar (`Mostrar
+  miniaturas:`) · confirmed. Já estava na antiga `askCmdr.consent.noContents`.
+- **camera details (EXIF de uma foto) → `detalhes da câmera`** · câmera: terminologia da Microsoft (id 27160), macOS
+  SystemSettings pt-BR (`câmeras e outros dispositivos`), e o catálogo (`onboarding.stepOptional.mtp.*`); `detalhes` é a
+  palavra que `askCmdr.renameReview.evidence.metadata` já usa para metadados (`Detalhes do arquivo, não o conteúdo`) ·
+  high. ❌ Não `metadados` nem `dados EXIF` nesta tela: o inglês evita o jargão de propósito.
+- **location (onde a foto foi tirada) → `localização`** no item da lista e no aviso do que mudou; `onde ela foi tirada`
+  na regra, que tem espaço para desfazer a ambiguidade · macOS Finder pt-BR usa `localização` para lugar (`FI12`, `BU39`
+  "Escolher Localização…"), terminologia da Microsoft (id 333724) · high. A regra escreve por extenso porque
+  `localização de uma foto` sozinho poderia se ler como o caminho do arquivo.
+- **some text / some lines of text → `um trecho de texto` / `algumas linhas de texto`** · `trecho` é o substantivo
+  natural de pt-BR para um excerto; `arquivo de texto` é o termo da Microsoft (id 120995) quando o tipo de arquivo é
+  nomeado · high.
+- **a few pages of a PDF along with its title and author → `algumas páginas de um PDF junto com o título e o autor`** ·
+  página (Microsoft id 89939), título (id 151997), autor (id 747536) · high. `PDF` fica verbatim.
+- **whole files → `arquivos inteiros`** · a regra abre com `O Cmdr nunca envia arquivos inteiros, fotos ou miniaturas`,
+  trocando o antigo `os arquivos em si: nem o conteúdo dos arquivos` porque agora um pedaço do conteúdo PODE sair; a
+  frase não pode mais prometer que conteúdo nenhum é enviado · high.
+- **"works the same way" → `funciona do mesmo jeito`** · pt-BR coloquial, casa com o tom da tela · high.
+- **Recuperado da antiga `askCmdr.consent.noContents`, palavra por palavra:** a frase da busca de fotos (`o texto que o
+  Cmdr reconheceu dentro das fotos correspondentes e as etiquetas delas vão para o seu provedor para que ele possa
+  encontrá-las`) e a frase das sugestões (`O Ask Cmdr pode sugerir renomeações, movimentações e faxinas, e nada acontece
+  com nenhum arquivo até você aprovar.`). `etiquetas` = tags (o catálogo já usa em `errors.listing.attributeNotFound`),
+  `provedor` = provider (§ Terms), `faxinas` = cleanups.
+- **`whatsNew.body`**: a segunda frase (`É mais do que você aceitou na época, então aqui está tudo de novo.`) ficou como
+  estava; só a primeira foi retraduzida. `um arquivo quando você pergunta sobre ele` no lugar do relativo `sobre o qual`,
+  que soa formal demais para a tela.
+- Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `estar a` + infinitivo, `consoante`, `Rever`. Nenhum valor
+  leva apóstrofo ASCII, então não há `''`. Nenhum `sameAsSourceJustification`: os cinco valores diferem do inglês.
+- ⚠️ Fora do lote: `askCmdr.empty.hint` (inglês e português) ainda diz `nunca o conteúdo dos arquivos`, o que contradiz
+  a nova regra. É uma correção do inglês, não desta locale; registrada para o lead.

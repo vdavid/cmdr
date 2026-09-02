@@ -112,6 +112,14 @@
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
+  "askCmdr.tool.inspectFile.doing": "正在查看文件内容",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "已查看文件内容",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
+  },
   "askCmdr.tool.imageFacts.doing": "正在读取你照片中的内容",
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
@@ -348,6 +356,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Cmdr 为了回答你而打开的文件里的部分内容：一些文本、PDF 页面、压缩文件里有哪些文件，以及照片的相机信息和拍摄地点",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "你此刻正在看的内容：当前文件夹、光标位置、选择内容，以及已连接的驱动器",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -360,9 +372,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr 从不发送文件本身：不发送文件内容，不发送照片，也不发送缩略图。照片搜索是唯一会深入你图像内部的功能，而且仅在你用它搜索照片时：Cmdr 在匹配照片中识别出的文字及其标签会发送给你的提供方，以便它找到这些照片。Ask Cmdr 可以建议重命名、移动和整理，在你批准之前，任何文件都不会有变化。",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr 从不发送整个文件、照片或缩略图。当你问到某个文件时，它可以读取其中有限的一部分：几行文本、PDF 的几页及其标题和作者、压缩文件里的文件列表，或者照片的相机信息，包括拍摄地点。照片搜索也是同样的方式：Cmdr 在匹配照片中识别出的文字及其标签会发送给你的提供方，以便它找到这些照片。Ask Cmdr 可以建议重命名、移动和整理，在你批准之前，任何文件都不会有变化。",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr 会给自己记下关于你的笔记：你喜欢怎样整理东西、你以前拒绝过什么，以及任何你让它记住的事。只要这些笔记还在，它们就会随你发出的每条消息一起发送，其中可能包含 Cmdr 在你照片里识别出的文字。你随时可以在 Ask Cmdr 设置中查看或清空它们。",
   "@askCmdr.consent.memory": {
@@ -392,9 +404,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr 现在会在多次对话之间记住关于你的笔记，并且在留意到值得一提的事情时主动开启对话。这比你当初同意的范围更大，所以这里再完整说明一次。",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr 现在可以查看你问到的文件里的内容：其中的一些文本、PDF 的几页、压缩文件里的文件列表，或者照片的相机信息和拍摄地点。这比你当初同意的范围更大，所以这里再完整说明一次。",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "忘掉 Ask Cmdr 记住的所有内容？",
   "@askCmdr.forget.title": {

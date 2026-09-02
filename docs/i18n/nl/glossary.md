@@ -2189,3 +2189,65 @@ eerlijk en ontspannen, geen excuus en geen waarschuwing, want de app doet het ge
 - **`look off` → `er raar uitzien`** · alledaags, en het vermijdt `fout`/`mislukt`, die de stem verbiedt.
 - **Geen `z''n`**: de samentrekking zou een ICU-apostrof nodig hebben, en `zijn best` leest even natuurlijk.
 - **De laatste zin is David in de ik-vorm**, met `je`, net als `onboarding.stepBeta.greeting`.
+
+## Ask Cmdr looks inside files: the `inspectFile` tool line and the reworded consent screen (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+Five keys, mined `_ignored/i18n/nl/` (macOS Finder/AppKit, Microsoft `DUTCH.tbx`, Nautilus, Thunar, Dolphin, Total
+Commander, Double Commander). The consent paragraph `contentsRule` replaces the old `noContents`; its photo-search and
+approval sentences are carried over from that key verbatim so the screen keeps one voice.
+
+- look inside files (tool line, `inspectFile.doing` / `.done`) → `Kijkt in bestanden` / `In bestanden gekeken` · no
+  pile precedent (AI tool-status lines), coined in the shape of the settled siblings (`Doorzoekt je foto''s` / `Je
+  foto''s doorzocht`, `Haalt mapinhoud op` / `Mapinhoud opgehaald`): present tense without subject for doing,
+  participle-led for done. Bare plural `bestanden` keeps it plural-neutral (one call covers up to 200 files) · tentative
+- thumbnail → `miniatuur` (plural `miniaturen`) · macOS Finder ("klein/normaal/groot formaat miniaturen",
+  "Miniatuurgrootte:"), Microsoft terminology ("thumbnail"→"miniatuur", NLD/BEL), Nautilus/Thunar/Double Commander all
+  "miniaturen"; already in the old `noContents` · high
+- camera details (a photo's EXIF: make, model, exposure, and so on) → `cameragegevens` · compound of camera→`camera`
+  (Microsoft terminology "camera"→"camera"; macOS Finder "camera's"; in-catalog "camera''s") + `gegevens`, the word
+  this catalog already uses for a file's metadata (`Bestandsgegevens, niet de inhoud`, `de bestandsgegevens`). Nautilus
+  names the individual fields "Merk camera" / "Model camera", so `camera` is the settled head; no source has a
+  collective noun for the whole block · tentative
+- location (where a photo was taken) → `locatie` · macOS Finder ("Location"→"Locatie", "Get Location"→"Haal locatie
+  op"), Microsoft terminology ("location"→"locatie"), Nautilus/Thunar/Dolphin "Locatie" · high
+- where it was taken (of a photo, spelled out) → `waar die gemaakt is` · standard Dutch takes a photo with `maken`
+  (in-catalog `foto''s … kopiëren`, macOS "Foto's"); `die` refers back to `foto` (de-word) · high
+- page (of a PDF) → `pagina` (plural `pagina''s`, ICU-doubled apostrophe) · macOS Finder ("Webpagina's"), Dolphin
+  ("Page Count"→"Aantal pagina's"), in-catalog `Pagina omhoog` · high. Microsoft's "page"→"page" is the memory-paging
+  sense (mining trap 4), not this one.
+- PDF pages → `PDF-pagina''s` · brand+hyphen+noun compound like `Zip-archief`, `Finder-tag` · high
+- title and author (PDF document metadata) → `titel en auteur` · Nautilus ("Title"→"Titel"), Dolphin
+  ("Author"→"Auteur"), Microsoft terminology ("author"→"auteur") · high. Microsoft's "title"→"functie" is the job-title
+  sense (trap 4); `titel` is the document sense and matches in-catalog `Chattitel`.
+- archive (zip/tar/7z, and what's inside it) → `archief`; "the list of files inside an archive" → `de lijst met
+  bestanden in een archief`; "what's inside an archive" → `wat er in een archief zit` · settled glossary term (macOS
+  "Zip-archief", "Soort is Archief"); the `in een archief` shape follows in-catalog `Er is geen prullenmand in een
+  archief` · high
+- some text / some lines of text → `wat tekst` / `wat regels tekst` · text→`tekst` is macOS Finder ("Text"→"Tekst",
+  "Platte tekst"); the informal quantifier `wat` matches the `je`-register of the screen · high on `tekst`, tentative
+  on `wat`
+- a limited part of it → `een beperkt deel ervan` · plain Dutch; `ervan` keeps the referent (a file) neutral · high
+- photo search (the feature) → `de fotozoekfunctie` · inherited from the old `noContents` key · tentative (no pile
+  precedent for the feature name; the consent screen is its only prose mention)
+- provider (AI) → `aanbieder` · settled glossary term, reused ("naar je aanbieder") · high
+- "nothing happens to a file until you approve it" → `er gebeurt niets met een bestand tot jij het goedkeurt` ·
+  inherited verbatim from the old `noContents`; stressed `jij` marks the contrast (the assistant proposes, you decide),
+  per the style guide's `jij`-for-emphasis rule · high
+- "Cmdr never sends whole files, photos, or thumbnails" → `Cmdr verstuurt nooit hele bestanden, foto''s of miniaturen`
+  · send→`versturen` settled; `hele bestanden` (whole files) deliberately replaces the old key's `geen bestandsinhoud`,
+  which promised no contents at all and would now be false · high
+- No `sameAsSourceJustification` needed: all five values differ from English.
+
+REVIEW FLAGS (inspect-file pass):
+
+- `cameragegevens` is a coined compound (no source carries a collective noun for a photo's EXIF block). Confirm it
+  reads as "what the camera recorded" and not as "data about the camera"; `camera-informatie` is the fallback.
+- `wat tekst` / `wat regels tekst` for "some text" / "some lines of text": the informal `wat` fits the `je` register
+  but `een deel van de tekst` (used in `whatsNew.body`) is the safer form. Confirm the three keys can share one shape.
+- `De fotozoekfunctie werkt net zo` for "Photo search works the same way": `net zo` is colloquial; confirm it doesn't
+  read as clipped in a consent paragraph (`op dezelfde manier` is the formal fallback).
+- `Ask Cmdr kan hernoemen, verplaatsen en opruimen voorstellen` is inherited from the old key and still says
+  `hernoemen`, which the rename-as-noun decision (`naamwijziging`) argues against; it's part of the pending locale-wide
+  sweep already flagged in `style.md`.
+- Overflow: `contentsRule` runs 545 characters against the English 492; it's a wrapping paragraph, so the risk is
+  height, not clipping. Eyeball it in the Settings disclosure.

@@ -1981,3 +1981,61 @@ thật và thoải mái, không xin lỗi và không cảnh báo, vì ứng dụ
 - **`fixes` → `việc khắc phục`, không phải `sửa lỗi`** · `lỗi` thuộc thanh ghi mà giọng nói tránh; `khắc phục` nói đúng
   việc mà không mang chữ đó.
 - **Câu cuối là David ở ngôi thứ nhất, dùng `mình`**, đúng như `onboarding.stepBeta.greeting`; người dùng vẫn là `bạn`.
+
+## Ask Cmdr xem bên trong tệp: hai nhãn công cụ + ba khóa đồng ý (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+Năm khóa cho công cụ `inspect_file` (Ask Cmdr đọc một phần có giới hạn của tệp khi được hỏi) và màn hình đồng ý viết
+lại quanh nó. Dùng lại các thuật ngữ đã chốt (tệp nén → `tệp nén`, văn bản → `văn bản`, dòng → `dòng`, ảnh → `ảnh`,
+thẻ → `thẻ`, nhà cung cấp → `nhà cung cấp`, đề xuất → `đề xuất`, phê duyệt → `phê duyệt`). Hai câu cuối của
+`contentsRule` (tìm kiếm ảnh; đề xuất chờ phê duyệt) lấy **nguyên văn** từ khóa cũ `askCmdr.consent.noContents`, và câu
+thứ hai của `whatsNew.body` giữ nguyên. Thuật ngữ mới:
+
+- **thumbnail → `hình thu nhỏ`** · macOS AppKit `WindowTabs` ("thumbnail of the tab picker image" → `hình thu nhỏ của
+  hình ảnh bộ chọn tab`), thuật ngữ Microsoft (`thumbnail` → `hình thu nhỏ`), KDE Dolphin và Xfce Thunar (`Thumbnails` →
+  `Hình thu nhỏ`); chỉ GNOME Nautilus nói `ảnh thu nhỏ` · `high`. Khóa `noContents` cũ (nay đã bỏ) từng viết
+  `ảnh thu nhỏ`, và không chỗ nào khác trong catalog dùng từ này, nên đổi theo phe macOS + MS không gây lệch. Thêm một
+  lý do ngữ nghĩa: trong câu `toàn bộ tệp, ảnh hay hình thu nhỏ`, chữ `hình` tách "thumbnail" khỏi "photo" (`ảnh`) đứng
+  ngay trước nó.
+- **camera (của một bức ảnh) → `máy ảnh`; "camera details" → `thông tin máy ảnh`** · macOS AppKit
+  (`NSStillCameraTemplate` → `máy ảnh`), thuật ngữ Microsoft (`camera` → `máy ảnh`), GNOME Nautilus (`Camera Brand` →
+  `Nhãn hiệu máy ảnh`, `Camera Model` → `Kiểu máy ảnh`); catalog đã có `daemon máy ảnh của macOS` (`mtp.connectedToast`)
+  · `high`. Xfce Thunar nói `Hiệu máy` (bỏ chữ ảnh) nhưng là thiểu số. "details" ở đây là thông tin EXIF, nên viết
+  `thông tin` (cùng chữ với `Thông tin tệp, không phải nội dung` ở `askCmdr.renameReview.evidence.metadata`), không
+  phải `chi tiết` (macOS `Hiển thị Chi tiết` là nút mở rộng một hộp thoại, nghĩa khác).
+- **location / "where it was taken" (của ảnh) → `vị trí chụp`** · `vị trí` là "location" của macOS Finder (`Location` →
+  `Vị trí`, `Get Location` → `Lấy vị trí`) và Microsoft (`location` → `vị trí`, nghĩa địa lý → `vị trí địa lý`); `chụp`
+  (chụp ảnh) nói rõ đây là nơi bấm máy, không phải đường dẫn tệp (catalog dùng `vị trí` cho đường dẫn/thư mục ở
+  `fileExplorer.navigation.locationUnreachableToast`, `commands.paneCopyPath*`) · `high`. Dùng cùng một cụm cho cả
+  "location" (`item.contents`, `whatsNew.body`) lẫn "including where it was taken" (`kể cả vị trí chụp` trong
+  `contentsRule`), để ba khóa trên một màn hình gọi cùng một thứ bằng cùng một tên.
+- **page (của PDF) → `trang`** · macOS AppKit `Printing` (`Page %ld` → `Trang %ld`, `No pages from the document` → `Chưa
+  chọn trang nào`), thuật ngữ Microsoft (`page` → `trang`), KDE Dolphin (`Page Count` → `Số trang`) · `high`. "PDF pages"
+  → `vài trang PDF`; "a few pages of a PDF" → `vài trang của một tệp PDF`. `PDF` giữ nguyên (tên chuẩn).
+- **title and author (của PDF) → `tiêu đề và tác giả`** · title: macOS AppKit `Common` (`Title` → `Tiêu đề`), Microsoft
+  (`Title` → `Tiêu đề`), Dolphin (`Tiêu đề`); catalog đã dùng `Tiêu đề trò chuyện`. author: Microsoft (`author` →
+  `tác giả`, biến thể `người tạo` là nghĩa "creator"), Dolphin (`Author` → `Tác giả`); macOS không có chuỗi "author"
+  trong kho · `high`.
+- **"what's inside an archive" → `những gì bên trong một tệp nén`; "the list of files inside an archive" →
+  `danh sách các tệp bên trong một tệp nén`** · `bên trong` là cách catalog đã nói "inside" (`Cmdr không đọc gì bên
+  trong tệp này`, `văn bản bên trong hình ảnh`), và `những gì` là khung của khóa chị em `item.envelope` (`Những gì bạn
+  đang xem ngay bây giờ`) · `high`.
+- **"look inside files" (nhãn công cụ) → `Đang xem bên trong tệp` / `Đã xem bên trong tệp`** · cùng khuôn `Đang … / Đã …`
+  với các nhãn chị em (`Đang liệt kê một thư mục`, `Đang đọc nội dung trong ảnh của bạn`), cùng chữ `bên trong` như
+  trên; `tệp` trần vì tiếng Việt không đánh dấu số, nên nhãn trung tính cho một hay 200 tệp · `high`. Cùng gốc `xem bên
+  trong` được dùng lại ở `whatsNew.body` (`có thể xem bên trong tệp mà bạn hỏi đến`).
+- **"a photo's …" → `… của một bức ảnh`** · catalog dùng `ảnh` trần cho "photo", nhưng `thông tin máy ảnh của ảnh` lặp
+  chữ `ảnh` hai lần liền và đọc rối; loại từ `bức` là cách tiếng Việt chuẩn đếm một tấm ảnh, và Photos của Apple viết
+  `Chọn ảnh` / `Cắt ảnh` (không loại từ) chỉ ở nhãn nút, không ở câu văn · `tentative` (không có nguồn kho cho loại từ;
+  chỉ dùng khi "ảnh" đứng cạnh "máy ảnh"). Ở chỗ "photos" không đứng cạnh "máy ảnh" thì vẫn `ảnh` trần
+  (`toàn bộ tệp, ảnh hay hình thu nhỏ`, `Tìm kiếm ảnh`, `các ảnh khớp`).
+- **"whole files" → `toàn bộ tệp`** · catalog đã có `toàn bộ đĩa`, `toàn bộ đường dẫn`, `bỏ qua toàn bộ {skippedText}
+  tệp` · `high`. Không dùng `chính các tệp` của khóa cũ: câu mới không còn hứa "không gửi nội dung tệp", nên `toàn bộ`
+  (whole) là chữ mang đúng ranh giới mới.
+- **"a limited part of it" → `một phần có giới hạn của tệp đó`** · `có giới hạn` đã có trong catalog (`một hệ thống tệp
+  có giới hạn`) · `high`. "some lines of text" → `vài dòng văn bản`; "some text" / "some of its text" → `một ít văn bản`
+  / `một phần văn bản của tệp` (không có nguồn kho cho lượng từ; chữ thường ngày) · `tentative`.
+- **"works the same way" → `cũng hoạt động theo cách đó`** · `hoạt động` là "work/operate" của Microsoft; viết `cũng …
+  theo cách đó` để nối vào câu trước · `tentative` (không có mẫu câu trong kho).
+- Không giá trị nào chứa dấu nháy đơn ASCII nên không phát sinh `''` của ICU; không giá trị nào giống tiếng Anh nên
+  không cần `sameAsSourceJustification`. Dấu phẩy trước `và` trong danh sách bỏ đi theo các khóa chị em
+  (`thư mục hiện tại, con trỏ, mục đã chọn và các ổ đĩa`).

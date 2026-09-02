@@ -113,6 +113,14 @@
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
+  "askCmdr.tool.inspectFile.doing": "Kijkt in bestanden",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "In bestanden gekeken",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
+  },
   "askCmdr.tool.imageFacts.doing": "Leest wat er in je foto''s staat",
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
@@ -351,6 +359,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Delen van bestanden die Cmdr opent om je te antwoorden: wat tekst, PDF-pagina''s, wat er in een archief zit, en de cameragegevens en locatie van een foto",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "Wat je nu bekijkt: je huidige map, cursor, selectie en verbonden schijven",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -363,9 +375,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr verstuurt nooit de bestanden zelf: geen bestandsinhoud, geen foto''s, geen miniaturen. De fotozoekfunctie is het enige dat in je afbeeldingen kijkt, en alleen wanneer je ermee zoekt: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden. Ask Cmdr kan hernoemen, verplaatsen en opruimen voorstellen, en er gebeurt niets met een bestand tot jij het goedkeurt.",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr verstuurt nooit hele bestanden, foto''s of miniaturen. Als je iets over een bestand vraagt, kan het een beperkt deel ervan lezen: wat regels tekst, een paar pagina''s van een PDF met de titel en auteur erbij, de lijst met bestanden in een archief, of de cameragegevens van een foto, inclusief waar die gemaakt is. De fotozoekfunctie werkt net zo: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden. Ask Cmdr kan hernoemen, verplaatsen en opruimen voorstellen, en er gebeurt niets met een bestand tot jij het goedkeurt.",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr schrijft notities over je: hoe je dingen graag ordent, wat je eerder hebt afgewezen, alles wat je het vraagt te onthouden. Die notities gaan mee met elk bericht dat je stuurt, zolang ze bestaan, en ze kunnen tekst bevatten die Cmdr in je foto''s heeft herkend. Je kunt ze op elk moment lezen of wissen in de Ask Cmdr-instellingen.",
   "@askCmdr.consent.memory": {
@@ -395,9 +407,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr houdt nu notities over je bij tussen chats door, en het kan uit zichzelf een gesprek beginnen als het iets opmerkt dat het waard is. Dat is een grotere belofte dan waar je destijds ja op zei, dus hier staat het allemaal opnieuw.",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr kan nu in een bestand kijken waar je naar vraagt: een deel van de tekst, een paar pagina''s van een PDF, de lijst met bestanden in een archief, of de cameragegevens en locatie van een foto. Dat is een grotere belofte dan waar je destijds ja op zei, dus hier staat het allemaal opnieuw.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "Alles vergeten wat Ask Cmdr onthoudt?",
   "@askCmdr.forget.title": {

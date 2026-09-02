@@ -343,6 +343,11 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
 - **A vague English place word needs an explicit Chinese one.** "The rest are still there" has no Chinese rendering that
   couldn't be read as `原處` (_back where they came from_), which in a rollback toast is the opposite of what happened.
   Name the place (`目標位置`, `移動過去的地方`) rather than gesturing at it.
+- **Ask Cmdr tool-line labels are a `正在…` / `已…` pair sharing one object phrase verbatim.** `askCmdr.tool.*.doing`
+  / `.done` differ only in the aspect marker (`正在查看檔案裡的內容` / `已查看檔案裡的內容`, `正在搜尋你的照片` /
+  `已搜尋你的照片`), so a new tool label copies the sibling shape rather than restating the object two ways. "Look
+  inside" a file is `查看…裡的內容`; a photo's place is `拍攝地點`, a path's is `位置` (`glossary.md` § Ask Cmdr looks
+  inside files).
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.

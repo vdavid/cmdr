@@ -233,6 +233,13 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **`koppla från`, `koppla ur` och `dra ur` är tre olika saker.** Programmässig frånkoppling, enheten ur porten, kabeln
   ur uttaget. Engelskan har `disconnect` och `unplug`; svenskan skiljer dem tydligare, så välj efter vad som faktiskt
   händer. Belägg: `glossary.md` § Utmatning och frånkoppling.
+- **`samt` före sista ledet när det ledet själva innehåller `och`.** Engelskans Oxford-komma bär upp ”…, an archive, and
+  a photo’s camera details and location”; svenskan har inget serie-komma, och två `och` i rad med olika räckvidd blir
+  otydligt. Byt det yttre `och` mot `samt`: ”…, vad som finns i ett arkiv samt en bilds kamerauppgifter och var den
+  togs”. Belägg: `glossary.md` § Ask Cmdr tittar in i filer.
+- **`plats` är var en fil ligger; var en bild togs skrivs ut som bisats.** `plats` är det satta ordet för `location` i
+  filsystemsmening, så direkt efter ”en bilds” läses det som filens plats. Skriv `var den togs` när engelskan menar
+  fotots geoposition. Belägg: `glossary.md` § Ask Cmdr tittar in i filer.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

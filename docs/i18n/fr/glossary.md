@@ -2333,3 +2333,56 @@ testée. Ton honnête et détendu, ni excuse ni avertissement, puisque l''app fo
 - **`look off` → `être décalés`** · registre courant, et il évite « erreur » / « échec », interdits par la voix.
 - **La dernière phrase, c''est David à la première personne**, au `vous` comme le reste du catalogue.
 - Apostrophes ICU doublées : `j''aimerais`.
+
+## Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, `askCmdr.tool.inspectFile.*`, 2026-09-02)
+
+Cinq clés ICU (apostrophes ASCII doublées, espace ASCII avant `:`). `contentsRule` remplace l'ancienne
+`askCmdr.consent.noContents` : ses deux dernières phrases (la recherche de photos ; les suggestions qui attendent votre
+accord) sont reprises mot pour mot de l'ancienne traduction, et seule la promesse d'ouverture change.
+
+- **thumbnail → `vignette`** · macOS AppKit `fr` (« Taille de vignette : », « vignette de grande taille », « vignette de
+  l’image du sélecteur d’onglets »), Total Commander `fr` (`25="&Vignettes"`), Double Commander `fr` (« Enregistrer les
+  vignettes en cache ») ; Microsoft terminologie FRA dit `miniature`, Nautilus et Thunar mélangent les deux · high
+  (macOS + les deux gestionnaires orthodoxes). L'ancienne `noContents` disait `miniatures` ; comme aucune autre clé du
+  catalogue ne porte l'un ou l'autre mot, le terme Tier 1 s'impose sans rien casser. Vérifié dans
+  `~/projects-git/vdavid/cmdr/_ignored/i18n/fr/`, 2026-09-02.
+- **camera (d'une photo) → `appareil photo`** · macOS AppKit `fr` (`NSStillCameraTemplate` → « appareil photo »),
+  Microsoft terminologie FRA (`camera` → « appareil photo », sens photo ; « caméra » est le sens vidéo/webcam) et le
+  catalogue (« Prise en charge Android/Kindle/appareil photo ») · high. **camera details → `les détails de l'appareil
+  photo`** : `détails` reprend `askCmdr.renameReview.evidence.metadata` (« Détails du fichier, pas son contenu ») · high.
+- **location (d'une photo, où elle a été prise) → `localisation`** · macOS Finder `fr`, panneau d'aperçu d'une image
+  (`PV5` / `PV56` « Location » → « Localisation », à côté de « Détail de l’image » et « Exif ») : c'est exactement ce
+  champ-là · high. ❌ Pas `emplacement` : c'est le mot du catalogue (et de Dolphin) pour l'emplacement d'un FICHIER sur
+  le disque, et la phrase parle justement d'autre chose. En prose, « including where it was taken » se rend par
+  `y compris l'endroit où elle a été prise` (`contentsRule`), comme l'anglais lui-même varie entre `location` et
+  `where it was taken`.
+- **title and author (d'un PDF) → `son titre et son auteur`** · macOS AppKit `fr` (`Title` → « Titre »), KDE Dolphin `fr`
+  (« Author » → « Auteur », « Title » → « Titre »), Microsoft terminologie FRA (`author` → « auteur ») · high.
+- **page (d'un PDF) → `page`** · macOS Finder `fr` (« Page ^0 sur ^1 », « Pages ») · high. « a few pages of a PDF » →
+  `quelques pages d'un PDF` ; « PDF pages » (liste) → `des pages de PDF`.
+- **archive → `archive`** (fém.), **provider → `fournisseur`**, **tag → `tag`** : termes déjà posés, réutilisés tels quels.
+- **what's inside an archive → `ce que contient une archive`** ; **the list of files inside an archive → `la liste des
+  fichiers contenus dans une archive`** · racine `contenir` dans les deux, pour éviter deux `à l'intérieur` dans la
+  même phrase de `whatsNew.body` (« regarder à l'intérieur d'un fichier … ») · high (choix rédactionnel).
+- **Parts of files → `Des parties des fichiers`** · pas `extraits`, qui irait au texte et aux pages mais pas à la liste
+  d'une archive ni aux données Exif · high.
+- **When you ask about a file → `Quand vous lui posez une question sur un fichier`** ; **a file you ask about → `un
+  fichier sur lequel vous lui posez une question`** · calque de `askCmdr.empty.title` / `composer.placeholder` (« Posez
+  une question sur vos fichiers ») · high.
+- **`inspectFile.doing` / `.done` → `Lecture du contenu de fichiers` / `A lu le contenu de fichiers`** · même moule que
+  la sœur `imageFacts` (« Lecture du contenu de vos photos » / « A lu le contenu de vos photos ») : nom verbal au
+  présent, `A <participe>` au passé (règle de la passe `ask-cmdr`). `contenu` dit explicitement que Cmdr lit dans le
+  fichier, ce que l'anglais `inside` veut faire entendre sur cette ligne de transparence ; « Consultation de fichiers »
+  aurait été pris pour un simple listage (`listDir` = « Consultation d'un dossier ») · high.
+
+Notes de rédaction :
+
+- **« a photo's camera details and location » se rend avec l'incise `pour une photo, …`** : « les détails de l'appareil
+  photo … d'une photo » colle deux `photo` à trois mots d'écart. `… et, pour une photo, les détails de l'appareil photo
+  et la localisation` (liste et `whatsNew.body`) ; `… ou, pour une photo, les détails de l'appareil photo, y compris
+  l'endroit où elle a été prise` (`contentsRule`). Le `pour une photo` porte sur les deux compléments.
+- **« never sends whole files, photos, or thumbnails » → `n'envoie jamais de fichiers entiers, de photos ni de
+  vignettes`** : `de` répété après la négation, `ni` devant le dernier terme.
+- Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais.
+- À signaler : `askCmdr.empty.hint` (anglais inchangé, « never file contents » / « jamais le contenu des fichiers »)
+  contredit désormais cette promesse-ci ; c'est une question de copie source, pas de traduction.

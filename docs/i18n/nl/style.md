@@ -222,6 +222,9 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   characters against the English 31, on a toast next to the short "Wijzig instellingen". Dutch can't hang one shared
   object in front of both verbs, so each verb carries its own half. The compact "Bekijk of vul het rapport aan" fits
   better but drops the notitie the dialog is for. Confirm which one wins in the real toast, and overflow-check it.
+- **"camera details" → `cameragegevens`** (`askCmdr.consent.item.contents`, `contentsRule`, `whatsNew.body`): a coined
+  compound for a photo's EXIF block, no source has a collective noun for it. Confirm it reads as "what the camera
+  recorded", not "data about the camera". Evidence and the fallback: `glossary.md` § Ask Cmdr looks inside files.
 
 ## Glossary
 

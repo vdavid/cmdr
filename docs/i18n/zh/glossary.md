@@ -1773,3 +1773,50 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 - **`best effort` → `尽力而为`** · pile 里没有对应词条（只有网络 QoS 的定义），但这是中文里现成的说法 · `high`。
 - **`look off` → `不太对`** · 口语，且避开了语气规则禁止的「错误」「失败」。
 - **最后一句是 David 的第一人称**，仍用 `你`，与 `onboarding.stepBeta.greeting` 一致。
+
+### Ask Cmdr inspect-file consent + tool labels (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+macOS zh-CN Tier 1 (Finder/AppKit pile + live Preview.app and Photos.app `zh_CN` loctables, macOS 26, `plutil`),
+Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses settled `压缩文件`, `文本`, `照片`,
+`标签`, `提供方`, `查看`, and the old `askCmdr.consent.noContents` sentences where they still hold.
+
+- **look inside files (the inspect tool line, doing/done)** · `正在查看文件内容` / `已查看文件内容` · `查看` = "look at
+  the contents" (settled; macOS `zh-CN` `NE57`, and the sibling `askCmdr.tool.appState.*` `正在查看…`); `文件内容`
+  names what the tool reads. Chinese has no number, so the plural-neutral English needs nothing extra. Same `正在…` /
+  `已…` shape and length class as `searchPhotos.*` / `imageFacts.*` / `listDir.*` · `high`
+- **look inside a file (prose, `whatsNew.body`)** · `查看你问到的文件里的内容` · same verb as the tool line so the
+  what's-new paragraph and the rail label read as one feature; `问到` = "ask about" · `high`
+- **thumbnail** · `缩略图` · macOS Finder `zh-CN` (`缩略图大小：`, `小/中等/大缩略图大小`), Microsoft TBX
+  (`thumbnail` → 缩略图), Nautilus/Thunar/TC/DC all agree; the old `noContents` value already used it · `high`
+- **whole files (never sent)** · `整个文件` · plain "the whole file"; the old `文件本身：不发送文件内容…` wording was
+  deliberately dropped because the new copy must NOT promise that no contents are ever sent · `high`
+- **camera details (a photo's EXIF: camera, lens, settings)** · `相机信息` · Photos.app `zh_CN` info panel
+  (`IPXInfoPanelLCDUnknownCamera` → `无相机信息`), Preview.app `Camera` → `相机`, catalog precedent `相机` for
+  camera devices (`settings.section.mtp`); Microsoft TBX also has `摄像头`/`照相机` but those are the webcam/device
+  senses, wrong here · `high`
+- **location / where it was taken (a photo's GPS place)** · `拍摄地点` · Photos.app `zh_CN` calls photo places `地点`
+  (`IPXPlaceBrowserTabLabel`, `你照片中的地点`) and "taken" `拍摄` (`这张照片是在…拍摄的吗？`); `拍摄地点` is the
+  everyday compound. NOT `位置`: in this catalog `位置` is a file-system location (`目标位置`, `原来的位置`), and
+  reusing it for a photo would read as the file's path · `high`
+- **some lines of text (of a text file)** · `几行文本` · settled `文本` (macOS `纯文本`, viewer `文本` mode);
+  `几行` = a few lines. Kept distinct from `文字` (the recognized text inside photos, `识别出的文字`, settled in
+  `askCmdr.consent.memory`): `文本` is file content, `文字` is writing seen in an image · `high`
+- **some text (consent list item)** · `一些文本` · same `文本`; `一些` for the vaguer "some" · `high`
+- **a few pages of a PDF** · `PDF 的几页` · `页` = page (AppKit Printing `第%ld页`, Microsoft TBX `页`, Dolphin
+  `页数`, DC `逐页`); `PDF` verbatim (settled format token), spaced from the Han text · `high`
+- **PDF pages (list item)** · `PDF 页面` · `页面` for the bare noun (Preview.app `页面大小`) · `high`
+- **title and author (of a PDF)** · `标题和作者` · Preview.app `zh_CN` PDF inspector
+  (`INSPECTOR_FILE_INFO_PDF_TITLE` → `标题`, `INSPECTOR_FILE_INFO_PDF_AUTHOR` → `作者`), AppKit `Title` → `标题`,
+  Microsoft TBX `author` → 作者, Dolphin `Author` → 作者 · `high`
+- **the list of files inside an archive** · `压缩文件里的文件列表` · settled `压缩文件` (the browsable zip/tar/7z; NOT
+  Finder's `归档`, see the archive-browsing section) + `文件列表`; the shorter list item says
+  `压缩文件里有哪些文件` ("which files are in the archive") for the English "what's inside an archive" · `high`
+- **a limited part of it** · `其中有限的一部分` · plain rendering; `有限` = limited · `high`
+- **Photo search works the same way** · `照片搜索也是同样的方式：` · the clause after the colon is reused verbatim
+  from the old `askCmdr.consent.noContents` (`Cmdr 在匹配照片中识别出的文字及其标签会发送给你的提供方，以便它找到这些照片`),
+  as is the closing sentence (`Ask Cmdr 可以建议重命名、移动和整理，在你批准之前，任何文件都不会有变化。`), so the
+  paragraph stays consistent with the rest of the consent screen · `confirmed` (previously shipped wording)
+- **"That's a bigger promise than the one you agreed to…"** · kept verbatim from the previous `whatsNew.body`
+  (`这比你当初同意的范围更大，所以这里再完整说明一次。`) · `confirmed`
+- No apostrophes on the Chinese side (the U+2019 in the English carries no ICU meaning anyway); no placeholders; no
+  `sameAsSourceJustification` needed, all five values differ from English.

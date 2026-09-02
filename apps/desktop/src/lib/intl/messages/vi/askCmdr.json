@@ -112,6 +112,14 @@
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
+  "askCmdr.tool.inspectFile.doing": "Đang xem bên trong tệp",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "Đã xem bên trong tệp",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
+  },
   "askCmdr.tool.imageFacts.doing": "Đang đọc nội dung trong ảnh của bạn",
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
@@ -348,6 +356,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Một phần nội dung của các tệp mà Cmdr mở để trả lời bạn: một ít văn bản, vài trang PDF, những gì bên trong một tệp nén và thông tin máy ảnh cùng vị trí chụp của một bức ảnh",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "Những gì bạn đang xem ngay bây giờ: thư mục hiện tại, con trỏ, mục đã chọn và các ổ đĩa đang kết nối",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -360,9 +372,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr không bao giờ gửi chính các tệp: không gửi nội dung tệp, không gửi ảnh, không gửi ảnh thu nhỏ. Tìm kiếm ảnh là thứ duy nhất nhìn vào bên trong hình ảnh của bạn, và chỉ khi bạn dùng nó để tìm: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng. Ask Cmdr có thể đề xuất đổi tên, di chuyển và dọn dẹp, và không có gì xảy ra với tệp nào cho đến khi bạn phê duyệt.",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr không bao giờ gửi toàn bộ tệp, ảnh hay hình thu nhỏ. Khi bạn hỏi về một tệp, nó có thể đọc một phần có giới hạn của tệp đó: vài dòng văn bản, vài trang của một tệp PDF cùng với tiêu đề và tác giả của nó, danh sách các tệp bên trong một tệp nén, hoặc thông tin máy ảnh của một bức ảnh, kể cả vị trí chụp. Tìm kiếm ảnh cũng hoạt động theo cách đó: văn bản mà Cmdr nhận dạng được bên trong các ảnh khớp cùng thẻ của chúng sẽ được gửi đến nhà cung cấp của bạn để có thể tìm thấy chúng. Ask Cmdr có thể đề xuất đổi tên, di chuyển và dọn dẹp, và không có gì xảy ra với tệp nào cho đến khi bạn phê duyệt.",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr tự viết ghi chú về bạn: bạn thích sắp xếp mọi thứ ra sao, trước đây bạn đã từ chối điều gì, và bất cứ điều gì bạn nhờ nó nhớ. Những ghi chú đó đi kèm mọi tin nhắn bạn gửi, chừng nào chúng còn tồn tại, và có thể chứa văn bản mà Cmdr nhận dạng được bên trong ảnh của bạn. Bạn có thể đọc hoặc xóa chúng bất cứ lúc nào trong cài đặt Ask Cmdr.",
   "@askCmdr.consent.memory": {
@@ -392,9 +404,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr giờ đây lưu ghi chú về bạn giữa các cuộc trò chuyện, và có thể tự mở một cuộc trò chuyện khi nhận thấy điều gì đó đáng nói. Đó là lời hứa rộng hơn điều bạn đã đồng ý, nên đây là toàn bộ nội dung một lần nữa.",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr giờ đây có thể xem bên trong tệp mà bạn hỏi đến: một phần văn bản của tệp, vài trang của một tệp PDF, danh sách các tệp bên trong một tệp nén, hoặc thông tin máy ảnh và vị trí chụp của một bức ảnh. Đó là lời hứa rộng hơn điều bạn đã đồng ý, nên đây là toàn bộ nội dung một lần nữa.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "Quên mọi thứ Ask Cmdr đang nhớ?",
   "@askCmdr.forget.title": {

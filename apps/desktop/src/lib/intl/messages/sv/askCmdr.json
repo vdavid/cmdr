@@ -112,6 +112,14 @@
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
+  "askCmdr.tool.inspectFile.doing": "Tittar in i filer",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "Tittade in i filer",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
+  },
   "askCmdr.tool.imageFacts.doing": "Läser vad som finns i dina bilder",
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
@@ -348,6 +356,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Delar av filer som Cmdr öppnar för att svara dig: lite text, PDF-sidor, vad som finns i ett arkiv samt en bilds kamerauppgifter och var den togs",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "Vad du tittar på just nu: din aktuella mapp, markör, markering och anslutna enheter",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -360,9 +372,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr skickar aldrig själva filerna: inget filinnehåll, inga foton, inga miniatyrer. Fotosökningen är det enda som tittar inuti dina bilder, och bara när du söker med den: texten som Cmdr känt igen i de matchande fotona och deras taggar skickas till din leverantör så att den kan hitta dem. Ask Cmdr kan föreslå namnbyten, flyttar och upprensningar, och ingenting händer med en fil förrän du godkänner det.",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr skickar aldrig hela filer, bilder eller miniatyrer. När du frågar om en fil kan Cmdr läsa en begränsad del av den: några rader text, några sidor ur en PDF tillsammans med dess titel och författare, vilka filer som finns i ett arkiv, eller en bilds kamerauppgifter, inklusive var den togs. Bildsökningen fungerar på samma sätt: texten som Cmdr känt igen i de matchande bilderna och deras taggar skickas till din leverantör så att den kan hitta dem. Ask Cmdr kan föreslå namnbyten, flyttar och upprensningar, och ingenting händer med en fil förrän du godkänner det.",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr skriver anteckningar om dig: hur du gillar att ha saker ordnade, vad du har tackat nej till förut, och allt du ber den komma ihåg. Anteckningarna följer med varje meddelande du skickar, så länge de finns, och de kan innehålla text som Cmdr känt igen inuti dina foton. Du kan läsa dem, eller radera dem, när som helst i inställningarna för Ask Cmdr.",
   "@askCmdr.consent.memory": {
@@ -392,9 +404,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr sparar nu anteckningar om dig mellan chattarna, och den kan starta ett samtal på eget initiativ när den lägger märke till något värt att nämna. Det är ett större löfte än det du sa ja till, så här kommer alltihop igen.",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr kan nu titta in i en fil du frågar om: en del av texten, några sidor ur en PDF, vilka filer som finns i ett arkiv eller en bilds kamerauppgifter och var den togs. Det är ett större löfte än det du sa ja till, så här kommer alltihop igen.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "Glömma allt som Ask Cmdr minns?",
   "@askCmdr.forget.title": {

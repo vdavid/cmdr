@@ -112,6 +112,14 @@
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
+  "askCmdr.tool.inspectFile.doing": "正在查看檔案裡的內容",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "已查看檔案裡的內容",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
+  },
   "askCmdr.tool.imageFacts.doing": "正在讀取你照片裡的內容",
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
@@ -348,6 +356,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Cmdr 為了回答你而開啟的檔案裡的部分內容：一些文字、PDF 的幾頁、封存檔裡有哪些東西，以及照片的相機資訊和拍攝地點",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "你此刻正在看的東西：目前的資料夾、游標、選取的項目，以及已連接的磁碟機",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -360,9 +372,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr 不會送出檔案本身：不送檔案內容、不送照片、不送縮圖。照片搜尋是唯一會看進你影像裡的功能，而且只在你叫它搜尋照片時：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。Ask Cmdr 可以建議重新命名、移動和整理，但在你同意之前，任何檔案都不會有變化。",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr 絕不會送出整個檔案、照片或縮圖。當你問到某個檔案時，它可以讀取其中有限的一部分：幾行文字、PDF 的幾頁連同它的標題和作者、封存檔裡的檔案列表，或是照片的相機資訊，包括拍攝地點。照片搜尋也是同樣的做法：Cmdr 在符合的照片裡辨識出的文字和標籤會送給你的提供者，好讓它找得到。Ask Cmdr 可以建議重新命名、移動和整理，但在你同意之前，任何檔案都不會有變化。",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr 會給自己記下關於你的筆記：你喜歡怎麼整理東西、你以前拒絕過什麼，還有任何你要它記住的事。只要這些筆記還在，你送出的每一則訊息都會帶著它們一起走，其中也可能包含 Cmdr 在你照片裡辨識出的文字。你隨時可以在 Ask Cmdr 的設定裡讀它們，或是全部清掉。",
   "@askCmdr.consent.memory": {
@@ -392,9 +404,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr 現在會在不同對話之間記住關於你的筆記，而且注意到值得一提的事情時，會自己開啟一段對話。這比你當初同意的範圍更大，所以整份說明再給你看一次。",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr 現在可以查看你問到的檔案裡的內容：它的一些文字、PDF 的幾頁、封存檔裡的檔案列表，或是照片的相機資訊和拍攝地點。這比你當初同意的範圍更大，所以整份說明再給你看一次。",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "要忘記 Ask Cmdr 記住的所有東西嗎？",
   "@askCmdr.forget.title": {

@@ -112,6 +112,14 @@
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
+  "askCmdr.tool.inspectFile.doing": "Mirando dentro de los archivos",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "Se miró dentro de los archivos",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
+  },
   "askCmdr.tool.imageFacts.doing": "Leyendo el contenido de tus fotos",
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
@@ -350,6 +358,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Partes de los archivos que Cmdr abre para responderte: algo de texto, páginas de un PDF, lo que hay dentro de un archivo comprimido y los datos de la cámara y la ubicación de una foto",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "Lo que estás viendo ahora mismo: tu carpeta actual, el cursor, la selección y las unidades conectadas",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -362,9 +374,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr nunca envía los archivos en sí: ni el contenido de los archivos, ni fotos, ni miniaturas. La búsqueda de fotos es lo único que mira dentro de tus imágenes, y solo cuando la usas para buscarlas: el texto que Cmdr reconoció dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas. Ask Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr nunca envía archivos completos, fotos ni miniaturas. Cuando preguntas por un archivo, puede leer una parte limitada de su contenido: algunas líneas de texto, unas pocas páginas de un PDF junto con su título y su autor, la lista de archivos que contiene un archivo comprimido o los datos de la cámara de una foto, incluido el lugar donde se tomó. La búsqueda de fotos funciona igual: el texto que Cmdr reconoció dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas. Ask Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr se escribe notas sobre ti: cómo te gusta tener las cosas organizadas, qué has rechazado antes, todo lo que le pidas que recuerde. Esas notas viajan con cada mensaje que envías, mientras existan, y pueden incluir texto que Cmdr reconoció dentro de tus fotos. Puedes leerlas, o borrarlas, cuando quieras en los ajustes de Ask Cmdr.",
   "@askCmdr.consent.memory": {
@@ -394,9 +406,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr ahora guarda notas sobre ti entre conversaciones, y puede empezar una por su cuenta cuando ve algo que merece la pena mencionar. Es más de lo que aceptaste en su día, así que aquí lo tienes todo otra vez.",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr ahora puede mirar dentro de un archivo por el que preguntes: parte de su texto, unas pocas páginas de un PDF, la lista de archivos que contiene un archivo comprimido o los datos de la cámara y la ubicación de una foto. Es más de lo que aceptaste en su día, así que aquí lo tienes todo otra vez.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "¿Olvidar todo lo que Ask Cmdr recuerda?",
   "@askCmdr.forget.title": {
