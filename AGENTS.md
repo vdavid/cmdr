@@ -2,9 +2,8 @@
 
 This file is for AI agents. Human contributors, see `CONTRIBUTING.md`.
 
-Cmdr is an extremely fast, keyboard-first two-pane file manager in Rust, free for personal use on macOS (BSL
-license), at [getcmdr.com](https://getcmdr.com). Started 2025-12-25; in open beta with a few dozen early-stage-aware
-users.
+Cmdr is an extremely fast, keyboard-first two-pane file manager in Rust, free for personal use on macOS (BSL license),
+at [getcmdr.com](https://getcmdr.com). Started 2025-12-25; in open beta with a few dozen early-stage-aware users.
 
 This is a monorepo of four apps:
 

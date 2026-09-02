@@ -42,13 +42,13 @@ sections above.
 
 ### One-liner — `AGENTS.md`
 
-> An extremely fast AI-native file manager written in Rust, free for personal use on macOS (BSL license).
-> Downloadable at the website.
+> An extremely fast AI-native file manager written in Rust, free for personal use on macOS (BSL license). Downloadable
+> at the website.
 
 ### Intro — `README.md`
 
-> An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free
-> for personal use. With fully optional, privacy-first AI features.
+> An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free for
+> personal use. With fully optional, privacy-first AI features.
 >
 > Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026. Like Total
 > Commander, but on macOS.
