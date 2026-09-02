@@ -112,6 +112,7 @@ serde_json = "1"
 notify = "8"
 dirs = "6"
 image = "0.25.10"
+mime_guess = "2"
 base64 = "0.23.0"
 rayon = "1.11.0"
 regex = "1"
@@ -240,7 +241,6 @@ zbus = "5"
 # Native file icons: XDG icon theme lookup (pure Rust, no GTK dependency)
 freedesktop-icons = "0.4"
 # MIME type guessing from file extensions (for icon name resolution)
-mime_guess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 # MTP (Android device) support via pure Rust implementation.

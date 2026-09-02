@@ -202,7 +202,7 @@ fn parse_params(params: &Value) -> Result<Params, ToolError> {
         .and_then(|v| v.as_str())
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .map(super::expand_user_path)
+        .map(super::expand_tilde)
         .ok_or_else(|| ToolError::invalid_params("Missing 'path' parameter (an absolute file path)"))?;
     let max_chars = match params.get("maxChars") {
         None | Some(Value::Null) => DEFAULT_MAX_CHARS,
@@ -219,7 +219,11 @@ fn parse_params(params: &Value) -> Result<Params, ToolError> {
             .map(|n| n as usize)
             .ok_or_else(|| ToolError::invalid_params("'offset' must be a non-negative integer"))?,
     };
-    Ok(Params { path, max_chars, offset })
+    Ok(Params {
+        path,
+        max_chars,
+        offset,
+    })
 }
 
 // ── Sniffing (pure) ───────────────────────────────────────────────────────────
@@ -238,7 +242,10 @@ pub(crate) fn sniff(head: &[u8]) -> Detected {
         Detected::Gif
     } else if head.len() >= 12 && &head[0..4] == b"RIFF" && &head[8..12] == b"WEBP" {
         Detected::Webp
-    } else if head.len() >= 12 && &head[4..8] == b"ftyp" && (&head[8..12] == b"heic" || &head[8..12] == b"heix" || &head[8..12] == b"mif1") {
+    } else if head.len() >= 12
+        && &head[4..8] == b"ftyp"
+        && (&head[8..12] == b"heic" || &head[8..12] == b"heix" || &head[8..12] == b"mif1")
+    {
         Detected::Heic
     } else if starts(b"II*\0") || starts(b"MM\0*") {
         Detected::Tiff
@@ -285,9 +292,13 @@ fn kind_for(detected: Detected, size: u64) -> Kind {
     }
     match detected {
         Detected::Utf8Text => Kind::Text,
-        Detected::Png | Detected::Jpeg | Detected::Gif | Detected::Webp | Detected::Heic | Detected::Tiff | Detected::Bmp => {
-            Kind::Image
-        }
+        Detected::Png
+        | Detected::Jpeg
+        | Detected::Gif
+        | Detected::Webp
+        | Detected::Heic
+        | Detected::Tiff
+        | Detected::Bmp => Kind::Image,
         Detected::Pdf => Kind::Pdf,
         Detected::Zip | Detected::Gzip | Detected::SevenZip | Detected::Rar | Detected::Tar => Kind::Archive,
         Detected::Sqlite | Detected::MachO | Detected::Elf | Detected::Unknown => Kind::Binary,
@@ -298,7 +309,12 @@ fn kind_for(detected: Detected, size: u64) -> Kind {
 pub(crate) fn pdf_facts(bytes: &[u8]) -> PdfContent {
     let version = bytes
         .strip_prefix(b"%PDF-")
-        .map(|rest| rest.iter().take_while(|b| b.is_ascii_digit() || **b == b'.').map(|b| *b as char).collect::<String>())
+        .map(|rest| {
+            rest.iter()
+                .take_while(|b| b.is_ascii_digit() || **b == b'.')
+                .map(|b| *b as char)
+                .collect::<String>()
+        })
         .filter(|v| !v.is_empty());
     let mut count = 0usize;
     for needle in [&b"/Type /Page"[..], &b"/Type/Page"[..]] {
@@ -375,7 +391,11 @@ fn inspect_blocking(path: &str, max_chars: usize, offset: usize) -> InspectResul
             })
         }
         Kind::Text => {
-            let all = if size <= MAX_COUNT_BYTES { read_up_to(&mut file, size).ok() } else { None };
+            let all = if size <= MAX_COUNT_BYTES {
+                read_up_to(&mut file, size).ok()
+            } else {
+                None
+            };
             match all {
                 Some(bytes) => {
                     let text = String::from_utf8_lossy(&bytes);
@@ -402,7 +422,10 @@ fn inspect_blocking(path: &str, max_chars: usize, offset: usize) -> InspectResul
         .modified()
         .ok()
         .map(|t| chrono::DateTime::<chrono::Utc>::from(t).to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
-    let name = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let name = p
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
     let extension = p.extension().map(|e| e.to_string_lossy().to_lowercase());
     let mime = mime_guess::from_path(p).first().map(|m| m.essence_str().to_string());
     InspectResult::Ok {
@@ -429,7 +452,11 @@ fn read_up_to(file: &mut std::fs::File, limit: u64) -> std::io::Result<Vec<u8>> 
 
 /// Handler: inspect one file on a blocking thread, bounded by [`READ_TIMEOUT`].
 pub async fn execute_inspect_file<R: Runtime>(_app: &AppHandle<R>, params: &Value) -> ToolResult {
-    let Params { path, max_chars, offset } = parse_params(params)?;
+    let Params {
+        path,
+        max_chars,
+        offset,
+    } = parse_params(params)?;
     let p = path.clone();
     let job = tokio::task::spawn_blocking(move || inspect_blocking(&p, max_chars, offset));
     let result = match tokio::time::timeout(READ_TIMEOUT, job).await {
@@ -464,7 +491,11 @@ mod tests {
         let facts = pdf_facts(pdf);
         assert_eq!(facts.version.as_deref(), Some("1.4"));
         assert_eq!(facts.page_count_estimate, Some(2));
-        assert_eq!(pdf_facts(b"%PDF-1.7\n").page_count_estimate, None, "no pages found is absent, not zero");
+        assert_eq!(
+            pdf_facts(b"%PDF-1.7\n").page_count_estimate,
+            None,
+            "no pages found is absent, not zero"
+        );
     }
 
     #[test]
@@ -472,7 +503,10 @@ mod tests {
         let text = "αβγδε";
         let w = window(text, 1, 2, Some(5));
         assert_eq!(w.content, "βγ");
-        assert_eq!((w.offset, w.returned, w.total_chars, w.truncated), (1, 2, Some(5), true));
+        assert_eq!(
+            (w.offset, w.returned, w.total_chars, w.truncated),
+            (1, 2, Some(5), true)
+        );
         let last = window(text, 3, 10, Some(5));
         assert_eq!(last.content, "δε");
         assert!(!last.truncated, "the tail of the file is not truncated");
@@ -486,7 +520,13 @@ mod tests {
         let txt = dir.path().join("notes.md");
         std::fs::write(&txt, "# Title\nline two\n").unwrap();
         match inspect_blocking(txt.to_str().unwrap(), 5, 2) {
-            InspectResult::Ok { detected, content: Content::Text(t), mime, extension, .. } => {
+            InspectResult::Ok {
+                detected,
+                content: Content::Text(t),
+                mime,
+                extension,
+                ..
+            } => {
                 assert_eq!(detected, Detected::Utf8Text);
                 assert_eq!(t.content, "Title");
                 assert_eq!(t.total_chars, Some(17));
@@ -508,12 +548,19 @@ mod tests {
         std::fs::write(&bin, [0u8, 1, 2, 3, 0xFF]).unwrap();
         assert!(matches!(
             inspect_blocking(bin.to_str().unwrap(), 10, 0),
-            InspectResult::Ok { detected: Detected::Unknown, content: Content::Binary {}, .. }
+            InspectResult::Ok {
+                detected: Detected::Unknown,
+                content: Content::Binary {},
+                ..
+            }
         ));
         let png = dir.path().join("dot.png");
         image::RgbaImage::new(3, 2).save(&png).unwrap();
         match inspect_blocking(png.to_str().unwrap(), 10, 0) {
-            InspectResult::Ok { content: Content::Image(i), .. } => assert_eq!((i.width, i.height), (Some(3), Some(2))),
+            InspectResult::Ok {
+                content: Content::Image(i),
+                ..
+            } => assert_eq!((i.width, i.height), (Some(3), Some(2))),
             other => panic!("expected an image result, got {other:?}"),
         }
     }
