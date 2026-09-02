@@ -11,6 +11,8 @@
  * Test file: a 1 KB text file from the shared E2E fixtures (`left/file-a.txt`).
  */
 
+import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { closeScopedWindow, openViewerWindow, pollUntil } from './helpers.js'
@@ -557,5 +559,123 @@ test.describe('File viewer error handling', () => {
     } finally {
       await closeScopedWindow(main, viewer, label)
     }
+  })
+})
+
+test.describe('File viewer multi-click selection', () => {
+  // A line with several words, so a word selection and a line selection differ. It lives
+  // outside the shared fixture tree on purpose: that tree is manifest-guarded, and the
+  // global `afterEach` fails any spec that leaves churn in `left/` or `right/`.
+  const multiWordLine = 'alpha beta gamma'
+  const multiWordFile = path.join(os.tmpdir(), `cmdr-viewer-multi-click-${String(process.pid)}.txt`)
+
+  let viewer: TauriPage
+  let viewerLabel: string
+
+  test.beforeAll(() => {
+    fs.writeFileSync(multiWordFile, `${multiWordLine}\nsecond line\n`)
+  })
+
+  test.afterAll(() => {
+    fs.rmSync(multiWordFile, { force: true })
+  })
+
+  test.beforeEach(async ({ tauriPage }) => {
+    viewer = await openViewerForFile(tauriPage as TauriPage, multiWordFile)
+    const wl = viewer.targetWindow
+    if (!wl) throw new Error('Scoped viewer page has no targetWindow label')
+    viewerLabel = wl
+  })
+
+  test.afterEach(async ({ tauriPage }) => {
+    await closeScopedWindow(tauriPage as TauriPage, viewer, viewerLabel)
+  })
+
+  /**
+   * The middle of the word `beta` (offsets 6-10 of line 0), in client coordinates.
+   *
+   * Walks the line's text nodes to reach those offsets rather than indexing into the
+   * first child: `.line-text` renders one segment per `{#each}` entry, so its children
+   * are a mix of text nodes, `<span class="selected">` / `<mark>` wrappers, and Svelte's
+   * own anchors. Read once, before anything is selected; the geometry doesn't move, so
+   * one reading serves every press.
+   */
+  async function betaPoint(): Promise<{ x: number; y: number }> {
+    return await viewer.evaluate<{ x: number; y: number }>(`
+            (function() {
+                const lineText = document.querySelector('[data-line="0"] .line-text')
+                if (!lineText) throw new Error('line 0 not found')
+                const walker = document.createTreeWalker(lineText, NodeFilter.SHOW_TEXT)
+                const range = document.createRange()
+                let pos = 0
+                let started = false
+                let node = walker.nextNode()
+                while (node) {
+                    const len = (node.nodeValue || '').length
+                    if (!started && 6 <= pos + len) { range.setStart(node, 6 - pos); started = true }
+                    if (started && 10 <= pos + len) {
+                        range.setEnd(node, 10 - pos)
+                        const rect = range.getBoundingClientRect()
+                        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+                    }
+                    pos += len
+                    node = walker.nextNode()
+                }
+                throw new Error('line 0 is shorter than the word it should hold: ' + pos + ' units')
+            })()
+        `)
+  }
+
+  /**
+   * Presses and releases `times` times at `point`, WITHOUT setting `detail`: the viewer
+   * counts the presses itself off the `pointerdown` stream, so this exercises our counter
+   * rather than the engine's click count. A `detail` set by hand here would pass whatever
+   * the app does.
+   */
+  async function pressAt(point: { x: number; y: number }, times: number): Promise<void> {
+    await viewer.evaluate(`
+            (function() {
+                const target = document.querySelector('.file-content')
+                if (!target) throw new Error('file-content not found')
+                function fire(type) {
+                    target.dispatchEvent(new PointerEvent(type, {
+                        bubbles: true, cancelable: true,
+                        clientX: ${String(point.x)}, clientY: ${String(point.y)},
+                        button: 0, pointerId: 3, pointerType: 'mouse',
+                    }))
+                }
+                for (let i = 0; i < ${String(times)}; i++) {
+                    fire('pointerdown')
+                    fire('pointerup')
+                }
+            })()
+        `)
+  }
+
+  /** The text painted as selected on line 0, read back out of the rendered segments. */
+  async function selectedTextOnLineZero(): Promise<string> {
+    return await viewer.evaluate<string>(
+      `Array.from(document.querySelectorAll('[data-line="0"] .selected')).map(function (n) { return n.textContent }).join('')`,
+    )
+  }
+
+  test('a double press selects the word and a triple press the whole line', async () => {
+    const point = await betaPoint()
+
+    await pressAt(point, 2)
+    await expect.poll(selectedTextOnLineZero, { timeout: 3000 }).toBe('beta')
+
+    // Wait out the multi-click interval so the next burst starts its own cycle.
+    await new Promise((resolve) => setTimeout(resolve, 700))
+
+    await pressAt(point, 3)
+    await expect.poll(selectedTextOnLineZero, { timeout: 3000 }).toBe(multiWordLine)
+
+    // One more press is a plain click either way (a restarted cycle if it lands inside
+    // the interval, a fresh one if it doesn't), so the line selection gives way to a
+    // caret instead of sticking. The cycle's exact wrap-around is pinned in
+    // `viewer-multi-click.test.ts`, where the clock is an argument.
+    await pressAt(point, 1)
+    await expect.poll(selectedTextOnLineZero, { timeout: 3000 }).toBe('')
   })
 })

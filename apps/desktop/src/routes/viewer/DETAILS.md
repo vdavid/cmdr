@@ -172,6 +172,42 @@ What falls out of doing it ourselves, and what the tests pin:
 - **Drag and autoscroll aim through `caretFromPointClamped`.** Past the top or bottom edge it snaps horizontally to that
   side too, so a drag out of the viewport sweeps whole visual rows as they scroll by instead of freezing.
 
+Known gap: **a click inside a right-to-left run resolves to a wrong-but-plausible offset.** `findOffsetByGeometry`
+binary-searches the character boxes assuming reading order is monotone, which holds for LTR text but not inside an RTL
+run (Hebrew or Arabic file content), where x runs the other way as the offset grows. The damage is contained: the
+comparison only misorders when the point falls inside the RTL run's own x range, so the LTR parts of a mixed line still
+resolve correctly, and every row-level behavior above is unaffected. The fix, if it's ever worth the work, is to find
+the bidi run rect containing the point via `Range.getClientRects()` (one rect per run) and binary-search within that run
+in the run's own direction.
+
+### Click cycle (word and line selection)
+
+A second press selects the word, a third the whole logical line (offset 0 to the line's UTF-16 length, so a word-wrapped
+line still selects in full), and a fourth starts the cycle over at a plain click, which is what editors do.
+`viewer-multi-click.ts` holds the counting as a pure function of the previous press: a press restarts the cycle when it
+comes later than `MULTI_CLICK_INTERVAL_MS` (500 ms, matching the macOS default), lands further than
+`MULTI_CLICK_SLOP_PX` (4 px) from the one before it, or arrives with an earlier timestamp. Each press is compared
+against its predecessor, not against the first, so a gesture that creeps a couple of pixels per press stays one gesture.
+A shift-click is an extend gesture and resets the count.
+
+Decision/Why: the count comes from the controller's own `pointerdown` stream, and the page binds no `click` handler at
+all. Before that, the same handler read a `click` event's `detail`, and triple-click selected nothing in the app while
+double-click worked; since the two branches shared every line but the `detail` comparison, `detail` never reached 3
+there. The whole gesture vocabulary now rests on the one event stream the drag already depends on, which also makes it
+reachable from a test that dispatches plain `PointerEvent`s (`viewer.spec.ts` § "multi-click selection"): a synthetic
+`click` with a hand-set `detail` would have passed against the broken code.
+
+Gotcha/Why: which part of the native pipeline dropped that count is NOT established, so don't reach back for `detail` on
+the theory that some documented rule explains it. `preventDefault()` on `pointerdown` suppresses the compatibility
+`mousedown` / `mouseup` per the Pointer Events spec, but a plain WKWebView still fires `click` with `detail` counting 1,
+2, 3, 4, including with pointer capture held, with the pressed node replaced mid-gesture, and with DOM focus moved
+inside the handler. In other words the obvious suspect is innocent, and an isolated probe can't reproduce the app's
+failure. (Verified on macOS 26.6.2 WKWebView, offscreen WKWebView probe driving synthesized `NSEvent`s at clickCount
+1-4, 2026-09-02.)
+
+A press that counts 2 or 3 deliberately does NOT arm the drag: the gesture is already complete, and a hand twitch before
+the release would otherwise call `setFocus` and collapse the fresh word or line back to a caret.
+
 ## Title-bar overlay toolbar
 
 The viewer window opens with `titleBarStyle: 'overlay'` and `trafficLightPosition: { x: 9, y: 17 }` (see

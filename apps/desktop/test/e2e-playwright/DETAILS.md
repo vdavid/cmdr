@@ -815,6 +815,11 @@ test.afterEach(() => {
 `restoreFixtureTree` is surgical: it rewrites only the entries that drifted, so an untouched `sample.zip` keeps its
 inode and an archive spec's watch on it survives. On a clean tree it changes nothing at all.
 
+**A spec needing content the tree doesn't have writes it OUTSIDE the tree**, to `os.tmpdir()` in a `beforeAll`, and
+removes it in `afterAll`. Adding a file to `fixtures.ts` for one spec puts it in the manifest, the pane-readiness
+expectations, and every other spec's guard run. `viewer.spec.ts` § "multi-click selection" is the worked example: it
+needs a line with several words, which the 1 KB block of `A`s can't give it, and the viewer opens any absolute path.
+
 **Ordering, when the spec also leaves an operation in flight.** The restore DELETES a spec-made source dir (it isn't in
 the pristine manifest), so a copy still reading that dir dies with `SourceNotFound`. That's not a quiet death: the
 backend RETAINS the failure, the main window raises the "no longer exists" toast the leak guard reports, and the

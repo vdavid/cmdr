@@ -7,11 +7,10 @@ search). Reusable FE primitives: `apps/desktop/src/lib/file-viewer/CLAUDE.md`.
 
 ## Module map
 
-`+page.svelte` is the top-level component (lifecycle, window management, UI); it wires the `createViewer*` composables
-(scroll, search, line-heights, text-width, tail, media, copy, autoscroll), the selection/caret/segment helpers, and the
-`createViewerKeyboard` keydown router. Media renders inline via `MediaImageView` / `MediaPdfView`; toolbar, status bar,
-context menu, pickers, and dialogs are presentational siblings. Per-file inventory and media flow: `DETAILS.md` §
-"Module map". Locate symbols via `codegraph_search`.
+`+page.svelte` (lifecycle, window management, UI) wires the `createViewer*` composables (scroll, search, line-heights,
+text-width, tail, media, copy, autoscroll), the selection/caret/segment helpers, and the `createViewerKeyboard` keydown
+router. Media renders inline (`MediaImageView` / `MediaPdfView`); toolbar, status bar, context menu, pickers, and
+dialogs are presentational siblings. Inventory and media flow: `DETAILS.md` § "Module map".
 
 ## Must-knows
 
@@ -29,8 +28,9 @@ Each line is a break-if-ignored invariant; the named `DETAILS.md` section has th
   trips `viewer-media.spec.ts`. (§ "Media rendering")
 - **`user-select: none` on `.file-content` is deliberate**: the viewer owns its selection model; the native one loses
   its anchor on scroll-out. `.status-bar` opts back in with `user-select: text`. (§ Gotchas)
-- **Point → caret is geometric, ❌ never the browser caret API** (silently wrong under `user-select: none` on some
-  WebKits). (§ "Pointer → caret")
+- **Point → caret is geometric and presses are counted off `pointerdown`**: ❌ never the browser caret API (silently
+  wrong under `user-select: none` on some WebKits) or a click's `detail` (the page binds no `click` handler). (§
+  "Pointer → caret", § "Click cycle")
 - **A content pointer gesture claims DOM focus** (`takeFocus`); without it ⌘C copies the search query. (§ Gotchas)
 - **Selection / IPC offsets are UTF-16 code units, not bytes or graphemes.** Caret math (`viewer-pointer.ts`) and
   anything crossing `viewer_read_range` must preserve this; the backend converts to UTF-8 and clamps lone surrogates. (§
@@ -39,12 +39,11 @@ Each line is a break-if-ignored invariant; the named `DETAILS.md` section has th
   sync `close()` stalls other webviews' IPC on the GTK tick, a `0`-delay close lets macOS WebKit segfault the whole app
   mid-teardown, and rAF starves in unfocused E2E windows. Don't lower it. (§ Gotchas; `$lib/window-close-defer`;
   `docs/testing.md` § "`requestAnimationFrame` in unfocused windows")
-- **Escape handling depends on listener order: the page's window keydown runs BEFORE `ViewerContextMenu`'s.** The page
-  gates on `contextMenuPos !== null` before falling through to `closeWindow()`, else an open menu's Escape shuts the
-  window. (§ Gotchas)
+- **Escape: the page's window keydown runs BEFORE `ViewerContextMenu`'s**, so it gates on `contextMenuPos !== null`
+  before falling through to `closeWindow()`, else an open menu's Escape shuts the window. (§ Gotchas)
 - **The height map's wrap width comes from row geometry, never a `.line-text` span** (`.line-text` shrink-wraps;
-  measuring it once inflated the map ~7x). `heightMap.ready` gates every height-map path (uniform-height fallback
-  otherwise). (§ "Variable-height word wrap", § Gotchas)
+  measuring it once inflated the map ~7x). `heightMap.ready` gates every height-map path. (§ "Variable-height word
+  wrap", § Gotchas)
 - **Tail mode is not persisted, and the viewer window has NO `store:default` capability** (it renders possibly-hostile
   content). Persisted viewer settings (`viewer.wordWrap`, `fileViewer.suppressBinaryWarning`) go through the typed
   restricted-window commands: extend that allowlist, never re-grant store access. (§ "Tail mode";

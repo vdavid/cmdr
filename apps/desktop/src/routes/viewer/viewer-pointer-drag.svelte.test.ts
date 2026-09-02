@@ -183,3 +183,83 @@ describe('viewer pointer drag extension', () => {
     expect(harness.setFocus).toHaveBeenCalledWith({ line: 1, offset: 11 })
   })
 })
+
+describe('viewer multi-click selection', () => {
+  /** x that lands on offset 6 of `hello world`, the `w` of `world`. */
+  const WORD_X = TEXT_LEFT + 6 * CHAR_W + 2
+  const WORD_Y = ROW_H / 2
+
+  /** Presses and releases at the same spot `times` times, as a person clicking does. */
+  function clickTimes(drag: ReturnType<typeof createDrag>, times: number, x = WORD_X, y = WORD_Y): void {
+    for (let i = 0; i < times; i++) {
+      drag.handlePointerDown(pointerEvent('pointerdown', { x, y }))
+      drag.handlePointerUp(pointerEvent('pointerup', { x, y }))
+    }
+  }
+
+  it('selects the word on the second press', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    clickTimes(drag, 2)
+
+    expect(harness.setAnchor).toHaveBeenLastCalledWith({ line: 0, offset: 6 })
+    expect(harness.setFocus).toHaveBeenLastCalledWith({ line: 0, offset: 11 })
+  })
+
+  it('selects the whole logical line on the third press', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    clickTimes(drag, 3)
+
+    expect(harness.setAnchor).toHaveBeenLastCalledWith({ line: 0, offset: 0 })
+    expect(harness.setFocus).toHaveBeenLastCalledWith({ line: 0, offset: 11 })
+  })
+
+  it('restarts the cycle on the fourth press instead of leaving the line selected', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    clickTimes(drag, 3)
+    harness.setAnchor.mockClear()
+    harness.setFocus.mockClear()
+    clickTimes(drag, 1)
+
+    // Back to a plain click: a fresh caret anchor where the pointer is (which collapses
+    // the selection), and no focus move to stretch it anywhere.
+    expect(harness.setAnchor).toHaveBeenCalledExactlyOnceWith({ line: 0, offset: 6 })
+    expect(harness.setFocus).not.toHaveBeenCalled()
+  })
+
+  it('treats a press that drifted away as a fresh single click', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    clickTimes(drag, 1)
+    clickTimes(drag, 1, WORD_X + 40)
+
+    // The second press is its own gesture, so it anchors a caret rather than a word.
+    expect(harness.setAnchor).toHaveBeenLastCalledWith({ line: 0, offset: 11 })
+    expect(harness.setFocus).not.toHaveBeenCalled()
+  })
+
+  it('keeps the word selected when the pointer twitches after a double-click', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    clickTimes(drag, 2)
+    harness.setFocus.mockClear()
+    drag.handlePointerMove(pointerEvent('pointermove', { x: WORD_X + 2, y: WORD_Y }))
+
+    // A multi-click press doesn't arm the drag: a stray move can't collapse the word
+    // selection back to a caret.
+    expect(harness.setFocus).not.toHaveBeenCalled()
+  })
+
+  it('selects the whole logical line even when the line wraps across visual rows', () => {
+    // The harness renders one row per line, so the wrap case is expressed by the line
+    // text being longer than the row: the selection still runs to the logical end.
+    const drag = createDrag(harness, 'hello world and then some more text')
+
+    clickTimes(drag, 3)
+
+    expect(harness.setAnchor).toHaveBeenLastCalledWith({ line: 0, offset: 0 })
+    expect(harness.setFocus).toHaveBeenLastCalledWith({ line: 0, offset: 35 })
+  })
+})
