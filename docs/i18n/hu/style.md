@@ -169,8 +169,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
     `{name}` is always `iCloud Drive`, so it's `az **{name}**`. The `a(z)` form answers an UNKNOWN first sound; where
     nothing is unknown it's just noise.
   - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
-    carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on
-    leaves a half-corrected family, which is worse than either end state.
+    carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on leaves
+    a half-corrected family, which is worse than either end state.
   - **❌ Never `a(z)` in front of a NUMBER placeholder — reword instead.** The article follows the numeral's
     pronunciation (`a három` but `az öt`, `a száz` but `az ezer`), so a bare `a` is wrong, and the hedge is a
     written-language crutch that shows badly in a short button. Bind the article to a word you choose and push the

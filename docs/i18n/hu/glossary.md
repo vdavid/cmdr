@@ -2196,9 +2196,8 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
     írott nyelvi mankó, egy szűk oldalsávba szánt rövid GOMBFELIRATBAN pedig ez a mankó látszik a legjobban. A `@key`
     kifejezetten rövidséget kér.
   - A megoldás elve ugyanaz, mint az `*Aria`-párok egyeztetésénél: **a névelőt olyan szóhoz kötjük, amit mi
-    választunk**. Az `összes` kezdőhangja fix (`ö`), tehát `Az összes` mindig helyes, a szám pedig zárójeles
-    értelmezőbe kerül, ahol semmivel nem kell egyeztetnie. Ugyanaz a fogás, mint a `done*` soroknál a `mindent` +
-    kettőspontos szám.
+    választunk**. Az `összes` kezdőhangja fix (`ö`), tehát `Az összes` mindig helyes, a szám pedig zárójeles értelmezőbe
+    kerül, ahol semmivel nem kell egyeztetnie. Ugyanaz a fogás, mint a `done*` soroknál a `mindent` + kettőspontos szám.
   - A `{count}` a parity miatt marad benne (`desktop-i18n-parity` pontos placeholder-halmazt vár), mindkét ága `csomag`:
     az `összes` után a magyar amúgy is egyes számot mond.
   - Mind a hét érintett kulcs ANGOLJA változatlan, tehát a `sourceHash`-ük érintetlen: fordítási minőségjavítás.
