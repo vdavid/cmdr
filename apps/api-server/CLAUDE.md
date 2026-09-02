@@ -15,7 +15,7 @@ Four areas own their own code, tests, and `CLAUDE.md` + `DETAILS.md`; read an ar
 
 Root holds only the assembly and the shared leaves: `index.ts` (Hono mounting + cron wiring), `types.ts` (`Bindings`,
 `verifyAdminAuth`, `enforceIpRateLimit`, `hashCallerIp`), `email.ts`, `discord.ts`, `scheduled.ts` (cron),
-`user-agent.ts`. ❌ Areas depend on root leaves, never on each other.
+`cron-health.ts` (the cron dead-man's switch), `user-agent.ts`. ❌ Areas depend on root leaves, never on each other.
 
 ## Must-knows
 
@@ -35,6 +35,9 @@ Root holds only the assembly and the shared leaves: `index.ts` (Hono mounting + 
   app instances registered as new installs and left the table 6x over-counted. The daily `handleSyntheticHeartbeatSweep`
   deletes ids that never persisted a setting and have been quiet a week; ❌ never shorten that grace period, a brand-new
   real user looks identical for their first minutes. DETAILS § Synthetic heartbeats.
+- **A cron job's failure has to leave the Worker.** Every job goes through `runCronJob` (`index.ts`), which alerts
+  Discord, and the tick reports to healthchecks.io. ❌ Never add a job with `console.error` as its only failure path:
+  that's how a dead credential ran silently for weeks. DETAILS § Cron alarms.
 - **Deploy rails**: apply D1 migrations first (`wrangler d1 migrations apply cmdr-telemetry`); the default export must
   stay the object form (`{ fetch, scheduled }`) or cron breaks (`app` is also named-exported for tests).
 

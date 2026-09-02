@@ -26,11 +26,13 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` rule lives, shared by the feedback digest and error-report
   mail so neither needs a new secret. The card-shaped emails share one page shell and one set of style constants, so
   feedback and error reports read as one family.
-- **`discord.ts`**: Discord webhook client (single retry on 429, drop-on-failure).
+- **`discord.ts`**: Discord webhook client (single retry on 429, drop-on-failure). Carries the cron failure alert as
+  well as the error-report, feedback, beta-signup, and eviction notifications.
+- **`cron-health.ts`**: `pingCronHealth`, the healthchecks.io dead-man's switch for the cron tick. § Cron alarms.
 - **`scheduled.ts`**: the cron jobs (crash notifications, feedback digest, daily aggregation, DB size, retention sweep,
   eviction sweep). Tests split by axis: `crash-notification-email.test.ts` and `feedback-notification-email.test.ts`
   cover the two jobs whose output is a document (query → row → rendered HTML and subject), `scheduled.test.ts` the
-  DB-writing jobs, with the D1/env fakes in `cron-test-helpers.ts`.
+  DB-writing jobs, and `cron-alarm.test.ts` the handler's alarm wiring, with the D1/env fakes in `cron-test-helpers.ts`.
 - **`user-agent.ts`**: `classifyUaFamily` / `resolveUaFamily`, shared by the download write path and the funnel read
   path so neither area imports the other.
 - **`scripts/generate-keys.js`**: Ed25519 key pair generation (run once at setup).
@@ -105,6 +107,7 @@ Decisions.
 | `LISTMONK_API_TOKEN`               | Listmonk API token               | Same (least-privilege at deploy)   |
 | `LISTMONK_BETA_LIST_ID`            | Beta-list numeric id             | Same id                            |
 | `IP_HASH_PEPPER`                   | Any random string                | Makes every stored IP hash one-way |
+| `HEALTHCHECKS_PING_URL`            | unset (skips the ping)           | healthchecks.io cron ping URL      |
 
 `ED25519_PRIVATE_KEY` is two different keys, unlike the rows marked "Same". The production signer can mint a license
 every shipped build accepts, so it exists only as a wrangler secret; `.dev.vars` gets its own pair, and the desktop app
@@ -266,8 +269,8 @@ Rerun `pnpm --filter @cmdr/api-server types:gen` after editing bindings or vars 
 
 ## Cron handler
 
-A single `scheduled` handler runs every 3 hours (`0 */3 * * *`). It runs its jobs in independent try-catch blocks so one
-failure doesn't block the others:
+A single `scheduled` handler runs every 3 hours (`0 */3 * * *`). Every job goes through `runCronJob`, which isolates one
+job's failure from the rest and raises the alarm for it (§ Cron alarms):
 
 1. **Crash notifications** (every invocation): queries `crash_reports WHERE notified_at IS NULL`, sorted newest-first,
    marks rows as notified, then sends an email via Resend with one row per crash report (When, Env, Fate, ID, Site,
@@ -306,6 +309,49 @@ failure doesn't block the others:
 
 The default export uses the object form (`{ fetch, scheduled }`) required for cron support. The Hono `app` is also
 exported as a named export so tests can use `app.request()`.
+
+## Cron alarms
+
+The cron jobs are the whole notification pipeline: crash alerts, the feedback digest, retention, eviction. When one of
+them stops working, nothing downstream complains, because "no crash email" and "no crashes" look identical. Three layers
+cover that, and they cover different failures.
+
+1. **Discord, for a tick that ran and threw.** `runCronJob` (`index.ts`) catches, then posts through
+   `postCronFailureNotification` to `DISCORD_WEBHOOK_URL` (`#error-reports`). The alert names the job, the tick's
+   `scheduledTime`, and the stringified error. Plain `content`, never an embed: this is the message that carries the
+   news that something is broken, so it must not have a failure mode of its own. The post never throws (`postWithRetry`
+   swallows), so a dead webhook costs the alert and nothing else. Deliberately NOT an email: email is one of the things
+   that can be broken here, and an alarm routed through the broken path can't fire.
+2. **healthchecks.io, for a tick that never ran** (`cron-health.ts`, `HEALTHCHECKS_PING_URL`). Layer 1 structurally
+   cannot see this: if no code executes, nothing posts. The switch pings after the last job, so a removed cron trigger,
+   a bad deploy, or a Worker dying before the first job all surface when the expected ping doesn't arrive. A tick with
+   failures pings `/fail` instead, which trips the check immediately and names the jobs in the body. That makes it a
+   second, independent channel for layer 1's case too: healthchecks.io alerts through its own infrastructure, not
+   Resend.
+3. **Workers logs, for reading the stack afterwards.** `[observability] enabled = true` in `wrangler.toml`. Without it
+   `console.error` is written nowhere and is visible only to a live `wrangler tail`, which is how a job could throw
+   every three hours indefinitely and leave no trace. Layers 1 and 2 wake someone; this is what they read.
+
+Both secrets are optional, and the cron behaves exactly as before when they're unset, so local dev and tests need no
+setup. `HEALTHCHECKS_PING_URL` is a capability URL (anyone holding it can report the check healthy), hence a secret.
+
+**To create or rotate the healthchecks.io check:**
+
+1. At [healthchecks.io](https://healthchecks.io), add a check named "Cmdr cron". Period 3 hours, grace 1 hour: the
+   Worker's own schedule plus room for a slow tick.
+2. Copy its ping URL (shape `https://hc-ping.com/<uuid>`) and store it:
+   ```sh
+   pnpm --filter @cmdr/api-server exec wrangler secret put HEALTHCHECKS_PING_URL
+   ```
+3. Confirm the alert route on the check is an address that doesn't depend on Cmdr's own Resend account. The whole point
+   of this layer is surviving a broken Cmdr email path.
+4. Smoke-test both endpoints, then let the next real tick clear the check:
+   ```sh
+   curl -fsS -X POST -d 'manual test' "<ping-url>/fail" && curl -fsS -X POST -d 'manual test' "<ping-url>"
+   ```
+
+Tests: `cron-alarm.test.ts` drives the real handler with a D1 that throws and asserts both channels fire, that a later
+job still runs after an earlier one throws, and that a dead alarm channel can't take the cron down.
 
 ## Data retention
 

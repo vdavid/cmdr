@@ -74,6 +74,10 @@ export type Bindings = {
   // Optional dedicated Discord webhook for in-app feedback notifications. When unset,
   // POST /feedback falls back to DISCORD_WEBHOOK_URL so feedback works with no new secret.
   DISCORD_FEEDBACK_WEBHOOK_URL?: string
+  // healthchecks.io ping URL for the cron dead-man's switch (https://hc-ping.com/<uuid>). Optional:
+  // when unset the cron runs exactly as before, minus the ping. A capability URL, so it's a secret
+  // rather than a var. See `cron-health.ts` for why this exists alongside the Discord alert.
+  HEALTHCHECKS_PING_URL?: string
   // Optional dedicated Discord webhook for beta-tester signup notifications. When unset,
   // POST /beta-signup falls back to DISCORD_WEBHOOK_URL (so pings land in #error-reports until
   // the #beta-signups channel and its webhook exist).

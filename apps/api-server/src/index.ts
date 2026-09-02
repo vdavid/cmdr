@@ -19,6 +19,8 @@ import {
   handleRetentionSweep,
   handleSyntheticHeartbeatSweep,
 } from './scheduled'
+import { postCronFailureNotification } from './discord'
+import { pingCronHealth } from './cron-health'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -41,53 +43,57 @@ app.route('/', linkCodes)
 
 export { app }
 
+/**
+ * Run one cron job, keeping its failure off the other jobs and onto a channel someone watches.
+ *
+ * `console.error` alone is where cron failures used to go, and Workers logs weren't retained, so a
+ * job could throw every three hours forever with nothing to show for it. The Discord post is the
+ * alarm; it deliberately uses `DISCORD_WEBHOOK_URL` (the #error-reports channel) rather than an
+ * email, because email is one of the things that can be broken here.
+ *
+ * Returns whether the job finished, so the caller can report the tick to the dead-man's switch.
+ */
+async function runCronJob(env: Bindings, job: string, when: string, run: () => Promise<void>): Promise<boolean> {
+  try {
+    await run()
+    return true
+  } catch (e) {
+    console.error(`${job} failed:`, e)
+    if (env.DISCORD_WEBHOOK_URL) {
+      // `postCronFailureNotification` swallows its own failures, so a dead webhook costs us the
+      // alert and nothing else.
+      await postCronFailureNotification(env.DISCORD_WEBHOOK_URL, { job, when, detail: String(e) })
+    }
+    return false
+  }
+}
+
 export default {
   fetch: app.fetch.bind(app),
   async scheduled(event: ScheduledEvent, env: Bindings) {
-    try {
-      await handleCrashNotifications(env)
-    } catch (e) {
-      console.error('Crash notifications failed:', e)
+    const when = new Date(event.scheduledTime).toISOString()
+    const failedJobs: string[] = []
+
+    const run = async (job: string, handler: () => Promise<void>): Promise<void> => {
+      if (!(await runCronJob(env, job, when, handler))) failedJobs.push(job)
     }
 
-    try {
-      await handleFeedbackNotifications(env)
-    } catch (e) {
-      console.error('Feedback notifications failed:', e)
-    }
+    await run('Crash notifications', () => handleCrashNotifications(env))
+    await run('Feedback notifications', () => handleFeedbackNotifications(env))
 
     // Daily jobs: only run on the 00:00 UTC invocation
-    const hour = new Date(event.scheduledTime).getUTCHours()
-    if (hour === 0) {
-      try {
-        await handleDailyAggregation(env)
-      } catch (e) {
-        console.error('Daily aggregation failed:', e)
-      }
+    if (new Date(event.scheduledTime).getUTCHours() === 0) {
+      await run('Daily aggregation', () => handleDailyAggregation(env))
+      await run('DB size check', () => handleDbSizeCheck(env))
+      await run('Daily eviction sweep', () => handleDailyEvictionSweep(env))
+      await run('Retention sweep', () => handleRetentionSweep(env))
+      await run('Synthetic heartbeat sweep', () => handleSyntheticHeartbeatSweep(env))
+    }
 
-      try {
-        await handleDbSizeCheck(env)
-      } catch (e) {
-        console.error('DB size check failed:', e)
-      }
-
-      try {
-        await handleDailyEvictionSweep(env)
-      } catch (e) {
-        console.error('Daily eviction sweep failed:', e)
-      }
-
-      try {
-        await handleRetentionSweep(env)
-      } catch (e) {
-        console.error('Retention sweep failed:', e)
-      }
-
-      try {
-        await handleSyntheticHeartbeatSweep(env)
-      } catch (e) {
-        console.error('Synthetic heartbeat sweep failed:', e)
-      }
+    // Last, so the ping reports the whole tick. A tick that never reaches this line is exactly what
+    // the dead-man's switch is for: healthchecks.io alerts on the ping that didn't arrive.
+    if (env.HEALTHCHECKS_PING_URL) {
+      await pingCronHealth(env.HEALTHCHECKS_PING_URL, failedJobs)
     }
   },
 }

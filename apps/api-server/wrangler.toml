@@ -144,6 +144,13 @@ period = 60
 [triggers]
 crons = ["0 */3 * * *"]
 
+# Retained, searchable Workers logs. Without this, `console.error` goes nowhere: the only way to see
+# a cron failure was to happen to be running `wrangler tail` at that second, which is how a broken
+# job could repeat every three hours indefinitely with no trace. The Discord alert in `index.ts` is
+# what wakes someone up; this is what they read once they're awake.
+[observability]
+enabled = true
+
 [vars]
 # Non-secret config
 PRODUCT_NAME = "Cmdr"
@@ -183,7 +190,12 @@ LISTMONK_NEWSLETTER_LIST_ID = 3
 # - FEEDBACK_NOTIFICATION_EMAIL    (optional: recipient for the in-app feedback digest; the cron job
 #                                   falls back to CRASH_NOTIFICATION_EMAIL when unset, so feedback
 #                                   email needs no new secret)
-# - DISCORD_WEBHOOK_URL            (Discord webhook for #error-reports)
+# - DISCORD_WEBHOOK_URL            (Discord webhook for #error-reports; also carries the cron
+#                                   failure alerts, so a broken cron job reaches a channel that
+#                                   doesn't depend on email working)
+# - HEALTHCHECKS_PING_URL          (optional: healthchecks.io ping URL for the cron dead-man's
+#                                   switch. Alerts when a tick DOESN'T arrive, which the Discord
+#                                   alert structurally can't do. A capability URL, hence a secret.)
 # - DISCORD_FEEDBACK_WEBHOOK_URL   (optional: dedicated webhook for in-app feedback;
 #                                   POST /feedback falls back to DISCORD_WEBHOOK_URL when unset)
 # - DISCORD_BETA_SIGNUP_WEBHOOK_URL (optional: dedicated webhook for #beta-signups; POST /beta-signup
