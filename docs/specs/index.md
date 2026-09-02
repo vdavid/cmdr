@@ -10,17 +10,6 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-09-02 `inspect-file-v2.md` - **Ask Cmdr's `inspect_file` re-derives the shipped viewer core and can't answer
-      "what's in this file?"** The first cut sniffs magic bytes, tests UTF-8 only (so UTF-16 and Latin-1 files read as
-      binary), pages by a char offset it can't honor past 8 MB, answers `{}` for archives and no text for PDFs, takes
-      one path per call, never runs `fit_to_result_budget`, and ships behind a consent copy that promises "no file
-      contents". Six milestones, one implementer session each: rebuild on `file_viewer` through two small seams
-      (`headless::open_text_backend`, `content_kind::looks_binary`) with multi-path and the bug fixes; `find` over
-      `Matcher` / `SearchMode`; archive listing and archive-inner routing through `VolumeManager::resolve` and
-      `archive_extract`; EXIF via `kamadak-exif` 0.6.1; PDF text by page via `pdf-extract` 0.12.0 behind a scoped
-      `crash_reporter::contain_panics` seam; then the consent rewrite, `CONSENT_COPY_VERSION` 3 → 4, 10 catalogs, the
-      system-prompt sentence that still says the agent reads no contents, and `docs/security.md`. Crate picks verified
-      and `cargo deny` green on 2026-09-02. ❗ Decisions David may want to override are listed at the top of the spec.
 - [ ] 2026-09-02 `android-adb-ui.md` - **The ADB backend works and nobody can reach it.** No connect flow, no device
       picker, no settings, and no words for the six ways a connect refuses. Eight decisions, taken rather than listed:
       one switcher row per phone with MTP as the default face and ADB a mode you switch it into; non-ready devices shown
@@ -94,6 +83,15 @@ that lives beside the code, and git holds the history.
 Deferred future work. Unchecked by default; the folder name is the status. Each entry notes what shipped and what's
 left, so the durable intent survives the wipe.
 
+- [ ] 2026-09-02 `later/inspect-file-follow-ups.md` - **What Ask Cmdr's `inspect_file` still owes.** The tool shipped
+      whole: up to 200 paths a call on the viewer's own backends, `find` across text and PDFs, PDF text by page with
+      title and author, archive listings and files inside them, EXIF with GPS, every cut visible, and the consent copy
+      (`CONSENT_COPY_VERSION` 4, 10 languages), system prompt, and `docs/security.md` all saying so. Eight things are
+      open, each with its cost and trigger: `find` over archive entry names, files on direct SMB / MTP / SFTP volumes
+      (waits on a viewer `Volume` seam), password-protected PDFs and archives, OCR for scans, the viewer's search
+      splitting on raw `\n` before decoding (a UTF-16 file over 1 MB searches misaligned in both surfaces; a real bug),
+      an unsupported codec at extract time still reading `corrupt`, a GPS gate, and the `cfg(test)` secrets store
+      writing to the REAL `secrets.json`.
 - [ ] 2026-08-27 `later/idle-cost-follow-ups.md` - **What the idle-cost effort deliberately left.** Two structural fixes
       shipped (each CLIP tower loads on demand, and an anchor storm costs one visible sweep a day instead of a subtree
       walk each), both documented beside the code. What's open starts with a measurement rather than a fix: every number

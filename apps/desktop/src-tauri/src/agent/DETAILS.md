@@ -27,10 +27,10 @@ The backend modules:
   modeled on `operation_log::start`. Depth: `store/DETAILS.md`, `store/proposals/DETAILS.md`.
 - `suggested_ops/`: the service over the spine — resolving a selector to a frozen op list against the drive index,
   wrapping the store's claim, and the acceptance-rate metric. Depth: `suggested_ops/DETAILS.md`.
-- `tools/`: the in-process toolset — the five read families authored as `consumers: [Agent]`
-  entries in the consolidated registry (agent-spec D49, extend-don't-fork), their handlers/result shapes that reuse the
-  shipped cores (drive index, importance, operation log, volumes, app state), and the gated dispatch that refuses any
-  non-view name before `execute_tool`. Depth: `tools/DETAILS.md`.
+- `tools/`: the in-process toolset — the read families authored as `consumers: [Agent]` entries in the consolidated
+  registry (agent-spec D49, extend-don't-fork), their handlers/result shapes that reuse the shipped cores (drive index,
+  importance, operation log, volumes, app state, the file viewer), the propose and memory tiers, and the gated dispatch
+  that refuses any non-view name before `execute_tool`. Depth: `tools/DETAILS.md`.
 - `chat/`: the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
   crash-safe persistence, the `AgentChatEvent` seam) and the pure, TDD-heavy context-assembly core (stable prefix,
   elide-only compaction, the fresh context envelope on the latest user turn only). `chat/session.rs` is what a turn
@@ -55,12 +55,17 @@ action. There is no tool, and never will be a tool, that approves a proposal. Wi
 extra steps.
 
 The agent can look, speak, ask, and write its own notes (spec §2.1): no tool in its dispatch view touches the user's
-files, and there is no content-read tool, so only names, paths, and metadata ever reach the provider — never file
-contents. This is the privacy line and it is structural, not a runtime guard. The registry's `consumers` + `access`
+files. Names, paths, and metadata reach the provider on every turn; file contents reach it only on request, through
+three read tools whose egress the consent copy names item by item: `search_photos` and `image_facts` (image-derived
+text) and `inspect_file` (bounded text windows, `find` lines, PDF pages plus title and author, one level of archive
+entry names, EXIF including GPS). No tool can return bytes: every result DTO is text-only by construction, each pinned
+by a test. This is the privacy line and it is structural, not a runtime guard. The registry's `consumers` + `access`
 dimensions pin the agent's view to exactly its authored `[agent]` entries, every one `Access::Read`,
 `Access::Propose`, or `Access::Memory`, never `Access::Write`; the runtime's `ToolId` parse step is the runtime choke
 point (an unrecognized name resolves to `ToolId::Unrecognized`, which is never in the agent view, so dispatch refuses
-it). Revisit the whole consent + gating story before adding the first content-read tool.
+it). A new KIND of content egress (a new tool, or a new field on an existing one) is a consent-copy change plus a
+`CONSENT_COPY_VERSION` bump, never a silent widening; `docs/security.md` § Ask Cmdr agent egress is the user-facing
+account and has to move with it.
 
 **`Access::Memory`: what the widening cost, and what holds it.** The agent's promise used to be "it never changes
 anything". `memory_write` and `memory_edit` made that false, so the promise narrowed to "it writes only into its own

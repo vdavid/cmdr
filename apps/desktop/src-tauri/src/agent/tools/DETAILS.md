@@ -383,9 +383,10 @@ The negative test (`view.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete"
 end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
 
 The refusal copy says Ask Cmdr can prepare a rename plan, suggest file operations for the user to review, and save
-notes in its own memory folder, but can't touch the user's files, approve a proposal, or read file contents. ⚠️ Keep it
-accurate as the tiers grow: it used to promise the agent couldn't change anything at all, which `Access::Memory` made
-false.
+notes in its own memory folder, but can't touch the user's files or approve a proposal, and reads a file's contents only
+through `inspect_file`. ⚠️ Keep it accurate as the tiers grow: it promised "couldn't change anything at all" until
+`Access::Memory`, and "can't read file contents" until `inspect_file`; a model told a false limit either refuses the
+question or invents the answer.
 
 `dispatch` routes two tools specially rather than through the generic `execute_tool` call: `propose_rename_plan`,
 which needs the evidence scope, and `propose_suggestions`, which needs the conversation id so a sweep records the
