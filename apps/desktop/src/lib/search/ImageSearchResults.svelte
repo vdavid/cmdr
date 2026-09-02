@@ -361,6 +361,7 @@
                     {#each tiles as tile (tile.path)}
                         <li class="ir-tile-wrap">
                             <button type="button" class="ir-tile" onclick={() => { onOpen(tile.path); }}>
+<!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
                                 {@render tileFace(tile)}
                             </button>
                         </li>
@@ -394,6 +395,7 @@
                                     onOpen(tile.path)
                                 }}
                             >
+<!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
                                 {@render tileFace(tile)}
                                 {#if tile.reason === 'semantic'}
                                     <span class="ir-reason">{tString('search.imageResults.matchedDescription')}</span>

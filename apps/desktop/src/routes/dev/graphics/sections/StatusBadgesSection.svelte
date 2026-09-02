@@ -45,7 +45,7 @@
             colors (not <code>currentColor</code>), which is why they live outside the <code>Icon</code> registry. Shown
             at a 24px review size; in the app the sync badges overlay file icons at about 10px.
         {/snippet}
-        {#snippet glyph(badge)}
+        {#snippet glyph(badge: Badge)}
             <img src={`/icons/${badge.id}.svg`} alt="" width="24" height="24" />
         {/snippet}
     </GlyphGrid>
