@@ -673,6 +673,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Esto devuelve todo lo que la operación ha movido hasta ahora. Los archivos que haya reemplazado no volverán. Cmdr omite todo aquello de lo que no está seguro, así que puede que alguno se quede donde está.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "¿Terminar de revertir esta operación?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

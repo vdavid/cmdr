@@ -674,6 +674,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Isso leva de volta tudo o que a operação moveu até agora. O que foi substituído não volta. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar onde está.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "Concluir esta reversão?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

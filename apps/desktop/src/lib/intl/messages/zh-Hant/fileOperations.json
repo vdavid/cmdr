@@ -671,6 +671,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "這會把這項操作到目前為止移動過的東西全部移回原處。被它取代掉的檔案回不來了。Cmdr 會略過沒有把握的部分，所以可能有些會留在現在的地方。",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "要完成這項操作的復原嗎？",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

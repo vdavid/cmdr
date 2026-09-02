@@ -676,6 +676,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Das verschiebt alles zurück, was der Vorgang bisher verschoben hat, und ersetzte Dateien kommen nicht zurück. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges liegen.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "Rollback abschließen?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

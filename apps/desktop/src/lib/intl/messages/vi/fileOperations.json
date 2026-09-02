@@ -672,6 +672,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Việc này sẽ đưa về lại mọi thứ mà thao tác đã chuyển đến giờ, và những tệp bị nó ghi đè sẽ không lấy lại được. Cmdr bỏ qua những gì nó không chắc chắn, nên vài tệp có thể vẫn nằm nguyên chỗ cũ.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "Tiếp tục hoàn tác thao tác này?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

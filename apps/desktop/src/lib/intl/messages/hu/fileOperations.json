@@ -673,6 +673,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Ez visszaviszi mindazt, amit a művelet eddig áthelyezett. Amit felülírt, az nem jön vissza. Amiben a Cmdr nem biztos, azt kihagyja, szóval egy-kettő ottmaradhat.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "Befejezed a művelet visszagörgetését?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

@@ -675,6 +675,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Cela replace tout ce que l''opération a déplacé jusqu''à présent, et les fichiers qu''elle a remplacés ne reviendront pas. Cmdr laisse de côté tout ce dont il n''est pas sûr, certains peuvent donc rester où ils sont.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "Terminer le retour en arrière sur cette opération ?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

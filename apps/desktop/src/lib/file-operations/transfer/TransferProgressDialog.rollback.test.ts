@@ -348,3 +348,48 @@ describe('TransferProgressDialog Rollback — conflict-section footer', () => {
     await expectNoA11yViolations(target)
   })
 })
+
+/* ------------------------------------------------------------------------- */
+/* The question the Rollback button raises                                   */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferProgressDialog Rollback — what the confirmation says', () => {
+  /** Presses the enabled Rollback and returns the stacked confirmation's body
+   *  text plus the classes on its confirming button. */
+  async function askRollback(target: HTMLElement): Promise<{ body: string; confirmClass: string }> {
+    const rollback = buttonByText(target, 'Rollback')
+    expect(rollback, 'Rollback button present').toBeTruthy()
+    rollback?.click()
+    await tick()
+    const body = target.querySelector('#rollback-confirmation-body')?.textContent.trim() ?? ''
+    const confirm = buttonByText(target, 'Roll back')
+    expect(confirm, 'the confirming button is up').toBeTruthy()
+    return { body, confirmClass: confirm?.className ?? '' }
+  }
+
+  it('tells a MOVE the files travel back, on a button that does not read as destructive', async () => {
+    // Pre-fix this showed the copy's "this deletes every file the operation has
+    // written so far" in red, over a reversal that deletes nothing.
+    const target = await mountDialog({ operationType: 'move', sourceVolumeId: 'root', destVolumeId: 'root' })
+    const { body, confirmClass } = await askRollback(target)
+    expect(body).toContain('moves back')
+    expect(body).not.toContain('deletes')
+    expect(confirmClass).toContain('btn-primary')
+    expect(confirmClass).not.toContain('btn-danger')
+  })
+
+  it('keeps the delete wording and the red button for a COPY, which really does delete what it wrote', async () => {
+    const target = await mountDialog({ operationType: 'copy', sourceVolumeId: 'root', destVolumeId: 'root' })
+    const { body, confirmClass } = await askRollback(target)
+    expect(body).toContain('deletes')
+    expect(confirmClass).toContain('btn-danger')
+  })
+
+  it('offers the same way out of both, so the safe answer reads alike whichever operation is running', async () => {
+    for (const operationType of ['copy', 'move'] as const) {
+      const target = await mountDialog({ operationType, sourceVolumeId: 'root', destVolumeId: 'root' })
+      await askRollback(target)
+      expect(buttonByText(target, 'Keep them'), `Keep them present for ${operationType}`).toBeTruthy()
+    }
+  })
+})

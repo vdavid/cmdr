@@ -674,6 +674,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Dit zet alles terug wat de bewerking tot nu toe heeft verplaatst. Wat daarbij is vervangen, komt niet terug. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat blijven staan.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "Het terugdraaien van deze bewerking voltooien?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

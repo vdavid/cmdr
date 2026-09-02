@@ -16,6 +16,8 @@
     import TransferConflictDialog from './transfer/TransferConflictDialog.svelte'
     import RollbackConfirmDialog from './RollbackConfirmDialog.svelte'
     import { getFolderName } from './transfer/transfer-dialog-utils'
+    import { inFlightRollbackVariant } from './reversal-wording'
+    import { opKindForWireType } from './op-kind'
     import {
         cancelConflictPrompt,
         getConflictPrompt,
@@ -29,9 +31,9 @@
      *  which this body doesn't have. */
     const DIALOG_WIDTH_STYLE = 'width: 520px; min-width: 520px'
 
-    /** Rollback deletes everything the operation has written, and a file it
-     *  overwrote has no backup, so the click raises the question rather than
-     *  the deletion. `DETAILS.md` § "Rollback asks first". */
+    /** Rollback undoes everything the operation has written or moved, and a file
+     *  it overwrote has no backup either way, so the click raises the question
+     *  rather than acting. `DETAILS.md` § "Rollback asks first". */
     let rollbackAsked = $state(false)
 
     const prompt = $derived(getConflictPrompt())
@@ -41,6 +43,13 @@
     /** The typed truth from the snapshot, rather than the progress dialog's own
      *  same-volume guess: a CROSS-volume move can't roll back either. */
     const rollbackUnavailable = $derived(snapshot !== null && !snapshot.supportsRollback)
+
+    /** What rolling THIS operation back would do to the files, so the question
+     *  matches the operation rather than always reading as a delete.
+     *  `reversal-wording.ts`. Null only with no prompt up, where nothing renders. */
+    const inFlightVariant = $derived(
+        snapshot === null ? null : inFlightRollbackVariant(opKindForWireType(snapshot.operationType)),
+    )
 
     /** Which operation is asking. With several running at once, the buttons
      *  below are ambiguous without it. */
@@ -100,9 +109,9 @@
     <!-- Stacked over the prompt that raised it: same subtree, so DOM order puts
          it on top and its focus trap takes over until it goes
          (`$lib/ui/DETAILS.md` § ModalDialog). -->
-    {#if rollbackAsked}
+    {#if rollbackAsked && inFlightVariant !== null}
         <RollbackConfirmDialog
-            variant="stopAndDelete"
+            variant={inFlightVariant}
             onConfirm={() => {
                 rollbackAsked = false
                 void cancelConflictPrompt(true)

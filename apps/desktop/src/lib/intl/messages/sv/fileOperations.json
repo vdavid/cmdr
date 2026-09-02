@@ -673,6 +673,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Det här flyttar tillbaka allt som åtgärden har flyttat hittills, och filer som den har skrivit över kommer inte tillbaka. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar där de är.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "Ångra klart den här åtgärden?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

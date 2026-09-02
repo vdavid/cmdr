@@ -13,7 +13,8 @@
     import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
     import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
-    import { rollbackConfirmVariant, reversalLabelKey } from '../reversal-wording'
+    import { inFlightRollbackVariant, rollbackConfirmVariant, reversalLabelKey } from '../reversal-wording'
+    import { opKindForWireType } from '../op-kind'
     import { requestForegroundOperation } from '$lib/tauri-commands'
 
     interface Props {
@@ -215,6 +216,11 @@
      *  "Rollback asks first". */
     let rollbackAsked = $state(false)
 
+    /** What rolling THIS operation back would do to the files. Same picker the
+     *  progress dialog uses on the same operation, so the two windows can't ask
+     *  the question in different words. `../reversal-wording.ts`. */
+    const inFlightVariant = $derived(inFlightRollbackVariant(opKindForWireType(snapshot.operationType)))
+
 </script>
 
 <li class="queue-row" class:selected data-operation-id={snapshot.operationId} data-status={status}>
@@ -315,8 +321,9 @@
             </Button>
         {/if}
         {#if canRollback}
-            <!-- Danger, like the progress dialog's: the same click deletes the
-                 same files, so it can't read as gentler here. -->
+            <!-- Danger, like the progress dialog's: the same click stops the same
+                 operation, so it can't read as gentler here. What that click DOES
+                 to the files is the confirmation's job to say. -->
             <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
                 <Button
                     variant="danger"
@@ -337,7 +344,7 @@
              left to undo, and the row beneath already says so. -->
         {#if rollbackAsked && canRollback}
             <RollbackConfirmDialog
-                variant="stopAndDelete"
+                variant={inFlightVariant}
                 onConfirm={() => {
                     rollbackAsked = false
                     void op?.rollback()

@@ -30,7 +30,8 @@
     import { formatInteger } from '$lib/intl/number-format'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { stallNoticeFor } from './transfer-stall'
-    import { rollbackConfirmVariant, reversalTitleKey } from '../reversal-wording'
+    import { inFlightRollbackVariant, rollbackConfirmVariant, reversalTitleKey } from '../reversal-wording'
+    import { opKindForTransferType } from '../op-kind'
     import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
     import { hasOtherQueuedWork } from '$lib/file-operations/queue/queue-backlog'
 
@@ -202,13 +203,20 @@
         mcpRequestId,
     })
 
-    /** Rollback is asked about before it happens: it deletes everything the
-     *  operation has written, and a file it overwrote has no backup, so one
-     *  mis-click on a button that sits beside a harmless Cancel is
-     *  unrecoverable. Both entry points (this dialog's own button and the
-     *  conflict body's) go through `handleCancel(true)`, so the question hangs
-     *  off that one call. `../DETAILS.md` § "Rollback asks first". */
+    /** Rollback is asked about before it happens: it undoes everything the
+     *  operation has written or moved, and a file it overwrote has no backup
+     *  either way, so one mis-click on a button that sits beside a harmless
+     *  Cancel is unrecoverable. Both entry points (this dialog's own button and
+     *  the conflict body's) go through `handleCancel(true)`, so the question
+     *  hangs off that one call. `../DETAILS.md` § "Rollback asks first". */
     let rollbackAsked = $state(false)
+
+    /** What rolling THIS operation back would do to the files, so the question
+     *  matches the operation: stopping a copy deletes what it wrote, stopping a
+     *  move carries back what it moved. ❌ Never a fixed `stopAndDelete` — red
+     *  "this deletes everything" over a move's harmless reversal pushes people
+     *  onto the wrong button. `../reversal-wording.ts`. */
+    const inFlightVariant = $derived(inFlightRollbackVariant(opKindForTransferType(operationType)))
 
     // Local aliases over the factory getters so the markup reads the same names
     // it always has. Each tracks reactive state (the view's own, or the
@@ -613,7 +621,7 @@
      operation settles, because there is nothing left to undo. -->
 {#if rollbackAsked && !operationSettled}
     <RollbackConfirmDialog
-        variant="stopAndDelete"
+        variant={inFlightVariant}
         onConfirm={() => {
             rollbackAsked = false
             void progress.handleCancel(true)

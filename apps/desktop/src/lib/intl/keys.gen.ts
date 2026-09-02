@@ -1453,6 +1453,7 @@ export type MessageKey =
   | 'fileOperations.operationConflict.context'
   | 'fileOperations.operationConflict.pausedNote'
   | 'fileOperations.rollbackConfirm.body'
+  | 'fileOperations.rollbackConfirm.bodyStopAndMoveBack'
   | 'fileOperations.rollbackConfirm.bodyUndoByDeleting'
   | 'fileOperations.rollbackConfirm.bodyUndoByMovingBack'
   | 'fileOperations.rollbackConfirm.bodyUndoByRenamingBack'

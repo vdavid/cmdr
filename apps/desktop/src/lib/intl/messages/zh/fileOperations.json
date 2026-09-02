@@ -671,6 +671,10 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "这会把这项操作已经挪走的东西全部挪回原处。被覆盖掉的文件找不回来了。Cmdr 会跳过没有把握的部分，所以可能有些会留在原处。",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
+  },
   "fileOperations.rollbackConfirm.titleFinish": "要完成这项操作的回滚吗？",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"

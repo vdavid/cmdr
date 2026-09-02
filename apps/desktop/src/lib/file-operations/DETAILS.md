@@ -27,6 +27,9 @@ Umbrella-level files:
   no name yet, so ambient main-window surfaces stay quiet about all three (§ below).
 - `foreground-request.ts`: `adoptedOperationFor(rows, id)`, the pure half of the queue's Show button, resolving the id
   that crossed the window boundary against the MAIN window's own snapshot.
+- `reversal-wording.ts` + `op-kind.ts`: what a reversal will DO to the files, and every surface's wording for it
+  (§ "Rollback asks first"). `op-kind.ts` is the two `Record`s that turn the registry snapshot's `WriteOperationType`
+  and the progress dialog's `TransferOperationType` into the `OpKind` those decisions are taken in.
 - `settled-operations.ts`: one `write-settled` subscription per window plus `whenOperationSettled(id)`, the wait a
   follow-up takes before reading an operation's journal rows. It REMEMBERS recent settles, because the event lands
   before anyone asks: it follows its terminal event by microseconds while the completion handling is held for
@@ -272,14 +275,26 @@ the button reads the same on every surface.
 
 **What it says depends on what the reversal DOES** (`variant`, in `reversal-wording.ts`):
 
-- `stopAndDelete`, for a copy or move still RUNNING. Three facts: it deletes the files the operation has written (not
-  only the half-written one a plain Cancel drops), a file it replaced won't come back, and Cmdr skips anything it isn't
-  sure about, so the reversal can come out partial. ❌ Don't restore the old "removes everything written so far": the
-  recheck makes that an over-promise, and the third sentence is what keeps it parallel with the `bodyUndo*` siblings.
+- `stopAndDelete`, for a COPY (or a compress) still RUNNING. Three facts: it deletes the files the operation has written
+  (not only the half-written one a plain Cancel drops), a file it replaced won't come back, and Cmdr skips anything it
+  isn't sure about, so the reversal can come out partial. ❌ Don't restore the old "removes everything written so far":
+  the recheck makes that an over-promise, and the third sentence is what keeps it parallel with its siblings.
+- `stopAndMoveBack`, for a MOVE (or a trash) still RUNNING. Same three facts with the first one inverted: what the move
+  has carried across travels back, and NOTHING is deleted, so it takes `primary` rather than `danger`. ❌ Never let a
+  running move share the copy's arm: "this deletes every file the operation has written so far" over a red button, for a
+  reversal that takes nothing away, pushes people onto Cancel — which is the choice that actually leaves their files
+  split across two folders.
 - `undoByDeleting` / `undoByMovingBack` / `undoByRenamingBack`, for undoing a FINISHED operation from the history
   dialog. Each names the inverse action, then admits the reversal may come out partial. They mirror the backend's
   `inverse_kind`; the picker is `rollbackConfirmVariant` in `reversal-wording.ts`, and the reasoning behind the wording
   is `$lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the inverse".
+
+**Two pickers, one vocabulary.** `inFlightRollbackVariant(kind)` answers for an operation still running and
+`rollbackConfirmVariant(kind)` for undoing a finished one; both live in `reversal-wording.ts` and the tests pin them to
+agree on the only fact that matters, whether the reversal takes files away. The kind reaches each caller under a
+different name — the dialog holds a `TransferOperationType`, the queue row and the main window's clash prompt hold the
+snapshot's `WriteOperationType` — so `op-kind.ts` maps both onto `OpKind`, the operation log's vocabulary, with a
+`Record` over each source type so a new operation type is a compile error rather than a silent "worded as a copy".
 
 **A second axis, orthogonal to `variant`: `finishing`.** An operation that's already PARTLY rolled back offers to pick
 its reversal back up rather than to start one, so the dialog swaps its title
@@ -294,7 +309,7 @@ this a fresh reversal or the rest of one", and neither has to know about the oth
 operation SKIPPED, so any number here would be wrong on exactly the operation that had clashes — which is most of the
 ones anybody rolls back. The undo variants say nothing about a count either, and nothing that promises completeness.
 
-**The two deleting variants get `danger`; the other two get `primary`.** Red on "put my files back" cries wolf, and this
+**The two deleting variants get `danger`; the other three get `primary`.** Red on "put my files back" cries wolf, and this
 app spends that colour on operations that take something away. The safe answer holds focus in every variant, so a reflex
 Enter never reverses anything.
 
