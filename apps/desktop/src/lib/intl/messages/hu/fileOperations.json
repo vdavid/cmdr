@@ -465,6 +465,10 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
+  "fileOperations.transferProgress.titleRemovingOriginals": "Az eredeti fájlok eltávolítása…",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
+  },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}…",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "fe64f70"

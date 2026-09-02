@@ -16,6 +16,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Instant;
 
 use super::super::copy::{JournalDestUnder, copy_single_item, create_scanned_dirs_at_destination};
 use super::MoveTransaction;
@@ -471,6 +472,21 @@ pub(super) fn move_with_staging(
 /// is walked: every non-skipped child is deleted and directories are removed
 /// only once they're empty, so the skipped child's original survives inside a
 /// surviving source directory.
+///
+/// ## Why this phase reports progress
+///
+/// It is the last real work of the move and it is unbounded: one `remove_file`
+/// or `remove_dir_all` per top-level source, over however large a tree. Running
+/// it silently left the frontend on the copy phase's last tick, `files_done ==
+/// files_total`, so the dialog read 100% (and "Paused" over a full bar if the
+/// user parked it here) with the whole sweep still ahead — the exact "looks
+/// finished when it isn't" the honest-progress principle forbids.
+///
+/// The denominator is the TOP-LEVEL sources, because that's what the loop
+/// iterates: `remove_dir_all` takes a subtree in one call and reports nothing
+/// from inside it, so a leaf-granular bar here would be an invention. Bytes stay
+/// zero throughout — nothing is transferred — which is how the readout knows to
+/// drop its size bar rather than freeze it at whatever the copy left.
 fn delete_sources_after_move(
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -479,6 +495,14 @@ fn delete_sources_after_move(
     files_done: usize,
     skipped_source_paths: &HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
+    let sources_total = sources.len();
+    let mut sources_done = 0usize;
+    let mut last_progress_time = Instant::now();
+
+    // The opening tick, unthrottled: it's what flips the frontend off the copy's
+    // full bar and onto this phase's own, and the first source can take minutes.
+    emit_source_sweep_progress(events, state, operation_id, None, 0, sources_total);
+
     for source in sources {
         // Check cancellation
         if is_cancelled(&state.intent) {
@@ -511,6 +535,10 @@ fn delete_sources_after_move(
                 source_removed: false,
                 outcome: SourceItemOutcome::Skipped,
             });
+            // Counted anyway: the bar measures how far through the sources the
+            // sweep has got, and a deliberate skip is as finished with as a
+            // deletion. Leaving it out would strand the bar short of full.
+            sources_done += 1;
             continue;
         }
 
@@ -538,9 +566,55 @@ fn delete_sources_after_move(
                 outcome: SourceItemOutcome::Done,
             });
         }
+
+        sources_done += 1;
+        if last_progress_time.elapsed() >= state.progress_interval {
+            let name = source.file_name().map(|n| n.to_string_lossy().into_owned());
+            emit_source_sweep_progress(events, state, operation_id, name, sources_done, sources_total);
+            last_progress_time = Instant::now();
+        }
     }
 
+    // The closing tick, unthrottled for the same reason as the opening one: the
+    // throttle would otherwise leave the bar short of full on a fast sweep, and
+    // the next thing the user sees is `write-complete`.
+    emit_source_sweep_progress(events, state, operation_id, None, sources_done, sources_total);
+
     Ok(())
+}
+
+/// One `Deleting`-phase tick for the source sweep, paired with its status-cache
+/// update so no caller can emit one without the other.
+fn emit_source_sweep_progress(
+    events: &dyn OperationEventSink,
+    state: &Arc<WriteOperationState>,
+    operation_id: &str,
+    current_file: Option<String>,
+    sources_done: usize,
+    sources_total: usize,
+) {
+    state.emit_progress_via_sink(
+        events,
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Move,
+            WriteOperationPhase::Deleting,
+            current_file.clone(),
+            sources_done,
+            sources_total,
+            0,
+            0,
+        ),
+    );
+    update_operation_status(
+        operation_id,
+        WriteOperationPhase::Deleting,
+        current_file,
+        sources_done,
+        sources_total,
+        0,
+        0,
+    );
 }
 
 /// Recursively deletes `dir`'s contents, skipping any path in

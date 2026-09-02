@@ -10,8 +10,7 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
   standalone operation-queue window).
 - Umbrella-level files: `TransferProgressReadout.svelte`, `scan-throughput.ts`, `foreground-operation.svelte.ts`,
   `foreground-request.ts`, `operation-conflict.svelte.ts`, `settled-operations.ts`, `op-kind.ts`, plus
-  `mutation-error.ts` +
-  `mutation-error-messages.ts` (the mutation-refusal path). What each one is: DETAILS § File map.
+  `mutation-error.ts` + `mutation-error-messages.ts` (the mutation-refusal path). What each one is: DETAILS § File map.
 
 ## Must-knows
 
@@ -33,9 +32,9 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
   answer lands. ❌ Never a native `ask`, ❌ no file count in it.
 - **Its `variant` says what the reversal DOES, in the question AND on the running bar; wrong is a data-safety lie in
   copy.** Running: `stopAndDelete` (copy), `stopAndMoveBack` (move). Finished: the three `undo*`, mirroring
-  `inverse_kind`. Both pickers: `reversal-wording.ts`, keyed on `OpKind` (`op-kind.ts` maps the wire spellings).
-  ❌ Never word a move's reversal as a delete, ❌ never infer one from `phase === 'rolling_back'` (a cancelled copy
-  wears it too). DETAILS § Rollback.
+  `inverse_kind`. Both pickers: `reversal-wording.ts`, keyed on `OpKind` (`op-kind.ts` maps the wire spellings). ❌
+  Never word a move's reversal as a delete, ❌ never infer one from `phase === 'rolling_back'` (a cancelled copy wears
+  it too). DETAILS § Rollback.
 - **A conflict no dialog owns is answered on the MAIN window** (`operation-conflict.svelte.ts`): pause what's running,
   prompt, resume exactly the ids paused. ❌ Never `resumeAll()` (it restarts a USER pause); ❌ never decide ownership
   while `isForegroundClaimPending()`: defer, or you double-prompt or re-wedge it.

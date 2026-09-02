@@ -26,6 +26,7 @@
  */
 
 import { bytes, bytesPerSecond, seconds, type ByteCount, type BytesPerSecond, type Seconds } from '$lib/units'
+import type { OpKind, WriteOperationPhase } from '$lib/ipc/bindings'
 
 /**
  * The numbers a `write-progress` event carries, branded.
@@ -58,6 +59,21 @@ export function transferReadout(event: {
     bytesPerSecond: event.bytesPerSecond == null ? null : bytesPerSecond(event.bytesPerSecond),
     etaSeconds: event.etaSeconds == null ? null : seconds(event.etaSeconds),
   }
+}
+
+/**
+ * The noun the count bar counts, which is not "files" everywhere.
+ *
+ * A trash moves ITEMS, and so does the last stage of a move between disks: that
+ * stage removes the originals one TOP-LEVEL source at a time (`remove_dir_all`
+ * takes a whole subtree in one call and reports nothing from inside it), so its
+ * denominator is the selection, not the leaf count the copy stage counted.
+ * Both surfaces that render the readout ask this, so neither can label the same
+ * phase differently from the other.
+ */
+export function progressCountKind(kind: OpKind, phase: WriteOperationPhase | null): 'files' | 'items' {
+  if (kind === 'trash') return 'items'
+  return kind === 'move' && phase === 'deleting' ? 'items' : 'files'
 }
 
 /**

@@ -1580,6 +1580,7 @@ export type MessageKey =
   | 'fileOperations.transferProgress.titleConflict'
   | 'fileOperations.transferProgress.titleFlushing'
   | 'fileOperations.transferProgress.titlePaused'
+  | 'fileOperations.transferProgress.titleRemovingOriginals'
   | 'fileOperations.transferProgress.titleReversalDeleting'
   | 'fileOperations.transferProgress.titleReversalMovingBack'
   | 'fileOperations.transferProgress.titleReversalRenamingBack'

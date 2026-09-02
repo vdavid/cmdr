@@ -47,6 +47,23 @@ describe('TransferProgressReadout', () => {
     expect(texts('.percent')).toEqual(['(25%)'])
   })
 
+  it('draws no bar and no percentage while the count total is still unknown', () => {
+    // A total of zero is the backend saying "still counting", not "nothing to
+    // do". A fraction against it is a fraction against a number that hasn't been
+    // decided, and it renders as a bar frozen at 0% beside "(0%)" on an
+    // operation that is moving. So the readout reports what it knows — how many
+    // it has got through — and waits for a denominator before drawing one.
+    render({ bytesDone: 0, bytesTotal: 0, filesDone: 17_238, filesTotal: 0 })
+    expect(target.querySelectorAll('[role="progressbar"]').length).toBe(0)
+    expect(texts('.amount')).toEqual(['17,238'])
+    expect(texts('.percent')).toEqual([''])
+  })
+
+  it('never shows 100% off a total that only equals the done count because both are zero', () => {
+    render({ bytesDone: 0, bytesTotal: 0, filesDone: 0, filesTotal: 0 })
+    expect(texts('.percent')).toEqual([''])
+  })
+
   it('shows both amounts: bytes done/total and files done/total', () => {
     render(halfway)
     expect(texts('.amount')).toEqual(['50 bytes / 200 bytes', '1 / 4'])

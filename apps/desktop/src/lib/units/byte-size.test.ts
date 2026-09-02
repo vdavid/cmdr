@@ -146,9 +146,7 @@ describe('formatFileSizeWithFormat', () => {
       // decimal instead, so the pair can't outgrow that.
       const widest = formatFileSizeWithFormat(999 * 1000 ** 3, 'si', undefined, true)
       expect(widest).toBe('999 GB')
-      expect(formatFileSizeWithFormat(9.9 * 1000 ** 3, 'si', undefined, true).length).toBeLessThanOrEqual(
-        widest.length,
-      )
+      expect(formatFileSizeWithFormat(9.9 * 1000 ** 3, 'si', undefined, true).length).toBeLessThanOrEqual(widest.length)
     })
   })
 })

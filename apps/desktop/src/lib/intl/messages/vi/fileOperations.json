@@ -464,6 +464,10 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
+  "fileOperations.transferProgress.titleRemovingOriginals": "Đang xóa các bản gốc...",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
+  },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}...",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "fe64f70"

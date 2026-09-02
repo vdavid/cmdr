@@ -126,6 +126,102 @@ fn cross_fs_local_move_emits_flushing_phase_before_complete() {
     assert_eq!(complete.len(), 1, "exactly one write-complete");
 }
 
+/// Phase 4 — deleting the originals, once the destinations are durable — must
+/// report itself, because it is real, unbounded work: one `remove_file` or
+/// `remove_dir_all` per top-level source, over however large a tree.
+///
+/// While it ran silently the last progress the frontend had was the copy phase's
+/// `files_done == files_total`, so the dialog sat at "100%" (and, if the user
+/// pressed Pause, at "Paused" over a full bar) with the whole source sweep still
+/// ahead. Its own `Deleting` phase gives the readout a denominator that means
+/// something and gives the dialog a phase to name.
+#[test]
+fn cross_fs_local_move_reports_the_source_deletion_instead_of_sitting_at_full() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    // Three top-level sources, so the cleanup bar has somewhere to travel.
+    let sources: Vec<_> = ["a.bin", "b.bin", "c.bin"]
+        .iter()
+        .map(|name| {
+            let path = src_dir.join(name);
+            fs::write(&path, vec![0u8; 4096]).unwrap();
+            path
+        })
+        .collect();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state(200);
+    let config = WriteOperationConfig::default();
+
+    let result = move_with_staging(
+        &*events,
+        "op-cross-fs-move-cleanup",
+        &state,
+        &sources,
+        &dst_dir,
+        &config,
+        0,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let deleting: Vec<_> = progress
+        .iter()
+        .filter(|p| p.phase == WriteOperationPhase::Deleting)
+        .collect();
+    assert!(
+        !deleting.is_empty(),
+        "cross-FS move: expected Deleting-phase progress for the source sweep, got phases {:?}",
+        progress.iter().map(|p| p.phase).collect::<Vec<_>>(),
+    );
+
+    // The denominator is the top-level sources it iterates, and the sweep opens
+    // at zero rather than inheriting the copy's full bar.
+    assert!(
+        deleting.iter().all(|p| p.files_total == sources.len()),
+        "every cleanup tick counts against the sources it will remove, got {:?}",
+        deleting
+            .iter()
+            .map(|p| (p.files_done, p.files_total))
+            .collect::<Vec<_>>(),
+    );
+    assert_eq!(
+        deleting.first().map(|p| p.files_done),
+        Some(0),
+        "the sweep opens at zero"
+    );
+    assert_eq!(
+        deleting.last().map(|p| p.files_done),
+        Some(sources.len()),
+        "and closes having accounted for every source",
+    );
+
+    // No bytes move in this phase, so the readout drops its size bar rather than
+    // showing one frozen at whatever the copy left.
+    assert!(
+        deleting.iter().all(|p| p.bytes_total == 0 && p.bytes_done == 0),
+        "the cleanup sweep transfers no bytes",
+    );
+
+    // Ordering: the flush that makes the destinations durable comes first.
+    let flushing_at = progress
+        .iter()
+        .position(|p| p.phase == WriteOperationPhase::Flushing)
+        .expect("a Flushing-phase event");
+    let deleting_at = progress
+        .iter()
+        .position(|p| p.phase == WriteOperationPhase::Deleting)
+        .expect("a Deleting-phase event");
+    assert!(
+        flushing_at < deleting_at,
+        "the originals go only after the destinations are durable",
+    );
+}
+
 /// A same-FS move announces its closing flush too, so the FE's state machine
 /// shows "Writing the last piece…" for both move kinds. What it flushes is the
 /// directories the renames touched, not the moved files (`touched_directories`),

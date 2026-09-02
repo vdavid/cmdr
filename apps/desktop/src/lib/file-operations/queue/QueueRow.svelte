@@ -15,6 +15,7 @@
     import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
     import { inFlightRollbackVariant, rollbackConfirmVariant, reversalLabelKey } from '../reversal-wording'
     import { opKindForWireType } from '../op-kind'
+    import { progressCountKind } from '../progress-readout'
     import { requestForegroundOperation } from '$lib/tauri-commands'
 
     interface Props {
@@ -402,7 +403,7 @@
                 filesPerSecond={fileRate}
                 {etaSeconds}
                 {stall}
-                countKind={snapshot.operationType === 'trash' ? 'items' : 'files'}
+                countKind={progressCountKind(opKindForWireType(snapshot.operationType), progress.phase)}
             />
         </div>
     {/if}

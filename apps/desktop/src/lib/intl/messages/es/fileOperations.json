@@ -464,6 +464,10 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
+  "fileOperations.transferProgress.titleRemovingOriginals": "Eliminando los originales...",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
+  },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copiando} move {Moviendo} compress {Comprimiendo} delete {Eliminando} other {Moviendo a la papelera}}...",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "fe64f70"

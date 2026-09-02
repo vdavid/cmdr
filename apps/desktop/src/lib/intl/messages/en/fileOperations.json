@@ -825,6 +825,13 @@
     "screenshot": "toast-transfer-complete.png"
   },
 
+  "fileOperations.transferProgress.titleRemovingOriginals": "Removing the originals...",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "description": "Progress-dialog title for the last stage of a move BETWEEN disks, which copies first and only then removes the source files. By this point every file is safely at the destination and what is left is clearing the old copies, which on a big folder takes real time. \"The originals\" are the source files the user asked to move; the word matters, because a title that only said \"Deleting\" over a move would read as the user''s files being destroyed. A move within one disk never shows this (it renames, so there is nothing to clear). Keep the trailing ellipsis, like its sibling titles.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is the title it shows during the final stage of a move between disks."
+  },
+
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}...",
   "@fileOperations.transferProgress.titleActive": {
     "description": "Progress-dialog title during the operation itself, in the -ing form of the verb. 'Moving to trash' is the trash variant. Keep the trailing ellipsis.",

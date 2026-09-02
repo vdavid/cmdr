@@ -135,13 +135,23 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
    - Dual progress bars (size + file count). Speed (both bytes/s and files/s) and ETA come pre-computed from the backend
      (`write_operations/eta.rs`) on every `WriteProgressEvent`; the dialog renders the numbers and applies a tiny
      display low-pass to the ETA to prevent flicker. No FE-side math. See BE § "ETA + throughput".
-   - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move).
+   - Dynamic stage indicator: "Scanning" → "Copying" → "Writing the last piece..." (+ "Removing the originals..." for a
+     cross-disk move, § below).
    - **Flushing phase.** When a `write-progress` event arrives with `phase: 'flushing'`, the dialog title shows
      **"Writing the last piece..."** (exact copy). This is the backend's closing `fdatasync` over the freshly written
      destinations — on slow media (USB sticks, SD cards) it's a real multi-second pause, so the bar must not sit frozen
      at 100% pretending the work is done. The phase maps back to the active stage chip (copying/moving) in
      `getStageStatus`, since it's the tail of the copy, not a separate chip. Shown for both copy and move. Pinned by
      `TransferProgressDialog.flushing.test.ts`. See the BE doc § "Durability" for what the flush actually does.
+   - **Removing the originals** (`phase === 'deleting'` on a MOVE): the closing stage of a move BETWEEN disks, which
+     copies first and only then removes the sources. The title reads "Removing the originals..."; the readout counts
+     ITEMS over the top-level sources (`progressCountKind`), because `remove_dir_all` takes a whole subtree in one call
+     and reports nothing from inside it, and the size bar drops out since no bytes move. ❌ Don't fold this into
+     `titleActive`'s `delete` arm: "Deleting..." over a move the user asked for reads as their files being destroyed. A
+     move WITHIN one disk never reaches it (a rename leaves no originals), and a real `delete` operation keeps
+     "Deleting...", which is what its `deleting` phase actually is. Why the backend emits it at all, and what the dialog
+     looked like when it didn't: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "The
+     source sweep reports itself". Pinned by `TransferProgressDialog.flushing.test.ts`.
    - **Scanning-phase UI** (`phase === 'scanning'`, the one path there is now): rendered via `ScanPhaseBody`. Shows
      source path, running tallies (`bytesFound / filesFound / dirsFound`), FE-computed throughput from `ScanThroughput`
      (`../scan-throughput.ts`), and a spinner. Current directory (`event.currentDir`) renders above the filename so the
@@ -320,7 +330,7 @@ Copy and Move share 95%+ of UI/flow. Differences:
 - Labels ("Copy" vs "Move")
 - Backend command (`copyFiles()` vs `moveFiles()`)
 - Post-completion: move refreshes both panes (source files gone)
-- Cross-FS move has an extra "Cleaning up" stage
+- Cross-FS move has an extra closing stage, § "Removing the originals"
 
 Parameterizing by `operationType` avoids duplication and guarantees UX consistency.
 

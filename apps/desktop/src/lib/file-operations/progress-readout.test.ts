@@ -6,8 +6,27 @@
  * window and "5m 46s" in the other at the same moment.
  */
 import { describe, it, expect } from 'vitest'
-import { createEtaSmoother, ETA_SMOOTHING_FACTOR } from './progress-readout'
+import { createEtaSmoother, ETA_SMOOTHING_FACTOR, progressCountKind } from './progress-readout'
 import { seconds } from '$lib/units'
+
+describe('progressCountKind', () => {
+  it('counts files through a transfer', () => {
+    expect(progressCountKind('copy', 'copying')).toBe('files')
+    expect(progressCountKind('move', 'copying')).toBe('files')
+    expect(progressCountKind('delete', 'deleting')).toBe('files')
+  })
+
+  it('counts items for a trash, whatever it is doing', () => {
+    expect(progressCountKind('trash', 'trashing')).toBe('items')
+  })
+
+  it("counts items through a move's source sweep, whose bar runs over the selection", () => {
+    // The cross-disk move's closing stage removes one TOP-LEVEL source per step
+    // (`remove_dir_all` takes a whole subtree in one call), so its denominator
+    // is the selection rather than the leaf count the copy stage counted.
+    expect(progressCountKind('move', 'deleting')).toBe('items')
+  })
+})
 
 describe('createEtaSmoother', () => {
   it('adopts the first value as-is, with no warm-up lag', () => {

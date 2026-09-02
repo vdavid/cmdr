@@ -465,6 +465,10 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
+  "fileOperations.transferProgress.titleRemovingOriginals": "Tar bort originalen...",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
+  },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Kopierar} move {Flyttar} compress {Komprimerar} delete {Raderar} other {Flyttar till papperskorgen}}...",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "fe64f70"

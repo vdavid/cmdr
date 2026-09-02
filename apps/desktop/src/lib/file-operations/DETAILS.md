@@ -27,9 +27,9 @@ Umbrella-level files:
   no name yet, so ambient main-window surfaces stay quiet about all three (§ below).
 - `foreground-request.ts`: `adoptedOperationFor(rows, id)`, the pure half of the queue's Show button, resolving the id
   that crossed the window boundary against the MAIN window's own snapshot.
-- `reversal-wording.ts` + `op-kind.ts`: what a reversal will DO to the files, and every surface's wording for it
-  (§ "Rollback asks first"). `op-kind.ts` is the two `Record`s that turn the registry snapshot's `WriteOperationType`
-  and the progress dialog's `TransferOperationType` into the `OpKind` those decisions are taken in.
+- `reversal-wording.ts` + `op-kind.ts`: what a reversal will DO to the files, and every surface's wording for it (§
+  "Rollback asks first"). `op-kind.ts` is the two `Record`s that turn the registry snapshot's `WriteOperationType` and
+  the progress dialog's `TransferOperationType` into the `OpKind` those decisions are taken in.
 - `settled-operations.ts`: one `write-settled` subscription per window plus `whenOperationSettled(id)`, the wait a
   follow-up takes before reading an operation's journal rows. It REMEMBERS recent settles, because the event lands
   before anyone asks: it follows its terminal event by microseconds while the completion handling is held for
@@ -113,10 +113,20 @@ catalog keys.
   "(100%)", "999 MB/s"). This is the point of the component, not a detail: the bars' width then depends only on the
   window, and nothing shifts as digits come and go. The columns are `minmax(…, auto)` so a rarer outlier (a byte-scale
   pair) grows instead of clipping.
-- **Live sizes are ROUNDED** (`<Size rounded>`, "7 GB" not "7.09 GB"), amounts and speed alike. A number that changes
-  several times a second doesn't earn decimals nobody can read at that rate; a size column, where people compare and
-  copy values, still gets them. Rounding is half-up, so a nearly-finished transfer can read "23 GB / 23 GB" — the
-  percent beside it is what stays exact.
+- **Live sizes take the COARSE form** (`<Size rounded>`: a tenth below ten, whole units above, so "1.7 GB" and "24 GB"),
+  amounts and speed alike. A number that changes several times a second doesn't earn two decimals nobody can read at
+  that rate; a size column, where people compare and copy values, still gets them. ❌ Not whole units at every scale,
+  tempting as it looks: that printed "2 GB / 2 GB (80%)" for a 1.7-of-2.4 GB copy, and every transfer in the 1-10 GB
+  range stepped a whole gigabyte at a time. Where the tenth comes from and why it costs no column width:
+  `$lib/units/byte-size.ts::formatSizeLive`.
+- **No denominator, no fraction.** A `filesTotal` of 0 is the backend saying it hasn't decided the number yet (what a
+  scanning operation reports on both axes), ❌ never "nothing to do", so the count row keeps its tally and drops the bar
+  and the percentage until a real total lands — the same answer `hasBytesRow` gives the size axis, and the same one the
+  corner chip gives a scanning operation. Both callers gate the whole readout on the phase anyway; this is here so a
+  third surface that forgets can't invent "(0%)" over an operation that's moving.
+- **The count row's noun comes from `progressCountKind`**, not from the operation type alone: a trash moves ITEMS, and
+  so does the closing stage of a cross-disk move, whose bar runs over the top-level sources rather than the leaves the
+  copy stage counted; that stage is `transfer/DETAILS.md` § "Removing the originals".
 - **The time left has its own row**, spanning the grid and right-aligned. It keeps the bars wide, and lets an estimate
   firm up from "1h 8m left" to "56m 24s left" without moving anything above it. The row renders even while empty (a
   `:empty::before` no-break space), so the estimator warming up doesn't shove the rest of the dialog down.
@@ -309,9 +319,9 @@ this a fresh reversal or the rest of one", and neither has to know about the oth
 operation SKIPPED, so any number here would be wrong on exactly the operation that had clashes — which is most of the
 ones anybody rolls back. The undo variants say nothing about a count either, and nothing that promises completeness.
 
-**The two deleting variants get `danger`; the other three get `primary`.** Red on "put my files back" cries wolf, and this
-app spends that colour on operations that take something away. The safe answer holds focus in every variant, so a reflex
-Enter never reverses anything.
+**The two deleting variants get `danger`; the other three get `primary`.** Red on "put my files back" cries wolf, and
+this app spends that colour on operations that take something away. The safe answer holds focus in every variant, so a
+reflex Enter never reverses anything.
 
 **Raised by the surface, not the session.** Four hosts hold the pending question in their own `$state`
 (`TransferProgressDialog`, `OperationConflictDialog`, `QueueRow`, and `$lib/operation-log/OperationLogDialog.svelte`),

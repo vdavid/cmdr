@@ -31,10 +31,10 @@ dialog and the operation queue both do) rather than adding a code-side rate form
   and formatter-shaped names whose body does unit work). Opt out per-line with a reason for a genuine fixed binary
   threshold.
 - **`<Size bytes>`** (`$lib/ui/Size.svelte`) is the COMPONENT form: same numbers plus the size-tier colors. Prefer it in
-  markup; use `formatByteSize` for tooltips, toasts, and anything composing a string. `<Size bytes rounded>` is the
-  LIVE form — a tenth below ten, whole units above ("1.7 GB", "24 GB") — for the transfer bars only, where the number
-  changes several times a second. ❌ Not whole units at every scale: that printed "2 GB / 2 GB (70%)". A size someone
-  compares or copies keeps its two decimals.
+  markup; use `formatByteSize` for tooltips, toasts, and anything composing a string. `<Size bytes rounded>` is the LIVE
+  form — a tenth below ten, whole units above ("1.7 GB", "24 GB") — for the transfer bars only, where the number changes
+  several times a second. ❌ Not whole units at every scale: that printed "2 GB / 2 GB (70%)". A size someone compares
+  or copies keeps its two decimals.
 - **`formatDuration` requires a branded `seconds(n)`**, and rates are branded `bytesPerSecond(n)`. IPC hands you bare
   numbers, so brand at the edge — for `write-progress` that's `transferReadout(event)` in
   `apps/desktop/src/lib/file-operations/progress-readout.ts`. `formatByteSize` takes a plain `number` on purpose: ~40

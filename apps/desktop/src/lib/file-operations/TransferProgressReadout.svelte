@@ -70,6 +70,19 @@
     const bytePercent = $derived(calculatePercentage(bytesDone, bytesTotal))
     const filePercent = $derived(calculatePercentage(filesDone, filesTotal))
 
+    /** Whether the count bar has a denominator to measure against.
+     *
+     *  A total of zero is the backend saying it hasn't decided yet (it's what a
+     *  scanning operation reports on both axes), ❌ never "nothing to do". A
+     *  fraction against it is a fraction against a number nobody has committed
+     *  to, and it renders as a bar frozen at 0% beside "(0%)" on an operation
+     *  that is moving. So the row keeps its count and drops the bar and the
+     *  percentage until a denominator lands — the same answer the corner chip
+     *  gives a scanning operation, and the same one `hasBytesRow` gives the size
+     *  axis one line up. The callers' own phase gates should mean this never
+     *  fires; it's here so a surface that forgets one can't invent a percentage. */
+    const hasCountFraction = $derived(filesTotal > 0)
+
     /** A zero rate is the estimator saying nothing has moved yet, not a speed. */
     const byteRate = $derived(bytesPerSecond !== null && bytesPerSecond > 0 ? bytesPerSecond : null)
     /** `null` for a rate that rounds to zero, so the cell stays empty. */
@@ -110,13 +123,21 @@
     {/if}
 
     <span class="bar-label">{countLabel}</span>
-    <ProgressBar
-        value={filesTotal > 0 ? filesDone / filesTotal : 0}
-        size={isCompact ? 'sm' : 'md'}
-        ariaLabel={tString('fileOperations.transferProgress.fileProgressAria')}
-    />
-    <span class="amount">{formatNumber(filesDone)} / {formatNumber(filesTotal)}</span>
-    <span class="percent">({formatNumber(filePercent)}%)</span>
+    <!-- The bar and the percentage wait for a denominator; the cells stay so the
+         five-column grid holds its shape and nothing shifts when one lands. -->
+    {#if hasCountFraction}
+        <ProgressBar
+            value={filesDone / filesTotal}
+            size={isCompact ? 'sm' : 'md'}
+            ariaLabel={tString('fileOperations.transferProgress.fileProgressAria')}
+        />
+        <span class="amount">{formatNumber(filesDone)} / {formatNumber(filesTotal)}</span>
+        <span class="percent">({formatNumber(filePercent)}%)</span>
+    {:else}
+        <span></span>
+        <span class="amount">{formatNumber(filesDone)}</span>
+        <span class="percent"></span>
+    {/if}
     <span class="rate">{fileRateText ?? ''}</span>
 
     <!-- Rendered even while empty (see `.time:empty` below): the line holds its

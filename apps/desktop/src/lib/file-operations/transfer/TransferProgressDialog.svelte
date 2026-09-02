@@ -30,6 +30,7 @@
     import { formatInteger } from '$lib/intl/number-format'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { stallNoticeFor } from './transfer-stall'
+    import { progressCountKind } from '../progress-readout'
     import { inFlightRollbackVariant, rollbackConfirmVariant, reversalTitleKey } from '../reversal-wording'
     import { opKindForTransferType } from '../op-kind'
     import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
@@ -216,7 +217,8 @@
      *  move carries back what it moved. ❌ Never a fixed `stopAndDelete` — red
      *  "this deletes everything" over a move's harmless reversal pushes people
      *  onto the wrong button. `../reversal-wording.ts`. */
-    const inFlightVariant = $derived(inFlightRollbackVariant(opKindForTransferType(operationType)))
+    const opKind = $derived(opKindForTransferType(operationType))
+    const inFlightVariant = $derived(inFlightRollbackVariant(opKind))
 
     // Local aliases over the factory getters so the markup reads the same names
     // it always has. Each tracks reactive state (the view's own, or the
@@ -379,6 +381,13 @@
             {tString('fileOperations.transferProgress.titlePaused')}
         {:else if phase === 'flushing'}
             {tString('fileOperations.transferProgress.titleFlushing')}
+        {:else if isMove && phase === 'deleting'}
+            <!-- The closing stage of a move BETWEEN disks: the files are all at
+                 the destination and the originals are going. It has its own bar
+                 (over the top-level sources), so leaving the title on "Moving..."
+                 would be the one phase whose name says nothing about what the
+                 numbers under it are counting. -->
+            {tString('fileOperations.transferProgress.titleRemovingOriginals')}
         {:else}
             {tString('fileOperations.transferProgress.titleActive', { gerund: gerundKind })}
         {/if}
@@ -455,7 +464,7 @@
                     {filesPerSecond}
                     etaSeconds={etaSecondsDisplay}
                     {stall}
-                    countKind={operationType === 'trash' ? 'items' : 'files'}
+                    countKind={progressCountKind(opKind, phase)}
                 />
             </div>
 

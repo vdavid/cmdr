@@ -463,6 +463,10 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
+  "fileOperations.transferProgress.titleRemovingOriginals": "正在移除原檔案…",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
+  },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {正在複製} move {正在移動} compress {正在壓縮} delete {正在刪除} other {正在移至垃圾桶}}…",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "fe64f70"
