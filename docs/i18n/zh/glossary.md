@@ -1820,3 +1820,10 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
   (`这比你当初同意的范围更大，所以这里再完整说明一次。`) · `confirmed`
 - No apostrophes on the Chinese side (the U+2019 in the English carries no ICU meaning anyway); no placeholders; no
   `sameAsSourceJustification` needed, all five values differ from English.
+- **looks inside a file only when you ask about it (`askCmdr.empty.hint`, `settings.askCmdr.intro`)** ·
+  `只有在你问到某个文件时才会查看它的内容` · the same `查看…内容` / `问到` wording as the tool line and `whatsNew.body`
+  above; the old `从不读取文件内容` / `是只读的…从不修改任何内容` promises were removed because the English no longer
+  makes them · `high`
+- **never changes a file without your approval** · `未经你批准，绝不会更改任何文件` · `批准` matches the settled
+  `在你批准之前，任何文件都不会有变化` (`consent.contentsRule`); `更改` for "change" (macOS AppKit `复查更改…`) ·
+  `high`

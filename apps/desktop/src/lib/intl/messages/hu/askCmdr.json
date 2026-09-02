@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "A Cmdr megnézheti, mit böngészel épp, a meghajtóidat és a fájlműveleti előzményeidet, hogy válaszolhasson. Csak neveket, útvonalakat és méreteket olvas, fájltartalmakat soha.",
+  "askCmdr.empty.hint": "A Cmdr megnézheti, mit böngészel épp, a meghajtóidat és a fájlműveleti előzményeidet, hogy válaszolhasson. Neveket, útvonalakat és méreteket olvas, és egy fájlba csak akkor néz bele, ha arról kérdezed.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Kérdés a fájljaidról…",
   "@askCmdr.composer.placeholder": {

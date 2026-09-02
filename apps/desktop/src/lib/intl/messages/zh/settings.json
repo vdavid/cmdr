@@ -1497,9 +1497,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name, kept verbatim across the whole zh catalog per the @key description (\"keep it as-is\")."
   },
-  "settings.askCmdr.intro": "和 AI 聊聊你的文件、驱动器和历史记录。Ask Cmdr 是只读的：它通过读取名称、路径和大小来回答问题，从不修改任何内容。",
+  "settings.askCmdr.intro": "和 AI 聊聊你的文件、驱动器和历史记录。Ask Cmdr 通过读取名称、路径和大小来回答问题，只有在你问到某个文件时才会查看它的内容，而且未经你批准，绝不会更改任何文件。",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr 已开启",
   "@settings.askCmdr.status.on": {

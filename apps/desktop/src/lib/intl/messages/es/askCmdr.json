@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr puede consultar lo que estás explorando, tus unidades y tu historial de archivos para responder. Solo lee nombres, rutas y tamaños, nunca el contenido de los archivos.",
+  "askCmdr.empty.hint": "Cmdr puede consultar lo que estás explorando, tus unidades y tu historial de archivos para responder. Lee nombres, rutas y tamaños, y solo mira dentro de un archivo cuando le preguntas por él.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Pregunta sobre tus archivos…",
   "@askCmdr.composer.placeholder": {

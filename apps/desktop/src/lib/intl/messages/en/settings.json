@@ -1896,9 +1896,9 @@
     "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr is read-only: it reads names, paths, and sizes to answer, and never changes anything.",
+  "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr reads names, paths, and sizes to answer, looks inside a file only when you ask about it, and never changes a file without your approval.",
   "@settings.askCmdr.intro": {
-    "description": "Intro paragraph at the top of the Ask Cmdr settings section.",
+    "description": "Intro paragraph at the top of the Ask Cmdr settings section. Three facts: it reads names, paths, and sizes; it looks inside a file only when the user asks about that file; it never changes a file without the user's approval (it proposes renames and moves and writes its own notes, so do not say it changes nothing or is read-only).",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.status.on": "Ask Cmdr is on",

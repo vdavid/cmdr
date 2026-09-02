@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr kan kijken naar wat je nu bekijkt, je schijven en je bestandsgeschiedenis om te antwoorden. Het leest alleen namen, paden en groottes, nooit de inhoud van bestanden.",
+  "askCmdr.empty.hint": "Cmdr kan kijken naar wat je nu bekijkt, je schijven en je bestandsgeschiedenis om te antwoorden. Het leest namen, paden en groottes, en kijkt alleen in een bestand als je ernaar vraagt.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Vraag iets over je bestanden…",
   "@askCmdr.composer.placeholder": {

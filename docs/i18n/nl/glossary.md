@@ -2251,3 +2251,8 @@ REVIEW FLAGS (inspect-file pass):
   sweep already flagged in `style.md`.
 - Overflow: `contentsRule` runs 545 characters against the English 492; it's a wrapping paragraph, so the risk is
   height, not clipping. Eyeball it in the Settings disclosure.
+- Follow-up, same pass: `askCmdr.empty.hint` and `settings.askCmdr.intro` drop the old "never file contents" /
+  "alleen-lezen" promise. "looks inside a file only when you ask about it" → `kijkt alleen in een bestand als je ernaar
+  vraagt` (same `in een bestand kijken` as `whatsNew.body`); "never changes a file without your approval" → `verandert
+  nooit een bestand zonder jouw goedkeuring` (goedkeuren already settled in `contentsRule`; stressed `jouw` marks the
+  contrast) · high. First sentences of both keys kept verbatim.

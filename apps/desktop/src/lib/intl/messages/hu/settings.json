@@ -1498,9 +1498,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the read-only AI chat rail); kept verbatim in every locale, per the en @key note."
   },
-  "settings.askCmdr.intro": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről. Az Ask Cmdr csak olvasásra képes: a válaszadáshoz neveket, útvonalakat és méreteket olvas, és soha semmit nem változtat.",
+  "settings.askCmdr.intro": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről. Az Ask Cmdr a válaszadáshoz neveket, útvonalakat és méreteket olvas, egy fájlba csak akkor néz bele, ha arról kérdezed, és a jóváhagyásod nélkül egyetlen fájlt sem változtat meg.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Az Ask Cmdr be van kapcsolva",
   "@settings.askCmdr.status.on": {

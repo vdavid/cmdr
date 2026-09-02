@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr kan titta på det du bläddrar i, dina enheter och din filhistorik för att svara. Cmdr läser bara namn, sökvägar och storlekar, aldrig filinnehåll.",
+  "askCmdr.empty.hint": "Cmdr kan titta på det du bläddrar i, dina enheter och din filhistorik för att svara. Cmdr läser namn, sökvägar och storlekar, och tittar in i en fil bara när du frågar om den.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Fråga om dina filer…",
   "@askCmdr.composer.placeholder": {

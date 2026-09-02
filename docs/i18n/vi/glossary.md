@@ -2039,3 +2039,9 @@ thứ hai của `whatsNew.body` giữ nguyên. Thuật ngữ mới:
 - Không giá trị nào chứa dấu nháy đơn ASCII nên không phát sinh `''` của ICU; không giá trị nào giống tiếng Anh nên
   không cần `sameAsSourceJustification`. Dấu phẩy trước `và` trong danh sách bỏ đi theo các khóa chị em
   (`thư mục hiện tại, con trỏ, mục đã chọn và các ổ đĩa`).
+- **Hai câu "chỉ xem bên trong khi bạn hỏi" (`askCmdr.empty.hint`, `settings.askCmdr.intro`)** · câu đầu của cả hai giữ
+  nguyên; câu thứ hai viết lại theo tiếng Anh mới: "looks inside a file only when you ask about it" →
+  `chỉ xem bên trong một tệp khi bạn hỏi về tệp đó` (cùng gốc `xem bên trong` với nhãn công cụ ở trên), "never changes a
+  file without your approval" → `không bao giờ thay đổi một tệp khi chưa được bạn phê duyệt` (`phê duyệt` là chữ của
+  `contentsRule`) · `high`. ❌ Bỏ hẳn `chỉ đọc` / `không bao giờ đọc nội dung tệp` / `không bao giờ thay đổi bất cứ điều
+  gì` của bản cũ: tiếng Anh mới không còn hứa những điều đó.

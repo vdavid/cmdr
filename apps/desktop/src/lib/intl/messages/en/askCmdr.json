@@ -19,9 +19,9 @@
     "description": "Heading of the Ask Cmdr rail's empty state, shown before the first message. Sentence case.",
     "screenshot": "ask-cmdr-empty.png"
   },
-  "askCmdr.empty.hint": "Cmdr can look at what you’re browsing, your drives, and your file history to answer. It only reads names, paths, and sizes, never file contents.",
+  "askCmdr.empty.hint": "Cmdr can look at what you’re browsing, your drives, and your file history to answer. It reads names, paths, and sizes, and looks inside a file only when you ask about it.",
   "@askCmdr.empty.hint": {
-    "description": "Explanatory text in the Ask Cmdr rail's empty state, describing what the assistant can see. The apostrophe is a curly typographic apostrophe (U+2019).",
+    "description": "Explanatory text in the Ask Cmdr rail's empty state, describing what the assistant can see: names, paths, and sizes by default, and the inside of a file (text, PDF pages, an archive's entries, a photo's camera data) only when the user asks about that file. Must NOT promise that file contents are never read. The apostrophe is a curly typographic apostrophe (U+2019).",
     "screenshot": "ask-cmdr-empty.png"
   },
   "askCmdr.composer.placeholder": "Ask about your files…",

@@ -1498,9 +1498,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Nombre del producto; se mantiene igual en todos los idiomas, tal y como indica su descripción en el catálogo en inglés."
   },
-  "settings.askCmdr.intro": "Chatea con una IA sobre tus archivos, unidades e historial. Ask Cmdr es de solo lectura: lee nombres, rutas y tamaños para responder, y nunca cambia nada.",
+  "settings.askCmdr.intro": "Chatea con una IA sobre tus archivos, unidades e historial. Ask Cmdr lee nombres, rutas y tamaños para responder, solo mira dentro de un archivo cuando le preguntas por él y nunca cambia un archivo sin tu aprobación.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr está activado",
   "@settings.askCmdr.status.on": {

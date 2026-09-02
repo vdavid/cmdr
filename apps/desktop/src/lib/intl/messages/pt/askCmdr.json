@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "O Cmdr pode ver o que você está navegando, seus discos e seu histórico de arquivos para responder. Ele só lê nomes, caminhos e tamanhos, nunca o conteúdo dos arquivos.",
+  "askCmdr.empty.hint": "O Cmdr pode ver o que você está navegando, seus discos e seu histórico de arquivos para responder. Ele lê nomes, caminhos e tamanhos, e só olha dentro de um arquivo quando você pergunta sobre ele.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Pergunte sobre seus arquivos…",
   "@askCmdr.composer.placeholder": {

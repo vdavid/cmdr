@@ -1899,3 +1899,8 @@ Belege: Pile `de/` (macOS Finder/AppKit, Microsoft-Terminologie, Nautilus/Thunar
 - **`whatsNew.body`: zweiter Satz unverändert** („Das ist mehr, als du damals zugestimmt hast, deshalb hier noch
   einmal das Ganze.“); der erste Satz ist neu und nennt die vier Dinge in derselben Reihenfolge wie `contentsRule`.
 - Kein `sameAsSourceJustification` nötig: alle fünf Werte unterscheiden sich vom Englischen.
+- **„looks inside a file only when you ask about it“ → `schaut nur dann in eine Datei hinein, wenn du nach ihr
+  fragst`** (`askCmdr.empty.hint`, `settings.askCmdr.intro`) · dasselbe `hineinschauen` wie oben, und `nach ihr fragst`
+  wie in `contentsRule` („Wenn du nach einer Datei fragst“) · `high`. Beide Schlüssel haben das alte „nie
+  Dateiinhalte“ / „ist schreibgeschützt … verändert nie etwas“ verloren; die Einstellungs-Einleitung sagt jetzt
+  `verändert nie eine Datei ohne deine Zustimmung` (Zustimmung wie `bevor du zustimmst` in `contentsRule`).

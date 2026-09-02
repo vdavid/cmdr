@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr 可以看你正在瀏覽的內容、你的磁碟機和檔案記錄來回答你。它只讀取名稱、路徑和大小，絕不讀取檔案內容。",
+  "askCmdr.empty.hint": "Cmdr 可以看你正在瀏覽的內容、你的磁碟機和檔案記錄來回答你。它會讀取名稱、路徑和大小，只有在你問到某個檔案時，才會查看它裡面的內容。",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "問問你的檔案…",
   "@askCmdr.composer.placeholder": {

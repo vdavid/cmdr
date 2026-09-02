@@ -1497,9 +1497,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product feature name, kept verbatim across the whole catalogue per the @key description (“keep it as-is”)."
   },
-  "settings.askCmdr.intro": "和 AI 聊聊你的檔案、磁碟機和歷史記錄。Ask Cmdr 是唯讀的：它讀取名稱、路徑和大小來回答問題，絕不會更動任何東西。",
+  "settings.askCmdr.intro": "和 AI 聊聊你的檔案、磁碟機和歷史記錄。Ask Cmdr 會讀取名稱、路徑和大小來回答問題，只有在你問到某個檔案時才會查看它裡面的內容，而且沒有你的同意，絕不會更動任何檔案。",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr 已開啟",
   "@settings.askCmdr.status.on": {

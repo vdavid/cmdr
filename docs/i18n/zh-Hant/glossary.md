@@ -845,6 +845,13 @@ pile's AppKit, Nautilus, Dolphin, Thunar, Double Commander, and the Microsoft TB
 - The two sentences carried over from the retired `askCmdr.consent.noContents` (photo search; "nothing happens to a
   file until you approve it") are reused verbatim. Only the opener changed: `照片搜尋也是同樣的做法：` ("works the same
   way") replaces the old "is the one thing that reaches inside your images", which is no longer true.
+- **"looks inside a file only when you ask about it"** (`askCmdr.empty.hint`, `settings.askCmdr.intro`) ·
+  `只有在你問到某個檔案時，才會查看它裡面的內容` · the same `問到某個檔案` + `查看…裡面的內容` pair as `contentsRule`,
+  so the rail, the settings intro, and the consent screen make one promise in one wording · `high`. The retired
+  `絕不讀取檔案內容` / `Ask Cmdr 是唯讀的…絕不會更動任何東西` are gone: both promised more than the new English does.
+- **"never changes a file without your approval"** · `沒有你的同意，絕不會更動任何檔案` · `同意` is the catalog's
+  _approve_ word (`askCmdr.decision.approved`, `contentsRule` `在你同意之前`); `任何檔案` rather than `任何東西`, because
+  the assistant does write its own notes · `high`
 - `provider` stays `提供者` (in the reused sentence), and `Ask Cmdr` / `Cmdr` / `PDF` stay Latin and spaced. All five
   values differ from English, so none needs a `sameAsSourceJustification`; the U+2019 apostrophes in the English have
   no counterpart in Chinese.

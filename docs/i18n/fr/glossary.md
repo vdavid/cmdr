@@ -2386,3 +2386,10 @@ Notes de rédaction :
 - Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais.
 - À signaler : `askCmdr.empty.hint` (anglais inchangé, « never file contents » / « jamais le contenu des fichiers »)
   contredit désormais cette promesse-ci ; c'est une question de copie source, pas de traduction.
+- **Suite (2026-09-02) : `askCmdr.empty.hint` et `settings.askCmdr.intro` réécrits sur le nouvel anglais.** Première
+  phrase conservée dans les deux ; la seconde reprend les termes ci-dessus : « looks inside a file only when you ask
+  about it » → `ne regarde à l'intérieur d'un fichier que lorsque vous lui posez une question à son sujet` (`regarder
+  à l'intérieur` = `whatsNew.body`, `poser une question sur` = le moule du catalogue) ; « never changes a file without
+  your approval » → `ne modifie jamais un fichier sans votre approbation` (racine `approuver` de `contentsRule`, « tant
+  que vous ne l'avez pas approuvé »). ❌ Plus de `en lecture seule` ni de `ne change jamais rien` : Ask Cmdr écrit ses
+  notes et propose des renommages, la promesse porte sur l'accord de la personne, pas sur l'absence d'écriture.

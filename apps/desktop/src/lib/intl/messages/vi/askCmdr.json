@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr có thể xem những gì bạn đang duyệt, ổ đĩa và lịch sử thao tác của bạn để trả lời. Cmdr chỉ đọc tên, đường dẫn và kích cỡ, không bao giờ đọc nội dung tệp.",
+  "askCmdr.empty.hint": "Cmdr có thể xem những gì bạn đang duyệt, ổ đĩa và lịch sử thao tác của bạn để trả lời. Cmdr đọc tên, đường dẫn và kích cỡ, và chỉ xem bên trong một tệp khi bạn hỏi về tệp đó.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Hỏi về tệp của bạn…",
   "@askCmdr.composer.placeholder": {

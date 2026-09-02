@@ -2019,3 +2019,10 @@ kvalitetspassets beslut (`photo` → `bild`, uniformt). Återanvänder `arkiv`, 
   kortare och kommat borta.
 - Inga `sameAsSourceJustification` · alla fem värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
   så ICU:s dubblering `''` blir aldrig aktuell. `PDF`, `Cmdr` och `Ask Cmdr` står oböjda.
+- **Uppföljning, samma pass: `askCmdr.empty.hint` och `settings.askCmdr.intro`** · båda bar det gamla löftet ”aldrig
+  filinnehåll”/”är skrivskyddad … ändrar aldrig något”, som inte längre stämmer. Första meningen i vardera behålls
+  ordagrant; andra meningen säger nu de tre faktan med de satta orden: `läser namn, sökvägar och storlekar`,
+  `tittar in i en fil bara när du frågar om den` (samma `titta in i` som verktygsraden och `whatsNew.body`), och
+  `ändrar aldrig en fil utan ditt godkännande` (`godkänna` som i `contentsRule`: ”förrän du godkänner det”). ❌ Inte
+  `skrivskyddad`/`ändrar aldrig något`: den skriver egna anteckningar och föreslår namnbyten. Kommat före det sista
+  `och` står kvar i båda: leden är långa, och i `empty.hint` skiljer det sats-`och` från uppräknings-`och` · `high`.

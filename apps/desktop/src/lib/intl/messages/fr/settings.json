@@ -1508,9 +1508,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (\"Ask Cmdr\" is the feature's brand name); kept verbatim in every locale per the @key description."
   },
-  "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Ask Cmdr est en lecture seule : il lit les noms, chemins et tailles pour répondre, et ne change jamais rien.",
+  "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Ask Cmdr lit les noms, chemins et tailles pour répondre, ne regarde à l''intérieur d''un fichier que lorsque vous lui posez une question à son sujet, et ne modifie jamais un fichier sans votre approbation.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr est activé",
   "@settings.askCmdr.status.on": {

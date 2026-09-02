@@ -2006,3 +2006,8 @@ anuncia en el carril del chat.
   de una foto`, sin coma antes de la `y` final, como ya hace `askCmdr.consent.item.envelope` ("el cursor, la selección
   y las unidades conectadas"). El doble `y` es español corriente; la alternativa `y, de una foto, los datos…` corta el
   ritmo de una lista de consentimiento · high.
+- **"looks inside a file only when you ask about it" → `solo mira dentro de un archivo cuando le preguntas por él`**
+  (`askCmdr.empty.hint`, `settings.askCmdr.intro`) · reutiliza `mirar dentro de` (arriba) y `preguntar por un archivo`
+  (`contentsRule`, "Cuando preguntas por un archivo"). El antiguo `es de solo lectura … nunca cambia nada` desaparece:
+  Ask Cmdr propone cambios de nombre y movimientos y escribe sus notas, así que la garantía nueva es `nunca cambia un
+  archivo sin tu aprobación`, con `aprobación` del par `Aprobar` / `hasta que tú lo apruebas` ya asentado · high.

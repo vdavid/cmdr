@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr 可以查看你正在浏览的内容、你的驱动器和文件历史来回答问题。它只读取名称、路径和大小，从不读取文件内容。",
+  "askCmdr.empty.hint": "Cmdr 可以查看你正在浏览的内容、你的驱动器和文件历史来回答问题。它会读取名称、路径和大小，只有在你问到某个文件时才会查看它的内容。",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "问问你的文件…",
   "@askCmdr.composer.placeholder": {

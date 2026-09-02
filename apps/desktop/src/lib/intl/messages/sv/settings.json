@@ -1504,9 +1504,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
   },
-  "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Ask Cmdr är skrivskyddad: den läser namn, sökvägar och storlekar för att svara, och ändrar aldrig något.",
+  "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Ask Cmdr läser namn, sökvägar och storlekar för att svara, tittar in i en fil bara när du frågar om den, och ändrar aldrig en fil utan ditt godkännande.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr är på",
   "@settings.askCmdr.status.on": {

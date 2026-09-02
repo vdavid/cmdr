@@ -1856,5 +1856,4 @@ Fontes: `_ignored/i18n/pt-BR/` (macOS Finder + SystemSettings, terminologia da M
   que soa formal demais para a tela.
 - Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `estar a` + infinitivo, `consoante`, `Rever`. Nenhum valor
   leva apóstrofo ASCII, então não há `''`. Nenhum `sameAsSourceJustification`: os cinco valores diferem do inglês.
-- ⚠️ Fora do lote: `askCmdr.empty.hint` (inglês e português) ainda diz `nunca o conteúdo dos arquivos`, o que contradiz
-  a nova regra. É uma correção do inglês, não desta locale; registrada para o lead.
+- **`askCmdr.empty.hint` e `settings.askCmdr.intro` seguem a mesma regra**: `Ele lê nomes, caminhos e tamanhos, e só olha dentro de um arquivo quando você pergunta sobre ele` / `… só olha dentro de um arquivo quando você pergunta sobre ele e nunca muda um arquivo sem a sua aprovação`. O antigo `é somente leitura` e o `nunca muda nada` saíram: o Ask Cmdr propõe renomeações e escreve as próprias anotações, então só a aprovação pode ser prometida · high.

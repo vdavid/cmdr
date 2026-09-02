@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Pour répondre, Cmdr peut consulter ce que vous parcourez, vos disques et votre historique de fichiers. Il ne lit que les noms, chemins et tailles, jamais le contenu des fichiers.",
+  "askCmdr.empty.hint": "Pour répondre, Cmdr peut consulter ce que vous parcourez, vos disques et votre historique de fichiers. Il lit les noms, chemins et tailles, et ne regarde à l''intérieur d''un fichier que lorsque vous lui posez une question à son sujet.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Posez une question sur vos fichiers…",
   "@askCmdr.composer.placeholder": {

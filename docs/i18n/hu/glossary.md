@@ -2269,3 +2269,8 @@ jóváhagyásra várnak) szó szerint átkerült, csak az első mondatok újak.
   tárgyas felsorolás (`elolvashatja a szövegének egy részét, …`), hogy a lista ne `-ba/-be` ragok láncán lógjon.
 - Mind az öt érték eltér az angoltól, tehát nincs `sameAsSourceJustification`; egyik értékben sincs ASCII aposztróf,
   a birtokos `’`-ek a magyarban nem jelennek meg, tehát az ICU `''` szabálya nem lép be.
+- **Utólag ugyanez a két rövid ígéret** (`askCmdr.empty.hint`, `settings.askCmdr.intro`): a „looks inside a file only
+  when you ask about it” tagmondat mindkettőben `egy fájlba csak akkor néz bele, ha arról kérdezed` (a settled `belenéz`
+  ige), a „never changes a file without your approval” pedig `a jóváhagyásod nélkül egyetlen fájlt sem változtat meg`,
+  a `contentsRule` `amíg jóvá nem hagyod` zárásának párja. A régi `fájltartalmakat soha` és `csak olvasásra képes … soha
+  semmit nem változtat` alakok kikerültek: az új angol se ígéri őket.

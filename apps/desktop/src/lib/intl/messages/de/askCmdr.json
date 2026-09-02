@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr kann sich ansehen, was du gerade durchsiehst, deine Laufwerke und deinen Verlauf, um zu antworten. Dabei liest Cmdr nur Namen, Pfade und Größen, nie Dateiinhalte.",
+  "askCmdr.empty.hint": "Cmdr kann sich ansehen, was du gerade durchsiehst, deine Laufwerke und deinen Verlauf, um zu antworten. Dabei liest Cmdr Namen, Pfade und Größen und schaut nur dann in eine Datei hinein, wenn du nach ihr fragst.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Frag nach deinen Dateien …",
   "@askCmdr.composer.placeholder": {
