@@ -15,9 +15,9 @@
 //! (`super::test_support`).
 
 use super::super::super::conflict_responder_test_support::await_prompted_clash;
-use super::test_support::{make_state, make_state_with_interval_ms, make_volumes};
+use super::test_support::{self, make_state, make_state_with_interval_ms, make_volumes};
 use super::*;
-use crate::file_system::volume::LocalPosixVolume;
+use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::ConflictResolutionResponse;
 use crate::file_system::write_operations::types::ConflictResolution;
@@ -519,4 +519,65 @@ async fn cross_volume_move_creates_missing_nested_dest() {
     assert!(!source.exists(Path::new("/b.txt")).await);
     assert!(dest.exists(Path::new("/incoming/2026/trip/a.txt")).await);
     assert!(dest.exists(Path::new("/incoming/2026/trip/b.txt")).await);
+}
+
+/// A move into a directory reaps the stale `.cmdr-tmp-*` leftovers a crash or a
+/// force-quit left there, exactly as a copy into it does.
+///
+/// This is the last backstop for a partial nothing else will ever clear: the
+/// in-memory sweep dies with the process, and the persisted one can't reach a
+/// path that lives behind a volume backend. It used to hang off the copy path
+/// alone, so a destination folder a person only ever moved things into kept its
+/// leftovers indefinitely.
+///
+/// The age gate stays: a temp that is only minutes old may belong to a transfer
+/// running right now, in this app or another instance on the same share.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_move_into_a_directory_reaps_the_stale_temps_a_crash_left_there() {
+    let source_vol = Arc::new(InMemoryVolume::new("Source"));
+    let dest_vol = Arc::new(InMemoryVolume::new("Dest"));
+    source_vol.create_file(Path::new("/notes.txt"), b"hello").await.unwrap();
+    dest_vol.create_directory(Path::new("/inbox")).await.unwrap();
+
+    let stale = Path::new("/inbox/holiday.jpg.cmdr-tmp-4d1f9c");
+    let fresh = Path::new("/inbox/report.pdf.cmdr-tmp-77aa10");
+    dest_vol.create_file(stale, b"an abandoned partial").await.unwrap();
+    dest_vol.create_file(fresh, b"someone is writing this").await.unwrap();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    dest_vol.set_modified_at(stale, Some(now - 2 * 60 * 60));
+    dest_vol.set_modified_at(fresh, Some(now - 60));
+
+    let source: Arc<dyn Volume> = source_vol.clone();
+    let dest: Arc<dyn Volume> = dest_vol.clone();
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+
+    move_volumes_with_progress(
+        events,
+        "op-move-reap",
+        &state,
+        source,
+        &[PathBuf::from("/notes.txt")],
+        dest,
+        Path::new("/inbox"),
+        &test_support::config_default(),
+    )
+    .await
+    .expect("the move itself succeeds");
+
+    assert!(
+        !dest_vol.exists(stale).await,
+        "an hours-old partial in the destination goes when a move starts into it"
+    );
+    assert!(
+        dest_vol.exists(fresh).await,
+        "a minutes-old partial may belong to a transfer running right now, so it stays"
+    );
+    assert!(
+        dest_vol.exists(Path::new("/inbox/notes.txt")).await,
+        "the move still lands"
+    );
 }

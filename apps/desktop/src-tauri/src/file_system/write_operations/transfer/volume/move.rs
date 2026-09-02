@@ -434,6 +434,15 @@ pub(crate) async fn move_volumes_with_progress(
     );
     let op_probe = probe_guard.probe();
 
+    // Phase 0.6: clear `.cmdr-tmp-*` partials a crash or force-quit left in this
+    // destination, exactly as the copy path does before its own loop. A folder
+    // somebody only ever MOVES into is as good an occasion to reap as one they
+    // copy into, and it used to get no sweep at all. Age-gated, so a temp another
+    // transfer is streaming into right now is never touched. The move pipeline
+    // builds no destination name index, so the listing it returns has no second
+    // customer here.
+    super::cleanup::reap_stale_transfer_temps(&dest_volume, dest_path).await;
+
     let outcome = drive_transfer_serial_async(
         &*events,
         state,
