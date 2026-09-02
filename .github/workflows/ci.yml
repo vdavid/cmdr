@@ -576,6 +576,10 @@ jobs:
         run: go build -o check .
         working-directory: ./scripts/check
 
+      - name: Sync Astro types
+        run: pnpm exec astro sync
+        working-directory: ./apps/website
+
       - name: Run ESLint
         run: ./scripts/check/check --check website-eslint --ci
 

@@ -1425,7 +1425,10 @@ doubles as production code.
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input
   fingerprint is what keeps it off unrelated runs)
-- **Website / Astro**: prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e
+- **Website / Astro**: prettier, astro-sync, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e.
+  `astro-sync` generates Astro's gitignored `types.d.ts` and `website-eslint` depends on it: the type-aware rules read
+  `astro:content` through it, and on an unsynced tree every blog-post field is `any`, so the `no-unsafe-*` rules bury
+  the run in ~90 false positives. `website-eslint` refuses to run when the file is missing rather than report those.
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, eslint, typecheck, tests
 - **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check, import-cycles, knip, tests, build,

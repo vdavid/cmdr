@@ -926,13 +926,27 @@ var AllChecks = []CheckDefinition{
 	},
 
 	// Website checks
+	// Generates `.astro/types.d.ts`, where `astro:content` and the blog collection's
+	// schema types live. The type-aware ESLint rules need it: without it every post
+	// field is `any` and the `no-unsafe-*` rules fire ~90 false positives.
+	{
+		ID:          "website-astro-sync",
+		Nickname:    "astro-sync",
+		DisplayName: "astro sync",
+		App:         AppWebsite,
+		Tech:        "🚀 Astro",
+		NotInCI:     "CI's website job runs `pnpm exec astro sync` directly as a setup step",
+		DependsOn:   []string{"oxfmt"},
+		Inputs:      websiteInputs,
+		Run:         RunWebsiteAstroSync,
+	},
 	{
 		ID:          "website-eslint",
 		CpuWeight:   1,
 		DisplayName: "eslint",
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
-		DependsOn:   []string{"oxfmt"},
+		DependsOn:   []string{"website-astro-sync"},
 		Inputs:      websiteInputs,
 		Run:         RunWebsiteESLint,
 	},
