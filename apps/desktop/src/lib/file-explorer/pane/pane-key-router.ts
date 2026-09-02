@@ -9,7 +9,7 @@
  * 3. open / parent (Enter, ⌘↓, Backspace, ⌘↑) run above the view-mode split, so
  *    every view gets them,
  * 4. the Selection dialog's bare `+` / `-`,
- * 5. the four selection commands,
+ * 5. the five selection commands,
  * 6. whatever is left goes to the Brief or Full cursor handler.
  *
  * The classifiers themselves live in siblings (`selection-dialog-keys.ts`,
@@ -50,6 +50,7 @@ export interface PaneKeyRouterDeps {
   toggleSelectionAndMoveDown: () => void
   selectAll: () => void
   deselectAll: () => void
+  invertSelection: () => void
   /** End the mouse Shift+click anchor gesture. */
   clearRangeState: () => void
 }
@@ -106,6 +107,9 @@ export function createPaneKeyRouter(deps: PaneKeyRouterDeps): PaneKeyRouter {
         break
       case 'selection.deselectAll':
         deps.deselectAll()
+        break
+      case 'selection.invert':
+        deps.invertSelection()
         break
     }
     return true

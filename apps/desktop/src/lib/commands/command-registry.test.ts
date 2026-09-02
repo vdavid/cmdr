@@ -102,6 +102,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'selection.toggleAndDown',
   'selection.selectAll',
   'selection.deselectAll',
+  'selection.invert',
   'selection.selectFiles',
   'selection.deselectFiles',
   'network.refresh',

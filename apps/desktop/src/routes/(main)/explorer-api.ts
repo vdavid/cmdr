@@ -25,6 +25,7 @@ export type SelectionAction =
   | 'clear'
   | 'deselectAll'
   | 'selectAll'
+  | 'invert'
   | 'toggleAtCursor'
   | 'toggleAtCursorAndMoveDown'
   | 'selectRange'

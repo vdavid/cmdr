@@ -190,6 +190,10 @@
   "@menu.select.deselectAll": {
     "sourceHash": "9675494"
   },
+  "menu.select.invert": "Selectie omkeren",
+  "@menu.select.invert": {
+    "sourceHash": "d2e128a"
+  },
   "menu.select.files": "Selecteer bestanden…",
   "@menu.select.files": {
     "sourceHash": "b7f202e"

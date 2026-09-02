@@ -588,6 +588,14 @@
   "@commands.selectionDeselectAll.label": {
     "sourceHash": "9675494"
   },
+  "commands.selectionInvert.label": "反向選取",
+  "@commands.selectionInvert.label": {
+    "sourceHash": "d2e128a"
+  },
+  "commands.selectionInvert.description": "選取所有未選取的檔案，並取消選取已選取的檔案",
+  "@commands.selectionInvert.description": {
+    "sourceHash": "b63ce32"
+  },
   "commands.selectionSelectFiles.label": "選取檔案…",
   "@commands.selectionSelectFiles.label": {
     "sourceHash": "b7f202e"

@@ -67,6 +67,7 @@ function buildPaneRef(
     // Action / select spies
     clearSelection: vi.fn(),
     selectAll: vi.fn(),
+    invertSelection: vi.fn(),
     toggleSelectionAtCursor: vi.fn(),
     toggleSelectionAndMoveDownAtCursor: vi.fn(),
     selectRange: vi.fn(),
@@ -164,6 +165,13 @@ describe('handleSelectionAction routing', () => {
     const cmds = create(buildAccess({ paneRefs: { left: ref } }))
     cmds.handleSelectionAction({ action: 'selectAll' })
     expect(ref.selectAll).toHaveBeenCalledOnce()
+  })
+
+  it('routes invert', () => {
+    const ref = buildPaneRef()
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    cmds.handleSelectionAction({ action: 'invert' })
+    expect(ref.invertSelection).toHaveBeenCalledOnce()
   })
 
   it('routes toggleAtCursor and toggleAtCursorAndMoveDown', () => {

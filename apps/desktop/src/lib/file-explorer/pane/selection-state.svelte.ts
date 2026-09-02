@@ -165,6 +165,22 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
     onChanged?.()
   }
 
+  // Flip every selectable row: selected → unselected and back. `..` (index 0
+  // when `hasParent`) stays untouched, mirroring `selectAll`. Indices past
+  // `effectiveTotalCount` (stale after a refresh) are dropped rather than kept
+  // inverted, so the result is always a subset of the visible rows.
+  function invertSelection(hasParent: boolean, effectiveTotalCount: number) {
+    const startIndex = hasParent ? 1 : 0
+    const next: number[] = []
+    for (let i = startIndex; i < effectiveTotalCount; i++) {
+      if (!selectedIndices.has(i)) next.push(i)
+    }
+    selectedIndices.clear()
+    for (const i of next) selectedIndices.add(i)
+    clearRangeState()
+    onChanged?.()
+  }
+
   // Apply a set of indices (typically from the Selection dialog's matcher) to
   // the selection set without touching the range anchor / end state. The dialog
   // commits matched indices in bulk; the user's existing keyboard/mouse range
@@ -232,6 +248,7 @@ export function createSelectionState(options?: { onChanged?: () => void }) {
     clearRangeState,
     selectAll,
     deselectAll,
+    invertSelection,
     selectRange,
     applyIndices,
     isAllSelected,

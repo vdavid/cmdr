@@ -588,6 +588,14 @@
   "@commands.selectionDeselectAll.label": {
     "sourceHash": "9675494"
   },
+  "commands.selectionInvert.label": "Kijelölés megfordítása",
+  "@commands.selectionInvert.label": {
+    "sourceHash": "d2e128a"
+  },
+  "commands.selectionInvert.description": "Kijelöli az összes nem kijelölt fájlt, és megszünteti a kijelöltek kijelölését",
+  "@commands.selectionInvert.description": {
+    "sourceHash": "b63ce32"
+  },
   "commands.selectionSelectFiles.label": "Fájlok kijelölése…",
   "@commands.selectionSelectFiles.label": {
     "sourceHash": "b7f202e"

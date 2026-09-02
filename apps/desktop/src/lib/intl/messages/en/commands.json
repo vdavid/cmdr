@@ -700,6 +700,15 @@
     "description": "Command name that clears the selection. Appears in the command palette. A terse control label.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.selectionInvert.label": "Invert selection",
+  "@commands.selectionInvert.label": {
+    "description": "Command name that flips the selection: every selected file becomes unselected and every unselected file becomes selected. Appears in the command palette, the Select menu, and the keyboard-shortcuts settings. A terse control label; Total Commander calls it \"Invert selection\".",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.selectionInvert.description": "Selects every unselected file and deselects every selected one",
+  "@commands.selectionInvert.description": {
+    "description": "Longer help text for the \"Invert selection\" command, shown as a secondary line in the command palette."
+  },
   "commands.selectionSelectFiles.label": "Select files…",
   "@commands.selectionSelectFiles.label": {
     "description": "Command name that opens a dialog to select files matching a pattern. The trailing ellipsis (…) signals it opens a dialog; keep it. Appears in the command palette.",
