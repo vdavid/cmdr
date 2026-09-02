@@ -131,7 +131,8 @@ Each person needs their own license. For teams of five or more, email legal@getc
 
 ## System requirements
 
-- **macOS**: Apple Silicon (M1 and later) and Intel. Separate DMG installers for each architecture, plus a universal build.
+- **macOS**: 12 or newer, on Apple Silicon (M1 and later) and Intel. Separate DMG installers for each architecture, plus a universal build.
+- **Older macOS**: 10.15 Catalina and 11 Big Sur install and run on a best-effort basis. Everything works, but a few colors and layout details can look off, and fixes for those systems are a lower priority.
 - **Linux**: Alpha support. Volumes via /proc/mounts, file ops with reflink support, trash via FreeDesktop spec, inotify file watching, native file icons via freedesktop-icons.
 
 ## License

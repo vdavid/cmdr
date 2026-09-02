@@ -47,7 +47,8 @@ Current version: ${version}
 
 ## System requirements
 
-- macOS (Apple Silicon and Intel)
+- macOS 12 or newer (Apple Silicon and Intel)
+- macOS 10.15 and 11 run on a best-effort basis: they work, but a few colors and layout details can look off, and fixes for them are a lower priority
 - Linux support in alpha
 
 ## License
