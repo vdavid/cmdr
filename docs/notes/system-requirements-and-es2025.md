@@ -14,23 +14,23 @@ Three numbers, and nothing but this note ties them together:
   goes missing or stops naming a Safari version, but it deliberately enforces no relationship between the numbers:
   mapping a macOS version to "the WebKit we must assume" is a product call, not a fact.
 - **The capability floor the app enforces at runtime**, Safari 15.4, in `apps/desktop/src/lib/utils/webkit-compat.ts`
-  and the inline guard in `apps/desktop/src/app.html`. This one isn't a knob: it's what the shipped code actually
-  needs, and the guard is what turns "below it" from a white screen into a sentence the user can act on.
+  and the inline guard in `apps/desktop/src/app.html`. This one isn't a knob: it's what the shipped code actually needs,
+  and the guard is what turns "below it" from a white screen into a sentence the user can act on.
 
 Catalina is a **best-effort** floor, deliberately below what the app needs on a stock install. The three numbers don't
 line up, and that's the design:
 
 - `minimumSystemVersion` is the OLDEST macOS whose Objective-C surface we stay inside, so Gatekeeper lets the app open
   and the native code doesn't abort. It says nothing about whether the UI can render.
-- A stock Catalina 10.15.0 ships Safari 13, a stock Big Sur 11.0 ships Safari 14, and a stock Monterey 12.0 ships
-  Safari 15.0. The frontend needs newer than all three.
+- A stock Catalina 10.15.0 ships Safari 13, a stock Big Sur 11.0 ships Safari 14, and a stock Monterey 12.0 ships Safari
+  15.0. The frontend needs newer than all three.
 - A **fully patched** Catalina 10.15.7 reaches Safari 15.6.1, Big Sur 11.7.10 reaches 16.6, and Monterey 12.7.6 reaches
-  17.6, and every one of those runs the frontend fine. That's the whole reason Catalina is worth offering: "install
-  your updates" is advice a user can act on (verified against WebKit's release history and Apple's security-update
-  index, 2026-09-02).
+  17.6, and every one of those runs the frontend fine. That's the whole reason Catalina is worth offering: "install your
+  updates" is advice a user can act on (verified against WebKit's release history and Apple's security-update index,
+  2026-09-02).
 
-Below the capability floor the app blocks itself rather than white-screening. Why the block can't live inside the app:
-§ The two floors old WebKit crosses.
+Below the capability floor the app blocks itself rather than white-screening. Why the block can't live inside the app: §
+The two floors old WebKit crosses.
 
 Leaving `build.target` unset is what the check exists to prevent. Vite's default is
 `ESBUILD_BASELINE_WIDELY_AVAILABLE_TARGET`, a MOVING baseline (Safari 16.4 under Vite 8), so an unset target drifts

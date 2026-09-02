@@ -2185,13 +2185,14 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
   mondat változatlan marad. Így a négy `rollbackConfirm` törzsszöveg egyetlen ígéretet mond, egyetlen megfogalmazásban.
 - Mind a tizennyolc érték eltér az angoltól, tehát nincs szükség `sameAsSourceJustification`-re. Egyetlen új értékben
   sincs aposztróf, így az ICU `''` szabálya nem lép be; a `{name}`, `{countText}` és `{count}` mind változatlan.
+
 ## A túl régi WebKit blokkoló képernyője (`main.oldWebkit.*`, 2026-09-02)
 
 Három szöveg, amit a Cmdr a felülete helyett mutat, ha a Mac Safarija túl régi. A HTML-vázban élnek, nem az appban,
 tehát ez az egyetlen, amit az illető a Cmdrből lát.
 
-- **`Software Update` → `Szoftverfrissítés`** · a macOS így nevezi a Rendszerbeállítások paneljét; a Finder Tier-1
-  nyoma megerősíti a szót (`Apple Device Software Update File` → `Apple-eszköz szoftverfrissítési fájlja`) · `high`.
+- **`Software Update` → `Szoftverfrissítés`** · a macOS így nevezi a Rendszerbeállítások paneljét; a Finder Tier-1 nyoma
+  megerősíti a szót (`Apple Device Software Update File` → `Apple-eszköz szoftverfrissítési fájlja`) · `high`.
 - **`Quit` → `Kilépés`** · macOS AppKit `Quit` → `Kilépés` · `high`. Eddig hiányzott a glosszáriumból, most bekerül.
 - **A márka kötőjel nélkül toldalékolódik: `A Cmdrnek`**, a `style.md` § Brand and do-not-translate szabálya szerint.
 - **`Safari 15.4-es vagy újabb verzió`**: a verziószám számjegy marad, a magyar toldalék kötőjellel kapcsolódik hozzá.

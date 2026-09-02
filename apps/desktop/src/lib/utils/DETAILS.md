@@ -177,10 +177,10 @@ carries a flat lowercase alias map so `zh-TW` lands on Traditional and never fal
 Restart the dev server after touching the shell.
 
 **❗ ES5 only in the guard.** One arrow function or template literal and it dies silently on the WebKit it exists for.
-`apps/desktop/scripts/app-boot-guard.test.ts` extracts the real script, sweeps it for the ES6 syntax you'd reach for, and runs it
-against a stubbed environment with each capability removed in turn (globals arrive as function parameters, so a test can
-take `Object.hasOwn` away from the guard without taking it away from vitest). That test is also what holds the guard's
-probes and `WEBKIT_FLOOR_CAPABILITIES` together, since the guard can't import the list.
+`apps/desktop/scripts/app-boot-guard.test.ts` extracts the real script, sweeps it for the ES6 syntax you'd reach for,
+and runs it against a stubbed environment with each capability removed in turn (globals arrive as function parameters,
+so a test can take `Object.hasOwn` away from the guard without taking it away from vitest). That test is also what holds
+the guard's probes and `WEBKIT_FLOOR_CAPABILITIES` together, since the guard can't import the list.
 
 The Quit button calls `window.__TAURI_INTERNALS__.invoke('plugin:process|exit')`, the only raw invoke in the tree, and
 it still routes through the quit gate: `src-tauri/capabilities/DETAILS.md` § The boot guard's exit.

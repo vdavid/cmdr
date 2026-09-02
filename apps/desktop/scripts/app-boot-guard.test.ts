@@ -88,16 +88,9 @@ function runGuard(options: RunOptions = {}): { blocked: boolean; lang: string; t
   // is the only way to test what actually runs. Parameters shadow the globals, so
   // a fake WebKit stays inside this call.
   // eslint-disable-next-line @typescript-eslint/no-implied-eval
-  const run = new Function(
-    'crypto',
-    'CSS',
-    'Object',
-    'Array',
-    'navigator',
-    'window',
-    'document',
-    source,
-  ) as (...args: unknown[]) => void
+  const run = new Function('crypto', 'CSS', 'Object', 'Array', 'navigator', 'window', 'document', source) as (
+    ...args: unknown[]
+  ) => void
   run(fakeCrypto, fakeCss, fakeObject, fakeArray, fakeNavigator, fakeWindow, document)
 
   const block = document.querySelector('.cmdr-boot-block')
@@ -185,7 +178,7 @@ describe('below the floor', () => {
     expect(document.querySelector('#loading-screen')).toBeNull()
   })
 
-  it('speaks the reader\'s language and stamps `<html lang>`', () => {
+  it("speaks the reader's language and stamps `<html lang>`", () => {
     const result = runGuard({ capabilities: { hasOwn: false }, languages: ['hu-HU', 'en-US'] })
     expect(result.title).toBe(PAYLOAD.strings.hu.title)
     expect(result.quit).toBe(PAYLOAD.strings.hu.quit)

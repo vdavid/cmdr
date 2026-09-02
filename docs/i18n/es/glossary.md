@@ -1923,14 +1923,15 @@ CUENTA (`*.counted`). El tono es siempre "Cmdr hizo lo prudente", nunca una disc
   familia sin cambiar ni un píxel en pantalla. Si algún día una `counted` puede valer 1, hay que rehacer las cinco a la
   vez.
 - No hace falta `sameAsSourceJustification`: los 18 valores difieren del inglés.
+
 ## La pantalla de bloqueo por WebKit antiguo (`main.oldWebkit.*`, 2026-09-02)
 
-Tres cadenas que Cmdr muestra en lugar de su interfaz cuando el Safari del Mac es demasiado antiguo. Viven en el
-armazón HTML, no en la app, así que son lo único que esa persona verá de Cmdr.
+Tres cadenas que Cmdr muestra en lugar de su interfaz cuando el Safari del Mac es demasiado antiguo. Viven en el armazón
+HTML, no en la app, así que son lo único que esa persona verá de Cmdr.
 
 - **`Software Update` → `Actualización de software`** · macOS lo nombra así en Ajustes del Sistema; el rastro Tier 1 de
-  Finder confirma el término (`Apple Device Software Update File` → `Archivo de actualización de software del
-  dispositivo Apple`) · `high`.
+  Finder confirma el término (`Apple Device Software Update File` →
+  `Archivo de actualización de software del dispositivo Apple`) · `high`.
 - **`Quit` → `Salir`** · clave `Quit` de AppKit en macOS → `Salir` · `high`. Entra también en el glosario general, que
   hasta ahora no la recogía.
 - **`o posterior`, no `o más nuevo`**, para «or newer» hablando de versiones: es la fórmula que usa Apple.

@@ -333,6 +333,13 @@ symbol, because the failure is otherwise invisible: the menu builds fine, just w
 **Gotcha**: an accelerator update replaces the menu item (see "Accelerator sync"), and the fresh
 `NSMenuItem` carries no image, so `update_menu_accelerator` re-applies the icons afterwards.
 
+**Below macOS 11 there are no SF Symbols at all**, and the bundle's floor is 10.15, so `set_sf_symbol`
+returns early on `crate::platform::macos_at_least(11, 0)`. Catalina gets menu items with no icons,
+which is the feature degrading; calling `imageWithSystemSymbolName:accessibilityDescription:` there
+would raise an unrecognized-selector exception and abort the process instead. The
+`allowed-newer-selector` marker on the call is what tells `desktop-rust-macos-availability` the gate
+exists, since it reads lines rather than control flow.
+
 Context menus don't get SF Symbols for our own items because Tauri doesn't expose the raw `NSMenu`
 pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look poor (no
 template auto-tinting). However, **full-color non-template images do render correctly** through

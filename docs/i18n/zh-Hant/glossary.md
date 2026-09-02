@@ -851,13 +851,14 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
   string (`user@example.com` likewise). Compare Vietnamese, where the same source DOES localize the local part. So a
   Latin-script local part is the Chinese convention, all three keys already agree, and the existing
   `sameAsSourceJustification` stands. `example.com` is RFC 2606's reserved domain. · `high`
+
 ## WebKit 過舊時的攔截頁（`main.oldWebkit.*`，2026-09-02）
 
-三條文案，在 Mac 的 Safari 過舊時代替 Cmdr 的介面顯示。它們寫在 HTML 外殼裡而不是 app 裡，所以這是那位使用者能看到的
-Cmdr 的全部內容。
+三條文案，在 Mac 的 Safari 過舊時代替 Cmdr 的介面顯示。它們寫在 HTML 外殼裡而不是 app 裡，所以這是那位使用者能看到的 Cmdr 的全部內容。
 
-- **`Software Update` → `軟體更新`** · macOS 系統設定中該面板的名稱；Finder 的 Tier 1 證據佐證了這個詞（`Apple Device
-  Software Update File` → `Apple裝置軟體更新檔案`）· `high`。
-- **`Quit` → `結束`** · macOS AppKit 的 `Quit` 鍵 → `結束` · `high`。簡體用「退出」，繁體用「結束」，兩份目錄不互相轉換。
+- **`Software Update` → `軟體更新`** · macOS 系統設定中該面板的名稱；Finder 的 Tier
+  1 證據佐證了這個詞（`Apple Device Software Update File` → `Apple裝置軟體更新檔案`）· `high`。
+- **`Quit` → `結束`** · macOS AppKit 的 `Quit` 鍵 → `結束` ·
+  `high`。簡體用「退出」，繁體用「結束」，兩份目錄不互相轉換。
 - **`Safari`、`Mac`、`15.4` 保持原樣**，兩側依 § Spacing 加空格。`Safari` 已加入 `BRAND_WORDS`。
 - 面板名用直角引號 `「軟體更新」`，與目錄裡其餘繁體文案一致。

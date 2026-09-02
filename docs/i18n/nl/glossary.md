@@ -2165,6 +2165,7 @@ die dit paar op `controleren` (het gevestigde woord in deze catalogus) trekt, zo
 
 **Overloop nakijken op de melding.** De redenregels lopen 75–90 tekens tegen 50–60 in het Engels, en
 `reason.failed.counted` is de langste van de achttien. Controleer ze tegen de pseudolocale in een smalle melding.
+
 ## Het blokkeerscherm bij te oude WebKit (`main.oldWebkit.*`, 2026-09-02)
 
 Drie strings die Cmdr toont in plaats van zijn interface als de Safari van de Mac te oud is. Ze staan in het

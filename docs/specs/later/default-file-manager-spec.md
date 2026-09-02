@@ -32,8 +32,8 @@ They're independent OS toggles with different blast radius and different fragili
   `NSWorkspace.setDefaultApplication(at:toOpenContentType:completionHandler:)` (macOS 12+, above the 10.15
   `minimumSystemVersion` floor in `tauri.conf.json`, so it needs a `macos_at_least(12, 0)` gate plus the
   `allowed-newer-selector` marker, and the feature stays hidden below macOS 12). Takes the app URL, async completion,
-  surfaces errors. Never poke `com.apple.launchservices.secure` with `defaults write` (the recipe
-  most blogs show): it's fragile and LS db rebuilds can drop it.
+  surfaces errors. Never poke `com.apple.launchservices.secure` with `defaults write` (the recipe most blogs show): it's
+  fragile and LS db rebuilds can drop it.
 
 Prerequisite for B (and possibly for A; spike item 1): Cmdr must declare itself a folder viewer via
 `CFBundleDocumentTypes` with `LSItemContentTypes = [public.folder]`, `CFBundleTypeRole = Viewer`,

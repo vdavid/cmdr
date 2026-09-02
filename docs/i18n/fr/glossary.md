@@ -2305,14 +2305,15 @@ une alerte.
   `renameUndo.skipReason.*.counted`.
 - Espace ASCII avant chaque `:` , apostrophes ASCII doublées (ICU), aucun U+2019 ni U+202F. Aucun
   `sameAsSourceJustification` : les 18 valeurs diffèrent de l'anglais.
+
 ## L’écran de blocage quand le WebKit est trop ancien (`main.oldWebkit.*`, 2026-09-02)
 
 Trois chaînes que Cmdr affiche à la place de son interface quand le Safari du Mac est trop ancien. Elles vivent dans la
 coquille HTML, pas dans l’app : c’est tout ce que cette personne verra de Cmdr.
 
 - **`Software Update` → `Mise à jour de logiciels`** · nom du volet dans les Réglages Système ; la trace Tier 1 de
-  Finder confirme le terme (`Apple Device Software Update File` → `Fichier de mise à jour logicielle d’appareil
-  Apple`) · `high`.
+  Finder confirme le terme (`Apple Device Software Update File` → `Fichier de mise à jour logicielle d’appareil Apple`)
+  · `high`.
 - **`Quit` → `Quitter`** · déjà au glossaire (§ menus), confirmé par la clé `Quit` d’AppKit · `high`.
 - **Apostrophe typographique `’` partout** (`d’une`, `L’interface`), comme Apple. Bonus mécanique : ICU n’échappe que
   l’apostrophe ASCII, donc rien à doubler ici.

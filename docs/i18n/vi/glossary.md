@@ -1957,10 +1957,11 @@ Giọng xuyên suốt: **Cmdr đã làm phần cẩn thận**, không xin lỗi,
 - Cả 18 giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
   không phát sinh `''` của ICU; mọi `{countText}` / `{count}` / `{name}` giữ nguyên, và mỗi `plural` chỉ có một nhánh
   `other`.
+
 ## Màn hình chặn khi WebKit quá cũ (`main.oldWebkit.*`, 2026-09-02)
 
-Ba chuỗi Cmdr hiển thị thay cho giao diện khi Safari của máy Mac quá cũ. Chúng nằm trong lớp vỏ HTML chứ không nằm
-trong app, nên đây là thứ duy nhất người dùng đó thấy được của Cmdr.
+Ba chuỗi Cmdr hiển thị thay cho giao diện khi Safari của máy Mac quá cũ. Chúng nằm trong lớp vỏ HTML chứ không nằm trong
+app, nên đây là thứ duy nhất người dùng đó thấy được của Cmdr.
 
 - **`Software Update` → `Cập nhật phần mềm`** · tên bảng trong Cài đặt hệ thống của macOS; dấu vết Tier 1 từ Finder xác
   nhận cụm từ (`Apple Device Software Update File` → `Tệp cập nhật phần mềm thiết bị Apple`) · `high`.

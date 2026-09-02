@@ -1,58 +1,58 @@
 {
-    "main.instanceLock.alertTitle": "Cmdr 已在运行",
-    "@main.instanceLock.alertTitle": {
-        "sourceHash": "7c8f09d"
-    },
-    "main.instanceLock.alertBody": "另一个 Cmdr 副本正在使用这个数据文件夹。请切换到正在运行的应用，或者退出它再试一次。",
-    "@main.instanceLock.alertBody": {
-        "sourceHash": "140c57d"
-    },
-    "main.upgradeNudge.mac": "我们新增了入门引导选项。打开 Cmdr > 入门引导… 来查看。",
-    "@main.upgradeNudge.mac": {
-        "sourceHash": "477f3a5"
-    },
-    "main.upgradeNudge.other": "我们新增了入门引导选项。打开命令面板并运行入门引导… 来查看。",
-    "@main.upgradeNudge.other": {
-        "sourceHash": "4b0b39e"
-    },
-    "main.quit.title": "{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}",
-    "@main.quit.title": {
-        "sourceHash": "2671a89"
-    },
-    "main.quit.body": "已经完成的都会保留。正在写入的项目会就此停下，Cmdr 会把写了一半的文件清理掉。",
-    "@main.quit.body": {
-        "sourceHash": "c17f6e7"
-    },
-    "main.quit.countdown": "{seconds, plural, other {将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。}}",
-    "@main.quit.countdown": {
-        "sourceHash": "a389e0c"
-    },
-    "main.quit.countdownAria": "Cmdr 自动退出前的剩余时间",
-    "@main.quit.countdownAria": {
-        "sourceHash": "6b0b5c2"
-    },
-    "main.quit.keepWorking": "继续工作",
-    "@main.quit.keepWorking": {
-        "sourceHash": "5ed03f2"
-    },
-    "main.quit.quitNow": "立即退出",
-    "@main.quit.quitNow": {
-        "sourceHash": "c96bcc8"
-    },
-    "main.quit.operationsHeading": "仍在进行",
-    "@main.quit.operationsHeading": {
-        "sourceHash": "89acce5"
-    },
-    "main.oldWebkit.title": "Cmdr 需要更新版本的 Safari",
-    "@main.oldWebkit.title": {
-        "sourceHash": "03e502b"
-    },
-    "main.oldWebkit.body": "Cmdr 的界面需要 Safari 15.4 或更高版本，而这台 Mac 上的版本更旧。打开“软件更新”，安装所有待处理的更新，通常就能解决。",
-    "@main.oldWebkit.body": {
-        "sourceHash": "bcadac5"
-    },
-    "main.oldWebkit.quit": "退出",
-    "@main.oldWebkit.quit": {
-        "sourceHash": "b3eb37a"
-    }
+  "main.instanceLock.alertTitle": "Cmdr 已在运行",
+  "@main.instanceLock.alertTitle": {
+    "sourceHash": "7c8f09d"
+  },
+  "main.instanceLock.alertBody": "另一个 Cmdr 副本正在使用这个数据文件夹。请切换到正在运行的应用，或者退出它再试一次。",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "140c57d"
+  },
+  "main.upgradeNudge.mac": "我们新增了入门引导选项。打开 Cmdr > 入门引导… 来查看。",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "我们新增了入门引导选项。打开命令面板并运行入门引导… 来查看。",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "已经完成的都会保留。正在写入的项目会就此停下，Cmdr 会把写了一半的文件清理掉。",
+  "@main.quit.body": {
+    "sourceHash": "c17f6e7"
+  },
+  "main.quit.countdown": "{seconds, plural, other {将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Cmdr 自动退出前的剩余时间",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "继续工作",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "立即退出",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "仍在进行",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
+  },
+  "main.oldWebkit.title": "Cmdr 需要更新版本的 Safari",
+  "@main.oldWebkit.title": {
+    "sourceHash": "03e502b"
+  },
+  "main.oldWebkit.body": "Cmdr 的界面需要 Safari 15.4 或更高版本，而这台 Mac 上的版本更旧。打开“软件更新”，安装所有待处理的更新，通常就能解决。",
+  "@main.oldWebkit.body": {
+    "sourceHash": "bcadac5"
+  },
+  "main.oldWebkit.quit": "退出",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
+  }
 }

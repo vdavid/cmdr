@@ -67,7 +67,7 @@ describe('buildBootGuardData', () => {
     expect(data.aliases.de).toBe('de')
   })
 
-  it('drops an overlay that hasn\'t forked this copy, so the tag falls through to its base', () => {
+  it("drops an overlay that hasn't forked this copy, so the tag falls through to its base", () => {
     const root = fixtureRoot({ en: catalogFor('en'), 'en-GB': {} })
     const data = buildBootGuardData({ locales: ['en', 'en-GB'], messagesRoot: root })
     expect(Object.keys(data.strings)).toEqual(['en'])
@@ -89,9 +89,7 @@ describe('buildBootGuardData', () => {
 
   it('says which key is missing rather than shipping a blank screen', () => {
     const root = fixtureRoot({ en: { [BOOT_GUARD_KEYS.title]: 'only a title' } })
-    expect(() => buildBootGuardData({ locales: ['en'], messagesRoot: root })).toThrow(
-      new RegExp(BOOT_GUARD_KEYS.body),
-    )
+    expect(() => buildBootGuardData({ locales: ['en'], messagesRoot: root })).toThrow(new RegExp(BOOT_GUARD_KEYS.body))
   })
 
   it('carries the forced block only when asked', () => {

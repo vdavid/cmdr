@@ -1933,6 +1933,7 @@ två av dem har teckenidentisk engelska, så `i18n-terms` kräver identisk svens
   ICU-grenarna blir identiska; de skrivs ut ändå.
 - Inga `sameAsSourceJustification` · alla 18 värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
   så ICU:s dubblering `''` blir aldrig aktuell.
+
 ## Blockskärmen när WebKit är för gammalt (`main.oldWebkit.*`, 2026-09-02)
 
 Tre strängar som Cmdr visar i stället för sitt gränssnitt när Macens Safari är för gammalt. De bor i HTML-skalet, inte i

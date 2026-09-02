@@ -1813,6 +1813,7 @@ Aufzählung von `reason.*`-Zeilen. Grundton: Cmdr hat das Umsichtige getan. Nie 
   danach nennt das Laufwerk ohne Possessiv („Vielleicht ist das Laufwerk nicht verbunden oder schreibgeschützt.“,
   Glossar `read-only → schreibgeschützt`), im Ton von `trash.undoUnavailable`.
 - Kein `sameAsSourceJustification` nötig: alle 18 Werte unterscheiden sich vom Englischen.
+
 ## Der Block-Screen bei zu altem WebKit (`main.oldWebkit.*`, 2026-09-02)
 
 Drei Strings, die Cmdr statt seiner Oberfläche zeigt, wenn das Safari des Macs zu alt ist. Sie stehen in der HTML-Hülle,
@@ -1823,7 +1824,7 @@ nicht in der App, also sieht der Mensch sonst nichts von Cmdr: der Ton muss beim
   `Updatedatei für Gerätesoftware von Apple`) · `high`. Nicht „Software-Update", das ist die generische Schreibung, kein
   Pane-Name.
 - **`Quit` → `Beenden`** · macOS Finder AppKit-Schlüssel `Quit` → `Beenden` · `high`.
-- **Kein Genitiv der Marke.** `Cmdr''s interface` wird zu `Die Oberfläche von Cmdr`, nach der Regel in `style.md`
-  § Brand and do-not-translate.
+- **Kein Genitiv der Marke.** `Cmdr''s interface` wird zu `Die Oberfläche von Cmdr`, nach der Regel in `style.md` §
+  Brand and do-not-translate.
 - **`Safari` und `Mac` bleiben stehen.** `Safari` ist neu in `BRAND_WORDS`; die Versionsnummer `15.4` bleibt Ziffern.
 - Kein `sameAsSourceJustification` nötig: alle drei Werte unterscheiden sich vom Englischen.

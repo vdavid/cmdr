@@ -1,58 +1,58 @@
 {
-    "main.instanceLock.alertTitle": "Cmdr ya se está ejecutando",
-    "@main.instanceLock.alertTitle": {
-        "sourceHash": "7c8f09d"
-    },
-    "main.instanceLock.alertBody": "Otra copia de Cmdr está usando esta carpeta de datos. Cambia a la app que ya se está ejecutando, o ciérrala e inténtalo de nuevo.",
-    "@main.instanceLock.alertBody": {
-        "sourceHash": "140c57d"
-    },
-    "main.upgradeNudge.mac": "Hemos añadido nuevas opciones de introducción. Abre Cmdr > Introducción… para revisarlas.",
-    "@main.upgradeNudge.mac": {
-        "sourceHash": "477f3a5"
-    },
-    "main.upgradeNudge.other": "Hemos añadido nuevas opciones de introducción. Abre la paleta de comandos y ejecuta Introducción… para revisarlas.",
-    "@main.upgradeNudge.other": {
-        "sourceHash": "4b0b39e"
-    },
-    "main.quit.title": "{count, plural, one {¿Salir mientras hay una operación en curso?} many {¿Salir mientras hay {countText} operaciones en curso?} other {¿Salir mientras hay {countText} operaciones en curso?}}",
-    "@main.quit.title": {
-        "sourceHash": "2671a89"
-    },
-    "main.quit.body": "Todo lo que ya ha terminado se conserva. Lo que aún se está escribiendo se interrumpe donde esté, y Cmdr borra lo que quede a medio escribir.",
-    "@main.quit.body": {
-        "sourceHash": "c17f6e7"
-    },
-    "main.quit.countdown": "{seconds, plural, one {Cmdr se cerrará en {secondsText} segundo, para no hacerte esperar al reiniciar el Mac o cerrar sesión.} many {Cmdr se cerrará en {secondsText} segundos, para no hacerte esperar al reiniciar el Mac o cerrar sesión.} other {Cmdr se cerrará en {secondsText} segundos, para no hacerte esperar al reiniciar el Mac o cerrar sesión.}}",
-    "@main.quit.countdown": {
-        "sourceHash": "a389e0c"
-    },
-    "main.quit.countdownAria": "Tiempo hasta que Cmdr se cierre solo",
-    "@main.quit.countdownAria": {
-        "sourceHash": "6b0b5c2"
-    },
-    "main.quit.keepWorking": "Seguir trabajando",
-    "@main.quit.keepWorking": {
-        "sourceHash": "5ed03f2"
-    },
-    "main.quit.quitNow": "Salir ahora",
-    "@main.quit.quitNow": {
-        "sourceHash": "c96bcc8"
-    },
-    "main.quit.operationsHeading": "Aún en curso",
-    "@main.quit.operationsHeading": {
-        "sourceHash": "89acce5"
-    },
-    "main.oldWebkit.title": "Cmdr necesita una versión más reciente de Safari",
-    "@main.oldWebkit.title": {
-        "sourceHash": "03e502b"
-    },
-    "main.oldWebkit.body": "La interfaz de Cmdr necesita Safari 15.4 o posterior, y este Mac tiene una versión anterior. Abre Actualización de software e instala todo lo que esté pendiente. Con eso debería bastar.",
-    "@main.oldWebkit.body": {
-        "sourceHash": "bcadac5"
-    },
-    "main.oldWebkit.quit": "Salir",
-    "@main.oldWebkit.quit": {
-        "sourceHash": "b3eb37a"
-    }
+  "main.instanceLock.alertTitle": "Cmdr ya se está ejecutando",
+  "@main.instanceLock.alertTitle": {
+    "sourceHash": "7c8f09d"
+  },
+  "main.instanceLock.alertBody": "Otra copia de Cmdr está usando esta carpeta de datos. Cambia a la app que ya se está ejecutando, o ciérrala e inténtalo de nuevo.",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "140c57d"
+  },
+  "main.upgradeNudge.mac": "Hemos añadido nuevas opciones de introducción. Abre Cmdr > Introducción… para revisarlas.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "477f3a5"
+  },
+  "main.upgradeNudge.other": "Hemos añadido nuevas opciones de introducción. Abre la paleta de comandos y ejecuta Introducción… para revisarlas.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "4b0b39e"
+  },
+  "main.quit.title": "{count, plural, one {¿Salir mientras hay una operación en curso?} many {¿Salir mientras hay {countText} operaciones en curso?} other {¿Salir mientras hay {countText} operaciones en curso?}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Todo lo que ya ha terminado se conserva. Lo que aún se está escribiendo se interrumpe donde esté, y Cmdr borra lo que quede a medio escribir.",
+  "@main.quit.body": {
+    "sourceHash": "c17f6e7"
+  },
+  "main.quit.countdown": "{seconds, plural, one {Cmdr se cerrará en {secondsText} segundo, para no hacerte esperar al reiniciar el Mac o cerrar sesión.} many {Cmdr se cerrará en {secondsText} segundos, para no hacerte esperar al reiniciar el Mac o cerrar sesión.} other {Cmdr se cerrará en {secondsText} segundos, para no hacerte esperar al reiniciar el Mac o cerrar sesión.}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Tiempo hasta que Cmdr se cierre solo",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Seguir trabajando",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Salir ahora",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Aún en curso",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
+  },
+  "main.oldWebkit.title": "Cmdr necesita una versión más reciente de Safari",
+  "@main.oldWebkit.title": {
+    "sourceHash": "03e502b"
+  },
+  "main.oldWebkit.body": "La interfaz de Cmdr necesita Safari 15.4 o posterior, y este Mac tiene una versión anterior. Abre Actualización de software e instala todo lo que esté pendiente. Con eso debería bastar.",
+  "@main.oldWebkit.body": {
+    "sourceHash": "bcadac5"
+  },
+  "main.oldWebkit.quit": "Salir",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
+  }
 }

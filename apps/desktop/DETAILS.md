@@ -53,6 +53,16 @@ Two traps that make this worse than it sounds:
 If you genuinely want two apps at once, give the second one its own `--worktree` slug: separate slug, separate data dir,
 no lock contention.
 
+### The app shell is generated, and `src/app.html` isn't what SvelteKit reads
+
+`svelte.config.js` points `kit.files.appTemplate` at `.svelte-kit/cmdr-app.html`, a copy of `src/app.html` with the
+old-WebKit boot guard's translated strings spliced in at config-load time. Two consequences worth knowing before you
+touch the shell: `pnpm dev` does NOT hot-reload an edit to `src/app.html` (restart the dev server), and the guard's copy
+comes from the message catalog rather than the HTML. How and why: `src/lib/utils/DETAILS.md` § Old-WebKit boot guard.
+
+The bundle's `minimumSystemVersion` in `src-tauri/tauri.conf.json` (10.15) and `build.target` in `vite.config.js`
+(`safari15`) are the other two halves of the same story: `docs/notes/system-requirements-and-es2025.md`.
+
 ### Dev watcher and markdown files
 
 Two watchers run during `pnpm dev`, each with its own shield (don't delete either):

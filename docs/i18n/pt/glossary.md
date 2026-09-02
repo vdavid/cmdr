@@ -1787,6 +1787,7 @@ cuidadoso", nunca desculpa nem alarme.
   `tem certeza`.
 - Nenhum valor leva apóstrofo, então não há `''` no lote. Nenhum `sameAsSourceJustification` é necessário: os 18 valores
   diferem do inglês.
+
 ## A tela de bloqueio quando o WebKit é antigo demais (`main.oldWebkit.*`, 2026-09-02)
 
 Três strings que o Cmdr mostra no lugar da interface quando o Safari do Mac é antigo demais. Elas ficam no invólucro
