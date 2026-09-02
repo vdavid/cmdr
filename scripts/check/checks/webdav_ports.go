@@ -19,7 +19,7 @@ import (
 // table (`TestWebdavFixturePortsMatchComposeDefaults`), so a bare `start.sh`
 // with no runner around it lands on the same ports.
 var webdavServiceHostPorts = map[string]int{
-	"APACHE": 13480, "DIGEST": 13481, "NEXTCLOUD": 13482,
+	"APACHE": 13480, "DIGEST": 13481, "NEXTCLOUD": 13482, "NORANGE": 13483,
 }
 
 // webdavCoreServices are the services `core` mode brings up, which is the set
@@ -29,7 +29,7 @@ var webdavServiceHostPorts = map[string]int{
 // a container its own mode never started would spend its whole timeout doing
 // it. `TestWebdavModeServicesAgree` is what keeps these two lists and
 // `stacklease.WEBDAV`'s from drifting.
-var webdavCoreServices = []string{"APACHE", "DIGEST"}
+var webdavCoreServices = []string{"APACHE", "DIGEST", "NORANGE"}
 
 // webdavNextcloudServices are the services `nextcloud` mode brings up.
 var webdavNextcloudServices = []string{"NEXTCLOUD"}

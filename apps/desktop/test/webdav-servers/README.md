@@ -1,11 +1,11 @@
 # The WebDAV fixture stack
 
-Three servers in Docker: two Apache httpd, one per auth scheme a WebDAV client has to answer, and one real Nextcloud for
-the questions no `mod_dav` can settle. `crates/cmdr-webdav`'s Docker cells and the app's WebDAV suite both talk to
+Four servers in Docker: three Apache httpd, one per behaviour a WebDAV client has to answer for, and one real Nextcloud
+for the questions no `mod_dav` can settle. `crates/cmdr-webdav`'s Docker cells and the app's WebDAV suite both talk to
 these.
 
 ```bash
-./start.sh            # core: both httpd servers the integration lane uses
+./start.sh            # core: the three httpd servers the integration lane uses
 ./start.sh minimal    # the Basic-auth server alone
 ./start.sh nextcloud  # the sabre/dav server alone (slow: it installs itself on first boot)
 ./stop.sh             # releases this shell's lease; downs only at zero holders
@@ -16,7 +16,7 @@ these.
 
 ## What differs from the SFTP stack next door
 
-- **Same shape, smaller.** First-party compose file in this directory, one env-driven image under `image/` for the two
+- **Same shape, smaller.** First-party compose file in this directory, one env-driven image under `image/` for the three
   httpd servers plus `image-nextcloud/` for the sabre/dav one, both rebuilt on every bring-up (the lease declares both
   as build contexts, the way SFTP declares its one).
 - **Ports are 13480+**, this stack's own range: SFTP owns 12480+, SMB's vendored consumer stack owns 11480+, and
@@ -33,8 +33,9 @@ these.
 | `webdav-fixture-apache`    | 13480 | Stock `mod_dav` behind Basic auth: the default target for every cell        |
 | `webdav-fixture-digest`    | 13481 | `AuthType Digest` only, realm `cmdr`: proves the client refuses with a type |
 | `webdav-fixture-nextcloud` | 13482 | A real sabre/dav server: `Range`, a chunked PUT, and RFC 4331 quota         |
+| `webdav-fixture-norange`   | 13483 | `MaxRanges none`: answers every ranged GET 200 with the whole file          |
 
-The two httpd servers run as `ada` / `openthedoor` and export `/srv/data` at the URL path `/dav/`. Both carry the same
+The three httpd servers run as `ada` / `openthedoor` and export `/srv/data` at the URL path `/dav/`. They carry the same
 landmarks (`hello.txt`, `docs/` holding a `readme.md`, `nested/deep/file.txt`, `many/` with 300 entries, `empty/`,
 `naïve name.txt`, `photos/2024 summer/`, `large.bin`), so a cell can assert on them whichever server it's pointed at.
 
@@ -45,6 +46,30 @@ the file. `cmdr_webdav::volume::testing::fixture_large_bytes` regenerates the ex
 The export is writable by the httpd user, and Apache answers GET with `Content-Length` and honours `Range` natively,
 which is what the streaming and `read_range` cells lean on. `DavDepthInfinity On` allows a whole-tree PROPFIND;
 `DavMinTimeout 600` keeps a lock a cell takes alive past the cell.
+
+## The server that ignores `Range`
+
+`webdav-fixture-norange` is the stock export with one directive changed: `MaxRanges none`, an Apache core directive that
+drops every `Range` header and serves the whole resource. Verified on httpd 2.4.68 by `curl`, 2026-09-02: a
+`Range: bytes=100-199` on `large.bin` comes back `200` with `Accept-Ranges: none` and `Content-Length: 4194304`, where
+the stock server answers `206` with `Content-Range: bytes 100-199/4194304`.
+
+It exists because RFC 9110 § 14.2 makes ranges optional, so `crates/cmdr-webdav/src/volume/streams.rs` treats a 200 as
+"the server ignored the header" and skips `offset` bytes locally rather than trusting the response as a window. That
+branch is on the read path of every resumed transfer and every remote-archive window, and no server anyone has watched
+answers that way, so without this service it was data-path code nothing executed.
+
+- **A core directive, not `mod_headers`.** `RequestHeader unset Range` would work too, but it needs a module the stock
+  `httpd.conf` leaves commented out, and it hides the header from the whole request chain rather than telling the range
+  machinery to stand down. `MaxRanges none` is one line in the `<Directory>` block and changes nothing else.
+- **In `core`, unlike Nextcloud.** It is the same ~60 MB httpd image under the same 256 MB / 0.5 CPU cap, and it binds
+  its port as fast as the other two, so the default integration lane carries it.
+- **`RANGES=honour|ignore`** picks the behaviour in `image/entrypoint.sh`, the way `AUTH=basic|digest` picks the scheme.
+
+The cells: `a_bounded_range_is_exact_even_when_the_server_ignores_the_header` and
+`a_resumed_stream_skips_locally_when_the_server_ignores_the_header`, in
+`crates/cmdr-webdav/src/volume/integration_test.rs`. Each asks the server directly what it answered before asserting on
+the backend, so a fixture that quietly started honouring `Range` fails loudly instead of re-testing the 206 path.
 
 ## Where the ports bind
 
@@ -60,9 +85,11 @@ the run if a `ports:` entry loses the prefix.
 ## The Nextcloud server
 
 `webdav-fixture-nextcloud` is the stack's only non-Apache service, and the only one outside `core`. It exists because
-three claims in `crates/cmdr-webdav/DETAILS.md` are about REAL servers, and no `mod_dav` can settle any of them: it
-honours `Range` natively and omits the quota properties entirely. `crates/cmdr-webdav/src/volume/nextcloud_test.rs`
-holds the cells; the answers they observed are anchored in that `DETAILS.md`.
+three claims in `crates/cmdr-webdav/DETAILS.md` are about REAL servers, and no `mod_dav` can settle any of them: stock,
+it honours `Range` natively and omits the quota properties entirely, and `webdav-fixture-norange` only says what our
+code does when a server declines, never what a server in the wild chose.
+`crates/cmdr-webdav/src/volume/nextcloud_test.rs` holds the cells; the answers they observed are anchored in that
+`DETAILS.md`.
 
 - **Not in `core`, on purpose.** The image is ~1 GB against httpd's ~60 MB, and first boot runs the whole Nextcloud
   install before it binds a port (~25 s on a warm laptop). A default `pnpm check` never pays for it: the lane is
@@ -122,25 +149,31 @@ watch them go by. They need something only the seeded fixture has:
 - `quota_reports_the_accounts_own_numbers_not_the_servers_disk` and
   `an_account_with_no_quota_reports_no_free_space_at_all` — the Nextcloud fixture's two accounts and its exact 5 GiB
   quota.
+- `a_bounded_range_is_exact_even_when_the_server_ignores_the_header` and
+  `a_resumed_stream_skips_locally_when_the_server_ignores_the_header` — `webdav-fixture-norange`, plus the seeded
+  `large.bin`. Both assert the server answered 200 before they assert anything about the backend, and a server of your
+  own almost certainly answers 206.
 
-All 26 selected cells pass against the fixture's own Nextcloud through this path (measured 2026-09-02), the seven
-conformance cells included — so the `Volume` contract those cells hold every backend to survives sabre/dav's verbs, not
-only Apache's.
+The 26 cells that existed when this was measured all pass against the fixture's own Nextcloud through this path
+(2026-09-02), the conformance cells included — so the `Volume` contract those cells hold every backend to survives
+sabre/dav's verbs, not only Apache's. The four added since (the two `Range`-ignoring cells above and the two
+size-mismatch cells below) are outside that number.
 
-Everything else is honest anywhere: the seven conformance cells, the write and rename and copy and delete cells, the
-cancellation cells, and the two credential refusals all build their own scratch directory or assert something
-client-side. So do the two sabre/dav cells worth aiming at someone else's server, which is rather the point of aiming
-it: `a_ranged_get_is_answered_with_a_window_rather_than_the_whole_file` and
+Everything else is honest anywhere: the conformance cells, the write and rename and copy and delete cells, the
+cancellation cells, the two size-mismatch cells (`a_source_that_ends_early_never_reaches_the_users_filename`,
+`a_source_that_overruns_its_promise_never_reaches_the_users_filename`), and the two credential refusals all build their
+own scratch directory or assert something client-side. So do the two sabre/dav cells worth aiming at someone else's
+server, which is rather the point of aiming it: `a_ranged_get_is_answered_with_a_window_rather_than_the_whole_file` and
 `a_put_with_no_content_length_is_accepted_rather_than_refused` ask a Synology or a proxied Nextcloud exactly what this
 fixture asked its own.
 
 ## One image, env-driven
 
-`image/` builds both httpd servers. `AUTH=basic|digest` picks the scheme; everything else is identical, so a scheme is a
-compose line rather than a second Dockerfile to keep in sync. The entrypoint uncomments the DAV and Digest modules in
-the stock `httpd.conf`, writes the credentials (`htpasswd` for Basic; the digest line is
-`user:realm:MD5(user:realm:password)`, computed by hand because `htdigest` is interactive), and includes one
-`webdav-fixture.conf` for the export.
+`image/` builds all three httpd servers. `AUTH=basic|digest` picks the auth scheme and `RANGES=honour|ignore` the range
+policy; everything else is identical, so a server here is a compose line rather than a second Dockerfile to keep in
+sync. The entrypoint uncomments the DAV and Digest modules in the stock `httpd.conf`, writes the credentials (`htpasswd`
+for Basic; the digest line is `user:realm:MD5(user:realm:password)`, computed by hand because `htdigest` is
+interactive), and includes one `webdav-fixture.conf` for the export.
 
 ## Adding a server
 
@@ -158,3 +191,5 @@ the stock `httpd.conf`, writes the credentials (`htpasswd` for Basic; the digest
    entry disagree, and on one the table forgot entirely.
 4. If it builds a first-party image of its own, add that context to `buildContextsRel` on the `WEBDAV` stack. Without
    it, `up` never rebuilds the image and an edit to the Dockerfile or its scripts never reaches a running container.
+5. Add its key, port, and URL path to `FIXTURE_SERVICES` in `crates/cmdr-webdav/src/volume/testing.rs`. That table is
+   what `fixture_target` resolves a service name through, and a key missing from it panics rather than guessing a path.

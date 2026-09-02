@@ -122,9 +122,9 @@ var SFTP = &Stack{
 	servicesWithoutHealthcheck: map[string]bool{},
 }
 
-// WEBDAV is the WebDAV fixture stack: two Apache httpd servers with `mod_dav`,
-// first-party like SFTP (one compose file in the fixture dir, one env-driven
-// image). It mounts no host state: HTTP has no key material to publish, so the
+// WEBDAV is the WebDAV fixture stack: three Apache httpd servers with `mod_dav`
+// plus a real Nextcloud, first-party like SFTP (one compose file in the fixture
+// dir, one env-driven image for the httpd trio). It mounts no host state: HTTP has no key material to publish, so the
 // lock and the lease dir are its only machine-wide paths.
 //
 // ❗ `modeServices` has to stay in lock-step with the fixture's own case table
@@ -149,7 +149,7 @@ var WEBDAV = &Stack{
 	portEnvPrefix: "WEBDAV_FIXTURE_",
 	modeServices: map[string][]string{
 		ModeMinimal: {"webdav-fixture-apache"},
-		ModeCore:    {"webdav-fixture-apache", "webdav-fixture-digest"},
+		ModeCore:    {"webdav-fixture-apache", "webdav-fixture-digest", "webdav-fixture-norange"},
 		// ❗ Its own mode, and deliberately NOT part of `core`: Nextcloud is a
 		// ~1 GB image that installs itself before it binds a port, against
 		// httpd's ~60 MB and instant start. `desktop-rust-webdav-nextcloud` is

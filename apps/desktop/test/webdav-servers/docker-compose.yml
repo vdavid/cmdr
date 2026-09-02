@@ -1,5 +1,6 @@
-# The WebDAV fixture stack: two real Apache httpd servers with `mod_dav`, one per
-# auth scheme a WebDAV client has to answer.
+# The WebDAV fixture stack: three real Apache httpd servers with `mod_dav` (one
+# per auth scheme a WebDAV client has to answer, plus one that ignores `Range`),
+# and one real Nextcloud.
 #
 # ❗ The project is `webdav-fixture` and every service name carries that prefix.
 # `desktop-fixture-lane-coverage` identifies a WebDAV cell by an `#[ignore]`
@@ -24,14 +25,15 @@
 # Nothing here bind-mounts host state: HTTP has no key material to publish, so
 # there is no third machine-wide path beside the lock and the lease dir.
 #
-# One image, `image/`. What differs between services is env, so a scheme is a
-# line here rather than a Dockerfile to keep in sync.
+# One image, `image/`. What differs between the httpd services is env, so an auth
+# scheme or a `Range` policy is a line here rather than a Dockerfile to keep in
+# sync.
 
 x-fixture: &fixture
   build: ./image
   image: cmdr-webdav-fixture:latest
   restart: unless-stopped
-  # Principle 5 applies to CI too: two idle httpd containers should cost about
+  # Principle 5 applies to CI too: three idle httpd containers should cost about
   # what one does.
   mem_limit: 256m
   cpus: 0.5
@@ -51,6 +53,17 @@ services:
     environment:
       AUTH: digest
     ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_DIGEST_PORT:-13481}:80']
+
+  # The same export behind a server that IGNORES `Range` and answers 200 with
+  # the whole file. RFC 9110 § 14.2 makes ranges optional, so `streams.rs` skips
+  # `offset` bytes locally rather than trusting a 200 as a window; this is the
+  # server that makes that branch run. `MaxRanges none` is the whole difference
+  # (see `image/entrypoint.sh`).
+  webdav-fixture-norange:
+    <<: *fixture
+    environment:
+      RANGES: ignore
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_NORANGE_PORT:-13483}:80']
 
   # A real Nextcloud (sabre/dav), and the ONLY service here that isn't Apache
   # `mod_dav`. It exists so three claims about real servers are observations:

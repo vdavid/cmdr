@@ -6,7 +6,7 @@
 # to re-sync when a dependency bumps.
 #
 # Usage:
-#   ./start.sh             # core: both servers the integration lane talks to
+#   ./start.sh             # core: the three servers the integration lane talks to
 #   ./start.sh minimal     # just the Basic-auth server
 #   ./start.sh nextcloud   # just the sabre/dav server (slow: it installs itself)
 #   ./start.sh all         # everything the compose file defines
@@ -31,8 +31,8 @@ case "$mode" in
         services=(webdav-fixture-apache)
         ;;
     core)
-        echo "Starting the core WebDAV servers (Basic and Digest)..."
-        services=(webdav-fixture-apache webdav-fixture-digest)
+        echo "Starting the core WebDAV servers (Basic, Digest, and the one that ignores Range)..."
+        services=(webdav-fixture-apache webdav-fixture-digest webdav-fixture-norange)
         ;;
     nextcloud)
         # Deliberately alone and deliberately not in `core`: a ~1 GB image that

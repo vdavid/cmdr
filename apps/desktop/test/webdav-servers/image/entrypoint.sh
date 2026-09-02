@@ -3,13 +3,15 @@
 # in the foreground.
 #
 # Env, all optional:
-#   AUTH        basic | digest   (default: basic)
+#   AUTH        basic | digest      (default: basic)
+#   RANGES      honour | ignore     (default: honour)
 #   LARGE_MB    size of `large.bin` in MiB (default: 4)
 set -e
 
 USER_NAME="${USER_NAME:-ada}"
 USER_PASSWORD="${USER_PASSWORD:-openthedoor}"
 AUTH="${AUTH:-basic}"
+RANGES="${RANGES:-honour}"
 REALM="cmdr"
 EXPORT_DIR=/srv/data
 HTTPD_PREFIX=/usr/local/apache2
@@ -60,6 +62,24 @@ case "$AUTH" in
     *) echo "unknown AUTH: $AUTH" >&2; exit 1 ;;
 esac
 
+# ── Range handling ───────────────────────────────────────────────────
+#
+# RFC 9110 § 14.2 makes ranges optional, so a client has to survive a server
+# that answers a ranged GET with 200 and the whole resource. `MaxRanges none`
+# is how Apache says exactly that: the core handler drops every `Range` header
+# and serves the entire file. It is a core directive, so this needs no extra
+# module loaded, and it leaves everything else about the server alone — which
+# is what makes the difference between this service and the stock one one line.
+#
+# ❗ Not `RequestHeader unset Range`: that works too, but it needs
+# `mod_headers` uncommented and it hides the header from the whole request
+# chain rather than telling the range machinery to stand down.
+case "$RANGES" in
+    honour) ranges_directive="" ;;
+    ignore) ranges_directive="    MaxRanges none" ;;
+    *) echo "unknown RANGES: $RANGES" >&2; exit 1 ;;
+esac
+
 # ── The export ───────────────────────────────────────────────────────
 #
 # ❗ `DavLockDB` has to live somewhere the httpd WORKER user can write, and
@@ -88,6 +108,7 @@ Alias /dav $EXPORT_DIR
     Dav On
     Options +Indexes
     AllowOverride None
+$ranges_directive
 $auth_block
     Require valid-user
 </Directory>

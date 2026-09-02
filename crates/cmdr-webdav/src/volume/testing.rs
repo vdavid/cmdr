@@ -88,8 +88,9 @@ struct FixtureService {
     key: &'static str,
     port: u16,
     /// ❗ Not the same for every server, and that is the point of holding it
-    /// here: Apache `mod_dav` exports one directory at `/dav/`, while Nextcloud
-    /// serves the signed-in account's files under `/remote.php/webdav/`.
+    /// here: the three Apache `mod_dav` servers export one directory at
+    /// `/dav/`, while Nextcloud serves the signed-in account's files under
+    /// `/remote.php/webdav/`.
     dav_path: &'static str,
 }
 
@@ -100,7 +101,7 @@ struct FixtureService {
 /// accounts. The three properties the sabre/dav cells read (`Range`, a chunked
 /// PUT, RFC 4331 quota) answer identically on both endpoints (verified on
 /// nextcloud 34.0.2-apache, by hand with `curl`, 2026-09-02).
-const FIXTURE_SERVICES: [FixtureService; 3] = [
+const FIXTURE_SERVICES: [FixtureService; 4] = [
     FixtureService {
         key: "APACHE",
         port: 13480,
@@ -109,6 +110,11 @@ const FIXTURE_SERVICES: [FixtureService; 3] = [
     FixtureService {
         key: "DIGEST",
         port: 13481,
+        dav_path: "/dav/",
+    },
+    FixtureService {
+        key: "NORANGE",
+        port: 13483,
         dav_path: "/dav/",
     },
     FixtureService {
@@ -205,8 +211,8 @@ pub fn fixture_target(service: &str, fallback_port: u16, username: &str) -> Fixt
             root: std::env::var(TEST_ROOT_ENV).unwrap_or_else(|_| FIXTURE_ROOT.to_string()),
         };
     }
-    // ❗ A panic, not a default: the two servers here export at different URL
-    // paths, so a typo'd key that quietly got `/dav/` would 404 against
+    // ❗ A panic, not a default: the servers here don't all export at the same
+    // URL path, so a typo'd key that quietly got `/dav/` would 404 against
     // Nextcloud and read as a backend bug.
     let dav_path = FIXTURE_SERVICES
         .iter()
