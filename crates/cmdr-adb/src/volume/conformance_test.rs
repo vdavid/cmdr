@@ -221,3 +221,16 @@ async fn cancelling_a_read_mid_file_releases_the_socket_and_the_volume_keeps_wor
     assert_eq!(&tail[..], &big[100_000..]);
     assert_eq!(resumed.total_size(), big.len() as u64);
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn conflict_scan_reads_a_missing_destination_as_empty() {
+    // `ls` on a directory that isn't there exits non-zero, and the match arm in
+    // `scan_for_conflicts_impl` is what turns that into "nothing clashes" rather
+    // than into a copy preview that won't open.
+    let (_server, volume) = seeded().await;
+    conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
+        volume.as_ref(),
+        Path::new("/sdcard/not-created-yet"),
+    )
+    .await;
+}

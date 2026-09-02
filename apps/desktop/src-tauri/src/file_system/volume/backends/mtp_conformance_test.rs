@@ -126,3 +126,21 @@ async fn not_found_honors_the_shared_path_payload_contract() {
 
     teardown(&device_id, &fixture).await;
 }
+
+/// The shared conflict-scan assertion, over a real `MtpVolume`: a destination
+/// the paste would create answers "nothing clashes", not the `NotFound` the
+/// cache-aware listing hands back for a path it can't resolve.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn conflict_scan_honors_the_shared_missing_destination_contract() {
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let (device_id, volume) = connect_primed_volume(&fixture).await;
+
+    cmdr_fs::volume::conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
+        &volume,
+        Path::new("/not-created-yet"),
+    )
+    .await;
+
+    teardown(&device_id, &fixture).await;
+}

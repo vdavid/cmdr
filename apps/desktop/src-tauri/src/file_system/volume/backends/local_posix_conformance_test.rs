@@ -127,3 +127,19 @@ async fn not_found_honors_the_shared_path_payload_contract() {
 
     cmdr_fs::volume::conformance::assert_not_found_carries_the_path(&volume, Path::new("no-such-file.txt")).await;
 }
+
+/// The shared conflict-scan assertion. LocalPosix gets it for free from the
+/// per-item `exists()` probe, which simply finds nothing under a destination
+/// directory that isn't there. "Free" is what makes the contract invisible until
+/// a backend that has to spend a listing on it comes along, and two of them did.
+#[tokio::test]
+async fn conflict_scan_honors_the_shared_missing_destination_contract() {
+    let test_dir = TestDir::new("conflict_scan_missing_destination_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    cmdr_fs::volume::conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
+        &volume,
+        Path::new("not-created-yet"),
+    )
+    .await;
+}

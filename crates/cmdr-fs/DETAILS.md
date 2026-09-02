@@ -298,7 +298,7 @@ The double is the oracle: these `Volume` contracts have to hold in it, not just 
 
 ### The shared assertions in `volume::conformance`
 
-The four contracts above that are CROSS-BACKEND live as shared assertions rather than as per-backend tests, so a backend
+The contracts above that are CROSS-BACKEND live as shared assertions rather than as per-backend tests, so a backend
 can't quietly opt out of one. Each takes an already-seeded fixture, because seeding is the one part that can't be shared
 (a local volume needs a temp dir, MTP a backing dir plus a rescan, SMB a share); what the assertion checks is identical
 everywhere, which is the point.
@@ -316,10 +316,25 @@ everywhere, which is the point.
   in doubt, answer `AlreadyExisted`". MTP is the backend this matters most for: it answers
   `create_directory_errors_on_existing_dir() == false`, so the default walk learns "already there" from its `exists`
   probe rather than from a collision error.
+- `assert_conflict_scan_reads_a_missing_destination_as_empty` — a destination that isn't there yet holds nothing, so
+  `scan_for_conflicts` answers an empty list rather than the `NotFound` its listing hit. `scan_volume_copy` propagates
+  what comes back, so the wrong answer isn't an odd conflict entry: it's the whole copy preview refusing to open, on the
+  ordinary act of pasting into a folder the transfer would have created moments later. Three backends kept it by
+  accident (a per-item `exists()` that finds nothing, `scan_walk::scan_conflicts`' match arm, a double that lists a
+  missing directory as empty) and two forwarded their listing error, because every other conflict-scan test seeds the
+  destination first.
+- `assert_writability_matches_the_mutations_offered` and `assert_export_matches_the_bytes_offered` — the two capability
+  DECLARATIONS that reach the user as UI state. Nothing but a test stops either drifting from the methods it speaks for.
+- `assert_not_found_carries_the_path` — the payload the frontend renders as the missing file's name.
 
-`InMemoryVolume`, `LocalPosixVolume`, and `SmbVolume` (Docker-gated) run all four; `MtpVolume` runs every one but
-`create_file`, which it doesn't implement. `ArchiveVolume` is read-only and pins the same ground with
-`every_mutation_is_unsupported`. A backend that adds a mutation adds the matching call.
+`InMemoryVolume`, `LocalPosixVolume`, `AdbVolume`, and the Docker-gated `SmbVolume`, `SftpVolume`, and `WebdavVolume`
+run every one (InMemory's writability cell sits in `capabilities_test.rs`, next to the predicate it speaks for).
+`MtpVolume` runs all but `create_file` (which it doesn't implement: an upload there is `write_from_stream`, one
+`SendObject` transaction) and `rename` (which it DOES implement, so that one is an open gap rather than a
+not-applicable), and its `delete` cell lives in `mtp_delete_test.rs` for the scaffolding that contract needs. `ArchiveVolume` is read-only: it runs the three that don't
+mutate and pins the rest of the ground with `every_mutation_is_unsupported`, and it is deliberately outside the
+conflict-scan one, since nothing copies INTO an archive through the volume. A backend that adds a mutation adds the
+matching call.
 
 ## The faults `InMemoryVolume` can be told to have
 

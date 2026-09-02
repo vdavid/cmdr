@@ -278,8 +278,8 @@ are the same volume instance (`write_operations/transfer/volume/strategy.rs::try
 - ❌ **Nothing here calls `authoritative_listing`.** There is no watcher, so `listing_watch_coverage` is `None` and a
   cached listing is only as fresh as the last look. SMB's scan may consult the cache because its watcher backs the
   claim; borrowing that here is how a pre-flight conflict scan misses a file and a copy overwrites it.
-- **A conflict scan of a destination that isn't there yet finds nothing**, rather than reporting the missing directory:
-  otherwise "paste into a folder I'm about to create" is a failure.
+- **A conflict scan of a destination that isn't there yet finds nothing**, which is the trait's contract for every
+  backend rather than anything of this one's (`Volume::scan_for_conflicts`); `scan_walk::scan_conflicts` keeps it here.
 - **`dedup_bytes` always equals `total_bytes`.** SFTP v3's stat carries no link count, so the source footprint is taken
   as the write footprint.
 

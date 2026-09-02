@@ -155,3 +155,20 @@ async fn not_found_carries_the_path() {
 
     clean_scratch(&volume, &dir).await;
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn conflict_scan_reads_a_missing_destination_as_empty() {
+    // The server answers `SSH_FX_NO_SUCH_FILE` for a directory nobody has
+    // created yet, and the walk's `scan_conflicts` is what turns it into "nothing
+    // clashes" rather than into a copy preview that won't open.
+    let (volume, dir) = stock_server_with_scratch("conflict-scan-missing-dest").await;
+
+    conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
+        &volume,
+        Path::new(&format!("{dir}/not-created-yet")),
+    )
+    .await;
+
+    clean_scratch(&volume, &dir).await;
+}

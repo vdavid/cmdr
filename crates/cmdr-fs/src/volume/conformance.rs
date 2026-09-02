@@ -13,7 +13,7 @@
 
 use std::path::Path;
 
-use super::{DirectoryCreation, Volume, VolumeError};
+use super::{DirectoryCreation, SourceItemInfo, Volume, VolumeError};
 
 /// The size `path` reports right now, for a fixture precondition or an
 /// after-the-fact "nothing was overwritten" check.
@@ -386,4 +386,57 @@ pub async fn assert_not_found_carries_the_path(volume: &dyn Volume, missing: &Pa
          so the user reads it as the name of their missing file.",
         volume.name(),
     );
+}
+
+/// [`Volume::scan_for_conflicts`] answers an EMPTY list for a destination
+/// directory that isn't there yet, rather than the `NotFound` its listing hit.
+///
+/// `dest` must NOT exist on `volume`; the assertion checks that first.
+///
+/// **Why this one is worth a shared assertion.** Pasting into a folder the
+/// transfer is about to create is an ordinary thing to do, and this pre-flight
+/// runs before anything is created. `scan_volume_copy` propagates what comes
+/// back with `?`, so a `NotFound` here doesn't produce a conflict list with one
+/// odd entry in it. It refuses the whole copy preview, over a destination that
+/// is empty in the only sense that matters: nothing there can be overwritten.
+/// The user reads that as "Cmdr won't copy into this folder", about a folder
+/// they never expected to exist yet.
+///
+/// Each backend arrives at the answer its own way (a per-item `exists()` that
+/// simply finds nothing, [`scan_walk::scan_conflicts`](crate::volume::scan_walk::scan_conflicts)
+/// mapping the variant, a cache-aware listing with a match arm of its own), so
+/// there is no shared mechanism to trust, only a shared promise. A backend that
+/// forwards its listing error keeps every OTHER conflict-scan test passing,
+/// because they all seed the destination first.
+pub async fn assert_conflict_scan_reads_a_missing_destination_as_empty(volume: &dyn Volume, dest: &Path) {
+    assert!(
+        !volume.exists(dest).await,
+        "fixture precondition: {} must not exist yet",
+        dest.display()
+    );
+
+    let source_items = [SourceItemInfo {
+        name: "pasted.txt".to_string(),
+        size: 12,
+        modified: None,
+        is_directory: false,
+    }];
+
+    let outcome = volume.scan_for_conflicts(&source_items, dest).await;
+    match outcome {
+        Ok(conflicts) => assert!(
+            conflicts.is_empty(),
+            "{} found {} conflict(s) in the not-yet-created {}, which holds nothing: {conflicts:?}",
+            volume.name(),
+            conflicts.len(),
+            dest.display(),
+        ),
+        Err(e) => panic!(
+            "scan_for_conflicts against the not-yet-created {} on {} must answer an empty list, \
+             but it reported {e:?}. The copy preview propagates that straight to the user, so it \
+             refuses a paste into a folder the transfer would have created moments later.",
+            dest.display(),
+            volume.name(),
+        ),
+    }
 }

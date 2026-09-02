@@ -878,6 +878,19 @@ pub trait Volume: Send + Sync {
 
     /// Checks destination for conflicts with source items.
     /// Returns list of files that already exist at destination.
+    ///
+    /// ❗ **A destination that isn't there yet holds nothing, so the answer is an
+    /// empty list, never [`VolumeError::NotFound`].** Pasting into a folder the
+    /// transfer is about to create is an ordinary thing to do, and this
+    /// pre-flight runs before anything is created. The caller propagates what
+    /// comes back, so reporting the missing directory doesn't produce an odd
+    /// conflict list; it refuses a legitimate copy outright, over a destination
+    /// that is empty in the only sense that matters.
+    ///
+    /// [`scan_walk::scan_conflicts`]
+    /// keeps that for a backend with nothing special to say about the listing; a
+    /// backend that lists its own way owes it by hand. Pinned by
+    /// [`conformance::assert_conflict_scan_reads_a_missing_destination_as_empty`].
     fn scan_for_conflicts<'a>(
         &'a self,
         source_items: &'a [SourceItemInfo],

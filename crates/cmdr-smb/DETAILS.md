@@ -599,7 +599,10 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   cancel, cancel-by-drop, multi-chunk files, and the error / partial-cleanup paths with the `ErroringReadStream` double,
   plus the two compound-frame shape assertions.
 - `conformance_test.rs` — the `cmdr_fs::volume::conformance` promises, answered by a real server rather than an
-  in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`.
+  in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`,
+  `STATUS_OBJECT_NAME_NOT_FOUND`. That last one is the conflict scan's: `scan_for_conflicts_impl` keeps its own
+  cache-aware listing but reads a `NotFound` from it as an empty conflict list, which is the trait's contract for every
+  backend (`Volume::scan_for_conflicts`), so pasting into a folder the transfer is about to create isn't refused.
 - `test_support.rs` — the session-free builders (a struct-literal `SmbVolumeInner` with no client and no tree), the
   vocabulary every suite globs, and a re-export of `volume::testing` so one `use` covers all three.
 

@@ -172,9 +172,10 @@ pub fn conflicts_against(source_items: &[SourceItemInfo], dest_entries: &[FileEn
 
 /// One listing of `dest_path`, matched against `source_items`.
 ///
-/// ❗ A destination that isn't there yet holds nothing, so nothing clashes.
-/// Reporting the `NotFound` instead would turn "paste into a folder I'm about to
-/// create" into a failure.
+/// ❗ This is where a walk-driven backend keeps
+/// [`Volume::scan_for_conflicts`](crate::volume::Volume::scan_for_conflicts)'
+/// promise that a destination which isn't there yet answers an empty list; that
+/// method's doc says why the promise exists.
 pub fn scan_conflicts<'a>(
     source: &'a dyn ScanSource,
     source_items: &'a [SourceItemInfo],

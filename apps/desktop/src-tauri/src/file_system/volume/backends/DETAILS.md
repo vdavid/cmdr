@@ -237,9 +237,18 @@ renames retain normal POSIX replacement semantics because the caller explicitly 
 ## Where the shared conformance assertions live
 
 `cmdr_fs::volume::conformance` holds the promises no backend may quietly opt out of, and each backend runs the ones it
-can: `mtp_conformance_test.rs` and `cmdr-smb`'s `conformance_test.rs` collect them per backend, LocalPosix keeps its in
-`local_posix_test.rs`, and `mtp_delete_test.rs` stays separate because the non-recursion contract is the one MTP has to
-IMPLEMENT rather than inherit (`MtpDeleteScope`), with enough scaffolding to earn its own file.
+can: `mtp_conformance_test.rs`, `local_posix_conformance_test.rs`, and each remote crate's own `conformance_test.rs`
+collect them per backend, and `mtp_delete_test.rs` stays separate because the non-recursion contract is the one MTP has
+to IMPLEMENT rather than inherit (`MtpDeleteScope`), with enough scaffolding to earn its own file. The roster and what
+each one defends: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
+
+**Decision**: MTP settles a conflict scan's missing destination through `get_metadata`, not through a `NotFound` arm.
+**Why**: every other backend reads a `VolumeError::NotFound` from the destination listing as "nothing clashes" and
+answers an empty list. MTP can't: `resolve_path_to_handle` is cache-only, so a path nobody has browsed to fails as a
+generic `IoError` ("path not in cache"), which is honest, because it means UNKNOWN rather than absent. Reading every
+listing failure as absence would let a disconnected device pass for an empty folder and clear the copy to run.
+`get_metadata` settles it by listing the PARENT, so only a confirmed-absent destination reads as empty and every other
+failure stays the caller's to see. It costs one extra parent listing, on the error path only.
 
 **Gotcha: a virtual-MTP test must UNREGISTER its device, not just disconnect.** `setup_virtual_mtp_device()` registers a
 device over a fresh `TempDir`; leaving it registered means the next test in the same binary connects to a stale storage

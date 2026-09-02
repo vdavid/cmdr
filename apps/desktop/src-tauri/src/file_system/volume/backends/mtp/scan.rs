@@ -216,7 +216,27 @@ impl MtpVolume {
             // The listing is this backend's own (it goes through the listing
             // cache); the matching is the shared one, so every backend hands a
             // conflict dialog the same shape.
-            let entries = self.list_directory(dest_path, None).await?;
+            let entries = match self.list_directory(dest_path, None).await {
+                Ok(entries) => entries,
+                // ❗ The trait's contract: a destination the paste is about to
+                // create holds nothing, so nothing clashes. ❌ Not the plain
+                // `NotFound` arm every other backend uses. MTP resolves a path
+                // through a cache that browsing populates, so a destination
+                // nobody has walked to yet fails as a generic `IoError` ("path
+                // not in cache"), which is honest: it means "unknown", not
+                // "absent". `get_metadata` settles the difference by listing
+                // the PARENT. Only a confirmed-absent destination reads as
+                // empty; anything else (it is there and the listing failed for
+                // its own reason, or the parent can't be read either) stays the
+                // caller's to see, so a disconnected device can't pass for an
+                // empty folder.
+                Err(e) => {
+                    return match self.get_metadata(dest_path).await {
+                        Err(VolumeError::NotFound(_)) => Ok(Vec::new()),
+                        _ => Err(e),
+                    };
+                }
+            };
             Ok(conflicts_against(source_items, &entries))
         })
     }

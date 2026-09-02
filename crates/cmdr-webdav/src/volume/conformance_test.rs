@@ -155,3 +155,16 @@ async fn not_found_carries_the_path() {
 
     clean(&volume, &dir).await;
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn conflict_scan_reads_a_missing_destination_as_empty() {
+    // A `PROPFIND` on a collection nobody has created yet answers 404, and the
+    // walk's `scan_conflicts` is what turns it into "nothing clashes" rather
+    // than into a copy preview that won't open.
+    let (volume, dir) = stock_server_with_scratch().await;
+
+    conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(&volume, &dir.join("not-created-yet")).await;
+
+    clean(&volume, &dir).await;
+}

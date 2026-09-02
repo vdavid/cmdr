@@ -390,9 +390,16 @@ impl SmbVolume {
         Box::pin(async move {
             // The listing is this backend's own (cache-aware); the matching is
             // the shared one, so every backend hands a conflict dialog the same
-            // shape. ❗ Unlike the walk-driven backends, a missing destination is
-            // reported rather than read as "nothing clashes".
-            let entries = self.list_directory_impl(dest_path).await?;
+            // shape.
+            let entries = match self.list_directory_impl(dest_path).await {
+                Ok(entries) => entries,
+                // ❗ The trait's contract: a destination the paste is about to
+                // create holds nothing, so nothing clashes. Reporting the
+                // server's `STATUS_OBJECT_NAME_NOT_FOUND` instead would refuse
+                // the whole copy preview.
+                Err(VolumeError::NotFound(_)) => return Ok(Vec::new()),
+                Err(e) => return Err(e),
+            };
             Ok(conflicts_against(source_items, &entries))
         })
     }

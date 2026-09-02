@@ -174,3 +174,25 @@ async fn smb_integration_not_found_honors_the_shared_path_payload_contract() {
 
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// The shared conflict-scan assertion, against a real SMB server: a destination
+/// the paste would create answers "nothing clashes", not the server's
+/// `STATUS_OBJECT_NAME_NOT_FOUND`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_conflict_scan_honors_the_shared_missing_destination_contract() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    let unborn = format!("{base}/not-created-yet");
+
+    cmdr_fs::volume::conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
+        smb_vol.as_ref(),
+        Path::new(&unborn),
+    )
+    .await;
+
+    ensure_clean(&smb_vol, &base).await;
+}
