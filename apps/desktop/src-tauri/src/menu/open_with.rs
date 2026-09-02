@@ -14,9 +14,10 @@
 //! bitmaps can't reproduce).
 //!
 //! The first candidate (the OS default for the right-clicked file) gets a plain-text
-//! ` (default)` suffix. TODO: once `tauri-apps/muda#353` lands and Tauri exposes
-//! `set_text_with_secondary` on its menu wrapper, render that suffix in
-//! `NSColor.secondaryLabelColor` to match Finder's "Open with" submenu styling.
+//! ` (default)` suffix. TODO: muda has `set_styled_text` now (`tauri-apps/muda#353`), so
+//! the remaining gap is Tauri: once its menu wrappers expose it, pass the suffix as a
+//! `TextStyle::Secondary` part so it renders in `NSColor.secondaryLabelColor`, matching
+//! Finder's "Open with" submenu.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
