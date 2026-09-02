@@ -36,6 +36,11 @@
             {/each}
         </ul>
     {/if}
+    <!-- Under the reasons, not among them: those are files Cmdr chose to keep,
+         this is Cmdr's own scratch it couldn't take away. -->
+    {#if readout.staged !== null}
+        <span class="staged">{readout.staged}</span>
+    {/if}
 </div>
 
 <style>
@@ -53,8 +58,14 @@
     /* The expectation-setting line and the reasons under it are the explanation,
        not the news, so they sit a step back from the headline. */
     .left-behind,
-    .reasons {
+    .reasons,
+    .staged {
         color: var(--color-text-secondary);
+    }
+
+    /* A scratch name carries a UUID and can't be broken at a space. */
+    .staged {
+        overflow-wrap: anywhere;
     }
 
     .reasons {

@@ -17,7 +17,7 @@ function skip(reason: SkipReason, count: number, exampleName = 'invoice-2026.pdf
 }
 
 function rollback(partial: Partial<CancelRollback>): CancelRollback {
-  return { outcome: 'notRolledBack', reversed: 0, skips: [], ...partial }
+  return { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null, ...partial }
 }
 
 describe('readCancelRollback', () => {
@@ -44,6 +44,7 @@ describe('readCancelRollback', () => {
         headline: 'Removed the 1,240 items Cmdr had written.',
         leftBehind: null,
         reasons: [],
+        staged: null,
         level: 'success',
       })
     })
@@ -80,6 +81,7 @@ describe('readCancelRollback', () => {
         headline: 'Stopped after removing 12 items. The rest are still there.',
         leftBehind: null,
         reasons: [],
+        staged: null,
         level: 'info',
       })
     })
@@ -104,6 +106,7 @@ describe('readCancelRollback', () => {
         headline: 'Removed 9 items.',
         leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
         reasons: ['Left invoice-2026.pdf alone: it changed after Cmdr put it there.'],
+        staged: null,
         level: 'info',
       })
     })
@@ -209,6 +212,7 @@ describe('readCancelRollback', () => {
         headline: 'Stopped after removing 5 items. The rest are still there.',
         leftBehind: null,
         reasons: [],
+        staged: null,
         level: 'info',
       })
     })
@@ -232,6 +236,85 @@ describe('readCancelRollback', () => {
         expect(readout?.reasons, `no line for ${reason}`).toHaveLength(1)
         expect(readout?.reasons[0], `${reason} should name the item`).toContain('thing.txt')
       }
+    })
+  })
+
+  describe("Cmdr's own scratch the destination wouldn't give up", () => {
+    // An abandoned write keeps its handle open, the destination refuses the
+    // delete for as long as that session lives, and the ledger reversal itself
+    // can still be perfect. The readout is the only thing standing between that
+    // and a user being told their NAS is clear while gigabytes sit on it.
+    const staged = { count: 1, exampleName: 'holiday.jpg.cmdr-tmp-4d1f9c' }
+
+    it('never lets a perfect ledger reversal read as a clean success', () => {
+      const readout = readCancelRollback(
+        rollback({ outcome: 'rolledBack', reversed: 4, stagedLeftovers: staged }),
+        'copy',
+      )
+      expect(readout).toEqual({
+        // `someDeleted`, never `doneDeleting`: "the items Cmdr had written" would
+        // claim a completeness the destination just denied.
+        headline: 'Removed 4 items.',
+        leftBehind: null,
+        reasons: [],
+        staged:
+          "Couldn't remove holiday.jpg.cmdr-tmp-4d1f9c, an unfinished copy left at the destination. " +
+          "It's safe to delete, and Cmdr clears it on a later transfer there.",
+        level: 'warn',
+      })
+    })
+
+    it('keeps the clean wording and the success colour when the sweep got everything', () => {
+      const readout = readCancelRollback(
+        rollback({ outcome: 'rolledBack', reversed: 4, stagedLeftovers: null }),
+        'copy',
+      )
+      expect(readout?.headline).toBe('Removed the 4 items Cmdr had written.')
+      expect(readout?.staged).toBeNull()
+      expect(readout?.level).toBe('success')
+    })
+
+    it('speaks even when no reversal ran at all', () => {
+      // A plain Stop, or a cross-volume move's cancel: there is no undo to
+      // report, and the leftover is still the user's to know about.
+      const readout = readCancelRollback(rollback({ stagedLeftovers: staged }), 'move')
+      expect(readout?.headline).toBeNull()
+      expect(readout?.staged).toContain('holiday.jpg.cmdr-tmp-4d1f9c')
+      expect(readout?.level).toBe('warn')
+    })
+
+    it('counts them instead of naming one when several stayed', () => {
+      const readout = readCancelRollback(
+        rollback({
+          outcome: 'rolledBack',
+          reversed: 0,
+          stagedLeftovers: { count: 1240, exampleName: 'holiday.jpg.cmdr-tmp-4d1f9c' },
+        }),
+        'copy',
+      )
+      expect(readout?.staged).toBe(
+        "Couldn't remove 1,240 unfinished copies left at the destination. " +
+          "They're safe to delete, and Cmdr clears them on a later transfer there.",
+      )
+    })
+
+    it('rides alongside the reasons rather than among them', () => {
+      // The reasons sit under "Cmdr skips anything it isn't sure about", which is
+      // Cmdr protecting the user's files. This is Cmdr's own leftover, so it
+      // must not borrow that framing.
+      const readout = readCancelRollback(
+        rollback({
+          outcome: 'partiallyRolledBack',
+          reversed: 2,
+          skips: [skip('drift', 1)],
+          stagedLeftovers: staged,
+        }),
+        'copy',
+      )
+      expect(readout?.reasons).toHaveLength(1)
+      expect(readout?.reasons[0]).not.toContain('cmdr-tmp')
+      expect(readout?.staged).toContain('cmdr-tmp')
+      expect(readout?.level).toBe('warn')
     })
   })
 })

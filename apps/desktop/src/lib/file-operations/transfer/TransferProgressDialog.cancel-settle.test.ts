@@ -184,7 +184,7 @@ describe('TransferProgressDialog cancel-settle gate', () => {
         operationId: 'op-1',
         operationType: 'delete',
         filesProcessed: 3,
-        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
       })
       await tick()
       expect(onCancelled, 'onCancelled must not fire on write-cancelled alone').not.toHaveBeenCalled()
@@ -223,7 +223,7 @@ describe('TransferProgressDialog cancel-settle gate', () => {
         operationId: 'op-1',
         operationType: 'delete',
         filesProcessed: 7,
-        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
       })
       await tick()
       vi.advanceTimersByTime(450)
@@ -270,7 +270,7 @@ describe('TransferProgressDialog cancel-settle gate', () => {
         operationId: 'op-other',
         operationType: 'delete',
         filesProcessed: 99,
-        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
       })
       settledCb({ operationId: 'op-other', operationType: 'delete', volumeId: 'mtp-1' })
       await tick()
@@ -304,7 +304,7 @@ describe('TransferProgressDialog is always dismissable', () => {
         operationId: 'op-1',
         operationType: 'delete',
         filesProcessed: 7,
-        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
       })
       await tick()
       expect(onCancelled, 'still waiting on settle').not.toHaveBeenCalled()

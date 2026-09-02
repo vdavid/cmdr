@@ -218,7 +218,7 @@ describe('a rolling-back row offers to pause and to stop', () => {
         operationId: 'inv-1',
         operationType: 'delete',
         filesProcessed: 2,
-        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
       },
     })
     emitSnapshot([])

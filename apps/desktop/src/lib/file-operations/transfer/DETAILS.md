@@ -689,6 +689,26 @@ already found: "name the one file" vs "count them" is a display decision, not a 
 as reversed, so it never arrives as a skip — and it stays in the map so a NEW `SkipReason` is a compile error here
 rather than a count silently dropped off the list.
 
+**Cmdr's OWN leftover gets its own line, outside the reason list.** `rollback.stagedLeftovers` is the `.cmdr-tmp-*`
+scratch a cancelled transfer's sweep asked the destination to remove and didn't get, because an abandoned write task
+still holds the handle (BE doc: `write_operations/transfer/DETAILS.md` § "Naming what a cancel left behind"). Three
+rules the readout enforces, and they exist because the defect being fixed was a toast that said the reversal was clean
+while gigabytes sat on the user's NAS:
+
+- **A leftover always speaks**, including through both silences above. `notRolledBack` carrying one raises a toast with
+  no headline at all, which is how a plain Stop and a cross-volume move's cancel get to report theirs.
+- **It never renders as a clean success.** The headline drops to the partial wording (`someDeleted`, never
+  `doneDeleting`, which says "the items Cmdr had written" and would claim a completeness the destination just denied)
+  and the level goes `warn`, whatever `outcome` says. `outcome` answers for the LEDGER only, so `rolledBack` plus a
+  leftover is a real combination rather than a contradiction to paper over.
+- **It sits BELOW the bullets, not among them.** The bullets live under "Cmdr skips anything it isn't sure about", which
+  is Cmdr protecting the user's files; this is Cmdr's own working file, and borrowing that framing would read as a
+  choice nobody made.
+
+The copy says it is safe to delete and that Cmdr clears it on **a later** transfer there. ❌ Never "the next one": the
+backstop sweep spares anything under an hour old, so a person who cancels and retries straight away meets their own
+leftover. Over-promising there would re-create the exact defect this line was added to remove.
+
 **The confirmation ends where its siblings do.** `fileOperations.rollbackConfirm.body` carries the same "Cmdr skips
 anything it isn't sure about, so a few may stay behind" clause as its three `bodyUndo*` siblings, because the recheck
 makes "this deletes every file the operation has written so far" an over-promise. The Rollback TOOLTIP is deliberately

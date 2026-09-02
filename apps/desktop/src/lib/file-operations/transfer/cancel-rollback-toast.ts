@@ -19,7 +19,13 @@ import { tString } from '$lib/intl/messages.svelte'
 import { addToast } from '$lib/ui/toast'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { ToastLevel } from '$lib/ui/toast'
-import type { CancelRollback, SkipBreakdown, SkipReason, WriteOperationType } from '$lib/ipc/bindings'
+import type {
+  CancelRollback,
+  SkipBreakdown,
+  SkipReason,
+  StagedLeftovers,
+  WriteOperationType,
+} from '$lib/ipc/bindings'
 import CancelRollbackToastContent from './CancelRollbackToastContent.svelte'
 
 /** What the toast says, already localized, in the order the lines are read. */
@@ -31,6 +37,9 @@ export interface CancelRollbackReadout {
   leftBehind: string | null
   /** One line per typed reason, in the order the backend grouped them. */
   reasons: string[]
+  /** Cmdr's own half-written working files that stayed at the destination.
+   *  `null` whenever the sweep cleared them, which is the ordinary ending. */
+  staged: string | null
   level: ToastLevel
 }
 
@@ -104,6 +113,25 @@ function levelFor(skips: SkipBreakdown[]): ToastLevel {
   return skips.some((group) => group.reason === 'failed') ? 'warn' : 'info'
 }
 
+/**
+ * The line about Cmdr's OWN scratch that stayed at the destination.
+ *
+ * Deliberately outside `reasons`: those lines sit under "Cmdr skips anything it
+ * isn't sure about", and nothing chose to keep these: the destination turned
+ * the delete down while an abandoned write still held the file open. Naming it
+ * when there is one is the same call the reason lines make: that name is what
+ * the user would go looking for at the destination.
+ */
+function stagedLine(staged: StagedLeftovers): string {
+  if (staged.count === 1) {
+    return tString('fileOperations.cancelRollback.stagedLeftover.named', { name: staged.exampleName })
+  }
+  return tString('fileOperations.cancelRollback.stagedLeftover.counted', {
+    countText: formatNumber(staged.count),
+    count: staged.count,
+  })
+}
+
 /** The count line for a reversal that finished, with nothing left behind. */
 function cleanHeadline(operationType: WriteOperationType, reversed: number): string {
   const key: MessageKey = movesItemsBack(operationType)
@@ -146,27 +174,61 @@ function stoppedHeadline(operationType: WriteOperationType, reversed: number): s
  * with no groups can only be a stop. When a stop DOES carry groups, the partial
  * wording covers it, because every line it prints is true either way and none
  * of them claims the ledger was walked to the end.
+ *
+ * **Both silences break the moment `stagedLeftovers` arrives.** `outcome`
+ * answers for the LEDGER alone, so a reversal really can walk it to the last
+ * entry while gigabytes of Cmdr's own scratch sit at the destination, and a
+ * user who chose Rollback asked for that destination to be cleared. So a
+ * leftover always speaks, it always takes the wording that claims nothing about
+ * completeness (never `cleanHeadline`, which says "the items"), and it is never
+ * `success`.
  */
 export function readCancelRollback(
   rollback: CancelRollback,
   operationType: WriteOperationType,
 ): CancelRollbackReadout | null {
-  const { outcome, reversed, skips } = rollback
-  if (outcome === 'notRolledBack') return null
+  const { outcome, reversed, skips, stagedLeftovers } = rollback
+  const staged = stagedLeftovers === null ? null : stagedLine(stagedLeftovers)
+  if (outcome === 'notRolledBack') {
+    if (staged === null) return null
+    return { headline: null, leftBehind: null, reasons: [], staged, level: 'warn' }
+  }
   if (outcome === 'rolledBack') {
-    if (reversed === 0) return null
-    return { headline: cleanHeadline(operationType, reversed), leftBehind: null, reasons: [], level: 'success' }
+    if (reversed === 0 && staged === null) return null
+    if (staged === null) {
+      return {
+        headline: cleanHeadline(operationType, reversed),
+        leftBehind: null,
+        reasons: [],
+        staged: null,
+        level: 'success',
+      }
+    }
+    return {
+      headline: reversed === 0 ? null : partialHeadline(operationType, reversed),
+      leftBehind: null,
+      reasons: [],
+      staged,
+      level: 'warn',
+    }
   }
 
   const reasons = skips.map(reasonLine).filter((line): line is string => line !== null)
   if (reasons.length === 0) {
-    return { headline: stoppedHeadline(operationType, reversed), leftBehind: null, reasons: [], level: 'info' }
+    return {
+      headline: stoppedHeadline(operationType, reversed),
+      leftBehind: null,
+      reasons: [],
+      staged,
+      level: staged === null ? 'info' : 'warn',
+    }
   }
   return {
     headline: reversed === 0 ? null : partialHeadline(operationType, reversed),
     leftBehind: tString('fileOperations.cancelRollback.leftBehind'),
     reasons,
-    level: levelFor(skips),
+    staged,
+    level: staged === null ? levelFor(skips) : 'warn',
   }
 }
 
@@ -187,7 +249,7 @@ export function raiseCancelRollbackToast(rollback: CancelRollback, operationType
   addToast(CancelRollbackToastContent, {
     id: CANCEL_ROLLBACK_TOAST_ID,
     level: readout.level,
-    timeoutMs: readout.reasons.length > 0 ? REASONS_TIMEOUT_MS : SUMMARY_TIMEOUT_MS,
+    timeoutMs: readout.reasons.length > 0 || readout.staged !== null ? REASONS_TIMEOUT_MS : SUMMARY_TIMEOUT_MS,
     props: { readout },
   })
 }

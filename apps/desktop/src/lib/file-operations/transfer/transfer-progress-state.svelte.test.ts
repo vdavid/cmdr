@@ -531,7 +531,7 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
       operationId: 'op-1',
       operationType: 'copy',
       filesProcessed: 4,
-      rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+      rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
     })
     flushSync()
     expect(state.operationSettled).toBe(true)
@@ -611,7 +611,7 @@ describe('createTransferProgressState: rollback', () => {
       operationId: 'op-1',
       operationType: 'copy',
       filesProcessed: 2,
-      rollback: { outcome: 'rolledBack', reversed: 2, skips: [] },
+      rollback: { outcome: 'rolledBack', reversed: 2, skips: [], stagedLeftovers: null },
     })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
     flushSync()
@@ -638,6 +638,7 @@ describe('createTransferProgressState: rollback', () => {
         outcome: 'partiallyRolledBack',
         reversed: 3,
         skips: [{ reason: 'drift', count: 1, exampleName: 'notes.md' }],
+        stagedLeftovers: null,
       },
     })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
@@ -661,7 +662,7 @@ describe('createTransferProgressState: rollback', () => {
       operationId: 'op-1',
       operationType: 'copy',
       filesProcessed: 4,
-      rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+      rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
     })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
     flushSync()
@@ -856,7 +857,7 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
       operationId: 'op-1',
       operationType: 'copy',
       filesProcessed: 0,
-      rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+      rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
     })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
     state.destroy()

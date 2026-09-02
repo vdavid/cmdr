@@ -236,7 +236,7 @@ describe('seeding', () => {
           operationId: 'a',
           operationType: 'copy',
           filesProcessed: 4,
-          rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+          rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
         },
       })
     })
@@ -290,7 +290,7 @@ describe('derived read state', () => {
         operationId: 'a',
         operationType: 'copy',
         filesProcessed: 2,
-        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [] },
+        rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
       },
     })
 

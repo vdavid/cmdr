@@ -317,7 +317,7 @@ describe('CancelRollbackToastContent a11y', () => {
     mount(CancelRollbackToastContent, {
       target,
       props: {
-        readout: { headline: 'Removed the 3 items Cmdr had written.', leftBehind: null, reasons: [], level: 'success' },
+        readout: { headline: 'Removed the 3 items Cmdr had written.', leftBehind: null, reasons: [], staged: null, level: 'success' },
       },
     })
     await tick()
@@ -336,6 +336,7 @@ describe('CancelRollbackToastContent a11y', () => {
             'Left notes.md alone: it changed after Cmdr put it there.',
             'Left 3 folders alone: they have something in them now.',
           ],
+          staged: null,
           level: 'info',
         },
       },

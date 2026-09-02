@@ -31,7 +31,7 @@ beforeEach(() => {
 
 describe('CancelRollbackToastContent', () => {
   it('shows a clean reversal as one line, with nothing to explain', () => {
-    render({ headline: 'Removed the 3 items Cmdr had written.', leftBehind: null, reasons: [], level: 'success' })
+    render({ headline: 'Removed the 3 items Cmdr had written.', leftBehind: null, reasons: [], staged: null, level: 'success' })
     expect(target.querySelector('.headline')?.textContent.trim()).toBe('Removed the 3 items Cmdr had written.')
     expect(target.querySelector('.left-behind')).toBeNull()
     expect(target.querySelector('ul')).toBeNull()
@@ -45,6 +45,7 @@ describe('CancelRollbackToastContent', () => {
         'Left notes.md alone: it changed after Cmdr put it there.',
         'Left 3 folders alone: they have something in them now.',
       ],
+      staged: null,
       level: 'info',
     })
     expect(lines()).toEqual([
@@ -58,6 +59,7 @@ describe('CancelRollbackToastContent', () => {
       headline: 'Removed 9 items.',
       leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
       reasons: ['Left notes.md alone: it changed after Cmdr put it there.'],
+      staged: null,
       level: 'info',
     })
     const rendered = target.textContent
@@ -70,10 +72,31 @@ describe('CancelRollbackToastContent', () => {
       headline: null,
       leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
       reasons: ['Left 2 items alone: they changed after Cmdr put them there.'],
+      staged: null,
       level: 'info',
     })
     expect(target.querySelector('.headline')).toBeNull()
     expect(target.querySelector('.left-behind')).not.toBeNull()
     expect(lines()).toHaveLength(1)
+  })
+
+  it("puts Cmdr's own leftover under the reasons, not among them", () => {
+    // The bulleted reasons sit under "Cmdr skips anything it isn't sure about",
+    // which is Cmdr protecting the user's files. A scratch file the destination
+    // wouldn't release is a different kind of news and must not borrow that
+    // framing by joining the list.
+    render({
+      headline: 'Removed 4 items.',
+      leftBehind: null,
+      reasons: [],
+      staged:
+        "Couldn't remove holiday.jpg.cmdr-tmp-4d1f9c, an unfinished copy left at the destination. " +
+        "It's safe to delete, and Cmdr clears it on a later transfer there.",
+      level: 'warn',
+    })
+    expect(target.querySelector('ul')).toBeNull()
+    expect(target.querySelector('.staged')?.textContent).toContain('holiday.jpg.cmdr-tmp-4d1f9c')
+    const rendered = target.textContent
+    expect(rendered.indexOf("Couldn't remove")).toBeGreaterThan(rendered.indexOf('Removed 4 items'))
   })
 })
