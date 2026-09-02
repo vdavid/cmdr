@@ -43,6 +43,11 @@ facts that none of those carry live here:
 - **`transfer_probe_tests.rs` is a `#[path]` sibling, not an inline `mod tests`**, for the same reason every other big
   module here splits: the probe plus its watchdog cases is 1.3k lines in one file. `retry.rs`'s policy tests stay inline
   (the module is small and the tests read as its specification).
+- **`transfer_probe_vocabulary.rs` is the probe's value half**, a `#[path]` child re-exported by `transfer_probe.rs`, so
+  every caller still writes `transfer_probe::<item>`. It holds what a row and a driver can SAY (`TaskPhase`,
+  `DriverPhase`, `TaskRole`, `TaskRow`) with each one's `label` and its round trip out of the `AtomicU8` it is stored
+  in; the live table, the registry, and the watchdog stay in `transfer_probe.rs`. The seam is that nothing in the
+  vocabulary takes a lock, holds an `Arc`, or reads the registry. ❌ Don't put a probe field or a counter here.
 
 ## Copy + move semantics
 
