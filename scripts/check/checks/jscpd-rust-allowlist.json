@@ -34,6 +34,10 @@
     "apps/desktop/src-tauri/src/stubs/volumes.rs ↔ apps/desktop/src-tauri/src/volumes_linux/fs_type.rs": 23,
     "apps/desktop/src-tauri/src/volumes/mod.rs ↔ apps/desktop/src-tauri/src/volumes_linux/mod.rs": 15,
     "apps/desktop/src-tauri/src/volumes/smb.rs ↔ apps/desktop/src-tauri/src/volumes_linux/smb.rs": 20,
+    "crates/cmdr-adb/src/volume/volume_impl.rs ↔ crates/cmdr-webdav/src/volume/volume_impl.rs": {
+      "lines": 117,
+      "reason": "`Volume` trait-method signatures again, in five blocks: the three `list_directory*` beside `max_concurrent_ops`, the `get_metadata` / `exists` / `is_directory` stat group, `open_read_stream_at_offset`, the `create_file` / `create_directory` / `create_directory_all` group, and `notify_mutation` beside the three `scan_for_*`. Every body is one line delegating to an inherent `*_impl` or straight to `cmdr_fs::volume`. Same trade as the `cmdr-sftp` ↔ `cmdr-webdav` entry: folding these takes a macro that emits trait methods, which costs more lines than it removes and hides every one from `codegraph_search` and go-to-definition. ❗ This pair GREW (82 → 117) when `cmdr-adb` dropped its own tree walk and listing patcher for `scan_walk` and `patching`: the last block matches only because both backends now delegate to the same shared code, so the number rising is what sharing the logic looks like from here. Revisit when a body stops being a one-line delegation, or when enough backends land that the macro pays for itself."
+    },
     "crates/cmdr-archive/src/read/tar.rs": 15,
     "crates/cmdr-fs/src/volume/in_memory.rs": 18,
     "crates/cmdr-index/src/importance/writer.rs ↔ crates/cmdr-index/src/media_index/writer/maintenance.rs": 11,
