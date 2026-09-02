@@ -1,12 +1,31 @@
 # System requirements and ES2025 adoption notes
 
-Reference for when we revisit minimum-OS pinning and adopting newer JS features. Assembled 2026-04-27 during the npm /
-Rust / Go dep sweep that followed the v0.14.0 release.
+Reference for minimum-OS pinning and for adopting newer JS features.
 
-## Current effective minimums (nothing declared)
+## The declared floor and what backs it
 
-We don't pin a `minimumSystemVersion` in `tauri.conf.json` and the website doesn't list a minimum OS version either;
-only "macOS (Apple Silicon and Intel)" and "Linux: alpha." So the floors below are implicit, imposed by the stack.
+Two numbers have to agree, and nothing but this note ties them together:
+
+- **`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.conf.json`** is what the `.app` claims: macOS
+  12.0 Monterey today. It's also the floor `desktop-rust-macos-availability` enforces every Objective-C selector
+  against.
+- **`build.target` in `apps/desktop/vite.config.js`** is what the frontend bundle is transpiled to: `safari15` today,
+  because Cmdr's WebKit IS the system Safari and Monterey ships Safari 15.0. `build.cssTarget` follows it, so JS and
+  CSS share one floor. `desktop-vite-build-target` fails the build if the pin goes missing or stops naming a Safari
+  version, but it deliberately enforces no relationship between the two numbers: mapping a macOS version to "the WebKit
+  we must assume" is a product call, not a fact (an untouched Monterey runs Safari 15.0, a fully patched one reaches
+  17.6). Move them together, by hand, and update this section.
+
+The website's download page lists no minimum OS version; only "macOS (Apple Silicon and Intel)" and "Linux: alpha."
+
+Leaving `build.target` unset is what the check exists to prevent. Vite's default is
+`ESBUILD_BASELINE_WIDELY_AVAILABLE_TARGET`, a MOVING baseline (Safari 16.4 under Vite 8), so an unset target drifts
+upward on a routine dep bump while the plist stays put. That gap was live: the bundle carried 286 raw `oklch()` colors
+(Safari 15.4+), so every one of those design tokens was unset on a Monterey that never updated Safari. Pinning
+`safari15` lowers them to `lab()` (Safari 15.0) and costs +8,939 bytes on a 6.2 MB bundle (verified on Vite 8.2.0,
+production build, 2026-09-02).
+
+## Effective minimums imposed by the stack
 
 ### macOS
 
@@ -15,11 +34,14 @@ only "macOS (Apple Silicon and Intel)" and "Linux: alpha." So the floors below a
 - **Intel binary (x86_64)**: macOS 10.15 Catalina (2019-10)
 - **Universal binary (what we ship)**: Per-arch: 10.15 Intel, 11.0 Apple Silicon
 - **Apple frameworks we touch (`IOKit`, `core-foundation`, `FSEvents`, etc)**: Ancient, not a binding constraint
-- **Modern CSS we use (`:has()`, container queries, top-level await)**: macOS 12 Monterey (2021-10) for things to render
-  correctly
+- **Modern CSS**: nothing above the `build.target` floor ships. Container queries (Safari 16) are gone from the tree and
+  banned by stylelint (`at-rule-disallowed-list` / `property-disallowed-list` in `apps/desktop/.stylelintrc.mjs`); the
+  stand-in is `useInlineSize` in `apps/desktop/src/lib/utils/inline-size-action.ts`. `:has()` (Safari 15.4) is unused.
+  The one thing esbuild can't lower is `color-mix()` over a `var()`, which is why the `@supports not (…)` fallbacks in
+  `app.css` and the runtime mixes behind `webkit-compat.ts` both have to stay.
 - **llama-server (AI feature only)**: Apple Silicon only (no Intel AI build, rest of app works fine)
 
-**Effective practical floor: macOS 12 Monterey (2021-10).** Anyone older may launch the app but see CSS render oddities.
+**Effective practical floor: macOS 12 Monterey (2021-10)**, the version the plist declares.
 
 ### Linux
 
@@ -68,14 +90,16 @@ Everything else needs macOS 14.7+, so adopting them means declaring that floor a
 
 ## Recommendation if we want to use the fancier ES2025 features
 
-1. Add `"minimumSystemVersion": "14.7"` (or "15.0") to `tauri.conf.json` macOS section.
+1. Raise `minimumSystemVersion` in `tauri.conf.json` to `14.7` (or `15.0`), and `build.target` in `vite.config.js` to
+   the matching Safari.
 2. Update website's download page system requirements to mention the version.
 3. Bump tsconfigs to `target: ES2025` so TypeScript knows these exist without manual `lib` overrides.
 4. Adopt `using` / `Set.union` / iterator helpers selectively where they shorten code.
 5. For Linux: ask the alpha tester what distro they're on. Anything beyond `Set` methods needs WebKitGTK 2.46+, which
    Ubuntu 24.04 doesn't ship (24.04 has 2.44).
 
-If we don't want to raise the floor, just keep `target: esnext` (which we already do) and skip these features.
+If we'd rather keep the floor where it is, leave `build.target` on `safari15` and skip these features. Note that
+raising the floor takes BOTH numbers: the plist and `build.target`.
 
 ## Other simplifications worth remembering for next time
 
