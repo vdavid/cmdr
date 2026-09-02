@@ -150,7 +150,7 @@
                                 <div class="mb-1">
                                     <div class="flex items-baseline justify-between text-xs">
                                         <span class="text-text-primary">{version.x}</span>
-                                        <span class="tabular-nums text-text-secondary">{formatNumber(version.y)}</span>
+                                        <span class="text-text-secondary tabular-nums">{formatNumber(version.y)}</span>
                                     </div>
                                     <MiniTimeline
                                         data={timelineData}
@@ -191,7 +191,7 @@
                             >
                                 <p class="mb-2 text-sm font-medium text-text-primary">
                                     {day}
-                                    <span class="ml-2 tabular-nums text-text-secondary">{formatNumber(dayTotal)} downloads</span>
+                                    <span class="ml-2 text-text-secondary tabular-nums">{formatNumber(dayTotal)} downloads</span>
                                 </p>
                                 <div class="flex items-start gap-5">
                                     <div>
@@ -259,7 +259,7 @@
                         <table class="w-full text-left text-sm">
                             <thead>
                                 <tr class="border-b border-border-subtle text-text-tertiary">
-                                    <th class="pb-2 pr-4 font-medium">Release</th>
+                                    <th class="pr-4 pb-2 font-medium">Release</th>
                                     <th class="pb-2 text-right font-medium tabular-nums">Downloads</th>
                                 </tr>
                             </thead>
@@ -267,7 +267,7 @@
                                 {#each github.data.releases.slice(0, 5) as release (release.tagName)}
                                     <tr class="border-b border-border-subtle/50">
                                         <td class="py-1.5 pr-4 text-text-primary">{release.tagName}</td>
-                                        <td class="py-1.5 text-right tabular-nums text-text-secondary"
+                                        <td class="py-1.5 text-right text-text-secondary tabular-nums"
                                             >{formatNumber(release.totalDownloads)}</td
                                         >
                                     </tr>

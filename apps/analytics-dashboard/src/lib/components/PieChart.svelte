@@ -71,11 +71,11 @@
     </svg>
     <div class="mt-1 space-y-px">
         {#each arcs as arc (arc.label)}
-            <div class="flex items-center gap-1.5 text-xs leading-tight">
+            <div class="flex items-center gap-1.5 text-xs/tight">
                 <span style="color: {arc.color}" class="text-[10px]">●</span>
                 <span class="text-text-secondary">{arc.label}</span>
-                <span class="ml-auto tabular-nums text-text-tertiary">{arc.value}</span>
-                <span class="w-9 tabular-nums text-text-tertiary text-right">{(arc.frac * 100).toFixed(0)}%</span>
+                <span class="ml-auto text-text-tertiary tabular-nums">{arc.value}</span>
+                <span class="w-9 text-right text-text-tertiary tabular-nums">{(arc.frac * 100).toFixed(0)}%</span>
             </div>
         {/each}
     </div>

@@ -21,16 +21,16 @@ const testimonials = [
         <div class="grid gap-6 md:grid-cols-3">
             {
                 testimonials.map((t) => (
-                    <div class="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 transition-all duration-300 hover:border-[var(--color-accent)]/30">
-                        <span class="mb-2 text-4xl leading-none text-[var(--color-accent-text)]" aria-hidden="true">
+                    <div class="flex flex-col rounded-2xl border border-border bg-surface p-8 transition-all duration-300 hover:border-accent/30">
+                        <span class="mb-2 text-4xl leading-none text-accent-text" aria-hidden="true">
                             &ldquo;
                         </span>
                         <blockquote
-                            class="mb-8 flex-1 text-lg italic leading-relaxed text-[var(--color-text-secondary)]"
+                            class="mb-8 flex-1 text-lg/relaxed text-text-secondary italic"
                             set:html={`${t.quote}`}
                         />
                         <div class="flex items-center gap-3">
-                            <div class="rounded-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent)]/40 p-[2px]">
+                            <div class="rounded-full bg-linear-to-br from-accent to-accent/40 p-[2px]">
                                 <img
                                     src="/images/david-88x88.jpg"
                                     srcset="/images/david-44x44.jpg 44w, /images/david-88x88.jpg 88w, /images/david-132x132.jpg 132w, /images/david.jpg 400w"
@@ -42,8 +42,8 @@ const testimonials = [
                                 />
                             </div>
                             <div>
-                                <p class="font-semibold text-[var(--color-text-primary)]">David</p>
-                                <p class="text-sm text-[var(--color-text-tertiary)]">software eng</p>
+                                <p class="font-semibold text-text-primary">David</p>
+                                <p class="text-sm text-text-tertiary">software eng</p>
                             </div>
                         </div>
                     </div>

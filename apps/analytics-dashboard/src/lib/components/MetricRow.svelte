@@ -15,12 +15,12 @@
         <div>
             <p class="flex items-center gap-1.5 text-xs text-text-tertiary">
                 {#if metric.color}
-                    <span class="inline-block h-2 w-2 rounded-full" style="background: {metric.color}"></span>
+                    <span class="inline-block size-2 rounded-full" style="background: {metric.color}"></span>
                 {/if}
                 {metric.label}
             </p>
             <div class="flex items-baseline gap-2">
-                <p class="text-2xl font-bold tabular-nums text-text-primary">{metric.value}</p>
+                <p class="text-2xl font-bold text-text-primary tabular-nums">{metric.value}</p>
                 {#if metric.delta}
                     <span class="text-sm tabular-nums {metric.delta.positive ? 'text-success' : 'text-danger'}">
                         {metric.delta.text}

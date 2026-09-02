@@ -60,17 +60,17 @@ const faq = [
     {
         question: 'Can I see the source code?',
         answer: "Yes! Cmdr is source-available. You can view the code, learn from it, verify that there are no nasty backdoors or any other weird stuff going on. You just can't reuse or republish the code or the app. The BSL 1.1 license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won't end up without updates forever.",
-        answerHtml: 'Yes! Cmdr is <a href="https://github.com/vdavid/cmdr" target="_blank" rel="noopener noreferrer" class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]">source-available</a>. You can view the code, learn from it, verify that there are no nasty backdoors or any other weird stuff going on. Just you can\'t reuse/republish the code or the app. The BSL 1.1 license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won\'t end up without updates forever.',
+        answerHtml: 'Yes! Cmdr is <a href="https://github.com/vdavid/cmdr" target="_blank" rel="noopener noreferrer" class="text-accent-text underline underline-offset-2 hover:text-accent-hover">source-available</a>. You can view the code, learn from it, verify that there are no nasty backdoors or any other weird stuff going on. Just you can\'t reuse/republish the code or the app. The BSL 1.1 license converts to AGPL-3.0 after 3 years, meaning that if the dev gets hit by a bus, you won\'t end up without updates forever.',
     },
     {
         question: 'What if I regret the purchase?',
         answer: "30-day, no-questions-asked refund. Send an email and you'll get your money back.",
-        answerHtml: '<a href="/refund" class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]">30-day, no-questions-asked refund</a>. Send an email and you\'ll get your money back.',
+        answerHtml: '<a href="/refund" class="text-accent-text underline underline-offset-2 hover:text-accent-hover">30-day, no-questions-asked refund</a>. Send an email and you\'ll get your money back.',
     },
     {
         question: 'Do you offer team licenses?',
         answer: 'Each person needs their own license. For teams of 10+ people, email legal@getcmdr.com for volume pricing.',
-        answerHtml: 'Each person needs their own license. For teams of 10+ people, email <a href="mailto:legal@getcmdr.com" class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]">legal@getcmdr.com</a> for volume pricing.',
+        answerHtml: 'Each person needs their own license. For teams of 10+ people, email <a href="mailto:legal@getcmdr.com" class="text-accent-text underline underline-offset-2 hover:text-accent-hover">legal@getcmdr.com</a> for volume pricing.',
     },
 ]
 ---
@@ -86,76 +86,76 @@ const faq = [
         <!-- Download Button -->
         <div class="mb-16">
             <DownloadButton variant="pricing" />
-            <p class="mt-3 text-sm text-[var(--color-text-tertiary)]">macOS only · Source-available (BSL 1.1)</p>
+            <p class="mt-3 text-sm text-text-tertiary">macOS only · Source-available (BSL 1.1)</p>
         </div>
 
         <!-- Pricing Cards -->
         <div class="mb-16 grid gap-6 md:grid-cols-3">
             <!-- Personal (Free) -->
-            <div class="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div class="flex flex-col rounded-2xl border border-border bg-surface p-6">
                 <div class="mb-4">
-                    <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Personal</h2>
-                    <p class="text-sm text-[var(--color-text-tertiary)]">For hobbyists and side projects</p>
+                    <h2 class="text-lg font-semibold text-text-primary">Personal</h2>
+                    <p class="text-sm text-text-tertiary">For hobbyists and side projects</p>
                 </div>
                 <div class="mb-6">
-                    <span class="text-3xl font-bold text-[var(--color-text-primary)]">Free</span>
-                    <span class="text-[var(--color-text-tertiary)]"> forever</span>
+                    <span class="text-3xl font-bold text-text-primary">Free</span>
+                    <span class="text-text-tertiary"> forever</span>
                 </div>
-                <ul class="mb-6 space-y-2 text-sm text-[var(--color-text-secondary)]">
+                <ul class="mb-6 space-y-2 text-sm text-text-secondary">
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         All features
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         Unlimited machines
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         Automatic updates
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-text-tertiary)]">✗</span>
-                        <span class="text-[var(--color-text-tertiary)]">Commercial use</span>
+                        <span class="text-text-tertiary">✗</span>
+                        <span class="text-text-tertiary">Commercial use</span>
                     </li>
                 </ul>
-                <div class="mt-auto py-2 text-center text-sm text-[var(--color-text-tertiary)]">Just download and use it</div>
+                <div class="mt-auto py-2 text-center text-sm text-text-tertiary">Just download and use it</div>
             </div>
 
             <!-- Commercial Subscription -->
             <div
-                class="relative mt-4 flex flex-col rounded-2xl border-2 border-[var(--color-accent)] bg-[var(--color-surface)] p-6 shadow-lg md:mt-0"
+                class="relative mt-4 flex flex-col rounded-2xl border-2 border-accent bg-surface p-6 shadow-lg md:mt-0"
             >
                 <div
-                    class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-accent)] px-3 py-1 text-xs font-medium text-[var(--color-accent-contrast)]"
+                    class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-contrast"
                 >
                     Most popular
                 </div>
                 <div class="mb-4">
-                    <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Commercial</h2>
-                    <p class="text-sm text-[var(--color-text-tertiary)]">For work use</p>
+                    <h2 class="text-lg font-semibold text-text-primary">Commercial</h2>
+                    <p class="text-sm text-text-tertiary">For work use</p>
                 </div>
                 <div class="mb-6">
-                    <span class="text-lg text-[var(--color-text-tertiary)] line-through">$79</span>
-                    <span class="text-3xl font-bold text-[var(--color-text-primary)]"> $59</span>
-                    <span class="text-[var(--color-text-tertiary)]">/year</span>
-                    <div class="mt-1 text-xs text-[var(--color-accent-text)]">First 1,000 licenses</div>
+                    <span class="text-lg text-text-tertiary line-through">$79</span>
+                    <span class="text-3xl font-bold text-text-primary"> $59</span>
+                    <span class="text-text-tertiary">/year</span>
+                    <div class="mt-1 text-xs text-accent-text">First 1,000 licenses</div>
                 </div>
-                <ul class="mb-6 space-y-2 text-sm text-[var(--color-text-secondary)]">
+                <ul class="mb-6 space-y-2 text-sm text-text-secondary">
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         All features
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
-                        <strong class="text-[var(--color-text-primary)]">Commercial use</strong>
+                        <span class="text-accent-text">✓</span>
+                        <strong class="text-text-primary">Commercial use</strong>
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         Per user, your own devices
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         Auto-renews annually
                     </li>
                 </ul>
@@ -163,37 +163,37 @@ const faq = [
                     type="button"
                     data-paddle-price="commercialSubscription"
                     disabled={!isPaddleConfigured}
-                    class="mt-auto block w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-2 text-center text-sm font-medium text-[var(--color-accent-contrast)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="mt-auto block w-full cursor-pointer rounded-lg bg-accent py-2 text-center text-sm font-medium text-accent-contrast transition-all duration-200 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy commercial license
                 </button>
             </div>
 
             <!-- Commercial Perpetual -->
-            <div class="flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div class="flex flex-col rounded-2xl border border-border bg-surface p-6">
                 <div class="mb-4">
-                    <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Perpetual</h2>
-                    <p class="text-sm text-[var(--color-text-tertiary)]">Buy once, use forever</p>
+                    <h2 class="text-lg font-semibold text-text-primary">Perpetual</h2>
+                    <p class="text-sm text-text-tertiary">Buy once, use forever</p>
                 </div>
                 <div class="mb-6">
-                    <span class="text-3xl font-bold text-[var(--color-text-primary)]">$199</span>
-                    <span class="text-[var(--color-text-tertiary)]"> one-time</span>
+                    <span class="text-3xl font-bold text-text-primary">$199</span>
+                    <span class="text-text-tertiary"> one-time</span>
                 </div>
-                <ul class="mb-6 space-y-2 text-sm text-[var(--color-text-secondary)]">
+                <ul class="mb-6 space-y-2 text-sm text-text-secondary">
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         All features
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
-                        <strong class="text-[var(--color-text-primary)]">Commercial use</strong>
+                        <span class="text-accent-text">✓</span>
+                        <strong class="text-text-primary">Commercial use</strong>
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         Per user, your own devices
                     </li>
                     <li class="flex items-start gap-2">
-                        <span class="text-[var(--color-accent-text)]">✓</span>
+                        <span class="text-accent-text">✓</span>
                         1 year of updates
                     </li>
                 </ul>
@@ -201,7 +201,7 @@ const faq = [
                     type="button"
                     data-paddle-price="commercialPerpetual"
                     disabled={!isPaddleConfigured}
-                    class="mt-auto block w-full cursor-pointer rounded-lg border border-[var(--color-border)] py-2 text-center text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="mt-auto block w-full cursor-pointer rounded-lg border border-border py-2 text-center text-sm font-medium text-text-primary transition-colors hover:bg-surface-elevated focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Buy perpetual license
                 </button>
@@ -219,15 +219,15 @@ const faq = [
             })),
         })} />
         <section>
-            <h2 class="mb-8 text-2xl font-bold text-[var(--color-text-primary)]">
+            <h2 class="mb-8 text-2xl font-bold text-text-primary">
                 Frequently asked questions
             </h2>
 
             <div class="grid gap-6 md:grid-cols-2">
                 {faq.map(({ question, answer, answerHtml }) => (
-                    <div class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-5">
-                        <h3 class="mb-2 font-semibold text-[var(--color-text-primary)]">{question}</h3>
-                        <p class="text-[var(--color-text-secondary)]" set:html={answerHtml ?? answer} />
+                    <div class="rounded-lg border border-border-subtle bg-surface p-5">
+                        <h3 class="mb-2 font-semibold text-text-primary">{question}</h3>
+                        <p class="text-text-secondary" set:html={answerHtml ?? answer} />
                     </div>
                 ))}
             </div>
@@ -237,61 +237,61 @@ const faq = [
 
     {/* Organization name modal for commercial checkouts */}
     <div id="org-name-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="org-modal-title">
-        <div class="relative mx-4 w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
+        <div class="relative mx-4 w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl">
             <button
                 type="button"
                 id="org-modal-close"
-                class="absolute right-4 top-4 rounded text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                class="absolute top-4 right-4 rounded-sm text-text-tertiary transition-colors hover:text-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 aria-label="Close"
             >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
 
-            <div class="mb-1 text-xs font-medium uppercase tracking-wide text-[var(--color-accent-text)]">
+            <div class="mb-1 text-xs font-medium tracking-wide text-accent-text uppercase">
                 Step 1 of 2
             </div>
-            <h2 id="org-modal-title" class="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
+            <h2 id="org-modal-title" class="mb-2 text-xl font-semibold text-text-primary">
                 Company details
             </h2>
-            <p class="mb-6 text-sm text-[var(--color-text-secondary)]">
+            <p class="mb-6 text-sm text-text-secondary">
                 Enter your company name as you'd like it to appear on your invoice.
             </p>
 
             <div class="mb-4">
-                <label for="org-name-input" class="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+                <label for="org-name-input" class="mb-2 block text-sm font-medium text-text-primary">
                     Company name
                 </label>
                 <input
                     type="text"
                     id="org-name-input"
                     placeholder="Example: Acme Inc."
-                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                    class="w-full rounded-lg border border-border bg-background px-4 py-3 text-text-primary placeholder-text-tertiary transition-colors focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
             </div>
 
             <div class="mb-6">
-                <label for="org-email-input" class="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+                <label for="org-email-input" class="mb-2 block text-sm font-medium text-text-primary">
                     Email
                 </label>
                 <input
                     type="email"
                     id="org-email-input"
                     placeholder="Example: you@acme.com"
-                    class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] transition-colors focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                    class="w-full rounded-lg border border-border bg-background px-4 py-3 text-text-primary placeholder-text-tertiary transition-colors focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
             </div>
 
             <button
                 type="button"
                 id="org-modal-continue"
-                class="w-full cursor-pointer rounded-lg bg-[var(--color-accent)] py-3 text-center font-medium text-[var(--color-accent-contrast)] transition-all duration-200 hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                class="w-full cursor-pointer rounded-lg bg-accent py-3 text-center font-medium text-accent-contrast transition-all duration-200 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Continue to payment
             </button>
 
-            <p class="mt-4 text-center text-xs text-[var(--color-warning)]">
+            <p class="mt-4 text-center text-xs text-warning">
                 <strong>Need your company address on the invoice?<br /> Click "Add VAT number" before entering your card details.</strong>
             </p>
         </div>

@@ -13,7 +13,7 @@
     <table class="w-full text-left text-sm">
         <thead>
             <tr class="border-b border-border-subtle text-text-tertiary">
-                <th class="pb-2 pr-4 font-medium">{colLabel}</th>
+                <th class="pr-4 pb-2 font-medium">{colLabel}</th>
                 <th class="pb-2 text-right font-medium">{colValue}</th>
             </tr>
         </thead>
@@ -21,7 +21,7 @@
             {#each items as item (item.x)}
                 <tr class="border-b border-border-subtle/50">
                     <td class="py-1.5 pr-4 text-text-primary">{item.x || '(direct)'}</td>
-                    <td class="py-1.5 text-right tabular-nums text-text-secondary">{formatNumber(item.y)}</td>
+                    <td class="py-1.5 text-right text-text-secondary tabular-nums">{formatNumber(item.y)}</td>
                 </tr>
             {/each}
         </tbody>

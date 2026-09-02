@@ -34,7 +34,7 @@ const postsWithExcerpts = await Promise.all(
 <Layout title="Blog | Cmdr" description="Product updates, behind-the-scenes stories, and tips.">
     <Header />
     <main class="mx-auto max-w-3xl px-6 pt-32 pb-24">
-        <h1 class="mb-12 text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">Blog</h1>
+        <h1 class="mb-12 text-4xl font-bold tracking-tight text-text-primary">Blog</h1>
 
         {
             postsWithExcerpts.map(({ post, excerptHtml, formattedDate }, index) => {
@@ -43,7 +43,7 @@ const postsWithExcerpts = await Promise.all(
                         <article class="mb-16">
                             <header class="mb-6">
                                 <time
-                                    class="text-sm text-[var(--color-text-tertiary)]"
+                                    class="text-sm text-text-tertiary"
                                     datetime={post.data.date.toISOString().slice(0, 10)}
                                 >
                                     {formattedDate}
@@ -51,7 +51,7 @@ const postsWithExcerpts = await Promise.all(
                                 <h2 class="mt-1 text-2xl font-bold tracking-tight">
                                     <a
                                         href={`/blog/${post.id}`}
-                                        class="text-[var(--color-text-primary)] no-underline transition-colors hover:text-[var(--color-accent-text)]"
+                                        class="text-text-primary no-underline transition-colors hover:text-accent-text"
                                     >
                                         {post.data.title}
                                     </a>

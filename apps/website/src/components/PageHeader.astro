@@ -16,12 +16,12 @@ const { title, class: className = 'mb-14' } = Astro.props
 ---
 
 <header class:list={[className]}>
-    <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl lg:text-5xl">
+    <h1 class="mb-4 text-3xl font-bold tracking-tight text-text-primary md:text-4xl lg:text-5xl">
         {title}
     </h1>
     {
         Astro.slots.has('default') && (
-            <p class="max-w-2xl text-lg text-[var(--color-text-secondary)]">
+            <p class="max-w-2xl text-lg text-text-secondary">
                 <slot />
             </p>
         )

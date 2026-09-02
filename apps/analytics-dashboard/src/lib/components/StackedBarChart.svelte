@@ -74,7 +74,7 @@
     <!-- X-axis labels -->
     <div class="mt-1 flex gap-px">
         {#each days as day, dayIdx (day)}
-            <div class="flex-1 text-center text-[9px] tabular-nums text-text-tertiary">
+            <div class="flex-1 text-center text-[9px] text-text-tertiary tabular-nums">
                 {dayIdx % labelEvery === 0 ? shortDay(day) : ''}
             </div>
         {/each}
@@ -84,7 +84,7 @@
     <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1">
         {#each series as s (s.key)}
             <div class="flex items-center gap-1.5 text-xs text-text-secondary">
-                <span class="inline-block h-2.5 w-2.5 rounded-sm" style="background-color: {s.color};"></span>
+                <span class="inline-block size-2.5 rounded-sm" style="background-color: {s.color};"></span>
                 {s.label}
             </div>
         {/each}
@@ -96,17 +96,17 @@
         <div class="mt-3 inline-block rounded-lg border border-border bg-surface-elevated p-3 text-sm">
             <p class="mb-1 font-medium text-text-primary">
                 {days[dayIdx]}
-                <span class="ml-2 tabular-nums text-text-secondary">{dayTotals[dayIdx]} {unitLabel}</span>
+                <span class="ml-2 text-text-secondary tabular-nums">{dayTotals[dayIdx]} {unitLabel}</span>
             </p>
             <div class="flex flex-col gap-0.5">
                 {#each series as s (s.key)}
                     {@const value = s.values[dayIdx] ?? 0}
                     <div class="flex items-center justify-between gap-4 text-xs">
                         <span class="flex items-center gap-1.5 text-text-secondary">
-                            <span class="inline-block h-2.5 w-2.5 rounded-sm" style="background-color: {s.color};"></span>
+                            <span class="inline-block size-2.5 rounded-sm" style="background-color: {s.color};"></span>
                             {s.label}
                         </span>
-                        <span class="tabular-nums text-text-primary">{value}</span>
+                        <span class="text-text-primary tabular-nums">{value}</span>
                     </div>
                 {/each}
             </div>

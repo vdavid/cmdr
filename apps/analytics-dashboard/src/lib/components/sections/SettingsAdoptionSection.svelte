@@ -78,10 +78,10 @@
                         <table class="w-full text-left text-sm">
                             <thead>
                                 <tr class="border-b border-border-subtle text-text-tertiary">
-                                    <th class="pb-2 pr-4 font-medium">Setting</th>
-                                    <th class="pb-2 pr-4 font-medium">Default</th>
-                                    <th class="pb-2 pr-4 text-right font-medium">Installs</th>
-                                    <th class="pb-2 pr-4 text-right font-medium">On default</th>
+                                    <th class="pr-4 pb-2 font-medium">Setting</th>
+                                    <th class="pr-4 pb-2 font-medium">Default</th>
+                                    <th class="pr-4 pb-2 text-right font-medium">Installs</th>
+                                    <th class="pr-4 pb-2 text-right font-medium">On default</th>
                                     <th class="pb-2 font-medium">Most common change</th>
                                 </tr>
                             </thead>
@@ -92,10 +92,10 @@
                                     <tr class="border-b border-border-subtle/50">
                                         <td class="py-1.5 pr-4 font-mono text-xs text-text-primary">{setting.key}</td>
                                         <td class="py-1.5 pr-4 text-text-secondary">{setting.defaultLabel ?? 'changed by version'}</td>
-                                        <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">
+                                        <td class="py-1.5 pr-4 text-right text-text-secondary tabular-nums">
                                             {formatNumber(setting.eligible)}
                                         </td>
-                                        <td class="py-1.5 pr-4 text-right tabular-nums text-text-secondary">
+                                        <td class="py-1.5 pr-4 text-right text-text-secondary tabular-nums">
                                             {share === null ? '–' : formatShare(share)}
                                         </td>
                                         <td class="py-1.5 text-text-secondary">

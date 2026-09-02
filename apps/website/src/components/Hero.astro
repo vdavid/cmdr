@@ -13,7 +13,7 @@ const currentYear = new Date().getFullYear()
 
     <!-- Grid pattern overlay -->
     <div
-        class="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--color-border-subtle)_1px,transparent_1px),linear-gradient(90deg,var(--color-border-subtle)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black,transparent)]"
+        class="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--color-border-subtle)_1px,transparent_1px),linear-gradient(90deg,var(--color-border-subtle)_1px,transparent_1px)] mask-[radial-gradient(ellipse_60%_60%_at_50%_50%,black,transparent)] bg-size-[4rem_4rem]"
     >
     </div>
 
@@ -21,32 +21,32 @@ const currentYear = new Date().getFullYear()
         <!-- Open-beta eyebrow - Step 1 -->
         <a
             href="/features"
-            class="animate-blur-in stagger-1 mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-1 text-sm font-medium text-[var(--color-accent-text)] transition-colors hover:bg-[var(--color-accent)]/20"
+            class="animate-blur-in stagger-1 mb-5 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-sm font-medium text-accent-text transition-colors hover:bg-accent/20"
         >
             Now in open beta
             <span aria-hidden="true">&rarr;</span>
         </a>
 
         <!-- Headline - Steps 2 & 3 -->
-        <h1 class="mb-6 text-3xl font-bold leading-tight tracking-tight md:text-4xl lg:text-6xl">
+        <h1 class="mb-6 text-3xl/tight font-bold tracking-tight md:text-4xl lg:text-6xl">
             <span class="animate-blur-in stagger-2 inline-block">Finally, a file manager</span>
-            <span class="animate-blur-in stagger-3 inline-block gradient-text">from {currentYear}!</span>
+            <span class="animate-blur-in stagger-3 gradient-text inline-block">from {currentYear}!</span>
         </h1>
 
         <!-- Subheadline - Step 4: a lead line, the two "plus" points as a real list, then the
              closer. The list owns the indent and the line breaks, so the copy survives being
              re-worded or translated; `max-w-3xl` keeps each point on one line at the md size. -->
         <div
-            class="animate-blur-in stagger-4 mb-10 max-w-3xl text-lg leading-relaxed text-[var(--color-text-secondary)] md:text-xl"
+            class="animate-blur-in stagger-4 mb-10 max-w-3xl text-lg/relaxed text-text-secondary md:text-xl"
         >
             <p>The standard two-pane file manager experience we already love,</p>
             <ul class="mt-1 space-y-1 ps-6">
                 <li>
-                    <em class="text-[var(--color-accent-text)]">plus</em> a drive index for instant search and visible folder
+                    <em class="text-accent-text">plus</em> a drive index for instant search and visible folder
                     sizes,
                 </li>
                 <li>
-                    <em class="text-[var(--color-accent-text)]">plus</em> a bunch of (optional!) AI features to organize your
+                    <em class="text-accent-text">plus</em> a bunch of (optional!) AI features to organize your
                     files.
                 </li>
             </ul>
@@ -60,11 +60,11 @@ const currentYear = new Date().getFullYear()
             <a
                 href="#homebrew"
                 data-brew-jump
-                class="animate-blur-in stagger-6 inline-flex items-center gap-1.5 self-center text-sm text-[var(--color-text-tertiary)] underline decoration-[var(--color-border)] underline-offset-4 transition-colors hover:text-[var(--color-accent-text)] hover:decoration-[var(--color-accent)] sm:self-auto"
+                class="animate-blur-in stagger-6 inline-flex items-center gap-1.5 self-center text-sm text-text-tertiary underline decoration-border underline-offset-4 transition-colors hover:text-accent-text hover:decoration-accent sm:self-auto"
             >
                 or Homebrew
                 <svg
-                    class="h-3.5 w-3.5"
+                    class="size-3.5"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -79,12 +79,12 @@ const currentYear = new Date().getFullYear()
         </div>
 
         <!-- Pricing hint - Step 7 -->
-        <p class="animate-blur-in stagger-7 mt-8 text-sm text-[var(--color-text-tertiary)]">
+        <p class="animate-blur-in stagger-7 mt-8 text-sm text-text-tertiary">
             <a
                 href="https://github.com/vdavid/cmdr"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="link-muted hover:text-[var(--color-accent-text)]">Source-available</a
+                class="link-muted hover:text-accent-text">Source-available</a
             > · Free for personal use · Commercial from $59/year
         </p>
     </div>

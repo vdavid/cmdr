@@ -35,7 +35,7 @@
     <table class="w-full text-left text-sm">
         <thead>
             <tr class="border-b border-border-subtle text-text-tertiary">
-                <th class="pb-2 pr-4 font-medium">Country</th>
+                <th class="pr-4 pb-2 font-medium">Country</th>
                 <th class="pb-2 text-right font-medium">Downloads</th>
             </tr>
         </thead>
@@ -53,7 +53,7 @@
                     }}
                 >
                     <td class="py-1.5 pr-4 text-text-primary">{formatCountry(item.x)}</td>
-                    <td class="py-1.5 text-right tabular-nums text-text-secondary">{formatNumber(item.y)}</td>
+                    <td class="py-1.5 text-right text-text-secondary tabular-nums">{formatNumber(item.y)}</td>
                 </tr>
             {/each}
         </tbody>
@@ -79,7 +79,7 @@
                 <div class="mb-1">
                     <div class="flex items-baseline justify-between text-xs">
                         <span class="text-text-secondary">{arch.x}</span>
-                        <span class="tabular-nums text-text-tertiary">{formatNumber(arch.y)}</span>
+                        <span class="text-text-tertiary tabular-nums">{formatNumber(arch.y)}</span>
                     </div>
                     <MiniTimeline data={td} height={48} maxY={archMaxY} xMin={zoomXMin} xMax={zoomXMax} />
                 </div>
@@ -93,7 +93,7 @@
                 <div class="mb-1">
                     <div class="flex items-baseline justify-between text-xs">
                         <span class="text-text-secondary">{ver.x}</span>
-                        <span class="tabular-nums text-text-tertiary">{formatNumber(ver.y)}</span>
+                        <span class="text-text-tertiary tabular-nums">{formatNumber(ver.y)}</span>
                     </div>
                     <MiniTimeline data={td} height={48} maxY={verMaxY} xMin={zoomXMin} xMax={zoomXMax} />
                 </div>
