@@ -50,7 +50,9 @@ The full top-level inventory is here:
   archive I/O: `archive_remote_edit.rs`, `scratch_dir.rs`. Entry points: `create/` + `create.rs`, `rename/` +
   `rename.rs`, `paste_clipboard.rs`, `routing.rs` (the one routing every cross-volume transfer takes:
   `start_volume_{copy,move,compress}`). `source_binding.rs` is the optional set of sources an op may touch. Fixtures:
-  `test_support.rs`.
+  `test_support.rs`, plus `network_transfer_test_support.rs` and `network_gated_source_test_support.rs` (the
+  backend-blind transfer scenarios the WebDAV and SFTP Docker suites both drive, and the chunk-gated source one of them
+  needs; see § "The network transfer suites").
 
 What the mechanisms DO is in the sections below: the registry, lanes, and `run_instant` in § "Operation manager";
 the zip-edit driver in § "Archive edits"; cancellation, pause, Stop-mode conflicts, safe overwrite, scan-preview caching,
@@ -902,6 +904,40 @@ sibling's pass can only satisfy them early, never fail them.
 handle threaded through its callers needs none of it.
 
 See also: `docs/testing.md` for the project-wide testing playbook.
+
+## The network transfer suites
+
+`webdav_transfer_integration_test.rs` and `sftp_transfer_integration_test.rs` copy real bytes between local disk and a
+live fixture server through `copy_between_volumes`, which is the seam neither backend crate can reach: both directions
+of an actual copy were once broken in the app while `cmdr-sftp`'s own Docker suite was fully green (a `supports_export`
+predicate the crate never states, and a free-space pre-flight reading `NotSupported` as "no room").
+
+- **The scenarios are backend-blind and live in `network_transfer_test_support.rs`.** Everything they touch is
+  `dyn Volume`, so a claim proved against WebDAV is proved in the same words against SFTP and the two suites can't
+  drift. Each backend file connects its own fixture, mints a scratch dir, and delegates.
+- **❗ The cells themselves must stay in the two backend files, on the `webdav_integration_` / `sftp_integration_` name
+  prefix.** The integration lane selects the app crate's Docker cells by NAME (`scripts/check/checks/fixture-lane-coverage.go`,
+  enforced by `desktop-fixture-lane-coverage`), so a scenario promoted to a `#[tokio::test]` in the shared file would
+  compile, look like coverage, and never run anywhere.
+- **What the shared scenarios pin**: a nested directory tree lands intact in both directions (structure and bytes, as
+  one `tree_fingerprint` comparison); a copy cancelled mid-upload leaves neither the user's filename nor a
+  `.cmdr-tmp-*` sibling; an Overwrite answer travels out as a `write-conflict` and back through
+  `resolve_write_conflict` and lands the source bytes; a PRE-EXISTING destination folder still probes each name under
+  the concurrent driver (what a wrongly-`Created` `DirectoryCreation` would turn into a silent overwrite of every
+  clashing file); and awkward names (`&`, `+`, `%`, `#`, non-ASCII) plus a zero-byte file survive a full round trip.
+- **Nothing here waits on a stopwatch to decide a verdict.** The fixture stack is machine-wide and shared with every
+  sibling worktree, so a wait that expires says "the containers were busy" at least as loudly as it says "the code is
+  wrong". Two consequences to keep: a wait for a clash also ends when the operation SETTLES, so a destination probe that
+  never happened fails as a sentence rather than as a timeout; and the cancel cell's premise is a chunk COUNT, not a
+  duration.
+- **The cancel cell holds the source at a chunk boundary rather than racing a timer.** Its `GatedUploadSource`
+  (`network_gated_source_test_support.rs`, split out so neither file crosses the `file-length` warn threshold) hands
+  out one chunk per semaphore permit, so the destination provably holds an open, incomplete staging sibling when the
+  cancel lands; it then insists a `write-cancelled` was emitted and no `write-complete` was, so neither a copy that
+  finished nor a run the host starved can satisfy the later claims for the wrong reason. It waits for TWO chunks, not
+  one: the stream is polled again only once the destination has taken the previous chunk, so the second hand-out is what
+  proves the first reached the server. That also keeps the cell inside the workspace-wide 8 s nextest cap,
+  which a payload big enough to outrun a stopwatch would not.
 
 ## Bulk rename's hop log
 
