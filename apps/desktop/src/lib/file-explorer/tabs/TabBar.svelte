@@ -6,6 +6,8 @@
     import { deriveTabLabel } from './tab-label'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
+    import { useInlineSize } from '$lib/utils/inline-size-action'
+    import { SvelteSet } from 'svelte/reactivity'
 
     interface Props {
         tabs: TabState[]
@@ -42,6 +44,32 @@
     const newTabShortcut = $derived(getFirstShortcutReactive('tab.new'))
 
     const volumeNameById = $derived(new Map(getVolumes().map((v) => [v.id, v.name])))
+
+    /** Content-box width at or below which a tab drops its close button, in px. */
+    const NARROW_TAB_WIDTH = 80
+
+    /** Tabs currently too narrow for a close button, by id. */
+    const narrowTabs = new SvelteSet<TabId>()
+
+    // Measured per tab rather than queried in CSS: `@container` needs Safari 16
+    // and Cmdr's floor is Safari 15, where the whole block is dropped silently
+    // and every tab keeps a close button it has no room for. `useInlineSize`
+    // reports the same content box a size query would, so the threshold above is
+    // the one the `@container (max-width: 80px)` rule used.
+    function measureTab(tabId: TabId, inlineSize: number): void {
+        // 0 is "not measured yet" (the observer's first callback lands after the
+        // first paint), not "narrower than everything".
+        if (inlineSize > 0 && inlineSize <= NARROW_TAB_WIDTH) narrowTabs.add(tabId)
+        else narrowTabs.delete(tabId)
+    }
+
+    // Closing a tab leaves its id behind; drop it so the set can't outgrow the bar.
+    $effect(() => {
+        const live = new Set(tabs.map((tab) => tab.id))
+        for (const id of narrowTabs) {
+            if (!live.has(id)) narrowTabs.delete(id)
+        }
+    })
 
     function tabTooltipText(tab: TabState): string {
         const volumeName = volumeNameById.get(tab.volumeId)
@@ -99,9 +127,15 @@
                 class:pinned={tab.pinned}
                 class:unreachable={!!tab.unreachable}
                 class:after-active={isAfterActive}
+                class:narrow={narrowTabs.has(tab.id)}
                 role="tab"
                 aria-selected={isActive}
                 use:tooltip={tabTooltipText(tab)}
+                use:useInlineSize={{
+                    onResize: (inlineSize: number) => {
+                        measureTab(tab.id, inlineSize)
+                    },
+                }}
                 onmousedown={(e: MouseEvent) => {
                     handleTabMouseDown(e, tab.id)
                 }}
@@ -244,7 +278,6 @@
         cursor: default;
         overflow: hidden;
         white-space: nowrap;
-        container-type: inline-size;
         transition:
             background-color var(--transition-fast),
             color var(--transition-fast);
@@ -480,11 +513,11 @@
         color: var(--color-text-primary);
     }
 
-    /* Hide close button when tab is narrower than 80px via container query */
-    @container (max-width: 80px) {
-        .close-btn {
-            display: none;
-        }
+    /* Hide the close button on a tab too narrow to hold one. `.narrow` is set from
+       a measured width (see `measureTab` above), not by a container query:
+       `@container` needs Safari 16 and Cmdr's floor is Safari 15. */
+    .tab.narrow .close-btn {
+        display: none;
     }
 
     /* A circle centred in the bar. `.tab-bar` is `align-items: end` so the tabs can

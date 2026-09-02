@@ -93,6 +93,25 @@ through the HOUSE tooltip. Never a native `title`: its delay and chrome are the 
 dialogs, and result lists alike, which would otherwise hover three different ways. `tooltipWhenTruncated?: boolean`
 narrows the tooltip to strings truncation actually trimmed (default `false`: hover always shows the full text).
 
+## inline-size-action.ts
+
+`useInlineSize(node, { onResize })` is the house stand-in for a CSS container query: it reports an element's
+content-box inline size at mount and on every resize, so Svelte can branch in markup where CSS would have used
+`@container`.
+
+Why it exists: `@container` / `container-type` need Safari 16, and Cmdr's WebKit floor is Safari 15 (`build.target` in
+`apps/desktop/vite.config.js`, guarded by the `desktop-vite-build-target` check). Old WebKit drops an unsupported
+at-rule block whole and in silence, so the styling inside it never applies and nothing reports it. `ResizeObserver` is
+Safari 13.1+, below every floor Cmdr targets. Stylelint's `at-rule-disallowed-list` / `property-disallowed-list` keep
+the CSS form from coming back.
+
+It reports `entry.contentRect.width`, the same content box a size query reads, so a threshold ported from
+`@container (max-width: Npx)` keeps its meaning. (`entry.contentBoxSize` says the same thing, but only from Safari
+15.4, above the floor this action exists for.) The seed call at mount reads `clientWidth` minus the computed horizontal
+padding, because the observer's own first callback lands after the next layout and one frame of unmeasured styling is
+visible. A reported `0` means "not measured", not "narrower than everything", so callers gate on `> 0`; `TabBar.svelte`
+is the reference caller.
+
 ## srgb-mix.ts / webkit-compat.ts
 
 `webkit-compat.ts` exposes `hasColorMix` (computed once at module load) so consumers can branch, and `logWebkitCompat()`

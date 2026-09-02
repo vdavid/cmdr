@@ -7,8 +7,8 @@ Small stateless helpers. Pure, no Svelte state, safe to import from plain `.ts` 
 `filename-validation.ts` (client-side name and path validation), `timing.ts` (`withTimeout`, `createDebounce`,
 `createThrottle`, `createCoalesced`, `waitForNextPaint`), `shorten-middle.ts` + `shorten-middle-action.ts`
 (mid-truncation and its Svelte action), `srgb-mix.ts` + `webkit-compat.ts` (sRGB color math, `color-mix()` detection),
-`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`, `version.ts` (semver `major.minor.patch` ordering). Per-file
-export catalogs: `DETAILS.md`.
+`confirm-dialog.ts`, `pluralize.ts`, `text-input-focus.ts`, `version.ts` (semver `major.minor.patch` ordering),
+`inline-size-action.ts` (the container-query stand-in). Per-file export catalogs: `DETAILS.md`.
 
 ## Must-knows
 
@@ -29,6 +29,9 @@ export catalogs: `DETAILS.md`.
   Stacked calls once took the backend's whole blocking pool (image-index badge fetch) and froze the app. `cancel()` on
   teardown.
 - **`useShortenMiddle` reveals the full text through the HOUSE tooltip**, ❌ never a native `title`.
+- **Sizing a component off its own width? `useInlineSize`, never `@container`.** Container queries need Safari 16 and
+  the floor is Safari 15, where the block is dropped in silence. Stylelint rejects the CSS form; the action reports the
+  same content box, so a size-query threshold ports over unchanged.
 - **Two focus predicates, ❌ don't re-roll either**: `isTextInputFocused()` for keyboard events,
   `isTextInputTarget(target)` for mouse (a right-click can land on an unfocused field).
 

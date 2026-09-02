@@ -100,9 +100,6 @@
     "file-explorer/selection/FileIcon.svelte": {
       "reason": "Simple UI component, display only"
     },
-    "file-explorer/tabs/TabBar.svelte": {
-      "reason": "UI component, tab interactions tested via DualPaneExplorer integration"
-    },
     "file-explorer/views/BriefList.svelte": {
       "reason": "Logic tested in brief-list-utils.ts, component mounting heavy"
     },
