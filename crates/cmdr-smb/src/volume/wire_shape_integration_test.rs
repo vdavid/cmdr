@@ -66,15 +66,20 @@ async fn smb_integration_a_hinted_read_leaves_as_one_compound_frame() {
     let (requests_after, compounds_after) = request_counts(&vol).await;
 
     assert_eq!(got, data, "the fast path must serve the file byte for byte");
+    // ONE compound frame, three ops inside it (verified against Samba in the
+    // `smb-consumer` container on smb2 0.21.0, 2026-09-02). The two counters
+    // answer different questions: `compound_requests_sent` counts CHAINS, which
+    // is the frame count, while `requests_sent` counts every sub-op of every
+    // chain (`MetricsSnapshot`'s own docs say so). So `(1, 3)` is one frame
+    // carrying CREATE+READ+CLOSE, and reading that 3 as a round-trip count is
+    // the mistake this comment exists to head off.
+    // Asserting the PAIR is what gives the cell its teeth: a 3-RTT streaming
+    // open reads as `(0, 3)`, and a loose round trip alongside the compound as
+    // `(1, 4)`. Same shape as the write cell below.
     assert_eq!(
-        compounds_after - compounds_before,
-        1,
-        "a hinted small read must be one compound frame, not a 3-RTT streaming open"
-    );
-    assert_eq!(
-        requests_after - requests_before,
-        1,
-        "and that compound is the ONLY request the read sends"
+        (compounds_after - compounds_before, requests_after - requests_before),
+        (1, 3),
+        "a hinted small read must leave as ONE compound frame carrying CREATE+READ+CLOSE; a 3-RTT streaming open is what this prevents"
     );
 
     ensure_clean(&vol, &dir).await;
