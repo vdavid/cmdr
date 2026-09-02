@@ -2185,8 +2185,8 @@ het om een restant van Cmdr zelf.
 - **`at the destination` → `op de bestemming`** · het woord uit de catalogus (`conflictsUnknown`) · `high`
 - **`transfer` (zelfstandig naamwoord) → `overdracht`** · de catalogus zegt het al zo
   (`errors.listing.deviceReconnecting.explanation`: „na een geannuleerde of onderbroken overdracht") · `high`
-- **`Cmdr clears it` → `Cmdr ruimt het op`** · `opruimen` in plaats van `verwijderen`, omdat het Cmdrs eigen
-  werkbestand is · `high`
+- **`Cmdr clears it` → `Cmdr ruimt het op`** · `opruimen` in plaats van `verwijderen`, omdat het Cmdrs eigen werkbestand
+  is · `high`
 - ⚠️ **`bij een latere overdracht`, ❌ nooit „de volgende keer".** Cmdrs opruiming slaat alles over dat jonger is dan
   een uur, dus een directe tweede poging ruimt niets op. Een belofte die niet uitkomt is precies de fout die deze regel
   wegneemt.

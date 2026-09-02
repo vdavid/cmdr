@@ -905,17 +905,17 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
 
 ### `cancelRollback.stagedLeftover.*`（Cmdr 自己留在目標位置的殘留）
 
-2026-09-02 新增。兩條文案，說的是 Cmdr 自己建立的工作檔案沒能從目標位置清掉。它們**不屬於** `reason.*` 清單：那邊是
-Cmdr 在保護使用者的檔案，這邊是 Cmdr 自己的殘留。
+2026-09-02 新增。兩條文案，說的是 Cmdr 自己建立的工作檔案沒能從目標位置清掉。它們**不屬於** `reason.*`
+清單：那邊是 Cmdr 在保護使用者的檔案，這邊是 Cmdr 自己的殘留。
 
-- **`unfinished copy` → `不完整副本`** · `不完整` 是 Apple 對 "incomplete" 的譯法（macOS `LA33`：「已損毀或不完
-  整」），`副本` 是 `NE111` 裡的名詞（「保留可恢復的副本」）· `high`
+- **`unfinished copy` → `不完整副本`** · `不完整` 是 Apple 對 "incomplete" 的譯法（macOS
+  `LA33`：「已損毀或不完整」），`副本` 是 `NE111` 裡的名詞（「保留可恢復的副本」）· `high`
 - **`at the destination` → `目標位置`** · 目錄裡已在用的詞（`conflictsUnknown`）· `high`
-- **`transfer`（名詞）→ `傳輸`** · 目錄已這樣說（`errors.listing.deviceReconnecting.explanation`：「傳輸被取消或中斷
-  之後」）· `high`
+- **`transfer`（名詞）→ `傳輸`**
+  · 目錄已這樣說（`errors.listing.deviceReconnecting.explanation`：「傳輸被取消或中斷之後」）· `high`
 - 第二句用 `清掉` 而不是 `刪除`：這是 Cmdr 自己的工作檔案，不是使用者的檔案。
-- ⚠️ **寫 `之後往那裡傳輸時`，❌ 絕不寫「下次」。** Cmdr 的清理會跳過不滿一小時的檔案，所以立刻重試並不會清掉它。給一
-  個兌現不了的承諾，正是這條文案要消除的毛病。
+- ⚠️ **寫 `之後往那裡傳輸時`，❌ 絕不寫「下次」。**
+  Cmdr 的清理會跳過不滿一小時的檔案，所以立刻重試並不會清掉它。給一個兌現不了的承諾，正是這條文案要消除的毛病。
 
 ## WebKit 過舊時的攔截頁（`main.oldWebkit.*`，2026-09-02）
 

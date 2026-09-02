@@ -19,13 +19,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import { addToast } from '$lib/ui/toast'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { ToastLevel } from '$lib/ui/toast'
-import type {
-  CancelRollback,
-  SkipBreakdown,
-  SkipReason,
-  StagedLeftovers,
-  WriteOperationType,
-} from '$lib/ipc/bindings'
+import type { CancelRollback, SkipBreakdown, SkipReason, StagedLeftovers, WriteOperationType } from '$lib/ipc/bindings'
 import CancelRollbackToastContent from './CancelRollbackToastContent.svelte'
 
 /** What the toast says, already localized, in the order the lines are read. */

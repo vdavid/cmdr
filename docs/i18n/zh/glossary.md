@@ -1754,17 +1754,17 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 
 ### `cancelRollback.stagedLeftover.*`（Cmdr 自己留在目标位置的残留）
 
-2026-09-02 新增。两条文案，说的是 Cmdr 自己建的工作文件没能从目标位置清掉。它们**不属于** `reason.*` 列表：那边是
-Cmdr 在保护用户的文件，这边是 Cmdr 自己的残留。
+2026-09-02 新增。两条文案，说的是 Cmdr 自己建的工作文件没能从目标位置清掉。它们**不属于** `reason.*`
+列表：那边是 Cmdr 在保护用户的文件，这边是 Cmdr 自己的残留。
 
-- **`unfinished copy` → `不完整副本`** · `不完整` 是 Apple 对 "incomplete" 的译法（macOS `LA33`：「已损坏或不完
-  整」），`副本` 是 `NE111` 里的名词（「保留可恢复的副本」）· `high`
+- **`unfinished copy` → `不完整副本`** · `不完整` 是 Apple 对 "incomplete" 的译法（macOS
+  `LA33`：「已损坏或不完整」），`副本` 是 `NE111` 里的名词（「保留可恢复的副本」）· `high`
 - **`at the destination` → `目标位置`** · 目录里已在用的词（`conflictsUnknown`、`stallWaitingDestination`）· `high`
-- **`transfer`（名词）→ `传输`** · 目录已这样说（`errors.listing.deviceReconnecting.explanation`：「传输被取消或中断
-  之后」）· `high`
+- **`transfer`（名词）→ `传输`**
+  · 目录已这样说（`errors.listing.deviceReconnecting.explanation`：「传输被取消或中断之后」）· `high`
 - 第二句用 `清掉` 而不是 `删除`：这是 Cmdr 自己的工作文件，不是用户的文件。
-- ⚠️ **写 `之后往那里传输时`，❌ 绝不写「下次」。** Cmdr 的清理会跳过不满一小时的文件，所以马上重试并不会清掉它。给一
-  个兑现不了的承诺，正是这条文案要消除的毛病。
+- ⚠️ **写 `之后往那里传输时`，❌ 绝不写「下次」。**
+  Cmdr 的清理会跳过不满一小时的文件，所以马上重试并不会清掉它。给一个兑现不了的承诺，正是这条文案要消除的毛病。
 
 ## WebKit 过旧时的拦截页（`main.oldWebkit.*`，2026-09-02）
 

@@ -1963,12 +1963,12 @@ Giọng xuyên suốt: **Cmdr đã làm phần cẩn thận**, không xin lỗi,
 Thêm ngày 2026-09-02. Hai dòng về một tệp làm việc do chính Cmdr tạo ra và không xóa được khỏi đích. Chúng KHÔNG thuộc
 danh sách `reason.*`: ở đó Cmdr bảo vệ tệp của người dùng, còn đây là phần thừa của chính Cmdr.
 
-- **`unfinished copy` → `bản sao chưa hoàn chỉnh`** · `bản sao` là danh từ trong macOS `NE111` ("giữ lại bản sao có
-  thể tiếp tục"), `hoàn chỉnh` là từ Apple dùng cho "complete" (macOS `LA33`: "không hoàn chỉnh"); dùng `chưa` thay
-  cho `không` vì việc sao chép chỉ mới dừng giữa chừng · `high`
+- **`unfinished copy` → `bản sao chưa hoàn chỉnh`** · `bản sao` là danh từ trong macOS `NE111` ("giữ lại bản sao có thể
+  tiếp tục"), `hoàn chỉnh` là từ Apple dùng cho "complete" (macOS `LA33`: "không hoàn chỉnh"); dùng `chưa` thay cho
+  `không` vì việc sao chép chỉ mới dừng giữa chừng · `high`
 - **`at the destination` → `ở đích`** · từ của catalog (`conflictsUnknown`) · `high`
-- **`transfer` (danh từ) → `lần truyền`** · catalog đã dùng
-  (`errors.listing.deviceReconnecting.explanation`: "sau một lần truyền bị hủy hoặc bị gián đoạn") · `high`
+- **`transfer` (danh từ) → `lần truyền`** · catalog đã dùng (`errors.listing.deviceReconnecting.explanation`: "sau một
+  lần truyền bị hủy hoặc bị gián đoạn") · `high`
 - ⚠️ **`trong một lần truyền sau`, ❌ không bao giờ "lần tới".** Việc dọn dẹp của Cmdr bỏ qua mọi thứ chưa đủ một giờ,
   nên thử lại ngay sẽ không dọn được gì. Một lời hứa không giữ được chính là lỗi mà dòng này sinh ra để loại bỏ.
 

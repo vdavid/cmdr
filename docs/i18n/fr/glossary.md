@@ -2312,12 +2312,12 @@ Nouvelles le 2026-09-02. Deux lignes sur un fichier de travail créé par Cmdr e
 destination. Elles ne font PAS partie de la liste `reason.*` : là, Cmdr protège les fichiers de la personne ; ici, il
 s'agit de son propre reste.
 
-- **`unfinished copy` → `copie incomplète`** · `incomplet` est le mot d'Apple (macOS `LA33` : « endommagée ou
-  incomplète »), `copie` le substantif de `NE111` (« conserver une copie réactivable ») · `high`
+- **`unfinished copy` → `copie incomplète`** · `incomplet` est le mot d'Apple (macOS `LA33` : « endommagée ou incomplète
+  »), `copie` le substantif de `NE111` (« conserver une copie réactivable ») · `high`
 - **`at the destination` → `à destination`** · forme déjà employée par `conflictsUnknown` (« ce qui se trouve déjà à
   destination ») · `high`
-- **`transfer` (substantif) → `transfert`** · déjà dans le catalogue
-  (`errors.listing.deviceReconnecting.explanation` : « après un transfert annulé ou interrompu ») · `high`
+- **`transfer` (substantif) → `transfert`** · déjà dans le catalogue (`errors.listing.deviceReconnecting.explanation` :
+  « après un transfert annulé ou interrompu ») · `high`
 - La deuxième phrase reprend `Cmdr` comme sujet, comme `leftBehind` (« Cmdr laisse de côté… »).
 - ⚠️ **`lors d'un transfert ultérieur`, ❌ jamais « la prochaine fois ».** Le nettoyage de Cmdr épargne tout ce qui a
   moins d'une heure : une nouvelle tentative immédiate ne retire donc rien. Promettre le contraire serait exactement le

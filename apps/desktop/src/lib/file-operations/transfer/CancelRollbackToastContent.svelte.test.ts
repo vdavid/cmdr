@@ -31,7 +31,13 @@ beforeEach(() => {
 
 describe('CancelRollbackToastContent', () => {
   it('shows a clean reversal as one line, with nothing to explain', () => {
-    render({ headline: 'Removed the 3 items Cmdr had written.', leftBehind: null, reasons: [], staged: null, level: 'success' })
+    render({
+      headline: 'Removed the 3 items Cmdr had written.',
+      leftBehind: null,
+      reasons: [],
+      staged: null,
+      level: 'success',
+    })
     expect(target.querySelector('.headline')?.textContent.trim()).toBe('Removed the 3 items Cmdr had written.')
     expect(target.querySelector('.left-behind')).toBeNull()
     expect(target.querySelector('ul')).toBeNull()

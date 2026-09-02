@@ -1797,8 +1797,8 @@ NÃO pertencem à lista `reason.*`: lá o Cmdr protege os arquivos da pessoa, aq
   "danificado ou incompleto"), `cópia` vem de `NE111` ("manter uma cópia retomável") · `high`
 - **`at the destination` → `no destino`** · o termo do catálogo (`stoppedDeleting`: "O resto continua no destino") ·
   `high`
-- **`transfer` (substantivo) → `transferência`** · o catálogo já usa
-  (`errors.listing.deviceReconnecting.explanation`: "depois de uma transferência cancelada ou interrompida") · `high`
+- **`transfer` (substantivo) → `transferência`** · o catálogo já usa (`errors.listing.deviceReconnecting.explanation`:
+  "depois de uma transferência cancelada ou interrompida") · `high`
 - A segunda frase fica no mesmo verbo `apagar` do resto da família.
 - ⚠️ **`numa transferência posterior`, ❌ nunca "da próxima vez".** A limpeza do Cmdr pula tudo com menos de uma hora,
   então uma nova tentativa imediata não apaga nada. Prometer o contrário seria exatamente a falha que esta linha

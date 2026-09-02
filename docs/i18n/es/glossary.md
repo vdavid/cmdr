@@ -1932,8 +1932,8 @@ suyo.
 
 - **`unfinished copy` → `copia parcial`** · macOS `NE111` dice literalmente «una copia parcial que puedas completar en
   otro momento» · `high`
-- **`at the destination` → `en el destino`** · el término del catálogo (`conflictsUnknown`,
-  `stallWaitingDestination`) · `high`
+- **`at the destination` → `en el destino`** · el término del catálogo (`conflictsUnknown`, `stallWaitingDestination`) ·
+  `high`
 - **`transfer` (sustantivo) → `transferencia`** · el catálogo ya lo usa
   (`errors.listing.deviceReconnecting.explanation`: «después de una transferencia cancelada o interrumpida») · `high`
 - La segunda frase deja `Cmdr` como sujeto tácito («La eliminará…») para no repetir el nombre en dos frases seguidas.
