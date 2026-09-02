@@ -504,7 +504,7 @@ pub(crate) fn inspect_path_with(path: &str, ask: &TextAsk, cancel: &AtomicBool, 
     {
         return FileRow::UnsupportedVolume { path: owned };
     }
-    if let Routed::Row(row) = archive::route(path, &volume_id, ask, cancel, extract) {
+    if let Routed::Row(row) = archive::route_archive_path(path, &volume_id, ask, cancel, extract) {
         return row;
     }
 

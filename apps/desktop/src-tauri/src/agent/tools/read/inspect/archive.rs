@@ -91,7 +91,13 @@ pub(super) enum Routed {
 
 /// Route `path` through the volume manager. A pure string check gates everything: a path
 /// with no archive-named component costs no I/O here.
-pub(super) fn route(path: &str, volume_id: &str, ask: &TextAsk, cancel: &AtomicBool, extract: ExtractFn) -> Routed {
+pub(super) fn route_archive_path(
+    path: &str,
+    volume_id: &str,
+    ask: &TextAsk,
+    cancel: &AtomicBool,
+    extract: ExtractFn,
+) -> Routed {
     let p = Path::new(path);
     // The one inner-path parser (`boundary.rs`): the archive file, and the path inside it
     // (empty for the archive itself), which is also the index key.
