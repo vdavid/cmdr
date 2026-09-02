@@ -20,6 +20,7 @@ use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 
+use cmdr_fs::staging::is_staging_temp_name;
 use cmdr_fs::volume::{Volume, VolumeError, VolumeReadStream};
 use reqwest::header::{CONTENT_TYPE, RANGE};
 use reqwest::{Body, Method, StatusCode};
@@ -135,8 +136,11 @@ async fn the_staged_write_path_lands_a_file_byte_exact_on_sabre_dav() {
     assert_eq!(written, bytes.len() as u64);
     assert_same_bytes(&read_whole(&volume, &path).await, &bytes, "a staged write to sabre/dav");
     let siblings = volume.list_directory(&dir, None).await.expect(FIXTURE);
+    // ❗ `is_staging_temp_name` looks anywhere in the name: a staging sibling is
+    // `<destination>.cmdr-tmp-<id>`, so a `starts_with` test would pass whatever
+    // the directory holds.
     assert!(
-        !siblings.iter().any(|e| e.name.starts_with(".cmdr-tmp-")),
+        !siblings.iter().any(|e| is_staging_temp_name(&e.name)),
         "the staging sibling has to be gone, found {:?}",
         siblings.iter().map(|e| &e.name).collect::<Vec<_>>()
     );
