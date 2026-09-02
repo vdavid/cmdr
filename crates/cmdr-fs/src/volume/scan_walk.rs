@@ -4,7 +4,7 @@
 //!
 //! **Why it lives here rather than in each backend.** The walk is arithmetic
 //! over two operations every `Volume` already has, so a per-backend copy differs
-//! from its neighbours only in the type name — and then drifts. A dedup rule
+//! from its neighbours only in the type name, and then drifts. A dedup rule
 //! fixed in one copy and not the others is a wrong byte total in a transfer
 //! estimate, which is the number the user decides on.
 //!

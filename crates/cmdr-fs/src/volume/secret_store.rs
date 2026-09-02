@@ -2,7 +2,7 @@
 //!
 //! ❗ **Every call here runs on a blocking task.** The store can put a Keychain
 //! prompt in front of a read or a write, and a modal dialog on the async runtime
-//! holds the whole runtime — every other volume's listings and transfers with
+//! holds the whole runtime, every other volume's listings and transfers with
 //! it. A backend that reaches `host.credentials()` directly from an async fn is
 //! one user click away from freezing the app.
 

@@ -3,7 +3,7 @@
 //! finished volume while retiring whoever held its id.
 //!
 //! ❗ **A backend never registers itself.** Each `*_volume_wiring.rs` knows both
-//! its backend and the volume registry, and neither of those knows the wiring —
+//! its backend and the volume registry, and neither of those knows the wiring;
 //! `DETAILS.md` § "Backends never register themselves" has the rationale. What
 //! lives HERE is only the part that is identical between them, so a fix to the
 //! cancel race or the supersede order lands once instead of once per protocol.
@@ -33,7 +33,7 @@ struct Attempt {
 ///
 /// ❗ The id is the CALLER's, and that is the whole point: a connect can hold for
 /// half a minute, so a sign-in dialog has to arm its cancel button before the
-/// command answers — and an id the backend handed back would only arrive once
+/// command answers, and an id the backend handed back would only arrive once
 /// the connect was already over. The serial is what keeps a repeated id honest:
 /// a finishing attempt only ever takes its OWN entry out.
 pub struct AttemptTable {

@@ -33,6 +33,9 @@ Discovery, the keychain, mounts, upgrade passes, and every word a human reads st
 - **Streaming-write progress reports `FileWriter::bytes_written()`** (server-confirmed), ❌ never bytes handed to the
   pipeline: `write_chunk` returns on ACCEPTANCE, so a slow link diverges by `concurrency x window`. Size any test
   reaching this path off `negotiated_max_write()`, or it silently takes the compound path.
+- **The batch scan keeps its own oracle short-circuit** (the watcher earns the `authoritative_listing` shortcut), but
+  the conflict matcher and the batch fold are `cmdr_fs::volume::scan_walk`'s, so every backend hands a conflict dialog
+  the same shape.
 - **Bulk work draws on the refcounted pool of extra sessions** (`scan_pool.rs`); a dead member retries on a sibling, ❌
   never moving the MAIN volume's connection state.
 - **smb2 bounds every wait itself**: ❌ no timeout layer of ours, never a missed keepalive read as death.

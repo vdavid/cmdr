@@ -36,21 +36,11 @@ Two smaller things the review pass flagged and did not settle, each an hour at m
 - [ ] **A file where an ancestor directory should be.** `create_directory_all` reads a 405 on an ancestor MKCOL as "it
       exists", so a FILE in the way surfaces as the leaf's `NotFound` rather than a clear refusal.
 
-## 1. There is no WebDAV frontend (shared with SFTP, the bigger item)
+## 1. There is no WebDAV frontend (the bigger item, and shared with SFTP)
 
-**The gap**: a connected WebDAV volume is registered and navigable by `volumeId`, and every write path can reach it, but
-nothing puts it on screen. `volume_listing::complete` has no WebDAV arm, so the sidebar never shows one, and
-`resolve_path_volume` / `resolve_location` don't answer for a remote path. This is the same gap SFTP has
-(`docs/specs/later/sftp-follow-ups.md` § 1), and the two want one design: one "Servers" section, one sign-in dialog, one
-connect form that branches on the scheme. The WebDAV form is simpler (URL + username + password, no key file, no
-host-key approval step), which makes it the easier first arm to build.
-
-**What already exists**: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend" carries every command, the
-connect outcomes a sign-in UI branches on, and the four lines that wire the cancel button; `getVolumeSignInState`
-answers live what a banner should ask for, and the `volume-connection-changed` event drives the reconnect banner
-unchanged.
-
-**Cost**: the UI work, roughly a week for both backends together. David designs and builds it.
+`docs/specs/servers-in-the-sidebar.md` owns it: one design for both backends, five milestones, roughly a week. Nothing
+on the backend side is missing for it, and this crate's § "Connecting from the frontend" is the contract it builds
+against.
 
 ## 2. Certificate trust-on-first-use for self-signed NAS certificates
 

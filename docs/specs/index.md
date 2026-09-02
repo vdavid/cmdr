@@ -10,6 +10,15 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-02 `servers-in-the-sidebar.md` - **Two finished backends nobody can reach.** SFTP and WebDAV connect,
+      list, read, write, and reconnect, and there is no way to open one: `volume_listing::complete` has no arm for
+      either, so nothing reaches the sidebar, and `resolve_path_volume` doesn't answer for a remote path, so a saved tab
+      couldn't be restored if it did. Five milestones, ❗ one design covering BOTH backends rather than two
+      half-matching dialogs: the sidebar section, path resolution riding with it, one protocol-first connect dialog
+      branching on typed outcomes, the sign-in banner, and SFTP's host-key step as an arm of the dialog. Every command,
+      outcome, and the reconnect model already exist and are typed; what's open is design (which section, what an eject
+      means, whether a saved-but-unconnected server shows) and copy, both David's. Roughly a week.
+
 - [ ] 2026-09-01 `webdav-backend-follow-ups.md` - **The WebDAV backend ships without a way to reach it, and trusts only
       what the system roots vouch for.** `crates/cmdr-webdav`, its IPC surface, and the Docker fixtures are done and
       documented in `crates/cmdr-webdav/DETAILS.md`. Open: the sidebar and sign-in UI it shares with SFTP (the big one),
