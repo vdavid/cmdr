@@ -651,6 +651,9 @@ jobs:
         run: go build -o check .
         working-directory: ./scripts/check
 
+      - name: Generate Worker types
+        run: ./scripts/check/check --check api-server-worker-types --ci
+
       - name: Run ESLint
         run: ./scripts/check/check --check api-server-eslint --ci
 

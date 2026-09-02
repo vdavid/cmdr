@@ -1045,12 +1045,25 @@ var AllChecks = []CheckDefinition{
 
 	// API server checks
 	{
+		ID:          "api-server-worker-types",
+		DisplayName: "worker types",
+		App:         AppApiServer,
+		Tech:        "⸆⸉ TS",
+		DependsOn:   []string{"oxfmt"},
+		// IsFast for the same reason as `dashboard-svelte-kit-sync`: `--fast` keeps only fast
+		// entries, and `api-server-typecheck` is one. Left out, the fast lane would typecheck
+		// against a missing `worker-configuration.d.ts` and fail on every Worker global.
+		IsFast: true,
+		Inputs: apiServerInputs,
+		Run:    RunApiServerWorkerTypes,
+	},
+	{
 		ID:          "api-server-eslint",
 		CpuWeight:   2,
 		DisplayName: "eslint",
 		App:         AppApiServer,
 		Tech:        "⸆⸉ TS",
-		DependsOn:   []string{"oxfmt"},
+		DependsOn:   []string{"api-server-worker-types"},
 		Inputs:      apiServerInputs,
 		Run:         RunApiServerESLint,
 	},
@@ -1059,10 +1072,12 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "typecheck",
 		App:         AppApiServer,
 		Tech:        "⸆⸉ TS",
-		DependsOn:   []string{"api-server-eslint"},
-		IsFast:      true,
-		Inputs:      apiServerInputs,
-		Run:         RunApiServerTypecheck,
+		// Names the generator as well as the linter: `--fast` drops `api-server-eslint`, and
+		// without a second edge this check would start before the types exist.
+		DependsOn: []string{"api-server-eslint", "api-server-worker-types"},
+		IsFast:    true,
+		Inputs:    apiServerInputs,
+		Run:       RunApiServerTypecheck,
 	},
 	{
 		ID:          "api-server-tests",

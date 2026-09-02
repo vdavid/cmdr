@@ -1430,7 +1430,13 @@ doubles as production code.
   `astro:content` through it, and on an unsynced tree every blog-post field is `any`, so the `no-unsafe-*` rules bury
   the run in ~90 false positives. `website-eslint` refuses to run when the file is missing rather than report those.
 - **Website / Docker**: docker-build
-- **API server / TS**: oxfmt, eslint, typecheck, tests
+- **API server / TS**: oxfmt, worker-types, eslint, typecheck, tests. `api-server-worker-types` runs `wrangler types`,
+  which writes the gitignored `worker-configuration.d.ts` (Worker runtime globals at the Worker's `compatibility_date`,
+  plus the `Env` its bindings imply); `api-server-eslint` and `api-server-typecheck` depend on it, and both would
+  otherwise see `KVNamespace` and friends resolve to nothing. Same shape as `website-astro-sync`, down to
+  `api-server-eslint` refusing to run when the file is missing rather than reporting the `no-unsafe-*` fallout. It
+  regenerates instead of diffing, so there's no freshness contract to break; `api-server-typecheck` calls
+  `typecheck:no-gen` so it doesn't rewrite the file under the parallel ESLint pass.
 - **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check, import-cycles, knip, tests, build,
   settings-defaults (regenerates the defaults manifest from the desktop settings registry and diffs it). Stylelint,
   knip, and import-cycles run through the same `runStylelintCheck` / `runKnipCheck` / `runImportCyclesCheck` helpers the
