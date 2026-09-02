@@ -359,6 +359,29 @@ everything because a person is being asked a question; a pause is authoritative 
 only claimed when EVERY in-flight task agrees, since one task still streaming means something else is holding things
 up; otherwise `Unknown`, which is the shape the 2026-07-31 wedge took.
 
+**The dump's in-flight count measures the WINDOW, and a walker is not in it.** Every row declares a `TaskRole`: `File`
+for a merge leaf or a top-level file source, `Walker` for a directory source's walk. A walker deliberately holds no
+`FileWindow` permit (one held across a recursive descent deadlocks the operation at width 1), so it was never one of the
+writes the width bounds — yet counting it printed `in_flight=11/10` on a perfectly healthy 10-wide copy, which reads as
+a broken limiter and costs a reader their first minutes during an incident. `render_dump` counts only `File` rows
+against the width and reports `walkers=N` separately, and the walker's own row carries a ` (walker)` marker so the
+header's arithmetic can be read back against the table. `TransferActivity::in_flight`, which the UI renders, still
+counts every row: it answers "how many things are open", not "how full is the window".
+
+**Row numbers are unique per walker, not per dump.** `merge.rs`'s `LeafPool` numbers its leaves from 0, and the driver
+numbers top-level sources from 0, so a walker and the first leaf under it both render as `#0`. The ` (walker)` marker is
+what tells them apart; with several directory sources in one operation the same number can appear once per walker.
+Namespacing the leaves under their source would mean carrying the source index on `MergeCtx` and through
+`copy_directory_streaming`, which is not worth it while the marker disambiguates.
+
+**Every driver sets its `DriverPhase`, and one that forgets says nothing.** The field is initialised to `Starting`, so a
+driver that never advances it reports `driver=starting()` however long it has been running. Both drivers set it now:
+`PreparingNext` around the destination-metadata fetch, `ResolvingConflict` around the resolver (parking on a person is
+unbounded by design, so naming it explains the whole stall, where `paused=` only covers the pause gate),
+`TransferringSource` for the whole of a serial source, and `PostLoop` once the driver returns. The serial driver has no
+window to drain, which is why it reports `TransferringSource` rather than the concurrent driver's `AwaitingTasks`: the
+phase's job there is to say the wedge can only be in the rows below.
+
 **A conflict prompt is read from the responder slot, NOT from task phases.** `wait_reason` and `watchdog_step` both
 check `state.conflict_slot.is_awaiting()` first. `TaskPhase::ResolvingConflict` only ever covers a deep-merge
 child, because TOP-LEVEL conflict resolution runs on the DRIVER, between tasks — so a scan of task phases misses the

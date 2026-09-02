@@ -51,7 +51,6 @@ merge/staging engine (`strategy.rs`, `merge.rs`). File map: `DETAILS.md` § File
 - **A failure carries the path it happened ON** (`transfer_error.rs::PathedVolumeError`): ❌ never re-label with the
   top-level source, ❌ never `.at()` above the frame that knows the item. `DETAILS.md` § "Naming the item that failed".
 - **Two test traps**: a `*_tests.rs` here is a `#[path]` CHILD, so `super::` is one level shallower; and a
-  `FaultyVolume` cell must **assert `fault_fired(op)`**, or it pins UNFAULTED behavior. `DETAILS.md` § test-support
-  files.
+  `FaultyVolume` cell must **assert `fault_fired(op)`**, or it pins UNFAULTED behavior. `DETAILS.md` § Files.
 
 Semantics, flows, decisions, and the rollback ledger: `DETAILS.md`, read before non-trivial work here.
