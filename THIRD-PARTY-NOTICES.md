@@ -6,9 +6,9 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 730
+- Rust crates: 725
 - npm packages: 125
-- Distinct license texts: 322
+- Distinct license texts: 321
 
 ## Rust crates
 
@@ -132,7 +132,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **ctr** 0.10.1, MIT OR Apache-2.0, <https://github.com/RustCrypto/block-modes>
 - **ctutils** 0.4.2, Apache-2.0 OR MIT, <https://github.com/RustCrypto/utils>
 - **cty** 0.2.2, MIT OR Apache-2.0, <https://github.com/japaric/cty>
-- **curve25519-dalek** 4.1.3, BSD-3-Clause, <https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek>
 - **curve25519-dalek** 5.0.0, BSD-3-Clause, <https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek>
 - **curve25519-dalek-derive** 0.1.1, MIT OR Apache-2.0, <https://github.com/dalek-cryptography/curve25519-dalek>
 - **cxx** 1.0.198, MIT OR Apache-2.0, <https://github.com/dtolnay/cxx>
@@ -167,9 +166,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **dunce** 1.0.5, CC0-1.0 OR MIT-0 OR Apache-2.0, <https://gitlab.com/kornelski/dunce>
 - **dyn-clone** 1.0.20, MIT OR Apache-2.0, <https://github.com/dtolnay/dyn-clone>
 - **ecdsa** 0.17.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/signatures>
-- **ed25519** 2.2.3, Apache-2.0 OR MIT, <https://github.com/RustCrypto/signatures/tree/master/ed25519>
 - **ed25519** 3.0.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/signatures>
-- **ed25519-dalek** 2.2.0, BSD-3-Clause, <https://github.com/dalek-cryptography/curve25519-dalek/tree/main/ed25519-dalek>
 - **ed25519-dalek** 3.0.0, BSD-3-Clause, <https://github.com/dalek-cryptography/curve25519-dalek/tree/main/ed25519-dalek>
 - **either** 1.16.0, MIT OR Apache-2.0, <https://github.com/rayon-rs/either>
 - **elliptic-curve** 0.14.1, Apache-2.0 OR MIT, <https://github.com/RustCrypto/traits>
@@ -505,7 +502,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **rand** 0.9.4, MIT OR Apache-2.0, <https://github.com/rust-random/rand>
 - **rand_chacha** 0.9.0, MIT OR Apache-2.0, <https://github.com/rust-random/rand>
 - **rand_core** 0.10.1, MIT OR Apache-2.0, <https://github.com/rust-random/rand_core>
-- **rand_core** 0.6.4, MIT OR Apache-2.0, <https://github.com/rust-random/rand>
 - **rand_core** 0.9.5, MIT OR Apache-2.0, <https://github.com/rust-random/rand>
 - **rav1e** 0.8.1, BSD-2-Clause, <https://github.com/xiph/rav1e/>
 - **ravif** 0.13.0, BSD-3-Clause, <https://github.com/kornelski/cavif-rs>
@@ -575,7 +571,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **shlex** 2.0.1, MIT OR Apache-2.0, <https://github.com/comex/rust-shlex>
 - **signal-hook** 0.4.4, MIT OR Apache-2.0, <https://github.com/vorner/signal-hook>
 - **signal-hook-registry** 1.4.8, MIT OR Apache-2.0, <https://github.com/vorner/signal-hook>
-- **signature** 2.2.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/traits/tree/master/signature>
 - **signature** 3.0.0, Apache-2.0 OR MIT, <https://github.com/RustCrypto/traits>
 - **simd-adler32** 0.3.9, MIT, <https://github.com/mcountryman/simd-adler32>
 - **simd_helpers** 0.1.0, MIT, <https://github.com/lu-zero/simd_helpers>
@@ -2813,7 +2808,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ### BSD-3-Clause
 
-Covers: alloc-stdlib 0.2.4, aws-lc-sys 0.42.0, curve25519-dalek 4.1.3, exr 1.74.0
+Covers: alloc-stdlib 0.2.4, aws-lc-sys 0.42.0, exr 1.74.0
 
 ```text
 Copyright (c) <year> <owner>. 
@@ -2907,7 +2902,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ### BSD-3-Clause
 
-Covers: ed25519-dalek 2.2.0, ed25519-dalek 3.0.0
+Covers: ed25519-dalek 3.0.0
 
 Text from: `LICENSE`
 
@@ -6120,40 +6115,6 @@ Text from: `LICENSE-MIT`
 
 ```text
 Copyright (c) 2018-2026 RustCrypto Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### MIT
-
-Covers: ed25519 2.2.3, signature 2.2.0
-
-Text from: `LICENSE-MIT`
-
-```text
-Copyright (c) 2018-2023 RustCrypto Developers
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -9816,7 +9777,7 @@ THE SOFTWARE.
 
 ### MIT
 
-Covers: rand 0.10.2, rand 0.9.4, rand_chacha 0.9.0, rand_core 0.6.4, rand_core 0.9.5
+Covers: rand 0.10.2, rand 0.9.4, rand_chacha 0.9.0, rand_core 0.9.5
 
 Text from: `LICENSE-MIT`
 
