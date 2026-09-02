@@ -387,7 +387,10 @@ modules under `volume/` carry the arithmetic, each behind a trait the backend im
 - **`scan_walk.rs`** (`ScanSource`: `scan_stat` + `scan_list`) answers `scan_for_copy`, `scan_for_copy_batch`, and
   `scan_for_conflicts`. The walk lists and ❌ never stats a child, so a 1,000-file folder costs one round trip per
   DIRECTORY; `dedup_bytes` tracks `total_bytes` because a backend reaching this walk has no link count. ❌ Nothing here
-  consults `authoritative_listing`: that shortcut needs a watcher behind it, and these backends have none.
+  consults `authoritative_listing`: that shortcut needs a watcher behind it, and these backends have none. ❗ A
+  symlinked directory counts as the ONE entry it is and is never walked: following one double-counts its target
+  (Android's `/sdcard` and `/storage/emulated/0` are the same bytes) and a link aimed at an ancestor never terminates.
+  `scan_preview.rs` makes the same promise app-side, so a copy estimate reads the same whichever walker produced it.
 - **`mkdir_all.rs`** (`MakesDirectories`) answers `create_directory_all`, leaf first so the common case costs one
   request. ❗ Its `DirectoryCreation` answer is the load-bearing part: the transfer driver spends a `Created` by
   skipping its per-file destination conflict probe, so anything short of certainty (a lost race included) answers

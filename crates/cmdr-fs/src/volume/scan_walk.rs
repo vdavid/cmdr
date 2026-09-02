@@ -205,7 +205,13 @@ fn walk_directory<'a>(
         ticker.dir();
         for entry in source.scan_list(dir).await? {
             let child = dir.join(&entry.name);
-            if entry.is_directory {
+            // ❗ A symlinked directory is ONE entry, never a subtree. Following
+            // one double-counts its target (Android's `/sdcard` and
+            // `/storage/emulated/0` are the same bytes) and a link pointing at
+            // an ancestor turns the scan into a hang. `scan_preview.rs` makes
+            // the same promise app-side, so a copy estimate reads the same
+            // whichever walker produced it.
+            if entry.is_directory && !entry.is_symlink {
                 walk_directory(source, &child, ticker, into).await?;
             } else {
                 let size = entry.size.unwrap_or(0);

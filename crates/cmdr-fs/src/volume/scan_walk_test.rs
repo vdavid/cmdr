@@ -48,6 +48,16 @@ impl FakeTree {
         self
     }
 
+    /// Adds one SYMLINKED directory child to an existing directory. The target
+    /// is a real directory in the map, so a walk that follows the link would
+    /// find something to count.
+    fn with_symlinked_dir(mut self, parent: &str, name: &str) -> Self {
+        let child = format!("{}/{name}", parent.trim_end_matches('/'));
+        let entry = FileEntry::new(name.to_string(), child, true, true);
+        self.dirs.entry(parent.to_string()).or_default().push(entry);
+        self
+    }
+
     fn listings_of(&self, path: &str) -> usize {
         self.asked.lock_ignore_poison().iter().filter(|p| *p == path).count()
     }
@@ -229,4 +239,33 @@ fn folding_an_empty_batch_is_all_zeroes_rather_than_a_panic() {
     assert_eq!(batch.aggregate.total_bytes, 0);
     assert!(!batch.aggregate.top_level_is_directory);
     assert!(batch.per_path.is_empty());
+}
+
+/// ❗ A symlinked directory is ONE entry, never a subtree to walk.
+///
+/// Following one double-counts the target (Android's `/sdcard` and
+/// `/storage/emulated/0` are the same bytes) and a link that points at an
+/// ancestor turns the scan into a hang. It also has to match what the app-side
+/// walker already promises: `scan_preview.rs` skips the same shape, and
+/// `scan_preview_preserves_symlink_semantics` is the cell that pins it there.
+#[tokio::test]
+async fn a_symlinked_directory_counts_as_one_entry_and_is_never_walked() {
+    let tree = FakeTree::new()
+        .with_dir("/src", &[("real.txt", false, 10)])
+        .with_dir("/elsewhere", &[("a.bin", false, 500), ("b.bin", false, 700)])
+        .with_symlinked_dir("/src", "elsewhere");
+
+    let scan = scan_one(&tree, Path::new("/src")).await.expect("the scan runs");
+
+    assert_eq!(scan.dir_count, 1, "only `/src` itself is a directory here");
+    assert_eq!(
+        scan.file_count, 2,
+        "the real file plus the link counted as the one entry it is"
+    );
+    assert_eq!(scan.total_bytes, 10, "the link's target contributes nothing");
+    assert_eq!(
+        tree.listings_of("/src/elsewhere"),
+        0,
+        "the walk must never list through a symlink"
+    );
 }
