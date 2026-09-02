@@ -376,7 +376,7 @@ pub async fn copy_between_volumes(
 /// Both pre-flights go through here, so the tolerance can't drift between the
 /// dialog's preview and the transfer that follows it.
 /// `a_destination_that_cant_report_free_space_is_still_copyable_into` and its
-/// sibling in `copy_tests.rs` hold both sides.
+/// sibling in `copy_space_tests.rs` hold both sides.
 async fn dest_space_if_known(dest_volume: &dyn Volume) -> Result<Option<SpaceInfo>, VolumeError> {
     match dest_volume.get_space_info().await {
         Ok(info) => Ok(Some(info)),
@@ -397,7 +397,7 @@ async fn dest_space_if_known(dest_volume: &dyn Volume) -> Result<Option<SpaceInf
 ///
 /// ❌ Neither may read as "no room". The first is ignorance; the second is the
 /// one destination a copy is guaranteed to fit into. Pinned by
-/// `copy_tests.rs::{a_destination_with_no_ceiling_accepts_a_copy_bigger_than_anything_it_holds, a_preview_of_a_destination_with_no_ceiling_carries_what_it_holds}`.
+/// `copy_space_tests.rs::{a_destination_with_no_ceiling_accepts_a_copy_bigger_than_anything_it_holds, a_preview_of_a_destination_with_no_ceiling_carries_what_it_holds}`.
 fn room_to_check(dest_space: Option<SpaceInfo>) -> Option<u64> {
     dest_space.and_then(|space| space.available_bytes())
 }
@@ -1155,10 +1155,13 @@ pub(crate) async fn copy_volumes_with_progress(
     }))
 }
 
-// The `volume/copy_tests.rs` suite was split for size. The crash-safety and
-// rollback suites live in their own files; both share `make_state` /
-// `make_volumes` from `tests` (`super::tests`). The bench suite is a single
-// `#[ignore]`d, network-gated test.
+// The copy suite is one file per contract, and `tests` (`copy_tests.rs`) is the
+// general one rather than the default: a new test goes to the sibling whose
+// contract it pins, and only here when it pins none of them. Every sibling
+// shares `make_state` / `make_volumes` from `tests` (`super::tests`). Tests for
+// a symbol another module owns go to THAT module's suite. What each file holds:
+// `volume/DETAILS.md` § Files. The bench suites are `#[ignore]`d and
+// network-gated.
 #[cfg(test)]
 #[path = "copy_bench.rs"]
 mod bench;
@@ -1193,6 +1196,9 @@ mod merge_window_tests;
 #[path = "copy_precheck_tests.rs"]
 mod precheck_tests;
 #[cfg(test)]
+#[path = "copy_prescan_reuse_tests.rs"]
+mod prescan_reuse_tests;
+#[cfg(test)]
 #[path = "copy_retry_tests.rs"]
 mod retry_tests;
 #[cfg(test)]
@@ -1201,6 +1207,9 @@ mod rollback_tests;
 #[cfg(test)]
 #[path = "copy_source_hint_tests.rs"]
 mod source_hint_tests;
+#[cfg(test)]
+#[path = "copy_space_tests.rs"]
+mod space_tests;
 #[cfg(test)]
 #[path = "copy_staged_write_tests.rs"]
 mod staged_write_tests;
