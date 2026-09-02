@@ -31,9 +31,9 @@ that lives beside the code, and git holds the history.
       what the system roots vouch for.** `crates/cmdr-webdav`, its IPC surface, and the Docker fixtures are done and
       documented in `crates/cmdr-webdav/DETAILS.md`. Open: the sidebar and sign-in UI it shares with SFTP (the big one),
       trust-on-first-use for the self-signed certificates most NAS boxes present, Digest auth or a typed refusal,
-      Nextcloud chunked uploads, RFC 4331 quota, and three things David runs locally because this branch was built in a
-      cloud box: `bindings.ts` regeneration, `pnpm check --include-slow`, and the surface counts for
-      `index-crate-isolation`.
+      Nextcloud chunked uploads, RFC 4331 quota, a blind spot in the write path's size guard that can MOVE a truncated
+      file onto the user's filename, and three things David runs locally because this branch was built in a cloud box:
+      `bindings.ts` regeneration, `pnpm check --include-slow`, and the surface counts for `index-crate-isolation`.
 - [ ] 2026-09-01 `android-adb-backend.md` - **MTP shows the tree a phone chooses to expose; developers want the real
       one.** `crates/cmdr-adb` is a device-anchored `Volume` over the ADB server's sync service and `shell,v2`, beside
       MTP rather than replacing it, and the development adds the seam MTP never had: `device_volumes.rs`, a provider

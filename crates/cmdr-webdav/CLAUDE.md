@@ -31,10 +31,13 @@ The WebDAV backend: a `Volume` over one `reqwest` client with one account's Basi
 - ❗ **Redirects are off.** A followed MOVE or COPY would resend `Destination` somewhere the user never named. A
   PROPFIND on a slash-less collection that answers 3xx is retried once with the slash.
 - ❗ **PUT sends `Content-Length` from `size`**, never a body of unknown length. Every write lands on a `.cmdr-tmp-*`
-  sibling and is MOVEd into place with `Overwrite: T`.
+  sibling and is MOVEd into place with `Overwrite: T`. ❌ A source whose byte count disagrees with `size` is never
+  MOVEd: hyper truncates a longer body and the server stores the prefix happily. `DETAILS.md` § "Write staging" has the
+  one shape that still slips through.
 - ❗ **`Range` may be ignored.** A 200 to a ranged GET is handled by skipping locally; `read_range` never returns more
-  than `len` and drops the response as soon as the window is full. What a real server answers to that and to a chunked
-  PUT, with dates: `DETAILS.md` § "What a real server answers".
+  than `len` and drops the response as soon as the window is full. The server that makes that branch run is
+  `webdav-fixture-norange`, port 13483. What a real server answers to that and to a chunked PUT, with dates:
+  `DETAILS.md` § "What a real server answers".
 - ❗ **DELETE is recursive by protocol; the trait's is not.** `delete` refuses a non-empty collection with `ENOTEMPTY`
   after a `Depth: 1` PROPFIND.
 - ❌ Never `root_anchored`, never a stat per child in a scan, never `authoritative_listing` (coverage is `None`).

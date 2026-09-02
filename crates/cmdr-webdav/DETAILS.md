@@ -76,17 +76,43 @@ request aborts, the temp is DELETEd), then MOVEs the temp onto `dest` with `Over
 best-effort. `copy_within` is one COPY with `Overwrite: T`, `Depth: infinity`, progress reported once with the source's
 PROPFIND size.
 
+**A byte count that disagrees with `size` is never MOVEd**, in either direction, and both arms are pinned by a cell in
+`volume/integration_test.rs`:
+
+- **A source that ends EARLY** ends the request from our side (hyper's `NotEof`), which `reqwest` reports with the same
+  predicate a dropped connection answers. ❌ Reading it as `DeviceDisconnected` would flip the whole volume offline over
+  one stale `size`, so `source_ended` plus `total != size` turns it into an `IoError` naming both numbers.
+  `a_source_that_ends_early_never_reaches_the_users_filename` fails with `Err(DeviceDisconnected(…))` if that arm goes.
+- **A source that yields MORE** is the sharper one: hyper TRUNCATES the body at `Content-Length` (verified on hyper
+  1.10.1, in its HTTP/1 encoder's `Kind::Length` arm, 2026-09-01), the server stores the prefix and answers 201, and
+  nothing on the wire is wrong. Only the count this side kept says the file is short.
+  `a_source_that_overruns_its_promise_never_reaches_the_users_filename` fails with `Ok(150000)` if that arm goes: a
+  truncated file wearing the user's name, reported as a success.
+
+❗ **The over-long arm has a blind spot**, and it is the reason that cell's source hands its bytes over in pieces of
+70,001. hyper stops POLLING the body the moment `Content-Length` is satisfied, so an over-long source is only visible
+when the overshoot lands inside a piece it did poll. A source whose piece boundaries land exactly on `size` is never
+polled again, `total == size`, and the truncated prefix is MOVEd into place with an `Ok` (measured against
+`webdav-fixture-apache` by a throwaway cell, 200,000 bytes in 50,000-byte pieces against a promised 150,000, which
+answered `Ok(150000)`, 2026-09-02). A source reading in 1 MiB chunks against a file whose stale size is a MiB multiple
+hits it. Closing it means reading one piece ahead in the body's `unfold`, so the source's "I have more" is known before
+the PUT returns; open in `docs/specs/webdav-backend-follow-ups.md`.
+
 ## What a real server answers
 
-Three things this backend's shape rests on are the SERVER's behaviour, not ours, and Apache `mod_dav` can settle none of
-them: it honours `Range` natively and omits the quota properties entirely. `volume/nextcloud_test.rs` pins each one
-against `webdav-fixture-nextcloud`, and `desktop-rust-webdav-nextcloud` is the lane that runs it. Read the numbers here
-as one server's answer, evidence-anchored, rather than as the protocol's.
+Three things this backend's shape rests on are the SERVER's behaviour, not ours, and a stock Apache `mod_dav` can settle
+none of them: it honours `Range` natively and omits the quota properties entirely. `volume/nextcloud_test.rs` pins each
+one against `webdav-fixture-nextcloud`, and `desktop-rust-webdav-nextcloud` is the lane that runs it. Read the numbers
+here as one server's answer, evidence-anchored, rather than as the protocol's.
 
 - **A ranged GET comes back 206 with exactly the window asked for** (verified on `nextcloud:34.0.2-apache`, sabre/dav
   behind Apache 2.4.68 + PHP 8.5.9, by the Docker cell, 2026-09-02). The 200 path in `streams.rs` stays anyway: RFC 9110
   § 14.2 makes ranges optional, no other real server has been watched, and the fallback costs a whole file's bandwidth
-  only when it fires. ❗ Nothing exercises the skip-locally branch today, so it is code no test covers.
+  only when it fires. What exercises it is a fixture built to: `webdav-fixture-norange` serves the same export under
+  Apache's `MaxRanges none`, which answers every ranged GET 200 with `Accept-Ranges: none` and the whole file (verified
+  on httpd 2.4.68 by `curl` and by the two cells, 2026-09-02). Both halves of the skip are pinned there — the resumed
+  stream and `read_range` — and each cell asks the server what it answered before asserting on the backend, so a fixture
+  that started honouring `Range` fails rather than quietly re-testing the 206 path.
 - **A PUT with no `Content-Length` is accepted, 201 Created, body byte-exact** (same server and date; 256 KiB by the
   Docker cell, 8 MiB by hand with `curl`). ❌ So "sabre/dav answers 411 to a chunked PUT" is NOT true of Nextcloud on
   Apache with `mod_php`, which is what the official image runs. `writes.rs` sends the length regardless, and the reason
@@ -129,6 +155,11 @@ conformance cells answer with Apache's own verbs, which is the point: `MOVE` ove
 collection is recursive, and a `PROPFIND` of a collection nobody has created yet is a 404 that the conflict scan owes an
 empty list for. The app: anything whose other half is the transfer pipeline, the registry, or the listing cache, built
 on `volume::testing`.
+
+The two size-mismatch cells sit here rather than in the app's transfer suite for a reason worth keeping: reaching that
+guard through the real pipeline needs a local source that disagrees with its own stat, which only happens by racing a
+truncation. A cell handing `write_from_stream` a `size` the source was never going to match asks the same question with
+nothing to race.
 
 `volume/nextcloud_test.rs` is the exception in two ways, both deliberate. Its server is heavy enough to stay out of the
 shared fixture lane, so `desktop-rust-webdav-nextcloud` selects it by MODULE PATH (`test(volume::nextcloud_test::)`) and

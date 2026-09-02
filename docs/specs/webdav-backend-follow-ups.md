@@ -26,15 +26,32 @@ What no Apache fixture can answer, and what a Nextcloud one now does:
       and `crates/cmdr-webdav/src/volume/nextcloud_test.rs`. The answers, with their anchors and what they change:
       `crates/cmdr-webdav/DETAILS.md` § "What a real server answers". One of the two came back the other way round,
       which is the part worth knowing before reading it.
-- [ ] **Nothing exercises `streams.rs`'s skip-locally branch.** It handles a 200 to a ranged GET, and no server has been
-      watched answering one, so it is data-path code no test covers. A fixture that strips `Range` (a fourth httpd
-      service, an hour) would close it without needing a server that does it in the wild.
+- [x] **`streams.rs`'s skip-locally branch is exercised**, by `webdav-fixture-norange` (port 13483, in `core`): the same
+      export under Apache's `MaxRanges none`, which answers every ranged GET 200 with the whole file. Both halves of the
+      skip are pinned — the resumed stream and `read_range` — in `crates/cmdr-webdav/src/volume/integration_test.rs` §
+      "A server that ignores `Range`". Why that directive and not `mod_headers`:
+      `apps/desktop/test/webdav-servers/README.md` § "The server that ignores `Range`".
 - [ ] **A Synology, and a Nextcloud behind nginx + php-fpm.** The 411 claim is plausible for a deployment where PHP
       never sees a chunked body, and that is the shape the Docker image doesn't have. Neither is automatable here;
       `CMDR_WEBDAV_TEST_URL` is what points the whole suite at one by hand (`apps/desktop/test/webdav-servers/README.md`
       § "Against a server of your own").
 
 The public surface IS pinned (6 / 1 / 8, measured 2026-09-01), so widening it is the usual conversation.
+
+One thing writing those tests turned up, and it is a data-safety hole rather than a coverage gap:
+
+- [ ] **`writes.rs`'s over-long guard has a blind spot.** hyper stops POLLING the body the moment `Content-Length` is
+      satisfied, so an over-long source is caught only when the overshoot lands inside a piece hyper did poll. A source
+      whose piece boundaries land exactly on `size` is never polled again, the counter agrees with the promise, and the
+      truncated prefix is MOVEd onto the user's filename and reported as a success. Measured by a throwaway cell against
+      `webdav-fixture-apache`: 200,000 bytes in 50,000-byte pieces against a promised 150,000 answered `Ok(150000)`
+      (2026-09-02). A source reading in 1 MiB chunks against a file whose stale size is a MiB multiple, that has since
+      grown, hits it. **The fix**: read one piece ahead in the body's `unfold` (carry a `pending: Option<Vec<u8>>`,
+      fetch the next piece before yielding the current one, count at fetch time), so the source's "I have more" is known
+      before the PUT returns and both arms land on the existing `total != size` guard. Care needed around cancellation
+      (a piece is fetched one poll before the cancel is seen) and progress reading one piece ahead of the wire. Plus a
+      third cell for the aligned case. Half a day. The unaligned arms are pinned today (`crates/cmdr-webdav/DETAILS.md`
+      § "Write staging").
 
 Two smaller things the review pass flagged and did not settle, each an hour at most:
 

@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 
+use cmdr_fs::staging::is_staging_temp_name;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::InMemoryCredentials;
 use cmdr_fs::volume::{Volume, VolumeError, VolumeReadStream};
@@ -94,6 +95,7 @@ async fn read_whole(volume: &WebdavVolume, path: &Path) -> Vec<u8> {
 struct BufferSource {
     bytes: Vec<u8>,
     at: usize,
+    chunk: usize,
 }
 
 impl VolumeReadStream for BufferSource {
@@ -102,7 +104,7 @@ impl VolumeReadStream for BufferSource {
             if self.at >= self.bytes.len() {
                 return None;
             }
-            let end = (self.at + 70_001).min(self.bytes.len());
+            let end = (self.at + self.chunk).min(self.bytes.len());
             let chunk = self.bytes[self.at..end].to_vec();
             self.at = end;
             Some(Ok(chunk))
@@ -116,8 +118,39 @@ impl VolumeReadStream for BufferSource {
     }
 }
 
+/// The piece size every source here hands its bytes over in.
+///
+/// ❗ A number that divides nothing, and the size-mismatch cells lean on it:
+/// hyper stops polling a body the moment `Content-Length` is satisfied, so an
+/// over-long source is only visible when the overshoot lands INSIDE a piece it
+/// did poll. A round number that divided the promised size would hide it.
+const SOURCE_CHUNK: usize = 70_001;
+
 fn source(bytes: Vec<u8>) -> Box<dyn VolumeReadStream> {
-    Box::new(BufferSource { bytes, at: 0 })
+    Box::new(BufferSource {
+        bytes,
+        at: 0,
+        chunk: SOURCE_CHUNK,
+    })
+}
+
+/// Fails, naming what it found, when a `.cmdr-tmp-*` staging sibling survived.
+///
+/// ❗ Matched with `is_staging_temp_name`, which looks anywhere in the name: a
+/// staging sibling is `<destination>.cmdr-tmp-<id>`, so a `starts_with` test
+/// passes whatever is in the directory.
+async fn assert_no_staging_leftovers(volume: &WebdavVolume, dir: &Path, what: &str) {
+    let names: Vec<String> = volume
+        .list_directory(dir, None)
+        .await
+        .expect(FIXTURE)
+        .into_iter()
+        .map(|e| e.name)
+        .collect();
+    assert!(
+        !names.iter().any(|n| is_staging_temp_name(n)),
+        "{what}: a staging sibling outlived the write, found {names:?}"
+    );
 }
 
 async fn write(volume: &WebdavVolume, path: &Path, bytes: Vec<u8>) -> Result<u64, VolumeError> {
@@ -258,9 +291,9 @@ async fn a_bounded_range_comes_back_exactly_and_never_over_long() {
         return;
     }
     // What remote-archive browsing asks for: a `.zip`'s central directory is a
-    // window at the tail, and one byte either side is a wrong answer. A server
-    // that ignores `Range` answers 200 with the whole file, which is the
-    // over-long case this pins.
+    // window at the tail, and one byte either side is a wrong answer. This is
+    // the 206 half, against a server that honours the header; the two cells
+    // below ask the same of one that doesn't.
     let volume = connect_fixture("APACHE", 13480).await;
 
     let expected = fixture_large_bytes(2 * 1024 * 1024);
@@ -270,6 +303,129 @@ async fn a_bounded_range_comes_back_exactly_and_never_over_long() {
         .expect(FIXTURE);
     assert_eq!(range.len(), 300_000, "exactly the bytes asked for, never more");
     assert_same_bytes(&range, &expected[1_000_000..1_300_000], "a bounded range");
+}
+
+// ── A server that ignores `Range` ────────────────────────────────────
+//
+// ❗ `webdav-fixture-norange` is the stock export behind `MaxRanges none`, so
+// every ranged GET comes back 200 with the whole file. RFC 9110 § 14.2 makes
+// ranges optional, and `streams.rs` answers that by skipping `offset` bytes
+// locally instead of trusting the response as a window. These two cells are
+// what run that skip: without a server that ignores the header, it is data-path
+// code on every resumed transfer that nothing executes.
+
+/// The status and length a fixture server answers a ranged GET with, asked
+/// straight rather than through this backend.
+///
+/// ❗ Deliberate, and only the two cells below do it: whether the server really
+/// ignored `Range` is the premise every other assertion there rests on, and no
+/// `Volume` method reports a status code.
+async fn raw_ranged_get(service: &str, port: u16, at: &str, range: &str) -> (reqwest::StatusCode, Option<u64>) {
+    let target = fixture_target(service, port, FIXTURE_USER);
+    let url = target
+        .base_url
+        .join(at)
+        .unwrap_or_else(|e| panic!("joining {at} onto the fixture base URL: {e}"));
+    let response = reqwest::Client::builder()
+        .user_agent("Cmdr")
+        .build()
+        .expect("a client with no TLS options is infallible")
+        .get(url)
+        .basic_auth(&target.username, Some(&target.password))
+        .header(reqwest::header::RANGE, range.to_string())
+        .send()
+        .await
+        .expect(FIXTURE);
+    (response.status(), response.content_length())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_bounded_range_is_exact_even_when_the_server_ignores_the_header() {
+    if not_for_your_own_server("`webdav-fixture-norange`, a server that answers 200 to a ranged GET") {
+        return;
+    }
+    // The premise first: this server has to be answering 200 with all 4 MiB,
+    // or the cell below it is quietly re-testing the 206 path.
+    let (status, length) = raw_ranged_get("NORANGE", 13483, FIXTURE_LARGE_FILE, "bytes=1000000-1299999").await;
+    assert_eq!(
+        status,
+        reqwest::StatusCode::OK,
+        "`MaxRanges none` is what makes this server ignore `Range`; it just answered {status} instead"
+    );
+    assert_eq!(
+        length,
+        Some(4 * 1024 * 1024),
+        "a server that ignored the header sends the WHOLE file"
+    );
+
+    let volume = connect_fixture("NORANGE", 13483).await;
+
+    let range = volume
+        .read_range(&Path::new(FIXTURE_ROOT).join(FIXTURE_LARGE_FILE), 1_000_000, 300_000)
+        .await
+        .expect(FIXTURE);
+
+    // ❗ Both halves matter. The length says `read_range` stopped at `len`
+    // rather than handing a caller the 4 MiB the server sent, and the bytes say
+    // it skipped to the window the caller asked for rather than returning the
+    // head of the file.
+    assert_eq!(range.len(), 300_000, "exactly the bytes asked for, never more");
+    assert_same_bytes(
+        &range,
+        &fixture_large_bytes(1_300_000)[1_000_000..],
+        "a bounded range from a server that ignored it",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_resumed_stream_skips_locally_when_the_server_ignores_the_header() {
+    if not_for_your_own_server("`webdav-fixture-norange`, a server that answers 200 to a ranged GET") {
+        return;
+    }
+    // The resume path: every interrupted transfer picks up at an offset, and on
+    // this server that offset is honoured by the client or not at all. A stream
+    // that trusted the 200 would hand the transfer the head of the file and
+    // write it over the bytes already on disk.
+    let (status, _) = raw_ranged_get("NORANGE", 13483, FIXTURE_LARGE_FILE, "bytes=3000000-").await;
+    assert_eq!(
+        status,
+        reqwest::StatusCode::OK,
+        "the premise: this server ignores `Range`"
+    );
+
+    let volume = connect_fixture("NORANGE", 13483).await;
+    let offset = 3_000_000;
+    let whole = 4 * 1024 * 1024;
+
+    let mut stream = volume
+        .open_read_stream_at_offset(&Path::new(FIXTURE_ROOT).join(FIXTURE_LARGE_FILE), offset)
+        .await
+        .expect(FIXTURE);
+
+    // The progress bar's denominator, which is the FILE's size on both answers:
+    // a 206 reads it off `Content-Range`, a 200 off `Content-Length`.
+    assert_eq!(stream.total_size(), whole);
+    let mut read = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        read.extend_from_slice(&chunk.expect(FIXTURE));
+    }
+    assert_eq!(
+        read.len() as u64,
+        whole - offset,
+        "a resumed stream yields the tail, never the whole file the server sent"
+    );
+    assert_eq!(
+        stream.bytes_read(),
+        whole - offset,
+        "and counts only what it handed over"
+    );
+    assert_same_bytes(
+        &read,
+        &fixture_large_bytes(whole as usize)[offset as usize..],
+        "a resumed stream from a server that ignored `Range`",
+    );
 }
 
 // ── The write path ───────────────────────────────────────────────────
@@ -292,6 +448,78 @@ async fn a_streamed_write_lands_byte_exact_and_leaves_no_temp_sibling() {
         vec!["copied.bin"],
         "no `.cmdr-tmp-*` sibling survives a finished write"
     );
+
+    clean(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_source_that_ends_early_never_reaches_the_users_filename() {
+    // ❗ A data-safety cell. `size` is what `Content-Length` promised, and a
+    // source that stops short of it ends the request from OUR side; the server
+    // has a shorter file staged and would keep it. The refusal has to be typed
+    // as ours, the temp has to go, and the destination must never appear.
+    //
+    // What makes this happen in the wild: `size` comes off a stat, and the file
+    // shrinks between that stat and the read.
+    let (volume, dir) = stock_with_scratch().await;
+    let path = dir.join("short.bin");
+    let bytes = fixture_large_bytes(120_000);
+    let promised = bytes.len() as u64 + 40_000;
+
+    let refused = volume
+        .write_from_stream(&path, promised, source(bytes), &|_, _| ControlFlow::Continue(()))
+        .await;
+
+    assert!(
+        matches!(refused, Err(VolumeError::IoError { .. })),
+        "a short source is the caller's wrong `size`, reported as an I/O refusal; got {refused:?}"
+    );
+    // ❗ Never `DeviceDisconnected`: a short source ends the body from our side,
+    // which `reqwest` reports with the same predicate a dropped connection
+    // answers, and reading it that way would take the whole volume offline over
+    // one stale size.
+    assert_eq!(
+        volume.inner.connection_state(),
+        super::ConnectionState::Connected,
+        "one wrong `size` must not flip the volume offline"
+    );
+    assert!(!volume.exists(&path).await, "the destination was never written");
+    assert_no_staging_leftovers(&volume, &dir, "a source that ended early").await;
+
+    clean(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_source_that_overruns_its_promise_never_reaches_the_users_filename() {
+    // ❗ The other half, and the sharper one: hyper TRUNCATES a body longer than
+    // `Content-Length` rather than refusing it, and the server stores that
+    // prefix and answers 201 Created. Nothing on the wire is wrong, so only the
+    // byte count this side counted says the file is short. MOVE it and the user
+    // has a truncated file wearing the name they asked for, with no error
+    // anywhere.
+    //
+    // What makes this happen in the wild: the file GREW between the stat and
+    // the read.
+    let (volume, dir) = stock_with_scratch().await;
+    let path = dir.join("overrun.bin");
+    let bytes = fixture_large_bytes(200_000);
+    let promised = 150_000;
+
+    let refused = volume
+        .write_from_stream(&path, promised, source(bytes), &|_, _| ControlFlow::Continue(()))
+        .await;
+
+    assert!(
+        matches!(refused, Err(VolumeError::IoError { .. })),
+        "the PUT succeeded and only the count says the body was cut; got {refused:?}"
+    );
+    assert!(
+        !volume.exists(&path).await,
+        "a truncated body must never wear the user's filename"
+    );
+    assert_no_staging_leftovers(&volume, &dir, "a source that overran its promise").await;
 
     clean(&volume, &dir).await;
 }

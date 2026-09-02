@@ -8,7 +8,8 @@
 //! answering 411; `DETAILS.md` § "What a real server answers" carries the
 //! observation and its date.) A source that yields a different byte count fails
 //! the request, which is reported honestly and the temp removed; it is never
-//! MOVEd into place.
+//! MOVEd into place. ❗ With one shape still open, and it is a silent
+//! truncation: `DETAILS.md` § "Write staging" has it and the fix.
 
 use std::ops::ControlFlow;
 use std::path::Path;

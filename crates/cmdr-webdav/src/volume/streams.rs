@@ -4,8 +4,9 @@
 //! (RFC 9110 § 14.2 makes ranges optional), so a 200 is handled by skipping
 //! `offset` bytes locally rather than trusted as a window. No real server has
 //! been watched doing it — Nextcloud answers 206 with the exact window
-//! (`DETAILS.md` § "What a real server answers") — so the skip branch is the one
-//! path here no test covers.
+//! (`DETAILS.md` § "What a real server answers") — so the fixture stack carries
+//! one that does, `webdav-fixture-norange`, and both the resumed stream and
+//! `read_range` are pinned against it.
 
 use std::path::Path;
 use std::pin::Pin;
