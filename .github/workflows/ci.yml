@@ -267,6 +267,19 @@ jobs:
       - name: Check rustdoc links
         run: ./scripts/check/check --check desktop-rust-rustdoc --ci
 
+      # Rendered HTML nothing downstream reads, and caching it costs twice: ~200 MB of
+      # rust-cache payload, and eight `##[error]` annotations on every cold-cache run, in a
+      # log where each red line reads as a cause. `Swatinem/rust-cache` treats any dir under
+      # `target/` named `tests` as a cargo test profile, then walks its `target`/`trybuild`
+      # children without awaiting (`src/cleanup.ts`), so the rejection escapes its `try` and
+      # Node prints `ENOENT ... opendir '.../doc/cmdr_index/indexing/tests/target'`. This
+      # lane documents `cmdr_index::indexing::tests` because it runs `--all-features` and the
+      # module is `cfg(any(test, feature = "testing"))`. `always()`, so a failing step above
+      # still leaves a doc-free cache.
+      - name: Drop rustdoc HTML before it reaches the cache
+        if: always()
+        run: rm -rf target/doc
+
       # Before the suite, because it says whether the suite is running under the
       # caps and groups its config claims. A filter that selects nothing drops
       # its tests back to the global cap and full parallelism, silently.
