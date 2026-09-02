@@ -54,8 +54,8 @@ MCP pane mirror, the tag sweep, a post-transfer refresh), and stamping there wou
 was investigated and rejected.
 
 **Robustness bar.** A listing that never returns must not hold a lease forever. Confirm and document the bound: the
-`smb2` transport has a 30 s response deadline and a 20 s send deadline, and the park is capped independently
-(milestone 3's cap stays), so a held lease slows an upload but can never stop it.
+`smb2` transport has a 30 s response deadline and a 20 s send deadline, and the park is capped independently (milestone
+3's cap stays), so a held lease slows an upload but can never stop it.
 
 ---
 
@@ -87,10 +87,10 @@ and behavior at the boundaries must be observably identical apart from wake late
 Independent of milestones 1 and 2; do it last so it lands on top of a settled foreground signal.
 
 The 4 MiB floor and the 1 s park cap (`DEST_FOREGROUND_YIELD_HARD_CAP`) both exist for one reason: an upload holds an
-open SMB write handle across a pause, and a server can reap an idle handle. On the single-shot compound path that
-reason does not apply. `crates/cmdr-smb/src/volume/streams.rs` drains the source stream fully into a buffer and only
-then sends CREATE+WRITE+FLUSH+CLOSE as one frame, so during the drain (which is where the checkpoints happen) nothing
-is open on the server.
+open SMB write handle across a pause, and a server can reap an idle handle. On the single-shot compound path that reason
+does not apply. `crates/cmdr-smb/src/volume/streams.rs` drains the source stream fully into a buffer and only then sends
+CREATE+WRITE+FLUSH+CLOSE as one frame, so during the drain (which is where the checkpoints happen) nothing is open on
+the server.
 
 1. Pass the already-computed single-shot answer into `CheckpointStream`. `resolve_staging` runs a couple of lines before
    the stream is wrapped in `transfer/volume/strategy.rs`, so no new probe or round trip is needed. Check whether
@@ -98,11 +98,11 @@ is open on the server.
    captured separately: `resolve_staging` only returns `SingleShot` when the request was `Stage`, so the enum may
    under-report. Prefer whichever is exact.
 2. On that path, skip the min-progress floor in the destination arm, so a small file can yield.
-3. **Keep the 1 s hard cap.** This is a deliberate correction to an earlier draft of this plan that proposed removing it.
-   A small file's whole drain is well under a second, so the cap never binds and removing it buys nothing; meanwhile the
-   single-shot decision and the actual write happen at different moments, and a reconnect between them could change the
-   server's negotiated `max_write_size` and move the file onto the streaming path, which does hold a handle open. Keeping
-   the cap makes that race harmless. ❌ Do not remove or raise the cap.
+3. **Keep the 1 s hard cap.** This is a deliberate correction to an earlier draft of this plan that proposed removing
+   it. A small file's whole drain is well under a second, so the cap never binds and removing it buys nothing; meanwhile
+   the single-shot decision and the actual write happen at different moments, and a reconnect between them could change
+   the server's negotiated `max_write_size` and move the file onto the streaming path, which does hold a handle open.
+   Keeping the cap makes that race harmless. ❌ Do not remove or raise the cap.
 4. Net effect: no data-safety change at all. An existing guard is narrowed to the cases it was written for.
 
 **Lean on the existing guarantee.** `write_is_single_shot` and `write_from_stream` are required to branch on the same

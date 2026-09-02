@@ -31,9 +31,8 @@ only as `transfer::volume::<item>` (contracts: `volume/CLAUDE.md`). All four cor
   them or leaves an empty skeleton. ❌ A new `copy/` arm commits through `commit_journaling_created_dirs`, never bare;
   `move_with_staging` is the ONE exception. DETAILS § "Who may commit a `CopyTransaction` bare".
 - **Cross-volume copy parks and yields between chunks** (`CheckpointStream`): park in place, ❌ no release/reopen. TWO
-  opt-ins, ❌ don't merge: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB) is capped. A
-  single-shot write skips the min-progress floor (nothing is open server-side during its drain): the only way a
-  sub-floor file yields.
+  opt-ins, ❌ don't merge: SOURCE read-yield (MTP + SMB) is unbounded, DESTINATION write-yield (SMB) is capped, and a
+  single-shot write is exempt from its floor (nothing is open server-side mid-drain).
 - **Every phase announces itself to `transfer_probe.rs`, on ALL THREE streaming paths**: ❌ no `.await` without a
   phase, ❌ never derive a stall from FE timing. A new streaming path owes BOTH `register_operation` and a
   `CURRENT_TASK_PROBE` scope (registering without binding reports nothing), plus a `MergeCtx.op_probe` if it opens a
