@@ -3,6 +3,7 @@
 //! Provides a minimal volume implementation that returns the root filesystem
 //! and common Linux directories as "favorites".
 
+use cmdr_fs::volume::SpaceInfo;
 use serde::{Deserialize, Serialize};
 
 /// Category of a location item.
@@ -48,14 +49,6 @@ pub struct VolumeInfo {
     /// per-kind defaults. Filled by `enrich_from_volume_registry`, never by a
     /// discovery constructor.
     pub capabilities: Option<cmdr_fs::volume::VolumeCapabilities>,
-}
-
-/// Information about volume space.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VolumeSpaceInfo {
-    pub total_bytes: u64,
-    pub available_bytes: u64,
 }
 
 /// Default volume ID for the root filesystem.
@@ -140,9 +133,12 @@ pub fn get_default_volume_id() -> String {
 }
 
 /// Gets space information for a volume at the given path.
+///
+/// A mounted filesystem always has a capacity, so this is always
+/// [`SpaceInfo::Bounded`].
 #[tauri::command]
 #[specta::specta]
-pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
+pub fn get_volume_space(path: String) -> Option<SpaceInfo> {
     use std::ffi::CString;
 
     let c_path = CString::new(path).ok()?;
@@ -154,10 +150,10 @@ pub fn get_volume_space(path: String) -> Option<VolumeSpaceInfo> {
         let mut stat: libc::statvfs = std::mem::zeroed();
         if libc::statvfs(c_path.as_ptr(), &mut stat) == 0 {
             let block_size = stat.f_frsize;
-            Some(VolumeSpaceInfo {
-                total_bytes: stat.f_blocks * block_size,
-                available_bytes: stat.f_bavail * block_size,
-            })
+            Some(SpaceInfo::bounded(
+                stat.f_blocks * block_size,
+                stat.f_bavail * block_size,
+            ))
         } else {
             None
         }

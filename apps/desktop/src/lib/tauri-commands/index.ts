@@ -178,7 +178,7 @@ export {
   openSystemSettingsUrl,
   openAppearanceSettings,
 } from './storage'
-export type { Location, PathVolumeResolution, ResolveLocationResult, VolumeSpaceInfo } from './storage'
+export type { Location, PathVolumeResolution, ResolveLocationResult, SpaceInfo } from './storage'
 
 // Networking (SMB, keychain, mounting)
 export {
@@ -587,7 +587,6 @@ export type {
   MtpDeviceDisconnectedEvent,
   MtpObjectInfo,
   MtpScanResult,
-  VolumeSpaceInfoExtended,
   VolumeConflictInfo,
   VolumeCopyScanResult,
   VolumeCopyConfig,

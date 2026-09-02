@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import { getPathValidationError, formatSpaceInfo } from './transfer-dialog-logic'
-import type { VolumeSpaceInfo } from '$lib/tauri-commands'
+import type { SpaceInfo } from '$lib/ipc/bindings'
 
 // Pin the base locale so the catalog-resolved validation/space copy is the
 // deterministic en parity net.
@@ -114,7 +114,14 @@ describe('formatSpaceInfo', () => {
   })
 
   it('formats free-of-total using the injected formatter', () => {
-    const space: VolumeSpaceInfo = { availableBytes: 500, totalBytes: 1000 }
+    const space: SpaceInfo = { kind: 'bounded', availableBytes: 500, totalBytes: 1000, usedBytes: 500 }
     expect(formatSpaceInfo(space, fmt)).toBe('500 B free of 1000 B')
+  })
+
+  it('states what is stored, and that nothing caps it, where there is no ceiling', () => {
+    // ❗ The dialog has to say the copy will FIT. A blank line here, or a
+    // "0 B free" one, would read as a destination with no room.
+    const space: SpaceInfo = { kind: 'unbounded', usedBytes: 64_000_000 }
+    expect(formatSpaceInfo(space, fmt)).toBe('64000000 B used, no size limit')
   })
 })

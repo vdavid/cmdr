@@ -126,7 +126,7 @@ impl DeviceVolumeProvider for AdbDeviceProvider {
         Box::pin(async move {
             let volume = connected_volume(serial_of_path(path)?)?;
             let space = volume.get_space_info().await.ok()?;
-            Some((space.total_bytes, space.available_bytes))
+            Some((space.total_bytes()?, space.available_bytes()?))
         })
     }
 

@@ -3272,11 +3272,16 @@ export const commands = {
   getDefaultVolumeId: () => __TAURI_INVOKE<string>('get_default_volume_id'),
   /**
    *  Gets space information for a volume at the given path.
-   *  Returns total and available bytes for the volume.
+   *
+   *  A mounted filesystem and a device storage both have a size, so everything
+   *  this command can answer is [`SpaceInfo::Bounded`]. Storage with no ceiling
+   *  reaches the frontend through the poller's `volume-space-changed` instead,
+   *  which asks the registered `Volume` rather than the mount table.
+   *
    *  For device paths (`mtp://`, `adb://`), asks the device provider instead of
    *  the filesystem.
    */
-  getVolumeSpace: (path: string) => __TAURI_INVOKE<TimedOut<VolumeSpaceInfo | null>>('get_volume_space', { path }),
+  getVolumeSpace: (path: string) => __TAURI_INVOKE<TimedOut<SpaceInfo | null>>('get_volume_space', { path }),
   // Gets all currently discovered network hosts.
   listNetworkHosts: () => __TAURI_INVOKE<NetworkHost[]>('list_network_hosts'),
   /**
@@ -11220,15 +11225,44 @@ export type SourceItemInput = {
  */
 export type SourceItemOutcome = 'done' | 'skipped' | 'failed'
 
-// Space information for a volume.
-export type SpaceInfo = {
-  // In bytes.
-  totalBytes: number
-  // In bytes.
-  availableBytes: number
-  // In bytes.
-  usedBytes: number
-}
+/**
+ *  What a volume can say about its room.
+ *
+ *  Two shapes, because two situations are genuinely different. A disk, a share,
+ *  or a quota'd account has a TOTAL, so "free" and "how full" both mean
+ *  something. Storage with no quota at all has no total, and the only honest
+ *  number is what's already stored: a stock Nextcloud account is the live case,
+ *  answering RFC 4331 `quota-available-bytes: -3` (sabre/dav's unlimited
+ *  sentinel) next to a real `quota-used-bytes`.
+ *
+ *  ❌ Three `Option`s would let a caller build an `available` with no `total`,
+ *  which is a percentage with no denominator: a fill bar at an invented figure,
+ *  and the 80% / 95% warning bands firing on a volume that can't run out. Here
+ *  that value can't be constructed, so no caller has to remember not to.
+ */
+export type SpaceInfo =
+  /**
+   *  The volume has a ceiling, so it can be full and a percentage means
+   *  something.
+   */
+  | {
+      kind: 'bounded'
+      // Capacity, in bytes.
+      totalBytes: number
+      // Room left, in bytes.
+      availableBytes: number
+      // Already stored, in bytes.
+      usedBytes: number
+    }
+  /**
+   *  No ceiling. Only what's stored is known, so there's nothing to fill a bar
+   *  against and no band to warn in.
+   */
+  | {
+      kind: 'unbounded'
+      // Already stored, in bytes.
+      usedBytes: number
+    }
 
 /**
  *  SQLite's page memory: the one process-wide slab every store's cached database
@@ -12357,19 +12391,13 @@ export type VolumeScanError =
  *  wire event name (`volume-space-changed`) via `tauri_specta::Event`. Both the
  *  TS payload type and a typed `events.volumeSpaceChanged.listen(...)` helper are
  *  generated into `apps/desktop/src/lib/ipc/bindings.ts`.
+ *
+ *  The whole [`SpaceInfo`] rides along rather than two loose numbers, so a volume
+ *  with no ceiling stays recognizable all the way to the pane's indicator.
  */
 export type VolumeSpaceChanged = {
   volumeId: string
-  totalBytes: number
-  availableBytes: number
-}
-
-// Information about volume space.
-export type VolumeSpaceInfo = {
-  // In bytes.
-  totalBytes: number
-  // In bytes.
-  availableBytes: number
+  space: SpaceInfo
 }
 
 /**

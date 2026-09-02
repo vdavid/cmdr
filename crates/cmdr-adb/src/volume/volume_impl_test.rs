@@ -4,6 +4,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use cmdr_fs::volume::SpaceInfo;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection};
 use cmdr_fs::volume::{LaneKey, SignInPrompt, Volume, WatchCoverage, adb_volume_id};
@@ -180,9 +181,14 @@ async fn space_comes_from_df() {
     let server = FakeAdbServer::start(FakeTree::new()).await;
     let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
     let space = volume.get_space_info().await.expect("df -k");
-    assert_eq!(space.total_bytes, 118_120_468 * 1024);
-    assert_eq!(space.available_bytes, 96_764_008 * 1024);
-    assert_eq!(space.used_bytes, space.total_bytes - space.available_bytes);
+    assert_eq!(
+        space,
+        SpaceInfo::Bounded {
+            total_bytes: 118_120_468 * 1024,
+            available_bytes: 96_764_008 * 1024,
+            used_bytes: (118_120_468 - 96_764_008) * 1024,
+        }
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

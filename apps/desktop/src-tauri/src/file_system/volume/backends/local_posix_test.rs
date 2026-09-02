@@ -550,10 +550,19 @@ async fn test_get_space_info() {
     let volume = LocalPosixVolume::new("Test", "/tmp");
     let space = volume.get_space_info().await.unwrap();
 
-    // Basic sanity checks
-    assert!(space.total_bytes > 0);
-    assert!(space.available_bytes <= space.total_bytes);
-    assert!(space.used_bytes <= space.total_bytes);
+    // Basic sanity checks. A mounted filesystem always has a ceiling, so the
+    // reading is always `Bounded`.
+    let SpaceInfo::Bounded {
+        total_bytes,
+        available_bytes,
+        used_bytes,
+    } = space
+    else {
+        panic!("a local filesystem always has a capacity, got {space:?}");
+    };
+    assert!(total_bytes > 0);
+    assert!(available_bytes <= total_bytes);
+    assert!(used_bytes <= total_bytes);
 }
 
 #[tokio::test]

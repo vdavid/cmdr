@@ -7,7 +7,7 @@
  */
 
 import type { TransferOperationType } from '$lib/file-explorer/types'
-import type { VolumeSpaceInfo } from '$lib/tauri-commands'
+import type { SpaceInfo } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
 
 /**
@@ -72,15 +72,20 @@ export function getPathValidationError(
 }
 
 /**
- * Formats the free-space line ("12 GB free of 500 GB") for the volume selector.
+ * Formats the free-space line ("12 GB free of 500 GB") for the volume selector,
+ * or "64 MB used, no size limit" for storage with no ceiling, where there is no
+ * free figure to state and the copy is certain to fit.
  * Intentionally uncolored upstream: red GB would falsely signal "low space".
  * Returns an empty string when no space info is available (the line is hidden).
  *
  * The byte formatter is injected so this stays pure and testable; the dialog
  * passes the user's configured size format via `formatFileSizeWithFormat`.
  */
-export function formatSpaceInfo(space: VolumeSpaceInfo | null, formatSize: (bytes: number) => string): string {
+export function formatSpaceInfo(space: SpaceInfo | null, formatSize: (bytes: number) => string): string {
   if (!space) return ''
+  if (space.kind !== 'bounded') {
+    return tString('fileOperations.transferDialog.spaceInfoUnbounded', { used: formatSize(space.usedBytes) })
+  }
   const free = formatSize(space.availableBytes)
   const total = formatSize(space.totalBytes)
   return tString('fileOperations.transferDialog.spaceInfo', { free, total })

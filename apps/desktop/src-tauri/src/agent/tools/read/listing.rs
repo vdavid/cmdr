@@ -33,9 +33,9 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use super::{expand_tilde, join_child_path};
+use crate::file_system::volume::SpaceInfo;
 use crate::index_host::index;
 use crate::mcp::resources::indexing::status_token;
-use crate::mcp::resources::volumes::VolumeSpace;
 use crate::mcp::{ToolError, ToolResult};
 use crate::search::{format_size, format_timestamp};
 use cmdr_index::Freshness;
@@ -365,14 +365,18 @@ pub struct VolumeBlock {
 impl VolumeBlock {
     /// Build the block from the poller's space reading, deriving the spoken forms.
     /// No space known ⇒ all four fields absent, never a zero that reads as a full
-    /// disk.
-    pub(crate) fn new(id: String, space: Option<VolumeSpace>) -> Self {
+    /// disk. Storage with no ceiling omits them for the same reason: it has no
+    /// capacity and no free figure, and inventing either would be worse than
+    /// silence.
+    pub(crate) fn new(id: String, space: Option<SpaceInfo>) -> Self {
+        let total = space.and_then(|s| s.total_bytes());
+        let available = space.and_then(|s| s.available_bytes());
         Self {
             id,
-            total_bytes: space.map(|s| s.total_bytes),
-            total_human: space.map(|s| format_size(s.total_bytes)),
-            available_bytes: space.map(|s| s.available_bytes),
-            available_human: space.map(|s| format_size(s.available_bytes)),
+            total_bytes: total,
+            total_human: total.map(format_size),
+            available_bytes: available,
+            available_human: available.map(format_size),
         }
     }
 }

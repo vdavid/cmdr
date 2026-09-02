@@ -117,24 +117,40 @@ impl WebdavVolume {
         Ok(self.get_metadata_impl(path).await?.is_directory)
     }
 
-    /// RFC 4331 quota on the root. `NotSupported` unless the server reports
-    /// both numbers and neither is the "unlimited" sentinel Nextcloud spells
-    /// as a negative value.
+    /// RFC 4331 quota on the root, as far as the server is willing to say.
+    ///
+    /// Three answers, because servers give three:
+    ///
+    /// - **Both numbers, both non-negative** ⇒ a quota'd account.
+    ///   [`SpaceInfo::Bounded`], with the total built from the pair (RFC 4331
+    ///   has no capacity property, so `available + used` IS the total).
+    /// - **A real `quota-used-bytes` with no usable `quota-available-bytes`** ⇒
+    ///   an account with no quota, which is what a stock Nextcloud user is and
+    ///   so the common case. sabre/dav answers `-3` there (`SPACE_UNLIMITED`);
+    ///   `-1` and `-2` are its other sentinels, and a server that simply omits
+    ///   the property lands here too. Every one of them means the same thing to
+    ///   a reader: there is no ceiling, but the used figure is real, so
+    ///   [`SpaceInfo::Unbounded`] shows it. ❌ Reading the sentinel as a size
+    ///   would put a nonsense figure under the user's pane.
+    /// - **No usable `quota-used-bytes`** ⇒ nothing to show. `NotSupported`.
+    ///   Apache `mod_dav` is here: it sends neither property.
     pub(super) async fn get_space_info_impl(&self) -> Result<SpaceInfo, VolumeError> {
         let root = self.to_remote_path(Path::new("/"))?;
         let client = self.clone_client().await?;
         let prop = self.stat(&client, &root).await?;
-        match (prop.quota_available, prop.quota_used) {
-            (Some(available), Some(used)) if available >= 0 && used >= 0 => {
+        let Some(used) = prop.quota_used.filter(|used| *used >= 0).map(i64::unsigned_abs) else {
+            return Err(VolumeError::NotSupported);
+        };
+        match prop.quota_available.filter(|available| *available >= 0) {
+            Some(available) => {
                 let available = available.unsigned_abs();
-                let used = used.unsigned_abs();
-                Ok(SpaceInfo {
+                Ok(SpaceInfo::Bounded {
                     total_bytes: available.saturating_add(used),
                     available_bytes: available,
                     used_bytes: used,
                 })
             }
-            _ => Err(VolumeError::NotSupported),
+            None => Ok(SpaceInfo::Unbounded { used_bytes: used }),
         }
     }
 }

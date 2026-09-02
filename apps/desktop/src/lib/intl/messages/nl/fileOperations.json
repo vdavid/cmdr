@@ -225,6 +225,10 @@
   "@fileOperations.transferDialog.spaceInfo": {
     "sourceHash": "a46cd4e"
   },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "{used} gebruikt, geen groottelimiet",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "sourceHash": "5d74d4d"
+  },
   "fileOperations.transferDialog.smbNativeNote": "Deze share gebruikt de systeemverbinding. Annuleren kan vertraagd zijn. Gebruik ‘Verbind direct’ in de volumekiezer voor snellere overdrachten en betrouwbaar annuleren.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"

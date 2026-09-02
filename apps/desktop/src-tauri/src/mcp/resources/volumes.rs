@@ -16,6 +16,7 @@
 //! and `stale` in the other.
 
 use super::indexing::status_token;
+use crate::file_system::volume::SpaceInfo;
 use crate::index_host::index;
 use crate::search::format_size;
 
@@ -76,20 +77,13 @@ pub(crate) struct VolumeSummary {
     pub index_status: Option<&'static str>,
     /// SMB connection state (`direct` / `os_mount` / `disconnected`); `None` off SMB.
     pub smb_connection_state: Option<&'static str>,
-    /// Capacity and free space, from the space poller's cache. `None` when nothing
-    /// is watching this volume — see [`space_summary`] for why that isn't a
-    /// `statfs` here.
-    pub space: Option<VolumeSpace>,
+    /// What the volume reports about its room, from the space poller's cache.
+    /// `None` when nothing is watching this volume — see [`space_summary`] for
+    /// why that isn't a `statfs` here.
+    pub space: Option<SpaceInfo>,
 }
 
-/// A volume's capacity and free space, as last polled.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct VolumeSpace {
-    pub total_bytes: u64,
-    pub available_bytes: u64,
-}
-
-/// The volume's capacity/free from the poller's cache, never a fresh `statfs`.
+/// The volume's space from the poller's cache, never a fresh `statfs`.
 ///
 /// "How full is this drive" must not be able to block a resource read or a tool
 /// call: `statfs` on a hung network mount waits 30–120 s, and `cmdr://state` is
@@ -97,11 +91,8 @@ pub(crate) struct VolumeSpace {
 /// something is watching (the boot volume always, plus whatever the panes show),
 /// which covers the volume a disk-space question is actually about. Anything
 /// unwatched reports no space at all rather than a stale or guessed number.
-pub(crate) fn space_summary(volume_id: &str) -> Option<VolumeSpace> {
-    crate::space_poller::cached_space(volume_id).map(|s| VolumeSpace {
-        total_bytes: s.total_bytes,
-        available_bytes: s.available_bytes,
-    })
+pub(crate) fn space_summary(volume_id: &str) -> Option<SpaceInfo> {
+    crate::space_poller::cached_space(volume_id)
 }
 
 /// Push one volume's YAML block. `name`, `id`, and `kind` always render; the rest
@@ -134,10 +125,24 @@ fn push_volume(lines: &mut Vec<String>, v: &VolumeSummary) {
     // `search::format_size`, the one formatter (so a size reads the same here as in
     // the `search` table).
     if let Some(space) = v.space {
-        lines.push(format!("    totalBytes: {}", space.total_bytes));
-        lines.push(format!("    totalHuman: {}", format_size(space.total_bytes)));
-        lines.push(format!("    availableBytes: {}", space.available_bytes));
-        lines.push(format!("    availableHuman: {}", format_size(space.available_bytes)));
+        if let SpaceInfo::Bounded {
+            total_bytes,
+            available_bytes,
+            ..
+        } = space
+        {
+            lines.push(format!("    totalBytes: {total_bytes}"));
+            lines.push(format!("    totalHuman: {}", format_size(total_bytes)));
+            lines.push(format!("    availableBytes: {available_bytes}"));
+            lines.push(format!("    availableHuman: {}", format_size(available_bytes)));
+        } else {
+            // No ceiling (a quota-less WebDAV account). Saying so beats omitting
+            // the block: a reader who sees only `usedBytes` would otherwise wonder
+            // whether the capacity was simply unknown.
+            lines.push("    unbounded: true".to_string());
+        }
+        lines.push(format!("    usedBytes: {}", space.used_bytes()));
+        lines.push(format!("    usedHuman: {}", format_size(space.used_bytes())));
     }
 }
 
@@ -323,10 +328,7 @@ mod tests {
         // The pair is what makes a size answer actionable: "40 GB" reads
         // differently against 2 TB free than against 8 GB.
         let mut v = local("Macintosh HD", "root");
-        v.space = Some(VolumeSpace {
-            total_bytes: 2_000_000_000_000,
-            available_bytes: 214_300_000_000,
-        });
+        v.space = Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000));
         let yaml = build_volumes_yaml(&[v]);
         assert!(yaml.contains("totalBytes: 2000000000000"));
         assert!(yaml.contains("availableBytes: 214300000000"));

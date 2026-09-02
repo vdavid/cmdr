@@ -2,7 +2,7 @@
 //! and paging rules. All pure over resolved inputs — no index, no filesystem.
 
 use super::*;
-use crate::mcp::resources::volumes::VolumeSpace;
+use crate::file_system::volume::SpaceInfo;
 use crate::search::format_size;
 
 fn dir_stats(size: u64, complete: bool, stale: bool, pending: bool) -> DirStats {
@@ -193,10 +193,7 @@ fn a_listing_names_its_volume_and_how_full_it_is() {
         Some(Freshness::Fresh),
         VolumeBlock::new(
             "root".to_string(),
-            Some(VolumeSpace {
-                total_bytes: 2_000_000_000_000,
-                available_bytes: 214_300_000_000,
-            }),
+            Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000)),
         ),
         &ListOptions::default(),
     );
@@ -520,10 +517,7 @@ fn the_wire_shape_carries_every_spoken_field_in_camel_case() {
         Some(Freshness::Fresh),
         VolumeBlock::new(
             "root".to_string(),
-            Some(VolumeSpace {
-                total_bytes: 2_000_000_000_000,
-                available_bytes: 214_300_000_000,
-            }),
+            Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000)),
         ),
         &opts,
     );

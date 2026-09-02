@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 
 use cmdr_fs::staging::is_staging_temp_name;
-use cmdr_fs::volume::{Volume, VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use reqwest::header::{CONTENT_TYPE, RANGE};
 use reqwest::{Body, Method, StatusCode};
 
@@ -273,39 +273,54 @@ async fn quota_reports_the_accounts_own_numbers_not_the_servers_disk() {
 
     let space = volume.get_space_info().await.expect(FIXTURE);
 
+    let SpaceInfo::Bounded {
+        total_bytes,
+        available_bytes,
+        used_bytes,
+    } = space
+    else {
+        panic!("an account WITH a quota has a ceiling; got {space:?}");
+    };
     assert_eq!(
-        space.total_bytes, FIXTURE_NEXTCLOUD_QUOTA_BYTES,
+        total_bytes, FIXTURE_NEXTCLOUD_QUOTA_BYTES,
         "the total has to be the ACCOUNT's quota; the container's disk is nothing like this number"
     );
     assert_eq!(
-        space.available_bytes + space.used_bytes,
-        space.total_bytes,
+        available_bytes + used_bytes,
+        total_bytes,
         "`total` is built from the two RFC 4331 numbers, so it can't disagree with them"
     );
-    assert!(
-        space.used_bytes > 0,
-        "a freshly installed account holds its skeleton files"
-    );
-    assert!(space.available_bytes < space.total_bytes);
+    assert!(used_bytes > 0, "a freshly installed account holds its skeleton files");
+    assert!(available_bytes < total_bytes);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the Nextcloud WebDAV fixture: apps/desktop/test/webdav-servers/start.sh nextcloud (webdav-fixture-nextcloud)"]
-async fn an_account_with_no_quota_reports_no_free_space_at_all() {
+async fn an_account_with_no_quota_reports_what_it_holds_and_no_ceiling() {
     if not_for_your_own_server("the fixture's second, quota-less account") {
         return;
     }
-    // ❗ The DEFAULT state of a real Nextcloud account, and the reason
-    // `get_space_info` tests both numbers for being non-negative: an unlimited
-    // account answers `quota-available-bytes` with a negative sentinel, and
-    // reading that as a size would put a nonsense figure under the user's pane.
-    // `NotSupported` is what makes the indicator show nothing instead.
+    // ❗ The DEFAULT state of a real Nextcloud account, so this is the COMMON
+    // case rather than an edge one. The server answers `quota-available-bytes`
+    // with a negative sentinel (`-3`, `SPACE_UNLIMITED`) next to a real
+    // `quota-used-bytes`, and the two halves of the answer are what this pins:
+    // ❌ the sentinel is never read as a size, and ❌ the used figure the server
+    // DID give is never thrown away. The pane draws no bar and no percentage for
+    // this shape, and the 80% / 95% warning bands can't fire on it.
     let volume = connect_fixture_as("NEXTCLOUD", 13482, FIXTURE_UNLIMITED_USER).await;
 
-    let refused = volume.get_space_info().await;
+    let space = volume.get_space_info().await.expect(FIXTURE);
 
+    let SpaceInfo::Unbounded { used_bytes } = space else {
+        panic!("an account with no quota has no ceiling to report; got {space:?}");
+    };
     assert!(
-        matches!(refused, Err(VolumeError::NotSupported)),
-        "an unlimited account has no free-space figure to show; got {refused:?}"
+        used_bytes > 0,
+        "a freshly installed account holds its skeleton files, and that figure is the one thing worth showing"
+    );
+    assert_eq!(
+        space.available_bytes(),
+        None,
+        "'available' with no total is the value this shape exists to make unrepresentable"
     );
 }

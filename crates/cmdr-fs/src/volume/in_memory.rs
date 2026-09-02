@@ -264,13 +264,18 @@ impl InMemoryVolume {
         self
     }
 
-    /// Sets configurable space info so get_space_info() works in tests.
+    /// Sets configurable BOUNDED space info so get_space_info() works in tests.
     pub fn with_space_info(mut self, total_bytes: u64, available_bytes: u64) -> Self {
-        self.space_info = Some(SpaceInfo {
-            total_bytes,
-            available_bytes,
-            used_bytes: total_bytes.saturating_sub(available_bytes),
-        });
+        self.space_info = Some(SpaceInfo::bounded(total_bytes, available_bytes));
+        self
+    }
+
+    /// Sets configurable UNBOUNDED space info: storage with no ceiling, where
+    /// only what's stored is known (an unlimited Nextcloud account). Lets a test
+    /// drive the pre-flight's "can't tell, go ahead" path with a volume that
+    /// nonetheless answers.
+    pub fn with_unbounded_space_info(mut self, used_bytes: u64) -> Self {
+        self.space_info = Some(SpaceInfo::Unbounded { used_bytes });
         self
     }
 
@@ -934,7 +939,7 @@ impl Volume for InMemoryVolume {
     }
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.space_info.clone().ok_or(VolumeError::NotSupported) })
+        Box::pin(async move { self.space_info.ok_or(VolumeError::NotSupported) })
     }
 
     fn supports_local_fs_access(&self) -> bool {

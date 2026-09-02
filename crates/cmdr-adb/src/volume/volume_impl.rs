@@ -354,11 +354,7 @@ impl Volume for AdbVolume {
             }
             let parts =
                 shell::parse_df_k(&String::from_utf8_lossy(&outcome.stdout)).ok_or(VolumeError::NotSupported)?;
-            Ok(SpaceInfo {
-                total_bytes: parts.total_bytes,
-                available_bytes: parts.available_bytes,
-                used_bytes: parts.total_bytes.saturating_sub(parts.available_bytes),
-            })
+            Ok(SpaceInfo::bounded(parts.total_bytes, parts.available_bytes))
         }))
     }
 

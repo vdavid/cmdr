@@ -225,6 +225,10 @@
   "@fileOperations.transferDialog.spaceInfo": {
     "sourceHash": "a46cd4e"
   },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "{used} använt, ingen storleksgräns",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "sourceHash": "5d74d4d"
+  },
   "fileOperations.transferDialog.smbNativeNote": "Den här delade mappen använder systemanslutningen. Avbrytning kan fördröjas. Använd ”Anslut direkt” i volymväljaren för snabbare överföringar och tillförlitlig avbrytning.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"

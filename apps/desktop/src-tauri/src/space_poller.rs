@@ -28,6 +28,7 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
+use crate::file_system::volume::SpaceInfo;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::ignore_poison::IgnorePoison;
 
@@ -42,7 +43,7 @@ static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 static WATCHED: OnceLock<Mutex<HashMap<String, WatchEntry>>> = OnceLock::new();
 
 /// Last emitted space per volume, for change detection.
-static LAST_SPACE: OnceLock<Mutex<HashMap<String, CachedSpace>>> = OnceLock::new();
+static LAST_SPACE: OnceLock<Mutex<HashMap<String, SpaceInfo>>> = OnceLock::new();
 
 /// Rate limit for the per-emission debug line (the events themselves are never
 /// throttled; only the logging is). Per volume, so a churning boot disk can't
@@ -89,13 +90,7 @@ struct WatchEntry {
     path: String,
 }
 
-#[derive(Clone)]
-pub(crate) struct CachedSpace {
-    pub(crate) total_bytes: u64,
-    pub(crate) available_bytes: u64,
-}
-
-/// The last polled capacity and free space for a volume, if the poller has any.
+/// The last polled space for a volume, if the poller has any.
 ///
 /// A READ of the poll cache, never a fresh `statfs`. That's the point: the MCP
 /// resources and the agent's read tools answer "how full is this drive" without
@@ -107,22 +102,24 @@ pub(crate) struct CachedSpace {
 /// is showing. Nothing watching ⇒ `None`, which callers render as absent rather
 /// than as a guessed zero. Widening this beyond the watched set means widening
 /// what the poller watches, not reaching for `statfs` here.
-pub(crate) fn cached_space(volume_id: &str) -> Option<CachedSpace> {
+pub(crate) fn cached_space(volume_id: &str) -> Option<SpaceInfo> {
     let cache = LAST_SPACE.get()?;
     let map = cache.lock_ignore_poison();
-    map.get(volume_id).cloned()
+    map.get(volume_id).copied()
 }
 
 /// Typed `volume-space-changed` Tauri event. The struct name kebab-cases to the
 /// wire event name (`volume-space-changed`) via `tauri_specta::Event`. Both the
 /// TS payload type and a typed `events.volumeSpaceChanged.listen(...)` helper are
 /// generated into `apps/desktop/src/lib/ipc/bindings.ts`.
+///
+/// The whole [`SpaceInfo`] rides along rather than two loose numbers, so a volume
+/// with no ceiling stays recognizable all the way to the pane's indicator.
 #[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeSpaceChanged {
     pub volume_id: String,
-    pub total_bytes: u64,
-    pub available_bytes: u64,
+    pub space: SpaceInfo,
 }
 
 /// Typed `low-disk-space` Tauri event. The struct keeps its `Payload` suffix
@@ -282,10 +279,7 @@ async fn poll_loop() {
                 if let Some(vol) = vol_clone
                     && let Ok(info) = vol.get_space_info().await
                 {
-                    return Some(CachedSpace {
-                        total_bytes: info.total_bytes,
-                        available_bytes: info.available_bytes,
-                    });
+                    return Some(info);
                 }
                 fetch_space_for_path(&path_clone)
             };
@@ -324,18 +318,35 @@ enum LowSpaceTransition {
 /// `low-disk-space` on each edge: `is_low: true` when free percent crosses
 /// below the threshold, `is_low: false` when it recovers above the re-arm
 /// margin (so the frontend can auto-dismiss the toast).
-fn check_low_space(volume_id: &str, space: &CachedSpace) {
+///
+/// ❗ A volume with no ceiling is never low and never recovers: there is no
+/// percentage to cross a threshold with, and you can't run out of storage that
+/// has no limit. It leaves the detector's armed state untouched, so a boot
+/// volume that somehow reported one can't disarm the warning for the real one.
+fn check_low_space(volume_id: &str, space: &SpaceInfo) {
     if !LOW_SPACE_ENABLED.load(Ordering::Relaxed) {
         return;
     }
+    let SpaceInfo::Bounded {
+        total_bytes,
+        available_bytes,
+        ..
+    } = *space
+    else {
+        return;
+    };
     let threshold = LOW_SPACE_THRESHOLD_PERCENT.load(Ordering::Relaxed);
-    let free = free_percent(space.total_bytes, space.available_bytes);
+    let free = free_percent(total_bytes, available_bytes);
     let armed = LOW_SPACE_ARMED.load(Ordering::Relaxed);
     let (new_armed, transition) = low_space_transition(armed, free, threshold as f64);
     LOW_SPACE_ARMED.store(new_armed, Ordering::Relaxed);
     match transition {
-        LowSpaceTransition::BecameLow => emit_low_disk_space(volume_id, space, free, threshold, true),
-        LowSpaceTransition::Recovered => emit_low_disk_space(volume_id, space, free, threshold, false),
+        LowSpaceTransition::BecameLow => {
+            emit_low_disk_space(volume_id, total_bytes, available_bytes, free, threshold, true)
+        }
+        LowSpaceTransition::Recovered => {
+            emit_low_disk_space(volume_id, total_bytes, available_bytes, free, threshold, false)
+        }
         LowSpaceTransition::None => {}
     }
 }
@@ -365,12 +376,19 @@ fn low_space_transition(armed: bool, free_percent: f64, threshold_percent: f64) 
     (armed, LowSpaceTransition::None)
 }
 
-fn emit_low_disk_space(volume_id: &str, space: &CachedSpace, free_percent: f64, threshold_percent: u64, is_low: bool) {
+fn emit_low_disk_space(
+    volume_id: &str,
+    total_bytes: u64,
+    available_bytes: u64,
+    free_percent: f64,
+    threshold_percent: u64,
+    is_low: bool,
+) {
     let Some(app) = APP_HANDLE.get() else { return };
     let payload = LowDiskSpacePayload {
         volume_id: volume_id.to_string(),
-        total_bytes: space.total_bytes,
-        available_bytes: space.available_bytes,
+        total_bytes,
+        available_bytes,
         free_percent,
         threshold_percent,
         is_low,
@@ -380,8 +398,8 @@ fn emit_low_disk_space(volume_id: &str, space: &CachedSpace, free_percent: f64, 
         if is_low { "low" } else { "recovered" },
         volume_id,
         free_percent,
-        space.available_bytes,
-        space.total_bytes,
+        available_bytes,
+        total_bytes,
         threshold_percent
     );
     if let Err(e) = payload.emit(app) {
@@ -391,23 +409,17 @@ fn emit_low_disk_space(volume_id: &str, space: &CachedSpace, free_percent: f64, 
 
 /// Fetches space info for a filesystem path using the platform API.
 /// Used as a fallback when the volume is not registered in VolumeManager.
-fn fetch_space_for_path(path: &str) -> Option<CachedSpace> {
+///
+/// Always [`SpaceInfo::Bounded`]: a mounted filesystem has a size.
+fn fetch_space_for_path(path: &str) -> Option<SpaceInfo> {
     #[cfg(target_os = "macos")]
     {
-        let info = crate::volumes::get_volume_space(path)?;
-        Some(CachedSpace {
-            total_bytes: info.total_bytes,
-            available_bytes: info.available_bytes,
-        })
+        crate::volumes::get_volume_space(path)
     }
 
     #[cfg(target_os = "linux")]
     {
-        let info = crate::volumes_linux::get_volume_space(path)?;
-        Some(CachedSpace {
-            total_bytes: info.total_bytes,
-            available_bytes: info.available_bytes,
-        })
+        crate::volumes_linux::get_volume_space(path)
     }
 
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -417,34 +429,57 @@ fn fetch_space_for_path(path: &str) -> Option<CachedSpace> {
     }
 }
 
-/// Returns `true` if the new space exceeds the threshold relative to the last emission.
-fn exceeds_threshold(volume_id: &str, new: &CachedSpace, threshold: u64) -> bool {
+/// The one number a reader watches move on this volume, and the number the emit
+/// threshold is measured on.
+///
+/// A bounded volume's story is how much room is LEFT; an unbounded one has no
+/// such number, so its story is how much is stored. Both move by the same amount
+/// on a write, so one threshold serves both.
+fn moving_figure(space: &SpaceInfo) -> u64 {
+    space.available_bytes().unwrap_or_else(|| space.used_bytes())
+}
+
+/// [`moving_figure`] with the word that says which figure it is, for the log.
+fn log_figure(space: &SpaceInfo) -> String {
+    match space.available_bytes() {
+        Some(available) => format!("{available} avail"),
+        None => format!("{} used, no ceiling", space.used_bytes()),
+    }
+}
+
+/// Returns `true` if the new space exceeds the threshold relative to the last
+/// emission.
+///
+/// A volume that changed SHAPE (a quota added or lifted between polls) always
+/// emits: the two figures aren't comparable, and the pane has a different thing
+/// to draw.
+fn exceeds_threshold(volume_id: &str, new: &SpaceInfo, threshold: u64) -> bool {
     let cache = match LAST_SPACE.get() {
         Some(c) => c,
         None => return true,
     };
     let map = cache.lock_ignore_poison();
     match map.get(volume_id) {
-        Some(old) => {
-            let diff = (old.available_bytes as i64 - new.available_bytes as i64).unsigned_abs();
+        Some(old) if old.available_bytes().is_some() == new.available_bytes().is_some() => {
+            let diff = (moving_figure(old) as i64 - moving_figure(new) as i64).unsigned_abs();
             diff >= threshold
         }
-        None => true, // First fetch: always emit.
+        // A changed shape, or a first fetch: always emit.
+        _ => true,
     }
 }
 
-fn update_cache(volume_id: &str, space: &CachedSpace) {
+fn update_cache(volume_id: &str, space: &SpaceInfo) {
     if let Some(cache) = LAST_SPACE.get() {
-        cache.lock_ignore_poison().insert(volume_id.to_string(), space.clone());
+        cache.lock_ignore_poison().insert(volume_id.to_string(), *space);
     }
 }
 
-fn emit(volume_id: &str, space: &CachedSpace) {
+fn emit(volume_id: &str, space: &SpaceInfo) {
     let Some(app) = APP_HANDLE.get() else { return };
     let payload = VolumeSpaceChanged {
         volume_id: volume_id.to_string(),
-        total_bytes: space.total_bytes,
-        available_bytes: space.available_bytes,
+        space: *space,
     };
     // A machine that's building writes past the 1 MB threshold on most 2 s ticks,
     // so this was ~1,000 lines an hour of "the number moved again". Rolled up per
@@ -452,17 +487,18 @@ fn emit(volume_id: &str, space: &CachedSpace) {
     // many emissions it stands for and the latest value. What a reader needs from
     // this line is that the stream is flowing and roughly how fast, and the rolled
     // up form says both.
+    let moved = log_figure(space);
     if let Some(batch) = SPACE_EMIT_LOG.record(volume_id) {
         if batch.is_rolled_up() {
             debug!(
-                "volume-space-changed: {} ×{} in {}s (now {} avail)",
+                "volume-space-changed: {} ×{} in {}s (now {})",
                 volume_id,
                 batch.count,
                 batch.elapsed.as_secs(),
-                space.available_bytes
+                moved
             );
         } else {
-            debug!("volume-space-changed: {} ({} avail)", volume_id, space.available_bytes);
+            debug!("volume-space-changed: {} ({})", volume_id, moved);
         }
     }
     if let Err(e) = payload.emit(app) {

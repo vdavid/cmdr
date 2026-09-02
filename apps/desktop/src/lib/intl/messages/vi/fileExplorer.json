@@ -59,6 +59,14 @@
   "@fileExplorer.diskSpace.freeShort": {
     "sourceHash": "b8f52a6"
   },
+  "fileExplorer.diskSpace.used": "Đã dùng {usedText}",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "Bộ nhớ này không có giới hạn dung lượng, nên không có thanh nào để lấp đầy.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "0c363c5"
+  },
   "fileExplorer.diskSpace.lowNote": "Thanh này màu đỏ vì ổ đĩa sắp hết dung lượng.",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"

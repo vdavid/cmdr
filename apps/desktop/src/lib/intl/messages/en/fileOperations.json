@@ -386,6 +386,14 @@
     },
     "screenshot": "conflict-dialog.png"
   },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "{used} used, no size limit",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "description": "The line next to the destination-volume picker when that storage has no size limit, so there is no free figure to state: a cloud account with no quota, for example. Says what is stored and that nothing caps it, so the user knows the copy will fit. The value is an already-formatted size.",
+    "placeholders": {
+      "used": "how much is stored, already formatted (e.g. 64 MB)"
+    },
+    "screenshot": "conflict-dialog.png"
+  },
 
   "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use \"Connect directly\" in the volume picker for faster transfers and reliable cancel.",
   "@fileOperations.transferDialog.smbNativeNote": {

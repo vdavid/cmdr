@@ -147,9 +147,12 @@ here as one server's answer, evidence-anchored, rather than as the protocol's.
 - **RFC 4331 quota reports the ACCOUNT's numbers.** A 5 GiB account answers `quota-available-bytes` + `quota-used-bytes`
   adding up to exactly 5,368,709,120, nothing like the container's disk (same server and date). An account with no quota
   — which is a stock Nextcloud user, and so the common case — answers `quota-available-bytes: -3`, the `SPACE_UNLIMITED`
-  sentinel, which `get_space_info` reads as `NotSupported` so the free-space indicator shows nothing rather than a
-  nonsense figure. ❗ The `occ` quota is applied at process start, so a quota changed on a live server stays invisible
-  over WebDAV until the server restarts; the fixture provisions in a post-installation hook for exactly that reason.
+  sentinel, beside a REAL `quota-used-bytes`. `get_space_info` reads that pair as `SpaceInfo::Unbounded { used_bytes }`,
+  so the pane states what the account holds and draws no bar (`cmdr-fs`'s `SpaceInfo`, and
+  `apps/desktop/src/lib/file-explorer/DETAILS.md` for what the indicator does with it). ❌ The sentinel is never read as
+  a size, and ❌ the used figure the server did give is never thrown away. ❗ The `occ` quota is applied at process
+  start, so a quota changed on a live server stays invisible over WebDAV until the server restarts; the fixture
+  provisions in a post-installation hook for exactly that reason.
 
 ## The reconnect model
 
@@ -205,8 +208,9 @@ and what the write cells do to a real account, is in `apps/desktop/test/webdav-s
 - Certificate pinning or a trust prompt: an untrusted certificate is a typed refusal and nothing more.
 - WebDAV locks (LOCK/UNLOCK); a 423 is reported as busy.
 - No watcher: `listing_watch_coverage` is `None`; `notify_mutation` is what keeps a pane honest.
-- Quota (`get_space_info`) only where the server reports both RFC 4331 numbers non-negative, which rules out an
-  unlimited Nextcloud account (§ "What a real server answers") and Apache `mod_dav`, which sends neither.
+- Quota (`get_space_info`) where the server reports a usable `quota-used-bytes`: with a non-negative
+  `quota-available-bytes` beside it that's a bounded account, without one it's an unbounded reading (§ "What a real
+  server answers"). Apache `mod_dav` sends neither property, so it gets `NotSupported`.
 
 ## The public surface is capped
 

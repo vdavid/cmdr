@@ -10,6 +10,7 @@ import {
   type MtpExclusiveAccessError,
   type MtpPermissionError,
   type MtpStorageInfo as MtpStorageInfoBinding,
+  type SpaceInfo,
 } from '$lib/ipc/bindings'
 import type { ConflictResolution, FileEntry, WriteOperationStartResult } from '../file-explorer/types'
 import { throwIpcError } from './ipc-types'
@@ -350,13 +351,6 @@ export async function scanMtpForCopy(deviceId: string, storageId: number, path: 
 // Unified volume copy operations
 // ============================================================================
 
-/** Space information for a volume. */
-export interface VolumeSpaceInfoExtended {
-  totalBytes: number
-  availableBytes: number
-  usedBytes: number
-}
-
 /** Conflict information for a file that already exists at destination. */
 export interface VolumeConflictInfo {
   sourcePath: string
@@ -378,10 +372,11 @@ export interface VolumeCopyScanResult {
   fileCount: number
   dirCount: number
   totalBytes: number
-  /** What the destination reports it has room for, or `null` when the backend
+  /** What the destination reports about its room, or `null` when the backend
    *  genuinely can't answer (SFTP can't reach `statvfs@openssh.com`). `null`
-   *  means "can't tell", never "no room". */
-  destSpace: VolumeSpaceInfoExtended | null
+   *  means "can't tell", never "no room"; nor does an `unbounded` reading, which
+   *  is storage with no ceiling. */
+  destSpace: SpaceInfo | null
   conflicts: VolumeConflictInfo[]
 }
 

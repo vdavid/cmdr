@@ -59,6 +59,14 @@
   "@fileExplorer.diskSpace.freeShort": {
     "sourceHash": "b8f52a6"
   },
+  "fileExplorer.diskSpace.used": "{usedText} gebruikt",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "Deze opslag heeft geen groottelimiet, dus er is geen balk om te vullen.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "0c363c5"
+  },
   "fileExplorer.diskSpace.lowNote": "Deze balk is rood omdat de vrije ruimte op dit volume bijna op is.",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"

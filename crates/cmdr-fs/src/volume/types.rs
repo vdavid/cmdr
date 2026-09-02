@@ -311,16 +311,81 @@ pub struct ScanConflict {
     pub dest_is_directory: bool,
 }
 
-/// Space information for a volume.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct SpaceInfo {
-    /// In bytes.
-    pub total_bytes: u64,
-    /// In bytes.
-    pub available_bytes: u64,
-    /// In bytes.
-    pub used_bytes: u64,
+/// What a volume can say about its room.
+///
+/// Two shapes, because two situations are genuinely different. A disk, a share,
+/// or a quota'd account has a TOTAL, so "free" and "how full" both mean
+/// something. Storage with no quota at all has no total, and the only honest
+/// number is what's already stored: a stock Nextcloud account is the live case,
+/// answering RFC 4331 `quota-available-bytes: -3` (sabre/dav's unlimited
+/// sentinel) next to a real `quota-used-bytes`.
+///
+/// ❌ Three `Option`s would let a caller build an `available` with no `total`,
+/// which is a percentage with no denominator: a fill bar at an invented figure,
+/// and the 80% / 95% warning bands firing on a volume that can't run out. Here
+/// that value can't be constructed, so no caller has to remember not to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum SpaceInfo {
+    /// The volume has a ceiling, so it can be full and a percentage means
+    /// something.
+    Bounded {
+        /// Capacity, in bytes.
+        total_bytes: u64,
+        /// Room left, in bytes.
+        available_bytes: u64,
+        /// Already stored, in bytes.
+        used_bytes: u64,
+    },
+    /// No ceiling. Only what's stored is known, so there's nothing to fill a bar
+    /// against and no band to warn in.
+    Unbounded {
+        /// Already stored, in bytes.
+        used_bytes: u64,
+    },
+}
+
+impl SpaceInfo {
+    /// A bounded volume whose used figure is simply what isn't free.
+    ///
+    /// Most backends are here: SMB, MTP, ADB, and a quota'd WebDAV account each
+    /// report two numbers that add up. `statvfs` does NOT (its reserved blocks
+    /// are neither free nor stored), so `local_posix` builds [`Self::Bounded`]
+    /// itself with all three.
+    pub fn bounded(total_bytes: u64, available_bytes: u64) -> Self {
+        Self::Bounded {
+            total_bytes,
+            available_bytes,
+            used_bytes: total_bytes.saturating_sub(available_bytes),
+        }
+    }
+
+    /// Bytes already stored. Every volume that answers at all knows this one.
+    pub fn used_bytes(&self) -> u64 {
+        match *self {
+            Self::Bounded { used_bytes, .. } | Self::Unbounded { used_bytes } => used_bytes,
+        }
+    }
+
+    /// Room left, or `None` when there's no total to subtract from.
+    ///
+    /// ❗ The transfer pre-flight reads `None` as "can't tell, go ahead", ❌
+    /// never as "no room": an unbounded destination is the one place a copy can
+    /// always fit.
+    pub fn available_bytes(&self) -> Option<u64> {
+        match *self {
+            Self::Bounded { available_bytes, .. } => Some(available_bytes),
+            Self::Unbounded { .. } => None,
+        }
+    }
+
+    /// Capacity, or `None` when the volume has no ceiling.
+    pub fn total_bytes(&self) -> Option<u64> {
+        match *self {
+            Self::Bounded { total_bytes, .. } => Some(total_bytes),
+            Self::Unbounded { .. } => None,
+        }
+    }
 }
 
 /// Information about a source item for conflict scanning.

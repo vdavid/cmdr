@@ -385,6 +385,23 @@ async fn dest_space_if_known(dest_volume: &dyn Volume) -> Result<Option<SpaceInf
     }
 }
 
+/// The figure the free-space pre-flight compares against, or `None` when there
+/// isn't one to compare against.
+///
+/// TWO different silences collapse here deliberately, because a copy owes them
+/// the same answer:
+///
+/// - the backend refused to measure (`dest_space_if_known` gave `None`), and
+/// - the backend measured and there is no ceiling ([`SpaceInfo::Unbounded`]),
+///   which a Nextcloud account with no quota reports.
+///
+/// ❌ Neither may read as "no room". The first is ignorance; the second is the
+/// one destination a copy is guaranteed to fit into. Pinned by
+/// `copy_tests.rs::{a_destination_with_no_ceiling_accepts_a_copy_bigger_than_anything_it_holds, a_preview_of_a_destination_with_no_ceiling_carries_what_it_holds}`.
+fn room_to_check(dest_space: Option<SpaceInfo>) -> Option<u64> {
+    dest_space.and_then(|space| space.available_bytes())
+}
+
 /// Performs a pre-flight scan for volume copy without executing.
 ///
 /// This scans the source files and checks destination for conflicts and space.
@@ -434,15 +451,16 @@ pub async fn scan_for_volume_copy(
     // What the destination has room for, or `None` when it genuinely can't tell.
     let dest_space = dest_space_if_known(dest_volume).await?;
 
-    // ❗ Only a volume that ANSWERED gets checked. `None` is "can't tell", and a
-    // preview the user can't even open is the wrong way to say that.
-    if let Some(space) = &dest_space
-        && space.available_bytes < total_bytes
+    // ❗ Only a volume that answered with a CEILING gets checked. See
+    // `room_to_check`: a silent backend and a bottomless one both mean "don't
+    // compare", and a preview the user can't even open is the wrong way to say so.
+    if let Some(available) = room_to_check(dest_space)
+        && available < total_bytes
     {
         return Err(VolumeError::IoError {
             message: format!(
-                "Not enough space: need {} bytes, only {} available",
-                total_bytes, space.available_bytes
+                "Not enough space: need {}, only {available} available",
+                cmdr_fs::pluralize::pluralize(total_bytes, "byte")
             ),
             raw_os_error: None,
         });
@@ -681,12 +699,12 @@ pub(crate) async fn copy_volumes_with_progress(
     let dest_space = dest_space_if_known(&*dest_volume)
         .await
         .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
-    if let Some(space) = dest_space
-        && space.available_bytes < total_bytes
+    if let Some(available) = room_to_check(dest_space)
+        && available < total_bytes
     {
         return Err(WriteFailure::synthetic(WriteOperationError::InsufficientSpace {
             required: total_bytes,
-            available: space.available_bytes,
+            available,
             volume_name: Some(dest_volume.name().to_string()),
         }));
     }

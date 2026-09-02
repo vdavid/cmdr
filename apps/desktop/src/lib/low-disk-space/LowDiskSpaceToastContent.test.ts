@@ -4,8 +4,9 @@ import { mount, tick, type ComponentProps } from 'svelte'
 // Hoisted mocks: the component delegates to the settings writer + deep-link
 // helper and the toast dismisser. We assert the exact wire calls without
 // rendering the rest of the app.
-type VolumeSpacePayload = { volumeId: string; totalBytes: number; availableBytes: number }
-type VolumeSpaceListener = (payload: VolumeSpacePayload) => void
+import type { VolumeSpaceChanged } from '$lib/ipc/bindings'
+
+type VolumeSpaceListener = (payload: VolumeSpaceChanged) => void
 
 const {
   setLowDiskSpaceNotificationsModeMock,
@@ -95,16 +96,44 @@ describe('LowDiskSpaceToastContent', () => {
     await tick()
 
     // A matching-volume update recomputes both the free bytes and the percent.
-    getListener()({ volumeId: 'root', totalBytes: 1_000_000_000_000, availableBytes: 21_000_000_000 })
+    getListener()({
+      volumeId: 'root',
+      space: {
+        kind: 'bounded',
+        totalBytes: 1_000_000_000_000,
+        availableBytes: 21_000_000_000,
+        usedBytes: 979_000_000_000,
+      },
+    })
     await tick()
     expect(target.textContent).toContain('21000000000 B')
     expect(target.textContent).toContain('2.1%')
 
     // An update for a different volume is ignored.
-    getListener()({ volumeId: 'other', totalBytes: 500, availableBytes: 10 })
+    getListener()({
+      volumeId: 'other',
+      space: { kind: 'bounded', totalBytes: 500, availableBytes: 10, usedBytes: 490 },
+    })
     await tick()
     expect(target.textContent).toContain('21000000000 B')
     expect(target.textContent).toContain('2.1%')
+  })
+
+  it('ignores an update from a volume with no ceiling, which can never be low', async () => {
+    // ❗ Storage with no size limit has no free figure and no percentage. The
+    // backend never fires the warning for one; if a stray update arrives anyway,
+    // the toast keeps the numbers it was seeded with rather than showing zeros.
+    const getListener = captureVolumeSpaceListener()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(LowDiskSpaceToastContent, { target, props: makeProps() })
+    await tick()
+
+    getListener()({ volumeId: 'root', space: { kind: 'unbounded', usedBytes: 64_000_000 } })
+    await tick()
+
+    expect(target.textContent).toContain('42000000000 B')
+    expect(target.textContent).toContain('4.2%')
   })
 
   it('"Disable these notifications" flips the setting to off, dismisses, and deep-links to Settings', async () => {

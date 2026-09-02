@@ -856,13 +856,7 @@ pub(crate) fn get_space_info_for_path(path: &Path) -> Result<SpaceInfo, VolumeEr
     #[cfg(target_os = "macos")]
     {
         if let Some(space) = crate::volumes::get_volume_space(&path.to_string_lossy()) {
-            // NSURL doesn't give us used_bytes directly, compute from total - available.
-            let used_bytes = space.total_bytes.saturating_sub(space.available_bytes);
-            return Ok(SpaceInfo {
-                total_bytes: space.total_bytes,
-                available_bytes: space.available_bytes,
-                used_bytes,
-            });
+            return Ok(space);
         }
     }
 
@@ -895,7 +889,11 @@ fn get_space_info_statvfs(path: &Path) -> Result<SpaceInfo, VolumeError> {
             #[allow(clippy::unnecessary_cast, reason = "statvfs field types vary across platforms")]
             let used_bytes = total_bytes.saturating_sub((stat.f_bfree as u64) * block_size);
 
-            Ok(SpaceInfo {
+            // ❗ `used` is NOT the complement of `available` here: `statvfs`
+            // reserves blocks that are neither free to a normal user nor holding
+            // anything, so the two come from different fields and `bounded`
+            // (which derives one from the other) would be wrong.
+            Ok(SpaceInfo::Bounded {
                 total_bytes,
                 available_bytes,
                 used_bytes,

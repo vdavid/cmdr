@@ -86,7 +86,7 @@ impl VolumeProvider for AppVolumeProvider {
 
     fn volume_used_bytes(&self, path: &Path) -> Option<u64> {
         super::volume::backends::get_space_info_for_path(path)
-            .map(|info| info.used_bytes)
+            .map(|info| info.used_bytes())
             .map_err(|e| log::warn!("Failed to read volume used bytes (tier-2 will degrade): {e}"))
             .ok()
     }

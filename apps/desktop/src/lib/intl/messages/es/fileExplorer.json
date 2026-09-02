@@ -59,6 +59,14 @@
   "@fileExplorer.diskSpace.freeShort": {
     "sourceHash": "b8f52a6"
   },
+  "fileExplorer.diskSpace.used": "{usedText} en uso",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "Este almacenamiento no tiene límite de tamaño, así que no hay ninguna barra que llenar.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "0c363c5"
+  },
   "fileExplorer.diskSpace.lowNote": "Esta barra está en rojo porque a este volumen le queda poco espacio.",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"

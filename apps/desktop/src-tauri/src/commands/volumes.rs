@@ -17,7 +17,8 @@ use crate::volumes as platform;
 #[cfg(target_os = "linux")]
 use crate::volumes_linux as platform;
 
-use platform::{DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
+use crate::file_system::volume::SpaceInfo;
+use platform::{DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo};
 
 const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
 
@@ -56,18 +57,20 @@ pub fn get_default_volume_id() -> String {
 }
 
 /// Gets space information for a volume at the given path.
-/// Returns total and available bytes for the volume.
+///
+/// A mounted filesystem and a device storage both have a size, so everything
+/// this command can answer is [`SpaceInfo::Bounded`]. Storage with no ceiling
+/// reaches the frontend through the poller's `volume-space-changed` instead,
+/// which asks the registered `Volume` rather than the mount table.
+///
 /// For device paths (`mtp://`, `adb://`), asks the device provider instead of
 /// the filesystem.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>> {
+pub async fn get_volume_space(path: String) -> TimedOut<Option<SpaceInfo>> {
     if let Some((total_bytes, available_bytes)) = crate::device_volumes::device_space_for_path(&path).await {
         return TimedOut {
-            data: Some(VolumeSpaceInfo {
-                total_bytes,
-                available_bytes,
-            }),
+            data: Some(SpaceInfo::bounded(total_bytes, available_bytes)),
             timed_out: false,
         };
     }

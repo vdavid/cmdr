@@ -11,6 +11,7 @@ import {
   type Location,
   type LowDiskSpacePayload,
   type ResolveLocationResult,
+  type SpaceInfo,
   type VolumeConnectionChanged,
   type VolumeContextAction,
   type VolumesBusyChanged,
@@ -115,18 +116,15 @@ export async function resolveLocation(path: string): Promise<ResolveLocationResu
   }
 }
 
-/** Space information for a volume. */
-export interface VolumeSpaceInfo {
-  totalBytes: number
-  availableBytes: number
-}
+/** Space information for a volume: `SpaceInfo` from the generated bindings. */
+export type { SpaceInfo } from '$lib/ipc/bindings'
 
 /**
  * Gets space information (total and available bytes) for a volume at the given path.
  * @param path - Any path on the volume to get space info for
  * @returns Space info or null if unavailable
  */
-export async function getVolumeSpace(path: string): Promise<TimedOut<VolumeSpaceInfo | null>> {
+export async function getVolumeSpace(path: string): Promise<TimedOut<SpaceInfo | null>> {
   try {
     return await commands.getVolumeSpace(path)
   } catch {
@@ -252,7 +250,7 @@ export async function unwatchVolumeSpace(watcherId: string): Promise<void> {
 
 /**
  * Subscribes to live disk-space updates from the backend poller. The payload is
- * the typed `tauri-specta` event, so `volumeId` / `totalBytes` / `availableBytes`
+ * the typed `tauri-specta` event, so `volumeId` and the `space` union
  * are checked at compile time against the Rust `VolumeSpaceChanged` struct.
  * Call the returned `UnlistenFn` in `onDestroy` to avoid leaks.
  */

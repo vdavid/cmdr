@@ -1,5 +1,5 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity'
-import { getVolumeSpace, type VolumeSpaceInfo } from '$lib/tauri-commands'
+import { getVolumeSpace, type SpaceInfo } from '$lib/tauri-commands'
 import { withTimeout } from '$lib/utils/timing'
 import type { VolumeInfo } from '../types'
 
@@ -8,7 +8,7 @@ const autoRetryDelayMs = 5000
 const shakeAnimationMs = 400
 
 export interface VolumeSpaceManager {
-  volumeSpaceMap: SvelteMap<string, VolumeSpaceInfo>
+  volumeSpaceMap: SvelteMap<string, SpaceInfo>
   spaceTimedOutSet: SvelteSet<string>
   spaceRetryingSet: SvelteSet<string>
   spaceRetryFailedSet: SvelteSet<string>
@@ -21,7 +21,7 @@ export interface VolumeSpaceManager {
 }
 
 export function createVolumeSpaceManager(): VolumeSpaceManager {
-  const volumeSpaceMap = new SvelteMap<string, VolumeSpaceInfo>()
+  const volumeSpaceMap = new SvelteMap<string, SpaceInfo>()
   const spaceTimedOutSet = new SvelteSet<string>()
   const spaceRetryingSet = new SvelteSet<string>()
   const spaceRetryFailedSet = new SvelteSet<string>()

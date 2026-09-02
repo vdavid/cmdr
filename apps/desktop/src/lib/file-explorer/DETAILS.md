@@ -373,12 +373,22 @@ volume at its own cadence (`Volume::space_poll_interval()`: 2 s local, 5 s netwo
 exceeds a configurable threshold (Settings > Advanced). The volume dropdown (`volume-space-manager.svelte.ts`) uses a
 separate on-demand fetch and is unaffected.
 
-The wording lives in `disk-space-utils.ts`, three catalog-backed functions over one `VolumeSpaceInfo` plus an injected
-size formatter (the caller picks binary vs decimal). Two things are in the catalog that look like they belong in code,
-both because they vary by language: the `%` sign is a separate literal from `{percentText}` (German, French, and Swedish
+The wording lives in `disk-space-utils.ts`, catalog-backed functions over one `SpaceInfo` plus an injected size
+formatter (the caller picks binary vs decimal). Two things are in the catalog that look like they belong in code, both
+because they vary by language: the `%` sign is a separate literal from `{percentText}` (German, French, and Swedish
 write `10 %`), and `fileExplorer.diskSpace.barTooltip` is a select whose only translatable content is the punctuation
 joining the size line to the notes after it (Chinese ends a sentence with `。`). `getDiskUsageLevel` returns a typed
 `severity` band, not an English label: the tooltip branches on the band, and the copy is only ever rendered.
+
+**Storage with no ceiling shows a used figure and NO bar.** `SpaceInfo` is a union (`kind: 'bounded' | 'unbounded'`),
+and `getUsageBar` is the one place that decides: `null` for the unbounded half, so `FilePane` and `VolumeBreadcrumb`
+render no track at all rather than an empty one (an empty track reads as "0% full", a claim nothing supports), and
+`formatDiskSpaceStatus` / `formatDiskSpaceShort` state `fileExplorer.diskSpace.used` instead of the free line. ❗ The
+80% / 95% severity bands CANNOT fire there: `formatSpaceNotes` branches on `getUsageBar` before it looks at severity, so
+a quota-less account gets `fileExplorer.diskSpace.noLimitNote` and never a low-space warning. `getUsedPercent` takes
+`BoundedSpaceInfo`, so the type refuses the unbounded half rather than computing a percentage with no denominator; the
+Rust twin is `SpaceInfo::available_bytes()` (`src-tauri/src/file_system/volume/DETAILS.md`). Pinned by
+`disk-space-utils.test.ts` § "storage with no ceiling".
 
 ## Error display
 

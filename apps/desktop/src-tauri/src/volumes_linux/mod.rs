@@ -103,14 +103,6 @@ impl cmdr_fs::volume::canonical_root::MountRootCandidate for LocationInfo {
     }
 }
 
-/// Information about volume space.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VolumeSpaceInfo {
-    pub total_bytes: u64,
-    pub available_bytes: u64,
-}
-
 /// The volume-shaped name for the same struct; see the macOS twin in `volumes/mod.rs`.
 pub use LocationInfo as VolumeInfo;
 

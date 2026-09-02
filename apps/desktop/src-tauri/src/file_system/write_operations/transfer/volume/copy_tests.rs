@@ -94,7 +94,7 @@ async fn test_scan_for_volume_copy_with_in_memory_volumes() {
     assert_eq!(result.total_bytes, 10); // "Hello" + "World"
     assert!(result.conflicts.is_empty());
     let dest_space = result.dest_space.expect("this destination reports its space");
-    assert!(dest_space.available_bytes >= result.total_bytes);
+    assert!(dest_space.available_bytes().expect("bounded") >= result.total_bytes);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -385,7 +385,13 @@ async fn test_scan_for_volume_copy_with_local_volumes() {
     assert_eq!(scan.file_count, 2);
     assert_eq!(scan.total_bytes, 10); // "Hello" + "World"
     assert!(scan.conflicts.is_empty());
-    assert!(scan.dest_space.expect("this destination reports its space").total_bytes > 0);
+    assert!(
+        scan.dest_space
+            .expect("this destination reports its space")
+            .total_bytes()
+            .expect("bounded")
+            > 0
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -2263,4 +2269,63 @@ async fn a_destination_that_does_report_free_space_still_refuses_what_it_cant_ho
         "the refusal must stay the typed InsufficientSpace the dialog renders, got {:?}",
         failure.error,
     );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_destination_with_no_ceiling_accepts_a_copy_bigger_than_anything_it_holds() {
+    // ❗ The third answer, and the one that shipped broken: a destination that
+    // MEASURED and has no ceiling. A quota-less Nextcloud account is the live
+    // case, and it is the DEFAULT state of a real account, so reading it as
+    // "no room" would refuse every legitimate copy to every stock Nextcloud user.
+    // The volume here holds far more than it is being sent, which is exactly the
+    // arithmetic that would trip a check keying off `used_bytes`.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_unbounded_space_info(64 * 1024 * 1024));
+    source
+        .create_file(Path::new("/big.bin"), b"more than four bytes")
+        .await
+        .unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-space-unbounded",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/big.bin")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+
+    assert!(
+        result.is_ok(),
+        "storage with no ceiling is the one destination a copy always fits into, got {:?}",
+        result.err().map(|f| format!("{:?}", f.error)),
+    );
+    assert!(dest.exists(Path::new("/big.bin")).await, "the file has to be there");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_preview_of_a_destination_with_no_ceiling_carries_what_it_holds() {
+    // The dialog's half of the same answer: the preview opens, AND it carries the
+    // used figure the server gave rather than dropping it the way `NotSupported`
+    // would. ❗ `available_bytes()` staying `None` is what keeps the pane from
+    // drawing a bar and the warning bands from firing.
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(1_000_000, 900_000));
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_unbounded_space_info(67_108_864));
+    source.create_file(Path::new("/report.pdf"), b"content").await.unwrap();
+
+    let result = scan_for_volume_copy(
+        source.as_ref(),
+        &[PathBuf::from("/report.pdf")],
+        dest.as_ref(),
+        Path::new("/"),
+        10,
+    )
+    .await
+    .expect("a destination with no ceiling is still previewable");
+
+    assert_eq!(result.dest_space, Some(SpaceInfo::Unbounded { used_bytes: 67_108_864 }));
 }

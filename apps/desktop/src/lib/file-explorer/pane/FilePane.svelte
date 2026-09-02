@@ -78,7 +78,7 @@
     import { type CanonicalPath, parentOf, toCanonical } from '$lib/path/canonical'
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
-    import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
+    import { getUsageBar, formatBarTooltip } from '../disk-space-utils'
     import { getTypeToJumpResetDelay } from '$lib/settings/reactive-settings.svelte'
     import { createRowOverlays } from './row-overlays.svelte'
     import { createSelectionInfoFeed } from './selection-info-feed.svelte'
@@ -575,6 +575,9 @@
         getVolumePath: () => volumePath,
         getIsDiskImage: () => isDiskImageVolume,
     })
+
+    /** What to draw the disk-usage bar with, or `null` when there is no bar to draw. */
+    const usageBar = $derived(diskSpace.volumeSpace ? getUsageBar(diskSpace.volumeSpace) : null)
 
     // The Network host the pane has open (and any share queued to auto-mount on
     // it), cleared whenever the pane leaves the network volume by ANY route
@@ -1842,7 +1845,12 @@
     </div>
     <!-- SelectionInfo shown in both modes (not in network view, MTP connecting state, or error states) -->
     {#if paneViewKind === 'normal' && !friendlyError && !error && !unreachable}
-        {#if !isDiskImageVolume}
+        <!-- ❗ The bar is a fill against a total, so it renders only where a total
+             exists. Storage with no ceiling (`usageBar === null`) shows the used
+             figure in `SelectionInfo` below and no bar at all: an empty track
+             would read as "0% full", which is a claim nothing supports. A `null`
+             `volumeSpace` is the not-yet-fetched state and keeps the empty track. -->
+        {#if !isDiskImageVolume && (!diskSpace.volumeSpace || usageBar)}
         <div
             class="disk-usage-bar-wrapper"
             use:tooltip={diskSpace.volumeSpace
@@ -1853,15 +1861,15 @@
                 class="disk-usage-bar"
                 role="meter"
                 aria-label={tString('fileExplorer.pane.diskUsageAriaLabel')}
-                aria-valuenow={diskSpace.volumeSpace ? getUsedPercent(diskSpace.volumeSpace) : 0}
+                aria-valuenow={usageBar?.usedPercent ?? 0}
                 aria-valuemin={0}
                 aria-valuemax={100}
             >
-                {#if diskSpace.volumeSpace}
+                {#if usageBar}
                     <div
                         class="disk-usage-fill"
-                        style:width="{getUsedPercent(diskSpace.volumeSpace)}%"
-                        style:background-color="var({getDiskUsageLevel(getUsedPercent(diskSpace.volumeSpace)).cssVar})"
+                        style:width="{usageBar.usedPercent}%"
+                        style:background-color="var({usageBar.cssVar})"
                     ></div>
                 {/if}
             </div>

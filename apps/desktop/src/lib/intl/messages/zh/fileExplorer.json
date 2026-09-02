@@ -59,6 +59,14 @@
   "@fileExplorer.diskSpace.freeShort": {
     "sourceHash": "b8f52a6"
   },
+  "fileExplorer.diskSpace.used": "已用 {usedText}",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "此储存空间没有容量上限，因此没有可填充的条形。",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "0c363c5"
+  },
   "fileExplorer.diskSpace.lowNote": "这个条形显示为红色，表示宗卷的可用空间不足。",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"

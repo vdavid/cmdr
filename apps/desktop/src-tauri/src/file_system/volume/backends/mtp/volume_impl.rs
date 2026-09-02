@@ -534,11 +534,7 @@ impl Volume for MtpVolume {
                 })
             })?;
 
-            Ok(SpaceInfo {
-                total_bytes: storage.total_bytes,
-                available_bytes: storage.available_bytes,
-                used_bytes: storage.total_bytes.saturating_sub(storage.available_bytes),
-            })
+            Ok(SpaceInfo::bounded(storage.total_bytes, storage.available_bytes))
         })
     }
 
