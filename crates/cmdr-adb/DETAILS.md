@@ -97,10 +97,11 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   the row exists even though it is not a user-facing knob. `adbd` serializes I/O per device, so a second concurrent
   transfer only adds contention.
 - **`supports_export` → true, `is_writable` → true, `supports_streaming` → true.** Every read and write path is
-  implemented; the conformance assertions hold each declaration to what the device accepts. The conflict scan keeps its
-  own `ls`-backed listing and matches with the shared `scan_walk::conflicts_against`, so a conflict dialog gets the same
-  shape here as anywhere; a `NotFound` from that listing is an empty list, per `Volume::scan_for_conflicts`. A read-only mount answers
-  `ReadOnly` per path when the shell's `EROFS` says so, not volume-wide.
+  implemented; the conformance assertions hold each declaration to what the device accepts. The conflict scan is
+  `scan_walk::scan_conflicts`, which lists the destination through this backend's own `scan_list` and matches with
+  `conflicts_against`, so a conflict dialog gets the same shape here as anywhere; a destination that isn't there yet
+  answers an empty list rather than `NotFound`, per `Volume::scan_for_conflicts`. A read-only mount answers `ReadOnly`
+  per path when the shell's `EROFS` says so, not volume-wide.
 - **`can_watch_listings` → false, `listing_watch_coverage` → `None`.** There is no watcher, so ❌ nothing here may claim
   an authoritative listing; the pane stays honest through `notify_mutation`, called once per changed directory by every
   mutation, `write_from_stream` included. The patch itself is `cmdr_fs::volume::patching`: this backend implements

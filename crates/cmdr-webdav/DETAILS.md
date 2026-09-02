@@ -101,11 +101,11 @@ The app's commands (owned by `apps/desktop`):
 ## Which side a test lives on
 
 This crate: the parser, the path translation, the status table, the state machine (no server), and the Docker cells
-against the fixture stack (`volume/integration_test.rs`, `volume/conformance_test.rs`, all `#[ignore]`d without it).
-The conformance cells answer with Apache's own verbs, which is the point: `MOVE` overwrites by default, `DELETE` on a
-collection is recursive, and a `PROPFIND` of a collection nobody has created yet is a 404 that the conflict scan owes
-an empty list for. The
-app: anything whose other half is the transfer pipeline, the registry, or the listing cache, built on `volume::testing`.
+against the fixture stack (`volume/integration_test.rs`, `volume/conformance_test.rs`, all `#[ignore]`d without it). The
+conformance cells answer with Apache's own verbs, which is the point: `MOVE` overwrites by default, `DELETE` on a
+collection is recursive, and a `PROPFIND` of a collection nobody has created yet is a 404 that the conflict scan owes an
+empty list for. The app: anything whose other half is the transfer pipeline, the registry, or the listing cache, built
+on `volume::testing`.
 
 ## Not supported, and say so out loud
 
