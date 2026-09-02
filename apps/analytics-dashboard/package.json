@@ -35,7 +35,7 @@
     "globals": "^17.7.0",
     "knip": "^6.27.0",
     "oxlint": "^1.74.0",
-    "postcss-html": "^1.8.1",
+    "postcss-html": "^2.0.0",
     "stylelint": "^17.14.0",
     "stylelint-config-standard": "^40.0.0",
     "stylelint-declaration-block-no-ignored-properties": "3.0.0",
