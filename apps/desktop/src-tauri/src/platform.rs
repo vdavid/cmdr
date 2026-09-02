@@ -58,6 +58,11 @@ pub(crate) fn macos_at_least(major: i64, minor: i64) -> bool {
     (running_major, running_minor) >= (major, minor)
 }
 
+/// Off macOS every caller is itself `cfg`-gated to macOS, so nothing but the test below reaches
+/// this stub and the non-test lib build reads it as dead. It stays anyway: callers get to ask the
+/// question unconditionally instead of each growing its own `cfg`. `allow` rather than `expect`,
+/// because the test build does use it and an `expect` would go unfulfilled there.
+#[allow(dead_code)]
 #[cfg(not(target_os = "macos"))]
 pub(crate) fn macos_at_least(_major: i64, _minor: i64) -> bool {
     false

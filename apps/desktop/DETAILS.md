@@ -63,6 +63,13 @@ comes from the message catalog rather than the HTML. How and why: `src/lib/utils
 The bundle's `minimumSystemVersion` in `src-tauri/tauri.conf.json` (10.15) and `build.target` in `vite.config.js`
 (`safari15`) are the other two halves of the same story: `docs/notes/system-requirements-and-es2025.md`.
 
+The runtime half is `src-tauri/src/platform.rs::macos_at_least`, which anything newer than the 10.15 floor has to ask
+before touching a selector. **Gotcha:** its `cfg(not(target_os = "macos"))` stub carries `#[allow(dead_code)]` and needs
+it. Every caller sits inside a macOS-only module, so on Linux only the unit test reaches the stub and the non-test lib
+build clippy runs reads it as dead, which fails the `Desktop (Rust)` and Linux E2E jobs while macOS stays green. Don't
+delete the stub (callers would each grow their own `cfg`) and don't swap the `allow` for an `expect` (the test build
+does use it, so the expectation would go unfulfilled).
+
 ### Dev watcher and markdown files
 
 Two watchers run during `pnpm dev`, each with its own shield (don't delete either):
