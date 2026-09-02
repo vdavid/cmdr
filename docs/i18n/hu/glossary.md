@@ -2200,6 +2200,10 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
     kerül, ahol semmivel nem kell egyeztetnie. Ugyanaz a fogás, mint a `done*` soroknál a `mindent` + kettőspontos szám.
   - A `{count}` a parity miatt marad benne (`desktop-i18n-parity` pontos placeholder-halmazt vár), mindkét ága `csomag`:
     az `összes` után a magyar amúgy is egyes számot mond.
+  - ❌ **Ez NEM felhatalmazás a `Mind a(z)` + számnév kiseprésére.** Két szállított kulcs viszi ezt az alakot
+    (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`), mindkettő folyó szövegben, ahol a hedge
+    helyénvaló. Az átfogalmazás ott nyer, ahol a szám zárójelbe vagy kettőspont mögé mozdítható, és gombon a legerősebb
+    az érv.
   - Mind a hét érintett kulcs ANGOLJA változatlan, tehát a `sourceHash`-ük érintetlen: fordítási minőségjavítás.
 - **`rollbackConfirm.body`**: az angol egy harmadik mondattal bővült, ami betű szerint azonos a `bodyUndoByDeleting`
   záró mondatával (`Cmdr skips anything it isn''t sure about, so a few may stay behind.`), ezért a magyar is szó szerint

@@ -171,11 +171,15 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
     carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on leaves
     a half-corrected family, which is worse than either end state.
-  - **❌ Never `a(z)` in front of a NUMBER placeholder — reword instead.** The article follows the numeral's
-    pronunciation (`a három` but `az öt`, `a száz` but `az ezer`), so a bare `a` is wrong, and the hedge is a
-    written-language crutch that shows badly in a short button. Bind the article to a word you choose and push the
-    number into a parenthetical or after a colon: `Az összes csomag visszavonása ({countText})`, macOS Tier 1
-    (`Az összes lemez (^0) …`). Worked case: `glossary.md` § `askCmdr.renameUndo.undoJob`.
+  - **In front of a NUMBER the article varies too, so ❌ never a bare `a {countText}`.** It follows the numeral's
+    pronunciation: `a három`, `a négy`, but `az öt`, `a száz` but `az ezer`. In running prose the hedge is the answer
+    and two shipped keys use it (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`); don't sweep
+    those.
+  - **For the phrase "all N X" specifically, prefer `Az összes X ({N})` over `Mind a(z) N X`.** macOS Hungarian words it
+    that way (`Az összes lemez (^0) kiadásához…`), and it's strictly better: the article now agrees with `összes`, a
+    word we choose, so nothing hinges on the runtime value at all. Worth the swap wherever the count can move to a
+    parenthetical or behind a colon, and near-mandatory in a short button, where the hedge is most visible. Worked case:
+    `glossary.md` § `askCmdr.renameUndo.undoJob`.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
 - **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`.** `Cmdr` is pronounced "commander", so
