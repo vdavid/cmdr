@@ -62,10 +62,18 @@ esac
 
 # ── The export ───────────────────────────────────────────────────────
 #
-# `DavLockDB` has to live somewhere `daemon` (the httpd user) can write, or
-# every LOCK answers 500. `DavDepthInfinity On` because a client that lists a
-# whole tree in one PROPFIND is what the crate does; `DavMinTimeout 600` so a
-# lock a cell takes outlives the cell.
+# ❗ `DavLockDB` has to live somewhere the httpd WORKER user can write, and
+# `mod_dav` opens that database before every write method (to evaluate a
+# possible `If:` header), not just on LOCK. A directory the worker can't write
+# turns every PUT, MKCOL, MOVE, COPY, and DELETE into a 500 carrying
+# "Could not open the lock database" in the error log, which reads like a
+# backend bug. The user is read from `httpd.conf` below rather than hardcoded:
+# the stock image runs as `www-data`, and guessing `daemon` is exactly how this
+# broke once.
+#
+# `DavDepthInfinity On` because a client that lists a whole tree in one PROPFIND
+# is what the crate does; `DavMinTimeout 600` so a lock a cell takes outlives
+# the cell.
 mkdir -p "$HTTPD_PREFIX/var"
 cat > "$HTTPD_PREFIX/conf/webdav-fixture.conf" <<CONF
 DavLockDB $HTTPD_PREFIX/var/DavLock
@@ -87,7 +95,12 @@ CONF
 echo 'Include conf/webdav-fixture.conf' >> "$CONF"
 
 /usr/local/bin/seed.sh "$EXPORT_DIR"
-chown -R daemon:daemon "$EXPORT_DIR" "$HTTPD_PREFIX/var"
+
+# The user httpd drops to after binding the port, straight from its own config,
+# so an image that changes it can't leave the export read-only behind our back.
+run_user=$(awk '$1 == "User" { print $2 }' "$CONF" | tail -n 1)
+run_group=$(awk '$1 == "Group" { print $2 }' "$CONF" | tail -n 1)
+chown -R "${run_user:-www-data}:${run_group:-www-data}" "$EXPORT_DIR" "$HTTPD_PREFIX/var"
 
 touch /etc/fixture-configured
 exec httpd-foreground
