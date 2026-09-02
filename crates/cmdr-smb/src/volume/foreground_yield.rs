@@ -33,10 +33,16 @@
 //! slowing a NAS copy. (The index scan makes the same call for the same reason; see
 //! `indexing/network_scanner/scan_pace.rs`.)
 //!
-//! Starvation is handled one layer up and doesn't need a floor here:
-//! `CheckpointStream` won't honor a yield until the transfer has moved
-//! `min_progress_floor` bytes since its last resume, so continuous browsing slows a
-//! copy but can never stop it.
+//! Starvation is handled one layer up and doesn't need a floor here, but WHICH
+//! bound does the work depends on the write. A streaming write earns its
+//! forward progress from `min_progress_floor`: `CheckpointStream` won't honor a
+//! yield until the transfer has moved that many bytes since its last resume. A
+//! SINGLE-SHOT write is exempt from the floor (nothing is open on the far side
+//! while the source drains, so a small file can stand aside at all), and its
+//! guarantee is the per-park hard cap instead: every park ends, and a chunk
+//! moves between two of them. ❌ So don't cite the floor as the reason a copy
+//! can't be starved on the upload path; it isn't the one holding that end up.
+//! `write_operations/transfer/volume/DETAILS.md` § "The single-shot exemption".
 //!
 //! Both functions serve BOTH directions: a DOWNLOAD off this share (source arm)
 //! and an UPLOAD to it (destination arm, gated by
