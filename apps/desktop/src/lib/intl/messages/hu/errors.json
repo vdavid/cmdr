@@ -973,15 +973,15 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Győződj meg róla, hogy be vagy jelentkezve az iCloudba itt: {system_settings}\n- Lépj ide újra az ismételt próbához",
+  "errors.provider.iCloud.transient": "Ezt a mappát az **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Győződj meg róla, hogy be vagy jelentkezve az iCloudba itt: {system_settings}\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.iCloud.transient": {
     "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd, hogy az iCloud Drive engedélyezve van itt: **{system_settings} > Apple-fiók > iCloud**\n- Győződj meg róla, hogy a megfelelő Apple-fiókba vagy bejelentkezve\n- Ellenőrizd, hogy nincs tele az iCloud-tárhelyed",
+  "errors.provider.iCloud.needsAction": "Ezt a mappát az **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd, hogy az iCloud Drive engedélyezve van itt: **{system_settings} > Apple-fiók > iCloud**\n- Győződj meg róla, hogy a megfelelő Apple-fiókba vagy bejelentkezve\n- Ellenőrizd, hogy nincs tele az iCloud-tárhelyed",
   "@errors.provider.iCloud.needsAction": {
     "sourceHash": "1c6dab0"
   },
-  "errors.provider.iCloud.serious": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Jelentkezz ki, majd vissza az iCloudba itt: {system_settings}\n- Nézd meg az Apple [rendszerállapot-oldalát](https://www.apple.com/support/systemstatus/)",
+  "errors.provider.iCloud.serious": "Ezt a mappát az **{name}** kezeli. Ezeket próbálhatod:\n- Jelentkezz ki, majd vissza az iCloudba itt: {system_settings}\n- Nézd meg az Apple [rendszerállapot-oldalát](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
     "sourceHash": "3276e42"
   },
@@ -1037,15 +1037,15 @@
   "@errors.provider.genericCloudStorage.nonTransient": {
     "sourceHash": "ce8a112"
   },
-  "errors.provider.appBased.transient": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Nyisd meg a {app} appot, és győződj meg róla, hogy fut és szinkronizál\n- Lépj ide újra az ismételt próbához",
+  "errors.provider.appBased.transient": "Ezt a mappát a(z) **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Nyisd meg a(z) {app} appot, és győződj meg róla, hogy fut és szinkronizál\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.appBased.transient": {
     "sourceHash": "e3ef8b8"
   },
-  "errors.provider.appBased.needsAction": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Nyisd meg a {app} appot, és ellenőrizd a szinkronizálás állapotát\n- Győződj meg róla, hogy be vagy jelentkezve ide: {app}\n- Ellenőrizd, hogy van hozzáférésed ehhez a mappához itt: {name}",
+  "errors.provider.appBased.needsAction": "Ezt a mappát a(z) **{name}** kezeli. Ezeket próbálhatod:\n- Nyisd meg a(z) {app} appot, és ellenőrizd a szinkronizálás állapotát\n- Győződj meg róla, hogy be vagy jelentkezve ide: {app}\n- Ellenőrizd, hogy van hozzáférésed ehhez a mappához itt: {name}",
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "88009fd"
   },
-  "errors.provider.appBased.serious": "Ezt a mappát a **{name}** kezeli. Ezeket próbálhatod:\n- Lépj ki a {app} appból, és nyisd meg újra\n- Jelentkezz ki, majd vissza ide: {app}\n- Nézd meg a {name} állapotoldalát, hátha leállás van",
+  "errors.provider.appBased.serious": "Ezt a mappát a(z) **{name}** kezeli. Ezeket próbálhatod:\n- Lépj ki a(z) {app} appból, és nyisd meg újra\n- Jelentkezz ki, majd vissza ide: {app}\n- Nézd meg a(z) {name} állapotoldalát, hátha leállás van",
   "@errors.provider.appBased.serious": {
     "sourceHash": "64baea5"
   },

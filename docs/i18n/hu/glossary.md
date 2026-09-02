@@ -2175,10 +2175,33 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
     azonos, tehát a `desktop-i18n-term-consistency` egyetlen magyar alakot vár rájuk; és mert egy félig javított család
     rosszabb bármelyik végállapotnál (a rename-undo értesítésben is egyszerre látszanak a sorok). Az öt szállított kulcs
     ANGOLJA nem változott, tehát a `sourceHash`-ük érintetlen: ez fordítási minőségjavítás, nem újrafordítás.
-  - **Nyitott, más családokban**: az `errors.provider.appBased.transient`/`.needsAction`/`.serious` ugyanezt hozza egy
-    szolgáltatónévre (`Ezt a mappát a **{name}** kezeli`, ahol a `{name}` iCloud/Dropbox/pCloud), az
-    `askCmdr.renameUndo.undoJob` pedig egy SZÁMRA (`Mind a {countText} csomag…`: az `1` és az `5` más névelőt kér).
-    Egyik sem ennek a két családnak a része, ezért ez a menet nem nyúlt hozzájuk; a szabály viszont rájuk is áll.
+  - **A két nyitott család is lezárva** (2026-09-02). Az `errors.provider.appBased.transient`/`.needsAction`/`.serious`
+    mostantól `a(z) **{name}**` és `a(z) {app}` alakot ír: a szolgáltatói névsor tényleg vegyes (`az iCloud`,
+    `az OneDrive` szemben a `a Dropbox`, `a pCloud` alakkal), és a sorokban KÉT független ismeretlen áll, mert a
+    `{name}` a `displayName`, a `{app}` az `appName` kulcsból jön. ⚠️ Kulcsonként KÉT névelőhely van, a `serious`-ban
+    HÁROM (`a(z) {app} appból` és `a(z) {name} állapotoldalát` is), tehát a sorokat végig kell olvasni: az elsőt
+    javítani és továbbmenni pont olyan félkész állapot, mint amit a fenti bekezdés tilt.
+  - **Az `errors.provider.iCloud.*` három sora ugyanezt hozta, de ott a névelő NEM ismeretlen**: a `{name}` mindig az
+    egyetlen `iCloud Drive` displayName, ezért a helyes alak a kiírt `az **{name}**`, nem az `a(z)`. Ahol a placeholder
+    értékkészlete egyelemű, ott a hedge fölösleges, és rosszabb magyar; a hedge az ISMERETLEN kezdőhangnak szól, nem a
+    placeholdernek magának.
+- **`askCmdr.renameUndo.undoJob` → `Az összes {csomag} visszavonása ({countText})`: ÁTFOGALMAZÁS, nem névelő** · macOS
+  Tier 1 a szerkezetre (`Az összes lemez (^0) kiadásához kattintson az Összes kiadása gombra…`), és a pile-ban egyetlen
+  `Mind a/az` + számnév alak sincs · high.
+  - A `Mind a {countText} csomag visszavonása` azért rossz, mert a névelő a SZÁMNÉV kiejtésén múlik: `a kettő`,
+    `a három`, `a négy`, de `az öt`, `a hat`, … `az ezer`. Az `a` minden ötödik-ezredik esetben hibás.
+  - **A fenti ❌ (`Mind a(z) {countText} elem`) indoklása viszont ITT nem áll**, és ezt érdemes pontosan tudni: az
+    `undoJob` gomb csak `jobOperationIds.length > 1` esetén jelenik meg (`AskCmdrMessage.svelte`), tehát a `count` soha
+    nem 1, és a `Mind az 1 csomag` eset elő sem fordul. A KÖVETKEZTETÉS mégis ugyanaz marad, csak más okból: az `a(z)`
+    írott nyelvi mankó, egy szűk oldalsávba szánt rövid GOMBFELIRATBAN pedig ez a mankó látszik a legjobban. A `@key`
+    kifejezetten rövidséget kér.
+  - A megoldás elve ugyanaz, mint az `*Aria`-párok egyeztetésénél: **a névelőt olyan szóhoz kötjük, amit mi
+    választunk**. Az `összes` kezdőhangja fix (`ö`), tehát `Az összes` mindig helyes, a szám pedig zárójeles
+    értelmezőbe kerül, ahol semmivel nem kell egyeztetnie. Ugyanaz a fogás, mint a `done*` soroknál a `mindent` +
+    kettőspontos szám.
+  - A `{count}` a parity miatt marad benne (`desktop-i18n-parity` pontos placeholder-halmazt vár), mindkét ága `csomag`:
+    az `összes` után a magyar amúgy is egyes számot mond.
+  - Mind a hét érintett kulcs ANGOLJA változatlan, tehát a `sourceHash`-ük érintetlen: fordítási minőségjavítás.
 - **`rollbackConfirm.body`**: az angol egy harmadik mondattal bővült, ami betű szerint azonos a `bodyUndoByDeleting`
   záró mondatával (`Cmdr skips anything it isn''t sure about, so a few may stay behind.`), ezért a magyar is szó szerint
   annak a farkát veszi át (`Amiben a Cmdr nem biztos, azt kihagyja, szóval maradhat belőlük egy-kettő.`). Az első két

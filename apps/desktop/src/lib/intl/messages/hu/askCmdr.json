@@ -613,7 +613,7 @@
   "@askCmdr.renameUndo.undoLabel": {
     "sourceHash": "fc1c08a"
   },
-  "askCmdr.renameUndo.undoJob": "Mind a {countText} {count, plural, one {csomag} other {csomag}} visszavonása",
+  "askCmdr.renameUndo.undoJob": "Az összes {count, plural, one {csomag} other {csomag}} visszavonása ({countText})",
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },

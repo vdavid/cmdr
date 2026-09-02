@@ -162,7 +162,20 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   genuinely has to precede a name placeholder, write `A(z) „{name}”`** — the `a(z)` house form plus `„…”` quotes, both
   macOS Tier 1 (`A(z) „^0” elemet…`) and the catalog's majority. ❌ Never a bare `A {name}`: it renders "A alma.txt" on
   every vowel-initial name. Nothing is needed after a colon or in a possessive (`Letöltve: {fileName}`). Evidence and
-  the two families that were corrected to it: `glossary.md` § A megszakított visszagörgetés eredményértesítése.
+  the families that were corrected to it: `glossary.md` § A megszakított visszagörgetés eredményértesítése.
+  - **Quotes only around a NAME the user typed or owns.** A brand or provider placeholder takes bare `a(z) {name}`
+    (`a(z) **{name}** kezeli`): the bold or the sentence already delimits it, and `„Dropbox”` reads as scare quotes.
+  - **A placeholder with ONE possible value gets the real article, never the hedge.** `errors.provider.iCloud.*`'s
+    `{name}` is always `iCloud Drive`, so it's `az **{name}**`. The `a(z)` form answers an UNKNOWN first sound; where
+    nothing is unknown it's just noise.
+  - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
+    carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on
+    leaves a half-corrected family, which is worse than either end state.
+  - **❌ Never `a(z)` in front of a NUMBER placeholder — reword instead.** The article follows the numeral's
+    pronunciation (`a három` but `az öt`, `a száz` but `az ezer`), so a bare `a` is wrong, and the hedge is a
+    written-language crutch that shows badly in a short button. Bind the article to a word you choose and push the
+    number into a parenthetical or after a colon: `Az összes csomag visszavonása ({countText})`, macOS Tier 1
+    (`Az összes lemez (^0) …`). Worked case: `glossary.md` § `askCmdr.renameUndo.undoJob`.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
 - **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`.** `Cmdr` is pronounced "commander", so
