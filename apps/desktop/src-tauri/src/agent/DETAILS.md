@@ -64,8 +64,8 @@ dimensions pin the agent's view to exactly its authored `[agent]` entries, every
 `Access::Propose`, or `Access::Memory`, never `Access::Write`; the runtime's `ToolId` parse step is the runtime choke
 point (an unrecognized name resolves to `ToolId::Unrecognized`, which is never in the agent view, so dispatch refuses
 it). A new KIND of content egress (a new tool, or a new field on an existing one) is a consent-copy change plus a
-`CONSENT_COPY_VERSION` bump, never a silent widening; `docs/security.md` § Ask Cmdr agent egress is the user-facing
-account and has to move with it.
+`CONSENT_COPY_VERSION` bump, never a silent widening; `docs/security.md` § Ask Cmdr agent egress, the user-facing
+account, has to move with it.
 
 **`Access::Memory`: what the widening cost, and what holds it.** The agent's promise used to be "it never changes
 anything". `memory_write` and `memory_edit` made that false, so the promise narrowed to "it writes only into its own
