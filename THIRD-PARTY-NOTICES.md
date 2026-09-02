@@ -582,7 +582,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **siphasher** 1.0.3, MIT OR Apache-2.0, <https://github.com/jedisct1/rust-siphash>
 - **slab** 0.4.12, MIT, <https://github.com/tokio-rs/slab>
 - **smallvec** 1.15.2, MIT OR Apache-2.0, <https://github.com/servo/rust-smallvec>
-- **smb2** 0.20.1, MIT OR Apache-2.0, <https://github.com/vdavid/smb2>
+- **smb2** 0.21.0, MIT OR Apache-2.0, <https://github.com/vdavid/smb2>
 - **socket-pktinfo** 0.4.0, MIT, <https://github.com/pixsper/socket-pktinfo>
 - **socket2** 0.6.4, MIT OR Apache-2.0, <https://github.com/rust-lang/socket2>
 - **specta** 2.0.0-rc.24, MIT, <https://github.com/specta-rs/specta>
@@ -10685,7 +10685,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: smb2 0.20.1
+Covers: smb2 0.21.0
 
 Text from: `LICENSE-MIT`
 
