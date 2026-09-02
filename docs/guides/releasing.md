@@ -64,17 +64,19 @@ tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, two are worth know
 
 ## Pre-release smoke test on old macOS
 
-Cmdr targets macOS 12 Monterey and up. The bundled Safari there can be 15.x, which doesn't support `color-mix()` (16.2+)
-or `oklch` color (16.4+). We carry static sRGB fallbacks for both in `app.css` (`@supports not (color: color-mix(...))`
-blocks) and via JS in `accent-color.ts` / `volume-tint.svelte.ts`. The fallbacks have to stay in sync as new tokens
-land.
+Cmdr opens on macOS 10.15 Catalina and up, which means two different old-WebKit paths, and both want a look before a
+tag. The floor rationale and version evidence: `docs/notes/system-requirements-and-es2025.md`.
 
-Before tagging a release:
+### Degraded but working: the `color-mix()` fallbacks
 
-1. On any Mac, run `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` from the repo root. This forces the fallback path on modern
-   WebKit by faking `hasColorMix = false` (routes the JS branches through sRGB mix) and setting `data-force-old-webkit`
-   on `<html>` (activates the mirror of the `@supports not (...)` blocks in `app.css`). It doesn't perfectly replicate
-   Safari 15.x's renderer, but it does prove the fallback values look reasonable.
+Safari below 16.2 doesn't support `color-mix()`, and below 16.4 not `color-mix(in oklch, …)`. We carry static sRGB
+fallbacks in `app.css` (`@supports not (color: color-mix(...))` blocks) and via JS in `accent-color.ts` /
+`volume-tint.svelte.ts`. They have to stay in sync as new tokens land.
+
+1. On any Mac, run `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` from the repo root. This fakes `hasColorMix = false` (routing
+   the JS branches through sRGB mix) and sets `data-force-old-webkit` on `<html>` (activating the mirror of the
+   `@supports not (...)` blocks). It doesn't replicate Safari 15.x's renderer, but it proves the fallback values look
+   reasonable.
 2. Optionally, boot a Monterey 12.7+ VM or a real old Mac and open the dev build. Note that ARM Monterey VMs ship with
    current Safari (17.x), so the bug isn't reproducible there without an early-12.x IPSW.
 3. Either way, confirm the four user-visible spots aren't broken:
@@ -88,6 +90,25 @@ Before tagging a release:
 If a new `color-mix()` token lands without a matching entry in the `@supports not` blocks, those four spots silently
 break on old WebKit. Keep the lists in `app.css` in sync, and prefer the JS-derivation pattern (`accent-color.ts`,
 `volume-tint.svelte.ts`) for any token that depends on the live macOS accent color.
+
+### Below the floor: the boot guard
+
+Under Safari 15.4 the app can't run at all, and the inline guard in `apps/desktop/src/app.html` replaces the window with
+a translated "Cmdr needs a newer Safari" screen instead of leaving a white one. Nobody on the team has that Safari, so
+the dev override is the only routine way to see it.
+
+1. Run `VITE_CMDR_FORCE_OLD_WEBKIT=unsupported pnpm dev` from the repo root. The flag is read at BUILD time by
+   `svelte.config.js`, so it has to be set before the dev server starts; restarting an already-running one won't pick it
+   up.
+2. Confirm the screen paints: title, one paragraph, one Quit button, centered, correct in both light and dark mode.
+3. Click Quit. The app should exit. (It goes through `plugin:process|exit`, so the quit gate sees it like ⌘Q.)
+4. Check a second language: set macOS to one of the shipped locales, or run the same command after temporarily pointing
+   `navigator.language`'s answer at another tag in the dev tools. Copy comes from `main.oldWebkit.*` in the catalog, so
+   any locale you can pick in Settings is one the guard can show.
+
+Nothing here needs a real old Mac: `apps/desktop/scripts/app-boot-guard.test.ts` runs the actual guard with each Safari
+15.4 capability removed in turn, and fails on ES6 syntax that old WebKit couldn't parse. The smoke test is about how the
+screen LOOKS, which no test can judge.
 
 ## Keep the Mac awake during the build (self-hosted only)
 

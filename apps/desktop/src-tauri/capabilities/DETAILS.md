@@ -64,3 +64,19 @@ the app's own commands, but the `tauri-plugin` crate's build script passes `None
 `capabilities/**/*` glob. A capability outside `capabilities/` is therefore invisible to plugin build scripts. Turning the option on would strip the playwright plugin's commands from the E2E build; production
 is unaffected, since every production capability is in `capabilities/`. The fix would be merging
 `removeUnusedCommands: false` into the E2E build through its own `--config`.
+
+## The boot guard's exit
+
+`default.json` grants `process:allow-exit` for exactly one caller: the Quit button on the old-WebKit block screen in
+`apps/desktop/src/app.html`. That screen is an inline ES5 script that runs before the module bundle loads (a WebKit
+below Safari 15.4 may not be able to parse the bundle at all), so it can't reach `$lib/ipc` or any typed wrapper. It
+calls `window.__TAURI_INTERNALS__.invoke('plugin:process|exit', { code: 0 })` directly, the only raw invoke in the
+tree, and swallows a rejection: if the permission were ever removed the button would simply do nothing, and the native
+menu bar would still quit.
+
+The permission does NOT open a path around the quit gate. `tauri-plugin-process`'s `exit` command is `AppHandle::exit`,
+which Tauri delivers back as `RunEvent::ExitRequested`, and `src-tauri/src/app_lifecycle.rs` routes every one of those
+through `src-tauri/src/quit/` the same way ⌘Q, the menu, and a logout go. On the boot-guard path there's nothing in
+flight to ask about, so the gate lets it straight through.
+
+The other windows' capability files deliberately don't carry it: a below-floor WebKit never gets far enough to open one.

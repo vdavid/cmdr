@@ -152,6 +152,39 @@ evidence: `docs/notes/system-requirements-and-es2025.md`.
 Use them to verify the old-WebKit paths without a real Safari 15.x environment. See `docs/guides/releasing.md` §
 "Pre-release smoke test on old macOS".
 
+## Old-WebKit boot guard
+
+The screen a below-floor Mac gets instead of a white window. It lives in `src/app.html`, not here, and that placement is
+the whole design: Safari 13.x can't PARSE the bundle (measured, `docs/notes/system-requirements-and-es2025.md` § The two
+floors old WebKit crosses), so anything shipped inside the bundle is unreachable on exactly the Mac that needs it. The
+guard is an inline ES5 `<script>` in `<head>` that probes the four Safari 15.4 capabilities and, if any is missing,
+empties `<body>` and paints a title, a sentence, and a Quit button.
+
+Emptying the body is what makes it deterministic. SvelteKit's boot script captures `#app-root` while the body parses and
+mounts into that captured element later; once the body is emptied, a bundle that DID parse mounts into a detached node
+and never reaches the screen. So the guard wins whichever order the two run in.
+
+**Its copy comes from the message catalog**, which is the other half of the design. The guard runs before any module, so
+it can't call `t()`. `svelte.config.js` resolves the three `boot-guard-keys.ts` keys against every shipped catalog at
+config-load time, formats the ICU away (the values carry `''` escaping the guard would otherwise show verbatim), and
+splices the answers into a copy of the shell at `.svelte-kit/cmdr-app.html`, which is what `kit.files.appTemplate`
+points at. Nothing is committed, so nothing can go stale; a missing marker fails the build rather than shipping a
+stringless guard. Locale matching is precomputed too, because the guard can't run the script-boundary rule: the payload
+carries a flat lowercase alias map so `zh-TW` lands on Traditional and never falls through to Simplified. Details:
+`apps/desktop/scripts/gen-boot-guard-lib.ts`.
+
+**Gotcha**: because `appTemplate` is the generated path, `pnpm dev` does NOT hot-reload an edit to `src/app.html`.
+Restart the dev server after touching the shell.
+
+**❗ ES5 only in the guard.** One arrow function or template literal and it dies silently on the WebKit it exists for.
+`apps/desktop/scripts/app-boot-guard.test.ts` extracts the real script, sweeps it for the ES6 syntax you'd reach for, and runs it
+against a stubbed environment with each capability removed in turn (globals arrive as function parameters, so a test can
+take `Object.hasOwn` away from the guard without taking it away from vitest). That test is also what holds the guard's
+probes and `WEBKIT_FLOOR_CAPABILITIES` together, since the guard can't import the list.
+
+The Quit button calls `window.__TAURI_INTERNALS__.invoke('plugin:process|exit')`, the only raw invoke in the tree, and
+it still routes through the quit gate: `src-tauri/capabilities/DETAILS.md` § The boot guard's exit.
+
 ## Decisions
 
 - **Frontend (pure TS) validation, not Rust round-trips**: keystroke feedback needs sub-millisecond latency; the rules

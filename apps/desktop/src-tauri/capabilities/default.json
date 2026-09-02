@@ -57,6 +57,7 @@
         },
         "updater:default",
         "process:allow-restart",
+        "process:allow-exit",
         "dialog:allow-ask",
         "notification:default",
         "global-shortcut:default"

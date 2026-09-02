@@ -48,7 +48,7 @@ const log = getAppLogger('webkit-compat')
  * Vite only exposes env vars to client code when they're prefixed with `VITE_`.
  * The flag is read at module load, so set it before `pnpm dev` starts.
  */
-const FORCE_LEVEL = import.meta.env.VITE_CMDR_FORCE_OLD_WEBKIT
+const FORCE_LEVEL: string = String(import.meta.env.VITE_CMDR_FORCE_OLD_WEBKIT ?? '')
 const FORCE_BELOW_FLOOR = FORCE_LEVEL === 'unsupported'
 const FORCE_OLD_WEBKIT = FORCE_LEVEL === '1' || FORCE_LEVEL === 'old' || FORCE_BELOW_FLOOR
 
