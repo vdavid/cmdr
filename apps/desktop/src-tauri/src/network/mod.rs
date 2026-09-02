@@ -11,6 +11,7 @@
 pub mod credential_store;
 pub mod keychain;
 
+pub mod connect_wiring;
 pub mod known_shares;
 pub mod manual_servers;
 pub mod mdns_discovery;
@@ -18,6 +19,7 @@ pub mod mdns_discovery;
 // The durable trusted-SSH-host-key store, which answers the `HostKeys` seam.
 // Not SMB's business, but it lives here for the same reason `credential_store`
 // does: this module is where the app keeps what it knows about servers.
+pub mod server_list_file;
 pub mod sftp_host_keys;
 pub mod sftp_known_servers;
 pub mod sftp_volume_wiring;

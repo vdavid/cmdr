@@ -18,11 +18,12 @@
 //! the username (`cmdr_fs::volume::webdav_volume_id`), so two accounts on one
 //! server are two entries and two volumes rather than one of each.
 
-use std::fs;
 use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
+
+use super::server_list_file;
 
 use crate::ignore_poison::IgnorePoison;
 
@@ -127,25 +128,14 @@ fn same_server(entry: &KnownWebdavServer, url: &str, username: &str) -> bool {
 /// user's server list is a convenience, and losing it costs one re-entry rather
 /// than access to anything.
 pub fn load_known_webdav_servers<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
-    let Ok(dir) = crate::config::resolved_app_data_dir(app) else {
+    let Some((store, path)) = server_list_file::load(app, "webdav_known_servers.json") else {
         return;
     };
-    let path = dir.join("webdav_known_servers.json");
-    // A `.tmp` left by a crash mid-write.
-    let tmp = path.with_extension("json.tmp");
-    if tmp.exists() {
-        let _ = fs::remove_file(&tmp);
-    }
-
-    let store = fs::read_to_string(&path)
-        .ok()
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default();
     *known().lock_ignore_poison() = store;
     let _ = STORE_PATH.set(path);
 }
 
-/// Writes the in-memory store back, durably (`config::durable_write_json`).
+/// Writes the in-memory store back, durably.
 fn save() {
     let Some(path) = STORE_PATH.get() else {
         // Before `load_known_webdav_servers` there's nowhere to write. A test
@@ -153,12 +143,7 @@ fn save() {
         return;
     };
     let store = known().lock_ignore_poison().clone();
-    let Ok(json) = serde_json::to_string_pretty(&store) else {
-        return;
-    };
-    if let Err(e) = crate::config::durable_write_json(path, &path.with_extension("json.tmp"), &json) {
-        log::warn!(target: "volume", "couldn't write the known WebDAV servers: {e}");
-    }
+    server_list_file::save(path, "the known WebDAV servers", &store);
 }
 
 /// Every server the user has connected to.

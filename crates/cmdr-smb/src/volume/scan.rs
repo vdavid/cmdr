@@ -6,6 +6,7 @@
 use super::SmbVolume;
 use super::mapping::map_smb_error;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::scan_walk::{conflicts_against, fold_batch};
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, ListingProgress, ScanConflict, ScanTicker, SourceItemInfo, VolumeError,
 };
@@ -221,23 +222,17 @@ impl SmbVolume {
             // All paths resolved via oracle: assemble the result and skip the
             // pipelined-stat machinery entirely.
             if leftover_indices.is_empty() {
-                let mut aggregate = CopyScanResult {
-                    file_count: 0,
-                    dir_count: 0,
-                    total_bytes: 0,
-                    dedup_bytes: 0,
-                    top_level_is_directory: false,
-                };
-                let mut per_path = Vec::with_capacity(paths.len());
-                for (i, slot) in per_path_results.into_iter().enumerate() {
-                    let scan = slot.expect("oracle path must have populated every index");
-                    aggregate.file_count += scan.file_count;
-                    aggregate.dir_count += scan.dir_count;
-                    aggregate.total_bytes += scan.total_bytes;
-                    aggregate.dedup_bytes += scan.dedup_bytes;
-                    per_path.push((paths[i].clone(), scan));
-                }
-                return Ok(BatchScanResult { aggregate, per_path });
+                let per_path = per_path_results
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, slot)| {
+                        (
+                            paths[i].clone(),
+                            slot.expect("oracle path must have populated every index"),
+                        )
+                    })
+                    .collect();
+                return Ok(fold_batch(per_path));
             }
 
             // Pre-compute SMB paths so the pipelined stats can borrow strings
@@ -371,24 +366,18 @@ impl SmbVolume {
             }
 
             // Fold per-path into aggregate + per_path vec (in input order).
-            let mut aggregate = CopyScanResult {
-                file_count: 0,
-                dir_count: 0,
-                total_bytes: 0,
-                dedup_bytes: 0,
-                top_level_is_directory: false,
-            };
-            let mut per_path = Vec::with_capacity(paths.len());
-            for (i, slot) in per_path_results.into_iter().enumerate() {
-                let scan = slot.expect("every input path must have a result by this point");
-                aggregate.file_count += scan.file_count;
-                aggregate.dir_count += scan.dir_count;
-                aggregate.total_bytes += scan.total_bytes;
-                aggregate.dedup_bytes += scan.dedup_bytes;
-                per_path.push((paths[i].clone(), scan));
-            }
+            let per_path = per_path_results
+                .into_iter()
+                .enumerate()
+                .map(|(i, slot)| {
+                    (
+                        paths[i].clone(),
+                        slot.expect("every input path must have a result by this point"),
+                    )
+                })
+                .collect();
 
-            Ok(BatchScanResult { aggregate, per_path })
+            Ok(fold_batch(per_path))
         })
     }
 
@@ -399,27 +388,12 @@ impl SmbVolume {
         dest_path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // List destination directory to check for conflicts
+            // The listing is this backend's own (cache-aware); the matching is
+            // the shared one, so every backend hands a conflict dialog the same
+            // shape. ❗ Unlike the walk-driven backends, a missing destination is
+            // reported rather than read as "nothing clashes".
             let entries = self.list_directory_impl(dest_path).await?;
-            let mut conflicts = Vec::new();
-
-            for item in source_items {
-                if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
-                    let dest_modified = existing.modified_at.map(|s| s as i64);
-                    conflicts.push(ScanConflict {
-                        source_path: item.name.clone(),
-                        dest_path: existing.path.clone(),
-                        source_size: item.size,
-                        dest_size: existing.size.unwrap_or(0),
-                        source_modified: item.modified,
-                        dest_modified,
-                        source_is_directory: item.is_directory,
-                        dest_is_directory: existing.is_directory,
-                    });
-                }
-            }
-
-            Ok(conflicts)
+            Ok(conflicts_against(source_items, &entries))
         })
     }
 }

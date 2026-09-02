@@ -8,9 +8,10 @@ original path; prefer that in app code (`crate::file_system::volume::VolumeError
 
 - `volume/`: the trait, its types, `InMemoryVolume`, `ids` + `canonical_root` (the ID funnel and double-mount collapse),
   `retirement.rs` (how background work learns it stopped being the live volume), `channel_stream.rs` (the consumer half
-  a network backend's read path is built on), `scan_ticker.rs` (the running counts every remote scan reports),
-  `friendly_error/` (typed, word-free classification), and `host/` (what a backend needs from the app, as named traits;
-  read `src/volume/host/CLAUDE.md` before writing a backend).
+  a network backend's read path is built on), `scan_ticker.rs` (the running counts every remote scan reports), the four
+  modules a stat-and-listing backend gets its `Volume` bodies from (`scan_walk.rs`, `mkdir_all.rs`, `patching.rs`,
+  `secret_store.rs`), `friendly_error/` (typed, word-free classification), and `host/` (what a backend needs from the
+  app, as named traits; read `src/volume/host/CLAUDE.md` before writing a backend).
 - `entry.rs` + `icons/` (`FileEntry` and the classifiers behind `get_icon_id`), `sqlite_util.rs` (the ONE process-wide
   page-cache slab and the connection factories all five stores open through), `staging.rs` (`StagingTemp`, the ONLY way
   to name a scratch file).
@@ -41,6 +42,9 @@ original path; prefer that in app code (`crate::file_system::volume::VolumeError
   deletes) to the wrong disk. Add a constructor there.
 - **Nothing here produces user-facing prose**: errors carry typed reasons and structured params, and the frontend
   renders every word (`pluralize` and `display_size` excepted).
+- **A stat-and-listing backend implements three small traits, ❌ never its own copy of the walk**: `ScanSource`,
+  `MakesDirectories`, `PatchSource`. `secret_store.rs` is the only place a backend touches the credential store.
+  `DETAILS.md` § "Bodies a backend gets for free".
 
 Composition rationale, the four cuts that made the closure finite, and what deliberately stayed in the app:
 `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

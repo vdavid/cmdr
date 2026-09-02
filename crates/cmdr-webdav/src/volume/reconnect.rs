@@ -22,6 +22,7 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use cmdr_fs::volume::host::credentials::StoredCredentials;
+use cmdr_fs::volume::secret_store;
 use cmdr_fs::volume::{SelfHandle, VolumeError};
 use log::{debug, info, warn};
 use tokio_util::sync::CancellationToken;
@@ -195,13 +196,7 @@ impl WebdavVolumeInner {
     /// The store's entry for this account. ❗ On a blocking task: the store may
     /// put a Keychain prompt in front of this.
     async fn stored_secret(&self) -> Option<StoredCredentials> {
-        let host = self.host.clone();
-        let service = self.params.credential_service();
-        let scope = self.params.username.clone();
-        tokio::task::spawn_blocking(move || host.credentials().credentials(&service, Some(&scope)))
-            .await
-            .ok()
-            .flatten()
+        secret_store::stored_secret(&self.host, &self.params.credential_service(), &self.params.username).await
     }
 
     /// Reports the stall and turns it into the trait's vocabulary.
@@ -226,22 +221,10 @@ impl WebdavVolumeInner {
     /// ❗ Refreshes, ❌ never seeds: a store with nothing in it is the user
     /// having said no.
     async fn refresh_remembered_secret(&self, username: &str, secret: &str) {
-        let host = self.host.clone();
-        let service = self.params.credential_service();
-        let scope = username.to_string();
-        let stored = StoredCredentials {
-            username: username.to_string(),
-            secret: secret.to_string(),
-        };
-        let written = tokio::task::spawn_blocking(move || {
-            let store = host.credentials();
-            if store.credentials(&service, Some(&scope)).is_none() {
-                return Ok(());
-            }
-            store.save_credentials(&service, Some(&scope), &stored)
-        })
-        .await;
-        if !matches!(written, Ok(Ok(()))) {
+        let took =
+            secret_store::refresh_remembered_secret(&self.host, &self.params.credential_service(), username, secret)
+                .await;
+        if !took {
             warn!(
                 target: "volume",
                 "webdav volume '{}': the secret store didn't take the new secret; this connection still came up",

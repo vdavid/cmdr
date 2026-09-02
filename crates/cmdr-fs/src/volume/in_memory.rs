@@ -956,25 +956,7 @@ impl Volume for InMemoryVolume {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let dest_entries = self.list_directory(dest_path, None).await?;
-            let mut conflicts = Vec::new();
-
-            for item in source_items {
-                if let Some(existing) = dest_entries.iter().find(|e| e.name == item.name) {
-                    let dest_modified = existing.modified_at.map(|s| s as i64);
-                    conflicts.push(ScanConflict {
-                        source_path: item.name.clone(),
-                        dest_path: existing.path.clone(),
-                        source_size: item.size,
-                        dest_size: existing.size.unwrap_or(0),
-                        source_modified: item.modified,
-                        dest_modified,
-                        source_is_directory: item.is_directory,
-                        dest_is_directory: existing.is_directory,
-                    });
-                }
-            }
-
-            Ok(conflicts)
+            Ok(super::scan_walk::conflicts_against(source_items, &dest_entries))
         })
     }
 }

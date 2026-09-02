@@ -10,6 +10,8 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::patching;
+use cmdr_fs::volume::scan_walk;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
     ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
@@ -215,7 +217,7 @@ impl Volume for WebdavVolume {
         parent_path: &'a Path,
         mutation: MutationEvent,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(self.notify_mutation_impl(parent_path, mutation))
+        Box::pin(patching::patch_mutation(self, parent_path, mutation))
     }
 
     // ── Scanning, before a copy runs ─────────────────────────────────
@@ -224,7 +226,7 @@ impl Volume for WebdavVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
-        Box::pin(self.noting(self.scan_for_copy_impl(path)))
+        Box::pin(self.noting(scan_walk::scan_one(self, path)))
     }
 
     fn scan_for_copy_batch_with_progress<'a>(
@@ -232,7 +234,7 @@ impl Volume for WebdavVolume {
         paths: &'a [PathBuf],
         on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        Box::pin(self.noting(self.scan_for_copy_batch_impl(paths, on_progress)))
+        Box::pin(self.noting(scan_walk::scan_trees(self, paths, on_progress)))
     }
 
     fn scan_for_conflicts<'a>(
@@ -240,7 +242,7 @@ impl Volume for WebdavVolume {
         source_items: &'a [SourceItemInfo],
         dest_path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
-        Box::pin(self.noting(self.scan_for_conflicts_impl(source_items, dest_path)))
+        Box::pin(self.noting(scan_walk::scan_conflicts(self, source_items, dest_path)))
     }
 
     /// The server copies for itself (COPY), so duplicating a file inside one

@@ -378,3 +378,27 @@ MiB block absent from the map entirely (verified on macOS 26.5, 2026-08-21).
 
 Cost is one syscall per map entry, so it is snapshot-only — never per watchdog tick or per log line, unlike the
 `task_info` readers beside it.
+
+## Bodies a backend gets for free
+
+A backend whose only tools are a stat and a listing (SFTP, WebDAV) writes almost no `Volume` body of its own. Four
+modules under `volume/` carry the arithmetic, each behind a trait the backend implements in a handful of lines:
+
+- **`scan_walk.rs`** (`ScanSource`: `scan_stat` + `scan_list`) answers `scan_for_copy`, `scan_for_copy_batch`, and
+  `scan_for_conflicts`. The walk lists and ❌ never stats a child, so a 1,000-file folder costs one round trip per
+  DIRECTORY; `dedup_bytes` tracks `total_bytes` because a backend reaching this walk has no link count. ❌ Nothing here
+  consults `authoritative_listing`: that shortcut needs a watcher behind it, and these backends have none.
+- **`mkdir_all.rs`** (`MakesDirectories`) answers `create_directory_all`, leaf first so the common case costs one
+  request. ❗ Its `DirectoryCreation` answer is the load-bearing part: the transfer driver spends a `Created` by
+  skipping its per-file destination conflict probe, so anything short of certainty (a lost race included) answers
+  `AlreadyExisted`. It also reports the SHALLOWEST directory it created, which is the one listing worth patching.
+- **`patching.rs`** (`PatchSource`) answers `notify_mutation` and the created / deleted / renamed patches around it. A
+  patch is a courtesy and ❌ never fails the mutation that earned it, so every function returns `()`. A rename across
+  directories is two changes, ❗ never one `Renamed`.
+- **`secret_store.rs`** is the only place a backend reads or refreshes a stored secret, always on a blocking task: the
+  store can put a Keychain prompt in front of a call, and a modal dialog on the async runtime holds every other volume.
+  It REFRESHES and ❌ never seeds, because an empty store is the user having declined to remember.
+
+SMB and MTP keep their own cache-aware batch scans (their watchers back the `authoritative_listing` shortcut) and borrow
+only the pure halves, `conflicts_against` and `fold_batch`, so every backend hands a conflict dialog the same shape and
+folds a batch the same way.

@@ -1335,9 +1335,13 @@ mod capabilities;
 mod channel_stream;
 mod ids;
 mod in_memory;
+pub mod mkdir_all;
 pub mod mtp_ids;
+pub mod patching;
 mod retirement;
 mod scan_ticker;
+pub mod scan_walk;
+pub mod secret_store;
 mod types;
 
 // Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
@@ -1361,8 +1365,11 @@ pub use capabilities::VolumeCapabilities;
 pub use channel_stream::ChannelReadStream;
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
+pub use mkdir_all::{MadeDirectories, MakesDirectories};
+pub use patching::{PatchSource, patch_created, patch_deleted, patch_mutation, patch_renamed};
 pub use retirement::{Retirement, Retires, SelfHandle};
 pub use scan_ticker::ScanTicker;
+pub use scan_walk::{ScanSource, Walking, conflicts_against, fold_batch, scan_conflicts, scan_one, scan_trees};
 pub use types::*;
 
 #[cfg(test)]

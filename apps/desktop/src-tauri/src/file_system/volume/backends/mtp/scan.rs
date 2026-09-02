@@ -10,6 +10,8 @@
 use super::super::{BatchScanResult, CopyScanResult, ScanConflict, SourceItemInfo, Volume, VolumeError};
 use super::MtpVolume;
 use super::mapping::map_mtp_error;
+use cmdr_fs::volume::scan_walk::conflicts_against;
+
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::mtp::connection::connection_manager;
@@ -211,28 +213,11 @@ impl MtpVolume {
         dest_path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // List destination directory to check for conflicts
+            // The listing is this backend's own (it goes through the listing
+            // cache); the matching is the shared one, so every backend hands a
+            // conflict dialog the same shape.
             let entries = self.list_directory(dest_path, None).await?;
-            let mut conflicts = Vec::new();
-
-            for item in source_items {
-                // Check if a file with the same name exists at destination
-                if let Some(existing) = entries.iter().find(|e| e.name == item.name) {
-                    let dest_modified = existing.modified_at.map(|s| s as i64);
-                    conflicts.push(ScanConflict {
-                        source_path: item.name.clone(),
-                        dest_path: existing.path.clone(),
-                        source_size: item.size,
-                        dest_size: existing.size.unwrap_or(0),
-                        source_modified: item.modified,
-                        dest_modified,
-                        source_is_directory: item.is_directory,
-                        dest_is_directory: existing.is_directory,
-                    });
-                }
-            }
-
-            Ok(conflicts)
+            Ok(conflicts_against(source_items, &entries))
         })
     }
 }

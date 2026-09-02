@@ -10,14 +10,11 @@
 //! lives here, because a connect is three things happening in one order: dial,
 //! register (retiring any predecessor), and remember the server for next time.
 
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::Arc;
 
-use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_webdav::{UnattendedReconnect, WebdavConnectError, WebdavConnectionParams, WebdavVolume};
-use tokio_util::sync::CancellationToken;
 
+use super::connect_wiring::{self, AttemptTable};
 use super::webdav_known_servers::{self, KnownWebdavServer};
 
 /// What a connect attempt produced, in the terms a sign-in UI branches on.
@@ -63,75 +60,15 @@ pub enum WebdavConnection {
 // Calling a connect off
 // ============================================================================
 
-/// The connect attempts a user could still call off, by the id their caller made
-/// up for one, each with the serial that says WHICH attempt holds the entry.
-///
-/// ❗ The id is the CALLER's, and that is the whole point: a connect can hold for
-/// half a minute, so a sign-in dialog has to arm its cancel button before the
-/// command answers — and an id the backend handed back would only arrive once
-/// the connect was already over. The serial is what keeps a repeated id honest:
-/// a finishing attempt only ever takes its OWN entry out.
-///
-/// A table of its own rather than SFTP's: the two backends' attempt ids are
-/// minted with different prefixes on the frontend, and sharing the table would
-/// let one backend's cancel reach into the other's dial.
-static ATTEMPTS: LazyLock<Mutex<HashMap<String, (u64, CancellationToken)>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-
-/// The next attempt's serial.
-static NEXT_ATTEMPT: AtomicU64 = AtomicU64::new(0);
-
-/// Takes one attempt's entry out of the table when its connect ends, however it
-/// ends.
-///
-/// ❗ A guard rather than a call at each exit: a connect leaves through eight
-/// arms, and the one that forgets is a token nobody ever collects.
-struct AttemptGuard {
-    id: String,
-    serial: u64,
-}
-
-impl Drop for AttemptGuard {
-    fn drop(&mut self) {
-        let mut attempts = ATTEMPTS.lock_ignore_poison();
-        // Only if it's still ours: a second connect under the same id has
-        // replaced the entry, and taking that one out would leave it uncancelable.
-        if attempts.get(&self.id).is_some_and(|(serial, _)| *serial == self.serial) {
-            attempts.remove(&self.id);
-        }
-    }
-}
-
-/// Files `attempt_id` as cancelable and hands back the token the dial runs under.
-fn register_attempt(attempt_id: &str) -> (CancellationToken, AttemptGuard) {
-    let cancel = CancellationToken::new();
-    let serial = NEXT_ATTEMPT.fetch_add(1, Ordering::Relaxed);
-    ATTEMPTS
-        .lock_ignore_poison()
-        .insert(attempt_id.to_string(), (serial, cancel.clone()));
-    (
-        cancel,
-        AttemptGuard {
-            id: attempt_id.to_string(),
-            serial,
-        },
-    )
-}
+/// The connect attempts a user could still call off, and the guard that empties
+/// the table. The mechanism, and why each backend holds its OWN table:
+/// `connect_wiring.rs`.
+static ATTEMPTS: AttemptTable = AttemptTable::new("a webdav");
 
 /// Calls off the connect filed under `attempt_id`, answering whether one was
-/// running.
-///
-/// ❗ An id nobody is holding is a plain `false`: a cancel racing a connect that
-/// just finished is ordinary, and there is nothing wrong to report about it. The
-/// entry stays until the dial itself notices, so ❌ this never reports on what the
-/// attempt then did.
+/// running. An id nobody is holding is a plain `false`.
 pub fn cancel_connect(attempt_id: &str) -> bool {
-    let Some((_, cancel)) = ATTEMPTS.lock_ignore_poison().get(attempt_id).cloned() else {
-        return false;
-    };
-    cancel.cancel();
-    log::info!(target: "volume", "a webdav connect was called off");
-    true
+    ATTEMPTS.cancel(attempt_id)
 }
 
 /// Dials `params`, and on success registers the volume and remembers the server.
@@ -150,7 +87,7 @@ pub async fn connect_and_register(
     attempt_id: &str,
 ) -> WebdavConnection {
     let volume_id = cmdr_fs::volume::webdav_volume_id(params.host(), params.port(), &params.username);
-    let (cancel, _attempt) = register_attempt(attempt_id);
+    let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
     let outcome = cmdr_webdav::connect_webdav_volume(
         display_name,
         &volume_id,
@@ -165,7 +102,7 @@ pub async fn connect_and_register(
         Err(e) => return failed(e),
     };
 
-    register(&volume_id, volume).await;
+    connect_wiring::install_retiring_incumbent(&volume_id, Arc::new(volume)).await;
     webdav_known_servers::remember(KnownWebdavServer {
         url: params.base_url.to_string(),
         username: params.username.clone(),
@@ -196,26 +133,6 @@ fn failed(error: WebdavConnectError) -> WebdavConnection {
             WebdavConnection::Unreachable
         }
     }
-}
-
-/// Installs the volume under `volume_id`, retiring whoever held that id.
-///
-/// ❗ `on_superseded`, ❌ never `on_unmount`: a running transfer, an open viewer
-/// stream, and the indexer all hold an `Arc` across a re-registration, and
-/// tearing the session down would kill every one of them on a connection that is
-/// perfectly healthy.
-async fn register(volume_id: &str, volume: WebdavVolume) {
-    let manager = crate::file_system::volume::manager::get_volume_manager();
-    let volume: Arc<dyn cmdr_fs::volume::Volume> = Arc::new(volume);
-    // Asked BEFORE retiring anyone: a registry that keeps the incumbent would
-    // otherwise leave the id pointing at a volume whose background work we just
-    // stopped.
-    let refused = manager.would_keep_incumbent(volume_id, volume.root());
-    if !refused && let Some(previous) = manager.get(volume_id) {
-        let _ = tokio::task::spawn_blocking(move || previous.on_superseded()).await;
-    }
-    manager.register(volume_id, volume);
-    crate::volume_broadcast::emit_volumes_changed();
 }
 
 /// Moves the "reconnect automatically" switch on a volume that is already

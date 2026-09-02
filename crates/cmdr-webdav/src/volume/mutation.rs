@@ -4,10 +4,15 @@
 //! and `Overwrite: F` are preconditions the server evaluates atomically, where
 //! a stat-then-write would be a TOCTOU window.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
+use cmdr_fs::entry::FileEntry;
 use cmdr_fs::pluralize::pluralize_with;
-use cmdr_fs::volume::{DirectoryCreation, MutationEvent, VolumeError};
+use cmdr_fs::volume::host::listings::ListingHost;
+use cmdr_fs::volume::mkdir_all::{self, MakesDirectories};
+use cmdr_fs::volume::patching::{PatchSource, patch_created, patch_deleted, patch_renamed};
+use cmdr_fs::volume::scan_walk::Walking;
+use cmdr_fs::volume::{DirectoryCreation, VolumeError};
 use log::debug;
 use reqwest::Method;
 use reqwest::header::IF_NONE_MATCH;
@@ -35,7 +40,7 @@ impl WebdavVolume {
             .body(content.to_vec())
             .timeout(MUTATION_BUDGET);
         self.send(request, &remote, Attempted::TakingAName).await?;
-        self.notify_created(path).await;
+        patch_created(self, path).await;
         Ok(())
     }
 
@@ -44,7 +49,7 @@ impl WebdavVolume {
         let remote = self.to_remote_path(path)?;
         let client = self.clone_client().await?;
         self.mkcol(&client, &remote).await?;
-        self.notify_created(path).await;
+        patch_created(self, path).await;
         Ok(())
     }
 
@@ -55,53 +60,15 @@ impl WebdavVolume {
         self.send(request, remote, Attempted::TakingAName).await.map(|_| ())
     }
 
-    /// Leaf first, then the ancestors only if the leaf's parent was missing.
+    /// `mkdir -p`, through the shared walk: leaf first, ancestors only when the
+    /// leaf's parent was missing. The honesty contract on the answer:
+    /// `cmdr_fs::volume::mkdir_all`.
     pub(super) async fn create_directory_all_impl(&self, path: &Path) -> Result<DirectoryCreation, VolumeError> {
-        let remote = self.to_remote_path(path)?;
-        let client = self.clone_client().await?;
-        let root = self.to_remote_path(Path::new("/"))?;
-        if remote == root {
-            return Ok(DirectoryCreation::AlreadyExisted);
+        let made = mkdir_all::create_directory_all(self, path).await?;
+        if let Some(created) = made.shallowest_created {
+            patch_created(self, &created).await;
         }
-        match self.mkcol(&client, &remote).await {
-            Ok(()) => {
-                self.notify_created(path).await;
-                return Ok(DirectoryCreation::Created);
-            }
-            Err(VolumeError::AlreadyExists(_)) => return Ok(DirectoryCreation::AlreadyExisted),
-            Err(VolumeError::NotFound(_)) => {}
-            Err(e) => return Err(e),
-        }
-        let mut missing: Vec<(&Path, String)> = Vec::new();
-        for ancestor in path.ancestors() {
-            let Ok(remote_ancestor) = self.to_remote_path(ancestor) else {
-                break;
-            };
-            if remote_ancestor == root {
-                break;
-            }
-            missing.push((ancestor, remote_ancestor));
-        }
-        let mut leaf = DirectoryCreation::AlreadyExisted;
-        let mut first_created: Option<&Path> = None;
-        for (index, (as_addressed, dir)) in missing.iter().enumerate().rev() {
-            match self.mkcol(&client, dir).await {
-                Ok(()) => {
-                    first_created.get_or_insert(as_addressed);
-                    if index == 0 {
-                        leaf = DirectoryCreation::Created;
-                    }
-                }
-                Err(VolumeError::AlreadyExists(_)) => {}
-                Err(e) => return Err(e),
-            }
-        }
-        // ❗ ONE patch, for the SHALLOWEST directory this created: its parent is
-        // the only listing a pane could be holding.
-        if let Some(created) = first_created {
-            self.notify_created(created).await;
-        }
-        Ok(leaf)
+        Ok(made.leaf)
     }
 
     /// One DELETE. ❗ A collection that still holds something is refused with
@@ -129,7 +96,7 @@ impl WebdavVolume {
             .request(Method::DELETE, client.url_for(&remote, is_collection))
             .timeout(MUTATION_BUDGET);
         self.send(request, &remote, Attempted::Reaching).await?;
-        self.notify_deleted(path).await;
+        patch_deleted(self, path).await;
         Ok(())
     }
 
@@ -152,101 +119,44 @@ impl WebdavVolume {
             Attempted::TakingAName
         };
         self.send(request, &remote_to, attempted).await?;
-        self.notify_renamed(from, to).await;
+        patch_renamed(self, from, to).await;
         Ok(())
     }
+}
 
-    // ── Listing-cache patches ────────────────────────────────────────
-
-    async fn notify_created(&self, path: &Path) {
-        let (Some(parent), Some(name)) = (path.parent(), path.file_name()) else {
-            return;
-        };
-        let Some(parent) = self.display_path_for(parent) else {
-            return;
-        };
-        self.notify_mutation_impl(&parent, MutationEvent::Created(name.to_string_lossy().into_owned()))
-            .await;
+/// What the shared `mkdir -p` walk needs from this backend: MKCOL, and this
+/// volume's own path spelling. The `Created` promise it answers with is spent by
+/// the transfer driver, so the refusals matter: `cmdr_fs::volume::mkdir_all`.
+impl MakesDirectories for WebdavVolume {
+    fn remote_path_of(&self, path: &Path) -> Result<String, VolumeError> {
+        self.to_remote_path(path)
     }
 
-    async fn notify_deleted(&self, path: &Path) {
-        let (Some(parent), Some(name)) = (path.parent(), path.file_name()) else {
-            return;
-        };
-        let Some(parent) = self.display_path_for(parent) else {
-            return;
-        };
-        self.notify_mutation_impl(&parent, MutationEvent::Deleted(name.to_string_lossy().into_owned()))
-            .await;
+    fn make_one_directory<'a>(&'a self, remote: &'a str) -> Walking<'a, ()> {
+        Box::pin(async move {
+            let client = self.clone_client().await?;
+            self.mkcol(&client, remote).await
+        })
+    }
+}
+
+/// What the shared listing-cache patcher needs from this backend. ❗ There is no
+/// watcher here, so a patch is the ONLY thing that keeps a pane honest after a
+/// write. The rules: `cmdr_fs::volume::patching`.
+impl PatchSource for WebdavVolume {
+    fn patch_volume_id(&self) -> &str {
+        self.volume_id()
     }
 
-    async fn notify_renamed(&self, from: &Path, to: &Path) {
-        let (Some(from_parent), Some(from_name), Some(to_parent), Some(to_name)) =
-            (from.parent(), from.file_name(), to.parent(), to.file_name())
-        else {
-            return;
-        };
-        let (Some(from_parent), Some(to_parent)) =
-            (self.display_path_for(from_parent), self.display_path_for(to_parent))
-        else {
-            return;
-        };
-        let (from_name, to_name) = (
-            from_name.to_string_lossy().into_owned(),
-            to_name.to_string_lossy().into_owned(),
-        );
-        if from_parent == to_parent {
-            self.notify_mutation_impl(
-                &from_parent,
-                MutationEvent::Renamed {
-                    from: from_name,
-                    to: to_name,
-                },
-            )
-            .await;
-        } else {
-            self.notify_mutation_impl(&from_parent, MutationEvent::Deleted(from_name))
-                .await;
-            self.notify_mutation_impl(&to_parent, MutationEvent::Created(to_name))
-                .await;
-        }
+    fn patch_listings(&self) -> &dyn ListingHost {
+        self.inner.host.listings()
     }
 
-    /// Patches the listing cache for one change under `parent_path`. ❗ There is
-    /// no watcher here, so this is the ONLY thing that keeps a pane honest.
-    pub(super) async fn notify_mutation_impl(&self, parent_path: &Path, mutation: MutationEvent) {
-        use cmdr_fs::volume::DirectoryChange;
+    fn patch_stat<'a>(&'a self, path: &'a Path) -> Walking<'a, FileEntry> {
+        Box::pin(self.get_metadata_impl(path))
+    }
 
-        let listings = self.inner.host.listings();
-        let volume_id = self.volume_id();
-        match mutation {
-            MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
-                let Ok(entry) = self.get_metadata_impl(&parent_path.join(name)).await else {
-                    return;
-                };
-                let change = if matches!(mutation, MutationEvent::Created(_)) {
-                    DirectoryChange::Added(entry)
-                } else {
-                    DirectoryChange::Modified(entry)
-                };
-                listings.directory_changed(volume_id, parent_path, change);
-            }
-            MutationEvent::Deleted(name) => {
-                listings.directory_changed(volume_id, parent_path, DirectoryChange::Removed(name));
-            }
-            MutationEvent::Renamed { from, to } => {
-                let Ok(entry) = self.get_metadata_impl(&parent_path.join(&to)).await else {
-                    return;
-                };
-                listings.directory_changed(
-                    volume_id,
-                    parent_path,
-                    DirectoryChange::Renamed {
-                        old_name: from,
-                        new_entry: entry,
-                    },
-                );
-            }
-        }
+    fn patch_display_path(&self, path: &Path) -> Option<PathBuf> {
+        self.display_path_for(path)
     }
 }
