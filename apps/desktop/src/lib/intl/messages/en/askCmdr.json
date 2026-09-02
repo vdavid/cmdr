@@ -119,13 +119,13 @@
   "@askCmdr.tool.searchPhotos.done": {
     "description": "Past-tense label on the same tool line once the photo search finished. Pairs with askCmdr.tool.searchPhotos.doing; keep both the same length where the language allows."
   },
-  "askCmdr.tool.inspectFile.doing": "Looking at a file",
+  "askCmdr.tool.inspectFile.doing": "Looking inside files",
   "@askCmdr.tool.inspectFile.doing": {
-    "description": "Present-tense label on a tool line while the assistant reads one file's details and a bounded slice of its contents (inspect_file). Pairs with askCmdr.tool.inspectFile.done."
+    "description": "Present-tense label on a tool line while the assistant reads the details and a bounded part of the contents of one or more files (inspect_file; one call covers up to 200 files, so the label is plural-neutral). Pairs with askCmdr.tool.inspectFile.done."
   },
-  "askCmdr.tool.inspectFile.done": "Looked at a file",
+  "askCmdr.tool.inspectFile.done": "Looked inside files",
   "@askCmdr.tool.inspectFile.done": {
-    "description": "Past-tense label on the same tool line once the assistant finished reading the file. Pairs with askCmdr.tool.inspectFile.doing."
+    "description": "Past-tense label on the same tool line once the assistant finished reading the files. Pairs with askCmdr.tool.inspectFile.doing."
   },
   "askCmdr.tool.imageFacts.doing": "Reading what’s in your photos",
   "@askCmdr.tool.imageFacts.doing": {
@@ -375,12 +375,17 @@
   },
   "askCmdr.consent.item.names": "The names and paths of files and folders Cmdr looks at to answer you",
   "@askCmdr.consent.item.names": {
-    "description": "Consent list item: the file and folder names and paths Cmdr reads to answer. Never the file contents. Sentence case, no period.",
+    "description": "Consent list item: the file and folder names and paths Cmdr reads to answer. The contents Cmdr can read on request are a separate item, askCmdr.consent.item.contents. Sentence case, no period.",
     "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.item.sizes": "Their sizes and dates",
   "@askCmdr.consent.item.sizes": {
     "description": "Consent list item: the sizes and dates of those files and folders. Short noun phrase, sentence case.",
+    "screenshot": "ask-cmdr-consent.png"
+  },
+  "askCmdr.consent.item.contents": "Parts of files Cmdr opens to answer you: some text, PDF pages, what’s inside an archive, and a photo’s camera details and location",
+  "@askCmdr.consent.item.contents": {
+    "description": "Consent list item naming the file contents Ask Cmdr can read on request through its inspect tool: some lines of a text file, PDF text by page, the names of the files inside an archive, and a photo's EXIF data including where it was taken. Sentence case, no period. The apostrophes are U+2019.",
     "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.item.envelope": "What you’re looking at right now: your current folder, cursor, selection, and connected drives",
@@ -398,9 +403,9 @@
     "description": "Sixth item in the Ask Cmdr consent list of what leaves the Mac: the assistant's own memory notes about the user, which are re-sent with every single message. Sentence case, no period.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.noContents": "Cmdr doesn’t send the files themselves: no file contents, no photos, no thumbnails. Photo search is the one thing that reaches inside your images, and only when you have it search them: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
-  "@askCmdr.consent.noContents": {
-    "description": "Reassurance paragraph on the Ask Cmdr consent screen, and in the same disclosure in Settings > Ask Cmdr: the files themselves (contents, photos, thumbnails) are never sent; the one exception is photo search, which sends image-derived text (recognized text and tags) when used; and the assistant proposes file changes but never carries one out without the user approving it. The last sentence must NOT promise that the assistant changes nothing, because it writes its own notes and it proposes renames and moves. The apostrophes are U+2019.",
+  "askCmdr.consent.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When you ask about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
+  "@askCmdr.consent.contentsRule": {
+    "description": "Reassurance paragraph on the Ask Cmdr consent screen, and in the same disclosure in Settings > Ask Cmdr. Four facts to keep: whole files, photos, and thumbnails are never sent; when the user asks about a file, the assistant reads a limited part of it (some lines of text, a few PDF pages plus the PDF's title and author, the names of the files inside an archive, a photo's camera details including where it was taken); photo search sends the text recognized inside the matching photos and their tags; and the assistant proposes file changes but never carries one out without the user approving it. Must NOT promise that no file contents are sent, and must NOT promise that the assistant changes nothing (it writes its own notes and proposes renames and moves). The apostrophes are U+2019.",
     "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.consent.memory": "Ask Cmdr writes itself notes about you: how you like things organized, what you’ve turned down before, anything you ask it to remember. Those notes ride along with every message you send, for as long as they exist, and they can include text Cmdr recognized inside your photos. You can read them, or wipe them, any time in the Ask Cmdr settings.",
@@ -438,9 +443,9 @@
     "description": "Heading above the Ask Cmdr consent screen, shown ONLY to someone who already accepted an older version of this copy, so they can see why they are being asked again. Sentence case. The apostrophe is U+2019.",
     "screenshot": "ask-cmdr-consent.png"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr now keeps notes about you between chats, and it can start a conversation on its own when it notices something worth mentioning. That’s a bigger promise than the one you agreed to, so here it all is again.",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr can now look inside a file you ask about: some of its text, a few pages of a PDF, the list of files inside an archive, or a photo’s camera details and location. That’s a bigger promise than the one you agreed to, so here it all is again.",
   "@askCmdr.consent.whatsNew.body": {
-    "description": "Paragraph under askCmdr.consent.whatsNew.title, shown only to someone being asked again after the consent copy changed. Names the two new things (notes kept between chats, and starting conversations unprompted) and says why the whole screen is being shown again. The apostrophe is U+2019.",
+    "description": "Paragraph under askCmdr.consent.whatsNew.title, shown only to someone being asked again after the consent copy changed. Names the new thing (on request, the assistant reads parts of a file: some text, a few PDF pages, the names of the files inside an archive, or a photo's camera details and location) and says why the whole screen is being shown again. The apostrophes are U+2019.",
     "screenshot": "ask-cmdr-consent.png"
   },
   "askCmdr.forget.title": "Forget everything Ask Cmdr remembers?",

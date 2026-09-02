@@ -223,6 +223,20 @@ describe('AskCmdrConsent a11y', () => {
     target.remove()
   })
 
+  /**
+   * The disclosure the copy-version-4 re-prompt exists for: `inspect_file` reads parts of a
+   * file on request (text, PDF pages, archive entries, a photo's EXIF with its location), so
+   * the list names it beside names and sizes, and the reassurance paragraph must not promise
+   * "no file contents" any more.
+   */
+  it('discloses that parts of files are read on request', async () => {
+    const target = await mountGate()
+    expect(target.textContent).toContain(getMessage('askCmdr.consent.item.contents'))
+    expect(target.textContent).toContain(getMessage('askCmdr.consent.contentsRule'))
+    expect(target.textContent).not.toContain('no file contents')
+    target.remove()
+  })
+
   it('says nothing about a change to somebody who is opting in for the first time', async () => {
     const target = await mountGate()
     expect(target.textContent).not.toContain(getMessage('askCmdr.consent.whatsNew.title'))
