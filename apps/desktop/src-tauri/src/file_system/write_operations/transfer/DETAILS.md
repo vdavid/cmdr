@@ -368,11 +368,20 @@ against the width and reports `walkers=N` separately, and the walker's own row c
 header's arithmetic can be read back against the table. `TransferActivity::in_flight`, which the UI renders, still
 counts every row: it answers "how many things are open", not "how full is the window".
 
-**Row numbers are unique per walker, not per dump.** `merge.rs`'s `LeafPool` numbers its leaves from 0, and the driver
-numbers top-level sources from 0, so a walker and the first leaf under it both render as `#0`. The ` (walker)` marker is
-what tells them apart; with several directory sources in one operation the same number can appear once per walker.
-Namespacing the leaves under their source would mean carrying the source index on `MergeCtx` and through
-`copy_directory_streaming`, which is not worth it while the marker disambiguates.
+**A row's number is unique within the dump, and says where the row sits.** Every row carries a `TaskRow`: a TOP-LEVEL
+source renders as `#<its position in the source list>`, and a leaf its walker hands to the window renders as
+`#<that source>.<leaf>`. So `#3.7` tells a reader which of the operation's sources is producing the work, and `#3` is the
+walker to read for the walk it came out of, which a globally unique counter couldn't say. Depth doesn't enter the label:
+one walker numbers every leaf of its whole subtree from a single counter (`LeafPool.next_leaf`, which only climbs), so
+the number stays short and is never reused inside one operation.
+
+Two shapes keep it that way. `begin_task` takes the `TaskRow`, the same way it takes a `TaskRole`, so a new row can't
+join the table without deciding where it sits. And `MergeCtx` carries a `MergeProbe` (`strategy.rs`: the operation's
+probe PLUS the walker's own row) rather than a bare probe, so a walk can't be handed the table without being told which
+source to number its leaves under. ❗ Hand a walker a numbering scheme of its own and the collision is back: a source and
+its first leaf both reading `#0`, once per walker, is what the ` (walker)` marker alone had to disambiguate. The drivers'
+`transferring-source(#N …)` and `preparing-next(#N …)` details render through the same `TaskRow::label`, so the phase and
+the table can't drift apart.
 
 **Every driver sets its `DriverPhase`, and one that forgets says nothing.** The field is initialised to `Starting`, so a
 driver that never advances it reports `driver=starting()` however long it has been running. Both drivers set it now:

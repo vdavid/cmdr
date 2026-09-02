@@ -307,10 +307,11 @@ its own `begin_task` row and runs inside its own `CURRENT_TASK_PROBE` scope. Tha
 wedged instead of the folder, and makes `WriteProgressEvent::activity.in_flight` a real measurement of how full the
 window got. The top-level source's own row stays alongside them, in a phase the watchdog never acts on.
 
-**Whoever builds a window owes the probe two things**, and both are one line each: `MergeCtx.op_probe`, so the leaves can
+**Whoever builds a window owes the probe two things**, and both are one line each: `MergeCtx.probe`, so the leaves can
 open rows; and the SAME width to `register_operation`, so the dump's `in_flight=<open>/<width>` names the fan-out rather
-than the driver's own source loop. Miss the first and every leaf reports into the enclosing SOURCE's row through the
-outer task-local — the clobbering above, silently, plus a dump that names the folder. Miss the second and the table
+than the driver's own source loop. The first is a `MergeProbe` (`strategy.rs`), which pairs the operation's probe with
+the walker's own `TaskRow`: a walk can't be handed the table without also being told which source to number its leaves
+under. Miss the field entirely and every leaf reports into the enclosing SOURCE's row through the outer task-local — the clobbering above, silently, plus a dump that names the folder. Miss the second and the table
 declares a width nothing uses. The cross-volume move missed both while running a `transfer_concurrency`-wide walk, and a
 user's bundle shows what that costs: a 282-file folder to a NAS dumped `in_flight=1/1` with ten writes open, its one row
 the top-level directory carrying a leaf's byte count. Pinned for both drivers side by side in `probe_row_tests.rs`,

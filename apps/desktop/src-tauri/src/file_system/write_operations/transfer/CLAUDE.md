@@ -35,7 +35,7 @@ only as `transfer::volume::<item>` (contracts: `volume/CLAUDE.md`). All four cor
   single-shot write is exempt from its floor (nothing is open server-side mid-drain).
 - **Every phase announces itself to `transfer_probe.rs`, on ALL THREE streaming paths**: ❌ no `.await` without a
   phase, ❌ never derive a stall from FE timing. A new streaming path owes BOTH `register_operation` and a
-  `CURRENT_TASK_PROBE` scope (registering without binding reports nothing), plus a `MergeCtx.op_probe` if it opens a
+  `CURRENT_TASK_PROBE` scope (registering without binding reports nothing), plus a `MergeCtx.probe` if it opens a
   `FileWindow`. The watchdog judges movement by the counters the UI shows, and ❌ the probe never gets any of its own:
   one the drivers must feed is one a driver forgets. DETAILS § "The stall signal".
 - **Cancel has TWO tiers, and ❌ nothing a user clicks reaches tier 2.** Tier 1 (`state.backend_cancel`) travels via
