@@ -6,7 +6,7 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 pub(crate) mod analytics;
-mod archive_extract;
+pub(crate) mod archive_extract;
 mod byte_seek;
 pub mod content_kind;
 pub mod encoding;

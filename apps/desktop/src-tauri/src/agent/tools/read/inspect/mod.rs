@@ -11,8 +11,12 @@
 //!   matching lines take the window's place (`find.rs`), found with the viewer's search.
 //! - **image**: format and dimensions from the header, and a pointer to `image_facts` for
 //!   what's IN the picture. Image BYTES never cross (the DTO is text-only).
-//! - **empty** / **binary**: metadata only. PDFs and archives are `binary` here: their
-//!   text and entry listings need parsers this tool doesn't carry.
+//! - **archive**: the immediate children of a `.zip` / tar / 7z, or of a directory inside
+//!   one, listed through the same volume routing the pane browses with; a FILE inside an
+//!   archive is extracted to the viewer's bounded temp and read as its own kind
+//!   (`archive.rs`).
+//! - **empty** / **binary**: metadata only. PDFs are `binary` here: their text needs a
+//!   parser this tool doesn't carry.
 //!
 //! Every path gets a typed status (`ok` / `folder` / `missing` / `unreadable` /
 //! `unreachable` / `unsupportedVolume`), the whole answer is cut to the tool-result
@@ -32,6 +36,9 @@
 //! [`CALL_TIMEOUT`] for the call. A dead mount answers `unreachable`, never a wedged turn
 //! (principle 2, Rock solid). What the tool does with the thread it can't stop: `runner`.
 
+mod archive;
+#[cfg(test)]
+mod archive_tests;
 mod find;
 #[cfg(test)]
 mod find_tests;
@@ -51,6 +58,8 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
+use crate::file_system::volume::manager::get_volume_manager;
+use crate::file_viewer::archive_extract::extract_if_archive_inner;
 use crate::file_viewer::content_kind::{
     CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, looks_binary, media_mime,
 };
@@ -60,6 +69,8 @@ use crate::file_viewer::{Matcher, SearchMode, ViewerError};
 use crate::mcp::{ToolError, ToolResult, fit_to_result_budget, is_virtual_path};
 use crate::search::{format_size, format_timestamp};
 
+pub use archive::{ArchiveContent, ArchiveEntry};
+use archive::{ExtractFn, Routed};
 pub use find::{FindHits, FindLine};
 use runner::{InspectFn, RunnerConfig};
 pub use text::TextWindow;
@@ -107,6 +118,15 @@ pub enum UnreadableReason {
     Permission,
     /// Any other I/O failure (a failing disk, a symlink loop, a read that panicked).
     Io,
+    /// A password-protected archive, or an encrypted entry inside one. The tool has no
+    /// password path (the viewer prompts the user; the agent can't).
+    Encrypted,
+    /// An archive that didn't parse: structurally damaged, an unsupported codec, or a
+    /// tree past the archive layer's DoS cap.
+    Corrupt,
+    /// A file inside an archive over the viewer's 256 MiB extraction cap
+    /// (`archive_extract::EXTRACT_CAP_BYTES`), refused before any byte was extracted.
+    TooLargeToExtract,
 }
 
 /// What the header of an image says. Never pixels.
@@ -156,6 +176,7 @@ pub enum Content {
     Binary {},
     Text(TextContent),
     Image(ImageContent),
+    Archive(ArchiveContent),
 }
 
 /// A file that was read: its metadata and per-kind content. Boxed inside [`FileRow::Ok`]
@@ -168,8 +189,11 @@ pub struct InspectedFile {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
-    pub size_bytes: u64,
-    pub size_human: String,
+    /// Absent only for a directory inside an archive, which has no size to report.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size_bytes: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size_human: Option<String>,
     /// Last modified, RFC 3339 UTC seconds. Absent when the filesystem doesn't say.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified: Option<String>,
@@ -197,8 +221,9 @@ pub enum FileRow {
     Unreadable { path: String, reason: UnreadableReason },
     /// [`PATH_TIMEOUT`] passed: a disconnected drive or a hung mount.
     Unreachable { path: String },
-    /// An `mtp://` or direct `smb://` path: no local byte path to read (the viewer has
-    /// the same limit).
+    /// An `mtp://` or direct `smb://` path, or a path on a registered volume without
+    /// local filesystem access: no local byte path to read (the viewer has the same
+    /// limit).
     UnsupportedVolume { path: String },
 }
 
@@ -392,10 +417,31 @@ impl From<ViewerError> for ReadFailure {
 /// Inspect one path. Blocking: runs on the pool under the runner's deadline, which flips
 /// `cancel` when the path is out of time (the line-index build and the search check it).
 pub(crate) fn inspect_path(path: &str, ask: &TextAsk, cancel: &AtomicBool) -> FileRow {
+    inspect_path_with(path, ask, cancel, &extract_if_archive_inner)
+}
+
+/// [`inspect_path`] with the archive extract step injected (tests shrink its cap and
+/// redirect its temp).
+pub(crate) fn inspect_path_with(path: &str, ask: &TextAsk, cancel: &AtomicBool, extract: ExtractFn) -> FileRow {
     let owned = path.to_string();
     if is_virtual_path(path) {
         return FileRow::UnsupportedVolume { path: owned };
     }
+    // The volume that holds the path: the longest registered mount root over it, else the
+    // main drive. It is the archive's parent for routing, and the one place a path with no
+    // scheme can still be unreadable through `std::fs` (a device volume's namespace).
+    let manager = get_volume_manager();
+    let volume_id = manager.mount_id_for_path(path).unwrap_or_else(|| "root".to_string());
+    if manager
+        .get(&volume_id)
+        .is_some_and(|volume| !volume.supports_local_fs_access())
+    {
+        return FileRow::UnsupportedVolume { path: owned };
+    }
+    if let Routed::Row(row) = archive::route(path, &volume_id, ask, cancel, extract) {
+        return row;
+    }
+
     let p = Path::new(path);
     let meta = match std::fs::metadata(p) {
         Ok(m) => m,
@@ -405,32 +451,49 @@ pub(crate) fn inspect_path(path: &str, ask: &TextAsk, cancel: &AtomicBool) -> Fi
         return FileRow::Folder { path: owned };
     }
     let size = meta.len();
-    let content = match read_content(p, size, ask, cancel) {
-        Ok(c) => c,
-        Err(failure) => return status_for(owned, failure),
-    };
-    let modified_secs = meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs());
+    match read_content(p, size, ask, cancel) {
+        Ok(content) => ok_row(owned, p, Some(size), modified_secs(&meta), content),
+        Err(failure) => status_for(owned, failure),
+    }
+}
+
+/// An `ok` row: the metadata every kind shares, named after the requested path.
+fn ok_row(path: String, p: &Path, size: Option<u64>, modified_secs: Option<u64>, content: Content) -> FileRow {
+    let (modified, modified_human) = spoken_modified(modified_secs);
     FileRow::Ok(Box::new(InspectedFile {
-        path: owned,
+        path,
         name: p
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default(),
         extension: p.extension().map(|e| e.to_string_lossy().to_lowercase()),
         size_bytes: size,
-        size_human: format_size(size),
-        modified: modified_secs.and_then(|secs| {
-            chrono::DateTime::<chrono::Utc>::from_timestamp(secs as i64, 0)
-                .map(|t| t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
-        }),
-        modified_human: modified_secs.map(format_timestamp),
+        size_human: size.map(format_size),
+        modified,
+        modified_human,
         mime: mime_guess::from_path(p).first().map(|m| m.essence_str().to_string()),
         content,
     }))
+}
+
+/// A stat's mtime as Unix seconds, when the filesystem says.
+fn modified_secs(meta: &std::fs::Metadata) -> Option<u64> {
+    meta.modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+}
+
+/// A timestamp as the model reads it: RFC 3339 UTC seconds, and its `YYYY-MM-DD` twin
+/// (`search::format_timestamp`, never a second formatter).
+fn spoken_modified(secs: Option<u64>) -> (Option<String>, Option<String>) {
+    (
+        secs.and_then(|secs| {
+            chrono::DateTime::<chrono::Utc>::from_timestamp(secs as i64, 0)
+                .map(|t| t.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+        }),
+        secs.map(format_timestamp),
+    )
 }
 
 /// The typed status for a read that stopped short.
@@ -449,6 +512,17 @@ fn status_for(path: String, failure: ReadFailure) -> FileRow {
         },
         ReadFailure::Viewer(ViewerError::NotFound { .. }) => FileRow::Missing { path },
         ReadFailure::Viewer(ViewerError::IsDirectory) => FileRow::Folder { path },
+        ReadFailure::Viewer(ViewerError::ExtractTooLarge { .. }) => FileRow::Unreadable {
+            path,
+            reason: UnreadableReason::TooLargeToExtract,
+        },
+        // The archive layer's typed "couldn't serve this entry": damaged, or a codec it
+        // doesn't decode. (An encrypted entry never gets here; `archive.rs` refuses it
+        // from the index before extracting.)
+        ReadFailure::Viewer(ViewerError::Archive { .. }) => FileRow::Unreadable {
+            path,
+            reason: UnreadableReason::Corrupt,
+        },
         ReadFailure::Viewer(_) => FileRow::Unreadable {
             path,
             reason: UnreadableReason::Io,

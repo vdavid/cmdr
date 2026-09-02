@@ -77,7 +77,11 @@ strips the archive-path prefix (the FE sends full absolute paths), accepts an al
 empty path / `.` as the root `""`. `node_to_entry` builds each `FileEntry`'s full path as `archive_path/inner`; the root
 node (`""`) carries the archive's own file name and path. `ArchiveNode::modified` is Unix seconds, matching `FileEntry`
 (a negative timestamp is dropped); `extended_metadata_loaded` is `true` — the archive listing is complete in one pass,
-no deferred enrichment.
+no deferred enrichment. `FileEntry` has no `encrypted` field, so `index()` is `pub`: a host caller that must name
+encryption (the Ask Cmdr `inspect_file` tool) queries the same cached `ArchiveIndex` the listing maps from (`get` /
+`list` / `has_encrypted_entries`, keyed by the inner path `archive_boundary_candidate` splits off), so the two never
+disagree. For 7z the per-entry flag is derived from the entry's block: an `AES256_SHA256` coder in its chain
+(`sevenz.rs`); an entry with no block (a directory, an empty file) is never flagged.
 
 **Streaming reads.** `open_read_stream` / `open_read_stream_at_offset` parse the index (cached) and open the byte source
 on `spawn_blocking`, then wrap `ArchiveEntryReader` as an `ArchiveVolumeReadStream`. A compressed entry has no random

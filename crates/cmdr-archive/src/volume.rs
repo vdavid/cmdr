@@ -239,7 +239,16 @@ impl ArchiveVolume {
     /// path or the remote parent-backed path by [`parent_is_local`](Self::parent_is_local).
     /// The pure tree queries the callers run on the returned index don't block, so
     /// only the parse itself is off-executor.
-    async fn index(&self) -> Result<Arc<ArchiveIndex>, VolumeError> {
+    ///
+    /// Public because [`FileEntry`] can't carry everything an [`ArchiveNode`] knows
+    /// (`encrypted`, and the archive-wide
+    /// [`has_encrypted_entries`](ArchiveIndex::has_encrypted_entries)): a caller
+    /// that must name encryption (the Ask Cmdr `inspect_file` tool) queries the
+    /// index directly, keyed by the inner path `archive_boundary_candidate` splits
+    /// off. It is the same cached parse `list_directory` reads, so the two never
+    /// disagree. Fails as the listing does: `NeedsPassword` for a header-encrypted
+    /// 7z.
+    pub async fn index(&self) -> Result<Arc<ArchiveIndex>, VolumeError> {
         let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         let format = self.format;

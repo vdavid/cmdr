@@ -407,6 +407,11 @@ re-register path already builds. Full rationale, and the `SelfHandle` a backend 
 carry its ID, exactly one of them ACTIVE (the one `volume.root()` returns). `remove_root` and `mark_root_stale` move the
 ID between them; `unregister` drops the whole entry.
 
+`mount_id_for_path` (the longest non-`/` root over a path, for the index router and `inspect_file`'s parent-volume
+lookup) skips every registered `ArchiveVolume`: an archive's root is the `.zip` file, the longest prefix of every path
+inside it, but it is not a mount, and a path inside an archive belongs to the volume holding the `.zip`. Filtered by
+type rather than by LRU membership, because an archive is registered a moment before it enters the LRU.
+
 **Why**: one filesystem can be reached through several mount points and they all derive one volume ID (an SMB share keys
 on `(server, port, share)`, a local disk on its filesystem UUID). Binding the ID to one root chosen purely by path shape
 meant nothing re-resolved when that root went away: ejecting `/Volumes/naspi` while the same share was still mounted at

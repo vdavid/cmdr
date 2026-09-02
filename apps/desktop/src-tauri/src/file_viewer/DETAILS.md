@@ -146,6 +146,14 @@ Flow (in `open_session_inner`, before the media/text split):
 `remove_dir_all`s `extract_cleanup`. One temp per open — re-opening the same entry re-extracts (simple beats a dedup
 cache).
 
+**The second caller: the agent's `inspect_file`** (`agent/tools/read/inspect/archive.rs`). It calls the same
+`extract_if_archive_inner(path, volume_id)` for a FILE inside an archive, runs its per-kind pipeline on `temp_file`, and
+removes `cleanup_dir` in a `Drop` guard, so its temp lives for one read rather than a session. The contract both callers
+share, and any third one inherits: the 256 MiB cap and the refuse-before-extract guard are inside the function and stay
+there; a caller never extracts around them; and whoever receives an `ExtractedEntry` owns removing its `cleanup_dir`
+(the reaper only covers a crash). `extract_if_archive_inner_with` (explicit dir + cap) is `pub(crate)` for both
+callers' tests.
+
 **The cap is 256 MiB** (`EXTRACT_CAP_BYTES`), chosen to comfortably cover real preview content (documents, images, PDFs,
 most media) while bounding the temp write, extraction time, and decompression amplification. It's independent of the FE
 copy-selection ceiling (`COPY_REFUSE_BYTES`, 100 MiB): that caps a *selection*, this caps a whole-entry materialization.

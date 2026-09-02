@@ -458,6 +458,31 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn mount_id_for_path_skips_a_registered_archive_and_names_its_parent_mount() {
+        // An `ArchiveVolume`'s root is the `.zip` itself, the longest prefix of every
+        // path inside it. It is not a mount: a path inside the archive belongs to the
+        // volume holding the `.zip` (what `inspect_file` and the index router route by).
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("bundle.zip");
+        write_zip_magic(&zip);
+
+        let manager = VolumeManager::new();
+        manager.register(
+            "ext",
+            Arc::new(InMemoryVolume::new("Ext").with_root(dir.path()).with_local_fs_access()),
+        );
+        let inner = zip.join("docs/readme.txt");
+        assert!(manager.resolve("ext", &inner).await.is_archive);
+
+        let inner = inner.to_string_lossy();
+        assert_eq!(manager.mount_id_for_path(&inner).as_deref(), Some("ext"));
+        assert_eq!(
+            manager.mount_id_for_path(&zip.to_string_lossy()).as_deref(),
+            Some("ext")
+        );
+    }
+
+    #[tokio::test]
     async fn resolve_evicts_the_least_recently_used_archive_past_the_cap() {
         let dir = tempfile::tempdir().expect("tempdir");
         let manager = VolumeManager::new();

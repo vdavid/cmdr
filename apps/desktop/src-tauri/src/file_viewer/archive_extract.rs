@@ -11,7 +11,10 @@
 //!
 //! - **One temp per open.** Re-opening the same entry re-extracts — simple beats a
 //!   dedup cache. The temp is deleted when the viewer session closes (both close
-//!   paths funnel through [`super::session::close_session`]).
+//!   paths funnel through [`super::session::close_session`]). The second caller,
+//!   the agent's `inspect_file` (`agent/tools/read/inspect/archive.rs`), owns its
+//!   temp for one read and removes it in a `Drop` guard; the contract is the same:
+//!   whoever calls [`extract_if_archive_inner`] removes `cleanup_dir`.
 //! - **Bounded, refuse-before-extract.** The archive index reports the entry's
 //!   uncompressed size UP FRONT, so an oversize entry is refused with a typed
 //!   [`ViewerError::ExtractTooLarge`] before a single byte is written. That's also
@@ -38,7 +41,7 @@ use super::ViewerError;
 /// amplification. Chosen independently of the FE copy-selection ceiling
 /// (`COPY_REFUSE_BYTES`, 100 MiB) — that caps a *selection*, this caps a whole-entry
 /// materialization.
-pub(super) const EXTRACT_CAP_BYTES: u64 = 256 * 1024 * 1024;
+pub(crate) const EXTRACT_CAP_BYTES: u64 = 256 * 1024 * 1024;
 
 /// Prefix on each extraction's subdir. The startup reaper matches on it, and it's the
 /// `.cmdr-` family the project uses for recoverable temps.
@@ -54,13 +57,13 @@ static EXTRACT_DIR: LazyLock<RwLock<Option<PathBuf>>> = LazyLock::new(|| RwLock:
 
 /// A successful extraction: the temp file to open, and the subdir to remove on close.
 #[derive(Debug)]
-pub(super) struct ExtractedEntry {
+pub(crate) struct ExtractedEntry {
     /// The extracted entry on local disk, named with the entry's basename so the
     /// viewer shows the right title and classifies media by the right extension.
-    pub(super) temp_file: PathBuf,
+    pub(crate) temp_file: PathBuf,
     /// The `.cmdr-viewer-<uuid>/` subdir wrapping `temp_file`, removed wholesale on
     /// session close (stored on the `ViewerSession`).
-    pub(super) cleanup_dir: PathBuf,
+    pub(crate) cleanup_dir: PathBuf,
 }
 
 /// Records the per-instance extract dir and reaps any orphans left in it by a crash.
@@ -112,7 +115,7 @@ pub(super) fn is_orphan_extract_name(name: &str) -> bool {
 /// single-sourced with the listing/copy paths — and a `.zip` on a REMOTE parent
 /// (direct SMB / MTP) is pulled through that parent, not a hardcoded `"root"`.
 /// Blocking: run it inside `spawn_blocking`, not on the IPC thread.
-pub(super) fn extract_if_archive_inner(
+pub(crate) fn extract_if_archive_inner(
     requested: &Path,
     volume_id: &str,
 ) -> Result<Option<ExtractedEntry>, ViewerError> {
@@ -120,7 +123,7 @@ pub(super) fn extract_if_archive_inner(
 }
 
 /// [`extract_if_archive_inner`] with an explicit dir + cap, for tests.
-pub(super) fn extract_if_archive_inner_with(
+pub(crate) fn extract_if_archive_inner_with(
     requested: &Path,
     volume_id: &str,
     dir: &Path,

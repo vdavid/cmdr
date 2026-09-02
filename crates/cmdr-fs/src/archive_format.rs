@@ -41,6 +41,21 @@ pub enum TarCodec {
 }
 
 impl ArchiveFormat {
+    /// The format as a person (or a model) names it: `zip`, `tar`, `tar.gz`,
+    /// `tar.bz2`, `tar.xz`, `tar.zst`, `7z`. The canonical suffix without its dot,
+    /// so it round-trips through [`format_for_name`].
+    pub fn label(self) -> &'static str {
+        match self {
+            ArchiveFormat::Zip => "zip",
+            ArchiveFormat::Tar(TarCodec::Plain) => "tar",
+            ArchiveFormat::Tar(TarCodec::Gzip) => "tar.gz",
+            ArchiveFormat::Tar(TarCodec::Bzip2) => "tar.bz2",
+            ArchiveFormat::Tar(TarCodec::Xz) => "tar.xz",
+            ArchiveFormat::Tar(TarCodec::Zstd) => "tar.zst",
+            ArchiveFormat::SevenZ => "7z",
+        }
+    }
+
     /// Whether extracting from this format is inherently SEQUENTIAL: the whole
     /// stream (or a solid block) must be decoded front-to-back, so there's no
     /// cheap random access to an arbitrary entry. A plain `.tar` and a `.zip` are
@@ -108,6 +123,21 @@ pub fn has_supported_archive_extension(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_label_round_trips_through_format_for_name() {
+        for format in [
+            ArchiveFormat::Zip,
+            ArchiveFormat::Tar(TarCodec::Plain),
+            ArchiveFormat::Tar(TarCodec::Gzip),
+            ArchiveFormat::Tar(TarCodec::Bzip2),
+            ArchiveFormat::Tar(TarCodec::Xz),
+            ArchiveFormat::Tar(TarCodec::Zstd),
+            ArchiveFormat::SevenZ,
+        ] {
+            assert_eq!(format_for_name(&format!("a.{}", format.label())), Some(format));
+        }
+    }
 
     #[test]
     fn detects_tar_codecs_by_suffix() {

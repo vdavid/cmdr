@@ -200,7 +200,7 @@ fn an_empty_file_is_empty_and_a_pdf_is_binary() {
     std::fs::write(&empty, b"").unwrap();
     let file = file_of(&inspect(&empty)).clone();
     assert_eq!(file.content, Content::Empty {});
-    assert_eq!((file.size_bytes, file.size_human.as_str()), (0, "0 B"));
+    assert_eq!((file.size_bytes, file.size_human.as_deref()), (Some(0), Some("0 B")));
 
     let pdf = dir.join("doc.pdf");
     std::fs::write(&pdf, b"%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj\n%%EOF\n").unwrap();
@@ -237,7 +237,7 @@ fn an_ok_row_carries_spoken_size_and_date_beside_the_raw_values() {
     let file = file_of(&inspect(&path)).clone();
     assert_eq!(file.name, "a.md");
     assert_eq!(file.extension.as_deref(), Some("md"));
-    assert_eq!((file.size_bytes, file.size_human.as_str()), (8, "8 B"));
+    assert_eq!((file.size_bytes, file.size_human.as_deref()), (Some(8), Some("8 B")));
     assert_eq!(file.mime.as_deref(), Some("text/markdown"));
     let modified = file.modified.expect("a fresh file has an mtime");
     let human = file.modified_human.expect("and its spoken twin");
@@ -520,8 +520,8 @@ async fn a_read_that_honours_the_cancel_flag_hands_back_its_partial_row() {
             path: path.to_string(),
             name: "slow.log".into(),
             extension: Some("log".into()),
-            size_bytes: 1,
-            size_human: "1 B".into(),
+            size_bytes: Some(1),
+            size_human: Some("1 B".into()),
             modified: None,
             modified_human: None,
             mime: None,
@@ -557,8 +557,8 @@ fn dense_row(index: usize) -> FileRow {
         path: format!("/logs/app-{index:03}.log"),
         name: format!("app-{index:03}.log"),
         extension: Some("log".into()),
-        size_bytes: 1_000_000,
-        size_human: "976.6 KB".into(),
+        size_bytes: Some(1_000_000),
+        size_human: Some("976.6 KB".into()),
         modified: Some("2026-09-02T08:00:00Z".into()),
         modified_human: Some("2026-09-02".into()),
         mime: None,

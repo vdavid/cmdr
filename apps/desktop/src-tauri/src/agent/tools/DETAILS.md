@@ -56,9 +56,12 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   50, each `{ line, matches, text }` with `text` a 300-char snippet around the first match), `totalMatches`,
   `matchesCapped` (the viewer's 10,000-match cap), `returnedLines` / `truncated`, and `scanIncomplete` with
   `bytesScanned` / `totalBytes` when the deadline stopped the scan. One `find` applies to every text path in the call;
-  images give `format` + dimensions and point at `image_facts`; empty and binary (which today includes PDFs
-  and archives) carry metadata only. Per-path statuses: `ok` / `folder` / `missing` / `unreadable { reason }` /
-  `unreachable` / `unsupportedVolume`. The call reports `total` / `returned` / `truncated` and names every path with
+  images give `format` + dimensions and point at `image_facts`; an archive (`.zip`, tar, 7z), or a directory inside
+  one, lists its immediate children (`format`, `inner`, up to 200 `entries` with `isDir`, `size` + `sizeHuman`,
+  `modified` + `modifiedHuman`, `encrypted`, plus `total` / `returned` / `truncated` and `hasEncryptedEntries`), and a
+  FILE inside an archive is read as its own kind through the viewer's bounded temp; empty and binary (which today
+  includes PDFs) carry metadata only. Per-path statuses: `ok` / `folder` / `missing` /
+  `unreadable { permission | io | encrypted | corrupt | tooLargeToExtract }` / `unreachable` / `unsupportedVolume`. The call reports `total` / `returned` / `truncated` and names every path with
   no row in `unanswered`. The sole disk reader among the handlers; how it reads and how it times out: § Reading a
   file the way the viewer does.
 - **`list_volumes`** (`read/volumes.rs`) — every volume with `indexStatus` (`fresh`/`scanning`/`stale`/`off`) and, for
@@ -111,7 +114,7 @@ auto-dispatched ones the user never previews, and `redact::redact_line_salted` i
 sentence about which of the user's folders were boring. Log that a wake was quiet, never what it said.
 
 **What it costs everyone else.** The schema is prefix, so all 17 declarations are paid on every rail turn: this one is
-97 tokens of the 5,241 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
+97 tokens of the 5,257 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
 being able to stay silent, and it's why the description is two sentences.
 
 ## The two tools that write (`memory_write`, `memory_edit`)
@@ -136,8 +139,8 @@ folder is for. It is also the mechanism behind the injection risk the prompt fen
 
 ## Reading a file the way the viewer does (`inspect_file`)
 
-The tool re-derives nothing the viewer already ships. Per behavior, the symbol it calls (`read/inspect/mod.rs` and
-`text.rs`):
+The tool re-derives nothing the viewer already ships. Per behavior, the symbol it calls (`read/inspect/mod.rs`,
+`text.rs`, `archive.rs`):
 
 - **Head**: one 64 KB read per file. `encoding::detect_from_head` takes all of it; the classifier takes the first
   `content_kind::CLASSIFY_HEAD_LEN` bytes of the same buffer.
@@ -173,9 +176,30 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   scan that didn't reach the cap or the end (`bytesScanned` / `totalBytes` say where, spoken twins beside them). A
   `find` row never sets `lineNumbersApproximate` (nothing in it is estimated) and has `totalLines` only for a FullLoad
   file. Non-text rows are untouched by `find`.
-- **Not local**: `mcp::is_virtual_path` (`mtp://`, direct `smb://`) → `unsupportedVolume`. A `missing` there would be
-  a lie the model relays. An OS-mounted share (`/Volumes/share`) is a real path and flows through; the timeout is what
-  protects the turn.
+- **Not local**: `mcp::is_virtual_path` (`mtp://`, direct `smb://`) → `unsupportedVolume`, and so does a scheme-less
+  path whose owning volume (`VolumeManager::mount_id_for_path`, else `root`) reports
+  `!supports_local_fs_access()`. A `missing` there would be a lie the model relays. An OS-mounted share
+  (`/Volumes/share`) is a real path and flows through; the timeout is what protects the turn.
+- **Archives** (`archive.rs`): the pane's own routing, before any `std::fs`. A path with an archive-named component
+  (`cmdr_archive::archive_boundary_candidate`, a pure string check) goes through `VolumeManager::resolve(volume_id,
+  path)` (`block_on` from the blocking thread, as `archive_extract` does): the shared boundary detector confirms the
+  format by name and magic bytes and hands back the on-demand `ArchiveVolume`, or a passthrough for a mislabeled
+  `.zip`, which then reads as text or binary. The row is then built from the archive's cached index
+  (`ArchiveVolume::index()`, the seam the volume opened for this: `FileEntry` has no `encrypted` field, and
+  `list_directory` is a thin map over the same nodes; the key is the inner path the boundary candidate split off): a
+  directory node (the root, or one inside) →
+  `Content::Archive` from `index.list(inner)`, cut at `MAX_ARCHIVE_ENTRIES` (200), dirs first as the pane lists them,
+  format from `ArchiveFormat::label()`; the archive root's row metadata is the `.zip` file's own `std::fs` stat, an
+  inner directory's `sizeBytes` is absent (never a zero). A file node → refused `unreadable { encrypted }` from the
+  node's flag BEFORE extraction (the tool has no password path), else
+  `archive_extract::extract_if_archive_inner(path, volume_id)` streams it to the viewer's bounded temp (the same
+  256 MiB refuse-before-extract cap; `ExtractTooLarge` → `tooLargeToExtract`, `ViewerError::Archive` → `corrupt`),
+  `read_content` runs the normal per-kind pipeline on `temp_file` (so `find` and the window work inside a zip), and
+  `TempCleanup` removes `cleanup_dir` in `Drop`, so an early return or a panic can't leak it. A zip inside a zip is
+  `binary`: the boundary is the leftmost archive component, as in the pane. The parse errors map typed:
+  `NeedsPassword` (a header-encrypted 7z) → `encrypted`, `IoError` / `NotSupported` (the archive layer's damaged /
+  unsupported / over-cap collapse) → `corrupt`. The extract step is injected (`ExtractFn`) so the tests shrink the cap
+  and watch the temp dir.
 - **Statuses from I/O**: `NotFound` / `NotADirectory` → `missing`; `PermissionDenied` → `unreadable { permission }`
   (EACCES and a Full Disk Access refusal are one kind of `std::io::Error`, so the enum doesn't pretend to tell them
   apart); anything else, including a read that panicked → `unreadable { io }`.
