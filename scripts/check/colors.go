@@ -34,3 +34,9 @@ func indentOutput(output, indent string) string {
 func printError(format string, args ...interface{}) {
 	_, _ = fmt.Fprintf(os.Stderr, "%s%s%s\n", colorRed, fmt.Sprintf(format, args...), colorReset)
 }
+
+// printNotice prints a message in yellow, for a run that stopped on a signpost
+// rather than on something wrong.
+func printNotice(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, "%s%s%s\n", colorYellow, fmt.Sprintf(format, args...), colorReset)
+}

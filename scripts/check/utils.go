@@ -30,19 +30,18 @@ func findRootDir() (string, error) {
 	}
 }
 
-// enforceMainCloneGuard exits with a message when checks are run in the main
-// clone without the override. The checks auto-fix and reformat files, and the
-// solo-dev workflow only ever does that in a worktree. CI is exempt (it runs
-// with --ci in the main checkout); pass --allow-main / -m for a deliberate local
-// run. Call this AFTER the read-only early-exit flags (--help, --docs-graph),
-// so those still work in the main clone.
+// enforceMainCloneGuard stops a run started in the main clone, so a check meant
+// for a worktree doesn't auto-fix files there by surprise. It's a signpost, not
+// a policy: -m is an ordinary way to run, and CI is exempt (it uses --ci). Call
+// this AFTER the read-only early-exit flags (--help, --docs-graph), so those
+// still work in the main clone.
 func enforceMainCloneGuard(flags *cliFlags, rootDir string) {
 	if flags.ciMode || flags.allowMain || !isMainWorkingTree(rootDir) {
 		return
 	}
-	printError("Refusing to run in the main clone (%s).\n"+
-		"Checks run in a worktree — cd into .claude/worktrees/<slug>, "+
-		"or pass --allow-main (-m) if you really mean it.", rootDir)
+	printNotice("In the main clone (%s), not a worktree.\n"+
+		"Checks auto-fix files. Add -m to run here, "+
+		"or cd into .claude/worktrees/<slug>.", rootDir)
 	os.Exit(1)
 }
 
