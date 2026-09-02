@@ -44,7 +44,7 @@
       "groupName": "website non-major updates"
     },
     {
-      "description": "Worker + dashboard deps: both are Cloudflare-targeted and share workers-types.",
+      "description": "Worker + dashboard deps: both are Cloudflare-targeted and share wrangler.",
       "matchFileNames": ["apps/api-server/**", "apps/analytics-dashboard/**"],
       "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
       "groupName": "cloudflare apps non-major updates"

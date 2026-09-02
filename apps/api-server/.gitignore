@@ -1,5 +1,10 @@
 node_modules/
 dist/
+# Worker runtime + `Env` types, generated from `wrangler.toml` by `wrangler types` (the `prepare`
+# script, and the `api-server-worker-types` check). Generated rather than tracked: it's 14k lines of
+# upstream runtime surface pinned to the installed wrangler's `workerd`, so a tracked copy would
+# rewrite wholesale on every wrangler bump and could drift from `compatibility_date`.
+worker-configuration.d.ts
 .wrangler/
 keys/
 # Glob, not the bare name: a `.dev.vars.backup` / `.dev.vars.local` sitting next to the

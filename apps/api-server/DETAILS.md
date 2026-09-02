@@ -249,10 +249,20 @@ touches `update_checks`). The only remaining Analytics Engine dataset is `DEVICE
 other state (license codes, activation counter, device sets, link codes, blog likes) lives in Cloudflare KV. Short codes
 never expire (perpetual licenses last forever); subscription validity is checked live via the Paddle API.
 
-**Workers types entrypoint:** `tsconfig.json` pins `@cloudflare/workers-types/2023-07-01`, not the package root (which
-resolves to the 2021-11-03 snapshot). The root snapshot predates `R2ListOptions.include` and `R2Object.customMetadata`,
-which `/admin/error-reports` needs. The dated entrypoint matches the runtime better anyway (`compatibility_date` is
-2025-01-01); don't revert it to the bare package name.
+**Workers types:** there's no `@cloudflare/workers-types` dependency. `wrangler types` generates
+`worker-configuration.d.ts` from `wrangler.toml`, and `tsconfig.json` includes it. Two things come out of that file: the
+runtime globals (`KVNamespace`, `D1Database`, `R2Bucket`, `RateLimit`, and the rest) at this Worker's
+`compatibility_date`, and an `Env` interface derived from the bindings and `[vars]`. Deriving from the compatibility
+date is the point: the published package tracks the newest runtime, so it types APIs a Worker pinned to 2025-01-01 can't
+call.
+
+The file is gitignored, and three things write it: the `prepare` script (so a plain `pnpm install` leaves it in place),
+the `typecheck` script humans run standalone, and the `api-server-worker-types` check the ESLint and typecheck lanes
+depend on. It's regenerated rather than compared, so it can't go stale. `Bindings` in `src/types.ts` stays hand-written
+and is what the code uses: it carries the secrets `wrangler.toml` can't know about, and marks the optional ones the
+routes degrade over.
+
+Rerun `pnpm --filter @cmdr/api-server types:gen` after editing bindings or vars in `wrangler.toml`.
 
 ## Cron handler
 
