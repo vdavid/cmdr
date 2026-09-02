@@ -553,7 +553,7 @@ Pinned by `strategy_single_shot_tests.rs` (both directions: single-shot writes a
 too big, or a backend that makes no promise, still stages; a caller temp is never converted),
 `staged_write::tests::a_single_shot_write_targets_the_final_name_and_needs_no_landing`, `cmdr-smb`'s `streams_test.rs` (the boundary of
 `fits_one_compound_write`, and no promise without a live session), and — against real Samba —
-`cmdr-smb`'s `streaming_integration_test.rs::smb_integration_a_single_shot_write_leaves_as_one_compound_frame`, which counts wire
+`cmdr-smb`'s `wire_shape_integration_test.rs::smb_integration_a_single_shot_write_leaves_as_one_compound_frame`, which counts wire
 frames to prove the promised write really is one compound frame.
 
 ## Pause and the concurrent copy path
