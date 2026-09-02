@@ -32,8 +32,11 @@ export function useInlineSize(node: HTMLElement, params: InlineSizeParams): Acti
   let onResize = params.onResize
 
   const observer = new ResizeObserver((entries) => {
-    const entry = entries[entries.length - 1]
-    if (entry) onResize(entry.contentRect.width)
+    // Only the last entry matters: the batch is this one element's sizes, oldest
+    // first. `contentRect`, not `contentBoxSize`, which is Safari 15.4+ and so
+    // above the floor this action exists for.
+    if (entries.length === 0) return
+    onResize(entries[entries.length - 1].contentRect.width)
   })
   observer.observe(node)
 

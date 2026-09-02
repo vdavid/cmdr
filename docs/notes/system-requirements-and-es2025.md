@@ -10,11 +10,11 @@ Two numbers have to agree, and nothing but this note ties them together:
   12.0 Monterey today. It's also the floor `desktop-rust-macos-availability` enforces every Objective-C selector
   against.
 - **`build.target` in `apps/desktop/vite.config.js`** is what the frontend bundle is transpiled to: `safari15` today,
-  because Cmdr's WebKit IS the system Safari and Monterey ships Safari 15.0. `build.cssTarget` follows it, so JS and
-  CSS share one floor. `desktop-vite-build-target` fails the build if the pin goes missing or stops naming a Safari
-  version, but it deliberately enforces no relationship between the two numbers: mapping a macOS version to "the WebKit
-  we must assume" is a product call, not a fact (an untouched Monterey runs Safari 15.0, a fully patched one reaches
-  17.6). Move them together, by hand, and update this section.
+  because Cmdr's WebKit IS the system Safari and Monterey ships Safari 15.0. `build.cssTarget` follows it, so JS and CSS
+  share one floor. `desktop-vite-build-target` fails the build if the pin goes missing or stops naming a Safari version,
+  but it deliberately enforces no relationship between the two numbers: mapping a macOS version to "the WebKit we must
+  assume" is a product call, not a fact (an untouched Monterey runs Safari 15.0, a fully patched one reaches 17.6). Move
+  them together, by hand, and update this section.
 
 The website's download page lists no minimum OS version; only "macOS (Apple Silicon and Intel)" and "Linux: alpha."
 
@@ -98,8 +98,8 @@ Everything else needs macOS 14.7+, so adopting them means declaring that floor a
 5. For Linux: ask the alpha tester what distro they're on. Anything beyond `Set` methods needs WebKitGTK 2.46+, which
    Ubuntu 24.04 doesn't ship (24.04 has 2.44).
 
-If we'd rather keep the floor where it is, leave `build.target` on `safari15` and skip these features. Note that
-raising the floor takes BOTH numbers: the plist and `build.target`.
+If we'd rather keep the floor where it is, leave `build.target` on `safari15` and skip these features. Note that raising
+the floor takes BOTH numbers: the plist and `build.target`.
 
 ## Other simplifications worth remembering for next time
 
