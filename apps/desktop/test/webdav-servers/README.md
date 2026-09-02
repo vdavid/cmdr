@@ -94,8 +94,13 @@ export CMDR_WEBDAV_TEST_URL=https://cloud.example.com/remote.php/dav/files/you/
 export CMDR_WEBDAV_TEST_USERNAME=you
 read -rs CMDR_WEBDAV_TEST_PASSWORD && export CMDR_WEBDAV_TEST_PASSWORD   # never on a command line
 export CMDR_WEBDAV_TEST_ROOT=/cmdr-scratch                               # optional; defaults to the whole account
-cargo nextest run -p cmdr-webdav --run-ignored only
+cargo nextest run -p cmdr-webdav --run-ignored only --profile own-server
 ```
+
+❗ **`--profile own-server` is not optional.** The default profile caps every test at 8 s, which is right for a
+`mod_dav` container on loopback and impossible for a real server: 13 of 26 cells died at that cap against the Nextcloud
+fixture, which is only a PHP hop away. The profile lifts it to 120 s and drops to four threads, because the far side is
+somebody's real account. `.config/nextest.toml` carries the reasoning.
 
 - ❗ **The write cells write.** They create `cmdr-test-<pid>-<n>/` at the root you name, fill it, and remove it again.
   Point `CMDR_WEBDAV_TEST_ROOT` at a directory you would not miss.
@@ -117,6 +122,10 @@ watch them go by. They need something only the seeded fixture has:
 - `quota_reports_the_accounts_own_numbers_not_the_servers_disk` and
   `an_account_with_no_quota_reports_no_free_space_at_all` — the Nextcloud fixture's two accounts and its exact 5 GiB
   quota.
+
+All 26 selected cells pass against the fixture's own Nextcloud through this path (measured 2026-09-02), the seven
+conformance cells included — so the `Volume` contract those cells hold every backend to survives sabre/dav's verbs, not
+only Apache's.
 
 Everything else is honest anywhere: the seven conformance cells, the write and rename and copy and delete cells, the
 cancellation cells, and the two credential refusals all build their own scratch directory or assert something

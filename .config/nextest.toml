@@ -414,6 +414,31 @@ fail-fast = false
 failure-output = "immediate"
 slow-timeout = { period = "40s", terminate-after = 1 }
 
+[profile.own-server]
+# For `CMDR_WEBDAV_TEST_URL`: the `cmdr-webdav` suite aimed at a real server
+# (a Nextcloud, a Synology, a Fastmail account) instead of the Docker fixtures.
+# `apps/desktop/test/webdav-servers/README.md` § "Against a server of your own"
+# is the recipe; this is the profile it tells you to pass.
+#
+# ❗ No `inherits`, so the per-test caps above don't apply. They are tuned for a
+# `mod_dav` container on loopback, and every one of these cells is tens of round
+# trips: aimed at a real server the same cells all died at the global 8 s cap
+# (13 of 26, measured 2026-09-02 against the Nextcloud fixture, which is only a
+# PHP hop away — a server across the internet is worse). 120 s is a hang
+# backstop, not a runtime.
+#
+# ❌ Not the default profile's problem to solve. Against the fixtures these cells
+# run in milliseconds, and loosening the global cap for everyone would spend the
+# fast feedback the 8 s policy buys on a case nothing automated ever hits.
+# `test-threads = 4` because the far side is somebody's real account, not a
+# container we own.
+test-threads = 4
+retries = 0
+fail-fast = false
+failure-output = "immediate"
+success-output = "immediate"
+slow-timeout = { period = "120s", terminate-after = 1 }
+
 [profile.ci]
 # Inherit from default profile
 inherits = "default"

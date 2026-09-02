@@ -137,9 +137,10 @@ is the one place to change with it. And two of its cells build a `reqwest` reque
 `Volume` method, because what they ask is what the server does with a request this backend never sends.
 
 Every connection in `volume::testing` resolves through `fixture_target`, so `CMDR_WEBDAV_TEST_URL` (plus `_USERNAME`,
-`_PASSWORD`, and an optional `_ROOT`) points the whole suite at a server of your own with no code change. The cells that
-can only be honest against the seeded fixture say so and return; which ones, and what the write cells do to a real
-account, is in `apps/desktop/test/webdav-servers/README.md`.
+`_PASSWORD`, and an optional `_ROOT`) points the whole suite at a server of your own with no code change, under the
+`own-server` nextest profile. All 26 selected cells pass that way against the fixture's own Nextcloud (2026-09-02),
+conformance cells included. The cells that can only be honest against the seeded fixture say so and return; which ones,
+and what the write cells do to a real account, is in `apps/desktop/test/webdav-servers/README.md`.
 
 ## Not supported, and say so out loud
 
