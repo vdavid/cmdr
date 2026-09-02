@@ -211,11 +211,13 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **An incident diagnosis kept for the lever it rules out:**
 
-- `smb-credit-stall-2026-09-01.md` — why a 300 GB SMB-to-SMB copy stopped moving bytes 30 seconds into its copy phase.
-  **The compound fast-path charged SMB credits for `max_read` (8 MB, 130 credits) rather than for the 4 MB file it was
-  reading**, which capped the connection at three concurrent reads against a 512-credit window while the transfer
-  launched 10, so seven tasks parked on credits that couldn't arrive. Read it before anyone raises `CREDIT_TARGET`,
-  widens the fast-path threshold, or adds adaptive concurrency backoff: the arithmetic says the charge was the lever and
-  the other three aren't. Carries the stall dump that confirmed the three-of-10 prediction exactly, the truncation guard
-  the fix had to move, and the two things it does NOT explain (the destination's independently slow send side, and a
-  Pi-class source ceiling of 7.4 MB/s).
+- `smb-credit-stall-2026-09-01.md` — why a 300 GB SMB-to-SMB copy stopped moving bytes 30 seconds into its copy phase,
+  and the separate defect the log exposed underneath it. **The stall itself was a weak link** (the laptop sat far from
+  the router, and both shares ride one radio); **the defect is that the compound fast-path charged SMB credits for
+  `max_read` (8 MB, 130 credits) rather than for the 4 MB file it was reading**, capping the connection at three
+  concurrent reads against a 512-credit window while the transfer launched 10. Read it before anyone raises
+  `CREDIT_TARGET`, widens the fast-path threshold, or adds adaptive concurrency backoff: the arithmetic says the charge
+  was the lever and the other three aren't. Read it also before crediting the fix with curing a slow copy — it moves the
+  ceiling from three concurrent reads to seven and does nothing for a weak link. Carries the stall dump that confirmed
+  the three-of-10 prediction exactly, the truncation guard the fix had to move, and 2026-09-02 throughput baselines for
+  the reference NAS (24.7 MB/s up, 40.2 MB/s down, 8.6 MB/s on 4 MB files) to compare against before blaming a server.

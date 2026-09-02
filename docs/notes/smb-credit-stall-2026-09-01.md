@@ -1,12 +1,21 @@
 # The SMB compound read's credit over-charge, 2026-09-01
 
-A 300 GB SMB-to-SMB copy stalled about 30 seconds into its copy phase. **The cause was the compound fast-path charging
-SMB credits for `max_read` (8 MB, 130 credits) instead of for the file it was actually reading (4 MB, 66 credits), which
-capped the connection at three concurrent reads against a client window of 512 while the transfer launched 10.** Seven
-tasks parked waiting for credits that couldn't arrive, and the transfer stopped moving bytes.
+A 300 GB SMB-to-SMB copy stopped moving bytes about 30 seconds into its copy phase. Two separate things were true, and
+keeping them apart is the whole value of this note.
+
+**What actually stalled the copy was a weak network link**: the laptop was much further from the router than usual that
+day, and both shares ride the same radio, so reads and writes degraded together. That is not a Cmdr defect and no code
+change here would have prevented it.
+
+**What the log exposed underneath it is a real defect**: the compound fast-path charged SMB credits for `max_read` (8
+MB, 130 credits) rather than for the 4 MB file it was actually reading (66 credits), capping the connection at three
+concurrent reads against a client window of 512 while the transfer launched 10. That cap applies on a perfect link too;
+the bad link is only what made it visible, by stretching a stall long enough to dump the in-flight table.
 
 Read this before anyone raises `CREDIT_TARGET`, widens the compound fast-path threshold, or adds adaptive concurrency
-backoff to the transfer engine. It carries the arithmetic that says which of those is the real lever.
+backoff to the transfer engine. It carries the arithmetic that says which of those is the real lever. Read it also
+before crediting the credit fix with curing a slow copy: it raises the ceiling from three concurrent reads to seven, and
+does nothing whatsoever for a weak link.
 
 ## What the evidence was
 
@@ -54,18 +63,23 @@ available.
 requests at 8 credits each for 512 KB chunks)". The compound read violated that stated invariant by a factor of four,
 which is the tell that the charge, not the window, had drifted.
 
-## What is NOT explained by this
+## What the credit story does NOT account for
 
-Two things in the same log that the credit story doesn't account for, both still open:
+Two things in the same log that the arithmetic above does not explain, and that the fix does not improve:
 
-- **The destination's send side was slow independently.** naspi's socket accepted 425 to 767 KB/s, with 1 MB WRITE
-  frames queued 14 to 40 seconds and taking 2.2 to 2.9 seconds each to reach the socket. The three tasks that did read
-  their bytes then jammed writing them. Whether that's the Mac's link carrying both halves of the copy, the QNAP being
-  busy under a sustained write, or something else isn't answerable from this log. Time a `smb2 put` of a few hundred MB
-  to naspi on its own before blaming the transfer engine for it.
+- **The destination's send side was slow, and the destination was not why.** naspi's socket accepted 425 to 767 KB/s,
+  with 1 MB WRITE frames queued 14 to 40 seconds and taking 2.2 to 2.9 seconds each to reach the socket. **Measured the
+  same path on 2026-09-02 with the `smb2` CLI** (Tailscale reported a direct route via 192.168.1.111 at 4 ms, so this is
+  the LAN path, not a relay): one 200 MB file uploaded at **24.7 MB/s** and downloaded at **40.2 MB/s**, and 30 separate
+  4 MB files uploaded serially at **8.6 MB/s** including a fresh connection, session setup, and tree connect per file.
+  Roughly 33× what the stalled copy managed, which rules out both "the QNAP was busy" and "small files are expensive on
+  this NAS". The explanation is the link: the laptop sat much further from the router during the stalled run, and both
+  shares share one radio, so a weak signal shows up as slow sends to one host and unanswered reads from the other at the
+  same moment. That is also why the source stopped responding for 16+ seconds, which is what kept the credit pool from
+  refilling. These numbers are the baseline to compare against before blaming either server again.
 - **The source is slow hardware.** The 2026-08-14 run of the same copy averaged 7.4 MB/s over 67 minutes, which reads
-  like a Pi-class ceiling. Ten concurrent readers against one USB disk is seek thrash regardless of credits. The credit
-  fix removes the self-inflicted half of the problem; it doesn't make the Pi fast.
+  like a Pi-class ceiling and was measured on a healthy link. Ten concurrent readers against one USB disk is seek thrash
+  regardless of credits. The credit fix raises the concurrency ceiling; it doesn't make the Pi fast.
 
 ## The related defects found in the same investigation
 
