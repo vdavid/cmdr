@@ -1,46 +1,58 @@
 {
-  "main.instanceLock.alertTitle": "Cmdr draait al",
-  "@main.instanceLock.alertTitle": {
-    "sourceHash": "7c8f09d"
-  },
-  "main.instanceLock.alertBody": "Een andere kopie van Cmdr gebruikt deze gegevensmap. Ga naar de app die al draait, of stop die en probeer het opnieuw.",
-  "@main.instanceLock.alertBody": {
-    "sourceHash": "140c57d"
-  },
-  "main.upgradeNudge.mac": "We hebben nieuwe onboardingopties toegevoegd. Open Cmdr > Onboarding… om ze te bekijken.",
-  "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
-  },
-  "main.upgradeNudge.other": "We hebben nieuwe onboardingopties toegevoegd. Open het opdrachtenpalet en voer Onboarding… uit om ze te bekijken.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
-  },
-  "main.quit.title": "Stoppen terwijl er nog {count, plural, one {een bewerking wordt} other {{countText} bewerkingen worden}} uitgevoerd?",
-  "@main.quit.title": {
-    "sourceHash": "2671a89"
-  },
-  "main.quit.body": "Wat al klaar is, blijft klaar. Alles wat nog wordt geschreven, stopt waar het is, en wat gedeeltelijk geschreven achterblijft, ruimt Cmdr op.",
-  "@main.quit.body": {
-    "sourceHash": "c17f6e7"
-  },
-  "main.quit.countdown": "Over {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} stopt Cmdr vanzelf, zodat herstarten of uitloggen nooit hoeft te wachten.",
-  "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
-  },
-  "main.quit.countdownAria": "Tijd totdat Cmdr vanzelf stopt",
-  "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
-  },
-  "main.quit.keepWorking": "Werk door",
-  "@main.quit.keepWorking": {
-    "sourceHash": "5ed03f2"
-  },
-  "main.quit.quitNow": "Stop nu",
-  "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
-  },
-  "main.quit.operationsHeading": "Nog bezig",
-  "@main.quit.operationsHeading": {
-    "sourceHash": "89acce5"
-  }
+    "main.instanceLock.alertTitle": "Cmdr draait al",
+    "@main.instanceLock.alertTitle": {
+        "sourceHash": "7c8f09d"
+    },
+    "main.instanceLock.alertBody": "Een andere kopie van Cmdr gebruikt deze gegevensmap. Ga naar de app die al draait, of stop die en probeer het opnieuw.",
+    "@main.instanceLock.alertBody": {
+        "sourceHash": "140c57d"
+    },
+    "main.upgradeNudge.mac": "We hebben nieuwe onboardingopties toegevoegd. Open Cmdr > Onboarding… om ze te bekijken.",
+    "@main.upgradeNudge.mac": {
+        "sourceHash": "477f3a5"
+    },
+    "main.upgradeNudge.other": "We hebben nieuwe onboardingopties toegevoegd. Open het opdrachtenpalet en voer Onboarding… uit om ze te bekijken.",
+    "@main.upgradeNudge.other": {
+        "sourceHash": "4b0b39e"
+    },
+    "main.quit.title": "Stoppen terwijl er nog {count, plural, one {een bewerking wordt} other {{countText} bewerkingen worden}} uitgevoerd?",
+    "@main.quit.title": {
+        "sourceHash": "2671a89"
+    },
+    "main.quit.body": "Wat al klaar is, blijft klaar. Alles wat nog wordt geschreven, stopt waar het is, en wat gedeeltelijk geschreven achterblijft, ruimt Cmdr op.",
+    "@main.quit.body": {
+        "sourceHash": "c17f6e7"
+    },
+    "main.quit.countdown": "Over {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} stopt Cmdr vanzelf, zodat herstarten of uitloggen nooit hoeft te wachten.",
+    "@main.quit.countdown": {
+        "sourceHash": "a389e0c"
+    },
+    "main.quit.countdownAria": "Tijd totdat Cmdr vanzelf stopt",
+    "@main.quit.countdownAria": {
+        "sourceHash": "6b0b5c2"
+    },
+    "main.quit.keepWorking": "Werk door",
+    "@main.quit.keepWorking": {
+        "sourceHash": "5ed03f2"
+    },
+    "main.quit.quitNow": "Stop nu",
+    "@main.quit.quitNow": {
+        "sourceHash": "c96bcc8"
+    },
+    "main.quit.operationsHeading": "Nog bezig",
+    "@main.quit.operationsHeading": {
+        "sourceHash": "89acce5"
+    },
+    "main.oldWebkit.title": "Cmdr heeft een nieuwere Safari nodig",
+    "@main.oldWebkit.title": {
+        "sourceHash": "03e502b"
+    },
+    "main.oldWebkit.body": "De interface van Cmdr heeft Safari 15.4 of nieuwer nodig, en op deze Mac staat een oudere versie. Open Software-update en installeer alles wat klaarstaat. Dat lost het meestal op.",
+    "@main.oldWebkit.body": {
+        "sourceHash": "bcadac5"
+    },
+    "main.oldWebkit.quit": "Stop",
+    "@main.oldWebkit.quit": {
+        "sourceHash": "b3eb37a"
+    }
 }

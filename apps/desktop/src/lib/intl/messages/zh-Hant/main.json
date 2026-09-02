@@ -1,46 +1,58 @@
 {
-  "main.instanceLock.alertTitle": "Cmdr 已經在執行中",
-  "@main.instanceLock.alertTitle": {
-    "sourceHash": "7c8f09d"
-  },
-  "main.instanceLock.alertBody": "另一個 Cmdr 副本正在使用這個資料夾。請切換到正在執行的那一個，或是先結束它再試一次。",
-  "@main.instanceLock.alertBody": {
-    "sourceHash": "140c57d"
-  },
-  "main.upgradeNudge.mac": "我們新增了入門引導的選項。開啟 Cmdr > 入門引導… 來查看。",
-  "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
-  },
-  "main.upgradeNudge.other": "我們新增了入門引導的選項。開啟指令面板並執行「入門引導…」來查看。",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
-  },
-  "main.quit.title": "{count, plural, other {有 {countText} 項操作仍在進行，要結束嗎？}}",
-  "@main.quit.title": {
-    "sourceHash": "2671a89"
-  },
-  "main.quit.body": "已經完成的都會保留。正在寫入的項目會就此停下，Cmdr 會清理掉寫到一半的檔案。",
-  "@main.quit.body": {
-    "sourceHash": "c17f6e7"
-  },
-  "main.quit.countdown": "{seconds, plural, other {將在 {secondsText} 秒後自動結束，這樣重新開機或登出時就不用等 Cmdr。}}",
-  "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
-  },
-  "main.quit.countdownAria": "Cmdr 自動結束前的剩餘時間",
-  "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
-  },
-  "main.quit.keepWorking": "繼續工作",
-  "@main.quit.keepWorking": {
-    "sourceHash": "5ed03f2"
-  },
-  "main.quit.quitNow": "立即結束",
-  "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
-  },
-  "main.quit.operationsHeading": "仍在進行",
-  "@main.quit.operationsHeading": {
-    "sourceHash": "89acce5"
-  }
+    "main.instanceLock.alertTitle": "Cmdr 已經在執行中",
+    "@main.instanceLock.alertTitle": {
+        "sourceHash": "7c8f09d"
+    },
+    "main.instanceLock.alertBody": "另一個 Cmdr 副本正在使用這個資料夾。請切換到正在執行的那一個，或是先結束它再試一次。",
+    "@main.instanceLock.alertBody": {
+        "sourceHash": "140c57d"
+    },
+    "main.upgradeNudge.mac": "我們新增了入門引導的選項。開啟 Cmdr > 入門引導… 來查看。",
+    "@main.upgradeNudge.mac": {
+        "sourceHash": "477f3a5"
+    },
+    "main.upgradeNudge.other": "我們新增了入門引導的選項。開啟指令面板並執行「入門引導…」來查看。",
+    "@main.upgradeNudge.other": {
+        "sourceHash": "4b0b39e"
+    },
+    "main.quit.title": "{count, plural, other {有 {countText} 項操作仍在進行，要結束嗎？}}",
+    "@main.quit.title": {
+        "sourceHash": "2671a89"
+    },
+    "main.quit.body": "已經完成的都會保留。正在寫入的項目會就此停下，Cmdr 會清理掉寫到一半的檔案。",
+    "@main.quit.body": {
+        "sourceHash": "c17f6e7"
+    },
+    "main.quit.countdown": "{seconds, plural, other {將在 {secondsText} 秒後自動結束，這樣重新開機或登出時就不用等 Cmdr。}}",
+    "@main.quit.countdown": {
+        "sourceHash": "a389e0c"
+    },
+    "main.quit.countdownAria": "Cmdr 自動結束前的剩餘時間",
+    "@main.quit.countdownAria": {
+        "sourceHash": "6b0b5c2"
+    },
+    "main.quit.keepWorking": "繼續工作",
+    "@main.quit.keepWorking": {
+        "sourceHash": "5ed03f2"
+    },
+    "main.quit.quitNow": "立即結束",
+    "@main.quit.quitNow": {
+        "sourceHash": "c96bcc8"
+    },
+    "main.quit.operationsHeading": "仍在進行",
+    "@main.quit.operationsHeading": {
+        "sourceHash": "89acce5"
+    },
+    "main.oldWebkit.title": "Cmdr 需要較新版本的 Safari",
+    "@main.oldWebkit.title": {
+        "sourceHash": "03e502b"
+    },
+    "main.oldWebkit.body": "Cmdr 的介面需要 Safari 15.4 或更新版本，而這台 Mac 上的版本較舊。請打開「軟體更新」，安裝所有待處理的更新，通常就能解決。",
+    "@main.oldWebkit.body": {
+        "sourceHash": "bcadac5"
+    },
+    "main.oldWebkit.quit": "結束",
+    "@main.oldWebkit.quit": {
+        "sourceHash": "b3eb37a"
+    }
 }

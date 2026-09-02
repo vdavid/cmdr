@@ -1933,3 +1933,15 @@ två av dem har teckenidentisk engelska, så `i18n-terms` kräver identisk svens
   ICU-grenarna blir identiska; de skrivs ut ändå.
 - Inga `sameAsSourceJustification` · alla 18 värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
   så ICU:s dubblering `''` blir aldrig aktuell.
+## Blockskärmen när WebKit är för gammalt (`main.oldWebkit.*`, 2026-09-02)
+
+Tre strängar som Cmdr visar i stället för sitt gränssnitt när Macens Safari är för gammalt. De bor i HTML-skalet, inte i
+appen, så det här är det enda personen kommer att se av Cmdr.
+
+- **`Software Update` → `Programuppdatering`** · macOS namn på panelen i Systeminställningar; Tier 1-spåret i Finder
+  bekräftar ordet (`Apple Device Software Update File` → `Programuppdateringsfil för Apple-enhet`) · `high`. Inte
+  `Mjukvaruuppdatering`, som är den engelskpåverkade formen.
+- **`Quit` → `Avsluta`** · macOS AppKit-nyckeln `Quit` → `Avsluta` · `high`. Saknades i glossaret, står här nu.
+- **Genitiv på varumärket går bra på svenska: `Cmdrs gränssnitt`.** (Tyskan förbjuder sitt `Cmdrs`; det är en tysk
+  regel, inte en allmän.)
+- **`Safari`, `Mac` och `15.4` står kvar.** `Safari` ligger nu i `BRAND_WORDS`.

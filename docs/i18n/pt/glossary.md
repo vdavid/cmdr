@@ -1787,3 +1787,13 @@ cuidadoso", nunca desculpa nem alarme.
   `tem certeza`.
 - Nenhum valor leva apóstrofo, então não há `''` no lote. Nenhum `sameAsSourceJustification` é necessário: os 18 valores
   diferem do inglês.
+## A tela de bloqueio quando o WebKit é antigo demais (`main.oldWebkit.*`, 2026-09-02)
+
+Três strings que o Cmdr mostra no lugar da interface quando o Safari do Mac é antigo demais. Elas ficam no invólucro
+HTML, não no app, então são a única coisa que essa pessoa vai ver do Cmdr.
+
+- **`Software Update` → `Atualização de Software`** · nome do painel nos Ajustes do Sistema; o rastro Tier 1 do Finder
+  confirma o termo (`Apple Device Software Update File` → `Arquivo de Atualização de Software do Dispositivo Apple`) ·
+  `high`. Mantém as maiúsculas do nome do painel, ao contrário do uso corrido.
+- **`Quit` → `Encerrar`** · já no glossário, confirmado por `Encerrar Finder` na barra de menus do Finder · `high`.
+- **`Safari`, `Mac` e `15.4` ficam como estão.** `Safari` entrou para `BRAND_WORDS`.

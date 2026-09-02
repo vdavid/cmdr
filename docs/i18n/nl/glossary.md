@@ -2165,3 +2165,13 @@ die dit paar op `controleren` (het gevestigde woord in deze catalogus) trekt, zo
 
 **Overloop nakijken op de melding.** De redenregels lopen 75–90 tekens tegen 50–60 in het Engels, en
 `reason.failed.counted` is de langste van de achttien. Controleer ze tegen de pseudolocale in een smalle melding.
+## Het blokkeerscherm bij te oude WebKit (`main.oldWebkit.*`, 2026-09-02)
+
+Drie strings die Cmdr toont in plaats van zijn interface als de Safari van de Mac te oud is. Ze staan in het
+HTML-omhulsel, niet in de app, dus dit is het enige wat die persoon van Cmdr ziet.
+
+- **`Software Update` → `Software-update`** (met streepje) · macOS noemt het paneel zo; het Tier-1-spoor uit Finder
+  bevestigt de schrijfwijze (`Apple Device Software Update File` → `Software-updatebestand Apple apparaat`) · `high`.
+- **`Quit` → `Stop`** · al in het glossarium vastgelegd (macOS gebruikt `Stop`, niet `Afsluiten`) · `high`.
+- **`Safari`, `Mac` en `15.4` blijven staan.** `Safari` staat nu in `BRAND_WORDS`.
+- Geen `sameAsSourceJustification` nodig: alle drie de waarden wijken af van het Engels.

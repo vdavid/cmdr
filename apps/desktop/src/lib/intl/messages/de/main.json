@@ -1,46 +1,58 @@
 {
-  "main.instanceLock.alertTitle": "Cmdr läuft bereits",
-  "@main.instanceLock.alertTitle": {
-    "sourceHash": "7c8f09d"
-  },
-  "main.instanceLock.alertBody": "Eine andere Kopie von Cmdr benutzt diesen Datenordner. Wechsle zur laufenden App oder beende sie und versuche es erneut.",
-  "@main.instanceLock.alertBody": {
-    "sourceHash": "140c57d"
-  },
-  "main.upgradeNudge.mac": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne Cmdr > Einführung…, um sie anzusehen.",
-  "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
-  },
-  "main.upgradeNudge.other": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne die Befehlspalette und führe Einführung… aus, um sie anzusehen.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
-  },
-  "main.quit.title": "{count, plural, one {Ein Vorgang läuft noch. Trotzdem beenden?} other {{countText} Vorgänge laufen noch. Trotzdem beenden?}}",
-  "@main.quit.title": {
-    "sourceHash": "2671a89"
-  },
-  "main.quit.body": "Was fertig ist, bleibt fertig. Alles, was gerade geschrieben wird, stoppt genau dort, wo es ist, und Cmdr entfernt, was dabei halb geschrieben zurückbleibt.",
-  "@main.quit.body": {
-    "sourceHash": "c17f6e7"
-  },
-  "main.quit.countdown": "{seconds, plural, one {Cmdr beendet sich in {secondsText} Sekunde, damit ein Neustart oder eine Abmeldung nie darauf warten muss.} other {Cmdr beendet sich in {secondsText} Sekunden, damit ein Neustart oder eine Abmeldung nie darauf warten muss.}}",
-  "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
-  },
-  "main.quit.countdownAria": "Zeit, bis sich Cmdr von selbst beendet",
-  "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
-  },
-  "main.quit.keepWorking": "Weiterarbeiten",
-  "@main.quit.keepWorking": {
-    "sourceHash": "5ed03f2"
-  },
-  "main.quit.quitNow": "Jetzt beenden",
-  "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
-  },
-  "main.quit.operationsHeading": "Noch aktiv",
-  "@main.quit.operationsHeading": {
-    "sourceHash": "89acce5"
-  }
+    "main.instanceLock.alertTitle": "Cmdr läuft bereits",
+    "@main.instanceLock.alertTitle": {
+        "sourceHash": "7c8f09d"
+    },
+    "main.instanceLock.alertBody": "Eine andere Kopie von Cmdr benutzt diesen Datenordner. Wechsle zur laufenden App oder beende sie und versuche es erneut.",
+    "@main.instanceLock.alertBody": {
+        "sourceHash": "140c57d"
+    },
+    "main.upgradeNudge.mac": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne Cmdr > Einführung…, um sie anzusehen.",
+    "@main.upgradeNudge.mac": {
+        "sourceHash": "477f3a5"
+    },
+    "main.upgradeNudge.other": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne die Befehlspalette und führe Einführung… aus, um sie anzusehen.",
+    "@main.upgradeNudge.other": {
+        "sourceHash": "4b0b39e"
+    },
+    "main.quit.title": "{count, plural, one {Ein Vorgang läuft noch. Trotzdem beenden?} other {{countText} Vorgänge laufen noch. Trotzdem beenden?}}",
+    "@main.quit.title": {
+        "sourceHash": "2671a89"
+    },
+    "main.quit.body": "Was fertig ist, bleibt fertig. Alles, was gerade geschrieben wird, stoppt genau dort, wo es ist, und Cmdr entfernt, was dabei halb geschrieben zurückbleibt.",
+    "@main.quit.body": {
+        "sourceHash": "c17f6e7"
+    },
+    "main.quit.countdown": "{seconds, plural, one {Cmdr beendet sich in {secondsText} Sekunde, damit ein Neustart oder eine Abmeldung nie darauf warten muss.} other {Cmdr beendet sich in {secondsText} Sekunden, damit ein Neustart oder eine Abmeldung nie darauf warten muss.}}",
+    "@main.quit.countdown": {
+        "sourceHash": "a389e0c"
+    },
+    "main.quit.countdownAria": "Zeit, bis sich Cmdr von selbst beendet",
+    "@main.quit.countdownAria": {
+        "sourceHash": "6b0b5c2"
+    },
+    "main.quit.keepWorking": "Weiterarbeiten",
+    "@main.quit.keepWorking": {
+        "sourceHash": "5ed03f2"
+    },
+    "main.quit.quitNow": "Jetzt beenden",
+    "@main.quit.quitNow": {
+        "sourceHash": "c96bcc8"
+    },
+    "main.quit.operationsHeading": "Noch aktiv",
+    "@main.quit.operationsHeading": {
+        "sourceHash": "89acce5"
+    },
+    "main.oldWebkit.title": "Cmdr braucht eine neuere Safari-Version",
+    "@main.oldWebkit.title": {
+        "sourceHash": "03e502b"
+    },
+    "main.oldWebkit.body": "Die Oberfläche von Cmdr braucht Safari 15.4 oder neuer, und auf diesem Mac läuft eine ältere Version. Öffne Softwareupdate und installiere alles, was aussteht. Das sollte es lösen.",
+    "@main.oldWebkit.body": {
+        "sourceHash": "bcadac5"
+    },
+    "main.oldWebkit.quit": "Beenden",
+    "@main.oldWebkit.quit": {
+        "sourceHash": "b3eb37a"
+    }
 }

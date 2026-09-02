@@ -1751,3 +1751,13 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   —— 英文那一句在两个键里**完全相同**，中文也就必须相同 · `confirmed`
 - 18 条值都与英文不同，无需 `sameAsSourceJustification`。中文侧没有撇号，ICU 的 `''` 规则用不上； `{count}` 只写 `other`
   分支（中文 CLDR 只有这一类）。
+## WebKit 过旧时的拦截页（`main.oldWebkit.*`，2026-09-02）
+
+三条文案，在 Mac 的 Safari 过旧时代替 Cmdr 的界面显示。它们写在 HTML 外壳里而不是应用里，所以这是那位用户能看到的 Cmdr 的
+全部内容。
+
+- **`Software Update` → `软件更新`** · macOS 系统设置中该面板的名称；Finder 的 Tier 1 证据佐证了这个词（`Apple Device
+  Software Update File` → `Apple设备软件更新文件`）· `high`。
+- **`Quit` → `退出`** · macOS AppKit 的 `Quit` 键 → `退出` · `high`。此前不在词汇表里，现补上。
+- **`Safari`、`Mac`、`15.4` 保持原样**，两侧按 § 间距规则加空格。`Safari` 已加入 `BRAND_WORDS`。
+- 面板名用直角引号之外的全角引号 `“软件更新”`，与目录里其余简体文案一致。

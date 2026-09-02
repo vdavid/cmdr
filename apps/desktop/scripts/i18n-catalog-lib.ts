@@ -520,6 +520,7 @@ export const BRAND_WORDS: readonly string[] = Object.freeze([
   'Tauri', // tech name (appears in About/credits)
   'Rust', // tech name
   'Svelte', // tech name
+  'Safari', // Apple's browser; Apple keeps the name English in every locale, and Cmdr's WebKit IS it
   // NOT here: "Quick Look" and other Apple FEATURE names Apple localizes per-OS
   // (fr "Coup d’œil", de "Übersicht", es "Vista rápida"). They must be translated
   // to match the user's macOS, not kept verbatim. Only Apple feature/product names

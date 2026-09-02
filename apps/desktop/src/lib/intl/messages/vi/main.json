@@ -1,46 +1,58 @@
 {
-  "main.instanceLock.alertTitle": "Cmdr đang chạy rồi",
-  "@main.instanceLock.alertTitle": {
-    "sourceHash": "7c8f09d"
-  },
-  "main.instanceLock.alertBody": "Một bản Cmdr khác đang dùng thư mục dữ liệu này. Hãy chuyển sang ứng dụng đang chạy, hoặc thoát nó rồi thử lại.",
-  "@main.instanceLock.alertBody": {
-    "sourceHash": "140c57d"
-  },
-  "main.upgradeNudge.mac": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở Cmdr > Thiết lập ban đầu… để xem qua.",
-  "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
-  },
-  "main.upgradeNudge.other": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở bảng lệnh và chạy Thiết lập ban đầu… để xem qua.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
-  },
-  "main.quit.title": "{count, plural, other {Thoát trong khi {countText} thao tác đang chạy?}}",
-  "@main.quit.title": {
-    "sourceHash": "2671a89"
-  },
-  "main.quit.body": "Những gì đã xong vẫn được giữ nguyên. Những gì đang được ghi sẽ dừng lại ngay tại chỗ, và Cmdr dọn dẹp tệp ghi dở còn sót lại.",
-  "@main.quit.body": {
-    "sourceHash": "c17f6e7"
-  },
-  "main.quit.countdown": "{seconds, plural, other {Sẽ thoát sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}",
-  "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
-  },
-  "main.quit.countdownAria": "Thời gian còn lại trước khi Cmdr tự thoát",
-  "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
-  },
-  "main.quit.keepWorking": "Tiếp tục làm việc",
-  "@main.quit.keepWorking": {
-    "sourceHash": "5ed03f2"
-  },
-  "main.quit.quitNow": "Thoát ngay",
-  "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
-  },
-  "main.quit.operationsHeading": "Vẫn đang chạy",
-  "@main.quit.operationsHeading": {
-    "sourceHash": "89acce5"
-  }
+    "main.instanceLock.alertTitle": "Cmdr đang chạy rồi",
+    "@main.instanceLock.alertTitle": {
+        "sourceHash": "7c8f09d"
+    },
+    "main.instanceLock.alertBody": "Một bản Cmdr khác đang dùng thư mục dữ liệu này. Hãy chuyển sang ứng dụng đang chạy, hoặc thoát nó rồi thử lại.",
+    "@main.instanceLock.alertBody": {
+        "sourceHash": "140c57d"
+    },
+    "main.upgradeNudge.mac": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở Cmdr > Thiết lập ban đầu… để xem qua.",
+    "@main.upgradeNudge.mac": {
+        "sourceHash": "477f3a5"
+    },
+    "main.upgradeNudge.other": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở bảng lệnh và chạy Thiết lập ban đầu… để xem qua.",
+    "@main.upgradeNudge.other": {
+        "sourceHash": "4b0b39e"
+    },
+    "main.quit.title": "{count, plural, other {Thoát trong khi {countText} thao tác đang chạy?}}",
+    "@main.quit.title": {
+        "sourceHash": "2671a89"
+    },
+    "main.quit.body": "Những gì đã xong vẫn được giữ nguyên. Những gì đang được ghi sẽ dừng lại ngay tại chỗ, và Cmdr dọn dẹp tệp ghi dở còn sót lại.",
+    "@main.quit.body": {
+        "sourceHash": "c17f6e7"
+    },
+    "main.quit.countdown": "{seconds, plural, other {Sẽ thoát sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}",
+    "@main.quit.countdown": {
+        "sourceHash": "a389e0c"
+    },
+    "main.quit.countdownAria": "Thời gian còn lại trước khi Cmdr tự thoát",
+    "@main.quit.countdownAria": {
+        "sourceHash": "6b0b5c2"
+    },
+    "main.quit.keepWorking": "Tiếp tục làm việc",
+    "@main.quit.keepWorking": {
+        "sourceHash": "5ed03f2"
+    },
+    "main.quit.quitNow": "Thoát ngay",
+    "@main.quit.quitNow": {
+        "sourceHash": "c96bcc8"
+    },
+    "main.quit.operationsHeading": "Vẫn đang chạy",
+    "@main.quit.operationsHeading": {
+        "sourceHash": "89acce5"
+    },
+    "main.oldWebkit.title": "Cmdr cần phiên bản Safari mới hơn",
+    "@main.oldWebkit.title": {
+        "sourceHash": "03e502b"
+    },
+    "main.oldWebkit.body": "Giao diện của Cmdr cần Safari 15.4 trở lên, còn máy Mac này đang dùng phiên bản cũ hơn. Hãy mở Cập nhật phần mềm và cài mọi bản cập nhật đang chờ. Như vậy thường là xong.",
+    "@main.oldWebkit.body": {
+        "sourceHash": "bcadac5"
+    },
+    "main.oldWebkit.quit": "Thoát",
+    "@main.oldWebkit.quit": {
+        "sourceHash": "b3eb37a"
+    }
 }
