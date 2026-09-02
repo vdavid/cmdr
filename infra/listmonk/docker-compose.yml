@@ -1,6 +1,6 @@
 services:
   listmonk-db:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: listmonk-db
     restart: unless-stopped
     environment:
@@ -8,7 +8,12 @@ services:
       POSTGRES_USER: listmonk
       POSTGRES_PASSWORD: ${LISTMONK_DB_PASSWORD}
     volumes:
-      - listmonk-data:/var/lib/postgresql/data
+      # Postgres 18 images put PGDATA in a major-version subdirectory
+      # (`/var/lib/postgresql/18/docker`), so the mount sits one level up at
+      # `/var/lib/postgresql`. Mounting the old `/var/lib/postgresql/data` path makes the
+      # container refuse to start. The volume is new on purpose: the Postgres 17 volume
+      # stays untouched as the rollback. See README.md, "Upgrading Postgres".
+      - listmonk-data-pg18:/var/lib/postgresql
     networks:
       - listmonk-internal
 
@@ -36,7 +41,10 @@ services:
       - proxy-net
 
 volumes:
-  listmonk-data:
+  # The Postgres 17 volume (`listmonk_listmonk-data`) is deliberately not declared here any
+  # more. It still holds the pre-upgrade cluster and is the rollback path, so leave it on the
+  # box until the upgrade has proven itself.
+  listmonk-data-pg18:
 
 networks:
   listmonk-internal:

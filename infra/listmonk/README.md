@@ -163,14 +163,259 @@ docker compose up -d
 
 ### Backups
 
-Postgres data lives in the `listmonk-data` Docker volume. The VPS has daily NAS backups that cover Docker volumes, so no
-extra backup config is needed.
+Postgres data lives in the `listmonk_listmonk-data-pg18` Docker volume. That volume is **not** rsynced to the NAS: the
+backup script lists it in `SKIP_VOLUMES` and covers listmonk with a nightly SQL dump instead, at 03:08 Europe/Stockholm:
+
+```bash
+docker exec listmonk-db pg_dump -U listmonk listmonk > /home/david/db-backups/listmonk.sql
+```
+
+The script is `infra/hetzner/ansible/roles/backup-export/files/backup-prep.sh` in the `infra` repo (Ansible-managed, so
+don't edit the copy on the box). The NAS then pulls `/home/david/` over the read-only export. Check the dump is current
+with `ls -l /home/david/db-backups/listmonk.sql`.
 
 To manually export subscribers:
 
 ```bash
 docker exec listmonk-db pg_dump -U listmonk listmonk > listmonk-backup.sql
 ```
+
+### Upgrading Postgres
+
+> **Until the cutover has run, the compose file on the server is ahead of the containers actually running.** Every
+> website deploy does `git reset --hard origin/main` in `/opt/cmdr` and then rebuilds only `apps/website`, so the moment
+> the Postgres 18 commit lands on `main` the file says `postgres:18-alpine` while listmonk-db is still 17 on the old
+> volume.
+>
+> - ❌ Don't run `docker compose up -d`, `down`, or a `restart` that recreates the container in
+>   `/opt/cmdr/infra/listmonk` during that window, unless you're doing the cutover. Recreating `listmonk-db` from the
+>   new file creates an empty `listmonk-data-pg18` volume and starts an empty Postgres 18. Listmonk's boot
+>   `--install --idempotent` then initializes it, and the newsletter goes live with zero subscribers.
+> - Nothing restarts on its own, so leaving it alone is safe. `restart: unless-stopped` reuses the existing container
+>   config, across reboots too.
+> - **Which state is the box in?** Compare what's running against what the file says:
+>   ```bash
+>   docker inspect listmonk-db --format '{{.Config.Image}}'   # what's running
+>   grep 'image: postgres' docker-compose.yml                 # what the file says
+>   ```
+> - **If it happens anyway**, the data is fine: the 17 volume is untouched. Follow the rollback below, which is the same
+>   two-line revert plus `docker volume rm listmonk_listmonk-data-pg18`.
+
+Listmonk runs on `postgres:18-alpine`. Postgres majors can't read each other's data directory, so a major bump is a dump
+and restore, and the image adds a second twist: **Postgres 18 moved `PGDATA`.**
+
+- 17: `PGDATA=/var/lib/postgresql/data`, and that path is the declared volume.
+- 18: `PGDATA=/var/lib/postgresql/18/docker`, and the declared volume is the parent, `/var/lib/postgresql`.
+
+(Verified on `postgres:17-alpine` = 17.11 and `postgres:18-alpine` = 18.6, `docker inspect` of `Config.Env` and
+`Config.Volumes`, 2026-09-02. Upstream rationale: docker-library/postgres PR #1259.)
+
+So the compose mount moves from `listmonk-data:/var/lib/postgresql/data` to `listmonk-data-pg18:/var/lib/postgresql`.
+Bumping the image while keeping the old mount path doesn't corrupt anything and doesn't quietly start an empty database:
+the entrypoint detects a cluster at `/var/lib/postgresql/data`, prints "in 18+, these Docker images are configured to
+store database data in a format which is compatible with `pg_ctlcluster`", and exits 1. The failure is loud, and the 17
+volume is left untouched.
+
+**Why dump and restore rather than `pg_upgrade`.** `pg_upgrade` needs both major versions' binaries in one image, which neither
+official image ships, so it means a custom image or a `tianon/postgres-upgrade` run. For a database this small (9.7 MB,
+18 subscribers as of 2026-09-02) that's a lot of moving parts to save a few seconds. Dump and restore also rebuilds
+every index under the new server's collation, which sidesteps the index-corruption class of problem that `pg_upgrade`
+inherits when a collation changes underneath a btree.
+
+**Restoring onto a new volume, rather than reusing the old one, is what makes rollback free.** The 17 cluster is still
+sitting there, so going back is "edit two lines, `docker compose up -d`".
+
+#### Before you start
+
+- Expect **five to 10 minutes of downtime** on a database this size. The dump and restore themselves take seconds; the
+  time goes into pulling the image, the container starts, and the verification. Newsletter signups on getcmdr.com return
+  502 for that window, and any campaign send is paused.
+- Do it outside a campaign send. Check Campaigns in the admin UI for anything `running`.
+- Have a second terminal open on the box.
+
+#### 1. Take a backup, and verify it before touching anything
+
+```bash
+ssh hetzner
+cd /opt/cmdr/infra/listmonk
+
+# Stop listmonk (the app) so nothing writes mid-dump. Leave the database up.
+docker compose stop listmonk
+
+# Dump, tagged with the date so it can't be confused with the nightly one.
+docker exec listmonk-db pg_dump -U listmonk -d listmonk -Fc \
+  > ~/listmonk-pre-pg18-$(date +%F).dump
+```
+
+Now prove the backup is real. An unverified dump is not a backup:
+
+```bash
+BACKUP=~/listmonk-pre-pg18-$(date +%F).dump
+
+# It's non-empty and readable as an archive.
+ls -lh "$BACKUP"
+docker run --rm -v "$BACKUP:/b.dump:ro" postgres:18-alpine pg_restore -l /b.dump | head -20
+
+# It contains the tables that matter, with their data sections.
+docker run --rm -v "$BACKUP:/b.dump:ro" postgres:18-alpine pg_restore -l /b.dump \
+  | grep 'TABLE DATA' | grep -E 'subscribers|subscriber_lists|campaigns|lists|users'
+```
+
+You want all five of those lines. Note the current row counts too, so step 4 has something to compare against:
+
+```bash
+docker exec listmonk-db psql -U listmonk -d listmonk -c \
+  "select 'subscribers' t, count(*) from subscribers
+   union all select 'subscriber_lists', count(*) from subscriber_lists
+   union all select 'lists', count(*) from lists
+   union all select 'campaigns', count(*) from campaigns
+   union all select 'users', count(*) from users order by 1;"
+```
+
+#### 2. Stop the database and switch the compose file
+
+```bash
+docker compose stop listmonk-db
+
+# Pull the new compose file (as the owning user, see the Hetzner note in the obsidian tooling docs).
+docker run --rm --privileged --pid=host alpine nsenter -t 1 -m -u -n -i \
+  su -s /bin/bash deploy-cmdr -c "cd /opt/cmdr && git pull --ff-only"
+
+# Confirm the two changed lines are actually there.
+grep -E 'image: postgres|/var/lib/postgresql' docker-compose.yml
+```
+
+The old `listmonk_listmonk-data` volume is untouched by all of this. Don't remove it.
+
+#### 3. Start Postgres 18 on the new volume and restore
+
+```bash
+docker compose up -d listmonk-db
+
+# Wait for it to accept connections.
+until docker exec listmonk-db pg_isready -U listmonk -d listmonk; do sleep 1; done
+
+# Sanity: 18, and PGDATA in the new place.
+docker exec listmonk-db psql -U listmonk -d listmonk -tAc "select version();"
+docker exec listmonk-db sh -c 'echo $PGDATA; cat $PGDATA/PG_VERSION'
+
+# Restore. --exit-on-error --single-transaction means a partial restore can't survive:
+# either everything lands or the database stays empty and you roll back.
+docker run --rm --network listmonk_listmonk-internal \
+  -e PGPASSWORD="$(grep LISTMONK_DB_PASSWORD .env | cut -d= -f2-)" \
+  -v ~/listmonk-pre-pg18-$(date +%F).dump:/b.dump:ro \
+  postgres:18-alpine \
+  pg_restore -h listmonk-db -U listmonk -d listmonk --exit-on-error --single-transaction /b.dump
+```
+
+#### 4. Verify before letting listmonk near it
+
+Re-run the row-count query from step 1 and compare. The numbers must match exactly:
+
+```bash
+docker exec listmonk-db psql -U listmonk -d listmonk -c \
+  "select 'subscribers' t, count(*) from subscribers
+   union all select 'subscriber_lists', count(*) from subscriber_lists
+   union all select 'lists', count(*) from lists
+   union all select 'campaigns', count(*) from campaigns
+   union all select 'users', count(*) from users order by 1;"
+
+# Sequences have to carry over, or the next signup fails on a duplicate key.
+docker exec listmonk-db psql -U listmonk -d listmonk -tAc "select last_value from subscribers_id_seq;"
+
+# Listmonk's own migration history has to be there, or --upgrade will misjudge the schema.
+docker exec listmonk-db psql -U listmonk -d listmonk -tAc \
+  "select value from settings where key='migrations';"
+```
+
+If any of that looks wrong, stop and roll back. Don't start listmonk on a half-restored database.
+
+#### 5. Start listmonk
+
+```bash
+docker compose up -d listmonk
+docker compose logs -f listmonk
+```
+
+The container's boot command runs `--install --idempotent` then `--upgrade --yes`. Both are no-ops after a restore:
+`--install --idempotent` exits as soon as it sees a `settings` table ("skipping install as database appears to be
+already setup"), and `--upgrade` reads the `migrations` array out of `settings`, which the dump carried over verbatim,
+so it finds nothing to apply. (Verified by reading listmonk v6.2.0's
+[install command](https://github.com/knadh/listmonk/blob/v6.2.0/cmd/install.go) and
+[upgrade command](https://github.com/knadh/listmonk/blob/v6.2.0/cmd/upgrade.go), 2026-09-02.)
+
+Then check the real thing: log into `https://mail.getcmdr.com`, confirm the subscriber count and the list, and submit a
+test address through the signup form on getcmdr.com.
+
+#### 6. Update the backup script in the `infra` repo
+
+**This one is easy to forget and the runbook is not finished without it.** The volume rename means the nightly backup
+script no longer recognizes listmonk's volume, and every run will print:
+
+```
+WARNING: Uncovered Docker volumes detected!
+  - listmonk_listmonk-data-pg18
+```
+
+It's a warning, so the backup still completes and still pings healthchecks.io: nothing breaks, and nothing tells you
+either. In `infra`, edit `hetzner/ansible/roles/backup-export/files/backup-prep.sh` and change the `SKIP_VOLUMES` entry
+from `listmonk_listmonk-data` to `listmonk_listmonk-data-pg18`, then re-run the Ansible role. The dump itself (step 2c
+of that script) keys off the `listmonk-db` container name, which doesn't change, so the actual backup keeps working
+throughout.
+
+#### Rollback
+
+The 17 cluster is still on disk, so this is quick:
+
+```bash
+cd /opt/cmdr/infra/listmonk
+docker compose down
+
+# Point the compose file back at 17 and the old volume.
+git revert --no-edit <the-pg18-commit>   # or edit the two lines by hand
+
+docker compose up -d
+until docker exec listmonk-db pg_isready -U listmonk -d listmonk; do sleep 1; done
+docker exec listmonk-db psql -U listmonk -d listmonk -tAc "select version();"
+```
+
+The two lines, if you're editing by hand: `image: postgres:17-alpine` and `- listmonk-data:/var/lib/postgresql/data`,
+plus `listmonk-data:` back under `volumes:`.
+
+Then delete the failed 18 volume so a retry starts clean: `docker volume rm listmonk_listmonk-data-pg18`.
+
+#### Afterwards
+
+Once the upgrade has run for a week or two without complaint, reclaim the old volume:
+
+```bash
+docker volume rm listmonk_listmonk-data
+```
+
+Keep the pre-upgrade dump for longer; it's small.
+
+#### What this was tested against
+
+The procedure was rehearsed end to end locally before it was written down (2026-09-02, Docker 29.4.0 on OrbStack,
+aarch64), using listmonk v6.2.0's `schema.sql` seeded with 1,500 subscribers, 1,500 subscriptions, a campaign, a
+template, a bcrypt-hashed user, and the three materialized views. Both dump styles restored into 18 with row counts,
+per-table content hashes, sequence positions, the bcrypt hash, unicode, and all 14 enum types identical to the source:
+the `pg_dump -Fc` archive this runbook uses, and the plain-SQL dump the nightly backup produces. Rolling back to the 17
+container after a failed 18 start reproduced the original fingerprints exactly.
+
+Two things came out of that rehearsal that are worth knowing:
+
+- `pgcrypto` moves from 1.3 to 1.4 on restore, because the dump asks for `CREATE EXTENSION pgcrypto` without a version
+  and 18 installs its default. Existing bcrypt hashes still verify against `crypt()`, so admin logins survive. Nothing
+  to do, but it's a real version change and it shows up in `\dx`.
+- The database's locale is `en_US.utf8` with `datlocprovider = c` on both images, so no reindex is needed. Worth
+  re-checking at the time of the cutover rather than assuming: if `datcollate` differs between the old database and the
+  fresh 18 one, text index ordering changes underneath you. Dump and restore handles that correctly (indexes get
+  rebuilt), which is another reason to prefer it over `pg_upgrade` here.
+
+Image identity at the time of writing: `postgres:18-alpine` was PostgreSQL 18.6, multi-arch index digest
+`sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2` (from `registry-1.docker.io`, 2026-09-02). The
+box was running 17.7 rather than the tag's current 17.11, because the local image predates the tag's last rebuild.
 
 ### Updates
 
@@ -294,10 +539,11 @@ handle /webhooks/ses {
 
 ## Troubleshooting
 
-| Problem                         | Check                                                                      |
-| ------------------------------- | -------------------------------------------------------------------------- |
-| Form returns 502                | Is the listmonk container running? `docker compose ps`                     |
-| Confirmation email not arriving | Check Resend dashboard for delivery status and errors, check Listmonk logs |
-| Admin UI unreachable            | Check `mail.getcmdr.com` DNS, Caddy config, container health               |
-| Database connection errors      | Check `.env` password matches, Postgres container is healthy               |
-| SMTP connection timeout         | Hetzner blocks port 465; use port 587 with STARTTLS instead                |
+| Problem                                                      | Check                                                                                                                        |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Form returns 502                                             | Is the listmonk container running? `docker compose ps`                                                                       |
+| Confirmation email not arriving                              | Check Resend dashboard for delivery status and errors, check Listmonk logs                                                   |
+| Admin UI unreachable                                         | Check `mail.getcmdr.com` DNS, Caddy config, container health                                                                 |
+| Database connection errors                                   | Check `.env` password matches, Postgres container is healthy                                                                 |
+| SMTP connection timeout                                      | Hetzner blocks port 465; use port 587 with STARTTLS instead                                                                  |
+| `listmonk-db` exits 1 on start, log mentions `pg_ctlcluster` | The volume is mounted at the Postgres 17 path. It must be `listmonk-data-pg18:/var/lib/postgresql`, see "Upgrading Postgres" |
