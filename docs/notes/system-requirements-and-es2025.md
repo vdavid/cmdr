@@ -39,7 +39,8 @@ upward on a routine dep bump while the plist stays put. That gap was live: the b
 `safari15` lowers them to `lab()` (Safari 15.0) and costs +8,939 bytes on a 6.2 MB bundle (verified on Vite 8.2.0,
 production build, 2026-09-02).
 
-The website's download page lists no minimum OS version; only "macOS (Apple Silicon and Intel)" and "Linux: alpha."
+The website says the same two-part answer: `apps/website/src/components/Download.astro` (the download card's fine
+print), `llms.txt.ts` / `llms-full.txt.ts`, and `brand/listings/macupdate.md`. Keep them in step with the plist.
 
 ## The two floors old WebKit crosses
 
