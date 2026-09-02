@@ -10,6 +10,14 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-02 `android-adb-ui.md` - **The ADB backend works and nobody can reach it.** No connect flow, no device
+      picker, no settings, and no words for the six ways a connect refuses. Eight decisions, taken rather than listed:
+      one switcher row per phone with MTP as the default face and ADB a mode you switch it into; non-ready devices shown
+      disabled with their reason instead of hidden; the authorize prompt resolving itself off the `track-devices` push;
+      connecting rendered in the pane, never a modal; a Settings section whose `adb` path override exists because a
+      macOS GUI app never inherits the shell `PATH`; panes opening at `/sdcard`; ADB deliberately not indexed; and
+      "Disconnect" rather than "Eject". Still gated on the real-device pass.
+
 - [ ] 2026-09-02 `servers-in-the-sidebar.md` - **Two finished backends nobody can reach.** SFTP and WebDAV connect,
       list, read, write, and reconnect, and there is no way to open one: `volume_listing::complete` has no arm for
       either, so nothing reaches the sidebar, and `resolve_path_volume` doesn't answer for a remote path, so a saved tab
