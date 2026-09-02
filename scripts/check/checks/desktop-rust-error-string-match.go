@@ -204,7 +204,11 @@ func hasAllowErrorStringMatchComment(line string) bool {
 // `agent/store/proposals/tests/` and `agent/tools/propose/rename/tests/` are), and every file
 // in one is as much a dedicated test file as the `tests.rs` it was split out of.
 func isRustTestFile(path string) bool {
-	if filepath.Base(filepath.Dir(path)) == "tests" {
+	dir := filepath.Base(filepath.Dir(path))
+	// `tests/`, and the same convention with the subject kept in the name: a suite
+	// that outgrows `copy_tests.rs` becomes `copy_tests/progress.rs`. Splitting a
+	// long test file must not enroll its halves in a production-code scanner.
+	if dir == "tests" || strings.HasSuffix(dir, "_tests") || strings.HasSuffix(dir, "_test") {
 		return true
 	}
 	name := filepath.Base(path)
