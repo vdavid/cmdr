@@ -183,9 +183,9 @@ Two mechanics that bite in Portuguese specifically:
   (`a pasta {name}`). Mesma lógica dos tokens de painel do macOS, § acima.
 
 - **O Ask Cmdr agora lê partes de um arquivo, e nenhuma frase pode prometer o contrário.** A tela de consentimento diz
-  `arquivos inteiros, fotos ou miniaturas` (nunca enviados) e `uma parte limitada dele` (o que pode sair); o verbo
-  de espiar é `olhar dentro de`, os metadados de foto são `detalhes da câmera` e o lugar é `localização` / `onde ela
-  foi tirada`. Evidência: `glossary.md` § O que o Ask Cmdr lê dentro de um arquivo.
+  `arquivos inteiros, fotos ou miniaturas` (nunca enviados) e `uma parte limitada dele` (o que pode sair); o verbo de
+  espiar é `olhar dentro de`, os metadados de foto são `detalhes da câmera` e o lugar é `localização` /
+  `onde ela foi tirada`. Evidência: `glossary.md` § O que o Ask Cmdr lê dentro de um arquivo.
 
 ## Decisions to confirm with David
 

@@ -2348,27 +2348,30 @@ accord) sont reprises mot pour mot de l'ancienne traduction, et seule la promess
   `~/projects-git/vdavid/cmdr/_ignored/i18n/fr/`, 2026-09-02.
 - **camera (d'une photo) → `appareil photo`** · macOS AppKit `fr` (`NSStillCameraTemplate` → « appareil photo »),
   Microsoft terminologie FRA (`camera` → « appareil photo », sens photo ; « caméra » est le sens vidéo/webcam) et le
-  catalogue (« Prise en charge Android/Kindle/appareil photo ») · high. **camera details → `les détails de l'appareil
-  photo`** : `détails` reprend `askCmdr.renameReview.evidence.metadata` (« Détails du fichier, pas son contenu ») · high.
+  catalogue (« Prise en charge Android/Kindle/appareil photo ») · high. **camera details →
+  `les détails de l'appareil photo`** : `détails` reprend `askCmdr.renameReview.evidence.metadata` (« Détails du
+  fichier, pas son contenu ») · high.
 - **location (d'une photo, où elle a été prise) → `localisation`** · macOS Finder `fr`, panneau d'aperçu d'une image
   (`PV5` / `PV56` « Location » → « Localisation », à côté de « Détail de l’image » et « Exif ») : c'est exactement ce
   champ-là · high. ❌ Pas `emplacement` : c'est le mot du catalogue (et de Dolphin) pour l'emplacement d'un FICHIER sur
   le disque, et la phrase parle justement d'autre chose. En prose, « including where it was taken » se rend par
   `y compris l'endroit où elle a été prise` (`contentsRule`), comme l'anglais lui-même varie entre `location` et
   `where it was taken`.
-- **title and author (d'un PDF) → `son titre et son auteur`** · macOS AppKit `fr` (`Title` → « Titre »), KDE Dolphin `fr`
-  (« Author » → « Auteur », « Title » → « Titre »), Microsoft terminologie FRA (`author` → « auteur ») · high.
+- **title and author (d'un PDF) → `son titre et son auteur`** · macOS AppKit `fr` (`Title` → « Titre »), KDE Dolphin
+  `fr` (« Author » → « Auteur », « Title » → « Titre »), Microsoft terminologie FRA (`author` → « auteur ») · high.
 - **page (d'un PDF) → `page`** · macOS Finder `fr` (« Page ^0 sur ^1 », « Pages ») · high. « a few pages of a PDF » →
   `quelques pages d'un PDF` ; « PDF pages » (liste) → `des pages de PDF`.
-- **archive → `archive`** (fém.), **provider → `fournisseur`**, **tag → `tag`** : termes déjà posés, réutilisés tels quels.
-- **what's inside an archive → `ce que contient une archive`** ; **the list of files inside an archive → `la liste des
-  fichiers contenus dans une archive`** · racine `contenir` dans les deux, pour éviter deux `à l'intérieur` dans la
-  même phrase de `whatsNew.body` (« regarder à l'intérieur d'un fichier … ») · high (choix rédactionnel).
+- **archive → `archive`** (fém.), **provider → `fournisseur`**, **tag → `tag`** : termes déjà posés, réutilisés tels
+  quels.
+- **what's inside an archive → `ce que contient une archive`** ; **the list of files inside an archive →
+  `la liste des fichiers contenus dans une archive`** · racine `contenir` dans les deux, pour éviter deux
+  `à l'intérieur` dans la même phrase de `whatsNew.body` (« regarder à l'intérieur d'un fichier … ») · high (choix
+  rédactionnel).
 - **Parts of files → `Des parties des fichiers`** · pas `extraits`, qui irait au texte et aux pages mais pas à la liste
   d'une archive ni aux données Exif · high.
-- **When you ask about a file → `Quand vous lui posez une question sur un fichier`** ; **a file you ask about → `un
-  fichier sur lequel vous lui posez une question`** · calque de `askCmdr.empty.title` / `composer.placeholder` (« Posez
-  une question sur vos fichiers ») · high.
+- **When you ask about a file → `Quand vous lui posez une question sur un fichier`** ; **a file you ask about →
+  `un fichier sur lequel vous lui posez une question`** · calque de `askCmdr.empty.title` / `composer.placeholder` («
+  Posez une question sur vos fichiers ») · high.
 - **`inspectFile.doing` / `.done` → `Lecture du contenu de fichiers` / `A lu le contenu de fichiers`** · même moule que
   la sœur `imageFacts` (« Lecture du contenu de vos photos » / « A lu le contenu de vos photos ») : nom verbal au
   présent, `A <participe>` au passé (règle de la passe `ask-cmdr`). `contenu` dit explicitement que Cmdr lit dans le
@@ -2378,18 +2381,21 @@ accord) sont reprises mot pour mot de l'ancienne traduction, et seule la promess
 Notes de rédaction :
 
 - **« a photo's camera details and location » se rend avec l'incise `pour une photo, …`** : « les détails de l'appareil
-  photo … d'une photo » colle deux `photo` à trois mots d'écart. `… et, pour une photo, les détails de l'appareil photo
-  et la localisation` (liste et `whatsNew.body`) ; `… ou, pour une photo, les détails de l'appareil photo, y compris
-  l'endroit où elle a été prise` (`contentsRule`). Le `pour une photo` porte sur les deux compléments.
-- **« never sends whole files, photos, or thumbnails » → `n'envoie jamais de fichiers entiers, de photos ni de
-  vignettes`** : `de` répété après la négation, `ni` devant le dernier terme.
+  photo … d'une photo » colle deux `photo` à trois mots d'écart.
+  `… et, pour une photo, les détails de l'appareil photo et la localisation` (liste et `whatsNew.body`) ;
+  `… ou, pour une photo, les détails de l'appareil photo, y compris l'endroit où elle a été prise` (`contentsRule`). Le
+  `pour une photo` porte sur les deux compléments.
+- **« never sends whole files, photos, or thumbnails » →
+  `n'envoie jamais de fichiers entiers, de photos ni de vignettes`** : `de` répété après la négation, `ni` devant le
+  dernier terme.
 - Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais.
 - À signaler : `askCmdr.empty.hint` (anglais inchangé, « never file contents » / « jamais le contenu des fichiers »)
   contredit désormais cette promesse-ci ; c'est une question de copie source, pas de traduction.
 - **Suite (2026-09-02) : `askCmdr.empty.hint` et `settings.askCmdr.intro` réécrits sur le nouvel anglais.** Première
   phrase conservée dans les deux ; la seconde reprend les termes ci-dessus : « looks inside a file only when you ask
-  about it » → `ne regarde à l'intérieur d'un fichier que lorsque vous lui posez une question à son sujet` (`regarder
-  à l'intérieur` = `whatsNew.body`, `poser une question sur` = le moule du catalogue) ; « never changes a file without
-  your approval » → `ne modifie jamais un fichier sans votre approbation` (racine `approuver` de `contentsRule`, « tant
-  que vous ne l'avez pas approuvé »). ❌ Plus de `en lecture seule` ni de `ne change jamais rien` : Ask Cmdr écrit ses
-  notes et propose des renommages, la promesse porte sur l'accord de la personne, pas sur l'absence d'écriture.
+  about it » → `ne regarde à l'intérieur d'un fichier que lorsque vous lui posez une question à son sujet`
+  (`regarder à l'intérieur` = `whatsNew.body`, `poser une question sur` = le moule du catalogue) ; « never changes a
+  file without your approval » → `ne modifie jamais un fichier sans votre approbation` (racine `approuver` de
+  `contentsRule`, « tant que vous ne l'avez pas approuvé »). ❌ Plus de `en lecture seule` ni de `ne change jamais rien`
+  : Ask Cmdr écrit ses notes et propose des renommages, la promesse porte sur l'accord de la personne, pas sur l'absence
+  d'écriture.

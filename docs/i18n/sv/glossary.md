@@ -1973,47 +1973,48 @@ kvalitetspassets beslut (`photo` → `bild`, uniformt). Återanvänder `arkiv`, 
   `Tittar på ett förslag`/`Tittade på ett förslag` och `Läser vad som finns i dina bilder` (samma verbform, samma
   längdklass); `whatsNew.body` säger `titta in i en fil du frågar om`. Inget belägg i högen för just den här AI-frasen;
   vald för att `titta in i` är den idiomatiska svenskan för ”look into” och tydlig med ett filobjekt efter sig (utan
-  objekt kan `titta in` betyda ”hälsa på”, men den läsningen finns inte här). `inuti` står kvar som preposition i löpande
-  text (`consent.memory`: ”känt igen inuti dina foton”) · `tentative` (stilval utan direkt belägg; syskonstyrt).
+  objekt kan `titta in` betyda ”hälsa på”, men den läsningen finns inte här). `inuti` står kvar som preposition i
+  löpande text (`consent.memory`: ”känt igen inuti dina foton”) · `tentative` (stilval utan direkt belägg; syskonstyrt).
 - **thumbnail → `miniatyr`** (neutrum; plural `miniatyrer`) · MS-terminologi (`thumbnail` → `miniatyr`, neutrum), macOS
-  AppKit (`Miniatyrstorlek:`, ”liten/medelstor/stor miniatyrstorlek”), Total Commander (`&Miniatyrer`, ”Läs in
-  markerade miniatyrer på nytt”). Nautilus/Thunar säger `miniatyrbilder`; det kortare `miniatyr` är förstapartsordet
-  och det gamla `noContents` använde redan `miniatyrer` · `high`.
+  AppKit (`Miniatyrstorlek:`, ”liten/medelstor/stor miniatyrstorlek”), Total Commander (`&Miniatyrer`, ”Läs in markerade
+  miniatyrer på nytt”). Nautilus/Thunar säger `miniatyrbilder`; det kortare `miniatyr` är förstapartsordet och det gamla
+  `noContents` använde redan `miniatyrer` · `high`.
 - **camera details (a photo's EXIF fields: model, lens, exposure) → `kamerauppgifter`** · `kamera` är belagt överallt
   (MS `camera` → `kamera`, macOS `NSStillCameraTemplate` → `kamera`, Thunar `Kamera`, Nautilus `Kameramärke`/
-  `Kameramodell`); efterledet `-uppgifter` är katalogens eget ord för filmetadata (`askCmdr.renameReview.evidence.metadata`
-  = ”Filuppgifter, inte innehållet”, `filuppgifterna`), så sammansättningen läses som ”bildens kamera-metadata”. ❌ Inte
-  `kameradetaljer`: `detaljer` är reserverat för det expanderbara avsnittet (`tekniska detaljer`) · `high` (belagd
-  förled + katalogets efterled).
+  `Kameramodell`); efterledet `-uppgifter` är katalogens eget ord för filmetadata
+  (`askCmdr.renameReview.evidence.metadata` = ”Filuppgifter, inte innehållet”, `filuppgifterna`), så sammansättningen
+  läses som ”bildens kamera-metadata”. ❌ Inte `kameradetaljer`: `detaljer` är reserverat för det expanderbara avsnittet
+  (`tekniska detaljer`) · `high` (belagd förled + katalogets efterled).
 - **location (where a photo was taken) → `var den togs`**, inte `plats` · `plats` är det satta ordet för `location` i
   filsystemsmening (macOS Finder `Plats`, MS `plats`, Nautilus/Thunar/Dolphin `Plats`), och direkt efter ”en bilds”
   skulle `plats` läsas som var FILEN ligger, vilket är precis det samtyckestexten inte handlar om. Bisatsen säger vad
   engelskans ”location”/”where it was taken” faktiskt betyder: `en bilds kamerauppgifter och var den togs`
-  (`item.contents`, `whatsNew.body`), `inklusive var den togs` (`contentsRule`) · `high` (belagd term medvetet
-  undviken; bisatsen är entydig).
+  (`item.contents`, `whatsNew.body`), `inklusive var den togs` (`contentsRule`) · `high` (belagd term medvetet undviken;
+  bisatsen är entydig).
 - **title and author (a PDF's document metadata) → `titel och författare`** · `titel`: macOS AppKit `Title` → `Titel`,
   katalogen (`Chattens titel`); `författare`: MS-terminologi (`author` → `författare`). Dolphin säger `Upphovsman`, som
-  är könsmarkerat och utgår; MS:s `title` → `äganderätt` är den juridiska betydelsen och fel här. `tillsammans med dess
-  titel och författare` · `high`.
+  är könsmarkerat och utgår; MS:s `title` → `äganderätt` är den juridiska betydelsen och fel här.
+  `tillsammans med dess titel och författare` · `high`.
 - **page(s) (of a PDF) → `sida`/`sidor`** · MS-terminologi (`page` → `sida`); `några sidor ur en PDF`, `PDF-sidor`
-  (bindestreck efter initialförkortning som i `zip-arkiv`, `API-nyckel`). macOS Finders `Pages` är appnamnet, inte
-  ordet · `high`.
+  (bindestreck efter initialförkortning som i `zip-arkiv`, `API-nyckel`). macOS Finders `Pages` är appnamnet, inte ordet
+  · `high`.
 - **the list of files inside an archive → `vilka filer som finns i ett arkiv`**; what's inside an archive →
   `vad som finns i ett arkiv` · `listan över filerna i ett arkiv` är en kalk; svenskan säger naturligt ”vilka filer som
   finns i”. Samma ram (`… som finns i ett arkiv`) i alla tre nycklarna så att listan och stycket läses som en röst ·
   `high` (idiomatisk omskrivning; `arkiv` satt sedan arkivpasset).
-- **some text / some lines of text / some of its text → `lite text` / `några rader text` / `en del av texten`** ·
-  tre engelska formuleringar, tre svenska efter sammanhang: listpunkten (`lite text`), stycket (`några rader text`,
-  `rad` = textrad enligt visarpasset), nyhetsrutan (`en del av texten`) · `high`.
-- **whole files → `hela filer`** · ”Cmdr skickar aldrig hela filer, bilder eller miniatyrer”; det gamla `själva filerna:
-  inget filinnehåll` gick inte att behålla eftersom texten nu just LOVAR att en del innehåll skickas · `high`.
+- **some text / some lines of text / some of its text → `lite text` / `några rader text` / `en del av texten`** · tre
+  engelska formuleringar, tre svenska efter sammanhang: listpunkten (`lite text`), stycket (`några rader text`, `rad` =
+  textrad enligt visarpasset), nyhetsrutan (`en del av texten`) · `high`.
+- **whole files → `hela filer`** · ”Cmdr skickar aldrig hela filer, bilder eller miniatyrer”; det gamla
+  `själva filerna: inget filinnehåll` gick inte att behålla eftersom texten nu just LOVAR att en del innehåll skickas ·
+  `high`.
 - **`it` (= Cmdr) i meningen ”it can read a limited part of it” → `Cmdr`** · katalogkonventionen (Ask Cmdr-passet:
   upprepa Cmdr i stället för ett pronomen när meningen beskriver Cmdrs eget beteende); här hade `den … av den` dessutom
   syftat på två olika saker. `så att den kan hitta dem` står kvar: `den` = leverantören i samma mening · `high`.
 - **Uppräkning vars sista led själva innehåller `och` → `samt` före sista ledet** · `item.contents`: ”lite text,
-  PDF-sidor, vad som finns i ett arkiv samt en bilds kamerauppgifter och var den togs”. Utan `samt` hade det blivit
-  ”… i ett arkiv och en bilds … och var den togs”, två `och` i rad med olika räckvidd. Regel: style.md § Notes and
-  decisions · `high`.
+  PDF-sidor, vad som finns i ett arkiv samt en bilds kamerauppgifter och var den togs”. Utan `samt` hade det blivit ”… i
+  ett arkiv och en bilds … och var den togs”, två `och` i rad med olika räckvidd. Regel: style.md § Notes and decisions
+  · `high`.
 - Kommat före `eller` i `contentsRule` (”…, vilka filer som finns i ett arkiv, eller en bilds kamerauppgifter, …”) står
   kvar: leden är långa och läsaren behöver pausen (style.md § komma före `och`/`eller`). I `whatsNew.body` är leden
   kortare och kommat borta.

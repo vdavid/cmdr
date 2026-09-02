@@ -265,10 +265,10 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   notification qui porte déjà « Impossible de … : », donc la valeur commence directement par l'observation et jamais par
   un second « Impossible de … ». Elle garde sa majuscule initiale, comme toutes les valeurs `errors.*`. Exemple
   travaillé : `glossary.md` § Éjection et déconnexion refusées.
-- **« appareil photo » + « photo » dans la même proposition : passer par l'incise `pour une photo, …`.** « les
-  détails de l'appareil photo d'une photo » colle deux `photo` ; on écrit `…, et, pour une photo, les détails de
-  l'appareil photo et la localisation`. Termes et preuves : `glossary.md` § Ce qu'Ask Cmdr lit à l'intérieur d'un
-  fichier.
+- **« appareil photo » + « photo » dans la même proposition : passer par l'incise `pour une photo, …`.** « les détails
+  de l'appareil photo d'une photo » colle deux `photo` ; on écrit
+  `…, et, pour une photo, les détails de l'appareil photo et la localisation`. Termes et preuves : `glossary.md` § Ce
+  qu'Ask Cmdr lit à l'intérieur d'un fichier.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

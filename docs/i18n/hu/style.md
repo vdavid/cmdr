@@ -212,12 +212,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   csak a család EGY sorát érintené, az egész családot igazítsd hozzá: az olvasó egy felsorolásban látja őket egyszerre,
   a két funkció eltérését viszont soha. Eset és érvelés: `glossary.md` § A megszakított visszagörgetés
   eredményértesítése.
-- **Egy PDF oldala `oldal`, soha nem `lap`**: a `lap` a `tab` foglalt szava. Összetételben kötőjellel:
-  `PDF-oldalak`. Fotó esetén a hely `hol készült` / `készítési helye`, a gép adatai `kameraadatok`. Forrás:
-  `glossary.md` § Belenézés a fájlokba.
-- **Az `askCmdr.tool.*` címkepár akkor is a családi mintát követi, ha a próza más igét használ**: a hozzájárulási
-  szöveg `belenéz`-e az eszközsoron `Fájlok átnézése` / `Fájlok átnézve` lesz, mert a `belenéz`-nek nincs
-  állapotot mondó `-va/-ve` alakja. Indoklás: `glossary.md` § Belenézés a fájlokba.
+- **Egy PDF oldala `oldal`, soha nem `lap`**: a `lap` a `tab` foglalt szava. Összetételben kötőjellel: `PDF-oldalak`.
+  Fotó esetén a hely `hol készült` / `készítési helye`, a gép adatai `kameraadatok`. Forrás: `glossary.md` § Belenézés a
+  fájlokba.
+- **Az `askCmdr.tool.*` címkepár akkor is a családi mintát követi, ha a próza más igét használ**: a hozzájárulási szöveg
+  `belenéz`-e az eszközsoron `Fájlok átnézése` / `Fájlok átnézve` lesz, mert a `belenéz`-nek nincs állapotot mondó
+  `-va/-ve` alakja. Indoklás: `glossary.md` § Belenézés a fájlokba.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

@@ -205,18 +205,19 @@ with their own API key. Privacy posture:
   - image: dimensions and the EXIF block, `gps { latitude, longitude }` included when the photo carries it. A photo's
     coordinates are a home address;
   - `find`: matching lines from every text and PDF path in the call (up to 50 per row, 300 characters around the first
-    match), so one call can search many files.
-  Every cut is reported (`truncated`, `linesCut`, `returnedLines` / `totalMatches`, `unanswered`); a path the tool
-  can't or won't read answers a typed status (`folder`, `missing`, `unreadable { permission | io | encrypted | corrupt |
-  unsupported | tooLargeToExtract }`, `unreachable` after the 5 s per-path deadline, `unsupportedVolume` for `mtp://`
-  and direct `smb://`), and an encrypted PDF or archive entry stays closed: the tool has no password path. The PDF parser
-  runs inside `crash_reporter::contain_panics`, so a malformed PDF is a message-free `warn` line and an `unparseable`
-  row, never a crash report carrying its bytes. Same consent gate, named in its copy (`askCmdr.consent.item.contents`,
-  `askCmdr.consent.contentsRule`; `CONSENT_COPY_VERSION` 4).
-- **Raw bytes of any file never egress.** Every result DTO the agent can receive is text-only by construction: the
-  photo tools' shapes and `inspect_file`'s rows have no field that can hold bytes, each pinned by a walk-the-JSON test
-  (`photo_hit_is_text_only_no_byte_fields`, `file_facts_is_text_only_no_byte_fields`, `every_row_shape_is_text_only_no_byte_fields`). Image bytes, thumbnails,
-  and archive entry contents are unreachable by any tool in the agent's view.
+    match), so one call can search many files. Every cut is reported (`truncated`, `linesCut`, `returnedLines` /
+    `totalMatches`, `unanswered`); a path the tool can't or won't read answers a typed status (`folder`, `missing`,
+    `unreadable { permission | io | encrypted | corrupt | unsupported | tooLargeToExtract }`, `unreachable` after the 5
+    s per-path deadline, `unsupportedVolume` for `mtp://` and direct `smb://`), and an encrypted PDF or archive entry
+    stays closed: the tool has no password path. The PDF parser runs inside `crash_reporter::contain_panics`, so a
+    malformed PDF is a message-free `warn` line and an `unparseable` row, never a crash report carrying its bytes. Same
+    consent gate, named in its copy (`askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`;
+    `CONSENT_COPY_VERSION` 4).
+- **Raw bytes of any file never egress.** Every result DTO the agent can receive is text-only by construction: the photo
+  tools' shapes and `inspect_file`'s rows have no field that can hold bytes, each pinned by a walk-the-JSON test
+  (`photo_hit_is_text_only_no_byte_fields`, `file_facts_is_text_only_no_byte_fields`,
+  `every_row_shape_is_text_only_no_byte_fields`). Image bytes, thumbnails, and archive entry contents are unreachable by
+  any tool in the agent's view.
 - **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
   to a local folder and is never transmitted.
 

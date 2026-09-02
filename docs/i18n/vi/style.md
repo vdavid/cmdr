@@ -227,12 +227,12 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `Giữ nguyên {countText} … : …` frame, and where the English strings are IDENTICAL the Vietnamese values must match
   word for word. The two sets today: `askCmdr.renameUndo.skipReason.*` and `fileOperations.cancelRollback.reason.*`;
   details and the `mục` vs `tệp` line: `glossary.md` § Toast sau khi hoàn tác thao tác đang chạy.
-- **Ask Cmdr "looks inside" a file: `xem bên trong tệp`, and the three photo words stay apart.** The inspect tool
-  and the consent copy share one root (`Đang xem bên trong tệp`, `có thể xem bên trong tệp mà bạn hỏi đến`).
-  Around it: thumbnail is `hình thu nhỏ` (macOS + MS; not GNOME's `ảnh thu nhỏ`), a photo's camera is `máy ảnh`,
-  and where it was taken is `vị trí chụp` (never bare `vị trí`, which the catalog uses for a file's path). When
-  "photo" lands right next to "camera", write `một bức ảnh` so `ảnh` doesn't double up; elsewhere keep bare `ảnh`.
-  Evidence: `glossary.md` § Ask Cmdr xem bên trong tệp.
+- **Ask Cmdr "looks inside" a file: `xem bên trong tệp`, and the three photo words stay apart.** The inspect tool and
+  the consent copy share one root (`Đang xem bên trong tệp`, `có thể xem bên trong tệp mà bạn hỏi đến`). Around it:
+  thumbnail is `hình thu nhỏ` (macOS + MS; not GNOME's `ảnh thu nhỏ`), a photo's camera is `máy ảnh`, and where it was
+  taken is `vị trí chụp` (never bare `vị trí`, which the catalog uses for a file's path). When "photo" lands right next
+  to "camera", write `một bức ảnh` so `ảnh` doesn't double up; elsewhere keep bare `ảnh`. Evidence: `glossary.md` § Ask
+  Cmdr xem bên trong tệp.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

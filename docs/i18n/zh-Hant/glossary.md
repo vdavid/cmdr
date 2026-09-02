@@ -811,19 +811,18 @@ pile's AppKit, Nautilus, Dolphin, Thunar, Double Commander, and the Microsoft TB
 
 - **look inside a file (the inspect tool)** · `查看…裡的內容` (`正在查看檔案裡的內容` / `已查看檔案裡的內容`;
   `可以查看你問到的檔案裡的內容` in the what's-new paragraph) · composed on the catalog's own tool-line pairs:
-  `askCmdr.tool.listVolumes.*` already renders "look at" as `查看`, and `askCmdr.tool.imageFacts.*` renders "read
-  what's in your photos" as `讀取你照片裡的內容` · `high`. `查看` (look at) rather than `讀取` (read) where the English
-  says "look inside"; `讀取` stays for the `contentsRule` sentence, where the English says "read".
+  `askCmdr.tool.listVolumes.*` already renders "look at" as `查看`, and `askCmdr.tool.imageFacts.*` renders "read what's
+  in your photos" as `讀取你照片裡的內容` · `high`. `查看` (look at) rather than `讀取` (read) where the English says
+  "look inside"; `讀取` stays for the `contentsRule` sentence, where the English says "read".
 - **camera details (a photo's EXIF)** · `相機資訊` · AP Photos live TW (`No camera information` → `沒有相機資訊`; HK
   `沒有相機資料`, the HK `資料` variant this catalog already ruled against under _info_). `相機` alone is AP-TW = AP-HK
-  (Photos `camera`, AppKit `NSStillCameraTemplate`), THU (`Camera` → 相機), NAU (`Camera Model` → 相機型號), MS (4×
-  相機) · `high`. ❗ Not `EXIF 資料`: the consent copy is plain-language by design, and the English says "camera
-  details".
+  (Photos `camera`, AppKit `NSStillCameraTemplate`), THU (`Camera` → 相機), NAU (`Camera Model` → 相機型號), MS (4×相機)
+  · `high`. ❗ Not `EXIF 資料`: the consent copy is plain-language by design, and the English says "camera details".
 - **where a photo was taken / a photo's location** · `拍攝地點` · composed from AP Photos live TW = HK: `拍攝` is the
-  shooting verb (`Capture Date` → `拍攝日期`, `拍攝日期為…`), and `地點` is Photos' word for a place in a photo
-  (`Place` / `Places` → `地點`, `你照片中的地點`) · `high`. ❗ Not `位置`, this catalog's word for a place in the
-  FILESYSTEM (the path sense; see _location_ above). Photos draws the same line, so the boundary the _location_ entry
-  predicted holds: `地點` for a physical place, `位置` for a path.
+  shooting verb (`Capture Date` → `拍攝日期`, `拍攝日期為…`), and `地點` is Photos' word for a place in a photo (`Place`
+  / `Places` → `地點`, `你照片中的地點`) · `high`. ❗ Not `位置`, this catalog's word for a place in the FILESYSTEM (the
+  path sense; see _location_ above). Photos draws the same line, so the boundary the _location_ entry predicted holds:
+  `地點` for a physical place, `位置` for a path.
 - **thumbnail** · `縮圖` · reused from § Viewer, media, and image metadata; MS `thumbnail` → 縮圖 (2), THU + DC
   `Thumbnails` → 縮圖 · `high`
 - **archive (in the consent copy)** · `封存檔` · the glossary's general-archive noun (AP-TW = AP-HK `Archive` → 封存,
@@ -836,25 +835,24 @@ pile's AppKit, Nautilus, Dolphin, Thunar, Double Commander, and the Microsoft TB
   (`kMDItemTextContent` → `文字內容`); consistent with the `純文字` ruling for _plain text_ · `high`
 - **a few pages of a PDF** · `PDF 的幾頁` · on the _page_ entry (`頁` counts pages; never `分頁`, the tab word);
   Spotlight `kMDItemNumberOfPages` → `頁數` TW = HK · `high`
-- **the list of files inside an archive** · `封存檔裡的檔案列表` · on the _list_ ruling (`列表`, never `清單`) ·
-  `high`
+- **the list of files inside an archive** · `封存檔裡的檔案列表` · on the _list_ ruling (`列表`, never `清單`) · `high`
 - **"Cmdr never sends whole files…"** · `Cmdr 絕不會送出整個檔案、照片或縮圖。` · `絕不會` is the catalog's own
   strong-negation form for a privacy promise (`askCmdr.consent.logsNote` `絕不會送到任何地方`, the telemetry settings'
   `絕不會傳送檔名`); `整個檔案` (whole files) replaces the retired `檔案本身：不送檔案內容`, which promised that no
   contents ever leave, a promise the new English deliberately withdraws · `high`
-- The two sentences carried over from the retired `askCmdr.consent.noContents` (photo search; "nothing happens to a
-  file until you approve it") are reused verbatim. Only the opener changed: `照片搜尋也是同樣的做法：` ("works the same
-  way") replaces the old "is the one thing that reaches inside your images", which is no longer true.
+- The two sentences carried over from the retired `askCmdr.consent.noContents` (photo search; "nothing happens to a file
+  until you approve it") are reused verbatim. Only the opener changed: `照片搜尋也是同樣的做法：` ("works the same way")
+  replaces the old "is the one thing that reaches inside your images", which is no longer true.
 - **"looks inside a file only when you ask about it"** (`askCmdr.empty.hint`, `settings.askCmdr.intro`) ·
   `只有在你問到某個檔案時，才會查看它裡面的內容` · the same `問到某個檔案` + `查看…裡面的內容` pair as `contentsRule`,
   so the rail, the settings intro, and the consent screen make one promise in one wording · `high`. The retired
   `絕不讀取檔案內容` / `Ask Cmdr 是唯讀的…絕不會更動任何東西` are gone: both promised more than the new English does.
 - **"never changes a file without your approval"** · `沒有你的同意，絕不會更動任何檔案` · `同意` is the catalog's
-  _approve_ word (`askCmdr.decision.approved`, `contentsRule` `在你同意之前`); `任何檔案` rather than `任何東西`, because
-  the assistant does write its own notes · `high`
+  _approve_ word (`askCmdr.decision.approved`, `contentsRule` `在你同意之前`); `任何檔案` rather than `任何東西`,
+  because the assistant does write its own notes · `high`
 - `provider` stays `提供者` (in the reused sentence), and `Ask Cmdr` / `Cmdr` / `PDF` stay Latin and spaced. All five
-  values differ from English, so none needs a `sameAsSourceJustification`; the U+2019 apostrophes in the English have
-  no counterpart in Chinese.
+  values differ from English, so none needs a `sameAsSourceJustification`; the U+2019 apostrophes in the English have no
+  counterpart in Chinese.
 
 ## Notes
 

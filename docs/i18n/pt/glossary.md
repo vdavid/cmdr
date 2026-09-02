@@ -1822,13 +1822,14 @@ Fontes: `_ignored/i18n/pt-BR/` (macOS Finder + SystemSettings, terminologia da M
   `olhar dentro de` é o verbo que o catálogo já usa para o Cmdr espiar um conteúdo (`search.coverage.denied` "não teve
   permissão para olhar dentro desta pasta", `search.coverage.declined` "não olha dentro de pastas de snapshot") · high.
   Gerúndio + pretérito, o molde dos irmãos (`Buscando nas suas fotos` / `Buscou nas suas fotos`). O artigo definido
-  (`dos arquivos`) porque a linha aparece enquanto o assistente lê os arquivos da pergunta; a chamada cobre até 200, então
-  o plural fica neutro como no inglês.
-- **archive → `arquivo compactado`** · entrada já assentada (§ Archive-browsing terms) · high. `a lista dos arquivos
-  dentro de um arquivo compactado` repete `arquivo` de propósito: é a mesma repetição que a entrada original já aceita.
+  (`dos arquivos`) porque a linha aparece enquanto o assistente lê os arquivos da pergunta; a chamada cobre até 200,
+  então o plural fica neutro como no inglês.
+- **archive → `arquivo compactado`** · entrada já assentada (§ Archive-browsing terms) · high.
+  `a lista dos arquivos dentro de um arquivo compactado` repete `arquivo` de propósito: é a mesma repetição que a
+  entrada original já aceita.
 - **thumbnail → `miniatura`** · macOS Finder pt-BR (`Tamanho da miniatura:`, `miniatura pequena/média/grande` nas
-  descrições de acessibilidade das visualizações), terminologia da Microsoft (id 121524 `miniatura`), Thunar (`Mostrar
-  miniaturas:`) · confirmed. Já estava na antiga `askCmdr.consent.noContents`.
+  descrições de acessibilidade das visualizações), terminologia da Microsoft (id 121524 `miniatura`), Thunar
+  (`Mostrar miniaturas:`) · confirmed. Já estava na antiga `askCmdr.consent.noContents`.
 - **camera details (EXIF de uma foto) → `detalhes da câmera`** · câmera: terminologia da Microsoft (id 27160), macOS
   SystemSettings pt-BR (`câmeras e outros dispositivos`), e o catálogo (`onboarding.stepOptional.mtp.*`); `detalhes` é a
   palavra que `askCmdr.renameReview.evidence.metadata` já usa para metadados (`Detalhes do arquivo, não o conteúdo`) ·
@@ -1846,14 +1847,19 @@ Fontes: `_ignored/i18n/pt-BR/` (macOS Finder + SystemSettings, terminologia da M
   trocando o antigo `os arquivos em si: nem o conteúdo dos arquivos` porque agora um pedaço do conteúdo PODE sair; a
   frase não pode mais prometer que conteúdo nenhum é enviado · high.
 - **"works the same way" → `funciona do mesmo jeito`** · pt-BR coloquial, casa com o tom da tela · high.
-- **Recuperado da antiga `askCmdr.consent.noContents`, palavra por palavra:** a frase da busca de fotos (`o texto que o
-  Cmdr reconheceu dentro das fotos correspondentes e as etiquetas delas vão para o seu provedor para que ele possa
-  encontrá-las`) e a frase das sugestões (`O Ask Cmdr pode sugerir renomeações, movimentações e faxinas, e nada acontece
-  com nenhum arquivo até você aprovar.`). `etiquetas` = tags (o catálogo já usa em `errors.listing.attributeNotFound`),
-  `provedor` = provider (§ Terms), `faxinas` = cleanups.
+- **Recuperado da antiga `askCmdr.consent.noContents`, palavra por palavra:** a frase da busca de fotos
+  (`o texto que o Cmdr reconheceu dentro das fotos correspondentes e as etiquetas delas vão para o seu provedor para que ele possa encontrá-las`)
+  e a frase das sugestões
+  (`O Ask Cmdr pode sugerir renomeações, movimentações e faxinas, e nada acontece com nenhum arquivo até você aprovar.`).
+  `etiquetas` = tags (o catálogo já usa em `errors.listing.attributeNotFound`), `provedor` = provider (§ Terms),
+  `faxinas` = cleanups.
 - **`whatsNew.body`**: a segunda frase (`É mais do que você aceitou na época, então aqui está tudo de novo.`) ficou como
-  estava; só a primeira foi retraduzida. `um arquivo quando você pergunta sobre ele` no lugar do relativo `sobre o qual`,
-  que soa formal demais para a tela.
+  estava; só a primeira foi retraduzida. `um arquivo quando você pergunta sobre ele` no lugar do relativo
+  `sobre o qual`, que soa formal demais para a tela.
 - Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `estar a` + infinitivo, `consoante`, `Rever`. Nenhum valor
   leva apóstrofo ASCII, então não há `''`. Nenhum `sameAsSourceJustification`: os cinco valores diferem do inglês.
-- **`askCmdr.empty.hint` e `settings.askCmdr.intro` seguem a mesma regra**: `Ele lê nomes, caminhos e tamanhos, e só olha dentro de um arquivo quando você pergunta sobre ele` / `… só olha dentro de um arquivo quando você pergunta sobre ele e nunca muda um arquivo sem a sua aprovação`. O antigo `é somente leitura` e o `nunca muda nada` saíram: o Ask Cmdr propõe renomeações e escreve as próprias anotações, então só a aprovação pode ser prometida · high.
+- **`askCmdr.empty.hint` e `settings.askCmdr.intro` seguem a mesma regra**:
+  `Ele lê nomes, caminhos e tamanhos, e só olha dentro de um arquivo quando você pergunta sobre ele` /
+  `… só olha dentro de um arquivo quando você pergunta sobre ele e nunca muda um arquivo sem a sua aprovação`. O antigo
+  `é somente leitura` e o `nunca muda nada` saíram: o Ask Cmdr propõe renomeações e escreve as próprias anotações, então
+  só a aprovação pode ser prometida · high.

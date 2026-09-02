@@ -1953,19 +1953,19 @@ Tono honesto y relajado, ni disculpa ni advertencia, porque la app sí funciona.
 ## Mirar dentro de un archivo: la herramienta `inspect_file` y la pantalla de consentimiento (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
 
 Superficie nueva: Ask Cmdr puede leer, a petición, una parte acotada de un archivo (unas líneas de texto, unas páginas
-de un PDF con su título y autor, la lista de lo que contiene un archivo comprimido, o los datos de la cámara y el
-lugar de una foto). La pantalla de consentimiento lo cuenta en tres sitios (un ítem de la lista, el párrafo de
-garantías que sustituye al antiguo `noContents`, y el aviso de "qué ha cambiado"), y la etiqueta de herramienta lo
-anuncia en el carril del chat.
+de un PDF con su título y autor, la lista de lo que contiene un archivo comprimido, o los datos de la cámara y el lugar
+de una foto). La pantalla de consentimiento lo cuenta en tres sitios (un ítem de la lista, el párrafo de garantías que
+sustituye al antiguo `noContents`, y el aviso de "qué ha cambiado"), y la etiqueta de herramienta lo anuncia en el
+carril del chat.
 
 - **look inside (a file) → `mirar dentro de`** · sin fuente directa en la pila (ningún gestor de archivos ni macOS
   tienen la función); es la locución corriente y la más literal, y macOS `es` ya usa `dentro de` para "inside" (Finder,
-  "Crear una carpeta llamada ${fileName} dentro de ${target}"). Etiquetas de herramienta: `Mirando dentro de los
-  archivos` / `Se miró dentro de los archivos`, el mismo molde impersonal `Se + pretérito` + complemento que
-  `Se buscó en tus fotos` (verbo intransitivo, sin objeto directo), con `los archivos` porque el inglés dice "files"
-  a secas (los archivos por los que preguntaste), igual que `listDir` dice `una carpeta`. Rechazado `Leyendo el
-  contenido de los archivos`: `contenido` promete más de lo que lee (una parte acotada), y el inglés eligió "look
-  inside" justo para no prometerlo · high (molde), tentative (la locución).
+  "Crear una carpeta llamada ${fileName} dentro de ${target}"). Etiquetas de herramienta:
+  `Mirando dentro de los archivos` / `Se miró dentro de los archivos`, el mismo molde impersonal `Se + pretérito` +
+  complemento que `Se buscó en tus fotos` (verbo intransitivo, sin objeto directo), con `los archivos` porque el inglés
+  dice "files" a secas (los archivos por los que preguntaste), igual que `listDir` dice `una carpeta`. Rechazado
+  `Leyendo el contenido de los archivos`: `contenido` promete más de lo que lee (una parte acotada), y el inglés eligió
+  "look inside" justo para no prometerlo · high (molde), tentative (la locución).
 - **thumbnail → `miniatura`** · macOS AppKit (WindowTabs, "thumbnail of the tab picker image" → "miniatura de la imagen
   del selector de pestaña"), MS terminology (id 1057247, todas las regiones incl. ESP/419), Nautilus ("Miniaturas"),
   Total Commander ("&Miniaturas"). Cuatro fuentes de acuerdo · high.
@@ -1975,12 +1975,12 @@ anuncia en el carril del chat.
   archivos. `datos` en vez de `detalles` porque en español "detalles de la cámara" suena a la ficha de un producto;
   `metadatos` (MS, id 592925) es correcto pero técnico para un texto de consentimiento · high (cámara), tentative (la
   frase).
-- **location (de una foto, dónde se tomó) → `ubicación`** en las listas cortas, y **"where it was taken" → `el lugar
-  donde se tomó`** en el párrafo · location → `ubicación` en macOS Finder ("Ubicación:", ventana de información) y
-  AppKit (Menus, "Location" → "Ubicación"), MS terminology (id 341945), Nautilus y Dolphin ("Ubicación"). Para el verbo
-  de la foto, España dice `hacer una foto` y Latinoamérica `tomar una foto`; `tomar` se entiende en las dos orillas y es
-  la forma neutra que pide la base panregional del `style.md`, así que `donde se tomó` (no `se hizo`, ni `se sacó`) ·
-  high (ubicación), tentative (tomar, decisión regional).
+- **location (de una foto, dónde se tomó) → `ubicación`** en las listas cortas, y **"where it was taken" →
+  `el lugar donde se tomó`** en el párrafo · location → `ubicación` en macOS Finder ("Ubicación:", ventana de
+  información) y AppKit (Menus, "Location" → "Ubicación"), MS terminology (id 341945), Nautilus y Dolphin ("Ubicación").
+  Para el verbo de la foto, España dice `hacer una foto` y Latinoamérica `tomar una foto`; `tomar` se entiende en las
+  dos orillas y es la forma neutra que pide la base panregional del `style.md`, así que `donde se tomó` (no `se hizo`,
+  ni `se sacó`) · high (ubicación), tentative (tomar, decisión regional).
 - **archive (zip/tar/7z) → `archivo comprimido`** · reafirma la entrada de la pasada de exploración de archivos
   comprimidos (macOS ArchiveUtility + Total Commander). En "the list of files inside an archive" el español encadenaría
   `archivos dentro de un archivo`, así que la frase es `la lista de archivos que contiene un archivo comprimido`: el
@@ -1990,24 +1990,25 @@ anuncia en el carril del chat.
   creó un documento en la nube", otro concepto) y Nautilus ("Author" → "Autor") · high.
 - **page (de un PDF) → `página`** · macOS AppKit Printing ("Page %ld" → "Página %ld"), MS terminology (id 89935) · high.
 - **"whole files" → `archivos completos`** · `completo` es el adjetivo de macOS `es` para "entero/todo" en contextos de
-  archivos y copias; `enteros` también vale, pero `completos` lee más natural junto a `fotos` y `miniaturas`. El
-  antiguo `los archivos en sí` (de `noContents`) desaparece porque el inglés nuevo ya no dice "the files themselves" ·
-  high.
+  archivos y copias; `enteros` también vale, pero `completos` lee más natural junto a `fotos` y `miniaturas`. El antiguo
+  `los archivos en sí` (de `noContents`) desaparece porque el inglés nuevo ya no dice "the files themselves" · high.
 - **"some lines of text" → `algunas líneas de texto`; "some text" (ítem corto) → `algo de texto`; "some of its text" →
-  `parte de su texto`** · tres formas del mismo "some" según el molde de cada frase: `algo de` para el ítem de lista
-  sin artículo, `parte de` cuando hay un poseedor ("its text"), `algunas` cuando hay unidad contable ("lines") · high.
+  `parte de su texto`** · tres formas del mismo "some" según el molde de cada frase: `algo de` para el ítem de lista sin
+  artículo, `parte de` cuando hay un poseedor ("its text"), `algunas` cuando hay unidad contable ("lines") · high.
 - **"a limited part of it" → `una parte limitada de su contenido`** · `de él` colgado al final suena a traducción;
   `de su contenido` da al pronombre un sustantivo y deja claro que es el interior del archivo, no el archivo · high.
 - **"Photo search works the same way" → `La búsqueda de fotos funciona igual`** · el resto de la frase (el texto
   reconocido y las etiquetas van al proveedor) se recupera literal del antiguo `noContents`, igual que la última frase
-  entera (`Ask Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta
-  que tú lo apruebas.`), para que la pantalla no cambie de voz entre una versión y otra · high.
-- **Sin coma de Oxford.** El ítem de lista termina en `… un archivo comprimido y los datos de la cámara y la ubicación
-  de una foto`, sin coma antes de la `y` final, como ya hace `askCmdr.consent.item.envelope` ("el cursor, la selección
-  y las unidades conectadas"). El doble `y` es español corriente; la alternativa `y, de una foto, los datos…` corta el
-  ritmo de una lista de consentimiento · high.
+  entera
+  (`Ask Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.`),
+  para que la pantalla no cambie de voz entre una versión y otra · high.
+- **Sin coma de Oxford.** El ítem de lista termina en
+  `… un archivo comprimido y los datos de la cámara y la ubicación de una foto`, sin coma antes de la `y` final, como ya
+  hace `askCmdr.consent.item.envelope` ("el cursor, la selección y las unidades conectadas"). El doble `y` es español
+  corriente; la alternativa `y, de una foto, los datos…` corta el ritmo de una lista de consentimiento · high.
 - **"looks inside a file only when you ask about it" → `solo mira dentro de un archivo cuando le preguntas por él`**
   (`askCmdr.empty.hint`, `settings.askCmdr.intro`) · reutiliza `mirar dentro de` (arriba) y `preguntar por un archivo`
   (`contentsRule`, "Cuando preguntas por un archivo"). El antiguo `es de solo lectura … nunca cambia nada` desaparece:
-  Ask Cmdr propone cambios de nombre y movimientos y escribe sus notas, así que la garantía nueva es `nunca cambia un
-  archivo sin tu aprobación`, con `aprobación` del par `Aprobar` / `hasta que tú lo apruebas` ya asentado · high.
+  Ask Cmdr propone cambios de nombre y movimientos y escribe sus notas, así que la garantía nueva es
+  `nunca cambia un archivo sin tu aprobación`, con `aprobación` del par `Aprobar` / `hasta que tú lo apruebas` ya
+  asentado · high.

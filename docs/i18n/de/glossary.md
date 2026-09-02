@@ -1851,11 +1851,11 @@ Zustimmungsbildschirm, der Absatz `contentsRule` (ersetzt `askCmdr.consent.noCon
 Belege: Pile `de/` (macOS Finder/AppKit, Microsoft-Terminologie, Nautilus/Thunar/Dolphin, TC/DC) plus die Live-Bundles
 `Preview.app` und `Photos.app` (`.loctable`, macOS 26.6.2, 2026-09-02).
 
-- **look inside files (Werkzeugzeile) → `Dateien werden durchgesehen` / `Dateien durchgesehen`** · `durchsehen` ist
-  das gesetzte Verb fürs Hineinschauen-und-Auflisten (§ Archive browsing, KDE Dolphin „Archive durchsehen“), und die
-  Form spiegelt die Geschwister `Deine Fotos werden durchsucht` / `Deine Fotos durchsucht` · `high`. ❌ Nicht
-  `durchsuchen` (= suchen) und nicht `Dateiinhalte werden gelesen`: Das Werkzeug liest nur einen begrenzten Teil, und
-  `Dateiinhalte` ist im Katalog das Wort für das, was Cmdr NICHT liest (`askCmdr.empty.hint`).
+- **look inside files (Werkzeugzeile) → `Dateien werden durchgesehen` / `Dateien durchgesehen`** · `durchsehen` ist das
+  gesetzte Verb fürs Hineinschauen-und-Auflisten (§ Archive browsing, KDE Dolphin „Archive durchsehen“), und die Form
+  spiegelt die Geschwister `Deine Fotos werden durchsucht` / `Deine Fotos durchsucht` · `high`. ❌ Nicht `durchsuchen`
+  (= suchen) und nicht `Dateiinhalte werden gelesen`: Das Werkzeug liest nur einen begrenzten Teil, und `Dateiinhalte`
+  ist im Katalog das Wort für das, was Cmdr NICHT liest (`askCmdr.empty.hint`).
 - **look inside a file (Prosa) → `hineinschauen`** („kann Ask Cmdr jetzt hineinschauen und einen Teil davon lesen“) ·
   Katalogpräzedenz aus dem alten `noContents` („was in deine Bilder hineinschaut“); umgangssprachlich, passt zum
   `du`-Ton · `high`.
@@ -1870,37 +1870,36 @@ Belege: Pile `de/` (macOS Finder/AppKit, Microsoft-Terminologie, Nautilus/Thunar
   Inhalt“) · `high` für `Kamera`, `tentative` für die Zusammensetzung (keine Quelle hat „camera details“ als Begriff;
   Runner-up „Kameradaten“ wäre ebenso gängig). Nicht `EXIF`: Das Englische vermeidet das Kürzel absichtlich.
 - **location / where it was taken (eines Fotos) → `Aufnahmeort`** · Apples Fotos-App sagt für den Ort eines Fotos
-  schlicht „Ort“ (`Assign Location` → „Ort zuweisen“, `Hide Location` → „Ort ausblenden“), Thunar/Nautilus ebenso
-  „Ort“, Microsoft `location → Standort` (Gerätesinn, Fotos-App „Standortinformationen“ beim Teilen). Auf dem
-  Zustimmungsbildschirm steht das Wort neben Dateien, wo ein bloßes „Ort“ als Speicherort gelesen würde; das
-  Kompositum aus Apples „Ort“ und dem „aufgenommen“ aus „where it was taken“ ist eindeutig · `tentative` (keine Quelle
-  hat das Kompositum selbst). In der Prosa `einschließlich des Aufnahmeorts`, in der Liste `der Aufnahmeort eines
-  Fotos`.
+  schlicht „Ort“ (`Assign Location` → „Ort zuweisen“, `Hide Location` → „Ort ausblenden“), Thunar/Nautilus ebenso „Ort“,
+  Microsoft `location → Standort` (Gerätesinn, Fotos-App „Standortinformationen“ beim Teilen). Auf dem
+  Zustimmungsbildschirm steht das Wort neben Dateien, wo ein bloßes „Ort“ als Speicherort gelesen würde; das Kompositum
+  aus Apples „Ort“ und dem „aufgenommen“ aus „where it was taken“ ist eindeutig · `tentative` (keine Quelle hat das
+  Kompositum selbst). In der Prosa `einschließlich des Aufnahmeorts`, in der Liste `der Aufnahmeort eines Fotos`.
 - **title and author (PDF-Metadaten) → `Titel und Autor`** · Vorschau-Inspektor `Title` → „Titel“, `Author` →
-  „Autor:in“; Microsoft `title → Titel`, `author → Autor`; Dolphin `Author` → „Autor“ · `high` für `Titel`,
-  `tentative` für `Autor`: Apple nutzt den Gender-Doppelpunkt, den unsere Regel (keine typografischen Glyphen,
-  Screenreader) ausschließt, und eine neutrale Umschreibung („wer es verfasst hat“) liest sich in der Aufzählung
-  gestelzt. `Autor` steht hier als Name des Metadatenfelds, nicht als Anrede einer Person. Siehe `style.md` §
-  Decisions to confirm with David.
-- **page (eines PDFs) → `Seite`/`Seiten`** · Vorschau `Pages` → „Seiten“, `Page Count` → „Seitenanzahl“ (auch
-  Dolphin), Microsoft `page → Seite` · `high`. `PDF-Seiten` mit Bindestrich, `einige Seiten eines PDFs` (Genitiv
-  `des PDFs`, Glossar: `das PDF`).
+  „Autor:in“; Microsoft `title → Titel`, `author → Autor`; Dolphin `Author` → „Autor“ · `high` für `Titel`, `tentative`
+  für `Autor`: Apple nutzt den Gender-Doppelpunkt, den unsere Regel (keine typografischen Glyphen, Screenreader)
+  ausschließt, und eine neutrale Umschreibung („wer es verfasst hat“) liest sich in der Aufzählung gestelzt. `Autor`
+  steht hier als Name des Metadatenfelds, nicht als Anrede einer Person. Siehe `style.md` § Decisions to confirm with
+  David.
+- **page (eines PDFs) → `Seite`/`Seiten`** · Vorschau `Pages` → „Seiten“, `Page Count` → „Seitenanzahl“ (auch Dolphin),
+  Microsoft `page → Seite` · `high`. `PDF-Seiten` mit Bindestrich, `einige Seiten eines PDFs` (Genitiv `des PDFs`,
+  Glossar: `das PDF`).
 - **archive → `Archiv`**, „the list of files inside an archive“ → `die Liste der Dateien in einem Archiv`, „what’s
   inside an archive“ → `was in einem Archiv steckt` · gesetzt (§ Archive browsing); `steckt` hält den lockeren Ton des
   Englischen `what’s inside` · `high`.
-- **provider → `Anbieter`** („gehen an deinen Anbieter, damit er sie finden kann“) · gesetzt (Microsoft), Wortlaut
-  aus dem alten `noContents` unverändert übernommen · `high`.
+- **provider → `Anbieter`** („gehen an deinen Anbieter, damit er sie finden kann“) · gesetzt (Microsoft), Wortlaut aus
+  dem alten `noContents` unverändert übernommen · `high`.
 - **`contentsRule`: die beiden letzten Sätze sind der alte `noContents`-Wortlaut** („Die Fotosuche …“ ist neu
-  angeschlossen mit `funktioniert genauso`; „Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags
-  gehen an deinen Anbieter, damit er sie finden kann.“ und „Ask Cmdr kann Umbenennungen, Verschiebungen und
-  Aufräumaktionen vorschlagen, und an keiner Datei passiert etwas, bevor du zustimmst.“ wörtlich) · `high`. Der
-  Absatz verspricht bewusst NICHT „keine Dateiinhalte“ mehr, sondern `nie ganze Dateien, Fotos oder Miniaturen` und
+  angeschlossen mit `funktioniert genauso`; „Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen
+  an deinen Anbieter, damit er sie finden kann.“ und „Ask Cmdr kann Umbenennungen, Verschiebungen und Aufräumaktionen
+  vorschlagen, und an keiner Datei passiert etwas, bevor du zustimmst.“ wörtlich) · `high`. Der Absatz verspricht
+  bewusst NICHT „keine Dateiinhalte“ mehr, sondern `nie ganze Dateien, Fotos oder Miniaturen` und
   `einen begrenzten Teil davon`. `es` für Cmdr wie in `askCmdr.error.noConsent` („was es sehen darf“).
-- **`whatsNew.body`: zweiter Satz unverändert** („Das ist mehr, als du damals zugestimmt hast, deshalb hier noch
-  einmal das Ganze.“); der erste Satz ist neu und nennt die vier Dinge in derselben Reihenfolge wie `contentsRule`.
+- **`whatsNew.body`: zweiter Satz unverändert** („Das ist mehr, als du damals zugestimmt hast, deshalb hier noch einmal
+  das Ganze.“); der erste Satz ist neu und nennt die vier Dinge in derselben Reihenfolge wie `contentsRule`.
 - Kein `sameAsSourceJustification` nötig: alle fünf Werte unterscheiden sich vom Englischen.
-- **„looks inside a file only when you ask about it“ → `schaut nur dann in eine Datei hinein, wenn du nach ihr
-  fragst`** (`askCmdr.empty.hint`, `settings.askCmdr.intro`) · dasselbe `hineinschauen` wie oben, und `nach ihr fragst`
-  wie in `contentsRule` („Wenn du nach einer Datei fragst“) · `high`. Beide Schlüssel haben das alte „nie
-  Dateiinhalte“ / „ist schreibgeschützt … verändert nie etwas“ verloren; die Einstellungs-Einleitung sagt jetzt
+- **„looks inside a file only when you ask about it“ → `schaut nur dann in eine Datei hinein, wenn du nach ihr fragst`**
+  (`askCmdr.empty.hint`, `settings.askCmdr.intro`) · dasselbe `hineinschauen` wie oben, und `nach ihr fragst` wie in
+  `contentsRule` („Wenn du nach einer Datei fragst“) · `high`. Beide Schlüssel haben das alte „nie Dateiinhalte“ / „ist
+  schreibgeschützt … verändert nie etwas“ verloren; die Einstellungs-Einleitung sagt jetzt
   `verändert nie eine Datei ohne deine Zustimmung` (Zustimmung wie `bevor du zustimmst` in `contentsRule`).

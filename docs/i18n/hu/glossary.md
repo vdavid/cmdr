@@ -2235,42 +2235,42 @@ jóváhagyásra várnak) szó szerint átkerült, csak az első mondatok újak.
   pile-találat a fotó-készítés értelemre; a `tartózkodási hely` az MS-ben a felhasználó helyét jelenti, nem a fotóét,
   ezért kimarad). A `contentsRule`-ban az angol mellékmondatot (`including where it was taken`) tartja a magyar is:
   `beleértve azt, hogy hol készült`; a listás kulcsokban a rövid birtokos alak (`készítési helye`) áll.
-- **page (egy PDF oldala) → `oldal`, SOHA nem `lap`** · MS terminológia (`page` = `oldal` a dokumentumoldal
-  értelemben; a `lap` az MS-nél a munkalap/fül) · high. A `lap` a katalógusban a `tab` foglalt szava
-  (`style.md` § Terminology), tehát a PDF-oldal csak `oldal` lehet. Összetételben kötőjellel, a rövidítés szabálya
-  szerint: `PDF-oldalak` (mint a szótár `PDF-je` alakja).
+- **page (egy PDF oldala) → `oldal`, SOHA nem `lap`** · MS terminológia (`page` = `oldal` a dokumentumoldal értelemben;
+  a `lap` az MS-nél a munkalap/fül) · high. A `lap` a katalógusban a `tab` foglalt szava (`style.md` § Terminology),
+  tehát a PDF-oldal csak `oldal` lehet. Összetételben kötőjellel, a rövidítés szabálya szerint: `PDF-oldalak` (mint a
+  szótár `PDF-je` alakja).
 - **title and author (a PDF metaadata) → `cím` és `szerző`** · `cím`: macOS AppKit (`Title` = `Cím`), MS (`Cím`);
-  `szerző`: MS (`author` = `szerző`, három bejegyzés) · high. Birtokos szerkezetben: `egy PDF néhány oldalát a címével
-  és a szerzőjével együtt`.
+  `szerző`: MS (`author` = `szerző`, három bejegyzés) · high. Birtokos szerkezetben:
+  `egy PDF néhány oldalát a címével és a szerzőjével együtt`.
 - **text (a szöveges fájl tartalma) → `szöveg`; some lines of text → `néhány sor szöveg`; some text → `némi szöveg`;
   some of its text → `a szövegének egy része`** · macOS Finder és AppKit (`Text` = `Szöveg`), MS (`Szöveg`) · high.
-- **archive → `archívum`** (szótár, settled); **the list of files inside an archive → `az archívumban lévő fájlok
-  listája`** (a kulcsokban határozatlan névelővel: `egy archívumban lévő fájlok listája`) · high. A rövidebb
-  `consent.item.contents` angolja (`what’s inside an archive`) is ezt a hosszabb alakot kapja, mert a rövidebb `egy
-  archívum tartalma` a „fájltartalom” ígéretével ütközne épp azon a képernyőn, amelyik azt mondja, hogy egész fájl
-  soha nem megy el.
+- **archive → `archívum`** (szótár, settled); **the list of files inside an archive →
+  `az archívumban lévő fájlok listája`** (a kulcsokban határozatlan névelővel: `egy archívumban lévő fájlok listája`) ·
+  high. A rövidebb `consent.item.contents` angolja (`what’s inside an archive`) is ezt a hosszabb alakot kapja, mert a
+  rövidebb `egy archívum tartalma` a „fájltartalom” ígéretével ütközne épp azon a képernyőn, amelyik azt mondja, hogy
+  egész fájl soha nem megy el.
 - **provider → `szolgáltató`, `a szolgáltatód`** (szótár, settled; a `consent.proactive` és a régi `noContents` is
   `a szolgáltatódhoz`) · high.
-- **look inside (a file) → `belenéz` (ige, a próza), `Fájlok átnézése` / `Fájlok átnézve` (az eszközsor
-  címkepárja)** · a `belenéz` a katalógus saját szava erre (`search.coverage.denied` = `belenézzen ebbe a mappába`, a
-  régi `noContents` = `belenéz a képeidbe`; a `renameReview.*` tooltipek `a fájl belsejéből`), pile-találat nincs. Az
-  eszközsor címkéi a szótár `askCmdr.tool.*` szabályát követik (igenév a folyamatra, `-va/-ve` határozói igenév a
-  kész állapotra, ugyanazon a tárgyon): a `belenéz` ebbe a mintába nem fér bele (`A fájlokba belenézve` nem
-  állapot, hanem módhatározó), ezért a tárgyas `átnéz` viszi a párt (`Fájlok átnézése` / `Fájlok átnézve`), pont úgy,
-  ahogy a `searchPhotos` sor is a családi mintát választotta a szó szerinti ige helyett. Az `átvizsgálás` (scan) foglalt
-  a `searchPhotos`/`operationsList` sorokon, ezért nem az. Névelő nélkül, mert az angol is puszta többes (egy hívás
-  1–200 fájlt fed) · tentative, FLAGGED anyanyelvi lektornak: az `átnéz` a „belső” jelentést csak sugallja.
-- **limited part (of a file) → `egy korlátozott részét`** · leíró (MS `limited` = `korlátozott`) · high. NEM `egy kis
-  részét`: az angol a határt ígéri, nem a méretet.
-- **whole files → `egész fájlokat`** · leíró · high. A régi `magukat a fájlokat` alak azért nem maradt, mert az új
-  angol szándékosan a „teljes fájl vs. egy része” szembeállítást mondja ki.
+- **look inside (a file) → `belenéz` (ige, a próza), `Fájlok átnézése` / `Fájlok átnézve` (az eszközsor címkepárja)** ·
+  a `belenéz` a katalógus saját szava erre (`search.coverage.denied` = `belenézzen ebbe a mappába`, a régi `noContents`
+  = `belenéz a képeidbe`; a `renameReview.*` tooltipek `a fájl belsejéből`), pile-találat nincs. Az eszközsor címkéi a
+  szótár `askCmdr.tool.*` szabályát követik (igenév a folyamatra, `-va/-ve` határozói igenév a kész állapotra, ugyanazon
+  a tárgyon): a `belenéz` ebbe a mintába nem fér bele (`A fájlokba belenézve` nem állapot, hanem módhatározó), ezért a
+  tárgyas `átnéz` viszi a párt (`Fájlok átnézése` / `Fájlok átnézve`), pont úgy, ahogy a `searchPhotos` sor is a családi
+  mintát választotta a szó szerinti ige helyett. Az `átvizsgálás` (scan) foglalt a `searchPhotos`/`operationsList`
+  sorokon, ezért nem az. Névelő nélkül, mert az angol is puszta többes (egy hívás 1–200 fájlt fed) · tentative, FLAGGED
+  anyanyelvi lektornak: az `átnéz` a „belső” jelentést csak sugallja.
+- **limited part (of a file) → `egy korlátozott részét`** · leíró (MS `limited` = `korlátozott`) · high. NEM
+  `egy kis részét`: az angol a határt ígéri, nem a méretet.
+- **whole files → `egész fájlokat`** · leíró · high. A régi `magukat a fájlokat` alak azért nem maradt, mert az új angol
+  szándékosan a „teljes fájl vs. egy része” szembeállítást mondja ki.
 - A `whatsNew.body` második mondata (`Ez többet ígér annál, mint amihez hozzájárultál, ezért itt van újra az egész.`)
   változatlanul átkerült a régi fordításból; az első mondat a `belenézhet abba a fájlba, amelyről kérdezel` + egy
   tárgyas felsorolás (`elolvashatja a szövegének egy részét, …`), hogy a lista ne `-ba/-be` ragok láncán lógjon.
-- Mind az öt érték eltér az angoltól, tehát nincs `sameAsSourceJustification`; egyik értékben sincs ASCII aposztróf,
-  a birtokos `’`-ek a magyarban nem jelennek meg, tehát az ICU `''` szabálya nem lép be.
+- Mind az öt érték eltér az angoltól, tehát nincs `sameAsSourceJustification`; egyik értékben sincs ASCII aposztróf, a
+  birtokos `’`-ek a magyarban nem jelennek meg, tehát az ICU `''` szabálya nem lép be.
 - **Utólag ugyanez a két rövid ígéret** (`askCmdr.empty.hint`, `settings.askCmdr.intro`): a „looks inside a file only
   when you ask about it” tagmondat mindkettőben `egy fájlba csak akkor néz bele, ha arról kérdezed` (a settled `belenéz`
-  ige), a „never changes a file without your approval” pedig `a jóváhagyásod nélkül egyetlen fájlt sem változtat meg`,
-  a `contentsRule` `amíg jóvá nem hagyod` zárásának párja. A régi `fájltartalmakat soha` és `csak olvasásra képes … soha
-  semmit nem változtat` alakok kikerültek: az új angol se ígéri őket.
+  ige), a „never changes a file without your approval” pedig `a jóváhagyásod nélkül egyetlen fájlt sem változtat meg`, a
+  `contentsRule` `amíg jóvá nem hagyod` zárásának párja. A régi `fájltartalmakat soha` és
+  `csak olvasásra képes … soha semmit nem változtat` alakok kikerültek: az új angol se ígéri őket.
