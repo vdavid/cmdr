@@ -387,13 +387,21 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       case 'cancelled': {
         if (!settleEventReceived) return
         const event = settled.event
-        log.info('{op} cancelled after {filesProcessed} {filesNoun}, rollback={rollback} ({left} left behind)', {
-          op: operationLabel,
-          filesProcessed: event.filesProcessed,
-          filesNoun: pluralize(event.filesProcessed, 'file'),
-          rollback: event.rollback.outcome,
-          left: event.rollback.skips.reduce((total, group) => total + group.count, 0),
-        })
+        // `staged` rides along because `outcome` answers for the LEDGER only: a
+        // clean `rolledBack` can still sit on top of gigabytes of Cmdr's own
+        // scratch the destination refused to release, and a log that omitted it
+        // would be as misleading as the toast used to be.
+        log.info(
+          '{op} cancelled after {filesProcessed} {filesNoun}, rollback={rollback} ({left} left behind, {staged} staged)',
+          {
+            op: operationLabel,
+            filesProcessed: event.filesProcessed,
+            filesNoun: pluralize(event.filesProcessed, 'file'),
+            rollback: event.rollback.outcome,
+            left: event.rollback.skips.reduce((total, group) => total + group.count, 0),
+            staged: event.rollback.stagedLeftovers?.count ?? 0,
+          },
+        )
         // Said here rather than by the parent: the reversal's report rides the
         // cancelled event, and both the started and the adopted arms reach this
         // one place. Raised before the close so the summary is already up when
