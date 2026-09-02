@@ -35,9 +35,7 @@ const MARKER = 'cmdr:download'
 
 // `latest.json` is written by our own release pipeline, so the shape is trusted rather than
 // validated; the assertion marks that as a choice instead of an unchecked `any` assignment.
-const latest = JSON.parse(
-  readFileSync(new URL('../../public/latest.json', import.meta.url), 'utf-8'),
-) as LatestRelease
+const latest = JSON.parse(readFileSync(new URL('../../public/latest.json', import.meta.url), 'utf-8')) as LatestRelease
 const version = latest.version
 
 function dmgUrl(arch: string): string {
