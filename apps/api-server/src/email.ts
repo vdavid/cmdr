@@ -60,6 +60,40 @@ async function sendViaResend(resend: Resend, payload: CreateEmailOptions, label:
   }
 }
 
+/**
+ * Resend's simulator address. It accepts the message and marks it delivered without sending it to
+ * a person, so the daily probe below costs an inbox nothing.
+ */
+export const EMAIL_PROBE_RECIPIENT = 'delivered@resend.dev'
+
+/**
+ * Prove the Resend send path still works, without waiting for something that matters to need it.
+ *
+ * Real sends are sporadic (a handful a month), so a rotated or revoked key would otherwise stay
+ * invisible until a crash alert, a feedback digest, or a buyer's license key hit the dead
+ * credential. This is a REAL send through the real key: the key is scoped to sending only, so
+ * every read endpoint (`/domains`, `/api-keys`, `/emails`) returns 401 no matter how healthy the
+ * key is, which makes them useless as probes (verified against the live key, 2026-09-02). Widening
+ * the key's scope to make them work would test the wrong capability AND hand a leaked key the
+ * power to delete our sending domain.
+ *
+ * Throws through `sendViaResend` when Resend rejects, which is what the cron alarm turns into a
+ * Discord message.
+ */
+export async function sendEmailPathProbe(params: { resendApiKey: string }): Promise<void> {
+  const resend = new Resend(params.resendApiKey)
+  await sendViaResend(
+    resend,
+    {
+      from: 'Cmdr <noreply@getcmdr.com>',
+      to: EMAIL_PROBE_RECIPIENT,
+      subject: 'Cmdr email path probe',
+      text: 'Automated daily check that the Resend send path still works. Nobody receives this.',
+    },
+    'email path probe',
+  )
+}
+
 /** The fate column's rendered values. `'?'` is the honest answer, never a guessed `'crashed'`. */
 export type CrashFate = 'crashed' | 'kept running' | '?'
 

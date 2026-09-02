@@ -22,17 +22,18 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **`email.ts`**: Resend delivery (HTML + plain text, multi-seat), behind the single `sendViaResend` wrapper. Senders:
   license keys, the crash digest, the feedback digest, one hand-written error report
   (`sendErrorReportNotificationEmail`, sent at intake, not on cron: `src/telemetry/DETAILS.md` § Notification email),
-  the DB-size alert, and the device-count alert. `humanReportRecipient` is the one place the
-  `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` rule lives, shared by the feedback digest and error-report
-  mail so neither needs a new secret. The card-shaped emails share one page shell and one set of style constants, so
-  feedback and error reports read as one family.
+  the DB-size alert, the device-count alert, and `sendEmailPathProbe` (the daily liveness check, § Cron handler job 8).
+  `humanReportRecipient` is the one place the `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL` rule lives,
+  shared by the feedback digest and error-report mail so neither needs a new secret. The card-shaped emails share one
+  page shell and one set of style constants, so feedback and error reports read as one family.
 - **`discord.ts`**: Discord webhook client (single retry on 429, drop-on-failure). Carries the cron failure alert as
   well as the error-report, feedback, beta-signup, and eviction notifications.
 - **`cron-health.ts`**: `pingCronHealth`, the healthchecks.io dead-man's switch for the cron tick. § Cron alarms.
 - **`scheduled.ts`**: the cron jobs (crash notifications, feedback digest, daily aggregation, DB size, retention sweep,
   eviction sweep). Tests split by axis: `crash-notification-email.test.ts` and `feedback-notification-email.test.ts`
   cover the two jobs whose output is a document (query → row → rendered HTML and subject), `scheduled.test.ts` the
-  DB-writing jobs, and `cron-alarm.test.ts` the handler's alarm wiring, with the D1/env fakes in `cron-test-helpers.ts`.
+  DB-writing jobs, `cron-alarm.test.ts` the handler's alarm wiring, and `email-path-probe.test.ts` the daily liveness
+  check, with the D1/env fakes in `cron-test-helpers.ts`.
 - **`user-agent.ts`**: `classifyUaFamily` / `resolveUaFamily`, shared by the download write path and the funnel read
   path so neither area imports the other.
 - **`scripts/generate-keys.js`**: Ed25519 key pair generation (run once at setup).
@@ -273,10 +274,14 @@ A single `scheduled` handler runs every 3 hours (`0 */3 * * *`). Every job goes 
 job's failure from the rest and raises the alarm for it (§ Cron alarms):
 
 1. **Crash notifications** (every invocation): queries `crash_reports WHERE notified_at IS NULL`, sorted newest-first,
-   marks rows as notified, then sends an email via Resend with one row per crash report (When, Env, Fate, ID, Site,
-   Signal, Version, Reply to) plus a full-width sub-row carrying the redacted `panic_message` (an em-dash when the row
-   has none). Marks before sending to prefer missed notifications over duplicates. Requires `CRASH_NOTIFICATION_EMAIL`
-   and `RESEND_API_KEY`.
+   sends an email via Resend with one row per crash report (When, Env, Fate, ID, Site, Signal, Version, Reply to) plus a
+   full-width sub-row carrying the redacted `panic_message` (an em-dash when the row has none), then marks the rows
+   notified. Requires `CRASH_NOTIFICATION_EMAIL` and `RESEND_API_KEY`.
+   - **Stamps `notified_at` AFTER the send**, matching the feedback digest. `sendViaResend` throws on a rejected send,
+     so a failure leaves every row NULL and the next tick retries. Stamping first drops the alert permanently, and the
+     credential failure that would cause it is exactly when crash reports matter most. The cost is a duplicate email
+     when a send succeeds and the `UPDATE` then fails, or a batch re-mailed every three hours while Resend stays
+     unhappy; both are visible (§ Cron alarms) and bounded by the cron interval, which a silent drop is not.
    - **Fate is the severity ranking**, and the reason the email is worth reading row by row: `crashed` (red) for
      `app_fate = 'ended'`, `kept running` (amber) for `'keptRunning'`, `?` (gray) for a NULL or `'unconfirmed'` row that
      claims nothing. Two rows that both read `signal: panic` are otherwise indistinguishable, though one killed the app
@@ -287,10 +292,9 @@ job's failure from the rest and raises the alarm for it (§ Cron alarms):
    one email with a card per message (header strip with the UTC timestamp, app version, OS version, and a `prod`/`dev`
    chip; then the message body with `white-space: pre-wrap` so the sender's line breaks survive; then the reply-to
    line). Recipient is `FEEDBACK_NOTIFICATION_EMAIL ?? CRASH_NOTIFICATION_EMAIL`, so it ships with no new secret.
-   - **Stamps `notified_at` AFTER the send**, the opposite of the crash job, and deliberately so: `sendViaResend` throws
-     on a rejected send, so a failure leaves the rows NULL and the next tick retries them. A crash is one signal among
-     many and its row persists either way, but feedback is a person talking to us and this email is the only surface it
-     gets read on, so a duplicate costs seconds while a drop costs a conversation. Don't "fix" it back to match crashes.
+   - **Stamps `notified_at` AFTER the send**, same as the crash job: a rejected send leaves the rows NULL and the next
+     tick retries them. Feedback is a person talking to us and this email is the only surface it gets read on, so a
+     duplicate costs seconds while a drop costs a conversation. ❌ Don't stamp before the send in either job.
    - **`replyTo` is set only when exactly one message in the batch carries an address**, which makes answering that
      person a plain reply. With none or several there's no single right answer, so the header stays off and the per-card
      `mailto:` links carry it.
@@ -306,6 +310,16 @@ job's failure from the rest and raises the alarm for it (§ Cron alarms):
    (the per-upload KV counter is racy and drifts), clears `intake_paused` if the bucket is back under the LOW watermark,
    then triggers `tryEvict` if still over 8 GB. Idempotent, and it catches drift from concurrent uploads or a Worker
    dying mid-eviction.
+8. **Email path probe** (00:00 UTC only): `handleEmailPathProbe` sends one throwaway email through Resend so a dead
+   `RESEND_API_KEY` surfaces within a day instead of at the moment a crash alert, a feedback digest, or a buyer's
+   license key needs it. Recipient is `delivered@resend.dev`, Resend's simulator address, so nobody receives it.
+   - **It has to be a real send.** The key is scoped to sending only, so `GET /domains`, `/api-keys`, and `/emails` all
+     return 401 however healthy the key is (verified against the live key, 2026-09-02); a check built on them would
+     alarm constantly. ❌ Don't widen the key to "Full access" to make them work: it would test the wrong capability (a
+     readable domain list doesn't prove sending works) and give a leaked key the power to delete our sending domain and
+     mint its own keys.
+   - Covers the Worker's Resend API path only. Listmonk authenticates to the same service over SMTP with a **separate**
+     credential, so one can be dead while the other works. `src/website/DETAILS.md` owns the signup path.
 
 The default export uses the object form (`{ fetch, scheduled }`) required for cron support. The Hono `app` is also
 exported as a named export so tests can use `app.request()`.

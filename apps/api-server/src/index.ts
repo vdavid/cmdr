@@ -12,6 +12,7 @@ import { betaSignup } from './website/beta-signup'
 import { linkCodes } from './website/link-codes'
 import {
   handleCrashNotifications,
+  handleEmailPathProbe,
   handleFeedbackNotifications,
   handleDailyAggregation,
   handleDbSizeCheck,
@@ -88,6 +89,7 @@ export default {
       await run('Daily eviction sweep', () => handleDailyEvictionSweep(env))
       await run('Retention sweep', () => handleRetentionSweep(env))
       await run('Synthetic heartbeat sweep', () => handleSyntheticHeartbeatSweep(env))
+      await run('Email path probe', () => handleEmailPathProbe(env))
     }
 
     // Last, so the ping reports the whole tick. A tick that never reaches this line is exactly what
@@ -101,6 +103,7 @@ export default {
 // Export handler functions for testing
 export {
   handleCrashNotifications,
+  handleEmailPathProbe,
   handleFeedbackNotifications,
   handleDailyAggregation,
   handleDbSizeCheck,

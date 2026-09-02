@@ -2,6 +2,7 @@ import {
   humanReportRecipient,
   sendCrashNotificationEmail,
   sendDbSizeAlert,
+  sendEmailPathProbe,
   sendFeedbackNotificationEmail,
   type CrashEmailRow,
   type CrashFate,
@@ -76,21 +77,31 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
     message: row.panic_message,
   }))
 
-  const ids = results.map((r) => r.id)
-  const now = new Date().toISOString()
-
-  // Mark as notified BEFORE sending email (prefer missed notification over duplicate)
-  const placeholders = ids.map(() => '?').join(', ')
-  await env.TELEMETRY_DB.prepare(`UPDATE crash_reports SET notified_at = ? WHERE id IN (${placeholders})`)
-    .bind(now, ...ids)
-    .run()
-
+  // Stamp AFTER the send, matching `handleFeedbackNotifications`. `sendViaResend` throws on a
+  // rejected send, so a failure leaves every row NULL and the next tick retries. Stamping first
+  // would drop the alert permanently, and a dead credential is exactly when that happens.
   await sendCrashNotificationEmail({
     crashes,
     totalCount: results.length,
     to: env.CRASH_NOTIFICATION_EMAIL,
     resendApiKey: env.RESEND_API_KEY,
   })
+
+  const ids = results.map((r) => r.id)
+  const placeholders = ids.map(() => '?').join(', ')
+  await env.TELEMETRY_DB.prepare(`UPDATE crash_reports SET notified_at = ? WHERE id IN (${placeholders})`)
+    .bind(new Date().toISOString(), ...ids)
+    .run()
+}
+
+/**
+ * Send one throwaway email a day so a dead `RESEND_API_KEY` surfaces on its own schedule rather
+ * than at the moment something important needs to send. Recipient is Resend's simulator address,
+ * so nobody receives it. A rejection throws, and `runCronJob` turns that into a Discord alert.
+ */
+async function handleEmailPathProbe(env: Bindings): Promise<void> {
+  if (!env.RESEND_API_KEY) return
+  await sendEmailPathProbe({ resendApiKey: env.RESEND_API_KEY })
 }
 
 /**
@@ -391,6 +402,7 @@ async function handleDailyEvictionSweep(env: Bindings): Promise<void> {
 
 export {
   handleCrashNotifications,
+  handleEmailPathProbe,
   handleFeedbackNotifications,
   handleDailyAggregation,
   handleDbSizeCheck,
