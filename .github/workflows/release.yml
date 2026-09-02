@@ -122,7 +122,7 @@ jobs:
           done < <(mount | awk -F' on ' '/\/Volumes\/Cmdr/ { sub(/ \(.*$/, "", $2); print $2 }')
 
       - name: Build, sign, and notarize
-        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
+        uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -143,6 +143,16 @@ jobs:
           releaseName: 'Cmdr ${{ github.ref_name }}'
           releaseBody: 'See CHANGELOG.md for details.'
           releaseDraft: false
+          # The `.sig` assets are what the publish job reads to build `latest.json`, so this
+          # default is load-bearing rather than incidental. Stated explicitly to keep it that way.
+          uploadUpdaterSignatures: true
+          # ❌ Don't turn this back on. From v1 the action writes `latest.json` with GitHub API
+          # asset URLs (`api.github.com/repos/.../releases/assets/<id>`), which only serve the
+          # binary to a caller sending `Accept: application/octet-stream`. Cmdr's updater
+          # (`apps/desktop/src-tauri/src/updater/mod.rs`) does a plain `reqwest` GET, so it would
+          # get JSON metadata and fail signature verification. The publish job below is the single
+          # source of the manifest we ship, with browser-download URLs.
+          uploadUpdaterJson: false
 
       - name: Delete llama-server signing keychain
         if: always()
@@ -177,12 +187,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
           mkdir -p /tmp/signatures
           gh release download "$TAG" -p "Cmdr_*.app.tar.gz.sig" -D /tmp/signatures
 
-          # Verify all 3 arch sigs were downloaded
+          # Verify all 3 arch sigs were downloaded. Since tauri-action v1 the `.app.tar.gz` and
+          # `.app.tar.gz.sig` names carry the app version, the way the DMG names always have:
+          # `Cmdr_<version>_<arch>.app.tar.gz.sig`. `gh` writes each file under the release
+          # asset's own name, so these are the names on disk too.
           for arch in aarch64 x64 universal; do
-              [ -f "/tmp/signatures/Cmdr_${arch}.app.tar.gz.sig" ] || { echo "Missing sig for $arch"; exit 1; }
+              [ -f "/tmp/signatures/Cmdr_${VERSION}_${arch}.app.tar.gz.sig" ] || { echo "Missing sig for $arch"; exit 1; }
           done
 
       - name: Extract changelog for this version
@@ -204,9 +218,9 @@ jobs:
           TAG="${{ github.ref_name }}"
 
           # Read signatures downloaded from the release
-          SIG_AARCH64=$(cat /tmp/signatures/Cmdr_aarch64.app.tar.gz.sig)
-          SIG_X86_64=$(cat /tmp/signatures/Cmdr_x64.app.tar.gz.sig)
-          SIG_UNIVERSAL=$(cat /tmp/signatures/Cmdr_universal.app.tar.gz.sig)
+          SIG_AARCH64=$(cat "/tmp/signatures/Cmdr_${VERSION}_aarch64.app.tar.gz.sig")
+          SIG_X86_64=$(cat "/tmp/signatures/Cmdr_${VERSION}_x64.app.tar.gz.sig")
+          SIG_UNIVERSAL=$(cat "/tmp/signatures/Cmdr_${VERSION}_universal.app.tar.gz.sig")
 
           # Query DMG sizes from the release assets (tauri-action uses "x64" in DMG names)
           RELEASE_JSON=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG")
@@ -236,13 +250,21 @@ jobs:
               notes: $notes,
               pub_date: $pub_date,
               platforms: {
-                "darwin-universal": { signature: $sig_universal, url: "\($base_url)/Cmdr_universal.app.tar.gz" },
-                "darwin-aarch64": { signature: $sig_aarch64, url: "\($base_url)/Cmdr_aarch64.app.tar.gz" },
-                "darwin-x86_64": { signature: $sig_x86_64, url: "\($base_url)/Cmdr_x64.app.tar.gz" }
+                "darwin-universal": { signature: $sig_universal, url: "\($base_url)/Cmdr_\($version)_universal.app.tar.gz" },
+                "darwin-aarch64": { signature: $sig_aarch64, url: "\($base_url)/Cmdr_\($version)_aarch64.app.tar.gz" },
+                "darwin-x86_64": { signature: $sig_x86_64, url: "\($base_url)/Cmdr_\($version)_x64.app.tar.gz" }
               }
             }' > /tmp/latest.json
 
-      - name: Replace tauri-action's latest.json on the release
+          # Every installed copy of Cmdr fetches these URLs verbatim and has no fallback, so a name
+          # that drifts from what tauri-action uploaded would strand the whole install base. Fail
+          # the release here instead, while nothing has shipped.
+          for asset in $(jq -r '.platforms[].url | split("/") | last' /tmp/latest.json | sort -u); do
+              echo "$RELEASE_JSON" | jq -e --arg name "$asset" 'any(.assets[]; .name == $name)' > /dev/null \
+                  || { echo "latest.json points at \"$asset\", which is not an asset on release $TAG"; exit 1; }
+          done
+
+      - name: Upload latest.json to the release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

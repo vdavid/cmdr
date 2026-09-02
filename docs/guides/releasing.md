@@ -30,9 +30,11 @@ service is stopped.
 
 **To switch back**: set `runs-on: [self-hosted, macOS, ARM64]`, restart the service with
 `cd ~/actions-runner && ./svc.sh start`, and fix the Finder Automation grant first, or the DMG step hangs ~2 minutes and
-fails every job. Worth doing if hosted minutes get expensive or cold builds get painful; the whole workflow still
-carries the self-hosted-specific guards (the stale-`/Volumes/Cmdr` detach, the keychain search-list restore), so nothing
-else has to change.
+fails every job. Check the runner version too: `tauri-action` v1 declares `runs.using: node24`, which needs
+`actions-runner` 2.327.0 or newer (added in that release, 2025-07-22); an older runner rejects the step outright. Worth
+doing if hosted minutes get expensive or cold builds get painful; the whole workflow still carries the
+self-hosted-specific guards (the stale-`/Volumes/Cmdr` detach, the keychain search-list restore), so nothing else has to
+change.
 
 Re-enabling the persistent cargo target dir belongs with that switch, not before it: the old `CARGO_TARGET_DIR`
 (`~/.cache/cmdr-release-target`, outside the workspace `actions/checkout` wipes) was safe ONLY because the jobs ran
@@ -150,6 +152,35 @@ Then hand David the submission link: https://member.macupdate.com/content/submit
 the top takes the app name and loads the current listing. MacUpdate prefers updating an existing listing over a new one
 (downloads keep accumulating, version history stays catalogued, and Watch List users get notified).
 
+## What a release publishes
+
+One GitHub release per tag, carrying these assets for each of the three arches (`aarch64`, `x64`, `universal`):
+
+- `Cmdr_<version>_<arch>.dmg`: what people download. `getcmdr.com/download/latest/<arch>`, the website's download
+  buttons, and the Homebrew cask each rebuild this name from the version, so it's the one asset name the rest of the
+  repo hard-codes.
+- `Cmdr_<version>_<arch>.app.tar.gz` plus its `.sig`: the updater payload and its minisign signature.
+- `latest.json`, whose copy in `apps/website/public/latest.json` (committed by the publish job) is what
+  `getcmdr.com/latest.json` serves.
+
+Two naming details are load-bearing:
+
+- **File names say `x64`, never `x86_64`.** Tauri's CLI names the Intel bundles that way, while the rest of the repo
+  (URL paths, D1 columns, Rust target triples) says `x86_64`. The mapping happens at the file-name boundary only; see
+  `apps/api-server/src/telemetry/DETAILS.md` § Gotchas.
+- **Every bundle name carries the app version, `.app.tar.gz[.sig]` included.** That last part arrived with
+  `tauri-action` v1 (verified on tauri-action v1.0.0, reading its `getAssetName` name builder, 2026-09-02); v0 left the
+  tarballs unversioned, so releases up to 0.41.0 carry `Cmdr_<arch>.app.tar.gz` instead.
+
+**The publish job owns `latest.json`, not `tauri-action`.** From v1 the action writes download URLs in GitHub's API form
+(`api.github.com/repos/.../releases/assets/<id>`), which hands back the binary only to a caller sending
+`Accept: application/octet-stream`. Cmdr's updater does a plain `reqwest` GET (`download_update` in
+`apps/desktop/src-tauri/src/updater/mod.rs`), so it would read JSON metadata and fail signature verification. The
+workflow passes `uploadUpdaterJson: false` and builds the manifest itself with
+`https://github.com/<repo>/releases/download/<tag>/<file>` URLs. Before uploading it, the job asserts that every URL in
+it names an asset actually on the release: a name that drifts from what the action uploaded would strand every install
+in the field, with no fallback in the app to recover.
+
 ## How updates work
 
 - App checks `https://getcmdr.com/latest.json` on start and every 60 min
@@ -194,13 +225,23 @@ the build will complete in minutes.
 
 Use "Re-run failed jobs" (not "Re-run all jobs") to avoid rebuilding architectures that already succeeded.
 
+### The release notes reverted to "See CHANGELOG.md for details."
+
+`tauri-action` rewrites an existing release's name and body on every run (since v1). A build job re-run after the
+publish job already wrote the changelog therefore puts the placeholder body back. Re-run the publish job afterwards: it
+re-extracts the CHANGELOG section, regenerates `latest.json`, and re-commits the website copy.
+
 ### Publish job failed but builds succeeded
 
 The publish job downloads signatures from the release, generates `latest.json`, updates the release body, commits to
 main, and triggers a website deploy. If it fails:
 
 - **Missing signatures**: check that all 3 build jobs uploaded their `.sig` files. The publish job validates this
-  upfront and fails fast with a clear message.
+  upfront and fails fast with a clear message. It looks for `Cmdr_<version>_<arch>.app.tar.gz.sig`, so a `tauri-action`
+  bump that changes bundle naming lands here first.
+- **`latest.json` points at an asset that isn't on the release**: same cause, caught by the assertion the job runs
+  before uploading the manifest. Compare `gh release view <tag> --json assets` against the names the workflow builds,
+  and fix the workflow rather than the release.
 - **Git push failed**: another commit was pushed to main between checkout and push. Re-run the publish job; it does
   `git pull --rebase` to handle this, but if the rebase itself conflicts (someone else edited `latest.json`), it needs
   manual resolution.
