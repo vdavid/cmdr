@@ -8,6 +8,9 @@
  * `_setLocaleForTests` (value only, no rune bump) would NOT re-render: that's
  * the seam distinction Decision 6 warns about.
  */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, unmount, flushSync } from 'svelte'
 import {
@@ -99,10 +102,25 @@ describe('availableLocales() (loaded-catalog discovery + non-locale-dir exclusio
   })
 
   it('never treats the `screenshots/` capture-artifact dir as a locale', () => {
-    // `screenshots/` sits alongside the locale dirs under `messages/` and is
-    // globbed by `messages/*/*.json`, but it's not a BCP-47 tag, so the runtime
-    // must filter it out. A regression here would surface it as a fake locale.
+    // `screenshots/` sits alongside the locale dirs under `messages/`. The glob
+    // excludes it outright, and `BCP47_DIR` would reject it anyway; this pins the
+    // user-visible half, that it can't surface as a fake locale.
     expect(availableLocales()).not.toContain('screenshots')
+  })
+
+  it('excludes `screenshots/` in the glob PATTERN, not just at runtime', () => {
+    // The pattern is what decides whether those files reach the bundle at all.
+    // `screenshots/capture-report.json` is translator tooling that weighed
+    // ~280 kB, 4.5% of the whole frontend, downloaded on every silent update and
+    // parsed at every launch, before the negative pattern kept it out. A runtime
+    // gate reads identically in review but ships every byte first, so a
+    // well-meaning simplification back to a single positive pattern is exactly
+    // the regression this test exists to catch.
+    //
+    // Read from source because `import.meta.glob` resolves at build time: by the
+    // time this module is imported, the pattern is already gone.
+    const source = readFileSync(join(import.meta.dirname, 'messages.svelte.ts'), 'utf8')
+    expect(source).toContain("'!./messages/screenshots/**'")
   })
 
   it('only lists BCP-47-shaped tags', () => {

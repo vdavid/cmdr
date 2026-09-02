@@ -1,16 +1,16 @@
 {
   "$comment": "Baseline for the desktop-bundle-size check (warn-only). Measures the SvelteKit output the Tauri app embeds, built fresh into a private dir so it never touches apps/desktop/build/. Asset names are content-hash-normalized (chunks/AbC12345.js → chunks/*.js) so rebuilds compare stably. A local run ratchets totalBytes down when the bundle shrinks. Raising it is FINE without asking, unlike most allowlists here: delete this file and run `pnpm check desktop-bundle-size` to regenerate. The warn at the moment of growth is the signal; the number is only a record of where the bundle stands.",
-  "totalBytes": 6235288,
+  "totalBytes": 5951739,
   "topAssets": {
     "_app/immutable/assets/0.*.css": 37796,
     "_app/immutable/assets/10.*.css": 39530,
     "_app/immutable/assets/5.*.css": 131491,
     "_app/immutable/assets/whats-new-trigger.*.css": 40323,
-    "_app/immutable/chunks/*.js": 4821339,
+    "_app/immutable/chunks/*.js": 4536690,
     "_app/immutable/nodes/10.*.js": 163965,
     "_app/immutable/nodes/12.*.js": 63007,
     "_app/immutable/nodes/2.*.js": 53034,
-    "_app/immutable/nodes/5.*.js": 618741,
+    "_app/immutable/nodes/5.*.js": 619842,
     "_app/immutable/nodes/6.*.js": 100890
   }
 }

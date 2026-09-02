@@ -56,12 +56,16 @@ function stripMetadata(raw: Record<string, unknown>): Catalog {
 // Static catalog imports for the bundled SPA: every `messages/<locale>/*.json` is
 // eagerly globbed and merged into one per-locale map at module load, so adding a
 // catalog file (or a whole new locale dir) needs no edit here. The dir segment is
-// the locale tag (`messages/de-DE/foo.json` → `de-DE`); a path that doesn't look
-// like a BCP-47 tag is NOT a locale and is skipped (the `screenshots/` capture-
-// artifact dir lives alongside the locale dirs, and `en-XA/` is present only in
-// dev builds). `ssr=false` (`+layout.ts`) means this runs client-side only; the
+// the locale tag (`messages/de-DE/foo.json` → `de-DE`); `en-XA/` is present only
+// in dev builds. `ssr=false` (`+layout.ts`) means this runs client-side only; the
 // merge touches no `window`, so it's safe regardless.
-const allModules = import.meta.glob<Record<string, unknown>>('./messages/*/*.json', {
+//
+// ❗ `screenshots/` is EXCLUDED in the glob pattern, not merely rejected later by
+// `BCP47_DIR`. It's a sibling of the locale dirs holding translator tooling
+// artifacts, and `capture-report.json` alone is ~280 kB. A negative pattern keeps
+// it out of the bundle; a runtime gate would still ship and parse every byte
+// before throwing the object away. Verified in the emitted chunk, 2026-09-02.
+const allModules = import.meta.glob<Record<string, unknown>>(['./messages/*/*.json', '!./messages/screenshots/**'], {
   eager: true,
   import: 'default',
 })
