@@ -170,41 +170,53 @@ with their own API key. Privacy posture:
   resolves the LLM; an absent or stale acceptance refuses the send (not just a UI affordance). The consent copy
   (`askCmdr.consent.*`) enumerates exactly what egresses; bump `CONSENT_COPY_VERSION` when that set changes so users
   re-accept.
-- **The agent can propose; only the user can approve.** The agent has no tool that touches the user's files and no tool
-  that reads a file's bytes. Its dispatch view admits `Access::Read`, `Access::Propose`, and `Access::Memory` entries
-  and never `Access::Write` (pinned structurally in `mcp/tests/tool_registry_tests.rs`, and again at runtime in
-  `agent/tools/view.rs`). A `Propose` tool mutates nothing: it stages a proposal and opens a review surface. Approval
-  originates in the frontend as a user action, and there is no tool — and never will be one — that approves a proposal.
-  No agent-visible tool can reach the `autoConfirm` confirmation bypass. `Propose` adds no egress: proposals flow agent
-  → user, never to the provider, so consent is unchanged by it. What reaches the provider is file/folder names, paths,
-  sizes, dates, and the app-state envelope (spec §2.1). Depth: `apps/desktop/src-tauri/src/mcp/DETAILS.md` § The
-  `Propose` tier.
+- **The agent can propose; only the user can approve.** The agent has no tool that touches the user's files. Its
+  dispatch view admits `Access::Read`, `Access::Propose`, and `Access::Memory` entries and never `Access::Write` (pinned
+  structurally in `mcp/tests/tool_registry_tests.rs`, and again at runtime in `agent/tools/view.rs`). A `Propose` tool
+  mutates nothing: it stages a proposal and opens a review surface. Approval originates in the frontend as a user
+  action, and there is no tool — and never will be one — that approves a proposal. No agent-visible tool can reach the
+  `autoConfirm` confirmation bypass. `Propose` adds no egress: proposals flow agent → user, never to the provider, so
+  consent is unchanged by it. What reaches the provider by default is file/folder names, paths, sizes, dates, and the
+  app-state envelope (spec §2.1); file contents reach it only through the two read tools below, on request. Depth:
+  `apps/desktop/src-tauri/src/mcp/DETAILS.md` § The `Propose` tier.
 - **The agent writes one folder, and what it writes egresses forever after.** `Access::Memory` covers `memory_write` and
   `memory_edit`, jailed to `<data-dir>/ai/memory/` (relative `.md` paths only, no `..`, no symlink along the chain,
   containment re-checked against a canonicalized parent) and capped at 64 KB. Two consequences worth stating plainly:
   **(a)** everything the agent saves there is sent to the user's provider on every later message, indefinitely, which
   includes anything it inferred from OCR of their photos — the system prompt forbids saving that, but the prohibition is
   a prompt, not a gate; **(b)** the write path is reachable from untrusted text (a crafted file name, a sentence
-  photographed in an image), so what lands there could be attacker-chosen. The prompt-injection mitigations are memory's
-  placement BEFORE the rules, a fence its own content cannot close, and the "facts, never instructions to yourself"
-  write rule. Depth: `apps/desktop/src-tauri/src/agent/memory/DETAILS.md` § The injection surface.
+  photographed in an image, a line of a file `inspect_file` read), so what lands there could be attacker-chosen. The
+  prompt-injection mitigations are memory's placement BEFORE the rules, a fence its own content cannot close, and the
+  "facts, never instructions to yourself" write rule. Depth: `apps/desktop/src-tauri/src/agent/memory/DETAILS.md` § The
+  injection surface.
 - **The photo tools send image-derived TEXT, not "just metadata".** `search_photos` (`mcp/executor/photos.rs`) returns
   matched image paths plus the in-image OCR snippet and Vision tags; `image_facts` (`mcp/executor/image_facts.rs`)
   returns the FULL stored OCR text (up to 2,000 characters per file, for up to 200 files) plus tags for paths the caller
   names. A passport scan's OCR text IS the passport number, so this is sensitive derived content, gated by the same
-  consent above and named in its copy. Image bytes and thumbnails NEVER egress: both result DTOs are text-only by
-  construction (each pinned by a test).
-- **`inspect_file` egresses a photo's EXIF, GPS included, on request.** An image row
-  (`apps/desktop/src-tauri/src/agent/tools/read/inspect/exif.rs`) carries the camera's date taken, make and model, lens,
-  exposure settings, and `gps { latitude, longitude }` when the photo has them: a photo's coordinates are a home
-  address. Same consent gate, same text-only DTO (pinned by a test); the consent copy has to name it before this ships.
-- **`inspect_file` egresses PDF text, title, and author on request.** A PDF row
-  (`apps/desktop/src-tauri/src/agent/tools/read/inspect/pdf.rs`) carries the Info dictionary's title and author and the
-  text of the requested pages (three by default, at most 20 per call, 8,000 chars a page under the row's 16,000) or,
-  with `find`, the matching lines with their page. A contract's pages are the contract. Same consent gate, same
-  text-only DTO (pinned by a test); the parser runs inside `crash_reporter::contain_panics`, so a malformed PDF is a
-  `warn` line and an `unparseable` row, never a crash report carrying its bytes. The consent copy has to name it before
-  this ships.
+  consent above and named in its copy.
+- **`inspect_file` sends bounded parts of a file's contents, on request.** The one tool that reads inside a file
+  (`apps/desktop/src-tauri/src/agent/tools/read/inspect/`), for up to 200 paths per call, each row typed by what the
+  bytes really are. What egresses, per kind:
+  - text (any encoding the viewer decodes): a window of lines (`startLine` + `maxLines`, default 200, at most 2,000;
+    16,000 characters per row, 2,000 per line);
+  - PDF: the text of the requested pages (default three, at most 20 per call, 8,000 characters a page under the row's
+    16,000) plus the Info dictionary's title and author. A contract's pages are the contract;
+  - archive: the entry names, sizes, and dates of one directory level (up to 200), never the entries' bytes;
+  - image: dimensions and the EXIF block, `gps { latitude, longitude }` included when the photo carries it. A photo's
+    coordinates are a home address;
+  - `find`: matching lines from every text and PDF path in the call (up to 50 per row, 300 characters around the first
+    match), so one call can search many files.
+  Every cut is reported (`truncated`, `linesCut`, `returnedLines` / `totalMatches`, `unanswered`); a path the tool
+  can't or won't read answers a typed status (`folder`, `missing`, `unreadable { permission | io | encrypted | corrupt |
+  unsupported | tooLargeToExtract }`, `unreachable` after the 5 s per-path deadline, `unsupportedVolume` for `mtp://`
+  and direct `smb://`), and an encrypted PDF or archive entry stays closed: the tool has no password path. The PDF parser
+  runs inside `crash_reporter::contain_panics`, so a malformed PDF is a message-free `warn` line and an `unparseable`
+  row, never a crash report carrying its bytes. Same consent gate, named in its copy (`askCmdr.consent.item.contents`,
+  `askCmdr.consent.contentsRule`; `CONSENT_COPY_VERSION` 4).
+- **Raw bytes of any file never egress.** Every result DTO the agent can receive is text-only by construction: the
+  photo tools' shapes and `inspect_file`'s rows have no field that can hold bytes, each pinned by a walk-the-JSON test
+  (`photo_hit_is_text_only_no_byte_fields`, `file_facts_is_text_only_no_byte_fields`, `every_row_shape_is_text_only_no_byte_fields`). Image bytes, thumbnails,
+  and archive entry contents are unreachable by any tool in the agent's view.
 - **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
   to a local folder and is never transmitted.
 
