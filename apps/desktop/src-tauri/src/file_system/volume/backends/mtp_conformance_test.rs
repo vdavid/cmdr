@@ -55,13 +55,13 @@ async fn teardown(device_id: &str, fixture: &VirtualDeviceFixture) {
 
 /// The shared `Volume::rename` no-clobber assertion, over a real `MtpVolume`.
 ///
-/// MTP is the backend with no protocol-level exclusivity to lean on, so the
-/// refusal is a hand-written `exists` probe in front of `rename_object` and
-/// nothing but this assertion would notice it going away. It wouldn't even leave
-/// a visible collision behind: the protocol happily hosts two siblings with the
-/// same name, and the virtual device's rename is a `std::fs::rename`, which
-/// replaces the destination and answers OK. Why the probe can't be anything
-/// tighter: `mtp/volume_impl.rs`, on the guard itself.
+/// MTP is the backend with no protocol-level exclusivity to lean on: PTP has no
+/// rename-if-absent, so the refusal is a hand-written `exists` probe in front of
+/// `rename_object` and nothing but this assertion would notice it going away. It
+/// wouldn't even leave a visible collision behind: the protocol happily hosts two
+/// siblings with the same name, and the virtual device's rename is a
+/// `std::fs::rename`, which replaces the destination and answers OK. Why the
+/// probe can't be anything tighter: `mtp/volume_impl.rs`, on the guard itself.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn rename_honors_the_shared_no_clobber_contract() {
     let _guard = virtual_device_test_lock().lock().await;

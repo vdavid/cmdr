@@ -259,12 +259,12 @@ has a window in it. The conformance cell is `mtp_conformance_test.rs`'s
 `rename_honors_the_shared_no_clobber_contract`.
 
 **Decision**: leave the window open and say so, rather than build machinery around it. **Why**: MTP offers nothing
-tighter to build on (verified against `mtp-rs` 0.32.0's source, 2026-09-02). A same-directory rename is
-`SetObjectPropValue(handle, ObjectFileName)` and a cross-directory move is `MoveObject(handle, storage, parent)`;
-neither operation takes an overwrite or exclusive flag, and PTP's response-code set has no collision code to read one
-out of (`StoreFull`, `AccessDenied`, `InvalidParameter`, and no `ObjectAlreadyExists`). The protocol also permits two
-siblings with the same name, so a device asked to collide doesn't refuse: it complies, and the user ends up with a
-duplicate. ❌ Don't reach for a lock or a retry loop here. Cmdr isn't the only writer — the phone's own apps and MTP's
+tighter to build on (verified on `mtp-rs` 0.32.0, source read, 2026-09-02). A same-directory rename is
+`SetObjectPropValue(0x9804)` on `ObjectFileName(0xDC07)`, and a cross-directory move is `MoveObject(0x1019)` with
+params `[handle, storage_id, parent]`; neither operation takes an overwrite or exclusive flag, and PTP's response-code
+enum has no collision code to read one out of (`StoreFull`, `AccessDenied`, `InvalidParameter`, and no
+`ObjectAlreadyExists`). The protocol also permits two siblings with the same name, so a device asked to collide doesn't
+refuse: it complies, and the user ends up with a duplicate. ❌ Don't reach for a lock or a retry loop here. Cmdr isn't the only writer — the phone's own apps and MTP's
 other clients mutate the same storage — so a lock this side would buy nothing and read like a guarantee.
 
 **Gotcha: a virtual-MTP test must UNREGISTER its device, not just disconnect.** `setup_virtual_mtp_device()` registers a
