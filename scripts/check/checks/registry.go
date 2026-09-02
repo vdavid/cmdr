@@ -822,6 +822,19 @@ var AllChecks = []CheckDefinition{
 		Run:         RunBarePoll,
 	},
 	{
+		ID:          "desktop-vite-build-target",
+		Nickname:    "vite-build-target",
+		DisplayName: "vite-build-target",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		IsFast:      true,
+		// Reads one file and nothing else, so it stays off `svelteInputs`: the
+		// verdict can't change on a component edit, and the whole point of the
+		// check is that it re-runs the moment the config moves.
+		Inputs: []string{viteConfigRelPath},
+		Run:    RunViteBuildTarget,
+	},
+	{
 		ID:          "desktop-svelte-check",
 		CpuWeight:   2,
 		Nickname:    "svelte-check",

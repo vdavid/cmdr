@@ -1419,8 +1419,14 @@ doubles as production code.
   echoes the script's own last line as its success message, so the untriaged-divergence total is stated once, by the
   layer that computed it. Then bundle-size (warn-only; builds a production-shaped frontend into a private dir and
   compares its total against a committed baseline, since the app embeds this output so every byte ships in each silent
-  update and is parsed before first paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow),
-  e2e-playwright (slow)
+  update and is parsed before first paint), vite-build-target (ERROR; `apps/desktop/vite.config.js` must pin
+  `build.target` to a `safari<major>`, because Vite's default is a MOVING "widely available" baseline: leave it unset
+  and a routine Vite major bump raises the browser floor above the `minimumSystemVersion` the bundle claims, silently,
+  with a green build. It parses the config structurally (comments blanked, string literals masked, then brace-matched)
+  so the comment explaining the pin can neither fake one nor hide one, and so a `target` under `server` or
+  `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER bound against the plist: mapping a macOS
+  version to "the WebKit we must assume" is a product call, not a fact), knip, type-drift, tests, e2e-linux-typecheck,
+  e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input

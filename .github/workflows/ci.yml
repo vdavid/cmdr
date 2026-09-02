@@ -355,6 +355,9 @@ jobs:
       - name: Check bare polls
         run: ./scripts/check/check --check desktop-svelte-bare-poll --ci
 
+      - name: Check Vite build target
+        run: ./scripts/check/check --check desktop-vite-build-target --ci
+
       - name: Run svelte-check
         run: ./scripts/check/check --check desktop-svelte-check --ci
 
