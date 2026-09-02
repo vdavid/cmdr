@@ -25,7 +25,13 @@ var rustJscpdLane = jscpdLane{
 	// `latest.rs`: `test*.rs` (prefix), `*_test.rs` / `*_tests.rs` (suffix),
 	// `*_test_*.rs` (shared fixture modules), and `tests/` module directories,
 	// which is where most of this repo's unit tests actually live.
-	ignore: "**/test*.rs,**/*_test.rs,**/*_tests.rs,**/*_test_*.rs,**/tests/**",
+	//
+	// `*_tests/**` covers the same convention one level up: a suite that outgrows
+	// one file becomes a DIRECTORY of the same name (`copy_tests.rs` ->
+	// `copy_tests/progress.rs`). Without it, splitting a long test file silently
+	// enrolls it in this lane, and the children's shared setup reads as new
+	// production duplication.
+	ignore: "**/test*.rs,**/*_test.rs,**/*_tests.rs,**/*_test_*.rs,**/tests/**,**/*_tests/**",
 }
 
 // RunJscpdRust reports copy-paste between Rust files: which two files say the same

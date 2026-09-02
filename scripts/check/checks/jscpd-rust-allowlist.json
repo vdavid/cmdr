@@ -29,7 +29,6 @@
     "apps/desktop/src-tauri/src/volumes/mod.rs ↔ apps/desktop/src-tauri/src/volumes_linux/mod.rs": 15,
     "apps/desktop/src-tauri/src/volumes/smb.rs ↔ apps/desktop/src-tauri/src/volumes_linux/smb.rs": 20,
     "crates/cmdr-index/src/importance/writer.rs ↔ crates/cmdr-index/src/media_index/writer/maintenance.rs": 11,
-    "crates/cmdr-index/src/indexing/lifecycle/cover/cold_drive_tests/branches.rs ↔ crates/cmdr-index/src/indexing/lifecycle/cover/cold_drive_tests/switches.rs": 6,
     "crates/cmdr-index/src/indexing/lifecycle/network_scan.rs ↔ crates/cmdr-index/src/indexing/lifecycle/scan_completion.rs": 17,
     "crates/cmdr-index/src/indexing/network_scanner/full_scan.rs ↔ crates/cmdr-index/src/indexing/network_scanner/reconcile_scan.rs": 16,
     "crates/cmdr-index/src/indexing/reconcile/reconcile_bench.rs": 12,
