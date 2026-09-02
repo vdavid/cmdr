@@ -91,6 +91,11 @@
       "enabled": false
     },
     {
+      "description": "`cookie` stays below 2.0: that release renamed the whole API, and `@sveltejs/kit`'s runtime still imports the 0.x/1.x names, so 2.x breaks the SvelteKit build. Raise the ceiling only once Kit uses the 2.x names. The override and the full rationale live in `pnpm-workspace.yaml`.",
+      "matchPackageNames": ["cookie"],
+      "allowedVersions": "<2.0.0"
+    },
+    {
       "description": "rand_core stays 0.6.x: the test-only keygen must match ed25519-dalek 2.x's rand_core API, and the `getrandom` feature is gone in later versions, so a bump can't resolve.",
       "matchPackageNames": ["rand_core"],
       "allowedVersions": "<0.7.0"
