@@ -258,6 +258,36 @@ pub(super) fn move_with_rename(
 
     result?;
 
+    // The loop drained, but the user may have clicked Rollback between the last
+    // item's `is_cancelled` check and the loop's exit — a rename takes a whole
+    // subtree in one call, so on a small move the entire loop fits inside that
+    // window. Read the intent once more before reporting anything: without this
+    // the operation goes on to flush and emit `write-complete`, and the person
+    // who asked for "put it back" is told "everything's where you sent it"
+    // instead. `copy/mod.rs`'s `PostLoopIntent::Completed` arm is the same guard
+    // on the copy side; the reversal itself is `MoveTransaction::rollback`,
+    // which rechecks each item and never overwrites an occupied source.
+    if load_intent(&state.intent) == OperationIntent::RollingBack {
+        log::info!(
+            "move_with_rename: rollback requested after loop completion op={}, {} items",
+            operation_id,
+            move_tx.renames.len()
+        );
+        let rollback = move_tx.rollback().into_cancel_rollback();
+        events.emit_cancelled(WriteCancelledEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Move,
+            files_processed: files_done,
+            rollback,
+        });
+        // Cancelled, like the in-loop arm above: the wrapper reads it as
+        // "already emitted its terminal event", and journals the op as canceled
+        // rather than done — which is what a reversed move is.
+        return Err(WriteOperationError::Cancelled {
+            message: "Operation cancelled by user".to_string(),
+        });
+    }
+
     // Durability: a same-FS rename moves directory ENTRIES, so the directories
     // on both sides of each rename are exactly what needs flushing — the moved
     // files' data blocks and inodes were already durable before the move, and

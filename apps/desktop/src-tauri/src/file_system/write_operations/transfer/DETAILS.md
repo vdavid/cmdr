@@ -20,9 +20,15 @@ same-volume rename-merge in § "Key decisions"). The cross-volume engine documen
 (the archive route included, § "One-pass sequential extract"). Only the layout
 facts that none of those carry live here:
 
-- **`copy/mod.rs`'s post-loop dispatch keeps a three-arm `PostLoopIntent` shape** (Completed / Cancelled / Failed)
-  including a post-completion `RollingBack` recheck, for the rollback-clicked-in-the-last-millisecond race (commit
-  `1de4255d`). Pre-flight scan, dry-run, disk-space, and bulk-skip filtering stay OUTSIDE the driver, in `copy/mod.rs`.
+- **Both local engines recheck the rollback intent AFTER their loop drains**, for the
+  rollback-clicked-in-the-last-millisecond race: `copy/mod.rs` in its three-arm `PostLoopIntent` dispatch (Completed /
+  Cancelled / Failed), `move_op/same_fs.rs` in a matching arm before its flush. A loop that returns `Ok` never looks at
+  the intent again, so without the recheck the click is discarded and the operation reports complete — and a same-FS
+  move renames a whole subtree per call, so on a small move the entire loop fits inside that window. The move's
+  reversal is `MoveTransaction::rollback` (per-item recheck, non-clobbering restore) and the engine returns
+  `Cancelled`, so the wrapper journals the op canceled rather than done. Pinned by
+  `move_op_tests.rs::a_rollback_clicked_as_the_last_item_lands_puts_the_move_back`. Pre-flight scan, dry-run,
+  disk-space, and bulk-skip filtering stay OUTSIDE the driver, in `copy/mod.rs`.
 - **`move_op/` splits the local move by engine**: `mod.rs` picks between them on `is_same_filesystem` and owns what
   both need (`MoveTransaction`, `move_resolved_into_place`, `merge_move_directory` — the last is written for two
   callers at once), `same_fs.rs` holds the `rename(2)` engine, `cross_fs.rs` the five-phase staging engine. Both

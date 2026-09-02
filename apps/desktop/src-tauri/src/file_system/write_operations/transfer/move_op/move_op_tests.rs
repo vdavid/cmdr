@@ -708,3 +708,103 @@ fn a_cross_fs_move_that_took_the_item_ends_on_done() {
         vec![SourceItemOutcome::Done, SourceItemOutcome::Done]
     );
 }
+
+/// A Rollback the user clicks as the last item lands actually reverses the move.
+///
+/// A same-FS move renames a whole directory in one call, so the loop can drain
+/// between the click and the next `is_cancelled` check — reliably, on a
+/// one-item move. The intent has to be read once more after the loop, or the
+/// operation reports "complete" and leaves everything at the destination, which
+/// is the one answer the user didn't choose. `copy/mod.rs`'s
+/// `PostLoopIntent::Completed` arm is the same guard on the copy side.
+#[test]
+fn a_rollback_clicked_as_the_last_item_lands_puts_the_move_back() {
+    use crate::file_system::write_operations::state::OperationIntent;
+    use crate::file_system::write_operations::types::{
+        CancelRollbackOutcome, ConflictInfo, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent,
+        WriteConflictEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
+    };
+    use std::sync::Mutex;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// Clicks Rollback the instant the move reports the item landed — after the
+    /// rename, and before the post-loop intent check reads it.
+    struct RollBackWhenTheItemLands {
+        state: Arc<WriteOperationState>,
+        cancelled: Mutex<Vec<WriteCancelledEvent>>,
+        completes: AtomicUsize,
+    }
+
+    impl OperationEventSink for RollBackWhenTheItemLands {
+        fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {
+            self.state
+                .intent
+                .store(OperationIntent::RollingBack as u8, Ordering::SeqCst);
+        }
+        fn emit_cancelled(&self, event: WriteCancelledEvent) {
+            self.cancelled.lock_ignore_poison().push(event);
+        }
+        fn emit_complete(&self, _event: WriteCompleteEvent) {
+            self.completes.fetch_add(1, Ordering::SeqCst);
+        }
+        fn emit_settled(&self, _event: crate::file_system::write_operations::types::WriteSettledEvent) {}
+        fn emit_progress(&self, _event: WriteProgressEvent) {}
+        fn emit_error(&self, _event: WriteErrorEvent) {}
+        fn emit_conflict(&self, _event: WriteConflictEvent) {}
+        fn emit_conflict_resolved(
+            &self,
+            _event: crate::file_system::write_operations::types::WriteConflictResolvedEvent,
+        ) {
+        }
+        fn emit_scan_progress(&self, _event: ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _conflict: ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _result: DryRunResult) {}
+    }
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    let src_file = src_dir.join("notes.txt");
+    fs::write(&src_file, b"the only copy").unwrap();
+
+    let state = make_state(200);
+    let events = Arc::new(RollBackWhenTheItemLands {
+        state: Arc::clone(&state),
+        cancelled: Mutex::new(Vec::new()),
+        completes: AtomicUsize::new(0),
+    });
+
+    let result = move_files_with_progress_inner(
+        &*events,
+        "op-same-fs-late-rollback",
+        &state,
+        std::slice::from_ref(&src_file),
+        &dst_dir,
+        &WriteOperationConfig::default(),
+    );
+
+    assert!(
+        matches!(result, Err(WriteOperationError::Cancelled { .. })),
+        "a move the user rolled back ends cancelled, got {result:?}"
+    );
+    assert_eq!(
+        fs::read(&src_file).unwrap(),
+        b"the only copy",
+        "the file the user asked back is back where it started"
+    );
+    assert!(
+        !dst_dir.join("notes.txt").exists(),
+        "and it's off the destination again"
+    );
+    assert_eq!(
+        events.completes.load(Ordering::SeqCst),
+        0,
+        "a rolled-back move never reports itself complete"
+    );
+    let cancelled = events.cancelled.lock_ignore_poison();
+    assert_eq!(cancelled.len(), 1, "exactly one write-cancelled");
+    assert_eq!(cancelled[0].rollback.outcome, CancelRollbackOutcome::RolledBack);
+    assert_eq!(cancelled[0].rollback.reversed, 1, "the one rename it made, reversed");
+}
