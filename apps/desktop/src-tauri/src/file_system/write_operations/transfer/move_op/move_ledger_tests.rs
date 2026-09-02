@@ -138,3 +138,46 @@ fn reversing_a_move_drains_its_ledger() {
     assert!(!landed.exists());
     assert!(move_tx.renames.is_empty(), "a reversed rename is no longer claimed");
 }
+
+/// What a same-FS move flushes for durability: the directories whose entries it
+/// changed, one fsync each, however many files crossed them.
+///
+/// A `rename(2)` moves a directory ENTRY. The file's data blocks and inode are
+/// untouched, so syncing the file itself buys nothing — and on macOS that sync
+/// is `fcntl(F_FULLFSYNC)`, a device-level barrier, per file, dirty or not.
+/// Both sides count: the entry left one directory and arrived in another.
+#[test]
+fn a_move_flushes_one_entry_per_directory_it_touched() {
+    let tmp = tempfile::tempdir().unwrap();
+    let photos = tmp.path().join("photos");
+    let scans = tmp.path().join("scans");
+    let archive = tmp.path().join("archive");
+    for dir in [&photos, &scans, &archive] {
+        fs::create_dir_all(dir).unwrap();
+    }
+
+    let mut move_tx = MoveTransaction::new();
+    for i in 0..50 {
+        let source = if i % 2 == 0 { &photos } else { &scans }.join(format!("{i}.jpg"));
+        fs::write(&source, b"pixels").unwrap();
+        let landed = archive.join(format!("{i}.jpg"));
+        fs::rename(&source, &landed).unwrap();
+        move_tx.record(source, WrittenFile::local(landed));
+    }
+
+    let touched = move_tx.touched_directories();
+
+    assert_eq!(
+        touched.iter().collect::<HashSet<_>>(),
+        [&photos, &scans, &archive].into_iter().collect(),
+        "both directories the entries left and the one they arrived in"
+    );
+    assert_eq!(
+        touched.len(),
+        3,
+        "one entry per DIRECTORY — 50 renames through 3 directories cost 3 fsyncs, not 50"
+    );
+    for dir in &touched {
+        assert!(dir.is_dir(), "{} has to be a directory, not a moved file", dir.display());
+    }
+}

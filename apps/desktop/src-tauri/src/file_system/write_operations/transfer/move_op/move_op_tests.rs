@@ -126,6 +126,41 @@ fn cross_fs_local_move_emits_flushing_phase_before_complete() {
     assert_eq!(complete.len(), 1, "exactly one write-complete");
 }
 
+/// A same-FS move announces its closing flush too, so the FE's state machine
+/// shows "Writing the last piece…" for both move kinds. What it flushes is the
+/// directories the renames touched, not the moved files (`touched_directories`),
+/// and this event is the observable proxy for that pass.
+#[test]
+fn same_fs_local_move_emits_flushing_phase_before_complete() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let src_file = src_dir.join("file.bin");
+    fs::write(&src_file, vec![0u8; 4096]).unwrap();
+
+    let events = run_same_fs_move(
+        std::slice::from_ref(&src_file),
+        &dst_dir,
+        ConflictResolution::Stop,
+        "op-same-fs-move-flushing",
+    )
+    .expect("the move should land");
+
+    assert!(!src_file.exists(), "the rename took the source with it");
+    assert!(dst_dir.join("file.bin").exists(), "and the destination holds it");
+
+    let progress = events.progress.lock().unwrap();
+    assert!(
+        progress.iter().any(|p| p.phase == WriteOperationPhase::Flushing),
+        "same-FS move: expected a Flushing-phase progress event, got phases {:?}",
+        progress.iter().map(|p| p.phase).collect::<Vec<_>>(),
+    );
+    assert_eq!(events.complete.lock().unwrap().len(), 1, "exactly one write-complete");
+}
+
 /// CRITICAL ordering invariant. The final destination's dir entry must be
 /// fsynced (the `Flushing` pass) BEFORE the source originals are deleted.
 /// The source is the only other copy of the data; deleting it before the

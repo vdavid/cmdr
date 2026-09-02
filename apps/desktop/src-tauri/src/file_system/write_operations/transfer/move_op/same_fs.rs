@@ -10,7 +10,6 @@
 //! between them, and the conflict-landing and directory-merge helpers both
 //! engines share, live in `move_op` itself.
 
-use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -19,7 +18,7 @@ use super::super::super::ledger::WrittenFile;
 use super::{MoveTransaction, merge_move_directory, move_resolved_into_place};
 
 use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
-use crate::file_system::write_operations::durability::flush_created_destinations;
+use crate::file_system::write_operations::durability::flush_touched_directories;
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::state::{
@@ -259,16 +258,15 @@ pub(super) fn move_with_rename(
 
     result?;
 
-    // Durability: a same-FS rename moves no data blocks (the file's contents
-    // were already durable before the move), but the new directory entries
-    // still need flushing. `flush_created_destinations` emits a `Flushing`
-    // event (so the FE shows "Writing the last piece…" for moves too) and
-    // `fdatasync`s each moved file plus its parent directory, making the
-    // rename-into-place durable. `already_synced` is empty: an `fdatasync` on
-    // an already-durable file is cheap, and the parent-dir fsync is the point.
-    let renamed_dests: Vec<PathBuf> = move_tx.renames.iter().map(|item| item.landed.path.clone()).collect();
-    let empty_synced: HashSet<PathBuf> = HashSet::new();
-    flush_created_destinations(
+    // Durability: a same-FS rename moves directory ENTRIES, so the directories
+    // on both sides of each rename are exactly what needs flushing — the moved
+    // files' data blocks and inodes were already durable before the move, and
+    // syncing them would cost an `fcntl(F_FULLFSYNC)` per file on macOS (a
+    // device-level barrier) for a write that never happened.
+    // `flush_touched_directories` emits the `Flushing` event too, so the FE
+    // shows "Writing the last piece…" for both move kinds.
+    let touched_dirs = move_tx.touched_directories();
+    flush_touched_directories(
         events,
         operation_id,
         WriteOperationType::Move,
@@ -277,8 +275,7 @@ pub(super) fn move_with_rename(
         files_done,
         0,
         0,
-        &renamed_dests,
-        &empty_synced,
+        &touched_dirs,
     );
 
     // Emit completion (instant, no progress needed)

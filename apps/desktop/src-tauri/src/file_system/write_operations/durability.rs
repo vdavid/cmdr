@@ -1,6 +1,10 @@
-//! Targeted durability: `fdatasync` per created destination so "complete"
-//! means "durable on disk", not "buffered in the OS page cache". Also holds
-//! the drive-index size lookup used to render directory sizes in conflict UI.
+//! Targeted durability, so "complete" means "durable on disk", not "buffered in
+//! the OS page cache". Two passes, one per kind of write: an operation that
+//! produced BYTES `fdatasync`s each created destination
+//! (`flush_created_destinations`), while one that only moved directory ENTRIES
+//! flushes the directories themselves (`flush_touched_directories`). Both
+//! announce the `Flushing` phase first. Also holds the drive-index size lookup
+//! used to render directory sizes in conflict UI.
 
 use std::collections::HashSet;
 use std::fs;
@@ -50,22 +54,15 @@ pub(super) fn flush_created_destinations(
     created_files: &[PathBuf],
     already_synced: &HashSet<PathBuf>,
 ) {
-    use super::types::{WriteOperationPhase, WriteProgressEvent};
-
-    // Announce the closing flush so the FE can show "Writing the last piece…"
-    // instead of a bar frozen at 100% on slow media.
-    state.emit_progress_via_sink(
+    emit_flushing_phase(
         events,
-        WriteProgressEvent::new(
-            operation_id.to_string(),
-            operation_type,
-            WriteOperationPhase::Flushing,
-            None,
-            files_done,
-            files_total,
-            bytes_done,
-            bytes_total,
-        ),
+        operation_id,
+        operation_type,
+        state,
+        files_done,
+        files_total,
+        bytes_done,
+        bytes_total,
     );
 
     let mut synced_dirs: HashSet<PathBuf> = HashSet::new();
@@ -120,6 +117,88 @@ pub(super) fn flush_created_destinations(
             );
         }
     }
+}
+
+/// Emits a `Flushing`-phase progress event, then `fsync`s each of `directories`
+/// once so the entry changes inside them are durable. Blocks until they're done.
+///
+/// This is what a `rename(2)`-based move flushes: the rename moved directory
+/// ENTRIES, and the moved files' own data blocks and inodes were already durable
+/// before it (see `MoveTransaction::touched_directories`, which picks the
+/// directories). Syncing the files here would buy nothing and cost one
+/// `fcntl(F_FULLFSYNC)` per file on macOS, a device-level barrier that dwarfs
+/// this pass — `transfer/DETAILS.md` § Durability carries the measurements.
+///
+/// Best-effort like the rest of the flush: a directory that rejects `fsync`
+/// (some filesystems do) is logged, never propagated.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The natural operation-wide values a progress emit needs, matching flush_created_destinations."
+)]
+pub(super) fn flush_touched_directories(
+    events: &dyn OperationEventSink,
+    operation_id: &str,
+    operation_type: super::types::WriteOperationType,
+    state: &Arc<WriteOperationState>,
+    files_done: usize,
+    files_total: usize,
+    bytes_done: u64,
+    bytes_total: u64,
+    directories: &[PathBuf],
+) {
+    emit_flushing_phase(
+        events,
+        operation_id,
+        operation_type,
+        state,
+        files_done,
+        files_total,
+        bytes_done,
+        bytes_total,
+    );
+
+    for dir in directories {
+        if let Err(e) = fsync_dir(dir) {
+            log::debug!(
+                target: "write_durability",
+                "flush: dir fsync skipped for {}: {e}",
+                dir.display()
+            );
+        }
+    }
+}
+
+/// Announces the closing flush so the FE can show "Writing the last piece…"
+/// instead of a bar frozen at 100% on slow media.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The natural operation-wide values a progress emit needs, matching WriteProgressEvent::new."
+)]
+fn emit_flushing_phase(
+    events: &dyn OperationEventSink,
+    operation_id: &str,
+    operation_type: super::types::WriteOperationType,
+    state: &Arc<WriteOperationState>,
+    files_done: usize,
+    files_total: usize,
+    bytes_done: u64,
+    bytes_total: u64,
+) {
+    use super::types::{WriteOperationPhase, WriteProgressEvent};
+
+    state.emit_progress_via_sink(
+        events,
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            operation_type,
+            WriteOperationPhase::Flushing,
+            None,
+            files_done,
+            files_total,
+            bytes_done,
+            bytes_total,
+        ),
+    );
 }
 
 /// Opens a directory and `fsync`s it so directory-entry changes (the final

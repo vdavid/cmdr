@@ -75,6 +75,32 @@ impl MoveTransaction {
         self.renames.pop()
     }
 
+    /// The distinct directories whose entries these renames changed, in
+    /// first-seen order: every directory an item left, and every directory one
+    /// landed in. This is the whole durability job of a same-FS move.
+    ///
+    /// A `rename(2)` moves a directory ENTRY — it takes one out of the source
+    /// directory and puts one into the destination directory, touching neither
+    /// the file's data blocks nor its inode. So both sides need an `fsync`, and
+    /// the moved file itself needs nothing: syncing it would buy a device-level
+    /// barrier (`fcntl(F_FULLFSYNC)` on macOS) per file for a write that never
+    /// happened. Measurements: `transfer/DETAILS.md` § Durability.
+    fn touched_directories(&self) -> Vec<PathBuf> {
+        let mut seen: HashSet<&Path> = HashSet::new();
+        let mut dirs: Vec<PathBuf> = Vec::new();
+        for item in &self.renames {
+            for parent in [item.original_source.parent(), item.landed.path.parent()]
+                .into_iter()
+                .flatten()
+            {
+                if seen.insert(parent) {
+                    dirs.push(parent.to_path_buf());
+                }
+            }
+        }
+        dirs
+    }
+
     /// Reverses all recorded renames (dest → source) in reverse order, and
     /// reports what it left alone. Same-FS rename is instant, so this runs
     /// synchronously.
