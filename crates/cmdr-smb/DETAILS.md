@@ -357,6 +357,17 @@ short of the hint (`data.len() != size`) and falls through the same way. Neither
 file's final name. ❌ Never "simplify" either arm away, and never call the unsized `read_file_compound` from a path that
 knows the size: an 8 MB request against a 4 MB file is both the over-charge and a guard that can't fire.
 
+**Known gap, unfixed on purpose: a window too small to carry even ONE compound read.** The fast path's condition is "the
+hint fits one READ", which asks about `max_read` and not about credits. A server granting a small window (embedded NAS
+firmware, a router's USB share, Samba built with a low `smb2 max credits`) can leave a 4 MB file's 66-credit chain
+unservable: smb2 refuses with `Error::CreditStarvation` rather than hanging, the fast path has no arm for it, and the
+file fails instead of falling through to a streaming read that would have worked at ~10 credits a chunk. Nothing has
+been observed hitting this — the reference servers grant 512 — which is exactly why no recovery branch was written: an
+untested error path in the copy engine is worse than a documented gap. Two shapes if it ever does show up: match
+`Error::CreditStarvation` in the fast path and fall through to streaming (cheap, but a genuinely dead server then pays
+the credit wait twice), or gate the fast path on the window up front, which needs smb2 to distinguish "one fits" from
+"none does" — `Connection::credit_capacity_for` floors its answer at 1 as of 0.21.0 and so cannot say it.
+
 **`max_concurrent_ops` is clamped by what the window can carry.** The setting alone (`network.smbConcurrency`,
 default 10) says nothing about the connection, so the answer is `min(setting, credit_capacity_for(512 KB))`, floored at
 1 and never raised above what the user chose. `Connection::credit_capacity_for` is sync but the connection lives behind
@@ -640,19 +651,19 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
 - **The byte path is three files split by contract**, all declared from `volume/mod.rs`. A new byte-path cell adds
   itself to the matching contract rather than growing one file; a cell that straddles goes where its ASSERTION lives,
   not where its setup does.
-  - `read_stream_integration_test.rs` — what `open_read_stream` / `open_read_stream_with_hint` hand back: a plain
-    read, a multi-MB read across chunk boundaries, cancel-by-drop, and both size-drift arms of the hinted fast path (a
-    file that grew, a file that shrank) serving the file as it is now.
+  - `read_stream_integration_test.rs` — what `open_read_stream` / `open_read_stream_with_hint` hand back: a plain read,
+    a multi-MB read across chunk boundaries, cancel-by-drop, and both size-drift arms of the hinted fast path (a file
+    that grew, a file that shrank) serving the file as it is now.
   - `write_stream_integration_test.rs` — what `write_from_stream` does with a source: the bytes that land, progress
     shape (server-confirmed, never queued), cancel and mid-write cancel, multi-chunk sources, and the error /
     partial-cleanup path with the `ErroringReadStream` double. The cross-volume streaming copy is here because every
     assertion it makes is about what arrived on the share, even though its source is an `InMemoryVolume`.
-  - `wire_shape_integration_test.rs` — what a byte-path op COSTS, which neither of the above asks: the hinted read's
-    ONE compound frame, the single-shot write promise the transfer layer skips `.cmdr-tmp-*` staging on (the wire proof
-    and the `write_is_single_shot` predicate behind it, kept together), and the copy-slot clamp. It owns
-    `request_counts`, the diagnostics-metric reader those frame assertions run on. The copy-concurrency cell exercises
-    neither byte path; it sits here because its subject is the credit window of § "Copy concurrency and the credit
-    window", which the sized read and the slot clamp are the two halves of.
+  - `wire_shape_integration_test.rs` — what a byte-path op COSTS, which neither of the above asks: the hinted read's ONE
+    compound frame, the single-shot write promise the transfer layer skips `.cmdr-tmp-*` staging on (the wire proof and
+    the `write_is_single_shot` predicate behind it, kept together), and the copy-slot clamp. It owns `request_counts`,
+    the diagnostics-metric reader those frame assertions run on. The copy-concurrency cell exercises neither byte path;
+    it sits here because its subject is the credit window of § "Copy concurrency and the credit window", which the sized
+    read and the slot clamp are the two halves of.
 - `conformance_test.rs` — the `cmdr_fs::volume::conformance` promises, answered by a real server rather than an
   in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`,
   `STATUS_OBJECT_NAME_NOT_FOUND`. That last one is the conflict scan's: `scan_for_conflicts_impl` keeps its own
