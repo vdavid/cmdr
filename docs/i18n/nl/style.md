@@ -212,9 +212,6 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   nothing in the pile carries this register for files, so the shipped sibling family is the source. Confirm the register
   reads right in a toast, and that `Map {name} ongemoeid gelaten` (no article, inherited byte-for-byte from the askCmdr
   sibling the consistency check ties it to) doesn't read as clipped.
-- **`controleren` vs `nagaan` for "couldn't check whether it changed"**: the rollback toast says `kon niet controleren`,
-  the near-identical askCmdr line says `kon niet nagaan`, and no check catches it because the English differs only in
-  the apostrophe. Confirm a sweep to `controleren`, which is this catalog's settled word for a check.
 - **"after Cmdr put it there" → "nadat Cmdr er klaar mee was"**: the English place adverbial goes, so the line can stay
   gender- and number-neutral (see § Notes and decisions). Confirm the trade, and whether "De rest staat nog op de nieuwe
   plek" is the best rendering of "where the move put them".

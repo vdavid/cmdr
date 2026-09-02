@@ -656,11 +656,11 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "sourceHash": "2fd2e7a"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet nagaan of het bestand gewijzigd is.",
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet controleren of het bestand gewijzigd is.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {bestand} other {bestanden}} ongemoeid gelaten: Cmdr kon niet nagaan of ze gewijzigd zijn.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {bestand} other {bestanden}} ongemoeid gelaten: Cmdr kon niet controleren of ze gewijzigd zijn.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
     "sourceHash": "5964166"
   },

@@ -2130,6 +2130,15 @@ overal **Cmdr heeft de zorgvuldige keuze gemaakt**: nooit verontschuldigend, noo
   `controleren` is het gevestigde werkwoord voor een controle in deze catalogus (`Controleren op wijzigingen`,
   `Bezig met controleren op conflicten`) en `gewijzigd` het gevestigde deelwoord voor een veranderd bestand
   (`Laatst gewijzigd`) · high.
+  - **`controleren` geldt voor BEIDE families.** `askCmdr.renameUndo.skipReason.unverifiable.named`/`.counted` zeiden
+    `Cmdr kon niet nagaan of …` en zijn op 2026-09-02 meegetrokken; `controleren` staat er nu 99 keer tegenover de
+    twee `nagaan` die weg zijn. Het Engels van de twee sleutels veranderde niet, dus hun `sourceHash` bleef staan.
+  - ⚠️ **Geen enkele check bewaakt dit paar, deze regel is de enige bewaker.** Het Engels van de twee families
+    verschilt alléén in het apostrofteken (`couldn''t` in `fileOperations`, `couldn’t` in `askCmdr`), dus
+    `desktop-i18n-term-consistency` ziet twee verschillende bronzinnen en legt ze nooit naast elkaar. Een terugval
+    naar `nagaan` zou dus groen door de build komen.
+  - `nagaan` blijft wél staan in `queryUi.results.live.resolvingCoverage`: daar zegt het Engels "Working out what's
+    already indexed", geen "check", dus dat is een eigen keuze en geen restant van deze divergentie.
 - **"Couldn't undo {name}" → `{name} terugdraaien lukte niet`** · de catalogusbrede weergave van "couldn't X" is
   `X lukte niet` (`Bundel bewaren lukte niet`, `{volumeName} uitwerpen lukte niet`, `Je notitie toevoegen lukte niet`),
   en `terugdraaien` is het vastgelegde werkwoord van deze hele familie (Microsoft bevestigt `roll back` →
@@ -2157,11 +2166,9 @@ overal **Cmdr heeft de zorgvuldige keuze gemaakt**: nooit verontschuldigend, noo
 - Geen `sameAsSourceJustification` nodig: alle achttien waarden verschillen van het Engels.
 
 REVIEW FLAGS: `nadat Cmdr er klaar mee was` ruilt de plaatsbepaling van het Engels in voor genderneutraliteit; dat is de
-eerste regel om aan een moedertaalspreker voor te leggen. En let op een divergentie die geen check ziet:
-`reason.unverifiable.*` zegt hier `Cmdr kon niet controleren of …`, terwijl de bijna gelijkluidende zus
-`askCmdr.renameUndo.skipReason.unverifiable.*` `Cmdr kon niet nagaan of …` zegt. Het Engels verschilt alleen in de
-apostrof (`couldn''t` tegen `couldn’t`), dus `desktop-i18n-term-consistency` legt de twee nooit naast elkaar. Eén ronde
-die dit paar op `controleren` (het gevestigde woord in deze catalogus) trekt, zou het opruimen.
+eerste regel om aan een moedertaalspreker voor te leggen. De `controleren`/`nagaan`-divergentie met
+`askCmdr.renameUndo.skipReason.unverifiable.*` die hier stond, is op 2026-09-02 opgeruimd; de reden dat geen check haar
+zag staat nu bij het `controleren`-lemma hierboven.
 
 **Overloop nakijken op de melding.** De redenregels lopen 75–90 tekens tegen 50–60 in het Engels, en
 `reason.failed.counted` is de langste van de achttien. Controleer ze tegen de pseudolocale in een smalle melding.
