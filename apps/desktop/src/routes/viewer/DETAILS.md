@@ -66,6 +66,10 @@ source for the origin form). `openViewerSession` hands the result to `media.setF
   `viewer_open_as_text` (text) or `viewer_open` (re-classifies → media), swaps to it, and closes the old session
   EXPLICITLY (different id). The page tears down per-session listeners first because `openViewerSession` re-attaches
   them. No backend change: `viewer_open` re-classification is what re-derives the media kind.
+- **The image stage's checkerboard uses the dedicated `--color-checkerboard-base` / `--color-checkerboard-tile` tokens
+  (`app.css`), not the general surface tokens.** `--color-bg-primary` vs `--color-bg-tertiary` is ~1.2:1 (light) and
+  ~1.5:1 (dark), which on 10px cells rendered as a flat surface: the checker was "there" but invisible, so transparent
+  PNGs looked opaque. Keep the pair at roughly 1.6:1 or more per theme (Preview.app / Photoshop "light" checker range).
 - CSP: the `cmdr-media:` token is in `img-src` + `object-src` (`tauri.conf.json`); `viewer-media.spec.ts` locks "no
   `cmdr-media`/`img-src`/`object-src` violation". WKWebView applies EXIF orientation by default (phone photos upright).
 
