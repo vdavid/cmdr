@@ -10,8 +10,8 @@ backoff to the transfer engine. It carries the arithmetic that says which of tho
 
 ## What the evidence was
 
-The dev log (`~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/cmdr.log`, app 0.41.0, pid 63999,
-2026-09-01 12:50 to 13:04). Log files rotate at 50 MB, so the primary evidence is gone; what's below is the extract.
+The dev log (`~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/cmdr.log`, app 0.41.0, pid 63999, 2026-09-01
+12:50 to 13:04). Log files rotate at 50 MB, so the primary evidence is gone; what's below is the extract.
 
 Source `/Volumes/PiHDD` (raspi.local, 192.168.1.150), destination `/Volumes/naspi` (192.168.1.111). Both direct smb2,
 SMB 3.1.1, signed, `max_read` 8,388,608 on both. 119,204 files of roughly 4 MB each. Neither connection dropped, and no
