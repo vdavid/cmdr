@@ -119,11 +119,38 @@ also exports `relativeLuminance`, `contrastRatio`, and `readableFgOn`. `readable
 `#ffffff` by whichever has the higher WCAG contrast against the accent; used by `accent-color.ts` to compute
 `--color-accent-fg` per runtime accent, and mirrored in `scripts/check-a11y-contrast/accent_matrix.go`.
 
-**Dev override**: `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the fallback path on modern WebKit. At module load it
-flips `hasColorMix` to `false` (routing the JS-mix branches) and sets `data-force-old-webkit` on `<html>` (activating
-the `:root[data-force-old-webkit]` blocks in `app.css` that mirror the `@supports not (...)` fallbacks). Use it to
-verify the old-WebKit look without a real Safari 15.x environment. See `docs/guides/releasing.md` § "Pre-release smoke
-test on old macOS".
+### The two old-WebKit answers
+
+`webkit-compat.ts` answers two different questions, and mixing them up is the easy mistake.
+
+- `hasColorMix` is **degraded but working**: Safari below 16.2 can't parse `color-mix()`, so the accent and volume-tint
+  paths mix in JS. Everything else about the app is fine.
+- `meetsWebkitFloor` is **below the floor**: `crypto.randomUUID`, `Object.hasOwn`, `Array.prototype.findLast`, and
+  `:has()` all arrived in Safari 15.4, the app calls them unconditionally, and esbuild's `build.target` lowers syntax
+  and never runtime APIs. `missingWebkitCapabilities` names which ones are absent, and `WEBKIT_FLOOR_CAPABILITIES` is
+  the list both this module and the `app.html` guard probe.
+
+In a shipped build `meetsWebkitFloor` is effectively always `true`, because the guard in `src/app.html` replaces the
+page before the bundle loads. It exists for the dev override and so app code can reason about the floor without
+re-probing. `logWebkitCompat()` (called from the main layout at boot) emits `error` when it's false and the usual
+`debug`/`info` line for `hasColorMix`, so an affected user shows up in error reports.
+
+`isBelowSupportedMacOs(macosMajor)` is a third, unrelated answer: whether this Mac is older than `SUPPORTED_MACOS_MAJOR`
+(12), the range Cmdr is developed and tested against. The bundle's `minimumSystemVersion` is 10.15, deliberately lower,
+so 10 and 11 are best-effort and this predicate is where "best effort" is defined. It takes the number rather than
+fetching it, which keeps the module free of IPC: callers pass what `commands.getMacosMajorVersion()` returned (Catalina
+reports `10`, not `10.15`), and a version that didn't parse reads as supported. Floor rationale and the version
+evidence: `docs/notes/system-requirements-and-es2025.md`.
+
+**Dev override**, two levels, both read at module load so they must be set before `pnpm dev` starts:
+
+- `VITE_CMDR_FORCE_OLD_WEBKIT=1` (or `=old`) forces the `color-mix()` fallback path on modern WebKit. It flips
+  `hasColorMix` to `false` (routing the JS-mix branches) and sets `data-force-old-webkit` on `<html>` (activating the
+  `:root[data-force-old-webkit]` blocks in `app.css` that mirror the `@supports not (...)` fallbacks).
+- `VITE_CMDR_FORCE_OLD_WEBKIT=unsupported` does that AND forces `meetsWebkitFloor` to `false`.
+
+Use them to verify the old-WebKit paths without a real Safari 15.x environment. See `docs/guides/releasing.md` §
+"Pre-release smoke test on old macOS".
 
 ## Decisions
 
