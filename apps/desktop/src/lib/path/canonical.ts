@@ -4,7 +4,7 @@ declare const __canonicalBrand: unique symbol
  * An absolute path safe for `dirname` / `basename` arithmetic.
  *
  * Includes local filesystem paths (start with `/`) and virtual-volume URLs
- * (`mtp://...`, `smb://...`, `search-results://...`). Excludes `~`-rooted
+ * (`mtp://...`, `adb://...`, `smb://...`, `search-results://...`). Excludes `~`-rooted
  * paths, relative paths, and anything that would silently break `lastIndexOf('/')`
  * style derivations.
  *

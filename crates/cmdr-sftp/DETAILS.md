@@ -1041,7 +1041,9 @@ The connection state rides `volume-connection-changed` as `VolumeConnection`, wh
 - **An SFTP volume doesn't appear in the sidebar.** `connectSftpVolume` registers it in the volume registry, so
   navigating by `volumeId` works and every write path can reach it, but `volume_listing::complete` (which builds what
   `listVolumes` returns) has no SFTP arm. Adding one is the sidebar's own design question — which section, what icon,
-  what an eject means — and it belongs with the sign-in UI rather than ahead of it.
+  what an eject means — and it belongs with the sign-in UI rather than ahead of it. The device-provider seam
+  (`apps/desktop/src-tauri/src/device_volumes.rs`, which MTP and ADB register through) is NOT that arm: it lists things
+  that appear and leave on their own, and a server is signed into, not plugged in.
 - **`resolve_path_volume` / `resolve_location` don't answer for a remote path.** SFTP paths are plain server-side
   absolute paths with no `sftp://` scheme in front, so `/srv/data/x` on a server is spelled exactly like a local path.
   Whatever the sidebar does about identity, path resolution has to agree with it.

@@ -76,6 +76,22 @@ describe('enrichBreadcrumbSegments', () => {
     expect(segs[2].target).toBeNull() // current folder
   })
 
+  it('reconstructs ADB paths from the parsed serial (device root is the first target)', () => {
+    const ctx: BreadcrumbNavContext = {
+      volumeId: 'adb-pixel-7-a1b2c3d',
+      volumePath: 'adb://R58M12345',
+      currentPath: 'adb://R58M12345/sdcard/DCIM/Camera',
+      userHomePath: '/Users/dave',
+      isSearchResults: false,
+    }
+    // ADB display path is the absolute device path "/sdcard/DCIM/Camera".
+    const segs = enrich('/sdcard/DCIM/Camera', ctx)
+    expect(segs[0].target).toBeNull() // the empty root marker
+    expect(segs[1].target).toBe('adb://R58M12345/sdcard')
+    expect(segs[2].target).toBe('adb://R58M12345/sdcard/DCIM')
+    expect(segs[3].target).toBeNull() // current folder
+  })
+
   it('never makes search-results panes clickable', () => {
     const ctx: BreadcrumbNavContext = {
       volumeId: 'search-results',

@@ -57,12 +57,12 @@ pub fn get_default_volume_id() -> String {
 
 /// Gets space information for a volume at the given path.
 /// Returns total and available bytes for the volume.
-/// For MTP paths (`mtp://`), fetches from the MTP connection manager instead of
-/// asking the filesystem.
+/// For device paths (`mtp://`, `adb://`), asks the device provider instead of
+/// the filesystem.
 #[tauri::command]
 #[specta::specta]
 pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>> {
-    if let Some((total_bytes, available_bytes)) = volume_listing::mtp_space_for_path(&path).await {
+    if let Some((total_bytes, available_bytes)) = crate::device_volumes::device_space_for_path(&path).await {
         return TimedOut {
             data: Some(VolumeSpaceInfo {
                 total_bytes,
@@ -116,9 +116,24 @@ async fn resolve_location_inner(path: String, fs_timeout: Duration) -> ResolveLo
 /// the mount table under `fs_timeout`. Returns the volume (if any) and whether it
 /// timed out.
 async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<VolumeInfo>, bool) {
-    // MTP protocol dispatch
-    if path.starts_with("mtp://") {
-        return (volume_listing::mtp_volume_for_path(&path).await, false);
+    // Device protocol dispatch (`mtp://`, `adb://`): whichever provider's
+    // storage the path falls under. An ADB device is listed before it's
+    // dialed, so the first navigation onto it is what connects it.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        if path.starts_with("adb://") {
+            match crate::adb::volume_wiring::volume_id_for_path(&path).await {
+                Some(Ok(_)) => {}
+                Some(Err(error)) => {
+                    log::info!(target: "volume", "adb device for {path} didn't connect: {error}");
+                    return (None, false);
+                }
+                None => return (None, false),
+            }
+        }
+    }
+    if path.starts_with("mtp://") || path.starts_with("adb://") {
+        return (crate::device_volumes::device_volume_for_path(&path).await, false);
     }
 
     // SMB/network protocol paths → return the virtual network volume

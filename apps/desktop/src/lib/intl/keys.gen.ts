@@ -3,6 +3,7 @@
 
 /** Every key present in `messages/en/*.json`. A wrong key is a typecheck error. */
 export type MessageKey =
+  | 'adb.volumeLabelWithSuffix'
   | 'ai.cloud.apiKeyDescription'
   | 'ai.cloud.apiKeyLabel'
   | 'ai.cloud.apiKeyPlaceholderAnthropic'
@@ -593,8 +594,7 @@ export type MessageKey =
   | 'errorReporter.sentToast.dismiss'
   | 'errorReporter.sentToast.message'
   | 'errors.eject.busy'
-  | 'errors.eject.mtpDisconnectRefused'
-  | 'errors.eject.mtpIdMissingDevicePrefix'
+  | 'errors.eject.deviceDisconnectRefused'
   | 'errors.eject.notAnSmbVolume'
   | 'errors.eject.notEjectable'
   | 'errors.eject.timedOut'

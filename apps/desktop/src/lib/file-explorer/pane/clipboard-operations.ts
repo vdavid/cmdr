@@ -40,7 +40,9 @@ type DialogState = ReturnType<typeof createDialogState>
  * in `clipboard-operations.test.ts`).
  */
 function isMtpClipboardRefusal(volumeId: string): boolean {
-  return capabilitiesFor(volumeId).kind === 'mtp'
+  // `adb` rides along: an `adb://` path is as invisible to the OS clipboard as an `mtp://` one.
+  const kind = capabilitiesFor(volumeId).kind
+  return kind === 'mtp' || kind === 'adb'
 }
 
 /**

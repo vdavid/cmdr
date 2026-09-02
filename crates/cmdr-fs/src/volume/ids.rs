@@ -246,6 +246,19 @@ pub fn mtp_device_id(serial_or_location: &str) -> String {
     derived_id("mtp", serial_or_location, &[serial_or_location])
 }
 
+/// Build the ID for an Android device reached over ADB from its (opaque,
+/// verbatim) serial.
+///
+/// Its own scheme rather than a reuse of [`mtp_device_id`]: the same phone
+/// attached over USB is both an MTP device and an ADB device at once, and they
+/// are different storages (the curated media tree vs. the real filesystem) with
+/// different indexes. Keying both on the serial would let one's cache answer
+/// for the other. Routing the serial through the funnel keeps a `/`, `:`, or
+/// `.` in it out of the `index-{id}.db` filename.
+pub fn adb_volume_id(serial: &str) -> String {
+    derived_id("adb", serial, &[serial])
+}
+
 /// Whether `id` predates the current ID scheme, so the state it keys can never
 /// be reached again.
 ///

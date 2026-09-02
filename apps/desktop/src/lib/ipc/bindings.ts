@@ -3229,6 +3229,11 @@ export const commands = {
    */
   scanMtpForCopy: (deviceId: string, storageId: number, path: string) =>
     typedError<MtpScanResult, MtpConnectionError>(__TAURI_INVOKE('scan_mtp_for_copy', { deviceId, storageId, path })),
+  // The ADB devices the server last reported, from the cache the tracker keeps.
+  listAdbDevices: () => __TAURI_INVOKE<AdbDevice[]>('list_adb_devices'),
+  // Dials the device with `serial` and answers its volume id.
+  connectAdbDevice: (serial: string) =>
+    typedError<string, AdbConnectOutcomeError>(__TAURI_INVOKE('connect_adb_device', { serial })),
   /**
    *  Lists all mounted volumes, including connected MTP devices, each enriched
    *  with what its registered backend can do.
@@ -3256,8 +3261,8 @@ export const commands = {
   /**
    *  Gets space information for a volume at the given path.
    *  Returns total and available bytes for the volume.
-   *  For MTP paths (`mtp://`), fetches from the MTP connection manager instead of
-   *  asking the filesystem.
+   *  For device paths (`mtp://`, `adb://`), asks the device provider instead of
+   *  the filesystem.
    */
   getVolumeSpace: (path: string) => __TAURI_INVOKE<TimedOut<VolumeSpaceInfo | null>>('get_volume_space', { path }),
   // Gets all currently discovered network hosts.
@@ -4287,6 +4292,82 @@ export type ActivityPhase =
    *  phase until the user rebuilds it. The terminal, unhappy sibling of `Idle`.
    */
   | 'failed'
+
+/**
+ *  Why a connect didn't produce a volume, as the frontend branches on it.
+ *
+ *  A typed mirror of `cmdr_adb::AdbConnectError`, ❌ never prose: the
+ *  frontend's own copy is what a person reads. The backend's diagnostic string
+ *  goes to the log.
+ */
+export type AdbConnectOutcomeError =
+  // No `adb` binary on this machine, so no server could be started.
+  | { type: 'adbNotInstalled' }
+  // The server socket couldn't be reached.
+  | { type: 'serverUnreachable' }
+  // The device isn't attached (or vanished mid-connect).
+  | {
+      type: 'deviceGone'
+      // The serial asked for.
+      serial: string
+    }
+  // The phone hasn't accepted this computer's key; "Allow" on the device.
+  | {
+      type: 'unauthorized'
+      // The serial asked for.
+      serial: string
+    }
+  // The device's ADB predates `shell_v2` (Android 7).
+  | {
+      type: 'deviceTooOld'
+      // The serial asked for.
+      serial: string
+    }
+  // The connect ran past its budget.
+  | { type: 'timedOut' }
+  // The user called it off.
+  | { type: 'cancelled' }
+  // The transport refused or broke in a way none of the above names.
+  | { type: 'transport' }
+
+// One device the server knows about.
+export type AdbDevice = {
+  // The serial (`host:devices` column one). Identity of the volume.
+  serial: string
+  // What the server can do with it. Only [`AdbDeviceState::Ready`] mounts.
+  state: AdbDeviceState
+  // `ro.product.name`, when the server reports it.
+  product: string | null
+  // `ro.product.model`, when the server reports it. Underscores for spaces.
+  model: string | null
+  // `ro.product.device`, when the server reports it.
+  device: string | null
+  // The server's transport id, for telling two identical serials apart.
+  transportId: number | null
+}
+
+// The server's state word for a device.
+export type AdbDeviceState =
+  // `device`: authorized and online. The only mountable state.
+  | 'ready'
+  // `unauthorized`: waiting on the phone's "Allow USB debugging" prompt.
+  | 'unauthorized'
+  // `offline`: attached but `adbd` isn't answering.
+  | 'offline'
+  // `no permissions`: the host can't open the USB device (udev on Linux).
+  | 'noPermissions'
+  // `connecting`: a TCP device mid-handshake.
+  | 'connecting'
+  // `authorizing`: mid RSA handshake.
+  | 'authorizing'
+  // `recovery`: booted to recovery.
+  | 'recovery'
+  // `bootloader`: in fastboot.
+  | 'bootloader'
+  // `sideload`: recovery's sideload mode.
+  | 'sideload'
+  // A word this crate doesn't know.
+  | 'unknown'
 
 // The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
 export type AgentErrorKindView =
@@ -5794,16 +5875,7 @@ export type EjectError =
       volumeId: string
     }
   /**
-   *  The MTP volume id is shaped wrong: missing the `{device_id}:{storage_id}`
-   *  separator.
-   */
-  | {
-      type: 'mtpIdMissingDevicePrefix'
-      // The malformed id, verbatim.
-      volumeId: string
-    }
-  /**
-   *  The volume can't be ejected at all: not SMB, not MTP, and the OS reports
+   *  The volume can't be ejected at all: not SMB, not a device, and the OS reports
    *  it as fixed. Typical for the boot volume and other internal disks.
    */
   | {
@@ -5821,10 +5893,15 @@ export type EjectError =
       // The volume asked about.
       volumeId: string
     }
-  // The device wouldn't close its MTP session.
+  /**
+   *  The device provider wouldn't retire the volume (MTP: the device wouldn't
+   *  close its session).
+   */
   | {
-      type: 'mtpDisconnectRefused'
-      // What the MTP layer reported, for the log and the details line.
+      type: 'deviceDisconnectRefused'
+      // Which provider refused (`"mtp"`, `"adb"`).
+      provider: string
+      // What the provider reported, for the log and the details line.
       detail: string
     }
   /**

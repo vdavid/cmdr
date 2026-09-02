@@ -19,6 +19,7 @@ describe('toCanonical', () => {
 
   it('passes virtual-volume URLs through', () => {
     expect(toCanonical('mtp://dev/65537/Music', HOME)).toBe('mtp://dev/65537/Music')
+    expect(toCanonical('adb://R58M12345/sdcard/Music', HOME)).toBe('adb://R58M12345/sdcard/Music')
     expect(toCanonical('smb://host/share/dir', HOME)).toBe('smb://host/share/dir')
     expect(toCanonical('search-results://snap-1', HOME)).toBe('search-results://snap-1')
   })
@@ -52,6 +53,7 @@ describe('parentOf', () => {
 
   it('handles virtual-volume URLs by slash arithmetic', () => {
     expect(parentOf(toCanonical('mtp://dev/65537/Music', HOME))).toBe('mtp://dev/65537')
+    expect(parentOf(toCanonical('adb://R58M12345/sdcard', HOME))).toBe('adb://R58M12345')
   })
 })
 

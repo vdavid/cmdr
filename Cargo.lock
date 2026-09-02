@@ -1357,6 +1357,7 @@ dependencies = [
  "bytes",
  "chrono",
  "cmdr",
+ "cmdr-adb",
  "cmdr-archive",
  "cmdr-fs",
  "cmdr-index",
@@ -1449,6 +1450,19 @@ dependencies = [
  "zbus",
  "zbus-secret-service-keyring-store",
  "zip 8.6.0",
+]
+
+[[package]]
+name = "cmdr-adb"
+version = "0.0.0"
+dependencies = [
+ "cmdr-adb",
+ "cmdr-fs",
+ "log",
+ "serde",
+ "specta",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]

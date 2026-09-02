@@ -26,6 +26,14 @@ that lives beside the code, and git holds the history.
       Nextcloud chunked uploads, RFC 4331 quota, and three things David runs locally because this branch was built in a
       cloud box: `bindings.ts` regeneration, `pnpm check --include-slow`, and the surface counts for
       `index-crate-isolation`.
+- [ ] 2026-09-01 `android-adb-backend.md` - **MTP shows the tree a phone chooses to expose; developers want the real
+      one.** `crates/cmdr-adb` is a device-anchored `Volume` over the ADB server's sync service and `shell,v2`, beside
+      MTP rather than replacing it, and the development adds the seam MTP never had: `device_volumes.rs`, a provider
+      registry the volume list folds over, with `host:track-devices` as the first push-channel hotplug. The crate, the
+      seam, and the app wiring are documented beside the code (`crates/cmdr-adb/DETAILS.md`, `adb/DETAILS.md`). What
+      finishing costs: a real-device pass (authorize prompt, `unauthorized` → `device` mid-session, a 2 GB transfer, a
+      `/data` listing on a non-rooted phone), then three deliberate deferrals (`sendrecv_v2` compression off until
+      measured, wireless pairing left to the server, a settings switch for the `adb` binary path).
 
 - [ ] 2026-08-31 `rollback-recheck-plan.md` - **Cancelling an operation deletes files it no longer wrote, and the move
       case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and

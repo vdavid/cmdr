@@ -47,6 +47,7 @@ testing = [
   "cmdr-smb/testing",
   "cmdr-sftp/testing",
   "cmdr-webdav/testing",
+  "cmdr-adb/testing",
 ]
 
 [[bin]]
@@ -89,6 +90,9 @@ cmdr-sftp = { path = "../../../crates/cmdr-sftp" }
 # verifies it without building the app. The secret store, the server list, and
 # every command stay here.
 cmdr-webdav = { path = "../../../crates/cmdr-webdav" }
+# The Android-over-ADB backend: a real-filesystem `Volume` per device behind the
+# ADB server, beside MTP. No `tauri`, no user-facing words; `docs/specs/android-adb-backend.md`.
+cmdr-adb = { path = "../../../crates/cmdr-adb" }
 # The index: the file index, the media index, and folder importance, behind one
 # `Index` handle. Tauri-free by design and enforced — the app is its host, which
 # is why every seam it needs is answered in `src/index_host.rs` and nowhere else.

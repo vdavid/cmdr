@@ -1,5 +1,5 @@
 import { getFolderName } from '$lib/file-operations/transfer/transfer-dialog-utils'
-import { getMtpDisplayPath } from '$lib/mtp'
+import { getDeviceDisplayPath, isDeviceScheme } from '$lib/adb/adb-path-utils'
 
 /**
  * Derives the user-facing label for a tab from its path.
@@ -12,15 +12,18 @@ import { getMtpDisplayPath } from '$lib/mtp'
  * inner (within-storage) path instead: "/" at the storage root, the inner
  * folder basename below it — matching what the breadcrumb already shows.
  *
- * We special-case ONLY the MTP scheme. Every other path (including mounted
+ * An ADB path (`adb://{serial}/inner/path`) gets the same treatment: "/" at the
+ * device root, the inner folder basename below it.
+ *
+ * We special-case ONLY the two device schemes. Every other path (including mounted
  * volume roots like `/Volumes/USB`, which keep their basename "USB") flows
  * through `getFolderName` unchanged.
  */
 export function deriveTabLabel(path: string): string {
-  if (path.startsWith('mtp://')) {
-    // `getMtpDisplayPath` returns "/" at the storage root and `/DCIM/Camera`
-    // for a subfolder; its basename is the tab label.
-    return getFolderName(getMtpDisplayPath(path))
+  if (isDeviceScheme(path)) {
+    // `getDeviceDisplayPath` returns "/" at the storage or device root and
+    // `/DCIM/Camera` for a subfolder; its basename is the tab label.
+    return getFolderName(getDeviceDisplayPath(path))
   }
   return getFolderName(path)
 }

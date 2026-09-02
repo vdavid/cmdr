@@ -1613,10 +1613,6 @@
   "@errors.eject.volumeNotFound": {
     "sourceHash": "62a3af2"
   },
-  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr kunde inte avgöra vilken enhet det här är, så den går inte att koppla från.",
-  "@errors.eject.mtpIdMissingDevicePrefix": {
-    "sourceHash": "d26b57b"
-  },
   "errors.eject.notEjectable": "Den här enheten är inte borttagbar, så den förblir ansluten.",
   "@errors.eject.notEjectable": {
     "sourceHash": "bb88249"
@@ -1625,8 +1621,8 @@
   "@errors.eject.notAnSmbVolume": {
     "sourceHash": "d49623e"
   },
-  "errors.eject.mtpDisconnectRefused": "Enheten ville inte stänga sin anslutning. Koppla ur den när den inte används.",
-  "@errors.eject.mtpDisconnectRefused": {
+  "errors.eject.deviceDisconnectRefused": "Enheten ville inte stänga sin anslutning. Koppla ur den när den inte används.",
+  "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "d49861f"
   },
   "errors.eject.unmountRefused": "Något använder fortfarande den här enheten. Stäng öppna filer och appar och mata sedan ut igen.",

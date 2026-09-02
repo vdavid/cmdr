@@ -16,6 +16,11 @@ describe('deriveTabLabel', () => {
     expect(deriveTabLabel('mtp://0-5/65537/DCIM')).toBe('DCIM')
   })
 
+  it('shows "/" at an ADB device root and the folder name below it', () => {
+    expect(deriveTabLabel('adb://R58M12345')).toBe('/')
+    expect(deriveTabLabel('adb://R58M12345/sdcard/DCIM')).toBe('DCIM')
+  })
+
   it('shows "/" for the local filesystem root (convention pinned)', () => {
     expect(deriveTabLabel('/')).toBe('/')
   })

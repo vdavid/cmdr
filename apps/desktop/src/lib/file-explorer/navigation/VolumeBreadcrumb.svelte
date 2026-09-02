@@ -63,6 +63,7 @@
     /** Tooltip shown on a disabled Eject control while a transfer touches the volume. */
     const EJECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.ejectBusyTooltip'))
     import { groupByCategory, getIconForVolume } from './volume-grouping'
+    import { deviceVolumeLabel } from '$lib/adb/adb-volume-label'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
@@ -902,7 +903,7 @@
                                 aria-label={tString('fileExplorer.navigation.renameFavoriteAriaLabel')}
                             />
                         {:else}
-                            <span class="volume-label">{volume.name}</span>
+                            <span class="volume-label">{deviceVolumeLabel(volume, volumes)}</span>
                         {/if}
                         {#if fsLabel}
                             <span class="volume-fs">{fsLabel}</span>

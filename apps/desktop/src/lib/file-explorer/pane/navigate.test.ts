@@ -765,6 +765,17 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
     })
   })
 
+  it('ADB path on a pane not on that device is refused (typed kind, no volume-id derivation)', () => {
+    const result = navigate(
+      { pane: 'left', to: { goTo: { volumeId: 'root', path: 'adb://R58M12345/sdcard' } }, source: 'mcp' },
+      h.deps,
+    )
+    expect(result).toEqual({
+      status: 'refused',
+      reason: { kind: 'adb-unconnected', message: 'Pane is not on this ADB volume. Call select_volume first.' },
+    })
+  })
+
   it('on-MTP-volume pane returns the exact "on the … MTP volume" string (volumeName falls back to id)', () => {
     h = makeHarness({ left: { path: 'mtp://dev/1/DCIM', volumeId: 'mtp-dev:1' } })
     const result = navigate(

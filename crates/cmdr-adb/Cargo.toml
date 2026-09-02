@@ -1,0 +1,60 @@
+[package]
+name = "cmdr-adb"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# "This is a test build." It widens `volume::testing` (the fake-adb-server
+# fixture and the unique-name helpers) from `#[cfg(test)]`-only to `pub`, so the
+# app's ADB suites — the ones driving the transfer pipeline and the volume
+# registry, which belong on that side of the seam — share one set of fixtures
+# with this crate's own instead of growing a second, drifting copy.
+#
+# Never enable in a production build.
+testing = ["cmdr-fs/testing"]
+
+[dependencies]
+# The `Volume` trait, every type it exchanges, and the host seams this backend
+# asks the app through. The only crate below this one.
+cmdr-fs = { path = "../cmdr-fs" }
+serde = { version = "1", features = ["derive"] }
+# Type export for the Rust↔TS bindings: the device list and its typed state
+# cross IPC. Pinned to the EXACT same version the app uses, for the reason
+# `cmdr-fs` gives: two `specta` crates in one graph would make these `Type` impls
+# stop satisfying `tauri-specta`, and the app's command signatures collect them
+# transitively.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+log = "0.4"
+# The backend's own async surface. `net` is the whole transport (the ADB server
+# is a TCP socket on loopback, nothing else), `process` starts an absent server
+# through the platform `adb` binary once, and the rest is what `cmdr-sftp` takes:
+# `sync` for the session lock, `time` for timeouts, `rt` for the handle
+# background work spawns onto, `macros` for `select!`. Deliberately NOT
+# `rt-multi-thread`: the runtime is the app's, handed down through
+# `VolumeHost::runtime`.
+tokio = { version = "1", features = ["io-util", "macros", "net", "process", "rt", "sync", "time"] }
+# `CancellationToken`, on the cancelable listing and transfer paths. Default
+# features off, the same shape `cmdr-fs` pins, so no second copy enters the graph.
+tokio-util = { version = "0.7.18", default-features = false }
+
+[dev-dependencies]
+# Depending on ourselves turns the `testing` feature on for every DEV target and
+# leaves it off for the lib, so a shipped build carries no fixtures. Same shape
+# as `cmdr-sftp`'s and the app's own self dev-dependency.
+cmdr-adb = { path = ".", features = ["testing"] }
+# `InMemoryVolume` and the recording / scripted host-seam fakes this crate's
+# tests assert against.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# The fake-server suites drive real concurrency, so their tests need a
+# multi-threaded runtime the lib deliberately can't build for itself, and
+# `test-util` gives the timeout cells a `start_paused` clock so asserting on a
+# budget costs no wall time.
+tokio = { version = "1", features = ["rt-multi-thread", "test-util"] }

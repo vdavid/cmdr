@@ -1,0 +1,7 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
+  "@adb.volumeLabelWithSuffix": {
+    "sourceHash": "98d6c20",
+    "sameAsSourceJustification": "A placeholder plus the tool acronym ADB in parentheses; nothing to translate."
+  }
+}

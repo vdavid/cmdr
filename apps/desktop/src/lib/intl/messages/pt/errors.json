@@ -1613,10 +1613,6 @@
   "@errors.eject.volumeNotFound": {
     "sourceHash": "62a3af2"
   },
-  "errors.eject.mtpIdMissingDevicePrefix": "O Cmdr não conseguiu identificar qual é este dispositivo, então não consegue desconectá-lo.",
-  "@errors.eject.mtpIdMissingDevicePrefix": {
-    "sourceHash": "d26b57b"
-  },
   "errors.eject.notEjectable": "Este disco não é removível, então ele continua conectado.",
   "@errors.eject.notEjectable": {
     "sourceHash": "bb88249"
@@ -1625,8 +1621,8 @@
   "@errors.eject.notAnSmbVolume": {
     "sourceHash": "d49623e"
   },
-  "errors.eject.mtpDisconnectRefused": "O dispositivo se recusou a encerrar a conexão. Desconecte-o assim que ele estiver ocioso.",
-  "@errors.eject.mtpDisconnectRefused": {
+  "errors.eject.deviceDisconnectRefused": "O dispositivo se recusou a encerrar a conexão. Desconecte-o assim que ele estiver ocioso.",
+  "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "d49861f"
   },
   "errors.eject.unmountRefused": "Algo ainda está usando este disco. Feche os arquivos e aplicativos abertos, depois ejete-o de novo.",

@@ -1,0 +1,6 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName}（ADB）",
+  "@adb.volumeLabelWithSuffix": {
+    "sourceHash": "98d6c20"
+  }
+}

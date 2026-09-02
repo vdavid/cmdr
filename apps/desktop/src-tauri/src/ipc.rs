@@ -504,6 +504,10 @@ macro_rules! ipc_command_manifest {
                     crate::commands::mtp::rename_mtp_object,
                     crate::commands::mtp::move_mtp_object,
                     crate::commands::mtp::scan_mtp_for_copy,
+                    // Android over ADB. ❌ No stub counterpart, like SFTP: the
+                    // backend is macOS + Linux only.
+                    crate::adb::commands::list_adb_devices,
+                    crate::adb::commands::connect_adb_device,
                 ]
                 dispatch_only: []
             }
