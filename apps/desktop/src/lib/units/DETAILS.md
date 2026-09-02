@@ -29,10 +29,15 @@ So: one implementation per quantity, and a lint that keeps it that way.
   SCAN phase only, where the backend emits no rate at all.
 - **A file rate** is the same split one axis over: `formatFilesPerSecond(rate)` owns the number (one decimal below
   three, a whole number above, `null` once it rounds to nothing so the caller can hide the cell) and hands back both the
-  locale-formatted `text` and the `value` the catalog pluralizes on; `fileOperations.shared.fileRate` owns the "file/s" marker
-  and its plural. ONE key serves all three surfaces that show it — the transfer bars, the transfer dialog's scan line,
-  and the delete confirmation's — so the same rate can't read three ways. It used to be three: the noun was an English
-  literal inside the formatter, and two near-identical `throughputFiles` keys sat beside it in the catalog.
+  locale-formatted `text` and the `value` the catalog pluralizes on; `fileOperations.shared.fileRate` owns the "file/s"
+  marker and its plural. ONE key serves all three surfaces that show it — the transfer bars, the transfer dialog's scan
+  line, and the delete confirmation's — so the same rate can't read three ways. It used to be three: the noun was an
+  English literal inside the formatter, and two near-identical `throughputFiles` keys sat beside it in the catalog.
+  - **Exactly 1 is carved out of the one-decimal band and prints a bare `1`**, because it's the single rate where the
+    shown digits and the plural selector would disagree. CLDR classifies a VISIBLE fraction digit: `1.0` is `other` in
+    en/de/nl/sv ("1.0 files"), while the selector for the number `1` is `one` ("1 file"). ICU takes only the number, so
+    `Intl.PluralRules` can't be told the readout shows a tenth, and the pair would render "1.0 file/s". Dropping the
+    tenth makes the two agree in every locale at once. ❌ Don't "regularize" the band by giving 1 its decimal back.
 - **An ETA** is the backend's `write-progress.etaSeconds` through `createEtaSmoother()`
   (`apps/desktop/src/lib/file-operations/progress-readout.ts`), then `formatDuration`. The smoother closes 25% of the
   gap per tick, so a real slowdown shows within about a second while single-tick jitter is damped. It's stateful, which

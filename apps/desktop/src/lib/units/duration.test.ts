@@ -48,10 +48,13 @@ describe('formatFilesPerSecond', () => {
   })
 
   describe('the plural selector', () => {
-    it('hands the catalog exactly 1 when the rate rounds to one', () => {
-      expect(formatFilesPerSecond(1)).toEqual({ text: '1.0', value: 1 })
-      expect(formatFilesPerSecond(0.97)?.value).toBe(1)
-      expect(formatFilesPerSecond(1.04)?.value).toBe(1)
+    it('drops the tenth at exactly one, so the digits and the noun can agree', () => {
+      // CLDR reads a SHOWN "1.0" as `other` in en/de/nl/sv ("1.0 files"), while
+      // the selector for the number 1 is `one` ("1 file"). Showing the tenth
+      // here would print "1.0 file/s" — the one rate where the two disagree.
+      expect(formatFilesPerSecond(1)).toEqual({ text: '1', value: 1 })
+      expect(formatFilesPerSecond(0.97)).toEqual({ text: '1', value: 1 })
+      expect(formatFilesPerSecond(1.04)).toEqual({ text: '1', value: 1 })
     })
 
     it('hands it the shown value, not the raw rate, so the words match the digits', () => {

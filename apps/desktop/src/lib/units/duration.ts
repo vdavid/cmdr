@@ -66,6 +66,7 @@ export interface FileRateReadout {
  * Round a files-per-second rate to what the progress surfaces show.
  *
  * - `< 3`: 1 decimal (`0.4`, `1.8`). Small values aren't useful as integers.
+ * - Rounds to exactly `1`: a bare `1`, no tenth (see below).
  * - `>= 3`: integer (`27`). Decimal precision adds nothing at high rates.
  *
  * Returns `null` for rates that round to `0.0` so the caller can hide the readout
@@ -75,11 +76,18 @@ export interface FileRateReadout {
  * The `value` it hands back is the ROUNDED one, never the raw rate: the catalog
  * selects a plural form from it, and a form chosen from 0.97 while the reader
  * sees "1" is how "1 files/s" reaches a screen.
+ *
+ * ⚠️ Exactly 1 is the one rate where a shown tenth and the plural selector
+ * DISAGREE, so it drops the tenth. CLDR reads a visible "1.0" as `other` in
+ * en/de/nl/sv ("1.0 files") while the selector for the number 1 is `one`, and
+ * `Intl.PluralRules` can't be told about fraction digits through ICU. Printing
+ * "1" makes the digits and the noun agree in every locale instead.
  */
 export function formatFilesPerSecond(rate: number): FileRateReadout | null {
   if (rate < 3) {
     const oneDecimal = Math.round(rate * 10) / 10
     if (oneDecimal === 0) return null
+    if (oneDecimal === 1) return { text: formatInteger(1), value: 1 }
     return { text: formatTenth(oneDecimal), value: oneDecimal }
   }
   const whole = Math.round(rate)

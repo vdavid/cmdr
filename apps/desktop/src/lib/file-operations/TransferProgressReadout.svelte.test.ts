@@ -100,8 +100,11 @@ describe('TransferProgressReadout', () => {
     // The marker used to be an English literal in the formatter, so "files/s"
     // shipped to all thirteen locales. It comes from
     // `fileOperations.shared.fileRate` now, which is also where the singular is.
+    // A rate rounding to one prints a bare "1", never "1.0": CLDR reads a shown
+    // "1.0" as `other` ("1.0 files") while the selector for 1 is `one`, so a
+    // tenth here would render "1.0 file/s".
     render({ ...halfway, filesPerSecond: 0.97 })
-    expect(texts('.rate')[1]).toBe('1.0 file/s')
+    expect(texts('.rate')[1]).toBe('1 file/s')
 
     document.body.innerHTML = ''
     render({ ...halfway, filesPerSecond: 0.4 })
