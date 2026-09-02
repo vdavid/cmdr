@@ -222,11 +222,11 @@ wait_until_async(Duration::from_secs(5), "recovery to reopen the device", || {
 }).await;
 ```
 
-- **First ask whether the subject can SIGNAL completion; a deadline is the fallback, not the default.** If the work is
-  a thread or task the code already owns, hand its join handle back and join it: the test then fails only when the work
-  is wrong, never when the machine is loaded. `write_operations::in_flight_temps::init_and_sweep` returns a
-  `SweepHandle` for exactly this — the launch path drops it, the test calls `.wait()`. `wait_until` is for work whose
-  completion you can only observe from outside (an FSEvents callback, a scheduler tick, another process).
+- **First ask whether the subject can SIGNAL completion; a deadline is the fallback, not the default.** If the work is a
+  thread or task the code already owns, hand its join handle back and join it: the test then fails only when the work is
+  wrong, never when the machine is loaded. `write_operations::in_flight_temps::init_and_sweep` returns a `SweepHandle`
+  for exactly this — the launch path drops it, the test calls `.wait()`. `wait_until` is for work whose completion you
+  can only observe from outside (an FSEvents callback, a scheduler tick, another process).
 - Both **panic** on timeout with the caller's description and (for the sync one, via `#[track_caller]`) the caller's
   file and line. Neither returns anything, so a wait can't silently pass the way a bare `bool` helper can.
 - Phrase `description` as a noun phrase: it completes "timed out after 2.0s waiting for …".
