@@ -112,8 +112,8 @@ watch them go by. They need something only the seeded fixture has:
 - `a_whole_file_stream_is_byte_exact_and_knows_its_size_up_front` and
   `a_bounded_range_comes_back_exactly_and_never_over_long` — the seeded `large.bin` and its 4 MiB size.
 - `a_reconnect_against_a_live_server_succeeds_and_keeps_listing` — `hello.txt` and `docs/`.
-- `a_digest_only_server_is_a_typed_refusal` — a server that offers no Basic scheme, which is `webdav-fixture-digest`
-  and nothing else.
+- `a_digest_only_server_is_a_typed_refusal` — a server that offers no Basic scheme, which is `webdav-fixture-digest` and
+  nothing else.
 - `quota_reports_the_accounts_own_numbers_not_the_servers_disk` and
   `an_account_with_no_quota_reports_no_free_space_at_all` — the Nextcloud fixture's two accounts and its exact 5 GiB
   quota.

@@ -88,10 +88,10 @@ as one server's answer, evidence-anchored, rather than as the protocol's.
   § 14.2 makes ranges optional, no other real server has been watched, and the fallback costs a whole file's bandwidth
   only when it fires. ❗ Nothing exercises the skip-locally branch today, so it is code no test covers.
 - **A PUT with no `Content-Length` is accepted, 201 Created, body byte-exact** (same server and date; 256 KiB by the
-  Docker cell, 8 MiB by hand with `curl`). ❌ So "sabre/dav answers 411 to a chunked PUT" is NOT true of Nextcloud on Apache with
-  `mod_php`, which is what the official image runs. `writes.rs` sends the length regardless, and the reason is simply
-  that it always knows the size: a body of unknown length buys nothing here and gives every proxy and every server
-  configuration in the world a chance to disagree. The cell is what would tell us if a version answered 411.
+  Docker cell, 8 MiB by hand with `curl`). ❌ So "sabre/dav answers 411 to a chunked PUT" is NOT true of Nextcloud on
+  Apache with `mod_php`, which is what the official image runs. `writes.rs` sends the length regardless, and the reason
+  is simply that it always knows the size: a body of unknown length buys nothing here and gives every proxy and every
+  server configuration in the world a chance to disagree. The cell is what would tell us if a version answered 411.
 - **RFC 4331 quota reports the ACCOUNT's numbers.** A 5 GiB account answers `quota-available-bytes` + `quota-used-bytes`
   adding up to exactly 5,368,709,120, nothing like the container's disk (same server and date). An account with no quota
   — which is a stock Nextcloud user, and so the common case — answers `quota-available-bytes: -3`, the `SPACE_UNLIMITED`

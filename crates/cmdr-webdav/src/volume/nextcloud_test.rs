@@ -244,7 +244,11 @@ async fn a_ranged_get_is_answered_with_a_window_rather_than_the_whole_file() {
         .read_range(&dir.join(name), 100_000, 100_000)
         .await
         .expect(FIXTURE);
-    assert_same_bytes(&through_the_backend, &bytes[100_000..200_000], "read_range on sabre/dav");
+    assert_same_bytes(
+        &through_the_backend,
+        &bytes[100_000..200_000],
+        "read_range on sabre/dav",
+    );
 
     clean(&volume, &dir).await;
 }
@@ -274,7 +278,10 @@ async fn quota_reports_the_accounts_own_numbers_not_the_servers_disk() {
         space.total_bytes,
         "`total` is built from the two RFC 4331 numbers, so it can't disagree with them"
     );
-    assert!(space.used_bytes > 0, "a freshly installed account holds its skeleton files");
+    assert!(
+        space.used_bytes > 0,
+        "a freshly installed account holds its skeleton files"
+    );
     assert!(space.available_bytes < space.total_bytes);
 }
 
