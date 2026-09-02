@@ -117,8 +117,12 @@ async fn delete_leaves_a_non_empty_directory_intact() {
 #[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
 async fn writability_matches_the_mutations_offered() {
     let (volume, dir) = stock_server_with_scratch().await;
+    // ❗ A name that is NOT there yet: the helper creates the directory itself
+    // (or watches the create be refused) and removes it again, so handing it the
+    // scratch dir trips its own precondition.
+    let unborn = dir.join("unborn");
 
-    conformance::assert_writability_matches_the_mutations_offered(&volume, &dir).await;
+    conformance::assert_writability_matches_the_mutations_offered(&volume, &unborn).await;
 
     clean(&volume, &dir).await;
 }

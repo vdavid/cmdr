@@ -61,57 +61,60 @@ async fn cancelling_an_attempt_nobody_is_running_is_a_plain_no() {
     ));
 }
 
-/// A connect the user calls off ends at once and ❗ leaves nothing behind: no
-/// volume in the registry, no server in the saved list.
+/// A connect that ends on its own ❗ leaves nothing behind and takes its own
+/// entry out of the attempt table.
+///
+/// ❗ **Not SFTP's "cancel a hanging dial" cell, and it can't be.** SFTP reaches
+/// the wire before it reads a secret, so a routed-nowhere address hangs there
+/// and a cancel has something to interrupt. This backend reads the store FIRST
+/// and answers `NeedsCredentials` without dialing, so nothing here can be caught
+/// mid-flight from outside. The mid-flight cancel is the crate's cell
+/// (`crates/cmdr-webdav/src/volume/cancel_test.rs`), where the credential seam
+/// takes an in-memory store; what the app owns, and what this asserts, is the
+/// attempt table and the guard that empties it.
 ///
 /// `192.0.2.1` is reserved for documentation (RFC 5737) and routed nowhere, so
-/// this dial hangs exactly the way a typo'd hostname does. ❗ That hang IS the
-/// subject: without the cancel it holds for the whole connect budget, and a
-/// sign-in dialog with it.
+/// even a store that surprised us here could not reach a server.
 #[tokio::test]
-async fn cancelling_a_hanging_connect_ends_it_and_registers_nothing() {
-    const ATTEMPT: &str = "webdav-cancel-a-hanging-connect";
+async fn a_connect_that_ends_takes_its_attempt_entry_with_it_and_registers_nothing() {
+    const ATTEMPT: &str = "webdav-a-connect-that-ends";
     let base_url = url::Url::parse("https://192.0.2.1/dav/").expect("a literal");
     let params = WebdavConnectionParams::new(base_url.clone(), "nobody", "/");
     let volume_id = cmdr_fs::volume::webdav_volume_id(params.host(), params.port(), &params.username);
 
-    let dialing = params.clone();
-    let connecting =
-        tokio::spawn(async move { webdav_volume_wiring::connect_and_register("Nowhere", dialing, ATTEMPT).await });
-
-    // The attempt is cancelable from the moment the dial is in the air, which is
-    // the whole reason the id is the caller's.
-    cmdr_fs::testing::wait_until_async(Duration::from_secs(5), "the connect attempt to be cancelable", || {
-        webdav_volume_wiring::cancel_connect(ATTEMPT)
-    })
-    .await;
-
-    let outcome = tokio::time::timeout(Duration::from_secs(5), connecting)
-        .await
-        .expect("a cancelled connect answers long before the connect budget runs out")
-        .expect("the connect task must not panic");
+    let outcome = tokio::time::timeout(
+        Duration::from_secs(15),
+        webdav_volume_wiring::connect_and_register("Nowhere", params.clone(), ATTEMPT),
+    )
+    .await
+    .expect("a dial with nothing in the store answers without touching the network");
     assert!(
-        matches!(outcome, WebdavConnection::Cancelled),
-        "a cancelled connect says so, rather than reporting the address as unreachable"
+        matches!(outcome, WebdavConnection::NeedsCredentials),
+        "with no secret stored this backend asks for one rather than reporting the address as unreachable"
     );
 
     assert!(
         crate::file_system::volume::manager::get_volume_manager()
             .get(&volume_id)
             .is_none(),
-        "❗ a cancelled connect registers nothing"
+        "❗ a connect that didn't come up registers nothing"
     );
     assert!(
         !webdav_known_servers::all()
             .into_iter()
             .any(|entry| entry.url == base_url.as_str()),
-        "❗ a cancelled connect remembers no server either"
+        "❗ and it remembers no server either"
     );
     assert!(
         !keychain::has_credentials(&params.credential_service(), Some(&params.username)),
         "❗ and it writes no secret: only `save_webdav_credentials` ever does"
     );
 
-    // The entry is gone with the attempt, so a second cancel finds nothing.
-    assert!(!webdav_volume_wiring::cancel_connect(ATTEMPT));
+    // ❗ The `AttemptGuard` is what does this, on every one of the eight ways a
+    // connect can leave. A token nobody collects is an id that can never be
+    // reused, so this is the cell that notices the guard going missing.
+    assert!(
+        !webdav_volume_wiring::cancel_connect(ATTEMPT),
+        "the attempt's entry goes out with the connect, however the connect ended"
+    );
 }

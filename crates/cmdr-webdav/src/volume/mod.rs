@@ -262,6 +262,8 @@ impl WebdavVolume {
 
 // The suites asserting on this backend's own behavior.
 #[cfg(test)]
+mod cancel_test;
+#[cfg(test)]
 mod conformance_test;
 #[cfg(test)]
 mod integration_test;
