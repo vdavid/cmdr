@@ -637,16 +637,30 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   the copy and conflict scans, space info.
 - `session_integration_test.rs` — what the SESSION does: the connection gate the fresh-listing oracle reads, the
   reconnect cycle, the refcounted scan pool, and what a supersede leaves alone.
-- `streaming_integration_test.rs` — the whole byte path: `open_read_stream` / `write_from_stream` across progress,
-  cancel, cancel-by-drop, multi-chunk files, and the error / partial-cleanup paths with the `ErroringReadStream` double,
-  plus the two compound-frame shape assertions.
+- **The byte path is three files split by contract**, all declared from `volume/mod.rs`. A new byte-path cell adds
+  itself to the matching contract rather than growing one file; a cell that straddles goes where its ASSERTION lives,
+  not where its setup does.
+  - `read_stream_integration_test.rs` — what `open_read_stream` / `open_read_stream_with_hint` hand back: a plain
+    read, a multi-MB read across chunk boundaries, cancel-by-drop, and both size-drift arms of the hinted fast path (a
+    file that grew, a file that shrank) serving the file as it is now.
+  - `write_stream_integration_test.rs` — what `write_from_stream` does with a source: the bytes that land, progress
+    shape (server-confirmed, never queued), cancel and mid-write cancel, multi-chunk sources, and the error /
+    partial-cleanup path with the `ErroringReadStream` double. The cross-volume streaming copy is here because every
+    assertion it makes is about what arrived on the share, even though its source is an `InMemoryVolume`.
+  - `wire_shape_integration_test.rs` — what a byte-path op COSTS, which neither of the above asks: the hinted read's
+    ONE compound frame, the single-shot write promise the transfer layer skips `.cmdr-tmp-*` staging on (the wire proof
+    and the `write_is_single_shot` predicate behind it, kept together), and the copy-slot clamp. It owns
+    `request_counts`, the diagnostics-metric reader those frame assertions run on. The copy-concurrency cell exercises
+    neither byte path; it sits here because its subject is the credit window of § "Copy concurrency and the credit
+    window", which the sized read and the slot clamp are the two halves of.
 - `conformance_test.rs` — the `cmdr_fs::volume::conformance` promises, answered by a real server rather than an
   in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`,
   `STATUS_OBJECT_NAME_NOT_FOUND`. That last one is the conflict scan's: `scan_for_conflicts_impl` keeps its own
   cache-aware listing but reads a `NotFound` from it as an empty conflict list, which is the trait's contract for every
   backend (`Volume::scan_for_conflicts`), so pasting into a folder the transfer is about to create isn't refused.
 - `test_support.rs` — the session-free builders (a struct-literal `SmbVolumeInner` with no client and no tree), the
-  vocabulary every suite globs, and a re-export of `volume::testing` so one `use` covers all three.
+  vocabulary every suite globs, a re-export of `volume::testing` so one `use` covers all three, and `drain`, which lives
+  here rather than in one suite because the read and wire-shape files both drain a hinted read.
 
 Every Docker cell is `#[ignore]`d, so a default run skips it. Start the containers with
 `apps/desktop/test/smb-servers/start.sh` and run `cargo nextest run -E 'package(cmdr-smb)' --run-ignored only` — select

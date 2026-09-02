@@ -3,8 +3,9 @@
 //! streaming smoke tests, the copy and conflict scans, and space info.
 //!
 //! The session's own behavior (connection gates, reconnect, the scan pool,
-//! supersede) is `session_integration_test.rs`; the full byte path is
-//! `streaming_integration_test.rs`.
+//! supersede) is `session_integration_test.rs`; the byte path is
+//! `read_stream_integration_test.rs`, `write_stream_integration_test.rs`, and
+//! `wire_shape_integration_test.rs`.
 //!
 //! Every test here is `#[ignore]`d so default runs skip it. Start the containers
 //! with `apps/desktop/test/smb-servers/start.sh`, then run

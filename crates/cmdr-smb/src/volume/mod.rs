@@ -454,10 +454,14 @@ mod host_seam_test;
 #[cfg(test)]
 mod integration_test;
 #[cfg(test)]
+mod read_stream_integration_test;
+#[cfg(test)]
 mod retirement_test;
 #[cfg(test)]
 mod session_integration_test;
 #[cfg(test)]
-mod streaming_integration_test;
-#[cfg(test)]
 mod test_support;
+#[cfg(test)]
+mod wire_shape_integration_test;
+#[cfg(test)]
+mod write_stream_integration_test;

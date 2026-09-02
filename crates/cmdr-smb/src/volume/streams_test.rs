@@ -1,6 +1,8 @@
 //! The consumer side of the channel-backed read stream, driven off a pre-seeded
 //! channel rather than a real producer task, plus the single-shot write promise.
-//! End-to-end streaming is `streaming_integration_test.rs`.
+//! End-to-end streaming is `read_stream_integration_test.rs` and
+//! `write_stream_integration_test.rs`; the frames they cost are
+//! `wire_shape_integration_test.rs`.
 
 use super::*;
 use crate::volume::test_support::*;

@@ -80,3 +80,16 @@ pub(super) fn make_test_volume_direct() -> SmbVolume {
     vol.inner.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
     vol
 }
+
+/// Drains a read stream to the end and hands back everything it produced.
+///
+/// Shared, because both byte-path suites need it: the read suite drains a
+/// hinted read whose size drifted, and the wire-shape suite drains one while
+/// counting the frames it cost.
+pub(super) async fn drain(mut stream: Box<dyn VolumeReadStream>) -> Vec<u8> {
+    let mut out = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        out.extend_from_slice(&chunk.expect("no read error"));
+    }
+    out
+}
