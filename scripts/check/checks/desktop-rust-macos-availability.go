@@ -28,6 +28,21 @@ const tauriConfRelPath = "apps/desktop/src-tauri/tauri.conf.json"
 // only fires on the author's Mac isn't the gate this one has to be.
 const macOSAvailabilitySelectorsFile = "macos-availability-selectors.json"
 
+// AllowNewerSelectorComment opts a single call out of this check, for a selector
+// that IS newer than the floor but only ever runs on an OS that has it. Put it on
+// the line above the call (or trailing on the same line) with the gate as the
+// reason, so a reader can find the guard without leaving the file:
+//
+//	if !macos_at_least(12, 0) { return fallback(); }
+//	// allowed-newer-selector: guarded by the `macos_at_least(12, 0)` early return above
+//	let apps = workspace.URLsForApplicationsToOpenURL(&url);
+//
+// A runtime gate is the ONLY thing this excuses. The check can't see the gate (it
+// reads lines, not control flow), so the comment is the claim and the reason is
+// where you make it checkable by a human. An opt-out that excuses no call is
+// reported as an orphan, which is what keeps a stale one from rotting in place.
+const AllowNewerSelectorComment = "// allowed-newer-selector:"
+
 // nonFrameworkObjc2Crates are the `objc2-*` crates that bind no framework, so
 // there are no headers to resolve them against. Everything else must map to a
 // framework in the SDK or the check fails: an unmapped crate is a blind spot, and
@@ -143,13 +158,15 @@ func RunMacOSAvailability(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	var violations []availabilitySite
+	var orphans []orphanDirective
 	scanned := 0
 	for _, root := range roots {
-		rootViolations, rootScanned, scanErr := scanForNewSelectors(ctx.RootDir, root, newer)
+		rootViolations, rootOrphans, rootScanned, scanErr := scanForNewSelectors(ctx.RootDir, root, newer)
 		if scanErr != nil {
 			return CheckResult{}, fmt.Errorf("failed to scan Rust files: %w", scanErr)
 		}
 		violations = append(violations, rootViolations...)
+		orphans = append(orphans, rootOrphans...)
 		scanned += rootScanned
 	}
 
@@ -165,10 +182,15 @@ func RunMacOSAvailability(ctx *CheckContext) (CheckResult, error) {
 			sb.WriteString(fmt.Sprintf("  %s:%d: `%s` needs macOS %s\n    %s\n", v.relPath, v.line, v.selector, v.needs, v.text))
 		}
 		return CheckResult{}, fmt.Errorf(
-			"found %d Objective-C %s newer than the macOS %s this bundle claims to run on (%s). On an older Mac the selector doesn't exist, and the unrecognized-selector exception aborts the app rather than returning an error. Use an older API that answers the same question, or gate the call on the running version:\n%s",
+			"found %d Objective-C %s newer than the macOS %s this bundle claims to run on (%s). On an older Mac the selector doesn't exist, and the unrecognized-selector exception aborts the app rather than returning an error. Use an older API that answers the same question, or gate the call on the running version (`crate::platform::macos_at_least`) and mark it with `%s <reason>`:\n%s",
 			len(violations), Pluralize(len(violations), "call", "calls"), floor, tauriConfRelPath,
+			AllowNewerSelectorComment,
 			strings.TrimRight(sb.String(), "\n"),
 		)
+	}
+
+	if len(orphans) > 0 {
+		return CheckResult{}, fmt.Errorf("%s", formatOrphanDirectives(AllowNewerSelectorComment, orphans))
 	}
 
 	message := fmt.Sprintf(
@@ -593,13 +615,17 @@ func cutAtAttribute(declaration string) string {
 }
 
 // scanForNewSelectors walks one source root and returns every call to a selector
-// in `newer`, plus the count of files scanned.
+// in `newer`, the opt-out directives that excused nothing, and the count of files
+// scanned.
 //
 // Only files that mention `objc2` are read for calls: elsewhere a matching name is
 // a Rust method that happens to share it, and the receiver can't be an
 // Objective-C object.
-func scanForNewSelectors(rootDir, srcDir string, newer map[string]macOSVersion) ([]availabilitySite, int, error) {
+func scanForNewSelectors(
+	rootDir, srcDir string, newer map[string]macOSVersion,
+) ([]availabilitySite, []orphanDirective, int, error) {
 	var violations []availabilitySite
+	var orphans []orphanDirective
 	scanned := 0
 
 	err := filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
@@ -624,18 +650,27 @@ func scanForNewSelectors(rootDir, srcDir string, newer map[string]macOSVersion) 
 			relPath = path
 		}
 
+		tracker := newDirectiveTracker(AllowNewerSelectorComment, "//")
 		scanner := bufio.NewScanner(strings.NewReader(string(raw)))
 		scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 		lineNum := 0
+		prev := ""
 		for scanner.Scan() {
 			lineNum++
 			line := scanner.Text()
+			tracker.observe(lineNum, line)
 			if strings.HasPrefix(strings.TrimLeft(line, " \t"), "//") {
+				prev = line
 				continue
 			}
 			for _, name := range calledSelectors(line) {
 				version, isNew := newer[name]
 				if !isNew {
+					continue
+				}
+				// Opt-out: the directive on the line above, or trailing on this one.
+				if strings.Contains(prev, AllowNewerSelectorComment) || strings.Contains(line, AllowNewerSelectorComment) {
+					tracker.markUsed(lineNum, line, prev)
 					continue
 				}
 				violations = append(violations, availabilitySite{
@@ -646,14 +681,16 @@ func scanForNewSelectors(rootDir, srcDir string, newer map[string]macOSVersion) 
 					text:     strings.TrimSpace(line),
 				})
 			}
+			prev = line
 		}
+		orphans = append(orphans, tracker.orphans(filepath.ToSlash(relPath))...)
 		return scanner.Err()
 	})
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 
-	return violations, scanned, nil
+	return violations, orphans, scanned, nil
 }
 
 // calledSelectors returns the names one line of Rust could be sending as a

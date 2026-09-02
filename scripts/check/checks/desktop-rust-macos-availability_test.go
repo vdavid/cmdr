@@ -147,7 +147,7 @@ func availabilityScanFixture(t *testing.T, newer map[string]macOSVersion, files 
 	for rel, body := range files {
 		mustWrite(t, filepath.Join(src, rel), body)
 	}
-	sites, scanned, err := scanForNewSelectors(root, src, newer)
+	sites, _, scanned, err := scanForNewSelectors(root, src, newer)
 	if err != nil {
 		t.Fatalf("scanForNewSelectors: %v", err)
 	}
@@ -155,6 +155,24 @@ func availabilityScanFixture(t *testing.T, newer map[string]macOSVersion, files 
 		t.Errorf("scanned %d files, wrote %d", scanned, len(files))
 	}
 	return sites
+}
+
+// availabilityScanFixtureWithOrphans is the same fixture, for the tests that care
+// about the opt-out directives that excused nothing.
+func availabilityScanFixtureWithOrphans(
+	t *testing.T, newer map[string]macOSVersion, files map[string]string,
+) ([]availabilitySite, []orphanDirective) {
+	t.Helper()
+	root := t.TempDir()
+	src := filepath.Join(root, "src")
+	for name, body := range files {
+		mustWrite(t, filepath.Join(src, name), body)
+	}
+	sites, orphans, _, err := scanForNewSelectors(root, src, newer)
+	if err != nil {
+		t.Fatalf("scanForNewSelectors: %v", err)
+	}
+	return sites, orphans
 }
 
 func TestScanForNewSelectors_FindsTheCallAndNamesIt(t *testing.T) {
@@ -193,6 +211,38 @@ func TestScanForNewSelectors_SkipsCommentsAndCatchesMsgSend(t *testing.T) {
 	}
 	if !strings.HasSuffix(sites[0].relPath, "hand.rs") {
 		t.Errorf("got %s, want the msg_send file", sites[0].relPath)
+	}
+}
+
+func TestScanForNewSelectors_HonorsTheGatedOptOut(t *testing.T) {
+	newer := map[string]macOSVersion{"regionCode": {major: 14}}
+	sites, orphans := availabilityScanFixtureWithOrphans(t, newer, map[string]string{
+		"above.rs": "use objc2_foundation::NSLocale;\nfn f() {\n" +
+			"    // allowed-newer-selector: guarded by the `macos_at_least(14, 0)` above\n" +
+			"    let r = locale.regionCode();\n}\n",
+		"trailing.rs": "use objc2_foundation::NSLocale;\nfn f() {\n" +
+			"    let r = locale.regionCode(); // allowed-newer-selector: guarded above\n}\n",
+	})
+	if len(sites) != 0 {
+		t.Fatalf("expected the opt-out to excuse both calls, got %+v", sites)
+	}
+	if len(orphans) != 0 {
+		t.Fatalf("expected no orphans, got %+v", orphans)
+	}
+}
+
+func TestScanForNewSelectors_ReportsAnOptOutThatExcusesNothing(t *testing.T) {
+	newer := map[string]macOSVersion{"regionCode": {major: 14}}
+	sites, orphans := availabilityScanFixtureWithOrphans(t, newer, map[string]string{
+		"stale.rs": "use objc2_foundation::NSLocale;\nfn f() {\n" +
+			"    // allowed-newer-selector: the call it excused moved to a version-gated helper\n" +
+			"    let r = locale.identifier();\n}\n",
+	})
+	if len(sites) != 0 {
+		t.Fatalf("expected no sites, got %+v", sites)
+	}
+	if len(orphans) != 1 || orphans[0].line != 3 {
+		t.Fatalf("expected one orphan on line 3, got %+v", orphans)
 	}
 }
 

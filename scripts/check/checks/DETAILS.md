@@ -1314,6 +1314,11 @@ How it decides:
   wins, and a name some class has carried since 10.x is never flagged, and (b) a selector has to carry an uppercase
   letter to count, because `bytes`, `close`, and `title` are selectors AND ordinary Rust method names. Both trade recall
   for a zero-noise list. Only files that mention `objc2` are read for calls, for the same reason.
+- **A gated call opts out per line**, with `// allowed-newer-selector: <reason>` above the call or trailing on it. The
+  check reads lines, never control flow, so it can't see a `crate::platform::macos_at_least(major, minor)` gate: the
+  comment is the claim and the reason is what makes it checkable by a human, so name the gate in it. An opt-out that
+  excuses no call is reported as an orphan (same `directiveTracker` every other opt-out uses), which is what stops a
+  stale one rotting in place after the call moves.
 
 ## Apps and check counts
 
