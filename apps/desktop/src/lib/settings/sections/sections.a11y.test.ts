@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, tick } from 'svelte'
+import { createRawSnippet, mount, tick, type ComponentProps } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import { clearSearchIndex } from '$lib/settings/settings-search'
 
@@ -87,6 +87,7 @@ import NavigationAndFileOpsSection from './NavigationAndFileOpsSection.svelte'
 import NetworkSection from './NetworkSection.svelte'
 import NotificationsSection from './NotificationsSection.svelte'
 import SearchSection from './SearchSection.svelte'
+import ShortcutPill from './ShortcutPill.svelte'
 
 /**
  * Installs this block's `getSetting` for its own tests only. Call inside a
@@ -591,5 +592,62 @@ describe('SearchSection a11y', () => {
     await tick()
     await expectNoA11yViolations(target)
     target.remove()
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `ShortcutPill.svelte`, the chip shared by
+ * `KeyboardShortcutsSection` rows and `$lib/downloads/GlobalShortcutRow.svelte`.
+ * Its states differ in the element they render: a `<button>` that starts recording
+ * by default, a plain `<span>` when `readOnly`, and the same button plus a
+ * hover-only remove control when `remove` is set.
+ */
+describe('ShortcutPill a11y', () => {
+  function mountPill(props: Omit<ComponentProps<typeof ShortcutPill>, 'children'> = {}): HTMLElement {
+    const target = container()
+    mount(ShortcutPill, {
+      target,
+      props: { ...props, children: createRawSnippet(() => ({ render: () => '<span>⌘ C</span>' })) },
+    })
+    return target
+  }
+
+  it('editable has no a11y violations', async () => {
+    const target = mountPill({ onclick: () => {} })
+    await tick()
+    expect(target.querySelector('button')).not.toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  it('read-only renders a span and has no a11y violations', async () => {
+    const target = mountPill({ readOnly: true })
+    await tick()
+    expect(target.querySelector('button')).toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  it('empty (an unbound slot) has no a11y violations', async () => {
+    const target = mountPill({ empty: true, onclick: () => {} })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('recording, with the captured combo in question, has no a11y violations', async () => {
+    const target = mountPill({ editing: true, pendingConflict: true })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  // TODO: `nested-interactive` — the remove control is a `<span role="button">`
+  // inside the pill's own `<button>` (`ShortcutPill.svelte`), and nested focusable
+  // controls are ambiguous for screen readers. Fix: render it as a sibling button
+  // beside the pill, or drop the inner span's `role="button"` (it is already
+  // `tabindex="-1"`, so the mouse-only click keeps working). This is the same
+  // finding as the skipped `KeyboardShortcutsSection` test above, which mounts the
+  // pills through a real row; unskip both together.
+  it.skip('with the remove control has no a11y violations (BLOCKED: nested-interactive)', async () => {
+    const target = mountPill({ onclick: () => {}, remove: { tooltip: 'Remove this shortcut', onRemove: () => {} } })
+    await tick()
+    await expectNoA11yViolations(target)
   })
 })
