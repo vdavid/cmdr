@@ -18,8 +18,10 @@
         currentPath: string
         /** The validation state this field shows and drives. */
         check: NewEntryNameCheck
-        /** The name being typed. */
-        value: string
+        /** The name being typed. Optional like every other bindable in the house set
+            (`TextInput`, `TextArea`): a required prop makes its `$bindable()` read as a
+            useless default, and the autofix for that silently removes the binding. */
+        value?: string
         /** The underlying input, for a parent that needs to hand focus back to it. */
         inputElement?: HTMLInputElement
         /** Enter pressed in the field. */
@@ -27,7 +29,7 @@
     }
 
     /* eslint-disable prefer-const -- the two `$bindable()` props need `let` */
-    let { kind, currentPath, check, value = $bindable(), inputElement = $bindable(), onSubmit }: Props = $props()
+    let { kind, currentPath, check, value = $bindable(''), inputElement = $bindable(), onSubmit }: Props = $props()
     /* eslint-enable prefer-const */
 
     const COPY = {
