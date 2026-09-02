@@ -508,6 +508,11 @@ mod test_support;
 #[path = "move_op_tests.rs"]
 mod tests;
 
+/// What a paused, rolled-back, or cancelled move does.
+#[cfg(test)]
+#[path = "move_interruption_tests.rs"]
+mod move_interruption_tests;
+
 /// What each ledger entry records about the rename it stands for.
 #[cfg(test)]
 #[path = "move_reversal_tests.rs"]
