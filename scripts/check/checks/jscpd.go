@@ -109,7 +109,8 @@ type jscpdReport struct {
 }
 
 // jscpdAllowlist is the on-disk shape of `<lane>-allowlist.json`. `Pairs` maps a
-// file pair to the duplicated line count it may carry.
+// file pair to the duplicated line count it may carry, optionally with the reason
+// it carries it (`jscpdPairLimit`).
 //
 // **The key is the file PAIR, not the clone.** A clone's location moves the moment
 // anything above it changes, and its content changes the moment somebody renames a
@@ -127,9 +128,57 @@ type jscpdReport struct {
 // and it would have to be re-approved every time the generator's input grows. So
 // exempt pairs never warn and never carry a count, and each needs a reason.
 type jscpdAllowlist struct {
-	Comment string            `json:"$comment,omitempty"`
-	Exempt  map[string]string `json:"exempt,omitempty"`
-	Pairs   map[string]int    `json:"pairs"`
+	Comment string                    `json:"$comment,omitempty"`
+	Exempt  map[string]string         `json:"exempt,omitempty"`
+	Pairs   map[string]jscpdPairLimit `json:"pairs"`
+}
+
+// jscpdPairLimit is one `pairs` entry: the duplicated line count the pair may
+// carry, plus an optional reason for why that duplication stays.
+//
+// **It reads and writes two JSON shapes**, and which one it writes depends only
+// on whether there's a reason: a bare number (`"a.rs ↔ b.rs": 14`) for the
+// ordinary pair, whose duplication is a standing debt waiting for somebody to
+// extract it, and an object (`{"lines": 62, "reason": "…"}`) for the pair
+// somebody looked at and deliberately accepted. Most entries want no reason
+// (the number IS the whole story), so the bare form stays the default and the
+// file keeps its one-line-per-pair shape; paying an object for every entry to
+// make a handful of them explainable is how a legible file turns into a wall.
+//
+// The reason rides on the entry rather than in a parallel map so the two can't
+// drift: shrink-wrap ratchets and drops entries, and a second map would need the
+// same edits applied twice, with a dangling reason as the failure mode.
+type jscpdPairLimit struct {
+	Lines  int
+	Reason string
+}
+
+// jscpdPairLimitObject is the object form's field names, and the type that keeps
+// jscpdPairLimit's own marshaller from recursing into itself.
+type jscpdPairLimitObject struct {
+	Lines  int    `json:"lines"`
+	Reason string `json:"reason,omitempty"`
+}
+
+func (l jscpdPairLimit) MarshalJSON() ([]byte, error) {
+	if l.Reason == "" {
+		return json.Marshal(l.Lines)
+	}
+	return json.Marshal(jscpdPairLimitObject(l))
+}
+
+func (l *jscpdPairLimit) UnmarshalJSON(data []byte) error {
+	var lines int
+	if err := json.Unmarshal(data, &lines); err == nil {
+		*l = jscpdPairLimit{Lines: lines}
+		return nil
+	}
+	var object jscpdPairLimitObject
+	if err := json.Unmarshal(data, &object); err != nil {
+		return fmt.Errorf("a `pairs` value is a line count or {\"lines\": N, \"reason\": \"…\"}: %w", err)
+	}
+	*l = jscpdPairLimit(object)
+	return nil
 }
 
 // jscpdPairPaths splits a pair key back into the file paths behind it: two for a
@@ -149,19 +198,19 @@ func jscpdAllowlistPath(rootDir, name string) string {
 // loadJscpdAllowlist reads a lane's allowlist. A missing or unparsable file yields
 // an empty allowlist, which reports every pair as unlisted.
 func loadJscpdAllowlist(rootDir, name string) jscpdAllowlist {
-	list := jscpdAllowlist{Exempt: map[string]string{}, Pairs: map[string]int{}}
+	list := jscpdAllowlist{Exempt: map[string]string{}, Pairs: map[string]jscpdPairLimit{}}
 	data, err := os.ReadFile(jscpdAllowlistPath(rootDir, name))
 	if err != nil {
 		return list
 	}
 	if err := json.Unmarshal(data, &list); err != nil {
-		return jscpdAllowlist{Exempt: map[string]string{}, Pairs: map[string]int{}}
+		return jscpdAllowlist{Exempt: map[string]string{}, Pairs: map[string]jscpdPairLimit{}}
 	}
 	if list.Exempt == nil {
 		list.Exempt = map[string]string{}
 	}
 	if list.Pairs == nil {
-		list.Pairs = map[string]int{}
+		list.Pairs = map[string]jscpdPairLimit{}
 	}
 	return list
 }
@@ -299,9 +348,10 @@ func shrinkwrapJscpdAllowlist(rootDir string, list *jscpdAllowlist, report jscpd
 		case current == 0:
 			delete(list.Pairs, key)
 			changes = append(changes, fmt.Sprintf("removed %s (no duplication left)", key))
-		case current < allowed:
-			list.Pairs[key] = current
-			changes = append(changes, fmt.Sprintf("ratcheted %s: %d → %d duplicated lines", key, allowed, current))
+		case current < allowed.Lines:
+			changes = append(changes, fmt.Sprintf("ratcheted %s: %d → %d duplicated lines", key, allowed.Lines, current))
+			allowed.Lines = current
+			list.Pairs[key] = allowed
 		}
 	}
 	// Exempt entries survive a run that found no duplication for them: a generated
@@ -326,6 +376,11 @@ type jscpdRegression struct {
 	pair    jscpdPair
 	allowed int
 	listed  bool
+	// reason is the allowlist entry's justification, when it carries one. Printing
+	// it beside the overshoot is the whole point of storing it: the reader deciding
+	// what to do about the growth gets the case for keeping the old duplication in
+	// the same breath, and can tell a still-good judgment from a stale one.
+	reason string
 }
 
 // findJscpdRegressions returns every pair over its allowed line count, worst
@@ -339,10 +394,10 @@ func findJscpdRegressions(report jscpdReport, list jscpdAllowlist) []jscpdRegres
 			continue
 		}
 		allowed, listed := list.Pairs[pair.key]
-		if listed && pair.lines <= allowed {
+		if listed && pair.lines <= allowed.Lines {
 			continue
 		}
-		out = append(out, jscpdRegression{pair: pair, allowed: allowed, listed: listed})
+		out = append(out, jscpdRegression{pair: pair, allowed: allowed.Lines, listed: listed, reason: allowed.Reason})
 	}
 	sort.Slice(out, func(i, j int) bool {
 		a, b := out[i].pair.lines-out[i].allowed, out[j].pair.lines-out[j].allowed
@@ -372,6 +427,9 @@ func formatJscpdRegressions(regressions []jscpdRegression) string {
 			len(regression.pair.clones), Pluralize(len(regression.pair.clones), "clone", "clones"), against)
 		for _, clone := range regression.pair.clones {
 			fmt.Fprintf(&sb, "\n      %s  ↔  %s", clone.A, clone.B)
+		}
+		if regression.reason != "" {
+			fmt.Fprintf(&sb, "\n      Allowlisted because: %s", regression.reason)
 		}
 	}
 	sb.WriteString("\nExtract the shared code, or get David's OK to raise the number " +

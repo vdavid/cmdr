@@ -1,5 +1,5 @@
 {
-  "$comment": "Accepted duplicated lines per file pair. Never hand-edited: `pnpm check jscpd-frontend` shrink-wraps it. Raising an entry needs David's OK (`.claude/rules/file-length-allowlist.md`).",
+  "$comment": "Accepted duplicated lines per file pair. A value is the line count on its own, or `{\"lines\": N, \"reason\": \"…\"}` when somebody looked at the duplication and decided it stays. `pnpm check jscpd-frontend` shrink-wraps the numbers, so a reason is the only part written by hand. Adding an entry, or raising a number, needs David's OK (`.claude/rules/file-length-allowlist.md`).",
   "pairs": {
     "apps/desktop/src/lib/downloads/GlobalShortcutRow.svelte ↔ apps/desktop/src/lib/settings/sections/KeyboardShortcutsSection.svelte": 37,
     "apps/desktop/src/lib/error-reporter/AutoSendToastContent.svelte ↔ apps/desktop/src/lib/error-reporter/ErrorReportToastContent.svelte": 20,

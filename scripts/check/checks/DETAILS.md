@@ -406,6 +406,42 @@ CI only reports what a local run would change. A pair missing from the allowlist
 under the same consent contract as the length allowlists (`.claude/rules/file-length-allowlist.md`). The allowlist also
 doubles as the complete inventory: every duplicated file pair in the repo is a line in it.
 
+### A `pairs` entry can carry its reason
+
+A `pairs` value reads and writes two shapes, and `jscpdPairLimit`'s own `MarshalJSON` / `UnmarshalJSON` pick between
+them:
+
+```json
+{
+  "pairs": {
+    "a.rs ↔ b.rs": 14,
+    "c.rs ↔ d.rs": { "lines": 62, "reason": "trait-method signatures; a macro emitting them costs more than it saves" }
+  }
+}
+```
+
+A bare number is the ordinary entry: duplication nobody has extracted yet, where the number is the whole story. The
+object form is for a pair somebody looked at and decided to keep, and its `reason` says what the duplication IS, why
+extracting it is worse than living with it, and what would flip that judgment. The reason is the one part of a `pairs`
+entry a human writes by hand; the number beside it still comes from the check.
+
+**Decision**: the reason rides ON the entry rather than in a parallel `pairReasons` map. **Why**: shrink-wrap ratchets
+numbers down and drops dead entries, and a second map would need every one of those edits applied twice, with a reason
+dangling beside a pair that no longer exists as the failure mode. One value, one lifetime.
+
+**Decision**: the bare number stays the default rather than migrating every entry to an object. **Why**: most pairs want
+no reason, and an allowlist where every entry is four lines instead of one stops being something a reader scans. The
+number-or-object union costs one small codec and keeps the file legible; the existing numeric entries needed no edit.
+
+- Shrink-wrap preserves the reason when it ratchets the number, and drops it with the entry when the duplication is
+  gone. A pair that comes back later comes back reasonless, which is right: the judgment was made about duplication that
+  no longer exists.
+- A regression on a pair that carries a reason prints it under the clone list (`Allowlisted because: …`), so whoever
+  reads the warn gets the case for the old duplication next to the growth, and can tell a still-good judgment from a
+  stale one.
+- An unparsable value fails the whole file's decode, which empties the allowlist and warns on every pair. Loud, and it
+  can't silently drop one entry's budget.
+
 ### The `exempt` section: generated files, no number
 
 Beside `pairs`, each lane's allowlist carries an `exempt` map from the same pair key to a REASON string, mirroring
