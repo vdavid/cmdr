@@ -126,16 +126,6 @@
     "screenshot": "delete-confirm.png"
   },
 
-  "fileOperations.delete.throughputFiles": "{rateText} files/s",
-  "@fileOperations.delete.throughputFiles": {
-    "description": "Live scan throughput in the delete dialog: files processed per second. '/s' means per second.",
-    "placeholders": {
-      "rateText": "the files-per-second rate, formatted for display (e.g. 1,200)"
-    },
-    "screenshot": "delete-confirm.png",
-    "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
-  },
-
   "fileOperations.delete.confirmDelete": "Delete",
   "@fileOperations.delete.confirmDelete": {
     "description": "Primary (destructive) confirm button in the delete dialog when the 'Move to trash' switch is off. Short control label.",
@@ -309,8 +299,17 @@
 
   "fileOperations.shared.byteRate": "<size></size>/s",
   "@fileOperations.shared.byteRate": {
-    "description": "Data-transfer speed shown next to a scan or copy/move bar, e.g. '1.2 MB/s'. <size> renders the formatted size (a widget, no inner text); '/s' means per second. Keep the per-second marker adjacent to the size.",
+    "description": "Data-transfer speed shown next to a scan or copy/move bar, e.g. '1.2 MB/s'. <size> renders the formatted size (a widget, no inner text); '/s' means per second. Keep the per-second marker adjacent to the size. Its sibling fileOperations.shared.fileRate does the same job for the files-per-second rate; keep the two reading alike.",
     "screenshot": "toast-transfer-complete.png"
+  },
+
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} file/s} other {{rateText} files/s}}",
+  "@fileOperations.shared.fileRate": {
+    "description": "How many files a second a scan or a copy/move is getting through, shown beside the bar and next to the transfer speed (fileOperations.shared.byteRate, its sibling — keep the two reading alike). '/s' means per second; keep that marker next to the number. {rateText} arrives ALREADY formatted for the locale, with the locale's own decimal mark and grouping ('0.4', '1,500'), so never re-format it or add digits to it. The plural is on the RATE, which is often a decimal below three ('0.4 files/s') and a whole number above it, so use your language's own plural categories rather than mirroring English's two: a language that always takes the singular after a number writes the same noun in every branch, and one with no plural forms needs only 'other'.",
+    "placeholders": {
+      "rateText": "the files-per-second rate, already formatted for display (e.g. 0.4 or 1,500)",
+      "count": "the same rate as a number (drives the singular/plural form of the noun)"
+    }
   },
 
   "fileOperations.shared.andJoin": "{a} and {b}",
@@ -653,14 +652,6 @@
       "count": "the directory count (drives the singular/plural noun)"
     },
     "screenshot": "conflict-dialog.png"
-  },
-
-  "fileOperations.scanPhase.throughputFiles": "{rateText} files/s",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "description": "Live scan throughput during a transfer: files processed per second. '/s' means per second.",
-    "placeholders": {
-      "rateText": "the files-per-second rate, formatted for display (e.g. 1,200)"
-    }
   },
 
   "fileOperations.transferProgress.scanTitleCopy": "Verifying before copy...",

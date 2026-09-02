@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} bestanden/s",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Verwijder",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -180,6 +176,10 @@
   "@fileOperations.shared.byteRate": {
     "sourceHash": "4a55710",
     "sameAsSourceJustification": "'<size></size>/s': the <size> tag renders the formatted size widget and '/s' is the per-second unit marker, identical in Dutch. No translatable text."
+  },
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} bestand/s} other {{rateText} bestanden/s}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
   },
   "fileOperations.shared.andJoin": "{a} en {b}",
   "@fileOperations.shared.andJoin": {
@@ -376,10 +376,6 @@
   "fileOperations.scanPhase.scanDir": "{count, plural, one {map} other {mappen}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
-  },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} bestanden/s",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Controleren voor het kopiëren...",
   "@fileOperations.transferProgress.scanTitleCopy": {

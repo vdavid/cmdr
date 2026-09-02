@@ -96,6 +96,18 @@ describe('TransferProgressReadout', () => {
     expect(texts('.rate')).toEqual(['', ''])
   })
 
+  it('takes the file rate from the catalog, singular included', () => {
+    // The marker used to be an English literal in the formatter, so "files/s"
+    // shipped to all thirteen locales. It comes from
+    // `fileOperations.shared.fileRate` now, which is also where the singular is.
+    render({ ...halfway, filesPerSecond: 0.97 })
+    expect(texts('.rate')[1]).toBe('1.0 file/s')
+
+    document.body.innerHTML = ''
+    render({ ...halfway, filesPerSecond: 0.4 })
+    expect(texts('.rate')[1]).toBe('0.4 files/s')
+  })
+
   it('renders the time left, and keeps the cell in place before an ETA lands', () => {
     render({ ...halfway, etaSeconds: seconds(154) })
     expect(texts('.time')).toEqual(['2m 34s left'])

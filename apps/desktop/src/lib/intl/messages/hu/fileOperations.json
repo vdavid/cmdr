@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} fájl/s",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Törlés",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -180,6 +176,10 @@
   "@fileOperations.shared.byteRate": {
     "sourceHash": "4a55710",
     "sameAsSourceJustification": "Pure tag + unit marker '<size></size>/s': <size> is a widget with no inner text, '/s' is the per-second unit suffix (language-neutral). Listed as legitimately identical-to-English in glossary (fileOperations pass)."
+  },
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} fájl/s} other {{rateText} fájl/s}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
   },
   "fileOperations.shared.andJoin": "{a} és {b}",
   "@fileOperations.shared.andJoin": {
@@ -376,10 +376,6 @@
   "fileOperations.scanPhase.scanDir": "{count, plural, one {mappa} other {mappa}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
-  },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} fájl/s",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Ellenőrzés a másolás előtt…",
   "@fileOperations.transferProgress.scanTitleCopy": {

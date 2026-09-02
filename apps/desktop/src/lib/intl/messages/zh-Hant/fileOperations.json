@@ -71,10 +71,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} 個檔案/秒",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "刪除",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -178,6 +174,10 @@
   "fileOperations.shared.byteRate": "<size></size>/秒",
   "@fileOperations.shared.byteRate": {
     "sourceHash": "4a55710"
+  },
+  "fileOperations.shared.fileRate": "{count, plural, other {{rateText} 個檔案/秒}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
   },
   "fileOperations.shared.andJoin": "{a}和 {b}",
   "@fileOperations.shared.andJoin": {
@@ -374,10 +374,6 @@
   "fileOperations.scanPhase.scanDir": "{count, plural, other {個目錄}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
-  },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} 個檔案/秒",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
   },
   "fileOperations.transferProgress.scanTitleCopy": "複製前正在核對…",
   "@fileOperations.transferProgress.scanTitleCopy": {

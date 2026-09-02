@@ -43,24 +43,43 @@ export function formatDuration(totalSeconds: Seconds): string {
 }
 
 /**
- * Format a files-per-second rate for the progress surfaces.
+ * A files-per-second rate ready for the catalog: the number as it will be shown,
+ * and the same number for the plural selector.
  *
- * - `< 3`: 1 decimal (`"0.4 files/s"`, `"1.8 files/s"`). Small values aren't useful as integers.
- * - Rounds to exactly `1`: `"1 file/s"` (singular).
- * - `>= 3`: integer (`"27 files/s"`). Decimal precision adds nothing at high rates.
+ * ❌ Not a finished string. "files/s" is user-facing copy, so it lives in
+ * `fileOperations.shared.fileRate` where a translator can reach it and give it
+ * their language's own plural forms — the same split
+ * `fileOperations.shared.byteRate` makes for transfer speed.
+ */
+export interface FileRateReadout {
+  /** The rate as it will be shown ("0.4", "1500"). */
+  text: string
+  /** The SHOWN value, so the words the catalog picks match the digits beside them. */
+  value: number
+}
+
+/**
+ * Round a files-per-second rate to what the progress surfaces show.
+ *
+ * - `< 3`: 1 decimal (`0.4`, `1.8`). Small values aren't useful as integers.
+ * - `>= 3`: integer (`27`). Decimal precision adds nothing at high rates.
  *
  * Returns `null` for rates that round to `0.0` so the caller can hide the readout
  * entirely. A "0 files/s" display masks the real (sub-1) rates that
  * heterogeneous-size copies produce.
+ *
+ * The `value` it hands back is the ROUNDED one, never the raw rate: the catalog
+ * selects a plural form from it, and a form chosen from 0.97 while the reader
+ * sees "1" is how "1 files/s" reaches a screen.
  */
-export function formatFilesPerSecond(rate: number): string | null {
+export function formatFilesPerSecond(rate: number): FileRateReadout | null {
   if (rate < 3) {
     const oneDecimal = Math.round(rate * 10) / 10
     if (oneDecimal === 0) return null
-    if (oneDecimal === 1) return '1 file/s'
-    return `${oneDecimal.toFixed(1)} files/s`
+    return { text: oneDecimal.toFixed(1), value: oneDecimal }
   }
-  return `${String(Math.round(rate))} files/s`
+  const whole = Math.round(rate)
+  return { text: String(whole), value: whole }
 }
 
 /**

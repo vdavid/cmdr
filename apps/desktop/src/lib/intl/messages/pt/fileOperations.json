@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} arquivos/s",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Apagar",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -180,6 +176,10 @@
   "@fileOperations.shared.byteRate": {
     "sourceHash": "4a55710",
     "sameAsSourceJustification": "Identical-in-pt-BR rate format '<size></size>/s': a size widget plus the per-second marker '/s', whose 's' is the unchanged pt-BR second symbol. No translatable text."
+  },
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} arquivo/s} many {{rateText} arquivos/s} other {{rateText} arquivos/s}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
   },
   "fileOperations.shared.andJoin": "{a} e {b}",
   "@fileOperations.shared.andJoin": {
@@ -376,10 +376,6 @@
   "fileOperations.scanPhase.scanDir": "{count, plural, one {pasta} many {pastas} other {pastas}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
-  },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} arquivos/s",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Verificando antes de copiar...",
   "@fileOperations.transferProgress.scanTitleCopy": {

@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} fichiers/s",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Supprimer",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -180,6 +176,10 @@
   "@fileOperations.shared.byteRate": {
     "sourceHash": "4a55710",
     "sameAsSourceJustification": "Placeholder/tag-only string ('<size></size>/s'); '/s' is the per-second rate notation, identical in French."
+  },
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} fichier/s} many {{rateText} fichiers/s} other {{rateText} fichiers/s}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
   },
   "fileOperations.shared.andJoin": "{a} et {b}",
   "@fileOperations.shared.andJoin": {
@@ -377,10 +377,6 @@
   "fileOperations.scanPhase.scanDir": "{count, plural, one {rép.} many {rép.} other {rép.}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
-  },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} fichiers/s",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Vérification avant la copie...",
   "@fileOperations.transferProgress.scanTitleCopy": {

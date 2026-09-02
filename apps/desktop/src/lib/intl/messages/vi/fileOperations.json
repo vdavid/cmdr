@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} tệp/giây",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Xóa",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -179,6 +175,10 @@
   "fileOperations.shared.byteRate": "<size></size>/giây",
   "@fileOperations.shared.byteRate": {
     "sourceHash": "4a55710"
+  },
+  "fileOperations.shared.fileRate": "{count, plural, other {{rateText} tệp/giây}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
   },
   "fileOperations.shared.andJoin": "{a} và {b}",
   "@fileOperations.shared.andJoin": {
@@ -375,10 +375,6 @@
   "fileOperations.scanPhase.scanDir": "{count, plural, other {thư mục}}",
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
-  },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} tệp/giây",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Đang xác minh trước khi sao chép...",
   "@fileOperations.transferProgress.scanTitleCopy": {

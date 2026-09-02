@@ -10,9 +10,11 @@ formatByteSize(87_654_321) // "83.59 MB" (binary) or "87.65 MB" (SI)
 formatDuration(seconds(492)) // "8m 12s"
 ```
 
-A transfer RATE is a size plus a per-second marker; that marker is user-facing copy, so render
-`<Trans key="fileOperations.shared.byteRate" snippets={{ size }} />` over a `<Size bytes={rate}>` snippet (what the copy
-dialog and the operation queue both do) rather than adding a code-side rate formatter.
+A RATE is a number plus a per-second marker, and that marker is user-facing copy, so it comes from the catalog and never
+from code. Transfer speed: `<Trans key="fileOperations.shared.byteRate" snippets={{ size }} />` over a
+`<Size bytes={rate}>` snippet. Files per second: `formatFilesPerSecond(rate)` for the number and the plural selector,
+rendered through `tString('fileOperations.shared.fileRate', { count, rateText })`. ❌ Never a code-side rate formatter
+that bakes in the noun: `'files/s'` was a literal once and shipped English to all thirteen locales.
 
 ## Module map
 
@@ -20,8 +22,8 @@ dialog and the operation queue both do) rather than adding a code-side rate form
   re-exports from the two leaves.
 - `byte-size.ts`: the unit math with the base passed in (`formatFileSizeWithFormat`, `unitLabel`, `fixedUnitFor`,
   `dynamicTierIndex`, `baseFor`), plus the `ByteCount` / `BytesPerSecond` brands.
-- `duration.ts`: `formatDuration` (seconds), `formatMilliseconds` (sub-second precision), `formatFilesPerSecond`, and
-  the `Seconds` brand.
+- `duration.ts`: `formatDuration` (seconds), `formatMilliseconds` (sub-second precision), `formatFilesPerSecond` (the
+  rounding policy, plus the `value` the catalog pluralizes on), and the `Seconds` brand.
 
 ## Must-knows
 

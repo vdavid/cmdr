@@ -27,6 +27,12 @@ So: one implementation per quantity, and a lint that keeps it that way.
   it belongs to the catalog, not to a code-side formatter; this module owns the number. The frontend does not compute a
   second, instantaneous rate for the active phase. The one frontend-computed rate is `ScanThroughput`, which covers the
   SCAN phase only, where the backend emits no rate at all.
+- **A file rate** is the same split one axis over: `formatFilesPerSecond(rate)` owns the number (one decimal below
+  three, a whole number above, `null` once it rounds to nothing so the caller can hide the cell) and hands back both the
+  `text` to show and the `value` the catalog pluralizes on; `fileOperations.shared.fileRate` owns the "file/s" marker
+  and its plural. ONE key serves all three surfaces that show it — the transfer bars, the transfer dialog's scan line,
+  and the delete confirmation's — so the same rate can't read three ways. It used to be three: the noun was an English
+  literal inside the formatter, and two near-identical `throughputFiles` keys sat beside it in the catalog.
 - **An ETA** is the backend's `write-progress.etaSeconds` through `createEtaSmoother()`
   (`apps/desktop/src/lib/file-operations/progress-readout.ts`), then `formatDuration`. The smoother closes 25% of the
   gap per tick, so a real slowdown shows within about a second while single-tick jitter is damped. It's stateful, which

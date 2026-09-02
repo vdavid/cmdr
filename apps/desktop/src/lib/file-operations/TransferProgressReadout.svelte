@@ -85,8 +85,16 @@
 
     /** A zero rate is the estimator saying nothing has moved yet, not a speed. */
     const byteRate = $derived(bytesPerSecond !== null && bytesPerSecond > 0 ? bytesPerSecond : null)
-    /** `null` for a rate that rounds to zero, so the cell stays empty. */
-    const fileRateText = $derived(filesPerSecond === null ? null : formatFilesPerSecond(filesPerSecond))
+    /** `null` for a rate that rounds to zero, so the cell stays empty. The
+     *  "files/s" marker is catalog copy, ❌ never a literal here: the byte rate
+     *  one line up composes its own marker the same way, and a hardcoded one
+     *  ships English to all thirteen locales. */
+    const fileRate = $derived(filesPerSecond === null ? null : formatFilesPerSecond(filesPerSecond))
+    const fileRateText = $derived(
+        fileRate === null
+            ? null
+            : tString('fileOperations.shared.fileRate', { count: fileRate.value, rateText: fileRate.text }),
+    )
 
     const countLabel = $derived(
         countKind === 'items'
