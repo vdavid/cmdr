@@ -60,6 +60,13 @@ static COURIER_RUNNING: AtomicBool = AtomicBool::new(false);
 #[cfg(test)]
 static COURIERS_STARTED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
+/// The most recent courier `notify` detached, kept so a test that provoked one can join it
+/// before the next test reads the process-wide counters (`COURIERS_STARTED` increments on
+/// the courier's own thread, so a detached courier from one test lands in the next one's
+/// count under plain `cargo test`). Production drops the handle.
+#[cfg(test)]
+static LAST_COURIER: std::sync::Mutex<Option<JoinHandle<()>>> = std::sync::Mutex::new(None);
+
 /// What the hook hands over. Every field is already in its final, sendable form: the hook
 /// builds the crash report first and clones out of it, so the courier does no redaction of
 /// its own and can't disagree with what went to disk.
@@ -98,7 +105,15 @@ impl PanicNotice {
 pub(super) fn notify(notice: PanicNotice) {
     // The handle is dropped, which detaches the thread. Nothing waits for a courier: a
     // fatal panic must not be slowed down by in-session delivery it won't live to see.
-    let _detached = spawn_courier(move || deliver(&notice));
+    let detached = spawn_courier(move || deliver(&notice));
+    #[cfg(test)]
+    if let Some(handle) = detached
+        && let Ok(mut slot) = LAST_COURIER.try_lock()
+    {
+        *slot = Some(handle);
+    }
+    #[cfg(not(test))]
+    drop(detached);
 }
 
 /// Runs `work` on a fresh thread with its unwind caught, unless a courier is already
@@ -152,6 +167,19 @@ pub(super) fn couriers_started_for_test() -> usize {
 #[cfg(test)]
 pub(super) fn courier_running_for_test() -> bool {
     COURIER_RUNNING.load(Ordering::SeqCst)
+}
+
+/// Wait for the courier the last `notify` started, if any, so its counter increment and
+/// its `COURIER_RUNNING` release have happened before the caller reads either.
+#[cfg(test)]
+pub(super) fn join_last_courier_for_test() {
+    let handle = LAST_COURIER
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .take();
+    if let Some(handle) = handle {
+        let _ = handle.join();
+    }
 }
 
 #[cfg(test)]

@@ -272,6 +272,17 @@ pub fn install_panic_hook() {
     });
 }
 
+/// The one line a contained panic leaves in the log: a fixed sentence plus the thread name,
+/// never the panic message. `cmdr.log` rides error reports, and a foreign parser's `expect`
+/// formats the object it choked on into its message, which for `pdf-extract` is bytes of the
+/// user's PDF. The sanitizer a crash report's message goes through strips paths, not that.
+fn contained_panic_warning(_info: &std::panic::PanicHookInfo<'_>) -> String {
+    format!(
+        "Contained a panic inside a foreign parser on thread {}; the message is withheld because it can quote the file",
+        std::thread::current().name().unwrap_or("<unnamed>")
+    )
+}
+
 /// What the hook did with a panic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PanicDisposition {
@@ -297,15 +308,9 @@ fn handle_panic(
     already_written: &AtomicBool,
 ) -> PanicDisposition {
     // The containment mark first: a panic inside `contain_panics` is a parser choking on
-    // untrusted input, not a crash. One warning (message and thread, never a path: the
-    // message goes through the same sanitizer as a report's), then nothing else.
+    // untrusted input, not a crash. One warning, then nothing else.
     if contain::panic_is_contained() {
-        let message = extract_panic_message(info).map(|m| sanitize_panic_message(&m));
-        log::warn!(
-            "Contained a panic on thread {}: {}",
-            std::thread::current().name().unwrap_or("<unnamed>"),
-            message.as_deref().unwrap_or("<no message>")
-        );
+        log::warn!("{}", contained_panic_warning(info));
         return PanicDisposition::Contained;
     }
 
