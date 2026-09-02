@@ -49,6 +49,18 @@ export default tseslint.config(
       // false-positives on function-type params (e.g. `(e: KeyboardEvent) => void`).
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
+      // The house type-aware set, identical in `api-server` and `analytics-dashboard`. The site
+      // already builds the TypeScript project for `projectService`, so these cost little beyond
+      // what the parse already pays for.
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/require-await': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
       'no-console': 'warn',
       complexity: ['error', { max: 15 }],
     },
@@ -89,6 +101,11 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         parser: tseslint.parser,
+        // `astro-eslint-parser` doesn't support `projectService` and silently rewrites it to
+        // `project: true`, so ask for `project: true` directly and skip the warning on every run.
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+        extraFileExtensions: ['.astro'],
       },
     },
     rules: {
@@ -101,6 +118,20 @@ export default tseslint.config(
       // used to, at the cost of this false positive.)
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
+      // The promise family works on `.astro` frontmatter (verified by planting a floating promise
+      // and an unawaited async function, 2026-09-02): frontmatter is where `await getCollection()`
+      // and `await render(post)` live, so a dropped `await` here renders a half-built page.
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/require-await': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+      // ❌ Don't add the `no-unsafe-*` family here. Astro's `Astro.props` inference and its template
+      // JSX are Volar features that plain TypeScript can't resolve, so those four rules reported 23
+      // findings across eight files, every one of them false, while `astro check` found 0 errors in
+      // the same files. They read as "type that cannot be resolved" or "type error", not `any`,
+      // which is the tell. Nothing in the source can fix them; they'd only buy `eslint-disable`
+      // noise. (verified on astro-eslint-parser 1.x + typescript-eslint 8.64, 2026-09-02)
     },
   },
   {

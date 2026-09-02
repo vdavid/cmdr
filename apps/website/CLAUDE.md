@@ -65,6 +65,8 @@ Color scheme.
   Docker; `scripts/release.sh` auto-runs it). [DETAILS.md](DETAILS.md) § Visual baselines.
 - **Keep TS generic calls single-line in `.astro` `<script>` blocks** — the astro-eslint parser chokes on multi-line,
   cascade-blocking build/deploy.
+- **Typed lint needs `astro sync` first**, and the `.astro` block deliberately omits the `no-unsafe-*` rules (they
+  report only false positives there). [DETAILS.md](DETAILS.md) § Typed linting.
 - `site` must be set in `astro.config.ts` for RSS and OG image URLs.
 - `compressHTML: true` is deliberate: Astro 7's `'jsx'` default breaks home + pricing; don't drop it.
 - Markdown pipeline details: [DETAILS.md](DETAILS.md) § Patterns.

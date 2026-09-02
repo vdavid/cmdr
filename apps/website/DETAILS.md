@@ -210,6 +210,36 @@ All pages support both light and dark mode. Users can override their system pref
 **Decision/Why**: The dual-selector pattern (media query + `data-theme` attribute) ensures the site works correctly
 without JS (falls back to system preference) while supporting explicit overrides via the toggle.
 
+## Typed linting
+
+`eslint.config.js` runs typescript-eslint's type-aware rules in two scopes, and they are deliberately different.
+
+**`**/*.ts` carries the full house set** (`no-unsafe-assignment` / `-call` / `-member-access` / `-return`,
+`no-floating-promises`, `await-thenable`, `no-misused-promises`, `require-await`, `no-explicit-any`), the same nine
+rules `api-server` and `analytics-dashboard` run. `projectService: true` was already configured here, so the type
+program was being built and read by nothing.
+
+**`**/*.astro` carries only the promise family plus `no-explicit-any`.** The `no-unsafe-*` four are excluded on
+evidence: turning them on reported 23 findings across eight files, every one false, while `astro check` found 0 errors
+in the same files. Astro's `Astro.props` inference and its template JSX are Volar features, and plain TypeScript
+resolves neither, so the findings read as "type that cannot be resolved" or "type error" rather than `any`. No source
+change can fix them. The promise rules, by contrast, were verified live by planting a floating promise and an
+unawaited async function in frontmatter and watching both fire. (verified on astro-eslint-parser 1.x + typescript-eslint
+8.64, 2026-09-02)
+
+The `.astro` block asks for `project: true`, not `projectService`: `astro-eslint-parser` doesn't support the latter and
+silently rewrites it to the former, printing a warning on every run. Naming it directly drops the warning. The block
+costs about eight seconds of the roughly 27-second warm lint run.
+
+**`astro sync` must run first.** Astro's generated `types.d.ts` is gitignored, and without it `getCollection('blog')` is `any`, so
+the `no-unsafe-*` rules on the `.ts` side report ~90 false positives across five files. The `website-astro-sync` check
+is a dependency of `website-eslint`, which also refuses to start when the file is missing; CI's website job runs
+`pnpm exec astro sync` as a setup step. This mirrors what `desktop-svelte-kit-sync` does for `.svelte-kit/tsconfig.json`.
+
+**`PUBLIC_*` environment variables are typed** in `src/env.d.ts` (`ImportMetaEnv`), mirroring `.env.example`. Without
+those declarations `import.meta.env.PUBLIC_ANYTHING` is `any`, so a typo reads as `undefined` and the feature quietly
+turns itself off. Add a variable to both places together.
+
 ## Tailwind class hygiene
 
 `eslint-plugin-better-tailwindcss` runs on `src/**/*.astro` and `src/**/*.ts` from `eslint.config.js`, with

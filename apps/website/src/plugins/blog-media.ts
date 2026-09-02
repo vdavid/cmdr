@@ -155,7 +155,9 @@ function icon(className: string, children: ElementContent[]): Element {
 
 /** Deep-clone a hast node (plain JSON), so the lightbox can reuse a slider image without sharing it. */
 function deepClone<T extends ElementContent>(node: T): T {
-  return JSON.parse(JSON.stringify(node))
+  // `JSON.parse` hands back `any`; the round trip preserves the shape, so state that rather than
+  // letting the `any` widen silently into the caller.
+  return JSON.parse(JSON.stringify(node)) as T
 }
 
 function lightboxFigure(cell: ElementContent, featured: boolean): Element {
