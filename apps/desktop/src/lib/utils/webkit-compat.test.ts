@@ -150,3 +150,16 @@ describe('isBelowSupportedMacOs', () => {
     expect(mod.isBelowSupportedMacOs(Number.NaN)).toBe(false)
   })
 })
+
+describe('macosVersionLabel', () => {
+  it('writes Catalina as 10.15, the only 10.x the bundle can launch on', async () => {
+    const mod = await import('./webkit-compat')
+    expect(mod.macosVersionLabel(10)).toBe('10.15')
+  })
+
+  it('leaves every later release as its bare major', async () => {
+    const mod = await import('./webkit-compat')
+    expect(mod.macosVersionLabel(11)).toBe('11')
+    expect(mod.macosVersionLabel(26)).toBe('26')
+  })
+})

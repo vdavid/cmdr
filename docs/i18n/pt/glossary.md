@@ -1798,3 +1798,17 @@ HTML, não no app, então são a única coisa que essa pessoa vai ver do Cmdr.
   `high`. Mantém as maiúsculas do nome do painel, ao contrário do uso corrido.
 - **`Quit` → `Encerrar`** · já no glossário, confirmado por `Encerrar Finder` na barra de menus do Finder · `high`.
 - **`Safari`, `Mac` e `15.4` ficam como estão.** `Safari` entrou para `BRAND_WORDS`.
+
+## O aviso de macOS antigo (`main.oldMacos.*`, 2026-09-02)
+
+Um diálogo que aparece uma única vez num Mac abaixo do macOS 12: o Cmdr abre, mas está fora da faixa testada. Tom
+honesto e tranquilo, sem pedido de desculpas e sem alarme, porque o app funciona.
+
+- **`supported` → `compatível`** · macOS Finder pt-BR (`… porque o item não é compatível.`) · `high`. Não `suportado`,
+  que é decalque.
+- **`X and up` → `X e versões mais recentes`** · macOS SystemSettings pt-BR (`… pelo menos a versão %@ do OS X`) ·
+  `high`.
+- **`best effort` → `faz o que dá`** · o pile não traz o termo (só definições de QoS de rede) · `high` para a paráfrase.
+  Deliberadamente não `melhor esforço`, que soa a contrato.
+- **`layout` fica `layout`** · empréstimo corrente no pt-BR de tecnologia; `disposição` soaria acadêmico aqui.
+- **A última frase é o David em primeira pessoa**, com `você`, como em `onboarding.stepBeta.greeting`.

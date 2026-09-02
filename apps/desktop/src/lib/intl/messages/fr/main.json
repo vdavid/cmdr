@@ -54,5 +54,17 @@
   "main.oldWebkit.quit": "Quitter",
   "@main.oldWebkit.quit": {
     "sourceHash": "b3eb37a"
+  },
+  "main.oldMacos.title": "Cmdr sur macOS {version}",
+  "@main.oldMacos.title": {
+    "sourceHash": "e75f925"
+  },
+  "main.oldMacos.body": "Cmdr prend officiellement en charge macOS 12 et les versions plus récentes, donc ici il fait au mieux. La plupart des choses fonctionnent, mais certaines couleurs et de petits détails de mise en page peuvent être décalés, et les corrections pour les anciens systèmes passent en dernier. Si vous tombez sur quelque chose de cassé, j''aimerais quand même le savoir.",
+  "@main.oldMacos.body": {
+    "sourceHash": "9484b91"
+  },
+  "main.oldMacos.gotIt": "D''accord",
+  "@main.oldMacos.gotIt": {
+    "sourceHash": "5ad3dbd"
   }
 }

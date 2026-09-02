@@ -494,6 +494,12 @@ export interface SettingsValues {
   'advanced.logLlmCalls': boolean
   'advanced.diskSpaceChangeThreshold': number
   'advanced.maxLogStorageMb': number
+  /**
+   * Whether the one-time "this Mac is below the supported floor" notice has been
+   * shown. Hidden internal state, written by the startup gates. A notice on every
+   * launch would be nagging, and the fact doesn't change between launches.
+   */
+  'advanced.oldMacosNoticeShown': boolean
   'fileExplorer.tabs.closedTabHistorySize': number
 
   // Search

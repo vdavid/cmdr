@@ -25,6 +25,8 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
 - **`$state` lives in `+page.svelte`; logic leaves through a context of setters and GETTERS.** Dialogs flip via
   write-only `ctx.dialogs.showXxx(...)`, new listeners go in `listener-setup.ts`, startup decisions in
   `startup-gates.ts`. ❌ Never capture a `$state` value; `isOnboardingVisible()` reads live.
+- **The old-macOS notice is `topmost` AND rendered after `<OnboardingWizard>`**, which is the only reason it lands over
+  the wizard's `--z-modal` overlay. ❌ Don't move it earlier in the markup or drop the prop. DETAILS § Startup gates.
 - **Text-region intercept (⌘C / ⌘A)**: `handleTextRegionShortcut` short-circuits `edit.copy` / `selection.selectAll`
   inside `.error-pane` or `[data-text-region]`, so copying error text doesn't copy files.
 - **Gate on capabilities, ❌ never a `volumeId` compare**: `blockedByCapabilities` bails pre-dispatch for

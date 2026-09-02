@@ -2264,5 +2264,13 @@
   "settings.window.loading": "Läser in inställningar…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.advanced.oldMacosNoticeShown.label": "Avisering om gammal macOS visad",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Internt: håller reda på om engångsaviseringen för en Mac under den macOS-version som stöds redan har visats. Dold i gränssnittet.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
   }
 }

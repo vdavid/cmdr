@@ -1936,3 +1936,16 @@ HTML, no en la app, así que son lo único que esa persona verá de Cmdr.
   hasta ahora no la recogía.
 - **`o posterior`, no `o más nuevo`**, para «or newer» hablando de versiones: es la fórmula que usa Apple.
 - **`Safari`, `Mac` y `15.4` se quedan tal cual.** `Safari` ya está en `BRAND_WORDS`.
+
+## El aviso de macOS antiguo (`main.oldMacos.*`, 2026-09-02)
+
+Un diálogo que aparece una sola vez en un Mac por debajo de macOS 12: Cmdr arranca, pero está fuera del rango probado.
+Tono honesto y relajado, ni disculpa ni advertencia, porque la app sí funciona.
+
+- **`supported` → `compatible`** · macOS Finder (`No se puede completar la operación porque no es compatible.`) ·
+  `high`. NO `soportado`, que es un calco.
+- **`X and up` → `X o posterior`** · macOS SystemSettings (`… requiere OS X %@ o posterior.`) · `high`.
+- **`best effort` → `hace lo que puede`** · el pile no trae el término (solo definiciones de QoS de red) · `high` para
+  la paráfrasis. Deliberadamente NO `mejor esfuerzo`, que es calco y suena a contrato.
+- **`look off` → `verse raros`** · lenguaje corriente; evita el registro de `error`/`fallo` que la voz prohíbe.
+- **La última frase es David en primera persona** y mantiene el `tú`, como `onboarding.stepBeta.greeting`.

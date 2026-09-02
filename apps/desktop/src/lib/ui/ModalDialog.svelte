@@ -96,7 +96,8 @@
          * Renders at `--z-modal-top`, above every other modal (they all share
          * `--z-modal` and stack by DOM order, which nothing the APP raises over
          * the user's current dialog can rely on). ❌ Not a "make mine important"
-         * switch: exactly one caller, the quit prompt. DETAILS § ModalDialog.
+         * switch: two callers, the quit prompt and the old-macOS notice, ordered
+         * against each other by DOM position. DETAILS § ModalDialog.
          */
         topmost?: boolean
         /** Renders × button and handles Escape key */

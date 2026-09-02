@@ -1946,3 +1946,16 @@ appen, så det här är det enda personen kommer att se av Cmdr.
 - **Genitiv på varumärket går bra på svenska: `Cmdrs gränssnitt`.** (Tyskan förbjuder sitt `Cmdrs`; det är en tysk
   regel, inte en allmän.)
 - **`Safari`, `Mac` och `15.4` står kvar.** `Safari` ligger nu i `BRAND_WORDS`.
+
+## Aviseringen om gammal macOS (`main.oldMacos.*`, 2026-09-02)
+
+En engångsdialog på en Mac under macOS 12: Cmdr startar, men ligger utanför det testade spannet. Tonen är ärlig och
+avspänd, varken ursäkt eller varning, för appen fungerar ju.
+
+- **`supported` → `har stöd för` / `stöds`** · macOS Finder (`… eftersom den inte stöds.`) · `high`.
+- **`X and up` → `X och senare`** · macOS SystemSettings (`… kräver OS X %@ eller senare.`) · `high`.
+- **`best effort` → `så gott det går`** · pilen har ingen term för det (bara QoS-definitioner för nätverk) · `high` för
+  omskrivningen. Medvetet ingen översättningslån.
+- **`look off` → `se konstiga ut`** · vardagligt, och det undviker `fel`/`misslyckades` som rösten förbjuder.
+- **Inget komma före `och` mellan de två korta huvudsatserna** i mening två, enligt § Notes and decisions i `style.md`.
+- **Sista meningen är David i jag-form**, med `du`, som `onboarding.stepBeta.greeting`.

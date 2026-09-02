@@ -1968,3 +1968,16 @@ app, nên đây là thứ duy nhất người dùng đó thấy được của C
 - **`Quit` → `Thoát`** · đã có trong glossary, khớp với macOS AppKit · `high`.
 - **`Safari`, `Mac` và `15.4` giữ nguyên.** `Safari` nay nằm trong `BRAND_WORDS`.
 - Dấu thanh đầy đủ ở mọi chữ, theo quyết định trong `style.md`.
+
+## Thông báo về macOS cũ (`main.oldMacos.*`, 2026-09-02)
+
+Hộp thoại hiện đúng một lần trên máy Mac thấp hơn macOS 12: Cmdr vẫn chạy, nhưng nằm ngoài dải đã kiểm thử. Giọng thành
+thật và thoải mái, không xin lỗi và không cảnh báo, vì ứng dụng vẫn chạy được.
+
+- **`supported` → `hỗ trợ`** · macOS Finder (`… vì thao tác không được hỗ trợ.`) · `high`.
+- **`X and up` → `X trở lên`** · macOS SystemSettings (`… yêu cầu OS X %@ trở lên.`) · `high`.
+- **`best effort` → `chỉ cố hết sức thôi`** · pile không có thuật ngữ này (chỉ có định nghĩa QoS mạng) · `high` cho cách
+  diễn đạt. Cố ý không dịch sát.
+- **`fixes` → `việc khắc phục`, không phải `sửa lỗi`** · `lỗi` thuộc thanh ghi mà giọng nói tránh; `khắc phục` nói đúng
+  việc mà không mang chữ đó.
+- **Câu cuối là David ở ngôi thứ nhất, dùng `mình`**, đúng như `onboarding.stepBeta.greeting`; người dùng vẫn là `bạn`.

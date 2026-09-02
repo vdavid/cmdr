@@ -2258,5 +2258,13 @@
   "settings.window.loading": "正在加载设置…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.advanced.oldMacosNoticeShown.label": "已显示旧版 macOS 提示",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "内部：记录低于所支持 macOS 版本的 Mac 是否已看过那条一次性提示。对界面隐藏。",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
   }
 }

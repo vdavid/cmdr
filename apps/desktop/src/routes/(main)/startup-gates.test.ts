@@ -7,12 +7,15 @@
  * wrong either re-prompts someone who already answered, or drops a first-run
  * user straight into an explorer with no disk access.
  */
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { FullDiskAccessChoice } from '$lib/settings'
 
 const mocks = vi.hoisted(() => ({
   isForceOnboarding: vi.fn(),
   checkFullDiskAccess: vi.fn(),
+  getMacosMajorVersion: vi.fn(),
   openWizard: vi.fn(),
   runWhatsNewStartupTrigger: vi.fn(),
   forceSave: vi.fn(),
@@ -28,6 +31,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('$lib/tauri-commands', () => ({
   isForceOnboarding: mocks.isForceOnboarding,
   checkFullDiskAccess: mocks.checkFullDiskAccess,
+  getMacosMajorVersion: mocks.getMacosMajorVersion,
 }))
 vi.mock('$lib/onboarding/onboarding-state.svelte', () => ({ openWizard: mocks.openWizard }))
 vi.mock('$lib/whats-new/whats-new-trigger.svelte', () => ({
@@ -54,6 +58,7 @@ vi.mock('$lib/logging/logger', () => ({
 import {
   maybeFireUpgradeNudge,
   maybeRunWhatsNew,
+  maybeShowOldMacosNotice,
   openOnboardingFromMenuOrPalette,
   resolveOnboardingMount,
   type StartupGatesContext,
@@ -62,10 +67,12 @@ import {
 let onboardingVisible: boolean
 let appShown: boolean
 let otherModalOpen: boolean
+/** The version label the old-macOS notice was raised with, or `null` if it never was. */
+let oldMacosNoticeVersion: string | null
 let ctx: StartupGatesContext
 
-/** The three settings the gates read, backing the keyed `getSetting` stub below. */
-let stored: { choice: FullDiskAccessChoice; onboarded: boolean; nudgeShown: boolean }
+/** The settings the gates read, backing the keyed `getSetting` stub below. */
+let stored: { choice: FullDiskAccessChoice; onboarded: boolean; nudgeShown: boolean; oldMacosNoticeShown: boolean }
 
 /** Puts the gates on one row of the truth table. */
 function settings(fullDiskAccessChoice: FullDiskAccessChoice, isOnboarded: boolean): void {
@@ -78,6 +85,7 @@ beforeEach(() => {
   onboardingVisible = false
   appShown = false
   otherModalOpen = false
+  oldMacosNoticeVersion = null
   ctx = {
     setOnboardingVisible: (visible: boolean) => {
       onboardingVisible = visible
@@ -87,10 +95,14 @@ beforeEach(() => {
       appShown = true
     },
     isOtherStartupModalOpen: () => otherModalOpen,
+    showOldMacosNotice: (versionLabel: string) => {
+      oldMacosNoticeVersion = versionLabel
+    },
   }
   mocks.isForceOnboarding.mockResolvedValue(false)
   mocks.checkFullDiskAccess.mockResolvedValue(false)
-  stored = { choice: 'notAskedYet', onboarded: false, nudgeShown: false }
+  stored = { choice: 'notAskedYet', onboarded: false, nudgeShown: false, oldMacosNoticeShown: false }
+  mocks.getMacosMajorVersion.mockResolvedValue(15)
   mocks.forceSave.mockResolvedValue(true)
   mocks.notifyOnboardingComplete.mockResolvedValue(undefined)
   mocks.runWhatsNewStartupTrigger.mockResolvedValue(undefined)
@@ -101,6 +113,7 @@ beforeEach(() => {
     if (id === 'onboarding.fullDiskAccessChoice') return stored.choice
     if (id === 'onboarding.completed') return stored.onboarded
     if (id === 'onboarding.upgradeNudgeShown') return stored.nudgeShown
+    if (id === 'advanced.oldMacosNoticeShown') return stored.oldMacosNoticeShown
     throw new Error(`Unexpected getSetting(${id})`)
   })
   mocks.isMacOS.mockReturnValue(true)
@@ -339,5 +352,99 @@ describe('openOnboardingFromMenuOrPalette', () => {
 
     expect(mocks.openWizard).not.toHaveBeenCalled()
     expect(mocks.checkFullDiskAccess).not.toHaveBeenCalled()
+  })
+})
+
+describe('maybeShowOldMacosNotice', () => {
+  it('raises the notice on Big Sur, naming the version the user would recognize', async () => {
+    mocks.getMacosMajorVersion.mockResolvedValue(11)
+
+    await maybeShowOldMacosNotice(ctx)
+
+    expect(oldMacosNoticeVersion).toBe('11')
+    expect(mocks.setSetting).toHaveBeenCalledWith('advanced.oldMacosNoticeShown', true)
+  })
+
+  it('writes Catalina as 10.15, because "macOS 10" names nothing', async () => {
+    mocks.getMacosMajorVersion.mockResolvedValue(10)
+
+    await maybeShowOldMacosNotice(ctx)
+
+    expect(oldMacosNoticeVersion).toBe('10.15')
+  })
+
+  it('stays quiet on the supported floor and above', async () => {
+    for (const major of [12, 15, 26]) {
+      oldMacosNoticeVersion = null
+      mocks.getMacosMajorVersion.mockResolvedValue(major)
+
+      await maybeShowOldMacosNotice(ctx)
+
+      expect(oldMacosNoticeVersion, `macOS ${String(major)}`).toBeNull()
+    }
+    expect(mocks.setSetting).not.toHaveBeenCalled()
+  })
+
+  it('shows once per machine, never on the launch after', async () => {
+    mocks.getMacosMajorVersion.mockResolvedValue(11)
+    stored.oldMacosNoticeShown = true
+
+    await maybeShowOldMacosNotice(ctx)
+
+    expect(oldMacosNoticeVersion).toBeNull()
+    expect(mocks.setSetting).not.toHaveBeenCalled()
+  })
+
+  it('never asks the OS off macOS', async () => {
+    mocks.isMacOS.mockReturnValue(false)
+
+    await maybeShowOldMacosNotice(ctx)
+
+    expect(mocks.getMacosMajorVersion).not.toHaveBeenCalled()
+    expect(oldMacosNoticeVersion).toBeNull()
+  })
+
+  it('stays quiet when the version probe throws, so a broken probe never warns spuriously', async () => {
+    mocks.getMacosMajorVersion.mockRejectedValue(new Error('no backend'))
+
+    await maybeShowOldMacosNotice(ctx)
+
+    expect(oldMacosNoticeVersion).toBeNull()
+    expect(mocks.setSetting).not.toHaveBeenCalled()
+  })
+
+  it('stays quiet under E2E mode so it cannot leak into the first spec', async () => {
+    mocks.getAppMode.mockReturnValue('e2e')
+    mocks.getMacosMajorVersion.mockResolvedValue(11)
+
+    await maybeShowOldMacosNotice(ctx)
+
+    expect(oldMacosNoticeVersion).toBeNull()
+    expect(mocks.getSetting).not.toHaveBeenCalled()
+  })
+})
+
+// The notice has to land OVER the onboarding wizard, which owns a full-screen
+// overlay at `--z-modal`, and UNDER the quit prompt, which is the one other
+// `topmost` caller. Neither claim survives happy-dom (component styles aren't
+// applied and `+page.svelte` needs the whole shell to mount), so read the
+// declarations, which IS where the guarantee lives.
+describe('the old-macOS notice sits above onboarding and below the quit prompt', () => {
+  function read(relative: string): string {
+    return readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
+  }
+
+  it('opts into the topmost layer', () => {
+    expect(read('./+page.svelte')).toContain('<AlertDialog\n                topmost')
+  })
+
+  it('renders after the wizard, so the DOM agrees with the z-index', () => {
+    const page = read('./+page.svelte')
+    expect(page.indexOf('<OnboardingWizard')).toBeLessThan(page.indexOf('<AlertDialog'))
+  })
+
+  it('leaves the quit prompt on top: the layout raises it after the page it wraps', () => {
+    const layout = read('./+layout.svelte')
+    expect(layout.indexOf('{@render children?.()}')).toBeLessThan(layout.indexOf('<QuitConfirmationDialog'))
   })
 })

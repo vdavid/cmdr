@@ -461,8 +461,9 @@
   /* One rung above every other modal, for the rare dialog that must be answerable
      even while another one is up. Modals otherwise all share `--z-modal` and
      stack by DOM order, which is not a contract a window-level prompt can rest
-     on. `ModalDialog`'s `topmost` prop is the only way in; keep it that way, or
-     "above everything" stops meaning anything. */
+     on. `ModalDialog`'s `topmost` prop is the only way in, and its two callers are
+     ordered against each other in the markup; keep both true, or "above
+     everything" stops meaning anything. */
   --z-modal-top: 350;
   --z-notification: 400;
   /* Tooltips (above all other layers) */

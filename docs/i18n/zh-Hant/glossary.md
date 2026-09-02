@@ -862,3 +862,16 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
   `high`。簡體用「退出」，繁體用「結束」，兩份目錄不互相轉換。
 - **`Safari`、`Mac`、`15.4` 保持原樣**，兩側依 § Spacing 加空格。`Safari` 已加入 `BRAND_WORDS`。
 - 面板名用直角引號 `「軟體更新」`，與目錄裡其餘繁體文案一致。
+
+## 舊版 macOS 提示（`main.oldMacos.*`，2026-09-02）
+
+低於 macOS
+12 的 Mac 上只出現一次的對話框：Cmdr 跑得動，但超出了測試範圍。語氣坦率輕鬆，既不是道歉也不是警告，因為應用程式確實在跑。
+
+- **`supported` → `支援`** · macOS Finder zh-TW（`無法完成此項操作，因為不支援此項操作。`）· `high`。
+- **`X and up` → `X 以上的版本`** · macOS SystemSettings zh-TW（`需要OS X %@或以上版本。`）·
+  `high`。Apple 寫得緊湊，我們在拉丁字元兩側加空格 (`style.md` § Spacing)。
+- **`best effort` → `盡力而為`** · pile 裡沒有對應詞條（只有網路 QoS 的定義），但這是現成的中文說法 · `high`。
+- **`layout` → `版面配置`** · Microsoft zh-Hant 的標準譯法 · `high`。
+- **`look off` → `不太對`** · 口語，且避開語氣規則禁止的「錯誤」「失敗」。
+- **最後一句是 David 的第一人稱**，仍用 `你`，與 `onboarding.stepBeta.greeting` 一致。

@@ -1828,3 +1828,18 @@ nicht in der App, also sieht der Mensch sonst nichts von Cmdr: der Ton muss beim
   Brand and do-not-translate.
 - **`Safari` und `Mac` bleiben stehen.** `Safari` ist neu in `BRAND_WORDS`; die Versionsnummer `15.4` bleibt Ziffern.
 - Kein `sameAsSourceJustification` nötig: alle drei Werte unterscheiden sich vom Englischen.
+
+## Der Hinweis auf zu altes macOS (`main.oldMacos.*`, 2026-09-02)
+
+Ein einmaliger Dialog auf einem Mac unter macOS 12, der Cmdr zwar startet, aber außerhalb der getesteten Spanne liegt.
+Ton: ehrlich und entspannt, keine Entschuldigung und keine Warnung, denn die App läuft ja.
+
+- **`X and up` → `X und neuer`** · macOS SystemSettings (`… benötigt OS X %@ oder neuer.`) · `high`. Der Beleg schreibt
+  `oder neuer`; unser Satz zählt zwei Dinge auf, also `macOS 12 und neuer`.
+- **`supports` → `unterstützt`** · macOS Finder (`… da er nicht unterstützt wird.`) · `high`.
+- **`best effort` → `nur so gut, wie es eben geht`** · keine Quelle im Pile führt den Begriff (die einzigen Treffer sind
+  Netzwerk-QoS-Definitionen) · `high` für die Umschreibung. Bewusst KEIN Kalk: „nach bestem Bemühen“ ist Vertragsdeutsch
+  und passt nicht zu Cmdrs Stimme. Der `@key.description` weist Übersetzende ausdrücklich auf die Umschreibung hin.
+- **`look off` → `daneben liegen`** · Alltagsdeutsch, keine Quelle nötig; hält den Ton leicht und vermeidet das
+  verbotene „falsch/Fehler“-Register.
+- **Der letzte Satz ist David in der Ich-Form** und bleibt beim `du`, wie `onboarding.stepBeta.greeting`.

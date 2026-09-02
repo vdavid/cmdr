@@ -101,6 +101,23 @@ describe('AlertDialog a11y', () => {
     await expectNoA11yViolations(target)
   })
 
+  it('the old-macOS notice (topmost, three-sentence body) has no a11y violations', async () => {
+    const target = container()
+    mount(AlertDialog, {
+      target,
+      props: {
+        topmost: true,
+        title: 'Cmdr on macOS 11',
+        message:
+          "Cmdr officially supports macOS 12 and up, so here it's best effort. Most of it works, but some colors and small layout details can look off, and fixes for older systems come last. If you hit something broken, I'd still like to hear about it.",
+        buttonText: 'Got it',
+        onClose: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
   it('terse title + message has no a11y violations', async () => {
     const target = container()
     mount(AlertDialog, {

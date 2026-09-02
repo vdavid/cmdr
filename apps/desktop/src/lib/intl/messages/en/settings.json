@@ -1687,6 +1687,14 @@
     "screenshot": "settings-advanced.png"
   },
 
+  "settings.advanced.oldMacosNoticeShown.label": "Old macOS notice shown",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "description": "Internal, hidden-from-UI label for a flag tracking whether the one-time \"this Mac is older than the macOS versions Cmdr is tested on\" dialog has already been shown. Not user-facing. \"macOS\" is Apple's OS name and stays untranslated."
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Internal: tracks whether the one-time best-effort notice for a Mac below the supported macOS version has been shown. Hidden from the UI.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "description": "Internal help text for the old-macOS notice flag (not user-facing). \"Best effort\" means Cmdr runs there but promises nothing about it."
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Onboarding upgrade nudge shown",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "description": "Internal, hidden-from-UI label for a flag tracking whether a one-time onboarding nudge toast fired. Surfaces only in settings search. \"nudge\" = a gentle prompt."

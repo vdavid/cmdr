@@ -2259,5 +2259,13 @@
   "settings.window.loading": "Cargando ajustes…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.advanced.oldMacosNoticeShown.label": "Aviso de macOS antiguo mostrado",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Interno: registra si ya se ha mostrado el aviso único para un Mac por debajo de la versión de macOS compatible. Oculto en la interfaz.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
   }
 }

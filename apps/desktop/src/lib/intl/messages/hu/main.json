@@ -54,5 +54,17 @@
   "main.oldWebkit.quit": "Kilépés",
   "@main.oldWebkit.quit": {
     "sourceHash": "b3eb37a"
+  },
+  "main.oldMacos.title": "A Cmdr macOS {version} rendszeren",
+  "@main.oldMacos.title": {
+    "sourceHash": "e75f925"
+  },
+  "main.oldMacos.body": "A Cmdr hivatalosan a macOS 12-t és az annál újabb rendszereket támogatja, itt tehát csak a tőle telhető legjobbat nyújtja. A legtöbb dolog működik, de néhány szín és apró elrendezési részlet félremehet, és a régebbi rendszerek javításai kerülnek a sor végére. Ha valami elromlottnak tűnik, azért szívesen hallanék róla.",
+  "@main.oldMacos.body": {
+    "sourceHash": "9484b91"
+  },
+  "main.oldMacos.gotIt": "Értem",
+  "@main.oldMacos.gotIt": {
+    "sourceHash": "5ad3dbd"
   }
 }

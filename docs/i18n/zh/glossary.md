@@ -1761,3 +1761,15 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 - **`Quit` → `退出`** · macOS AppKit 的 `Quit` 键 → `退出` · `high`。此前不在词汇表里，现补上。
 - **`Safari`、`Mac`、`15.4` 保持原样**，两侧按 § 间距规则加空格。`Safari` 已加入 `BRAND_WORDS`。
 - 面板名用直角引号之外的全角引号 `“软件更新”`，与目录里其余简体文案一致。
+
+## 旧版 macOS 提示（`main.oldMacos.*`，2026-09-02）
+
+低于 macOS
+12 的 Mac 上只出现一次的对话框：Cmdr 能跑，但超出了测试范围。语气坦率轻松，既不是道歉也不是警告，因为应用确实在运行。
+
+- **`supported` → `支持`** · macOS Finder（`无法完成此操作，因为不支持此操作。`）· `high`。
+- **`X and up` → `X 及更高版本`** · macOS SystemSettings（`需要OS X %@或更高版本。`）·
+  `high`。Apple 写得紧凑，我们在拉丁字符两侧加空格 (`style.md` § Numerals, punctuation, and spacing)。
+- **`best effort` → `尽力而为`** · pile 里没有对应词条（只有网络 QoS 的定义），但这是中文里现成的说法 · `high`。
+- **`look off` → `不太对`** · 口语，且避开了语气规则禁止的「错误」「失败」。
+- **最后一句是 David 的第一人称**，仍用 `你`，与 `onboarding.stepBeta.greeting` 一致。

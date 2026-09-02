@@ -66,6 +66,21 @@
   "@main.oldWebkit.body": {
     "description": "Body of the notice under main.oldWebkit.title. It says what is missing and what to do about it. \"Software Update\" is the macOS system settings pane: use the name Apple uses for it in the target language, since the person has to find it. \"15.4\" is a Safari version number and stays as digits. \"Cmdr\" is the product name and stays untranslated. Tone is calm and practical, not an apology: this is fixable by installing pending macOS updates, and on most old Macs it is."
   },
+  "main.oldMacos.title": "Cmdr on macOS {version}",
+  "@main.oldMacos.title": {
+    "description": "Title of the one-time dialog Cmdr shows on a Mac older than the oldest macOS it is developed and tested against. It names the version the person is actually on so the message reads as being about THEIR Mac, not a generic warning. \"Cmdr\" is the product name and \"macOS\" is Apple's OS name; both stay untranslated. It is a statement, not a warning or an apology: the app is running fine, and the body explains the caveats.",
+    "placeholders": {
+      "version": "the macOS version this Mac is running, already written the way people say it (\"10.15\" for Catalina, \"11\" for Big Sur). It is a version label, not a number: never reformat its digits or its dot for the target language."
+    }
+  },
+  "main.oldMacos.body": "Cmdr officially supports macOS 12 and up, so here it''s best effort. Most of it works, but some colors and small layout details can look off, and fixes for older systems come last. If you hit something broken, I''d still like to hear about it.",
+  "@main.oldMacos.body": {
+    "description": "Body of the one-time old-macOS dialog under main.oldMacos.title, shown once per machine and never again. Three things, in order: this macOS is outside the tested range, what that costs in practice (some colors and small layout details can be wrong), and an invitation to report anything broken anyway. \"12\" is a macOS version number and stays as digits. \"Best effort\" means Cmdr tries but makes no promises here; use whatever phrase carries that in the target language rather than a literal rendering. \"Come last\" means such fixes are the lowest priority, not that they never happen. The last sentence is Cmdr's maker speaking in the first person, which is deliberate; keep it warm and personal, and use the informal register if the language has one. Tone throughout is honest and relaxed, NOT an apology and NOT a warning."
+  },
+  "main.oldMacos.gotIt": "Got it",
+  "@main.oldMacos.gotIt": {
+    "description": "Label of the only button on the old-macOS dialog. Pressing it dismisses the dialog, which then never comes back. It acknowledges rather than agrees to anything, so it is an everyday \"understood\", not a formal \"OK\" or \"Accept\". Keep it to one or two short words: it is a button."
+  },
   "main.oldWebkit.quit": "Quit",
   "@main.oldWebkit.quit": {
     "description": "Label of the only button on the notice under main.oldWebkit.title. Pressing it quits Cmdr. It is a VERB (the action the button performs), not a noun, and it should match how the target language labels the standard macOS Quit menu item."

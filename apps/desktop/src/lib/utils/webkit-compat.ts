@@ -128,6 +128,21 @@ export function isBelowSupportedMacOs(macosMajor: number): boolean {
   return macosMajor < SUPPORTED_MACOS_MAJOR
 }
 
+/**
+ * How to write this Mac's major version in UI copy.
+ *
+ * `sw_vers -productVersion` reports Catalina as `10.15`, so its major is `10`,
+ * and "macOS 10" names a release nobody recognizes. The bundle's
+ * `minimumSystemVersion` is 10.15, so a `10` that got as far as running Cmdr
+ * can only be 10.15; Big Sur onward each name themselves by the major alone.
+ *
+ * Returns a string, never a number: a version is a label, and passing it through
+ * a locale's number formatting would turn 10.15 into "10,15" in half of Europe.
+ */
+export function macosVersionLabel(macosMajor: number): string {
+  return macosMajor === 10 ? '10.15' : String(macosMajor)
+}
+
 // Apply the dev override's CSS side as early as possible — before first paint
 // would be ideal. Module-level code on a SvelteKit client script runs after
 // document parse, so there can be a brief flash of the modern values; that's

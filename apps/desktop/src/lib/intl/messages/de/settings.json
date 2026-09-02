@@ -2267,5 +2267,13 @@
   "settings.window.loading": "Einstellungen werden geladen …",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
+  },
+  "settings.advanced.oldMacosNoticeShown.label": "Hinweis zu altem macOS gezeigt",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Intern: erfasst, ob der einmalige Hinweis für einen Mac unterhalb der unterstützten macOS-Version schon gezeigt wurde. In der Oberfläche ausgeblendet.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
   }
 }

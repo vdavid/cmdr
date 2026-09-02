@@ -2197,3 +2197,18 @@ tehát ez az egyetlen, amit az illető a Cmdrből lát.
 - **A márka kötőjel nélkül toldalékolódik: `A Cmdrnek`**, a `style.md` § Brand and do-not-translate szabálya szerint.
 - **`Safari 15.4-es vagy újabb verzió`**: a verziószám számjegy marad, a magyar toldalék kötőjellel kapcsolódik hozzá.
 - **`Mac` marad `Mac`, ragozva `Macen`.** A `Safari` mostantól a `BRAND_WORDS` listán van.
+
+## A régi macOS értesítése (`main.oldMacos.*`, 2026-09-02)
+
+Egyszeri párbeszédpanel egy macOS 12-nél régebbi Macen: a Cmdr elindul, de a tesztelt tartományon kívül van. A hang
+őszinte és laza, nem bocsánatkérés és nem figyelmeztetés, hiszen az app fut.
+
+- **`supported` → `támogatott`** · mac (Finder `A művelet nem hajtható végre, mert az nem támogatott.`) · `high`.
+- **`X and up` → `X és az annál újabb`** · mac (SystemSettings `OS X %@ vagy újabb rendszer szükséges`) · `high`. Az
+  Apple önöző mondatából csak a TERMINOLÓGIA jön; a mondat a miénk, tehát tegező.
+- **`best effort` → `a tőle telhető legjobbat nyújtja`** · a pile-ban nincs rá terminus (csak hálózati QoS-definíciók) ·
+  `high` a körülírásra. Szándékosan nem tükörfordítás.
+- **`look off` → `félremehet`** · köznyelvi; a `hiba` regisztert a hang tiltja, ezért kerüljük.
+- **`something broken` → `valami elromlottnak tűnik`** · ugyanezért: nem `hibás`.
+- **Az utolsó mondat David egyes szám első személyben**, tegezve, mint az `onboarding.stepBeta.greeting`.
+- **A `macOS 12-t` tárgyragos alak kötőjellel áll**, mert számjegy után jön a rag.

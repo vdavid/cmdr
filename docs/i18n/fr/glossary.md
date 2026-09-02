@@ -2318,3 +2318,18 @@ coquille HTML, pas dans l’app : c’est tout ce que cette personne verra de Cm
 - **Apostrophe typographique `’` partout** (`d’une`, `L’interface`), comme Apple. Bonus mécanique : ICU n’échappe que
   l’apostrophe ASCII, donc rien à doubler ici.
 - **`Safari`, `Mac` et `15.4` restent tels quels.** `Safari` est désormais dans `BRAND_WORDS`.
+
+## L''avis « ancien macOS » (`main.oldMacos.*`, 2026-09-02)
+
+Une boîte de dialogue affichée une seule fois sur un Mac sous macOS 12 : Cmdr démarre, mais on est hors de la plage
+testée. Ton honnête et détendu, ni excuse ni avertissement, puisque l''app fonctionne.
+
+- **`supports` → `prend en charge`** · macOS Finder (`… car elle n''est pas prise en charge.`) · `high`. Pas `supporte`,
+  qui est un anglicisme.
+- **`X and up` → `X et les versions plus récentes`** · macOS AppKit (`… requiert une version plus récente de macOS.`) et
+  SystemSettings (`OS X %@ ou ultérieur`) · `high`.
+- **`best effort` → `il fait au mieux`** · le pile ne contient pas le terme (seulement des définitions QoS réseau) ·
+  `high` pour la paraphrase. Surtout pas `au mieux de ses efforts`, qui est du français de contrat.
+- **`look off` → `être décalés`** · registre courant, et il évite « erreur » / « échec », interdits par la voix.
+- **La dernière phrase, c''est David à la première personne**, au `vous` comme le reste du catalogue.
+- Apostrophes ICU doublées : `j''aimerais`.

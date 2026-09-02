@@ -11,7 +11,7 @@
  * closure can't answer "is the wizard up?" from a setup-time snapshot.
  */
 
-import { isForceOnboarding, checkFullDiskAccess } from '$lib/tauri-commands'
+import { isForceOnboarding, checkFullDiskAccess, getMacosMajorVersion } from '$lib/tauri-commands'
 import { openWizard as openOnboardingWizard } from '$lib/onboarding/onboarding-state.svelte'
 import { runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
 import { forceSave, getSetting, setSetting } from '$lib/settings'
@@ -21,6 +21,7 @@ import { isMacOS } from '$lib/shortcuts/key-capture'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
+import { isBelowSupportedMacOs, macosVersionLabel } from '$lib/utils/webkit-compat'
 
 // Same category as the rest of the app shell's logging: these gates read as
 // `+page.svelte`'s startup in a log file, wherever the code sits.
@@ -40,6 +41,11 @@ export interface StartupGatesContext {
   showApp: () => void
   /** True while the expiration or commercial-reminder modal is up. */
   isOtherStartupModalOpen: () => boolean
+  /**
+   * Raises the one-time best-effort notice, given the version to name in it
+   * ('10.15', '11'). The component owns the dialog; this only says "now".
+   */
+  showOldMacosNotice: (versionLabel: string) => void
 }
 
 /**
@@ -116,6 +122,41 @@ export function maybeFireUpgradeNudge(): void {
   const message = isMacOS() ? tString('main.upgradeNudge.mac') : tString('main.upgradeNudge.other')
   addToast(message, { level: 'info' })
   setSetting('onboarding.upgradeNudgeShown', true)
+}
+
+/**
+ * Raises the one-time notice telling a Mac below `SUPPORTED_MACOS_MAJOR` that
+ * Cmdr here is best effort, then records it so no later launch repeats it.
+ *
+ * The floor the BUNDLE refuses to launch on (10.15) sits below the floor Cmdr is
+ * developed against (12), and that gap is deliberate. This is the soft half of
+ * saying so; the hard block for a WebKit that can't run the app at all is the
+ * inline guard in `apps/desktop/src/app.html`.
+ *
+ * Order of the guards is the cheap ones first, so the common case (a modern Mac
+ * that has already been told, or any Linux box) never pays for the IPC round
+ * trip. A probe that throws counts as supported: `isBelowSupportedMacOs` reads an
+ * unparsed version the same way, and warning somebody because a probe broke is
+ * worse than staying quiet.
+ *
+ * Marks the flag when the notice is RAISED, not when it's dismissed, matching
+ * `maybeFireUpgradeNudge`. A crash between the two costs one reading of a notice
+ * about cosmetic imperfection; the alternative risks repeating it forever if the
+ * dismissal write never lands.
+ *
+ * Suppressed under E2E mode for the same reason the upgrade nudge is: it would
+ * leak into whichever spec ran first. E2E runs on modern macOS anyway, so the
+ * branch is unreachable there in practice; the guard is belt and braces.
+ */
+export async function maybeShowOldMacosNotice(ctx: StartupGatesContext): Promise<void> {
+  if (isE2eRun()) return
+  if (!isMacOS()) return
+  if (getSetting('advanced.oldMacosNoticeShown')) return
+  const major = await getMacosMajorVersion().catch(() => 0)
+  if (!isBelowSupportedMacOs(major)) return
+  log.info(`macOS ${macosVersionLabel(major)} is below the supported floor; showing the best-effort notice once`)
+  setSetting('advanced.oldMacosNoticeShown', true)
+  ctx.showOldMacosNotice(macosVersionLabel(major))
 }
 
 /**

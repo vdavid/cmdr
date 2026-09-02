@@ -140,7 +140,13 @@ re-probing. `logWebkitCompat()` (called from the main layout at boot) emits `err
 so 10 and 11 are best-effort and this predicate is where "best effort" is defined. It takes the number rather than
 fetching it, which keeps the module free of IPC: callers pass what `commands.getMacosMajorVersion()` returned (Catalina
 reports `10`, not `10.15`), and a version that didn't parse reads as supported. Floor rationale and the version
-evidence: `docs/notes/system-requirements-and-es2025.md`.
+evidence: `docs/notes/system-requirements-and-es2025.md`. The one caller is `maybeShowOldMacosNotice` in
+`routes/(main)/startup-gates.ts`, which turns a `true` into the once-per-machine best-effort dialog.
+
+`macosVersionLabel(macosMajor)` writes that same number the way copy has to say it. Catalina's major is `10`, and "macOS
+10" names a release nobody recognizes, so it becomes `10.15` (safe: `minimumSystemVersion` is 10.15, so a `10` that got
+as far as running Cmdr can only be that one). Everything from Big Sur on is its bare major. It returns a string on
+purpose: routed through a locale's number formatting, 10.15 would reach half of Europe as "10,15".
 
 **Dev override**, two levels, both read at module load so they must be set before `pnpm dev` starts:
 

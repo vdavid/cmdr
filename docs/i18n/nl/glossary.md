@@ -2176,3 +2176,16 @@ HTML-omhulsel, niet in de app, dus dit is het enige wat die persoon van Cmdr zie
 - **`Quit` → `Stop`** · al in het glossarium vastgelegd (macOS gebruikt `Stop`, niet `Afsluiten`) · `high`.
 - **`Safari`, `Mac` en `15.4` blijven staan.** `Safari` staat nu in `BRAND_WORDS`.
 - Geen `sameAsSourceJustification` nodig: alle drie de waarden wijken af van het Engels.
+
+## De melding over een oude macOS (`main.oldMacos.*`, 2026-09-02)
+
+Een eenmalig dialoogvenster op een Mac onder macOS 12: Cmdr start wel, maar valt buiten het geteste bereik. Toon:
+eerlijk en ontspannen, geen excuus en geen waarschuwing, want de app doet het gewoon.
+
+- **`supported` → `ondersteund`** · macOS Finder (`… omdat deze niet wordt ondersteund.`) · `high`.
+- **`X and up` → `X en nieuwer`** · macOS SystemSettings (`… is OS X %@ of nieuwer vereist.`) · `high`.
+- **`best effort` → `doet het zijn best zonder garanties`** · het pile kent de term niet (alleen QoS-definities voor
+  netwerken) · `high` voor de omschrijving. Bewust geen leenvertaling.
+- **`look off` → `er raar uitzien`** · alledaags, en het vermijdt `fout`/`mislukt`, die de stem verbiedt.
+- **Geen `z''n`**: de samentrekking zou een ICU-apostrof nodig hebben, en `zijn best` leest even natuurlijk.
+- **De laatste zin is David in de ik-vorm**, met `je`, net als `onboarding.stepBeta.greeting`.
