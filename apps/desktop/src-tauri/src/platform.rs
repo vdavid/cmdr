@@ -33,3 +33,58 @@ pub(crate) fn os_version() -> String {
         std::env::consts::OS.to_string()
     }
 }
+
+/// True when the running macOS is at least `major.minor`. Always false off macOS.
+///
+/// This is the runtime half of the deployment-floor story. `objc2` carries no
+/// availability information, so a selector the running OS doesn't have raises
+/// `NSInvalidArgumentException`, which aborts the process instead of returning an
+/// error (`scripts/check/checks/desktop-rust-macos-availability.go` has the full
+/// account). The bundle's floor is macOS 10.15, so anything newer than that has to
+/// ask here first.
+///
+/// Reads `NSProcessInfo.operatingSystemVersion` (macOS 10.10), cached: the answer
+/// can't change while the process runs, and callers sit on menu-build paths.
+#[cfg(target_os = "macos")]
+pub(crate) fn macos_at_least(major: i64, minor: i64) -> bool {
+    use objc2_foundation::NSProcessInfo;
+    use std::sync::OnceLock;
+
+    static RUNNING: OnceLock<(i64, i64)> = OnceLock::new();
+    let (running_major, running_minor) = *RUNNING.get_or_init(|| {
+        let version = NSProcessInfo::processInfo().operatingSystemVersion();
+        (version.majorVersion as i64, version.minorVersion as i64)
+    });
+    (running_major, running_minor) >= (major, minor)
+}
+
+#[cfg(not(target_os = "macos"))]
+pub(crate) fn macos_at_least(_major: i64, _minor: i64) -> bool {
+    false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn os_version_is_never_empty() {
+        assert!(!os_version().is_empty());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_at_least_brackets_the_running_version() {
+        // Every Mac that can build this is past the bundle's floor, and none is
+        // running macOS 99. Anything else would mean the probe read garbage.
+        assert!(macos_at_least(10, 15));
+        assert!(macos_at_least(11, 0));
+        assert!(!macos_at_least(99, 0));
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn macos_at_least_is_false_off_macos() {
+        assert!(!macos_at_least(10, 15));
+    }
+}

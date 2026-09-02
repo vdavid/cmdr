@@ -7,16 +7,24 @@ Reference for minimum-OS pinning and for adopting newer JS features.
 Two numbers have to agree, and nothing but this note ties them together:
 
 - **`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.conf.json`** is what the `.app` claims: macOS
-  12.0 Monterey today. It's also the floor `desktop-rust-macos-availability` enforces every Objective-C selector
-  against.
-- **`build.target` in `apps/desktop/vite.config.js`** is what the frontend bundle is transpiled to: `safari15` today,
-  because Cmdr's WebKit IS the system Safari and Monterey ships Safari 15.0. `build.cssTarget` follows it, so JS and CSS
-  share one floor. `desktop-vite-build-target` fails the build if the pin goes missing or stops naming a Safari version,
-  but it deliberately enforces no relationship between the two numbers: mapping a macOS version to "the WebKit we must
-  assume" is a product call, not a fact (an untouched Monterey runs Safari 15.0, a fully patched one reaches 17.6). Move
-  them together, by hand, and update this section.
+  10.15 Catalina. It's also the floor `desktop-rust-macos-availability` enforces every Objective-C selector against, so
+  anything newer needs a `crate::platform::macos_at_least` gate plus the `allowed-newer-selector` marker.
+- **`build.target` in `apps/desktop/vite.config.js`** is what the frontend bundle is transpiled to: `safari15`.
+  `build.cssTarget` follows it, so JS and CSS share one floor. `desktop-vite-build-target` fails the build if the pin
+  goes missing or stops naming a Safari version, but it deliberately enforces no relationship between the numbers:
+  mapping a macOS version to "the WebKit we must assume" is a product call, not a fact.
 
-The website's download page lists no minimum OS version; only "macOS (Apple Silicon and Intel)" and "Linux: alpha."
+Catalina is a **best-effort** floor, deliberately below what the app needs on a stock install. The numbers don't line
+up, and that's the design:
+
+- `minimumSystemVersion` is the OLDEST macOS whose Objective-C surface we stay inside, so Gatekeeper lets the app open
+  and the native code doesn't abort. It says nothing about whether the UI can render.
+- A stock Catalina 10.15.0 ships Safari 13, a stock Big Sur 11.0 ships Safari 14, and a stock Monterey 12.0 ships
+  Safari 15.0. The frontend needs newer than all three.
+- A **fully patched** Catalina 10.15.7 reaches Safari 15.6.1, Big Sur 11.7.10 reaches 16.6, and Monterey 12.7.6 reaches
+  17.6, and every one of those runs the frontend fine. That's the whole reason Catalina is worth offering: "install
+  your updates" is advice a user can act on (verified against WebKit's release history and Apple's security-update
+  index, 2026-09-02).
 
 Leaving `build.target` unset is what the check exists to prevent. Vite's default is
 `ESBUILD_BASELINE_WIDELY_AVAILABLE_TARGET`, a MOVING baseline (Safari 16.4 under Vite 8), so an unset target drifts
@@ -24,6 +32,8 @@ upward on a routine dep bump while the plist stays put. That gap was live: the b
 (Safari 15.4+), so every one of those design tokens was unset on a Monterey that never updated Safari. Pinning
 `safari15` lowers them to `lab()` (Safari 15.0) and costs +8,939 bytes on a 6.2 MB bundle (verified on Vite 8.2.0,
 production build, 2026-09-02).
+
+The website's download page lists no minimum OS version; only "macOS (Apple Silicon and Intel)" and "Linux: alpha."
 
 ## Effective minimums imposed by the stack
 
@@ -41,7 +51,8 @@ production build, 2026-09-02).
   `app.css` and the runtime mixes behind `webkit-compat.ts` both have to stay.
 - **llama-server (AI feature only)**: Apple Silicon only (no Intel AI build, rest of app works fine)
 
-**Effective practical floor: macOS 12 Monterey (2021-10)**, the version the plist declares.
+**Effective practical floor: macOS 10.15 Catalina (2019-10)**, the version the plist declares, on the best-effort terms
+above. macOS 12 Monterey and up is the version range Cmdr is actually developed and tested against.
 
 ### Linux
 

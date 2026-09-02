@@ -12,6 +12,7 @@
 
 use std::panic::AssertUnwindSafe;
 
+use crate::platform::macos_at_least;
 use objc2::MainThreadMarker;
 use objc2::rc::Retained;
 use objc2_app_kit::{
@@ -359,8 +360,16 @@ fn find_ns_item(menu: &NSMenu, title: &str) -> Option<Retained<NSMenuItemAppKit>
         .find(|item| !item.isSeparatorItem() && item.title().to_string() == title)
 }
 
+/// Puts an SF Symbol on a menu item, where the OS has SF Symbols at all.
+///
+/// They arrived with macOS 11, and the bundle's floor is 10.15, so Catalina gets
+/// menu items with no icons rather than an unrecognized-selector abort.
 fn set_sf_symbol(item: &NSMenuItemAppKit, symbol_name: &str) {
+    if !macos_at_least(11, 0) {
+        return;
+    }
     let name = NSString::from_str(symbol_name);
+    // allowed-newer-selector: guarded by the `macos_at_least(11, 0)` early return above
     if let Some(image) = NSImage::imageWithSystemSymbolName_accessibilityDescription(&name, None) {
         item.setImage(Some(&image));
     } else {

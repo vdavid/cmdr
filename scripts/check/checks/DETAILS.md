@@ -1318,7 +1318,10 @@ How it decides:
   check reads lines, never control flow, so it can't see a `crate::platform::macos_at_least(major, minor)` gate: the
   comment is the claim and the reason is what makes it checkable by a human, so name the gate in it. An opt-out that
   excuses no call is reported as an orphan (same `directiveTracker` every other opt-out uses), which is what stops a
-  stale one rotting in place after the call moves.
+  stale one rotting in place after the call moves. Two calls carry it today, both degrading a feature rather than
+  faking it: `URLsForApplicationsToOpenURL` (macOS 12) in `file_system/open_with.rs` drops to the single default app
+  from `URLForApplicationToOpenURL`, and `imageWithSystemSymbolName_accessibilityDescription` (macOS 11) in
+  `menu/macos_appkit.rs` leaves menu items iconless.
 
 ## Apps and check counts
 

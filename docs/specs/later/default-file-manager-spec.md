@@ -29,9 +29,10 @@ They're independent OS toggles with different blast radius and different fragili
   evidence: ForkLift/Path Finder document it, and community recipes confirm it works through recent macOS (researched
   2026-07, community sources: ForkLift docs, MPU forum, yazi/fman GitHub threads).
 - **B. `public.folder` default handler**: the sanctioned LaunchServices route. Set via
-  `NSWorkspace.setDefaultApplication(at:toOpenContentType:completionHandler:)` (macOS 12+, exactly our
-  `minimumSystemVersion` floor in `tauri.conf.json`, verified 2026-08-27, so no fallback path needed). Takes the app
-  URL, async completion, surfaces errors. Never poke `com.apple.launchservices.secure` with `defaults write` (the recipe
+  `NSWorkspace.setDefaultApplication(at:toOpenContentType:completionHandler:)` (macOS 12+, above the 10.15
+  `minimumSystemVersion` floor in `tauri.conf.json`, so it needs a `macos_at_least(12, 0)` gate plus the
+  `allowed-newer-selector` marker, and the feature stays hidden below macOS 12). Takes the app URL, async completion,
+  surfaces errors. Never poke `com.apple.launchservices.secure` with `defaults write` (the recipe
   most blogs show): it's fragile and LS db rebuilds can drop it.
 
 Prerequisite for B (and possibly for A; spike item 1): Cmdr must declare itself a folder viewer via
@@ -121,7 +122,7 @@ Open questions:
    no code, so graceful degradation is the only cleanup we get).
 6. Confirm no OS consent dialog interferes (macOS 15+ added consent UI for default _browser_ changes; folders are
    believed prompt-free). Verify on the current macOS (26.x, what the team measures on) and, if a machine is available,
-   on the 12.0 `minimumSystemVersion` floor.
+   on the 10.15 `minimumSystemVersion` floor.
 7. Confirm the `Info.plist` declaration alone (toggles off) has no surprising side effects beyond the "Open With" menu
    entry.
 
