@@ -2186,6 +2186,22 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
 - Mind a tizennyolc érték eltér az angoltól, tehát nincs szükség `sameAsSourceJustification`-re. Egyetlen új értékben
   sincs aposztróf, így az ICU `''` szabálya nem lép be; a `{name}`, `{countText}` és `{count}` mind változatlan.
 
+### `cancelRollback.stagedLeftover.*` (a Cmdr saját maradéka a célhelyen)
+
+2026-09-02-én kerültek be. Két sor egy olyan munkafájlról, amelyet maga a Cmdr hozott létre, és nem tudott eltakarítani a
+célhelyről. NEM tartoznak a `reason.*` listához: ott a Cmdr a felhasználó fájljait védi, itt a saját maradékáról van
+szó.
+
+- **`unfinished copy` → `hiányos másolat`** · a `hiányos` az Apple szava az „incomplete"-re (macOS `LA33`: „sérült
+  vagy hiányos"), a `másolat` a `NE111`-ből („megőrizhet egy folytatható másolatot") · `high`
+- **`at the destination` → `a célhelyen`** · a katalógus szava (`conflictsUnknown`, `célhely`) · `high`
+- **`transfer` (főnév) → `átvitel`** · a katalógus már így mondja
+  (`errors.listing.deviceReconnecting.explanation`: „megszakított vagy félbeszakadt átvitel után") · `high`
+- A „nem sikerült" szerkezet a `reason.failed.*` párja, így a család egy hangon szól.
+- ⚠️ **`egy későbbi átvitel során`, ❌ soha nem „legközelebb".** A Cmdr takarítása kihagy mindent, ami egy óránál
+  fiatalabb, tehát egy azonnali újrapróbálkozás nem takarít el semmit. Egy be nem tartható ígéret pontosan az a hiba,
+  amit ez a sor megszüntet.
+
 ## A túl régi WebKit blokkoló képernyője (`main.oldWebkit.*`, 2026-09-02)
 
 Három szöveg, amit a Cmdr a felülete helyett mutat, ha a Mac Safarija túl régi. A HTML-vázban élnek, nem az appban,

@@ -776,6 +776,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr konnte {name} nicht entfernen: eine unvollständige Kopie, die am Ziel geblieben ist. Du kannst sie gefahrlos löschen, und Cmdr räumt sie bei einer späteren Übertragung dorthin weg.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Cmdr konnte {countText} unvollständige {count, plural, one {Kopie} other {Kopien}} nicht entfernen, die am Ziel geblieben sind. Du kannst sie gefahrlos löschen, und Cmdr räumt sie bei einer späteren Übertragung dorthin weg.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "Technische Details",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

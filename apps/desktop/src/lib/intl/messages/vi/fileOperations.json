@@ -772,6 +772,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Không xóa được {name}, một bản sao chưa hoàn chỉnh còn lại ở đích. Bạn có thể xóa nó mà không mất gì, và Cmdr cũng sẽ dọn nó trong một lần truyền sau tới đó.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Không xóa được {countText} {count, plural, other {bản sao}} chưa hoàn chỉnh còn lại ở đích. Bạn có thể xóa chúng mà không mất gì, và Cmdr cũng sẽ dọn chúng trong một lần truyền sau tới đó.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "Chi tiết kỹ thuật",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

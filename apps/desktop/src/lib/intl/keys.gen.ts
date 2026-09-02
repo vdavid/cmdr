@@ -1408,6 +1408,8 @@ export type MessageKey =
   | 'fileOperations.cancelRollback.reason.unverifiable.named'
   | 'fileOperations.cancelRollback.someDeleted'
   | 'fileOperations.cancelRollback.someMovedBack'
+  | 'fileOperations.cancelRollback.stagedLeftover.counted'
+  | 'fileOperations.cancelRollback.stagedLeftover.named'
   | 'fileOperations.cancelRollback.stoppedDeleting'
   | 'fileOperations.cancelRollback.stoppedMovingBack'
   | 'fileOperations.delete.archiveWarningRest'

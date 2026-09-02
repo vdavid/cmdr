@@ -1934,6 +1934,22 @@ två av dem har teckenidentisk engelska, så `i18n-terms` kräver identisk svens
 - Inga `sameAsSourceJustification` · alla 18 värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
   så ICU:s dubblering `''` blir aldrig aktuell.
 
+### `cancelRollback.stagedLeftover.*` (Cmdrs egna rester på målplatsen)
+
+Nya 2026-09-02. Två rader om en arbetsfil som Cmdr själv skapat och inte lyckats ta bort från målplatsen. De hör INTE
+till `reason.*`-listan: där skyddar Cmdr användarens filer, här handlar det om Cmdrs egen rest.
+
+- **`unfinished copy` → `ofullständig kopia`** · `ofullständig` är Apples ord för "incomplete" (macOS `LA33`: "skadad
+  eller ofullständig"), `kopia` substantivet i `NE111` ("behålla en återupptagbar kopia") · `high`
+- **`at the destination` → `på målplatsen`** · katalogens ord (`conflictsUnknown`, `stallWaitingDestination`) · `high`
+- **`transfer` (substantiv) → `överföring`** · katalogen säger redan så
+  (`errors.listing.deviceReconnecting.explanation`: "efter en avbruten överföring") · `high`
+- **`Cmdr clears it` → `Cmdr rensar bort den`** · `rensa bort` i stället för `radera`, eftersom det är Cmdrs egen
+  arbetsfil och inte användarens · `high`
+- ⚠️ **`vid en senare överföring`, ❌ aldrig "nästa gång".** Cmdrs rensning hoppar över allt som är yngre än en timme,
+  så ett omedelbart nytt försök rensar ingenting. Ett löfte som inte håller är precis det fel den här raden finns för
+  att ta bort.
+
 ## Blockskärmen när WebKit är för gammalt (`main.oldWebkit.*`, 2026-09-02)
 
 Tre strängar som Cmdr visar i stället för sitt gränssnitt när Macens Safari är för gammalt. De bor i HTML-skalet, inte i

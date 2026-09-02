@@ -2166,6 +2166,24 @@ die dit paar op `controleren` (het gevestigde woord in deze catalogus) trekt, zo
 **Overloop nakijken op de melding.** De redenregels lopen 75–90 tekens tegen 50–60 in het Engels, en
 `reason.failed.counted` is de langste van de achttien. Controleer ze tegen de pseudolocale in een smalle melding.
 
+### `cancelRollback.stagedLeftover.*` (Cmdrs eigen restanten op de bestemming)
+
+Nieuw op 2026-09-02. Twee regels over een werkbestand dat Cmdr zelf heeft aangemaakt en niet van de bestemming
+weggekregen heeft. Ze horen NIET bij de `reason.*`-lijst: daar beschermt Cmdr de bestanden van de gebruiker, hier gaat
+het om een restant van Cmdr zelf.
+
+- **`unfinished copy` → `onvolledig exemplaar`** · `onvolledig` is Apples woord voor „incomplete" (macOS `LA33`:
+  „beschadigd of onvolledig"), en macOS `NE111` gebruikt `exemplaar` als zelfstandig naamwoord voor een kopie („een
+  hervatbaar exemplaar bewaren") · `high`
+- **`at the destination` → `op de bestemming`** · het woord uit de catalogus (`conflictsUnknown`) · `high`
+- **`transfer` (zelfstandig naamwoord) → `overdracht`** · de catalogus zegt het al zo
+  (`errors.listing.deviceReconnecting.explanation`: „na een geannuleerde of onderbroken overdracht") · `high`
+- **`Cmdr clears it` → `Cmdr ruimt het op`** · `opruimen` in plaats van `verwijderen`, omdat het Cmdrs eigen
+  werkbestand is · `high`
+- ⚠️ **`bij een latere overdracht`, ❌ nooit „de volgende keer".** Cmdrs opruiming slaat alles over dat jonger is dan
+  een uur, dus een directe tweede poging ruimt niets op. Een belofte die niet uitkomt is precies de fout die deze regel
+  wegneemt.
+
 ## Het blokkeerscherm bij te oude WebKit (`main.oldWebkit.*`, 2026-09-02)
 
 Drie strings die Cmdr toont in plaats van zijn interface als de Safari van de Mac te oud is. Ze staan in het

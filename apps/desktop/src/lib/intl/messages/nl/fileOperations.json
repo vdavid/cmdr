@@ -774,6 +774,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "{name} verwijderen lukte niet: een onvolledig exemplaar dat op de bestemming is blijven staan. Je kunt het gerust verwijderen, en Cmdr ruimt het bij een latere overdracht daarheen op.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "{countText} onvolledige {count, plural, one {exemplaar} other {exemplaren}} verwijderen lukte niet; die zijn op de bestemming blijven staan. Je kunt ze gerust verwijderen, en Cmdr ruimt ze bij een latere overdracht daarheen op.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "Technische details",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

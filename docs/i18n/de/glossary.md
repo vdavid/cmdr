@@ -1814,6 +1814,24 @@ Aufzählung von `reason.*`-Zeilen. Grundton: Cmdr hat das Umsichtige getan. Nie 
   Glossar `read-only → schreibgeschützt`), im Ton von `trash.undoUnavailable`.
 - Kein `sameAsSourceJustification` nötig: alle 18 Werte unterscheiden sich vom Englischen.
 
+### `cancelRollback.stagedLeftover.*` (Cmdrs eigene Reste am Ziel)
+
+Neu 2026-09-02. Zwei Zeilen über eine Arbeitsdatei, die Cmdr selbst angelegt und am Ziel nicht mehr weggeräumt bekommen
+hat. Sie gehören NICHT zur `reason.*`-Liste: dort schützt Cmdr die Dateien der Person, hier ist es Cmdrs eigener Rest.
+
+- **`unfinished copy` → `unvollständige Kopie`** · `unvollständig` ist Apples Wort für „incomplete" (macOS `LA33`:
+  „… beschädigt oder unvollständig ist."), `Kopie` das Substantiv aus macOS `NE111` („eine fortsetzungsfähige Kopie
+  behalten") · `high`
+- **`at the destination` → `am Ziel`** · gesetzt (`destination → Ziel`), gleiche Form wie `stallWaitingDestination` ·
+  `high`
+- **`transfer` (Substantiv) → `Übertragung`** · der Katalog sagt es schon so
+  (`errors.listing.deviceReconnecting.explanation`: „nach einer abgebrochenen oder unterbrochenen Übertragung") · `high`
+- **`Cmdr clears it` → `Cmdr räumt sie weg`** · `wegräumen` statt `löschen`, weil es Cmdrs eigene Arbeitsdatei ist
+  und nicht die der Person · `high`
+- ⚠️ **`bei einer späteren Übertragung`, ❌ nie „beim nächsten Mal".** Cmdrs Aufräumen überspringt alles, was jünger
+  als eine Stunde ist, also räumt ein sofortiger zweiter Versuch nichts weg. Ein Versprechen, das nicht hält, ist genau
+  der Fehler, den diese Zeile beseitigen soll.
+
 ## Der Block-Screen bei zu altem WebKit (`main.oldWebkit.*`, 2026-09-02)
 
 Drei Strings, die Cmdr statt seiner Oberfläche zeigt, wenn das Safari des Macs zu alt ist. Sie stehen in der HTML-Hülle,

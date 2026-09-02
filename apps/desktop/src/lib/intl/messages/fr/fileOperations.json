@@ -775,6 +775,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr n''a pas pu supprimer {name}, une copie incomplète restée à destination. Vous pouvez la supprimer sans risque, et Cmdr s''en chargera lors d''un transfert ultérieur vers cet endroit.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Cmdr n''a pas pu supprimer {countText} {count, plural, one {copie incomplète restée} many {copies incomplètes restées} other {copies incomplètes restées}} à destination. Vous pouvez les supprimer sans risque, et Cmdr s''en chargera lors d''un transfert ultérieur vers cet endroit.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "Détails techniques",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

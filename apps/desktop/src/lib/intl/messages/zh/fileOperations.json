@@ -771,6 +771,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "没能删除 {name}，这是留在目标位置的一个不完整副本。你可以放心删掉它，Cmdr 之后往那里传输时也会清掉它。",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "没能删除留在目标位置的 {countText} {count, plural, other {个不完整副本}}。你可以放心删掉它们，Cmdr 之后往那里传输时也会清掉它们。",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "技术详情",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

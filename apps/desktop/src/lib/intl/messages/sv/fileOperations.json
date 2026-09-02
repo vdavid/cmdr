@@ -773,6 +773,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Det gick inte att radera {name}, en ofullständig kopia som blev kvar på målplatsen. Du kan radera den utan risk, och Cmdr rensar bort den vid en senare överföring dit.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Det gick inte att radera {countText} {count, plural, one {ofullständig kopia} other {ofullständiga kopior}} som blev kvar på målplatsen. Du kan radera dem utan risk, och Cmdr rensar bort dem vid en senare överföring dit.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "Tekniska detaljer",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

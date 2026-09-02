@@ -59,7 +59,8 @@ All verified in the pile, all absent from Cmdr's catalog. Fork them if the copy 
 - `popover` stays `popover` (`en-GB` writes `pop-over`). Cmdr forks neither; see `docs/i18n/en-GB/style.md` § The fork
   test.
 - The cancelled-rollback toast (`fileOperations.cancelRollback.*`) forks nothing here either; its vocabulary is
-  dialect-neutral. Same reading as `docs/i18n/en-GB/style.md` § The fork test, reached independently.
+  dialect-neutral, `stagedLeftover.*` included. Same reading as `docs/i18n/en-GB/style.md` § The fork test, reached
+  independently.
 
 ## Claims about `en-AU` that are WRONG
 

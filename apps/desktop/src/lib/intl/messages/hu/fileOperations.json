@@ -773,6 +773,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "A(z) „{name}” eltávolítása nem sikerült: ez egy hiányos másolat, amely a célhelyen maradt. Nyugodtan törölheted, a Cmdr pedig egy későbbi átvitel során eltávolítja onnan.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "{countText} hiányos {count, plural, one {másolat} other {másolat}} eltávolítása nem sikerült, ezek a célhelyen maradtak. Nyugodtan törölheted őket, a Cmdr pedig egy későbbi átvitel során eltávolítja őket onnan.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "Technikai részletek",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

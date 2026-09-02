@@ -1788,6 +1788,22 @@ cuidadoso", nunca desculpa nem alarme.
 - Nenhum valor leva apóstrofo, então não há `''` no lote. Nenhum `sameAsSourceJustification` é necessário: os 18 valores
   diferem do inglês.
 
+### `cancelRollback.stagedLeftover.*` (as sobras do próprio Cmdr no destino)
+
+Novas em 2026-09-02. Duas linhas sobre um arquivo de trabalho que o próprio Cmdr criou e não conseguiu tirar do destino.
+NÃO pertencem à lista `reason.*`: lá o Cmdr protege os arquivos da pessoa, aqui é uma sobra dele mesmo.
+
+- **`unfinished copy` → `cópia incompleta`** · `incompleto` é a palavra da Apple para "incomplete" (macOS `LA33`:
+  "danificado ou incompleto"), `cópia` vem de `NE111` ("manter uma cópia retomável") · `high`
+- **`at the destination` → `no destino`** · o termo do catálogo (`stoppedDeleting`: "O resto continua no destino") ·
+  `high`
+- **`transfer` (substantivo) → `transferência`** · o catálogo já usa
+  (`errors.listing.deviceReconnecting.explanation`: "depois de uma transferência cancelada ou interrompida") · `high`
+- A segunda frase fica no mesmo verbo `apagar` do resto da família.
+- ⚠️ **`numa transferência posterior`, ❌ nunca "da próxima vez".** A limpeza do Cmdr pula tudo com menos de uma hora,
+  então uma nova tentativa imediata não apaga nada. Prometer o contrário seria exatamente a falha que esta linha
+  conserta.
+
 ## A tela de bloqueio quando o WebKit é antigo demais (`main.oldWebkit.*`, 2026-09-02)
 
 Três strings que o Cmdr mostra no lugar da interface quando o Safari do Mac é antigo demais. Elas ficam no invólucro

@@ -774,6 +774,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Não foi possível apagar {name}, uma cópia incompleta que ficou no destino. Você pode apagá-la sem problema, e o Cmdr também vai apagá-la numa transferência posterior para lá.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Não foi possível apagar {countText} {count, plural, one {cópia incompleta que ficou} many {cópias incompletas que ficaram} other {cópias incompletas que ficaram}} no destino. Você pode apagá-las sem problema, e o Cmdr também vai apagá-las numa transferência posterior para lá.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "Detalhes técnicos",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

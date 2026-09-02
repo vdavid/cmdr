@@ -773,6 +773,14 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr no pudo eliminar {name}, una copia parcial que se quedó en el destino. Puedes borrarla sin problema, y Cmdr la eliminará en una transferencia posterior a ese sitio.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Cmdr no pudo eliminar {countText} {count, plural, one {copia parcial que se quedó} many {copias parciales que se quedaron} other {copias parciales que se quedaron}} en el destino. Puedes borrarlas sin problema, y Cmdr las eliminará en una transferencia posterior a ese sitio.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
+  },
   "fileOperations.errorDialog.technicalDetails": "Detalles técnicos",
   "@fileOperations.errorDialog.technicalDetails": {
     "sourceHash": "890ab35"

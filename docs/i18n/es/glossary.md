@@ -1924,6 +1924,23 @@ CUENTA (`*.counted`). El tono es siempre "Cmdr hizo lo prudente", nunca una disc
   vez.
 - No hace falta `sameAsSourceJustification`: los 18 valores difieren del inglés.
 
+### `cancelRollback.stagedLeftover.*` (los restos del propio Cmdr en el destino)
+
+Nuevas el 2026-09-02. Dos líneas sobre un archivo de trabajo que creó el propio Cmdr y que no consiguió quitar del
+destino. NO pertenecen a la lista `reason.*`: allí Cmdr protege los archivos de la persona, aquí se trata de un resto
+suyo.
+
+- **`unfinished copy` → `copia parcial`** · macOS `NE111` dice literalmente «una copia parcial que puedas completar en
+  otro momento» · `high`
+- **`at the destination` → `en el destino`** · el término del catálogo (`conflictsUnknown`,
+  `stallWaitingDestination`) · `high`
+- **`transfer` (sustantivo) → `transferencia`** · el catálogo ya lo usa
+  (`errors.listing.deviceReconnecting.explanation`: «después de una transferencia cancelada o interrumpida») · `high`
+- La segunda frase deja `Cmdr` como sujeto tácito («La eliminará…») para no repetir el nombre en dos frases seguidas.
+- ⚠️ **`en una transferencia posterior`, ❌ nunca «la próxima vez».** La limpieza de Cmdr salta todo lo que tenga menos
+  de una hora, así que un reintento inmediato no borra nada. Prometer lo contrario sería justo el fallo que esta línea
+  viene a corregir.
+
 ## La pantalla de bloqueo por WebKit antiguo (`main.oldWebkit.*`, 2026-09-02)
 
 Tres cadenas que Cmdr muestra en lugar de su interfaz cuando el Safari del Mac es demasiado antiguo. Viven en el armazón

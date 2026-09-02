@@ -1359,6 +1359,23 @@
     }
   },
 
+  "fileOperations.cancelRollback.stagedLeftover.named": "Couldn''t remove {name}, an unfinished copy left at the destination. It''s safe to delete, and Cmdr clears it on a later transfer there.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "description": "Last line of the toast after a cancelled copy or move, when Cmdr''s own half-written working file is still sitting at the destination and the drive wouldn''t let Cmdr take it away. This version is used when there is exactly ONE, so the line names it. What {name} holds is a scratch name Cmdr invented, like holiday.jpg.cmdr-tmp-4d1f9c, and naming it is the point: it is what the user would look for at the destination. This is NOT one of the deliberate choices the fileOperations.cancelRollback.reason.* lines describe: those are Cmdr protecting the user''s files, this is Cmdr''s own leftover that it couldn''t clear yet, so it reads as a straight account rather than as care. The second sentence is what the user can act on, and it carries two claims that must both stay true. (a) Deleting it by hand loses nothing, because the file it was copying is still whole at the source. (b) Cmdr''s own cleanup only runs at the start of a transfer into that same folder AND only touches leftovers over an hour old, so somebody who cancels and retries right away will still see it. Say \"a later transfer\", never \"the next one\": promising the next transfer is exactly the kind of over-claim this line exists to stop. Stay conversational and never use the words \"error\" or \"failed\". Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "placeholders": {
+      "name": "the leftover''s own name at the destination, e.g. holiday.jpg.cmdr-tmp-4d1f9c. Uncontrolled text of any length, in any script, so keep the sentence readable whatever lands here, and never translate it."
+    }
+  },
+
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Couldn''t remove {countText} unfinished {count, plural, one {copy} other {copies}} left at the destination. They''re safe to delete, and Cmdr clears them on a later transfer there.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "description": "The same line as fileOperations.cancelRollback.stagedLeftover.named, used when two or more of Cmdr''s half-written working files stayed at the destination, so it counts them instead of naming one. They can sit in different folders under the destination, which is why the line says \"there\" rather than naming a folder. Keep both claims of the named version, and the same restraint: \"a later transfer\", never \"the next one\", because Cmdr''s cleanup spares anything under an hour old. Stay conversational and never use the words \"error\" or \"failed\". Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "placeholders": {
+      "countText": "how many unfinished copies stayed behind, already formatted for display (e.g. 1,234). Always two or more",
+      "count": "the same number (drives the singular/plural form of the noun)"
+    }
+  },
+
   "fileOperations.errorDialog.technicalDetails": "Technical details",
   "@fileOperations.errorDialog.technicalDetails": {
     "description": "Toggle that expands raw, developer-facing details (paths, error codes) below a friendly transfer-error message. Control label.",
