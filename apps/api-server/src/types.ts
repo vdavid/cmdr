@@ -275,9 +275,9 @@ export async function readCappedBody(body: ReadableStream<Uint8Array>, maxBytes:
  * Hono `c.executionCtx.waitUntil` wrapper that falls back to inline await in tests.
  *
  * Takes only the `waitUntil` shape it actually calls: Hono's `Context.executionCtx` is its own
- * `ExecutionContext<unknown>`, which carries members (`tracing`) that the ambient
- * `@cloudflare/workers-types` `ExecutionContext` doesn't, so naming either type here breaks the
- * other whenever the two drift.
+ * `ExecutionContext<unknown>`, which carries members (`tracing`) that the ambient `ExecutionContext`
+ * (generated into `worker-configuration.d.ts`) doesn't, so naming either type here breaks the other
+ * whenever the two drift.
  */
 export function scheduleBackground(
   c: { executionCtx: { waitUntil: (promise: Promise<unknown>) => void } },
