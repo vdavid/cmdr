@@ -63,6 +63,7 @@
     "apps/desktop/src/lib/settings/settings-store.ts": 811,
     "apps/desktop/src/lib/tauri-commands/index.ts": 819,
     "apps/desktop/src/lib/ui/ModalDialog.svelte": 823,
+    "apps/desktop/src/routes/(main)/+page.svelte": 831,
     "apps/desktop/src/routes/(main)/command-dispatch.characterization.test.ts": 871,
     "apps/desktop/src/routes/debug/DebugSmbDiagnosticsPanel.svelte": 1040,
     "apps/desktop/src/routes/viewer/+page.svelte": 1442,
