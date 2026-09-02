@@ -67,9 +67,21 @@ services:
     build: ./image-nextcloud
     image: cmdr-webdav-fixture-nextcloud:latest
     restart: unless-stopped
-    # Roomier than the httpd pair's 256m/0.5: PHP installing Nextcloud is the
-    # heaviest moment of this stack's life, and starving it turns a 25 s first
-    # boot into a timeout.
+    # ❗ Four times the httpd pair's 256m and 0.5, deliberately, for two
+    # different reasons — and a cap is not a reservation, so an idle machine
+    # gives up nothing for it.
+    #
+    #   - **First boot.** PHP running `occ maintenance:install` is the heaviest
+    #     moment of this stack's life, and it happens BEFORE the port binds, so
+    #     starving it turns a 25 s install into a readiness timeout that reads
+    #     as a broken fixture.
+    #   - **Serving under a contended host.** This is a shared machine-wide
+    #     stack: several worktrees' suites hit one container at once, and a cell
+    #     here is tens of round trips through PHP where the same cell against
+    #     `mod_dav` is tens through C. On 2026-09-02, four parallel Rust builds
+    #     were enough to push these cells past nextest's global 8 s cap. The
+    #     headroom is what keeps a busy laptop from deciding the verdict; the
+    #     matching per-test cap lives in `.config/nextest.toml`.
     mem_limit: 1g
     cpus: 2.0
     environment:
