@@ -10,6 +10,8 @@
 //! `with_scan_meta` and `WriteErrorEvent::new` live in `event_sinks.rs` beside
 //! the sinks that emit them.
 
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 use tauri_specta::Event;
 
@@ -182,6 +184,43 @@ pub enum CancelRollbackOutcome {
     PartiallyRolledBack,
 }
 
+/// The staged `.cmdr-tmp-*` writes a cancel's sweep asked the destination to
+/// remove and didn't get.
+///
+/// **Deliberately not a [`SkipBreakdown`].** A skip is a LEDGER item the
+/// reversal walked to and chose to leave alone, named by the file the user is
+/// looking at; these are Cmdr's own scratch files for writes that never
+/// finished, they carry no user-facing name, and nothing chose to keep them —
+/// the destination refused (`transfer/volume/cleanup.rs`). Folding them into
+/// `skips` would also fold them into `reversed + skipped`, which is what the
+/// reversal's progress bar drains over, so the bar would report progress across
+/// items no reversal ever walks.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct StagedLeftovers {
+    /// Every one the sweep couldn't remove, not a sample.
+    pub count: u32,
+    /// The on-disk leaf name of the FIRST one, so a report can name it when it's
+    /// the only one. That name is the temp's own (`photo.jpg.cmdr-tmp-<uuid>`),
+    /// which is what the user would be looking for at the destination.
+    pub example_name: String,
+}
+
+impl StagedLeftovers {
+    /// Fold the paths a sweep couldn't remove into the shape a report reads.
+    /// `None` when it removed everything, which is the ordinary ending.
+    pub fn of(unremoved: &[PathBuf]) -> Option<Self> {
+        let first = unremoved.first()?;
+        Some(Self {
+            count: unremoved.len() as u32,
+            example_name: first
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default(),
+        })
+    }
+}
+
 /// What the reversal after a cancel managed to undo, and what it left alone.
 ///
 /// Reuses [`SkipBreakdown`] so a cancelled transfer and a Roll back from history
@@ -194,6 +233,14 @@ pub struct CancelRollback {
     pub reversed: u32,
     /// One group per reason, with the complete count and one example file name.
     pub skips: Vec<SkipBreakdown>,
+    /// The staged partials the abandoned writes left that the sweep couldn't
+    /// take away. `None` in the ordinary case, where it took them all.
+    ///
+    /// Independent of `outcome`: the ledger really can be reversed to the last
+    /// entry while gigabytes of scratch sit at the destination, and `outcome`
+    /// answers only for the ledger. It's the READOUT's job never to call that
+    /// combination clean (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`).
+    pub staged_leftovers: Option<StagedLeftovers>,
 }
 
 impl CancelRollback {
@@ -203,7 +250,16 @@ impl CancelRollback {
             outcome: CancelRollbackOutcome::NotRolledBack,
             reversed: 0,
             skips: Vec::new(),
+            staged_leftovers: None,
         }
+    }
+
+    /// Name the staged partials the cancel's sweep couldn't remove, so the
+    /// summary the user reads accounts for them.
+    #[must_use]
+    pub fn with_staged_leftovers(mut self, unremoved: &[PathBuf]) -> Self {
+        self.staged_leftovers = StagedLeftovers::of(unremoved);
+        self
     }
 }
 

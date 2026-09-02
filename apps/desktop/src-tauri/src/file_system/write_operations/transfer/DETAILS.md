@@ -105,6 +105,20 @@ Three ledgers say what an operation currently has at the destination, and each o
 
 **What comes back** is a `ReversalTally`, folded into the `CancelRollback` the `write-cancelled` event carries: a three-state outcome plus the reversed count and the per-reason `SkipBreakdown` groups (complete counts, one example name each) the history dialog's report already uses.
 
+### Naming what a cancel left behind
+
+`CancelRollback` reports TWO kinds of leftover, and they are separate fields on purpose.
+
+`skips` is per-reason `SkipBreakdown` groups: ledger entries a reversal walked to and DECIDED to leave, named by the file the user is looking at. `staged_leftovers` is a `StagedLeftovers { count, example_name }` for the `.cmdr-tmp-*` scratch the abandoned-write sweep asked the destination to remove and didn't get (§ "Staged writes"). Three reasons they don't merge:
+
+- **Nothing chose to keep a staged leftover.** Every `SkipReason` is a decision (drift, unprovable, occupied, non-empty) except `Failed`, and even `Failed` is a ledger item that may come back on a retry from history. A staged leftover is Cmdr's own working file for a write that never finished, kept by a handle the operation no longer controls.
+- **It has no user-facing name.** `SkipBreakdown::example_name` is documented as "the name the file carries right now, which is the one the user is looking at". A `photo.jpg.cmdr-tmp-<uuid>` is a name Cmdr invented, which is why the toast words it differently and says it is safe to delete.
+- **The counts have a job.** `reversed + skipped` is what the reversal's progress bar drains over (`reversal::drained`), and a staged temp is not a ledger entry any reversal walks. Folding it in would make the bar report progress across items nothing processes.
+
+**`outcome` stays about the LEDGER**, so `RolledBack` with leftovers is a real and honest combination: the reversal did walk every entry. ❌ Don't force it to `PartiallyRolledBack` — the frontend reads `partiallyRolledBack` with empty `skips` as "the user stopped it partway", and that inference is what tells the two apart. Instead, the READOUT (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`) never lets a leftover render as a clean success: it drops the completeness wording (`someDeleted`, never `doneDeleting`) and the `success` level whenever `staged_leftovers` is present, and it prints the line OUTSIDE the reason list, which sits under "Cmdr skips anything it isn't sure about".
+
+The three volume emit sites all attach it — the copy's Rollback branch, the copy's plain-Stop branch, and the cross-volume move's cancel — so a leftover speaks even where there is no reversal at all to report.
+
 ### The partials carve-out
 
 `volume/cleanup.rs::append_own_partials` folds the writes still in flight when the user clicked into the rollback ledger, marked `WrittenIdentity::OwnPartial`.
@@ -280,6 +294,15 @@ DROPPED mid-write — the concurrent driver drops the rest of its window on canc
 `volume::cleanup::clean_abandoned_staged_writes` removes those, and the deep-merge children that were never tracked at
 all are now covered too.
 
+**What that sweep can't remove, it REPORTS.** A dropped write task never closes its handle, and an SMB2 server answers
+the delete with a sharing violation for as long as that session lives (measured: refused continuously to t+191 s on a
+real share, then deleted instantly from a fresh session). Retrying is provably useless from inside the operation, so
+`clean_abandoned_staged_writes` returns the paths it couldn't take, and both volume drivers hang them on the
+`write-cancelled` event as `CancelRollback::staged_leftovers`. That is the whole remedy this layer owns: without it a
+user who chose Rollback was told the destination was clear while 519 MB across four files (2.2 GB in another run) sat on
+their NAS. ❌ Don't fold them into `CancelRollback::skips` — a skip is a LEDGER item a reversal walked to and chose to
+leave, and `reversed + skipped` is what the reversal's bar drains over. See § "Naming what a cancel left behind".
+
 Registration goes through `write_operations::in_flight_temps`, which keeps the operation's in-memory list AND a
 process-wide log in the app data dir. Local copies register there too (`overwrite::stage_and_land_file`), so
 `in_flight_temps` is no longer cross-volume-only — though only the cross-volume drivers run
@@ -296,14 +319,20 @@ left is a thread that never came back.
   their own thread, ❌ never inline in `setup`: a recorded partial can sit on a Finder-mounted NAS that stopped
   answering, and an `unlink` there blocks for a minute or two, which on the startup thread reads as an app that won't
   launch. Granularity and why there is no fsync: `in_flight_temps.rs` module docs.
-- **The rest, on the next transfer into that directory.** `volume::cleanup::reap_stale_transfer_temps` runs once at the
-  start of each cross-volume copy, over the destination directory only: one `list_directory`, then a `delete` for each
+- **The rest, on a later transfer into that directory.** `volume::cleanup::reap_stale_transfer_temps` runs once at the
+  start of each cross-volume copy AND each cross-volume move, over the destination directory only: one `list_directory`, then a `delete` for each
   `.cmdr-tmp-*` FILE whose mtime is at least `STALE_TEMP_MIN_AGE` (1 hour) old. The age gate is what makes it safe
   against a concurrent instance — a live staged write touches its temp every chunk, and even a destination-side
   foreground park is capped at a second — and an entry with no reported mtime is spared. It mirrors
   `archive_remote_edit::reap_remote_temps`. This is the backstop for anything the log missed (a power loss, a
   non-UTF-8 path); a leftover deeper inside a copied subtree waits for a transfer into that directory, and there is no
-  global filesystem sweep and there shouldn't be.
+  global filesystem sweep and there shouldn't be. ⚠️ It runs on both transfer verbs because a destination folder a
+  person only ever MOVES into would otherwise keep its leftovers forever; the copy path pays for one extra customer of
+  the listing (its `DestNameIndex`), the move path discards it.
+
+  ⚠️ **The age gate means this is not "the next transfer clears it".** A person who cancels and retries straight away
+  meets their own leftover: it is minutes old, so the gate spares it. That's why the leftover toast says "a later
+  transfer" and offers deleting it by hand, and why the `@key` descriptions forbid promising the next one.
 
 **Cost**: one extra rename per staged file. On SMB that is one round trip, which roughly doubles the wire cost of a file
 that would otherwise take the compound CREATE+WRITE+FLUSH+CLOSE fast path — the exemption below is what keeps a

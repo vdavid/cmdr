@@ -5050,6 +5050,16 @@ export type CancelRollback = {
   reversed: number
   // One group per reason, with the complete count and one example file name.
   skips: SkipBreakdown[]
+  /**
+   *  The staged partials the abandoned writes left that the sweep couldn't
+   *  take away. `None` in the ordinary case, where it took them all.
+   *
+   *  Independent of `outcome`: the ledger really can be reversed to the last
+   *  entry while gigabytes of scratch sit at the destination, and `outcome`
+   *  answers only for the ledger. It's the READOUT's job never to call that
+   *  combination clean (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`).
+   */
+  stagedLeftovers: StagedLeftovers | null
 }
 
 /**
@@ -11302,6 +11312,30 @@ export type SqlitePageCache = {
    *  adds its `cache_size` to SQLite's global ceiling on retained pages.
    */
   liveReadConnections: number
+}
+
+/**
+ *  The staged `.cmdr-tmp-*` writes a cancel's sweep asked the destination to
+ *  remove and didn't get.
+ *
+ *  **Deliberately not a [`SkipBreakdown`].** A skip is a LEDGER item the
+ *  reversal walked to and chose to leave alone, named by the file the user is
+ *  looking at; these are Cmdr's own scratch files for writes that never
+ *  finished, they carry no user-facing name, and nothing chose to keep them —
+ *  the destination refused (`transfer/volume/cleanup.rs`). Folding them into
+ *  `skips` would also fold them into `reversed + skipped`, which is what the
+ *  reversal's progress bar drains over, so the bar would report progress across
+ *  items no reversal ever walks.
+ */
+export type StagedLeftovers = {
+  // Every one the sweep couldn't remove, not a sample.
+  count: number
+  /**
+   *  The on-disk leaf name of the FIRST one, so a report can name it when it's
+   *  the only one. That name is the temp's own (`photo.jpg.cmdr-tmp-<uuid>`),
+   *  which is what the user would be looking for at the destination.
+   */
+  exampleName: string
 }
 
 /**

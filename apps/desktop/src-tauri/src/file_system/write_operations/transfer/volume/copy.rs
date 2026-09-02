@@ -1078,8 +1078,10 @@ pub(crate) async fn copy_volumes_with_progress(
     // Cancelled or errored. Before either branch, remove the staged partials of
     // tasks the driver abandoned mid-write: their futures were dropped, so
     // nothing else will. A temp whose write finished is already off this list, so
-    // committed data is never in scope here.
-    super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+    // committed data is never in scope here. Whatever the destination wouldn't
+    // let go of rides out on the cancel summary, so a Rollback that couldn't
+    // clear the destination never reads as one that did.
+    let staged_leftovers = super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
 
     // Decide between rollback and cancel.
     if intent == OperationIntent::RollingBack {
@@ -1112,7 +1114,7 @@ pub(crate) async fn copy_volumes_with_progress(
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Copy,
             files_processed: files_done,
-            rollback: reversal.into_cancel_rollback(),
+            rollback: reversal.into_cancel_rollback().with_staged_leftovers(&staged_leftovers),
         });
     } else {
         // Stopped or error: keep completed files, clean up partial files.
@@ -1141,7 +1143,10 @@ pub(crate) async fn copy_volumes_with_progress(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Copy,
                 files_processed: files_done,
-                rollback: CancelRollback::none(),
+                // A plain Stop keeps what it wrote, so there is no reversal to
+                // report — but a staged partial the destination wouldn't take
+                // back is still news, and this is the only event that carries it.
+                rollback: CancelRollback::none().with_staged_leftovers(&staged_leftovers),
             });
         }
     }

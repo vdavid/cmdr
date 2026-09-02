@@ -14,7 +14,7 @@ use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::ledger::WrittenIdentity;
 use crate::file_system::write_operations::state::cancel_write_operation;
 use crate::file_system::write_operations::test_support::TestOperationGuard;
-use crate::file_system::write_operations::types::CancelRollbackOutcome;
+use crate::file_system::write_operations::types::{CancelRollback, CancelRollbackOutcome};
 
 fn make_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(50)))
@@ -26,11 +26,7 @@ fn make_state() -> Arc<WriteOperationState> {
 /// Each entry is recorded with the size the backend reports right now, which is
 /// what a copy that just wrote the file would have recorded — so the reversal's
 /// recheck sees an undisturbed destination.
-async fn roll_back(
-    volume: &Arc<dyn Volume>,
-    copied_paths: &[PathBuf],
-    created_dirs: &[PathBuf],
-) -> crate::file_system::write_operations::types::CancelRollback {
+async fn roll_back(volume: &Arc<dyn Volume>, copied_paths: &[PathBuf], created_dirs: &[PathBuf]) -> CancelRollback {
     let mut ledger: Vec<WrittenFile> = Vec::new();
     for path in copied_paths {
         let size = volume.get_metadata(path).await.ok().and_then(|e| e.size).unwrap_or(0);
@@ -493,4 +489,68 @@ async fn remove_tree_missing_path_is_ok() {
     )
     .await;
     assert!(r.is_ok(), "expected Ok, got {r:?}");
+}
+
+/// A staged partial the destination refuses to remove **comes back from the
+/// sweep**, so the summary the user reads can account for it.
+///
+/// This is the honesty half of the abandoned-write path. A dropped write task
+/// leaves its SMB2 handle open, the server answers the delete with a sharing
+/// violation for as long as that session lives, and a user who chose Rollback
+/// was being told the destination was clear while gigabytes of scratch sat on
+/// their NAS. Retrying can't help — the handle outlives the operation — so
+/// reporting it is the whole remedy.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_staged_partial_the_destination_keeps_comes_back_from_the_sweep() {
+    let vol = Arc::new(InMemoryVolume::new("Dest").with_delete_failing());
+    let volume: Arc<dyn Volume> = vol.clone();
+    let state = make_state();
+    let temp = PathBuf::from("/album/holiday.jpg.cmdr-tmp-4d1f9c");
+    state.in_flight_temps.lock_ignore_poison().push(temp.clone());
+
+    let unremoved = clean_abandoned_staged_writes(&volume, &state).await;
+
+    assert_eq!(
+        unremoved,
+        vec![temp],
+        "a temp the destination wouldn't take back has to reach the caller, not only the log"
+    );
+    let leftovers = CancelRollback::none()
+        .with_staged_leftovers(&unremoved)
+        .staged_leftovers
+        .expect("a leftover the sweep reported must reach the summary");
+    assert_eq!(leftovers.count, 1);
+    assert_eq!(
+        leftovers.example_name, "holiday.jpg.cmdr-tmp-4d1f9c",
+        "named by what it is called at the destination, which is what the user would look for"
+    );
+}
+
+/// A sweep that got everything reports nothing, so the ordinary cancel stays
+/// silent about scratch nobody has to think about. A temp that had already gone
+/// counts as removed rather than sending the user hunting for a file that isn't
+/// there.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_sweep_that_cleared_the_destination_reports_no_leftovers() {
+    let vol = Arc::new(InMemoryVolume::new("Dest"));
+    vol.create_directory(Path::new("/album")).await.unwrap();
+    let present = PathBuf::from("/album/holiday.jpg.cmdr-tmp-4d1f9c");
+    vol.create_file(&present, b"half a photo").await.unwrap();
+    let volume: Arc<dyn Volume> = vol.clone();
+    let state = make_state();
+    state.in_flight_temps.lock_ignore_poison().extend([
+        present.clone(),
+        PathBuf::from("/album/already-landed.jpg.cmdr-tmp-77aa10"),
+    ]);
+
+    let unremoved = clean_abandoned_staged_writes(&volume, &state).await;
+
+    assert!(unremoved.is_empty(), "nothing was left, so there is nothing to report");
+    assert!(!vol.exists(&present).await, "the staged partial itself still goes");
+    assert!(
+        CancelRollback::none()
+            .with_staged_leftovers(&unremoved)
+            .staged_leftovers
+            .is_none()
+    );
 }

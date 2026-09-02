@@ -275,8 +275,14 @@ pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[P
 /// entry before landing, so a temp holding committed data (a landing that failed
 /// after the bytes were complete) is never in this set and is never touched here.
 ///
-/// Best-effort: a temp whose task is wedged with an open handle may refuse to
-/// delete, which is why it wears a recognizable name.
+/// A temp whose task is wedged with an open handle refuses to delete — an
+/// abandoned SMB2 write keeps its handle, and the server answers the delete with
+/// a sharing violation until that session ends. **Those come back to the caller**
+/// rather than living only in a WARN: a user who chose Rollback asked for the
+/// destination to be cleared, and multi-gigabyte scratch files staying behind is
+/// news they have to be told (`types::events::StagedLeftovers`). Retrying here
+/// can't help — the handle belongs to a session that outlives this operation —
+/// so the honest report is the whole remedy this function owns.
 ///
 /// **Skipped entirely once tier 2 has fired** (`state.backend_abort`). Every
 /// delete here is a round trip through the destination, and the reason the abort
@@ -284,33 +290,45 @@ pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[P
 /// quit deadline for a second time, right after the streaming write stopped
 /// holding it. The entries stay in both ledgers instead, and
 /// `write_operations::in_flight_temps`'s startup sweep clears them at the next
-/// launch, with no age gate, off the launch thread.
-pub(super) async fn clean_abandoned_staged_writes(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>) {
+/// launch, with no age gate, off the launch thread. Nothing is reported in that
+/// case: the app is on its way out and there is no toast left to read it.
+pub(super) async fn clean_abandoned_staged_writes(
+    volume: &Arc<dyn Volume>,
+    state: &Arc<WriteOperationState>,
+) -> Vec<PathBuf> {
     if state.backend_abort.is_cancelled() {
         log::info!(
             target: "copy",
             "clean_abandoned_staged_writes: the app is shutting down, leaving the staged partial(s) to the startup sweep"
         );
-        return;
+        return Vec::new();
     }
     let temps: Vec<PathBuf> = std::mem::take(&mut *state.in_flight_temps.lock_ignore_poison());
     if temps.is_empty() {
-        return;
+        return Vec::new();
     }
     log::info!(
         target: "copy",
         "clean_abandoned_staged_writes: removing {} staged partial(s) left by abandoned tasks",
         temps.len()
     );
+    let mut unremoved = Vec::new();
     for temp in temps {
-        if let Err(e) = volume.delete(&temp).await {
+        // Via `delete_written_file`, so a temp that's already gone counts as
+        // removed — the end state this sweep wants already holds, and reporting
+        // it as a leftover would send the user hunting for a file that isn't
+        // there.
+        if let Err(e) = delete_written_file(volume, &temp).await {
             log::warn!(
                 target: "copy",
-                "clean_abandoned_staged_writes: couldn't remove {}: {e}",
-                temp.display()
+                "clean_abandoned_staged_writes: couldn't remove {}: {:?}",
+                e.path.display(),
+                e.error
             );
+            unremoved.push(temp);
         }
     }
+    unremoved
 }
 
 /// Reaps `.cmdr-tmp-*` leftovers a crash or force-quit left in the destination

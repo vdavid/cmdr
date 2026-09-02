@@ -899,7 +899,10 @@ pub(crate) async fn move_volumes_with_progress(
     // serial driver's own error path usually cleans up as it goes; this covers
     // whatever it couldn't reach. A temp whose write COMPLETED is already off the
     // list, so committed data is never in scope.
-    super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+    // Whatever the destination wouldn't let go of rides out on the cancel event
+    // below, so a cancel that left scratch behind never reports a clear
+    // destination.
+    let staged_leftovers = super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
 
     match outcome.intent {
         PostLoopIntent::Completed => {
@@ -929,7 +932,9 @@ pub(crate) async fn move_volumes_with_progress(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_done,
-                rollback: CancelRollback::none(),
+                // A cross-volume move has no reversal to report, but a staged
+                // partial the destination wouldn't take back is still news.
+                rollback: CancelRollback::none().with_staged_leftovers(&staged_leftovers),
             });
             Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),

@@ -333,6 +333,7 @@ fn a_cancelled_event_carries_what_the_reversal_managed() {
             outcome: CancelRollbackOutcome::RolledBack,
             reversed: 5,
             skips: Vec::new(),
+            staged_leftovers: None,
         },
     };
 

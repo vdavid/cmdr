@@ -288,6 +288,10 @@ impl ReversalTally {
             outcome,
             reversed: self.reversed,
             skips: self.skips.into_breakdowns(),
+            // The abandoned-write sweep runs OUTSIDE the ledger walk, so its
+            // leftovers are attached by the caller that ran it
+            // (`CancelRollback::with_staged_leftovers`).
+            staged_leftovers: None,
         }
     }
 }
