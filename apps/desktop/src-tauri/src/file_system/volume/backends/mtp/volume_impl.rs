@@ -368,7 +368,15 @@ impl Volume for MtpVolume {
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // MTP doesn't support atomic overwrite, so check for conflicts when not forced.
+            // The no-clobber refusal, and it can only be check-then-act: MTP has
+            // no operation that CLAIMS a name. `SetObjectPropValue` and
+            // `MoveObject` take no exclusive flag, PTP has no collision response
+            // code, and the protocol lets two siblings share a name, so a device
+            // asked to collide complies rather than refusing. ❌ Don't wrap a
+            // lock or a retry loop around the window: the device has other
+            // writers, so that would read as a guarantee it isn't. Reasoning and
+            // the cell that pins the refusal: `backends/DETAILS.md` § "MTP's
+            // no-clobber rename is check-then-act".
             if !force && self.exists(to).await {
                 return Err(VolumeError::AlreadyExists(to.display().to_string()));
             }

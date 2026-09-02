@@ -308,6 +308,8 @@ everywhere, which is the point.
 - `assert_rename_refuses_an_existing_destination` — `force` is the only thing between a move and the file it would
   replace, and each backend earns the refusal differently (`renamex_np(RENAME_EXCL)`, an SMB `stat` plus the server's
   `ReplaceIfExists == false`, an MTP `exists` probe, a map lookup). No shared mechanism to trust, only a shared promise.
+  MTP's is the one that can't be atomic, and that's a property of the protocol rather than of the code:
+  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "MTP's no-clobber rename is check-then-act".
 - `assert_create_file_refuses_to_clobber` — the New File command renders the refusal as "that name is taken", so a
   clobbering backend silently empties a file and reports success.
 - `assert_create_directory_all_reports_an_existing_dir_honestly` — `Created` promises the leaf was empty, and the
@@ -329,9 +331,8 @@ everywhere, which is the point.
 
 `InMemoryVolume`, `LocalPosixVolume`, `AdbVolume`, and the Docker-gated `SmbVolume`, `SftpVolume`, and `WebdavVolume`
 run every one (InMemory's writability cell sits in `capabilities_test.rs`, next to the predicate it speaks for).
-`MtpVolume` runs all but `create_file` (which it doesn't implement: an upload there is `write_from_stream`, one
-`SendObject` transaction) and `rename` (which it DOES implement, so that one is an open gap rather than a
-not-applicable), and its `delete` cell lives in `mtp_delete_test.rs` for the scaffolding that contract needs.
+`MtpVolume` runs all but `create_file`, which it doesn't implement (an upload there is `write_from_stream`, one
+`SendObject` transaction); its `delete` cell lives in `mtp_delete_test.rs` for the scaffolding that contract needs.
 `ArchiveVolume` is read-only: it runs the three that don't mutate and pins the rest of the ground with
 `every_mutation_is_unsupported`, and it is deliberately outside the conflict-scan one, since nothing copies INTO an
 archive through the volume. A backend that adds a mutation adds the matching call.

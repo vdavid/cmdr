@@ -250,6 +250,23 @@ listing failure as absence would let a disconnected device pass for an empty fol
 `get_metadata` settles it by listing the PARENT, so only a confirmed-absent destination reads as empty and every other
 failure stays the caller's to see. It costs one extra parent listing, on the error path only.
 
+## MTP's no-clobber rename is check-then-act
+
+`MtpVolume::rename` earns the `force == false` refusal by asking `exists(to)` and then moving. Every other backend
+claims the name with a primitive the other end refuses (`renamex_np(RENAME_EXCL)`, an SFTP `create_new` placeholder or
+plain `SSH_FXP_RENAME`, WebDAV's `Overwrite: F`, SMB's `ReplaceIfExists == false`), so MTP is the only one whose refusal
+has a window in it. The conformance cell is `mtp_conformance_test.rs`'s
+`rename_honors_the_shared_no_clobber_contract`.
+
+**Decision**: leave the window open and say so, rather than build machinery around it. **Why**: MTP offers nothing
+tighter to build on (verified against `mtp-rs` 0.32.0's source, 2026-09-02). A same-directory rename is
+`SetObjectPropValue(handle, ObjectFileName)` and a cross-directory move is `MoveObject(handle, storage, parent)`;
+neither operation takes an overwrite or exclusive flag, and PTP's response-code set has no collision code to read one
+out of (`StoreFull`, `AccessDenied`, `InvalidParameter`, and no `ObjectAlreadyExists`). The protocol also permits two
+siblings with the same name, so a device asked to collide doesn't refuse: it complies, and the user ends up with a
+duplicate. ❌ Don't reach for a lock or a retry loop here. Cmdr isn't the only writer — the phone's own apps and MTP's
+other clients mutate the same storage — so a lock this side would buy nothing and read like a guarantee.
+
 **Gotcha: a virtual-MTP test must UNREGISTER its device, not just disconnect.** `setup_virtual_mtp_device()` registers a
 device over a fresh `TempDir`; leaving it registered means the next test in the same binary connects to a stale storage
 handle over a directory that's gone, and fails on its first write with a bare `GeneralError` that says nothing about the
