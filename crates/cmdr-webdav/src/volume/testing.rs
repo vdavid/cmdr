@@ -167,6 +167,10 @@ pub fn pointed_at_your_own_server() -> bool {
 /// when someone points the suite at their Fastmail; it just has nothing to say.
 /// Run nextest with `--success-output immediate` to see these go by, which is
 /// also what puts the test's own name beside the line.
+#[allow(
+    clippy::print_stderr,
+    reason = "a skip notice belongs in the test runner's captured output, which is where nextest attributes it to the cell; this module is `testing`-feature-gated and never in a shipped build"
+)]
 pub fn not_for_your_own_server(needs: &str) -> bool {
     if !pointed_at_your_own_server() {
         return false;
