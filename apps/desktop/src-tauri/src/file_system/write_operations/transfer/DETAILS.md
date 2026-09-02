@@ -37,7 +37,8 @@ facts that none of those carry live here:
   `move_op/move_journal_tests.rs` (the journal + reversal full loop), over the rig in `move_op/test_support.rs`.
 - **`volume/` holds the whole cross-volume engine and is a facade** (`volume/mod.rs`): copy phases (`copy.rs` + the two
   drivers, serial in `copy_serial.rs` and concurrent across `copy_concurrent{,_source,_task}.rs`), move (`move.rs`, declared `mod r#move;` because `move` is a
-  keyword, plus `move_same.rs` and `rename_merge.rs` for the same-volume rename path), the merge/staging engine
+  keyword, and only the strategy dispatcher; the cross-volume copy-then-delete engine it routes to is `move_cross.rs`,
+  plus `move_same.rs` and `rename_merge.rs` for the same-volume rename path), the merge/staging engine
   (`strategy.rs`, `sequential_extract.rs`), and the supporting `conflict.rs`, `cleanup.rs`, `preflight.rs`,
   `transfer_error.rs`. Every one of those is PRIVATE to `volume`; `mod.rs` re-exports the nine items outside code calls,
   so a caller writes `transfer::volume::<item>`. Adding a caller means adding a re-export, not widening a submodule —

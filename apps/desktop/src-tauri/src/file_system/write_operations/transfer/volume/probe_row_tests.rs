@@ -27,7 +27,9 @@
 //!
 //! Shared fixtures live in `volume/move_test_support.rs` (`super::test_support`).
 
+use std::pin::Pin;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use super::super::super::transfer_probe::render_live_dump;
 use super::super::faulty_volume::forward_volume_methods;
