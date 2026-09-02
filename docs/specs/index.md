@@ -10,6 +10,17 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-02 `inspect-file-v2.md` - **Ask Cmdr's `inspect_file` re-derives the shipped viewer core and can't answer
+      "what's in this file?"** The first cut sniffs magic bytes, tests UTF-8 only (so UTF-16 and Latin-1 files read as
+      binary), pages by a char offset it can't honor past 8 MB, answers `{}` for archives and no text for PDFs, takes
+      one path per call, never runs `fit_to_result_budget`, and ships behind a consent copy that promises "no file
+      contents". Six milestones, one implementer session each: rebuild on `file_viewer` through two small seams
+      (`headless::open_text_backend`, `content_kind::looks_binary`) with multi-path and the bug fixes; `find` over
+      `Matcher` / `SearchMode`; archive listing and archive-inner routing through `VolumeManager::resolve` and
+      `archive_extract`; EXIF via `kamadak-exif` 0.6.1; PDF text by page via `pdf-extract` 0.12.0 behind a scoped
+      `crash_reporter::contain_panics` seam; then the consent rewrite, `CONSENT_COPY_VERSION` 3 → 4, 10 catalogs, the
+      system-prompt sentence that still says the agent reads no contents, and `docs/security.md`. Crate picks verified
+      and `cargo deny` green on 2026-09-02. ❗ Decisions David may want to override are listed at the top of the spec.
 - [ ] 2026-09-02 `android-adb-ui.md` - **The ADB backend works and nobody can reach it.** No connect flow, no device
       picker, no settings, and no words for the six ways a connect refuses. Eight decisions, taken rather than listed:
       one switcher row per phone with MTP as the default face and ADB a mode you switch it into; non-ready devices shown
