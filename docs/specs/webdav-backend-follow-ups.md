@@ -20,11 +20,19 @@ Apache stack has been up (`LOCK` answers 200, `HEAD large.bin` reports 4,194,304
 runs 178 cells green on ports 13480+ under the `cmdr-webdav.lock` + `cmdr-webdav-leases` namespace
 (`scripts/check/DETAILS.md` § "Two fixture stacks, two lease namespaces").
 
-What no Apache fixture can answer:
+What no Apache fixture can answer, and what a Nextcloud one now does:
 
-- [ ] **Confirm the two claims about real servers** that `crates/cmdr-webdav/DETAILS.md` makes from RFC reading rather
-      than observation: a 200 to a ranged GET (the slice-locally path), and sabre/dav's 411 on a chunked PUT (why
-      `Content-Length` is always sent). One Nextcloud and one Synology are enough; then evidence-anchor them.
+- [x] **The two claims about real servers are observed**, by `webdav-fixture-nextcloud` (port 13482, its own stack mode)
+      and `crates/cmdr-webdav/src/volume/nextcloud_test.rs`. The answers, with their anchors and what they change:
+      `crates/cmdr-webdav/DETAILS.md` § "What a real server answers". One of the two came back the other way round,
+      which is the part worth knowing before reading it.
+- [ ] **Nothing exercises `streams.rs`'s skip-locally branch.** It handles a 200 to a ranged GET, and no server has been
+      watched answering one, so it is data-path code no test covers. A fixture that strips `Range` (a fourth httpd
+      service, an hour) would close it without needing a server that does it in the wild.
+- [ ] **A Synology, and a Nextcloud behind nginx + php-fpm.** The 411 claim is plausible for a deployment where PHP
+      never sees a chunked body, and that is the shape the Docker image doesn't have. Neither is automatable here;
+      `CMDR_WEBDAV_TEST_URL` is what points the whole suite at one by hand (`apps/desktop/test/webdav-servers/README.md`
+      § "Against a server of your own").
 
 The public surface IS pinned (6 / 1 / 8, measured 2026-09-01), so widening it is the usual conversation.
 
@@ -81,17 +89,19 @@ numbered chunks, MOVE the collection's `.file` to the destination) for anything 
 route writes above a threshold through the chunking API instead of the staged PUT+MOVE. The staged write already ends in
 a MOVE, so the assembly step is the same last line.
 
-**Cost**: two days, including a Nextcloud container in the fixture stack (heavier than Apache; keep it out of the
-default lane).
+**Cost**: two days. The Nextcloud container it needs already exists: `webdav-fixture-nextcloud`, in its own stack mode
+outside the default lane (`apps/desktop/test/webdav-servers/README.md` § "The Nextcloud server").
 
 ## 5. Server-side quota via RFC 4331
 
-**Shipped, unobserved**: `get_space_info` reads `quota-available-bytes` / `quota-used-bytes` off the root collection and
-answers `NotSupported` when the server omits them, polled every 60 s. Apache `mod_dav` omits them, so the fixture covers
-only the absent case.
+**Observed on Nextcloud.** `get_space_info` reads `quota-available-bytes` / `quota-used-bytes` off the root collection
+and answers `NotSupported` when the server omits them or reports either as negative, polled every 60 s. The Nextcloud
+fixture carries both properties on two accounts, and the cells confirm the numbers are the ACCOUNT's quota rather than
+the disk's; `crates/cmdr-webdav/DETAILS.md` § "What a real server answers" has them. The catch worth knowing: a stock
+Nextcloud account has no quota and answers the `-3` sentinel, so the free-space indicator shows nothing for most real
+users.
 
-**What's left**: one look at a Nextcloud and a Synology to confirm the numbers the free-space indicator shows are the
-account's quota rather than the disk's, and a fixture that carries the two properties. An hour.
+**What's left**: the same look at a Synology, by hand through `CMDR_WEBDAV_TEST_URL`. An hour.
 
 ## 6. WebDAV locks: deliberately not
 

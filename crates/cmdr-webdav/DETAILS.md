@@ -76,6 +76,29 @@ request aborts, the temp is DELETEd), then MOVEs the temp onto `dest` with `Over
 best-effort. `copy_within` is one COPY with `Overwrite: T`, `Depth: infinity`, progress reported once with the source's
 PROPFIND size.
 
+## What a real server answers
+
+Three things this backend's shape rests on are the SERVER's behaviour, not ours, and Apache `mod_dav` can settle none of
+them: it honours `Range` natively and omits the quota properties entirely. `volume/nextcloud_test.rs` pins each one
+against `webdav-fixture-nextcloud`, and `desktop-rust-webdav-nextcloud` is the lane that runs it. Read the numbers here
+as one server's answer, evidence-anchored, rather than as the protocol's.
+
+- **A ranged GET comes back 206 with exactly the window asked for** (verified on `nextcloud:34.0.2-apache`, sabre/dav
+  behind Apache 2.4.68 + PHP 8.5.9, by the Docker cell, 2026-09-02). The 200 path in `streams.rs` stays anyway: RFC 9110
+  § 14.2 makes ranges optional, no other real server has been watched, and the fallback costs a whole file's bandwidth
+  only when it fires. ❗ Nothing exercises the skip-locally branch today, so it is code no test covers.
+- **A PUT with no `Content-Length` is accepted, 201 Created, body byte-exact** (same server and date; 256 KiB by the
+  Docker cell, 8 MiB by hand with `curl`). ❌ So "sabre/dav answers 411 to a chunked PUT" is NOT true of Nextcloud on Apache with
+  `mod_php`, which is what the official image runs. `writes.rs` sends the length regardless, and the reason is simply
+  that it always knows the size: a body of unknown length buys nothing here and gives every proxy and every server
+  configuration in the world a chance to disagree. The cell is what would tell us if a version answered 411.
+- **RFC 4331 quota reports the ACCOUNT's numbers.** A 5 GiB account answers `quota-available-bytes` + `quota-used-bytes`
+  adding up to exactly 5,368,709,120, nothing like the container's disk (same server and date). An account with no quota
+  — which is a stock Nextcloud user, and so the common case — answers `quota-available-bytes: -3`, the `SPACE_UNLIMITED`
+  sentinel, which `get_space_info` reads as `NotSupported` so the free-space indicator shows nothing rather than a
+  nonsense figure. ❗ The `occ` quota is applied at process start, so a quota changed on a live server stays invisible
+  over WebDAV until the server restarts; the fixture provisions in a post-installation hook for exactly that reason.
+
 ## The reconnect model
 
 `state.rs` keeps `Connected | Disconnected | NeedsCredentials` in an atomic; `emit_if_changed` reports transitions only,
@@ -107,13 +130,25 @@ collection is recursive, and a `PROPFIND` of a collection nobody has created yet
 empty list for. The app: anything whose other half is the transfer pipeline, the registry, or the listing cache, built
 on `volume::testing`.
 
+`volume/nextcloud_test.rs` is the exception in two ways, both deliberate. Its server is heavy enough to stay out of the
+shared fixture lane, so `desktop-rust-webdav-nextcloud` selects it by MODULE PATH (`test(volume::nextcloud_test::)`) and
+the shared lane subtracts the same atom — renaming the module takes the cells out of both, and `WebdavNextcloudTestAtom`
+is the one place to change with it. And two of its cells build a `reqwest` request directly rather than going through a
+`Volume` method, because what they ask is what the server does with a request this backend never sends.
+
+Every connection in `volume::testing` resolves through `fixture_target`, so `CMDR_WEBDAV_TEST_URL` (plus `_USERNAME`,
+`_PASSWORD`, and an optional `_ROOT`) points the whole suite at a server of your own with no code change. The cells that
+can only be honest against the seeded fixture say so and return; which ones, and what the write cells do to a real
+account, is in `apps/desktop/test/webdav-servers/README.md`.
+
 ## Not supported, and say so out loud
 
 - Digest authentication (`AuthMethodUnsupported`). OAuth and app-password flows are plain passwords to this backend.
 - Certificate pinning or a trust prompt: an untrusted certificate is a typed refusal and nothing more.
 - WebDAV locks (LOCK/UNLOCK); a 423 is reported as busy.
 - No watcher: `listing_watch_coverage` is `None`; `notify_mutation` is what keeps a pane honest.
-- Quota (`get_space_info`) only where the server reports both RFC 4331 numbers non-negative.
+- Quota (`get_space_info`) only where the server reports both RFC 4331 numbers non-negative, which rules out an
+  unlimited Nextcloud account (§ "What a real server answers") and Apache `mod_dav`, which sends neither.
 
 ## The public surface is capped
 

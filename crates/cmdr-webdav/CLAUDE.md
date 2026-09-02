@@ -30,10 +30,11 @@ The WebDAV backend: a `Volume` over one `reqwest` client with one account's Basi
   stops. The store is only ever refreshed by an attended sign-in, never seeded.
 - ❗ **Redirects are off.** A followed MOVE or COPY would resend `Destination` somewhere the user never named. A
   PROPFIND on a slash-less collection that answers 3xx is retried once with the slash.
-- ❗ **PUT sends `Content-Length` from `size`**, never chunked: sabre/dav (Nextcloud, ownCloud) answers 411 otherwise.
-  Every write lands on a `.cmdr-tmp-*` sibling and is MOVEd into place with `Overwrite: T`.
+- ❗ **PUT sends `Content-Length` from `size`**, never a body of unknown length. Every write lands on a `.cmdr-tmp-*`
+  sibling and is MOVEd into place with `Overwrite: T`.
 - ❗ **`Range` may be ignored.** A 200 to a ranged GET is handled by skipping locally; `read_range` never returns more
-  than `len` and drops the response as soon as the window is full.
+  than `len` and drops the response as soon as the window is full. What a real server answers to that and to a chunked
+  PUT, with dates: `DETAILS.md` § "What a real server answers".
 - ❗ **DELETE is recursive by protocol; the trait's is not.** `delete` refuses a non-empty collection with `ENOTEMPTY`
   after a `Depth: 1` PROPFIND.
 - ❌ Never `root_anchored`, never a stat per child in a scan, never `authoritative_listing` (coverage is `None`).

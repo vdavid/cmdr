@@ -22,7 +22,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::testing::*;
 use super::{WebdavVolume, connect_webdav_volume};
-use crate::{WebdavConnectError, WebdavConnectionParams};
+use crate::WebdavConnectError;
 
 const FIXTURE: &str = "webdav-servers/start.sh (webdav-fixture)";
 
@@ -36,7 +36,7 @@ async fn dial(
     secret: Option<&str>,
     cell: &str,
 ) -> Result<WebdavVolume, WebdavConnectError> {
-    let params = WebdavConnectionParams::new(fixture_base_url(service, fallback_port), FIXTURE_USER, FIXTURE_ROOT);
+    let params = fixture_target(service, fallback_port, FIXTURE_USER).params();
     let credentials = match secret {
         Some(secret) => InMemoryCredentials::new().with_entry(
             &params.credential_service(),
@@ -132,6 +132,9 @@ async fn write(volume: &WebdavVolume, path: &Path, bytes: Vec<u8>) -> Result<u64
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
 async fn the_root_listing_tells_files_from_directories_and_knows_sizes() {
+    if not_for_your_own_server("the seeded landmarks (`hello.txt`, `large.bin`, `many/`, `empty/`)") {
+        return;
+    }
     let volume = connect_fixture("APACHE", 13480).await;
 
     let entries = volume
@@ -181,6 +184,9 @@ async fn the_root_listing_tells_files_from_directories_and_knows_sizes() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
 async fn a_name_with_spaces_and_utf8_round_trips_through_every_verb() {
+    if not_for_your_own_server("the seeded `naïve name.txt` and `photos/2024 summer/`") {
+        return;
+    }
     // Names travel percent-encoded in the URL and come back encoded in the
     // multistatus `href`, so a decode missed anywhere shows up as `na%C3%AFve`
     // in a pane or a 404 on a file the listing just showed.
@@ -222,6 +228,9 @@ async fn a_name_with_spaces_and_utf8_round_trips_through_every_verb() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
 async fn a_whole_file_stream_is_byte_exact_and_knows_its_size_up_front() {
+    if not_for_your_own_server("the seeded `large.bin`") {
+        return;
+    }
     let volume = connect_fixture("APACHE", 13480).await;
 
     let mut stream = volume
@@ -245,6 +254,9 @@ async fn a_whole_file_stream_is_byte_exact_and_knows_its_size_up_front() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
 async fn a_bounded_range_comes_back_exactly_and_never_over_long() {
+    if not_for_your_own_server("the seeded `large.bin`") {
+        return;
+    }
     // What remote-archive browsing asks for: a `.zip`'s central directory is a
     // window at the tail, and one byte either side is a wrong answer. A server
     // that ignores `Range` answers 200 with the whole file, which is the
@@ -400,6 +412,9 @@ async fn copy_within_uses_the_servers_copy_verb() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
 async fn a_digest_only_server_is_a_typed_refusal() {
+    if not_for_your_own_server("`webdav-fixture-digest`, a server that offers no Basic scheme") {
+        return;
+    }
     // `webdav-fixture-digest` offers no Basic scheme. The right credentials sent
     // the wrong way have to come back as a typed answer, ❌ never as a loop, a
     // transport error, or a password in the clear on a retry.
@@ -441,6 +456,9 @@ async fn no_secret_in_the_store_is_needs_credentials() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
 async fn a_reconnect_against_a_live_server_succeeds_and_keeps_listing() {
+    if not_for_your_own_server("the seeded `hello.txt` and `docs/`") {
+        return;
+    }
     // HTTP has no session to lose, so there is nothing to simulate losing; what
     // a reconnect means here is "re-prove the credentials still work", and that
     // has to leave the volume usable.

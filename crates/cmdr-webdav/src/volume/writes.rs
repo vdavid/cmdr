@@ -1,10 +1,14 @@
 //! The upload: one streaming PUT to a staging sibling, then a MOVE onto the
 //! user's filename.
 //!
-//! ❗ `Content-Length` is set from `size` rather than sending chunked: Nextcloud
-//! and ownCloud (sabre/dav) answer 411 to a chunked PUT. A source that yields a
-//! different byte count fails the request, which is reported honestly and the
-//! temp removed; it is never MOVEd into place.
+//! ❗ `Content-Length` is set from `size` rather than sending a body of unknown
+//! length. The size is always known here, so the header costs nothing and takes
+//! away every disagreement a proxy or a server configuration could have about a
+//! chunked request. (A real Nextcloud accepts a chunked PUT rather than
+//! answering 411; `DETAILS.md` § "What a real server answers" carries the
+//! observation and its date.) A source that yields a different byte count fails
+//! the request, which is reported honestly and the temp removed; it is never
+//! MOVEd into place.
 
 use std::ops::ControlFlow;
 use std::path::Path;

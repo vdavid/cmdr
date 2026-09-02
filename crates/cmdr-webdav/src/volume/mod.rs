@@ -267,5 +267,11 @@ mod cancel_test;
 mod conformance_test;
 #[cfg(test)]
 mod integration_test;
+// ❗ Its own module because its own LANE selects it by this module path:
+// `desktop-rust-webdav-nextcloud` runs `test(volume::nextcloud_test::)` and the
+// shared fixture lane subtracts the same atom, so a rename here has to move
+// `WebdavNextcloudTestAtom` with it (`scripts/check/checks/desktop-rust-webdav-nextcloud.go`).
+#[cfg(test)]
+mod nextcloud_test;
 #[cfg(test)]
 mod test_support;
