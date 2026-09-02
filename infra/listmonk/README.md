@@ -216,11 +216,11 @@ the entrypoint detects a cluster at `/var/lib/postgresql/data`, prints "in 18+, 
 store database data in a format which is compatible with `pg_ctlcluster`", and exits 1. The failure is loud, and the 17
 volume is left untouched.
 
-**Why dump and restore rather than `pg_upgrade`.** `pg_upgrade` needs both major versions' binaries in one image, which neither
-official image ships, so it means a custom image or a `tianon/postgres-upgrade` run. For a database this small (9.7 MB,
-18 subscribers as of 2026-09-02) that's a lot of moving parts to save a few seconds. Dump and restore also rebuilds
-every index under the new server's collation, which sidesteps the index-corruption class of problem that `pg_upgrade`
-inherits when a collation changes underneath a btree.
+**Why dump and restore rather than `pg_upgrade`.** `pg_upgrade` needs both major versions' binaries in one image, which
+neither official image ships, so it means a custom image or a `tianon/postgres-upgrade` run. For a database this small
+(9.7 MB, 18 subscribers as of 2026-09-02) that's a lot of moving parts to save a few seconds. Dump and restore also
+rebuilds every index under the new server's collation, which sidesteps the index-corruption class of problem that
+`pg_upgrade` inherits when a collation changes underneath a btree.
 
 **Restoring onto a new volume, rather than reusing the old one, is what makes rollback free.** The 17 cluster is still
 sitting there, so going back is "edit two lines, `docker compose up -d`".
