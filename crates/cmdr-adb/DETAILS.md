@@ -101,7 +101,17 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   `ReadOnly` per path when the shell's `EROFS` says so, not volume-wide.
 - **`can_watch_listings` → false, `listing_watch_coverage` → `None`.** There is no watcher, so ❌ nothing here may claim
   an authoritative listing; the pane stays honest through `notify_mutation`, called once per changed directory by every
-  mutation, `write_from_stream` included.
+  mutation, `write_from_stream` included. The patch itself is `cmdr_fs::volume::patching`: this backend implements
+  `PatchSource` (`volume/mutation.rs`) and owes nothing else.
+- **The tree walk is `cmdr_fs::volume::scan_walk`**, reached by implementing `ScanSource` (`volume/scan.rs`): one `STAT`
+  for a stat, one `LIST` for a listing, and the walk's arithmetic, batch loop, and conflict matcher come with it. ❗ It
+  counts a symlinked directory as the one entry it is rather than walking it, which matters more here than on any other
+  backend: `/sdcard` is a symlink to `/storage/emulated/0` on every modern Android, so following links would count the
+  same bytes twice and a link aimed at an ancestor would never terminate.
+- **❌ `MakesDirectories` is deliberately NOT implemented**, though the other stat-and-listing backends use it. That
+  walk exists for protocols whose create-directory verb makes exactly one level (WebDAV's `MKCOL`), so it spends one
+  request per missing ancestor. The device shell has native `mkdir -p`: `create_directory_all` is one probe plus one
+  verb whatever the depth, and adopting the shared walk would trade that for a round trip per level.
 - **`supports_local_fs_access`, `paths_are_os_visible`, `operations_are_local` → false; `local_path` → `None`.** Nothing
   on the host can open a device path.
 - **`create_directory_errors_on_existing_dir` → false.** `mkdir -p` is the verb, and it is idempotent by design.

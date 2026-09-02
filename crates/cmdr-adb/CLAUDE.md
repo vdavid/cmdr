@@ -11,8 +11,8 @@ user-facing words.
   `sync.rs` (`STAT`/`LIST`/`RECV`/`SEND`), `shell.rs` (`mkdir`/`rm`/`mv`/`cp`/`df`), `errors.rs`, `params.rs`,
   `testing/` (the fake ADB server: `tree` the filesystem model, `server` the listener and wire, `shell` the device-shell
   verbs).
-- `volume/`: the `Volume` impl by job: `paths`, `query`, `streams`, `writes`, `scan`, `mutation`, `mapping`, `state`,
-  `volume_impl`, `testing`.
+- `volume/`: the `Volume` impl by job: `paths`, `query`, `streams`, `writes`, `mapping`, `state`, `volume_impl`,
+  `testing`, plus `scan` and `mutation`, which are just this backend's `ScanSource` / `PatchSource` impls.
 
 ## Must-knows
 
@@ -32,6 +32,9 @@ user-facing words.
 - **❗ Every write lands under a staging name (`<name>.cmdr-tmp-<pid>-<n>`) and is `mv -f`ed into place.** `SEND`
   truncates on open, so a direct write is a torn file the moment the cable pulls.
 - **❗ Every mutation calls `notify_mutation`.** There is no watcher; `can_watch_listings` is `false` and stays so.
+- **❗ The walk and the listing patch come from `cmdr_fs::volume::{scan_walk, patching}`**, ❌ never a copy here. But ❌
+  do NOT adopt `MakesDirectories`: the shell's native `mkdir -p` is one verb at any depth, where that walk costs a
+  request per level. `DETAILS.md` has the reasoning.
 - **❗ One sync socket per operation, ❌ no shared session behind a mutex**: a same-volume copy would deadlock and a
   paused transfer would park every listing. `max_concurrent_ops` (1, the app's `"adb"` settings row) is what bounds
   transfers.
