@@ -33,8 +33,8 @@ Discovery, the keychain, mounts, upgrades, and every human-facing word stay in t
   pipeline: `write_chunk` returns on ACCEPTANCE, so a slow link diverges by `concurrency x window`. Size any test
   reaching this path off `negotiated_max_write()`, or it silently takes the compound path.
 - **A read that knows its size sends `read_file_compound_sized`**: unsized, it charges credits for a whole `max_read`
-  (130 for a 4 MB file), which parked seven of ten slots on a 300 GB copy. `max_concurrent_ops` clamps by
-  `credit_capacity_for`, same reason.
+  (130 for a 4 MB file), which parked seven of ten slots on a 300 GB copy. `max_concurrent_ops` also clamps by
+  `credit_capacity_for`, but ❌ that clamp is INERT and tuning it won't help: it divides a constant, not the grant.
 - **The batch scan keeps its own oracle short-circuit** (the watcher earns the `authoritative_listing` shortcut), but
   the conflict matcher and the batch fold are `cmdr_fs::volume::scan_walk`'s, so every backend hands a conflict dialog
   the same shape.
