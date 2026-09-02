@@ -8,11 +8,11 @@ use std::sync::atomic::AtomicBool;
 
 use serde_json::json;
 
-use super::archive::{ArchiveContent, ArchiveEntry, MAX_ARCHIVE_ENTRIES, TempCleanup};
+use super::archive::{ArchiveContent, ArchiveEntry, MAX_ARCHIVE_ENTRIES, TempCleanup, status_for_volume};
 use super::tests::assert_text_only;
 use super::*;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume};
+use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, VolumeError};
 use crate::file_viewer::archive_extract::{EXTRACT_CAP_BYTES, extract_if_archive_inner_with};
 use crate::test_support::TestDir;
 use cmdr_archive::test_fixtures::{
@@ -352,6 +352,27 @@ fn a_header_encrypted_7z_is_unreadable_encrypted_and_a_content_encrypted_one_lis
     assert!(archive.has_encrypted_entries);
     assert_eq!(names(&archive.entries), ["a.txt", "b.txt"]);
     assert!(archive.entries.iter().all(|e| e.encrypted));
+}
+
+// ── Parse errors, typed ───────────────────────────────────────────────────────
+
+#[test]
+fn an_unsupported_archive_is_unsupported_and_a_broken_one_is_corrupt() {
+    // The archive layer collapses "can't or won't serve this" (an unsupported codec, a
+    // non-archive, a tree past its DoS cap) to `NotSupported` and a damaged parse to
+    // `IoError`. Only the second is a damaged file; the model relays the word.
+    let reason = |err| match status_for_volume("/a.7z".into(), err) {
+        FileRow::Unreadable { reason, .. } => reason,
+        other => panic!("expected an unreadable row, got {other:?}"),
+    };
+    assert_eq!(reason(VolumeError::NotSupported), UnreadableReason::Unsupported);
+    assert_eq!(
+        reason(VolumeError::IoError {
+            message: "bad central directory".into(),
+            raw_os_error: None,
+        }),
+        UnreadableReason::Corrupt
+    );
 }
 
 // ── Not local ─────────────────────────────────────────────────────────────────

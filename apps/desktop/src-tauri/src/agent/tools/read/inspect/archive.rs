@@ -221,16 +221,18 @@ impl Drop for TempCleanup {
     }
 }
 
-/// The typed status for an archive that couldn't be read. `IoError` and `NotSupported`
-/// are what the archive layer collapses a broken parse to (a structurally damaged file,
-/// an unsupported codec, a tree past its DoS cap): `corrupt` is the honest name for all
-/// of them from where the model stands.
-fn status_for_volume(path: String, err: VolumeError) -> FileRow {
+/// The typed status for an archive that couldn't be read. The archive layer collapses a
+/// failed parse to two kinds: `IoError` for a structurally damaged file (`corrupt`), and
+/// `NotSupported` for what it can't or won't serve (an unsupported codec, a non-archive,
+/// a tree past its DoS cap: `unsupported`). An unsupported codec is not a damaged file,
+/// and the model relays the word it gets.
+pub(super) fn status_for_volume(path: String, err: VolumeError) -> FileRow {
     let reason = match err {
         VolumeError::NotFound(_) => return FileRow::Missing { path },
         VolumeError::PermissionDenied(_) => UnreadableReason::Permission,
         VolumeError::NeedsPassword { .. } => UnreadableReason::Encrypted,
-        VolumeError::IoError { .. } | VolumeError::NotSupported => UnreadableReason::Corrupt,
+        VolumeError::IoError { .. } => UnreadableReason::Corrupt,
+        VolumeError::NotSupported => UnreadableReason::Unsupported,
         _ => UnreadableReason::Io,
     };
     FileRow::Unreadable { path, reason }

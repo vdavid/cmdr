@@ -157,7 +157,7 @@ FileRow (tag = "status"):
   Ok { path, name, extension?, sizeBytes, sizeHuman, modified?, modifiedHuman?, mime?, content }
   Folder { path }                       // use list_dir
   Missing { path }
-  Unreadable { path, reason }           // reason: permission | encrypted | corrupt | tooLargeToExtract
+  Unreadable { path, reason }           // reason: permission | io | encrypted | corrupt | unsupported | tooLargeToExtract
   Unreachable { path }                  // PATH_TIMEOUT passed: a disconnected drive or a hung mount
   UnsupportedVolume { path }            // mtp:// or direct smb://: no local byte path; the viewer has the same limit
 ```

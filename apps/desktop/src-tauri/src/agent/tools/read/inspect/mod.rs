@@ -121,9 +121,12 @@ pub enum UnreadableReason {
     /// A password-protected archive, or an encrypted entry inside one. The tool has no
     /// password path (the viewer prompts the user; the agent can't).
     Encrypted,
-    /// An archive that didn't parse: structurally damaged, an unsupported codec, or a
-    /// tree past the archive layer's DoS cap.
+    /// An archive whose parse found a damaged structure (the archive layer's `IoError`).
     Corrupt,
+    /// An archive the archive layer can't or won't serve: an unsupported codec, a file
+    /// that isn't the archive its name claims, or a tree past its DoS cap (its
+    /// `NotSupported`). Not a damaged file, so never reported as one.
+    Unsupported,
     /// A file inside an archive over the viewer's 256 MiB extraction cap
     /// (`archive_extract::EXTRACT_CAP_BYTES`), refused before any byte was extracted.
     TooLargeToExtract,

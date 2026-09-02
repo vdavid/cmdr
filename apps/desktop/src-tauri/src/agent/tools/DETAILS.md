@@ -61,8 +61,9 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   `modified` + `modifiedHuman`, `encrypted`, plus `total` / `returned` / `truncated` and `hasEncryptedEntries`), and a
   FILE inside an archive is read as its own kind through the viewer's bounded temp; empty and binary (which today
   includes PDFs) carry metadata only. Per-path statuses: `ok` / `folder` / `missing` /
-  `unreadable { permission | io | encrypted | corrupt | tooLargeToExtract }` / `unreachable` / `unsupportedVolume`. The call reports `total` / `returned` / `truncated` and names every path with
-  no row in `unanswered`. The sole disk reader among the handlers; how it reads and how it times out: § Reading a
+  `unreadable { permission | io | encrypted | corrupt | unsupported | tooLargeToExtract }` / `unreachable` /
+  `unsupportedVolume`. The call reports `total` / `returned` / `truncated` and names every path with no row in
+  `unanswered`. The sole disk reader among the handlers; how it reads and how it times out: § Reading a
   file the way the viewer does.
 - **`list_volumes`** (`read/volumes.rs`) — every volume with `indexStatus` (`fresh`/`scanning`/`stale`/`off`) and, for
   SMB, `smbConnectionState` (`direct`/`os_mount`/`disconnected`), straight from `snapshot_volumes` so tokens can't drift.
@@ -197,9 +198,11 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   `read_content` runs the normal per-kind pipeline on `temp_file` (so `find` and the window work inside a zip), and
   `TempCleanup` removes `cleanup_dir` in `Drop`, so an early return or a panic can't leak it. A zip inside a zip is
   `binary`: the boundary is the leftmost archive component, as in the pane. The parse errors map typed:
-  `NeedsPassword` (a header-encrypted 7z) → `encrypted`, `IoError` / `NotSupported` (the archive layer's damaged /
-  unsupported / over-cap collapse) → `corrupt`. The extract step is injected (`ExtractFn`) so the tests shrink the cap
-  and watch the temp dir.
+  `NeedsPassword` (a header-encrypted 7z) → `encrypted`, `IoError` (a damaged structure) → `corrupt`, `NotSupported`
+  (the archive layer's unsupported-codec / non-archive / over-cap collapse) → `unsupported`: an unsupported codec is
+  not a damaged file. (An unsupported codec met at EXTRACT time still reads `corrupt`: `archive_extract` folds it into
+  `ViewerError::Archive { message }`, which carries no kind.) The extract step is injected (`ExtractFn`) so the tests
+  shrink the cap and watch the temp dir.
 - **Statuses from I/O**: `NotFound` / `NotADirectory` → `missing`; `PermissionDenied` → `unreadable { permission }`
   (EACCES and a Full Disk Access refusal are one kind of `std::io::Error`, so the enum doesn't pretend to tell them
   apart); anything else, including a read that panicked → `unreadable { io }`.
