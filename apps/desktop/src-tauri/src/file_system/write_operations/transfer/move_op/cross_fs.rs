@@ -438,10 +438,16 @@ pub(super) fn move_with_staging(
     // Phase 4: Delete source files (only after the destination is durable on
     // disk), skipping any source (or source child) whose copy was discarded on
     // Skip.
-    delete_sources_after_move(events, operation_id, state, sources, files_done, &skipped_source_paths)?;
+    let delete_result =
+        delete_sources_after_move(events, operation_id, state, sources, files_done, &skipped_source_paths);
 
-    // Phase 5: Remove empty staging directory
+    // Phase 5: Remove the staging directory, on EVERY path out of Phase 4. Phase
+    // 3 renamed the staged tree away, so this is an empty shell whichever way
+    // Phase 4 ended; leaving it behind on a cancel puts a stray
+    // `.cmdr-staging-<op>` folder in the user's destination for good. `remove_dir`
+    // refuses a non-empty directory, so a surprise leaves the contents alone.
     let _ = fs::remove_dir(&staging_dir);
+    delete_result?;
 
     // Emit completion
     events.emit_complete(WriteCompleteEvent {

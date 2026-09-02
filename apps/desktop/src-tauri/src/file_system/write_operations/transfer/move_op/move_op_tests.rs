@@ -974,3 +974,85 @@ fn a_paused_folder_merge_stops_renaming_its_children() {
         );
     }
 }
+
+/// A cancelled cross-FS move leaves no `.cmdr-staging-<op>` folder behind.
+///
+/// Phase 3 renames the staged tree into place, so by Phase 5 the staging folder
+/// is an empty shell — but Phase 5 sat after Phase 4's source delete, which
+/// returns `Err` on cancel, so a cancel in that window left the shell sitting in
+/// the user's destination folder forever. Removing it on the cancel path is safe
+/// precisely because there is nothing left inside it.
+#[test]
+fn a_cancelled_cross_fs_move_takes_its_staging_folder_with_it() {
+    use crate::file_system::write_operations::state::OperationIntent;
+    use crate::file_system::write_operations::types::{
+        ConflictInfo, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
+        WriteErrorEvent, WriteSourceItemDoneEvent,
+    };
+    use std::sync::atomic::Ordering;
+
+    /// Cancels the instant the flush announces itself — the last thing that
+    /// happens before Phase 4 starts deleting the originals.
+    struct CancelAtTheFlush {
+        state: Arc<WriteOperationState>,
+    }
+
+    impl OperationEventSink for CancelAtTheFlush {
+        fn emit_progress(&self, event: WriteProgressEvent) {
+            if event.phase == WriteOperationPhase::Flushing {
+                self.state.intent.store(OperationIntent::Stopped as u8, Ordering::SeqCst);
+            }
+        }
+        fn emit_settled(&self, _event: crate::file_system::write_operations::types::WriteSettledEvent) {}
+        fn emit_complete(&self, _event: WriteCompleteEvent) {}
+        fn emit_cancelled(&self, _event: WriteCancelledEvent) {}
+        fn emit_error(&self, _event: WriteErrorEvent) {}
+        fn emit_conflict(&self, _event: WriteConflictEvent) {}
+        fn emit_conflict_resolved(
+            &self,
+            _event: crate::file_system::write_operations::types::WriteConflictResolvedEvent,
+        ) {
+        }
+        fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {}
+        fn emit_scan_progress(&self, _event: ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _conflict: ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _result: DryRunResult) {}
+    }
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    let src_file = src_dir.join("file.bin");
+    fs::write(&src_file, vec![3u8; 4096]).unwrap();
+
+    let state = make_state(200);
+    let events = Arc::new(CancelAtTheFlush {
+        state: Arc::clone(&state),
+    });
+    let op_id = "op-cross-fs-cancel-staging";
+
+    let result = move_with_staging(
+        &*events,
+        op_id,
+        &state,
+        std::slice::from_ref(&src_file),
+        &dst_dir,
+        &WriteOperationConfig::default(),
+        0,
+    );
+
+    assert!(
+        matches!(result, Err(WriteOperationError::Cancelled { .. })),
+        "the cancel ends the move as cancelled, got {result:?}"
+    );
+    assert!(
+        !dst_dir.join(format!(".cmdr-staging-{op_id}")).exists(),
+        "a cancelled move must not leave its staging folder in the user's destination"
+    );
+    // What the cancel kept: the file landed in Phase 3, and the source it was
+    // about to delete is still there. Both are the existing contract.
+    assert!(dst_dir.join("file.bin").exists(), "the staged copy stays where it landed");
+    assert!(src_file.exists(), "and the cancel spared the original");
+}
