@@ -10,6 +10,13 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
+      user asked for "Open terminal here"; macOS has no default-terminal setting, so Cmdr keeps its own known-terminals
+      table (bundle id + launch recipe, queried live via `NSWorkspace`, no scan, no Refresh button), defaults to
+      Terminal, asks once on first use when another terminal is installed, and exposes one dropdown row in Navigation &
+      file ops plus a "Choose an app…" escape hatch. Deliberately no window-vs-tab control in v1: no universal mechanism
+      exists, so each terminal's own preference decides. Four milestones, about one agent-day.
+
 - [ ] 2026-09-02 `android-adb-ui.md` - **The ADB backend works and nobody can reach it.** No connect flow, no device
       picker, no settings, and no words for the six ways a connect refuses. Eight decisions, taken rather than listed:
       one switcher row per phone with MTP as the default face and ADB a mode you switch it into; non-ready devices shown
