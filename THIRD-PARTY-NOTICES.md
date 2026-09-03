@@ -92,7 +92,7 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **cff-parser** 0.2.0, MIT OR Apache-2.0, <https://github.com/jrmuizel/cff-parser>
 - **cfg-if** 1.0.4, MIT OR Apache-2.0, <https://github.com/rust-lang/cfg-if>
 - **cfg_aliases** 0.2.1, MIT, <https://github.com/katharostech/cfg_aliases>
-- **chacha20** 0.10.1, MIT OR Apache-2.0, <https://github.com/RustCrypto/stream-ciphers>
+- **chacha20** 0.10.2, MIT OR Apache-2.0, <https://github.com/RustCrypto/stream-ciphers>
 - **chardetng** 0.1.17, Apache-2.0 OR MIT, <https://github.com/hsivonen/chardetng>
 - **chrono** 0.4.45, MIT OR Apache-2.0, <https://github.com/chronotope/chrono>
 - **cipher** 0.4.4, MIT OR Apache-2.0, <https://github.com/RustCrypto/traits>
@@ -3763,7 +3763,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: aes-gcm 0.11.0, chacha20 0.10.1, ghash 0.6.0, polyval 0.7.1
+Covers: aes-gcm 0.11.0, chacha20 0.10.2, ghash 0.6.0, polyval 0.7.1
 
 Text from: `LICENSE-MIT`
 
