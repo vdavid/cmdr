@@ -358,6 +358,18 @@ user who chose Rollback was told the destination was clear while 519 MB across f
 their NAS. ❌ Don't fold them into `CancelRollback::skips` — a skip is a LEDGER item a reversal walked to and chose to
 leave, and `reversed + skipped` is what the reversal's bar drains over. See § "Naming what a cancel left behind".
 
+**Known gap, deliberately open: the abandoned SMB handle.** The reason that sweep is refused is the handle itself. A copy
+task abandoned mid-write has its future dropped, so the SMB2 `CLOSE` for the destination file is never sent, and the
+server holds the file open for the rest of the session. So the leftover isn't a race the app lost, it's a handle the app
+still owns and can't reach. ❌ **Retry with backoff cannot fix it** — that's what the t+191 s measurement above settles,
+and a delete from a FRESH session succeeded instantly on the same file. Two shapes would: send the `CLOSE` on the abandon
+path, or re-establish the session before sweeping. The second is the safer one, because it needs no cooperation from a
+task that may be wedged — which is exactly why the first is unattractive: the abandon path is the one hardened after the
+2026-07-31 incident, and a hang on cancel is worse for a person than a leftover file. So neither is wired, and the
+consequence is survivable rather than permanent: the startup orphan sweep is volume-aware (§ "Which path space a
+recorded partial lives in"), so a refused temp is removed on a later launch, and the leftover toast is what tells the
+user in the meantime.
+
 Registration goes through `write_operations::in_flight_temps`, which keeps the operation's in-memory list AND a
 process-wide log in the app data dir. Local copies register there too (`overwrite::stage_and_land_file`), so
 `in_flight_temps` is no longer cross-volume-only — though only the cross-volume drivers run
