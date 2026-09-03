@@ -2062,8 +2062,14 @@ quanh nó. Dùng lại các thuật ngữ đã chốt (tệp nén → `tệp né
 
 ## Hai chú giải của nút Rollback (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
 
-Bề mặt mới: chú giải của nút giờ nói rõ lần hoàn tác NÀY làm gì với các tệp, và nút bị tắt ngay khi một lần di chuyển giữa hai hệ thống tệp bước sang chặng cuối (xóa các bản gốc, khi mọi thứ đã ở đích).
+Bề mặt mới: chú giải của nút giờ nói rõ lần hoàn tác NÀY làm gì với các tệp, và nút bị tắt ngay khi một lần di chuyển
+giữa hai hệ thống tệp bước sang chặng cuối (xóa các bản gốc, khi mọi thứ đã ở đích).
 
-- **`rollbackTooltipStopAndMoveBack` → `Dừng lại và đưa trở lại mọi tệp đã di chuyển đến giờ`** · khung câu lấy từ khóa cùng cặp `rollbackTooltip` (`Dừng lại và …`), còn `đưa trở lại` là cách nói đã chốt cho việc về chỗ cũ (`cancelRollback.doneMovingBack`: „Đã đưa trở lại…”) · `high`. ❌ Không dùng `xóa`: hoàn tác một lần di chuyển không xóa gì.
-- **`rollbackAlreadyLandedTooltip`** · câu đầu lặp lại hình ảnh của `cancelRollback.moveAlreadyLanded` („đều đã ở đích”), `hoàn tác` là từ đã chốt cho rollback (`rollbackUnavailableTooltip`), và `Hủy` là nhãn của nút bên cạnh (`fileOperations.button.cancel`) nên giữ nguyên · `high`.
+- **`rollbackTooltipStopAndMoveBack` → `Dừng lại và đưa trở lại mọi tệp đã di chuyển đến giờ`** · khung câu lấy từ khóa
+  cùng cặp `rollbackTooltip` (`Dừng lại và …`), còn `đưa trở lại` là cách nói đã chốt cho việc về chỗ cũ
+  (`cancelRollback.doneMovingBack`: „Đã đưa trở lại…”) · `high`. ❌ Không dùng `xóa`: hoàn tác một lần di chuyển không
+  xóa gì.
+- **`rollbackAlreadyLandedTooltip`** · câu đầu lặp lại hình ảnh của `cancelRollback.moveAlreadyLanded` („đều đã ở
+  đích”), `hoàn tác` là từ đã chốt cho rollback (`rollbackUnavailableTooltip`), và `Hủy` là nhãn của nút bên cạnh
+  (`fileOperations.button.cancel`) nên giữ nguyên · `high`.
 - Không có `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.

@@ -2284,8 +2284,15 @@ REVIEW FLAGS (inspect-file pass):
 
 ## De twee tooltips van de Rollback-knop (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
 
-Nieuwe surface: de tooltip zegt nu wat DEZE terugdraaiing met de bestanden doet, en de knop gaat uit zodra een verplaatsing tussen twee bestandssystemen bij de laatste stap is (de originelen verwijderen, terwijl alles al op de bestemming staat).
+Nieuwe surface: de tooltip zegt nu wat DEZE terugdraaiing met de bestanden doet, en de knop gaat uit zodra een
+verplaatsing tussen twee bestandssystemen bij de laatste stap is (de originelen verwijderen, terwijl alles al op de
+bestemming staat).
 
-- **`rollbackTooltipStopAndMoveBack` → `Stop en zet elk bestand terug dat tot nu toe is verplaatst`** · het zusje `rollbackTooltip` geeft het kader (`Stop en …`), en `terugzetten` is het vaste werkwoord voor terug naar de oude plek (`cancelRollback.doneMovingBack`: „Alles is teruggezet”) · `high`. ❌ Niet `verwijderen`: het terugdraaien van een verplaatsing verwijdert niets.
-- **`rollbackAlreadyLandedTooltip`** · de eerste zin volgt `cancelRollback.moveAlreadyLanded` („staat al op de bestemming”), `terugdraaien` is de vaste term voor rollback (`rollbackUnavailableTooltip`), en `Annuleer` is het label van de knop ernaast (`fileOperations.button.cancel`), dus het staat er onveranderd in · `high`.
+- **`rollbackTooltipStopAndMoveBack` → `Stop en zet elk bestand terug dat tot nu toe is verplaatst`** · het zusje
+  `rollbackTooltip` geeft het kader (`Stop en …`), en `terugzetten` is het vaste werkwoord voor terug naar de oude plek
+  (`cancelRollback.doneMovingBack`: „Alles is teruggezet”) · `high`. ❌ Niet `verwijderen`: het terugdraaien van een
+  verplaatsing verwijdert niets.
+- **`rollbackAlreadyLandedTooltip`** · de eerste zin volgt `cancelRollback.moveAlreadyLanded` („staat al op de
+  bestemming”), `terugdraaien` is de vaste term voor rollback (`rollbackUnavailableTooltip`), en `Annuleer` is het label
+  van de knop ernaast (`fileOperations.button.cancel`), dus het staat er onveranderd in · `high`.
 - Geen `sameAsSourceJustification`; geen apostrof in de waarden.

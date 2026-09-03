@@ -2319,8 +2319,16 @@ jóváhagyásra várnak) szó szerint átkerült, csak az első mondatok újak.
 
 ## A Rollback gomb két buboréksúgója (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
 
-Új felület: a gomb súgója most azt mondja meg, hogy EZ a visszagörgetés mit tesz a fájlokkal, a gomb pedig kikapcsol, amint egy fájlrendszerek közti áthelyezés az utolsó lépéséhez ér (az eredetik eltávolítása, miközben minden már a célhelyen van).
+Új felület: a gomb súgója most azt mondja meg, hogy EZ a visszagörgetés mit tesz a fájlokkal, a gomb pedig kikapcsol,
+amint egy fájlrendszerek közti áthelyezés az utolsó lépéséhez ér (az eredetik eltávolítása, miközben minden már a
+célhelyen van).
 
-- **`rollbackTooltipStopAndMoveBack` → `Leállítás, és minden eddig áthelyezett fájl visszahelyezése`** · a testvér `rollbackTooltip` adja a keretet (`Leállítás, és …`), a `visszahelyez` pedig a katalógus bevett igéje a régi helyre való visszatérésre (`cancelRollback.doneMovingBack`: „mindent visszahelyezett”) · `high`. ❌ Nem `törlés`: egy áthelyezés visszagörgetése semmit sem töröl.
-- **`rollbackAlreadyLandedTooltip`** · az első tagmondat a `cancelRollback.moveAlreadyLanded` képét veszi át („már a célhelyen van”), a `visszagörgetés` a rollback bevett szava (`rollbackUnavailableTooltip`), a `Mégsem` pedig a szomszédos gomb saját felirata (`fileOperations.button.cancel`), így ragozás nélkül áll a mondatban · `high`.
-- A `Cmdrt` tárgyeset a márkanév kiejtés szerinti ragozása (style.md); nincs `sameAsSourceJustification`, és egyik érték sem tartalmaz aposztrófot.
+- **`rollbackTooltipStopAndMoveBack` → `Leállítás, és minden eddig áthelyezett fájl visszahelyezése`** · a testvér
+  `rollbackTooltip` adja a keretet (`Leállítás, és …`), a `visszahelyez` pedig a katalógus bevett igéje a régi helyre
+  való visszatérésre (`cancelRollback.doneMovingBack`: „mindent visszahelyezett”) · `high`. ❌ Nem `törlés`: egy
+  áthelyezés visszagörgetése semmit sem töröl.
+- **`rollbackAlreadyLandedTooltip`** · az első tagmondat a `cancelRollback.moveAlreadyLanded` képét veszi át („már a
+  célhelyen van”), a `visszagörgetés` a rollback bevett szava (`rollbackUnavailableTooltip`), a `Mégsem` pedig a
+  szomszédos gomb saját felirata (`fileOperations.button.cancel`), így ragozás nélkül áll a mondatban · `high`.
+- A `Cmdrt` tárgyeset a márkanév kiejtés szerinti ragozása (style.md); nincs `sameAsSourceJustification`, és egyik érték
+  sem tartalmaz aposztrófot.

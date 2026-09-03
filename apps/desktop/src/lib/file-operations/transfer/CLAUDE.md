@@ -30,15 +30,15 @@ dialog, error rendering. One set serves all via `operationType`; delete/trash re
   no second instantaneous rate here.
 - **A stall drops the ETA and says why** (`transfer-stall.ts`): the BACKEND classifies, this side owns the threshold. ❌
   Never infer a stall from event timing: a wedge emits no events at all. DETAILS § "The stalled-transfer notice".
-- **A cancel's reversal drains its bar to zero, so the TOAST says what actually stayed**
-  (`cancel-rollback-toast.ts`, off `event.rollback`). ❌ Never read the verb off the view's config: an ADOPTED dialog's
-  is inert, and a move's reversal worded as a delete is a data-safety lie. ❌ Never colour a deliberate skip as a
-  warning. DETAILS § "What a cancelled transfer's reversal says afterwards".
-- **"Couldn't find out" is its own state in BOTH pre-confirm checks, ❌ never silence.** Nothing rendered is what a CLEAN
-  destination looks like, and this feeds an overwrite decision. DETAILS § "When the dialog can't find out".
+- **A cancel's reversal drains its bar to zero, so the TOAST says what actually stayed** (`cancel-rollback-toast.ts`,
+  off `event.rollback`). ❌ Never read the verb off the view's config: an ADOPTED dialog's is inert, and a move's
+  reversal worded as a delete is a data-safety lie. ❌ Never colour a deliberate skip as a warning. DETAILS § "What a
+  cancelled transfer's reversal says afterwards".
+- **"Couldn't find out" is its own state in BOTH pre-confirm checks, ❌ never silence.** Nothing rendered is what a
+  CLEAN destination looks like, and this feeds an overwrite decision. DETAILS § "When the dialog can't find out".
 - **Rollback / Cancel disable during the settle window; an unavailable Rollback is `aria-disabled` + a why, ❌ never
-  `disabled`**, which hides it from a keyboard. A cancel close waits for both `write-cancelled` AND
-  `write-settled` — ❌ but never as the ONLY exit: `progress.dismiss()` leaves at once.
+  `disabled`**, which hides it from a keyboard. A cancel close waits for both `write-cancelled` AND `write-settled` — ❌
+  but never as the ONLY exit: `progress.dismiss()` leaves at once.
 - **The progress dialog does NOT wait for the scan; the BACKEND does.** It dispatches on mount, so a still-counting
   transfer has an `operationId`, a queue row, and Background from frame one. ❌ Never cancel the preview on teardown;
   confirm ALWAYS awaits `scan.scanStarted`. DETAILS § Scan.
