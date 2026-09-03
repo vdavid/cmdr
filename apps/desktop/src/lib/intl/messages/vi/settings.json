@@ -1321,6 +1321,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Đã hiển thị thông báo về macOS cũ",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Nội bộ: theo dõi việc thông báo một lần dành cho máy Mac thấp hơn phiên bản macOS được hỗ trợ đã hiện hay chưa. Ẩn khỏi giao diện.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Đã hiển thị nhắc nâng cấp khi nhập môn",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -2255,13 +2263,5 @@
   "settings.window.loading": "Đang tải cài đặt…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
-  },
-  "settings.advanced.oldMacosNoticeShown.label": "Đã hiển thị thông báo về macOS cũ",
-  "@settings.advanced.oldMacosNoticeShown.label": {
-    "sourceHash": "21b14e0"
-  },
-  "settings.advanced.oldMacosNoticeShown.description": "Nội bộ: theo dõi việc thông báo một lần dành cho máy Mac thấp hơn phiên bản macOS được hỗ trợ đã hiện hay chưa. Ẩn khỏi giao diện.",
-  "@settings.advanced.oldMacosNoticeShown.description": {
-    "sourceHash": "8ae26f2"
   }
 }

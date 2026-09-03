@@ -1325,6 +1325,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Aviso de macOS antigo exibido",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Interno: acompanha se o aviso único para um Mac abaixo da versão compatível do macOS já apareceu. Oculto da interface.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Aviso de atualização da introdução exibido",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -2259,13 +2267,5 @@
   "settings.window.loading": "Carregando ajustes…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
-  },
-  "settings.advanced.oldMacosNoticeShown.label": "Aviso de macOS antigo exibido",
-  "@settings.advanced.oldMacosNoticeShown.label": {
-    "sourceHash": "21b14e0"
-  },
-  "settings.advanced.oldMacosNoticeShown.description": "Interno: acompanha se o aviso único para um Mac abaixo da versão compatível do macOS já apareceu. Oculto da interface.",
-  "@settings.advanced.oldMacosNoticeShown.description": {
-    "sourceHash": "8ae26f2"
   }
 }

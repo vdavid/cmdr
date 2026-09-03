@@ -1324,6 +1324,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Régi macOS-értesítés megjelent",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Belső: követi, hogy a támogatott macOS-verziónál régebbi Macen megjelent-e már az egyszeri értesítés. Rejtve a felülettől.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Beavatási frissítési ösztönzés megjelent",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -2258,13 +2266,5 @@
   "settings.window.loading": "Beállítások betöltése…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
-  },
-  "settings.advanced.oldMacosNoticeShown.label": "Régi macOS-értesítés megjelent",
-  "@settings.advanced.oldMacosNoticeShown.label": {
-    "sourceHash": "21b14e0"
-  },
-  "settings.advanced.oldMacosNoticeShown.description": "Belső: követi, hogy a támogatott macOS-verziónál régebbi Macen megjelent-e már az egyszeri értesítés. Rejtve a felülettől.",
-  "@settings.advanced.oldMacosNoticeShown.description": {
-    "sourceHash": "8ae26f2"
   }
 }

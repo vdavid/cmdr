@@ -51,10 +51,6 @@
   "@main.oldWebkit.body": {
     "sourceHash": "bcadac5"
   },
-  "main.oldWebkit.quit": "Quitter",
-  "@main.oldWebkit.quit": {
-    "sourceHash": "b3eb37a"
-  },
   "main.oldMacos.title": "Cmdr sur macOS {version}",
   "@main.oldMacos.title": {
     "sourceHash": "e75f925"
@@ -66,5 +62,9 @@
   "main.oldMacos.gotIt": "D''accord",
   "@main.oldMacos.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "main.oldWebkit.quit": "Quitter",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
   }
 }

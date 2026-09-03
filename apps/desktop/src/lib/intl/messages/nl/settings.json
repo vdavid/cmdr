@@ -1327,6 +1327,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Melding over oude macOS getoond",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Intern: houdt bij of de eenmalige melding voor een Mac onder de ondersteunde macOS-versie al is getoond. Verborgen in de interface.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Onboarding-upgradehint getoond",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -2266,13 +2274,5 @@
   "settings.window.loading": "Instellingen laden…",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
-  },
-  "settings.advanced.oldMacosNoticeShown.label": "Melding over oude macOS getoond",
-  "@settings.advanced.oldMacosNoticeShown.label": {
-    "sourceHash": "21b14e0"
-  },
-  "settings.advanced.oldMacosNoticeShown.description": "Intern: houdt bij of de eenmalige melding voor een Mac onder de ondersteunde macOS-versie al is getoond. Verborgen in de interface.",
-  "@settings.advanced.oldMacosNoticeShown.description": {
-    "sourceHash": "8ae26f2"
   }
 }

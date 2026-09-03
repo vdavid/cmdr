@@ -51,10 +51,6 @@
   "@main.oldWebkit.body": {
     "sourceHash": "bcadac5"
   },
-  "main.oldWebkit.quit": "退出",
-  "@main.oldWebkit.quit": {
-    "sourceHash": "b3eb37a"
-  },
   "main.oldMacos.title": "macOS {version} 上的 Cmdr",
   "@main.oldMacos.title": {
     "sourceHash": "e75f925"
@@ -66,5 +62,9 @@
   "main.oldMacos.gotIt": "知道了",
   "@main.oldMacos.gotIt": {
     "sourceHash": "5ad3dbd"
+  },
+  "main.oldWebkit.quit": "退出",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
   }
 }
