@@ -695,9 +695,8 @@ overclaim.
 **The verb comes off the EVENT's operation type, never a view's config.** Only a same-volume move carries items home;
 every other in-flight reversal deletes what the transfer wrote, and a cross-drive move can't be reversed at all
 (`notRolledBack`, so it never picks a verb — its own line is `moveAlreadyLanded`). A dialog that ADOPTED a running
-operation was handed no birth context, so
-its config's operation type is inert there — reading it would word a move's reversal as a delete on exactly the path
-where nobody could see it coming.
+operation was handed no birth context, so its config's operation type is inert there — reading it would word a move's
+reversal as a delete on exactly the path where nobody could see it coming.
 
 **Level is decided by whether Cmdr CHOSE the leftover.** Drift, an unverifiable snapshot, an occupied spot, and a
 non-empty folder are all Cmdr protecting something, which is `info`. `failed` is the drive turning the undo down, which

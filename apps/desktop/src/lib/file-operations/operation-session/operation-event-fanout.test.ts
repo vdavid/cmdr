@@ -72,7 +72,7 @@ function cancelled(id: string): WriteCancelledEvent {
     operationId: id,
     operationType: 'copy',
     filesProcessed: 1,
-    rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null },
+    rollback: { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null, originalsStillInPlace: null },
   }
 }
 

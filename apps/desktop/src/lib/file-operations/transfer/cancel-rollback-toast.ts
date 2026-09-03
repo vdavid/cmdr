@@ -201,26 +201,37 @@ function stoppedHeadline(operationType: WriteOperationType, reversed: number): s
  * originals already deleted, and no reversal is coming for them. Silence there
  * would leave a user who pressed Rollback believing nothing had happened.
  */
+/**
+ * The `notRolledBack` arm: no reversal ran, so there is no count of undone
+ * items and nothing to word a verb around. Two things can still speak, and
+ * neither of them is `outcome` — see `readCancelRollback` for why silence is
+ * the right default and what breaks it.
+ */
+function readNothingReversed(
+  originalsStillInPlace: CancelRollback['originalsStillInPlace'],
+  staged: string | null,
+): CancelRollbackReadout | null {
+  const landed = originalsStillInPlace === null ? null : landedMoveHeadline(originalsStillInPlace.count)
+  if (landed === null && staged === null) return null
+  return {
+    headline: landed,
+    leftBehind: null,
+    reasons: [],
+    staged,
+    // Nothing went wrong on the landed-move path: the files are whole at the
+    // destination and the line only says so. Cmdr's own scratch outliving the
+    // sweep is the one thing here worth a colour.
+    level: staged === null ? 'info' : 'warn',
+  }
+}
+
 export function readCancelRollback(
   rollback: CancelRollback,
   operationType: WriteOperationType,
 ): CancelRollbackReadout | null {
   const { outcome, reversed, skips, stagedLeftovers, originalsStillInPlace } = rollback
   const staged = stagedLeftovers === null ? null : stagedLine(stagedLeftovers)
-  if (outcome === 'notRolledBack') {
-    const landed = originalsStillInPlace === null ? null : landedMoveHeadline(originalsStillInPlace.count)
-    if (landed === null && staged === null) return null
-    return {
-      headline: landed,
-      leftBehind: null,
-      reasons: [],
-      staged,
-      // Nothing went wrong on the landed-move path: the files are whole at the
-      // destination and the line only says so. Cmdr's own scratch outliving the
-      // sweep is the one thing here worth a colour.
-      level: staged === null ? 'info' : 'warn',
-    }
-  }
+  if (outcome === 'notRolledBack') return readNothingReversed(originalsStillInPlace, staged)
   if (outcome === 'rolledBack') {
     if (reversed === 0 && staged === null) return null
     if (staged === null) {
