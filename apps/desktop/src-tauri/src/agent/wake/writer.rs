@@ -22,9 +22,11 @@ use super::runner::{self, BackgroundTurn, ResolvedSlot};
 use super::schedule;
 use super::settings::{self, WakeSettings};
 use super::snapshot::readiness_snapshot;
+use super::spend;
 use super::{Inbox, PrepareOutcome, PrepareParams, persist, prepare_wake};
 use crate::agent::chat::budget;
-use crate::agent::chat::session::{AgentSlot, resolve_agent_llm, resolve_prompt_budget};
+use crate::agent::chat::runtime::day_for;
+use crate::agent::chat::session::{AgentSlot, local_offset, resolve_agent_llm, resolve_prompt_budget};
 use crate::agent::store;
 
 const LOG_TARGET: &str = "agent::wake";
@@ -67,6 +69,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
         not_before: 0,
         forced: None,
         follow_ups: FollowUpQueue::default(),
+        budget_noted: None,
         app,
         conn,
     };
@@ -135,6 +138,9 @@ struct WakeLoop {
     /// Sweeps the user turned something down in, waiting out their coalescing window. One
     /// entry per sweep, which is what makes "reject all" one model call.
     follow_ups: FollowUpQueue,
+    /// The local day the daily ceiling was last reported for, so it is said once rather than
+    /// every few minutes. See [`WakeLoop::note_budget_spent`].
+    budget_noted: Option<String>,
 }
 
 impl WakeLoop {
@@ -295,6 +301,16 @@ impl WakeLoop {
         if !forced && !self.settings.proactive {
             return;
         }
+        // The fifth gate, and the only one counted in money rather than permission: what
+        // proactive work has already spent today. Checked before the slot is resolved, so a
+        // spent day costs one indexed read per attempt and nothing else. ⚠️ A force skips it,
+        // like the `proactive` toggle above; a user-typed turn never reaches this function at
+        // all, so nothing the user asks for is ever capped.
+        let today = day_for(now as i64, local_offset());
+        if !spend::may_spend(forced, spend::spent_today(&self.conn, &today)) {
+            self.note_budget_spent(today);
+            return;
+        }
         let readiness = readiness_snapshot();
         if !readiness.may_wake() {
             runner::record_outcome("not_ready", None, self.inbox.len(), 0);
@@ -339,6 +355,19 @@ impl WakeLoop {
             PrepareOutcome::NothingDue => runner::record_outcome("nothing_due", None, self.inbox.len(), 0),
             PrepareOutcome::Unavailable => runner::record_outcome("unavailable", None, self.inbox.len(), 0),
         }
+    }
+
+    /// Report the daily ceiling ONCE per day, the first time it refuses a wake.
+    ///
+    /// ⚠️ **Once, ❌ never per attempt.** A spent day is the ordinary state for the rest of that
+    /// day, and the loop re-checks every few minutes: a line each would bury `cmdr.log` and turn
+    /// one categorical analytics fact into hundreds. Same reasoning the `proactive` gate carries.
+    fn note_budget_spent(&mut self, day: String) {
+        if self.budget_noted.as_deref() == Some(day.as_str()) {
+            return;
+        }
+        self.budget_noted = Some(day);
+        runner::record_outcome("budget_spent", None, self.inbox.len(), 0);
     }
 
     /// Cut the inbox down to the one folder a forced wake staged, on disk as well as in memory.

@@ -61,6 +61,7 @@ mod turn;
 mod types;
 
 pub(crate) use analytics::send_refused;
+pub(crate) use cost::day_for;
 pub use dispatch::{AppHandleDispatcher, ToolDispatchOutcome, ToolDispatcher, dispatch_ok};
 pub use events::{AgentChatEvent, AgentErrorKind, ChatEventSink};
 pub use turn::run_turn;

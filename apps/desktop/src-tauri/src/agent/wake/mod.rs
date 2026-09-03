@@ -55,6 +55,7 @@ mod runner;
 mod schedule;
 mod settings;
 mod snapshot;
+mod spend;
 mod staged;
 mod watch;
 mod writer;

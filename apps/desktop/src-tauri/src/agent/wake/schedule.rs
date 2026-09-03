@@ -75,9 +75,7 @@ pub(super) fn stamp_after(control: &WakeControl, not_before: u64, now: u64) -> u
 fn wait_after(control: &WakeControl) -> ControlWait {
     match control {
         WakeControl::WakeFinished(WakeCompletion::Wake) => ControlWait::For(MIN_WAKE_SPACING),
-        WakeControl::WakeFinished(WakeCompletion::ProviderRefused) => {
-            ControlWait::For(PROVIDER_REFUSAL_BACKOFF)
-        }
+        WakeControl::WakeFinished(WakeCompletion::ProviderRefused) => ControlWait::For(PROVIDER_REFUSAL_BACKOFF),
         // A follow-up answers something the user just did, so it neither earns a spacing nor
         // lifts the one a wake left: clearing here would let a rejection the user clicked
         // through pull an unrelated wake in ahead of its turn.
@@ -289,7 +287,10 @@ mod tests {
         let now = 1_780_000_000;
 
         assert!(!may_attempt(false, true, now + 60, now), "the stamp holds it");
-        assert!(!may_attempt(false, false, 0, now), "and so does an inbox with nothing due");
+        assert!(
+            !may_attempt(false, false, 0, now),
+            "and so does an inbox with nothing due"
+        );
         assert!(may_attempt(false, true, now, now), "the stamp expires to the second");
         assert!(may_attempt(true, false, now + 9_999, now), "a force skips both clocks");
     }

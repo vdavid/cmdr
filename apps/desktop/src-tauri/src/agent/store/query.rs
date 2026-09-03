@@ -618,6 +618,30 @@ pub fn conversation_cost(conn: &Connection, conversation_id: i64) -> Result<Conv
     })
 }
 
+/// Every token the agent spent on its OWN initiative on `day`, prompt plus completion.
+///
+/// ⚠️ **Scoped by `conversations.origin`, ❌ never by the whole meter.** Capping all agent spend
+/// would let a chatty afternoon on the rail starve the wake loop, and a busy wake loop eat the
+/// user's own budget; the two are different money. The two proactive origins are
+/// [`ConversationOrigin::Notification`] (a wake's thread) and [`ConversationOrigin::QuietWakes`]
+/// (the reserved row a quiet wake's spend is folded onto before its thread is deleted). A
+/// user-started thread has a NULL origin and never counts.
+pub fn proactive_tokens_for_day(conn: &Connection, day: &str) -> Result<u64, AgentStoreError> {
+    let total: i64 = conn.query_row(
+        "SELECT COALESCE(SUM(cost_meter.prompt_tokens + cost_meter.completion_tokens), 0)
+         FROM cost_meter
+         JOIN conversations ON conversations.id = cost_meter.conversation_id
+         WHERE cost_meter.day = ?1 AND conversations.origin IN (?2, ?3)",
+        rusqlite::params![
+            day,
+            ConversationOrigin::Notification.as_token(),
+            ConversationOrigin::QuietWakes.as_token()
+        ],
+        |row| row.get(0),
+    )?;
+    Ok(total.max(0) as u64)
+}
+
 /// The per-day cost rollup across every thread and model, newest day first. A day reads
 /// `fully_priced = false` when any contributing row was unpriced (`MIN(priced) = 0`).
 pub fn cost_summary(conn: &Connection) -> Result<CostSummary, AgentStoreError> {
