@@ -24,7 +24,7 @@ use super::super::ledger::{WrittenFile, WrittenIdentity};
 use super::super::overwrite::{rename_no_replace, safe_overwrite_dir};
 use super::super::reversal::{Recheck, ReversalTally, recheck_local};
 use super::super::scan::handle_dry_run;
-use super::super::state::{WriteOperationState, is_cancelled};
+use super::super::state::WriteOperationState;
 use super::super::types::{
     SourceItemOutcome, WriteOperationConfig, WriteOperationError, WriteOperationType, WriteSourceItemDoneEvent,
 };
@@ -418,18 +418,14 @@ fn merge_move_directory(
         };
         let dest_child = dest_dir.join(&file_name);
 
-        // Check cancellation
-        if is_cancelled(&state.intent) {
+        // The cooperative boundary, like every other loop in the engine. A
+        // folder-into-folder move does ALL its renaming down here, so without
+        // this a paused merge would keep going while the UI says it stopped.
+        if state.stop_or_park_sync() {
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
         }
-
-        // Pause gate, after the cancel check like every other loop in the
-        // engine. A folder-into-folder move does ALL its renaming down here, so
-        // without this a paused merge would keep going while the UI says it
-        // stopped.
-        state.pause_gate.wait_while_paused_sync(&state.intent);
 
         // Snapshot the child before the rename carries it across. The rename
         // preserves the node id, so this describes what lands at `dest_child` —

@@ -243,6 +243,44 @@ impl WriteOperationState {
         }
     }
 
+    /// The one cooperative boundary a serial loop asks at: `true` means stop
+    /// now, `false` means carry on with the next item.
+    ///
+    /// Everything a loop owes Cancel and Pause lives in here, so no caller can
+    /// get the order wrong. Cancel is read FIRST, so a stopping operation never
+    /// parks and no destructive call runs between the two reads; only a live
+    /// operation parks; and a cancel landing WHILE parked wakes the gate and is
+    /// answered `true` at that same boundary, rather than one item later.
+    ///
+    /// ❌ Ask it exactly where the loop already observes cancel, and only
+    /// there. A loop that parks less often than it can be cancelled makes Pause
+    /// the weaker of two buttons that mean the same thing to a person; one that
+    /// parks more often needs boundaries the backends don't offer. `DETAILS.md`
+    /// § "The park".
+    ///
+    /// This twin parks the calling blocking-pool thread; an async driver calls
+    /// [`stop_or_park_async`](Self::stop_or_park_async) instead. A caller whose
+    /// reading of "stop" isn't `is_cancelled` (a reversal, a detached scan
+    /// preview) drives [`PauseGate`]'s `*_until` helpers directly and names its
+    /// own predicate.
+    pub fn stop_or_park_sync(&self) -> bool {
+        if is_cancelled(&self.intent) {
+            return true;
+        }
+        self.pause_gate.wait_while_paused_sync(&self.intent);
+        is_cancelled(&self.intent)
+    }
+
+    /// Async sibling of [`stop_or_park_sync`](Self::stop_or_park_sync): same
+    /// answer, parking the calling task instead of an executor thread.
+    pub async fn stop_or_park_async(&self) -> bool {
+        if is_cancelled(&self.intent) {
+            return true;
+        }
+        self.pause_gate.wait_while_paused_async(&self.intent).await;
+        is_cancelled(&self.intent)
+    }
+
     /// A handle to this operation's [`liveness`](Self::liveness), for tagging
     /// the scratch files it stages.
     pub fn liveness_token(&self) -> Option<std::sync::Weak<()>> {

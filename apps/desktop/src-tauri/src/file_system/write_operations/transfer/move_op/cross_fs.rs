@@ -32,7 +32,7 @@ use crate::file_system::write_operations::journal;
 use crate::file_system::write_operations::ledger::CopyTransaction;
 use crate::file_system::write_operations::scan::{SourceItemTracker, scan_sources};
 use crate::file_system::write_operations::scan_cache::take_cached_scan_result;
-use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled, update_operation_status};
+use crate::file_system::write_operations::state::{WriteOperationState, update_operation_status};
 use crate::file_system::write_operations::types::{
     CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
@@ -519,8 +519,11 @@ fn delete_sources_after_move(
     emit_source_sweep_progress(events, state, operation_id, None, 0, sources_total);
 
     for source in sources {
-        // Check cancellation
-        if is_cancelled(&state.intent) {
+        // The cooperative boundary, like every other loop in the engine. The
+        // destination is already durable by now, so parking here holds the
+        // originals in place, which is exactly what a paused move should look
+        // like.
+        if state.stop_or_park_sync() {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
@@ -540,11 +543,6 @@ fn delete_sources_after_move(
             });
         }
 
-        // Pause gate, after the cancel check like every other loop in the
-        // engine. The destination is already durable by now, so parking here
-        // holds the originals in place, which is exactly what a paused move
-        // should look like.
-        state.pause_gate.wait_while_paused_sync(&state.intent);
 
         // A whole top-level source skipped on a file / type-mismatch conflict:
         // leave the original exactly where it is, and say so. The staging phase
