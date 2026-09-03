@@ -789,12 +789,17 @@ pub fn run() {
                 }
             });
 
-            // Start the importance scheduler: it sweeps the index registry for
-            // already-ready volumes and subscribes to the scan-completion bus, so a
-            // volume's folder weights recompute when its index finishes scanning (or
-            // is Fresh at launch). Independent of whether indexing auto-starts here —
-            // the bus fires whenever any scan completes. See
-            // `importance/scheduler.rs` and the plan (Decision 4 / 5).
+            // Start the importance scheduler: it subscribes to the volume-registration
+            // bus, then sweeps the index registry for already-ready volumes, so a
+            // volume's folder weights recompute when its index finishes scanning (or is
+            // Fresh at launch). Independent of whether indexing auto-starts here — the
+            // bus fires whenever any volume registers or any scan completes.
+            //
+            // ⚠️ The root index above starts on a SPAWNED task, so the sweep here
+            // usually sees an empty registry and root reaches the scheduler on the
+            // registration bus instead. Everything the scheduler owes a volume
+            // therefore hangs off `wire_volume`, which both paths share, never off the
+            // sweep alone. See `crates/cmdr-index/src/importance/scheduler/DETAILS.md`.
             if let Some(scheduler) = cmdr_index::importance::scheduler::ImportanceScheduler::start() {
                 // Reachable from the IPC layer: `record_visit` resolves it here.
                 app.manage(scheduler);

@@ -18,8 +18,8 @@ rule and the floor doctrine are in `../CLAUDE.md`.
   change to what rows or JSON the store persists, not only for a `CREATE TABLE` change.
 - **`needs_full_pass` must force the WRITE-path open FIRST, then read the meta table.** ❌ Never a read-path generation
   probe: the recreate is lazy and write-path only, so a read probe sees the OUTGOING schema's stamped generation, skips
-  the pass, and the recreate then wipes it — the volume sticks at "never scored" forever. The ordering and why the sweep
-  binds here: `../scheduler/DETAILS.md` § The initial full pass.
+  the pass, and the recreate then wipes it — the volume sticks at "never scored" forever. The ordering, and which
+  scheduler path binds here: `../scheduler/DETAILS.md` § The initial full pass.
 - **`SCORING_POLICY_KEY` is what makes a classification fix reach rows a user already has.** It stamps
   `classify::scoring_policy_fingerprint()` (a content hash of every classifier list plus `SCORING_RULES_VERSION`); a
   mismatch or an absent stamp makes `needs_full_pass` say yes. Nothing else revisits stored rows: a full pass runs once,

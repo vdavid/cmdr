@@ -16,10 +16,12 @@ use crate::importance::scorer::SignalSet;
 use crate::indexing::lifecycle::lifecycle_bus;
 
 /// Build and wire the scheduler, behind [`ImportanceScheduler::start`], which carries
-/// the contract this fulfils. The registration bus catches a share mounted
-/// MID-SESSION; the startup sweep catches volumes already ready at launch —
-/// subscribing to the bus BEFORE the sweep closes the gap so no registration is
-/// missed.
+/// the contract this fulfils. Two paths reach the same [`wire_volume`]: the startup
+/// sweep catches volumes already ready at launch, the registration bus catches every
+/// volume that becomes ready afterwards — including the ROOT volume on a normal launch,
+/// whose index starts on a spawned task while `start()` runs synchronously right after
+/// it, so the sweep usually sees an empty registry. Subscribing to the bus BEFORE the
+/// sweep closes the gap so no registration is missed.
 pub(super) fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
     let data_dir = match crate::indexing::host::config::data_dir() {
         Ok(d) => d,
@@ -51,12 +53,11 @@ pub(super) fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
 
     // Startup sweep: any volume already ready at launch (loaded from its persisted
     // scan_completed_at) never re-fires ScanCompleted, so catch it here — WITH its
-    // typed kind so MTP is excluded and SMB degrades correctly. Wiring alone only
-    // sets up subscriptions (the retained bus value stays `Pending`); the
-    // initial-pass trigger is what actually scores a fresh / recreated store.
+    // typed kind so MTP is excluded and SMB degrades correctly. `wire_volume` carries
+    // the initial-pass probe, so a volume caught here and one caught by the bus above
+    // get identical treatment.
     for (volume_id, kind) in crate::indexing::lifecycle::state::ready_volumes_with_kind() {
-        wire_volume(Arc::clone(&scheduler), volume_id.clone(), kind);
-        enqueue_full_pass_if_needed(Arc::clone(&scheduler), volume_id, kind);
+        wire_volume(Arc::clone(&scheduler), volume_id, kind);
     }
 
     // The caller owns the handle: the app keeps it in Tauri state so `record_visit`
@@ -65,13 +66,13 @@ pub(super) fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
     Some(scheduler)
 }
 
-/// For a volume READY at launch (Fresh, so no `ScanCompleted` will fire), enqueue a
-/// full recompute IFF its store can't be trusted: no generation yet (a fresh install,
-/// a schema-recreated store, or one maintained only by incremental rescores, which
-/// never stamp a generation), or rows computed under a superseded scoring policy. A
-/// volume whose weights are current is left alone; an unconditional kick would
-/// rescore every volume on every launch (importance's policy differs from media's
-/// cheap unconditional kick).
+/// For a volume being wired, enqueue a full recompute IFF its store can't be trusted:
+/// no generation yet (a fresh install, a schema-recreated store, or one maintained only
+/// by incremental rescores, which never stamp a generation), or rows computed under a
+/// superseded scoring policy. This is what covers the Fresh-at-launch volume whose bus
+/// stays `Pending` and never re-fires `ScanCompleted`. A volume whose weights are
+/// current is left alone; an unconditional kick would rescore every volume on every
+/// launch (importance's policy differs from media's cheap unconditional kick).
 ///
 /// The decision binds to the WRITE-path store open via
 /// [`crate::importance::store::needs_full_pass`], which forces the lazy schema recreate
@@ -100,7 +101,7 @@ pub(super) fn enqueue_full_pass_if_needed(
             Ok(Ok(true)) => {
                 log::info!(
                     target: "importance",
-                    "volume '{volume_id}' ready at launch with no generation or a superseded scoring policy; enqueuing a full recompute"
+                    "volume '{volume_id}' has no generation or a superseded scoring policy; enqueuing a full recompute"
                 );
                 spawn_recompute(scheduler, volume_id, available);
             }
@@ -131,16 +132,22 @@ pub(super) fn should_enqueue_full_pass(
 }
 
 /// Wire one volume into the scheduler by its typed kind: skip MTP (on-demand
-/// only), and for Local/SMB set up its scan-completion subscription (full
-/// recompute) and its dir-changed subscription (incremental rescore), then score
-/// it once if it's already ready.
+/// only), and for Local/SMB run the initial-pass probe and set up its
+/// scan-completion subscription (full recompute) and its dir-changed subscription
+/// (incremental rescore), then score it once if it's already ready.
+///
+/// ❌ The probe belongs HERE, not in the startup sweep alone. A volume that becomes
+/// ready after `start()` — the root volume on a normal launch, or a share mounted
+/// mid-session — only ever arrives on the registration bus, so a sweep-only probe is
+/// unreachable in production and both the no-generation initial pass and the
+/// scoring-policy re-arm silently never fire.
 ///
 /// Idempotent per volume in practice: the coalescing coordinator collapses a
 /// re-wire's duplicate recompute into the running one, and the underlying `watch`
 /// buses are per-volume, so re-subscribing spawns a second listener but each drives
 /// the same coalesced pass. A volume is wired from at most two places (the sweep
 /// and one registration), so no unbounded listener growth.
-fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: IndexVolumeKind) {
+pub(super) fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: IndexVolumeKind) {
     let available = match ScoringPolicy::for_kind(kind) {
         ScoringPolicy::Scored { available } => available,
         // MTP: on-demand only, never background-scored (a typed exclusion).
@@ -149,6 +156,12 @@ fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: Ind
             return;
         }
     };
+
+    // The initial full pass, when the store can't be trusted. Wiring alone only sets
+    // up subscriptions (a Fresh-at-launch volume's retained bus value stays
+    // `Pending`), so this is the one trigger that scores a fresh, schema-recreated, or
+    // policy-superseded store.
+    enqueue_full_pass_if_needed(Arc::clone(&scheduler), volume_id.clone(), kind);
 
     // Incremental recompute: rescore only the touched subtrees + capped ancestor
     // chains as live listing changes land. Full-volume recompute

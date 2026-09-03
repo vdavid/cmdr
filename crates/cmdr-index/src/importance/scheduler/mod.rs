@@ -8,23 +8,29 @@
 //! 1. **The lifecycle bus** ([`crate::indexing::lifecycle::lifecycle_bus`]): a
 //!    `ScanCompleted` publish for a volume ⇒ recompute it. This catches every
 //!    scan that finishes while the app runs.
-//! 2. **The startup registry sweep** ([`crate::indexing::lifecycle::state::ready_volumes_with_kind`]):
-//!    a volume already `Fresh` at launch (loaded from its persisted
-//!    `scan_completed_at`) never re-fires a `ScanCompleted`, so the bus subscription
-//!    the sweep WIRES would never score it — the common restart case (its retained
-//!    bus value stays `Pending`). To close that, the sweep ALSO runs
-//!    [`wiring::enqueue_full_pass_if_needed`] per ready volume: it forces the
-//!    write-path store open (triggering any lazy schema recreate) and enqueues a full
-//!    recompute IFF the store then carries no generation. Gating on "no generation"
+//! 2. **The initial-pass probe** ([`wiring::enqueue_full_pass_if_needed`], run for every
+//!    volume [`wiring::wire_volume`] wires): a volume already `Fresh` at launch (loaded
+//!    from its persisted `scan_completed_at`) never re-fires a `ScanCompleted`, so the
+//!    bus subscription alone would never score it — the common restart case (its
+//!    retained bus value stays `Pending`). The probe forces the write-path store open
+//!    (triggering any lazy schema recreate) and enqueues a full recompute IFF the store
+//!    then carries no generation or a superseded scoring policy. Gating on those two
 //!    (not an unconditional kick) means an already-scored volume isn't rescored on
 //!    every launch, while a fresh / schema-recreated / incremental-only store finally
-//!    gets its full pass. Each carries its typed kind (MTP excluded, SMB degraded).
-//! 3. **The registration bus** ([`crate::indexing::lifecycle::lifecycle_bus::subscribe_registrations`]):
-//!    a volume that registers AFTER the sweep (a share mounted mid-session) is wired then.
+//!    gets its full pass.
+//!
+//! Two paths wire a volume, both through the one [`wiring::wire_volume`] body, each
+//! carrying the typed kind (MTP excluded, SMB degraded): the **startup registry sweep**
+//! ([`crate::indexing::lifecycle::state::ready_volumes_with_kind`]) for volumes already
+//! ready at launch, and the **registration bus**
+//! ([`crate::indexing::lifecycle::lifecycle_bus::subscribe_registrations`]) for every
+//! volume that becomes ready afterwards — a share mounted mid-session, and on a normal
+//! launch the root volume too, since its index starts on a spawned task while
+//! [`ImportanceScheduler::start`] runs synchronously right after it.
 //!
 //! ## Coalescing
 //!
-//! Both triggers can target one volume at once (the sweep sees it Fresh AND a
+//! Both triggers can target one volume at once (the probe sees it unscored AND a
 //! concurrent startup scan completes). [`PassCoordinator`] guarantees ONE pass
 //! runs per volume at a time: a request arriving while a pass runs sets a re-run
 //! flag rather than starting a second pass. When the running pass finishes, it
@@ -293,6 +299,8 @@ mod recompute_tests;
 mod test_support;
 #[cfg(test)]
 mod walk_memory_tests;
+#[cfg(test)]
+mod wiring_tests;
 
 impl ImportanceScheduler {
     /// Construct a scheduler with the default weights and the app's data dir.

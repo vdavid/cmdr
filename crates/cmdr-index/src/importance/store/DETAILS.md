@@ -88,8 +88,8 @@ rows.
 ## `needs_full_pass` and the recreate ordering
 
 `needs_full_pass(data_dir, volume_id)` answers "can this store's weights be trusted, or does it owe a full recompute?"
-and is the gate the startup sweep uses. Two independent reasons say yes: no `RECOMPUTE_GENERATION_KEY` at all, or a
-`SCORING_POLICY_KEY` that doesn't match this build (below).
+and is the gate the scheduler's `wire_volume` probe uses. Two independent reasons say yes: no `RECOMPUTE_GENERATION_KEY`
+at all, or a `SCORING_POLICY_KEY` that doesn't match this build (below).
 
 It opens the store on the WRITE path first, which is where the lazy schema delete-and-recreate fires, and only then
 reads the meta table. A read-path probe would read the outgoing schema's stamped generation and skip the pass, after
