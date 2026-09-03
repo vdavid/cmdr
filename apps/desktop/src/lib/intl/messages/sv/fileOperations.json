@@ -733,6 +733,10 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Allt Cmdr har flyttat finns redan på målet och stannar där. {count, plural, one {Ett original ligger kvar på sin gamla plats.} other {{countText} original ligger kvar på sina gamla platser.}}",
+  "@fileOperations.cancelRollback.moveAlreadyLanded": {
+    "sourceHash": "842f15a"
+  },
   "fileOperations.cancelRollback.leftBehind": "Cmdr hoppar över allt som är osäkert, så det här blev kvar:",
   "@fileOperations.cancelRollback.leftBehind": {
     "sourceHash": "fb28a31"
