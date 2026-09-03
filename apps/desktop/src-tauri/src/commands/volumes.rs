@@ -174,9 +174,7 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
     // inherited from one resolver's failure mode — a stat-based fast path on Linux would
     // otherwise start returning `None` here with nothing to catch it.
     let result = blocking_with_timeout_flag(fs_timeout, None, move || {
-        let fs_path = match crate::file_system::volume::backends::archive::confirm_archive_boundary(
-            std::path::Path::new(&path),
-        ) {
+        let fs_path = match cmdr_archive::confirm_archive_boundary(std::path::Path::new(&path)) {
             Some((zip_path, _inner)) => zip_path,
             None => std::path::PathBuf::from(&path),
         };

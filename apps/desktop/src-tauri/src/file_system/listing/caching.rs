@@ -814,7 +814,7 @@ fn notify_modified(listing_id: &str, mut entry: FileEntry) {
 /// thread-local context, so a bare `tokio::spawn` panics with "there is no reactor
 /// running" and takes the app down. `tauri::async_runtime::spawn` resolves the
 /// process-global runtime instead of a thread-local one, so it works from any
-/// thread. Same rule as `file_system::watcher` and `volume::backends::archive::watch`.
+/// thread. Same rule as `file_system::watcher` and `cmdr_archive::watch`.
 pub(super) fn spawn_full_refresh(
     volume_id: String,
     parent_path: PathBuf,
@@ -1120,7 +1120,7 @@ pub fn try_get_authoritative_listing(volume_id: &str, path: &Path) -> Option<Vec
     // `is_archive` true).
     if !resolved.is_archive
         && !volume.supports_local_fs_access()
-        && crate::file_system::volume::backends::archive::archive_boundary_candidate(path).is_some()
+        && cmdr_archive::archive_boundary_candidate(path).is_some()
     {
         return None;
     }

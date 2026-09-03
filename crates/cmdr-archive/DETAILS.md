@@ -41,9 +41,8 @@ specific to retrofitting an existing backend:
 **Was specific to a retrofit, and a greenfield backend skips it.**
 
 - Rewriting `crate::…` paths, and re-homing the app-side tests that had grown into the backend's directory.
-- A facade module in the app (`apps/desktop/src-tauri/src/file_system/volume/backends/archive.rs`, a
-  `pub use cmdr_archive::*`) so ~40 existing call sites keep their original paths. A new backend has no existing call
-  sites to preserve.
+- Rewriting the app's call sites onto `cmdr_archive::…`. A new backend is imported by crate name from the start, so it
+  has no existing paths to rewrite.
 - Two rustdoc intra-doc links that stopped resolving across the boundary. One pointed at an app symbol
   (`VolumeManager::resolve`) and became prose; the other pointed at `Volume::extraction_is_sequential` and simply
   re-anchored on `cmdr_fs::`. Only app-side symbols genuinely have to go.

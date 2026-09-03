@@ -6,7 +6,7 @@
 
 use super::compress::{compress_start, seed_empty_zip};
 use super::test_support::*;
-use crate::file_system::volume::backends::archive::bytes_start_with_zip_signature;
+use cmdr_archive::bytes_start_with_zip_signature;
 
 /// The seed writes a valid empty archive: the reader opens it with zero entries,
 /// and its first bytes pass the shared zip-signature check. Pre-fix (a 0-byte

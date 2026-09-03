@@ -19,8 +19,8 @@ use std::time::Duration;
 
 use super::super::state::{OperationIntent, WriteOperationState};
 use super::pull_apply_upload_swap;
-use crate::file_system::volume::backends::archive::mutator::{self, AddEntry, AddSource, Changeset, MutationHooks};
 use crate::file_system::volume::{InMemoryVolume, Volume};
+use cmdr_archive::mutator::{self, AddEntry, AddSource, Changeset, MutationHooks};
 
 /// A no-op `MutationHooks`: the mutator never pauses/cancels in these tests, so
 /// every trait method keeps its default.

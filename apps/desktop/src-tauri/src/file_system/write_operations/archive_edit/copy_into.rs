@@ -28,12 +28,11 @@ use super::super::types::{
 use super::conflicts::{ConflictMode, conditional_overwrites, find_unique_inner, resolve_effective};
 use super::engine::{MutatorHooks, PlanError, delete_move_sources, run_managed_edit, to_write_error};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
-use crate::file_system::volume::backends::archive;
-use crate::file_system::volume::backends::archive::mutator::{self, AddEntry, AddSource, Changeset, MutationError};
-use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{LaneKey, LocalPosixVolume, Volume, VolumeError};
 use crate::operation_log::types::{ArchiveSubkind, ExecutionStatus};
+use cmdr_archive::mutator::{self, AddEntry, AddSource, Changeset, MutationError};
+use cmdr_archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 
 /// Routes a copy/move INTO a zip (a source dropped onto an archive destination)
 /// to the managed edit driver as a SINGLE `{ add + mkdir }` changeset — the whole
@@ -120,7 +119,7 @@ pub(crate) async fn route_archive_copy_into_with_provenance(
     // here — and it works for a REMOTE dest zip, where the `std::fs` confirm would
     // wrongly return `None`.
     let (archive_path, dest_inner) =
-        archive::archive_boundary_candidate(&dest_full_path).ok_or_else(|| read_only_error(&dest_full_path))?;
+        cmdr_archive::archive_boundary_candidate(&dest_full_path).ok_or_else(|| read_only_error(&dest_full_path))?;
     ensure_zip_writable(&archive_path)?;
     let dest_inner = normalize_inner_path(&dest_inner);
 

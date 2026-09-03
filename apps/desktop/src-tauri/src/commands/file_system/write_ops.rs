@@ -24,7 +24,6 @@ use tokio::time::Duration;
 
 use crate::commands::util::{DeadlineError, timeout_detached_typed};
 use crate::file_system::Volume;
-use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
@@ -48,7 +47,7 @@ async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathB
     // non-empty inner component can be archive-inner; the pure string pre-filter
     // gates the parent-aware resolve, which confirms a REMOTE zip too.
     let is_inner_candidate = first_source
-        .and_then(|first| archive::archive_boundary_candidate(first))
+        .and_then(|first| cmdr_archive::archive_boundary_candidate(first))
         .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
     let archive_source = if is_inner_candidate {
         // Bounded, because confirming a REMOTE archive boundary is real network
@@ -91,7 +90,7 @@ fn reject_if_archive_inner<'a>(paths: impl IntoIterator<Item = &'a PathBuf>) -> 
     for path in paths {
         // Only a path INSIDE an archive is read-only. The `.zip` file itself is a
         // regular file — copying/moving/deleting/trashing it must work.
-        if archive::path_is_inside_archive(path) {
+        if cmdr_archive::path_is_inside_archive(path) {
             return Err(WriteOperationError::ReadOnlyDevice {
                 path: path.to_string_lossy().into_owned(),
                 device_name: None,

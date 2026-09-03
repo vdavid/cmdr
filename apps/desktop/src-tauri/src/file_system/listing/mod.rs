@@ -46,6 +46,10 @@ pub(crate) use caching::{
 pub(crate) use operations::get_listings_by_volume_prefix;
 pub(crate) use operations::{get_listing_entries, update_listing_entries};
 
+// The app's half of `cmdr-archive`'s live-content watch: what a refresh does to
+// the listing cache, which is this module's side of the seam.
+#[cfg(test)]
+mod archive_watch_integration_test;
 #[cfg(test)]
 mod brief_columns_test;
 #[cfg(test)]

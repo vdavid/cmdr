@@ -9,9 +9,6 @@
 //! matrix, and `backends/CLAUDE.md` for the per-backend decisions and gotchas
 //! that drive each implementation here.
 
-// A re-export of the `cmdr-archive` crate under its original path, plus the
-// app-side half of its watch tests. See `archive.rs`.
-pub mod archive;
 mod local_posix;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;

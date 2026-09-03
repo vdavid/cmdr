@@ -30,7 +30,7 @@ use super::*;
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_archive_browse_and_extract_via_read_range() {
-    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_archive::{ArchiveFormat, ArchiveVolume};
     use cmdr_fs::volume::host::VolumeHost;
     use std::io::Write as _;
 
@@ -102,7 +102,7 @@ async fn smb_integration_archive_browse_and_extract_via_read_range() {
 
 /// A no-op `MutationHooks` for the mutator (never pauses/cancels here).
 struct RemoteEditNoHooks;
-impl crate::file_system::volume::backends::archive::mutator::MutationHooks for RemoteEditNoHooks {}
+impl cmdr_archive::mutator::MutationHooks for RemoteEditNoHooks {}
 
 /// Streams a zip back off the share via `open_read_stream` and parses it into a
 /// `name -> contents` map, so assertions re-verify the archive THROUGH THE SHARE
@@ -160,8 +160,8 @@ fn two_entry_zip() -> Vec<u8> {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_archive_routing_detection_and_extract_out() {
-    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
     use crate::file_system::volume::manager::get_volume_manager;
+    use cmdr_archive::{ArchiveFormat, ArchiveVolume};
     use cmdr_fs::volume::host::VolumeHost;
     use std::io::Write as _;
 
@@ -217,8 +217,8 @@ async fn smb_integration_archive_routing_detection_and_extract_out() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_remote_zip_edit_deletes_an_entry_through_the_share() {
-    use crate::file_system::volume::backends::archive::mutator::{self, Changeset};
     use crate::file_system::write_operations::{RemoteEditError, WriteOperationState, pull_apply_upload_swap};
+    use cmdr_archive::mutator::{self, Changeset};
     use std::time::Duration;
 
     let vol = Arc::new(make_docker_volume().await);
@@ -269,10 +269,10 @@ async fn smb_integration_remote_zip_edit_deletes_an_entry_through_the_share() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_remote_zip_edit_cancel_before_swap_keeps_original() {
-    use crate::file_system::volume::backends::archive::mutator::{self, Changeset};
     use crate::file_system::write_operations::{
         OperationIntent, RemoteEditError, WriteOperationState, pull_apply_upload_swap,
     };
+    use cmdr_archive::mutator::{self, Changeset};
     use std::sync::atomic::Ordering;
     use std::time::Duration;
 

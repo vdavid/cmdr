@@ -26,9 +26,8 @@ use super::archive_edit::{self, ArchiveEditRequest};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::mutation_error::MutationError;
 use super::types::WriteOperationType;
-use crate::file_system::volume::backends::archive;
-use crate::file_system::volume::backends::archive::mutator::{AddEntry, AddSource, Changeset};
 use crate::file_system::volume::manager::get_volume_manager;
+use cmdr_archive::mutator::{AddEntry, AddSource, Changeset};
 
 /// Whether a routed archive add creates a directory entry or an empty file.
 enum ArchiveEntryKind {
@@ -226,7 +225,7 @@ async fn route_archive_create(
     // `path_crosses_archive_boundary`), so a pure string split suffices — and it
     // works for a REMOTE zip, where the `std::fs` confirm would wrongly fail.
     let (archive_path, inner_parent) =
-        archive::archive_boundary_candidate(Path::new(parent_path)).ok_or(MutationError::ArchiveNotEditable)?;
+        cmdr_archive::archive_boundary_candidate(Path::new(parent_path)).ok_or(MutationError::ArchiveNotEditable)?;
     // Only zip archives are writable; tar and 7z are browse + extract only.
     archive_edit::ensure_zip_writable(&archive_path).map_err(|_| MutationError::ArchiveReadOnly)?;
     let inner_path = archive_edit::join_inner_path(&inner_parent, name);
@@ -334,7 +333,7 @@ pub(crate) async fn create_directory_core(
     // so it refuses rather than attempting a bogus filesystem write. Uses
     // `path_crosses` (NOT `path_is_inside`) so a `.zip` file AS the parent (a child
     // at the archive root) is caught too.
-    if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
+    if cmdr_archive::path_crosses_archive_boundary(Path::new(parent_path)) {
         return Err(MutationError::ArchiveNotEditable);
     }
 
@@ -398,7 +397,7 @@ pub(crate) async fn create_file_core(
     // `route_archive_create` before reaching core, so this branch is unreachable
     // in production. It guards a direct `*_core` caller (tests) from a bogus
     // plain-FS write into a `.zip`. `path_crosses` also catches a `.zip`-file parent.
-    if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
+    if cmdr_archive::path_crosses_archive_boundary(Path::new(parent_path)) {
         return Err(MutationError::ArchiveNotEditable);
     }
 

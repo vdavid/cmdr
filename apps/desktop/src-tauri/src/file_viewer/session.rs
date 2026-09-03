@@ -13,7 +13,6 @@ use std::time::Duration;
 use arc_swap::ArcSwap;
 
 use crate::commands::file_system::expand_tilde;
-use crate::file_system::volume::backends::archive;
 use crate::ignore_poison::IgnorePoison;
 use log::debug;
 use serde::Serialize;
@@ -359,7 +358,7 @@ fn open_session_inner(path: &str, volume_id: &str, force_text: bool) -> Result<V
     // archive question is answered here from the pure path split (the same one
     // `rename_managed` uses) — the core's own answer needs the extraction to have
     // happened, which is exactly what the failure cases skip.
-    let from_archive = archive::archive_boundary_candidate(Path::new(&expand_tilde(path)))
+    let from_archive = cmdr_archive::archive_boundary_candidate(Path::new(&expand_tilde(path)))
         .is_some_and(|(_, inner)| !inner.as_os_str().is_empty());
     let result = open_session_core(path, volume_id, force_text);
     super::analytics::emit_viewer_opened(&result, from_archive, force_text);

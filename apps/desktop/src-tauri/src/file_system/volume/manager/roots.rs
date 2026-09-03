@@ -8,9 +8,9 @@
 //! survivor when the active one dies. Rationale and the flows that drive it:
 //! `../DETAILS.md` § "A volume ID owns a set of mount roots".
 
-use super::super::backends::archive::ArchiveVolume;
 use super::{Volume, VolumeManager};
 use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_archive::ArchiveVolume;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 

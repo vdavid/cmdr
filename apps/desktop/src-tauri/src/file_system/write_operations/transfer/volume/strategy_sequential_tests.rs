@@ -15,8 +15,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume, TarCodec};
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
+use cmdr_archive::{ArchiveFormat, ArchiveVolume, TarCodec};
 use cmdr_fs::volume::host::VolumeHost;
 
 use crate::file_system::write_operations::state::OperationIntent;

@@ -345,9 +345,7 @@ fn build_draft<R: Runtime>(
                 "Every source must be in the focused pane's effective scope.",
             ));
         }
-        if crate::file_system::volume::backends::archive::archive_boundary_candidate(Path::new(&rename.source_path))
-            .is_some()
-        {
+        if cmdr_archive::archive_boundary_candidate(Path::new(&rename.source_path)).is_some() {
             return Err(invalid_params("Rename plans can't include files inside an archive."));
         }
         // One group is one `start_bulk_rename` call, and that executor refuses a row whose

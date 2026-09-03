@@ -1,6 +1,6 @@
 //! Remote zip edits: pull the `.zip` local, edit it with the SAME local
-//! [`ArchiveMutator`](crate::file_system::volume::backends::archive::mutator),
-//! upload the result under a remote temp name, then swap it into place.
+//! [`ArchiveMutator`](cmdr_archive::mutator), upload the result under a remote
+//! temp name, then swap it into place.
 //!
 //! ## Why pull-local
 //!
