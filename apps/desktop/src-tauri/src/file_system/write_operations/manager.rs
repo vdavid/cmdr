@@ -724,6 +724,12 @@ impl OperationManager {
     /// reintroduce a refusal here: an operation that holds its lane while a
     /// walk it claims to have stopped runs at full speed is the defect this
     /// whole path exists to prevent.
+    ///
+    /// A QUEUED op scanning behind a busy lane therefore answers
+    /// `NotApplicable`, the same as any other queued op: no surface offers
+    /// Pause on a queued row, and `pause_all` walks `running_ids()` only. If
+    /// "don't start this one" ever becomes a thing to offer, it wants a
+    /// deliberate design, not a pause that means something else here.
     pub(crate) fn set_paused(&self, operation_id: &str, paused: bool) -> PauseOutcome {
         let outcome = {
             let mut inner = self.inner.lock_ignore_poison();

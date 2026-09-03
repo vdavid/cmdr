@@ -187,11 +187,7 @@ struct PreviewClaimant {
 
 impl ScanPause {
     /// For a preview worker, which learns its owner from the claim.
-    pub(super) fn for_preview(
-        preview_id: String,
-        state: Arc<ScanPreviewState>,
-        watchdog: Arc<ScanWatchdog>,
-    ) -> Self {
+    pub(super) fn for_preview(preview_id: String, state: Arc<ScanPreviewState>, watchdog: Arc<ScanWatchdog>) -> Self {
         Self {
             claim: Some(PreviewClaimant { preview_id, state }),
             owner: OnceLock::new(),
