@@ -309,7 +309,8 @@
     "placeholders": {
       "rateText": "the files-per-second rate, already formatted for display (e.g. 0.4 or 1,500)",
       "count": "the same rate as a number (drives the singular/plural form of the noun)"
-    }
+    },
+    "screenshot": "toast-transfer-complete.png"
   },
 
   "fileOperations.shared.andJoin": "{a} and {b}",
@@ -820,7 +821,7 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "description": "Progress-dialog title for the last stage of a move BETWEEN disks, which copies first and only then removes the source files. By this point every file is safely at the destination and what is left is clearing the old copies, which on a big folder takes real time. \"The originals\" are the source files the user asked to move; the word matters, because a title that only said \"Deleting\" over a move would read as the user''s files being destroyed. A move within one disk never shows this (it renames, so there is nothing to clear). Keep the trailing ellipsis, like its sibling titles.",
     "screenshot": "transfer-dialog.png",
-    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is the title it shows during the final stage of a move between disks."
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}...",
@@ -1175,7 +1176,8 @@
 
   "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "This moves back everything the operation has moved so far, and any file it replaced won''t come back. Cmdr skips anything it isn''t sure about, so a few may stay where they are.",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
-    "description": "Body of the Rollback confirmation shown on a MOVE (or a move to the trash) that is still RUNNING. The sibling of fileOperations.rollbackConfirm.body, which covers a running copy. The difference is the whole point: rolling back a move deletes NOTHING, it carries the files back where they came from, so keep the tone calm rather than a warning and never word it as a delete. Three facts, all load-bearing: everything moved SO FAR travels back (not only the file in flight, which is what a plain Cancel leaves), a file at the destination that this move overwrote is gone for good because no copy of it was kept, and Cmdr leaves alone every file it can''t match against what it moved, so the reversal can come out partial. Keep the last sentence parallel with its siblings. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong."
+    "description": "Body of the Rollback confirmation shown on a MOVE (or a move to the trash) that is still RUNNING. The sibling of fileOperations.rollbackConfirm.body, which covers a running copy. The difference is the whole point: rolling back a move deletes NOTHING, it carries the files back where they came from, so keep the tone calm rather than a warning and never word it as a delete. Three facts, all load-bearing: everything moved SO FAR travels back (not only the file in flight, which is what a plain Cancel leaves), a file at the destination that this move overwrote is gone for good because no copy of it was kept, and Cmdr leaves alone every file it can''t match against what it moved, so the reversal can come out partial. Keep the last sentence parallel with its siblings. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong.",
+    "screenshot": "rollback-confirmation-stopAndMoveBack.png"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Finish rolling this back?",
   "@fileOperations.rollbackConfirm.titleFinish": {

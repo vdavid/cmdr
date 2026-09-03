@@ -110,7 +110,8 @@
 
   "fileExplorer.diskSpace.somewhatLowNote": "This bar is yellow to indicate that the volume is somewhat low on space.",
   "@fileExplorer.diskSpace.somewhatLowNote": {
-    "description": "The milder twin of fileExplorer.diskSpace.lowNote, shown when the drive is between 80% and 95% full and the bar has turned yellow rather than red. Keep the two sentences parallel in wording, and keep this one's tone the calmer of the pair. A full sentence with its own final punctuation."
+    "description": "The milder twin of fileExplorer.diskSpace.lowNote, shown when the drive is between 80% and 95% full and the bar has turned yellow rather than red. Keep the two sentences parallel in wording, and keep this one's tone the calmer of the pair. A full sentence with its own final punctuation.",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}. {notes}} other {{sizes}}}",
