@@ -20,6 +20,15 @@ that lives beside the code, and git holds the history.
       two `ListingHost` and two `IndexNotifier` additions; `UsbSpeed` moves to `cmdr-fs`. Gates: `bindings.ts` zero-diff
       after every in-place milestone, `cargo check -p cmdr-mtp --all-targets` with no app, the E2E MTP shard, a real
       phone. Two to three days.
+- [ ] 2026-09-04 `git-portal-volume.md` - **The virtual `.git` portal is ten `if` sites inside `LocalPosixVolume`, plus
+      English the translations never see.** Three route hooks and seven mutation guards, two more hand-enforced rules on
+      top (skip watching virtual paths, refresh on toggle), and a delete walker that lists through the hooked
+      `list_directory` and may meet six virtual folders it can't remove (verify at M0). Same mechanism archives already
+      use: a read-only `GitPortalVolume` in `crates/cmdr-git`, routed lexically by `resolve` only for `.git/<category>/`
+      paths, so `.git/` and every real file under it stay writable with no guard anywhere; the `.git/` root listing is a
+      pane-only overlay seam that scans and walkers never see. Three rules become types. `display_size` becomes a typed
+      `GitEntryMeta` the frontend words per locale; the watcher moves with a typed sink. Sequenced after
+      `mtp-crate-extraction.md`; can go first if that stalls. About three days.
 - [ ] 2026-09-03 `agent-search-tool.md` - **Ask Cmdr has 18 tools and none of them searches.** Asked to find penguin
       pictures, the agent invented `name` / `nameMatch` arguments onto `list_dir`, the deserializer dropped them, and it
       reported "nothing matched" four times: confident fabricated negatives on a question the index answers instantly. A
