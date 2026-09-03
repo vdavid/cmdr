@@ -10,6 +10,19 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-03 `agent-search-tool.md` - **Ask Cmdr has 18 tools and none of them searches.** Asked to find penguin
+      pictures, the agent invented `name` / `nameMatch` arguments onto `list_dir`, the deserializer dropped them, and it
+      reported "nothing matched" four times: confident fabricated negatives on a question the index answers instantly. A
+      full `search` tool is already authored in the shared registry with `consumers: [AiClient]`, and every coverage
+      field it needs is already typed, so this is wiring and shaping. Eight decisions taken: one registry entry serving
+      both views with a typed JSON result (the text table can't report `total` / `returned` / `truncated` and has no
+      `limit` ceiling, so `limit: 5000` blows the turn's prompt); a derived `coverage.complete` beside the seven flags
+      that each say a different sentence; `ai_search` stays out, because nesting a second LLM call inside an LLM is work
+      the agent should do itself; content search answered honestly as "search names, then `inspect_file` the hits", with
+      a drive-wide content index out of scope; the one-volume ceiling held, with `list_volumes` growing the `mountPath`
+      that makes a per-drive loop expressible at all; and a schema trim, because the declaration costs ~656 tokens on a
+      5,492-token prefix every turn. Three worked scenarios say it answers. Three to four days.
+
 - [ ] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
       user asked for "Open terminal here"; macOS has no default-terminal setting, so Cmdr keeps its own known-terminals
       table (bundle id + launch recipe, queried live via `NSWorkspace`, no scan, no Refresh button), defaults to
