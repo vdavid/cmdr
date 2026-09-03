@@ -1,9 +1,7 @@
 # Open terminal here
 
-**The problem**: A user asked for a shortcut or menu item that opens a terminal at the active pane's folder. Cmdr has
-"Show in Finder" and "Open in editor" but nothing that hands a folder to a shell, and a keyboard-first file manager
-without it sends every developer back to Finder's right-click menu. One user asked; every Total Commander, Marta, and
-ForkLift user expects it.
+**The quest**: A user asked for a conext menu item + shortcut that opens a terminal at the active pane's folder. Cmdr
+has "Show in Finder" and "Open in editor" but no "Open terminal here".
 
 **What macOS gives us**: nothing. There is no system-wide "default terminal" setting. Finder's built-in "New Terminal at
 Folder" service is hardcoded to Terminal.app; iTerm2 works around that by installing its own service. Every app that
@@ -36,18 +34,22 @@ folder and let the terminal's own preferences decide. That's what the user alrea
 
 ## Design decisions, taken
 
-1. **Which folder**: the active pane's current folder. Not the folder under the cursor. This matches Finder's service
-   and the request as worded.
-2. **Where it's enabled**: only when the pane sits on a plain POSIX path. Inside an archive, on MTP, on ADB, and on a
-   direct-SMB pane there is no path a shell can `cd` into, so the menu item, palette entry, and shortcut are disabled
-   with a hint ("This folder isn't on a local disk"). A Finder-mounted SMB volume under `/Volumes` works fine. Gate on
-   the pane's volume kind / `LocationInfo` capabilities, ❌ never on the path string.
+1. **Which folder**: If the cursor of the current pane is on a file, on "..", or in an empty root, then in the current
+   folder. If the cursor is on a folder then in that folder. If we're in an archive, then the containing folder. For
+   direct SMB locations, if there is an OS-native equivalent, then use that.
+2. **Where it's enabled**: only when the pane sits on a plain POSIX path. On MTP, on ADB, there is no path a shell can
+   `cd` into, so the menu item, palette entry, and shortcut are disabled with a hint ("This folder doesn't have a valid
+   path so can't open a terminal here."). Gate on the pane's volume kind / `LocationInfo` capabilities, ❌ never on the
+   path string.
 3. **Default**: Terminal.app. It's always present, so a user with no other terminal never sees a setting.
-4. **First-use picker**: the first time the action runs, if at least one other known terminal is installed, show a small
-   dialog: "Which terminal should Cmdr open?" listing the installed ones with icons, pre-selecting the one that is
-   currently running if exactly one is (via `NSWorkspace.runningApplications`), with a "Change it anytime in Settings"
-   note. The choice persists; the dialog never returns. A Warp user is done in one click and never opens Settings. If
-   only Terminal is installed, skip the dialog and open Terminal.
+4. **First-use picker**: the first time the action runs, if at least one other known terminal is installed, use the one
+   that is currently running if exactly one is (via `NSWorkspace.runningApplications`), persists the app as the user's
+   choice over the default (because maybe next time it won't be running), and show a non-disappearing toast: "Opened
+   this folder in your terminal app. Do you want Cmdr to open a different app next time? Go to [Settings > Navigation &
+   file ops](link that goes to this setting) and change it. [Dismiss] [Go to Settings]" note. The toast shows only once.
+   A Warp user dismisses the toast and never opens Settings. If only Terminal is installed, open Terminal, and skip the
+   toast, but don't mark it as seen — maybe the user installs a new terminal app until next time and is ripe to learn
+   about this setting.
 5. **Settings row, not a section**: one dropdown in Navigation & file ops: "Open terminal here uses: [Terminal ▾]". It
    lists only the known terminals that are installed, plus "Choose an app…", which reuses `pick_app_via_open_panel` and
    launches via `open -a <app> <dir>`. That works for any terminal that registers as a folder handler, which nearly all
@@ -57,8 +59,7 @@ folder and let the terminal's own preferences decide. That's what the user alrea
 7. **Graceful failure**: if the chosen app was uninstalled, open Terminal instead and toast "Warp isn't installed
    anymore, so this opened in Terminal", with a link to the settings row. Reset the setting to Terminal so the toast
    doesn't repeat.
-8. **Shortcut**: Cmd+Shift+T is taken. Pick a free default (Cmd+Alt+T is the candidate) and check it in
-   `conflict-detector.ts`; the shortcut is rebindable like every other command.
+8. **Shortcut**: ⌥⌘T.
 9. **Surfaces**: File menu next to Show in Finder, command palette, pane context menu, and the shortcut.
 
 ## Milestones
@@ -89,8 +90,8 @@ folder and let the terminal's own preferences decide. That's what the user alrea
 ### M2. The setting
 
 - `behavior.openTerminalHereApp` in `behavior.ts`: a string holding a bundle id, or a custom `.app` path for the "Choose
-  an app…" case; default `com.apple.Terminal`. Plus a hidden `behavior.openTerminalHerePickerSeen` boolean for the
-  first-use dialog, the way `doubleClickOnPaneNotificationSeen` does it.
+  an app…" case; default `com.apple.Terminal`. Plus a hidden `behavior.openTerminalHereToastSeen` boolean for the
+  first-use toast, the way `doubleClickOnPaneNotificationSeen` does it.
 - The dropdown row in `NavigationAndFileOpsSection.svelte`, fed by `list_terminal_apps` each time the section renders.
   Icons in the options. "Choose an app…" at the bottom.
 - i18n keys for label, description, options, and the toast, in every locale the repo carries (the parity test will tell
@@ -101,7 +102,7 @@ folder and let the terminal's own preferences decide. That's what the user alrea
 - `file.openTerminalHere` in `shortcuts-store.ts`, `command_map.rs` (pane-scoped, not file-scoped), `menu_structure.rs`
   next to Show in Finder, the palette, and the pane context menu.
 - Enablement wired to the pane's volume kind. Disabled state carries the hint.
-- The first-use picker dialog, built with the house `ModalDialog` primitive (`docs/guides/building-ui.md`).
+- The first-use toast.
 - The uninstalled-app fallback toast.
 
 ### M4. Docs and checks
@@ -122,6 +123,6 @@ folder and let the terminal's own preferences decide. That's what the user alrea
 
 ## Size
 
-About one agent-day. One Rust module with a table and two commands, one setting, one settings row, one small dialog,
+About one agent-day. One Rust module with a table and two commands, one setting, one settings row, a few small toasts,
 menu and palette wiring, and pure unit tests for the recipe builder. Clear win, no tradeoff, as long as v1 stays out of
 the tab-vs-window business.
