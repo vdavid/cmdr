@@ -166,15 +166,23 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
      (`Overwrite all smaller` / `Overwrite all older`), which are always apply-to-all by design (no single-file variant;
      the bulk semantic is the point).
    - Cancel button → rollback transaction (user chooses keep/rollback).
-   - **Rollback is DISABLED for same-volume volume moves.** `isSameVolumeMove` is a move where source and destination
-     are the SAME non-default volume (one smb2 share / one MTP device). The backend handles these as a server-side
-     `volume.rename` rename-merge with NO rollback support — it stops without reversing and reports
-     `rolled_back: false`. So both Rollback affordances (the conflict-section footer and the main footer) render the
-     Rollback button disabled with the tooltip "Rollback is not available for same-volume moves" (the disabled button is
-     wrapped in a span so the tooltip still fires — disabled buttons swallow their own pointer events). Plain Cancel
-     stays reachable in both spots; in the conflict footer, where Rollback would otherwise be the only button, a plain
-     Cancel renders alongside the disabled Rollback. Local→local same-FS moves keep a live Rollback (real
-     `MoveTransaction` rollback), so the default local volume is excluded; cross-volume moves and copies are unaffected.
+   - **Rollback is BLOCKED wherever the backend can't reverse, or can't reverse any more.** Both affordances (the
+     conflict-section footer and the main footer) render the button `aria-disabled` with a tooltip that says why, and the
+     press is guarded so a blocked click asks nothing. `aria-disabled` rather than `disabled`, in both spots and for
+     both reasons: a disabled button leaves the tab order and takes its explanation with it. Plain Cancel stays reachable
+     throughout; in the conflict footer, where Rollback would otherwise be the only button, a plain Cancel renders
+     alongside it. Two reasons reach the state, and the dialog folds them into one `rollbackBlockedTooltip`:
+     - **The strategy can't reverse at all**: the operation's `supportsRollback` is off, plus the props-only
+       `isSameVolumeMove` for the frames before the first snapshot lands (a move where source and destination are the
+       SAME non-default volume — one smb2 share, one MTP device — which the backend runs as a server-side
+       `volume.rename` rename-merge that stops without reversing). Tooltip: "Rollback is not available for same-volume
+       moves". Local→local same-FS moves keep a live Rollback (real `MoveTransaction` rollback), so the default local
+       volume is excluded from the props rule.
+     - **It could, and the moment has passed**: `reversalWindowClosed` (`../reversal-wording.ts`) — a local cross-FS
+       move in its `deleting` phase has landed every file and committed, so a Rollback there would only stop the source
+       sweep. The tooltip says so and points at the Cancel that still spares the untouched originals; the stacked
+       confirmation is withdrawn if the phase arrives while it's up, because its promise has just become false.
+
      Pinned by `TransferProgressDialog.rollback.test.ts`.
 
 3. **TransferErrorDialog** (error display)
@@ -606,11 +614,12 @@ non-prompting policy: that would turn "nobody looked" into a silent overwrite.
   individually (not copy-all-then-delete-all). Minimizes duplicates on partial failure: if it fails mid-way, only the
   current file exists in both places. The progress UI shows three stages (Scanning → Copying → Removing source). If copy
   succeeds but delete fails, the user keeps files in both places (safer than losing data).
-- **A cross-volume move can't be rolled back at all**, and this dialog doesn't know it yet: it disables Rollback only
-  for a SAME-volume move, so on a cross-volume one it still offers a button whose click only cancels (the driver treats
-  `RollingBack` exactly like `Stopped` and reports `rolled_back: false`). The backend now publishes the real verdict as
-  `supportsRollback` on the operation snapshot, which the operation queue window reads; pointing this dialog at the same
-  flag is the open fix. See `src-tauri/src/file_system/write_operations/DETAILS.md` § "Rollback availability".
+- **Whether Rollback works is the OPERATION's answer, never the volume ids'.** A cross-volume move can't be reversed at
+  all (the driver treats `RollingBack` exactly like `Stopped` and reports `rolled_back: false`) and looks, from the
+  props, exactly like a perfectly reversible transfer. So both this dialog's footers read `supportsRollback` off the
+  registry snapshot, the same flag the queue window reads. The props-only same-volume-move rule stands beside it for the
+  frames before the first snapshot lands. See
+  `src-tauri/src/file_system/write_operations/DETAILS.md` § "Rollback availability".
 - **Dry-run conflict sampling.** If >200 conflicts, `DryRunResult.conflicts` contains a random sample. Check
   `conflictsSampled: true` and `conflictsTotal` for the exact count.
 - **Progress dialog edge case.** Same-FS move completes so fast that the complete event may fire before the dialog
@@ -734,9 +743,11 @@ leftover. Over-promising there would re-create the exact defect this line was ad
 
 **The confirmation ends where its siblings do.** `fileOperations.rollbackConfirm.body` carries the same "Cmdr skips
 anything it isn't sure about, so a few may stay behind" clause as its three `bodyUndo*` siblings, because the recheck
-makes "this deletes every file the operation has written so far" an over-promise. The Rollback TOOLTIP is deliberately
-left alone: its job is telling Rollback apart from Cancel, the confirmation two clicks later carries the detail, and
-hedging a five-word tooltip would blunt the warning it exists to deliver.
+makes "this deletes every file the operation has written so far" an over-promise. The Rollback TOOLTIP carries no such
+hedge: its job is telling Rollback apart from Cancel, the confirmation two clicks later carries the detail, and hedging a
+seven-word tooltip would blunt the warning it exists to deliver. It does split by operation, though
+(`inFlightRollbackTooltipKey`), because "delete every file written so far" over a move's reversal isn't a hedge missing,
+it's the wrong verb.
 
 ## The dialog is a view
 
@@ -772,8 +783,9 @@ otherwise the same one, down to the buttons. Three things differ, each for its o
   doing nothing. The queue row correspondingly doesn't offer Show on a `queued` row.
 - **Rollback comes from the registry row.** `rollbackUnavailable` reads the snapshot's `supportsRollback`, which is a
   promise about the OPERATION; an adopted view has no volume ids or direction to reason from. The props-only
-  same-volume-move rule stands beside it for the window before the first snapshot lands, and the phase gate (nothing
-  written during a scan) is unchanged.
+  same-volume-move rule stands beside it for the window before the first snapshot lands, and the two phase gates (nothing
+  written during a scan, nothing reversible once a move is sweeping its sources) apply to an adopted view exactly as they
+  do to a dispatching one — they read the live phase, which is the one thing both kinds of view always have.
 - **The parent runs no pane tail.** An adopted view has no birth context, and the two-slot arrangement in `dialog-state`
   is what makes the wrong version unreachable: `../../file-explorer/pane/DETAILS.md` § "Birth context".
 

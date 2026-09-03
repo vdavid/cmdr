@@ -512,14 +512,17 @@ Every construction site states its own verdict (a struct literal, so a new spawn
   all-or-nothing temp+rename rewrite); instant metadata ops; and the operation-log rollback's own inverse op (rolling
   back a rollback would re-apply what the person just undid).
 
-⚠️ The progress DIALOG doesn't read this flag yet: it decides from the volume ids it holds, disabling Rollback only for
-a same-volume move. So it still offers Rollback on a cross-volume move, where the click only cancels. Pointing the
-dialog at this flag (or teaching the cross-volume move driver to reverse) is the fix; until then, the operation queue window
-is the honest one.
+Both surfaces read it. The progress dialog blocks Rollback whenever the flag is off, so a cross-volume move no longer
+offers a button whose click only cancels; its own props-only same-volume-move rule stands beside the flag for the frames
+before the first snapshot lands, and never contradicts it.
 
 The flag is a property of the op's STRATEGY, so it never changes over the op's life. Whether Rollback is offered *right
-now* is the UI's call on top of it: the queue row also requires a running/paused op that isn't already rolling back
-(which it reads from the live `write-progress` phase, since rollback is an `OperationIntent`, not a `LifecycleStatus`).
+now* is the UI's call on top of it, and both surfaces ask the same three questions: a running/paused op, not already
+rolling back (read from the live `write-progress` phase, since rollback is an `OperationIntent`, not a
+`LifecycleStatus`), and not past the point where a reversal can still do anything. That last one is the local cross-FS
+move: `cross_fs.rs` commits its transaction before Phase 4, so a Rollback pressed during the `Deleting`-phase source
+sweep reverses nothing and only stops the sweep. The frontend names that window in one place,
+`file-operations/reversal-wording.ts`'s `reversalWindowClosed`, which the dialog and the queue row both call.
 
 ### IPC
 

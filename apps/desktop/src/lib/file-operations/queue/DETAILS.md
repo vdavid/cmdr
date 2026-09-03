@@ -284,9 +284,16 @@ rather than handed up to the page: which way Pause goes is decided from the life
 and the guards it carries are shared with every other view of that operation, so a Cancel pressed here is visible to
 whatever else is watching. The page keeps the fleet actions (Pause all, Resume all, Cancel selected) and Dismiss, none
 of which is a command on one operation. Rollback is styled `danger` exactly like the progress dialog's, since the same
-click deletes the same files. Rollback hides again once the op IS rolling back, which the row reads off the live
-`write-progress` phase: rollback is an `OperationIntent`, so the lifecycle status stays `running` throughout, and the
-status cell shows "Rolling back..." instead.
+click stops the same operation, and its tooltip splits by what the reversal DOES the same way the dialog's does
+(`inFlightRollbackTooltipKey`): a move's says the files travel back, never that they're deleted. Rollback hides again
+once the op IS rolling back, which the row reads off the live `write-progress` phase: rollback is an `OperationIntent`,
+so the lifecycle status stays `running` throughout, and the status cell shows "Rolling back..." instead.
+
+It also hides once a local cross-FS move reaches its `deleting` phase, where every file has landed and the engine has
+committed, so a reversal can no longer carry anything home (`reversalWindowClosed` in `../reversal-wording.ts`, shared
+with the progress dialog). The row HIDES rather than blocking with an explanation, as it already does during a scan: a
+compact list of live operations is not where a reason gets read, and the dialog one Show away is the surface that
+explains itself. Same verdict either way, so the two can't contradict each other.
 
 The summary beside the label is `basename(source)`, then an arrow and `basename(destination)` when there is one, with
 the full paths in tooltips. A REMOVAL reversal (undoing a copy, a new file or folder, or a compress) has no destination,

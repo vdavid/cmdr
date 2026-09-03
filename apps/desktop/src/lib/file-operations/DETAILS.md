@@ -374,11 +374,22 @@ word, since it really is deleting the partials.
 
 **A settled operation withdraws the question** rather than leaving one that answers to nothing: the progress dialog
 gates on `operationSettled`, the queue row on `canRollback`, and the history row on the operation still reading
-`rollbackable` (a reversal started in another window, by the agent, or over MCP takes the question down with it).
+`rollbackable` (a reversal started in another window, by the agent, or over MCP takes the question down with it). The
+dialog withdraws it on a BLOCKED Rollback too, which is how a move reaching its source-deletion phase with the question
+up stops promising a journey home.
 
-**The Rollback tooltip is part of this.** It used to read "Cancel and delete any partial target files created", which
-describes CANCEL. A user who reads that and clicks has been misled before the question ever appears, so the tooltip
-names what the button does: "Stop, and delete every file written so far".
+**The Rollback tooltip is part of this**, and it comes in the same two flavours the question does
+(`inFlightRollbackTooltipKey`): "Stop, and delete every file written so far" for a copy, "Stop, and move back every file
+moved so far" for a move. One tooltip for both would describe CANCEL on one of them, and a user who reads it and clicks
+has been misled before the question ever appears.
+
+**A Rollback that is switched off says WHY, on a button that can still be focused.** Both surfaces that block it use
+`aria-disabled` plus a tooltip rather than the bare `disabled` attribute, because a disabled button leaves the tab order
+and takes its explanation with it — exactly away from the keyboard and screen-reader users the app is built for. The
+press is guarded instead, so a blocked click asks nothing. Two reasons reach the state: the operation's strategy can't
+reverse at all (`supportsRollback`), or the moment has passed (`reversalWindowClosed`; the tooltip there names the
+Cancel that still works). The `disabled` attribute stays right for the scan phase and the settle window, where the
+button is inert for a moment rather than for a reason.
 
 ## `scan-throughput.ts`
 
