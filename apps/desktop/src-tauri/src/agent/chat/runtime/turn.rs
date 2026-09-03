@@ -173,6 +173,23 @@ async fn drive(
             }
         };
 
+        // `End` arrived, but the turn carries nothing at all: no text and no tool call.
+        // That is what a degenerate provider reply reduces to once a nameless tool call is
+        // dropped on the way in (`genai_impl`). Persisting it would show a blank bubble and
+        // call it an answer, so it takes the dropped-stream path instead: nothing is
+        // written, and a retry starts clean.
+        if message.parts.is_empty() {
+            log::warn!(target: LOG_TARGET, "assistant turn ended with no content; treating it as unfinished");
+            emit(
+                sink,
+                AgentChatEvent::Failed {
+                    kind: AgentErrorKind::UnfinishedReply,
+                    detail: None,
+                },
+            );
+            return TurnResult::Failed(AgentErrorKind::UnfinishedReply);
+        }
+
         // A completed `respond`: record a model transition (first `End` only, BEFORE the
         // user row so the event line sits between the turns), persist the user row (first
         // `End` only), then the assistant row (content written only now), then meter this

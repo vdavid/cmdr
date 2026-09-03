@@ -27,6 +27,9 @@ decision rationale): `DETAILS.md`.
 - **`ToolId::Unrecognized` is the read-only choke point, not an error.** A raw provider tool name resolves through
   `ToolId::from_wire_name`; an unknown name becomes `Unrecognized(raw)`, which is never in the agent's tool view, so
   dispatch refuses it. The gate is a typed variant/view check, never a string match on the name.
+- **A nameless tool call is dropped BOTH ways, and arguments always leave as a JSON object.** Qwen sometimes stops with
+  a tool call that has an id and no `fn_name`; replaying it 400s that thread forever. Inbound keeps it out of the store,
+  outbound drops what old threads already stored (the call plus its result). Keep both halves.
 - **`ToolId` and errors classify by variant/HTTP status, never by message string**. Provider
   errors are status-classified upstream in `crate::ai` and mapped variant-to-variant here.
 - **Tool declarations are never `strict: true`** (Gap D): OpenAI strict also demands all-required, which genai doesn't

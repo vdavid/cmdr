@@ -280,6 +280,13 @@ impl ToolId {
     pub fn is_known(&self) -> bool {
         !matches!(self, ToolId::Unrecognized(_))
     }
+
+    /// True when the provider named no function at all. A nameless call is never a real
+    /// invocation: nothing can dispatch it, and providers that validate the field reject
+    /// it on replay, so both directions of `genai_impl` drop it rather than carry it.
+    pub fn is_nameless(&self) -> bool {
+        self.as_wire_name().trim().is_empty()
+    }
 }
 
 impl Serialize for ToolId {

@@ -479,6 +479,45 @@ async fn crash_a_stream_dropped_mid_text_persists_nothing() {
 }
 
 #[tokio::test]
+async fn an_assistant_turn_with_nothing_in_it_is_an_unfinished_reply() {
+    let conn = migrated_conn();
+    let id = conversation(&conn);
+    // What a degenerate provider turn reduces to once the nameless tool call is dropped
+    // on the way in: `End` arrived, but the message carries no text and no call. Ending
+    // the turn here would persist a blank bubble and call it an answer.
+    let llm = ProgrammableLlm::new(vec![Program::Tools {
+        calls: vec![],
+        usage: AgentUsage {
+            prompt_tokens: 10,
+            completion_tokens: 5,
+        },
+    }]);
+    let (tx, mut rx) = unbounded_channel();
+
+    let result = run_turn(
+        &llm,
+        &OkDispatcher,
+        &conn,
+        &[],
+        &params(id, Some("summarize this")),
+        &tx,
+        &CancellationToken::new(),
+    )
+    .await;
+
+    assert_eq!(result, TurnResult::Failed(AgentErrorKind::UnfinishedReply));
+    let persisted = store::list_messages(&conn, id, 100, 0).expect("list");
+    assert!(
+        persisted.is_empty(),
+        "an empty reply persists no rows, so a retry is clean"
+    );
+    assert!(drain(&mut rx).contains(&AgentChatEvent::Failed {
+        kind: AgentErrorKind::UnfinishedReply,
+        detail: None,
+    }));
+}
+
+#[tokio::test]
 async fn crash_c_completed_turns_persist_and_a_retry_resumes_from_them() {
     let conn = migrated_conn();
     let id = conversation(&conn);

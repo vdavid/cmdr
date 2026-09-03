@@ -441,7 +441,10 @@ A message's `content_blocks` are written only on that `respond` call's `End`, so
 state is unambiguous:
 
 - **(a)** assistant text before a non-`End` termination (a provider drop, a crash) is
-  discarded — no assistant row — and the UI gets `AgentErrorKind::UnfinishedReply`.
+  discarded — no assistant row — and the UI gets `AgentErrorKind::UnfinishedReply`. An `End`
+  whose message carries NO parts takes this same path: it's what a degenerate provider turn
+  reduces to once `llm/genai_impl.rs` drops a nameless tool call, and persisting it would
+  show a blank bubble and call it an answer.
 - **(b)** the user row is written on the FIRST `End`, not at send. A first `respond` that
   never reached `End` records nothing, so a re-send re-assembles byte-identically.
 - **(c)** completed turns (each written on its own `End`, tool results on their own rows)
