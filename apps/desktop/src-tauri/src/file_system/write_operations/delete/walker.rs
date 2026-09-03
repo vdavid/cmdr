@@ -212,7 +212,6 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
 
     // Delete directories (in reverse order - deepest first)
     for dir in scan_result.dirs.iter().rev() {
-        // Check cancellation
         // The cooperative boundary (delete phase, between dirs).
         if state.stop_or_park_sync() {
             events.emit_cancelled(WriteCancelledEvent {
