@@ -370,6 +370,9 @@ async fn a_paused_walk_resumes_and_still_reports_the_whole_tree() {
     let released = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let released_flag = Arc::clone(&released);
     tokio::spawn(async move {
+        // allowed-test-sleep: the resume must arrive while the walk is parked, and
+        // the assertion below is that it did — a poll would race the thing it's
+        // measuring.
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
         released_flag.store(true, std::sync::atomic::Ordering::Release);
         resumer.resume();

@@ -107,7 +107,10 @@ impl Volume for BoundaryWalkingVolume {
         Box::pin(async { true })
     }
 
-    fn is_directory<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
         Box::pin(async { Ok(true) })
     }
 
@@ -176,7 +179,7 @@ async fn a_cancel_during_the_operations_own_scan_stops_the_walk() {
     )
     .await;
 
-    let failure = outcome.err().expect("a cancelled scan must not report totals");
+    let failure = outcome.expect_err("a cancelled scan must not report totals");
     assert!(
         matches!(failure.error, WriteOperationError::Cancelled { .. }),
         "a cancelled scan surfaces as Cancelled, got {:?}",
@@ -184,6 +187,7 @@ async fn a_cancel_during_the_operations_own_scan_stops_the_walk() {
     );
     assert!(
         volume.walked() <= TRIP_AT + 1,
+        // allowed-pluralize-noun: a failing-assert diagnostic, and `ENTRIES` is 1,000.
         "the walk stopped where the cancel landed; it crossed {} of {ENTRIES} entries",
         volume.walked()
     );
@@ -207,8 +211,10 @@ async fn a_pause_during_the_operations_own_scan_holds_it_until_resume() {
     let resumer = Arc::clone(&state);
     let held_at = Arc::clone(&volume);
     let resumed = tokio::spawn(async move {
-        // Long enough that an unparked walk would be finished and the assertion
-        // below would read 1,000 rather than a handful.
+        // allowed-test-sleep: the pause IS the subject. The window has to be long
+        // enough that an unparked walk would have finished all 1,000 entries, and
+        // what it measures is how far the walk got while it stood still — which is
+        // exactly what a poll on that same counter would race.
         tokio::time::sleep(Duration::from_millis(100)).await;
         let crossed = held_at.walked();
         resumer.pause_gate.resume();
@@ -230,6 +236,7 @@ async fn a_pause_during_the_operations_own_scan_holds_it_until_resume() {
     let crossed_while_paused = resumed.await.expect("the resumer task doesn't panic");
     assert!(
         crossed_while_paused <= TRIP_AT + 1,
+        // allowed-pluralize-noun: a failing-assert diagnostic, and `ENTRIES` is 1,000.
         "the walk stood still while paused; it had crossed {crossed_while_paused} of {ENTRIES} entries"
     );
     assert_eq!(

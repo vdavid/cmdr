@@ -119,6 +119,9 @@ impl std::fmt::Debug for ScanStop {
 ///
 /// Behind the `testing` feature so other crates' tests can pin their backend's
 /// walk against the same owner the app's real one stands in for.
+// DEFAULT-OK: every field is a flag or a counter about THIS signal's own state,
+// and all-zero is the truthful opening one — a live, unpaused owner that has been
+// asked nothing yet. Nothing here describes a disk.
 #[cfg(any(test, feature = "testing"))]
 #[derive(Default)]
 pub struct TestScanStop {

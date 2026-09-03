@@ -466,8 +466,7 @@ pub async fn assert_batch_scan_stops_when_told(volume: &dyn Volume, dir: &Path) 
     );
 
     let signal = TestScanStop::already_stopping();
-    let boundary =
-        ScanBoundary::silent().stopping_at(ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>));
+    let boundary = ScanBoundary::silent().stopping_at(ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>));
     let outcome = volume
         .scan_for_copy_batch_with_boundary(&[dir.to_path_buf()], &boundary)
         .await;
@@ -503,8 +502,7 @@ pub async fn assert_batch_scan_stops_when_told(volume: &dyn Volume, dir: &Path) 
 /// `dir` must hold at least `at_least` entries across its subtree.
 pub async fn assert_batch_scan_asks_inside_the_walk(volume: &dyn Volume, dir: &Path, at_least: usize) {
     let signal = TestScanStop::new();
-    let boundary =
-        ScanBoundary::silent().stopping_at(ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>));
+    let boundary = ScanBoundary::silent().stopping_at(ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>));
     let scan = volume
         .scan_for_copy_batch_with_boundary(&[dir.to_path_buf()], &boundary)
         .await
@@ -512,6 +510,7 @@ pub async fn assert_batch_scan_asks_inside_the_walk(volume: &dyn Volume, dir: &P
 
     assert!(
         scan.aggregate.file_count + scan.aggregate.dir_count >= at_least,
+        // allowed-pluralize-noun: a mis-seeded-fixture panic; one entry can't prove this.
         "fixture precondition: {} must hold at least {at_least} entries, the scan found {}",
         dir.display(),
         scan.aggregate.file_count + scan.aggregate.dir_count,

@@ -62,7 +62,10 @@ async fn a_stopping_boundary_refuses_both_kinds_of_entry() {
         "a file boundary must refuse"
     );
     assert!(
-        matches!(ScanBoundary::silent().stopping_at(stop).check().await, Err(VolumeError::Cancelled(_))),
+        matches!(
+            ScanBoundary::silent().stopping_at(stop).check().await,
+            Err(VolumeError::Cancelled(_))
+        ),
         "and so must the bare check a backend uses between groups"
     );
 }

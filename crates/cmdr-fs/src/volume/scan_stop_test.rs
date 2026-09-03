@@ -47,7 +47,9 @@ async fn a_paused_owner_holds_the_walk_until_it_resumes() {
         answer
     });
 
-    // Give the task a chance to reach the gate and confirm it hasn't come back.
+    // allowed-test-sleep: the wait IS the subject — a park has nothing to poll
+    // for, and the only way to show one is happening is to let time pass and find
+    // the task still standing there.
     tokio::time::sleep(Duration::from_millis(50)).await;
     assert!(
         !parked.load(Ordering::Acquire),
@@ -69,6 +71,8 @@ async fn a_stop_landing_while_parked_is_answered_at_the_same_boundary() {
     let stop = ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>);
 
     let waiter = tokio::spawn(async move { stop.should_stop().await });
+    // allowed-test-sleep: the stop has to land while the task is ALREADY parked,
+    // so it needs a head start; there's nothing observable to wait on.
     tokio::time::sleep(Duration::from_millis(50)).await;
 
     // Cancel, with the pause flag still set: the walk must not have to wait for
@@ -88,8 +92,8 @@ fn the_blocking_boundary_answers_a_stop_that_lands_while_the_thread_is_parked() 
     let stop = ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>);
 
     let worker = std::thread::spawn(move || stop.should_stop_blocking());
-    // The blocking twin re-reads under its own sleep loop; a stop while it is
-    // parked has to end the park, the same as the async one.
+    // allowed-test-sleep: same head start, for the thread-parking twin — the stop
+    // has to land while the worker is already inside its park.
     std::thread::sleep(Duration::from_millis(20));
     signal.stop();
     let answer = worker.join().expect("the worker thread doesn't panic");

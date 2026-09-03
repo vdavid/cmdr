@@ -7,9 +7,7 @@ use super::SmbVolume;
 use super::mapping::map_smb_error;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::scan_walk::{conflicts_against, fold_batch};
-use cmdr_fs::volume::{
-    BatchScanResult, CopyScanResult, ScanBoundary, ScanConflict, SourceItemInfo, VolumeError,
-};
+use cmdr_fs::volume::{BatchScanResult, CopyScanResult, ScanBoundary, ScanConflict, SourceItemInfo, VolumeError};
 use log::{debug, warn};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;

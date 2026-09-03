@@ -29,6 +29,9 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
   `PathHandleCache` is bidirectional: write via `insert` / `remove_path`, ❌ never `path_to_handle`, since devices REUSE
   handles and a desynced reverse map resolves a new object to a dead path. `ListingCache`'s 5 s TTL survives mutations;
   invalidate explicitly for read-after-write.
+- **A copy scan takes `scan_for_copy_with_stop`** (`bulk_ops.rs`), consulting the `ScanStop` per entry and BEFORE each
+  child listing: one listing is the round trip (~17 s for 1k entries), so that is as fine as this layer can be. Plain
+  `scan_for_copy` passes `ScanStop::none()` and cannot be stopped.
 - **A suppressed event must win `EventDebouncer::claim_trailing` before a trailing re-emit**: one per burst, never one
   per event, else a bulk copy livelocks the pane.
 - **A failed PTP upload must delete the partial object** (mtp-rs doesn't), and a stale cached parent handle self-heals

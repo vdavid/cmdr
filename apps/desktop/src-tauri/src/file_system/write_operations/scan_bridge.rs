@@ -237,9 +237,7 @@ impl ScanPause {
     pub(super) fn park_while_paused(&self) {
         let Some(owner) = self.paused_owner() else { return };
         self.enter_park();
-        owner
-            .pause_gate
-            .wait_while_paused_sync_until(&|| self.told_to_stop());
+        owner.pause_gate.wait_while_paused_sync_until(&|| self.told_to_stop());
         self.leave_park();
     }
 
@@ -249,10 +247,7 @@ impl ScanPause {
     pub(super) async fn park_while_paused_async(&self) {
         let Some(owner) = self.paused_owner() else { return };
         self.enter_park();
-        owner
-            .pause_gate
-            .wait_while_paused_until(&|| self.told_to_stop())
-            .await;
+        owner.pause_gate.wait_while_paused_until(&|| self.told_to_stop()).await;
         self.leave_park();
     }
 

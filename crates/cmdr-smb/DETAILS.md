@@ -216,6 +216,26 @@ hooks close that, both funneling through the ONE reconnect path (`do_attempt_rec
   disconnected); a rescan restores Fresh. Canonical detail lives in `indexing/DETAILS.md` § "SMB indexing and the
   freshness model"; this bullet is the volume-side trigger map.
 
+## Scanning: where the copy scan asks whether to carry on
+
+`scan_recursive` threads a `cmdr_fs::volume::ScanBoundary` and asks it at three places: once before the top-level stat,
+`dir()` before every directory listing, and `file()` on every leaf. That is what a person's Cancel and Pause reach, and
+before it existed the whole batch scan was one uninterruptible call — a wrong-share scan over a NAS whose disks had spun
+down ran to completion whatever the user pressed.
+
+❗ **`dir()` goes BEFORE the listing, never after.** A listing is the round trip, seconds of it on a cold share, so a
+boundary on its far side is a Cancel the user waits out.
+
+❌ **Don't ask inside the pipelined top-level stat drain.** Those futures each hold a cloned `Connection`, and parking
+mid-drain would hold every one of them idle for as long as a person is thinking. The sizes it resolves are reported to
+the boundary once the drain is over; the drain itself is O(top-level paths) and pipelined, so the wait it can add is
+bounded, and the recursion after it is the long part.
+
+A stopped scan comes back as `VolumeError::Cancelled`, ❌ never a short total — the shared contract, with the reasoning
+in `crates/cmdr-fs/DETAILS.md` § "`ScanBoundary`". `conformance::assert_batch_scan_stops_when_told` and
+`assert_batch_scan_asks_inside_the_walk` both run against the Docker share (`volume/conformance_test.rs`), because a
+walk that ignores its boundary still returns the right numbers and nothing else in the suite would notice.
+
 ## SMB scan-connection pool
 
 Canonical home for the per-scan connection pool (`crates/cmdr-smb/src/volume/scan_pool.rs`).

@@ -35,9 +35,9 @@ Discovery, the keychain, mounts, upgrades, and every human-facing word stay in t
 - **A read that knows its size sends `read_file_compound_sized`**: unsized, it charges credits for a whole `max_read`
   (130 for a 4 MB file), which parked seven of ten slots on a 300 GB copy. `max_concurrent_ops` also clamps by
   `credit_capacity_for`, but ❌ that clamp is INERT and tuning it won't help: it divides a constant, not the grant.
-- **The batch scan keeps its own oracle short-circuit** (the watcher earns the `authoritative_listing` shortcut), but
-  the conflict matcher and the batch fold are `cmdr_fs::volume::scan_walk`'s, so every backend hands a conflict dialog
-  the same shape.
+- **The batch scan keeps its own oracle short-circuit** (the watcher earns the `authoritative_listing` shortcut); the
+  conflict matcher and batch fold are `cmdr_fs::volume::scan_walk`'s, so every backend hands a conflict dialog the same
+  shape. **`scan_recursive` asks its `ScanBoundary` per entry, `dir()` BEFORE the listing** — `DETAILS.md` § "Scanning".
 - **Bulk work draws on the refcounted pool of extra sessions** (`scan_pool.rs`); a dead member retries on a sibling, ❌
   never moving the MAIN volume's connection state.
 - **smb2 bounds every wait itself**: ❌ no timeout layer of ours, never a missed keepalive read as death.

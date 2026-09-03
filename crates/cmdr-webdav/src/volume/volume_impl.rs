@@ -14,8 +14,8 @@ use cmdr_fs::volume::patching;
 use cmdr_fs::volume::scan_walk;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
-    ScanBoundary,
-    ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
+    ScanBoundary, ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    WatchCoverage,
 };
 use tokio_util::sync::CancellationToken;
 

@@ -15,8 +15,8 @@ use super::{SmbVolume, foreground_yield};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::SmbConnectionState;
 use cmdr_fs::volume::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanBoundary, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
-    VolumeError, VolumeReadStream, WatchCoverage,
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanBoundary, ScanConflict, SourceItemInfo, SpaceInfo,
+    Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
 use cmdr_fs::volume::{ListingProgress, Retirement};
 use log::debug;

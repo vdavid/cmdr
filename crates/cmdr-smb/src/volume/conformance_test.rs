@@ -233,7 +233,10 @@ async fn smb_integration_a_batch_scan_asks_its_boundary_inside_the_walk() {
     ensure_clean(&smb_vol, &base).await;
 
     smb_vol.create_directory(Path::new(&base)).await.unwrap();
-    smb_vol.create_directory(Path::new(&format!("{base}/nested"))).await.unwrap();
+    smb_vol
+        .create_directory(Path::new(&format!("{base}/nested")))
+        .await
+        .unwrap();
     smb_vol
         .create_file(Path::new(&format!("{base}/a.txt")), b"a")
         .await

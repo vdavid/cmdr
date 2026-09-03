@@ -47,8 +47,7 @@ Copy, move, delete, trash, and zip edits, as managed background ops.
   modules). It holds `LifecycleStatus`, the ONE lifecycle answer: ❌ never re-derive it from a presence test, no new
   variant.
 - **A loop parks where it checks cancel**, via `state.stop_or_park_sync()` / `_async()` and ❌ never hand-rolled; a
-  SCAN's own is `ScanPause`, owing `note_parked`. Inside a BACKEND's walk both speak as a `cmdr_fs`
-  `ScanStopSignal`, carried by the `ScanBoundary` the batch scan is handed; ❌ never re-derive the ordering there.
+  SCAN's own is `ScanPause`, owing `note_parked`.
 - **Every preview runs under a `ScanWatchdog`**; whoever settles it CLAIMS the outcome, and it bounds by INACTIVITY:
   feed the progress callback.
 - **A FAILED op is retained out-of-band**, the one exception to removal-on-terminal; `record_failure` emits only after

@@ -14,8 +14,8 @@ use std::time::Duration;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
-    ScanBoundary,
-    ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
+    ScanBoundary, ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    WatchCoverage,
 };
 use cmdr_fs::volume::{patching, scan_walk};
 use tokio_util::sync::CancellationToken;

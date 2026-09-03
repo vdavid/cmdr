@@ -258,8 +258,8 @@ boundary the user waits out, which over a sleeping NAS is seconds per directory.
 against the ~1–3 µs syscall or round trip the entry already costs.
 
 **A stopped scan returns `VolumeError::Cancelled`, ❌ never a partial `BatchScanResult`.** Callers read a scan's totals
-as the size of the transfer they're about to run, so a truncated total that looks successful is a progress bar
-finishing at 30% and a free-space check passing when it shouldn't.
+as the size of the transfer they're about to run, so a truncated total that looks successful is a progress bar finishing
+at 30% and a free-space check passing when it shouldn't.
 
 **Granularity is per backend, and uniformity would be a lie.** A backend that walks a real tree (local, SMB, MTP, and
 everything on `scan_walk`) asks per entry; one whose per-path scan is a bounded walk over an already-loaded index
