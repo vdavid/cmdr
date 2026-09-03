@@ -145,14 +145,29 @@ here as one server's answer, evidence-anchored, rather than as the protocol's.
   is simply that it always knows the size: a body of unknown length buys nothing here and gives every proxy and every
   server configuration in the world a chance to disagree. The cell is what would tell us if a version answered 411.
 - **RFC 4331 quota reports the ACCOUNT's numbers.** A 5 GiB account answers `quota-available-bytes` + `quota-used-bytes`
-  adding up to exactly 5,368,709,120, nothing like the container's disk (same server and date). An account with no quota
-  — which is a stock Nextcloud user, and so the common case — answers `quota-available-bytes: -3`, the `SPACE_UNLIMITED`
-  sentinel, beside a REAL `quota-used-bytes`. `get_space_info` reads that pair as `SpaceInfo::Unbounded { used_bytes }`,
-  so the pane states what the account holds and draws no bar (`cmdr-fs`'s `SpaceInfo`, and
-  `apps/desktop/src/lib/file-explorer/DETAILS.md` for what the indicator does with it). ❌ The sentinel is never read as
-  a size, and ❌ the used figure the server did give is never thrown away. ❗ The `occ` quota is applied at process
-  start, so a quota changed on a live server stays invisible over WebDAV until the server restarts; the fixture
-  provisions in a post-installation hook for exactly that reason.
+  adding up to exactly 5,368,709,120, nothing like the container's disk (same server and date). `get_space_info` reads
+  that pair as `SpaceInfo::Bounded`, and ❗ the used figure there is `quota-used-bytes` and ❌ never `oc:size`, so the
+  three numbers stay one self-consistent set.
+- **An account with NO quota answers `quota-used-bytes: 0`, however much it holds.** This is the trap, and it's the
+  common case: unlimited is what a stock Nextcloud user gets. Alongside it comes `quota-available-bytes: -3`, the
+  `SPACE_UNLIMITED` sentinel (`-1` and `-2` are the others). Measured on the fixture's own Nextcloud (2026-09-03): the
+  two accounts hold the identical ~65 MB skeleton, and the quota'd one reports `quota-used-bytes: 64934262` while the
+  unlimited one reports `0`. It isn't a stale filecache — `occ files:scan` finds 0 new and 0 updated and the figure
+  stays 0. ❌ So "the used figure is real whenever the ceiling isn't" is FALSE, and trusting it renders "0 bytes used"
+  under the pane of an account full of files.
+- **`oc:size` is the way out, and the reason a non-standard property is in `PROPFIND_BODY`.** ownCloud's namespace
+  (`http://owncloud.org/ns`), inherited by Nextcloud, carries the bytes a collection holds counting everything under it,
+  and on the account root that IS the used figure: `64934262` on both fixture accounts, matching `quota-used-bytes`
+  exactly wherever that one works. `get_space_info` prefers it in the unbounded branch and falls back to
+  `quota-used-bytes`, so Apache `mod_dav` and generic sabre/dav are untouched (they send neither, and land on
+  `NotSupported`). The parser resolves it by NAMESPACE, never by the `oc:` prefix a document happens to use, since a
+  server may bind ownCloud's namespace to any prefix and `oc` to anything else; `propfind_test.rs` pins that with a
+  decoy. ❗ The bar for the next vendor property: the standard has to be unable to answer the question at all, the
+  fallback has to leave every other server exactly as it was, and a fixture cell has to hold the claim up.
+- ❗ The `occ` quota is applied at process start, so a quota changed on a live server stays invisible over WebDAV until
+  the server restarts; the fixture provisions in a post-installation hook for exactly that reason.
+
+What the pane does with each shape: `cmdr-fs`'s `SpaceInfo`, and `apps/desktop/src/lib/file-explorer/DETAILS.md`.
 
 ## The reconnect model
 

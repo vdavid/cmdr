@@ -117,32 +117,44 @@ impl WebdavVolume {
         Ok(self.get_metadata_impl(path).await?.is_directory)
     }
 
-    /// RFC 4331 quota on the root, as far as the server is willing to say.
+    /// Space on the root, as far as the server is willing to say.
     ///
     /// Three answers, because servers give three:
     ///
-    /// - **Both numbers, both non-negative** ⇒ a quota'd account.
+    /// - **Both RFC 4331 numbers, both non-negative** ⇒ a quota'd account.
     ///   [`SpaceInfo::Bounded`], with the total built from the pair (RFC 4331
-    ///   has no capacity property, so `available + used` IS the total).
-    /// - **A real `quota-used-bytes` with no usable `quota-available-bytes`** ⇒
-    ///   an account with no quota, which is what a stock Nextcloud user is and
-    ///   so the common case. sabre/dav answers `-3` there (`SPACE_UNLIMITED`);
-    ///   `-1` and `-2` are its other sentinels, and a server that simply omits
-    ///   the property lands here too. Every one of them means the same thing to
-    ///   a reader: there is no ceiling, but the used figure is real, so
-    ///   [`SpaceInfo::Unbounded`] shows it. ❌ Reading the sentinel as a size
-    ///   would put a nonsense figure under the user's pane.
-    /// - **No usable `quota-used-bytes`** ⇒ nothing to show. `NotSupported`.
-    ///   Apache `mod_dav` is here: it sends neither property.
+    ///   has no capacity property, so `available + used` IS the total). ❗ The
+    ///   used figure here is `quota-used-bytes` and ❌ never `oc:size`, so the
+    ///   three numbers stay one self-consistent set: a total assembled from one
+    ///   source and a used figure from another can't be trusted to add up.
+    /// - **No usable `quota-available-bytes`** ⇒ an account with no quota,
+    ///   which is what a stock Nextcloud user is and so the common case.
+    ///   sabre/dav answers `-3` there (`SPACE_UNLIMITED`); `-1` and `-2` are its
+    ///   other sentinels, and a server that simply omits the property lands here
+    ///   too. All mean the same thing: no ceiling. ❌ Reading the sentinel as a
+    ///   size would put a nonsense figure under the user's pane. The used figure
+    ///   comes from `oc:size`, falling back to `quota-used-bytes`, and
+    ///   [`SpaceInfo::Unbounded`] shows it.
+    /// - **Neither figure usable** ⇒ nothing to show. `NotSupported`. Apache
+    ///   `mod_dav` is here: it sends none of these properties.
+    ///
+    /// ❗ `oc:size` leads in the unbounded branch because Nextcloud answers
+    /// `quota-used-bytes: 0` for an unlimited account while `oc:size` reports
+    /// what it actually holds (verified against the fixture's own Nextcloud,
+    /// 2026-09-03: both accounts hold the same ~65 MB skeleton, and the
+    /// unlimited one reports `quota-used-bytes: 0` next to `oc:size: 64934262`).
+    /// Trusting the standard alone there renders "0 bytes used" for an account
+    /// full of files.
     pub(super) async fn get_space_info_impl(&self) -> Result<SpaceInfo, VolumeError> {
         let root = self.to_remote_path(Path::new("/"))?;
         let client = self.clone_client().await?;
         let prop = self.stat(&client, &root).await?;
-        let Some(used) = prop.quota_used.filter(|used| *used >= 0).map(i64::unsigned_abs) else {
-            return Err(VolumeError::NotSupported);
-        };
+        let quota_used = prop.quota_used.filter(|used| *used >= 0).map(i64::unsigned_abs);
         match prop.quota_available.filter(|available| *available >= 0) {
             Some(available) => {
+                let Some(used) = quota_used else {
+                    return Err(VolumeError::NotSupported);
+                };
                 let available = available.unsigned_abs();
                 Ok(SpaceInfo::Bounded {
                     total_bytes: available.saturating_add(used),
@@ -150,7 +162,12 @@ impl WebdavVolume {
                     used_bytes: used,
                 })
             }
-            None => Ok(SpaceInfo::Unbounded { used_bytes: used }),
+            None => {
+                let Some(used) = prop.oc_size.or(quota_used) else {
+                    return Err(VolumeError::NotSupported);
+                };
+                Ok(SpaceInfo::Unbounded { used_bytes: used })
+            }
         }
     }
 }

@@ -14,6 +14,16 @@ use quick_xml::reader::NsReader;
 /// The namespace every WebDAV property lives in.
 const DAV: &[u8] = b"DAV:";
 
+/// ownCloud's namespace, which Nextcloud inherited at the fork and still uses.
+/// The one property read from it is `size`; `crates/cmdr-webdav/DETAILS.md`
+/// § What a real server answers carries why a non-standard property earns its
+/// place here.
+const OC: &[u8] = b"http://owncloud.org/ns";
+
+/// How an `oc:` name is held on the element stack. DAV local names never
+/// contain a colon, so the prefix keeps the two namespaces from colliding.
+const OC_PREFIX: &[u8] = b"oc:";
+
 /// One `response` element, with the properties this backend asks for.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct PropfindEntry {
@@ -33,6 +43,11 @@ pub(crate) struct PropfindEntry {
     pub quota_available: Option<i64>,
     /// `quota-used-bytes` (RFC 4331).
     pub quota_used: Option<i64>,
+    /// `oc:size`, the bytes a collection holds counting everything under it.
+    /// Nextcloud and ownCloud only; absent everywhere else. Unsigned because
+    /// those servers report a real count here rather than RFC 4331's sentinels,
+    /// so a negative value is malformed and parses to `None`.
+    pub oc_size: Option<u64>,
 }
 
 /// The body didn't parse as a `multistatus`.
@@ -57,12 +72,7 @@ pub(crate) fn parse_multistatus(body: &str) -> Result<Vec<PropfindEntry>, NotMul
         let (ns, event) = reader.read_resolved_event().map_err(|_| NotMultistatus)?;
         match event {
             Event::Start(start) => {
-                let in_dav = matches!(ns, ResolveResult::Bound(namespace) if namespace.as_ref() == DAV);
-                let local = if in_dav {
-                    start.local_name().as_ref().to_vec()
-                } else {
-                    Vec::new()
-                };
+                let local = stack_name(&ns, start.local_name().as_ref());
                 match local.as_slice() {
                     b"multistatus" => saw_multistatus = true,
                     b"response" => {
@@ -133,6 +143,7 @@ pub(crate) fn parse_multistatus(body: &str) -> Result<Vec<PropfindEntry>, NotMul
                     b"creationdate" => pending.created_at = parse_rfc3339(&value),
                     b"quota-available-bytes" => pending.quota_available = value.parse().ok(),
                     b"quota-used-bytes" => pending.quota_used = value.parse().ok(),
+                    b"oc:size" => pending.oc_size = value.parse().ok(),
                     b"propstat" => {
                         if pending_status_ok && let Some(entry) = current.as_mut() {
                             merge(entry, &pending);
@@ -165,6 +176,22 @@ fn merge(entry: &mut PropfindEntry, from: &PropfindEntry) {
     entry.created_at = entry.created_at.or(from.created_at);
     entry.quota_available = entry.quota_available.or(from.quota_available);
     entry.quota_used = entry.quota_used.or(from.quota_used);
+    entry.oc_size = entry.oc_size.or(from.oc_size);
+}
+
+/// How an element is held on the stack: its local name for a `DAV:` element,
+/// the same prefixed with `oc:` for an ownCloud one, and empty for a namespace
+/// this parser reads nothing from.
+fn stack_name(ns: &ResolveResult, local: &[u8]) -> Vec<u8> {
+    match ns {
+        ResolveResult::Bound(namespace) if namespace.as_ref() == DAV => local.to_vec(),
+        ResolveResult::Bound(namespace) if namespace.as_ref() == OC => {
+            let mut name = OC_PREFIX.to_vec();
+            name.extend_from_slice(local);
+            name
+        }
+        _ => Vec::new(),
+    }
 }
 
 /// `HTTP/1.1 200 OK` → whether the code is 2xx. The code is parsed as a number;

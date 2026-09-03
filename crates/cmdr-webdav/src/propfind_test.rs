@@ -95,8 +95,80 @@ fn a_nextcloud_listing_yields_decoded_hrefs_and_typed_props() {
             created_at: Some(STAMP - 34 * 60 - 56),
             quota_available: None,
             quota_used: None,
+            oc_size: None,
         }
     );
+}
+
+/// `oc:size` is read by NAMESPACE, never by the prefix the document happens to
+/// use. A server is free to bind ownCloud's namespace to any prefix, and free to
+/// bind the letters `oc` to something else entirely; both happen in this body.
+/// Matching on the literal prefix would read the decoy and miss the real one.
+#[test]
+fn oc_size_is_matched_by_namespace_rather_than_by_prefix() {
+    let body = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:xyz="http://owncloud.org/ns" xmlns:oc="http://example.invalid/decoy">
+  <d:response>
+    <d:href>/remote.php/dav/files/grace/</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:resourcetype><d:collection/></d:resourcetype>
+        <d:quota-available-bytes>-3</d:quota-available-bytes>
+        <d:quota-used-bytes>0</d:quota-used-bytes>
+        <oc:size>999</oc:size>
+        <xyz:size>64934262</xyz:size>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+    let entries = parse_multistatus(body).expect("a multistatus");
+    assert_eq!(entries.len(), 1);
+    assert_eq!(
+        entries[0].oc_size,
+        Some(64_934_262),
+        "the ownCloud namespace carries the size whatever prefix it's bound to"
+    );
+    assert_eq!(
+        entries[0].quota_used,
+        Some(0),
+        "the RFC 4331 pair is still read alongside it"
+    );
+}
+
+/// A `size` outside the ownCloud namespace is not this property, and a value
+/// that isn't a count is no value at all.
+#[test]
+fn a_foreign_or_malformed_size_leaves_oc_size_empty() {
+    let body = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns">
+  <d:response>
+    <d:href>/dav/one/</d:href>
+    <d:propstat>
+      <d:prop><s:size>1234</s:size></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/two/</d:href>
+    <d:propstat>
+      <d:prop><oc:size>-1</oc:size></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/three/</d:href>
+    <d:propstat>
+      <d:prop><oc:size/></d:prop>
+      <d:status>HTTP/1.1 404 Not Found</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+    let entries = parse_multistatus(body).expect("a multistatus");
+    assert_eq!(entries.len(), 3);
+    assert_eq!(entries[0].oc_size, None, "sabre/dav's own namespace is not ownCloud's");
+    assert_eq!(entries[1].oc_size, None, "a negative count is malformed, not a size");
+    assert_eq!(entries[2].oc_size, None, "a 404 propstat never contributes a value");
 }
 
 #[test]

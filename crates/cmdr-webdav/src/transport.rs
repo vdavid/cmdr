@@ -61,12 +61,20 @@ pub(crate) enum Depth {
     One,
 }
 
-/// The properties every PROPFIND asks for, quota included: the two extra
-/// elements cost nothing on a server without them.
+/// The properties every PROPFIND asks for, quota included: the extra elements
+/// cost nothing on a server without them, which answers a 404 `propstat` the
+/// parser skips.
+///
+/// ❗ `oc:size` is NOT standard. It's ownCloud's, inherited by Nextcloud, and
+/// it's here because an unlimited Nextcloud account answers RFC 4331's
+/// `quota-used-bytes` with `0` while holding real bytes, so the standard alone
+/// can't report space for the commonest Nextcloud setup there is. Declaring the
+/// namespace is harmless for every other server. `DETAILS.md` § What a real
+/// server answers.
 const PROPFIND_BODY: &str = r#"<?xml version="1.0" encoding="utf-8"?>
-<D:propfind xmlns:D="DAV:"><D:prop>
+<D:propfind xmlns:D="DAV:" xmlns:oc="http://owncloud.org/ns"><D:prop>
 <D:resourcetype/><D:getcontentlength/><D:getlastmodified/><D:creationdate/><D:getetag/>
-<D:quota-available-bytes/><D:quota-used-bytes/>
+<D:quota-available-bytes/><D:quota-used-bytes/><oc:size/>
 </D:prop></D:propfind>"#;
 
 /// One authenticated client for one account on one server.

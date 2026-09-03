@@ -41,6 +41,8 @@ The WebDAV backend: a `Volume` over one `reqwest` client with one account's Basi
   than `len` and drops the response as soon as the window is full. The server that makes that branch run is
   `webdav-fixture-norange`, port 13483. What a real server answers to that and to a chunked PUT, with dates:
   `DETAILS.md` § "What a real server answers".
+- ❗ **Unbounded space reads `oc:size`, ❌ never `quota-used-bytes`**: an unlimited Nextcloud account answers `0` there
+  while holding real bytes. The only non-standard property here; `DETAILS.md` sets the bar for a second.
 - ❗ **DELETE is recursive by protocol; the trait's is not.** `delete` refuses a non-empty collection with `ENOTEMPTY`
   after a `Depth: 1` PROPFIND.
 - ❌ Never `root_anchored`, never a stat per child in a scan, never `authoritative_listing` (coverage is `None`).
