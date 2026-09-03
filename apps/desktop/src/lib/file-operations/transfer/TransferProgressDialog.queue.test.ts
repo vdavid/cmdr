@@ -646,6 +646,21 @@ describe('TransferProgressDialog while the operation is still counting', () => {
     ).not.toBeNull()
   })
 
+  it('titles a PAUSED scan "Paused", and offers Resume', async () => {
+    // The title check runs before the scanning arm on purpose: a paused walk
+    // has stopped, so "Scanning to copy…" over it would describe work that
+    // isn't happening. And without Resume here, a scan paused from "Pause all"
+    // had no way back but Cancel.
+    const { target } = await mountScanningDialog()
+
+    emitSnapshot(snapshot('paused'))
+    await tick()
+
+    expect(target.textContent).toContain('Paused')
+    expect(target.textContent, 'the title must not still claim it is counting').not.toContain('Scanning to copy')
+    expect(queryButton(target, 'Resume this transfer')).not.toBeNull()
+  })
+
   it('backgrounds a scanning operation without cancelling it', async () => {
     const { target, onQueue } = await mountScanningDialog()
 
