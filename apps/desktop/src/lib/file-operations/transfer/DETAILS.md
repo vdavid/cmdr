@@ -675,6 +675,16 @@ event, and raising it where the event lands means the started arm and the ADOPTE
 is exactly what a plain Cancel asks for and what stopping a reversal before its first item leaves. A clean reversal with
 `reversed === 0` says nothing either — the transfer had written nothing to undo, and "Removed 0 items" is noise.
 
+**Both silences break on a field, never on `outcome`.** `stagedLeftovers` breaks them because `outcome` answers for the
+LEDGER alone, and Cmdr's own scratch can outlive a perfect reversal. `originalsStillInPlace` breaks the first one for
+the same reason and is the sharper case: a cross-filesystem move stopped on its last step (deleting the originals, after
+every file has already arrived) has some of the user's originals gone for good and no reversal coming for them, yet its
+`outcome` is a truthful `notRolledBack`. Silence there tells a user who pressed Rollback that nothing happened. So
+`moveAlreadyLanded` says where the files are, that they're staying there, and how many originals are still in the folder
+the move started from — at `info`, because nothing went wrong, and claiming no undo, because none is coming. Why the
+backend spends a field on this instead of an outcome: `write_operations/transfer/DETAILS.md` § "A stop in the source
+sweep says where the files are".
+
 **How a stopped reversal is told apart from a skipping one**, with no extra field on the wire: a full pass that skipped
 nothing lands `rolledBack`, so `partiallyRolledBack` with an EMPTY `skips` can only be a reversal the user stopped, and
 it gets its own wording. When a stop DOES carry skip groups the partial wording covers it, because every line that
@@ -683,8 +693,9 @@ wording prints is true either way and none of them claims the ledger was walked 
 overclaim.
 
 **The verb comes off the EVENT's operation type, never a view's config.** Only a same-volume move carries items home;
-every other in-flight reversal deletes what the transfer wrote, and a cross-volume move can't be reversed at all
-(`notRolledBack`, so it never reaches here). A dialog that ADOPTED a running operation was handed no birth context, so
+every other in-flight reversal deletes what the transfer wrote, and a cross-drive move can't be reversed at all
+(`notRolledBack`, so it never picks a verb — its own line is `moveAlreadyLanded`). A dialog that ADOPTED a running
+operation was handed no birth context, so
 its config's operation type is inert there — reading it would word a move's reversal as a delete on exactly the path
 where nobody could see it coming.
 

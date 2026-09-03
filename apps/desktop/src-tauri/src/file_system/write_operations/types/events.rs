@@ -221,6 +221,31 @@ impl StagedLeftovers {
     }
 }
 
+/// The originals a cross-filesystem move still had in their old place when it
+/// was stopped, once the whole copy was already at the destination.
+///
+/// **Independent of `outcome`, the same way [`StagedLeftovers`] is.** No
+/// reversal ran here and none can: the bytes are across a filesystem boundary,
+/// so carrying them home would be a second full transfer the user never asked
+/// for. `NotRolledBack` says that truthfully and says all it can. What it can't
+/// say is that the move ALREADY LANDED — every source's copy is at the
+/// destination and durable, some originals are gone for good, and the ones
+/// counted here are duplicates of files that now live somewhere else. Without
+/// this the readout stays silent on all of it, which is the one reading a user
+/// who pressed Rollback must not be left with.
+///
+/// Set only by `transfer/move_op/cross_fs.rs`'s phase-4 source sweep, which is
+/// the only place that state exists.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct OriginalsStillInPlace {
+    /// Top-level items — the ones the user picked, files and folders alike, and
+    /// the same unit the sweep's own progress counts in. Never zero: the sweep
+    /// reads the intent at the top of each item, so a stop always leaves at
+    /// least the item it was about to take.
+    pub count: u32,
+}
+
 /// What the reversal after a cancel managed to undo, and what it left alone.
 ///
 /// Reuses [`SkipBreakdown`] so a cancelled transfer and a Roll back from history
@@ -241,6 +266,13 @@ pub struct CancelRollback {
     /// answers only for the ledger. It's the READOUT's job never to call that
     /// combination clean (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`).
     pub staged_leftovers: Option<StagedLeftovers>,
+    /// The originals a landed cross-FS move was still clearing when it stopped.
+    /// `None` everywhere else, which is every other operation Cmdr can cancel.
+    ///
+    /// Independent of `outcome` for the reason [`OriginalsStillInPlace`] gives,
+    /// and the READOUT owes it a line even though `outcome` is `NotRolledBack`
+    /// (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`).
+    pub originals_still_in_place: Option<OriginalsStillInPlace>,
 }
 
 impl CancelRollback {
@@ -251,7 +283,16 @@ impl CancelRollback {
             reversed: 0,
             skips: Vec::new(),
             staged_leftovers: None,
+            originals_still_in_place: None,
         }
+    }
+
+    /// Account for the originals a landed cross-FS move hadn't cleared yet, so
+    /// the summary the user reads says where their files actually are.
+    #[must_use]
+    pub const fn with_originals_still_in_place(mut self, count: u32) -> Self {
+        self.originals_still_in_place = Some(OriginalsStillInPlace { count });
+        self
     }
 
     /// Name the staged partials the cancel's sweep couldn't remove, so the

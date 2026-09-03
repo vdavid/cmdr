@@ -1274,6 +1274,15 @@
     }
   },
 
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Everything Cmdr moved is already at the destination, so it stays there. {count, plural, one {One original is still where it was.} other {{countText} originals are still where they were.}}",
+  "@fileOperations.cancelRollback.moveAlreadyLanded": {
+    "description": "Toast shown when the user stops a move between two different drives while Cmdr is on its last step: deleting the originals, after every file has already arrived at the other drive. Two sentences with two jobs. The first says where the files are and that they are staying there: carrying them back would mean copying everything across the drives a second time, which Cmdr will not do, so this must read as a settled fact and never as a promise to undo anything. The second accounts for the originals Cmdr had not deleted yet, which the user will find still sitting in the folder they started from; the ones it had already deleted are gone, and the sentence must not suggest they can come back. Nothing went wrong here, so keep it matter-of-fact with no hint of a warning. \"Original\" means the copy in the folder the move started from, as opposed to the one that has now arrived at the other drive. It covers both files and folders, and it counts the items the user picked, so one selected folder is one original however much is inside it. The second sentence sits inside the plural because the singular reads better without the number at all (\"One original\", not \"1 original\"); write each branch to read naturally in your language, and drop {countText} from any branch that doesn''t want it. Never use the words \"error\" or \"failed\". Sentence case.",
+    "placeholders": {
+      "countText": "how many originals are still in the folder the move started from, already formatted for display (e.g. 1,234)",
+      "count": "the same number of originals (drives the singular/plural form of the noun)"
+    }
+  },
+
   "fileOperations.cancelRollback.leftBehind": "Cmdr skips anything it isn''t sure about, so these stayed where they are:",
   "@fileOperations.cancelRollback.leftBehind": {
     "description": "Middle line of the toast after a cancelled copy or move whose undo left things behind. It sets the expectation BEFORE the reasons, so the user reads the leftovers as care rather than as something going wrong: Cmdr refuses to remove or move anything it can''t match against what it wrote. The lines under it (fileOperations.cancelRollback.reason.*) each name one reason and are shown as a bulleted list, which is why this line ends in a colon. It opens with the same verb as the Rollback confirmations (fileOperations.rollbackConfirm.body and its bodyUndo* siblings), which say Cmdr skips anything it isn''t sure about; keep the two matched in your language too. Sentence case; the apostrophe is doubled for ICU and renders as one."

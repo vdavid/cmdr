@@ -17,7 +17,14 @@ function skip(reason: SkipReason, count: number, exampleName = 'invoice-2026.pdf
 }
 
 function rollback(partial: Partial<CancelRollback>): CancelRollback {
-  return { outcome: 'notRolledBack', reversed: 0, skips: [], stagedLeftovers: null, ...partial }
+  return {
+    outcome: 'notRolledBack',
+    reversed: 0,
+    skips: [],
+    stagedLeftovers: null,
+    originalsStillInPlace: null,
+    ...partial,
+  }
 }
 
 describe('readCancelRollback', () => {
@@ -315,6 +322,70 @@ describe('readCancelRollback', () => {
       expect(readout?.reasons[0]).not.toContain('cmdr-tmp')
       expect(readout?.staged).toContain('cmdr-tmp')
       expect(readout?.level).toBe('warn')
+    })
+  })
+
+  describe('a cross-filesystem move stopped while it was clearing the originals', () => {
+    // The whole copy is at the destination and durable by the time this phase
+    // starts, so there is no undo to run and none to report. Staying silent
+    // would leave a user who pressed Rollback thinking nothing had happened,
+    // while some of their originals were already gone for good.
+    const landed = { count: 200 }
+
+    it('says where the files are and how many originals stayed', () => {
+      const readout = readCancelRollback(rollback({ originalsStillInPlace: landed }), 'move')
+      expect(readout).toEqual({
+        headline:
+          'Everything Cmdr moved is already at the destination, so it stays there. ' +
+          '200 originals are still where they were.',
+        leftBehind: null,
+        reasons: [],
+        staged: null,
+        level: 'info',
+      })
+    })
+
+    it('speaks of a single original in the singular, with no number', () => {
+      const readout = readCancelRollback(rollback({ originalsStillInPlace: { count: 1 } }), 'move')
+      expect(readout?.headline).toBe(
+        'Everything Cmdr moved is already at the destination, so it stays there. One original is still where it was.',
+      )
+    })
+
+    it('groups the thousands, like every other count the toast prints', () => {
+      const readout = readCancelRollback(rollback({ originalsStillInPlace: { count: 1240 } }), 'move')
+      expect(readout?.headline).toContain('1,240 originals')
+    })
+
+    it('stays calm: nothing went wrong, and it never says error or failed', () => {
+      const readout = readCancelRollback(rollback({ originalsStillInPlace: landed }), 'move')
+      expect(readout?.level).toBe('info')
+      expect(readout?.headline?.toLowerCase()).not.toMatch(/\berror\b|\bfailed\b/)
+    })
+
+    it('claims nothing about the originals it did remove', () => {
+      // Reversing those would be a second full transfer across the boundary,
+      // which Cmdr does not do. The line must not imply it will.
+      const readout = readCancelRollback(rollback({ originalsStillInPlace: landed }), 'move')
+      expect(readout?.headline?.toLowerCase()).not.toMatch(/put .* back|bring .* back|undo/)
+    })
+
+    it('still reports scratch the destination kept, and takes the warning colour', () => {
+      const readout = readCancelRollback(
+        rollback({
+          originalsStillInPlace: landed,
+          stagedLeftovers: { count: 1, exampleName: 'holiday.jpg.cmdr-tmp-4d1f9c' },
+        }),
+        'move',
+      )
+      expect(readout?.headline).toContain('200 originals')
+      expect(readout?.staged).toContain('cmdr-tmp')
+      expect(readout?.level).toBe('warn')
+    })
+
+    it('leaves every other cancelled operation silent, since only this one sets it', () => {
+      expect(readCancelRollback(rollback({}), 'move')).toBeNull()
+      expect(readCancelRollback(rollback({}), 'copy')).toBeNull()
     })
   })
 })

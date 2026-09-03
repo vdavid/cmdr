@@ -1396,6 +1396,7 @@ export type MessageKey =
   | 'fileOperations.cancelRollback.doneDeleting'
   | 'fileOperations.cancelRollback.doneMovingBack'
   | 'fileOperations.cancelRollback.leftBehind'
+  | 'fileOperations.cancelRollback.moveAlreadyLanded'
   | 'fileOperations.cancelRollback.reason.drift.counted'
   | 'fileOperations.cancelRollback.reason.drift.named'
   | 'fileOperations.cancelRollback.reason.failed.counted'

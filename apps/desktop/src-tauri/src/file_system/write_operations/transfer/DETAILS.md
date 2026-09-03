@@ -108,7 +108,7 @@ Three ledgers say what an operation currently has at the destination, and each o
 
 ### Naming what a cancel left behind
 
-`CancelRollback` reports TWO kinds of leftover, and they are separate fields on purpose.
+`CancelRollback` reports THREE kinds of leftover, and they are separate fields on purpose.
 
 `skips` is per-reason `SkipBreakdown` groups: ledger entries a reversal walked to and DECIDED to leave, named by the file the user is looking at. `staged_leftovers` is a `StagedLeftovers { count, example_name }` for the `.cmdr-tmp-*` scratch the abandoned-write sweep asked the destination to remove and didn't get (§ "Staged writes"). Three reasons they don't merge:
 
@@ -119,6 +119,8 @@ Three ledgers say what an operation currently has at the destination, and each o
 **`outcome` stays about the LEDGER**, so `RolledBack` with leftovers is a real and honest combination: the reversal did walk every entry. ❌ Don't force it to `PartiallyRolledBack` — the frontend reads `partiallyRolledBack` with empty `skips` as "the user stopped it partway", and that inference is what tells the two apart. Instead, the READOUT (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`) never lets a leftover render as a clean success: it drops the completeness wording (`someDeleted`, never `doneDeleting`) and the `success` level whenever `staged_leftovers` is present, and it prints the line OUTSIDE the reason list, which sits under "Cmdr skips anything it isn't sure about".
 
 The three volume emit sites all attach it — the copy's Rollback branch, the copy's plain-Stop branch, and the cross-volume move's cancel — so a leftover speaks even where there is no reversal at all to report.
+
+`originals_still_in_place` is the third, an `OriginalsStillInPlace { count }` set at exactly one site: `move_op/cross_fs.rs`'s phase-4 cancel. It counts the user's own originals, not Cmdr's leavings, and it is the one place `NotRolledBack` carries real news. Why the state needs a field rather than an `outcome` variant, and what the count includes: the "A stop in the source sweep says where the files are" block below.
 
 ### The partials carve-out
 
@@ -157,6 +159,39 @@ this: `volume/move.rs` copies and deletes PER FILE, so its bar already covers th
 **Cross-FS move source-delete preserves Skipped sources.** `move_with_staging`'s Phase 3 (staging → final rename) resolves conflicts; a Skip discards the staged copy so the file never lands at the destination. Phase 4 (`delete_sources_after_move`) must therefore NOT delete that source — the user clicked Skip to keep both copies, and deleting the only original would be silent data loss. Phase 3 records every Skipped original in a `skipped_source_paths: HashSet<PathBuf>` (whole top-level source for a single-file / type-mismatch Skip; per-child paths remapped from the staging prefix back to the source prefix for a directory merge). Phase 4 skips whole sources in the set, removes a clean source dir wholesale (`remove_dir_all`), and for a source dir that holds a Skipped descendant walks it via `delete_dir_preserving_skipped` (deletes non-skipped children, removes a dir only once empty), so the Skipped child's original survives inside a surviving source directory. The same-FS path (`move_with_rename`) is inherently correct: it renames originals directly, and a Skipped child just leaves the source dir non-empty. Pinned by `move_op_tests.rs::{cross_fs_move_skip_preserves_source_and_dest, cross_fs_move_dir_merge_skip_child_preserves_source_child}`.
 
 **Empty directories land via the scanned-dirs pass (`copy/scanned_dirs.rs::create_scanned_dirs_at_destination`).** The per-file loop creates directories only as FILE parents, so an empty directory — or a branch holding nothing but empty directories — has no file to hang its creation on and used to complete "successfully" while never arriving (and on a cross-FS move, Phase 4 then deleted the source: the empty dir was destroyed without ever landing). The pass runs over `ScanResult.dirs` on the local copy's Completed arm and after the move's staging loop (destination = the staging dir, so empty dirs ride the normal Phase-3 rename + cleanup). Mapping mirrors `FileInfo::dest_path`; created dirs are recorded for rollback. Data-safety: a dest path that already holds anything (dir = merge, file = type clash) is left untouched — an empty source dir never replaces user data. Pinned by `copy_tests.rs::{copy_creates_empty_directory_at_destination, copy_creates_nested_empty_directories, copy_empty_directory_does_not_clobber_same_named_dest_file}` and `move_op_tests.rs::cross_fs_move_preserves_empty_directories`. The volume (MTP/SMB) pipeline doesn't share the hole — `copy_directory_streaming` creates each dir before walking its children.
+
+**A stop in the source sweep says where the files are.** A cancel inside Phase 4 carries `originals_still_in_place`, and
+that is the only honest thing it can carry. By the time the sweep runs, every source's copy has landed at the
+destination (Phase 3) and been flushed (§ Durability), and each loop turn deletes one more original. So a stop there
+leaves a state no other cancel in the app produces: the move effectively SUCCEEDED, some originals are gone for good,
+and the rest are duplicates of files that now live somewhere else. Reversing it is out of scope by design — the bytes
+are across a filesystem boundary, so putting an original back means copying it home, minutes of I/O the user never asked
+for — which is why `outcome` says `NotRolledBack`, truthfully. Emitting a bare `CancelRollback::none()` was the problem:
+the readout renders `notRolledBack` with nothing attached as SILENCE (a plain Cancel keeps what it wrote, and announcing
+that would announce nothing happened), so a user who pressed Rollback after 200 of their 400 originals were gone was
+told nothing at all.
+
+- **Why a field, not a new `CancelRollbackOutcome`.** The count is the news, and `outcome` is a payload-free enum, so a
+  variant would need the field anyway. Worse, the frontend reads `partiallyRolledBack` with empty `skips` as "the user
+  stopped the reversal partway" (§ "Naming what a cancel left behind"), and every outcome that fits this state either
+  carries that inference or is a lie. The field mirrors `staged_leftovers` exactly: independent of `outcome`, additive
+  on the wire, and it obliges the readout to speak where `outcome` alone would stay quiet.
+- **What the count counts.** Top-level sources, the same unit as the sweep's own bar: the ones the loop never reached
+  PLUS the Skipped ones it walked past on purpose, both of which the user still has in the source folder. Never zero —
+  the intent is read at the top of each turn, so a stop always leaves at least the item it was about to take. The
+  already-deleted ones are deliberately absent: they aren't actionable (their content is whole at the destination), and
+  a second number would need its own wording for the stop-before-the-first-delete case.
+- **What it reads as.** `fileOperations.cancelRollback.moveAlreadyLanded`, at `info` level: everything Cmdr moved is
+  already at the destination and stays there, then the count of originals still in their old place. It claims nothing
+  about an undo, because none is coming.
+- **`cross_fs.rs` has no post-loop intent check**, unlike `copy/mod.rs`'s `PostLoopIntent`. A Rollback pressed after the
+  Phase-2 copy loop drains does NOT stop the operation there: Phase 3 renames the whole tree into place and the flush
+  runs regardless, and the sweep's first `is_cancelled` is what catches the click. The report stays honest either way
+  (every original is still in place, and the message says exactly that), but the operation carried on for one more phase
+  after the click. Closing that gap means deciding what a Rollback in that window should DO, which is the same deferred
+  product question as reversing Phase 4 itself.
+
+Pinned by `move_interruption_tests.rs::{a_rollback_during_the_source_sweep_reports_the_originals_it_did_not_reach, a_rollback_before_the_sweep_starts_reports_every_original_still_in_place, the_sweeps_account_counts_a_skipped_source_as_still_in_place}` and, for the wording, `cancel-rollback-toast.test.ts`.
 
 **Move rollback (same-FS).** `MoveTransaction` in `move_op/mod.rs` tracks `(original_source, landed)` pairs for each rename and reverses them newest-first, under both guards above. Same-FS rename rollback is instant (just another rename), so it runs synchronously. Cross-FS move rollback is handled by `CopyTransaction` (removes the staging directory).
 

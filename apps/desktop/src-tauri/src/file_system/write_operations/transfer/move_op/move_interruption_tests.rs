@@ -365,3 +365,322 @@ fn a_cancelled_cross_fs_move_takes_its_staging_folder_with_it() {
     );
     assert!(src_file.exists(), "and the cancel spared the original");
 }
+
+/// A Rollback pressed while the move is clearing the originals reports what is
+/// actually on disk: the whole copy is at the destination, and the originals the
+/// sweep hadn't reached are still where they were.
+///
+/// The undo itself is out of reach here — the bytes are already across a
+/// filesystem boundary, and carrying them home would be minutes of I/O the user
+/// never asked for. So the report's job is the truth, not a reversal: saying
+/// nothing would leave a user who pressed Rollback believing nothing had
+/// happened, while some of their originals were gone for good.
+#[test]
+fn a_rollback_during_the_source_sweep_reports_the_originals_it_did_not_reach() {
+    use crate::file_system::write_operations::state::OperationIntent;
+    use crate::file_system::write_operations::types::{
+        CancelRollbackOutcome, ConflictInfo, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent,
+        WriteConflictEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
+    };
+    use std::sync::Mutex;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// Presses Rollback once the sweep has removed `after` originals, so the
+    /// cancel lands in the MIDDLE of Phase 4 rather than at either end of it.
+    struct RollBackMidSweep {
+        state: Arc<WriteOperationState>,
+        after: usize,
+        removed: AtomicUsize,
+        cancelled: Mutex<Vec<WriteCancelledEvent>>,
+    }
+
+    impl OperationEventSink for RollBackMidSweep {
+        fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent) {
+            if event.source_removed && self.removed.fetch_add(1, Ordering::SeqCst) + 1 == self.after {
+                self.state
+                    .intent
+                    .store(OperationIntent::RollingBack as u8, Ordering::SeqCst);
+            }
+        }
+        fn emit_cancelled(&self, event: WriteCancelledEvent) {
+            self.cancelled.lock_ignore_poison().push(event);
+        }
+        fn emit_settled(&self, _event: crate::file_system::write_operations::types::WriteSettledEvent) {}
+        fn emit_complete(&self, _event: WriteCompleteEvent) {}
+        fn emit_progress(&self, _event: WriteProgressEvent) {}
+        fn emit_error(&self, _event: WriteErrorEvent) {}
+        fn emit_conflict(&self, _event: WriteConflictEvent) {}
+        fn emit_conflict_resolved(
+            &self,
+            _event: crate::file_system::write_operations::types::WriteConflictResolvedEvent,
+        ) {
+        }
+        fn emit_scan_progress(&self, _event: ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _conflict: ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _result: DryRunResult) {}
+    }
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    let names = ["a.bin", "b.bin", "c.bin", "d.bin"];
+    let sources: Vec<PathBuf> = names
+        .iter()
+        .map(|name| {
+            let path = src_dir.join(name);
+            fs::write(&path, vec![7u8; 512]).unwrap();
+            path
+        })
+        .collect();
+
+    let state = make_state(0);
+    let events = Arc::new(RollBackMidSweep {
+        state: Arc::clone(&state),
+        after: 2,
+        removed: AtomicUsize::new(0),
+        cancelled: Mutex::new(Vec::new()),
+    });
+
+    let result = move_with_staging(
+        &*events,
+        "op-cross-fs-rollback-mid-sweep",
+        &state,
+        &sources,
+        &dst_dir,
+        &WriteOperationConfig::default(),
+        0,
+    );
+
+    assert!(
+        matches!(result, Err(WriteOperationError::Cancelled { .. })),
+        "the Rollback ends the move as cancelled, got {result:?}"
+    );
+
+    // What is actually on disk, which is what the report has to match.
+    for name in names {
+        assert!(
+            dst_dir.join(name).exists(),
+            // allowed-pluralize-noun: `{name}` is a file name, not a count.
+            "{name} landed in phase 3, before the sweep ever started"
+        );
+    }
+    assert!(!sources[0].exists() && !sources[1].exists(), "the sweep removed two");
+    assert!(
+        sources[2].exists() && sources[3].exists(),
+        "and the Rollback caught it before the other two"
+    );
+
+    let cancelled = events.cancelled.lock_ignore_poison();
+    assert_eq!(cancelled.len(), 1, "exactly one write-cancelled event");
+    let rollback = &cancelled[0].rollback;
+    assert_eq!(
+        rollback.outcome,
+        CancelRollbackOutcome::NotRolledBack,
+        "no reversal ran, and none can: the copy is already across the boundary"
+    );
+    let left = rollback
+        .originals_still_in_place
+        .as_ref()
+        .expect("a sweep cancelled partway must account for the originals it left");
+    assert_eq!(left.count, 2, "two originals are still where they were");
+}
+
+/// A Rollback pressed before the sweep touches anything reports every original
+/// as still in place: the same account, at the other end of phase 4.
+///
+/// This is also the window a Rollback lands in when it arrives after the copy
+/// loop drains. `cross_fs.rs` has no post-loop intent check, so phase 3 renames
+/// the tree into place and the flush runs regardless; the sweep's first
+/// `is_cancelled` is what catches the click, and this report is what it says.
+#[test]
+fn a_rollback_before_the_sweep_starts_reports_every_original_still_in_place() {
+    use crate::file_system::write_operations::state::OperationIntent;
+    use crate::file_system::write_operations::types::{
+        ConflictInfo, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
+        WriteErrorEvent, WriteSourceItemDoneEvent,
+    };
+    use std::sync::Mutex;
+    use std::sync::atomic::Ordering;
+
+    /// Presses Rollback the instant the flush announces itself, the last thing
+    /// that happens before the sweep starts deleting the originals.
+    struct RollBackAtTheFlush {
+        state: Arc<WriteOperationState>,
+        cancelled: Mutex<Vec<WriteCancelledEvent>>,
+    }
+
+    impl OperationEventSink for RollBackAtTheFlush {
+        fn emit_progress(&self, event: WriteProgressEvent) {
+            if event.phase == WriteOperationPhase::Flushing {
+                self.state
+                    .intent
+                    .store(OperationIntent::RollingBack as u8, Ordering::SeqCst);
+            }
+        }
+        fn emit_cancelled(&self, event: WriteCancelledEvent) {
+            self.cancelled.lock_ignore_poison().push(event);
+        }
+        fn emit_settled(&self, _event: crate::file_system::write_operations::types::WriteSettledEvent) {}
+        fn emit_complete(&self, _event: WriteCompleteEvent) {}
+        fn emit_error(&self, _event: WriteErrorEvent) {}
+        fn emit_conflict(&self, _event: WriteConflictEvent) {}
+        fn emit_conflict_resolved(
+            &self,
+            _event: crate::file_system::write_operations::types::WriteConflictResolvedEvent,
+        ) {
+        }
+        fn emit_source_item_done(&self, _event: WriteSourceItemDoneEvent) {}
+        fn emit_scan_progress(&self, _event: ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _conflict: ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _result: DryRunResult) {}
+    }
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    let sources: Vec<PathBuf> = ["a.bin", "b.bin", "c.bin"]
+        .iter()
+        .map(|name| {
+            let path = src_dir.join(name);
+            fs::write(&path, vec![9u8; 512]).unwrap();
+            path
+        })
+        .collect();
+
+    let state = make_state(0);
+    let events = Arc::new(RollBackAtTheFlush {
+        state: Arc::clone(&state),
+        cancelled: Mutex::new(Vec::new()),
+    });
+
+    let result = move_with_staging(
+        &*events,
+        "op-cross-fs-rollback-before-sweep",
+        &state,
+        &sources,
+        &dst_dir,
+        &WriteOperationConfig::default(),
+        0,
+    );
+
+    assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
+    assert!(
+        sources.iter().all(|p| p.exists()),
+        "the Rollback caught the sweep before its first delete"
+    );
+
+    let cancelled = events.cancelled.lock_ignore_poison();
+    let left = cancelled[0]
+        .rollback
+        .originals_still_in_place
+        .as_ref()
+        .expect("the report accounts for the originals even when none were removed");
+    assert_eq!(left.count, 3, "every original is still where it was");
+}
+
+/// A source the user Skipped is still in its old place too, so the sweep's
+/// account has to count it alongside the ones it never reached.
+///
+/// Phase 3 discards a Skipped source's staged copy and phase 4 deliberately
+/// spares the original. Counting only the unvisited sources would undercount the
+/// originals the user can still see in the source folder.
+#[test]
+fn the_sweeps_account_counts_a_skipped_source_as_still_in_place() {
+    use crate::file_system::write_operations::state::OperationIntent;
+    use crate::file_system::write_operations::types::{
+        ConflictInfo, ConflictResolution, DryRunResult, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent,
+        WriteConflictEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
+    };
+    use std::sync::Mutex;
+    use std::sync::atomic::Ordering;
+
+    /// Presses Rollback once the sweep reports its first REMOVAL. With the
+    /// Skipped source ordered first, that lands the cancel with one source
+    /// skipped, one removed, and two untouched.
+    struct RollBackAfterTheFirstRemoval {
+        state: Arc<WriteOperationState>,
+        cancelled: Mutex<Vec<WriteCancelledEvent>>,
+    }
+
+    impl OperationEventSink for RollBackAfterTheFirstRemoval {
+        fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent) {
+            if event.source_removed {
+                self.state
+                    .intent
+                    .store(OperationIntent::RollingBack as u8, Ordering::SeqCst);
+            }
+        }
+        fn emit_cancelled(&self, event: WriteCancelledEvent) {
+            self.cancelled.lock_ignore_poison().push(event);
+        }
+        fn emit_settled(&self, _event: crate::file_system::write_operations::types::WriteSettledEvent) {}
+        fn emit_complete(&self, _event: WriteCompleteEvent) {}
+        fn emit_progress(&self, _event: WriteProgressEvent) {}
+        fn emit_error(&self, _event: WriteErrorEvent) {}
+        fn emit_conflict(&self, _event: WriteConflictEvent) {}
+        fn emit_conflict_resolved(
+            &self,
+            _event: crate::file_system::write_operations::types::WriteConflictResolvedEvent,
+        ) {
+        }
+        fn emit_scan_progress(&self, _event: ScanProgressEvent) {}
+        fn emit_scan_conflict(&self, _conflict: ConflictInfo) {}
+        fn emit_dry_run_complete(&self, _result: DryRunResult) {}
+    }
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(&src_dir).unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    // `taken.bin` already exists at the destination, so Skip discards its staged
+    // copy and the sweep spares the original.
+    fs::write(dst_dir.join("taken.bin"), b"the one the user kept").unwrap();
+    let sources: Vec<PathBuf> = ["taken.bin", "a.bin", "b.bin", "c.bin"]
+        .iter()
+        .map(|name| {
+            let path = src_dir.join(name);
+            fs::write(&path, vec![5u8; 512]).unwrap();
+            path
+        })
+        .collect();
+
+    let state = make_state(0);
+    let events = Arc::new(RollBackAfterTheFirstRemoval {
+        state: Arc::clone(&state),
+        cancelled: Mutex::new(Vec::new()),
+    });
+
+    let result = move_with_staging(
+        &*events,
+        "op-cross-fs-rollback-after-skip",
+        &state,
+        &sources,
+        &dst_dir,
+        &WriteOperationConfig {
+            conflict_resolution: ConflictResolution::Skip,
+            ..WriteOperationConfig::default()
+        },
+        0,
+    );
+
+    assert!(matches!(result, Err(WriteOperationError::Cancelled { .. })));
+    assert!(sources[0].exists(), "the Skipped source keeps its original");
+    assert!(!sources[1].exists(), "the sweep removed the one after it");
+    assert!(sources[2].exists() && sources[3].exists(), "and stopped there");
+
+    let cancelled = events.cancelled.lock_ignore_poison();
+    let left = cancelled[0]
+        .rollback
+        .originals_still_in_place
+        .as_ref()
+        .expect("the sweep accounts for the originals it left");
+    assert_eq!(
+        left.count, 3,
+        "the Skipped original counts alongside the two the sweep never reached"
+    );
+}

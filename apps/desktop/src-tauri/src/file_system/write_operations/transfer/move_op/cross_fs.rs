@@ -487,6 +487,17 @@ pub(super) fn move_with_staging(
 /// from inside it, so a leaf-granular bar here would be an invention. Bytes stay
 /// zero throughout — nothing is transferred — which is how the readout knows to
 /// drop its size bar rather than freeze it at whatever the copy left.
+///
+/// ## What a stop here reports
+///
+/// Nothing is reversed and nothing can be: the copy is across a filesystem
+/// boundary already, so `outcome` is `NotRolledBack`. But the state this leaves
+/// is worth a sentence — the whole copy landed and was flushed before the sweep
+/// began, some originals are gone for good, and the rest are duplicates of files
+/// that now live at the destination. So the cancel carries
+/// `originals_still_in_place`: the sources the sweep never reached, plus the
+/// Skipped ones it walked past on purpose, both of which the user still has in
+/// the source folder. Counted in the same top-level items as the bar above.
 fn delete_sources_after_move(
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -497,6 +508,10 @@ fn delete_sources_after_move(
 ) -> Result<(), WriteOperationError> {
     let sources_total = sources.len();
     let mut sources_done = 0usize;
+    // Originals the sweep has walked past and deliberately left where they are.
+    // A stop has to count these alongside the ones it never reached: both are
+    // still sitting in the user's source folder.
+    let mut originals_spared = 0usize;
     let mut last_progress_time = Instant::now();
 
     // The opening tick, unthrottled: it's what flips the frontend off the copy's
@@ -510,7 +525,14 @@ fn delete_sources_after_move(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_done,
-                rollback: CancelRollback::none(), // Source deletion phase - nothing to rollback
+                // No reversal, and none is possible: the copy is already across
+                // a filesystem boundary. What the report CAN say is where the
+                // user's files are — the whole copy landed and was flushed
+                // before this phase began, and these originals are still in
+                // their old place. Saying only `none()` left the readout silent
+                // while up to every original the sweep had reached was gone.
+                rollback: CancelRollback::none()
+                    .with_originals_still_in_place((sources_total - sources_done + originals_spared) as u32),
             });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
@@ -539,6 +561,7 @@ fn delete_sources_after_move(
             // sweep has got, and a deliberate skip is as finished with as a
             // deletion. Leaving it out would strand the bar short of full.
             sources_done += 1;
+            originals_spared += 1;
             continue;
         }
 

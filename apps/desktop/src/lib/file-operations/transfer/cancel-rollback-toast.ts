@@ -143,6 +143,24 @@ function partialHeadline(operationType: WriteOperationType, reversed: number): s
   return tString(key, { countText: formatNumber(reversed), count: reversed })
 }
 
+/**
+ * The line for a cross-filesystem move stopped on its last step, while it was
+ * deleting the originals of files that had all already arrived.
+ *
+ * The only headline here that reports NO reversal, because none ran and none
+ * can: carrying the files home would be a second full transfer across the
+ * drives, which Cmdr doesn't do. So it claims nothing about an undo. It says
+ * where the files are, that they're staying there, and how many originals are
+ * still sitting in the folder the move started from — the ones already deleted
+ * are gone, and this line must never suggest otherwise.
+ */
+function landedMoveHeadline(originalsLeft: number): string {
+  return tString('fileOperations.cancelRollback.moveAlreadyLanded', {
+    countText: formatNumber(originalsLeft),
+    count: originalsLeft,
+  })
+}
+
 /** The line for a reversal the user stopped partway, which says so rather than
  *  leaving the leftovers looking like Cmdr's decision. */
 function stoppedHeadline(operationType: WriteOperationType, reversed: number): string {
@@ -176,16 +194,32 @@ function stoppedHeadline(operationType: WriteOperationType, reversed: number): s
  * leftover always speaks, it always takes the wording that claims nothing about
  * completeness (never `cleanHeadline`, which says "the items"), and it is never
  * `success`.
+ *
+ * **`originalsStillInPlace` breaks the first silence for the same reason**, and
+ * is the one shape where `notRolledBack` has real news. A cross-filesystem move
+ * stopped on its last step has every file whole at the destination and some
+ * originals already deleted, and no reversal is coming for them. Silence there
+ * would leave a user who pressed Rollback believing nothing had happened.
  */
 export function readCancelRollback(
   rollback: CancelRollback,
   operationType: WriteOperationType,
 ): CancelRollbackReadout | null {
-  const { outcome, reversed, skips, stagedLeftovers } = rollback
+  const { outcome, reversed, skips, stagedLeftovers, originalsStillInPlace } = rollback
   const staged = stagedLeftovers === null ? null : stagedLine(stagedLeftovers)
   if (outcome === 'notRolledBack') {
-    if (staged === null) return null
-    return { headline: null, leftBehind: null, reasons: [], staged, level: 'warn' }
+    const landed = originalsStillInPlace === null ? null : landedMoveHeadline(originalsStillInPlace.count)
+    if (landed === null && staged === null) return null
+    return {
+      headline: landed,
+      leftBehind: null,
+      reasons: [],
+      staged,
+      // Nothing went wrong on the landed-move path: the files are whole at the
+      // destination and the line only says so. Cmdr's own scratch outliving the
+      // sweep is the one thing here worth a colour.
+      level: staged === null ? 'info' : 'warn',
+    }
   }
   if (outcome === 'rolledBack') {
     if (reversed === 0 && staged === null) return null
