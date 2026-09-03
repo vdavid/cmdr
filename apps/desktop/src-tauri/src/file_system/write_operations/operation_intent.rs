@@ -204,8 +204,21 @@ impl PauseGate {
     /// cancel path takes over. Call from the sync driver, AFTER its
     /// `is_cancelled` loop-top check.
     pub fn wait_while_paused_sync(&self, intent: &AtomicU8) {
+        self.wait_while_paused_sync_until(&|| is_cancelled(intent));
+    }
+
+    /// [`wait_while_paused_sync`](Self::wait_while_paused_sync) with the
+    /// caller's own reading of "stop", the sync twin of
+    /// [`wait_while_paused_until`](Self::wait_while_paused_until).
+    ///
+    /// A scan preview walks on its own thread for an operation it learns about
+    /// through a claim, so what stops it is its OWN cancel flag as much as the
+    /// operation's intent. Whoever parks names what stops them; ❌ a predicate
+    /// that misses one of the walk's cancel routes leaves the thread on the
+    /// gate with nobody left to open it.
+    pub fn wait_while_paused_sync_until(&self, should_stop: &dyn Fn() -> bool) {
         let mut guard = self.condvar_mutex.lock_ignore_poison();
-        while self.is_paused() && !is_cancelled(intent) {
+        while self.is_paused() && !should_stop() {
             // Recover from poison the same way `lock_ignore_poison` does: a
             // panic elsewhere shouldn't abort the app, and this guards no real
             // data (the flag is the `AtomicBool`).

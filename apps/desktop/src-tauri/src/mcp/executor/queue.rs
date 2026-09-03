@@ -51,20 +51,16 @@ pub async fn execute_queue(params: &Value) -> ToolResult {
 /// The agent-facing answer to a pause request, from what the manager actually
 /// did with it.
 ///
-/// An `OK` means the caller's intent holds. `Deferred` earns one because the
-/// operation is still scanning, so nothing parks yet, but the request is latched
-/// and lands before the first byte is written; `AlreadyInState` earns one
-/// because the operation is sitting exactly where the caller wants it.
-/// `NotApplicable` is a refusal, because nothing changed and nothing is
-/// remembered: a `Queued` operation is the everyday case (pause is documented to
-/// leave one alone), and an agent told "OK: Paused …" for one goes on to act on a
-/// queue that never stopped.
+/// An `OK` means the caller's intent holds. `Applied` earns one because the
+/// operation has parked — mid-scan as much as mid-write, since the walk honors
+/// the same gate; `AlreadyInState` earns one because the operation is sitting
+/// exactly where the caller wants it. `NotApplicable` is a refusal, because
+/// nothing changed and nothing is remembered: a `Queued` operation is the
+/// everyday case (pause is documented to leave one alone), and an agent told
+/// "OK: Paused …" for one goes on to act on a queue that never stopped.
 fn pause_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
     match outcome {
         PauseOutcome::Applied => Ok(json!(format!("OK: Paused operation {operation_id}."))),
-        PauseOutcome::Deferred => Ok(json!(format!(
-            "OK: Operation {operation_id} is still scanning, so there's nothing to park yet. It pauses the moment it starts writing."
-        ))),
         PauseOutcome::AlreadyInState => Ok(json!(format!("OK: Operation {operation_id} was already paused."))),
         PauseOutcome::NotApplicable => Err(ToolError::invalid_params(format!(
             "Operation {operation_id} isn't running, so there's nothing to pause: it's queued or already over. See cmdr://state operations for its current status."
@@ -82,8 +78,6 @@ struct SweepWords {
     request: &'static str,
     /// Why there was nothing to sweep at all.
     nothing_there: &'static str,
-    /// What a latched request means, said in full.
-    still_scanning: &'static str,
     /// The state an already-there operation was in: "paused" / "running".
     already: &'static str,
 }
@@ -92,7 +86,6 @@ const PAUSE_WORDS: SweepWords = SweepWords {
     did: "Paused",
     request: "pause",
     nothing_there: "no operation is running",
-    still_scanning: "so the pause lands the moment writing starts",
     already: "paused",
 };
 
@@ -100,16 +93,16 @@ const RESUME_WORDS: SweepWords = SweepWords {
     did: "Resumed",
     request: "resume",
     nothing_there: "no operation is paused",
-    still_scanning: "so nothing was parked; any pause waiting to take effect is now withdrawn",
     already: "running",
 };
 
 /// The agent-facing answer to `pause_all`, from what the sweep actually did.
 ///
 /// A sweep has no single verdict to report, so it reports the counts. "Nothing
-/// was running", "three parked", and "one is still scanning" are three different
-/// situations, and an agent told a flat "Paused every running operation" for all
-/// three goes on to act on a queue that may never have stopped.
+/// was running", "three parked", and "two were already paused" are three
+/// different situations, and an agent told a flat "Paused every running
+/// operation" for all three goes on to act on a queue that may never have
+/// stopped.
 fn pause_all_reply(outcome: PauseAllOutcome) -> String {
     sweep_reply(outcome, &PAUSE_WORDS)
 }
@@ -135,14 +128,6 @@ fn sweep_reply(outcome: PauseAllOutcome, words: &SweepWords) -> String {
             pluralize(outcome.applied as u64, "operation")
         ));
     }
-    if outcome.deferred > 0 {
-        sentences.push(format!(
-            "{} {} still scanning, {}.",
-            pluralize(outcome.deferred as u64, "operation"),
-            is_are(outcome.deferred),
-            words.still_scanning
-        ));
-    }
     if outcome.already_in_state > 0 {
         sentences.push(format!(
             "{} {} already {}.",
@@ -160,18 +145,14 @@ fn sweep_reply(outcome: PauseAllOutcome, words: &SweepWords) -> String {
         ));
     }
 
-    // Nothing flipped and nothing is latched: whatever the counts say, the queue
-    // is exactly where it was, and the answer has to open by saying so.
+    // Nothing flipped: whatever the counts say, the queue is exactly where it
+    // was, and the answer has to open by saying so.
     let opener = if outcome.took_effect_anywhere() {
         String::new()
     } else {
         format!("Nothing to {}: ", words.request)
     };
     format!("OK: {opener}{}", sentences.join(" "))
-}
-
-fn is_are(count: usize) -> &'static str {
-    if count == 1 { "is" } else { "are" }
 }
 
 fn was_were(count: usize) -> &'static str {
@@ -182,15 +163,12 @@ fn it_them(count: usize) -> &'static str {
     if count == 1 { "it" } else { "them" }
 }
 
-/// The mirror of [`pause_reply`] for resume. A resume during a scan withdraws a
-/// latched pause, which is a real effect and so an `OK`; anything else that
-/// isn't parked has nothing to resume.
+/// The mirror of [`pause_reply`] for resume. An operation parked mid-scan
+/// resumes exactly like one parked mid-write; anything that isn't parked has
+/// nothing to resume.
 fn resume_reply(operation_id: &str, outcome: PauseOutcome) -> ToolResult {
     match outcome {
         PauseOutcome::Applied => Ok(json!(format!("OK: Resumed operation {operation_id}."))),
-        PauseOutcome::Deferred => Ok(json!(format!(
-            "OK: Operation {operation_id} is still scanning, so it isn't parked. Any pause waiting to take effect is now withdrawn."
-        ))),
         PauseOutcome::AlreadyInState => Ok(json!(format!("OK: Operation {operation_id} was already running."))),
         PauseOutcome::NotApplicable => Err(ToolError::invalid_params(format!(
             "Operation {operation_id} isn't paused, so there's nothing to resume: it's queued or already over. See cmdr://state operations for its current status."
@@ -358,13 +336,12 @@ mod tests {
     }
 
     /// The whole mapping in one place: an `OK` means the caller's intent holds
-    /// (the queue stopped, will stop the moment the scan ends, or already was
-    /// stopped), and nothing else may be phrased as one.
+    /// (the queue stopped, or already was stopped), and nothing else may be
+    /// phrased as one.
     #[test]
     fn only_an_outcome_the_caller_asked_for_answers_ok() {
         for (outcome, expected_ok) in [
             (PauseOutcome::Applied, true),
-            (PauseOutcome::Deferred, true),
             (PauseOutcome::AlreadyInState, true),
             (PauseOutcome::NotApplicable, false),
         ] {
@@ -381,15 +358,14 @@ mod tests {
         }
     }
 
-    /// A latched pause is worth saying out loud: the operation is still `Running`
-    /// in `cmdr://state`, so an agent that read "OK: Paused" and then polled would
-    /// think the pause had been ignored.
+    /// A pause during the scan reads exactly like any other pause, because it
+    /// IS one: the walk parks on the same gate. The reply must not hedge — the
+    /// hedged version told users a pause was coming that never arrived.
     #[test]
-    fn a_latched_pause_says_it_takes_effect_later() {
-        let reply = pause_reply("op-1", PauseOutcome::Deferred).expect("a latched pause is an OK");
+    fn a_pause_that_happened_says_so_without_hedging() {
+        let reply = pause_reply("op-1", PauseOutcome::Applied).expect("an applied pause is an OK");
         let text = reply.as_str().expect("the reply is a string");
-        assert!(text.contains("still scanning"), "got {text}");
-        assert!(text.contains("starts writing"), "got {text}");
+        assert_eq!(text, "OK: Paused operation op-1.");
     }
 
     // ── The sweeps (`pause_all` / `resume_all`) ───────────────────────────────
@@ -423,18 +399,18 @@ mod tests {
         assert!(text.contains("Paused 3 operations"), "got {text}");
     }
 
-    /// A latched pause is the one an agent would otherwise misread: the
-    /// operation stays `Running` in `cmdr://state` until its scan ends.
+    /// Every count in a mixed sweep gets said. An agent reconciles the answer
+    /// against `cmdr://state`, so a reply that mentions only the flips reads as
+    /// a sweep that did more than it did.
     #[test]
-    fn a_sweep_says_which_ones_are_still_scanning() {
+    fn a_sweep_says_what_happened_to_every_operation_it_asked() {
         let text = pause_all_reply(PauseAllOutcome {
             applied: 1,
-            deferred: 2,
-            ..PauseAllOutcome::default()
+            already_in_state: 2,
+            not_applicable: 0,
         });
         assert!(text.contains("Paused 1 operation"), "got {text}");
-        assert!(text.contains("2 operations"), "got {text}");
-        assert!(text.contains("still scanning"), "got {text}");
+        assert!(text.contains("2 operations were already paused"), "got {text}");
     }
 
     /// A settle race is the only way a sweep meets `NotApplicable`, and saying
@@ -461,7 +437,6 @@ mod tests {
             PauseAllOutcome::default(),
             PauseAllOutcome {
                 applied: 2,
-                deferred: 1,
                 already_in_state: 1,
                 not_applicable: 1,
             },

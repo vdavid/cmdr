@@ -82,18 +82,15 @@ use super::types::{LifecycleStatus, WriteOperationError, WriteOperationType};
 /// are the same in both directions.
 ///
 /// The distinction is load-bearing at the MCP boundary, where an agent acts on
-/// the answer: `Applied` and `Deferred` both mean "the queue will stop", but
-/// `NotApplicable` means nothing changed and nothing is remembered.
+/// the answer: `Applied` means "the queue has stopped", `NotApplicable` means
+/// nothing changed and nothing is remembered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum PauseOutcome {
-    /// The record flipped: `Running`→`Paused` (the driver parks at its next
-    /// between-files boundary) or `Paused`→`Running`.
+    /// The record flipped: `Running`→`Paused` (the operation parks at its next
+    /// boundary — between files while writing, between entries while scanning)
+    /// or `Paused`→`Running`.
     Applied,
-    /// The operation is still waiting on its scan, so there is nothing to park
-    /// yet. The request is latched and applies the moment the write starts
-    /// (`end_scan_wait`); a resume withdraws a latched pause the same way.
-    Deferred,
     /// The operation is already in the state asked for (pausing a `Paused` one,
     /// resuming a `Running` one). Nothing changed because nothing had to, so a
     /// caller that retries its own request gets an honest yes rather than a
@@ -121,9 +118,6 @@ pub enum PauseOutcome {
 pub struct PauseAllOutcome {
     /// Operations that flipped right now.
     pub applied: usize,
-    /// Operations still scanning, whose request is latched for the moment the
-    /// write starts.
-    pub deferred: usize,
     /// Operations already sitting where the caller wants them.
     pub already_in_state: usize,
     /// Operations the sweep couldn't touch. From a sweep this is the settle
@@ -135,13 +129,12 @@ pub struct PauseAllOutcome {
 impl PauseAllOutcome {
     /// How many operations the sweep asked about.
     pub fn total(self) -> usize {
-        self.applied + self.deferred + self.already_in_state + self.not_applicable
+        self.applied + self.already_in_state + self.not_applicable
     }
 
-    /// Whether the caller's intent now holds for at least one operation, either
-    /// right now (`Applied`) or at the first byte written (`Deferred`).
+    /// Whether the caller's intent now holds for at least one operation.
     pub fn took_effect_anywhere(self) -> bool {
-        self.applied + self.deferred > 0
+        self.applied > 0
     }
 }
 
@@ -154,7 +147,6 @@ impl FromIterator<PauseOutcome> for PauseAllOutcome {
         for outcome in outcomes {
             match outcome {
                 PauseOutcome::Applied => totals.applied += 1,
-                PauseOutcome::Deferred => totals.deferred += 1,
                 PauseOutcome::AlreadyInState => totals.already_in_state += 1,
                 PauseOutcome::NotApplicable => totals.not_applicable += 1,
             }
@@ -231,16 +223,12 @@ struct OpRecord {
     claimed_preview: Option<String>,
     /// The op is parked on its scan preview and has written nothing. Set at
     /// registration when the claim lands on a still-walking preview, cleared
-    /// when the wait ends. Deliberately NOT on `OperationSnapshot`: the
-    /// frontend already learns the same fact from `write-progress`'s `phase`,
-    /// and two sources for one truth is how they drift.
+    /// when the wait ends. Read by the progress bridge alone, to keep a tick
+    /// that raced the end of the wait from dragging the phase back to
+    /// `scanning`. Deliberately NOT on `OperationSnapshot`: the frontend
+    /// already learns the same fact from `write-progress`'s `phase`, and two
+    /// sources for one truth is how they drift.
     in_scan_wait: bool,
-    /// A pause the manager refused because the op was in its scan-wait, held
-    /// until the wait ends. Without the latch, `pause_all` would drop the
-    /// request on the floor and that one op would start writing at full speed
-    /// while everything else stayed paused — the exact scenario pause exists
-    /// for.
-    pause_requested: bool,
 }
 
 /// One thin registry snapshot row (membership + lifecycle status, NOT 200 ms
@@ -471,7 +459,6 @@ impl OperationManager {
                     reserved_lanes: Vec::new(),
                     claimed_preview,
                     in_scan_wait,
-                    pause_requested: false,
                 },
             );
             inner.order.push(operation_id.clone());
@@ -628,10 +615,9 @@ impl OperationManager {
                     deferred: None,
                     reserved_lanes: Vec::new(),
                     // An instant op is a metadata syscall: no preview, nothing
-                    // to wait on, nothing to defer.
+                    // to wait on.
                     claimed_preview: None,
                     in_scan_wait: false,
-                    pause_requested: false,
                 },
             );
             inner.order.push(operation_id.clone());
@@ -731,24 +717,17 @@ impl OperationManager {
     /// terminal) is left untouched and reports `NotApplicable`. A Queued op
     /// can't be "paused" in v1 — it simply isn't admitted yet.
     ///
-    /// **A scan-waiting op refuses the flip and LATCHES the request**
-    /// (`Deferred`). It is `Running`, so without a rule the snapshot would say
-    /// `Paused`, the dialog title would say "Paused", and the walk would carry
-    /// on at full speed — while `set_paused` deliberately keeps the lane slots,
-    /// so a "paused" scan would hold its lane indefinitely doing nothing. No
-    /// surface flips optimistically, and the latch is what stops `pause_all`
-    /// from losing the request.
+    /// **A scan-waiting op is not a special case.** It is `Running`, it flips
+    /// like any other, and the walk it is waiting on parks with it
+    /// (`scan_bridge::ScanPause`) — so `Paused` in the snapshot and "Paused" in
+    /// the dialog title describe what the operation is actually doing. ❌ Don't
+    /// reintroduce a refusal here: an operation that holds its lane while a
+    /// walk it claims to have stopped runs at full speed is the defect this
+    /// whole path exists to prevent.
     pub(crate) fn set_paused(&self, operation_id: &str, paused: bool) -> PauseOutcome {
         let outcome = {
             let mut inner = self.inner.lock_ignore_poison();
             match inner.records.get_mut(operation_id) {
-                Some(rec) if rec.in_scan_wait => {
-                    // Nothing to park yet either way. The request (or its
-                    // withdrawal) is remembered and applied at `end_scan_wait`,
-                    // the moment the write would have begun.
-                    rec.pause_requested = paused;
-                    PauseOutcome::Deferred
-                }
                 Some(rec) if paused && rec.status == LifecycleStatus::Running => {
                     rec.status = LifecycleStatus::Paused;
                     PauseOutcome::Applied
@@ -775,29 +754,16 @@ impl OperationManager {
         outcome
     }
 
-    /// Marks the op's scan-wait over and reports whether a pause was latched
-    /// while it waited. Called once, by the wait itself. The caller applies the
-    /// pause OUTSIDE this call so the manager's lock never spans the driver's
-    /// park gate.
-    fn clear_scan_wait(&self, operation_id: &str) -> bool {
-        let mut inner = self.inner.lock_ignore_poison();
-        match inner.records.get_mut(operation_id) {
-            Some(rec) => {
-                rec.in_scan_wait = false;
-                rec.claimed_preview = None;
-                std::mem::take(&mut rec.pause_requested)
-            }
-            None => false,
-        }
-    }
-
-    /// Ends the op's scan-wait and applies a pause latched during it, so a
-    /// `pause_all` issued mid-scan takes effect before the op writes a byte.
+    /// Marks the op's scan-wait over. Called once, by the wait itself.
+    ///
+    /// A pause issued during the wait needs nothing from here: it already set
+    /// the op's `PauseGate`, so the driver that takes over from the walk parks
+    /// at its first boundary the same way the walk did.
     pub(super) fn end_scan_wait(&'static self, operation_id: &str) {
-        if self.clear_scan_wait(operation_id) {
-            log::info!(target: "op_manager", "applying deferred pause op={operation_id}");
-            // allowed-discarded-outcome: this APPLIES a pause already answered `Deferred` to whoever asked. The op is Running by now, so the outcome is `Applied` and the original caller was told the truth at request time.
-            pause_operation(operation_id);
+        let mut inner = self.inner.lock_ignore_poison();
+        if let Some(rec) = inner.records.get_mut(operation_id) {
+            rec.in_scan_wait = false;
+            rec.claimed_preview = None;
         }
     }
 

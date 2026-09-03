@@ -217,7 +217,7 @@ async fn scan_preview_uses_authoritative_listing_for_top_level_files() {
     ];
     let is_cancelled = || false;
     let on_progress = |_: crate::file_system::volume::ListingProgress| {};
-    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, &on_progress)
+    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, None, &on_progress)
         .await
         .expect("oracle-aware batch scan should succeed");
 
@@ -263,7 +263,7 @@ async fn scan_preview_falls_through_when_watcher_dead() {
     let sources = vec![PathBuf::from("/cold/a.jpg")];
     let is_cancelled = || false;
     let on_progress = |_: crate::file_system::volume::ListingProgress| {};
-    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, &on_progress)
+    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, None, &on_progress)
         .await
         .expect("scan should succeed via fallthrough");
 
@@ -304,7 +304,7 @@ async fn scan_preview_uses_cached_subfolder_listing_when_other_pane_has_it() {
     let sources = vec![PathBuf::from("/a/sub")];
     let is_cancelled = || false;
     let on_progress = |_: crate::file_system::volume::ListingProgress| {};
-    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, &on_progress)
+    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, None, &on_progress)
         .await
         .expect("scan should succeed");
 
@@ -344,7 +344,7 @@ async fn scan_preview_preserves_symlink_semantics() {
     let sources = vec![PathBuf::from("/a/link-to-elsewhere")];
     let is_cancelled = || false;
     let on_progress = |_: crate::file_system::volume::ListingProgress| {};
-    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, &on_progress)
+    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, None, &on_progress)
         .await
         .expect("symlink scan should succeed");
 
@@ -391,7 +391,7 @@ async fn scan_preview_handles_listing_closed_mid_walk() {
     let sources = vec![PathBuf::from("/a/sub")];
     let is_cancelled = || false;
     let on_progress = |_: crate::file_system::volume::ListingProgress| {};
-    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, &on_progress)
+    let result = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, None, &on_progress)
         .await
         .expect("mid-walk close scan should succeed");
 

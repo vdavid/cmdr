@@ -459,29 +459,33 @@ async fn the_bridge_ticks_after_the_snapshot_that_first_carries_the_row() {
 // Pause during the scan-wait
 // ============================================================================
 
-/// Pause is refused while an operation is parked on its preview: it holds its
-/// lane and writes nothing, so flipping it to `Paused` would say the walk had
-/// stopped when it had not. The refusal reports itself as `Deferred`, which is
-/// what lets a surface say "not yet, but it's coming" rather than either lie.
+/// An operation waiting on its preview pauses like any other: the walk it is
+/// waiting on parks on the same gate (`scan_pause_tests`), so the record can say
+/// `Paused` and mean it. Nothing here is a special case any more, which is the
+/// point — the special case is what told users a pause was coming and then
+/// let an 80,000-file move run to completion.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn pause_is_declined_during_the_scan_wait() {
+async fn pause_applies_during_the_scan_wait() {
     let (events, op_id, preview_id, dir) = start_copy_awaiting_preview("scanwait-pause").await;
 
     assert_eq!(
         pause_operation(&op_id),
-        PauseOutcome::Deferred,
-        "a scan-waiting op can't park, and the request is latched rather than lost"
+        PauseOutcome::Applied,
+        "a scan-waiting op parks, so its pause is an ordinary one"
     );
 
     assert_eq!(
         manager().lifecycle_status(&op_id),
-        Some(LifecycleStatus::Running),
-        "the record must stay Running: nothing has parked"
+        Some(LifecycleStatus::Paused),
+        "and the record says so"
     );
 
-    // Withdrawing before the wait ends clears the latch, so the operation runs
-    // on rather than parking the moment its scan lands.
     resume_operation(&op_id);
+    assert_eq!(
+        manager().lifecycle_status(&op_id),
+        Some(LifecycleStatus::Running),
+        "resume puts it back, with no latch left behind to fire later"
+    );
 
     let src = dir.join("src");
     let file = src.join("a.bin");
@@ -497,12 +501,12 @@ async fn pause_is_declined_during_the_scan_wait() {
     .await;
 }
 
-/// The one that matters: a "Pause all" issued mid-scan is LATCHED and applied
-/// the moment the wait ends. A bare refusal looks correct and silently loses
-/// the request, and that one operation then writes at full speed while every
-/// other one is paused and the user believes the device is free. That is
+/// The one that matters: a "Pause all" issued mid-scan is still holding when
+/// the scan ends, so the operation does not start writing at full speed while
+/// every other one is parked and the user believes the device is free. That is
 /// precisely the scenario pause exists for, which makes losing it worse than
-/// never offering it.
+/// never offering it. The gate is what carries it across the handover: the walk
+/// parks on it, and the driver that takes over parks on the same one.
 ///
 /// ⚠️ It drives `pause_all`'s two halves rather than `pause_all` itself: the
 /// manager is a process-global singleton, so a real `pause_all` here would park
@@ -511,7 +515,7 @@ async fn pause_is_declined_during_the_scan_wait() {
 /// so asserting membership plus the per-id behavior covers the same ground
 /// without reaching across the suite.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_pause_during_a_scan_wait_latches_and_lands_before_the_first_write() {
+async fn a_pause_during_a_scan_wait_still_holds_when_the_scan_ends() {
     let (events, op_id, preview_id, dir) = start_copy_awaiting_preview("scanwait-pauselatch").await;
 
     assert!(
@@ -519,14 +523,8 @@ async fn a_pause_during_a_scan_wait_latches_and_lands_before_the_first_write() {
         "`pause_all` walks the running set, so a scan-waiting op has to be in it"
     );
 
-    // The ask `pause_all` makes, per id. Nothing parks: a scan-wait has nothing
-    // to park, and flipping the record would claim the walk had stopped.
-    assert_eq!(pause_operation(&op_id), PauseOutcome::Deferred);
-    assert_eq!(
-        manager().lifecycle_status(&op_id),
-        Some(LifecycleStatus::Running),
-        "a scan-wait can't park, so the refusal is honest"
-    );
+    // The ask `pause_all` makes, per id.
+    assert_eq!(pause_operation(&op_id), PauseOutcome::Applied);
 
     let src = dir.join("src");
     let file = src.join("a.bin");
@@ -536,16 +534,17 @@ async fn a_pause_during_a_scan_wait_latches_and_lands_before_the_first_write() {
         Some(completed_result(vec![src.clone()], &[file], &src)),
     );
 
-    wait_until_async(WAIT, "the latched pause to land", || {
-        manager().lifecycle_status(&op_id) == Some(LifecycleStatus::Paused)
-            || !events.complete.lock().expect("collector mutex").is_empty()
-    })
-    .await;
+    // allowed-test-sleep: the claim is that the operation does NOT write across
+    // a span in which an unpaused one would have finished several times over.
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(
+        events.complete.lock().expect("collector mutex").is_empty(),
+        "a paused operation must not copy anything once its scan lands"
+    );
     assert_eq!(
         manager().lifecycle_status(&op_id),
         Some(LifecycleStatus::Paused),
-        "the deferred pause must land before the operation writes a byte, \
-         not be dropped on the floor by the refusal"
+        "and it is still parked, not quietly running again"
     );
 
     // Release it so the lane frees for the rest of the suite.

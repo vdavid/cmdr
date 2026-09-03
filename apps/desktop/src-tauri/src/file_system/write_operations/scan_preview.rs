@@ -39,7 +39,7 @@ use uuid::Uuid;
 
 use super::event_sinks::{ScanPreviewEventSink, TauriScanPreviewSink};
 use super::scan::{SubtreeTotals, WalkContext, scan_subtree_with_oracle, sort_files, walk_sources_with_per_path};
-use super::scan_bridge::{ScanCounts, forward_scan_progress};
+use super::scan_bridge::{ScanCounts, ScanPause, forward_scan_progress};
 use super::scan_cache::{
     ScanOutcome, cached_scan_totals, claimed_operation, in_flight_state, register_preview, release_preview,
     settle_preview,
@@ -189,7 +189,7 @@ pub fn cancel_scan_preview(preview_id: &str) {
     clippy::too_many_arguments,
     reason = "One worker's inputs: what to walk, how to sort it, where to publish, and what bounds it"
 )]
-fn run_scan_preview(
+pub(super) fn run_scan_preview(
     events: Arc<dyn ScanPreviewEventSink>,
     preview_id: String,
     sources: Vec<PathBuf>,
@@ -249,6 +249,10 @@ fn run_scan_preview(
         (None, None)
     };
 
+    // The gate this walk parks on, once an operation claims the preview. Its
+    // owner is looked up at the progress tick below, never per entry.
+    let pause = ScanPause::for_preview(preview_id.clone(), Arc::clone(&state), Arc::clone(&watchdog));
+
     // One `CopyScanResult` per top-level source, filled by the walk below. The
     // copy engine reads it back as its `source_hints`, so a source that isn't in
     // here reaches the drivers as "unknown" and costs them a stat probe.
@@ -269,6 +273,7 @@ fn run_scan_preview(
         let ctx = WalkContext {
             progress_interval: state.progress_interval,
             is_cancelled: &|| state.cancelled.load(Ordering::Relaxed),
+            park_while_paused: &|| pause.park_while_paused(),
             on_io_error: &|_, e| e.to_string(),
             on_cancelled: &|| "Cancelled".to_string(),
             on_symlink_loop: &|path| format!("Symlink loop detected: {}", path.display()),
@@ -276,6 +281,9 @@ fn run_scan_preview(
                 // Proof the walk is alive, fed before the emits so a slow sink
                 // can't read as a wedged volume.
                 watchdog.note_progress(files_found, dirs_found, bytes_found);
+                // The tick is the walk's one point off its per-entry path, so
+                // it is where the claim (which may land mid-walk) is looked up.
+                pause.resolve_owner();
                 events.emit_progress(ScanPreviewProgressEvent {
                     preview_id: preview_id.to_string(),
                     files_found,
@@ -421,7 +429,15 @@ pub(super) async fn run_volume_scan_preview(
     // ~5 events/s for the FE so the dialog's file count climbs smoothly without
     // flooding the IPC layer. Throttling lives in the closure rather than inside
     // each Volume impl so different backends share the same rate-limit policy.
+    // The gate this walk parks on, at the same seams `is_cancelled` is polled.
+    let pause = Arc::new(ScanPause::for_preview(
+        preview_id.clone(),
+        Arc::clone(&state),
+        Arc::clone(&watchdog),
+    ));
+
     let progress_state = Arc::new(std::sync::Mutex::new(Instant::now()));
+    let pause_for_cb = Arc::clone(&pause);
     let state_for_cb = Arc::clone(&state);
     let events_for_cb = Arc::clone(&events);
     let watchdog_for_cb = Arc::clone(&watchdog);
@@ -442,6 +458,9 @@ pub(super) async fn run_volume_scan_preview(
         }
         *last = Instant::now();
         drop(last);
+        // Off the per-entry path (the throttle above owns that), which is where
+        // the claim that names this walk's owner gets looked up.
+        pause_for_cb.resolve_owner();
         events_for_cb.emit_progress(ScanPreviewProgressEvent {
             preview_id: preview_id_for_cb.clone(),
             files_found: p.files,
@@ -469,6 +488,7 @@ pub(super) async fn run_volume_scan_preview(
     let state_for_cancel = Arc::clone(&state);
     let is_cancelled = move || state_for_cancel.cancelled.load(Ordering::Relaxed);
 
+
     let result: Result<BatchScanResult, String> = async {
         if state.cancelled.load(Ordering::Relaxed) {
             return Err("Cancelled".to_string());
@@ -479,6 +499,7 @@ pub(super) async fn run_volume_scan_preview(
             &source_volume_id,
             &sources,
             &is_cancelled,
+            Some(pause.as_ref()),
             &on_progress,
         )
         .await
@@ -562,6 +583,7 @@ pub(super) async fn run_oracle_aware_batch_scan(
     volume_id: &str,
     sources: &[PathBuf],
     is_cancelled: &(dyn Fn() -> bool + Sync),
+    pause: Option<&ScanPause>,
     on_progress: &(dyn Fn(crate::file_system::volume::ListingProgress) + Sync),
 ) -> Result<BatchScanResult, crate::file_system::volume::VolumeError> {
     use crate::file_system::listing::FileEntry;
@@ -605,6 +627,14 @@ pub(super) async fn run_oracle_aware_batch_scan(
             return Err(crate::file_system::volume::VolumeError::Cancelled(
                 "Operation cancelled by user".to_string(),
             ));
+        }
+        // The park points on the volume path are the ones cancel already has:
+        // per entry inside `scan_subtree_with_oracle`, and here, per source
+        // group. A cold-cache group is ONE call into the backend, which offers
+        // no boundary of its own to either check — so a pause issued during it
+        // lands when that group ends, exactly like a cancel would.
+        if let Some(pause) = pause {
+            pause.park_while_paused_async().await;
         }
         let paths_in_group = groups
             .get(parent)
@@ -678,6 +708,7 @@ pub(super) async fn run_oracle_aware_batch_scan(
                         volume_id,
                         source,
                         is_cancelled,
+                        pause,
                         Some(&shifted),
                         &mut seen_inodes,
                     )

@@ -750,6 +750,8 @@ mod network_transfer_test_support;
 #[cfg(test)]
 mod scan_bridge_tests;
 #[cfg(test)]
+mod scan_pause_tests;
+#[cfg(test)]
 mod scan_preview_listing_progress_tests;
 #[cfg(test)]
 mod scan_preview_oracle_tests;

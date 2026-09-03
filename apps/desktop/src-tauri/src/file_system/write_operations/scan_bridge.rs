@@ -18,6 +18,10 @@
 //!   `scan-preview-progress` is keyed by `previewId` and carries no
 //!   `operationId`, and nothing else emits for an operation that is only
 //!   waiting.
+//! - **The park.** [`ScanPause`] lets the walk honor its owner's Pause. The
+//!   scan is the minutes-long part of a big transfer, so it is where a person
+//!   presses Pause; a scan that carried on regardless would make the button a
+//!   lie for exactly as long as it mattered.
 //!
 //! Both events keep firing. A pre-confirm dialog may still be watching the same
 //! preview by `previewId`, and it has no operation to watch instead.
@@ -133,6 +137,150 @@ async fn settled_outcome(preview_id: &str) -> ScanOutcome {
             return outcome;
         }
         notified.await;
+    }
+}
+
+// ============================================================================
+// The park
+// ============================================================================
+
+/// The owning operation's pause gate, as a scan walk sees it.
+///
+/// **Where a scan parks: exactly where it already observes cancel.** A walk that
+/// stopped less often than it can be cancelled would make Pause the weaker of
+/// two buttons that mean the same thing to a person, and one that stopped more
+/// often would need park points the backends don't offer. So every call site
+/// puts [`park_while_paused`](Self::park_while_paused) immediately after its
+/// existing cancel check, and pause inherits cancel's granularity for free: per
+/// entry on the local walk and the oracle-aware volume walk, per source group
+/// inside a cold-cache volume batch.
+///
+/// **Why the owner is resolved lazily.** A preview walks detached from the
+/// operation that will consume it: the walk holds a `preview_id`, the gate hangs
+/// off the operation, and the claim that joins them lands when the user confirms
+/// — which may be after the walk started. Asking the preview map per entry would
+/// put a lookup on the walk's hot path, so [`resolve_owner`](Self::resolve_owner)
+/// runs at the walk's progress tick (already off that path) and the answer is
+/// kept for life: a claim is one-shot, and the `Arc` outlives the operation's
+/// record.
+pub(super) struct ScanPause {
+    /// The claim that names the owner, for a walk that has to look it up. `None`
+    /// for a scan running inside the operation itself, which knows.
+    claim: Option<PreviewClaimant>,
+    /// The owner's live state. Resolved at most once.
+    owner: std::sync::OnceLock<std::sync::Arc<WriteOperationState>>,
+    /// Fed on both edges of a park, so a scan waiting on a person can't read as
+    /// a volume that stopped answering and get killed by the inactivity bound.
+    watchdog: Option<std::sync::Arc<super::scan_watchdog::ScanWatchdog>>,
+}
+
+/// What a preview walk needs to find its owner and to know when it must stop
+/// regardless.
+struct PreviewClaimant {
+    preview_id: String,
+    state: std::sync::Arc<super::scan_cache::ScanPreviewState>,
+}
+
+impl ScanPause {
+    /// For a preview worker, which learns its owner from the claim.
+    pub(super) fn for_preview(
+        preview_id: String,
+        state: std::sync::Arc<super::scan_cache::ScanPreviewState>,
+        watchdog: std::sync::Arc<super::scan_watchdog::ScanWatchdog>,
+    ) -> Self {
+        Self {
+            claim: Some(PreviewClaimant { preview_id, state }),
+            owner: std::sync::OnceLock::new(),
+            watchdog: Some(watchdog),
+        }
+    }
+
+    /// For a scan the operation runs for itself (no preview to consume: an
+    /// evicted id, a stale one from a reloaded window, or a second operation
+    /// over the same sources). The owner is known from the start.
+    pub(super) fn for_operation(state: std::sync::Arc<WriteOperationState>) -> Self {
+        let owner = std::sync::OnceLock::new();
+        let _ = owner.set(state);
+        Self {
+            claim: None,
+            owner,
+            watchdog: None,
+        }
+    }
+
+    /// Looks the owner up if it isn't known yet. Call it from the walk's
+    /// progress tick — ❌ never per entry, which is what this design exists to
+    /// keep free.
+    pub(super) fn resolve_owner(&self) {
+        if self.owner.get().is_some() {
+            return;
+        }
+        let Some(claim) = &self.claim else { return };
+        let Some(operation_id) = super::scan_cache::claimed_operation(&claim.preview_id) else {
+            return;
+        };
+        let Some(state) = super::state::WRITE_OPERATION_STATE.get(&operation_id) else {
+            return;
+        };
+        let _ = self.owner.set(state);
+    }
+
+    /// Parks the walking thread while the owner is paused. The whole cost on an
+    /// unpaused walk is one atomic load, which is what lets this sit on the
+    /// per-entry path next to the cancel check.
+    pub(super) fn park_while_paused(&self) {
+        let Some(owner) = self.paused_owner() else { return };
+        self.enter_park();
+        owner.pause_gate.wait_while_paused_sync_until(&|| self.should_stop(owner));
+        self.leave_park();
+    }
+
+    /// Async twin of [`park_while_paused`](Self::park_while_paused), for the
+    /// volume walk. ❌ Never park a volume scan on the sync waiter: it runs on a
+    /// tokio worker, and a pause is as long as a person is thinking.
+    pub(super) async fn park_while_paused_async(&self) {
+        let Some(owner) = self.paused_owner() else { return };
+        self.enter_park();
+        owner
+            .pause_gate
+            .wait_while_paused_until(&|| self.should_stop(owner))
+            .await;
+        self.leave_park();
+    }
+
+    /// The owner, but only when it is actually paused: the fast-path filter
+    /// both parks share.
+    fn paused_owner(&self) -> Option<&std::sync::Arc<WriteOperationState>> {
+        let owner = self.owner.get()?;
+        owner.pause_gate.is_paused().then_some(owner)
+    }
+
+    /// Everything that must end the park. The operation's intent covers a cancel
+    /// aimed at the operation (which wakes the gate); the preview's own flag
+    /// covers a walk told to stop directly. ❌ Dropping either leaves the thread
+    /// on a gate nobody will open.
+    fn should_stop(&self, owner: &WriteOperationState) -> bool {
+        if super::state::is_cancelled(&owner.intent) {
+            return true;
+        }
+        self.claim.as_ref().is_some_and(|claim| {
+            claim
+                .state
+                .cancelled
+                .load(std::sync::atomic::Ordering::Relaxed)
+        })
+    }
+
+    fn enter_park(&self) {
+        if let Some(watchdog) = &self.watchdog {
+            watchdog.note_parked();
+        }
+    }
+
+    fn leave_park(&self) {
+        if let Some(watchdog) = &self.watchdog {
+            watchdog.note_resumed();
+        }
     }
 }
 

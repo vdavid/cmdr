@@ -65,6 +65,11 @@ pub(super) struct ScanWatchdog {
     bytes: AtomicU64,
     /// Set by whoever publishes this preview's outcome, worker or watchdog.
     outcome_claimed: AtomicBool,
+    /// The walk is parked on its operation's pause gate. A paused scan counts
+    /// nothing by design, which looks exactly like a volume that stopped
+    /// answering, so the inactivity budget is suspended while this is set. See
+    /// [`note_parked`](Self::note_parked).
+    parked: AtomicBool,
     inactivity_limit: Duration,
 }
 
@@ -73,6 +78,8 @@ pub(super) struct ScanWatchdog {
 pub(super) enum Beat {
     /// Still counting (or still within its inactivity budget): keep waiting.
     Walking,
+    /// Parked on the operation's pause gate: counting nothing, on purpose.
+    Parked,
     /// Someone already published this preview's outcome: the watchdog is done.
     Settled,
     /// Nothing counted for the whole limit: the volume isn't answering.
@@ -98,6 +105,7 @@ impl ScanWatchdog {
             dirs: AtomicUsize::new(0),
             bytes: AtomicU64::new(0),
             outcome_claimed: AtomicBool::new(false),
+            parked: AtomicBool::new(false),
             inactivity_limit,
         });
         log::info!(
@@ -118,6 +126,21 @@ impl ScanWatchdog {
         self.bytes.store(bytes, Ordering::Relaxed);
         self.last_progress_ms
             .store(self.started.elapsed().as_millis() as u64, Ordering::Relaxed);
+    }
+
+    /// The walk has parked on its operation's pause gate: stop the inactivity
+    /// clock. A person thinking is not a volume that died, and without this a
+    /// pause held for a minute would end the scan with "stopped responding".
+    pub(super) fn note_parked(&self) {
+        self.parked.store(true, Ordering::Release);
+    }
+
+    /// The walk is counting again. Restarts the inactivity clock from now, so
+    /// the pause itself is never charged against the budget.
+    pub(super) fn note_resumed(&self) {
+        self.last_progress_ms
+            .store(self.started.elapsed().as_millis() as u64, Ordering::Relaxed);
+        self.parked.store(false, Ordering::Release);
     }
 
     /// Takes the right to publish this preview's outcome, once ever. `true` for
@@ -157,6 +180,18 @@ impl ScanWatchdog {
         if self.outcome_claimed.load(Ordering::SeqCst) {
             return Beat::Settled;
         }
+        if self.parked.load(Ordering::Acquire) {
+            log::debug!(
+                target: LOG_TARGET,
+                "scan preview {} parked: paused at {} files, {} dirs, {} bytes ({})",
+                self.preview_id,
+                self.files.load(Ordering::Relaxed),
+                self.dirs.load(Ordering::Relaxed),
+                self.bytes.load(Ordering::Relaxed),
+                self.target
+            );
+            return Beat::Parked;
+        }
         let idle = self.idle();
         log::debug!(
             target: LOG_TARGET,
@@ -184,7 +219,7 @@ impl ScanWatchdog {
         loop {
             tokio::time::sleep(tick).await;
             match self.beat() {
-                Beat::Walking => {}
+                Beat::Walking | Beat::Parked => {}
                 Beat::Settled => return,
                 Beat::Unresponsive => {
                     self.give_up(&state, events.as_ref());

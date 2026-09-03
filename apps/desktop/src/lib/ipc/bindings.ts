@@ -9366,11 +9366,6 @@ export type PatternType = 'glob' | 'regex'
 export type PauseAllOutcome = {
   // Operations that flipped right now.
   applied: number
-  /**
-   *  Operations still scanning, whose request is latched for the moment the
-   *  write starts.
-   */
-  deferred: number
   // Operations already sitting where the caller wants them.
   alreadyInState: number
   /**
@@ -9387,21 +9382,16 @@ export type PauseAllOutcome = {
  *  are the same in both directions.
  *
  *  The distinction is load-bearing at the MCP boundary, where an agent acts on
- *  the answer: `Applied` and `Deferred` both mean "the queue will stop", but
- *  `NotApplicable` means nothing changed and nothing is remembered.
+ *  the answer: `Applied` means "the queue has stopped", `NotApplicable` means
+ *  nothing changed and nothing is remembered.
  */
 export type PauseOutcome =
   /**
-   *  The record flipped: `Running`→`Paused` (the driver parks at its next
-   *  between-files boundary) or `Paused`→`Running`.
+   *  The record flipped: `Running`→`Paused` (the operation parks at its next
+   *  boundary — between files while writing, between entries while scanning)
+   *  or `Paused`→`Running`.
    */
   | 'applied'
-  /**
-   *  The operation is still waiting on its scan, so there is nothing to park
-   *  yet. The request is latched and applies the moment the write starts
-   *  (`end_scan_wait`); a resume withdraws a latched pause the same way.
-   */
-  | 'deferred'
   /**
    *  The operation is already in the state asked for (pausing a `Paused` one,
    *  resuming a `Running` one). Nothing changed because nothing had to, so a
