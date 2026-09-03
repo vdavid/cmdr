@@ -36,8 +36,11 @@ ten-step "Writing a new backend" list: `crates/cmdr-fs/src/volume/host/DETAILS.m
   `volume_wiring.rs` (registrar + `DeviceVolumeProvider`), a new `events.rs` (the tauri event payload types and the
   adapter that maps the crate's typed events onto them), and `mod.rs` as a re-export of the crate plus the app's parked
   manager instance. `commands/mtp.rs`, `stubs/mtp.rs`, `ipc.rs`, and the frontend do not change shape.
-- **`backends/mtp.rs`** becomes the twin of `backends/smb.rs`: a re-export of `cmdr_mtp::volume::*` under the original
-  path plus the `#[path]` list of app-side test modules.
+- **No `backends/mtp.rs` shim.** Call sites import `cmdr_mtp::` directly, the way `cmdr_sftp`, `cmdr_webdav`, and
+  `cmdr_adb` are used; `backends/smb.rs` and `backends/archive.rs` are retrofit-era compatibility re-exports, not the
+  pattern to copy. App-side tests go beside the app subsystem they assert on (`write_operations/` for transfer cells,
+  `network/`-style wiring tests next to `mtp/volume_wiring.rs`, `file_system/volume/` for the oracle cell), the way
+  `sftp_transfer_integration_test.rs` and `sftp_volume_wiring_test.rs` sit today.
 
 ## Decisions
 
@@ -150,7 +153,7 @@ suites catch a regression before any path churns. Do not start M3 until M2 is gr
    `virtual-mtp = ["cmdr-mtp/virtual-device"]`, and the app's dev-dependency on `cmdr-mtp` with `testing` (the shape
    `cmdr-adb` uses). `cargo deny check` (nothing new enters the graph; assert it).
 3. `git mv` the files (decision "What moves"), fix paths, `src/mtp/mod.rs` re-exports the crate under the original
-   names, `backends/mtp.rs` mirrors `backends/smb.rs`.
+   names; `backends/mod.rs` drops its `mtp` module and re-exports `MtpVolume` from the crate.
 4. `index-crate-isolation`: add `cmdr-mtp` to `guardedIndexCrates`, and a `surfaceGuardedCrates` entry with ceilings set
    to the counts the audit lands on, justified in `crates/cmdr-mtp/DETAILS.md` § "The public surface is capped". The two
    MTP-specific checks (`desktop-rust-mtp-dropping-timeout`, `desktop-rust-mtp-no-transport-reset`) scan `src/mtp/`
@@ -168,8 +171,8 @@ on"). Starting allocation, to be corrected cell by cell while reading:
   `mtp_read_range_test.rs`, `mtp_read_bench.rs`, `connection/path_cache_sync_test.rs`, and the `Volume`-contract cells
   of `mtp_test.rs`. Add `volume/host_seam_test.rs` (seed a virtual device, walk it every way the backend can, assert
   `change_count` and the recorded device-event sequence), copying `crates/cmdr-sftp/src/volume/host_seam_test.rs`.
-- **App** (stay under `backends/` via `#[path]`, or where they are): `mtp_archive_test.rs` (archive routing is the
-  app's), `mtp_scan_oracle_tests.rs` (the app's oracle), the registrar-ordering and wiring cells of `mtp_test.rs`,
+- **App** (beside the subsystem each one asserts on, never under `backends/`): `mtp_archive_test.rs` (archive routing is
+  the app's), `mtp_scan_oracle_tests.rs` (the app's oracle), the registrar-ordering and wiring cells of `mtp_test.rs`,
   `write_operations/.../rename_merge_mtp_tests.rs` and `delete/volume_cancel_tests.rs` (they drive the app's pipeline).
   App cells reach the fixture through `cmdr_mtp::testing` and a thin `mtp_test_support.rs` that passes the app's real
   `VolumeHost`, the way `smb_test_support.rs` does.
