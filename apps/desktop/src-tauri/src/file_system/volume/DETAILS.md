@@ -10,8 +10,8 @@ every backend to turn raw OS errors into warm user-facing copy) lives in `friend
 ## Purpose
 
 Every file system operation (listing, copy, rename, delete, indexing, watching) goes through a `Volume`. The trait hides
-the differences between a local POSIX path, an MTP device, an in-memory test fixture, and future backends (SMB, S3,
-FTP). Callers never touch the filesystem directly; they call `Volume` methods with **paths relative to the volume root**.
+the differences between a local POSIX path, an MTP or ADB device, an archive, an SMB / SFTP / WebDAV server, and an
+in-memory test fixture. Callers never touch the filesystem directly; they call `Volume` methods with **paths relative to the volume root**.
 
 ## Key files
 
@@ -23,19 +23,64 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 - **`manager.rs`** (+ `manager/roots.rs`): `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default
   volume. Also holds the process-wide instance and its `get_volume_manager()` accessor. `roots.rs` holds the mount-root
   set each entry owns and the promotion rules over it
-- **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See `backends/CLAUDE.md`.
+- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume`, `MtpVolume`), re-exports of the crate backends, and the app-side halves of their suites. See `backends/CLAUDE.md`.
 - **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
 ## Architecture
 
+The layers, bottom to top, in plain words. Each layer only talks to the one below it through a named interface, and
+the crate boundary is what makes that a compile error rather than a habit.
+
+1. **The vocabulary: `crates/cmdr-fs`.** The `Volume` trait, every type it speaks in (`FileEntry`, `VolumeError`,
+   `MutationEvent`, the scan results), the shared walkers (`scan_walk`, `patching`), the conformance assertions, and
+   the **host seams** (`src/volume/host/`): the eight questions a backend may ask the app around it (report a listing
+   change, ask the fresh-listing oracle, get a runtime handle, report a connection transition, read credentials, trust
+   a host key, notify the index, read a setting). No `tauri`, no English.
+2. **The backends.** One `impl Volume` per storage kind. A backend has TWO faces, and the trait is only one of them:
+   - The **file-ops face** is the `Volume` trait, and it is 100% of what the transfer engine, the panes, the delete
+     walker, and the indexer's BFS use. Nothing above this layer knows which backend it holds; a copy from a phone to a
+     NAS is `open_read_stream` on one `Arc<dyn Volume>` and `write_from_stream` on another.
+   - The **lifecycle face** is everything that happens around the trait: discovering the server or device, connecting,
+     hotplug, reconnect after a dropped session, live change events, feeding the index, and saying "I need
+     credentials". This face has no trait. A crate backend routes it through the host seams (typed values, no prose)
+     plus a `VolumeHost` handed in at construction; the app's adapters turn each answer into a frontend event or a
+     cache write.
+   - Crate backends (no `tauri`, verified alone by `cargo check -p <crate>`): `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
+     `cmdr-webdav`, `cmdr-adb`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanent: the git portal
+     is implemented as its hooks) and `MtpVolume` (`backends/mtp/` over `src/mtp/`), which predates the seams and does
+     its lifecycle face the old way: the session layer holds a `tauri::AppHandle`, emits seven `tauri_specta::Event`
+     payloads itself, and reaches the listing cache, the registry, and `device_volumes` directly. `InMemoryVolume` (in
+     `cmdr-fs`) is the test and stress fixture.
+3. **The app-side half of each backend.** What a backend can't answer from its protocol alone, and what must know the
+   concrete type: discovery UI, the keychain, the OS mount, the ptpcamerad workaround, and REGISTRATION. A backend never
+   registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
+   `network/webdav_volume_wiring.rs`, `adb/`, `mtp/volume_wiring.rs`) mints the volume, hands it the app's `VolumeHost`
+   (`src-tauri/src/volume_host.rs`), and inserts it. Device backends also register a `DeviceVolumeProvider`
+   (`device_volumes.rs`) so the volume list and eject can fold over them. The app-side halves of the extracted crates'
+   test suites sit in `backends/` too (`smb_*_test.rs`), which is why that directory looks bigger than the two impls it
+   holds.
+4. **The registry: `VolumeManager`** (`manager.rs`). Volume id → `Arc<dyn Volume>`, plus the mount-root set per entry,
+   archive routing in `resolve`, retirement on removal, and the arrival subscription.
+5. **The consumers.** `write_operations/` (copy, move, delete, the cross-volume engine), `listing/` (panes and the
+   listing cache), `indexing/`'s BFS scanner, `file_viewer/`, and the MCP tools. All of them hold `Arc<dyn Volume>` and
+   nothing more specific; `VolumeKind` branches exist only for eject and for the local scanner's fast path.
+
 ```
-VolumeManager (registry)
-  └─ Arc<dyn Volume>  (async trait: most methods return Pin<Box<dyn Future>>)
-        ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O)
-        ├─ MtpVolume          → direct async MTP ops
-        ├─ SmbVolume          → direct async smb2 ops (direct protocol, not OS mount)
-        └─ InMemoryVolume     → HashMap, test/stress use only
+consumers: transfer engine, panes, delete, indexer BFS, viewer, MCP
+        │  Arc<dyn Volume>
+VolumeManager (registry; resolve routes .zip paths to ArchiveVolume)
+        │
+backends ── file-ops face: impl Volume ──────────────────────────────┐
+  crate:  Archive  Smb  Sftp  WebDav  Adb                            │ cmdr-fs: Volume trait,
+  app:    LocalPosix (permanent)  Mtp (pre-seam)  InMemory (tests)   │ types, walkers, host seams
+        │  lifecycle face: VolumeHost seams (crates) / direct reaches (MTP)
+app-side halves: wiring + registration, discovery, keychain, mounts, ptpcamerad, DeviceVolumeProvider, tauri events
 ```
+
+Moving a backend into a crate is therefore never only a file move: the file-ops face already is the trait, so the work
+is entirely on the lifecycle face, replacing each direct reach with a seam and each `tauri` event with a typed value
+the app maps. SMB's retrofit is the worked example; the cost model and the two things a crate does NOT buy:
+`crates/cmdr-fs/src/volume/host/DETAILS.md` § "What a backend crate buys".
 
 **Drive indexing does NOT go through `Volume`.** The local scanner and the FSEvents watcher are called directly by the
 indexing lifecycle (`indexing::scanner::{scan_volume, scan_subtree}`, `DriveWatcher::start`), dispatched on
