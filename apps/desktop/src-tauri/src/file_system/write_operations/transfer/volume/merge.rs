@@ -482,7 +482,11 @@ async fn merge_level<'a>(
     let entries = entries.at(source_path)?;
 
     for entry in &entries {
-        if super::super::super::state::is_cancelled(&state.intent) {
+        // The cooperative boundary, per entry. The walk's own work (listings,
+        // destination creation, a conflict decision per child) never passes
+        // through the between-chunks checkpoint the byte path parks at, so this
+        // is the only thing that stops a paused merge from walking on.
+        if state.stop_or_park_async().await {
             return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
         }
 

@@ -1192,6 +1192,9 @@ mod merge_dir_vs_dir_tests;
 #[path = "merge_dispatch_mutex_tests.rs"]
 mod merge_dispatch_mutex_tests;
 #[cfg(test)]
+#[path = "merge_pause_tests.rs"]
+mod merge_pause_tests;
+#[cfg(test)]
 #[path = "merge_tests.rs"]
 mod merge_tests;
 #[cfg(test)]
