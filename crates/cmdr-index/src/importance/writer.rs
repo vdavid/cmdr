@@ -36,7 +36,7 @@ use std::time::Duration;
 
 use rusqlite::{Connection, OptionalExtension};
 
-use super::store::{ImportanceStoreError, RECOMPUTE_GENERATION_KEY, open_write_connection};
+use super::store::{ImportanceStoreError, RECOMPUTE_GENERATION_KEY, SCORING_POLICY_KEY, open_write_connection};
 use crate::indexing::store::normalize_for_comparison;
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::pluralize::pluralize;
@@ -328,7 +328,8 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
 }
 
 /// Apply a FULL recompute pass under one transaction: REPLACE the whole weights
-/// table with `rows` (stamped at `generation`) and bump the stored generation.
+/// table with `rows` (stamped at `generation`), bump the stored generation, and
+/// stamp the scoring policy the rows were computed under.
 ///
 /// A full pass rewrites every folder, so it clears the table first — otherwise a
 /// folder that was scored last pass but now floors (or vanished from the index)
@@ -336,6 +337,12 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
 /// for a floored folder. Clearing + inserting + bumping in ONE transaction keeps
 /// the generation and the rows consistent — a reader never sees a bumped generation
 /// with un-written (or stale) rows.
+///
+/// ❌ Stamp [`SCORING_POLICY_KEY`] HERE and nowhere else. A full pass is the one
+/// moment the table provably holds nothing but rows this build's classifiers
+/// produced; an incremental only touches the folders the filesystem changed, so it
+/// can't vouch for the rest and stamping there would strand every untouched row
+/// under a policy it was never scored by.
 fn apply_full_pass(conn: &mut Connection, generation: u64, rows: &[WeightRow]) -> Result<(), ImportanceStoreError> {
     let tx = conn.transaction()?;
     {
@@ -344,6 +351,10 @@ fn apply_full_pass(conn: &mut Connection, generation: u64, rows: &[WeightRow]) -
         tx.execute(
             "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
             rusqlite::params![RECOMPUTE_GENERATION_KEY, generation.to_string()],
+        )?;
+        tx.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
+            rusqlite::params![SCORING_POLICY_KEY, super::classify::scoring_policy_fingerprint()],
         )?;
     }
     tx.commit()?;

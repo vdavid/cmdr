@@ -13,7 +13,7 @@
 //!    `scan_completed_at`) never re-fires a `ScanCompleted`, so the bus subscription
 //!    the sweep WIRES would never score it — the common restart case (its retained
 //!    bus value stays `Pending`). To close that, the sweep ALSO runs
-//!    [`wiring::enqueue_initial_full_pass_if_unscored`] per ready volume: it forces the
+//!    [`wiring::enqueue_full_pass_if_needed`] per ready volume: it forces the
 //!    write-path store open (triggering any lazy schema recreate) and enqueues a full
 //!    recompute IFF the store then carries no generation. Gating on "no generation"
 //!    (not an unconditional kick) means an already-scored volume isn't rescored on

@@ -3,7 +3,7 @@
 //! Spotlight degradation, offline-unmounted reads, and per-volume store isolation.
 
 use super::test_support::*;
-use super::wiring::should_enqueue_initial_full_pass;
+use super::wiring::should_enqueue_full_pass;
 use super::*;
 use crate::IndexVolumeKind;
 
@@ -270,24 +270,24 @@ fn scoring_policy_scores_local_and_smb_but_excludes_mtp() {
     assert!(!is_background_scored(IndexVolumeKind::Mtp));
 }
 
-/// The initial-full-pass enqueue decision (`enqueue_initial_full_pass_if_unscored`'s
+/// The initial-full-pass enqueue decision (`enqueue_full_pass_if_needed`'s
 /// core): a background-scored volume with an unscored store enqueues; an already-scored
 /// store does not; and MTP never does (on-demand only), even with an unscored store.
 /// This ties the kind policy and the store-state probe into the one decision the sweep
 /// makes, without spawning the recompute.
 #[test]
-fn should_enqueue_initial_full_pass_gates_on_kind_and_store_state() {
+fn should_enqueue_full_pass_gates_on_kind_and_store_state() {
     // An unscored (fresh) store on a Local volume ⇒ enqueue a full pass.
     let unscored = tempfile::tempdir().expect("temp dir");
     assert!(
-        should_enqueue_initial_full_pass(IndexVolumeKind::Local, unscored.path(), ROOT_VOLUME_ID).expect("probe"),
+        should_enqueue_full_pass(IndexVolumeKind::Local, unscored.path(), ROOT_VOLUME_ID).expect("probe"),
         "a background-scored volume with no generation needs an initial full pass"
     );
 
     // MTP is never background-scored, so it never enqueues — even over the same
     // unscored store (the kind veto short-circuits before the store probe).
     assert!(
-        !should_enqueue_initial_full_pass(IndexVolumeKind::Mtp, unscored.path(), ROOT_VOLUME_ID).expect("probe"),
+        !should_enqueue_full_pass(IndexVolumeKind::Mtp, unscored.path(), ROOT_VOLUME_ID).expect("probe"),
         "MTP is on-demand only and never enqueues a background pass"
     );
 
@@ -308,7 +308,7 @@ fn should_enqueue_initial_full_pass_gates_on_kind_and_store_state() {
     writer.flush_blocking().expect("flush");
     writer.shutdown();
     assert!(
-        !should_enqueue_initial_full_pass(IndexVolumeKind::Local, scored.path(), ROOT_VOLUME_ID).expect("probe"),
+        !should_enqueue_full_pass(IndexVolumeKind::Local, scored.path(), ROOT_VOLUME_ID).expect("probe"),
         "an already-scored store does not re-enqueue a full pass"
     );
 }

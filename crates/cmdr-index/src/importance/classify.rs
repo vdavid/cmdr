@@ -158,21 +158,180 @@ pub fn is_project_marker(folded_child_name: &str) -> bool {
 
 /// Classify a path into its [`PathClass`] prior, relative to the user's home.
 ///
-/// A `~/Library` subtree is `SystemOrCache` even under the home (it stays low);
-/// `Downloads`/`Desktop`/`Documents` and their subtrees are `UserContent`;
-/// everything else is `Neutral`. `ProjectRoot` is NOT decided here — it's set by
-/// the project-marker signal at assembly time, since it depends on directory
-/// contents, not the path alone.
+/// A `~/Library` subtree and the system temp roots ([`TEMP_ROOTS`]) are
+/// `SystemOrCache` (they stay low, and they FLOOR through
+/// [`is_hidden_or_system`]); `Downloads`/`Desktop`/`Documents` and their subtrees
+/// are `UserContent`; everything else is `Neutral`. `ProjectRoot` is NOT decided
+/// here — it's the marker promotion [`path_class_with_marker`] layers on at
+/// assembly time, since it depends on directory contents, not the path alone.
 pub fn path_class(path: &str, home: &str) -> PathClass {
-    if is_at_or_under(path, home, "Library") {
+    if is_at_or_under_any(path, TEMP_ROOTS) {
         return PathClass::SystemOrCache;
     }
-    for content in ["Downloads", "Desktop", "Documents"] {
+    for cache in HOME_CACHE_FOLDERS {
+        if is_at_or_under(path, home, cache) {
+            return PathClass::SystemOrCache;
+        }
+    }
+    for content in HOME_CONTENT_FOLDERS {
         if is_at_or_under(path, home, content) {
             return PathClass::UserContent;
         }
     }
     PathClass::Neutral
+}
+
+/// Home-relative folders whose subtrees are `SystemOrCache` (so they also FLOOR).
+const HOME_CACHE_FOLDERS: &[&str] = &["Library"];
+
+/// Home-relative folders whose subtrees are `UserContent`.
+const HOME_CONTENT_FOLDERS: &[&str] = &["Downloads", "Desktop", "Documents"];
+
+/// The system temp roots, whose whole subtrees are machine scratch space rather
+/// than something the user works in.
+///
+/// Both the `/private`-prefixed and the bare spellings are listed because macOS
+/// firmlinks `/tmp` to `/private/tmp` and `/var` to `/private/var`: the index
+/// stores whichever spelling the walk produced, and a classifier that knew only one
+/// of them would score the same directory two different ways.
+///
+/// Evidence (2026-09-03, read out of the live `importance-root.db`): before these
+/// were listed, `/private/tmp` stored at `score=0.898` with
+/// `pathClass=projectRoot`, because Claude Code writes background task output under
+/// `/private/tmp/claude-501/...` and the marker promotion fired on it. That held the
+/// agent's wake interest above its `0.7` hot threshold continuously.
+const TEMP_ROOTS: &[&str] = &[
+    "/tmp",
+    "/private/tmp",
+    "/var/tmp",
+    "/private/var/tmp",
+    "/var/folders",
+    "/private/var/folders",
+];
+
+/// The path prefixes under which one more component names a mounted volume, so
+/// `/Volumes/backup` is a volume root while `/Volumes/backup/photos` is an ordinary
+/// folder inside it. Per-platform, since the mount layout is.
+#[cfg(target_os = "macos")]
+const MOUNT_PREFIXES: &[&str] = &["/Volumes/"];
+/// See the macOS arm.
+#[cfg(target_os = "linux")]
+const MOUNT_PREFIXES: &[&str] = &["/mnt/", "/media/"];
+/// See the macOS arm. No mount convention we recognize, so only `/` is a root.
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+const MOUNT_PREFIXES: &[&str] = &[];
+
+/// Whether `path` is the root of a volume: the disk root `/`, or exactly one
+/// component under a [`MOUNT_PREFIXES`] entry.
+pub fn is_volume_root(path: &str) -> bool {
+    let trimmed = path.trim_end_matches('/');
+    if trimmed.is_empty() {
+        return true; // the disk root `/`.
+    }
+    MOUNT_PREFIXES.iter().any(|prefix| {
+        trimmed
+            .strip_prefix(prefix)
+            .is_some_and(|rest| !rest.is_empty() && !rest.contains('/'))
+    })
+}
+
+/// A folder's [`PathClass`] once the project-marker promotion is applied: a folder
+/// holding a marker (here or below) normally takes `ProjectRoot`, the strongest
+/// prior.
+///
+/// Three kinds of path are exempt, because a marker there says nothing about the
+/// folder being a place the user works:
+///
+/// - **`$HOME` itself.** A `.git` or `Makefile` sitting directly in the home
+///   directory means dotfiles. The exemption only drops the promotion; `$HOME`
+///   still scores on its ordinary signals. ❌ Never make `$HOME` FLOOR instead: the
+///   floor propagates through [`under_floored_ancestor`] to every folder below it
+///   and switches the whole feature off.
+/// - **A volume root** ([`is_volume_root`]). A marker at `/` or at a mount point
+///   would promote a whole disk.
+/// - **A `SystemOrCache` path.** Machine scratch stays machine scratch; a
+///   `package.json` written into a temp directory doesn't make it a project. These
+///   floor either way, so the promotion only wrote a misleading `projectRoot` into
+///   the stored signals.
+///
+/// An ordinary project directory is untouched: `~/projects/thing` with a `.git`
+/// still promotes, and so does a project sitting UNDER a volume root.
+pub fn path_class_with_marker(path: &str, home: &str, has_project_marker: bool) -> PathClass {
+    let class = path_class(path, home);
+    if !has_project_marker || !marker_can_promote(path, home, class) {
+        return class;
+    }
+    PathClass::ProjectRoot
+}
+
+/// Whether a project marker found at `path` may raise it to `ProjectRoot`. The
+/// exemptions are documented on [`path_class_with_marker`].
+fn marker_can_promote(path: &str, home: &str, class: PathClass) -> bool {
+    !matches!(class, PathClass::SystemOrCache) && path.trim_end_matches('/') != home && !is_volume_root(path)
+}
+
+// ── The scoring policy a store's rows were computed under ────────────
+
+/// Bump when a classification RULE changes in code rather than in one of the lists
+/// below: the fingerprint folds the lists in by content, but it can't see a change
+/// to how they're applied.
+///
+/// Starts at `2`: `1` names the rules in the builds before any stamp existed, which
+/// an absent [`SCORING_POLICY_KEY`](super::store::SCORING_POLICY_KEY) already stands
+/// for.
+///
+/// `2`: the temp roots became `SystemOrCache`, and the project-marker promotion
+/// stopped firing at `$HOME`, at a volume root, and on a `SystemOrCache` path.
+const SCORING_RULES_VERSION: &str = "2";
+
+/// A stable fingerprint of the classification policy a store's weights were
+/// computed under, persisted per volume under `store::SCORING_POLICY_KEY`.
+///
+/// Content-derived over every list that decides a folder's categorical signals,
+/// plus [`SCORING_RULES_VERSION`] for the rules that aren't a list. A stored value
+/// that differs means the rows predate the policy this build applies, so the volume
+/// needs a full recompute rather than being trusted: a classification change moves
+/// scores, and nothing else would ever revisit the ~189,000 rows a scored volume
+/// holds (observed on the local `root` volume, 2026-09-03). Mirrors the index's
+/// `scanner::exclusion_policy_fingerprint`, down to sharing its mixing function.
+///
+/// ❌ The scorer's [`Weights`](super::scorer::Weights) are deliberately NOT folded
+/// in. Every row persists the `FolderSignals` it was computed from, so a weight
+/// change re-weights the stored signals without a rescan; only a change to the
+/// SIGNALS themselves invalidates a row.
+pub fn scoring_policy_fingerprint() -> String {
+    crate::fingerprint::fingerprint_of(&scoring_policy_parts())
+}
+
+/// The policy's contents, flattened for hashing. Each list is preceded by its own
+/// label, so moving a name from one list to another changes the fingerprint even
+/// though the flat set of names didn't. Split out from
+/// [`scoring_policy_fingerprint`] so a test can perturb one list and check the
+/// stamp moves.
+fn scoring_policy_parts() -> Vec<&'static str> {
+    let mut parts: Vec<&str> = vec!["rules", SCORING_RULES_VERSION, "temp_roots"];
+    parts.extend_from_slice(TEMP_ROOTS);
+    parts.push("mount_prefixes");
+    parts.extend_from_slice(MOUNT_PREFIXES);
+    parts.push("home_cache");
+    parts.extend_from_slice(HOME_CACHE_FOLDERS);
+    parts.push("home_content");
+    parts.extend_from_slice(HOME_CONTENT_FOLDERS);
+    parts.push("project_markers");
+    parts.extend_from_slice(PROJECT_MARKERS);
+    parts.push("denylist");
+    parts.extend_from_slice(crate::SYSTEM_DIR_EXCLUDES);
+    parts
+}
+
+/// Whether `path` IS one of `roots` or sits under one: the absolute-path
+/// counterpart of [`is_at_or_under`], for the roots that don't live under the home
+/// directory. Guarded the same way, so `/var/tmpfoo` doesn't match `/var/tmp`.
+fn is_at_or_under_any(path: &str, roots: &[&str]) -> bool {
+    roots.iter().any(|root| {
+        path.strip_prefix(root)
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+    })
 }
 
 /// Whether `path` IS `{home}/{folder}` or sits under it. Compares by stripping prefixes
@@ -280,6 +439,155 @@ mod tests {
         // Folders outside any floored subtree are untouched.
         assert!(!under.contains("/Users/test/projects/webapp"));
         assert!(!under.contains("/Users/test/Documents/invoices"));
+    }
+
+    #[test]
+    fn temp_roots_classify_as_system_or_cache() {
+        let home = "/Users/test";
+        for root in TEMP_ROOTS {
+            assert_eq!(
+                path_class(root, home),
+                PathClass::SystemOrCache,
+                "{root} is a temp root"
+            );
+        }
+        assert_eq!(
+            path_class("/private/tmp/claude-501/session", home),
+            PathClass::SystemOrCache,
+            "anything under a temp root is system/cache too"
+        );
+        assert_eq!(
+            path_class("/private/var/folders/xx/yy/T", home),
+            PathClass::SystemOrCache,
+            "the macOS per-user $TMPDIR lives under /private/var/folders"
+        );
+    }
+
+    #[test]
+    fn a_temp_root_floors_itself_and_its_whole_subtree() {
+        let home = "/Users/test";
+        assert!(self_floors("/private/tmp", "tmp", home), "a temp root self-floors");
+        assert!(
+            under_floored_ancestor("/private/tmp/claude-501/scratchpad", home),
+            "a folder under a temp root floors via the ancestor rule"
+        );
+        assert!(floors_by_path("/private/tmp/claude-501/scratchpad", home));
+        assert!(floors_by_path("/private/var/folders/xx/yy/T/build", home));
+    }
+
+    #[test]
+    fn a_temp_root_prefix_doesnt_capture_a_lookalike_sibling() {
+        let home = "/Users/test";
+        assert_eq!(
+            path_class("/var/tmpfoo", home),
+            PathClass::Neutral,
+            "/var/tmpfoo is not /var/tmp"
+        );
+        assert!(!floors_by_path("/var/tmpfoo/project", home));
+        assert_eq!(path_class("/tmpfoo", home), PathClass::Neutral);
+        assert_eq!(path_class("/private/tmpfoo", home), PathClass::Neutral);
+    }
+
+    #[test]
+    fn a_marker_doesnt_promote_home_or_a_volume_root() {
+        let home = "/Users/test";
+        assert_eq!(
+            path_class_with_marker(home, home, true),
+            PathClass::Neutral,
+            "a .git in $HOME means dotfiles, not a project the user works in"
+        );
+        assert_eq!(
+            path_class_with_marker("/", home, true),
+            PathClass::Neutral,
+            "a marker at the boot volume root doesn't promote the whole disk"
+        );
+        for root in MOUNT_PREFIXES {
+            let mount = format!("{root}backup");
+            assert_eq!(
+                path_class_with_marker(&mount, home, true),
+                PathClass::Neutral,
+                "{mount} is a volume root"
+            );
+        }
+    }
+
+    #[test]
+    fn home_does_not_floor_even_when_its_promotion_is_suppressed() {
+        // Flooring $HOME would propagate through `under_floored_ancestor` to the
+        // whole home directory and disable the feature.
+        let home = "/Users/test";
+        assert!(!self_floors(home, "test", home));
+        assert!(!floors_by_path(home, home));
+        assert!(!floors_by_path("/Users/test/projects/webapp", home));
+    }
+
+    #[test]
+    fn a_marker_still_promotes_a_real_project_dir() {
+        let home = "/Users/test";
+        assert_eq!(
+            path_class_with_marker("/Users/test/projects-git/vdavid/cmdr", home, true),
+            PathClass::ProjectRoot,
+            "an ordinary project dir keeps the strongest prior"
+        );
+        assert_eq!(
+            path_class_with_marker("/Volumes/backup/repos/thing", home, true),
+            PathClass::ProjectRoot,
+            "a project UNDER a volume root still promotes"
+        );
+    }
+
+    #[test]
+    fn volume_roots_are_the_disk_root_and_one_level_under_a_mount_prefix() {
+        assert!(is_volume_root("/"));
+        for prefix in MOUNT_PREFIXES {
+            assert!(is_volume_root(&format!("{prefix}backup")), "{prefix}backup");
+            assert!(
+                !is_volume_root(&format!("{prefix}backup/photos")),
+                "one level under a mount prefix only"
+            );
+        }
+        assert!(!is_volume_root("/Users/test"));
+        assert!(!is_volume_root("/Users"));
+    }
+
+    /// The stamp is stable within a build. An unstable one would rescore every
+    /// volume on every launch, which is the expensive direction of this mechanism
+    /// failing.
+    #[test]
+    fn the_scoring_policy_fingerprint_is_stable() {
+        assert_eq!(scoring_policy_fingerprint(), scoring_policy_fingerprint());
+        assert_eq!(scoring_policy_fingerprint().len(), 16, "a 64-bit FNV-1a in hex");
+    }
+
+    /// Editing any list the classifiers read moves the fingerprint, which is the
+    /// whole mechanism: a store scored under the old list re-arms with no version
+    /// constant for anyone to forget to bump. Simulated over the real `parts`
+    /// shape, since the constants themselves can't be mutated at runtime.
+    #[test]
+    fn adding_a_name_to_any_policy_list_moves_the_fingerprint() {
+        let baseline = scoring_policy_fingerprint();
+        for label in [
+            "temp_roots",
+            "mount_prefixes",
+            "home_cache",
+            "home_content",
+            "project_markers",
+            "denylist",
+        ] {
+            let mut parts = scoring_policy_parts();
+            // Insert a new name right after the perturbed list's own label.
+            let at = parts.iter().position(|p| *p == label).expect("label present") + 1;
+            parts.insert(at, "/a-newly-listed-name");
+            assert_ne!(
+                crate::fingerprint::fingerprint_of(&parts),
+                baseline,
+                "a name added to {label} has to change the stamp"
+            );
+        }
+        // And so does a rules change that no list can see.
+        let mut parts = scoring_policy_parts();
+        parts[1] = "a-later-rules-version";
+        assert_ne!(crate::fingerprint::fingerprint_of(&parts), baseline);
     }
 
     #[test]

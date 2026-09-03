@@ -48,14 +48,48 @@ project-root prior from an ancestor `.git` and scored ~0.85, dwarfing real conte
 ## The shared classifiers (`classify.rs`)
 
 Pure path/name classifiers — `leaf_name`, `is_denylisted`, `is_hidden_or_system`, `self_floors`, `floors_by_path`,
-`under_floored_paths`, `is_project_marker`, `path_class` — shared by production signal assembly (`signals.rs`), the test
-fixtures, and the evals scenario builder. Keeping them in ONE place is load-bearing: the test stand-in and the real
-assembler must agree on what each signal means, and the only way to guarantee that is shared code, not re-derivation.
+`under_floored_paths`, `is_project_marker`, `path_class`, `path_class_with_marker`, `is_volume_root` — shared by
+production signal assembly (`signals.rs`), the test fixtures, and the evals scenario builder. Keeping them in ONE place
+is load-bearing: the test stand-in and the real assembler must agree on what each signal means, and the only way to
+guarantee that is shared code, not re-derivation.
 
 They run once per folder in the recompute walk and again per folder in scoring, so they hold no allocation on the ASCII
 path: the folded denylist is a process-wide `LazyLock`, and `path_class` strips prefixes rather than formatting a
 candidate path per check. A non-ASCII name still takes the exact `to_lowercase` path, because it can fold ONTO an ASCII
 name (U+212A KELVIN SIGN lowercases to `k`).
+
+### Temp roots are `SystemOrCache`
+
+`TEMP_ROOTS` (`/tmp`, `/private/tmp`, `/var/tmp`, `/private/var/tmp`, `/var/folders`, `/private/var/folders`, at or
+under) classify as `SystemOrCache`, so `is_hidden_or_system` floors them and `under_floored_ancestor` carries the floor
+down the whole subtree. Both spellings of each are listed because macOS firmlinks `/tmp` to `/private/tmp` and `/var` to
+`/private/var`, and the index stores whichever the walk produced. Matching is guarded exactly like `is_at_or_under`, so
+`/var/tmpfoo` is not `/var/tmp`.
+
+This deliberately reuses the existing floor rather than adding a parallel concept: one mechanism, and everything a
+temp root holds floors with it.
+
+**Why (2026-09-03, read out of the live `importance-root.db`):** `/private/tmp` was stored at `score=0.898` with
+`pathClass=projectRoot`. Claude Code writes background task output under `/private/tmp/claude-501/...`, so the agent's
+wake pipeline (`interest = importance_weight * intent_share`, hot above `0.7`) fired on ordinary dev work at the shipped
+five-second cadence: about 120 model calls an hour, 374,127 Qwen tokens in seven minutes.
+
+### A project marker doesn't promote `$HOME` or a volume root
+
+`path_class_with_marker(path, home, has_marker)` is the ONE place the marker promotion happens, and it declines in three
+cases: at `$HOME` itself (a `.git` or `Makefile` there means dotfiles; `$HOME` was stored at `score=0.954,
+pathClass=projectRoot` on the same date), at a volume root (`is_volume_root`: `/`, or one component under a
+`MOUNT_PREFIXES` entry), and on a `SystemOrCache` path (machine scratch stays machine scratch, and it floors anyway, so
+the promotion only wrote a misleading `projectRoot` into the stored signals).
+
+❌ **`$HOME` must NOT floor.** Flooring it propagates through `under_floored_ancestor` to every folder in the home
+directory and switches the whole feature off. The exemption only drops the promotion; `$HOME` still scores on its
+ordinary signals. `home_does_not_floor_even_when_its_promotion_is_suppressed` guards this, and
+`a_real_project_dir_still_becomes_a_project_root_and_scores_high` guards the other end (an ordinary project directory
+still takes `ProjectRoot` and still scores well above the wake's hot threshold).
+
+A change to any of these lists, or to `SCORING_RULES_VERSION`, re-arms every stored volume through the scoring-policy
+stamp: `store/DETAILS.md` § The scoring-policy stamp.
 
 ## Signal assembly (`signals.rs`)
 

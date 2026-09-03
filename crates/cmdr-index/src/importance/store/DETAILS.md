@@ -17,7 +17,8 @@ DB.
   own profile without a rescan), and the **as-of `recompute_generation`** the pass stamped.
 - **`visits`** — the navigation-visit signal, `path → (count, last-visit seconds)`. Counts and timestamps only, no
   content, local-only. Fed by `record_visit` (`../DETAILS.md` § The visit signal).
-- **`meta`** — `schema_version` and the per-volume `recompute_generation` counter, bumped once per full pass.
+- **`meta`** — `schema_version`, the per-volume `recompute_generation` counter (bumped once per full pass), and
+  `scoring_policy` (the classification fingerprint that pass scored under; see below).
 
 All three are `WITHOUT ROWID`. Every weight row carries the as-of generation it was scored at, the honest staleness
 marker an offline-unmounted read caveats with; all rows from the last full pass share it, and the read API surfaces it.
@@ -84,14 +85,43 @@ Two decisions keep the store small (an older DB just recreates fresh on the next
 The `weights` write phase dominates a full pass on a local root; compaction roughly halves it there by dropping ~76% of
 rows.
 
-## `needs_initial_full_pass` and the recreate ordering
+## `needs_full_pass` and the recreate ordering
 
-`needs_initial_full_pass(data_dir, volume_id)` answers "does this store still carry no generation?" and is the gate the
-startup sweep uses. It opens the store on the WRITE path first, which is where the lazy schema delete-and-recreate
-fires, and only then reads `RECOMPUTE_GENERATION_KEY`. A read-path probe would read the outgoing schema's stamped
-generation and skip the pass, after which the recreate wipes it. The full trap and its prod-upgrade history:
-`../scheduler/DETAILS.md` § The initial full pass. The store test drives the exact ordering (an old-schema DB with a
-stamped generation → the read probe sees it → the write-path-bound probe recreates and reports "needs a full pass").
+`needs_full_pass(data_dir, volume_id)` answers "can this store's weights be trusted, or does it owe a full recompute?"
+and is the gate the startup sweep uses. Two independent reasons say yes: no `RECOMPUTE_GENERATION_KEY` at all, or a
+`SCORING_POLICY_KEY` that doesn't match this build (below).
+
+It opens the store on the WRITE path first, which is where the lazy schema delete-and-recreate fires, and only then
+reads the meta table. A read-path probe would read the outgoing schema's stamped generation and skip the pass, after
+which the recreate wipes it. The full trap and its prod-upgrade history: `../scheduler/DETAILS.md` § The initial full
+pass. The store test drives the exact ordering (an old-schema DB with a stamped generation → the read probe sees it →
+the write-path-bound probe recreates and reports "needs a full pass").
+
+## The scoring-policy stamp
+
+`SCORING_POLICY_KEY` holds `classify::scoring_policy_fingerprint()`, a content hash over every list the classifiers read
+(temp roots, mount prefixes, the home-relative path-class folders, project markers, the denylist) plus
+`SCORING_RULES_VERSION` for the rules that aren't a list. `apply_full_pass` writes it in the same transaction as the
+generation bump; a mismatch (or an absent stamp) makes `needs_full_pass` answer yes.
+
+**Why it exists.** Nothing else ever revisits a scored volume's rows: a full pass runs once, and an incremental only
+touches folders the filesystem changed. So a classification fix ships and stays inert over everything already stored.
+On 2026-09-03 the local `root` volume held 188,760 such rows, among them `/private/tmp` at `score=0.898,
+pathClass=projectRoot` and `$HOME` at `score=0.954`, the two scores that had the agent's wake firing continuously. The
+stamp is what makes a fix like that reach them.
+
+**Why a stamp rather than a `SCHEMA_VERSION` bump**, which would also force a rescore: the bump deletes the DB file, and
+`visits` is the one table here that isn't regenerable. Navigation history is real user data, so a scoring change
+re-arms the weights and leaves it alone (`re_arming_the_scoring_policy_keeps_the_visit_history` pins that).
+
+❌ **Stamp it in `apply_full_pass` and nowhere else.** A full pass is the one moment the table provably holds nothing
+but rows this build's classifiers produced. An incremental can't vouch for the rows it didn't touch, so stamping there
+would strand them under a policy they were never scored by. Same discipline as the index's exclusion stamp, which is
+only ever sent right after a `TruncateData`.
+
+The mixing function is shared with that stamp: `crate::fingerprint::fingerprint_of`, FNV-1a, one golden test behind
+both. ❌ Don't fold the scorer's `Weights` into the fingerprint: every row persists the `FolderSignals` it was computed
+from, so a weight change re-weights stored signals without a rescan; only a change to the SIGNALS invalidates a row.
 
 ## Connection pragmas
 

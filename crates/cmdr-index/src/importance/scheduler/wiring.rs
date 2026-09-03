@@ -56,7 +56,7 @@ pub(super) fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
     // initial-pass trigger is what actually scores a fresh / recreated store.
     for (volume_id, kind) in crate::indexing::lifecycle::state::ready_volumes_with_kind() {
         wire_volume(Arc::clone(&scheduler), volume_id.clone(), kind);
-        enqueue_initial_full_pass_if_unscored(Arc::clone(&scheduler), volume_id, kind);
+        enqueue_full_pass_if_needed(Arc::clone(&scheduler), volume_id, kind);
     }
 
     // The caller owns the handle: the app keeps it in Tauri state so `record_visit`
@@ -66,20 +66,21 @@ pub(super) fn build_and_wire() -> Option<Arc<ImportanceScheduler>> {
 }
 
 /// For a volume READY at launch (Fresh, so no `ScanCompleted` will fire), enqueue a
-/// full recompute IFF its store has no generation yet — a fresh install, a
-/// schema-recreated store (the prod schema-3 upgrade), or one maintained only by
-/// incremental rescores (which never stamp a generation). An already-scored volume is
-/// left alone; an unconditional kick would rescore every volume on every launch
-/// (importance's policy differs from media's cheap unconditional kick).
+/// full recompute IFF its store can't be trusted: no generation yet (a fresh install,
+/// a schema-recreated store, or one maintained only by incremental rescores, which
+/// never stamp a generation), or rows computed under a superseded scoring policy. A
+/// volume whose weights are current is left alone; an unconditional kick would
+/// rescore every volume on every launch (importance's policy differs from media's
+/// cheap unconditional kick).
 ///
-/// The "unscored?" decision binds to the WRITE-path store open via
-/// [`crate::importance::store::needs_initial_full_pass`], which forces the lazy schema recreate
+/// The decision binds to the WRITE-path store open via
+/// [`crate::importance::store::needs_full_pass`], which forces the lazy schema recreate
 /// BEFORE reading the generation — never a sweep-time read probe, which would read the
 /// outgoing schema's stamped generation and skip, only for the recreate to wipe it
 /// moments later (the prod-upgrade ordering trap). The probe (a DB open) runs on a
-/// blocking task; when unscored it hands off to the normal coordinated
+/// blocking task; when a pass is needed it hands off to the normal coordinated
 /// [`spawn_recompute`], so a concurrent `ScanCompleted` coalesces correctly.
-pub(super) fn enqueue_initial_full_pass_if_unscored(
+pub(super) fn enqueue_full_pass_if_needed(
     scheduler: Arc<ImportanceScheduler>,
     volume_id: String,
     kind: IndexVolumeKind,
@@ -92,33 +93,33 @@ pub(super) fn enqueue_initial_full_pass_if_unscored(
     crate::indexing::host::runtime::spawn(async move {
         let data_dir = scheduler.data_dir().to_path_buf();
         let vid = volume_id.clone();
-        let needs = crate::indexing::host::runtime::spawn_blocking(move || {
-            should_enqueue_initial_full_pass(kind, &data_dir, &vid)
-        })
-        .await;
+        let needs =
+            crate::indexing::host::runtime::spawn_blocking(move || should_enqueue_full_pass(kind, &data_dir, &vid))
+                .await;
         match needs {
             Ok(Ok(true)) => {
                 log::info!(
                     target: "importance",
-                    "volume '{volume_id}' ready at launch with no generation (fresh/recreated); enqueuing an initial full recompute"
+                    "volume '{volume_id}' ready at launch with no generation or a superseded scoring policy; enqueuing a full recompute"
                 );
                 spawn_recompute(scheduler, volume_id, available);
             }
-            Ok(Ok(false)) => {} // already scored — leave it.
-            Ok(Err(e)) => log::warn!(target: "importance", "initial-pass probe for '{volume_id}' failed: {e}"),
-            Err(e) => log::warn!(target: "importance", "initial-pass probe task for '{volume_id}' panicked: {e}"),
+            Ok(Ok(false)) => {} // already scored under the current policy — leave it.
+            Ok(Err(e)) => log::warn!(target: "importance", "full-pass probe for '{volume_id}' failed: {e}"),
+            Err(e) => log::warn!(target: "importance", "full-pass probe task for '{volume_id}' panicked: {e}"),
         }
     });
 }
 
-/// Whether a volume ready at launch needs an initial full recompute enqueued: its kind
-/// is background-scored (not MTP) AND its store carries no generation yet (fresh /
-/// schema-recreated / incremental-only). Binds the "unscored?" check to the write-path
-/// store open ([`crate::importance::store::needs_initial_full_pass`]), which forces any lazy schema
-/// recreate before reading the generation. Extracted from
-/// [`enqueue_initial_full_pass_if_unscored`] so the combined kind + store-state decision
-/// is testable without spawning the recompute (which needs a read pool).
-pub(super) fn should_enqueue_initial_full_pass(
+/// Whether a volume ready at launch needs a full recompute enqueued: its kind is
+/// background-scored (not MTP) AND its store either carries no generation yet (fresh /
+/// schema-recreated / incremental-only) or holds rows from a superseded scoring policy.
+/// Binds that check to the write-path store open
+/// ([`crate::importance::store::needs_full_pass`]), which forces any lazy schema recreate
+/// before reading the meta table. Extracted from [`enqueue_full_pass_if_needed`] so the
+/// combined kind + store-state decision is testable without spawning the recompute
+/// (which needs a read pool).
+pub(super) fn should_enqueue_full_pass(
     kind: IndexVolumeKind,
     data_dir: &std::path::Path,
     volume_id: &str,
@@ -126,7 +127,7 @@ pub(super) fn should_enqueue_initial_full_pass(
     if matches!(ScoringPolicy::for_kind(kind), ScoringPolicy::Excluded) {
         return Ok(false); // MTP: on-demand only, never background-scored.
     }
-    crate::importance::store::needs_initial_full_pass(data_dir, volume_id)
+    crate::importance::store::needs_full_pass(data_dir, volume_id)
 }
 
 /// Wire one volume into the scheduler by its typed kind: skip MTP (on-demand

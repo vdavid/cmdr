@@ -27,7 +27,7 @@ use crate::indexing::volume::{IndexVolumeKind, VolumeId};
 /// act on it (its retained bus value stays `Pending`) — the common restart case. This
 /// snapshot is how the sweeps find those volumes; wiring their subscriptions is NOT
 /// enough on its own, so each scheduler pairs this with an explicit startup enqueue
-/// (media's `kick_all_ready_passes`, importance's `enqueue_initial_full_pass_if_unscored`).
+/// (media's `kick_all_ready_passes`, importance's `enqueue_full_pass_if_needed`).
 /// ⚠️ A volume being covered in PHASES is admitted on its home-coverage marker
 /// too, and is deliberately NOT `Fresh` while it is: the drive genuinely isn't
 /// covered yet. Without this the early media kick works on the first run and never

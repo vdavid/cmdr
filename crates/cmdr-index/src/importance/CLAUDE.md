@@ -12,8 +12,7 @@ dispositions in `../indexing/handle/DETAILS.md` § "The other two subsystems".
 
 ## Areas (routing map)
 
-Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth). Touch a dir and its `CLAUDE.md` autoloads;
-read it before non-trivial work there.
+Each area subdir has its own `CLAUDE.md` (must-knows) + `DETAILS.md` (depth).
 
 - **`scorer/CLAUDE.md`** — the pure formula: `score` / `explain`, `FolderSignals`, the tunable `Weights`.
   **`store/CLAUDE.md`** — per-volume `importance.db`: the schema, the folded PK, what earns a row.
@@ -37,7 +36,11 @@ Top-level leaves this file owns: `classify.rs` (the shared categorical classifie
   (`classify::floors_by_path`); ❌ don't reintroduce a `0.0` row.
 - **Categorical signals come from `classify.rs`**, shared by production, fixtures, and evals — ❌ never re-derive them.
   Classification is typed (`PathClass` / `SignalKind`), never a string branch, and the denylist reuses
-  `indexing::SYSTEM_DIR_EXCLUDES`.
+  `indexing::SYSTEM_DIR_EXCLUDES`. Marker promotion lives in `path_class_with_marker` alone; it declines at `$HOME`, a
+  volume root, and a `SystemOrCache` path. ❌ Never floor `$HOME`: that propagates home-wide and disables the feature.
+- **A classifier change is INERT until `store::SCORING_POLICY_KEY` re-arms stores** (a full pass runs once, an
+  incremental only touches changed folders). It hashes the lists plus `SCORING_RULES_VERSION`; bump the latter by hand
+  for a rule no list can see.
 - **`importance-{volume_id}.db` is a disposable cache**: a `SCHEMA_VERSION` mismatch delete-and-recreates it, no
   migrations. ONE long-lived `ImportanceWriter` per volume through `writer_registry`; visits AND recomputes both route
   through it. ❌ Never a second writer thread on one DB.

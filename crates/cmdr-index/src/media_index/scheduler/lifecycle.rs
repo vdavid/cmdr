@@ -318,7 +318,7 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
     // `start()`-time sweep kick can race the volume's registration (the sweep runs before
     // the volume is ready, then the registration bus wires it here). So kick an initial
     // coalesced pass for the volume we just wired when the master toggle is on, mirroring
-    // importance's `enqueue_initial_full_pass_if_unscored`. The `PassCoordinator` folds
+    // importance's `enqueue_full_pass_if_needed`. The `PassCoordinator` folds
     // this with any sweep-time kick, so a double-kick is a harmless no-op; the network
     // pass self-checks opt-in inside itself.
     if gate::is_enabled() {
