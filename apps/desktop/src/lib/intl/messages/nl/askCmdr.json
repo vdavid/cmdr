@@ -233,6 +233,10 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.error.repeatedToolCall": "Dit antwoord bleef dezelfde opzoeking herhalen zonder verder te komen. Probeer het anders te vragen.",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "ea46ed7"
+  },
   "askCmdr.error.unfinishedReply": "Het antwoord is niet afgerond. Opnieuw proberen?",
   "@askCmdr.error.unfinishedReply": {
     "sourceHash": "7cc85f5"

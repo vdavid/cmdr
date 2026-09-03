@@ -232,6 +232,10 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.error.repeatedToolCall": "Câu hỏi này cứ lặp lại cùng một lần tra cứu mà không tiến triển. Hãy thử hỏi theo cách khác.",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "ea46ed7"
+  },
   "askCmdr.error.unfinishedReply": "Câu trả lời chưa hoàn tất được. Thử lại?",
   "@askCmdr.error.unfinishedReply": {
     "sourceHash": "7cc85f5"

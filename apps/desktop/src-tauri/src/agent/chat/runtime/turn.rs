@@ -13,13 +13,15 @@ use super::analytics;
 use super::cost::meter_cost;
 use super::dispatch::{ToolDispatcher, dispatch_ok};
 use super::events::{AgentChatEvent, AgentErrorKind, ChatEventSink, emit};
+use super::repeats::{FailedCalls, Repeat};
 use super::types::{TurnParams, TurnResult, TurnTally};
 use super::{LOG_TARGET, context};
 use crate::agent::chat::context::{ElisionFacts, MAX_TOOL_TURNS, MAX_WALL_TIME, PrefixInputs};
 use crate::agent::chat::system_prompt::SYSTEM_PROMPT;
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::{
-    AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentUsage, ToolDeclaration,
+    AgentDelta, AgentLlmError, AgentMessage, AgentPart, AgentRole, AgentStopReason, AgentToolCall, AgentToolResult,
+    AgentUsage, ToolDeclaration,
 };
 use crate::agent::store::{self, AgentStoreError};
 
@@ -94,6 +96,9 @@ async fn drive(
     let started = Instant::now();
     let mut model_recorded = false;
     let mut trim_announced = false;
+    // What already came back with a problem this turn, so an identical retry doesn't cost
+    // another provider round trip for the same answer (`repeats.rs`).
+    let mut failed_calls = FailedCalls::default();
 
     loop {
         // Cancellation and both budgets are checked at the top, so no `respond` fires
@@ -254,10 +259,26 @@ async fn drive(
 
         // Dispatch each tool call, persisting its result on its own row, then loop.
         tally.tool_turns += 1;
+        // Set when a call the model was already warned about came back again. The turn ends
+        // AFTER this message's calls are all answered, so no tool call is left without a
+        // result row for the next turn to load.
+        let mut stuck = false;
         for part in &message.parts {
             let AgentPart::ToolCall(call) = part else { continue };
-            let dispatch = dispatcher.dispatch(call).await;
-            let result = dispatch.result;
+            let (result, proposal) = match failed_calls.judge(call) {
+                Repeat::Fresh => {
+                    let dispatch = dispatcher.dispatch(call).await;
+                    if !dispatch_ok(&dispatch.result) {
+                        failed_calls.record_failure(call, &dispatch.result.content);
+                    }
+                    (dispatch.result, dispatch.proposal)
+                }
+                Repeat::Refuse(content) => (repeat_result(call, content), None),
+                Repeat::Stuck(content) => {
+                    stuck = true;
+                    (repeat_result(call, content), None)
+                }
+            };
             emit(
                 sink,
                 AgentChatEvent::ToolCallFinished {
@@ -282,12 +303,42 @@ async fn drive(
             ) {
                 return persist_failed(sink, e);
             }
-            if let Some(proposal) = dispatch.proposal {
+            if let Some(proposal) = proposal {
                 tally.proposals += 1;
                 emit(sink, AgentChatEvent::ProposalReady { proposal });
             }
             transcript.push(tool_message);
         }
+
+        // The model sent a call it had already been told repeating wouldn't change, so it
+        // isn't going to get past this on its own. End here, with a reason that says what
+        // actually happened instead of leaving the user with "it hit its limit".
+        if stuck {
+            emit(
+                sink,
+                AgentChatEvent::Failed {
+                    kind: AgentErrorKind::RepeatedToolCall,
+                    detail: None,
+                },
+            );
+            return TurnResult::Failed(AgentErrorKind::RepeatedToolCall);
+        }
+    }
+}
+
+/// The tool result for a call the repeat breaker held back: it was never dispatched, but the
+/// transcript still needs a result row against its call, and the model still needs to read
+/// what the call came back with the first time.
+fn repeat_result(call: &AgentToolCall, content: serde_json::Value) -> AgentToolResult {
+    log::warn!(
+        target: LOG_TARGET,
+        "the model re-sent an identical {} call that already came back with a problem; not running it again",
+        call.tool.as_wire_name()
+    );
+    AgentToolResult {
+        call_id: call.call_id.clone(),
+        content,
+        elided: false,
     }
 }
 

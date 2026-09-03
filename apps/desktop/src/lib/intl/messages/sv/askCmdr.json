@@ -232,6 +232,10 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.error.repeatedToolCall": "Den här fastnade i samma sökning om och om igen. Försök fråga på ett annat sätt.",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "ea46ed7"
+  },
   "askCmdr.error.unfinishedReply": "Svaret blev inte klart. Försök igen?",
   "@askCmdr.error.unfinishedReply": {
     "sourceHash": "7cc85f5"

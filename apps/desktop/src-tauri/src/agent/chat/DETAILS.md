@@ -326,12 +326,13 @@ the test and this section together.
 
 ## The runtime (`runtime/`)
 
-Seven files plus `ChatRuntime` in `mod.rs`: `types.rs` (what a turn IS as data), `events.rs`
+Eight files plus `ChatRuntime` in `mod.rs`: `types.rs` (what a turn IS as data), `events.rs`
 (the `AgentChatEvent` seam and the typed `AgentErrorKind`), `dispatch.rs` (the
 `ToolDispatcher` seam and `AppHandleDispatcher`), `turn.rs` (`run_turn` and everything it
-drives), `cost.rs` (metering one completed `respond`), `cmdr_md.rs` (which `CMDR.md`, and how
-much of it), `analytics.rs` (the anonymous `ask_cmdr_turn` event). `mod.rs` re-exports all of
-it, so callers keep saying `chat::runtime::X`.
+drives), `repeats.rs` (the turn's memory of calls that already failed), `cost.rs` (metering one
+completed `respond`), `cmdr_md.rs` (which `CMDR.md`, and how much of it), `analytics.rs` (the
+anonymous `ask_cmdr_turn` event). `mod.rs` re-exports all of it, so callers keep saying
+`chat::runtime::X`.
 
 **`types.rs` is a leaf, and that is load-bearing.** `UserTurn`, `TurnParams`, `TurnResult`,
 and `TurnTally` live there rather than in `turn.rs` because THREE modules need that
@@ -350,6 +351,41 @@ single-flight guard. ⚠️ **A wake must not bypass this**: a wake thread is a 
 user can reply to, so calling `run_turn` directly would let the reply and the wake's own turn
 run concurrently in one thread. It also means TWO write connections to `main.db` during a wake,
 this one and the wake loop's; WAL makes that fine (`wake/DETAILS.md` says why).
+
+### The repeat breaker (`repeats.rs`)
+
+A refused `propose_rename_plan` came back to the driver eight times running, byte-identical each
+time, until `MAX_TOOL_TURNS` ended the turn: about 90 seconds and eight provider round trips
+spent on one broken payload, and from the user's side the agent simply stopped answering. The
+model had nothing new to read, so it had nothing new to try.
+
+`FailedCalls` is a per-turn map from the tool's wire name plus its whole serialized arguments
+object (`serde_json`'s `Map` is a `BTreeMap`, so key order can't split one call into two
+records) to what that call came back with. The driver judges each call before dispatching:
+
+1. **Nothing identical failed yet** ⇒ dispatch, and record the content if `dispatch_ok` says it
+   came back with a problem.
+2. **Identical to a failed call** ⇒ don't dispatch. Hand back that original content plus
+   `repeatedCall: true` and a sentence saying this answers the same way every time, so the model
+   still reads what to fix and learns that re-sending is not the move.
+3. **Identical to one it was already told that about** ⇒ hand back the same again (the transcript
+   still needs a result row against every call, or the next turn loads a dangling tool call), and
+   end the turn with `AgentErrorKind::RepeatedToolCall` once the message's calls are all
+   answered. Three round trips instead of eight, and the user reads "it kept retrying the same
+   lookup" rather than "it hit its limit".
+
+**Why it can't fire on a legitimate repeat.** Only a call that came back with a PROBLEM is
+remembered, judged by `dispatch_ok`'s typed result keys and never by wording. A re-fetch of an
+elided result (which the system prompt explicitly asks for, and which every idempotent local
+read supports) repeats a call that SUCCEEDED, so it was never recorded. Paging varies `offset`,
+which is part of the key. **What it does cost**: a call that failed for a passing reason gets no
+second execution inside the same turn. That is the trade, taken deliberately: the model is
+handed the original problem rather than a silence, varying the arguments at all dispatches
+normally, and a turn a user is waiting on stops burning its whole budget on one payload.
+
+The other half of the same fix is that a refusal has to be worth reading. The rename boundary
+now names WHICH rows and WHICH field (`../tools/propose/rename/plan.rs`, `rows_problem`), so a
+model that reads it can act on it and never reaches step 2.
 
 ### The turn event (`analytics.rs`), and why it is the funnel's denominator
 

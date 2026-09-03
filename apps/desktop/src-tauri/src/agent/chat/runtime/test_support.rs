@@ -251,6 +251,74 @@ impl ToolDispatcher for OkDispatcher {
     }
 }
 
+/// Answers every call with a typed handler problem, and records what it was actually asked
+/// to run. The counterpart to [`OkDispatcher`] for the repeat breaker: what it dispatched is
+/// the whole assertion, because a call the breaker stops never reaches it.
+#[derive(Default)]
+pub(super) struct FailingDispatcher {
+    dispatched: Mutex<Vec<(String, Value)>>,
+}
+
+impl FailingDispatcher {
+    pub(super) fn dispatched(&self) -> Vec<(String, Value)> {
+        self.dispatched.lock().expect("lock").clone()
+    }
+}
+
+impl ToolDispatcher for FailingDispatcher {
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
+        async move {
+            self.dispatched
+                .lock()
+                .expect("lock")
+                .push((call.tool.as_wire_name().to_string(), call.arguments.clone()));
+            ToolDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call.call_id.clone(),
+                    content: json!({ "problem": "list_dir needs path. It takes limit and path." }),
+                    elided: false,
+                },
+                proposal: None,
+            }
+        }
+        .boxed()
+    }
+}
+
+/// Records every call it is asked to run and answers each one successfully. Pins that a
+/// SUCCESSFUL call re-issued (the re-fetch the system prompt tells the model to make after a
+/// result is set aside) is never mistaken for a stuck repeat.
+#[derive(Default)]
+pub(super) struct CountingOkDispatcher {
+    dispatched: Mutex<Vec<(String, Value)>>,
+}
+
+impl CountingOkDispatcher {
+    pub(super) fn dispatched(&self) -> Vec<(String, Value)> {
+        self.dispatched.lock().expect("lock").clone()
+    }
+}
+
+impl ToolDispatcher for CountingOkDispatcher {
+    fn dispatch<'a>(&'a self, call: &'a AgentToolCall) -> BoxFuture<'a, ToolDispatchOutcome> {
+        async move {
+            self.dispatched
+                .lock()
+                .expect("lock")
+                .push((call.tool.as_wire_name().to_string(), call.arguments.clone()));
+            ToolDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call.call_id.clone(),
+                    content: json!({ "looked_at": call.tool.as_wire_name() }),
+                    elided: false,
+                },
+                proposal: None,
+            }
+        }
+        .boxed()
+    }
+}
+
 /// Sleeps `secs` (virtual, under `start_paused`) before returning — to drive the
 /// wall-time budget past its ceiling between respond calls.
 pub(super) struct SleepingDispatcher {

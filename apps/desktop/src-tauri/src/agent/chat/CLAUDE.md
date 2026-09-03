@@ -53,6 +53,9 @@ crash cases: `DETAILS.md`.
   memory's share, and why the tool-result ceiling must NOT follow it: `budget.rs`.
 - **A runaway loop is impossible by construction**: `MAX_TOOL_TURNS` / `MAX_WALL_TIME` are checked
   at the TOP of the loop. Don't bump one silently.
+- **An identical repeat of a FAILED tool call isn't dispatched again** (`runtime/repeats.rs`): it
+  gets its own problem back plus "repeating changes nothing", then the turn ends
+  `RepeatedToolCall`. Only failures are remembered, so a re-fetch and a new page still run.
 - **Never block the main thread.** `run_turn` is async, and the real `ToolDispatcher` routes through
   `agent::tools::view::dispatch`.
 - **`run_turn` wraps `drive` so ONE place reports `ask_cmdr_turn`**, the agent funnel's

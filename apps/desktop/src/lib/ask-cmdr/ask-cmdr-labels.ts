@@ -61,6 +61,7 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
   authFailed: 'askCmdr.error.authFailed',
   rateLimited: 'askCmdr.error.rateLimited',
   budgetExhausted: 'askCmdr.error.budgetExhausted',
+  repeatedToolCall: 'askCmdr.error.repeatedToolCall',
   unfinishedReply: 'askCmdr.error.unfinishedReply',
   provider: 'askCmdr.error.provider',
 }

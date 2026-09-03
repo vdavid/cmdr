@@ -232,6 +232,10 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.error.repeatedToolCall": "Esta respuesta repitió la misma consulta sin avanzar. Intenta preguntarlo de otra manera.",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "ea46ed7"
+  },
   "askCmdr.error.unfinishedReply": "La respuesta no terminó. ¿Lo intentas de nuevo?",
   "@askCmdr.error.unfinishedReply": {
     "sourceHash": "7cc85f5"

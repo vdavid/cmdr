@@ -232,6 +232,10 @@
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
+  "askCmdr.error.repeatedToolCall": "這一次一直重複同一次查詢，卻沒有任何進展。試著換個方式問問看。",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "ea46ed7"
+  },
   "askCmdr.error.unfinishedReply": "回覆沒有寫完。要再試一次嗎？",
   "@askCmdr.error.unfinishedReply": {
     "sourceHash": "7cc85f5"

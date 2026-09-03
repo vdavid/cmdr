@@ -4422,6 +4422,11 @@ export type AgentErrorKindView =
   | 'authFailed'
   | 'rateLimited'
   | 'budgetExhausted'
+  /**
+   *  The turn went in a circle: the model kept re-sending a tool call that had already come
+   *  back with a problem, after being told repeating it changes nothing.
+   */
+  | 'repeatedToolCall'
   | 'unfinishedReply'
   | 'provider'
 

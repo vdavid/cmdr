@@ -28,8 +28,10 @@ use serde_json::Value;
 
 use crate::mcp::executor::ToolError;
 
-/// One way a params object contradicted the schema it was checked against.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// One way a params object contradicted the schema it was checked against. Ordered so a
+/// caller collecting violations across many objects (the rename boundary, row by row) reports
+/// them in a stable order.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ParamViolation {
     /// A property the schema doesn't declare, on a schema that closed itself with
     /// `additionalProperties: false`.
@@ -87,9 +89,10 @@ impl ParamProblems {
             ));
         }
         if !missing.is_empty() {
+            // allowed-pluralize-noun: `needs` is the verb and what follows is a list of property names, never a count plus a noun
             parts.push(format!("{subject} needs {}", join(&missing)));
         }
-        format!("{}. It takes {}.", parts.join(", and "), join_all(&self.accepted))
+        format!("{}. It takes {}.", parts.join(", and "), list_names(&self.accepted))
     }
 
     /// The same facts as typed data, carried on the error's `data` member so a caller acts on
@@ -158,12 +161,13 @@ pub fn gate(tool: &str, schema: &Value, params: &Value) -> Result<(), ToolError>
 }
 
 fn join(names: &[&String]) -> String {
-    join_all(&names.iter().map(|n| (*n).clone()).collect::<Vec<_>>())
+    list_names(&names.iter().map(|n| (*n).clone()).collect::<Vec<_>>())
 }
 
 /// `a`, `a and b`, `a, b, and c`: the house Oxford comma, since these sentences are read by
-/// people as often as by models.
-fn join_all(names: &[String]) -> String {
+/// people as often as by models. Shared with the callers that build their own refusal out of
+/// [`check_object`] (the rename boundary), so one list never reads differently from another.
+pub fn list_names(names: &[String]) -> String {
     match names {
         [] => "nothing".to_string(),
         [one] => one.clone(),

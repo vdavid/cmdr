@@ -239,6 +239,10 @@
   "@askCmdr.error.budgetExhausted": {
     "description": "Shown when a single answer used up its tool-step or time budget before finishing. Friendly and actionable; avoids the words error and failed."
   },
+  "askCmdr.error.repeatedToolCall": "This one kept retrying the same lookup without getting anywhere. Try asking a different way.",
+  "@askCmdr.error.repeatedToolCall": {
+    "description": "Shown when a single answer got stuck re-sending the same tool call after it had already come back with a problem, so Cmdr stopped the turn rather than let it spin. Friendly and actionable; avoids the words error and failed. \"Lookup\" is the word the rail already uses for a tool call."
+  },
   "askCmdr.error.unfinishedReply": "The reply didn’t finish. Try again?",
   "@askCmdr.error.unfinishedReply": {
     "description": "Shown when the reply stream stopped before completing (a provider drop or a crash). Friendly; avoids the words error and failed. The apostrophe is U+2019."

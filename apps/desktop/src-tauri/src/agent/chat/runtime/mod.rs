@@ -57,6 +57,7 @@ mod cmdr_md;
 mod cost;
 mod dispatch;
 mod events;
+mod repeats;
 mod turn;
 mod types;
 

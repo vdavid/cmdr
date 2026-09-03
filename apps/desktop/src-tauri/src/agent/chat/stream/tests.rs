@@ -22,6 +22,7 @@ fn every_error_kind_maps_to_its_own_wire_kind() {
         AgentErrorKind::AuthFailed,
         AgentErrorKind::RateLimited,
         AgentErrorKind::BudgetExhausted,
+        AgentErrorKind::RepeatedToolCall,
         AgentErrorKind::UnfinishedReply,
         AgentErrorKind::Provider,
     ]
@@ -39,6 +40,7 @@ fn every_error_kind_maps_to_its_own_wire_kind() {
             "authFailed",
             "rateLimited",
             "budgetExhausted",
+            "repeatedToolCall",
             "unfinishedReply",
             "provider",
         ]

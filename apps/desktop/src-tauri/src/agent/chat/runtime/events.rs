@@ -105,6 +105,11 @@ pub enum AgentErrorKind {
     RateLimited,
     /// A per-message budget (tool turns or wall time) was exhausted before an answer.
     BudgetExhausted,
+    /// The model kept re-sending a tool call that had already come back with a problem, after
+    /// being told plainly that repeating it changes nothing (`repeats.rs`). Distinct from
+    /// [`BudgetExhausted`](Self::BudgetExhausted) because the user deserves a truer sentence
+    /// than "it hit its limit": nothing was running out, the turn was going in a circle.
+    RepeatedToolCall,
     /// The reply stream ended before completing (a provider drop or a crash mid-stream).
     UnfinishedReply,
     /// Any other provider-side problem; detail is logged, never carried in the type.
@@ -124,6 +129,7 @@ impl AgentErrorKind {
             AgentErrorKind::AuthFailed => "auth_failed",
             AgentErrorKind::RateLimited => "rate_limited",
             AgentErrorKind::BudgetExhausted => "budget_exhausted",
+            AgentErrorKind::RepeatedToolCall => "repeated_tool_call",
             AgentErrorKind::UnfinishedReply => "unfinished_reply",
             AgentErrorKind::Provider => "provider",
         }

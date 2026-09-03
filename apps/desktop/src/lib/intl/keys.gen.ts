@@ -159,6 +159,7 @@ export type MessageKey =
   | 'askCmdr.error.notConfigured'
   | 'askCmdr.error.provider'
   | 'askCmdr.error.rateLimited'
+  | 'askCmdr.error.repeatedToolCall'
   | 'askCmdr.error.timeout'
   | 'askCmdr.error.unavailable'
   | 'askCmdr.error.unfinishedReply'

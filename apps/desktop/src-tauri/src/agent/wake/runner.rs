@@ -278,6 +278,7 @@ fn completion_for_failure(kind: AgentErrorKind, ordinary: WakeCompletion) -> Wak
         | AgentErrorKind::Unavailable
         | AgentErrorKind::Timeout
         | AgentErrorKind::BudgetExhausted
+        | AgentErrorKind::RepeatedToolCall
         | AgentErrorKind::UnfinishedReply
         | AgentErrorKind::Provider => ordinary,
     }
