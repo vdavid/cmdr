@@ -11,7 +11,7 @@
 use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 
-use super::channel::{WakeControl, send_control};
+use super::channel::{WakeCompletion, WakeControl, send_control};
 use super::followup::PreparedFollowUp;
 use super::indicator::{note_wake_finished, note_wake_started};
 use super::staged::announce_staged;
@@ -81,6 +81,14 @@ impl BackgroundTurn {
             BackgroundTurn::FollowUp(_) => followup_token(outcome),
         }
     }
+
+    /// What this turn tells the scheduler when nothing about the provider was learned.
+    fn completion(&self) -> WakeCompletion {
+        match self {
+            BackgroundTurn::Wake(_) => WakeCompletion::Wake,
+            BackgroundTurn::FollowUp(_) => WakeCompletion::FollowUp,
+        }
+    }
 }
 
 /// ⚠️ Paired by hand because the outcome tokens are `&'static str` all the way into the
@@ -108,27 +116,28 @@ pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, turn: BackgroundTurn) {
             // stale `Thinking` would leave a spinner up forever and offer a click into a
             // thread a quiet wake has since deleted.
             note_wake_started(turn.conversation_id());
-            match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+            let completion = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
                 Ok(runtime) => runtime.block_on(run(app, slot, &turn)),
                 Err(e) => {
                     crate::log_error!(target: LOG_TARGET, "building the background turn's runtime failed: {e}");
                     let (tier, folders) = turn.scale();
                     record_outcome(turn.token("unavailable"), tier, folders, 0);
+                    turn.completion()
                 }
-            }
+            };
             note_wake_finished();
             // ⚠️ Whatever happened, the writer thread has to hear that this one is done, or it
             // will never prepare another.
-            send_control(WakeControl::WakeFinished);
+            send_control(WakeControl::WakeFinished(completion));
         });
     if let Err(e) = spawned {
         crate::log_error!(target: LOG_TARGET, "the wake thread did not start: {e}");
         note_wake_finished();
-        send_control(WakeControl::WakeFinished);
+        send_control(WakeControl::WakeFinished(WakeCompletion::Wake));
     }
 }
 
-async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
+async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeCompletion {
     let conversation_id = turn.conversation_id();
     let (tier, folders) = turn.scale();
     // A wake's thread was created moments ago, so say so before anything slow: this is what puts
@@ -176,7 +185,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
         log::warn!(target: LOG_TARGET, "the chat runtime is not registered; the turn has nowhere to run");
         record_outcome(turn.token("unavailable"), tier, folders, 0);
-        return;
+        return turn.completion();
     };
 
     // ⚠️ A background turn owns a plain `UnboundedSender<AgentChatEvent>` and drains it itself,
@@ -223,7 +232,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
             emit_turn_event(conversation_id, AskCmdrStreamEvent::Discarded);
         }
         record_outcome(turn.token("quiet"), tier, folders, proposals);
-        return;
+        return turn.completion();
     }
 
     // ⚠️ Announced whatever the turn ENDED as, and before the outcome line. A cancel or a
@@ -244,6 +253,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
             record_outcome(turn.token("unavailable"), tier, folders, proposals);
         }
     }
+    turn.completion()
 }
 
 /// One counted line per wake outcome, plus the matching anonymous event.

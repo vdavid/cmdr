@@ -108,7 +108,11 @@ pub enum WakeControl {
     /// The background turn thread finished, so another may be prepared. A wake and a
     /// rejection's follow-up share one in-flight flag, so they share this message too: at most
     /// one background turn at a time, whichever kind.
-    WakeFinished,
+    ///
+    /// ⚠️ **The payload is how the loop learns what the turn cost it.** It is the only path by
+    /// which a provider's answer reaches the scheduler, so a new outcome that forgets to carry
+    /// itself here reads as an ordinary finish and the backoff never happens.
+    WakeFinished(WakeCompletion),
     /// Act on the inbox NOW, ignoring the timer and the proactive toggle, and on the one
     /// folder the request names if it names one.
     ///
@@ -123,6 +127,22 @@ pub enum WakeControl {
     /// all" over an eight-group sweep sends eight of these and spends one model call. A
     /// dismissed dialog sends none at all (`../outcomes.rs`).
     SweepRejected { set_id: i64 },
+}
+
+/// How a finished background turn constrains the next one.
+///
+/// One value per thing the scheduler does about it, so the classification happens once — on the
+/// turn thread, where the provider's typed answer is — and the loop reads a decision rather than
+/// re-deriving one. ❌ Never a message string: `error-string-match` forbids it, and a provider's
+/// wording changes under us.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WakeCompletion {
+    /// A wake ran and spoke uninvited, whatever it ended as. The next one waits out the
+    /// spacing (`schedule.rs`).
+    Wake,
+    /// A follow-up ran. It answers something the user just did, so it imposes no spacing of its
+    /// own and does not lift a spacing a wake left behind.
+    FollowUp,
 }
 
 /// The endpoint: one sender, the receiver waiting to be claimed, and the rollup accounting the

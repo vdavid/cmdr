@@ -6,7 +6,7 @@
 
 use std::time::Duration;
 
-use super::channel::WakeControl;
+use super::channel::{WakeCompletion, WakeControl};
 
 /// How long the loop waits with nothing scheduled. It would be correct to wait forever (every
 /// arrival is a message), but a bounded park means a clock jump or a missed re-arm costs one
@@ -28,18 +28,52 @@ pub(super) fn may_attempt(forced: bool, inbox_due: bool, not_before: u64, now: u
     forced || (now >= not_before && inbox_due)
 }
 
+/// ⚠️ **The least time between two wakes, and the reason it is not the cadence slider.**
+///
+/// The slider (`WAKE_DELAY_STOPS`, five seconds at its attentive end) says how QUICKLY the agent
+/// reacts to something interesting. This says how OFTEN it may speak at all. Conflating the two
+/// is what let a five-second setting mean 43 model calls in seven minutes on 2026-09-03, which
+/// burned 374,127 tokens and exhausted the user's provider quota.
+///
+/// Fifteen minutes: an uninvited colleague interrupting four times an hour is already at the edge
+/// of welcome, and it caps a miscalibration at 96 wakes a day rather than the roughly 8,800 that
+/// day's rate extrapolates to. A force skips it, and so does the follow-up a rejected sweep
+/// earns: that one answers something the user just did.
+pub(super) const MIN_WAKE_SPACING: Duration = Duration::from_secs(15 * 60);
+
 /// What a control message does to the `not_before` stamp.
-pub(super) enum ControlWait {
+enum ControlWait {
     /// Drop the stamp: whatever the loop last decided may no longer hold, so act now.
     Clear,
+    /// Leave the stamp alone. The message says nothing about whether the loop may speak.
+    Keep,
+    /// Stamp this far ahead, from now.
+    For(Duration),
 }
 
-/// How a control message moves the stamp. See [`ControlWait`].
-pub(super) fn wait_after(control: &WakeControl) -> ControlWait {
+/// The `not_before` stamp a control message leaves behind, given the one the loop holds now.
+///
+/// The whole of the loop's "may it speak yet" policy, in one pure place: a gate moving clears
+/// the wait, a wake that spoke imposes one, and a provider that refused imposes a long one.
+pub(super) fn stamp_after(control: &WakeControl, not_before: u64, now: u64) -> u64 {
+    match wait_after(control) {
+        ControlWait::Clear => 0,
+        ControlWait::Keep => not_before,
+        ControlWait::For(wait) => now.saturating_add(wait.as_secs()),
+    }
+}
+
+fn wait_after(control: &WakeControl) -> ControlWait {
     match control {
+        WakeControl::WakeFinished(WakeCompletion::Wake) => ControlWait::For(MIN_WAKE_SPACING),
+        // A follow-up answers something the user just did, so it neither earns a spacing nor
+        // lifts the one a wake left: clearing here would let a rejection the user clicked
+        // through pull an unrelated wake in ahead of its turn.
+        WakeControl::WakeFinished(WakeCompletion::FollowUp) => ControlWait::Keep,
+        // ❌ Never `WakeFinished(_)` with a wildcard: a completion added later would silently
+        // inherit the ordinary spacing, which is the whole thing this file exists to prevent.
         WakeControl::SettingsChanged
         | WakeControl::ReadinessChanged
-        | WakeControl::WakeFinished
         | WakeControl::ForceWake(_)
         | WakeControl::SweepRejected { .. } => ControlWait::Clear,
     }
@@ -75,6 +109,10 @@ pub(super) fn park_for(next_deadline: Option<u64>, not_before: u64, now: u64) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::agent::wake::channel::WakeCompletion;
+
+    /// The policy the tests pin, in seconds: a wake may speak once a quarter of an hour.
+    const SPACING_SECS: u64 = 15 * 60;
 
     /// ⚠️ The spin guard. A deadline that has passed keeps having passed, so a park computed
     /// from it alone is zero-length, and a zero-length `recv_timeout` returns instantly. An
@@ -145,6 +183,60 @@ mod tests {
         assert_eq!(park_with_follow_up(IDLE_POLL, Some(now - 300), now), IDLE_POLL);
         assert_eq!(park_with_follow_up(IDLE_POLL, Some(now), now), IDLE_POLL);
         assert_eq!(park_with_follow_up(IDLE_POLL, None, now), IDLE_POLL);
+    }
+
+    /// ⚠️ **The seatbelt.** Two wakes cannot run closer together than [`MIN_WAKE_SPACING`],
+    /// however overdue the inbox is and however short the cadence slider is set. A wake that
+    /// RAN used to clear the stamp outright, so the next deadline brought the agent straight
+    /// back: with the five-second hot cadence that meant back-to-back model calls, which is how
+    /// 43 of them happened in seven minutes on 2026-09-03.
+    #[test]
+    fn two_wakes_cannot_run_closer_together_than_the_spacing() {
+        let now = 1_780_000_000;
+
+        let stamp = stamp_after(&WakeControl::WakeFinished(WakeCompletion::Wake), 0, now);
+
+        assert_eq!(stamp, now + SPACING_SECS);
+        assert!(
+            !may_attempt(false, true, stamp, now + SPACING_SECS - 1),
+            "an inbox due a second early still waits"
+        );
+        assert!(
+            may_attempt(false, true, stamp, now + SPACING_SECS),
+            "and the spacing expires to the second"
+        );
+    }
+
+    /// A settings or readiness change is a reason the last decision no longer holds, so it is
+    /// felt at once: somebody who just turned the agent on, granted disk access, or set a key
+    /// must not wait out a spacing earned before any of that.
+    #[test]
+    fn a_settings_or_readiness_change_clears_the_wait_immediately() {
+        let now = 1_780_000_000;
+        let held = now + SPACING_SECS;
+
+        for control in [WakeControl::SettingsChanged, WakeControl::ReadinessChanged] {
+            assert_eq!(stamp_after(&control, held, now), 0, "{control:?} has to be felt now");
+        }
+        assert!(may_attempt(false, true, 0, now));
+    }
+
+    /// ⚠️ **A follow-up neither imposes a spacing nor lifts one.** It answers something the user
+    /// just did, so it is not the agent speaking uninvited; but clearing the stamp would let a
+    /// rejection the user clicked through pull an unrelated wake in ahead of its spacing.
+    #[test]
+    fn a_follow_up_leaves_the_wakes_spacing_exactly_as_it_found_it() {
+        let now = 1_780_000_000;
+        let held = now + 600;
+
+        let stamp = stamp_after(&WakeControl::WakeFinished(WakeCompletion::FollowUp), held, now);
+
+        assert_eq!(stamp, held);
+        assert_eq!(
+            stamp_after(&WakeControl::WakeFinished(WakeCompletion::FollowUp), 0, now),
+            0,
+            "and it invents no wait where there was none"
+        );
     }
 
     /// The two clocks a wake waits on, and the one thing that skips them. A force replaces the

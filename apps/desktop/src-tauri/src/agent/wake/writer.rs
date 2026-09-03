@@ -19,7 +19,7 @@ use super::channel::{self, FolderActivity, ForcedWake, WakeControl, WakeMessage}
 use super::followup::{self, FollowUpQueue};
 use super::importance::ImportanceCache;
 use super::runner::{self, BackgroundTurn, ResolvedSlot};
-use super::schedule::{self, ControlWait};
+use super::schedule;
 use super::settings::{self, WakeSettings};
 use super::snapshot::readiness_snapshot;
 use super::{Inbox, PrepareOutcome, PrepareParams, persist, prepare_wake};
@@ -196,21 +196,20 @@ impl WakeLoop {
         }
     }
 
+    /// Act on one control message, then let `schedule.rs` say when the loop may next speak.
+    ///
+    /// ⚠️ **The stamp is computed BEFORE the match consumes the message**, so the two stay one
+    /// decision per variant rather than drifting apart.
     fn handle_control(&mut self, control: WakeControl) {
-        // Read before the match consumes the message, so the two stay one decision per variant.
-        let wait = schedule::wait_after(&control);
+        let stamped = schedule::stamp_after(&control, self.not_before, now_secs());
         match control {
             WakeControl::SettingsChanged => self.reload_settings(),
             WakeControl::ReadinessChanged => self.purge_inbox_if_not_permitted(),
-            WakeControl::WakeFinished => self.wake_in_flight = false,
+            WakeControl::WakeFinished(_) => self.wake_in_flight = false,
             WakeControl::ForceWake(request) => self.forced = Some(request),
             WakeControl::SweepRejected { set_id } => self.note_rejection(set_id),
         }
-        match wait {
-            // A settings or readiness change is a reason the last decision no longer holds: the
-            // gate the wake was refused by may have opened, so it has to be felt at once.
-            ControlWait::Clear => self.not_before = 0,
-        }
+        self.not_before = stamped;
     }
 
     /// Throw the backlog away, on disk as well as in memory, when the gates stopped permitting
