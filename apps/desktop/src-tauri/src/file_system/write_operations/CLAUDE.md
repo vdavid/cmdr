@@ -45,7 +45,10 @@ Copy, move, delete, trash, and zip edits, as managed background ops.
 - **❌ The `types` vocabulary floor `use`s no sibling**, `types/events.rs` included (one upward import re-welds 11
   modules). It holds
   `LifecycleStatus`, the ONE lifecycle answer: ❌ never re-derive it from a presence test, no new variant.
-- **A SCAN parks too** (`ScanPause`): ❌ only where it checks cancel, and owes `note_parked`.
+- **A loop asks `state.stop_or_park_sync()` / `_async()` where it already observes cancel**, and nowhere else: one call
+  reads cancel, parks, and re-reads, so `true` means bail through the loop's existing cancel arm. ❌ Never hand-roll
+  `is_cancelled` + `pause_gate.wait_*` (that's how a "Paused" op kept working). A SCAN parks too (`ScanPause`, which
+  owes `note_parked`), and a REVERSAL names its own `StopMeans`.
 - **Every preview runs under a `ScanWatchdog`**; whoever settles it CLAIMS the outcome, and it bounds by INACTIVITY:
   feed the progress callback.
 - **A FAILED op is retained out-of-band**, the one exception to removal-on-terminal; `record_failure` emits only after

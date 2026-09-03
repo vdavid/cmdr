@@ -501,7 +501,10 @@ cleans up nothing for the same reason.
 
 ⚠️ **A pause doesn't land mid-file here**, only at the next file boundary. There is no stream to park between chunks,
 and pausing frees nothing anyway — no bytes are crossing the link. Same limitation, and the same reasoning, as the
-local-FS chunk loop's.
+local-FS chunk loop's. What bounds it is the walk above: `merge_level` parks per entry (§ "Pause in the volume walks"),
+so a paused same-share subtree copy stops after the leaves already in flight finish — at most the operation's
+`FileWindow` width, one of them on MTP. Closing the mid-file gap would mean a cooperative stop inside
+`Volume::copy_within` itself, per backend, which is the same work that would give it a cancel.
 
 Cells: `strategy_server_side_copy_tests.rs` (eligibility, the fallback, staging, cancel) with a counting double;
 `crates/cmdr-sftp/src/volume/copy_test.rs` for what a real server does, including a fixture that lacks the extension.
@@ -571,9 +574,19 @@ too big, or a backend that makes no promise, still stages; a caller temp is neve
 `cmdr-smb`'s `wire_shape_integration_test.rs::smb_integration_a_single_shot_write_leaves_as_one_compound_frame`, which counts wire
 frames to prove the promised write really is one compound frame.
 
+## Pause in the volume walks
+
+Three loops in this directory are a WALK rather than a byte pump, and each parks at its own per-entry boundary by asking `state.stop_or_park_async()` exactly where it already observed cancel (`../../DETAILS.md` § "Pause / resume" owns the primitive and the ordering):
+
+- **`merge.rs`'s `merge_level`**, per entry. None of what a walk does — a listing per level, destination creation, a conflict decision per child — passes through the between-chunks checkpoint the byte path parks at, and file children go to the `FileWindow` rather than blocking the walk. So a merge whose children mostly clash, mostly skip, or land through `copy_within` moves down the whole tree with the byte path barely involved, which is what a paused merge used to do. Pinned by `merge_pause_tests.rs`, which makes every child a `Stop`-mode clash so no bytes stream at all and the prompt count is exact evidence about the walk.
+- **`rename_merge.rs`'s `rename_merge_directory`**, per child, and the one that matters most: a child with no destination counterpart rides ONE server-side rename that carries its entire subtree, so a single iteration is unbounded and this boundary is the only place a paused same-volume move-merge can stop. Pinned by `rename_merge_pause_tests.rs`.
+- **`sequential_extract.rs`'s member loop**, between members. A decode pass over a solid archive can't be re-entered, so the member boundary is the only place it can stop, and one iteration covers the remainder of the subtree whenever skipped members drain through it. Pinned by `strategy_sequential_tests.rs::sequential_extract_pauses_between_members_and_resumes`.
+
+Each test wires its pause to the operation's own progress (the first rename landing, the first prompt answered, the first member written) rather than a wall clock, then holds a window open to prove the walk stopped advancing, then resumes and asserts the outcome is byte-for-byte what an unpaused run produces.
+
 ## Pause and the concurrent copy path
 
-The serial drivers (`drive_transfer_serial_{sync,async}`) call `wait_while_paused_{sync,async}` at each per-source loop top, right after the `is_cancelled` check, so local copy/move, the cross-volume *serial* path, and delete all honor pause between files; the cross-volume serial path additionally parks between chunks (see above).
+The serial drivers (`drive_transfer_serial_{sync,async}`) ask `stop_or_park_{sync,async}` at each per-source loop top, so local copy/move, the cross-volume *serial* path, and delete all honor pause between files; the cross-volume serial path additionally parks between chunks (see above).
 
 **The concurrent copy path is deliberately NOT gated for mid-batch pause.** `copy_volumes_with_progress`'s `FuturesUnordered` path (several files in flight at once) has no single "between files" boundary to park at, so it does **not** honor mid-batch pause: its per-file progress callback (`make_concurrent_per_file_progress`) stays **cancel-only** (it breaks on `is_cancelled`, ignores `paused`), like the serial per-file callback. A pause on a concurrent-path op takes effect once the in-flight batch drains to the next admission point. (Threading the `CheckpointStream` checkpoint into the concurrent path too is possible — each in-flight file already streams through `stream_pipe_file` — but isn't wired yet; the admission-point framing is the current contract.) Pinned by `transfer_driver::tests::concurrent_per_file_callback_is_cancel_only_not_pause_aware`.
 

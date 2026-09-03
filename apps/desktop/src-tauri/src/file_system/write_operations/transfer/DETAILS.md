@@ -143,7 +143,7 @@ non-empty directory. Pinned by `move_op_tests.rs::a_cancelled_cross_fs_move_take
 tick at zero before the loop, throttled ticks inside it, and a closing tick at full — the same shape
 `delete/walker.rs` uses. It ran silently until it didn't, and the cost was a lie on every surface: the last progress the
 frontend had was Phase 2's `files_done == files_total`, so the dialog sat at "17,238 / 17,238 (100%)" for the whole
-sweep, and a user who pressed Pause here (the loop has a pause gate, right after the cancel check) got "Paused" over a
+sweep, and a user who pressed Pause here (the loop parks at its item boundary) got "Paused" over a
 full bar with the entire source removal still ahead. The sweep is real, unbounded work — one `remove_file` or
 `remove_dir_all` per top-level source, over however large a tree — so it owes a bar of its own.
 
@@ -158,7 +158,7 @@ this: `volume/move.rs` copies and deletes PER FILE, so its bar already covers th
 
 **Cross-FS move source-delete preserves Skipped sources.** `move_with_staging`'s Phase 3 (staging → final rename) resolves conflicts; a Skip discards the staged copy so the file never lands at the destination. Phase 4 (`delete_sources_after_move`) must therefore NOT delete that source — the user clicked Skip to keep both copies, and deleting the only original would be silent data loss. Phase 3 records every Skipped original in a `skipped_source_paths: HashSet<PathBuf>` (whole top-level source for a single-file / type-mismatch Skip; per-child paths remapped from the staging prefix back to the source prefix for a directory merge). Phase 4 skips whole sources in the set, removes a clean source dir wholesale (`remove_dir_all`), and for a source dir that holds a Skipped descendant walks it via `delete_dir_preserving_skipped` (deletes non-skipped children, removes a dir only once empty), so the Skipped child's original survives inside a surviving source directory. The same-FS path (`move_with_rename`) is inherently correct: it renames originals directly, and a Skipped child just leaves the source dir non-empty. Pinned by `move_op_tests.rs::{cross_fs_move_skip_preserves_source_and_dest, cross_fs_move_dir_merge_skip_child_preserves_source_child}`.
 
-**Empty directories land via the scanned-dirs pass (`copy/scanned_dirs.rs::create_scanned_dirs_at_destination`).** The per-file loop creates directories only as FILE parents, so an empty directory — or a branch holding nothing but empty directories — has no file to hang its creation on and used to complete "successfully" while never arriving (and on a cross-FS move, Phase 4 then deleted the source: the empty dir was destroyed without ever landing). The pass runs over `ScanResult.dirs` on the local copy's Completed arm and after the move's staging loop (destination = the staging dir, so empty dirs ride the normal Phase-3 rename + cleanup). Mapping mirrors `FileInfo::dest_path`; created dirs are recorded for rollback. Data-safety: a dest path that already holds anything (dir = merge, file = type clash) is left untouched — an empty source dir never replaces user data. Pinned by `copy_tests.rs::{copy_creates_empty_directory_at_destination, copy_creates_nested_empty_directories, copy_empty_directory_does_not_clobber_same_named_dest_file}` and `move_op_tests.rs::cross_fs_move_preserves_empty_directories`. The volume (MTP/SMB) pipeline doesn't share the hole — `copy_directory_streaming` creates each dir before walking its children.
+**Empty directories land via the scanned-dirs pass (`copy/scanned_dirs.rs::create_scanned_dirs_at_destination`).** The per-file loop creates directories only as FILE parents, so an empty directory — or a branch holding nothing but empty directories — has no file to hang its creation on and used to complete "successfully" while never arriving (and on a cross-FS move, Phase 4 then deleted the source: the empty dir was destroyed without ever landing). The pass runs over `ScanResult.dirs` on the local copy's Completed arm and after the move's staging loop (destination = the staging dir, so empty dirs ride the normal Phase-3 rename + cleanup). Mapping mirrors `FileInfo::dest_path`; created dirs are recorded for rollback. Data-safety: a dest path that already holds anything (dir = merge, file = type clash) is left untouched — an empty source dir never replaces user data. The pass parks per directory like every other loop (`../DETAILS.md` § "Pause / resume"), which matters because it starts AFTER the per-file loop: "Paused" is already on screen by then, so an ungated pass kept building the destination skeleton. Pinned by `copy_tests.rs::{copy_creates_empty_directory_at_destination, copy_creates_nested_empty_directories, copy_empty_directory_does_not_clobber_same_named_dest_file, a_paused_copy_stops_landing_scanned_dirs_until_it_resumes}` and `move_op_tests.rs::cross_fs_move_preserves_empty_directories`. The volume (MTP/SMB) pipeline doesn't share the hole — `copy_directory_streaming` creates each dir before walking its children.
 
 **A stop in the source sweep says where the files are.** A cancel inside Phase 4 carries `originals_still_in_place`, and
 that is the only honest thing it can carry. By the time the sweep runs, every source's copy has landed at the
@@ -433,12 +433,14 @@ the same numbers go out as one `info` line. Every record lands in exactly one co
 
 ## Pause in the local move engine
 
-**Every per-item loop in `move_op/` parks on the `PauseGate`, right after its cancel check** (cancel wins; the park
-returns immediately once the intent stops being `Running`). Five loops, because a local move can spend all its time in
-any one of them: `same_fs.rs`'s top-level rename loop, `mod.rs`'s `merge_move_directory` child loop (a
-folder-into-folder move does ALL its renaming there, so the top-level gate never sees it), and `cross_fs.rs`'s Phase-2
-staging copy, Phase-3 rename-into-place, and Phase-4 source delete. The Phase-2 loop is the one a user who hits Pause
-usually means: it's the phase that moves bytes, and its cancel checks live one level down inside `copy_single_item`.
+**Every per-item loop in `move_op/` parks** (cancel wins; the park returns immediately once the intent stops being
+`Running`). Five loops, because a local move can spend all its time in any one of them: `same_fs.rs`'s top-level rename
+loop, `mod.rs`'s `merge_move_directory` child loop (a folder-into-folder move does ALL its renaming there, so the
+top-level gate never sees it), and `cross_fs.rs`'s Phase-2 staging copy, Phase-3 rename-into-place, and Phase-4 source
+delete. Three of them ask `state.stop_or_park_sync()`, the one boundary question (`../DETAILS.md` § "Pause / resume").
+The Phase-2 and Phase-3 loops call `pause_gate.wait_while_paused_sync` on its own, because their cancel checks live one
+level down inside `copy_single_item` / the merge, so there is no cancel arm at the boundary to fold the park into.
+Phase-2 is the one a user who hits Pause usually means: it's the phase that moves bytes.
 
 A rename is a single syscall, so the item boundary is the only place a rename engine CAN park — there's no equivalent
 of the streaming path's between-chunks checkpoint below.
