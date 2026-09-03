@@ -19,6 +19,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use uuid::Uuid;
 
+use super::in_flight_temps::TempHome;
 use super::state::WriteOperationState;
 use super::types::WriteOperationError;
 use crate::file_system::staging::StagingTemp;
@@ -91,7 +92,7 @@ where
     // unlike the async cross-volume path (`transfer/staged_write.rs`), landing
     // here is one synchronous syscall, so there is no window in which the temp
     // holds the only complete copy of anything.
-    super::in_flight_temps::register(state, temp_path);
+    super::in_flight_temps::register(state, temp_path, Some(TempHome::LocalFs));
 
     // Step 1: fill the temp.
     let bytes = match write_bytes(temp_path) {
@@ -144,7 +145,7 @@ where
         });
     }
     // The temp is gone (it IS `dest` now), so it stops being a partial.
-    super::in_flight_temps::deregister(state, temp_path);
+    super::in_flight_temps::deregister(state, temp_path, Some(TempHome::LocalFs));
 
     // Step 4: Delete the renamed-aside original (non-critical, ignore errors).
     // Use remove_dir_all for directory asides (file-over-folder overwrite).
@@ -173,7 +174,7 @@ where
 /// holds open may refuse to go, which is why it wears a recognizable name.
 fn discard_temp(state: &Arc<WriteOperationState>, temp_path: &Path) {
     let _ = fs::remove_file(temp_path);
-    super::in_flight_temps::deregister(state, temp_path);
+    super::in_flight_temps::deregister(state, temp_path, Some(TempHome::LocalFs));
 }
 
 /// Renames `temp` onto `dest`, refusing to replace an existing entry unless

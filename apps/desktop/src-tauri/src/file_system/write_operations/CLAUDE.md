@@ -5,7 +5,7 @@ Copy, move, delete, trash, and zip edits, as managed background ops.
 ## Module map
 
 - Spine: `manager.rs` (registry, lanes, admission), `state.rs` (op state, cancel/abort), `ledger.rs` + `reversal.rs`
-  (what a reversal claims, and the recheck before it acts), `status_cache.rs` (status + the busy-volume set behind
+  (the in-flight ledgers), `status_cache.rs` (status + the busy-volume set behind
   Eject; reach it through `state::`), `types.rs`, `mod.rs`. Every other file and subdir: DETAILS § "Files (top level)".
   Frontend: `apps/desktop/src/lib/file-operations/CLAUDE.md`.
 
@@ -20,7 +20,7 @@ Copy, move, delete, trash, and zip edits, as managed background ops.
 - **A spawned op reserves every lane it touches or waits Queued**; the next admits on `on_settled`, ❌ not `Drop`.
 - **`OperationIntent` is one `AtomicU8`**; ❌ never `store(...)` it. Cancel keeps copied files, Rollback removes the
   ones it still recognizes: a reversal VERIFIES before each destructive act (`reversal.rs`, sharing `verify_snapshot` +
-  `SkipReason` with the history engine — ❌ never a batch, ❌ never a fork; only the `Drop` net is unconditional), and
+  `SkipReason` with the history engine — ❌ never a batch or a fork; only the `Drop` net is unconditional), and
   reports what it left on `write-cancelled`. `PauseGate` is orthogonal; cancel wins. ❌ A REVERSAL never asks
   `is_cancelled`: `RollingBack` means "reverse" to the cleanup under it, so it names its reading (`StopMeans`).
 - **Parking on a PERSON owes two calls** on both edges: the `human_wait.rs` clock AND `announce_human_wait(sink)`.
@@ -33,10 +33,11 @@ Copy, move, delete, trash, and zip edits, as managed background ops.
   `AlreadyResolved`, `StaleAnswer`, or `NoPendingConflict`, nor leave a settled prompt up: a modal blocks every op.
 - **Emit through `OperationEventSink`, ❌ never `AppHandle`**. `write-settled` fires once, AFTER the terminal event.
 - **`write-source-item-done` is the per-source verdict**; a cross-FS move speaks TWICE per source, so the LAST wins.
-  ❌ Nothing asks WHO started an op, and ❌ there's no `Extract` op type. Binding and routing: DETAILS.
+  ❌ Nothing asks WHO started an op; ❌ no `Extract` op type. Binding and routing: DETAILS.
 - **Register a destination with `downloads::note_pending_write_for_cmdr` BEFORE the syscall** (renames: both ends).
 - **EVERY local write lands via temp+rename** (`overwrite::stage_and_land_file`), rename-aside when replacing. Temps
-  carry the `.cmdr-` marker and register via `in_flight_temps`. ❌ Symlinks are never followed.
+  carry the `.cmdr-` marker and register via `in_flight_temps` with their `TempHome`, ❌ never a bare path.
+  ❌ Symlinks are never followed.
 - **❌ Never `statvfs` for macOS disk space** (it rejects copies APFS purgeable space allows): use
   `volumes::get_volume_space()`.
 - **Scans report `total_bytes` (copy/move) and `dedup_bytes` (delete)**: ❌ never point copy at the dedup'd one.
@@ -44,7 +45,7 @@ Copy, move, delete, trash, and zip edits, as managed background ops.
   as it lands: ❌ never batch to the end, nor put a rotation temp in `in_flight_temps`, whose sweep DELETES it.
 - **❌ The `types` vocabulary floor `use`s no sibling**, `types/events.rs` included (one upward import re-welds 11
   modules). It holds
-  `LifecycleStatus`, the ONE lifecycle answer: ❌ never re-derive that from a presence test, no new variant.
+  `LifecycleStatus`, the ONE lifecycle answer: ❌ never re-derive it from a presence test, no new variant.
 - **Every preview runs under a `ScanWatchdog`**; whoever settles it CLAIMS the outcome, and it bounds by INACTIVITY:
   feed the progress callback.
 - **A FAILED op is retained out-of-band**, the one exception to removal-on-terminal; `record_failure` emits only after

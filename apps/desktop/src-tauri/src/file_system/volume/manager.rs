@@ -34,7 +34,20 @@ pub struct VolumeManager {
     /// A value store: recovering on poison is safe (a lost reorder at worst
     /// evicts slightly early). See [`Self::touch_archive_lru`].
     archive_lru: Mutex<VecDeque<String>>,
+    /// Who wants to hear that a volume has become available. See
+    /// [`Self::on_volume_arrival`].
+    arrival_listeners: RwLock<Vec<VolumeArrivalListener>>,
 }
+
+/// Notified with the ID of a volume the registry has just taken on.
+///
+/// Deliberately only the ID: a listener that needs the handle asks the registry
+/// for it, so it can never act on a volume a racing registration has already
+/// replaced. It also keeps the dependency pointing one way — the registry knows
+/// nothing about who listens, which is what lets the in-flight temp ledger
+/// (`write_operations::in_flight_temps`) subscribe without welding the two
+/// subtrees into a cycle.
+type VolumeArrivalListener = Box<dyn Fn(&str) + Send + Sync>;
 
 /// How [`VolumeManager::register`] and [`VolumeManager::register_if_absent`]
 /// resolve an identity conflict, for the log line.
@@ -90,6 +103,28 @@ impl VolumeManager {
             volumes: RwLock::new(HashMap::new()),
             default_volume_id: RwLock::new(None),
             archive_lru: Mutex::new(VecDeque::new()),
+            arrival_listeners: RwLock::new(Vec::new()),
+        }
+    }
+
+    /// Asks to be told, by ID, whenever a volume becomes available here.
+    ///
+    /// For work that has to wait for a volume rather than go looking for one:
+    /// the in-flight temp ledger holds the partials an interrupted transfer left
+    /// on a share and can only remove them once that share is back. A listener
+    /// runs INSIDE the registration, so it must return immediately — hand real
+    /// work to a task.
+    pub fn on_volume_arrival(&self, listener: impl Fn(&str) + Send + Sync + 'static) {
+        self.arrival_listeners.write_ignore_poison().push(Box::new(listener));
+    }
+
+    /// Tells the listeners `id` is now served.
+    ///
+    /// ❌ Never call this while holding the `volumes` lock: a listener may ask
+    /// the registry for the volume it was just told about.
+    fn announce_arrival(&self, id: &str) {
+        for listener in self.arrival_listeners.read_ignore_poison().iter() {
+            listener(id);
         }
     }
 
@@ -103,6 +138,16 @@ impl VolumeManager {
     /// those mounts before they get here (`volumes::mounts::collapse_by_volume_id`);
     /// this is the registry's own guard, and it stays loud either way.
     pub fn register(&self, id: &str, volume: Arc<dyn Volume>) {
+        self.register_locked(id, volume);
+        // Outside the `volumes` guard, and unconditional: every arm above leaves
+        // a usable volume serving `id`, whether it's the newcomer or a kept
+        // incumbent.
+        self.announce_arrival(id);
+    }
+
+    /// [`register`](Self::register)'s body, so the announcement happens after the
+    /// `volumes` guard is gone.
+    fn register_locked(&self, id: &str, volume: Arc<dyn Volume>) {
         let mut volumes = self.volumes.write_ignore_poison();
         if let Some(existing) = volumes.get_mut(id) {
             report_identity_conflict(id, &existing.volume, &volume, ROOT_RECORDED_RESOLUTION);
@@ -130,6 +175,7 @@ impl VolumeManager {
         self.volumes
             .write_ignore_poison()
             .insert(id.to_string(), Registration::new(volume));
+        self.announce_arrival(id);
     }
 
     /// Whether [`register`] would REFUSE a volume rooted at `root` under `id`,
@@ -159,7 +205,7 @@ impl VolumeManager {
     /// and the new mount point is recorded as a fallback root.
     pub fn register_if_absent(&self, id: &str, volume: Arc<dyn Volume>) -> bool {
         use std::collections::hash_map::Entry;
-        match self.volumes.write_ignore_poison().entry(id.to_string()) {
+        let registered = match self.volumes.write_ignore_poison().entry(id.to_string()) {
             Entry::Occupied(mut existing) => {
                 let entry = existing.get_mut();
                 report_identity_conflict(id, &entry.volume, &volume, ROOT_RECORDED_RESOLUTION);
@@ -170,7 +216,11 @@ impl VolumeManager {
                 e.insert(Registration::new(volume));
                 true
             }
+        };
+        if registered {
+            self.announce_arrival(id);
         }
+        registered
     }
 
     /// Unregisters a volume by ID, dropping every mount root it owned.

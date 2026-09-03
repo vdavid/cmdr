@@ -437,7 +437,9 @@ pub fn run() {
                 // so nothing we're about to write is in the list we sweep. The
                 // returned handle is dropped on purpose: a recorded partial can
                 // sit on a dead mount where `unlink` blocks for minutes, and a
-                // launch must never wait on that. See
+                // launch must never wait on that. Runs before the volume registry
+                // below by design: a partial on a share is held and swept when
+                // that volume arrives, rather than chased from here. See
                 // `file_system/write_operations/in_flight_temps.rs`.
                 drop(file_system::write_operations::init_and_sweep_in_flight_temps(&data_dir));
             }

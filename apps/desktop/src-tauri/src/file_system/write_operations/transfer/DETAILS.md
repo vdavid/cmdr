@@ -336,7 +336,8 @@ left is a thread that never came back.
   paths carrying the scratch marker, so a corrupted log can't become a delete-anything primitive. The deletes run on
   their own thread, ❌ never inline in `setup`: a recorded partial can sit on a Finder-mounted NAS that stopped
   answering, and an `unlink` there blocks for a minute or two, which on the startup thread reads as an app that won't
-  launch. Granularity and why there is no fsync: `in_flight_temps.rs` module docs.
+  launch. Granularity and why there is no fsync: `in_flight_temps.rs` module docs. Each record names the path space it
+  lives in, and a volume's may be deferred; see § "Which path space a recorded partial lives in" below.
 - **The rest, on a later transfer into that directory.** `volume::cleanup::reap_stale_transfer_temps` runs once at the
   start of each cross-volume copy AND each cross-volume move, over the destination directory only: one `list_directory`, then a `delete` for each
   `.cmdr-tmp-*` FILE whose mtime is at least `STALE_TEMP_MIN_AGE` (1 hour) old. The age gate is what makes it safe
@@ -360,6 +361,38 @@ the file unstaged (a `NotSupported` landing), which no production backend trigge
 Pinned by `volume/copy_staged_write_tests.rs` (abandon the copy future mid-stream — the in-process equivalent of the
 force-quit — and assert nothing sits at a final name, for a fresh copy, an overwrite, and a merge child) and
 `staged_write::tests`.
+
+## Which path space a recorded partial lives in
+
+A staged temp is a sibling of the destination file, so it lives wherever the destination does: on the local filesystem
+for a local copy, and inside an SMB / SFTP / WebDAV / MTP volume's own namespace for a transfer to one. A path can't
+tell those apart, so every persisted record carries an `in_flight_temps::TempHome` (`LocalFs`, or a volume ID), and
+the sweep deletes through the volume that wrote it. `staged_write.rs` reads the volume from
+`WriteOperationState::dest_volume_id()` (the destination half of `journal_volumes`, which every volume copy/move
+deferred sets); `overwrite.rs` names `LocalFs` outright. An operation that names neither has its partial kept in the
+operation's own in-memory ledger and NOT persisted: that ledger's sweep holds the volume handle already, while a
+persisted path with no path space is one the next launch could resolve against the local filesystem and act on there.
+
+**Decision: the record keys on the volume ID, not the mount root.** The ledger's whole point is surviving a restart, and
+a root doesn't: macOS remounts the same share at `/Volumes/naspi-1` after a wedge. A volume ID is identity by
+construction (`cmdr_fs::volume::ids`) and is what the index DB and `lastUsedPaths` already key on.
+
+**Decision: an unreachable volume keeps its record; the sweep never goes looking.** `init_and_sweep` runs before
+`init_volume_manager`, and a NAS registers later still, so a volume-borne record is normally re-recorded and held
+pending. ❌ The sweep must not mount, dial, reconnect, or authenticate to reach one: a launch that blocks on a dead
+mount, or that pops a password box, is worse than the leftover it was chasing. Dropping the record instead would forget
+the only trace of a multi-gigabyte partial.
+
+**What makes the deferral terminate** is `VolumeManager::on_volume_arrival`: the ledger subscribes (once, and only when
+a launch actually has something waiting), and the moment that volume ID lands in the registry the records waiting on it
+are claimed and deleted on a task. A registration is the one moment a volume is known-usable without probing anything.
+The listener takes only the ID and the registry hands the volume back through `resolve`, which keeps the dependency
+pointing one way: the registry knows nothing about the ledger, so the two subtrees stay acyclic. A delete the volume
+refuses puts the record back, so a later arrival or a later launch tries again.
+
+**The sweep reports.** `SweepHandle::wait()` answers a `SweepTally` (swept / already gone / deferred / left alone) and
+the same numbers go out as one `info` line. Every record lands in exactly one counter, which is what makes a
+"the sweep quietly did nothing" regression visible instead of inferred.
 
 ## Pause in the local move engine
 

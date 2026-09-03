@@ -265,6 +265,22 @@ impl WriteOperationState {
         self
     }
 
+    /// The volume this operation's destination writes land on, when it has one.
+    ///
+    /// Read from [`journal_volumes`](Self::journal_volumes), which is where the
+    /// operation's `(source, dest)` volume identity lives. The in-flight temp
+    /// ledger needs the destination half: a staged partial is a sibling of the
+    /// destination file, so it lives in THAT volume's path space and only that
+    /// volume can delete it (`in_flight_temps`).
+    ///
+    /// `None` means no volume was named. Every volume copy/move deferred names
+    /// one; a local-FS operation doesn't (it stages through `overwrite.rs`,
+    /// which records against the local filesystem explicitly), and neither do
+    /// the tests that build a bare state.
+    pub(super) fn dest_volume_id(&self) -> Option<&str> {
+        self.journal_volumes.as_ref().map(|(_, dest)| dest.as_str())
+    }
+
     /// Records that `files` files worth `bytes` were credited to the progress
     /// counters without being transferred.
     ///

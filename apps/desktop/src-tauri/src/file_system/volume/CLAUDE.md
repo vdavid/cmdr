@@ -19,6 +19,9 @@ through a `Volume`, **paths relative to the volume root**.
   `DETAILS.md` § "Key decisions".
 - **A volume the registry REMOVES is retired** (`Volume::retirement`), so a backend's watcher and reconnect loop stand
   down. A replace deliberately doesn't. `DETAILS.md` § "Leaving the registry".
+- **Work that must WAIT for a volume subscribes with `on_volume_arrival`, ❌ never polls the registry.** A listener gets
+  the ID only and runs INSIDE the registration, so it must return at once and hand real work to a task. Today's one
+  subscriber is the in-flight temp ledger's deferred sweep. `DETAILS.md` § "Telling someone a volume arrived".
 - **A registry entry owns a SET of mount roots, one active.** An unmount drops one via `VolumeManager::remove_root`,
   which promotes a survivor and unregisters ONLY on the last; ❌ never `unregister` because one mount went away, or a
   share mounted twice disappears on the first eject. `find_by_root` matches ANY known root, so compare `volume.root()`

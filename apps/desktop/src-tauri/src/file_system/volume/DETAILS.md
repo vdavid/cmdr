@@ -401,6 +401,27 @@ Retirement is one-way, so a volume that comes back is a fresh instance under a f
 re-register path already builds. Full rationale, and the `SelfHandle` a backend reads the flag through:
 `crates/cmdr-fs/src/volume/host/DETAILS.md` § "The two registry reach-backs".
 
+### Telling someone a volume arrived
+
+**Decision**: `VolumeManager::on_volume_arrival` takes listeners, and `register`, `register_if_absent` (when it
+inserts), and `force_register` announce the ID to them once the `volumes` guard is gone.
+
+**Why**: some work can only run when a volume is there, and has no way to go looking for it. The in-flight temp ledger
+holds the `.cmdr-tmp-*` partials an interrupted transfer left on a share, and its startup sweep runs before
+`init_volume_manager`; a NAS registers later still, or a session later. Without an announcement those records would ride
+from launch to launch and never be acted on, which is the dead backstop this exists to end
+(`write_operations/transfer/DETAILS.md` § "Which path space a recorded partial lives in").
+
+**The listener takes the ID, not the handle.** It asks the registry back through `resolve`, so it can't act on a volume
+a racing registration has already replaced, and the registry stays ignorant of who listens, which is what keeps the
+`volume` and `write_operations` subtrees acyclic. ❌ A listener runs INSIDE the registration, so it must return
+immediately: real work goes to a task, and a registration must never wait on a share.
+
+**Announced after the guard drops, and unconditionally on `register`.** A listener asking the registry for what it was
+just told about would otherwise deadlock, and every `register` arm (insert, replace, identity-conflict-refused) leaves
+a usable volume serving that ID. Pinned by
+`in_flight_temps_tests.rs::every_registration_path_announces_the_volume`.
+
 ### A volume ID owns a set of mount roots
 
 **Decision**: a registry entry (`manager/roots.rs::Registration`) is the volume plus the SET of mount roots known to
