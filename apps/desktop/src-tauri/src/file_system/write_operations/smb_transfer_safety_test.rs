@@ -8,7 +8,7 @@
 //! `cargo nextest run smb_integration --run-ignored all`.
 
 use super::smb_test_support::*;
-use super::*;
+use cmdr_smb::volume::*;
 
 // ============================================================================
 // The four cells an in-memory double genuinely can't stand in for
@@ -47,10 +47,10 @@ fn injected_read_failure() -> VolumeError {
 /// files, one of which the fault will refuse to open.
 fn local_album_source() -> (tempfile::TempDir, Arc<crate::file_system::volume::LocalPosixVolume>) {
     let dir = tempfile::TempDir::new().expect("create TempDir");
-    std::fs::create_dir(dir.path().join("album")).unwrap();
-    std::fs::write(dir.path().join("album/one.bin"), vec![0xA1; 4096]).unwrap();
-    std::fs::write(dir.path().join("album/two.bin"), vec![0xA2; 4096]).unwrap();
-    std::fs::write(dir.path().join("album/three.bin"), vec![0xA3; 4096]).unwrap();
+    std::fs::create_dir(dir.path().join("album")).expect("create the local album dir");
+    std::fs::write(dir.path().join("album/one.bin"), vec![0xA1; 4096]).expect("seed album/one.bin");
+    std::fs::write(dir.path().join("album/two.bin"), vec![0xA2; 4096]).expect("seed album/two.bin");
+    std::fs::write(dir.path().join("album/three.bin"), vec![0xA3; 4096]).expect("seed album/three.bin");
     let vol = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
         "src",
         dir.path().to_path_buf(),
@@ -63,17 +63,26 @@ fn local_album_source() -> (tempfile::TempDir, Arc<crate::file_system::volume::L
 async fn seed_smb_album_with_sentinels(smb_vol: &Arc<SmbVolume>, base: &str) -> String {
     let album = format!("{base}/album");
     let sub = format!("{album}/sub");
-    smb_vol.create_directory(Path::new(base)).await.unwrap();
-    smb_vol.create_directory(Path::new(&album)).await.unwrap();
-    smb_vol.create_directory(Path::new(&sub)).await.unwrap();
+    smb_vol
+        .create_directory(Path::new(base))
+        .await
+        .expect("create the share base dir");
+    smb_vol
+        .create_directory(Path::new(&album))
+        .await
+        .expect("create the share album dir");
+    smb_vol
+        .create_directory(Path::new(&sub))
+        .await
+        .expect("create the share album subdir");
     smb_vol
         .create_file(Path::new(&format!("{album}/keep.txt")), b"DEST-keep")
         .await
-        .unwrap();
+        .expect("seed the album sentinel file");
     smb_vol
         .create_file(Path::new(&format!("{sub}/keep2.txt")), b"DEST-keep2")
         .await
-        .unwrap();
+        .expect("seed the subdir sentinel file");
     album
 }
 

@@ -76,7 +76,6 @@ use std::collections::HashMap;
 
 use super::*;
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::smb::{SmbConnectionParams, connect_smb_volume};
 use crate::file_system::volume::{
     BatchScanResult, CopyScanResult, LaneKey, ListingProgress, LocalPosixVolume, SpaceInfo, VolumeReadStream,
     smb_volume_id,
@@ -86,6 +85,7 @@ use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::types::ConflictResolution;
 use crate::file_system::{set_smb_concurrency, smb_concurrency};
 use crate::ignore_poison::IgnorePoison;
+use cmdr_smb::volume::{SmbConnectionParams, connect_smb_volume};
 use std::future::Future;
 use std::pin::Pin as StdPin;
 

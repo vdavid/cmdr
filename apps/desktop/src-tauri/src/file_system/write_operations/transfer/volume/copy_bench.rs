@@ -32,9 +32,9 @@ use crate::file_system::write_operations::types::ConflictResolution;
 )]
 async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
     use crate::file_system::volume::LocalPosixVolume;
-    use crate::file_system::volume::smb::{SmbConnectionParams, connect_smb_volume};
     use crate::file_system::volume::smb_volume_id;
     use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+    use cmdr_smb::volume::{SmbConnectionParams, connect_smb_volume};
 
     const FILE_COUNT: usize = 100;
 

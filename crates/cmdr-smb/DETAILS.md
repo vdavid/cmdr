@@ -5,9 +5,11 @@
 Two boundaries run through this crate, and they answer different questions.
 
 **The backend / app boundary** is the `Volume` trait plus the `VolumeHost` seams: `SmbVolume` implements one and asks
-everything else through the other, so nothing here names the app. What stayed up there is what genuinely needs the app —
-finding a share and mounting it, deciding when to replace a kernel mount with a direct session, and driving transfers.
-`apps/desktop/src-tauri/src/file_system/volume/backends/smb.rs` lists it.
+everything else through the other, so nothing here names the app. What stayed up there is what genuinely needs the app:
+finding a share and mounting it (`apps/desktop/src-tauri/src/network/`), minting an `SmbVolume` and registering it
+(`network/smb_upgrade.rs`), and driving every copy, move, and delete with the real event sink and pause gate
+(`apps/desktop/src-tauri/src/file_system/write_operations/`). App call sites import this crate by name, the way they do
+`cmdr-sftp` and `cmdr-webdav`.
 
 **The protocol / app boundary** is older and sits inside `network/`, which grew as one pile: mDNS discovery, share
 listing, mounting, the keychain, the auto-upgrade passes, and the Tauri events, plus a handful of pure functions over
@@ -128,10 +130,14 @@ The suites split by what a cell ASSERTS, never by what it connects to. Both side
 - **Here**, if the assertion is about this backend: the `Volume` contract against a real server, the byte path, the
   shared conformance promises, the retirement wiring, the watcher's archive-refresh routing, and every session-free unit
   case. § "The suites" below has the file-by-file map.
-- **In the app**, if the assertion is about what the APP does with a share: every cell driving `write_operations`, the
-  volume registry, the listing cache, archive routing, or media enrichment. The app's `smb_app_integration_test.rs`
-  holds the two that don't fit either heading — a pane close must not kill the watcher (the pane-close IPC is the
-  app's), and a local file streams onto the share (`LocalPosixVolume` is the app's).
+- **In the app**, if the assertion is about what the APP does with a share, and the cell sits beside the app code it
+  asserts on rather than beside the backend. `file_system/write_operations/` holds the transfer suites
+  (`smb_transfer_safety_test.rs`, `smb_transfer_semantics_test.rs`, `smb_full_concurrency_test.rs`,
+  `smb_stress_test.rs`, `smb_soak_test.rs`), the remote-archive cells (`smb_archive_integration_test.rs`), the
+  local-source stream write (`smb_stream_write_integration_test.rs`), and the fixture wiring they share
+  (`smb_test_support.rs`). `file_system/listing/` holds the pane-close watcher regression
+  (`smb_pane_close_watch_integration_test.rs`), and `file_system/volume/` holds the two cells where the index crate
+  meets a real share (`smb_index_scan_test.rs`, `smb_media_fetch_integration_test.rs`).
 
 **These are WHITE-BOX tests, and that is why they're here.** They build an `SmbVolumeInner` by struct literal, drive
 `do_attempt_reconnect` directly, and read the client, tree, and scan pool out of the session. ❌ Don't widen the

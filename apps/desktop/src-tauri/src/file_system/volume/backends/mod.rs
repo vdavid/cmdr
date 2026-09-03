@@ -1,9 +1,10 @@
 //! Per-backend `Volume` implementations.
 //!
 //! Each submodule wraps a different storage system behind the `Volume` trait,
-//! which lives in `cmdr_fs::volume` and is re-exported by [`super`]; the
-//! implementations live here. New backends slot in alongside these without
-//! touching the trait.
+//! which lives in `cmdr_fs::volume` and is re-exported by [`super`]. Only the
+//! backends that live IN the app are here: `local_posix` and `mtp`. The others
+//! are crates of their own (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
+//! `cmdr-webdav`, `cmdr-adb`) and every call site imports them by crate name.
 //!
 //! See [`super::CLAUDE.md`](../CLAUDE.md) for the trait shape and capability
 //! matrix, and `backends/CLAUDE.md` for the per-backend decisions and gotchas
@@ -12,10 +13,6 @@
 mod local_posix;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;
-// A re-export of the `cmdr-smb` crate under its original path, plus the app-side
-// half of its suites. See `smb.rs`.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub mod smb;
 
 pub use local_posix::LocalPosixVolume;
 /// Cross-platform volume used-bytes helper (NSURL purgeable-aware on macOS,
@@ -26,8 +23,6 @@ pub(crate) use local_posix::rename_local_exclusive;
 pub(crate) use local_posix::rename_volume_error;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use mtp::MtpVolume;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use smb::SmbVolume;
 
 // Re-export shared `volume/` types so each backend submodule can keep using
 // `super::Volume`, `super::VolumeError`, `super::MutationEvent`, etc. without

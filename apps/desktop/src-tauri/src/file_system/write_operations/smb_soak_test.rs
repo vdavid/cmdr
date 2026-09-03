@@ -2,9 +2,8 @@
 //!
 //! `#[ignore]`d by default. Hammers the SMB->Local copy pipeline thousands
 //! of times to catch credit drift, FD leaks, and memory growth. Run with
-//! `CMDR_SOAK_ITERATIONS` or `CMDR_SOAK_DURATION_SECS` set. Declared as a
-//! `#[cfg(test)]` submodule of `smb`; shared helpers come from
-//! `super::smb_test_support`.
+//! `CMDR_SOAK_ITERATIONS` or `CMDR_SOAK_DURATION_SECS` set. Shared helpers come
+//! from `super::smb_test_support`.
 //!
 //! Run a manual soak alone: it shares the machine-wide `smb-consumer` stack
 //! with any other live SMB work (a sibling worktree's integration suite, an
@@ -14,8 +13,8 @@
 //! but a load that grows over the soak's lifetime can.
 
 use super::smb_test_support::*;
-use super::*;
 use crate::file_system::volume::smb_volume_id;
+use cmdr_smb::volume::*;
 
 // ── Soak test: repeated SMB→Local copy pipeline ────────────────
 //

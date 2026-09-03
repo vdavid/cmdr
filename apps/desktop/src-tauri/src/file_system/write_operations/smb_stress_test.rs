@@ -6,13 +6,12 @@
 //! against the `smb-consumer-maxreadsize` fixture so every write is forced
 //! through the streaming-fallback (FileWriter) path. Carries its own
 //! diagnostic machinery (`MutexCaptureLogger`) to dump the last mutex/recv
-//! log lines on a hang. Declared as a `#[cfg(test)]` submodule of `smb`;
-//! shared helpers come from `super::smb_test_support`. This pairs with
-//! `smb_soak_test.rs`.
+//! log lines on a hang. Shared helpers come from `super::smb_test_support`.
+//! This pairs with `smb_soak_test.rs`.
 
 use super::smb_test_support::*;
-use super::*;
 use crate::file_system::volume::smb_volume_id;
+use cmdr_smb::volume::*;
 use std::sync::OnceLock;
 
 /// Cross-task content integrity: 100 concurrent SMB → local copies, each file
@@ -225,25 +224,30 @@ impl log::Log for MutexCaptureLogger {
         // `format!`-ed per record, which bogged `concurrent_streaming_writes_no_deadlock`
         // past its timeout. The prefix check in `log()` still does the final routing.
         let t = md.target();
-        t.contains("file_system::volume::backends::smb") || t.starts_with("smb2")
+        t.starts_with("cmdr_smb") || t.starts_with("smb2")
     }
     fn log(&self, record: &log::Record) {
         let msg = format!("{}", record.args());
         let target = record.target();
-        // `client-mutex:` lines come from smb.rs via `log::debug!` with
-        // the module-path target (`cmdr_lib::file_system::volume::smb`).
-        // `recv:` lines come from the smb2 receiver loop with an `smb2::*`
-        // target.
+        // `client-mutex:` lines come from `cmdr_smb::volume::session` with the
+        // module-path target (`cmdr_smb::*`). `recv:` lines come from the smb2
+        // receiver loop with an `smb2::*` target.
         // allowed-error-string-match: routes log records into ring buffers by our own `log::debug!` message-prefix convention (`client-mutex:` from this file, `recv:` from the smb2 crate's receiver loop). Not error/state classification; we own both prefixes and `cleanup_test_prefix` would notice drift. Pinned by `mutex_capture_logger_routes_known_prefixes`.
         if msg.starts_with("client-mutex:") {
-            let mut q = self.mutex_lines.lock().unwrap();
+            let mut q = self
+                .mutex_lines
+                .lock()
+                .expect("mutex-capture ring buffer poisoned; only this logger touches it");
             if q.len() >= 200 {
                 q.pop_front();
             }
             q.push_back(format!("[{}] {}", target, msg));
             // allowed-error-string-match: same convention as the `client-mutex:` branch above — routes smb2 receiver-loop log records by message prefix, not error/state classification. Pinned by `mutex_capture_logger_routes_known_prefixes`.
         } else if msg.starts_with("recv:") || (target.starts_with("smb2") && msg.contains("recv")) {
-            let mut q = self.recv_lines.lock().unwrap();
+            let mut q = self
+                .recv_lines
+                .lock()
+                .expect("recv-capture ring buffer poisoned; only this logger touches it");
             if q.len() >= 200 {
                 q.pop_front();
             }
@@ -315,7 +319,7 @@ async fn run_concurrent_write_pass(
 
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .expect("system clock is after the Unix epoch")
         .as_secs();
     // Include the PID so two concurrent runs (different worktrees sharing the
     // same `smb-consumer` container) never target the same dest dir within the
@@ -352,7 +356,7 @@ async fn run_concurrent_write_pass(
     for i in 0..n_conflicts {
         let name = format!("f_{i:04}.bin");
         let dest_abs = dest_dir_abs.join(&name);
-        let buf = std::fs::read(local_dir.path().join(&name)).unwrap();
+        let buf = std::fs::read(local_dir.path().join(&name)).expect("read the local fixture file");
         let stream: Box<dyn VolumeReadStream> = inline_read_stream(buf.clone());
         let size = buf.len() as u64;
         let progress = |_a: u64, _b: u64| -> std::ops::ControlFlow<()> { std::ops::ControlFlow::Continue(()) };
@@ -408,7 +412,9 @@ async fn run_concurrent_write_pass(
         Ok(Err(e)) => Some(format!("regression: copy failed in {elapsed:?}: {e:?}")),
         Err(_) => {
             let tail = |q: &std::sync::Mutex<std::collections::VecDeque<String>>| -> Vec<String> {
-                let q = q.lock().unwrap();
+                let q = q
+                    .lock()
+                    .expect("capture ring buffer poisoned; only this logger touches it");
                 let n = q.len().min(30);
                 q.iter().skip(q.len() - n).cloned().collect()
             };

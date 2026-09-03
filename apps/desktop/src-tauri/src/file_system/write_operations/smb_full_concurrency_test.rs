@@ -20,12 +20,11 @@
 //! `#[ignore]`d like every `smb_integration_` test; the
 //! `desktop-rust-integration-tests` check boots the Docker Samba stack and runs
 //! them. Locally: `./apps/desktop/test/smb-servers/start.sh`, then
-//! `cargo nextest run smb_integration_ --run-ignored all`. Declared as a
-//! `#[cfg(test)]` submodule of `smb`; shared helpers come from
-//! `super::smb_test_support`.
+//! `cargo nextest run smb_integration_ --run-ignored all`. Shared helpers come
+//! from `super::smb_test_support`.
 
 use super::smb_test_support::*;
-use super::*;
+use cmdr_smb::volume::*;
 use std::sync::atomic::AtomicBool;
 
 use crate::file_system::write_operations::test_support::TestOperationGuard;

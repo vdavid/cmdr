@@ -72,6 +72,11 @@ mod operations_test;
 mod path_index_test;
 #[cfg(test)]
 mod row_beside_test;
+// A pane close drops a listing, and must not reach the volume's own watcher.
+// Docker-gated, over a real `cmdr-smb` session, because the SMB watcher's
+// lifetime is what the regression was about.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_pane_close_watch_integration_test;
 #[cfg(test)]
 mod sorting_test;
 #[cfg(test)]

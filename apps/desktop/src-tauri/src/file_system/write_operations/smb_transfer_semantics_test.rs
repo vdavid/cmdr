@@ -7,9 +7,8 @@
 //! single-rename (no subtree walk) perf contract. Every test here is
 //! `#[ignore]`d so default runs skip it. Start the containers with
 //! `./apps/desktop/test/smb-servers/start.sh`, then run
-//! `cargo nextest run smb_integration --run-ignored all`. Declared as a
-//! `#[cfg(test)]` submodule of `smb`; shared helpers come from
-//! `super::smb_test_support`.
+//! `cargo nextest run smb_integration --run-ignored all`. Shared helpers come
+//! from `super::smb_test_support`.
 //!
 //! The data-SAFETY cells (a failed merge that must not sweep the user's share, a
 //! delete bound to its preview, an unanswerable source probe) are
@@ -17,7 +16,7 @@
 //! `smb_conformance_test.rs`.
 
 use super::smb_test_support::*;
-use super::*;
+use cmdr_smb::volume::*;
 use std::sync::atomic::AtomicUsize;
 
 /// FOLDER MERGE on a real SMB server: a Local source directory landing on a

@@ -9,12 +9,11 @@
 //!
 //! Every test here is `#[ignore]`d so default runs skip it. Start the
 //! containers with `./apps/desktop/test/smb-servers/start.sh`, then run
-//! `cargo nextest run smb_integration --run-ignored all`. Declared as a
-//! `#[cfg(test)]` submodule of `smb` alongside `smb_integration_test`; shared
-//! helpers come from `super::smb_test_support`.
+//! `cargo nextest run smb_integration --run-ignored all`. Shared helpers come
+//! from `super::smb_test_support`.
 
 use super::smb_test_support::*;
-use super::*;
+use cmdr_smb::volume::*;
 
 /// End-to-end proof that a zip living on a REAL SMB share browses and extracts
 /// through `SmbVolume::read_range` (backed by `smb2::FileReader`) — the remote
@@ -55,7 +54,7 @@ async fn smb_integration_archive_browse_and_extract_via_read_range() {
         w.write_all(b"hello").unwrap();
         w.start_file("dir/b.txt", deflated).unwrap();
         w.write_all(b"world from a deflated entry").unwrap();
-        w.finish().unwrap().into_inner()
+        w.finish().expect("finish the fixture zip").into_inner()
     };
 
     // Unique root-level name so the no-clobber `create_file` never collides and
@@ -147,11 +146,13 @@ fn two_entry_zip() -> Vec<u8> {
     let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     let stored = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     let deflated = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-    w.start_file("keep.txt", stored).unwrap();
-    w.write_all(b"keep me").unwrap();
-    w.start_file("drop.txt", deflated).unwrap();
-    w.write_all(b"delete me from the share").unwrap();
-    w.finish().unwrap().into_inner()
+    w.start_file("keep.txt", stored).expect("start the stored zip entry");
+    w.write_all(b"keep me").expect("write the stored zip entry");
+    w.start_file("drop.txt", deflated)
+        .expect("start the deflated zip entry");
+    w.write_all(b"delete me from the share")
+        .expect("write the deflated zip entry");
+    w.finish().expect("finish the fixture zip").into_inner()
 }
 
 /// The async, parent-aware write-routing predicate detects a zip-INNER path on a
