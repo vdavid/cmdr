@@ -115,7 +115,11 @@ pub(super) async fn extract_sequential_subtree(
         .at(source_path)?;
     let mut total_bytes = 0u64;
     while let Some(file) = extractor.next_file().await.at(source_path)? {
-        if super::super::super::state::is_cancelled(&state.intent) {
+        // The cooperative boundary, between members. One decode pass can't be
+        // re-entered, so this is the only place the extract can stop, and one
+        // iteration covers the remainder of the subtree whenever skipped members
+        // drain through it.
+        if state.stop_or_park_async().await {
             return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
         }
         // Not in the plan ⇒ the file was skipped by conflict resolution (or isn't
