@@ -136,11 +136,11 @@ add a handler the dispatch doesn't know about, so schema/dispatch/auth/exposure 
 - **Schema keys** serialize alphabetically (serde_json `Map` is a `BTreeMap`), so authored key order doesn't affect the
   wire bytes. A tools/list snapshot test (`tests/tool_snapshot_tests.rs`) pins the exact output; run it after any schema
   edit and update the fixture when the change is intentional.
-- **The schema is ENFORCED, so author it as the truth.** `validate_params` refuses a call whose params miss a
-  `required` property, and (on a schema declaring `additionalProperties: false`) one carrying a property `properties`
-  doesn't list, before your handler runs. Don't mark a field `required` the handler is happy without. An `[Agent]` tool
-  MUST declare `additionalProperties: false` (a structural test fails otherwise): its calls reach a person as facts,
-  and a swallowed argument becomes a confident wrong answer. `mcp/DETAILS.md` § The schema gate.
+- **The schema is ENFORCED, so author it as the truth.** `validate_params` refuses a call whose params miss a `required`
+  property, and (on a schema declaring `additionalProperties: false`) one carrying a property `properties` doesn't list,
+  before your handler runs. Don't mark a field `required` the handler is happy without. An `[Agent]` tool MUST declare
+  `additionalProperties: false` (a structural test fails otherwise): its calls reach a person as facts, and a swallowed
+  argument becomes a confident wrong answer. `mcp/DETAILS.md` § The schema gate.
 
 That's the whole change. No separate dispatch match, no auth string-list, and no hand-bumped tool count — the count and
 coverage tests are cheap guards over a property that's now true by construction.
