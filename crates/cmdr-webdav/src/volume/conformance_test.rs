@@ -168,3 +168,31 @@ async fn conflict_scan_reads_a_missing_destination_as_empty() {
 
     clean(&volume, &dir).await;
 }
+
+/// The shared stop assertions, against a real Apache `mod_dav`.
+///
+/// ❗ Per entry: this backend's scan is `scan_walk`'s, so the boundary comes with
+/// it. One `PROPFIND` per directory over a WAN link is the cost a Cancel has to
+/// land inside of.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_batch_scan_stops_when_it_is_told_to() {
+    let (volume, dir) = stock_server_with_scratch().await;
+    volume.create_file(&dir.join("a.txt"), b"a").await.expect(FIXTURE);
+
+    conformance::assert_batch_scan_stops_when_told(&volume, &dir).await;
+
+    clean(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_batch_scan_asks_its_boundary_inside_the_walk() {
+    let (volume, dir) = stock_server_with_scratch().await;
+    volume.create_file(&dir.join("a.txt"), b"a").await.expect(FIXTURE);
+    volume.create_file(&dir.join("b.txt"), b"bb").await.expect(FIXTURE);
+
+    conformance::assert_batch_scan_asks_inside_the_walk(&volume, &dir, 3).await;
+
+    clean(&volume, &dir).await;
+}

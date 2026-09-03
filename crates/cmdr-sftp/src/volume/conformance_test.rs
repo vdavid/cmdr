@@ -172,3 +172,40 @@ async fn conflict_scan_reads_a_missing_destination_as_empty() {
 
     clean_scratch(&volume, &dir).await;
 }
+
+/// The shared stop assertions, against a real SFTP server.
+///
+/// ❗ Per entry: this backend's scan is `scan_walk`'s, so the boundary comes with
+/// it. Over a 50 ms link a subtree walk is minutes, which is the whole reason the
+/// boundary sits before each listing rather than after.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_batch_scan_stops_when_it_is_told_to() {
+    let (volume, dir) = stock_server_with_scratch("scan-stop-told").await;
+    volume
+        .create_file(Path::new(&format!("{dir}/a.txt")), b"a")
+        .await
+        .expect("seed a file");
+
+    conformance::assert_batch_scan_stops_when_told(&volume, Path::new(&dir)).await;
+
+    clean_scratch(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_batch_scan_asks_its_boundary_inside_the_walk() {
+    let (volume, dir) = stock_server_with_scratch("scan-stop-per-entry").await;
+    volume
+        .create_file(Path::new(&format!("{dir}/a.txt")), b"a")
+        .await
+        .expect("seed a file");
+    volume
+        .create_file(Path::new(&format!("{dir}/b.txt")), b"bb")
+        .await
+        .expect("seed a second file");
+
+    conformance::assert_batch_scan_asks_inside_the_walk(&volume, Path::new(&dir), 3).await;
+
+    clean_scratch(&volume, &dir).await;
+}

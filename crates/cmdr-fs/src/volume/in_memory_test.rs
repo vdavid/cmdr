@@ -273,6 +273,24 @@ async fn conflict_scan_honors_the_shared_missing_destination_contract() {
         .await;
 }
 
+/// The shared stop assertion, over the double every other suite stands on.
+///
+/// ❗ Per SOURCE PATH here, ❌ not per entry, and that's honest: this backend's
+/// scan is a prefix match over an in-memory map with no I/O in it, so a path is
+/// already the smallest unit of waiting there is. A backend that walks a real
+/// tree owes `assert_batch_scan_asks_inside_the_walk` as well.
+#[tokio::test]
+async fn a_batch_scan_stops_when_it_is_told_to() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/album")).await.unwrap();
+    volume
+        .create_file(Path::new("/album/keep.txt"), b"content")
+        .await
+        .unwrap();
+
+    conformance::assert_batch_scan_stops_when_told(&volume, Path::new("/album")).await;
+}
+
 #[tokio::test]
 async fn test_delete_nonexistent_returns_error() {
     let volume = InMemoryVolume::new("Test");
