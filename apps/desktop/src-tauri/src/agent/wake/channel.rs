@@ -143,6 +143,9 @@ pub enum WakeCompletion {
     /// A follow-up ran. It answers something the user just did, so it imposes no spacing of its
     /// own and does not lift a spacing a wake left behind.
     FollowUp,
+    /// The provider refused for a reason it would refuse the next turn with identically: a
+    /// rejected key, or an exhausted quota. Either kind of turn can learn this.
+    ProviderRefused,
 }
 
 /// The endpoint: one sender, the receiver waiting to be claimed, and the rollup accounting the

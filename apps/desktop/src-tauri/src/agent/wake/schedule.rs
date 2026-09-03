@@ -41,6 +41,15 @@ pub(super) fn may_attempt(forced: bool, inbox_due: bool, not_before: u64, now: u
 /// earns: that one answers something the user just did.
 pub(super) const MIN_WAKE_SPACING: Duration = Duration::from_secs(15 * 60);
 
+/// How long the loop stays quiet after the provider refused in a way it will refuse again.
+///
+/// A rejected key and an exhausted quota are settled facts about the rest of the day, not
+/// transient failures worth retrying at the ordinary pace. After the 2026-09-03 quota died at
+/// 09:06 local, the app sent 261 further requests over roughly six hours and every one came back
+/// 403. Six hours turns that into four attempts, and a settings or readiness change (which is
+/// what fixing the key sends) lifts it at once rather than making the user wait it out.
+pub(super) const PROVIDER_REFUSAL_BACKOFF: Duration = Duration::from_secs(6 * 60 * 60);
+
 /// What a control message does to the `not_before` stamp.
 enum ControlWait {
     /// Drop the stamp: whatever the loop last decided may no longer hold, so act now.
@@ -66,6 +75,9 @@ pub(super) fn stamp_after(control: &WakeControl, not_before: u64, now: u64) -> u
 fn wait_after(control: &WakeControl) -> ControlWait {
     match control {
         WakeControl::WakeFinished(WakeCompletion::Wake) => ControlWait::For(MIN_WAKE_SPACING),
+        WakeControl::WakeFinished(WakeCompletion::ProviderRefused) => {
+            ControlWait::For(PROVIDER_REFUSAL_BACKOFF)
+        }
         // A follow-up answers something the user just did, so it neither earns a spacing nor
         // lifts the one a wake left: clearing here would let a rejection the user clicked
         // through pull an unrelated wake in ahead of its turn.
@@ -113,6 +125,8 @@ mod tests {
 
     /// The policy the tests pin, in seconds: a wake may speak once a quarter of an hour.
     const SPACING_SECS: u64 = 15 * 60;
+    /// And a provider that refused is left alone for six hours.
+    const REFUSAL_SECS: u64 = 6 * 60 * 60;
 
     /// ⚠️ The spin guard. A deadline that has passed keeps having passed, so a park computed
     /// from it alone is zero-length, and a zero-length `recv_timeout` returns instantly. An
@@ -237,6 +251,35 @@ mod tests {
             0,
             "and it invents no wait where there was none"
         );
+    }
+
+    /// ⚠️ **A dead key costs a handful of attempts a day, not hundreds.** After the 2026-09-03
+    /// quota died at 09:06 local, the app kept firing: 261 further requests over roughly six
+    /// hours, every one rejected. Six hours of quiet turns that into four.
+    #[test]
+    fn a_provider_that_refused_holds_the_agent_off_for_hours() {
+        let now = 1_780_000_000;
+
+        let stamp = stamp_after(&WakeControl::WakeFinished(WakeCompletion::ProviderRefused), 0, now);
+
+        assert_eq!(stamp, now + REFUSAL_SECS);
+        assert!(
+            !may_attempt(false, true, stamp, now + REFUSAL_SECS - 1),
+            "and the inbox filling all day does not shorten it"
+        );
+    }
+
+    /// ⚠️ **Fixing the key is felt at once.** A readiness change is what setting a working key
+    /// sends, and waiting out six hours after the user has already fixed the thing would read as
+    /// the agent having given up on them.
+    #[test]
+    fn a_settings_or_readiness_change_lifts_a_dead_keys_backoff() {
+        let now = 1_780_000_000;
+        let held = stamp_after(&WakeControl::WakeFinished(WakeCompletion::ProviderRefused), 0, now);
+
+        for control in [WakeControl::ReadinessChanged, WakeControl::SettingsChanged] {
+            assert_eq!(stamp_after(&control, held, now), 0, "{control:?} lifts it");
+        }
     }
 
     /// The two clocks a wake waits on, and the one thing that skips them. A force replaces the
