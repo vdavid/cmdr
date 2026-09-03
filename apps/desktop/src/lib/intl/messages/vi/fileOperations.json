@@ -732,9 +732,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.moveAlreadyLanded": "Mọi thứ Cmdr đã di chuyển đều đã ở đích và sẽ ở lại đó. {count, plural, other {{countText} bản gốc vẫn nằm ở chỗ cũ.}}",
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr đã dừng giữa lúc xóa các bản gốc, nhưng mọi thứ Cmdr đã di chuyển đều đã ở đích và sẽ ở lại đó. {count, plural, other {{countText} bản gốc vẫn nằm ở chỗ cũ.}}",
   "@fileOperations.cancelRollback.moveAlreadyLanded": {
-    "sourceHash": "842f15a"
+    "sourceHash": "88dcf83"
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr bỏ qua những gì nó không chắc chắn, nên những mục sau vẫn ở nguyên chỗ:",
   "@fileOperations.cancelRollback.leftBehind": {

@@ -733,9 +733,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.moveAlreadyLanded": "Todo lo que Cmdr movió ya está en el destino y ahí se queda. {count, plural, one {Queda un original donde estaba.} many {Quedan {countText} originales donde estaban.} other {Quedan {countText} originales donde estaban.}}",
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr se detuvo mientras eliminaba los originales, pero todo lo que movió ya está en el destino y ahí se queda. {count, plural, one {Queda un original donde estaba.} many {Quedan {countText} originales donde estaban.} other {Quedan {countText} originales donde estaban.}}",
   "@fileOperations.cancelRollback.moveAlreadyLanded": {
-    "sourceHash": "842f15a"
+    "sourceHash": "88dcf83"
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr omite todo aquello de lo que no está seguro, así que estos elementos se quedaron donde están:",
   "@fileOperations.cancelRollback.leftBehind": {

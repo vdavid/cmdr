@@ -733,9 +733,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.moveAlreadyLanded": "Amit a Cmdr áthelyezett, az már a célhelyen van, és ott is marad. {count, plural, one {Egy eredeti még a régi helyén van.} other {{countText} eredeti még a régi helyén van.}}",
+  "fileOperations.cancelRollback.moveAlreadyLanded": "A Cmdr leállt az eredeti fájlok eltávolítása közben, de amit áthelyezett, az már a célhelyen van, és ott is marad. {count, plural, one {Egy eredeti még a régi helyén van.} other {{countText} eredeti még a régi helyén van.}}",
   "@fileOperations.cancelRollback.moveAlreadyLanded": {
-    "sourceHash": "842f15a"
+    "sourceHash": "88dcf83"
   },
   "fileOperations.cancelRollback.leftBehind": "Amiben a Cmdr nem biztos, azt kihagyja, ezért ezek a helyükön maradtak:",
   "@fileOperations.cancelRollback.leftBehind": {

@@ -181,9 +181,11 @@ told nothing at all.
   the intent is read at the top of each turn, so a stop always leaves at least the item it was about to take. The
   already-deleted ones are deliberately absent: they aren't actionable (their content is whole at the destination), and
   a second number would need its own wording for the stop-before-the-first-delete case.
-- **What it reads as.** `fileOperations.cancelRollback.moveAlreadyLanded`, at `info` level: everything Cmdr moved is
-  already at the destination and stays there, then the count of originals still in their old place. It claims nothing
-  about an undo, because none is coming.
+- **What it reads as.** `fileOperations.cancelRollback.moveAlreadyLanded`, at `info` level, in the order what-happened →
+  why-that's-fine → the number: Cmdr stopped part-way through removing the originals (so the user reads that some are
+  gone, rather than inferring it from the count), everything it moved is already at the destination and stays there,
+  then how many originals are still in their old place. It claims nothing about an undo, because none is coming, and it
+  carries no hint of a warning, because nothing went wrong.
 - **`cross_fs.rs` has no post-loop intent check**, unlike `copy/mod.rs`'s `PostLoopIntent`. A Rollback pressed after the
   Phase-2 copy loop drains does NOT stop the operation there: Phase 3 renames the whole tree into place and the flush
   runs regardless, and the sweep's first `is_cancelled` is what catches the click. The report stays honest either way

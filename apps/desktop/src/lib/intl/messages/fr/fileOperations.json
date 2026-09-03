@@ -735,9 +735,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.moveAlreadyLanded": "Tout ce que Cmdr a déplacé est déjà arrivé à destination et y reste. {count, plural, one {Un original est toujours à sa place d''origine.} many {{countText} originaux sont toujours à leur place d''origine.} other {{countText} originaux sont toujours à leur place d''origine.}}",
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr s''est arrêté pendant la suppression des originaux, mais tout ce qu''il a déplacé est déjà arrivé à destination et y reste. {count, plural, one {Un original est toujours à sa place d''origine.} many {{countText} originaux sont toujours à leur place d''origine.} other {{countText} originaux sont toujours à leur place d''origine.}}",
   "@fileOperations.cancelRollback.moveAlreadyLanded": {
-    "sourceHash": "842f15a"
+    "sourceHash": "88dcf83"
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr laisse de côté tout ce dont il n''est pas sûr, donc voici ce qui n''a pas bougé :",
   "@fileOperations.cancelRollback.leftBehind": {

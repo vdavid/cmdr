@@ -731,9 +731,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr 移动过的文件都已经在目标位置了，会留在那里。{count, plural, other {还有 {countText} 个原文件留在原处。}}",
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr 在移除原文件的过程中停下了，但它移动过的文件都已经在目标位置了，会留在那里。{count, plural, other {还有 {countText} 个原文件留在原处。}}",
   "@fileOperations.cancelRollback.moveAlreadyLanded": {
-    "sourceHash": "842f15a"
+    "sourceHash": "88dcf83"
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr 会跳过没有把握的部分，所以这些都保持了原样：",
   "@fileOperations.cancelRollback.leftBehind": {

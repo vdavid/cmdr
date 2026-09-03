@@ -680,10 +680,12 @@ LEDGER alone, and Cmdr's own scratch can outlive a perfect reversal. `originalsS
 the same reason and is the sharper case: a cross-filesystem move stopped on its last step (deleting the originals, after
 every file has already arrived) has some of the user's originals gone for good and no reversal coming for them, yet its
 `outcome` is a truthful `notRolledBack`. Silence there tells a user who pressed Rollback that nothing happened. So
-`moveAlreadyLanded` says where the files are, that they're staying there, and how many originals are still in the folder
-the move started from — at `info`, because nothing went wrong, and claiming no undo, because none is coming. Why the
-backend spends a field on this instead of an outcome: `write_operations/transfer/DETAILS.md` § "A stop in the source
-sweep says where the files are".
+`moveAlreadyLanded` says that Cmdr stopped part-way through removing the originals, that everything it moved is already
+at the destination and staying there, and how many originals are still in the folder the move started from — at `info`,
+because nothing went wrong, and claiming no undo, because none is coming. The removal clause earns its length: without
+it the user has to infer from a bare count that some originals went, which is the one fact they can't check by looking
+at the toast. Why the backend spends a field on this instead of an outcome: `write_operations/transfer/DETAILS.md` § "A
+stop in the source sweep says where the files are".
 
 **How a stopped reversal is told apart from a skipping one**, with no extra field on the wire: a full pass that skipped
 nothing lands `rolledBack`, so `partiallyRolledBack` with an EMPTY `skips` can only be a reversal the user stopped, and

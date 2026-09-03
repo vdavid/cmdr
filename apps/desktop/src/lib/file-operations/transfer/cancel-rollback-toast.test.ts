@@ -332,12 +332,12 @@ describe('readCancelRollback', () => {
     // while some of their originals were already gone for good.
     const landed = { count: 200 }
 
-    it('says where the files are and how many originals stayed', () => {
+    it('says what stopped, where the files are, and how many originals stayed', () => {
       const readout = readCancelRollback(rollback({ originalsStillInPlace: landed }), 'move')
       expect(readout).toEqual({
         headline:
-          'Everything Cmdr moved is already at the destination, so it stays there. ' +
-          '200 originals are still where they were.',
+          'Cmdr stopped while removing the originals, but everything it moved is already at the destination ' +
+          'and stays there. 200 originals are still where they were.',
         leftBehind: null,
         reasons: [],
         staged: null,
@@ -348,8 +348,17 @@ describe('readCancelRollback', () => {
     it('speaks of a single original in the singular, with no number', () => {
       const readout = readCancelRollback(rollback({ originalsStillInPlace: { count: 1 } }), 'move')
       expect(readout?.headline).toBe(
-        'Everything Cmdr moved is already at the destination, so it stays there. One original is still where it was.',
+        'Cmdr stopped while removing the originals, but everything it moved is already at the destination ' +
+          'and stays there. One original is still where it was.',
       )
+    })
+
+    it('says plainly that a removal was under way, so the user knows some originals went', () => {
+      // The count alone would leave that to inference. The user needs to read
+      // it, without the line turning into a warning about something wrong.
+      const readout = readCancelRollback(rollback({ originalsStillInPlace: landed }), 'move')
+      expect(readout?.headline).toContain('removing the originals')
+      expect(readout?.level).toBe('info')
     })
 
     it('groups the thousands, like every other count the toast prints', () => {

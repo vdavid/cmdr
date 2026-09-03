@@ -734,9 +734,9 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.moveAlreadyLanded": "Alles wat Cmdr heeft verplaatst, staat al op de bestemming en blijft daar. {count, plural, one {Eén origineel staat nog op de oude plek.} other {{countText} originelen staan nog op hun oude plek.}}",
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr is gestopt tijdens het verwijderen van de originelen, maar alles wat het heeft verplaatst, staat al op de bestemming en blijft daar. {count, plural, one {Eén origineel staat nog op de oude plek.} other {{countText} originelen staan nog op hun oude plek.}}",
   "@fileOperations.cancelRollback.moveAlreadyLanded": {
-    "sourceHash": "842f15a"
+    "sourceHash": "88dcf83"
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr slaat alles over waar het niet zeker van is, dus deze zijn blijven staan:",
   "@fileOperations.cancelRollback.leftBehind": {
