@@ -95,6 +95,12 @@ the scan is for). A bar at 0% for minutes is not honest progress, so the chip sw
 tooltip becomes `fileOperations.shared.scanningTooltip` ("Scanning…") rather than `queue.chip.tooltip`, whose
 `· {percentText}%` clause would be the dishonest part. The visible label stays the verb.
 
+A scan can be PAUSED (the walk parks on the operation's own gate — `write_operations/DETAILS.md` § "The park"), and then
+both of those become claims the chip can't make. The spinner goes away entirely: it is the visible assertion that the
+walk is moving, and `chipLabel` already reads "Paused". The tooltip takes the SPOKEN sentence instead of "Scanning…",
+because that one carries `chipLabel` — a bare "Scanning…" hovering over a chip that says "Paused" is the same walk
+described two ways, and only one of them is true.
+
 The SPOKEN label is its own key, `queue.chip.scanningAriaLabel` ("{label}, scanning. Open the operation queue."), not
 the tooltip's string. It's `queue.chip.ariaLabel` with the percentage swapped for the state word, so the scan state
 gives up exactly the dishonest part and keeps the two that matter: the visible verb, which voice control needs to press

@@ -488,7 +488,6 @@ pub(super) async fn run_volume_scan_preview(
     let state_for_cancel = Arc::clone(&state);
     let is_cancelled = move || state_for_cancel.cancelled.load(Ordering::Relaxed);
 
-
     let result: Result<BatchScanResult, String> = async {
         if state.cancelled.load(Ordering::Relaxed) {
             return Err("Cancelled".to_string());

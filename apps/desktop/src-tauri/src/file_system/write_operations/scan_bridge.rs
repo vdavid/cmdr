@@ -26,10 +26,14 @@
 //! Both events keep firing. A pre-confirm dialog may still be watching the same
 //! preview by `previewId`, and it has no operation to watch instead.
 
+use std::sync::atomic::Ordering;
+use std::sync::{Arc, OnceLock};
+
 use super::event_sinks::OperationEventSink;
 use super::manager;
-use super::scan_cache::{PREVIEW_SETTLED, ScanOutcome, abandon_claim, finish_claim, poll_claim};
-use super::state::WriteOperationState;
+use super::scan_cache::{PREVIEW_SETTLED, ScanOutcome, ScanPreviewState, abandon_claim, finish_claim, poll_claim};
+use super::scan_watchdog::ScanWatchdog;
+use super::state::{WRITE_OPERATION_STATE, WriteOperationState, is_cancelled};
 use super::types::{
     CancelRollback, WriteCancelledEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent,
@@ -168,29 +172,29 @@ pub(super) struct ScanPause {
     /// for a scan running inside the operation itself, which knows.
     claim: Option<PreviewClaimant>,
     /// The owner's live state. Resolved at most once.
-    owner: std::sync::OnceLock<std::sync::Arc<WriteOperationState>>,
+    owner: OnceLock<Arc<WriteOperationState>>,
     /// Fed on both edges of a park, so a scan waiting on a person can't read as
     /// a volume that stopped answering and get killed by the inactivity bound.
-    watchdog: Option<std::sync::Arc<super::scan_watchdog::ScanWatchdog>>,
+    watchdog: Option<Arc<ScanWatchdog>>,
 }
 
 /// What a preview walk needs to find its owner and to know when it must stop
 /// regardless.
 struct PreviewClaimant {
     preview_id: String,
-    state: std::sync::Arc<super::scan_cache::ScanPreviewState>,
+    state: Arc<ScanPreviewState>,
 }
 
 impl ScanPause {
     /// For a preview worker, which learns its owner from the claim.
     pub(super) fn for_preview(
         preview_id: String,
-        state: std::sync::Arc<super::scan_cache::ScanPreviewState>,
-        watchdog: std::sync::Arc<super::scan_watchdog::ScanWatchdog>,
+        state: Arc<ScanPreviewState>,
+        watchdog: Arc<ScanWatchdog>,
     ) -> Self {
         Self {
             claim: Some(PreviewClaimant { preview_id, state }),
-            owner: std::sync::OnceLock::new(),
+            owner: OnceLock::new(),
             watchdog: Some(watchdog),
         }
     }
@@ -198,8 +202,8 @@ impl ScanPause {
     /// For a scan the operation runs for itself (no preview to consume: an
     /// evicted id, a stale one from a reloaded window, or a second operation
     /// over the same sources). The owner is known from the start.
-    pub(super) fn for_operation(state: std::sync::Arc<WriteOperationState>) -> Self {
-        let owner = std::sync::OnceLock::new();
+    pub(super) fn for_operation(state: Arc<WriteOperationState>) -> Self {
+        let owner = OnceLock::new();
         let _ = owner.set(state);
         Self {
             claim: None,
@@ -219,7 +223,7 @@ impl ScanPause {
         let Some(operation_id) = super::scan_cache::claimed_operation(&claim.preview_id) else {
             return;
         };
-        let Some(state) = super::state::WRITE_OPERATION_STATE.get(&operation_id) else {
+        let Some(state) = WRITE_OPERATION_STATE.get(&operation_id) else {
             return;
         };
         let _ = self.owner.set(state);
@@ -231,7 +235,9 @@ impl ScanPause {
     pub(super) fn park_while_paused(&self) {
         let Some(owner) = self.paused_owner() else { return };
         self.enter_park();
-        owner.pause_gate.wait_while_paused_sync_until(&|| self.should_stop(owner));
+        owner
+            .pause_gate
+            .wait_while_paused_sync_until(&|| self.should_stop(owner));
         self.leave_park();
     }
 
@@ -250,7 +256,7 @@ impl ScanPause {
 
     /// The owner, but only when it is actually paused: the fast-path filter
     /// both parks share.
-    fn paused_owner(&self) -> Option<&std::sync::Arc<WriteOperationState>> {
+    fn paused_owner(&self) -> Option<&Arc<WriteOperationState>> {
         let owner = self.owner.get()?;
         owner.pause_gate.is_paused().then_some(owner)
     }
@@ -260,15 +266,12 @@ impl ScanPause {
     /// covers a walk told to stop directly. ❌ Dropping either leaves the thread
     /// on a gate nobody will open.
     fn should_stop(&self, owner: &WriteOperationState) -> bool {
-        if super::state::is_cancelled(&owner.intent) {
+        if is_cancelled(&owner.intent) {
             return true;
         }
-        self.claim.as_ref().is_some_and(|claim| {
-            claim
-                .state
-                .cancelled
-                .load(std::sync::atomic::Ordering::Relaxed)
-        })
+        self.claim
+            .as_ref()
+            .is_some_and(|claim| claim.state.cancelled.load(Ordering::Relaxed))
     }
 
     fn enter_park(&self) {

@@ -597,8 +597,16 @@ inherits cancel's granularity for free:
 - **Oracle-aware volume walk** — per entry, in `scan_subtree_with_oracle`.
 - **Cold-cache volume group** — per source group, in `run_oracle_aware_batch_scan`. One group is a single call into
   `Volume::scan_for_copy_batch_with_progress`, which offers no boundary to pause OR cancel, so a request issued during
-  it lands when that group ends. Reaching inside means threading a park through `cmdr-fs`'s `scan_walk` and each
-  backend; the honest bound today is "no worse than cancel".
+  it lands when that group ends.
+- **An operation's own VOLUME scan** (`transfer/volume/preflight.rs`, the path a programmatic or MCP-started transfer
+  takes when it has no preview to consume) — **nowhere**. It is one `scan_for_copy_batch_with_progress` call over every
+  source, with no seam of any kind; it doesn't observe cancel either.
+
+⚠️ So on the two volume paths above, "Paused" can stand for a while over a walk that is still counting. The bound is
+the same one cancel has, which is why it ships this way rather than as a special case in the UI — but it IS the weak
+spot, and closing it means giving `Volume::scan_for_copy_batch_with_progress` a cooperative stop the backends honor
+(`cmdr-fs`'s `scan_walk` plus each backend's own recursion). That would fix cancel on the same path, which is the
+better reason to do it.
 
 **Why the owner is resolved lazily.** A preview walks detached from the operation that will consume it: the walk holds
 a `preview_id`, the gate hangs off the operation, and the claim joining them lands when the user confirms — possibly

@@ -231,7 +231,7 @@ async fn a_paused_scan_stops_counting() {
     let parked_at = wait_until_parked(&scan.sink).await;
     assert!(
         parked_at < TREE_FILES,
-        "the walk must park mid-tree, not after counting all {TREE_FILES} files (stopped at {parked_at})"
+        "the walk must park mid-tree; it counted the whole {TREE_FILES}-file tree instead (stopped at {parked_at})"
     );
     assert!(
         !scan.sink.is_complete(),
@@ -438,7 +438,7 @@ async fn an_operations_own_scan_parks_too() {
     assert!(parked_at > 0, "the scan must have counted something before parking");
     assert!(
         parked_at < TREE_FILES,
-        "the scan itself has to park mid-tree; finishing all {TREE_FILES} files and parking at the \
+        "the scan itself has to park mid-tree; walking the whole {TREE_FILES}-file tree and parking at the \
          driver's gate afterwards is the behavior this test exists to rule out (stopped at {parked_at})"
     );
     assert!(!sink.complete.load(Ordering::SeqCst));
