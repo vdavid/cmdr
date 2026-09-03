@@ -138,11 +138,10 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics
 - `file_system/volume/`: `VolumeManager` plus the `backends/` umbrella, re-exporting the `Volume` trait and its types
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
-- `file_system/volume/backends/`: the umbrella every backend is reached through, holding the two `Volume` impls that are
-  still app-resident, `LocalPosixVolume` and `MtpVolume`
-- `file_system/volume/backends/`'s `archive.rs` and `smb.rs`: re-exports of the `cmdr-archive` and `cmdr-smb` crates
-  under their original paths, plus the app-side half of each one's suites. What stays app-side is what needs the app:
-  archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving for both
+- `file_system/volume/backends/`: only the `Volume` impls that live in the app, `LocalPosixVolume` and `MtpVolume`.
+  Every crate backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`) is imported by crate name at
+  its call sites, and each one's app-side tests sit beside the app code they assert on. What stays app-side is what
+  needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving
 - `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
   hooks, typed git-error classification (`FriendlyGitErrorKind`)
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)

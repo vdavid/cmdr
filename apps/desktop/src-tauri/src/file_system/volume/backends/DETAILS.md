@@ -99,10 +99,11 @@ The failure this prevents: two "Connect directly" clicks nine seconds apart repl
 
 ## The SMB backend
 
-Everything about `SmbVolume` itself — the reconnect lifecycle, the scan-connection pool, re-rooting, the archive
-push-refresh, and its decisions — moved with the code to `crates/cmdr-smb/DETAILS.md`. What stays on this side is the
-auto-upgrade lifecycle above (it is `network/`'s, not the backend's) and the app-side half of the suites, in
-`smb_app_integration_test.rs`.
+`SmbVolume` itself — the reconnect lifecycle, the scan-connection pool, re-rooting, the archive push-refresh, and its
+decisions — is `crates/cmdr-smb/DETAILS.md`. What stays on this side is the auto-upgrade lifecycle above (it is
+`network/`'s, not the backend's). The app-side suites sit with the app code they assert on; the map is
+`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on", and what they pin is
+`file_system/write_operations/DETAILS.md` § "The SMB app-side suites".
 
 
 ## Per-backend decisions
@@ -193,43 +194,10 @@ Resolving the id instead would answer with the SUCCESSOR after a swap and mark a
 - `in_memory_test.rs`: unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
 - `local_posix_test.rs`: real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
 - `mtp/` inline tests: path conversion and capability flags (no device needed)
-- **The SMB suites are split across the crate boundary**, and which side a cell lives on is decided by what it
-  asserts, not by what it connects to: `crates/cmdr-smb/DETAILS.md` § "Which side a test lives on". The cells that stay
-  here are the ones driving THIS app — the transfer pipeline (`smb_transfer_semantics_test.rs`,
-  `smb_transfer_safety_test.rs`, `smb_full_concurrency_test.rs`, `smb_stress_test.rs`, `smb_soak_test.rs`), archive
-  routing (`smb_archive_integration_test.rs`), media enrichment (`smb_media_fetch_integration_test.rs`), and the two
-  odd ones out in `smb_app_integration_test.rs`. They connect through `cmdr_smb::volume::testing`, wrapped by
-  `smb_test_support.rs` so the volume they get is wired to the app's real `VolumeHost`.
-- **Docker SMB integration tests**: `#[ignore]` tests that require Docker SMB containers (start with
-  `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`. Connect via
-  `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()`
-  (10488), `slow_port()` (10493, 200ms latency). See `apps/desktop/test/smb-servers/README.md` for the full container
-  list and env var overrides.
-- **Full-concurrency copy** (`smb_full_concurrency_test.rs`): the automated net under the 2026-07-31 transfer wedge
-  (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). 400 local sources onto the share through
-  `copy_volumes_with_progress` at the driver's own concurrency, with sizes on BOTH SMB write paths: the large ones are
-  sized off the session's negotiated `max_write` at runtime, not hardcoded, so they always land on the staged streaming
-  writer. Beyond byte-exactness it asserts three things a content check alone would miss: the concurrency window really
-  filled (peak `TransferActivity::in_flight` off the progress events, against a floor rather than the driver's own
-  formula, so a change to it can't fail this suite for the wrong reason), a `.cmdr-tmp-*` really appeared during the
-  copy (else the
-  "no leftovers" check passes vacuously), and none survived it.
-
-  Both tests here bound their own wait and, on expiry, panic with `transfer_probe`'s LIVE in-flight table via
-  `write_operations::render_live_transfer_dump` — a `#[cfg(test)]` accessor over the probe registry. They time out on
-  the copy's `JoinHandle`, never on the copy future: timing out the future DROPS it, which drops the probe guard and
-  empties the registry before there is anything to dump. `smb_integration_a_wedged_copy_is_caught_and_names_its_phase`
-  is the test of that mechanism — it parks a copy on the pause gate and asserts the bound fires with a dump naming the
-  operation, the driver phase, the window fill, and `parked(pause)`. Without it the deadline and the dump are untested
-  scaffolding, and a suite meant to catch a hang becomes one. The wedge is staged through the pause gate rather than a
-  silenced server because what is under test is the harness at expiry, and a pause reaches that state deterministically
-  without holding the shared Docker stack hostage. `.config/nextest.toml` grants the big test a 75 s cap so its own 45 s
-  deadline stays authoritative; a cap kill would leave no diagnostic, which is the exact outcome the milestone ends.
-- **SMB soak test** (`smb_soak_copy_loop` in `smb_soak_test.rs`): Repeats the SMB→Local copy pipeline for hundreds to
-  thousands of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches accumulating bugs
-  the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown). Default mode:
-  `CMDR_SOAK_ITERATIONS=100` (≈5 s against Docker). Long mode: `CMDR_SOAK_DURATION_SECS=1800` (30 min, via
-  `./scripts/soak-smb.sh`). CI has a `workflow_dispatch`-only job in `slow-checks.yml`.
+- **No SMB or archive cell lives here.** Which side of the crate boundary one belongs on is decided by what it asserts,
+  not by what it connects to (`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on"), and the app-side ones then
+  sit beside the app code they assert on. What they pin, the Docker fixture ports, and the soak and wedge harnesses:
+  `file_system/write_operations/DETAILS.md` § "The SMB app-side suites".
 `LocalPosixVolume` routes every non-forced rename through the shared atomic-exclusive primitive. This applies equally
 to `/`, attached disks, Dropbox, iCloud, and other local POSIX roots registered with non-root volume IDs. Forced
 renames retain normal POSIX replacement semantics because the caller explicitly authorized replacement.

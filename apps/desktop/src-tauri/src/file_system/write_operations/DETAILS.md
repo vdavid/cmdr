@@ -58,7 +58,8 @@ The full top-level inventory is here:
   `start_volume_{copy,move,compress}`). `source_binding.rs` is the optional set of sources an op may touch. Fixtures:
   `test_support.rs`, plus `network_transfer_test_support.rs` and `network_gated_source_test_support.rs` (the
   backend-blind transfer scenarios the WebDAV and SFTP Docker suites both drive, and the chunk-gated source one of them
-  needs; see § "The network transfer suites").
+  needs; see § "The network transfer suites") and `smb_test_support.rs` (the app-wired fixture volume the `smb_*` Docker
+  suites share; see § "The SMB app-side suites").
 
 What the mechanisms DO is in the sections below: the registry, lanes, and `run_instant` in § "Operation manager";
 the zip-edit driver in § "Archive edits"; cancellation, pause, Stop-mode conflicts, safe overwrite, scan-preview caching,
@@ -974,6 +975,57 @@ predicate the crate never states, and a free-space pre-flight reading `NotSuppor
   one: the stream is polled again only once the destination has taken the previous chunk, so the second hand-out is what
   proves the first reached the server. That also keeps the cell inside the workspace-wide 8 s nextest cap,
   which a payload big enough to outrun a stopwatch would not.
+
+## The SMB app-side suites
+
+Every SMB cell whose other half is this app rather than the protocol lives here: `smb_transfer_semantics_test.rs`,
+`smb_transfer_safety_test.rs`, `smb_full_concurrency_test.rs`, `smb_stress_test.rs`, `smb_soak_test.rs`,
+`smb_archive_integration_test.rs` (remote-backed zips: browse, extract-out, and the pull-apply-upload-swap edit), and
+`smb_stream_write_integration_test.rs` (a `LocalPosixVolume` source streaming onto the share). They connect through
+`cmdr_smb::volume::testing`, wrapped by `smb_test_support.rs` so the volume they get carries the app's real
+`VolumeHost` and the listing cache, index, and activity tracker see what the share reports. Two cells that assert on
+other modules reach `smb_test_support` from there: `listing/smb_pane_close_watch_integration_test.rs` and
+`volume/smb_media_fetch_integration_test.rs`.
+
+- **Docker SMB integration tests**: `#[ignore]` tests that require Docker SMB containers (start with
+  `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`. Connect via
+  `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()`
+  (10488), `slow_port()` (10493, 200ms latency). See `apps/desktop/test/smb-servers/README.md` for the full container
+  list and env var overrides.
+- **❗ A cell must carry the `smb_integration_` name prefix**, the same rule the WebDAV and SFTP suites above follow:
+  the integration lane selects the app crate's Docker cells by NAME
+  (`scripts/check/checks/fixture-lane-coverage.go`, enforced by `desktop-fixture-lane-coverage`), so anything else
+  compiles, reviews clean, and runs nowhere.
+- **Full-concurrency copy** (`smb_full_concurrency_test.rs`): the automated net under the 2026-07-31 transfer wedge
+  (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). 400 local sources onto the share through
+  `copy_volumes_with_progress` at the driver's own concurrency, with sizes on BOTH SMB write paths: the large ones are
+  sized off the session's negotiated `max_write` at runtime, not hardcoded, so they always land on the staged streaming
+  writer. Beyond byte-exactness it asserts three things a content check alone would miss: the concurrency window really
+  filled (peak `TransferActivity::in_flight` off the progress events, against a floor rather than the driver's own
+  formula, so a change to it can't fail this suite for the wrong reason), a `.cmdr-tmp-*` really appeared during the
+  copy (else the "no leftovers" check passes vacuously), and none survived it.
+
+  Both tests there bound their own wait and, on expiry, panic with `transfer_probe`'s LIVE in-flight table via
+  `render_live_transfer_dump` — a `#[cfg(test)]` accessor over the probe registry. They time out on the copy's
+  `JoinHandle`, never on the copy future: timing out the future DROPS it, which drops the probe guard and empties the
+  registry before there is anything to dump. `smb_integration_a_wedged_copy_is_caught_and_names_its_phase` is the test
+  of that mechanism — it parks a copy on the pause gate and asserts the bound fires with a dump naming the operation,
+  the driver phase, the window fill, and `parked(pause)`. Without it the deadline and the dump are untested
+  scaffolding, and a suite meant to catch a hang becomes one. The wedge is staged through the pause gate rather than a
+  silenced server because what is under test is the harness at expiry, and a pause reaches that state deterministically
+  without holding the shared Docker stack hostage. `.config/nextest.toml` grants the big test a 75 s cap so its own 45 s
+  deadline stays authoritative; a cap kill would leave no diagnostic.
+- **The stress test's hung-run diagnostic gates on the log TARGET** (`MutexCaptureLogger::enabled` in
+  `smb_stress_test.rs`): `cmdr_smb::*` for the `client-mutex:` records and `smb2::*` for `recv:`. Without that gate the
+  whole process-wide trace stream flows through `log()` and gets `format!`-ed per record, which pushed
+  `smb_integration_concurrent_streaming_writes_no_deadlock` past its own deadline. ❗ The target is the EMITTING crate's
+  module path, so moving where the SMB client lives silently empties the capture rather than failing anything.
+- **SMB soak test** (`smb_soak_copy_loop` in `smb_soak_test.rs`): repeats the SMB→Local copy pipeline for hundreds to
+  thousands of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches
+  accumulating bugs the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown).
+  Default mode: `CMDR_SOAK_ITERATIONS=100` (≈5 s against Docker). Long mode: `CMDR_SOAK_DURATION_SECS=1800` (30 min,
+  via `./scripts/soak-smb.sh`). CI has a `workflow_dispatch`-only job in `slow-checks.yml`. It is deliberately outside
+  the gating lane, so it carries no `smb_integration_` prefix.
 
 ## Bulk rename's hop log
 

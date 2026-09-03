@@ -36,11 +36,11 @@ ten-step "Writing a new backend" list: `crates/cmdr-fs/src/volume/host/DETAILS.m
   `volume_wiring.rs` (registrar + `DeviceVolumeProvider`), a new `events.rs` (the tauri event payload types and the
   adapter that maps the crate's typed events onto them), and `mod.rs` as a re-export of the crate plus the app's parked
   manager instance. `commands/mtp.rs`, `stubs/mtp.rs`, `ipc.rs`, and the frontend do not change shape.
-- **No `backends/mtp.rs` shim.** Call sites import `cmdr_mtp::` directly, the way `cmdr_sftp`, `cmdr_webdav`, and
-  `cmdr_adb` are used; `backends/smb.rs` and `backends/archive.rs` are retrofit-era compatibility re-exports, not the
-  pattern to copy. App-side tests go beside the app subsystem they assert on (`write_operations/` for transfer cells,
-  `network/`-style wiring tests next to `mtp/volume_wiring.rs`, `file_system/volume/` for the oracle cell), the way
-  `sftp_transfer_integration_test.rs` and `sftp_volume_wiring_test.rs` sit today.
+- **No `backends/mtp.rs` shim.** Call sites import `cmdr_mtp::` directly, the way every other crate backend is used:
+  `backends/` holds only the impls that live in the app. App-side tests go beside the app subsystem they assert on
+  (`write_operations/` for transfer cells, `network/`-style wiring tests next to `mtp/volume_wiring.rs`,
+  `file_system/volume/` for the oracle cell), the way `sftp_transfer_integration_test.rs` and
+  `sftp_volume_wiring_test.rs` sit today.
 
 ## Decisions
 

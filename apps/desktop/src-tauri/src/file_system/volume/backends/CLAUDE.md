@@ -5,20 +5,21 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
 
 ## Module map
 
-- `local_posix.rs` and `mtp/` are implemented here; `archive.rs` and `smb.rs` are one-line re-exports of
-  `crates/cmdr-archive` and `crates/cmdr-smb`, each carrying the app-side half of its suites. `InMemoryVolume` rides
-  with the trait in `cmdr-fs`. MTP splits by concern the way both remote backends do: `volume_impl` is the whole
-  `impl Volume`, with `streams`, `mapping`, and `scan` beside it (SMB carries the pattern further; see
-  `crates/cmdr-smb/CLAUDE.md`).
-- The Android-over-ADB backend is `crates/cmdr-adb/` (its `CLAUDE.md` has the must-knows); the app-side tracker,
-  provider, and connect wiring live in `src-tauri/src/adb/`, not here.
-
-## SMB is a crate now
-
-`crates/cmdr-smb/` holds the backend; `smb.rs` here is a re-export of it plus the app-side half of its suites. The
-must-knows moved with it: `crates/cmdr-smb/CLAUDE.md`. What's still this side is the auto-upgrade lifecycle
-(`DETAILS.md` § "SMB auto-upgrade lifecycle", which is `network/`'s) and the cells that drive this app's transfer
-pipeline, registry, listing cache, or media enrichment.
+- **Only the backends that live IN the app are here**: `local_posix.rs` and `mtp/`, with their own tests.
+  `InMemoryVolume` rides with the trait in `cmdr-fs`. MTP splits by concern the way the remote backends do:
+  `volume_impl` is the whole `impl Volume`, with `streams`, `mapping`, and `scan` beside it (SMB carries the pattern
+  further; see `crates/cmdr-smb/CLAUDE.md`).
+- **Every other backend is a crate**, imported by crate name at its call sites, never re-exported through here:
+  `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, and `cmdr-adb`. ❌ Don't add a `pub use <crate>::*;` module
+  here to spare a call site the crate name: it puts the backend back in a directory it doesn't live in, and it becomes
+  the place app-side tests drift to.
+- **A crate backend's app-side tests live beside the app code they assert on**, not here. SMB's are in
+  `file_system/write_operations/` (transfers, remote archives, the shared `smb_test_support.rs`),
+  `file_system/listing/` (the pane-close watcher cell), and `file_system/volume/` (index scan, media fetch); the archive
+  watch cell is in `file_system/listing/`. Which side a cell belongs on: `crates/cmdr-smb/DETAILS.md` § "Which side a
+  test lives on".
+- The app-side tracker, provider, and connect wiring for ADB and MTP live in `src-tauri/src/adb/` and
+  `src-tauri/src/mtp/`, not here.
 
 ## Local and MTP must-knows
 

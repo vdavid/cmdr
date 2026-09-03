@@ -23,7 +23,7 @@ in-memory test fixture. Callers never touch the filesystem directly; they call `
 - **`manager.rs`** (+ `manager/roots.rs`): `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default
   volume. Also holds the process-wide instance and its `get_volume_manager()` accessor. `roots.rs` holds the mount-root
   set each entry owns and the promotion rules over it
-- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume`, `MtpVolume`), re-exports of the crate backends, and the app-side halves of their suites. See `backends/CLAUDE.md`.
+- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume`, `MtpVolume`) and their tests, and nothing else. Every crate backend is imported by crate name at its call sites. See `backends/CLAUDE.md`.
 - **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
 ## Architecture
@@ -56,9 +56,7 @@ the crate boundary is what makes that a compile error rather than a habit.
    registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
    `network/webdav_volume_wiring.rs`, `adb/`, `mtp/volume_wiring.rs`) mints the volume, hands it the app's `VolumeHost`
    (`src-tauri/src/volume_host.rs`), and inserts it. Device backends also register a `DeviceVolumeProvider`
-   (`device_volumes.rs`) so the volume list and eject can fold over them. The app-side halves of the extracted crates'
-   test suites sit in `backends/` too (`smb_*_test.rs`), which is why that directory looks bigger than the two impls it
-   holds.
+   (`device_volumes.rs`) so the volume list and eject can fold over them.
 4. **The registry: `VolumeManager`** (`manager.rs`). Volume id → `Arc<dyn Volume>`, plus the mount-root set per entry,
    archive routing in `resolve`, retirement on removal, and the arrival subscription.
 5. **The consumers.** `write_operations/` (copy, move, delete, the cross-volume engine), `listing/` (panes and the
@@ -578,9 +576,13 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 - `inmemory_test.rs`: integration tests combining `InMemoryVolume` + `VolumeManager`, streaming state, sort helpers
 - `manager.rs` inline tests: concurrent registration/read/write-mix scenarios
 - `mtp_scan_oracle_tests.rs`, `smb_scan_oracle_tests.rs`: oracle-aware batch-scan integration tests for MTP and SMB
+- `smb_index_scan_test.rs`, `smb_media_fetch_integration_test.rs`: the two Docker-gated cells where `cmdr-index` meets a
+  real `cmdr-smb` session (the BFS scanner, and media enrichment's byte fetcher). They live app-side because only this
+  side can build both halves; the fixtures come from `write_operations::smb_test_support`
 
-Per-backend tests live colocated with their backend in `backends/`. See `backends/DETAILS.md` §
-"Testing".
+`LocalPosixVolume`'s and `MtpVolume`'s own tests are colocated in `backends/` (`backends/DETAILS.md` § "Testing"). A
+crate backend's app-side cells sit beside the app code they assert on, not here or there:
+`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
 
 ### Test isolation for the global `VolumeManager`
 
