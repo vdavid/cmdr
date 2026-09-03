@@ -10,6 +10,16 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-03 `mtp-crate-extraction.md` - **MTP is the last backend that still reaches sideways into the app.** Its
+      session layer holds a `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache and the
+      index directly, and gates real behavior on nine inline `cfg(test)`s, so the backend on the flakiest hardware is
+      the one with no scoped verification loop. Ten decisions taken; the load-bearing one is that a backend has two
+      faces: the `Volume` trait already is the file-ops face and moves untouched, so the whole job is retrofitting the
+      lifecycle face onto the host seams IN PLACE (M1, M2) before a near-mechanical move (M3), then a test split by what
+      each cell asserts (M4). The manager becomes a value the app parks; device events become a crate-local typed trait;
+      two `ListingHost` and two `IndexNotifier` additions; `UsbSpeed` moves to `cmdr-fs`. Gates: `bindings.ts` zero-diff
+      after every in-place milestone, `cargo check -p cmdr-mtp --all-targets` with no app, the E2E MTP shard, a real
+      phone. Two to three days.
 - [ ] 2026-09-03 `agent-search-tool.md` - **Ask Cmdr has 18 tools and none of them searches.** Asked to find penguin
       pictures, the agent invented `name` / `nameMatch` arguments onto `list_dir`, the deserializer dropped them, and it
       reported "nothing matched" four times: confident fabricated negatives on a question the index answers instantly. A
