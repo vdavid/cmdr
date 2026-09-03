@@ -2029,3 +2029,11 @@ carril del chat.
   Ask Cmdr propone cambios de nombre y movimientos y escribe sus notas, así que la garantía nueva es
   `nunca cambia un archivo sin tu aprobación`, con `aprobación` del par `Aprobar` / `hasta que tú lo apruebas` ya
   asentado · high.
+
+## Los dos textos de ayuda del botón Rollback (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Superficie nueva: el texto de ayuda del botón dice ahora qué hace ESTA reversión con los archivos, y el botón se apaga en cuanto un movimiento entre dos sistemas de archivos llega a su último paso (eliminar los originales, con todo ya en el destino).
+
+- **`rollbackTooltipStopAndMoveBack` → `Detener y devolver a su sitio todos los archivos movidos hasta ahora`** · el hermano `rollbackTooltip` da el marco (`Detener y …`), y `devolver a su sitio` es la forma ya asentada para el regreso al lugar de origen (`cancelRollback.doneMovingBack`, «Se devolvió el elemento a su sitio») · `high`. ❌ No `eliminar`: revertir un movimiento no elimina nada.
+- **`rollbackAlreadyLandedTooltip`** · la primera oración retoma la imagen de `cancelRollback.moveAlreadyLanded` («ya está en el destino»), `reversión` es el término asentado para el rollback (`rollbackUnavailableTooltip`), y `Cancelar` es la etiqueta del botón vecino (`fileOperations.button.cancel`), así que entra tal cual · `high`.
+- Sin `sameAsSourceJustification`; ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`).

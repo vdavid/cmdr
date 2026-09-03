@@ -2416,3 +2416,11 @@ Notes de rédaction :
   `contentsRule`, « tant que vous ne l'avez pas approuvé »). ❌ Plus de `en lecture seule` ni de `ne change jamais rien`
   : Ask Cmdr écrit ses notes et propose des renommages, la promesse porte sur l'accord de la personne, pas sur l'absence
   d'écriture.
+
+## Les deux info-bulles du bouton Rollback (2026-09-04 ; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Nouvelle surface : l'info-bulle dit maintenant ce que CE retour en arrière fait aux fichiers, et le bouton est désactivé dès qu'un déplacement entre deux systèmes de fichiers atteint sa dernière étape (la suppression des originaux, alors que tout est déjà arrivé à destination).
+
+- **`rollbackTooltipStopAndMoveBack` → `Arrêter et remettre en place tous les fichiers déplacés jusqu'à présent`** · même cadre que le frère `rollbackTooltip` (`Arrêter et …`), et `remettre en place` est le verbe déjà retenu pour le retour à l'emplacement d'origine (`cancelRollback.doneMovingBack`, « a tout remis en place ») · `high`. ❌ Pas `supprimer` : annuler un déplacement ne supprime rien.
+- **`rollbackAlreadyLandedTooltip`** · la première proposition reprend l'image de `cancelRollback.moveAlreadyLanded` (« est déjà arrivé à destination »), `retour en arrière` est le terme retenu pour le rollback (`rollbackUnavailableTooltip`), et `Annuler` est l'étiquette du bouton voisin (`fileOperations.button.cancel`), donc elle passe telle quelle · `high`.
+- Pas de `sameAsSourceJustification`. Les apostrophes des valeurs sont doublées pour ICU (`jusqu''à`, `n''est`, `qu''il`).

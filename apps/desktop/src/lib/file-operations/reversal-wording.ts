@@ -12,7 +12,7 @@
  * placeholders.
  */
 
-import type { OpKind } from '$lib/ipc/bindings'
+import type { OpKind, WriteOperationPhase } from '$lib/ipc/bindings'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
 /**
@@ -86,6 +86,53 @@ export function inFlightRollbackVariant(kind: OpKind): RollbackConfirmVariant {
     case 'delete':
     case 'rename':
       return 'stopAndDelete'
+  }
+}
+
+/**
+ * Whether pressing Rollback RIGHT NOW could still reverse anything, which the
+ * operation's `supportsRollback` can't answer on its own: that flag is a property of
+ * the STRATEGY, decided once at spawn, and this is the other half of the question.
+ *
+ * One case needs it, and it's the last stage of a move between filesystems. That move
+ * copies into a staging folder, renames the tree into its final place, and only then
+ * removes the originals — and the engine commits its transaction before that last
+ * stage begins, so a Rollback pressed during the source sweep carries nothing home.
+ * It stops the sweep, exactly like the Cancel beside it: the moved files stay at the
+ * destination and the originals the sweep hasn't reached stay where they are, which
+ * is what `fileOperations.cancelRollback.moveAlreadyLanded` reports afterwards. So
+ * every surface that offers Rollback asks this too, or it offers a journey home the
+ * engine can no longer make.
+ *
+ * The `deleting` phase is the signal because it IS the sweep (`cross_fs.rs`'s
+ * `delete_sources_after_move` opens it with an unthrottled 0-of-total tick, the same
+ * one that retitles the dialog "Removing the originals…"). Only for a move: a delete
+ * wears the phase too, and a copy's reversal deletes what it wrote whatever phase it
+ * is in.
+ */
+export function reversalWindowClosed(kind: OpKind, phase: WriteOperationPhase | null): boolean {
+  return kind === 'move' && phase === 'deleting'
+}
+
+/**
+ * The tooltip on a LIVE Rollback button, which exists to say how this click differs
+ * from the plain Cancel beside it — so it has to name what the reversal does to the
+ * files, the same split the confirmation two clicks later makes: a copy's undo
+ * deletes what it wrote, a move's carries it back.
+ *
+ * The three `undo*` variants can't reach here (this is the button on a RUNNING
+ * transfer), and they map to the sibling that shares their direction so a new variant
+ * is a compile error rather than a copy's wording over a move.
+ */
+export function inFlightRollbackTooltipKey(variant: RollbackConfirmVariant): MessageKey {
+  switch (variant) {
+    case 'stopAndMoveBack':
+    case 'undoByMovingBack':
+      return 'fileOperations.transferProgress.rollbackTooltipStopAndMoveBack'
+    case 'stopAndDelete':
+    case 'undoByDeleting':
+    case 'undoByRenamingBack':
+      return 'fileOperations.transferProgress.rollbackTooltip'
   }
 }
 

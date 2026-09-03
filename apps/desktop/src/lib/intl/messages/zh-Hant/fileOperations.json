@@ -603,6 +603,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "停止，並把目前為止移動過的每一個檔案放回原處",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "所有檔案都已經在目標位置了，這次移動沒辦法再復原。不過「取消」還是能在 Cmdr 移除其餘原檔案之前把它停下來。",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "已暫停",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"

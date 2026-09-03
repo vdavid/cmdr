@@ -235,6 +235,13 @@ describe('transfer progress dialog chrome (en)', () => {
     expect(tString('fileOperations.transferProgress.rollbackTooltip')).toBe(
       'Stop, and delete every file written so far',
     )
+    // Its move sibling: the same button, and the opposite promise about the files.
+    expect(tString('fileOperations.transferProgress.rollbackTooltipStopAndMoveBack')).toBe(
+      'Stop, and move back every file moved so far',
+    )
+    expect(tString('fileOperations.transferProgress.rollbackAlreadyLandedTooltip')).toBe(
+      "Every file is already at the destination, so Cmdr can't undo the move now. Cancel still stops it from removing the rest of the originals.",
+    )
     expect(tString('fileOperations.transferProgress.smallerDisabledTooltip')).toBe(
       "Can't compare: target folder size is unknown.",
     )

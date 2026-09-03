@@ -605,6 +605,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Leállítás, és minden eddig áthelyezett fájl visszahelyezése",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Minden fájl már a célhelyen van, így az áthelyezés visszagörgetése már nem lehetséges. A Mégsem viszont még leállítja a Cmdrt, mielőtt eltávolítja a többi eredetit.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Szüneteltetve",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"

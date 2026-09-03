@@ -606,6 +606,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Parar e levar de volta todos os arquivos movidos até agora",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Todos os arquivos já estão no destino, então a reversão da movimentação não é mais possível. Cancelar ainda faz o Cmdr parar antes de apagar o resto dos originais.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Pausado",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"

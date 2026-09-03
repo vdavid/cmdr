@@ -13,7 +13,13 @@
     import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor } from '../transfer/transfer-stall'
     import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
-    import { inFlightRollbackVariant, rollbackConfirmVariant, reversalLabelKey } from '../reversal-wording'
+    import {
+        inFlightRollbackTooltipKey,
+        inFlightRollbackVariant,
+        reversalWindowClosed,
+        rollbackConfirmVariant,
+        reversalLabelKey,
+    } from '../reversal-wording'
     import { opKindForWireType } from '../op-kind'
     import { progressCountKind } from '../progress-readout'
     import { requestForegroundOperation } from '$lib/tauri-commands'
@@ -97,10 +103,16 @@
 
     /** Rollback is offered on exactly the operations the backend can reverse
      *  (`supportsRollback`), and only while there's still something running to
-     *  reverse. A scanning operation has written nothing, so it has nothing to
-     *  put back. Same affordance the progress dialog shows, same wording. */
+     *  reverse. A scanning operation has written nothing, so it has nothing to put
+     *  back; a move removing its originals has already landed everything, so
+     *  nothing can come back (`../reversal-wording.ts`). Same verdict the progress
+     *  dialog reaches, same wording. */
     const canRollback = $derived(
-        snapshot.supportsRollback && (isRunning || isPaused) && !isRollingBack && !isScanning,
+        snapshot.supportsRollback &&
+            (isRunning || isPaused) &&
+            !isRollingBack &&
+            !isScanning &&
+            !reversalWindowClosed(opKindForWireType(snapshot.operationType), progress?.phase ?? null),
     )
 
     /** Show hands this operation back to the main window's progress dialog, the
@@ -327,20 +339,19 @@
             <!-- Danger, like the progress dialog's: the same click stops the same
                  operation, so it can't read as gentler here. What that click DOES
                  to the files is the confirmation's job to say. -->
-            <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
-                <Button
-                    variant="danger"
-                    size="mini"
-                    onclick={() => {
-                        rollbackAsked = true
-                    }}
-                >
-                    <span class="btn-inner">
-                        <Icon name="rotate-ccw" size={13} />
-                        {tString('fileOperations.transferProgress.conflictRollback')}
-                    </span>
-                </Button>
-            </span>
+            <Button
+                variant="danger"
+                size="mini"
+                tooltipContent={tString(inFlightRollbackTooltipKey(inFlightVariant))}
+                onclick={() => {
+                    rollbackAsked = true
+                }}
+            >
+                <span class="btn-inner">
+                    <Icon name="rotate-ccw" size={13} />
+                    {tString('fileOperations.transferProgress.conflictRollback')}
+                </span>
+            </Button>
         {/if}
         <!-- Gated on `canRollback` as well, so an operation that finishes while
              the question is up takes the question with it: there is nothing

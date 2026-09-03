@@ -606,6 +606,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Stop en zet elk bestand terug dat tot nu toe is verplaatst",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Alle bestanden staan al op de bestemming, dus terugdraaien kan nu niet meer. Met Annuleer stopt Cmdr nog wel voordat het de rest van de originelen verwijdert.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Gepauzeerd",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"

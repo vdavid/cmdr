@@ -607,6 +607,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Stoppen und alle bisher bewegten Dateien zurücklegen",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Alle Dateien sind schon am Ziel, also lässt sich die Bewegung jetzt nicht mehr zurücknehmen. Mit Abbrechen stoppt Cmdr aber noch, bevor es die restlichen Originale entfernt.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Angehalten",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"

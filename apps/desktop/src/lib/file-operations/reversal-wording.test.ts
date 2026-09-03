@@ -19,6 +19,8 @@ import {
   inFlightRollbackVariant,
   reversalLabelKey,
   reversalTitleKey,
+  reversalWindowClosed,
+  inFlightRollbackTooltipKey,
 } from './reversal-wording'
 
 /** The three variants that describe undoing a FINISHED operation, which is what
@@ -186,5 +188,45 @@ describe('the running bar agrees with the question that raised it', () => {
       tString(reversalLabelKey(v)),
     )
     expect(new Set(labels).size).toBe(3)
+  })
+})
+
+describe('reversalWindowClosed', () => {
+  it('closes once a move is removing the originals: everything has landed and nothing can call it back', () => {
+    expect(reversalWindowClosed('move', 'deleting')).toBe(true)
+  })
+
+  it.each(['scanning', 'copying', 'flushing', 'rolling_back', null] as const)(
+    'stays open for a move in %s, where the engine can still carry the files home',
+    (phase) => {
+      expect(reversalWindowClosed('move', phase)).toBe(false)
+    },
+  )
+
+  it('is about the MOVE, not the phase name: a copy in a deleting phase still reverses what it wrote', () => {
+    // A delete / trash reports `supportsRollback: false`, so the button never
+    // reaches this question. The arms matter because a COPY must not be caught by
+    // it: undoing a copy deletes the copies, whatever phase it is in.
+    expect(reversalWindowClosed('copy', 'deleting')).toBe(false)
+    expect(reversalWindowClosed('delete', 'deleting')).toBe(false)
+    expect(reversalWindowClosed('trash', 'deleting')).toBe(false)
+  })
+})
+
+describe('inFlightRollbackTooltipKey', () => {
+  it('tells a move the files travel back, and never words it as a delete', () => {
+    const tip = tString(inFlightRollbackTooltipKey('stopAndMoveBack')).toLowerCase()
+    expect(tip).toContain('move back')
+    expect(tip).not.toContain('delete')
+  })
+
+  it('keeps the delete wording for a copy, which really does remove what it wrote', () => {
+    expect(tString(inFlightRollbackTooltipKey('stopAndDelete')).toLowerCase()).toContain('delete')
+  })
+
+  it('gives the two their own sentence, so the button beside Cancel says what THIS click does', () => {
+    expect(tString(inFlightRollbackTooltipKey('stopAndMoveBack'))).not.toBe(
+      tString(inFlightRollbackTooltipKey('stopAndDelete')),
+    )
   })
 })
