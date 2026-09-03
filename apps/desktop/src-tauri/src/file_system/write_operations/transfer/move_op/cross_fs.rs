@@ -529,8 +529,9 @@ fn delete_sources_after_move(
                 // a filesystem boundary. What the report CAN say is where the
                 // user's files are — the whole copy landed and was flushed
                 // before this phase began, and these originals are still in
-                // their old place. Saying only `none()` left the readout silent
-                // while up to every original the sweep had reached was gone.
+                // their old place. ❌ Never emit a bare `none()` here: the
+                // readout renders that as SILENCE, and every original the sweep
+                // already reached is gone for good.
                 rollback: CancelRollback::none()
                     .with_originals_still_in_place((sources_total - sources_done + originals_spared) as u32),
             });
