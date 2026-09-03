@@ -25,6 +25,10 @@ stores.
   closed, one message for missing-vs-wrong, ❌ never echo the token.
 - **Params are camelCase, tool names snake_case.** Agents pattern-match across tools, so an inconsistency is a
   guessed-wrong call.
+- **A call is checked against its own declared schema before a handler sees it** (`tool_registry/params.rs`, run by
+  `execute_tool` and by the agent view). Handlers pluck fields off the raw `Value`, so an undeclared key used to vanish
+  and the call ran as something nobody asked for. ❌ Never author an AGENT tool without `additionalProperties: false`
+  (a test pins it); an ai-client schema may stay open. DETAILS § The schema gate.
 - **Action tools wait for a typed ack before returning `OK`.** `OK` means the FE accepted the action, not that it
   finished; poll `await` for that.
 - **Whatever a user can reach, an agent must be able to reach, answer, and OBSERVE.** A state only a hand can drive is

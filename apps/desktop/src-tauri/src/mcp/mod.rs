@@ -38,4 +38,4 @@ pub use server::{
     McpServerOutcome, get_mcp_actual_port, is_mcp_running, rebind_interactive, start_mcp_server_background,
     stop_mcp_server, stop_mcp_server_and_wait,
 };
-pub(crate) use tool_registry::{Access, Consumer, agent_tool_view, execute_tool, tool_access};
+pub(crate) use tool_registry::{Access, Consumer, agent_tool_view, execute_tool, tool_access, validate_params};

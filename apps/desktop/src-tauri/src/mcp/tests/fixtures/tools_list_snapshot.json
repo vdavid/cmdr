@@ -1091,6 +1091,7 @@
     {
       "description": "List past operations (copy, move, delete, trash, rename, create, compress), newest first; filter by time, item name, kind, initiator, status; paged. In-flight ops: cmdr://state operations and the queue tool.",
       "inputSchema": {
+        "additionalProperties": false,
         "properties": {
           "executionStatus": {
             "enum": [
@@ -1170,6 +1171,7 @@
     {
       "description": "One operation's header plus a page of its item rows (source/dest paths, per-item outcome). Poll it to watch a rollback settle (rollbackState leaves 'rollingBack').",
       "inputSchema": {
+        "additionalProperties": false,
         "properties": {
           "limit": {
             "description": "Default 200, max 1000; a page may come back shorter, with returned, total, and truncated; use offset for the rest.",

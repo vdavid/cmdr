@@ -55,6 +55,34 @@ grouped by category) and the entries call them (`schema: schemas::copy_schema()`
 `mod.rs` holds the macro, the `Consumer` / `Access` dimensions, the authored table, and the generated accessors. The
 split changed no wire bytes — the snapshot passes unmodified.
 
+### The schema gate (`tool_registry/params.rs`)
+
+`validate_params(name, params)` checks a call against the tool's OWN declared schema before a handler reads a field off
+it, at both dispatch entries: `execute_tool` for everything routed through the registry, and `agent/tools/view.rs`
+ahead of its branch, because `propose_rename_plan` and `propose_suggestions` need the thread's scope and never reach
+`execute_tool`. Both run for an agent call; one small object checked twice costs nothing against a provider round trip,
+and neither path has to know what the other does.
+
+It reads ONE level of ONE object schema and answers two questions: is every `required` property present, and (only when
+the schema closed itself with `additionalProperties: false`) does every property present appear in `properties`. The
+refusal names each offender AND lists what the tool accepts, so one turn is enough to self-correct, and carries the
+same facts typed on the error's `data` member.
+
+**Why it exists.** Handlers pluck fields off the raw `Value` (`params.get("path")`), and providers don't enforce
+schemas. A model called `list_dir` with `name: "penguin"` and `nameMatch: "prefix"`; both keys vanished, an ordinary
+listing came back, and the agent told the user four times over that it had searched and found nothing. Fabricating a
+zero is what `../agent/tools/CLAUDE.md`'s honesty contract exists to prevent.
+
+**Why it stops there.** Types and enums stay unchecked: a wrong type already gets an honest, specific refusal from the
+handler that reads the field, so nothing was silent there. Nesting stays unchecked: `propose_rename_plan` and
+`propose_suggestions` deserialize their rows into serde structs carrying `deny_unknown_fields`, which refuses an
+unknown field and names it. What those structs can't do is name the ROW, which is why `check_object` is public and the
+rename boundary points it at one row at a time (`../agent/tools/propose/DETAILS.md`).
+
+A schema that never declared `additionalProperties` stays open exactly as it was, so closing one is what opts a tool
+in. Every AGENT tool closes its schema, pinned by `every_agent_tool_closes_its_schema`: nobody reads an agent call
+before it runs, and its answer reaches a person as a fact. An ai-client schema may stay open, and several do.
+
 ### Consumer and access views
 
 One authored registry serves two consumers (agent-spec D49: **extend the consolidated registry, don't fork a parallel

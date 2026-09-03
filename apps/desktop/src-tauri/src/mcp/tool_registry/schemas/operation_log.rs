@@ -48,7 +48,8 @@ pub fn operations_list_schema() -> Value {
                 "description": "Operations to skip."
             }
         },
-        "required": []
+        "required": [],
+        "additionalProperties": false
     })
 }
 
@@ -69,7 +70,8 @@ pub fn operations_get_schema() -> Value {
                 "description": "Item rows to skip."
             }
         },
-        "required": ["operationId"]
+        "required": ["operationId"],
+        "additionalProperties": false
     })
 }
 

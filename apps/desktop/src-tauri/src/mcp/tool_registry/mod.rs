@@ -39,6 +39,7 @@
 //! on this module. It must not depend on `server` or `auth` (that would cycle).
 
 mod gate;
+pub mod params;
 mod schemas;
 
 pub use gate::TokenGate;
@@ -106,6 +107,20 @@ pub enum Access {
 /// decision is on the typed [`Consumer`] set, never a string.
 pub fn tool_available_to(name: &str, consumer: Consumer) -> bool {
     tool_consumers(name).is_some_and(|cs| cs.contains(&consumer))
+}
+
+/// Refuse a params object its tool's own declared schema doesn't allow, before a handler
+/// reads a single field off it.
+///
+/// Handlers pluck fields off the raw value, so without this an undeclared property is
+/// swallowed in silence and the call runs as something the caller never asked for. What the
+/// check does and (just as deliberately) doesn't look at: [`params`]. An unknown name passes
+/// through untouched — the dispatch paths refuse it on their own, with their own wording.
+pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
+    match tool_schema(name) {
+        Some(schema) => params::gate(name, &schema, params),
+        None => Ok(()),
+    }
 }
 
 /// Declarative tool table → the consumers (`get_all_tools`, `agent_tool_view`, `execute_tool`,
@@ -189,6 +204,16 @@ macro_rules! mcp_tools {
             }
         }
 
+        /// The input schema a tool declares, or `None` for an unknown name. The same value
+        /// both views publish, so [`validate_params`] gates a call against exactly what the
+        /// caller was told the tool takes.
+        pub fn tool_schema(name: &str) -> Option<Value> {
+            match name {
+                $( $name => Some($schema), )*
+                _ => None,
+            }
+        }
+
         /// The `tools/call` dispatch, gated to `consumer`'s view. A name outside that view (an
         /// agent-only name over MCP, an `ai_client`-only name through the agent runtime, or an
         /// unknown name) is refused before dispatch with the same `INVALID_PARAMS` "Unknown tool"
@@ -203,6 +228,7 @@ macro_rules! mcp_tools {
             if !tool_available_to(name, consumer) {
                 return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
             }
+            validate_params(name, params)?;
             match name {
                 $( $name => mcp_tools!(@call $shape $path, $name, app, params), )*
                 _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),

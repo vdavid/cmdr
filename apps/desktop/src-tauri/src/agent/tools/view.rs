@@ -23,7 +23,7 @@ use tauri::{AppHandle, Runtime};
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
 use crate::agent::tools::propose::evidence::EvidenceScope;
 use crate::agent::tools::propose::rename::{RenameDispatchOutcome, RenameProposalSnapshot};
-use crate::mcp::{Access, Consumer, execute_tool, tool_access};
+use crate::mcp::{Access, Consumer, execute_tool, tool_access, validate_params};
 
 /// The access axis of the gate: whether a registry access class may dispatch through the
 /// agent's view. [`Access::Read`], [`Access::Propose`], and [`Access::Memory`] may,
@@ -72,6 +72,21 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, call
     if let Some(refusal) = refuse_unavailable(&call.call_id, &call.tool) {
         return DispatchOutcome {
             result: refusal,
+            proposal: None,
+        };
+    }
+    // The schema gate, ahead of the branch so it covers every agent call. `execute_tool`
+    // runs it too, for its own callers; the two thread-scoped propose tools below never
+    // reach `execute_tool`, and a model guesses an argument at them as readily as at a
+    // read tool. Checking one small object twice costs nothing next to a provider round
+    // trip, and neither dispatch path has to know what the other does.
+    if let Err(problem) = validate_params(call.tool.as_wire_name(), &call.arguments) {
+        return DispatchOutcome {
+            result: AgentToolResult {
+                call_id: call.call_id.clone(),
+                content: json!({ "problem": problem.message }),
+                elided: false,
+            },
             proposal: None,
         };
     }
