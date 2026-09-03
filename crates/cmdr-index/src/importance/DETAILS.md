@@ -66,8 +66,8 @@ down the whole subtree. Both spellings of each are listed because macOS firmlink
 `/private/var`, and the index stores whichever the walk produced. Matching is guarded exactly like `is_at_or_under`, so
 `/var/tmpfoo` is not `/var/tmp`.
 
-This deliberately reuses the existing floor rather than adding a parallel concept: one mechanism, and everything a
-temp root holds floors with it.
+This deliberately reuses the existing floor rather than adding a parallel concept: one mechanism, and everything a temp
+root holds floors with it.
 
 **Why (2026-09-03, read out of the live `importance-root.db`):** `/private/tmp` was stored at `score=0.898` with
 `pathClass=projectRoot`. Claude Code writes background task output under `/private/tmp/claude-501/...`, so the agent's
@@ -77,10 +77,10 @@ five-second cadence: about 120 model calls an hour, 374,127 Qwen tokens in seven
 ### A project marker doesn't promote `$HOME` or a volume root
 
 `path_class_with_marker(path, home, has_marker)` is the ONE place the marker promotion happens, and it declines in three
-cases: at `$HOME` itself (a `.git` or `Makefile` there means dotfiles; `$HOME` was stored at `score=0.954,
-pathClass=projectRoot` on the same date), at a volume root (`is_volume_root`: `/`, or one component under a
-`MOUNT_PREFIXES` entry), and on a `SystemOrCache` path (machine scratch stays machine scratch, and it floors anyway, so
-the promotion only wrote a misleading `projectRoot` into the stored signals).
+cases: at `$HOME` itself (a `.git` or `Makefile` there means dotfiles; `$HOME` was stored at
+`score=0.954, pathClass=projectRoot` on the same date), at a volume root (`is_volume_root`: `/`, or one component under
+a `MOUNT_PREFIXES` entry), and on a `SystemOrCache` path (machine scratch stays machine scratch, and it floors anyway,
+so the promotion only wrote a misleading `projectRoot` into the stored signals).
 
 ❌ **`$HOME` must NOT floor.** Flooring it propagates through `under_floored_ancestor` to every folder in the home
 directory and switches the whole feature off. The exemption only drops the promotion; `$HOME` still scores on its

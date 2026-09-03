@@ -105,14 +105,14 @@ the write-path-bound probe recreates and reports "needs a full pass").
 generation bump; a mismatch (or an absent stamp) makes `needs_full_pass` answer yes.
 
 **Why it exists.** Nothing else ever revisits a scored volume's rows: a full pass runs once, and an incremental only
-touches folders the filesystem changed. So a classification fix ships and stays inert over everything already stored.
-On 2026-09-03 the local `root` volume held 188,760 such rows, among them `/private/tmp` at `score=0.898,
-pathClass=projectRoot` and `$HOME` at `score=0.954`, the two scores that had the agent's wake firing continuously. The
-stamp is what makes a fix like that reach them.
+touches folders the filesystem changed. So a classification fix ships and stays inert over everything already stored. On
+2026-09-03 the local `root` volume held 188,760 such rows, among them `/private/tmp` at
+`score=0.898, pathClass=projectRoot` and `$HOME` at `score=0.954`, the two scores that had the agent's wake firing
+continuously. The stamp is what makes a fix like that reach them.
 
 **Why a stamp rather than a `SCHEMA_VERSION` bump**, which would also force a rescore: the bump deletes the DB file, and
-`visits` is the one table here that isn't regenerable. Navigation history is real user data, so a scoring change
-re-arms the weights and leaves it alone (`re_arming_the_scoring_policy_keeps_the_visit_history` pins that).
+`visits` is the one table here that isn't regenerable. Navigation history is real user data, so a scoring change re-arms
+the weights and leaves it alone (`re_arming_the_scoring_policy_keeps_the_visit_history` pins that).
 
 ❌ **Stamp it in `apply_full_pass` and nowhere else.** A full pass is the one moment the table provably holds nothing
 but rows this build's classifiers produced. An incremental can't vouch for the rows it didn't touch, so stamping there

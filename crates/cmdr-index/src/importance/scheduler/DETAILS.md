@@ -50,14 +50,13 @@ happens LAZILY, only inside `ImportanceStore::open` on a WRITE-path open (`open_
 recreates. So on a schema-upgrade launch, the DB is still on the OLD schema at sweep time WITH its old stamped
 generation. A naive sweep-time generation READ would read that non-zero generation, decide "already scored", skip the
 full pass — and THEN the recreate fires on the first incremental write, wiping the generation and leaving the volume
-stuck at "never scored" forever. `store::needs_full_pass` avoids this by opening the store on the WRITE path
-FIRST (forcing the recreate), then reading the generation, so the decision reflects the current schema. ❌ Never probe
-the generation via the read path before the write-path open.
+stuck at "never scored" forever. `store::needs_full_pass` avoids this by opening the store on the WRITE path FIRST
+(forcing the recreate), then reading the generation, so the decision reflects the current schema. ❌ Never probe the
+generation via the read path before the write-path open.
 
-`should_enqueue_full_pass` is the combined kind + store-state decision, extracted so it's testable without
-spawning a recompute (which needs a read pool). The probe itself is a DB open, so it runs on a blocking task, and when a
-pass is due it hands off to the normal coordinated `spawn_recompute`, so a concurrent `ScanCompleted` coalesces
-correctly.
+`should_enqueue_full_pass` is the combined kind + store-state decision, extracted so it's testable without spawning a
+recompute (which needs a read pool). The probe itself is a DB open, so it runs on a blocking task, and when a pass is
+due it hands off to the normal coordinated `spawn_recompute`, so a concurrent `ScanCompleted` coalesces correctly.
 
 ## The walk is O(dirs) in a small constant (`walk.rs`)
 
