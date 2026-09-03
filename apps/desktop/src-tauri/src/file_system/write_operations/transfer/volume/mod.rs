@@ -98,6 +98,8 @@ mod self_collision_tests;
 mod rename_merge_test_support;
 
 #[cfg(test)]
+mod preflight_stop_tests;
+#[cfg(test)]
 mod rename_merge_cancel_tests;
 #[cfg(test)]
 mod rename_merge_case_fold_tests;

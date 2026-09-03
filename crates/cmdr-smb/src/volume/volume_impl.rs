@@ -15,7 +15,7 @@ use super::{SmbVolume, foreground_yield};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::SmbConnectionState;
 use cmdr_fs::volume::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanBoundary, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
     VolumeError, VolumeReadStream, WatchCoverage,
 };
 use cmdr_fs::volume::{ListingProgress, Retirement};
@@ -302,13 +302,15 @@ impl Volume for SmbVolume {
 
     /// The scan preview's entry point. Reporting as the walk goes is what keeps
     /// the dialog's counters climbing on a folder-sized SMB scan, and what tells
-    /// the scan watchdog this share is still answering.
-    fn scan_for_copy_batch_with_progress<'a>(
+    /// the scan watchdog this share is still answering; the same boundary is
+    /// what lets a person cancel a walk over a share that has spun its disks
+    /// down, which used to run to the end whatever they pressed.
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.scan_for_copy_batch_impl(paths, on_progress)
+        self.scan_for_copy_batch_impl(paths, boundary)
     }
 
     fn scan_for_conflicts<'a>(

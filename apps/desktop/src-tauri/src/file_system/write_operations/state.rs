@@ -281,6 +281,13 @@ impl WriteOperationState {
         is_cancelled(&self.intent)
     }
 
+    /// The cheap half of the boundary: `true` when there is anything to ask
+    /// about. Two atomic loads, which is what lets a copy SCAN put the boundary
+    /// on its per-entry path (`cmdr_fs::volume::ScanStopSignal`).
+    pub fn is_stopping_or_paused(&self) -> bool {
+        is_cancelled(&self.intent) || self.pause_gate.is_paused()
+    }
+
     /// A handle to this operation's [`liveness`](Self::liveness), for tagging
     /// the scratch files it stages.
     pub fn liveness_token(&self) -> Option<std::sync::Weak<()>> {
@@ -499,6 +506,29 @@ impl WriteOperationState {
     pub fn emit_progress_via_sink(&self, sink: &dyn OperationEventSink, mut event: WriteProgressEvent) {
         self.enrich_progress(&mut event);
         sink.emit_progress(event);
+    }
+}
+
+/// This operation, as the copy scan inside a `Volume` backend sees it.
+///
+/// A backend crate can't name a `WriteOperationState` (`crates/` carry no
+/// `tauri` and no app), so the scan asks a `cmdr_fs` vocabulary type and this is
+/// what answers it. ❗ Every arm forwards to the same
+/// [`stop_or_park_sync`](WriteOperationState::stop_or_park_sync) /
+/// [`stop_or_park_async`](WriteOperationState::stop_or_park_async) the rest of
+/// the operation asks, so a scan can't end up with its own reading of
+/// cancel-outranks-pause. `DETAILS.md` § "The park".
+impl cmdr_fs::volume::ScanStopSignal for WriteOperationState {
+    fn is_stopping_or_paused(&self) -> bool {
+        WriteOperationState::is_stopping_or_paused(self)
+    }
+
+    fn stop_or_park<'a>(&'a self) -> std::pin::Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(self.stop_or_park_async())
+    }
+
+    fn stop_or_park_blocking(&self) -> bool {
+        self.stop_or_park_sync()
     }
 }
 

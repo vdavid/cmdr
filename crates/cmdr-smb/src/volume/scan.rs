@@ -8,7 +8,7 @@ use super::mapping::map_smb_error;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::scan_walk::{conflicts_against, fold_batch};
 use cmdr_fs::volume::{
-    BatchScanResult, CopyScanResult, ListingProgress, ScanConflict, ScanTicker, SourceItemInfo, VolumeError,
+    BatchScanResult, CopyScanResult, ScanBoundary, ScanConflict, SourceItemInfo, VolumeError,
 };
 use log::{debug, warn};
 use std::path::{Path, PathBuf};
@@ -17,10 +17,15 @@ use std::sync::Arc;
 
 impl SmbVolume {
     /// Recursively scans an SMB path, returning file/dir counts and total bytes.
+    ///
+    /// ❗ Every entry passes `boundary`, and a directory passes it BEFORE its
+    /// listing goes out. A share that has spun its disks down answers a listing in
+    /// seconds, so a boundary on the far side of one is a Cancel the user waits
+    /// out.
     pub(super) fn scan_recursive<'a>(
         &'a self,
         smb_path: &'a str,
-        ticker: &'a ScanTicker<'a>,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mut result = CopyScanResult {
@@ -37,6 +42,10 @@ impl SmbVolume {
                 top_level_is_directory: true,
             };
 
+            // Before the stat: a cancel that landed while the previous subtree
+            // was walking shouldn't buy one more round trip.
+            boundary.check().await?;
+
             // Stat to determine if this is a file or directory
             if smb_path.is_empty() {
                 // Root is always a directory, scan its contents
@@ -52,14 +61,14 @@ impl SmbVolume {
                     result.total_bytes = info.size;
                     result.dedup_bytes = info.size;
                     result.top_level_is_directory = false;
-                    ticker.file(info.size);
+                    boundary.file(info.size).await?;
                     return Ok(result);
                 }
             }
 
             // It's a directory: list and recurse
             result.dir_count += 1;
-            ticker.dir();
+            boundary.dir().await?;
             let display_path = self.to_display_path(smb_path);
             let entries = self.list_directory_impl(Path::new(&display_path)).await?;
 
@@ -71,7 +80,7 @@ impl SmbVolume {
                 };
 
                 if entry.is_directory {
-                    let sub = self.scan_recursive(&child_smb, ticker).await?;
+                    let sub = self.scan_recursive(&child_smb, boundary).await?;
                     result.file_count += sub.file_count;
                     result.dir_count += sub.dir_count;
                     result.total_bytes += sub.total_bytes;
@@ -80,7 +89,7 @@ impl SmbVolume {
                     result.file_count += 1;
                     result.total_bytes += entry.size.unwrap_or(0);
                     result.dedup_bytes += entry.size.unwrap_or(0);
-                    ticker.file(entry.size.unwrap_or(0));
+                    boundary.file(entry.size.unwrap_or(0)).await?;
                 }
             }
 
@@ -101,11 +110,11 @@ impl SmbVolume {
                 self.inner.share_name, smb_path
             );
 
-            // No caller-side progress on the single-path method: the trait gives
-            // it nowhere to go. The batch method below is the one the scan
-            // preview uses.
-            let ticker = ScanTicker::new(None);
-            self.scan_recursive(&smb_path, &ticker).await
+            // Nothing to report to and nobody to answer to: the single-path
+            // trait method hands this body neither. The batch method below is the
+            // one the scan preview drives and the one a person can cancel.
+            let boundary = ScanBoundary::silent();
+            self.scan_recursive(&smb_path, &boundary).await
         })
     }
 
@@ -113,13 +122,12 @@ impl SmbVolume {
     pub(super) fn scan_for_copy_batch_impl<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // One ticker for the whole call: every branch below feeds it, so the
+            // One boundary for the whole call: every branch below feeds it, so the
             // counts the caller sees climb across oracle hits, pipelined stats,
-            // and recursion alike.
-            let ticker = ScanTicker::new(on_progress);
+            // and recursion alike, and every branch answers the same Cancel.
             // Fast paths: empty / single. Empty returns zeroes; single falls
             // through to the recursive scanner so we don't pay the cost of the
             // batch machinery for one path.
@@ -137,7 +145,7 @@ impl SmbVolume {
             }
             if paths.len() == 1 {
                 let smb_path = self.to_smb_path(&paths[0])?;
-                let scan = self.scan_recursive(&smb_path, &ticker).await?;
+                let scan = self.scan_recursive(&smb_path, boundary).await?;
                 return Ok(BatchScanResult {
                     aggregate: scan.clone(),
                     per_path: vec![(paths[0].clone(), scan)],
@@ -194,7 +202,7 @@ impl SmbVolume {
                         // descendants. The oracle just told us "this is a
                         // dir without an SMB stat"; recurse to expand it.
                         let smb_path = self.to_smb_path(path)?;
-                        let scan = self.scan_recursive(&smb_path, &ticker).await?;
+                        let scan = self.scan_recursive(&smb_path, boundary).await?;
                         per_path_results[idx] = Some(scan);
                     } else {
                         per_path_results[idx] = Some(CopyScanResult {
@@ -204,7 +212,7 @@ impl SmbVolume {
                             dedup_bytes: entry.size.unwrap_or(0),
                             top_level_is_directory: false,
                         });
-                        ticker.file(entry.size.unwrap_or(0));
+                        boundary.file(entry.size.unwrap_or(0)).await?;
                     }
                 }
 
@@ -308,6 +316,13 @@ impl SmbVolume {
             // path below only fills the still-None slots.
             // Indices to recurse into after the stat batch finishes.
             let mut dirs_to_recurse: Vec<usize> = Vec::new();
+            // Sizes the stat batch resolved, reported to the boundary once the
+            // drain is over. ❗ Not inside the loop: parking there would hold
+            // every cloned connection in the batch idle for the length of a
+            // human pause. The drain is O(top-level paths) and pipelined, so the
+            // wait it can add is bounded; the recursion after it is the long part
+            // and asks per entry.
+            let mut files_from_stats: Vec<u64> = Vec::new();
 
             while let Some((idx, smb_path, result)) = stat_futs.next().await {
                 match result {
@@ -326,7 +341,7 @@ impl SmbVolume {
                                 dedup_bytes: info.size,
                                 top_level_is_directory: false,
                             });
-                            ticker.file(info.size);
+                            files_from_stats.push(info.size);
                         }
                     }
                     Err(e) => {
@@ -347,6 +362,10 @@ impl SmbVolume {
                 }
             }
 
+            for size in files_from_stats {
+                boundary.file(size).await?;
+            }
+
             // Recurse sequentially into each discovered directory. Per-dir
             // recursion still serializes on listing + child stats; that's a
             // future "Fix 5" (pipelined directory recursion). For the 100 ×
@@ -361,7 +380,7 @@ impl SmbVolume {
                 let smb_path = smb_path_by_idx
                     .get(&idx)
                     .expect("dirs_to_recurse only carries indices from the leftover stat batch");
-                let scan = self.scan_recursive(smb_path, &ticker).await?;
+                let scan = self.scan_recursive(smb_path, boundary).await?;
                 per_path_results[idx] = Some(scan);
             }
 

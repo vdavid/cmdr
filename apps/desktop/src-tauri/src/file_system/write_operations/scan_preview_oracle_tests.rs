@@ -102,10 +102,10 @@ impl Volume for CountingWatchedVolume {
         self.inner.scan_for_copy(path)
     }
 
-    fn scan_for_copy_batch_with_progress<'a>(
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        boundary: &'a crate::file_system::volume::ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         // Reuse the default trait implementation by calling through self.inner.
         // The inner volume's `scan_for_copy` does the actual list_directory work
@@ -114,8 +114,7 @@ impl Volume for CountingWatchedVolume {
         // map directly, so calls from this path don't bump `list_dir_calls` —
         // which is exactly what we want for the cold-cache assertion (a real
         // list_directory call only happens on the oracle path when we miss).
-        let _ = on_progress;
-        self.inner.scan_for_copy_batch(paths)
+        self.inner.scan_for_copy_batch_with_boundary(paths, boundary)
     }
 }
 

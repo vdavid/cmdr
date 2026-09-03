@@ -498,7 +498,7 @@ pub(super) async fn run_volume_scan_preview(
             &source_volume_id,
             &sources,
             &is_cancelled,
-            Some(pause.as_ref()),
+            Some(&pause),
             &on_progress,
         )
         .await
@@ -582,7 +582,7 @@ pub(super) async fn run_oracle_aware_batch_scan(
     volume_id: &str,
     sources: &[PathBuf],
     is_cancelled: &(dyn Fn() -> bool + Sync),
-    pause: Option<&ScanPause>,
+    pause: Option<&Arc<ScanPause>>,
     on_progress: &(dyn Fn(crate::file_system::volume::ListingProgress) + Sync),
 ) -> Result<BatchScanResult, crate::file_system::volume::VolumeError> {
     use crate::file_system::listing::FileEntry;
@@ -628,10 +628,9 @@ pub(super) async fn run_oracle_aware_batch_scan(
             ));
         }
         // The park points on the volume path are the ones cancel already has:
-        // per entry inside `scan_subtree_with_oracle`, and here, per source
-        // group. A cold-cache group is ONE call into the backend, which offers
-        // no boundary of its own to either check — so a pause issued during it
-        // lands when that group ends, exactly like a cancel would.
+        // per entry inside `scan_subtree_with_oracle`, here per source group, and
+        // — through the boundary handed to the cold-cache branch below — inside
+        // the backend's own walk.
         if let Some(pause) = pause {
             pause.park_while_paused_async().await;
         }
@@ -707,7 +706,7 @@ pub(super) async fn run_oracle_aware_batch_scan(
                         volume_id,
                         source,
                         is_cancelled,
-                        pause,
+                        pause.map(Arc::as_ref),
                         Some(&shifted),
                         &mut seen_inodes,
                     )
@@ -784,8 +783,19 @@ pub(super) async fn run_oracle_aware_batch_scan(
                     bytes: baseline.bytes + p.bytes,
                 })
             };
+            // ❗ The boundary carries this walk's stop into the backend, so a
+            // cold-cache group — one call that can be minutes over a sleeping
+            // share — answers Cancel and Pause from inside rather than when it
+            // ends. Both routes to "stop" ride along: the operation that claimed
+            // this preview, and the preview's own flag (`ScanPause`).
+            let mut group_boundary = crate::file_system::volume::ScanBoundary::new(Some(&shifted));
+            if let Some(pause) = pause {
+                group_boundary = group_boundary.stopping_at(crate::file_system::volume::ScanStop::new(
+                    Arc::clone(pause) as Arc<dyn crate::file_system::volume::ScanStopSignal>,
+                ));
+            }
             let group_result = volume
-                .scan_for_copy_batch_with_progress(paths_in_group, Some(&shifted))
+                .scan_for_copy_batch_with_boundary(paths_in_group, &group_boundary)
                 .await?;
             aggregate.file_count += group_result.aggregate.file_count;
             aggregate.dir_count += group_result.aggregate.dir_count;

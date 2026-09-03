@@ -147,10 +147,10 @@ impl Volume for WedgedVolume {
         never_answers!()
     }
 
-    fn scan_for_copy_batch_with_progress<'a>(
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         _paths: &'a [PathBuf],
-        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        _boundary: &'a cmdr_fs::volume::ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         never_answers!()
     }

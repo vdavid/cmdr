@@ -1161,8 +1161,9 @@ async fn test_scan_for_copy_batch_with_progress_fires_callback() {
         PathBuf::from("/b.txt"),
         PathBuf::from("/c.txt"),
     ];
+    let boundary = crate::file_system::volume::ScanBoundary::new(Some(&on_progress));
     let result = vol
-        .scan_for_copy_batch_with_progress(&paths, Some(&on_progress))
+        .scan_for_copy_batch_with_boundary(&paths, &boundary)
         .await
         .unwrap();
 
