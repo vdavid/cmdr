@@ -749,6 +749,9 @@ mod scan_preview_oracle_tests;
 mod scan_watchdog_tests;
 #[cfg(test)]
 mod settle_event_tests;
+// The one cooperative-stop boundary every serial loop here asks at.
+#[cfg(test)]
+mod stop_or_park_tests;
 // Real copies in BOTH directions against a live SFTP server, through
 // `copy_between_volumes`. Gated on the Docker fixture, and named for the
 // `sftp_integration_` lane the check runner selects on.

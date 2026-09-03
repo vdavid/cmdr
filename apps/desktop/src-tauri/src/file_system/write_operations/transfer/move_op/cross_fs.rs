@@ -543,7 +543,6 @@ fn delete_sources_after_move(
             });
         }
 
-
         // A whole top-level source skipped on a file / type-mismatch conflict:
         // leave the original exactly where it is, and say so. The staging phase
         // already reported this source as `Done` (it staged fine); this later

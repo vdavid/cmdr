@@ -147,10 +147,7 @@ async fn a_paused_rename_merge_stops_moving_children_until_it_resumes() {
             .count()
     };
 
-    crate::test_support::wait_until_async(Duration::from_secs(5), "the first child to land", || {
-        moved(root) >= 1
-    })
-    .await;
+    crate::test_support::wait_until_async(Duration::from_secs(5), "the first child to land", || moved(root) >= 1).await;
 
     // Parking has no "parked now" signal, so hold a window open: an ungated walk
     // would have renamed the remaining children many times over inside it.

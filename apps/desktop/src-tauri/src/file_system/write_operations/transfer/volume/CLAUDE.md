@@ -27,9 +27,8 @@ concurrent driver), the cross-, same-volume, and single-file moves, and the merg
 - **A same-`Arc` copy tries `strategy.rs::try_server_side_copy` → `Volume::copy_within` first**, staged like any
   write, ❌ never single-shot. Anything short of success streams instead, ❌ except a cancel.
 - **A staged temp the destination won't release is REPORTED**: the sweep RETURNS it, riding
-  `CancelRollback::staged_leftovers`, ❌ never `skips` and ❌ never only a log. ❌ And never a RETRY: an SMB server
-  refuses it for the whole session (the abandoned handle is ours), so backoff provably can't win.
-  `../DETAILS.md` § "Naming what a cancel left behind" and § "Staged writes".
+  `CancelRollback::staged_leftovers`, ❌ never `skips` and ❌ never only a log. `../DETAILS.md` § "Naming what a cancel
+  left behind".
 - **Only `cleanup.rs::remove_tree` recurses, and its `TreeRemoval` argument names who authorized it.** Cleanup and
   rollback call `delete_written_file` / `prune_created_dir_if_empty`, which list before deleting, so a wrong belief never reaches
   a recursive delete. A fourth sweep adds a variant.
