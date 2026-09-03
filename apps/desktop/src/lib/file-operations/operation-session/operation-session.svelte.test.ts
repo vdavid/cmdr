@@ -408,6 +408,30 @@ describe('derived read state', () => {
     dispose()
   })
 
+  it('drops the scan rates while the operation is paused, and keeps the tallies', () => {
+    // A paused walk parks between entries and emits nothing, so the last
+    // measured rate would sit on screen describing a scan that is standing
+    // still — the same reason the write phase's speed goes away. The counts
+    // stay: they are what the walk found, and that is still true.
+    vi.useFakeTimers()
+    const { fanout, session, dispose } = harness()
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    fanout._testEmit({ kind: 'progress', event: progress('a', { phase: 'scanning', filesDone: 10, bytesDone: 100 }) })
+    vi.advanceTimersByTime(1000)
+    fanout._testEmit({ kind: 'progress', event: progress('a', { phase: 'scanning', filesDone: 30, bytesDone: 300 }) })
+    expect(session.scan.filesPerSecond).toBe(20)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
+    expect(session.scan.filesPerSecond).toBeNull()
+    expect(session.scan.bytesPerSecond).toBeNull()
+    expect(session.scan.filesFound).toBe(30)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    expect(session.scan.filesPerSecond).toBe(20)
+    dispose()
+  })
+
   it('holds the conflict the operation is parked on', () => {
     const { fanout, session, dispose } = harness()
 

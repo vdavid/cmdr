@@ -24,6 +24,10 @@
         scanBytesPerSec: number | null
         scanCurrentDir: string | null
         currentFile: string | null
+        /** The walk is parked on a pause. The spinner is a claim that it's
+         *  moving, so it goes away; the tallies stay, because they're what it
+         *  found before it stopped. */
+        paused?: boolean
     }
 
     const {
@@ -36,6 +40,7 @@
         scanBytesPerSec,
         scanCurrentDir,
         currentFile,
+        paused = false,
     }: Props = $props()
 
     const isCompact = $derived(density === 'compact')
@@ -70,14 +75,16 @@
         <span class="scan-value">{formatNumber(scanDirsFound)}</span>
         <span class="scan-label">{t('fileOperations.scanPhase.scanDir', { count: scanDirsFound })}</span>
     </div>
-    <span
-        class="scan-status"
-        role="img"
-        aria-label={tString('fileOperations.shared.scanningTooltip')}
-        use:tooltip={{ text: tString('fileOperations.shared.scanningTooltip') }}
-    >
-        <Spinner size="sm" />
-    </span>
+    {#if !paused}
+        <span
+            class="scan-status"
+            role="img"
+            aria-label={tString('fileOperations.shared.scanningTooltip')}
+            use:tooltip={{ text: tString('fileOperations.shared.scanningTooltip') }}
+        >
+            <Spinner size="sm" />
+        </span>
+    {/if}
 </div>
 
 <!-- Throughput -->

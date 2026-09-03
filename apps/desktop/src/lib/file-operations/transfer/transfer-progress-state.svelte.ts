@@ -698,9 +698,9 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *
    *  Dispatches straight away even when a `TransferDialog` preview is still
    *  walking: the backend claims that preview at registration and its own task
-   *  waits for it, so the operation has an id, a queue row, and Background from
-   *  the first frame. (Pause stays hidden until the write starts — a scan-wait
-   *  has nothing to park, and the backend declines the flip.) */
+   *  waits for it, so the operation has an id, a queue row, Pause, and
+   *  Background from the first frame. Pause reaches the walk itself, which
+   *  parks between entries (`write_operations/scan_bridge.rs`). */
   function start(): void {
     if (adoptedOperationId !== null) {
       adopt(adoptedOperationId)

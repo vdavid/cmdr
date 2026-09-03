@@ -1194,8 +1194,7 @@ describe('createTransferProgressState: a still-scanning transfer', () => {
   it('offers Background while the operation is still scanning', async () => {
     // The shipped bug: `canPauseOrQueue` used to require the scan to be over,
     // so a large transfer could not be backgrounded for as long as it counted.
-    // Pause is a separate question and stays HIDDEN during a scan (the markup
-    // gates it on `!isScanning`, and the backend declines the flip anyway).
+    // It now covers Pause during the scan as well, since the walk parks.
     const { state } = await startedState({ previewId: 'prev-1' })
 
     expect(state.canPauseOrQueue).toBe(true)

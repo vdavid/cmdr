@@ -174,9 +174,12 @@ walking (`apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge.rs
 - **`queued` rows render it too.** `showReadout` requires `isRunning || isPaused`, so without this an operation admitted
   behind another on the same lane shows "Waiting" over an empty row for its whole scan — on a busy lane the common case,
   and it reads as a hung queue. "Waiting" over a moving file count is exactly what is happening.
-- **No Pause, no Rollback.** The backend declines a pause in a scan-wait (there is nothing to park, and a "paused" scan
-  would hold its lane doing nothing), and a scanning operation has written nothing to reverse. `supportsRollback` stays
-  true throughout: it is a promise about the OPERATION, so the phase is what decides which controls make sense now.
+- **Pause yes, Rollback no.** Pause parks the WALK (`write_operations/scan_bridge.rs` § `ScanPause`), so the row offers
+  it during the scan exactly as it does during the write, and offers Resume on a scan paused from "Pause all" — without
+  that, such a row's only way back was Cancel. A scanning operation has written nothing to reverse, so Rollback stays
+  away; `supportsRollback` stays true throughout, since it is a promise about the OPERATION and the phase is what
+  decides which controls make sense now. A PAUSED scanning row drops `ScanPhaseBody`'s spinner and its rates: the
+  spinner is the claim that the walk is moving.
 - **The status column still says "Running"**, and that is deliberate. `queue.row.status` is a `select` over the
   LIFECYCLE status, which genuinely is `running`; the readout names the activity, and the scan-phase line already says
   "Counting…" in the user's language. A "Scanning" arm would mix two axes into one column and would need a `phase` input

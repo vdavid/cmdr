@@ -342,14 +342,20 @@ export function createOperationSession(operationId: string, fanout: OperationEve
     get etaSecondsDisplay(): Seconds | null {
       return etaSecondsDisplay
     },
+    /** The scan's tallies, with its RATES dropped while the person is being
+     *  waited on, for the reason `bytesPerSecondDisplay` drops the write's: a
+     *  parked walk emits no ticks, so the last rate would sit frozen on screen
+     *  describing a scan that is standing still. The tallies stay — they are
+     *  what the walk has found, and that is still true while it waits. */
     get scan(): ScanReadout {
+      const waiting = awaitingHuman()
       return {
         filesFound: scanFilesFound,
         dirsFound: scanDirsFound,
         bytesFound: scanBytesFound,
         currentDir: scanCurrentDir,
-        filesPerSecond: scanFilesPerSecond,
-        bytesPerSecond: scanBytesPerSecond,
+        filesPerSecond: waiting ? null : scanFilesPerSecond,
+        bytesPerSecond: waiting ? null : scanBytesPerSecond,
       }
     },
     get awaitingAnswer(): boolean {

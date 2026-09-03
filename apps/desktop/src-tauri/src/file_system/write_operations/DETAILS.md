@@ -37,13 +37,16 @@ The full top-level inventory is here:
   `archive_edit/` (the zip-edit driver).
 - The in-flight ledgers and what reverses them: `ledger.rs` (`CopyTransaction` and `WrittenFile`, the vocabulary of what
   an operation currently has at the destination, plus the `Drop` panic net) and `reversal.rs` (the policy over it: the
-  recheck before each destructive act, and `ReversalTally`). `in_flight_temps.rs` registers every `.cmdr-` temp WITH
+  recheck before each destructive act, and `ReversalTally`). That recheck shares `verify_snapshot` + `SkipReason` with
+  the operation-log history engine — ❌ never a batch or a fork of either, so one reversal can't quietly grow a laxer
+  rule than the other; only the `Drop` net is unconditional. `in_flight_temps.rs` registers every `.cmdr-` temp WITH
   the path space it lives in (local filesystem, or a volume ID) so a startup sweep can find one an abandoned run left
   behind and delete it through the right backend; `transfer/DETAILS.md` § "Which path space a recorded partial lives
   in" holds the decisions, and § "Testing the in-flight temp ledger" below the rules its process-wide singleton imposes
   on tests.
 - Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs` (the scan-progress seam the drivers
-  feed), `scan_watchdog.rs` (the inactivity bound on a preview), `compress_estimate.rs`. Conflicts and overwrite:
+  feed, and `ScanPause`, the park that lets a walk honor its owner's Pause), `scan_watchdog.rs` (the inactivity bound on
+  a preview), `compress_estimate.rs`. Conflicts and overwrite:
   `conflict.rs` (policy), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
   `resolve_write_conflict`), `overwrite.rs`. Cancellation and durability: `cancellable.rs`, `rollback.rs`, `durability.rs`.
   `rollback.rs` wears two hats: the history dialog's reversal, and the executor the operation-log engine injects.
@@ -526,11 +529,11 @@ now* is the UI's call on top of it: the queue row also requires a running/paused
 The paused bit has TWO homes, kept in sync by the IPC layer: a `PauseGate` on `WriteOperationState` (the runtime gate the drivers honor) and the manager record's `LifecycleStatus::Paused` (what the UI sees in `operations-changed`). Pause is **orthogonal to `OperationIntent`** (which stays the cancel/rollback machine) — it never perturbs the validated `Running → RollingBack/Stopped` transitions — and it is **not a `WriteOperationPhase`** (a paused op may be mid-`Copying`).
 
 - **`PauseGate`** (`operation_intent.rs`): a `paused: AtomicBool` plus a `std::sync::Condvar` (for the sync driver, which parks inside `spawn_blocking`) and a `tokio::sync::Notify` (for the async volume drivers). `pause()` sets the flag and opens the operation's human-wait clock; `resume()` clears the flag, closes the clock, and wakes both waiters; `wake()` wakes both WITHOUT clearing the flag (the cancel path uses it) but DOES close the clock — the operation is winding down, so nobody is being waited on any more, and a clock left open would make the rollback that follows measure no rate at all. `wait_while_paused_sync(&intent)` / `wait_while_paused_async(&intent).await` park while `paused && !cancelled` and return immediately on cancel.
-- **Gate placement** (between-files boundaries, immediately AFTER the `is_cancelled` check so the data-safety ordering — cancel/skip before any destructive call — is preserved): both transfer drivers' per-source loop tops (`transfer_driver.rs`), and the delete-phase loops in both delete walkers (files then dirs, `delete/walker.rs`). The delete SCAN recursion is NOT gated (pausing mid-enumeration would freeze a half-counted "Scanning…"). The cross-volume streaming copy path ALSO parks BETWEEN CHUNKS via the `CheckpointStream` wrapper in `transfer/volume/strategy.rs` (the sync per-chunk `on_progress` callback can't `.await`, so the async stream decorator owns mid-file parking + a `yield_now`), so a paused single large file (e.g. MTP→local) stops mid-stream holding only its `.cmdr-tmp-<uuid>`. The local-FS sync chunk loop (`chunked_copy.rs`) still pauses only between files — it receives the cancel atom, not the `PauseGate`. Full rationale + scope: `transfer/DETAILS.md` § "Pause reaches between chunks".
+- **Gate placement** (immediately AFTER the `is_cancelled` check so the data-safety ordering — cancel/skip before any destructive call — is preserved): both transfer drivers' per-source loop tops (`transfer_driver.rs`), the delete-phase loops in both delete walkers (files then dirs, `delete/walker.rs`), and every SCAN boundary that already observes cancel ([The park](#the-park)). The cross-volume streaming copy path ALSO parks BETWEEN CHUNKS via the `CheckpointStream` wrapper in `transfer/volume/strategy.rs` (the sync per-chunk `on_progress` callback can't `.await`, so the async stream decorator owns mid-file parking + a `yield_now`), so a paused single large file (e.g. MTP→local) stops mid-stream holding only its `.cmdr-tmp-<uuid>`. The local-FS sync chunk loop (`chunked_copy.rs`) still pauses only between files — it receives the cancel atom, not the `PauseGate`. Full rationale + scope: `transfer/DETAILS.md` § "Pause reaches between chunks".
 - **Cancellation always wins over pause.** `cancel_write_operation` / `cancel_all_write_operations` flip the intent AND call `pause_gate.wake()`, so a paused, parked op unblocks, observes the non-`Running` intent, and bails through the existing keep-partials path (keeping already-copied files, deleting only the last partial). Without that wake a paused op parked on the condvar would never see the cancel.
 - **A paused Running op keeps its lane slots** (`set_paused` never touches lanes), so a same-lane Queued op can't start and then fight it on resume. Resume runs NO admission pass (the op never freed its lanes). Pausing a Queued op is a v1 no-op (it isn't touching a device yet; it stays Queued and admits normally when its lanes free). Pinned by `manager::tests::{set_paused_flips_running_op_to_paused_and_keeps_its_lane, paused_running_op_does_not_admit_a_queued_same_lane_op}`.
-- **The request reports what it did**, as a `PauseOutcome`: `Applied` (the record flipped), `Deferred` (a scan-waiting op, so the request is latched, see [The scan-wait](#the-scan-wait)), `AlreadyInState` (asked for what it already is, so the caller's intent holds and a retry isn't a refusal), `NotApplicable` (queued, over, or unknown — nothing changed and nothing is remembered). It travels the whole way out: `set_paused` → `pause_operation` / `resume_operation` → the IPC commands → `bindings.ts`. The MCP `queue` tool is the consumer that needs it, since an agent acts on the answer; the queue window ignores it and reads the live status from `operations-changed` instead.
-- **A sweep reports counts, not a verdict.** `pause_all` / `resume_all` ask every eligible op, so they fold the per-op outcomes into a `PauseAllOutcome` (`applied` / `deferred` / `already_in_state` / `not_applicable`) and hand that out the same way, through the IPC commands into `bindings.ts`. "No operation was running", "three parked", and "one is still scanning" are three different situations, and a flat "OK" for all three is what sent an agent on believing a device had gone quiet. `took_effect_anywhere()` is the one derived question worth a name: `applied + deferred > 0`, since a latched pause HAS taken effect, just not yet. From a sweep, `not_applicable` can only be the settle race (the snapshot named an op that finished before the call landed) — a queued op never enters the walk. The fold is `impl FromIterator<PauseOutcome> for PauseAllOutcome`, which is what makes it testable without touching the process-global manager (`manager::tests::a_sweep_counts_every_outcome_it_collected`); ❌ never drive a real `pause_all()` from a test, it would park a sibling test's operation.
+- **The request reports what it did**, as a `PauseOutcome`: `Applied` (the record flipped), `AlreadyInState` (asked for what it already is, so the caller's intent holds and a retry isn't a refusal), `NotApplicable` (queued, over, or unknown — nothing changed and nothing is remembered). It travels the whole way out: `set_paused` → `pause_operation` / `resume_operation` → the IPC commands → `bindings.ts`. The MCP `queue` tool is the consumer that needs it, since an agent acts on the answer; the queue window ignores it and reads the live status from `operations-changed` instead.
+- **A sweep reports counts, not a verdict.** `pause_all` / `resume_all` ask every eligible op, so they fold the per-op outcomes into a `PauseAllOutcome` (`applied` / `already_in_state` / `not_applicable`) and hand that out the same way, through the IPC commands into `bindings.ts`. "No operation was running", "three parked", and "two were already paused" are three different situations, and a flat "OK" for all three is what sent an agent on believing a device had gone quiet. `took_effect_anywhere()` is the one derived question worth a name. From a sweep, `not_applicable` can only be the settle race (the snapshot named an op that finished before the call landed) — a queued op never enters the walk. The fold is `impl FromIterator<PauseOutcome> for PauseAllOutcome`, which is what makes it testable without touching the process-global manager (`manager::tests::a_sweep_counts_every_outcome_it_collected`); ❌ never drive a real `pause_all()` from a test, it would park a sibling test's operation.
 - **Concurrent copy path.** `copy_volumes_with_progress`'s `FuturesUnordered` path has no single between-files boundary, and its per-file `on_progress` callback stays cancel-only (pinned by `transfer_driver::tests::concurrent_per_file_callback_is_cancel_only_not_pause_aware`). But its in-flight files stream through the shared `stream_pipe_file`, so each parks between chunks via `CheckpointStream` when paused; the admission loop adds no new files while everyone is parked, so the batch effectively halts. Serial paths (local copy/move, cross-volume serial, delete) honor pause between files; the cross-volume paths additionally park between chunks. See `transfer/volume/DETAILS.md` § "Pause and the concurrent copy path".
 - **Accepted resource asymmetry** (principle 5): `wait_while_paused_sync` parks the op's `spawn_blocking` pool thread for the whole pause — the same thing the deferred-start design avoids for *queued* ops. A paused Running op legitimately holds its lane and is rarer than queued ops, so v1 accepts this; many simultaneously-paused local ops could pressure the blocking pool. v2 may bound concurrent paused-and-parked ops if it proves real.
 - **Connection-idle caveat** (document, don't fully solve in v1): a long pause holds SMB/MTP connections idle and may hit server/USB timeouts. v1 accepts that resume may surface a normal transient error (SMB already reconnects; MTP stale-handle has a one-shot retry). v2 adds keep-alive / explicit reconnect-on-resume.
@@ -576,6 +579,43 @@ cancelled walk returns an error (the local walk's `on_cancelled` string, the vol
 `"Scan failed: {VolumeError::Cancelled}"`), so classifying on the event would reach the operation as a failure whose
 message merely says "cancelled", and recovering the truth from that message would be string-matching on the control
 path. Both workers' arms were reconciled to match.
+
+## The park
+
+Pausing during the scan is the case Pause exists for: the scan is the minutes-long part of a big transfer, so it is
+when somebody realizes they picked the wrong destination. `scan_bridge::ScanPause` is the one primitive that makes it
+real, for both scans — the detached preview worker, and the scan an operation runs for itself when it has no result to
+consume.
+
+**Where it parks: exactly where the walk already observes cancel, and only there.** A walk that stopped less often
+than it can be cancelled would make Pause the weaker of two buttons that mean the same thing to a person; one that
+stopped more often would need park points the volume backends don't offer. So every gate sits immediately after the
+existing `is_cancelled` check (cancel outranks pause, and a cancelled walk must never park on its way out), and pause
+inherits cancel's granularity for free:
+
+- **Local walk** — per entry, via `WalkContext::park_while_paused` in `walk_dir_recursive` and `walk_cached_entries`.
+- **Oracle-aware volume walk** — per entry, in `scan_subtree_with_oracle`.
+- **Cold-cache volume group** — per source group, in `run_oracle_aware_batch_scan`. One group is a single call into
+  `Volume::scan_for_copy_batch_with_progress`, which offers no boundary to pause OR cancel, so a request issued during
+  it lands when that group ends. Reaching inside means threading a park through `cmdr-fs`'s `scan_walk` and each
+  backend; the honest bound today is "no worse than cancel".
+
+**Why the owner is resolved lazily.** A preview walks detached from the operation that will consume it: the walk holds
+a `preview_id`, the gate hangs off the operation, and the claim joining them lands when the user confirms — possibly
+after the walk started. So `ScanPause::resolve_owner` runs at the walk's PROGRESS TICK, which is already off the
+per-entry path, and a `OnceLock` keeps the answer for life (a claim is one-shot, and the `Arc` outlives the record).
+❌ Don't move the lookup onto the per-entry path: what makes this free is that an unpaused entry costs one atomic load,
+the same as the cancel check beside it.
+
+**The park's exit names every way the walk can be told to stop**: the operation's intent (which `cancel_write_operation`
+sets BEFORE it wakes the gate) and the preview's own `cancelled` flag (which `abandon_claim` sets). ❌ Dropping either
+leaves the thread on a gate nobody will open — the async volume walk parks on `wait_while_paused_until`, the local one
+on the sync twin `wait_while_paused_sync_until`, and neither re-checks on a timer.
+
+**The watchdog has to know.** A paused scan counts nothing, which is precisely what `ScanWatchdog`'s 60 s inactivity
+bound fires on, so holding Pause would have ended the scan with "stopped responding" — the user's own click reported
+back as a dead share. `note_parked` suspends the budget; `note_resumed` restarts the clock from now, so the pause is
+never charged against it.
 
 ## Bounding the scan
 
@@ -643,27 +683,12 @@ row stays blank — exactly the case the tick exists for. So `emit_initial_scan_
 minutes). `scan_bridge_tests` asserts the ordering against the manager's broadcast counter, not merely the tick's
 existence.
 
-**Pause is refused, and the refusal is LATCHED.** `set_paused` flips any `Running` record, and a scan-waiting operation
-is `Running`, so without a rule the snapshot would say `Paused`, the dialog title would say "Paused", and the walk
-would carry on at full speed — while `set_paused` deliberately keeps the lane slots, so a "paused" scan would hold its
-lane indefinitely doing nothing. The refusal is one match arm on the record's `in_scan_wait` flag, and it is
-observable everywhere it matters: no surface flips optimistically, so a deferred pause shows as "the status stayed
-`running`, the button still says Pause". It reports itself as `PauseOutcome::Deferred`, which is what lets the MCP
-`queue` tool answer "it pauses the moment it starts writing" rather than either lie.
-
-The latch is the part that would otherwise ship as a real defect. `pause_all` walks `running_ids()` calling
-`pause_operation`, which sets the driver's park gate only on `PauseOutcome::Applied` — so a bare refusal would drop the
-request on the floor, and minutes later that one operation starts writing at full speed while every other operation is
-paused and the user believes the device is free. The refusing arm records the request on the record, and
-`end_scan_wait` applies it the moment the wait ends. Withdrawing (a resume during the scan) clears it the same way.
-Nothing surfaces the PENDING pause: the row keeps saying "Running", then flips to "Paused" on its own when the write
-would have begun. Showing "pause pending" would mean a new snapshot field and a new string, and the harm being fixed is
-the silent full-speed write, not the surprise. Revisit if the delayed flip confuses anyone.
-
-**Real parking was rejected**, and the volume path settles it rather than taste: a local walk could poll a pause flag
-per entry the way it polls `cancelled`, but a volume scan sits inside `scan_for_copy_batch_with_progress` for a whole
-batch, so there is no park point, and on MTP the batch can be the entire scan. Pausing would therefore work on the
-volume kind that needs it least.
+**Pause is NOT a special case here.** A scan-waiting operation is `Running`, and it pauses like any other `Running`
+operation: the record flips to `Paused`, the gate is set, and the walk it is waiting on parks on that same gate
+([The park](#the-park)). ❌ Don't reintroduce a refusal. The refusal that used to live here answered "it pauses the
+moment it starts writing" and then let an 80,000-file move run to completion, because the scan is the minutes-long
+part of a big transfer and nothing parked during it. The gate also carries the request across the handover: whatever
+sets it during the walk is still set when the driver takes over, so `pause_all` issued mid-scan cannot be lost.
 
 **Two leaks the wait creates, and their hooks.** (1) Every exit from the scan-wait has to reach `on_settled` or the row
 leaks and its lane stays reserved; the operation's task owns that, not the detached scan worker, and `free_and_remove`

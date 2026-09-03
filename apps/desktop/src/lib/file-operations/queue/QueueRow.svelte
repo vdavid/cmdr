@@ -285,9 +285,11 @@
                 </span>
             </Button>
         {/if}
-        {#if (isRunning || isPaused) && !isScanning}
-            <!-- Pause parks between files, so a still-counting operation has
-                 nothing to park; the backend declines the flip. -->
+        {#if isRunning || isPaused}
+            <!-- Offered during the scan as much as during the write: the walk
+                 parks on the same gate the drivers do. A row that showed no
+                 Resume on a scan paused from Pause all left it with no way back
+                 except Cancel. -->
             <Button
                 variant="secondary"
                 size="mini"
@@ -385,6 +387,7 @@
                 scanBytesPerSec={scanRates?.bytesPerSecond ?? null}
                 scanCurrentDir={progress.currentDir ?? null}
                 currentFile={progress.currentFile}
+                paused={isPaused}
             />
         </div>
     {/if}

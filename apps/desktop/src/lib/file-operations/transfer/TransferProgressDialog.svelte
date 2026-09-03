@@ -372,13 +372,16 @@
             {/if}
         {:else if conflictEvent}
             {tString('fileOperations.transferProgress.titleConflict')}
+        {:else if isPaused}
+            <!-- Before scanning, not after: a paused scan is stopped, so
+                 "Scanning to copy..." over it would describe a walk that isn't
+                 walking. -->
+            {tString('fileOperations.transferProgress.titlePaused')}
         {:else if isScanning}
             <!-- After cancelling and rolling back, not before: the phase stays
                  `scanning` while a cancel issued mid-count winds down, and the
                  title has to name what the dialog is doing NOW. -->
             {scanTitle}
-        {:else if isPaused}
-            {tString('fileOperations.transferProgress.titlePaused')}
         {:else if phase === 'flushing'}
             {tString('fileOperations.transferProgress.titleFlushing')}
         {:else if isMove && phase === 'deleting'}
@@ -433,8 +436,12 @@
                  phase: the bars, their labels, and the dialog title already say
                  what's going on, so a "Copying" chip under a "Copying..." title
                  is just a second copy of the word. -->
+            <!-- The spinner is the claim that the walk is moving, so a paused
+                 scan doesn't get one: it is stopped, and the title says so. -->
             <div class="phase-banner">
-                <Spinner size="sm" />
+                {#if !isPaused}
+                    <Spinner size="sm" />
+                {/if}
                 <span>{tString('fileOperations.transferProgress.stageScanning')}</span>
             </div>
 
@@ -448,6 +455,7 @@
                     scanBytesPerSec={scan.bytesPerSecond}
                     scanCurrentDir={scan.currentDir}
                     {currentFile}
+                    paused={isPaused}
                 />
             </div>
         {:else if !phaseUnknown}
@@ -528,28 +536,25 @@
                  F2 while this dialog is focused). Both show only during the active
                  copy/move/delete phases (`canPauseOrQueue`). -->
             {#if canPauseOrQueue}
-                <!-- Pause parks between files, so there's nothing to park while
-                     the operation is still counting: the backend declines a
-                     pause in its scan-wait, and offering a button that does
-                     nothing is worse than not offering it. Queue stays, and is
-                     the whole point of giving a scanning transfer an id. -->
-                {#if !isScanning}
-                    <Button
-                        variant="secondary"
-                        onclick={progress.handlePauseResume}
-                        disabled={pauseInFlight}
-                        aria-label={isPaused
-                            ? tString('fileOperations.transferProgress.resumeAria')
-                            : tString('fileOperations.transferProgress.pauseAria')}
-                    >
-                        <span class="btn-inner">
-                            <Icon name={isPaused ? 'play' : 'pause'} size={14} />
-                            {isPaused
-                                ? tString('fileOperations.transferProgress.resume')
-                                : tString('fileOperations.transferProgress.pause')}
-                        </span>
-                    </Button>
-                {/if}
+                <!-- Offered during the scan as much as during the write: the
+                     walk parks on the same gate the drivers do
+                     (`write_operations/scan_bridge.rs`), and the scan is where
+                     somebody realizes they picked the wrong destination. -->
+                <Button
+                    variant="secondary"
+                    onclick={progress.handlePauseResume}
+                    disabled={pauseInFlight}
+                    aria-label={isPaused
+                        ? tString('fileOperations.transferProgress.resumeAria')
+                        : tString('fileOperations.transferProgress.pauseAria')}
+                >
+                    <span class="btn-inner">
+                        <Icon name={isPaused ? 'play' : 'pause'} size={14} />
+                        {isPaused
+                            ? tString('fileOperations.transferProgress.resume')
+                            : tString('fileOperations.transferProgress.pause')}
+                    </span>
+                </Button>
                 <!-- One button, two words: "Queue" when there's something to
                      queue behind, "Background" when there isn't. The action, the
                      tooltip, and F2 are the same either way. -->

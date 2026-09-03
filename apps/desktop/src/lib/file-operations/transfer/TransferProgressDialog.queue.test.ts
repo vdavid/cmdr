@@ -631,14 +631,15 @@ describe('TransferProgressDialog background/queue button label', () => {
 })
 
 describe('TransferProgressDialog while the operation is still counting', () => {
-  it('offers Background but not Pause', async () => {
+  it('offers Background and Pause', async () => {
     // The shipped bug, from the other side: a confirmed transfer had no
     // `operationId` while its preview walked, so neither control rendered and a
-    // large copy could not be sent to the background. Now it can — and Pause
-    // stays away, because the backend declines a pause in its scan-wait.
+    // large copy could not be sent to the background. Both are here now, and
+    // Pause among them: the walk parks on the same gate the drivers do, and the
+    // scan is when somebody notices they picked the wrong destination.
     const { target } = await mountScanningDialog()
 
-    expect(queryButton(target, 'Pause this operation'), 'a scan has nothing to park').toBeNull()
+    expect(queryButton(target, 'Pause this transfer'), 'the scan parks, so the button does something').not.toBeNull()
     expect(
       queryButton(target, BACKGROUND_ARIA) ?? queryButton(target, QUEUE_ARIA),
       'backgrounding a scanning transfer is the whole point',

@@ -140,12 +140,28 @@
         return tString('fileOperations.transferProgress.etaRemaining', { duration: formatDuration(eta) })
     })
 
+    /** The scan state gets its OWN spoken label, not the tooltip's "Scanning…":
+     *  it drops the percentage (the one dishonest part) but keeps what the
+     *  sighted chip has — the visible verb, which voice control needs to press
+     *  the chip by name (WCAG 2.5.3), and the promise that pressing it opens
+     *  the queue, which is the chip's whole affordance. */
+    const ariaLabel = $derived(
+        chipState?.kind === 'failure'
+            ? failedText
+            : isScanning
+              ? tString('queue.chip.scanningAriaLabel', { label: chipLabel })
+              : tString('queue.chip.ariaLabel', { label: chipLabel, percentText }),
+    )
+
     const tooltipText = $derived.by(() => {
         if (chipState?.kind === 'failure') return failedText
         if (candidate === null) return ''
         // ❌ Not the progress tooltip: its "· 0%" clause would be a percentage
-        // that cannot move, for as long as the walk takes.
-        if (isScanning) return scanningText
+        // that cannot move, for as long as the walk takes. A PAUSED scan takes
+        // the spoken sentence instead, which carries `chipLabel`: a bare
+        // "Scanning…" over a chip that reads "Paused" is the same walk
+        // described two ways, and only one of them is true.
+        if (isScanning) return candidate.paused ? ariaLabel : scanningText
         const count = candidate.row.progress?.filesTotal ?? 0
         const destination = destinationName(candidate.row.snapshot.destination)
         // `chipLabel`, never `verb`: hovering a chip that reads "Paused" must
@@ -162,19 +178,6 @@
             detail: detail ?? '',
         })
     })
-
-    /** The scan state gets its OWN spoken label, not the tooltip's "Scanning…":
-     *  it drops the percentage (the one dishonest part) but keeps what the
-     *  sighted chip has — the visible verb, which voice control needs to press
-     *  the chip by name (WCAG 2.5.3), and the promise that pressing it opens
-     *  the queue, which is the chip's whole affordance. */
-    const ariaLabel = $derived(
-        chipState?.kind === 'failure'
-            ? failedText
-            : isScanning
-              ? tString('queue.chip.scanningAriaLabel', { label: chipLabel })
-              : tString('queue.chip.ariaLabel', { label: chipLabel, percentText }),
-    )
 
     /** The tooltip action ADOPTS this element, and an adopted element keeps its
      *  own `hidden` attribute — so it's the inner div that's bound here, never
@@ -202,10 +205,14 @@
         {#if chipState.kind === 'progress'}
             {#if chipState.operation.scanning}
                 <!-- Indeterminate: the totals are what the scan is looking for,
-                     so a bar would sit at 0% for the whole walk. -->
-                <span class="chip-spinner" aria-hidden="true">
-                    <Spinner size="sm" />
-                </span>
+                     so a bar would sit at 0% for the whole walk. A paused walk
+                     gets nothing at all — the spinner is the claim that it's
+                     moving, and the label already says it isn't. -->
+                {#if !chipState.operation.paused}
+                    <span class="chip-spinner" aria-hidden="true">
+                        <Spinner size="sm" />
+                    </span>
+                {/if}
             {:else}
                 <!-- The bar repeats what the aria-label already says as a percentage,
                      so screen readers hear it once. -->

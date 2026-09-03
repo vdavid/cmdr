@@ -125,9 +125,10 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
 2. **TransferProgressDialog** (operation execution)
    - Dispatches the operation on mount, whether or not `TransferDialog`'s preview has finished walking. The operation
      claims that preview in the backend and its own task waits for it, so the dialog is a view over a named operation
-     from the first frame. While `phase === 'scanning'` it renders the scan-phase body, hides Pause (the backend
-     declines a pause in a scan-wait), and disables Rollback (nothing written yet); Background stays, which is the whole
-     point.
+     from the first frame. While `phase === 'scanning'` it renders the scan-phase body and disables Rollback (nothing
+     written yet); Pause and Background both stay. Pause reaches the WALK — it parks between entries on the operation's
+     own gate (`write_operations/scan_bridge.rs` § `ScanPause`) — so a paused scan is titled "Paused" and drops its
+     spinner and its rates, because it has genuinely stopped.
    - Routes to a backend command through `transfer-dispatch.ts`, then binds the session for the id it gets back.
    - Subscribes to nothing. The window's fan-out holds the seven streams and buffers whatever arrives for an id no
      session has claimed yet, which covers the gap between the start command answering and the binder acquiring. § "The
