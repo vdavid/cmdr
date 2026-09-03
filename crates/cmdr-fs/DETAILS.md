@@ -234,16 +234,37 @@ The API contract says this crate emits no user-facing strings. Two things look l
 
 Anyone grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.
 
-## `ScanTicker`: one ticker, so the promise can't drift
+## `ScanBoundary`: one seam, so a walk can't count without asking
 
-`Volume::scan_for_copy_batch_with_progress` promises counts that are **cumulative for the call** — callers shift by
+`Volume::scan_for_copy_batch_with_boundary` promises counts that are **cumulative for the call** — callers shift by
 their own baseline across several calls, so a per-path reset makes the scan dialog's counters jump backwards. Every
 remote backend needs exactly that, and two hand-rolled copies would drift on precisely the part that matters. So the
-ticker lives here and both `cmdr-smb` and `cmdr-sftp` count through it.
+boundary lives here and every backend counts through it.
 
-⚠️ It exists at all because a recursive scan over a network backend reports nothing until it returns: the transfer
-dialog sits on "0 files" for the length of the walk, and `write_operations/scan_watchdog.rs` — which bounds a preview by
-INACTIVITY — can't tell a slow tree from a server that stopped answering.
+⚠️ The counting exists at all because a recursive scan over a network backend reports nothing until it returns: the
+transfer dialog sits on "0 files" for the length of the walk, and `write_operations/scan_watchdog.rs` — which bounds a
+preview by INACTIVITY — can't tell a slow tree from a server that stopped answering.
+
+**Reporting and stopping are one call, deliberately.** `boundary.file(size).await?` and `boundary.dir().await?` count
+the entry AND answer the user's Cancel and Pause, so a backend author reaches the stop by writing `?` on a call they
+were already making. The alternative — a separate stop parameter beside the callback — is a thing a backend can be
+handed and quietly not use, and the only symptom of that is a Cancel button doing nothing on one backend while the
+numbers stay perfectly correct. ❗ Ask BEFORE a round trip, never after: a boundary on the far side of a listing is a
+boundary the user waits out, which over a sleeping NAS is seconds per directory.
+
+**What the owner implements** is `ScanStopSignal` (`scan_stop.rs`), not anything in this crate: `crates/` carry no
+`tauri` and can't name a write operation. The handle is `ScanStop`, `Arc`-held so a backend walking inside
+`spawn_blocking` can carry one across the closure, cloned once per scan and never per entry. Cost is ~2 ns per entry
+against the ~1–3 µs syscall or round trip the entry already costs.
+
+**A stopped scan returns `VolumeError::Cancelled`, ❌ never a partial `BatchScanResult`.** Callers read a scan's totals
+as the size of the transfer they're about to run, so a truncated total that looks successful is a progress bar
+finishing at 30% and a free-space check passing when it shouldn't.
+
+**Granularity is per backend, and uniformity would be a lie.** A backend that walks a real tree (local, SMB, MTP, and
+everything on `scan_walk`) asks per entry; one whose per-path scan is a bounded walk over an already-loaded index
+(in-memory, archive) asks per source path, which is the smallest unit of waiting it has. `volume::conformance`'s
+`assert_batch_scan_stops_when_told` and `assert_batch_scan_asks_inside_the_walk` pin which is which.
 
 ## `Volume::copy_within`: letting a server copy for itself
 

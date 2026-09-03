@@ -157,7 +157,13 @@ async fn settled_outcome(preview_id: &str) -> ScanOutcome {
 /// puts [`park_while_paused`](Self::park_while_paused) immediately after its
 /// existing cancel check, and pause inherits cancel's granularity for free: per
 /// entry on the local walk and the oracle-aware volume walk, per source group
-/// inside a cold-cache volume batch.
+/// around a cold-cache volume batch.
+///
+/// **Inside that batch it speaks as a `ScanStopSignal`** (the impl below), which
+/// is how both of a preview's routes to "stop" reach a backend crate that can
+/// name neither this type nor an operation. The backend threads a
+/// `cmdr_fs::volume::ScanBoundary` and gets a boundary per entry or per round
+/// trip, whichever it can honestly offer.
 ///
 /// **Why the owner is resolved lazily.** A preview walks detached from the
 /// operation that will consume it: the walk holds a `preview_id`, the gate hangs

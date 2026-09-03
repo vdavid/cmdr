@@ -332,7 +332,7 @@ impl TopLevelMoveHints {
 /// / size from it, never re-walking. Otherwise, groups the top-level sources by
 /// PARENT and lists each distinct parent ONCE (`list_directory` is one
 /// round-trip per parent: a single pipelined op on SMB, one parent listing on
-/// MTP — the same shape `MtpVolume`'s `scan_for_copy_batch_with_progress` uses,
+/// MTP — the same shape `MtpVolume`'s `scan_for_copy_batch_with_boundary` uses,
 /// minus the recursion). Cost is O(distinct parents), never O(subtree).
 pub(super) async fn top_level_move_hints(
     volume: &Arc<dyn Volume>,

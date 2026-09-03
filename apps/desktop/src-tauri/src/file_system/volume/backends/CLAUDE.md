@@ -23,7 +23,7 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
 
 ## Local and MTP must-knows
 
-- **Feed the progress callbacks** in `list_directory` and in a copy SCAN (`scan_for_copy_batch_with_progress`);
+- **Feed the progress callbacks** in `list_directory` and in a copy SCAN (`scan_for_copy_batch_with_boundary`);
   ❌ never quiet one to `_on_progress`. They drive the pane's only "Loaded N files…" readout and the transfer dialog's
   only climbing counter, and the scan one is the watchdog's proof the device is answering: a silent backend gets cut
   off as unresponsive.

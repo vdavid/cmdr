@@ -8,7 +8,8 @@ original path; prefer that in app code (`crate::file_system::volume::VolumeError
 
 - `volume/`: the trait, its types, `InMemoryVolume`, `ids` + `canonical_root` (the ID funnel and double-mount collapse),
   `retirement.rs` (how background work learns it stopped being the live volume), `channel_stream.rs` (the consumer half
-  a network backend's read path is built on), `scan_ticker.rs` (the running counts every remote scan reports), the four
+  a network backend's read path is built on), `scan_boundary.rs` + `scan_stop.rs` (the one seam a copy scan
+  touches per entry: it reports the counts AND answers the user's Cancel and Pause), the four
   modules a stat-and-listing backend gets its `Volume` bodies from (`scan_walk.rs`, `mkdir_all.rs`, `patching.rs`,
   `secret_store.rs`), `friendly_error/` (typed, word-free classification), and `host/` (what a backend needs from the
   app, as named traits; read `src/volume/host/CLAUDE.md` before writing a backend).

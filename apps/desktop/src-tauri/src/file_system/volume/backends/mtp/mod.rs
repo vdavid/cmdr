@@ -136,7 +136,7 @@ impl MtpVolume {
 }
 
 /// Test-only call counter for `MtpVolume::list_directory`. The
-/// `scan_for_copy_batch_with_progress` integration tests assert "exactly 2
+/// `scan_for_copy_batch_with_boundary` integration tests assert "exactly 2
 /// `list_directory` calls for 2 unique parents" without having to wrap the
 /// volume (the override calls `self.list_directory` via static dispatch on
 /// `MtpVolume`, so a wrapper Volume can't intercept it).
