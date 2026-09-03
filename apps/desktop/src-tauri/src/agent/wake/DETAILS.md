@@ -214,6 +214,32 @@ they are what somebody searching their threads would actually type.
 
 ## The inbox, and what a restart does
 
+**A floored folder never gets in** (`Inbox::admit_if_permitted`). A `Floored` weight is `0.0`, so interest is `0.0`
+however much churn the folder sees and the row can never earn a deadline. Refusing at the door rather than at digest
+time buys three things: the digest shrinks, `agent_inbox` stops holding a record of Chrome's cache activity (this
+module's own contract says those rows are a record of what the USER has been doing), and it stays one decision instead
+of one per consumer. `Inbox::admit`, the unconditional one, is unchanged: the gate lives in the one place the tap goes
+through, matching how consent is gated.
+
+Evidence: across 263 wake digests captured from `llm-logs/` on 2026-09-03, the most common folders were the Claude CLI
+MCP logs (449 appearances), JetBrains `LocalHistory` (447), `~/Library/Preferences` (340), the macOS temp dir (326),
+Chrome's cache (289), Cmdr's own data dir (260), and Cmdr's own `llm-logs/` (251). Every one of those wakes came back
+`nothing_to_suggest`, reasoning "all caches, logs, temp files, and internal app state".
+
+❌ **`Floored` only, never `Unknown`.** `Unknown` carries `UNKNOWN_IMPORTANCE_WEIGHT` (0.35) and means a folder the
+scorer has not reached yet, like a project cloned five minutes ago. Collapsing the two would have the agent ignore
+every new folder on the disk, and the symptom ("it just isn't very good at noticing things") points nowhere near the
+cause. `a_floored_folder_is_refused_at_the_door` and
+`an_unscored_folder_still_gets_in_and_earns_a_warm_deadline` pin both halves.
+
+**Cmdr's own data directory falls out of this rather than being named.** `~/Library/Application
+Support/com.veszelovszki.cmdr*` sits under `~/Library`, which `cmdr_index::importance::classify` puts in
+`PathClass::SystemOrCache`, so it floors like any other cache and the refusal covers it. ❌ Don't add a self-naming
+exclusion: a path the classifier already answers correctly is one fewer list to keep in sync.
+
+Floored rows written before this landed are still on disk. They load back cold (interest `0.0`, no deadline) and go at
+the next wake's drain, which clears the table, so no migration is needed.
+
 A merge can only pull a deadline earlier and can only raise the stored interest. The asymmetry is a starvation guard,
 and it also stops a later, duller contribution from demoting what an earlier burst established.
 

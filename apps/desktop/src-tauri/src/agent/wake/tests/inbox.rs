@@ -458,6 +458,99 @@ fn a_missing_key_still_lets_signal_accumulate() {
     assert_eq!(inbox.len(), 1);
 }
 
+/// A floored folder never gets in. Its weight is `0.0`, so no amount of churn can earn it a
+/// deadline: the row would sit in `agent_inbox` forever, ride along on every wake, and spend
+/// model tokens on a line saying a cache directory changed.
+#[test]
+fn a_floored_folder_is_refused_at_the_door() {
+    let mut inbox = Inbox::default();
+
+    let admitted = inbox.admit_if_permitted(
+        WakeReadiness::Ready,
+        arrivals("/Users/someone/Library/Caches/Google/Chrome", 400, 100),
+        FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+
+    assert!(!admitted, "junk ground earns no row, however loud it is");
+    assert_eq!(inbox.len(), 0);
+    assert_eq!(inbox.next_deadline(), None);
+}
+
+/// ❌ **The trap the refusal must not fall into.** `Unknown` is NOT `Floored`: it is a folder
+/// the importance scorer hasn't reached yet, like a project cloned five minutes ago, and it
+/// carries a real weight. Collapsing the two would have the agent ignore every new folder on
+/// the disk, with a symptom ("it just isn't very good at noticing things") pointing nowhere
+/// near the cause.
+#[test]
+fn an_unscored_folder_still_gets_in_and_earns_a_warm_deadline() {
+    let mut inbox = Inbox::default();
+
+    let admitted = inbox.admit_if_permitted(
+        WakeReadiness::Ready,
+        arrivals("/Users/someone/projects/cloned-five-minutes-ago", 3, 100),
+        FolderImportance::Unknown,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+
+    assert!(admitted, "an unreached folder is not junk ground");
+    assert_eq!(inbox.len(), 1);
+    let deadline = inbox.next_deadline().expect("an unscored folder still comes due");
+    assert!(
+        deadline > 1_000 + DEFAULT_HOT_DELAY.as_secs(),
+        "warm, not hot: {deadline}"
+    );
+}
+
+/// A scored folder is untouched by the refusal: the gate reads the importance answer, and
+/// only the floor is a refusal.
+#[test]
+fn a_scored_folder_is_admitted_as_before() {
+    let mut inbox = Inbox::default();
+
+    let admitted = inbox.admit_if_permitted(
+        WakeReadiness::Ready,
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+
+    assert!(admitted);
+    assert_eq!(inbox.next_deadline(), Some(1_000 + DEFAULT_HOT_DELAY.as_secs()));
+}
+
+/// The point of refusing at the door: a floored folder never reaches the digest, so the model
+/// never pays to read and dismiss it. Chrome's cache, the macOS temp dir, and Cmdr's own data
+/// directory all floor, and all three were in the top seven folders of 263 captured wake
+/// digests on 2026-09-03, every one of which came back `nothing_to_suggest`.
+#[test]
+fn a_floored_folder_never_reaches_the_digest() {
+    let mut inbox = Inbox::default();
+    inbox.admit_if_permitted(
+        WakeReadiness::Ready,
+        arrivals("/Users/someone/Library/Caches/Google/Chrome", 400, 100),
+        FolderImportance::Floored,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+    inbox.admit_if_permitted(
+        WakeReadiness::Ready,
+        arrivals("/Users/someone/Downloads", 3, 100),
+        IMPORTANT,
+        DEFAULT_HOT_DELAY,
+        1_000,
+    );
+
+    let digest = compact(&inbox.scored(), 4_000);
+
+    assert_eq!(digest.lines.len(), 1, "only the folder worth talking about: {digest:?}");
+    assert_eq!(digest.lines[0].folder, "/Users/someone/Downloads");
+    assert!(digest.rollups.is_empty(), "nothing was rolled up either: {digest:?}");
+}
+
 /// ⚠️ **The re-pricing trap.** A merge is min-only, deliberately (the starvation guard above),
 /// so a LENGTHENED cadence would never reach anything already waiting: the user asks for a
 /// calmer agent, and every row currently queued still fires on the old, twitchy schedule. The

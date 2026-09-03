@@ -131,6 +131,17 @@ impl Inbox {
     /// The gate lives here rather than at each call site so that "no consent, no rows" is one
     /// decision instead of a rule every producer has to remember. A caller that wants the
     /// unconditional behaviour still has [`admit`](Self::admit); the tap uses this one.
+    ///
+    /// ⚠️ **A floored folder is refused too.** Its weight is `0.0`, so interest is `0.0`
+    /// however much churn it sees, and the row could never earn a deadline: it would sit in
+    /// `agent_inbox` as a record of Chrome's cache activity and ride along on every wake,
+    /// spending model tokens on a line the agent can only dismiss. Refusing here rather than
+    /// at the digest keeps it one decision instead of one per consumer, and keeps junk out of
+    /// the table as well as out of the prompt.
+    ///
+    /// ❌ **`Floored` only — never `Unknown`.** An unreached folder carries a real weight
+    /// (`UNKNOWN_IMPORTANCE_WEIGHT`) and is exactly the project cloned five minutes ago that
+    /// the agent should notice. See [`FolderImportance::Unknown`].
     pub fn admit_if_permitted(
         &mut self,
         readiness: WakeReadiness,
@@ -139,7 +150,7 @@ impl Inbox {
         hot_delay: Duration,
         now: u64,
     ) -> bool {
-        if !readiness.admits_to_inbox() {
+        if !readiness.admits_to_inbox() || importance == FolderImportance::Floored {
             return false;
         }
         self.admit(bundle, importance, hot_delay, now);
