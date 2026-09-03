@@ -52,6 +52,7 @@ mod persist;
 mod quiet;
 mod readiness;
 mod runner;
+mod schedule;
 mod settings;
 mod snapshot;
 mod staged;
