@@ -6,7 +6,7 @@
 use tokio::sync::mpsc::unbounded_channel;
 use tokio_util::sync::CancellationToken;
 
-use super::tests::{OkDispatcher, params, runtime_with_stamped_conversation};
+use super::test_support::{OkDispatcher, params, runtime_with_stamped_conversation};
 use crate::agent::chat::runtime::{AgentChatEvent, TurnResult};
 use crate::agent::llm::fake::{FakeAgentLlm, ScriptedTurn};
 use crate::agent::store;

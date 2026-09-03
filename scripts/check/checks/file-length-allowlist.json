@@ -8,7 +8,6 @@
     "scripts/check/checks/registry.go": "append-only check registry (one CheckDefinition entry per check); line count tracks the number of checks, not splittable logic"
   },
   "files": {
-    "apps/desktop/src-tauri/src/agent/chat/runtime/tests.rs": 1292,
     "apps/desktop/src-tauri/src/commands/file_system/volume_copy.rs": 819,
     "apps/desktop/src-tauri/src/commands/network.rs": 901,
     "apps/desktop/src-tauri/src/error_reporter/tests.rs": 998,

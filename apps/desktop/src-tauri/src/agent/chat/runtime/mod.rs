@@ -287,6 +287,13 @@ pub(crate) fn now_secs() -> i64 {
 }
 
 #[cfg(test)]
+mod test_support;
+
+#[cfg(test)]
+mod context_budget_tests;
+#[cfg(test)]
+mod model_change_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod wake_tests;
