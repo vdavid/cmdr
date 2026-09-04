@@ -420,9 +420,17 @@ because retrofitting is where all the cost sits:
   signature moved to fit it**. What it needed that didn't exist became a NEW seam, `HostKeys` (§ "Seam by seam") —
   growth rather than a break, because no earlier backend's security depended on recognizing a server across sessions.
   The backend itself: `crates/cmdr-sftp/DETAILS.md`.
-- **`local_posix` and MTP are permanently app-resident.** Both refusals are written out with their reasons in
-  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions", because that's where
-  someone proposing "let's complete the set" will be standing.
+- **MTP is the last retrofit, and it is under way.** It is the one backend still reaching sideways (the listing cache at
+  four sites, the index handle, `tokio::spawn`, and a `tauri::AppHandle` that emits seven frontend events from inside
+  the session layer). The three things that once read as permanent refusals each have an answer, and they are the same
+  three answers SMB gave: a crate-local typed event trait for the derives, `any(test, feature = "testing")` for the
+  `cfg(test)` gates, and one argued visibility widening for `test_hooks`. Reasons in full:
+  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions"; the plan and its
+  milestones: `docs/specs/mtp-crate-extraction.md`.
+- **`local_posix` stays app-resident permanently**, and that refusal is not the same shape as MTP's: the git portal is
+  implemented as `LocalPosixVolume` hooks, so extracting the backend means extracting git or inventing a seam with one
+  implementor forever. The reasons are in the same section, because that's where someone proposing "let's complete the
+  set" will be standing.
 
 **Expect an extraction to surface latent defects**, and treat that as the point rather than a surprise. Archive's move
 found two: seven `.unwrap()`s that were legal only while the file was `cfg(test)` and became clippy `unwrap_used`
