@@ -83,9 +83,10 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   table from `emit_progress`, which the destination calls from inside `write_from_stream` and therefore inside the
   `CURRENT_TASK_PROBE` scope. Outside that window the row is already gone.
 - **A `*_tests.rs` file is a `#[path]` CHILD of the module it pins**, not a sibling of it: `copy_tests/mod.rs` is
-  `volume::copy::tests` (and its children one level deeper, so `super::super::` there is `copy`), `strategy_pause_tests.rs` is `volume::strategy::pause_tests`. So inside one, `super::` is that
-  parent module and `super::super::` is `volume` — one level shallower than the same text at file scope in
-  `copy.rs`. Check which scope you are in before touching a `super::` chain here; a wrongly-deepened one can still
+  `volume::copy::tests` and `strategy_pause_tests.rs` is `volume::strategy::pause_tests`. So inside one, `super::` is
+  that parent module and `super::super::` is `volume` — one level shallower than the same text at file scope in
+  `copy.rs`. A `copy_tests/` child sits one level deeper again, so `super::` there is the suite and `super::super::` is
+  `copy`. Check which scope you are in before touching a `super::` chain here; a wrongly-deepened one can still
   compile against a same-named module at the other level.
 - **`copy_bench.rs` is `#[ignore]`d** and needs a QNAP NAS plus `SMB2_TEST_NAS_PASSWORD`, so it never runs in CI.
 - **Four test-support files, split by what they fake.** `faulty_volume_test_support.rs` holds `FaultyVolume` (wrap any
