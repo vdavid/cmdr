@@ -160,6 +160,10 @@ fn image_to_data_url(img: &DynamicImage) -> Option<String> {
 ///
 /// For icons that were read straight out of a bundle rather than fetched from the
 /// OS icon provider (the "open terminal here" app list).
+///
+/// macOS only, because its one caller is: `file_system::terminal` reads `.app`
+/// bundles, which don't exist elsewhere.
+#[cfg(target_os = "macos")]
 pub(crate) fn rgba_to_data_url(rgba: &[u8], width: u32, height: u32) -> Option<String> {
     let img = image::RgbaImage::from_raw(width, height, rgba.to_vec())?;
     image_to_data_url(&DynamicImage::ImageRgba8(img))

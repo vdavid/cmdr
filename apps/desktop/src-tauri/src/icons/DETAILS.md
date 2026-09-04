@@ -68,7 +68,8 @@ detection during listing; the cost is bounded to the ~50 visible rows.
 `rgba_to_data_url(rgba, w, h)` encodes a raw buffer at `ICON_SIZE`. Its one caller is the "open terminal here" app list
 (`../file_system/terminal.rs`), which reads each app's `.icns` straight out of its bundle rather than asking NSWorkspace,
 so it needs no TCC permission and can't descend into a FileProvider XPC chain. Nothing here caches it: that list is a
-handful of apps, rendered when the settings row opens.
+handful of apps, rendered when the settings row opens. It's `#[cfg(target_os = "macos")]` for the same reason its caller
+is: `.app` bundles are a macOS thing, and an ungated copy is dead code in the Linux build.
 
 **Volumes** carry their own per-path icon through a separate, already-wired path: `volumes/mod.rs` calls
 `icons::get_icon_for_path` at volume-enumeration time and stores the data URL directly on the volume struct (FDA-gated,
