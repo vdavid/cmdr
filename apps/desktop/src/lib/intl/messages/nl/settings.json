@@ -1457,6 +1457,39 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd",
+    "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Open in Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
+  },
+  "settings.behavior.openTerminalHereApp.label": "‘Terminal hier openen’ gebruikt",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr toont de terminal-apps die het op deze Mac vindt. Voor een app die het niet kent, kies je ‘Kies app…’.",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Kies app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Kies een terminal-app",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Je apps controleren…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Hint voor ‘Terminal hier openen’ getoond",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Of de eenmalige hint over het kiezen van een terminal-app is getoond.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
+  },
   "settings.section.archives": "Archieven",
   "@settings.section.archives": {
     "sourceHash": "e404aa8"

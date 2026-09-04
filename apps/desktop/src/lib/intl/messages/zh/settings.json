@@ -1451,6 +1451,38 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.terminal": "终端",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd"
+  },
+  "settings.behavior.openTerminalHereApp.label": "“在此处打开终端”使用",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr 会列出在这台 Mac 上找到的终端 App。要用它不认识的 App，请选择“选取 App…”。",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "选取 App…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "选取终端 App",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "正在检查你的 App…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "已显示“在此处打开终端”提示",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "是否已显示过关于选择终端 App 的一次性提示。",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
+  },
   "settings.section.archives": "压缩文件",
   "@settings.section.archives": {
     "sourceHash": "e404aa8"

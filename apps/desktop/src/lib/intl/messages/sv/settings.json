@@ -1458,6 +1458,39 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd",
+    "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Öppna i Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
+  },
+  "settings.behavior.openTerminalHereApp.label": "”Öppna terminal här” använder",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr listar de terminalappar den hittar på den här Macen. För en som den inte känner till, välj ”Välj app…”.",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Välj app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Välj en terminalapp",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Kontrollerar dina appar…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Tips om ”Öppna terminal här” visat",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Om engångstipset om att välja en terminalapp har visats.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
+  },
   "settings.section.archives": "Arkiv",
   "@settings.section.archives": {
     "sourceHash": "e404aa8"

@@ -2296,3 +2296,18 @@ bestemming staat).
   bestemming”), `terugdraaien` is de vaste term voor rollback (`rollbackUnavailableTooltip`), en `Annuleer` is het label
   van de knop ernaast (`fileOperations.button.cancel`), dus het staat er onveranderd in · `high`.
 - Geen `sameAsSourceJustification`; geen apostrof in de waarden.
+
+## ‘Terminal hier openen’ en de app-keuze (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Nieuw oppervlak: een kaart in `Gedrag > Navigatie en bewerkingen` waar je kiest welke terminal-app het commando opent.
+macOS bouwt de lijst; hier worden alleen de labels vertaald.
+
+- **terminal (de soort app) → `terminal`; Terminal (de app van Apple) → `Terminal`** · het Nederlandse macOS van Apple
+  houdt de naam Engels (`Open in Terminal`, sleutel `N67` in `macOS/Finder/LocalizableMerged.json`), en het generieke
+  Nederlandse woord is hetzelfde leenwoord · `high`. Daarom draagt de kaarttitel
+  `settings.navigationAndFileOps.card.terminal` een `sameAsSourceJustification`: hij is met opzet gelijk aan het Engels.
+- **Open terminal here (de commandonaam) → `Terminal hier openen`** · gebouwd op Apples `Open in Terminal`, met `hier`
+  voor de plek · `high`. De vertaling van het commando zelf (menu, commandopalet) moet precies deze vorm gebruiken.
+- **Choose an app… → `Kies app…`** · letterlijk Apples eigen `Choose Application…` (sleutel `N137`) in de Nederlandse
+  Finder, die al `app` zegt · `confirmed`.
+- **terminal app → `terminal-app`** · streepje, zoals de rest van de catalogus · `high`. Geen apostrof in de waarden.

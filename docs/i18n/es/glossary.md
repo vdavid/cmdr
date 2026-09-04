@@ -2044,3 +2044,19 @@ el destino).
   está en el destino»), `reversión` es el término asentado para el rollback (`rollbackUnavailableTooltip`), y `Cancelar`
   es la etiqueta del botón vecino (`fileOperations.button.cancel`), así que entra tal cual · `high`.
 - Sin `sameAsSourceJustification`; ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`).
+
+## “Abrir terminal aquí” y su selector de app (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Superficie nueva: una tarjeta en `Comportamiento > Navegación y operaciones de archivos` donde se elige la app de
+terminal que abre el comando. La lista la construye macOS; aquí solo se traducen las etiquetas.
+
+- **terminal (el tipo de app) → `terminal`; Terminal (la app de Apple) → `Terminal`** · el macOS en español de Apple
+  mantiene el nombre en inglés (`Abrir en Terminal`, clave `N67` de `macOS/Finder/LocalizableMerged.json`), y la palabra
+  genérica en español es el mismo préstamo · `high`. Por eso el título de la tarjeta
+  `settings.navigationAndFileOps.card.terminal` lleva `sameAsSourceJustification`: es idéntico al inglés a propósito.
+- **Open terminal here (el nombre del comando) → `Abrir terminal aquí`** · construido sobre el `Abrir en Terminal` de
+  Apple, con `aquí` para el lugar · `high`. La traducción del propio comando (menú, paleta) debe usar exactamente esta
+  forma.
+- **Choose an app… → `Seleccionar app…`** · el `Choose Application…` de Apple (clave `N137`) dice
+  `Seleccionar aplicación…`; `app` en vez de `aplicación`, como en todo el catálogo · `high`.
+- Ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`).

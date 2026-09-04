@@ -1461,6 +1461,39 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd",
+    "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Ouvrir dans Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
+  },
+  "settings.behavior.openTerminalHereApp.label": "« Ouvrir un terminal ici » utilise",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr liste les apps de terminal qu''il trouve sur ce Mac. Pour en utiliser une qu''il ne connaît pas, choisissez « Choisir une app… ».",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Choisir une app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Choisir une app de terminal",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Vérification de vos apps…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Astuce « Ouvrir un terminal ici » affichée",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Indique si l''astuce unique sur le choix d''une app de terminal a été affichée.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
+  },
   "settings.section.archives": "Archives",
   "@settings.section.archives": {
     "sourceHash": "e404aa8",

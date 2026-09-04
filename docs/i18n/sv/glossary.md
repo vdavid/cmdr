@@ -2057,3 +2057,19 @@ mellan två filsystem har nått sitt sista steg (originalen tas bort, allt ligge
   på målet”), `ångra` är det satta verbet för rollback (`rollbackUnavailableTooltip`: ”går inte att ångra”), och
   `Avbryt` är knappens egen etikett (`fileOperations.button.cancel`), så den står oböjd · `high`.
 - Inga `sameAsSourceJustification`; ingen apostrof i värdena, så ICU-dubbleringen `''` blir aldrig aktuell.
+
+## ”Öppna terminal här” och dess appväljare (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Ny yta: ett kort i `Beteende > Navigering och filåtgärder` som väljer vilken terminalapp kommandot startar. Listan byggs
+av macOS, så bara etiketterna översätts här.
+
+- **terminal (appklassen) → `terminal`; Terminal (Apples app) → `Terminal`** · Apples svenska Finder behåller namnet
+  engelskt (`Öppna i Terminal`, nyckel `N67` i `macOS/Finder/LocalizableMerged.json`), och det generiska svenska ordet
+  är samma lånord · `high`. Därför bär kortrubriken `settings.navigationAndFileOps.card.terminal` en
+  `sameAsSourceJustification`: den är avsiktligt identisk med engelskan.
+- **Open terminal here (kommandonamnet) → `Öppna terminal här`** · byggt på Apples `Öppna i Terminal`, med `här` för
+  platsen · `high`. När kommandot självt översätts (meny, kommandopalett) måste exakt den formen användas.
+- **Choose an app… → `Välj app…`** · ordagrant Apples eget `Choose Application…` (nyckel `N137`) i svensk Finder, som
+  redan säger `app` · `confirmed`.
+- **terminal app → `terminalapp`** · sammansatt, som katalogens övriga `app`-sammansättningar · `high`. Inga apostrofer
+  i värdena, så ICU-dubbleringen `''` blir aldrig aktuell.

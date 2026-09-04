@@ -1451,6 +1451,38 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.terminal": "終端機",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd"
+  },
+  "settings.behavior.openTerminalHereApp.label": "「在此開啟終端機」使用",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr 會列出在這台 Mac 上找到的終端機 App。想用它不認得的 App，請選擇「選擇 App…」。",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "選擇 App…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "選擇終端機 App",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "正在檢查你的 App…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "已顯示「在此開啟終端機」提示",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "是否已顯示過關於選擇終端機 App 的一次性提示。",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
+  },
   "settings.section.archives": "壓縮檔",
   "@settings.section.archives": {
     "sourceHash": "e404aa8"

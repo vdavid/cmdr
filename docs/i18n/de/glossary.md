@@ -1936,3 +1936,19 @@ alles liegt schon am Ziel).
   schon am Ziel“), `zurücknehmen` ist das Verb zum schon gesetzten `Rücknahme`, und `Abbrechen` ist die Beschriftung der
   Nachbarschaltfläche (`fileOperations.button.cancel`), also steht sie unverändert im Satz · `high`.
 - Kein `sameAsSourceJustification`; kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.
+
+## „Terminal hier öffnen“ und seine App-Auswahl (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Neue Fläche: eine Karte in `Verhalten > Navigation & Dateioperationen`, auf der die Terminal-App für den Befehl steht.
+Die Liste baut macOS; hier werden nur die Beschriftungen übersetzt.
+
+- **terminal (die App-Gattung) → `Terminal`; Terminal (Apples App) → `Terminal`** · Apples deutsches macOS behält den
+  Namen englisch (`In Terminal öffnen`, Schlüssel `N67` in `macOS/Finder/LocalizableMerged.json`), und das generische
+  deutsche Wort ist dasselbe Lehnwort · `high`. Deshalb trägt die Kartenüberschrift
+  `settings.navigationAndFileOps.card.terminal` eine `sameAsSourceJustification`: sie ist absichtlich identisch.
+- **Open terminal here (der Befehlsname) → `Terminal hier öffnen`** · nach Apples `In Terminal öffnen`, mit `hier` für
+  den Ort · `high`. Wird der Befehl selbst übersetzt (Menü, Befehlspalette), muss genau diese Fassung stehen.
+- **Choose an app… → `App auswählen…`** · Apples eigenes `Choose Application…` (Schlüssel `N137`) sagt
+  `Programm auswählen …`; `App` statt `Programm`, weil der Katalog durchgehend `App` schreibt · `high`.
+- **terminal app → `Terminal-App`** · Bindestrich-Komposition wie die übrigen `App`-Komposita · `high`. Kein Apostroph
+  in den Werten, die ICU-Dopplung `''` entfällt.

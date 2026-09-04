@@ -147,6 +147,11 @@ Considered and deliberately NOT forked, so nobody re-litigates them:
   2026-09-02 hold nothing new either: `remove`, `unfinished`, `copy`, `destination`, `clear`, and `move` are all
   dialect-neutral, and `destination` is British Finder's own word for the place a copy lands
   (`_ignored/i18n/en-GB/macOS/Finder`, `PE83`: `can't be copied to the destination`).
+- **The "Open terminal here" setting (`settings.behavior.openTerminalHereApp.*`,
+  `settings.navigationAndFileOps.card.terminal`, 8 keys).** Nothing forks. `terminal`, `app`, `Mac`, `Choose`,
+  `Checking`, and `hint` are dialect-neutral, and British Finder writes `Open in Terminal` and `Choose Application…`
+  with the same spellings as base `en` (`_ignored/i18n/en-GB/macOS/Finder/LocalizableMerged.json`, `N67` and `N137`,
+  2026-09-05). The one word worth a look, `app`, is what British Finder calls it too.
 - **`Forward` → `Forwards` on the Go menu.** The adverbial `-s` rides the verb phrase only. `en-GB` writes `Forward` on
   the menu item (`Finder/MenuBar.json:249.title`, `SystemSettings/MainMenu.json:448.title`) while writing `go forwards`
   in the accessibility description, so `menu.go.forward` inherits and `commands.navForward.label` forks.

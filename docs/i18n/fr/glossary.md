@@ -2433,3 +2433,19 @@ tout est déjà arrivé à destination).
   elle passe telle quelle · `high`.
 - Pas de `sameAsSourceJustification`. Les apostrophes des valeurs sont doublées pour ICU (`jusqu''à`, `n''est`,
   `qu''il`).
+
+## « Ouvrir un terminal ici » et son sélecteur d’app (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Nouvelle surface : une carte dans `Comportement > Navigation et opérations` qui choisit l’app de terminal lancée par la
+commande. C’est macOS qui construit la liste ; seules les étiquettes se traduisent ici.
+
+- **terminal (la catégorie d’app) → `terminal` ; Terminal (l’app d’Apple) → `Terminal`** · le macOS français d’Apple
+  garde le nom en anglais (`Ouvrir dans Terminal`, clé `N67` de `macOS/Finder/LocalizableMerged.json`), et le mot
+  générique français est le même emprunt · `high`. D’où la `sameAsSourceJustification` sur le titre de carte
+  `settings.navigationAndFileOps.card.terminal` : il est identique à l’anglais à dessein.
+- **Open terminal here (le nom de la commande) → `Ouvrir un terminal ici`** · construit sur le `Ouvrir dans Terminal`
+  d’Apple, avec `ici` pour le lieu · `high`. La traduction de la commande elle-même (menu, palette) doit reprendre
+  exactement cette forme.
+- **Choose an app… → `Choisir une app…`** · le `Choose Application…` d’Apple (clé `N137`) dit `Choisir une application…`
+  ; `app` plutôt qu’`application`, comme partout dans le catalogue · `high`.
+- Les apostrophes des valeurs sont doublées pour ICU (`qu''il`, `l''astuce`, `d''une`).

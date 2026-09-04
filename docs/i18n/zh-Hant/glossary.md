@@ -952,3 +952,16 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
   的說法（「已經在目標位置了」），`復原` 是已定的術語（`rollbackUnavailableTooltip`），`取消`
   直接用旁邊按鈕自己的標籤（`fileOperations.button.cancel`），依目錄慣例加上引號 · `high`。
 - 無 `sameAsSourceJustification`；兩個值都不含撇號。
+
+## 「在此開啟終端機」與它的 App 選擇器（`settings.behavior.openTerminalHereApp.*`、`settings.navigationAndFileOps.card.terminal`）
+
+新介面：`行為 > 導覽與檔案操作` 下的一張卡片，用來選這個指令要開哪個終端機 App。清單由 macOS 產生，這裡只翻譯標籤。
+
+- **terminal（這類 App）→ `終端機`；Terminal（Apple 的 App）→ `終端機`** ·
+  Apple 的繁體中文 macOS 會把名字譯出來（`在「終端機」中打開`，`zh-TW/macOS/Finder/LocalizableMerged.json` 的 `N67`
+  鍵）· `high`。所以卡片標題照常翻譯，不加 `sameAsSourceJustification`。
+- **Open terminal here（指令名稱）→ `在此開啟終端機`** · 沿用 Apple 的 `在「終端機」中打開`，用 `在此` 表示位置 ·
+  `high`。指令本身的翻譯（選單、指令面板）必須用一模一樣的寫法。
+- **Choose an app… → `選擇 App…`** · Apple 的 `Choose Application…`（`N137` 鍵）寫作 `選擇應用程式⋯`；`App`
+  沿用詞彙表裡已定的說法 · `high`。
+- **terminal app → `終端機 App`** · 拉丁詞前後留空格，與目錄裡其餘 `App` 用法一致 · `high`。兩個值都不含撇號。

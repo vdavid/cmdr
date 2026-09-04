@@ -1893,3 +1893,18 @@ movimentação entre dois sistemas de arquivos chega ao último passo (apagar os
   destino»), `reversão` é o termo assentado para o rollback (`rollbackUnavailableTooltip`), e `Cancelar` é o rótulo do
   botão ao lado (`fileOperations.button.cancel`), então entra sem mudança · `high`.
 - Sem `sameAsSourceJustification`; nenhum valor tem apóstrofo.
+
+## “Abrir terminal aqui” e o seletor de app (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Superfície nova: um cartão em `Comportamento > Navegação e operações de arquivo` que escolhe o app de terminal aberto
+pelo comando. O macOS monta a lista; aqui só os rótulos são traduzidos.
+
+- **terminal (o tipo de app) → `terminal`; Terminal (o app da Apple) → `Terminal`** · o macOS em pt-BR mantém o nome em
+  inglês (`Abrir no Terminal`, chave `N67` em `macOS/Finder/LocalizableMerged.json`), e a palavra genérica em português
+  é o mesmo empréstimo · `high`. Por isso o título do cartão `settings.navigationAndFileOps.card.terminal` leva
+  `sameAsSourceJustification`: ele é idêntico ao inglês de propósito.
+- **Open terminal here (o nome do comando) → `Abrir terminal aqui`** · construído sobre o `Abrir no Terminal` da Apple,
+  com `aqui` para o lugar · `high`. A tradução do próprio comando (menu, paleta) precisa usar exatamente esta forma.
+- **Choose an app… → `Escolher app…`** · o `Choose Application…` da Apple (chave `N137`) diz `Escolher Aplicativo…`;
+  `app` no lugar de `aplicativo`, como no resto do catálogo, e em caixa de frase · `high`.
+- Nenhum valor tem apóstrofo.

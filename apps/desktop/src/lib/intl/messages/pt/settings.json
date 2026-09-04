@@ -1453,6 +1453,39 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd",
+    "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Abrir no Terminal\", key N67, verified against the macOS reference pile 2026-09-05)."
+  },
+  "settings.behavior.openTerminalHereApp.label": "“Abrir terminal aqui” usa",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "O Cmdr lista os apps de terminal que encontra neste Mac. Para usar um que ele não conhece, escolha “Escolher app…”.",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Escolher app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Escolher um app de terminal",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Verificando seus apps…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Dica de “Abrir terminal aqui” exibida",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Se a dica única sobre escolher um app de terminal já foi exibida.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
+  },
   "settings.section.archives": "Arquivos compactados",
   "@settings.section.archives": {
     "sourceHash": "e404aa8"

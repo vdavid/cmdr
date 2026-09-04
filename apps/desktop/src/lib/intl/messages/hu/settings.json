@@ -1452,6 +1452,38 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.navigationAndFileOps.card.terminal": "Terminál",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "sourceHash": "e0926fd"
+  },
+  "settings.behavior.openTerminalHereApp.label": "A „Terminál megnyitása itt” appja",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "sourceHash": "d665817"
+  },
+  "settings.behavior.openTerminalHereApp.description": "A Cmdr felsorolja az ezen a Macen megtalált terminálappokat. Ha olyat használnál, amit nem ismer, válaszd az „App kiválasztása…” lehetőséget.",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "sourceHash": "0df49fc"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "App kiválasztása…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "sourceHash": "26c3b61"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Válassz egy terminálappot",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "sourceHash": "735e979"
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Appok ellenőrzése…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "sourceHash": "0d6957f"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "A „Terminál megnyitása itt” tippje megjelent",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "sourceHash": "22f31aa"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Hogy a terminálapp választásáról szóló egyszeri tipp megjelent-e már.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "f976886"
+  },
   "settings.section.archives": "Archívumok",
   "@settings.section.archives": {
     "sourceHash": "e404aa8"

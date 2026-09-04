@@ -1852,3 +1852,16 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
   的说法（“已经在目标位置了”），`回滚` 是已定的术语（`rollbackUnavailableTooltip`），`取消`
   直接用旁边按钮自己的标签（`fileOperations.button.cancel`），按目录惯例加上引号 · `high`。
 - 无 `sameAsSourceJustification`；两个值都不含撇号。
+
+## “在此处打开终端”与它的 App 选择器（`settings.behavior.openTerminalHereApp.*`、`settings.navigationAndFileOps.card.terminal`）
+
+新界面：`行为 > 导航与文件操作` 下的一张卡片，用来选这个命令启动哪个终端 App。列表由 macOS 生成，这里只翻译标签。
+
+- **terminal（这类 App）→ `终端`；Terminal（Apple 的 App）→ `终端`** ·
+  Apple 的简体中文 macOS 把名字译了出来（`在终端中打开`，`macOS/Finder/LocalizableMerged.json` 里的 `N67` 键）·
+  `high`。所以卡片标题照常翻译，不加 `sameAsSourceJustification`。
+- **Open terminal here（命令名）→ `在此处打开终端`** · 沿用 Apple 的 `在终端中打开`，用 `在此处` 表示位置 ·
+  `high`。命令本身的翻译（菜单、命令面板）必须用完全一样的写法。
+- **Choose an app… → `选取 App…`** · Apple 的 `Choose Application…`（`N137` 键）写作 `选取应用程序…`；`App`
+  沿用词汇表里已定的说法 · `high`。
+- **terminal app → `终端 App`** · 拉丁词前后留空格，与目录里其余 `App` 用法一致 · `high`。两个值都不含撇号。

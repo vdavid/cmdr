@@ -2073,3 +2073,18 @@ giữa hai hệ thống tệp bước sang chặng cuối (xóa các bản gốc
   đích”), `hoàn tác` là từ đã chốt cho rollback (`rollbackUnavailableTooltip`), và `Hủy` là nhãn của nút bên cạnh
   (`fileOperations.button.cancel`) nên giữ nguyên · `high`.
 - Không có `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.
+
+## “Mở terminal tại đây” và bộ chọn ứng dụng (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Bề mặt mới: một thẻ trong `Hành vi & thao tác tệp` (`Hành vi > Điều hướng & thao tác tệp`) để chọn ứng dụng terminal mà
+lệnh sẽ mở. macOS dựng danh sách; ở đây chỉ dịch các nhãn.
+
+- **terminal (loại ứng dụng) → `terminal`; Terminal (ứng dụng của Apple) → `Terminal`** · macOS tiếng Việt giữ nguyên
+  tên tiếng Anh (`Mở trong Terminal`, khóa `N67` trong `macOS/Finder/LocalizableMerged.json`), và từ chung trong tiếng
+  Việt cũng là từ mượn đó · `high`. Vì vậy tiêu đề thẻ `settings.navigationAndFileOps.card.terminal` mang
+  `sameAsSourceJustification`: nó giống hệt tiếng Anh một cách có chủ ý.
+- **Open terminal here (tên lệnh) → `Mở terminal tại đây`** · dựa trên `Mở trong Terminal` của Apple, thêm `tại đây` cho
+  vị trí · `high`. Bản dịch của chính lệnh đó (menu, bảng lệnh) phải dùng đúng dạng này.
+- **Choose an app… → `Chọn ứng dụng…`** · đúng nguyên văn `Choose Application…` của Apple (khóa `N137`) trong Finder
+  tiếng Việt · `confirmed`.
+- Không giá trị nào chứa dấu nháy đơn.

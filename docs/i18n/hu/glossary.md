@@ -2332,3 +2332,18 @@ célhelyen van).
   szomszédos gomb saját felirata (`fileOperations.button.cancel`), így ragozás nélkül áll a mondatban · `high`.
 - A `Cmdrt` tárgyeset a márkanév kiejtés szerinti ragozása (style.md); nincs `sameAsSourceJustification`, és egyik érték
   sem tartalmaz aposztrófot.
+
+## A „Terminál megnyitása itt” és az appválasztója (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
+
+Új felület: egy kártya a `Viselkedés > Navigáció és fájlműveletek` alatt, ahol a parancs által indított terminálapp áll.
+A listát a macOS építi; itt csak a feliratok fordulnak.
+
+- **terminal (az appfajta) → `terminál`; Terminal (az Apple appja) → `Terminal`** · a magyar macOS megtartja az angol
+  nevet (`Megnyitás a Terminalban`, `N67` kulcs a `macOS/Finder/LocalizableMerged.json`-ban), a köznévre viszont a
+  Microsoft-terminológia `terminál`-t ad (`HUN`) · `high`. A kártyacím ezért `Terminál`; a `glossary.md` korábbi „kept
+  verbatim `Terminal`” sora a tulajdonnévre vonatkozik, és itt fut a kettő közti határ.
+- **Open terminal here (a parancs neve) → `Terminál megnyitása itt`** · az Apple `Megnyitás a Terminalban` mintájára,
+  köznévi `terminál`-lal · `high`. A parancs saját fordításának (menü, parancspaletta) pontosan ezt kell használnia.
+- **Choose an app… → `App kiválasztása…`** · az Apple `Choose Application…` (`N137`) `Alkalmazás kiválasztása…`-t ad;
+  `app`, mert a katalógus végig azt írja · `high`.
+- **terminal app → `terminálapp`** · egybeírt összetétel · `high`. Egyik érték sem tartalmaz aposztrófot.
