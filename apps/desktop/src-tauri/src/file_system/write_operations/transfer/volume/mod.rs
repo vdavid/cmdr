@@ -22,6 +22,9 @@ mod merge;
 /// `move` is a Rust keyword, so the module is `r#move`. Nothing outside this
 /// facade names it: the move entry points are re-exported below.
 mod r#move;
+/// The cross-volume copy-then-delete engine `r#move` dispatches to. Split out of
+/// it so the dispatcher and the engine read as the two decisions they are.
+mod move_cross;
 mod move_file;
 mod move_same;
 mod naming;
@@ -95,11 +98,15 @@ mod self_collision_tests;
 mod rename_merge_test_support;
 
 #[cfg(test)]
+mod preflight_stop_tests;
+#[cfg(test)]
 mod rename_merge_cancel_tests;
 #[cfg(test)]
 mod rename_merge_case_fold_tests;
 #[cfg(test)]
 mod rename_merge_mtp_tests;
+#[cfg(test)]
+mod rename_merge_pause_tests;
 #[cfg(test)]
 mod rename_merge_stat_tests;
 #[cfg(test)]

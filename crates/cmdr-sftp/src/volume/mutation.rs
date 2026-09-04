@@ -22,10 +22,15 @@
 //! `DETAILS.md` § "The error policy" carries the table, and § "Renaming without
 //! clobbering" the reasoning behind the claim.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use cmdr_fs::volume::{DirectoryCreation, MutationEvent, Volume, VolumeError};
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::host::listings::ListingHost;
+use cmdr_fs::volume::mkdir_all::{self, MakesDirectories};
+use cmdr_fs::volume::patching::{PatchSource, patch_created, patch_deleted, patch_renamed};
+use cmdr_fs::volume::scan_walk::Walking;
+use cmdr_fs::volume::{DirectoryCreation, VolumeError};
 use log::debug;
 use openssh_sftp_client::Error as SftpError;
 
@@ -71,14 +76,14 @@ impl SftpVolume {
             return Err(e);
         }
 
-        self.notify_created(path).await;
+        patch_created(self, path).await;
         Ok(())
     }
 
     /// Creates one directory.
     ///
     /// `SSH_FXP_MKDIR` refuses an occupied name on every server, extension or
-    /// not, which is what lets [`Volume::create_directory_errors_on_existing_dir`]
+    /// not, which is what lets `Volume::create_directory_errors_on_existing_dir`
     /// answer `true` here — and that answer is what gives a remote archive edit
     /// its atomic swap.
     pub(super) async fn create_directory_impl(&self, path: &Path) -> Result<(), VolumeError> {
@@ -87,90 +92,25 @@ impl SftpVolume {
         debug!("SftpVolume::create_directory: {remote}");
 
         self.create_one_directory(&session, &remote).await?;
-        self.notify_created(path).await;
+        patch_created(self, path).await;
         Ok(())
     }
 
-    /// `mkdir -p`, in one round trip when the parent is already there.
+    /// `mkdir -p`, through the shared walk: leaf first, ancestors only when the
+    /// leaf's parent was missing.
     ///
     /// ❗ Overridden rather than left to the trait default, which calls
     /// `exists()` once per ancestor: over a 50 ms link that is one round trip per
     /// level before a single directory gets made, and a deep destination pays it
-    /// on every copy.
-    ///
-    /// ❗ And it answers honestly. `Created` promises the leaf was empty at that
-    /// instant, and the transfer driver spends the promise by skipping its
-    /// per-file destination conflict probe inside — so a `Created` for a
-    /// directory we merely found turns "would have prompted" into "overwrote",
-    /// for every file in the copy.
+    /// on every copy. The honesty contract on the answer, and why a `Created` we
+    /// aren't sure of is an overwrite: `cmdr_fs::volume::mkdir_all`.
     pub(super) async fn create_directory_all_impl(&self, path: &Path) -> Result<DirectoryCreation, VolumeError> {
-        let remote = self.to_remote_path(path)?;
-        let session = self.clone_session().await?;
-        debug!("SftpVolume::create_directory_all: {remote}");
-
-        // The volume root always exists, and so does every spelling of it.
-        let root = self.to_remote_path(Path::new("/"))?;
-        if remote == root {
-            return Ok(DirectoryCreation::AlreadyExisted);
+        debug!("SftpVolume::create_directory_all: {}", path.display());
+        let made = mkdir_all::create_directory_all(self, path).await?;
+        if let Some(created) = made.shallowest_created {
+            patch_created(self, &created).await;
         }
-
-        // The leaf first: the common case is a new folder under a directory
-        // that's already there, and that costs exactly one request.
-        match self.create_one_directory(&session, &remote).await {
-            Ok(()) => {
-                self.notify_created(path).await;
-                return Ok(DirectoryCreation::Created);
-            }
-            Err(VolumeError::AlreadyExists(_)) => return Ok(DirectoryCreation::AlreadyExisted),
-            // Only a missing ancestor earns the walk. Anything else (a read-only
-            // export, a quota, a refused name) fails the same way at every level,
-            // so walking would just spend round trips to arrive at the same
-            // answer.
-            Err(VolumeError::NotFound(_)) => {}
-            Err(e) => return Err(e),
-        }
-
-        // Leaf → root, stopping at the volume root, then created shallowest
-        // first so no child is asked for before its parent. Each level keeps both
-        // spellings: the remote one to create, the caller's to patch a pane with.
-        let mut missing: Vec<(&Path, String)> = Vec::new();
-        for ancestor in path.ancestors() {
-            let Ok(remote_ancestor) = self.to_remote_path(ancestor) else {
-                break;
-            };
-            if remote_ancestor == root {
-                break;
-            }
-            missing.push((ancestor, remote_ancestor));
-        }
-
-        let mut leaf = DirectoryCreation::AlreadyExisted;
-        let mut first_created: Option<&Path> = None;
-        for (index, (as_addressed, dir)) in missing.iter().enumerate().rev() {
-            match self.create_one_directory(&session, dir).await {
-                Ok(()) => {
-                    first_created.get_or_insert(as_addressed);
-                    if index == 0 {
-                        leaf = DirectoryCreation::Created;
-                    }
-                }
-                // Somebody else got there first. Idempotent, so it's a success —
-                // ❗ but not OURS: their directory may already hold something,
-                // which is exactly what `AlreadyExisted` tells the caller.
-                Err(VolumeError::AlreadyExists(_)) => {}
-                Err(e) => return Err(e),
-            }
-        }
-        // ❗ ONE patch, for the SHALLOWEST directory this created. Its parent is
-        // the only level that was there before, so it is the only listing a pane
-        // could be holding — the levels under it are brand new and nobody has
-        // them cached. Patching the leaf instead leaves that pane a level short,
-        // and patching every level would spend a stat round trip per level on
-        // directories nothing is showing.
-        if let Some(created) = first_created {
-            self.notify_created(created).await;
-        }
-        Ok(leaf)
+        Ok(made.leaf)
     }
 
     /// Deletes one file or one EMPTY directory.
@@ -188,14 +128,14 @@ impl SftpVolume {
         // directory form is the second guess.
         let first = match session.sftp().fs().remove_file(&remote).await {
             Ok(()) => {
-                self.notify_deleted(path).await;
+                patch_deleted(self, path).await;
                 return Ok(());
             }
             Err(e) => e,
         };
         let second = match session.sftp().fs().remove_dir(&remote).await {
             Ok(()) => {
-                self.notify_deleted(path).await;
+                patch_deleted(self, path).await;
                 return Ok(());
             }
             Err(e) => e,
@@ -234,7 +174,7 @@ impl SftpVolume {
             self.rename_into_a_free_name(&session, &remote_from, &remote_to).await?;
         }
 
-        self.notify_renamed(from, to).await;
+        patch_renamed(self, from, to).await;
         Ok(())
     }
 
@@ -400,107 +340,42 @@ impl SftpVolume {
             Err(_) => WhatIsThere::Nothing,
         }
     }
+}
 
-    // ── The listing-cache patches ────────────────────────────────────
-
-    /// The one patch a create leaves behind. A path that doesn't translate skips
-    /// it: the write already succeeded, and a cache patch must never fail it.
-    pub(super) async fn notify_created(&self, path: &Path) {
-        let (Some(parent), Some(name)) = (path.parent(), path.file_name()) else {
-            return;
-        };
-        let Some(parent_display) = self.display_path_for(parent) else {
-            return;
-        };
-        self.notify_mutation(
-            self.volume_id(),
-            &parent_display,
-            MutationEvent::Created(name.to_string_lossy().to_string()),
-        )
-        .await;
+/// What the shared `mkdir -p` walk needs from this backend: one `SSH_FXP_MKDIR`,
+/// and this volume's own path spelling. The `Created` promise it answers with is
+/// spent by the transfer driver, so the refusals matter:
+/// `cmdr_fs::volume::mkdir_all`.
+impl MakesDirectories for SftpVolume {
+    fn remote_path_of(&self, path: &Path) -> Result<String, VolumeError> {
+        self.to_remote_path(path)
     }
 
-    /// The same for a delete.
-    async fn notify_deleted(&self, path: &Path) {
-        let (Some(parent), Some(name)) = (path.parent(), path.file_name()) else {
-            return;
-        };
-        let Some(parent_display) = self.display_path_for(parent) else {
-            return;
-        };
-        self.notify_mutation(
-            self.volume_id(),
-            &parent_display,
-            MutationEvent::Deleted(name.to_string_lossy().to_string()),
-        )
-        .await;
+    fn make_one_directory<'a>(&'a self, remote: &'a str) -> Walking<'a, ()> {
+        Box::pin(async move {
+            let session = self.clone_session().await?;
+            self.create_one_directory(&session, remote).await
+        })
+    }
+}
+
+/// What the shared listing-cache patcher needs from this backend. ❗ There is no
+/// watcher here, so a patch is the ONLY thing that keeps a pane honest after a
+/// write. The rules: `cmdr_fs::volume::patching`.
+impl PatchSource for SftpVolume {
+    fn patch_volume_id(&self) -> &str {
+        self.volume_id()
     }
 
-    /// One `Renamed` when both ends share a parent, otherwise a `Deleted` at the
-    /// source and a `Created` at the destination. Still one call per changed
-    /// DIRECTORY.
-    async fn notify_renamed(&self, from: &Path, to: &Path) {
-        if from.parent() == to.parent() {
-            let (Some(parent), Some(from_name), Some(to_name)) = (from.parent(), from.file_name(), to.file_name())
-            else {
-                return;
-            };
-            let Some(parent_display) = self.display_path_for(parent) else {
-                return;
-            };
-            self.notify_mutation(
-                self.volume_id(),
-                &parent_display,
-                MutationEvent::Renamed {
-                    from: from_name.to_string_lossy().to_string(),
-                    to: to_name.to_string_lossy().to_string(),
-                },
-            )
-            .await;
-            return;
-        }
-        self.notify_deleted(from).await;
-        self.notify_created(to).await;
+    fn patch_listings(&self) -> &dyn ListingHost {
+        self.inner.host.listings()
     }
 
-    /// Patches the cached listing of ONE directory to match a mutation that has
-    /// already landed on the server.
-    pub(super) async fn notify_mutation_impl(&self, parent_path: &Path, mutation: MutationEvent) {
-        use cmdr_fs::volume::DirectoryChange;
+    fn patch_stat<'a>(&'a self, path: &'a Path) -> Walking<'a, FileEntry> {
+        Box::pin(self.get_metadata_impl(path))
+    }
 
-        let listings = self.inner.host.listings();
-        let volume_id = self.volume_id();
-        match mutation {
-            MutationEvent::Created(ref name) | MutationEvent::Modified(ref name) => {
-                let entry_path = parent_path.join(name);
-                // One stat, and a failure is simply no patch: the pane re-lists
-                // eventually, and the mutation itself has already succeeded.
-                let Ok(entry) = self.get_metadata_impl(&entry_path).await else {
-                    return;
-                };
-                let change = if matches!(mutation, MutationEvent::Created(_)) {
-                    DirectoryChange::Added(entry)
-                } else {
-                    DirectoryChange::Modified(entry)
-                };
-                listings.directory_changed(volume_id, parent_path, change);
-            }
-            MutationEvent::Deleted(name) => {
-                listings.directory_changed(volume_id, parent_path, DirectoryChange::Removed(name));
-            }
-            MutationEvent::Renamed { from, to } => {
-                let Ok(entry) = self.get_metadata_impl(&parent_path.join(&to)).await else {
-                    return;
-                };
-                listings.directory_changed(
-                    volume_id,
-                    parent_path,
-                    DirectoryChange::Renamed {
-                        old_name: from,
-                        new_entry: entry,
-                    },
-                );
-            }
-        }
+    fn patch_display_path(&self, path: &Path) -> Option<PathBuf> {
+        self.display_path_for(path)
     }
 }

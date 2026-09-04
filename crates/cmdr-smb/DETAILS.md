@@ -5,9 +5,11 @@
 Two boundaries run through this crate, and they answer different questions.
 
 **The backend / app boundary** is the `Volume` trait plus the `VolumeHost` seams: `SmbVolume` implements one and asks
-everything else through the other, so nothing here names the app. What stayed up there is what genuinely needs the app —
-finding a share and mounting it, deciding when to replace a kernel mount with a direct session, and driving transfers.
-`apps/desktop/src-tauri/src/file_system/volume/backends/smb.rs` lists it.
+everything else through the other, so nothing here names the app. What stayed up there is what genuinely needs the app:
+finding a share and mounting it (`apps/desktop/src-tauri/src/network/`), minting an `SmbVolume` and registering it
+(`network/smb_upgrade.rs`), and driving every copy, move, and delete with the real event sink and pause gate
+(`apps/desktop/src-tauri/src/file_system/write_operations/`). App call sites import this crate by name, the way they do
+`cmdr-sftp` and `cmdr-webdav`.
 
 **The protocol / app boundary** is older and sits inside `network/`, which grew as one pile: mDNS discovery, share
 listing, mounting, the keychain, the auto-upgrade passes, and the Tauri events, plus a handful of pure functions over
@@ -110,12 +112,13 @@ on", not by watching a number.
   splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct from its trait
   impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching into another's
   internals.
-- **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" WITHOUT a per-device gate.** MTP
-  has an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so the signal
-  here is time-based instead: the share counts as busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last
-  navigation on it. Scope is PER VOLUME on purpose, so browsing a local folder never slows a NAS copy.
-  `CheckpointStream`'s auto-yield parks on these two functions and `SmbVolume`'s `Volume` foreground-yield methods
-  delegate to them.
+- **`volume/foreground_yield.rs` answers "should a background transfer stand aside?" from the WORK, not the transport.**
+  MTP has an explicit holder for its single scarce USB pipe; SMB frames just interleave over one connection, so there is
+  nothing on the transport to count. A foreground LISTING is a scoped operation, though, so it holds a per-volume lease
+  for its real duration, and the share stays busy for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` after the last one ends. The
+  two halves are composed once, in `cmdr_fs::volume::host::activity::volume_busy_for_user`. Scope is PER VOLUME on
+  purpose, so browsing a local folder never slows a NAS copy. `CheckpointStream`'s auto-yield parks on these two
+  functions and `SmbVolume`'s `Volume` foreground-yield methods delegate to them.
 - **`SmbVolumeInner` is private to `volume/`**, and nothing outside it may name the type. What the app gets is
   `SmbVolume`, `SmbConnectionParams`, `ConnectionState`, and `connect_smb_volume`.
 
@@ -127,10 +130,14 @@ The suites split by what a cell ASSERTS, never by what it connects to. Both side
 - **Here**, if the assertion is about this backend: the `Volume` contract against a real server, the byte path, the
   shared conformance promises, the retirement wiring, the watcher's archive-refresh routing, and every session-free unit
   case. § "The suites" below has the file-by-file map.
-- **In the app**, if the assertion is about what the APP does with a share: every cell driving `write_operations`, the
-  volume registry, the listing cache, archive routing, or media enrichment. The app's `smb_app_integration_test.rs`
-  holds the two that don't fit either heading — a pane close must not kill the watcher (the pane-close IPC is the
-  app's), and a local file streams onto the share (`LocalPosixVolume` is the app's).
+- **In the app**, if the assertion is about what the APP does with a share, and the cell sits beside the app code it
+  asserts on rather than beside the backend. `file_system/write_operations/` holds the transfer suites
+  (`smb_transfer_safety_test.rs`, `smb_transfer_semantics_test.rs`, `smb_full_concurrency_test.rs`,
+  `smb_stress_test.rs`, `smb_soak_test.rs`), the remote-archive cells (`smb_archive_integration_test.rs`), the
+  local-source stream write (`smb_stream_write_integration_test.rs`), and the fixture wiring they share
+  (`smb_test_support.rs`). `file_system/listing/` holds the pane-close watcher regression
+  (`smb_pane_close_watch_integration_test.rs`), and `file_system/volume/` holds the two cells where the index crate
+  meets a real share (`smb_index_scan_test.rs`, `smb_media_fetch_integration_test.rs`).
 
 **These are WHITE-BOX tests, and that is why they're here.** They build an `SmbVolumeInner` by struct literal, drive
 `do_attempt_reconnect` directly, and read the client, tree, and scan pool out of the session. ❌ Don't widen the
@@ -208,6 +215,31 @@ hooks close that, both funneling through the ONE reconnect path (`do_attempt_rec
   media scheduler resumes enrichment with no scheduler changes. The resumed index loads Stale (we weren't watching while
   disconnected); a rescan restores Fresh. Canonical detail lives in `indexing/DETAILS.md` § "SMB indexing and the
   freshness model"; this bullet is the volume-side trigger map.
+
+## Scanning: where the copy scan asks whether to carry on
+
+`scan_recursive` threads a `cmdr_fs::volume::ScanBoundary` and asks it at three places: once before the top-level stat,
+`dir()` before every directory listing, and `file()` on every leaf. That is what a person's Cancel and Pause reach, and
+before it existed the whole batch scan was one uninterruptible call — a wrong-share scan over a NAS whose disks had spun
+down ran to completion whatever the user pressed.
+
+❗ **`dir()` goes BEFORE the listing, never after.** A listing is the round trip, seconds of it on a cold share, so a
+boundary on its far side is a Cancel the user waits out.
+
+❌ **Don't ask inside the pipelined top-level stat drain.** Those futures each hold a cloned `Connection`, and parking
+mid-drain would hold every one of them idle for as long as a person is thinking. The sizes it resolves are reported to
+the boundary once the drain is over; the drain itself is O(top-level paths) and pipelined, so the wait it can add is
+bounded, and the recursion after it is the long part.
+
+A stopped scan comes back as `VolumeError::Cancelled`, ❌ never a short total — the shared contract, with the reasoning
+in `crates/cmdr-fs/DETAILS.md` § "`ScanBoundary`". `conformance::assert_batch_scan_stops_when_told` and
+`assert_batch_scan_asks_inside_the_walk` both run against the Docker share (`volume/conformance_test.rs`), because a
+walk that ignores its boundary still returns the right numbers and nothing else in the suite would notice.
+
+**What the batch scan owns, and what it borrows.** The oracle short-circuit is this backend's: the watcher is what earns
+an `authoritative_listing` shortcut, so only a backend with one can take it. The conflict matcher and the batch fold are
+`cmdr_fs::volume::scan_walk`'s, deliberately, so every backend hands the conflict dialog the same shape rather than each
+growing its own near-miss.
 
 ## SMB scan-connection pool
 
@@ -333,6 +365,77 @@ evidence arrives on its own, an SMB volume on a wedged mount still claims OS vis
 notifications carry decide which cached listing they patch. So `SmbVolumeInner::active_mount_path` (a std
 `RwLock<PathBuf>`, shared with the watcher task and re-read once per event batch) is updated by a reroot; a watcher
 pinned to the old root would keep feeding paths that no longer name anything.
+
+## Copy concurrency and the credit window
+
+Every SMB2 request spends credits from a budget the server grants (smb2 steers toward a ~512-credit window), and the
+charge follows the size of the RESPONSE the request asks for, one credit per 64 KB. Credits and in-flight bytes are
+therefore the same quantity seen twice, which decides both halves of how a copy is sized. The incident that established
+all of this, with the log extract and the arithmetic: `docs/notes/smb-credit-stall-2026-09-01.md`.
+
+**The hinted read asks for the file's size, never `max_read`.** `open_read_stream_with_hint` takes the compound
+fast-path (CREATE+READ+CLOSE in one frame) for any hint that fits one READ, and drives
+`Tree::read_file_compound_sized(conn, path, size)`. The unsized `read_file_compound` asks for `max_read` whatever the
+file weighs, which is what stalled a 300 GB copy of 4 MB files: 130 credits each, three of them in a 512-credit window,
+seven of ten copy slots parked. The scan pool's prefetch (`scan_pool.rs::open_read_stream_for_scan_impl`) reads the same
+way, for the same reason.
+
+`expected_size` is a HARD bound, not a hint: smb2 compares the server's authoritative size (it rides the same compound
+frame, in the CREATE response) against the length asked for and refuses with `ErrorKind::TooLarge` rather than hand back
+a prefix. That splits the two size-drift arms in the fast path cleanly, and both are load-bearing. A file that GREW
+since the scan comes back `TooLarge` and falls through to streaming, which serves it whole; one that SHRANK comes back
+short of the hint (`data.len() != size`) and falls through the same way. Neither ever hands the copy a prefix under the
+file's final name. ❌ Never "simplify" either arm away, and never call the unsized `read_file_compound` from a path that
+knows the size: an 8 MB request against a 4 MB file is both the over-charge and a guard that can't fire.
+
+**Known gap, unfixed on purpose: a window too small to carry even ONE compound read.** The fast path's condition is "the
+hint fits one READ", which asks about `max_read` and not about credits. A server granting a small window (embedded NAS
+firmware, a router's USB share, Samba built with a low `smb2 max credits`) can leave a 4 MB file's 66-credit chain
+unservable: smb2 refuses with `Error::CreditStarvation` rather than hanging, the fast path has no arm for it, and the
+file fails instead of falling through to a streaming read that would have worked at ~10 credits a chunk. Nothing has
+been observed hitting this — both reference servers were measured granting 513 credits — which is exactly why no
+recovery branch was written: an untested error path in the copy engine is worse than a documented gap. The profile that
+would show it is specific: a LARGE `max_read` paired with a SMALL grant. A server with a small `max_read` is
+automatically safe, because `read_file_compound_sized` clamps `requested` to it and the charge falls with it.
+
+The fix, if it ever does show up, is to REACT rather than predict: `reserve_credits` refuses before anything reaches the
+wire, so an unfundable compound read costs zero round trips and the fast path can fall through to streaming on the spot.
+That is correct on every server, including one whose window moves mid-connection. What blocks it today is that smb2
+can't tell "unfundable here" from "transient": `Error::CreditStarvation` reports `is_retryable() == true` and classifies
+as `ErrorKind::TimedOut`, so a generic retry loop would retry a request that can never succeed. ❌ Don't reach instead
+for a predictive gate on `credit_capacity_for` — it answers from a constant (see the clamp note above), so it cannot
+tell you whether THIS server can fund the read.
+
+**`max_concurrent_ops` is clamped by what the window can carry — and that clamp cannot bind today.** The answer is
+`min(setting, credit_capacity_for(512 KB))`, floored at 1 and never raised above what the user chose.
+`Connection::credit_capacity_for` is sync but the connection lives behind an async mutex, so `clone_session` stores the
+figure in `SmbVolumeInner::credit_copy_capacity` on its way through (every read and write passes there) and the sync
+method reads the atomic; `0` means nothing has measured it yet and the setting stands.
+
+❌ **Do not describe this as protecting a copy from a small credit window; measured, it protects nothing.**
+`credit_capacity_for` divides the CONSTANT `CREDIT_TARGET` (512) by the request's charge, so it reports what the client
+STEERS TOWARD, never what a server granted. The only server-dependent input is `max_read`, which merely clamps the
+`bytes` argument. That puts the answer between 51 (an 8 MB `max_read`) and 170 (a 64 KB one) for any real server, while
+`network.smbConcurrency` is clamped to 1..=32 — so `min(setting, capacity)` is `setting` for every input either can
+take. The plumbing is live and correct; the number it carries is inert until smb2 tracks the granted window (its
+`credits()` is unspent-right-now, not capacity). Both reference servers were measured at 513 granted credits, so the
+steer is honored in full there and the case this was written for did not occur. Reassess when a release can answer from
+the grant; until then, ❌ don't tune `REPRESENTATIVE_COPY_REQUEST_BYTES` expecting the cap to start biting, because a
+constant divisor makes any value a differently-written constant, and one small enough to bind would throttle a generous
+server on a guess.
+
+The 512 KB question is the judgement call in it. There's no per-file knowledge at that seam, and the risk isn't
+symmetric: because charge and in-flight bytes are the same quantity, extra slots beyond what the window carries only
+park until a peer finishes (the wire is already full), while too FEW slots leave the window half empty and cost real
+throughput no retry gets back. So the figure has to sit at or below the typical copy request, not at the worst one:
+`max_read` would answer three or four slots and throttle a queue of 4 MB files the window carries seven of. One
+pipelined streaming READ (smb2 chunks a download at ~512 KB) is the smallest request a copy slot actually sends, so the
+cap stays clear of a healthy session and bites only where it must, on a server whose whole window can't carry the slots
+the setting asks for. Per-file sizing would be the accurate answer, and it belongs at the read, not here: it would need
+the transfer driver to budget slots by size rather than by count.
+
+Only the transfer driver reads `max_concurrent_ops` (`write_operations/transfer/volume/copy.rs`), so this clamp never
+slows a listing, a stat, or the watcher; those share the same window and are better off for the headroom.
 
 ## Decisions
 
@@ -533,6 +636,9 @@ the ETA was built on bytes nothing had committed, and the transfer watchdog read
 acknowledged count per chunk and one final call credits the last window. The per-chunk call still happens even when the
 count hasn't moved, because it doubles as the cancel poll.
 
+❗ **Size any test that means to reach this path off `negotiated_max_write()`.** A payload that fits one compound write
+silently takes the fast path instead, so the test passes without ever touching the pipelined loop it was written for.
+
 The compound fast-path reports differently on purpose: it has no acknowledgement to report until the one all-or-nothing
 frame returns, so it reports bytes buffered during the source drain. That lie is bounded by `max_write_size` and the
 frame either lands whole or creates nothing.
@@ -574,6 +680,15 @@ directories and constructing display paths.
 NFC-normalized filenames. macOS filesystem paths use NFD. The watcher NFD-normalizes filenames before constructing
 display paths used for cache lookups.
 
+**Gotcha**: a share name reaches the wire NFC, so `SmbConnectionParams` must be built with `new` **Why**: `new` runs the
+NFC normalization; a struct literal filled from a raw `statfs` mount name carries macOS's NFD spelling straight to the
+server, which answers `STATUS_BAD_NETWORK_NAME` for a share whose name has any composed character in it. The failure is
+loud and immediate, which is the only reason this doesn't sit in `CLAUDE.md`.
+
+**Gotcha**: `specta` is pinned to the app's exact version, and a bump has to move both **Why**: `tauri-specta` collects
+the app's commands transitively, so the `Type` impls this crate derives have to come from the SAME `specta` crate the
+app links. Two `specta` nodes in one graph make them different traits, and the collection stops compiling.
+
 ## The suites
 
 Which side each one lives on, and why: § "Which side a test lives on" above.
@@ -594,13 +709,38 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
   the copy and conflict scans, space info.
 - `session_integration_test.rs` — what the SESSION does: the connection gate the fresh-listing oracle reads, the
   reconnect cycle, the refcounted scan pool, and what a supersede leaves alone.
-- `streaming_integration_test.rs` — the whole byte path: `open_read_stream` / `write_from_stream` across progress,
-  cancel, cancel-by-drop, multi-chunk files, and the error / partial-cleanup paths with the `ErroringReadStream` double,
-  plus the two compound-frame shape assertions.
+- **The byte path is three files split by contract**, all declared from `volume/mod.rs`. A new byte-path cell adds
+  itself to the matching contract rather than growing one file; a cell that straddles goes where its ASSERTION lives,
+  not where its setup does.
+  - `read_stream_integration_test.rs` — what `open_read_stream` / `open_read_stream_with_hint` hand back: a plain read,
+    a multi-MB read across chunk boundaries, cancel-by-drop, and both size-drift arms of the hinted fast path (a file
+    that grew, a file that shrank) serving the file as it is now.
+  - `write_stream_integration_test.rs` — what `write_from_stream` does with a source: the bytes that land, progress
+    shape (server-confirmed, never queued), cancel and mid-write cancel, multi-chunk sources, and the error /
+    partial-cleanup path with the `ErroringReadStream` double. The cross-volume streaming copy is here because every
+    assertion it makes is about what arrived on the share, even though its source is an `InMemoryVolume`.
+  - `wire_shape_integration_test.rs` — what a byte-path op COSTS, which neither of the above asks: the hinted read's ONE
+    compound frame, the single-shot write promise the transfer layer skips `.cmdr-tmp-*` staging on (the wire proof and
+    the `write_is_single_shot` predicate behind it, kept together), and the copy-slot clamp. It owns `request_counts`,
+    the diagnostics-metric reader those frame assertions run on. **Every cell here asserts on the PAIR
+    `(compound_requests_sent, requests_sent)`, because `requests_sent` alone reads like a frame count and is not one**:
+    smb2 ticks it once per sub-op of a chain (`allocate_msg_id` is the funnel every send path goes through), while
+    `compound_requests_sent` counts the chain, and `execute_compound` hands the whole chain to one `send_and_count`. So
+    a hinted read is `(1, 3)` for one frame carrying CREATE+READ+CLOSE, and the single-shot write is `(2, 8)` for two
+    frames of four ops each (verified against Samba in the `smb-consumer` container on smb2 0.21.0, 2026-09-02). Reading
+    the second number as round trips costs an afternoon: it makes `requests == 1` look like the fast path's proof, and
+    that assertion is unsatisfiable by construction. The pair also asserts more than either half: a streaming open reads
+    as `(0, 3)`, a loose round trip beside the compound as `(1, 4)`. The copy-concurrency cell exercises neither byte
+    path; it sits here because its subject is the credit window of § "Copy concurrency and the credit window", which the
+    sized read and the slot clamp are the two halves of.
 - `conformance_test.rs` — the `cmdr_fs::volume::conformance` promises, answered by a real server rather than an
-  in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`.
+  in-process double (SMB has none): `STATUS_DIRECTORY_NOT_EMPTY`, `STATUS_OBJECT_NAME_COLLISION`,
+  `STATUS_OBJECT_NAME_NOT_FOUND`. That last one is the conflict scan's: `scan_for_conflicts_impl` keeps its own
+  cache-aware listing but reads a `NotFound` from it as an empty conflict list, which is the trait's contract for every
+  backend (`Volume::scan_for_conflicts`), so pasting into a folder the transfer is about to create isn't refused.
 - `test_support.rs` — the session-free builders (a struct-literal `SmbVolumeInner` with no client and no tree), the
-  vocabulary every suite globs, and a re-export of `volume::testing` so one `use` covers all three.
+  vocabulary every suite globs, a re-export of `volume::testing` so one `use` covers all three, and `drain`, which lives
+  here rather than in one suite because the read and wire-shape files both drain a hinted read.
 
 Every Docker cell is `#[ignore]`d, so a default run skips it. Start the containers with
 `apps/desktop/test/smb-servers/start.sh` and run `cargo nextest run -E 'package(cmdr-smb)' --run-ignored only` — select

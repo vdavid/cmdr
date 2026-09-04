@@ -188,6 +188,10 @@
   "@menu.select.deselectAll": {
     "sourceHash": "9675494"
   },
+  "menu.select.invert": "Inverser la sélection",
+  "@menu.select.invert": {
+    "sourceHash": "d2e128a"
+  },
   "menu.select.files": "Sélectionner des fichiers…",
   "@menu.select.files": {
     "sourceHash": "b7f202e"

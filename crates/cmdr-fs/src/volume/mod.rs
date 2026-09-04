@@ -796,6 +796,12 @@ pub trait Volume: Send + Sync {
 
     /// Scans a path recursively to get statistics for a copy operation.
     /// Returns file count, directory count, and total bytes.
+    ///
+    /// ⚠️ **No stop and no progress**: this method takes neither, so a walk behind
+    /// it runs to completion whatever the user presses. That is fine for its
+    /// callers — a single cheap subtree, a test, a per-path step of the default
+    /// batch below — and it is why the batch method is the one every transfer
+    /// goes through. ❌ Don't reach for this from an operation's pre-flight.
     fn scan_for_copy<'a>(
         &'a self,
         path: &'a Path,
@@ -804,47 +810,62 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
-    /// Scans multiple paths to get aggregate + per-path copy statistics.
+    /// Scans multiple paths to get aggregate + per-path copy statistics, with
+    /// nothing to report to and nobody to answer to.
     ///
-    /// The default iterates over `scan_for_copy` per path, which is correct for
-    /// volumes where per-path I/O is cheap (local FS, in-memory). Volume types
-    /// with expensive per-path I/O (MTP, SMB, FTP, S3) should override this to
-    /// batch, typically by pipelining per-path stats over a shared session
-    /// (SMB) or grouping paths by parent directory and listing each parent
-    /// once (MTP).
+    /// Convenience over [`scan_for_copy_batch_with_boundary`](Self::scan_for_copy_batch_with_boundary)
+    /// for a caller with no dialog and no Cancel button (a test, an internal
+    /// probe). ❌ Never override this one; override the boundary-taking method,
+    /// which is where every backend's real batch strategy lives.
+    fn scan_for_copy_batch<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let boundary = ScanBoundary::silent();
+            self.scan_for_copy_batch_with_boundary(paths, &boundary).await
+        })
+    }
+
+    /// The batch copy scan every transfer runs: aggregate + per-path statistics,
+    /// reporting its progress and honoring the user's Cancel and Pause through
+    /// one [`ScanBoundary`].
     ///
     /// The returned `BatchScanResult` carries both the rolled-up `aggregate`
     /// (what the scan-preview / pre-flight checks want) and a `per_path` vec
     /// (what the copy engine uses to seed its per-source hints, so it doesn't
     /// have to re-probe each source's type and size with a separate stat).
-    fn scan_for_copy_batch<'a>(
+    ///
+    /// **What an implementation owes the boundary.** Call `boundary.file(size)`
+    /// for every leaf and `boundary.dir()` before every directory listing, and
+    /// propagate what they return with `?`. That single habit buys three things
+    /// at once: the dialog's counters climb instead of showing a frozen
+    /// `0 files` for a slow enumeration (the MTP listing of `/DCIM/Camera` with
+    /// 1k+ entries is ~17 s of USB round trips), the scan watchdog can tell a
+    /// slow share from a dead one, and Cancel and Pause reach a walk that would
+    /// otherwise run for minutes with no way to stop it.
+    ///
+    /// ❗ **Ask BEFORE the round trip, not after.** A boundary on the far side of
+    /// a listing is a boundary the user waits out; over a sleeping NAS that is
+    /// seconds per directory.
+    ///
+    /// ❗ **A stopped scan returns [`VolumeError::Cancelled`], ❌ never a partial
+    /// result.** Callers read the totals as the size of the transfer they are
+    /// about to run, so a truncated total that looks successful is a progress bar
+    /// that finishes at 30% and a space check that passes when it shouldn't.
+    /// `ScanBoundary::file` / `dir` already hand back exactly that error.
+    ///
+    /// The default iterates over `scan_for_copy` per path, asking the boundary
+    /// between paths. That is honest for a backend whose per-path scan is cheap
+    /// and bounded (in-memory, an archive's central directory) and ❌ not enough
+    /// for one that walks a real tree per path: a backend with expensive per-path
+    /// I/O overrides this to batch (SMB pipelines its stats over one session; MTP
+    /// groups paths by parent and lists each parent once) and gets a boundary
+    /// inside its own recursion at the same time.
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-    ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.scan_for_copy_batch_with_progress(paths, None)
-    }
-
-    /// Same as `scan_for_copy_batch`, but emits running progress as the scan
-    /// walks. `on_progress(files_found)` is called repeatedly as entries are
-    /// discovered, letting the scan-preview dialog show a climbing count
-    /// instead of a frozen "0 files" spinner during a slow enumeration (the
-    /// MTP listing of /DCIM/Camera with 1k+ entries takes ~17 s of USB
-    /// round-trips, and there's nothing for the user to look at during it).
-    ///
-    /// The default implementation ignores `on_progress` and delegates to the
-    /// existing `scan_for_copy_batch`. Volumes with expensive per-path I/O
-    /// (currently MTP) override this to thread the callback through to their
-    /// underlying streaming listing primitive (`list_directory_with_progress`).
-    ///
-    /// The callback receives a `ListingProgress` carrying running files / dirs
-    /// / bytes. Backends accumulate from the entries they've enumerated and
-    /// report the cumulative totals for the current scan call. The FE renders
-    /// all three counters climbing live during the scan dialog.
-    #[allow(unused_variables, reason = "Default impl intentionally ignores `on_progress`")]
-    fn scan_for_copy_batch_with_progress<'a>(
-        &'a self,
-        paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mut aggregate = CopyScanResult {
@@ -858,19 +879,16 @@ pub trait Volume: Send + Sync {
             };
             let mut per_path = Vec::with_capacity(paths.len());
             for path in paths {
+                boundary.check().await?;
                 let scan = self.scan_for_copy(path).await?;
                 aggregate.file_count += scan.file_count;
                 aggregate.dir_count += scan.dir_count;
                 aggregate.total_bytes += scan.total_bytes;
                 aggregate.dedup_bytes += scan.dedup_bytes;
+                boundary
+                    .subtree(scan.file_count, scan.dir_count, scan.total_bytes)
+                    .await?;
                 per_path.push((path.clone(), scan));
-                if let Some(cb) = on_progress {
-                    cb(ListingProgress {
-                        files: aggregate.file_count,
-                        dirs: aggregate.dir_count,
-                        bytes: aggregate.total_bytes,
-                    });
-                }
             }
             Ok(BatchScanResult { aggregate, per_path })
         })
@@ -878,6 +896,19 @@ pub trait Volume: Send + Sync {
 
     /// Checks destination for conflicts with source items.
     /// Returns list of files that already exist at destination.
+    ///
+    /// ❗ **A destination that isn't there yet holds nothing, so the answer is an
+    /// empty list, never [`VolumeError::NotFound`].** Pasting into a folder the
+    /// transfer is about to create is an ordinary thing to do, and this
+    /// pre-flight runs before anything is created. The caller propagates what
+    /// comes back, so reporting the missing directory doesn't produce an odd
+    /// conflict list; it refuses a legitimate copy outright, over a destination
+    /// that is empty in the only sense that matters.
+    ///
+    /// [`scan_walk::scan_conflicts`]
+    /// keeps that for a backend with nothing special to say about the listing; a
+    /// backend that lists its own way owes it by hand. Pinned by
+    /// [`conformance::assert_conflict_scan_reads_a_missing_destination_as_empty`].
     fn scan_for_conflicts<'a>(
         &'a self,
         source_items: &'a [SourceItemInfo],
@@ -1209,6 +1240,13 @@ pub trait Volume: Send + Sync {
     /// `max_write_size` bytes), never the reason for it: a "small files are fine"
     /// answer silently brings back truncated files at real names.
     ///
+    /// ❌ A `true` answer promises a SECOND property: no write handle is open on
+    /// the far side while the source stream drains, so buffer the bytes first and
+    /// commit in the one operation. Opening a handle up front and streaming chunks
+    /// into it still lands all-or-nothing, and breaks this. The transfer layer's
+    /// foreground yield leans on it to let a small upload stand aside mid-drain;
+    /// `write_operations/transfer/volume/DETAILS.md` § "The single-shot exemption".
+    ///
     /// `false` (the default): every write to this volume stages.
     fn write_is_single_shot<'a>(&'a self, size: u64) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         let _ = size;
@@ -1335,9 +1373,14 @@ mod capabilities;
 mod channel_stream;
 mod ids;
 mod in_memory;
+pub mod mkdir_all;
 pub mod mtp_ids;
+pub mod patching;
 mod retirement;
-mod scan_ticker;
+mod scan_boundary;
+pub mod scan_stop;
+pub mod scan_walk;
+pub mod secret_store;
 mod types;
 
 // Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
@@ -1361,8 +1404,12 @@ pub use capabilities::VolumeCapabilities;
 pub use channel_stream::ChannelReadStream;
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
+pub use mkdir_all::{MadeDirectories, MakesDirectories};
+pub use patching::{PatchSource, patch_created, patch_deleted, patch_mutation, patch_renamed};
 pub use retirement::{Retirement, Retires, SelfHandle};
-pub use scan_ticker::ScanTicker;
+pub use scan_boundary::{ScanBoundary, stopped as scan_stopped};
+pub use scan_stop::{ScanStop, ScanStopSignal};
+pub use scan_walk::{ScanSource, Walking, conflicts_against, fold_batch, scan_conflicts, scan_one, scan_trees};
 pub use types::*;
 
 #[cfg(test)]

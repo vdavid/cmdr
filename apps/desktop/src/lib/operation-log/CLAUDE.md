@@ -12,6 +12,7 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
   `$lib/file-operations/RollbackConfirmDialog.svelte` over itself.
 - `operation-log-labels.ts`: the pure typed-enum → UI mappings (labels, the refusal notice). The confirmation variant is
   `$lib/file-operations/reversal-wording.ts`, which words the RUNNING reversal off the same map.
+- `RollbackControls.svelte`: Pause / Resume and Cancel on a row whose reversal is running.
 - `rollback-refusal.ts`: the `TypedFailure` that carries a `RollbackRefusal` from the command wrapper to the row.
 
 ## Must-knows
@@ -19,7 +20,12 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
 - **Every string comes from a typed enum through `operation-log-labels.ts`, ❌ never a display string the backend
   rendered.** Exhaustive switches, so a new `OpKind` or `RollbackState` is a compile error rather than a blank cell.
 - **Roll back dispatches and lets go. ❌ Don't grow a progress dialog here.** The user is reading history, not watching
-  a transfer; the status corner and the queue window own the reversal from the moment the command returns.
+  a transfer; the status corner and the queue window own the reversal from the moment the command returns. The row's
+  Pause / Cancel are the one exception, and they're the queue's own commands, ❌ never a second path to the IPC.
+- **A rolling-back row commands the REVERSAL, on `inverseOpId`, ❌ never its own `opId`** (a finished operation). The id
+  is journal truth on every read AND on the dispatch's answer, so a reversal someone else started gets the same buttons.
+  Which control shows follows the SESSION, ❌ not the read-on-open journal row. A reversal emits NO terminal event, so
+  liveness also reads `session.leftRegistry`, or the buttons outlive it and every press reaches nothing.
 - **The badge flip to "Rolling back" is journal truth, not optimism.** The backend gate writes `rolling_back`
   synchronously before the dispatch returns, so `markOperationRollingBack` repeats what the journal already says. ❌
   Don't turn it into a re-read.

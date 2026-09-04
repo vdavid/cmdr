@@ -187,6 +187,10 @@
   "@menu.select.deselectAll": {
     "sourceHash": "9675494"
   },
+  "menu.select.invert": "反向選取",
+  "@menu.select.invert": {
+    "sourceHash": "d2e128a"
+  },
   "menu.select.files": "選取檔案…",
   "@menu.select.files": {
     "sourceHash": "b7f202e"

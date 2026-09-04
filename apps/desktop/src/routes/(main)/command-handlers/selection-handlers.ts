@@ -1,5 +1,5 @@
 /**
- * Selection handlers: toggle / toggle-and-down / select-all / deselect-all, the
+ * Selection handlers: toggle / toggle-and-down / select-all / deselect-all / invert, the
  * MCP range-select, and the two selection-dialog openers (Select files… /
  * Deselect files…). `selection.selectAll` carries its own `activeElement` input
  * branch (a focused `<input>` selects its own text), distinct from the core's
@@ -31,6 +31,10 @@ export const selectionHandlers = {
 
   'selection.deselectAll': ({ explorerRef }) => {
     explorerRef?.handleSelectionAction({ action: 'deselectAll' })
+  },
+
+  'selection.invert': ({ explorerRef }) => {
+    explorerRef?.handleSelectionAction({ action: 'invert' })
   },
 
   'selection.mcpSelect': async ({ explorerRef, dispatchArgs }) => {

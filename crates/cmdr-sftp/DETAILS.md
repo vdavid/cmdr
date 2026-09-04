@@ -262,14 +262,15 @@ are the same volume instance (`write_operations/transfer/volume/strategy.rs::try
 
 ## Scanning, before a copy runs
 
-`scan.rs` answers `scan_for_copy`, `scan_for_copy_batch_with_progress`, and `scan_for_conflicts`.
+`scan.rs` answers `scan_for_copy`, `scan_for_copy_batch_with_boundary`, and `scan_for_conflicts`.
 
 - **One listing per DIRECTORY, ❌ never a stat per child.** A listing already carries every child's size and type, so a
   1 000-file folder is one round trip rather than a thousand. Over a 50 ms link that is a second against a minute.
-- ❗ **The batch method is overridden for its PROGRESS.** The trait default reports only between paths, so one deep
-  source leaves the scan dialog frozen and leaves the scan watchdog — which bounds a preview by INACTIVITY — unable to
-  tell a slow tree from a server that stopped answering. The ticker is `cmdr_fs::volume::ScanTicker`, shared with SMB so
-  the cumulative-for-the-call promise can't drift between the two.
+- ❗ **The batch method is overridden for its BOUNDARY.** The trait default asks only between paths, so one deep source
+  leaves the scan dialog frozen, leaves the scan watchdog — which bounds a preview by INACTIVITY — unable to tell a slow
+  tree from a server that stopped answering, and leaves Cancel with nothing to land on until the whole subtree is
+  counted. The boundary is `cmdr_fs::volume::ScanBoundary`, threaded by `scan_walk`, so both the cumulative-for-the-call
+  promise and the per-entry stop come for free and can't drift from the other backends'.
 - ⚠️ **The batch walks EVERY path's whole subtree, one path at a time.** There's no pipelined-stat shortcut here (SMB
   has one; this backend runs `scan_recursive` per path and only borrows the single path's `top_level_is_directory` for
   the aggregate). So a batch of one directory is a full recursive walk, ❌ never a cheap "what is this path?". A caller
@@ -278,8 +279,8 @@ are the same volume instance (`write_operations/transfer/volume/strategy.rs::try
 - ❌ **Nothing here calls `authoritative_listing`.** There is no watcher, so `listing_watch_coverage` is `None` and a
   cached listing is only as fresh as the last look. SMB's scan may consult the cache because its watcher backs the
   claim; borrowing that here is how a pre-flight conflict scan misses a file and a copy overwrites it.
-- **A conflict scan of a destination that isn't there yet finds nothing**, rather than reporting the missing directory:
-  otherwise "paste into a folder I'm about to create" is a failure.
+- **A conflict scan of a destination that isn't there yet finds nothing**, which is the trait's contract for every
+  backend rather than anything of this one's (`Volume::scan_for_conflicts`); `scan_walk::scan_conflicts` keeps it here.
 - **`dedup_bytes` always equals `total_bytes`.** SFTP v3's stat carries no link count, so the source footprint is taken
   as the write footprint.
 
@@ -810,7 +811,7 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
   pane) or skipping the temp's patch entirely, and both need the app's listing-mutation contract read first.
 - **`paths_are_os_visible` → false, `local_path` → `None`.** Answering otherwise would let a drag hand Finder a path
   that resolves to nothing, or worse to a local file of the same name.
-- **`scan_for_copy`, `scan_for_copy_batch_with_progress`, and `scan_for_conflicts` are all answered** (§ "Scanning,
+- **`scan_for_copy`, `scan_for_copy_batch_with_boundary`, and `scan_for_conflicts` are all answered** (§ "Scanning,
   before a copy runs"). ❗ `begin_scan_session` / `end_scan_session` keep their no-op defaults and are a DIFFERENT
   thing: they bracket the index scan's background walk, ❌ never `scan_for_copy`. There is no scan-connection pool to
   set up or tear down, because a second connection is a second authentication.
@@ -1041,7 +1042,9 @@ The connection state rides `volume-connection-changed` as `VolumeConnection`, wh
 - **An SFTP volume doesn't appear in the sidebar.** `connectSftpVolume` registers it in the volume registry, so
   navigating by `volumeId` works and every write path can reach it, but `volume_listing::complete` (which builds what
   `listVolumes` returns) has no SFTP arm. Adding one is the sidebar's own design question — which section, what icon,
-  what an eject means — and it belongs with the sign-in UI rather than ahead of it.
+  what an eject means — and it belongs with the sign-in UI rather than ahead of it. The device-provider seam
+  (`apps/desktop/src-tauri/src/device_volumes.rs`, which MTP and ADB register through) is NOT that arm: it lists things
+  that appear and leave on their own, and a server is signed into, not plugged in.
 - **`resolve_path_volume` / `resolve_location` don't answer for a remote path.** SFTP paths are plain server-side
   absolute paths with no `sftp://` scheme in front, so `/srv/data/x` on a server is spelled exactly like a local path.
   Whatever the sidebar does about identity, path resolution has to agree with it.

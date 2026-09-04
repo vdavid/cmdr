@@ -81,6 +81,17 @@ operations (a move can leave bytes nowhere durable), so they get the real target
 `tests.rs::no_global_sync_or_spawn_async_sync_in_write_operations`, which fails the suite if `spawn_async_sync` or a raw
 `libc::sync()` reappears in `write_operations/`.
 
+## Where each of the three loops parks
+
+All three destructive loops in this directory ask `state.stop_or_park_sync()` / `_async()` where they already observed
+cancel (`../DETAILS.md` § "Pause / resume" owns the primitive): the local walker's delete-phase file and dir loops, the
+volume walker's two, and trash's per-item loop. **The SCAN recursion is deliberately NOT gated** — pausing mid-scan
+would freeze a half-counted "Scanning…" for no benefit, since nothing has been destroyed yet.
+
+Trash's boundary is the ITEM, and that's all it can ever be: `trashItemAtURL` hands a whole top-level tree to the OS in
+one call, so there is no seam inside it the way the walkers have one per file. Pinned by `trash_pause_tests.rs`, which
+drives the loop over paths that don't exist so it exercises the boundary without moving anything into the real trash.
+
 ## Where a trash is (`trash_dir_for_path`)
 
 macOS keeps ONE trash per volume: `~/.Trash` for the boot volume, `<mount point>/.Trashes/<uid>` for everything else.

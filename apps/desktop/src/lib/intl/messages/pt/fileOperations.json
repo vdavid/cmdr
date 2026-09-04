@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} arquivos/s",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Apagar",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -181,6 +177,10 @@
     "sourceHash": "4a55710",
     "sameAsSourceJustification": "Identical-in-pt-BR rate format '<size></size>/s': a size widget plus the per-second marker '/s', whose 's' is the unchanged pt-BR second symbol. No translatable text."
   },
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} arquivo/s} many {{rateText} arquivos/s} other {{rateText} arquivos/s}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
+  },
   "fileOperations.shared.andJoin": "{a} e {b}",
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
@@ -224,6 +224,10 @@
   "fileOperations.transferDialog.spaceInfo": "{free} livres de {total}",
   "@fileOperations.transferDialog.spaceInfo": {
     "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "{used} em uso, sem limite de tamanho",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "sourceHash": "5d74d4d"
   },
   "fileOperations.transferDialog.smbNativeNote": "Este compartilhamento usa a conexão do sistema. O cancelamento pode demorar. Use \"Conectar diretamente\" no seletor de volumes para transferências mais rápidas e um cancelamento confiável.",
   "@fileOperations.transferDialog.smbNativeNote": {
@@ -373,10 +377,6 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} arquivos/s",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.transferProgress.scanTitleCopy": "Verificando antes de copiar...",
   "@fileOperations.transferProgress.scanTitleCopy": {
     "sourceHash": "fd21ea9"
@@ -460,6 +460,10 @@
   "fileOperations.transferProgress.titleFlushing": "Gravando a última parte...",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
+  },
+  "fileOperations.transferProgress.titleRemovingOriginals": "Apagando os originais...",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
   },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copiando} move {Movendo} compress {Comprimindo} delete {Apagando} other {Movendo para o Lixo}}...",
   "@fileOperations.transferProgress.titleActive": {
@@ -602,6 +606,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Parar e levar de volta todos os arquivos movidos até agora",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Todos os arquivos já estão no destino, então a reversão da movimentação não é mais possível. Cancelar ainda faz o Cmdr parar antes de apagar o resto dos originais.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Pausado",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"
@@ -666,9 +678,13 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Isso apaga todos os arquivos que a operação gravou até agora. O que foi substituído não volta.",
+  "fileOperations.rollbackConfirm.body": "Isso apaga todos os arquivos que a operação gravou até agora. O que foi substituído não volta. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar para trás.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
+  },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Isso leva de volta tudo o que a operação moveu até agora. O que foi substituído não volta. O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar onde está.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Concluir esta reversão?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -701,6 +717,86 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Concluir a reversão",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {O Cmdr apagou o item que tinha gravado} many {O Cmdr apagou os {countText} itens que tinha gravado} other {O Cmdr apagou os {countText} itens que tinha gravado}}.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "ff786b9"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {O Cmdr levou o item de volta} many {O Cmdr levou os {countText} itens de volta} other {O Cmdr levou os {countText} itens de volta}}.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "c5e329e"
+  },
+  "fileOperations.cancelRollback.someDeleted": "O Cmdr apagou {countText} {count, plural, one {item} many {itens} other {itens}}.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "O Cmdr levou {countText} {count, plural, one {item} many {itens} other {itens}} de volta.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "A reversão parou depois de apagar {countText} {count, plural, one {item} many {itens} other {itens}}. O resto continua no destino.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "A reversão parou depois de levar {countText} {count, plural, one {item} many {itens} other {itens}} de volta. O resto ficou onde a movimentação deixou.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.moveAlreadyLanded": "O Cmdr parou enquanto apagava os originais, mas tudo o que ele moveu já está no destino e fica por lá. {count, plural, one {Um original continua onde estava.} many {{countText} originais continuam onde estavam.} other {{countText} originais continuam onde estavam.}}",
+  "@fileOperations.cancelRollback.moveAlreadyLanded": {
+    "sourceHash": "88dcf83"
+  },
+  "fileOperations.cancelRollback.leftBehind": "O Cmdr pula tudo aquilo de que não tem certeza, então estes ficaram onde estão:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "fb28a31"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "{name} ficou como está: mudou depois que o Cmdr colocou lá.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "{count, plural, one {{countText} item ficou como está: mudou depois que o Cmdr colocou lá} many {{countText} itens ficaram como estão: mudaram depois que o Cmdr colocou lá} other {{countText} itens ficaram como estão: mudaram depois que o Cmdr colocou lá}}.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} ficou como está: o Cmdr não conseguiu verificar se mudou.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{count, plural, one {{countText} item ficou como está: o Cmdr não conseguiu verificar se mudou} many {{countText} itens ficaram como estão: o Cmdr não conseguiu verificar se mudaram} other {{countText} itens ficaram como estão: o Cmdr não conseguiu verificar se mudaram}}.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} ficou onde está: já existe outra coisa no lugar de onde veio.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{count, plural, one {{countText} item ficou onde está: já existe outra coisa no lugar de onde veio} many {{countText} itens ficaram onde estão: já existe outra coisa no lugar de onde vieram} other {{countText} itens ficaram onde estão: já existe outra coisa no lugar de onde vieram}}.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "A pasta {name} ficou como está: agora tem algo dentro.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {pasta} many {pastas} other {pastas}} ficaram como estão: agora têm algo dentro.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "Não foi possível reverter {name}. O disco pode estar desconectado ou ser somente leitura.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "Não foi possível reverter {countText} {count, plural, one {item} many {itens} other {itens}}. O disco pode estar desconectado ou ser somente leitura.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Não foi possível apagar {name}, uma cópia incompleta que ficou no destino. Você pode apagá-la sem problema, e o Cmdr também vai apagá-la numa transferência posterior para lá.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Não foi possível apagar {countText} {count, plural, one {cópia incompleta que ficou} many {cópias incompletas que ficaram} other {cópias incompletas que ficaram}} no destino. Você pode apagá-las sem problema, e o Cmdr também vai apagá-las numa transferência posterior para lá.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
   },
   "fileOperations.errorDialog.technicalDetails": "Detalhes técnicos",
   "@fileOperations.errorDialog.technicalDetails": {

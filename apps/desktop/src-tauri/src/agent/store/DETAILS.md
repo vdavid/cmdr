@@ -73,6 +73,13 @@ ANDs on conflict, so a day/thread/model that ever took an unpriced contribution 
 honest lower bound ("unknown"), never a silent $0 (spec §2.4). The per-day cross-thread rollup (`cost_summary`) sums with
 `GROUP BY day` and reads `fully_priced` from `MIN(priced)`.
 
+`proactive_tokens_for_day` is the third reader: the wake loop's daily ceiling
+(`agent/wake/DETAILS.md` § The three seatbelts) asks what the agent has spent on its own initiative today, prompt plus
+completion. ⚠️ **It JOINs `conversations` and counts only the `notification` and `quiet_wakes` origins**, which is the
+whole point of it existing beside `cost_summary`. Widening it to the whole meter would put two different budgets behind
+one number: a chatty afternoon on the rail would starve the wake loop, and a runaway wake loop would eat the user's own
+budget. A user-started thread has a NULL origin and never counts.
+
 ## v8: the reserved quiet-wakes thread
 
 A wake that finds nothing leaves no thread (`agent/wake/`), which means DELETING the conversation it opened to think in.

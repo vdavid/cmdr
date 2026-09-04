@@ -25,13 +25,13 @@ import (
 // description next to a countdown sentence, a narration of a `v{prev} → v{next}`
 // badge) fail that gate and are never reported, so there's nothing to silence.
 //
-// WARN rather than ERROR only because known violations ship today (`de` 3, `es` 1,
-// `pt` 1, `zh` 2). Escalate to an error once those are fixed; there is no
-// legitimate reason for a pair to stay broken. See
+// ERROR class, and it runs in CI on every push: no pair has a legitimate reason to
+// stay broken, and the English-containment gate above means a report is always a
+// real regression rather than a judgment call. ❌ Don't soften this to a warn. See
 // `apps/desktop/scripts/i18n-check-aria-label.ts`.
 //
 // Exit-code contract (shared with the other locale checks): 0 = clean / no
-// locales, 1 = at least one broken pair (→ WARN), any other code = a genuine
+// locales, 1 = at least one broken pair (→ ERROR), any other code = a genuine
 // script error.
 func RunDesktopI18nAriaLabel(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")

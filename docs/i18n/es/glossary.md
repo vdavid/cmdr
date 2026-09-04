@@ -1835,3 +1835,212 @@ el nombre anterior.
   artículo ni concordancia, así que cualquier nombre encaja; `en la carpeta {folder}` diría lo mismo pero ocupa más en
   una línea que el label ya comparte con el progreso.
 - No hace falta `sameAsSourceJustification`: los cinco valores se diferencian del inglés.
+
+## El aviso de una reversión que no lo pudo todo (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`, 2026-08-31)
+
+Superficie nueva: el usuario para una copia o un movimiento con `Revertir`, y cuando la reversión termina aparece un
+aviso de hasta tres partes: un titular (lo que la reversión sí consiguió), la línea `leftBehind` (que prepara al
+usuario), y una lista de motivos, cada uno en dos versiones, una que NOMBRA el elemento (`*.named`) y otra que los
+CUENTA (`*.counted`). El tono es siempre "Cmdr hizo lo prudente", nunca una disculpa ni una alarma.
+
+- **La familia calca el molde ya asentado de `askCmdr.renameUndo.skipReason.*`** · las dos superficies son el mismo
+  gesto (deshacer algo y omitir lo que no se puede verificar), y el usuario puede ver las dos, así que los motivos
+  comparten fórmula: `{name} se quedó como está: <motivo>.` / `{countText} elementos se quedaron como están: <motivo>.`
+  · high. Las dos claves de `folderNotEmpty` tienen el MISMO inglés que sus hermanas de `askCmdr`, así que el valor es
+  idéntico palabra por palabra (o salta `i18n-terms`).
+- **"Left {name} alone" → `{name} se quedó como está`; "Left {name} where it is" → `{name} se quedó donde está`** · el
+  inglés distingue los dos casos (no lo tocamos / no lo movimos de sitio) y el español los distingue igual. `se quedó`
+  pone el elemento de sujeto, que es lo que evita el clítico con género · high.
+- **Dos restricciones a la vez: la marca se queda Y nada concuerda con `{name}`.** El elemento puede ser un archivo
+  (masculino) o una carpeta (femenino), y `{name}` llega tal cual del disco, así que ningún clítico, artículo ni
+  participio puede referirse a él; y `Cmdr` es palabra de marca, así que tiene que aparecer literal en el valor
+  (`desktop-i18n-dont-translate` avisa si se cae). Por eso `it changed after Cmdr put it there` no admite ni
+  `lo dejara ahí` (concuerda) ni una reescritura sin la marca (`cambió después de llegar ahí`, que deja la frase
+  diciendo solo que el archivo cambió en algún momento, y ahí se pierde el motivo por el que Cmdr no lo toca). La
+  solución deja el elemento de sujeto del cambio y mete a Cmdr en una subordinada con lugar en vez de objeto:
+  **`cambió después de que Cmdr terminara de escribir ahí`** · `escribir` es el verbo que la familia ya usa para lo que
+  Cmdr deja en el destino (`transferProgress.rollbackTooltip`, "los archivos escritos hasta ahora") y `terminar de` +
+  infinitivo ya está asentado en `operationLog.dialog.finishRollBack` ("Terminar de revertir") · high. La versión
+  `counted` repite la misma fórmula aunque ahí sí se conozca el género (`elementos`), porque las dos se leen seguidas.
+- **"something else now sits where it came from" → `ahora hay otra cosa en su sitio`** · `su sitio` es justo lo que el
+  catálogo ya usa para "el lugar al que pertenece" (`fileOperations.trash.undone`, "devolver … a su sitio"), y sirve
+  igual para uno que para varios, que es lo que permite que `named` y `counted` compartan la segunda mitad. La
+  alternativa `en el lugar del que salió` (de `rollbackConfirm.bodyUndoByMovingBack`) dice lo mismo pero ocupa el doble
+  en una línea de lista · high.
+- **"Couldn't undo {name}" → `Cmdr no pudo revertir {name}`** · este motivo es el único de la lista que NO es una
+  decisión de Cmdr (la unidad dijo que no), y el inglés lo marca rompiendo el molde: frase propia, sin
+  `se quedó como está`. El español rompe igual. `revertir` es el verbo de la función (`operationLog.rollback.*`), y
+  nombrar a Cmdr como sujeto es lo que ya hace `refusalUnexpected` ("Cmdr no pudo iniciar la reversión") · high por
+  consistencia, pero el objeto es nuevo: hasta ahora se revertía una OPERACIÓN, y aquí se revierte un elemento suelto,
+  igual que el inglés estira su "undo {name}". Si una revisión nativa lo ve forzado, la alternativa es
+  `Cmdr no pudo deshacer lo hecho con {name}`, más larga y más vaga.
+- **"Its drive may be disconnected or read-only." → `Puede que su unidad no esté conectada o sea de solo lectura.`** ·
+  la primera mitad es literal de `fileOperations.trash.undoUnavailable` ("que su unidad no esté conectada");
+  `de solo lectura` es macOS `es` (Finder PE45, "el disco es de solo lectura"; AppKit "un volumen de solo lectura") ·
+  high.
+- **"Stopped after …" → `La reversión se detuvo después de …`** · el inglés no tiene sujeto y el español lo necesita, y
+  el sujeto natural es `la reversión`, la palabra que el catálogo ya usa para esta operación
+  (`transferProgress.rollbackUnavailableTooltip`). `detener` es el verbo de macOS `es` para parar una operación
+  ("Detener copia", "Detener"), y Double Commander traduce "Stopped" por "Detenido" · high. macOS `es` no usa `tras` en
+  ninguna de sus 11.676 cadenas, así que la subordinada va con `después de` (2026-08-31).
+- **"The rest are still there." → `El resto sigue ahí.`** y **"The rest stayed where the move put them." →
+  `El resto se quedó donde lo dejó el movimiento.`** · `el resto` (macOS `es`, "el resto de la frase", "Cerrar el resto
+  de pestañas") en vez de `los demás`, que en macOS `es` casi siempre son PERSONAS ("los demás ya no tendrán acceso").
+  El sustantivo de la operación es `el movimiento`, el que ya usa el catálogo (`errors.write.cancelled.title.move`,
+  "Movimiento cancelado"; `queue.failureToast.title`), no `traslado` · high.
+- **"the {countText} items" (titular con artículo determinado) pierde el numeral en la rama `one`.** `el 1 elemento` es
+  agramatical en español, así que la rama `one` dice `Se eliminó el elemento que Cmdr había creado.` y el numeral solo
+  aparece en `many`/`other`. Precedente en el propio catálogo: `transferProgress.titleReversalDeleting` ("Deleting the
+  file it created" → "Eliminando el archivo creado") · high. `desktop-i18n-parity` compara el CONJUNTO de placeholders
+  del valor entero, así que `{countText}` sigue presente y la comprobación pasa.
+- **El artículo determinado es lo único que separa `done*` de `some*`, y hay que conservarlo.** `doneDeleting` /
+  `doneMovingBack` dicen "los {countText} elementos" (fueron todos) y `someDeleted` / `someMovedBack` dicen "{countText}
+  elementos" (solo esos), igual que el inglés con su "the". Si se pierde el artículo, el aviso parcial promete que el
+  destino quedó limpio, que es justo lo que la clave no debe decir · high.
+- **"Cmdr had written" (elementos, no solo archivos) → `que Cmdr había creado`** · aquí `item` incluye las carpetas que
+  la operación hizo, y en español no se "escribe" una carpeta. El catálogo ya usa `crear` para esto
+  (`rollbackConfirm.bodyUndoByDeleting`, "los archivos y carpetas que creó la operación";
+  `transferProgress.titleReversalDeleting`, "los {countText} archivos creados") · high. `escrito` se queda para cuando
+  la fuente habla solo de archivos (`transferProgress.rollbackTooltip`, "los archivos escritos hasta ahora").
+- **Los dos verbos de la reversión no se mezclan nunca**: la reversión de una COPIA `elimina`
+  (`Se eliminaron los … elementos`) y la de un MOVIMIENTO `devuelve … a su sitio`
+  (`Se devolvieron los … elementos a su sitio`). Son los verbos ya asentados (`operationLog.summary.delete`,
+  `fileOperations.trash.undone`), y el aviso nunca los intercambia: el usuario tiene que poder leer del titular si algo
+  se borró o solo volvió a su carpeta · high.
+- **`leftBehind` cierra con dos puntos y nombra el sustantivo**: "Cmdr omite todo aquello de lo que no está seguro, así
+  que estos elementos se quedaron donde están:". La primera mitad es literal de `rollbackConfirm.bodyUndoByDeleting`, y
+  el español añade `elementos` porque un `estos` a secas queda desnudo delante de una lista · high.
+- **`rollbackConfirm.body` recupera la tercera promesa.** El inglés cambió y ahora admite que la reversión puede dejar
+  cosas, así que el valor termina con la misma frase que sus hermanas `bodyUndo*`: "Cmdr omite todo aquello de lo que no
+  está seguro, así que puede que quede alguno." Las tres frases van sueltas (el inglés une las dos primeras con "and");
+  en español se leen mejor separadas · high. `ha escrito` se queda en perfecto compuesto porque la operación sigue en
+  marcha, que es la excepción a la regla del pretérito del `style.md`.
+- **En las claves `*.counted` el verbo va en plural FUERA de las ramas, y la rama `one` no se usa.** Una clave `counted`
+  solo aparece con dos o más (lo dice su `@key.description`), así que el único contenido que cambia por rama es el
+  sustantivo contado, igual que en las hermanas de `askCmdr.renameUndo.skipReason.*`. Es la excepción consciente a la
+  regla del `style.md` de meter la frase entera en las ramas: `folderNotEmpty.counted` tiene que ser idéntica a su
+  hermana de `askCmdr` (mismo inglés), así que arreglar la concordancia de una rama muerta rompería la simetría de la
+  familia sin cambiar ni un píxel en pantalla. Si algún día una `counted` puede valer 1, hay que rehacer las cinco a la
+  vez.
+- No hace falta `sameAsSourceJustification`: los 18 valores difieren del inglés.
+
+### `cancelRollback.stagedLeftover.*` (los restos del propio Cmdr en el destino)
+
+Nuevas el 2026-09-02. Dos líneas sobre un archivo de trabajo que creó el propio Cmdr y que no consiguió quitar del
+destino. NO pertenecen a la lista `reason.*`: allí Cmdr protege los archivos de la persona, aquí se trata de un resto
+suyo.
+
+- **`unfinished copy` → `copia parcial`** · macOS `NE111` dice literalmente «una copia parcial que puedas completar en
+  otro momento» · `high`
+- **`at the destination` → `en el destino`** · el término del catálogo (`conflictsUnknown`, `stallWaitingDestination`) ·
+  `high`
+- **`transfer` (sustantivo) → `transferencia`** · el catálogo ya lo usa
+  (`errors.listing.deviceReconnecting.explanation`: «después de una transferencia cancelada o interrumpida») · `high`
+- La segunda frase deja `Cmdr` como sujeto tácito («La eliminará…») para no repetir el nombre en dos frases seguidas.
+- ⚠️ **`en una transferencia posterior`, ❌ nunca «la próxima vez».** La limpieza de Cmdr salta todo lo que tenga menos
+  de una hora, así que un reintento inmediato no borra nada. Prometer lo contrario sería justo el fallo que esta línea
+  viene a corregir.
+
+## La pantalla de bloqueo por WebKit antiguo (`main.oldWebkit.*`, 2026-09-02)
+
+Tres cadenas que Cmdr muestra en lugar de su interfaz cuando el Safari del Mac es demasiado antiguo. Viven en el armazón
+HTML, no en la app, así que son lo único que esa persona verá de Cmdr.
+
+- **`Software Update` → `Actualización de software`** · macOS lo nombra así en Ajustes del Sistema; el rastro Tier 1 de
+  Finder confirma el término (`Apple Device Software Update File` →
+  `Archivo de actualización de software del dispositivo Apple`) · `high`.
+- **`Quit` → `Salir`** · clave `Quit` de AppKit en macOS → `Salir` · `high`. Entra también en el glosario general, que
+  hasta ahora no la recogía.
+- **`o posterior`, no `o más nuevo`**, para «or newer» hablando de versiones: es la fórmula que usa Apple.
+- **`Safari`, `Mac` y `15.4` se quedan tal cual.** `Safari` ya está en `BRAND_WORDS`.
+
+## El aviso de macOS antiguo (`main.oldMacos.*`, 2026-09-02)
+
+Un diálogo que aparece una sola vez en un Mac por debajo de macOS 12: Cmdr arranca, pero está fuera del rango probado.
+Tono honesto y relajado, ni disculpa ni advertencia, porque la app sí funciona.
+
+- **`supported` → `compatible`** · macOS Finder (`No se puede completar la operación porque no es compatible.`) ·
+  `high`. NO `soportado`, que es un calco.
+- **`X and up` → `X o posterior`** · macOS SystemSettings (`… requiere OS X %@ o posterior.`) · `high`.
+- **`best effort` → `hace lo que puede`** · el pile no trae el término (solo definiciones de QoS de red) · `high` para
+  la paráfrasis. Deliberadamente NO `mejor esfuerzo`, que es calco y suena a contrato.
+- **`look off` → `verse raros`** · lenguaje corriente; evita el registro de `error`/`fallo` que la voz prohíbe.
+- **La última frase es David en primera persona** y mantiene el `tú`, como `onboarding.stepBeta.greeting`.
+
+## Mirar dentro de un archivo: la herramienta `inspect_file` y la pantalla de consentimiento (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+Superficie nueva: Ask Cmdr puede leer, a petición, una parte acotada de un archivo (unas líneas de texto, unas páginas
+de un PDF con su título y autor, la lista de lo que contiene un archivo comprimido, o los datos de la cámara y el lugar
+de una foto). La pantalla de consentimiento lo cuenta en tres sitios (un ítem de la lista, el párrafo de garantías que
+sustituye al antiguo `noContents`, y el aviso de "qué ha cambiado"), y la etiqueta de herramienta lo anuncia en el
+carril del chat.
+
+- **look inside (a file) → `mirar dentro de`** · sin fuente directa en la pila (ningún gestor de archivos ni macOS
+  tienen la función); es la locución corriente y la más literal, y macOS `es` ya usa `dentro de` para "inside" (Finder,
+  "Crear una carpeta llamada ${fileName} dentro de ${target}"). Etiquetas de herramienta:
+  `Mirando dentro de los archivos` / `Se miró dentro de los archivos`, el mismo molde impersonal `Se + pretérito` +
+  complemento que `Se buscó en tus fotos` (verbo intransitivo, sin objeto directo), con `los archivos` porque el inglés
+  dice "files" a secas (los archivos por los que preguntaste), igual que `listDir` dice `una carpeta`. Rechazado
+  `Leyendo el contenido de los archivos`: `contenido` promete más de lo que lee (una parte acotada), y el inglés eligió
+  "look inside" justo para no prometerlo · high (molde), tentative (la locución).
+- **thumbnail → `miniatura`** · macOS AppKit (WindowTabs, "thumbnail of the tab picker image" → "miniatura de la imagen
+  del selector de pestaña"), MS terminology (id 1057247, todas las regiones incl. ESP/419), Nautilus ("Miniaturas"),
+  Total Commander ("&Miniaturas"). Cuatro fuentes de acuerdo · high.
+- **camera details (los EXIF de una foto) → `los datos de la cámara`** · camera → `cámara` en macOS AppKit
+  (`NSStillCameraTemplate` → "cámara") y MS terminology (id 27152); Nautilus etiqueta los campos EXIF como "Marca de la
+  cámara" / "Modelo de la cámara", así que `de la cámara` (con artículo) es la forma que el usuario ve en un gestor de
+  archivos. `datos` en vez de `detalles` porque en español "detalles de la cámara" suena a la ficha de un producto;
+  `metadatos` (MS, id 592925) es correcto pero técnico para un texto de consentimiento · high (cámara), tentative (la
+  frase).
+- **location (de una foto, dónde se tomó) → `ubicación`** en las listas cortas, y **"where it was taken" →
+  `el lugar donde se tomó`** en el párrafo · location → `ubicación` en macOS Finder ("Ubicación:", ventana de
+  información) y AppKit (Menus, "Location" → "Ubicación"), MS terminology (id 341945), Nautilus y Dolphin ("Ubicación").
+  Para el verbo de la foto, España dice `hacer una foto` y Latinoamérica `tomar una foto`; `tomar` se entiende en las
+  dos orillas y es la forma neutra que pide la base panregional del `style.md`, así que `donde se tomó` (no `se hizo`,
+  ni `se sacó`) · high (ubicación), tentative (tomar, decisión regional).
+- **archive (zip/tar/7z) → `archivo comprimido`** · reafirma la entrada de la pasada de exploración de archivos
+  comprimidos (macOS ArchiveUtility + Total Commander). En "the list of files inside an archive" el español encadenaría
+  `archivos dentro de un archivo`, así que la frase es `la lista de archivos que contiene un archivo comprimido`: el
+  verbo `contener` deshace la repetición y `comprimido` sigue marcando cuál de los dos "archivo" es el zip · high.
+- **title and author (de un PDF) → `su título y su autor`** · title → `Título` en macOS AppKit (Common, NSFontPanel);
+  author → `autor` en MS terminology (ids 17202/2043587/2787486; la otra entrada, `creador`, es el sentido de "quien
+  creó un documento en la nube", otro concepto) y Nautilus ("Author" → "Autor") · high.
+- **page (de un PDF) → `página`** · macOS AppKit Printing ("Page %ld" → "Página %ld"), MS terminology (id 89935) · high.
+- **"whole files" → `archivos completos`** · `completo` es el adjetivo de macOS `es` para "entero/todo" en contextos de
+  archivos y copias; `enteros` también vale, pero `completos` lee más natural junto a `fotos` y `miniaturas`. El antiguo
+  `los archivos en sí` (de `noContents`) desaparece porque el inglés nuevo ya no dice "the files themselves" · high.
+- **"some lines of text" → `algunas líneas de texto`; "some text" (ítem corto) → `algo de texto`; "some of its text" →
+  `parte de su texto`** · tres formas del mismo "some" según el molde de cada frase: `algo de` para el ítem de lista sin
+  artículo, `parte de` cuando hay un poseedor ("its text"), `algunas` cuando hay unidad contable ("lines") · high.
+- **"a limited part of it" → `una parte limitada de su contenido`** · `de él` colgado al final suena a traducción;
+  `de su contenido` da al pronombre un sustantivo y deja claro que es el interior del archivo, no el archivo · high.
+- **"Photo search works the same way" → `La búsqueda de fotos funciona igual`** · el resto de la frase (el texto
+  reconocido y las etiquetas van al proveedor) se recupera literal del antiguo `noContents`, igual que la última frase
+  entera
+  (`Ask Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.`),
+  para que la pantalla no cambie de voz entre una versión y otra · high.
+- **Sin coma de Oxford.** El ítem de lista termina en
+  `… un archivo comprimido y los datos de la cámara y la ubicación de una foto`, sin coma antes de la `y` final, como ya
+  hace `askCmdr.consent.item.envelope` ("el cursor, la selección y las unidades conectadas"). El doble `y` es español
+  corriente; la alternativa `y, de una foto, los datos…` corta el ritmo de una lista de consentimiento · high.
+- **"looks inside a file only when you ask about it" → `solo mira dentro de un archivo cuando le preguntas por él`**
+  (`askCmdr.empty.hint`, `settings.askCmdr.intro`) · reutiliza `mirar dentro de` (arriba) y `preguntar por un archivo`
+  (`contentsRule`, "Cuando preguntas por un archivo"). El antiguo `es de solo lectura … nunca cambia nada` desaparece:
+  Ask Cmdr propone cambios de nombre y movimientos y escribe sus notas, así que la garantía nueva es
+  `nunca cambia un archivo sin tu aprobación`, con `aprobación` del par `Aprobar` / `hasta que tú lo apruebas` ya
+  asentado · high.
+
+## Los dos textos de ayuda del botón Rollback (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Superficie nueva: el texto de ayuda del botón dice ahora qué hace ESTA reversión con los archivos, y el botón se apaga
+en cuanto un movimiento entre dos sistemas de archivos llega a su último paso (eliminar los originales, con todo ya en
+el destino).
+
+- **`rollbackTooltipStopAndMoveBack` → `Detener y devolver a su sitio todos los archivos movidos hasta ahora`** · el
+  hermano `rollbackTooltip` da el marco (`Detener y …`), y `devolver a su sitio` es la forma ya asentada para el regreso
+  al lugar de origen (`cancelRollback.doneMovingBack`, «Se devolvió el elemento a su sitio») · `high`. ❌ No `eliminar`:
+  revertir un movimiento no elimina nada.
+- **`rollbackAlreadyLandedTooltip`** · la primera oración retoma la imagen de `cancelRollback.moveAlreadyLanded` («ya
+  está en el destino»), `reversión` es el término asentado para el rollback (`rollbackUnavailableTooltip`), y `Cancelar`
+  es la etiqueta del botón vecino (`fileOperations.button.cancel`), así que entra tal cual · `high`.
+- Sin `sameAsSourceJustification`; ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`).

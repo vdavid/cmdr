@@ -517,11 +517,19 @@ impl SmbVolume {
                     if size > max_read {
                         break; // too big for one compound READ ⇒ main-session streaming
                     }
-                    match tree.read_file_compound(&mut conn, &smb_path).await {
+                    // Sized to the hint, so the READ's credit charge follows the
+                    // file instead of booking a whole `max_read` window per
+                    // prefetch (see `volume_impl.rs`'s fast path). `expected_size`
+                    // is a HARD bound, which splits the two size-drift arms below
+                    // cleanly: a file that grew is `TooLarge`, a file that shrank
+                    // is short data. Both fall through to the main session, which
+                    // serves the file as it is now.
+                    match tree.read_file_compound_sized(&mut conn, &smb_path, size).await {
                         Ok(data) if data.len() as u64 == size => {
                             return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
                         }
-                        Ok(_) => break, // size drifted since the scan ⇒ streaming self-corrects
+                        // Short of the hint: the file SHRANK since the scan.
+                        Ok(_) => break, // ⇒ streaming serves today's bytes
                         Err(e) if is_pool_member_dead(&e) => {
                             log::debug!(
                                 "smb scan pool: member {idx} died reading {smb_path:?} ({e}); retrying on a sibling"
@@ -529,7 +537,11 @@ impl SmbVolume {
                             pool.mark_member_dead(idx);
                             continue;
                         }
-                        Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => break, // grew past max_read
+                        // The server reports more bytes than the hint asked for: the
+                        // file GREW since the scan. smb2 refuses rather than hand back
+                        // a prefix, which is what keeps a prefetch from caching a
+                        // truncated body.
+                        Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => break, // ⇒ streaming
                         // A real per-file error (permission, not-found, …): the same
                         // on any connection; surface it typed, don't touch the main
                         // session's state (this wasn't its connection).

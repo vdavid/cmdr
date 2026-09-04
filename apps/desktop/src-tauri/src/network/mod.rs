@@ -11,6 +11,7 @@
 pub mod credential_store;
 pub mod keychain;
 
+pub mod connect_wiring;
 pub mod known_shares;
 pub mod manual_servers;
 pub mod mdns_discovery;
@@ -18,9 +19,12 @@ pub mod mdns_discovery;
 // The durable trusted-SSH-host-key store, which answers the `HostKeys` seam.
 // Not SMB's business, but it lives here for the same reason `credential_store`
 // does: this module is where the app keeps what it knows about servers.
+pub mod server_list_file;
 pub mod sftp_host_keys;
 pub mod sftp_known_servers;
 pub mod sftp_volume_wiring;
+pub mod webdav_known_servers;
+pub mod webdav_volume_wiring;
 
 /// Reads both SFTP stores off disk: the host keys the user has approved and the
 /// servers they've connected to.
@@ -31,6 +35,12 @@ pub mod sftp_volume_wiring;
 pub fn load_sftp_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
     sftp_host_keys::load_trusted_host_keys(app);
     sftp_known_servers::load_known_sftp_servers(app);
+}
+
+/// Reads the WebDAV server list off disk. One call at startup, beside
+/// [`load_sftp_stores`].
+pub fn load_webdav_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
+    webdav_known_servers::load_known_webdav_servers(app);
 }
 
 #[cfg(target_os = "macos")]

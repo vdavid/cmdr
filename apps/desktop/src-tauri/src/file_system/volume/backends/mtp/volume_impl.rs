@@ -368,7 +368,15 @@ impl Volume for MtpVolume {
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // MTP doesn't support atomic overwrite, so check for conflicts when not forced.
+            // The no-clobber refusal, and it can only be check-then-act: MTP has
+            // no operation that CLAIMS a name. `SetObjectPropValue` and
+            // `MoveObject` take no exclusive flag, PTP has no collision response
+            // code, and the protocol lets two siblings share a name, so a device
+            // asked to collide complies rather than refusing. ❌ Don't wrap a
+            // lock or a retry loop around the window: the device has other
+            // writers, so that would read as a guarantee it isn't. Reasoning and
+            // the cell that pins the refusal: `backends/DETAILS.md` § "MTP's
+            // no-clobber rename is check-then-act".
             if !force && self.exists(to).await {
                 return Err(VolumeError::AlreadyExists(to.display().to_string()));
             }
@@ -487,12 +495,12 @@ impl Volume for MtpVolume {
         self.scan_for_copy_impl(path)
     }
 
-    fn scan_for_copy_batch_with_progress<'a>(
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        boundary: &'a cmdr_fs::volume::ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.scan_for_copy_batch_with_progress_impl(paths, on_progress)
+        self.scan_for_copy_batch_with_boundary_impl(paths, boundary)
     }
 
     fn scan_for_conflicts<'a>(
@@ -526,11 +534,7 @@ impl Volume for MtpVolume {
                 })
             })?;
 
-            Ok(SpaceInfo {
-                total_bytes: storage.total_bytes,
-                available_bytes: storage.available_bytes,
-                used_bytes: storage.total_bytes.saturating_sub(storage.available_bytes),
-            })
+            Ok(SpaceInfo::bounded(storage.total_bytes, storage.available_bytes))
         })
     }
 

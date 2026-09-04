@@ -19,8 +19,10 @@
 
 use super::constraints::Constraint;
 use super::scenario::{Availability, Scenario, ScenarioFolder};
-use crate::importance::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class, under_floored_paths};
-use crate::importance::scorer::{FolderSignals, PathClass, extension_count};
+use crate::importance::classify::{
+    is_denylisted, is_hidden_or_system, leaf_name, path_class_with_marker, under_floored_paths,
+};
+use crate::importance::scorer::{FolderSignals, extension_count};
 
 /// Seconds in a day, for readable age offsets.
 const DAY: u64 = 24 * 60 * 60;
@@ -165,17 +167,13 @@ impl ScenarioBuilder {
 }
 
 /// Derive a [`FolderSignals`] from a spec, using the production classifiers so a
-/// synthetic folder classifies exactly as the live scheduler would. A folder with
-/// a project marker is a project root (the strongest prior); otherwise the path
-/// alone classifies it.
+/// synthetic folder classifies exactly as the live scheduler would, marker
+/// promotion and its exemptions included
+/// ([`path_class_with_marker`](crate::importance::classify::path_class_with_marker)).
 fn derive_signals(spec: &FolderSpec, home: &str, now: u64, under_floored_ancestor: bool) -> FolderSignals {
     let name = leaf_name(&spec.path);
     let file_refs: Vec<&str> = spec.files.iter().map(|s| s.as_str()).collect();
-    let path_class = if spec.has_marker {
-        PathClass::ProjectRoot
-    } else {
-        path_class(&spec.path, home)
-    };
+    let path_class = path_class_with_marker(&spec.path, home, spec.has_marker);
     FolderSignals {
         name_denylisted: is_denylisted(&name),
         hidden_or_system: is_hidden_or_system(&spec.path, &name, home),

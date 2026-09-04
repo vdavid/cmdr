@@ -563,12 +563,17 @@ async fn get_space_info_delegates_to_the_parent() {
     let volume = archive.volume_with_parent(parent);
 
     let space = volume.get_space_info().await.unwrap();
-    // The parent's numbers verbatim, and crucially available > 0 so the
-    // pre-copy space check never reads the archive as "disk full".
-    assert_eq!(space.total_bytes, 1_000);
-    assert_eq!(space.available_bytes, 400);
-    assert_eq!(space.used_bytes, 600);
-    assert!(space.available_bytes > 0);
+    // The parent's numbers verbatim, and crucially a BOUNDED reading with
+    // available > 0, so the pre-copy space check never reads the archive as
+    // "disk full".
+    assert_eq!(
+        space,
+        SpaceInfo::Bounded {
+            total_bytes: 1_000,
+            available_bytes: 400,
+            used_bytes: 600,
+        }
+    );
 }
 
 #[test]
@@ -732,4 +737,21 @@ async fn not_found_honors_the_shared_path_payload_contract() {
     let volume = archive.volume();
 
     cmdr_fs::volume::conformance::assert_not_found_carries_the_path(&volume, Path::new("no-such-file.txt")).await;
+}
+
+/// The shared stop assertion.
+///
+/// ❗ Per SOURCE PATH here, ❌ not per entry, and that's honest: the scan walks the
+/// already-loaded central directory with no I/O and no decompression, so a path is
+/// the smallest unit of waiting there is. The long part of an archive transfer is
+/// the extract, which parks at its own member boundary
+/// (`sequential_extract.rs`). ❌ Don't add
+/// `assert_batch_scan_asks_inside_the_walk` here expecting it to pass; it would be
+/// asking for a boundary there is nothing to wait for.
+#[tokio::test]
+async fn a_batch_scan_stops_when_it_is_told_to() {
+    let archive = TestArchive::from_entries(&[deflated("dir/b.txt", "world"), deflated("dir/c.txt", "again")]);
+    let volume = archive.volume();
+
+    cmdr_fs::volume::conformance::assert_batch_scan_stops_when_told(&volume, Path::new("dir")).await;
 }

@@ -1613,10 +1613,6 @@
   "@errors.eject.volumeNotFound": {
     "sourceHash": "62a3af2"
   },
-  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr 認不出這是哪個裝置，所以沒辦法中斷它。",
-  "@errors.eject.mtpIdMissingDevicePrefix": {
-    "sourceHash": "d26b57b"
-  },
   "errors.eject.notEjectable": "這個磁碟機不可移除，所以會一直連著。",
   "@errors.eject.notEjectable": {
     "sourceHash": "bb88249"
@@ -1625,8 +1621,8 @@
   "@errors.eject.notAnSmbVolume": {
     "sourceHash": "d49623e"
   },
-  "errors.eject.mtpDisconnectRefused": "裝置沒有把連線關掉。等它閒下來再拔線。",
-  "@errors.eject.mtpDisconnectRefused": {
+  "errors.eject.deviceDisconnectRefused": "裝置沒有把連線關掉。等它閒下來再拔線。",
+  "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "d49861f"
   },
   "errors.eject.unmountRefused": "還有東西在用這個磁碟機。請關掉開著的檔案和 App，然後再退出一次。",

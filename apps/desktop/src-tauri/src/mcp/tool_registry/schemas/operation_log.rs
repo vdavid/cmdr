@@ -8,51 +8,48 @@ pub fn operations_list_schema() -> Value {
         "properties": {
             "since": {
                 "type": "integer",
-                "description": "Inclusive lower bound on the operation's start time (Unix milliseconds)"
+                "description": "Start time at or after this (Unix ms)."
             },
             "until": {
                 "type": "integer",
-                "description": "Inclusive upper bound on the operation's start time (Unix milliseconds)"
+                "description": "Start time at or before this (Unix ms)."
             },
             "name": {
                 "type": "string",
-                "description": "Match operations that touched an item with this name (folded: case- and Unicode-normalized). Exact or prefix match on the item's source name (see nameMatch), NOT a substring search."
+                "description": "Item name to match (case- and Unicode-folded), exact or prefix per nameMatch; not a substring search."
             },
             "nameMatch": {
                 "type": "string",
                 "enum": ["exact", "prefix"],
-                "description": "How 'name' matches: exact folded-name equality, or folded-name prefix. Default: prefix."
+                "description": "Default prefix."
             },
             "kind": {
                 "type": "string",
-                "enum": ["copy", "move", "delete", "trash", "rename", "createFolder", "createFile", "archiveEdit"],
-                "description": "Filter by operation kind"
+                "enum": ["copy", "move", "delete", "trash", "rename", "createFolder", "createFile", "archiveEdit"]
             },
             "initiator": {
                 "type": "string",
-                "enum": ["user", "aiClient", "agent"],
-                "description": "Filter by who initiated the operation"
+                "enum": ["user", "aiClient", "agent"]
             },
             "executionStatus": {
                 "type": "string",
-                "enum": ["queued", "running", "done", "failed", "canceled"],
-                "description": "Filter by lifecycle status"
+                "enum": ["queued", "running", "done", "failed", "canceled"]
             },
             "rollbackState": {
                 "type": "string",
-                "enum": ["notRollbackable", "rollbackable", "rollingBack", "rolledBack", "partiallyRolledBack"],
-                "description": "Filter by rollback state"
+                "enum": ["notRollbackable", "rollbackable", "rollingBack", "rolledBack", "partiallyRolledBack"]
             },
             "limit": {
                 "type": "integer",
-                "description": "Max operations to return. Default 50, max 1000. One response also has a size ceiling, so a big page may come back with fewer rows plus returned, total, and truncated; use offset for the rest."
+                "description": "Default 50, max 1000; a page may come back shorter, with returned, total, and truncated; use offset for the rest."
             },
             "offset": {
                 "type": "integer",
-                "description": "Number of operations to skip, for paging"
+                "description": "Operations to skip."
             }
         },
-        "required": []
+        "required": [],
+        "additionalProperties": false
     })
 }
 
@@ -62,18 +59,19 @@ pub fn operations_get_schema() -> Value {
         "properties": {
             "operationId": {
                 "type": "string",
-                "description": "The operation's id. The same id everywhere: from operations_list, a copy/move/delete response, cmdr://state operations, or the queue tool."
+                "description": "The operation's id, as given by operations_list, a copy/move/delete response, cmdr://state operations, or the queue tool."
             },
             "limit": {
                 "type": "integer",
-                "description": "Max item rows to return. Default 200, max 1000. One response also has a size ceiling, so a big page may come back with fewer rows plus returned, total, and truncated; use offset for the rest."
+                "description": "Default 200, max 1000; a page may come back shorter, with returned, total, and truncated; use offset for the rest."
             },
             "offset": {
                 "type": "integer",
-                "description": "Number of item rows to skip, for paging"
+                "description": "Item rows to skip."
             }
         },
-        "required": ["operationId"]
+        "required": ["operationId"],
+        "additionalProperties": false
     })
 }
 

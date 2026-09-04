@@ -207,6 +207,40 @@ async fn a_paused_reversal_stops_advancing_and_resumes_where_it_left_off() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_reversal_stopped_after_it_removed_something_lands_partly_rolled_back() {
+    // The state the Cancel button on a running rollback has to land on: some
+    // items came back, the rest never will on this pass, and the journal says so
+    // in the ONE state the history row already words and already offers to
+    // finish. `resolve_final_state` pins the mapping; this pins that a live stop
+    // reaches it and persists it.
+    let count = 6;
+    let (rig, dst) = copied_onto(count).await;
+    let _pacing = crate::test_mode::pace_rollback_for_test(ITEM_PACE_MS).await;
+    let reversal = Reversal::new("rollback-stop-midway");
+
+    let (report, ()) = tokio::join!(rig.rollback_driven_by("op", "inv-1", &reversal), async {
+        wait_until_async(PATIENCE, "the reversal to remove its first copy", || {
+            reversal.frames().last().is_some_and(|frame| frame.files_done >= 1)
+        })
+        .await;
+        reversal.stop();
+    });
+
+    assert!(report.canceled, "the stop must be observed");
+    assert!(report.reversed >= 1, "it removed something before it was stopped");
+    assert!(report.reversed < count as u64, "and it stopped before the last item");
+    assert_eq!(report.final_state, RollbackState::PartiallyRolledBack);
+    assert_eq!(
+        rig.read_op("op").rollback_state,
+        RollbackState::PartiallyRolledBack,
+        "the row a reopened history dialog reads says so too"
+    );
+
+    // What it didn't reach is still on disk, so finishing has something to do.
+    assert!(removed(&dst, count).await < count);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn stopping_inside_one_large_file_leaves_no_partial_and_loses_nothing() {
     // One file big enough to span many chunks, so the stop lands mid-stream.
     let bytes = vec![b'x'; 8 * 64 * 1024];

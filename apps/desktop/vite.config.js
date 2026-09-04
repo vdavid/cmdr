@@ -54,6 +54,17 @@ export default defineConfig(async () => ({
   },
 
   build: {
+    // The oldest WebKit Cmdr promises to run on, pinned rather than inherited.
+    // Vite's default target is `ESBUILD_BASELINE_WIDELY_AVAILABLE_TARGET`, a
+    // moving "widely available" baseline (Safari 16.4 as of Vite 8), so leaving
+    // it unset lets a routine Vite major bump raise the browser floor above the
+    // macOS version `tauri.conf.json`'s `minimumSystemVersion` promises, and the
+    // app just white-screens on a syntax it can't parse. Monterey ships Safari
+    // 15.0 and a fully patched Catalina tops out at 15.6.1, so 15.0 is the worst
+    // case on both. `build.cssTarget` follows `build.target`, so the CSS is
+    // downleveled to the same floor. `desktop-vite-build-target` keeps this
+    // pinned; see `docs/notes/system-requirements-and-es2025.md`.
+    target: 'safari15',
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       // Suppress Rolldown's PLUGIN_TIMINGS warning; sveltekit-guard taking 80%+ of

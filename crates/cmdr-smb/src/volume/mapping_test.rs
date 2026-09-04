@@ -70,9 +70,14 @@ fn fs_info_to_space_info_conversion() {
     };
 
     let space = fs_info_to_space_info(&info);
-    assert_eq!(space.total_bytes, 1_000_000_000);
-    assert_eq!(space.available_bytes, 400_000_000);
-    assert_eq!(space.used_bytes, 600_000_000);
+    assert_eq!(
+        space,
+        SpaceInfo::Bounded {
+            total_bytes: 1_000_000_000,
+            available_bytes: 400_000_000,
+            used_bytes: 600_000_000,
+        }
+    );
 }
 
 #[test]

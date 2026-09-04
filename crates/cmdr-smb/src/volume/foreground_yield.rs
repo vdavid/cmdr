@@ -7,13 +7,23 @@
 //! probe it parks on, and they're what `SmbVolume`'s `Volume` foreground-yield
 //! methods delegate to.
 //!
-//! MTP answers the same question from a per-device gate ("a foreground op is in
-//! flight on the USB pipe RIGHT NOW"), because a PTP session is a single scarce
-//! resource with an explicit holder. SMB has no such holder — frames just
-//! interleave — so the signal here is time-based instead: the share counts as busy
-//! for [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`] after the last navigation on it.
+//! The share is busy while a foreground operation HOLDS A LEASE on it (a directory
+//! listing takes one for its real duration), and for
+//! [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`] after the last one ended. The two halves
+//! are composed once, in `cmdr_fs::volume::host::activity::volume_busy_for_user`,
+//! and waited on once, in its `wait_until_volume_free`: the lease ending is an
+//! event to sleep on, and the leftover quiet window is one sleep to a computed
+//! deadline. Neither is a tick.
 //!
-//! The host reports the raw signal; the threshold stays here, because how long
+//! ❗ **The lease is what makes this exact, and it is not the connection.** The SMB
+//! connection has no holder — every `SmbVolume` clone multiplexes frames over one
+//! session, so there is nothing there to count, which is why this was time-based
+//! alone and why a slow listing used to stop counting halfway through the user's
+//! wait. A LISTING, though, is a scoped operation with a beginning and an end, so
+//! it can hold a lease exactly the way an MTP foreground op holds its per-device
+//! gate.
+//!
+//! The host reports the raw signals; the threshold stays here, because how long
 //! counts as "busy" belongs to the work standing aside. A transfer parks outright,
 //! so its window is short; an index scan that merely narrows wants far longer.
 //!
@@ -23,23 +33,32 @@
 //! slowing a NAS copy. (The index scan makes the same call for the same reason; see
 //! `indexing/network_scanner/scan_pace.rs`.)
 //!
-//! Starvation is handled one layer up and doesn't need a floor here:
-//! `CheckpointStream` won't honor a yield until the transfer has moved
-//! `min_progress_floor` bytes since its last resume, so continuous browsing slows a
-//! copy but can never stop it.
+//! Starvation is handled one layer up and doesn't need a floor here, but WHICH
+//! bound does the work depends on the write. A streaming write earns its
+//! forward progress from `min_progress_floor`: `CheckpointStream` won't honor a
+//! yield until the transfer has moved that many bytes since its last resume. A
+//! SINGLE-SHOT write is exempt from the floor (nothing is open on the far side
+//! while the source drains, so a small file can stand aside at all), and its
+//! guarantee is the per-park hard cap instead: every park ends, and a chunk
+//! moves between two of them. ❌ So don't cite the floor as the reason a copy
+//! can't be starved on the upload path; it isn't the one holding that end up.
+//! `write_operations/transfer/volume/DETAILS.md` § "The single-shot exemption".
 //!
-//! [`foreground_pending`] serves BOTH directions: a DOWNLOAD off this share
-//! (source arm) and an UPLOAD to it (destination arm, gated by
-//! `SmbVolume::supports_foreground_yield_as_destination`). The upload arm reads
-//! `foreground_pending` but NOT [`wait_until_foreground_idle`]: it can't park
-//! unbounded, because it holds an open write handle across the pause, so it caps
-//! each park itself (`write_operations/transfer/checkpoint_stream.rs`).
+//! Both functions serve BOTH directions: a DOWNLOAD off this share (source arm)
+//! and an UPLOAD to it (destination arm, gated by
+//! `SmbVolume::supports_foreground_yield_as_destination`). The difference is the
+//! BOUND, and it belongs to the caller: an upload holds an open write handle across
+//! the pause, so it caps every park (`write_operations/transfer/checkpoint_stream.rs`)
+//! where a download parks for as long as the user needs.
 
 use std::time::Duration;
 
 use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::host::activity;
 
-/// How long after a navigation the share still counts as in use by the user.
+/// How long after a foreground operation ENDS the share still counts as in use by
+/// the user. The window that debounces a burst of navigations into one park; the
+/// operations themselves are covered exactly, by their leases.
 ///
 /// Deliberately SHORT, unlike the index scan's window. A yield here PARKS the
 /// transfer outright (the scan merely drops to one listing in flight), and
@@ -47,28 +66,25 @@ use cmdr_fs::volume::host::VolumeHost;
 /// would compound into a visibly stalled copy for a single arrow-key press.
 pub(crate) const TRANSFER_FOREGROUND_IDLE_THRESHOLD: Duration = Duration::from_millis(500);
 
-/// How often [`wait_until_foreground_idle`] re-checks. The signal is a timestamp,
-/// not an event, so there's nothing to wake on; a tick well under the threshold
-/// keeps the resume latency a small fraction of the window.
-const POLL_INTERVAL: Duration = Duration::from_millis(100);
-
 /// Whether the user is currently using `volume_id` in the foreground, so a
 /// background transfer on it should stand aside.
+///
+/// True while any foreground operation holds a lease on the share, and for
+/// [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`] after the last one ends.
 pub(crate) fn foreground_pending(host: &VolumeHost, volume_id: &str) -> bool {
-    !host
-        .activity()
-        .volume_idle_for(volume_id, TRANSFER_FOREGROUND_IDLE_THRESHOLD)
+    activity::volume_busy_for_user(host.activity(), volume_id, TRANSFER_FOREGROUND_IDLE_THRESHOLD)
 }
 
 /// Park until `volume_id` has been quiet for [`TRANSFER_FOREGROUND_IDLE_THRESHOLD`].
 /// Returns immediately when it already is.
 ///
-/// The caller (`CheckpointStream::auto_yield_to_foreground`) races this against
-/// cancellation, so it never needs its own cancel awareness.
+/// Wakes on the LEASE coming back rather than on a tick, so an upload standing
+/// aside for a listing resumes the moment that listing ends instead of up to a tick
+/// later. Serves both arms of `CheckpointStream`: the source arm races it against
+/// cancellation and the destination arm races it against cancellation AND its hard
+/// cap, so it never needs awareness of either itself.
 pub(crate) async fn wait_until_foreground_idle(host: &VolumeHost, volume_id: &str) {
-    while foreground_pending(host, volume_id) {
-        tokio::time::sleep(POLL_INTERVAL).await;
-    }
+    activity::wait_until_volume_free(host.activity(), volume_id, TRANSFER_FOREGROUND_IDLE_THRESHOLD).await;
 }
 
 #[cfg(test)]
@@ -100,6 +116,25 @@ mod tests {
             foreground_pending(&host_watching(busy), browsed),
             "the user is browsing this share"
         );
+    }
+
+    /// The gap the lease closes: a listing that outlives the idle threshold keeps
+    /// the share busy for its whole duration. With the timestamp alone, a 10 s
+    /// listing was protected for its first half-second and the upload then
+    /// competed for the rest of the user's wait.
+    #[test]
+    fn a_listing_in_flight_keeps_a_transfer_yielding_however_long_it_takes() {
+        let browsed = "test://smb_yield/slow_listing";
+        let listing = Arc::new(BusyVolumes::new().holds_a_lease(browsed));
+        let host = host_watching(Arc::clone(&listing));
+        assert!(
+            activity::volume_idle_for(host.activity(), browsed, TRANSFER_FOREGROUND_IDLE_THRESHOLD),
+            "the timestamp half has already decayed, which is the case this covers"
+        );
+        assert!(foreground_pending(&host, browsed), "the listing is still running");
+
+        listing.releases_a_lease(browsed);
+        assert!(!foreground_pending(&host, browsed), "the listing finished");
     }
 
     /// THE scope guarantee for transfers: a copy from the NAS must not park because

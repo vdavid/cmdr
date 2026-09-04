@@ -10,7 +10,7 @@
  * (no `$effect.root`); the `.svelte.` infix is for the rune support.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { VolumeSpaceInfo } from '$lib/tauri-commands'
+import type { SpaceInfo, VolumeSpaceChanged } from '$lib/ipc/bindings'
 
 const { ipc } = vi.hoisted(() => ({
   ipc: {
@@ -30,7 +30,7 @@ vi.mock('$lib/tauri-commands', () => ({
 
 import { createVolumeSpace, type VolumeSpaceDeps } from './volume-space.svelte'
 
-const space: VolumeSpaceInfo = { totalBytes: 1000, availableBytes: 400 }
+const space: SpaceInfo = { kind: 'bounded', totalBytes: 1000, availableBytes: 400, usedBytes: 600 }
 
 function setup(over: Partial<VolumeSpaceDeps> = {}) {
   const deps: VolumeSpaceDeps = {
@@ -76,38 +76,38 @@ describe('createVolumeSpace', () => {
   })
 
   it('the live event updates the readout for the pane volume', () => {
-    let cb: ((p: { volumeId: string; totalBytes: number; availableBytes: number }) => void) | undefined
+    let cb: ((p: VolumeSpaceChanged) => void) | undefined
     ipc.onVolumeSpaceChanged.mockImplementation((fn: typeof cb) => {
       cb = fn
       return Promise.resolve(vi.fn())
     })
     const ctl = setup()
     ctl.startListening()
-    cb?.({ volumeId: 'vol-1', totalBytes: 2000, availableBytes: 900 })
-    expect(ctl.volumeSpace).toEqual({ totalBytes: 2000, availableBytes: 900 })
+    cb?.({ volumeId: 'vol-1', space: { kind: 'bounded', totalBytes: 2000, availableBytes: 900, usedBytes: 1100 } })
+    expect(ctl.volumeSpace).toEqual({ kind: 'bounded', totalBytes: 2000, availableBytes: 900, usedBytes: 1100 })
   })
 
   it('the live event ignores a mismatched volume id', () => {
-    let cb: ((p: { volumeId: string; totalBytes: number; availableBytes: number }) => void) | undefined
+    let cb: ((p: VolumeSpaceChanged) => void) | undefined
     ipc.onVolumeSpaceChanged.mockImplementation((fn: typeof cb) => {
       cb = fn
       return Promise.resolve(vi.fn())
     })
     const ctl = setup()
     ctl.startListening()
-    cb?.({ volumeId: 'other', totalBytes: 2000, availableBytes: 900 })
+    cb?.({ volumeId: 'other', space: { kind: 'bounded', totalBytes: 2000, availableBytes: 900, usedBytes: 1100 } })
     expect(ctl.volumeSpace).toBeNull()
   })
 
   it('the live event is ignored on a disk image', () => {
-    let cb: ((p: { volumeId: string; totalBytes: number; availableBytes: number }) => void) | undefined
+    let cb: ((p: VolumeSpaceChanged) => void) | undefined
     ipc.onVolumeSpaceChanged.mockImplementation((fn: typeof cb) => {
       cb = fn
       return Promise.resolve(vi.fn())
     })
     const ctl = setup({ getIsDiskImage: () => true })
     ctl.startListening()
-    cb?.({ volumeId: 'vol-1', totalBytes: 2000, availableBytes: 900 })
+    cb?.({ volumeId: 'vol-1', space: { kind: 'bounded', totalBytes: 2000, availableBytes: 900, usedBytes: 1100 } })
     expect(ctl.volumeSpace).toBeNull()
   })
 

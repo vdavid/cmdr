@@ -208,6 +208,10 @@ Prepare a release based on docs/guides/releasing.md.
       (`Cmdr_X.Y.Z_aarch64.dmg`, `_x64.dmg`, `_universal.dmg`) and sizes look reasonable.
     - Wait ~30 seconds for the website auto-deploy (the release workflow commits an updated `latest.json` and fires a
       webhook), then `curl -s https://getcmdr.com/latest.json | jq -r .version` and confirm it matches `X.Y.Z`.
+    - Confirm the updater payload behind that manifest actually resolves, for each of the three platform keys:
+      `curl -s https://getcmdr.com/latest.json | jq -r '.platforms[].url' | sort -u | xargs -I{} curl -sIL -o /dev/null -w '%{http_code} {}\n' {}`
+      should print `200` for all three. The workflow spells these `.app.tar.gz` names out by hand, so a naming change in
+      `tauri-action` surfaces here and nowhere else until installs stop updating.
     - If `latest.json` still shows the old version after ~2 minutes, the deploy webhook may have failed silently. Tell
       the user; the manual fix is to re-trigger the website-deploy workflow via `workflow_dispatch` from the Actions
       tab. Don't block release success on this. The GitHub Release is what users actually download.

@@ -32,14 +32,21 @@
     import { isPathAffectedByWalk } from '$lib/indexing/walked-ground'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
-    import type { VolumeSpaceInfo } from '$lib/tauri-commands'
-    import { formatDiskSpaceStatus } from '../disk-space-utils'
+    import type { SpaceInfo } from '$lib/ipc/bindings'
+    import { formatDiskSpaceStatus, formatSpaceNotes } from '../disk-space-utils'
     import { formatFileSizeWithFormat, formatByteSize } from '$lib/units'
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
-    function diskSpaceStatusText(space: VolumeSpaceInfo): string {
+    function diskSpaceStatusText(space: SpaceInfo): string {
         const format = getFileSizeFormat()
         return formatDiskSpaceStatus(space, (b) => formatFileSizeWithFormat(b, format))
+    }
+
+    // The same sentences the usage bar's tooltip appends, so this text carries the
+    // phone-storage hint and the "no size limit" note without either surface
+    // growing its own copy. Empty string ⇒ no tooltip.
+    function diskSpaceTooltipText(space: SpaceInfo): string {
+        return formatSpaceNotes(space, mtpSpaceHint)
     }
 
     interface Props {
@@ -57,7 +64,7 @@
         /** Number of selected items */
         selectedCount: number
         /** Disk space info for current volume (null when unavailable) */
-        volumeSpace?: VolumeSpaceInfo | null
+        volumeSpace?: SpaceInfo | null
         /**
          * Phone-storage caveat for the disk-space readout, set only on MTP
          * volumes. When present, it tooltips the free/total text to explain why
@@ -250,7 +257,7 @@
     {#if displayMode === 'empty'}
         <span class="summary-text">{tString('fileExplorer.selectionInfo.nothingHere')}</span>
         {#if volumeSpace}
-            <span class="disk-space-text" use:tooltip={mtpSpaceHint ?? ''}>{diskSpaceStatusText(volumeSpace)}</span>
+            <span class="disk-space-text" use:tooltip={diskSpaceTooltipText(volumeSpace)}>{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'file-info' && entry}
         <!-- Brief mode without selection: show file info -->
@@ -304,13 +311,13 @@
             {#if datePlaceholder !== null}{datePlaceholder}{:else}<DateLabel modifiedAt={dateTimestamp} />{/if}
         </span>
         {#if volumeSpace}
-            <span class="disk-space-text" use:tooltip={mtpSpaceHint ?? ''}>{diskSpaceStatusText(volumeSpace)}</span>
+            <span class="disk-space-text" use:tooltip={diskSpaceTooltipText(volumeSpace)}>{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'no-selection'}
         <!-- Full mode without selection: show totals -->
         <span class="summary-text">{noSelectionText}</span>
         {#if volumeSpace}
-            <span class="disk-space-text" use:tooltip={mtpSpaceHint ?? ''}>{diskSpaceStatusText(volumeSpace)}</span>
+            <span class="disk-space-text" use:tooltip={diskSpaceTooltipText(volumeSpace)}>{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'selection-summary' && stats}
         <!-- Selection summary -->

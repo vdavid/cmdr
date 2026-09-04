@@ -266,13 +266,13 @@ all. A persist problem is logged and dropped — a gauge is worth no turn.
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
 limits**:
 
-- what the PROMPT holds: `(budget − 10% headroom − 5,605 of prefix) / 349 per file`. The headroom exists because the
+- what the PROMPT holds: `(budget − 10% headroom − 5,492 of prefix) / 349 per file`. The headroom exists because the
   measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
   the user's sentence, JSON scaffolding).
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
   row's 59 tokens, so **101**.
 
-26 files at 16,000, 67 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
+25 files at 16,000, 66 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
 crossover the reply's ceiling binds and a bigger window buys no bigger batch.
 
 **Both limits are load-bearing.** The number is advertised to the model as "propose this many files" and the model
@@ -302,18 +302,18 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and this section together.
 
-- **Fixed overhead: 5,605 tokens** on every single call — 1,636 for `SYSTEM_PROMPT` and 3,969 for the 17 tool
+- **Fixed overhead: 5,492 tokens** on every single call — 1,809 for `SYSTEM_PROMPT` and 3,683 for the 18 tool
   declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
-  12-file one did not. **It grows with the tool view**: the suggested-ops trio added ~1,100 tokens of schema, which every
+  12-file one did not. **It grows with the tool view**: the suggested-ops trio is ~1,000 tokens of schema, which every
   call pays whether or not it suggests anything, and which costs a 16k budget about four files of rename batch. Even
-  `nothing_to_suggest`, one string argument and a two-sentence description, is 105 of them, paid by every rail turn that
-  will never call it. `memory_write` + `memory_edit` cost 263 between them, and the prompt's memory section another 265.
+  `nothing_to_suggest`, one string argument and a two-sentence description, is 97 of them, paid by every rail turn that
+  will never call it. `memory_write` + `memory_edit` cost 252 between them, and the prompt's memory section another 265.
   A new tool's schema is prefix, so keep its descriptions terse and say the rest once, in the registry line or the
   prompt.
 - **Per file: 269 for an `image_facts` row** (at 900 chars of OCR, the corpus average, against the 2,000-char cap — a
   text-dense corpus costs up to ~2.2× more), **59 for a plan row**, **21 for a pane-listing entry**. The facts dominate
   by more than 3×, so a window has to be sized for them, not for the plan.
-- **A 100-file content-based rename: 42,187 tokens** for the whole turn. The parts above account for over 90% of it; the
+- **A 100-file content-based rename: 42,077 tokens** for the whole turn. The parts above account for over 90% of it; the
   rest is the paths the calls name, the envelope, the user's sentence, and JSON scaffolding. The facts arrive over
   several `MAX_TOOL_RESULT_TOKENS` pages that all stay in the turn.
 - So **60k does 100 files, 16k does roughly 25** (`files_per_batch` says 101 and 25). A model's window must exceed the
@@ -326,12 +326,13 @@ the test and this section together.
 
 ## The runtime (`runtime/`)
 
-Seven files plus `ChatRuntime` in `mod.rs`: `types.rs` (what a turn IS as data), `events.rs`
+Eight files plus `ChatRuntime` in `mod.rs`: `types.rs` (what a turn IS as data), `events.rs`
 (the `AgentChatEvent` seam and the typed `AgentErrorKind`), `dispatch.rs` (the
 `ToolDispatcher` seam and `AppHandleDispatcher`), `turn.rs` (`run_turn` and everything it
-drives), `cost.rs` (metering one completed `respond`), `cmdr_md.rs` (which `CMDR.md`, and how
-much of it), `analytics.rs` (the anonymous `ask_cmdr_turn` event). `mod.rs` re-exports all of
-it, so callers keep saying `chat::runtime::X`.
+drives), `repeats.rs` (the turn's memory of calls that already failed), `cost.rs` (metering one
+completed `respond`), `cmdr_md.rs` (which `CMDR.md`, and how much of it), `analytics.rs` (the
+anonymous `ask_cmdr_turn` event). `mod.rs` re-exports all of it, so callers keep saying
+`chat::runtime::X`.
 
 **`types.rs` is a leaf, and that is load-bearing.** `UserTurn`, `TurnParams`, `TurnResult`,
 and `TurnTally` live there rather than in `turn.rs` because THREE modules need that
@@ -350,6 +351,41 @@ single-flight guard. ⚠️ **A wake must not bypass this**: a wake thread is a 
 user can reply to, so calling `run_turn` directly would let the reply and the wake's own turn
 run concurrently in one thread. It also means TWO write connections to `main.db` during a wake,
 this one and the wake loop's; WAL makes that fine (`wake/DETAILS.md` says why).
+
+### The repeat breaker (`repeats.rs`)
+
+A refused `propose_rename_plan` came back to the driver eight times running, byte-identical each
+time, until `MAX_TOOL_TURNS` ended the turn: about 90 seconds and eight provider round trips
+spent on one broken payload, and from the user's side the agent simply stopped answering. The
+model had nothing new to read, so it had nothing new to try.
+
+`FailedCalls` is a per-turn map from the tool's wire name plus its whole serialized arguments
+object (`serde_json`'s `Map` is a `BTreeMap`, so key order can't split one call into two
+records) to what that call came back with. The driver judges each call before dispatching:
+
+1. **Nothing identical failed yet** ⇒ dispatch, and record the content if `dispatch_ok` says it
+   came back with a problem.
+2. **Identical to a failed call** ⇒ don't dispatch. Hand back that original content plus
+   `repeatedCall: true` and a sentence saying this answers the same way every time, so the model
+   still reads what to fix and learns that re-sending is not the move.
+3. **Identical to one it was already told that about** ⇒ hand back the same again (the transcript
+   still needs a result row against every call, or the next turn loads a dangling tool call), and
+   end the turn with `AgentErrorKind::RepeatedToolCall` once the message's calls are all
+   answered. Three round trips instead of eight, and the user reads "it kept retrying the same
+   lookup" rather than "it hit its limit".
+
+**Why it can't fire on a legitimate repeat.** Only a call that came back with a PROBLEM is
+remembered, judged by `dispatch_ok`'s typed result keys and never by wording. A re-fetch of an
+elided result (which the system prompt explicitly asks for, and which every idempotent local
+read supports) repeats a call that SUCCEEDED, so it was never recorded. Paging varies `offset`,
+which is part of the key. **What it does cost**: a call that failed for a passing reason gets no
+second execution inside the same turn. That is the trade, taken deliberately: the model is
+handed the original problem rather than a silence, varying the arguments at all dispatches
+normally, and a turn a user is waiting on stops burning its whole budget on one payload.
+
+The other half of the same fix is that a refusal has to be worth reading. The rename boundary
+now names WHICH rows and WHICH field (`../tools/propose/rename/plan.rs`, `rows_problem`), so a
+model that reads it can act on it and never reaches step 2.
 
 ### The turn event (`analytics.rs`), and why it is the funnel's denominator
 
@@ -441,7 +477,10 @@ A message's `content_blocks` are written only on that `respond` call's `End`, so
 state is unambiguous:
 
 - **(a)** assistant text before a non-`End` termination (a provider drop, a crash) is
-  discarded — no assistant row — and the UI gets `AgentErrorKind::UnfinishedReply`.
+  discarded — no assistant row — and the UI gets `AgentErrorKind::UnfinishedReply`. An `End`
+  whose message carries NO parts takes this same path: it's what a degenerate provider turn
+  reduces to once `llm/genai_impl.rs` drops a nameless tool call, and persisting it would
+  show a blank bubble and call it an answer.
 - **(b)** the user row is written on the FIRST `End`, not at send. A first `respond` that
   never reached `End` records nothing, so a re-send re-assembles byte-identically.
 - **(c)** completed turns (each written on its own `End`, tool results on their own rows)
@@ -570,8 +609,12 @@ live types into `context`'s pure `EnvelopeFreshness` / `EnvelopeConnectivity` mi
 The context tests are four modules under `context/`, split by concern: `tests.rs` (the prefix,
 the envelope, elision, the budget), `stub_tests.rs` (what a dropped result says, and that a plan
 can't cite it), `cost_tests.rs` (what the real shapes cost), and `test_support.rs` (the
-transcript builders and budgets they share). Put a new context test in the module whose concern
-it matches rather than growing `tests.rs`.
+transcript builders and budgets they share). The runtime tests split the same way, over
+`runtime/test_support.rs`: `tests.rs` (single-flight, the per-message budgets, cancellation,
+the crash cases, cost, the typed error surface, and the attachment + consent gates),
+`repeat_tests.rs` (the repeat breaker), `context_budget_tests.rs`, `model_change_tests.rs`, and
+`wake_tests.rs`. Put a new test in the module whose concern it matches rather than growing
+`tests.rs`.
 
 Every `context.rs` test runs with no tokio runtime (the core is pure). The runtime tests
 use a local `ProgrammableLlm` (per-turn text / tool calls / usage / a mid-stream drop with

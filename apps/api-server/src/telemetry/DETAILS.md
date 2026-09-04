@@ -50,8 +50,8 @@ legacy rows), `diag_id` (`diag_<uuid>`, nullable), `email` (nullable), `panic_me
 no panic payload, and legacy rows predate the column), `app_fate` (nullable, migration `0015`). Validates payload size
 (max 64 KB), required fields, and the shape of optional fields before writing. `diagId` must match
 `^diag_[0-9a-f-]{36}$` (a malformed value, including any `anal_`-prefixed one, is rejected 400); `email` is loosely
-shape-checked and surfaced as the "Reply to" column in the crash-notification email (`../scheduled.ts` / `../email.ts`).
-No authentication required.
+shape-checked and surfaced as the "Reply to" column in the crash-notification email (`../scheduled.ts` /
+`../email/crash.ts`). No authentication required.
 
 **`app_fate` is what ranks a report's severity:** `'ended'` (the app went down with it) versus `'keptRunning'` (a
 background-thread panic it survived), plus `'unknown'` / `'unconfirmed'`, which claim nothing. Without it a real crash
@@ -271,7 +271,7 @@ footer (`replyToLine`, shared with the feedback card).
 OS version, arch, bundle size, a `prod`/`dev` chip, the reply-to line, and the download link with its 7-day expiry
 stated next to it (`linkTtlDays` is derived from `PRESIGN_TTL_SECONDS`, so the copy can't drift). Debug builds get a
 `[DEV]` subject mark; release builds get none, because a tag on every ordinary report is noise in an inbox list.
-Rendering lives in `../email.ts`.
+Rendering lives in `../email/error-report.ts`.
 
 ### Eviction (8/6 GB watermarks + 60-day age floor + lifecycle)
 

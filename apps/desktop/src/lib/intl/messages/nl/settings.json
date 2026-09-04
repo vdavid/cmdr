@@ -1327,6 +1327,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Melding over oude macOS getoond",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Intern: houdt bij of de eenmalige melding voor een Mac onder de ondersteunde macOS-versie al is getoond. Verborgen in de interface.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Onboarding-upgradehint getoond",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -1503,9 +1511,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr Settings section); kept verbatim in every locale, matches askCmdr.title and commands.askCmdrToggle.label."
   },
-  "settings.askCmdr.intro": "Chat met een AI over je bestanden, schijven en geschiedenis. Ask Cmdr is alleen-lezen: het leest namen, paden en groottes om te antwoorden, en verandert nooit iets.",
+  "settings.askCmdr.intro": "Chat met een AI over je bestanden, schijven en geschiedenis. Ask Cmdr leest namen, paden en groottes om te antwoorden, kijkt alleen in een bestand als je ernaar vraagt, en verandert nooit een bestand zonder jouw goedkeuring.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr staat aan",
   "@settings.askCmdr.status.on": {

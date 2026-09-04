@@ -13,24 +13,24 @@ import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
 
     <div class="relative mx-auto max-w-4xl text-center">
         <h2 class="mb-4 text-3xl font-bold md:text-4xl lg:text-5xl">Get Cmdr now!</h2>
-        <p class="mb-3 text-lg text-[var(--color-text-secondary)]">
-            Free forever for personal use. No signup, no account needed.
+        <p class="mb-3 text-lg text-text-secondary">
+            Free for personal use. No signup, no account needed.
         </p>
-        <p class="mb-10 text-sm text-[var(--color-text-tertiary)]">
+        <p class="mb-10 text-sm text-text-tertiary">
             Cmdr is in open beta: solid for daily use, and your feedback shapes what's next. See the <a
                 href="/features"
-                class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                class="text-accent-text underline underline-offset-2 hover:text-accent-hover"
                 >feature status</a
             >.
         </p>
 
         <!-- Download card -->
         <div
-            class="mx-auto max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 transition-all duration-300 hover:border-[var(--color-accent)]/30"
+            class="mx-auto max-w-md rounded-2xl border border-border bg-surface p-8 transition-all duration-300 hover:border-accent/30"
         >
             <div class="mb-6 flex items-center justify-center gap-4">
                 <svg
-                    class="h-12 w-12 text-[var(--color-text-secondary)]"
+                    class="size-12 text-text-secondary"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                     aria-hidden="true"
@@ -46,15 +46,19 @@ import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
 
             <HomebrewInstall />
 
-            <div class="mt-6 space-y-2 text-sm text-[var(--color-text-tertiary)]">
+            <div class="mt-6 space-y-2 text-sm text-text-tertiary">
                 <p>
                     Free for personal use · <a
                         href="/pricing"
-                        class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                        class="text-accent-text underline underline-offset-2 hover:text-accent-hover"
                         >Commercial from $59/yr</a
                     >
                 </p>
                 <p>Source-available · BSL 1.1 license</p>
+                <p>
+                    Needs macOS 12 or newer. macOS 10.15 and 11 run on a best-effort basis: everything works, but
+                    a few colors and layout details can look off.
+                </p>
             </div>
         </div>
 

@@ -23,10 +23,10 @@ use super::{
     FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_DUPLICATE_ID, FILE_MENU_ID,
     FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_HOME_ID,
     GO_LATEST_DOWNLOAD_ID, GO_MENU_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_MENU_ID, HELP_SEND_ERROR_REPORT_ID,
-    HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
-    OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID,
-    REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID, SETTINGS_ID,
-    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID,
+    HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, INVERT_SELECTION_ID, MenuItems, NEW_TAB_ID,
+    NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID,
+    QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID,
+    SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID,
     VIEW_MENU_ID, ViewMode, WINDOW_MENU_ID,
 };
 
@@ -259,6 +259,15 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         Some("Cmd+Shift+A"),
     )?;
+    // No accelerator: `⇧8` carries no Cmd, and a bare menu accelerator would swallow the
+    // `*` keystroke in every text field. FilePane's keydown handler binds it instead.
+    let invert_selection_item = MenuItem::with_id(
+        app,
+        INVERT_SELECTION_ID,
+        menu_t("menu.select.invert"),
+        true,
+        None::<&str>,
+    )?;
     let select_files_item = MenuItem::with_id(app, SELECT_FILES_ID, menu_t("menu.select.files"), true, None::<&str>)?;
     let deselect_files_item = MenuItem::with_id(
         app,
@@ -276,6 +285,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         &[
             &select_all_item,
             &deselect_all_item,
+            &invert_selection_item,
             &PredefinedMenuItem::separator(app)?,
             &select_files_item,
             &deselect_files_item,
@@ -579,15 +589,16 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 9);
     register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 11);
 
-    // Select menu positions: select_all(0), deselect_all(1), sep(2), select_files(3),
-    // deselect_files(4). The two `…` items carry no accelerator: bare `+`/`-` aren't valid
+    // Select menu positions: select_all(0), deselect_all(1), invert_selection(2), sep(3),
+    // select_files(4), deselect_files(5). The two `…` items carry no accelerator: bare `+`/`-` aren't valid
     // macOS menu accelerators (those always carry Cmd), so the keystroke binding lives in
     // FilePane's keydown handler. The items are still registered so a future user-customized
     // shortcut could flow into the menu via the generic update path.
     register_item(&mut items, SELECT_ALL_ID, &select_all_item, &select_menu, 0);
     register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &select_menu, 1);
-    register_item(&mut items, SELECT_FILES_ID, &select_files_item, &select_menu, 3);
-    register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 4);
+    register_item(&mut items, INVERT_SELECTION_ID, &invert_selection_item, &select_menu, 2);
+    register_item(&mut items, SELECT_FILES_ID, &select_files_item, &select_menu, 4);
+    register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 5);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6),
     // switch(7), swap(8), sep(9), command(10), queue(11), operation_log(12),

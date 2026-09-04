@@ -173,7 +173,7 @@ pnpm check [flags]
 - **`stack_orchestrator.go`**: Runner-level Docker fixture lifecycle: acquires a machine-wide lease per stack (via
   `stacklease`) at init, releases each at exit
 - **`stacklease/`**: Library: the machine-wide flock + holder-id refcount that makes a shared fixture stack safe across
-  worktrees. `registry.go` holds the registered stacks (`smb`, `sftp`); everything else is per-`Stack` methods
+  worktrees. `registry.go` holds the registered stacks (`smb`, `sftp`, `webdav`); everything else is per-`Stack` methods
 - **`stack-lease/`**: Thin `package main` CLI onto `stacklease` (`acquire`/`release`/`reconcile`/`status`, each taking
   the stack name first) that the bash scripts shell out to
 - **`checks/`**: One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)
@@ -227,8 +227,8 @@ reserved cores went unused. Declaring it costs no wall clock and hands that weig
 `docs/notes/check-cpu-contention.md` § "Cargo's build-directory lock".
 
 **Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`,
-`desktop-e2e-playwright`). Naming a check (positionally or via `--check`) implicitly includes slow checks
-(`includeSlow = len(checkNames) > 0`); group/app selectors don't.
+`desktop-e2e-playwright`, `desktop-rust-webdav-nextcloud`). Naming a check (positionally or via `--check`) implicitly
+includes slow checks (`includeSlow = len(checkNames) > 0`); group/app selectors don't.
 
 **Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: ~28 checks that finish in roughly 10s
 on a warm cache, intended to run before every commit. It's an editorial pick, not a timing-derived list (see Key
@@ -699,9 +699,10 @@ teardown are one implementation over that value.
 - **Separate namespaces are the point.** Each stack has its own flock target and its own lease dir, so one stack's
   holders are invisible to the other and downing one at zero can never touch the other's containers. The runner uses the
   same holder-id (its `check.sh` PID) in each, which counts once per stack.
-- **SMB's `/tmp` paths are frozen** at `cmdr-smb.lock` and `cmdr-smb-leases`, pinned by a test. A sibling worktree on
-  older code holds its lease at those exact paths; moving them would make a live holder invisible and re-open the
-  teardown race the library exists to close.
+- **SMB's `/tmp` paths are frozen** at `cmdr-smb.lock` and `cmdr-smb-leases`, pinned by a test. SFTP and WebDAV follow
+  the pattern (`cmdr-sftp.lock` + `cmdr-sftp-leases` on 12480+, `cmdr-webdav.lock` + `cmdr-webdav-leases` on 13480+). A
+  sibling worktree on older code holds its lease at those exact paths; moving them would make a live holder invisible
+  and re-open the teardown race the library exists to close.
 - **A stack's HOST state is machine-wide too, all of it.** SMB mounts nothing from the host; SFTP's two key-auth
   services bind-mount `/tmp/cmdr-sftp-keys/<service>`, a third machine-wide path beside the lock and the lease dir. ❌
   Never a path relative to the compose file: compose resolves a relative bind source against the compose file's own
@@ -717,9 +718,11 @@ teardown are one implementation over that value.
   So `Acquire` and `Reconcile` stat each leaf's private key before handing the stack over, restart exactly the services
   whose leaf is empty (re-running an entrypoint is the only thing that can put the two halves back in agreement), and
   wait for the pair to reappear. It reports rather than returning to a caller whose key-auth cells would all fail.
-- **A stack with a FIRST-PARTY image declares `buildContextRel`**, which folds the context's contents into the config
+- **A stack with FIRST-PARTY images declares `buildContextsRel`**, which folds every context's contents into the config
   hash and puts `--build` on `up`. ❗ Both, or an edited entrypoint never reaches a running container: `up -d` neither
-  rebuilds nor recreates a healthy one. SFTP declares it; SMB's images are vendored and don't.
+  rebuilds nor recreates a healthy one. SFTP declares one context, WebDAV two (its httpd image and its Nextcloud one);
+  SMB's images are vendored and it declares none. The hash carries each context's own name beside each file's, so two
+  contexts holding a `Dockerfile` can't cancel each other out.
 - **A check declares `NeedsContainers []StackMode`**, so it can ask for several stacks. Both strings resolve against the
   registry, and `TestEveryDeclaredStackModeResolves` (`stack_orchestrator_test.go`) turns a typo into a millisecond
   failure rather than one minutes into a run, after planning and `pnpm install`.

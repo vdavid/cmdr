@@ -5,7 +5,17 @@ use log::debug;
 use super::errors::MtpConnectionError;
 use super::{MtpConnectionManager, normalize_mtp_path};
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::CopyScanResult;
+use cmdr_fs::volume::{CopyScanResult, ScanStop};
+
+/// A scan the user stopped. ❗ The typed `Cancelled` variant, so `map_mtp_error`
+/// turns it into `VolumeError::Cancelled` and every caller classifies on the
+/// variant rather than on this sentence.
+fn scan_cancelled(device_id: &str) -> MtpConnectionError {
+    MtpConnectionError::Cancelled {
+        device_id: device_id.to_string(),
+        message: "Operation cancelled by user".to_string(),
+    }
+}
 
 impl MtpConnectionManager {
     /// Scans an MTP path recursively to get statistics for a copy operation.
@@ -25,16 +35,40 @@ impl MtpConnectionManager {
         storage_id: u32,
         path: &str,
     ) -> Result<CopyScanResult, MtpConnectionError> {
+        self.scan_for_copy_with_stop(device_id, storage_id, path, &ScanStop::none())
+            .await
+    }
+
+    /// [`scan_for_copy`](Self::scan_for_copy) that a person can stop.
+    ///
+    /// ❗ The seam is one PTP listing wide: this walk's whole cost is one
+    /// `list_directory` per directory over a USB pipe (~17 s for a 1,000-entry
+    /// folder), so `stop` is consulted before each of them and before each entry.
+    /// It cannot be finer — a listing in flight is inside `mtp-rs` and this layer
+    /// has nothing to interrupt it with.
+    pub async fn scan_for_copy_with_stop(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        stop: &ScanStop,
+    ) -> Result<CopyScanResult, MtpConnectionError> {
         debug!(
             "MTP scan_for_copy: device={}, storage={}, path={}",
             device_id, storage_id, path
         );
 
+        if stop.should_stop().await {
+            return Err(scan_cancelled(device_id));
+        }
+
         // Try to list the path as a directory
         match self.list_directory(device_id, storage_id, path).await {
             Ok(entries) if !entries.is_empty() => {
                 // Directory with contents: recurse using entries directly
-                let mut result = self.scan_entries_recursive(device_id, storage_id, entries).await?;
+                let mut result = self
+                    .scan_entries_recursive(device_id, storage_id, entries, stop)
+                    .await?;
                 result.top_level_is_directory = true;
                 Ok(result)
             }
@@ -82,18 +116,26 @@ impl MtpConnectionManager {
         device_id: &str,
         storage_id: u32,
         entries: Vec<FileEntry>,
+        stop: &ScanStop,
     ) -> Result<CopyScanResult, MtpConnectionError> {
         let mut file_count = 0usize;
         let mut dir_count = 0usize;
         let mut total_bytes = 0u64;
 
         for entry in &entries {
+            // Per entry, and so BEFORE the subdirectory listing below: that
+            // listing is the round trip, and asking after it is a Cancel the
+            // person waits out.
+            if stop.should_stop().await {
+                return Err(scan_cancelled(device_id));
+            }
             if entry.is_directory {
                 dir_count += 1;
                 // One list_directory call per subdirectory
                 let children = self.list_directory(device_id, storage_id, &entry.path).await?;
                 if !children.is_empty() {
-                    let child_result = Box::pin(self.scan_entries_recursive(device_id, storage_id, children)).await?;
+                    let child_result =
+                        Box::pin(self.scan_entries_recursive(device_id, storage_id, children, stop)).await?;
                     file_count += child_result.file_count;
                     dir_count += child_result.dir_count;
                     total_bytes += child_result.total_bytes;

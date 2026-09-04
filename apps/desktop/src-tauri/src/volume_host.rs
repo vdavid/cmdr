@@ -116,6 +116,8 @@ mod tests {
     /// every backend test in the app would inherit the problem.
     #[test]
     fn an_uninstalled_host_answers_everything_without_a_backend_noticing() {
+        // The host's real `credentials()` seam reaches the secret store below.
+        let _secrets = crate::test_support::isolate_secrets();
         let host = host();
         host.listings().directory_changed(
             "test://volume-host/detached",
@@ -132,10 +134,11 @@ mod tests {
                 .credentials("volume-host-detached.local", None)
                 .is_none()
         );
-        assert!(
-            host.activity()
-                .volume_idle_for("test://volume-host/detached", std::time::Duration::from_millis(1))
-        );
+        assert!(cmdr_fs::volume::host::activity::volume_idle_for(
+            host.activity(),
+            "test://volume-host/detached",
+            std::time::Duration::from_millis(1)
+        ));
         assert!(host.settings().max_concurrent_operations("ftp") >= 1);
     }
 

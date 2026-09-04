@@ -47,6 +47,34 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
 - **`folder_importance`** (`read/importance.rs`) — one folder's `PathImportance` (`snapshot_path`): Scored (score +
   `Explanation` breakdown + `stale` from asOf vs the volume's current `recompute_generation`), Floored (with reason), or
   Unscored. Offline-capable.
+- **`inspect_file`** (`read/inspect/`) — "what's in this file?" for up to 200 paths in one call. Each row: metadata
+  (`sizeBytes` + `sizeHuman`, `modified` + `modifiedHuman`), the extension's `mime` beside `content.kind` (so a lying
+  extension shows), and a typed `content` per kind. Text is a line window (`startLine` + `maxLines`, default 200, max
+  2,000, capped at 16,000 chars and 2,000 chars a line) read through the viewer's own backends, with `encoding`,
+  `totalLines` when known, `lineNumbersApproximate` on the ByteSeek fallback, and `truncated` / `linesCut` on the
+  window. With `find: { query, regex?, caseSensitive? }` the window is replaced by `find`: the matching lines (up to
+  50, each `{ line, matches, text }` with `text` a 300-char snippet around the first match), `totalMatches`,
+  `matchesCapped` (the viewer's 10,000-match cap), `returnedLines` / `truncated`, and `scanIncomplete` with
+  `bytesScanned` / `totalBytes` when the deadline stopped the scan. One `find` applies to every text and PDF path in
+  the call. A PDF gives `version`, the exact `pageCount`, the Info dictionary's `title` and `author`, and `pages`: a
+  page window (`pageStart` + `maxPages`, default 3, max 20; `{ page, text, truncated, unparseable? }` per page, each
+  page trimmed and cut at 8,000 chars, whole pages only up to the row's 16,000, with `returnedPages` / `truncated`),
+  or with `find` the matching lines each carrying `page` (`line` counts within the page; `scanIncomplete` +
+  `pagesScanned` when the deadline or the 50-line cap left pages undecoded). `hasTextLayer` is `false` when every
+  decoded page was whitespace (a scan), absent when none decoded; `textUnavailable` says `encrypted` (no strings read
+  either), `tooLarge` (over 64 MiB, never parsed), or `unparseable` (the parser refused or panicked, contained), with
+  the header `version` still answered. Images give `format` + dimensions, the camera's `exif` when the container carries a block (`dateTaken`,
+  `cameraMake`, `cameraModel`, `lens`, `orientation { value, spoken }`, `exposureTime`, `fNumber`, `iso`,
+  `focalLength`, and `gps { latitude, longitude }` in decimal degrees: a photo's coordinates are a home address, and
+  they egress on request), and point at `image_facts`; an archive (`.zip`, tar, 7z), or a directory inside
+  one, lists its immediate children (`format`, `inner`, up to 200 `entries` with `isDir`, `size` + `sizeHuman`,
+  `modified` + `modifiedHuman`, `encrypted`, plus `total` / `returned` / `truncated` and `hasEncryptedEntries`), and a
+  FILE inside an archive is read as its own kind through the viewer's bounded temp; empty and binary carry metadata
+  only. Per-path statuses: `ok` / `folder` / `missing` /
+  `unreadable { permission | io | encrypted | corrupt | unsupported | tooLargeToExtract }` / `unreachable` /
+  `unsupportedVolume`. The call reports `total` / `returned` / `truncated` and names every path with no row in
+  `unanswered`. The sole disk reader among the handlers; how it reads and how it times out: § Reading a
+  file the way the viewer does.
 - **`list_volumes`** (`read/volumes.rs`) — every volume with `indexStatus` (`fresh`/`scanning`/`stale`/`off`) and, for
   SMB, `smbConnectionState` (`direct`/`os_mount`/`disconnected`), straight from `snapshot_volumes` so tokens can't drift.
   Space rides along as `totalBytes` / `availableBytes` plus `totalHuman` / `availableHuman`, each pair present exactly
@@ -97,7 +125,7 @@ auto-dispatched ones the user never previews, and `redact::redact_line_salted` i
 sentence about which of the user's folders were boring. Log that a wake was quiet, never what it said.
 
 **What it costs everyone else.** The schema is prefix, so all 17 declarations are paid on every rail turn: this one is
-105 tokens of the 5,605 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
+97 tokens of the 5,257 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
 being able to stay silent, and it's why the description is two sentences.
 
 ## The two tools that write (`memory_write`, `memory_edit`)
@@ -119,6 +147,123 @@ against its 64 KB disk cap, so the model can see pruning coming rather than disc
 ⚠️ **Both are callable from the RAIL, not only from a wake.** "Remember that I keep invoices by year" is what the
 folder is for. It is also the mechanism behind the injection risk the prompt fences against
 (`../memory/DETAILS.md` § The injection surface), so it is stated rather than implied.
+
+## Reading a file the way the viewer does (`inspect_file`)
+
+The tool re-derives nothing the viewer already ships. Per behavior, the symbol it calls (`read/inspect/mod.rs`,
+`text.rs`, `pdf.rs`, `archive.rs`):
+
+- **Head**: one 64 KB read per file. `encoding::detect_from_head` takes all of it; the classifier takes the first
+  `content_kind::CLASSIFY_HEAD_LEN` bytes of the same buffer.
+- **Kind**: `file_viewer::content_kind::classify_viewer_content(head, None, true)`. `ext = None` keeps SVG on the text
+  path (its markup says more to a model than "an image"); `is_local = true` because the row is already a local file.
+  `Image` → `content_kind::media_mime` for the format and `media::read_image_dimensions` for the size (`None` for HEIC).
+  `Pdf` → `pdf.rs` (below).
+- **EXIF** (`exif.rs`): for a JPEG / TIFF / HEIC / PNG / WebP row (by the format above; GIF and BMP carry none and are
+  never opened for it), a second open through `exif::Reader::read_from_container` on a `BufReader<File>`
+  (`kamadak-exif` needs a seekable reader: HEIF boxes point across the file), then the pure `exif_facts`. `dateTaken`
+  is `DateTimeOriginal`, else `DateTime`, the camera's own `YYYY:MM:DD HH:MM:SS` with no time zone invented (a blank
+  or malformed date is absent); the strings come from the raw ASCII value, not `display_value` (which quotes and
+  escapes); the numbers are `display_value().with_unit()` ("1/250 s", "f/2.8", "400", "50 mm"); `orientation`
+  is the 1–8 code plus a spoken twin from a fixed table (a code outside it is absent); `gps` needs BOTH coordinates
+  (three rationals each, signed by the `Ref`, a zero denominator or an out-of-range value drops it) and rounds to six
+  decimals so the JSON carries no float noise. No block, a block that doesn't parse, and a block with none of these
+  fields are all "no `exif` key", never an error row. Inside an archive the same branch runs on the extracted
+  temp, so a photo in a zip carries its EXIF too.
+- **Text vs binary**: `content_kind::looks_binary(head, encoding)`, the seam the viewer doesn't need (it leaves the
+  warning to the FE's extension list). UTF-16 is never binary; a NUL or a control-byte share over 5% is.
+- **Encoding**: `encoding::detect_from_head` → `FileEncoding::label()` is the string the row carries. Never
+  `String::from_utf8_lossy` on the raw bytes: that read every UTF-16 file as binary once.
+- **The backend**: `file_viewer::headless::open_text_backend(path, encoding, cancel)`: FullLoad up to 1 MB, else a
+  LineIndex built under the cancel flag, falling back to ByteSeek with `line_numbers_exact = false` when the deadline
+  flips the flag (`file_viewer/DETAILS.md` § Headless reads). No session, no watcher, nothing to tear down.
+- **The window**: `backend.get_lines(Line(startLine - 1), maxLines + 1)`. The extra line says exactly whether more
+  exist, on every backend, without leaning on `total_lines`. `window_from_chunk` (pure) joins with `\n`, strips one
+  trailing `\r` per line (the backends keep it on CRLF files), cuts a line at `MAX_LINE_CHARS` (`linesCut`), stops at
+  `MAX_WINDOW_CHARS` (`truncated`), and answers a past-the-end `startLine` with an empty, un-truncated window (the
+  exact backends clamp such a target to the last line; the shaper must not present that line as line 50). `totalLines`
+  counts the trailing empty line after a final newline, as the viewer's line numbers do, so "line 812" means the same
+  thing in both places.
+- **`find`** (`find.rs`): `file_viewer::Matcher::build(query, SearchMode { use_regex, case_sensitive })` once per call
+  at param time (a `MatcherBuildError`, invalid or cross-line regex, is `INVALID_PARAMS` carrying the matcher's own
+  text), shared by every path through `TextAsk::Find(Arc<Matcher>)`. Per text row: `headless::open_scan_backend`
+  (FullLoad, or ByteSeek with no index: a scan streams from byte 0 and numbers lines exactly, so an index would only
+  read the file twice), then `backend.search(matcher, cancel, matches, progress)`, the viewer's own loop, capped at
+  `MAX_SEARCH_MATCHES`. Matches are grouped by line in arrival order, the first `MAX_FIND_LINES` (50) lines are fetched
+  by `SeekTarget::ByteOffset(match.byte_offset)` (exact on every backend; `Line(n)` is a guess on ByteSeek), `\r`
+  stripped, and cut by `snippet_around` to `FIND_SNIPPET_CHARS` (300) around the first match, a third before it, with
+  `…` at each cut end. The match column is UTF-16 (the viewer's JS-facing unit) and goes through
+  `range_read::clamp_utf16_offset_to_byte`, the one UTF-16→byte conversion in the tree; read as a char index it lands
+  twice as far along a line of emoji. `matchesCapped` is `totalMatches ≥ 10,000`; `scanIncomplete` is a flag-stopped
+  scan that didn't reach the cap or the end (`bytesScanned` / `totalBytes` say where, spoken twins beside them). A
+  `find` row never sets `lineNumbersApproximate` (nothing in it is estimated) and has `totalLines` only for a FullLoad
+  file. Non-text rows are untouched by `find`.
+- **PDF** (`pdf.rs`): the one kind the viewer doesn't decode for us, so it rides `pdf-extract` 0.12.0 (which
+  re-exports `lopdf` 0.42, so page tree, header, and Info dict come through the same crate) with every parser call
+  inside `crash_reporter::contain_panics` (`crash_reporter/DETAILS.md` § The one exemption): the closures wrap the
+  foreign calls only, never our shapers. Order: `header_version` over the classifier's head bytes (ours, so the version
+  survives a refused file), the 64 MiB `MAX_PDF_BYTES` gate (over it, `tooLarge` and no read), `std::fs::read`,
+  `Document::load_mem`, `get_pages().len()` (exact; a tree that panics the parser is `unparseable`), `is_encrypted()`
+  (→ `encrypted`, page count kept, Info strings not read: they're ciphertext), then `Title` / `Author` through
+  `doc.dereference` + `decode_text_string` (PDFDocEncoding or UTF-16, trimmed, blank is absent). Page text is
+  `output_doc_page(&doc, &mut PlainTextOutput::new(&mut buf), n)`, one page at a time so a range never decodes the
+  rest; a refusal or a contained panic marks that page `unparseable` and the loop continues. `window_from_pages` and
+  `find_in_pages` are pure over an `extract(page)` closure (tests inject page texts): the window trims each page, cuts
+  at `MAX_PAGE_CHARS` (8,000: two dense pages per row; a whole page the model can re-ask for by number beats a slice
+  it can't, since there is no offset inside a page), carries whole pages until the next would break
+  `MAX_WINDOW_CHARS` (the first always fits), and stops on the cancel flag; `find` runs the call's `Matcher` per
+  trimmed line of each page in order, groups by line with the first match's byte offset feeding `snippet_around_byte`,
+  finishes the page that fills `MAX_FIND_LINES` and then stops (decoding a 300-page manual only to count is not worth
+  the deadline), which `scanIncomplete` + `pagesScanned` report; `matchesCapped` at the viewer's `MAX_SEARCH_MATCHES`
+  is its own reason to stop, as on text. `hasTextLayer` is a verdict over decoded pages only. The whole file is read
+  into memory (bounded by the gate); nothing is cached between calls.
+- **Not local**: `mcp::is_virtual_path` (`mtp://`, direct `smb://`) → `unsupportedVolume`, and so does a scheme-less
+  path whose owning volume (`VolumeManager::mount_id_for_path`, else `root`) reports
+  `!supports_local_fs_access()`. A `missing` there would be a lie the model relays. An OS-mounted share
+  (`/Volumes/share`) is a real path and flows through; the timeout is what protects the turn.
+- **Archives** (`archive.rs`): the pane's own routing, before any `std::fs`. A path with an archive-named component
+  (`cmdr_archive::archive_boundary_candidate`, a pure string check) goes through `VolumeManager::resolve(volume_id,
+  path)` (`block_on` from the blocking thread, as `archive_extract` does): the shared boundary detector confirms the
+  format by name and magic bytes and hands back the on-demand `ArchiveVolume`, or a passthrough for a mislabeled
+  `.zip`, which then reads as text or binary. The row is then built from the archive's cached index
+  (`ArchiveVolume::index()`, the seam the volume opened for this: `FileEntry` has no `encrypted` field, and
+  `list_directory` is a thin map over the same nodes; the key is the inner path the boundary candidate split off): a
+  directory node (the root, or one inside) →
+  `Content::Archive` from `index.list(inner)`, cut at `MAX_ARCHIVE_ENTRIES` (200), dirs first as the pane lists them,
+  format from `ArchiveFormat::label()`; the archive root's row metadata is the `.zip` file's own `std::fs` stat, an
+  inner directory's `sizeBytes` is absent (never a zero). A file node → refused `unreadable { encrypted }` from the
+  node's flag BEFORE extraction (the tool has no password path), else
+  `archive_extract::extract_if_archive_inner(path, volume_id)` streams it to the viewer's bounded temp (the same
+  256 MiB refuse-before-extract cap; `ExtractTooLarge` → `tooLargeToExtract`, `ViewerError::Archive` → `corrupt`),
+  `read_content` runs the normal per-kind pipeline on `temp_file` (so `find` and the window work inside a zip), and
+  `TempCleanup` removes `cleanup_dir` in `Drop`, so an early return or a panic can't leak it. A zip inside a zip is
+  `binary`: the boundary is the leftmost archive component, as in the pane. The parse errors map typed:
+  `NeedsPassword` (a header-encrypted 7z) → `encrypted`, `IoError` (a damaged structure) → `corrupt`, `NotSupported`
+  (the archive layer's unsupported-codec / non-archive / over-cap collapse) → `unsupported`: an unsupported codec is
+  not a damaged file. (An unsupported codec met at EXTRACT time still reads `corrupt`: `archive_extract` folds it into
+  `ViewerError::Archive { message }`, which carries no kind.) The extract step is injected (`ExtractFn`) so the tests
+  shrink the cap and watch the temp dir.
+- **Statuses from I/O**: `NotFound` / `NotADirectory` → `missing`; `PermissionDenied` → `unreadable { permission }`
+  (EACCES and a Full Disk Access refusal are one kind of `std::io::Error`, so the enum doesn't pretend to tell them
+  apart); anything else, including a read that panicked → `unreadable { io }`.
+
+**The runner (`runner.rs`).** Every path is its own `spawn_blocking`, `PATH_CONCURRENCY` (4) in flight
+(`buffer_unordered`, slots re-sorted into request order). A path's budget is `PATH_TIMEOUT` (5 s) in two phases: the
+cooperative window, then the deadline flips the path's `AtomicBool` and waits `CANCEL_GRACE` (1 s) for a partial,
+flagged answer (a LineIndex still scanning falls back to ByteSeek in milliseconds), then the row is `unreachable` and
+the task is dropped, which detaches it. A thread stuck in a kernel call cannot be cancelled: the tool ABANDONS it,
+holding a blocking-pool thread until the syscall returns (the same posture as `commands/file_viewer.rs`'s
+`blocking_viewer_op`), so `unreachable` never means "we stopped reading". `CALL_TIMEOUT` (20 s) bounds the call: past
+it no new path starts, and each unlaunched path is an empty slot. The policy is a `RunnerConfig` value and the per-path
+work an injected `InspectFn`, so the tests drive both phases with millisecond budgets and no hung mount.
+
+**The `unanswered` contract.** `shape_ok` runs `fit_to_result_budget` over the rows that exist, then names every
+requested path with no row in the kept prefix: cut by the size ceiling, never launched, or abandoned without a row.
+`total` is the paths asked, `returned` the rows carried, `truncated` is `returned < total`. The model joins rows back
+by `path` and asks again for exactly `unanswered`.
+
+**Text-only by construction**: no field on any row can hold bytes; `tests::every_row_shape_is_text_only_no_byte_fields`
+walks the serialized result and requires every leaf to be a string, a number, or a flag.
 
 ## One tool, both questions (`list_dir`)
 
@@ -204,7 +349,8 @@ Every result that carries a LIST is cut to `agent::chat::budget::MAX_TOOL_RESULT
 `mcp::executor::fit_to_result_budget`, and reports `total` / `returned` / `truncated` so the model can say what it saw
 and ask for the rest. It applies to `list_dir` (children, under the caller's own `limit`), `list_pane_files` (entries, on
 top of its 200-row cap), `image_facts` (per-path rows, on top of the 2,000-char per-file text cap),
-`search_photos` (hits), the `operations_*` pages, and the suggested-ops reads (group summaries from
+`search_photos` (hits), `inspect_file` (per-path rows, on top of the 16,000-char per-row window cap, with the rows it
+drops named in `unanswered`), the `operations_*` pages, and the suggested-ops reads (group summaries from
 `list_suggestions`, the op page from `get_suggestion_group`).
 
 **Why a size cut on top of the row caps:** a row cap can't bound a payload. `image_facts` at 200 paths × 2,000
@@ -237,9 +383,10 @@ The negative test (`view.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete"
 end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
 
 The refusal copy says Ask Cmdr can prepare a rename plan, suggest file operations for the user to review, and save
-notes in its own memory folder, but can't touch the user's files, approve a proposal, or read file contents. ⚠️ Keep it
-accurate as the tiers grow: it used to promise the agent couldn't change anything at all, which `Access::Memory` made
-false.
+notes in its own memory folder, but can't touch the user's files or approve a proposal, and reads a file's contents only
+through `inspect_file`. ⚠️ Keep it accurate as the tiers grow: it promised "couldn't change anything at all" until
+`Access::Memory`, and "can't read file contents" until `inspect_file`; a model told a false limit either refuses the
+question or invents the answer.
 
 `dispatch` routes two tools specially rather than through the generic `execute_tool` call: `propose_rename_plan`,
 which needs the evidence scope, and `propose_suggestions`, which needs the conversation id so a sweep records the

@@ -20,13 +20,17 @@ use std::sync::Arc;
 use super::super::conflict::{ApplyToAll, resolve_conflict};
 use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
-use super::super::overwrite::safe_overwrite_dir;
+use super::super::ledger::{WrittenFile, WrittenIdentity};
+use super::super::overwrite::{rename_no_replace, safe_overwrite_dir};
+use super::super::reversal::{Recheck, ReversalTally, recheck_local};
 use super::super::scan::handle_dry_run;
-use super::super::state::{WriteOperationState, is_cancelled};
+use super::super::state::WriteOperationState;
 use super::super::types::{
     SourceItemOutcome, WriteOperationConfig, WriteOperationError, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use super::super::validation::{is_same_file, is_same_filesystem, path_exists_or_is_symlink};
+use crate::operation_log::rollback::ItemResult;
+use crate::operation_log::types::SkipReason;
 
 mod cross_fs;
 mod same_fs;
@@ -35,10 +39,23 @@ mod same_fs;
 // Move rollback tracking
 // ============================================================================
 
+/// One item this move renamed into place.
+struct MovedItem {
+    /// Where it was before the rename — where a reversal puts it back.
+    original_source: PathBuf,
+    /// Where it sits now, with the identity a reversal rechecks before touching
+    /// it. A rename carries the node id across untouched, so a snapshot taken of
+    /// the SOURCE just before the rename describes the landed item exactly.
+    landed: WrittenFile,
+}
+
 /// Tracks renames performed during same-FS move for rollback on cancellation.
-/// Each entry is `(original_source, moved_to_dest)`. Rollback reverses them.
+///
+/// A **stack**: [`MoveTransaction::pop`] takes the newest rename off as it's
+/// reversed, so the ledger claims exactly what this operation currently has
+/// sitting at the destination.
 struct MoveTransaction {
-    renames: Vec<(PathBuf, PathBuf)>,
+    renames: Vec<MovedItem>,
 }
 
 impl MoveTransaction {
@@ -46,12 +63,47 @@ impl MoveTransaction {
         Self { renames: Vec::new() }
     }
 
-    fn record(&mut self, source: PathBuf, dest: PathBuf) {
-        self.renames.push((source, dest));
+    fn record(&mut self, source: PathBuf, landed: WrittenFile) {
+        self.renames.push(MovedItem {
+            original_source: source,
+            landed,
+        });
     }
 
-    /// Reverses all recorded renames (dest → source) in reverse order.
-    /// Same-FS rename is instant, so this runs synchronously.
+    /// Take the newest rename off the ledger, to reverse it.
+    fn pop(&mut self) -> Option<MovedItem> {
+        self.renames.pop()
+    }
+
+    /// The distinct directories whose entries these renames changed, in
+    /// first-seen order: every directory an item left, and every directory one
+    /// landed in. This is the whole durability job of a same-FS move.
+    ///
+    /// A `rename(2)` moves a directory ENTRY — it takes one out of the source
+    /// directory and puts one into the destination directory, touching neither
+    /// the file's data blocks nor its inode. So both sides need an `fsync`, and
+    /// the moved file itself needs nothing: syncing it would buy a device-level
+    /// barrier (`fcntl(F_FULLFSYNC)` on macOS) per file for a write that never
+    /// happened. Measurements: `transfer/DETAILS.md` § Durability.
+    fn touched_directories(&self) -> Vec<PathBuf> {
+        let mut seen: HashSet<&Path> = HashSet::new();
+        let mut dirs: Vec<PathBuf> = Vec::new();
+        for item in &self.renames {
+            for parent in [item.original_source.parent(), item.landed.path.parent()]
+                .into_iter()
+                .flatten()
+            {
+                if seen.insert(parent) {
+                    dirs.push(parent.to_path_buf());
+                }
+            }
+        }
+        dirs
+    }
+
+    /// Reverses all recorded renames (dest → source) in reverse order, and
+    /// reports what it left alone. Same-FS rename is instant, so this runs
+    /// synchronously.
     ///
     /// Intentional: this reverses the moves THIS op made; it does NOT restore a
     /// destination that an Overwrite-with-rename replaced (no per-file backup is
@@ -59,17 +111,109 @@ impl MoveTransaction {
     /// whole operation risks unexpectedly filling the user's drive on a large
     /// Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
     /// § "Overwrite isn't reversible".
-    fn rollback(&self) {
-        for (original_source, moved_to_dest) in self.renames.iter().rev() {
-            if let Err(e) = fs::rename(moved_to_dest, original_source) {
-                log::warn!(
-                    "move rollback: failed to rename {} back to {}: {}",
-                    moved_to_dest.display(),
-                    original_source.display(),
-                    e
-                );
-            }
+    fn rollback(&mut self) -> ReversalTally {
+        let mut tally = ReversalTally::default();
+        while let Some(item) = self.pop() {
+            tally.record(restore_moved_item(&item), &item.landed.path);
         }
+        tally
+    }
+}
+
+/// Put one moved item back where it came from — if what sits at the landed path
+/// is still the item this move put there, AND nothing new has taken its original
+/// place.
+///
+/// **Two guards, the pair the history engine pins.** The recheck stops the move
+/// back from carrying off a file something else replaced at the destination. The
+/// non-destructive restore stops the rename from silently destroying whatever the
+/// user has since created at the original source — `rename(2)` replaces its target
+/// without a word, and there is no backup to put back afterwards. Either refusal
+/// leaves the item where it landed, which is recoverable; the alternative isn't.
+fn restore_moved_item(item: &MovedItem) -> ItemResult {
+    match recheck_local(&item.landed) {
+        // Something took the moved item away. The end state a restore wanted
+        // (nothing of ours at the destination) holds, so this is idempotent.
+        Recheck::AlreadyGone => return ItemResult::Skipped(SkipReason::AlreadyGone),
+        Recheck::Skip(reason) => return ItemResult::Skipped(reason),
+        Recheck::Act => {}
+    }
+    // Advisory: this stat names the ordinary case with a log line, and it's the
+    // only thing that can tell a real collision from a case-only self-collision.
+    // The refusal itself lives in `restore_rename`, which is what makes the guard
+    // hold against an entry that appears after this stat.
+    let mut force = false;
+    if let Ok(occupant) = fs::symlink_metadata(&item.original_source) {
+        if occupant_is_the_item_itself(item, &occupant) {
+            force = true;
+        } else {
+            log::info!(
+                "move rollback: leaving {} where it is, something else now sits at {}",
+                item.landed.path.display(),
+                item.original_source.display()
+            );
+            return ItemResult::Skipped(SkipReason::RestoreTargetOccupied);
+        }
+    }
+    restore_rename(&item.landed.path, &item.original_source, force)
+}
+
+/// The restore's own rename, which refuses to replace whatever is at
+/// `original_source` unless `force` says the entry there IS the item coming back.
+///
+/// This is where the non-destructive guarantee actually lives. The caller's stat
+/// only reports what was there when it looked; an entry created in the window
+/// between that stat and this rename would still be in the way, and a plain
+/// `rename(2)` would carry it off without a word. `rename_no_replace` closes the
+/// window with the kernel's atomic no-replace flag.
+///
+/// `force` is the case-only self-collision, where the entry the target reports IS
+/// the item being restored, so the rename has to be allowed to land on it.
+fn restore_rename(landed: &Path, original_source: &Path, force: bool) -> ItemResult {
+    let renamed = if force {
+        fs::rename(landed, original_source)
+    } else {
+        rename_no_replace(landed, original_source)
+    };
+    match renamed {
+        Ok(()) => ItemResult::Reversed,
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            log::info!(
+                "move rollback: leaving {} where it is, something took {} while the reversal ran",
+                landed.display(),
+                original_source.display()
+            );
+            ItemResult::Skipped(SkipReason::RestoreTargetOccupied)
+        }
+        Err(e) => {
+            log::warn!(
+                "move rollback: couldn't rename {} back to {}: {}",
+                landed.display(),
+                original_source.display(),
+                e
+            );
+            ItemResult::Skipped(SkipReason::Failed)
+        }
+    }
+}
+
+/// Is the entry occupying the original source actually the item being restored,
+/// rather than a real collision?
+///
+/// A case-insensitive filesystem folds `dog.jpg` and `dog.JPG` onto one entry, so
+/// a move that only changed a name's case finds its own destination sitting at the
+/// source. Same node id ⇒ same entry, and the rename back is then a case
+/// correction, not an overwrite. This is one local filesystem, so `(dev, ino)`
+/// settles it exactly and no path folding is needed.
+///
+/// The recorded node id is the right side to compare: the recheck above just
+/// proved the entry still at the landed path carries it.
+fn occupant_is_the_item_itself(item: &MovedItem, occupant: &fs::Metadata) -> bool {
+    match (item.landed.identity.node(), WrittenIdentity::node_of_stat(occupant)) {
+        (Some(recorded), Some(live)) => recorded == live,
+        // Nothing to compare, so nothing is proven — and an unproven restore that
+        // might overwrite is one we don't make.
+        _ => false,
     }
 }
 
@@ -93,6 +237,10 @@ fn move_resolved_into_place(
     source: &Path,
     dest_path: &Path,
     resolved: &super::super::overwrite::ResolvedDestination,
+    // The source's own metadata, stat'd before the rename. The rename carries the
+    // node id across, so this IS the landed item's identity; `None` (the stat
+    // failed) leaves the ledger entry unverifiable.
+    source_stat: Option<&fs::Metadata>,
     move_tx: &mut MoveTransaction,
 ) -> Result<(), WriteOperationError> {
     let source_is_dir = source.is_dir();
@@ -106,7 +254,10 @@ fn move_resolved_into_place(
             let _ = fs::remove_file(&resolved.path);
         }
         fs::rename(source, &resolved.path).with_path(source)?;
-        move_tx.record(source.to_path_buf(), resolved.path.clone());
+        move_tx.record(
+            source.to_path_buf(),
+            WrittenFile::local_stat(resolved.path.clone(), source_stat),
+        );
         return Ok(());
     }
 
@@ -121,10 +272,16 @@ fn move_resolved_into_place(
                 message: format!("Failed to rename across types: {}", e),
             })
         })?;
-        move_tx.record(source.to_path_buf(), resolved.path.clone());
+        move_tx.record(
+            source.to_path_buf(),
+            WrittenFile::local_stat(resolved.path.clone(), source_stat),
+        );
     } else {
         fs::rename(source, &resolved.path).with_path(source)?;
-        move_tx.record(source.to_path_buf(), resolved.path.clone());
+        move_tx.record(
+            source.to_path_buf(),
+            WrittenFile::local_stat(resolved.path.clone(), source_stat),
+        );
     }
     Ok(())
 }
@@ -261,12 +418,20 @@ fn merge_move_directory(
         };
         let dest_child = dest_dir.join(&file_name);
 
-        // Check cancellation
-        if is_cancelled(&state.intent) {
+        // The cooperative boundary, like every other loop in the engine. A
+        // folder-into-folder move does ALL its renaming down here, so without
+        // this a paused merge would keep going while the UI says it stopped.
+        if state.stop_or_park_sync() {
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });
         }
+
+        // Snapshot the child before the rename carries it across. The rename
+        // preserves the node id, so this describes what lands at `dest_child` —
+        // and it's the ONLY identity a cancelled merge has to reverse from, since
+        // the journal marks a directory merge unreversible.
+        let child_stat = fs::symlink_metadata(&source_child).ok();
 
         if source_child.is_dir() && dest_child.exists() && dest_child.is_dir() {
             // Both are directories, recurse
@@ -298,7 +463,7 @@ fn merge_move_directory(
                     // halves of the rename; no-ops outside ~/Downloads.
                     crate::downloads::note_pending_write_for_cmdr(&source_child);
                     crate::downloads::note_pending_write_for_cmdr(&resolved.path);
-                    move_resolved_into_place(&source_child, &dest_child, &resolved, move_tx)?;
+                    move_resolved_into_place(&source_child, &dest_child, &resolved, child_stat.as_ref(), move_tx)?;
                 }
                 None => {
                     // Skip: source file stays in place. Record it so a cross-FS
@@ -315,7 +480,7 @@ fn merge_move_directory(
             crate::downloads::note_pending_write_for_cmdr(&source_child);
             crate::downloads::note_pending_write_for_cmdr(&dest_child);
             fs::rename(&source_child, &dest_child).with_path(&source_child)?;
-            move_tx.record(source_child, dest_child);
+            move_tx.record(source_child, WrittenFile::local_stat(dest_child, child_stat.as_ref()));
         }
     }
 
@@ -338,6 +503,26 @@ mod test_support;
 #[cfg(test)]
 #[path = "move_op_tests.rs"]
 mod tests;
+
+/// What a move REPORTS while it runs: the phases it announces and the counts
+/// under them. Its sibling above owns what a move does to the files.
+#[cfg(test)]
+#[path = "move_progress_tests.rs"]
+mod move_progress_tests;
+
+/// What a paused, rolled-back, or cancelled move does.
+#[cfg(test)]
+#[path = "move_interruption_tests.rs"]
+mod move_interruption_tests;
+
+/// What each ledger entry records about the rename it stands for.
+#[cfg(test)]
+#[path = "move_reversal_tests.rs"]
+mod move_reversal_tests;
+
+#[cfg(test)]
+#[path = "move_ledger_tests.rs"]
+mod move_ledger_tests;
 
 /// One data-safety invariant swept across both engines and every resolution.
 #[cfg(test)]

@@ -12,8 +12,10 @@
 //! identical everywhere, which is the point.
 
 use std::path::Path;
+use std::sync::Arc;
 
-use super::{DirectoryCreation, Volume, VolumeError};
+use super::scan_stop::TestScanStop;
+use super::{DirectoryCreation, ScanBoundary, ScanStop, ScanStopSignal, SourceItemInfo, Volume, VolumeError};
 
 /// The size `path` reports right now, for a fixture precondition or an
 /// after-the-fact "nothing was overwritten" check.
@@ -385,5 +387,142 @@ pub async fn assert_not_found_carries_the_path(volume: &dyn Volume, missing: &Pa
          That string is what `map_volume_error` hands the frontend as SourceNotFound.path, \
          so the user reads it as the name of their missing file.",
         volume.name(),
+    );
+}
+
+/// [`Volume::scan_for_conflicts`] answers an EMPTY list for a destination
+/// directory that isn't there yet, rather than the `NotFound` its listing hit.
+///
+/// `dest` must NOT exist on `volume`; the assertion checks that first.
+///
+/// **Why this one is worth a shared assertion.** Pasting into a folder the
+/// transfer is about to create is an ordinary thing to do, and this pre-flight
+/// runs before anything is created. `scan_volume_copy` propagates what comes
+/// back with `?`, so a `NotFound` here doesn't produce a conflict list with one
+/// odd entry in it. It refuses the whole copy preview, over a destination that
+/// is empty in the only sense that matters: nothing there can be overwritten.
+/// The user reads that as "Cmdr won't copy into this folder", about a folder
+/// they never expected to exist yet.
+///
+/// Each backend arrives at the answer its own way (a per-item `exists()` that
+/// simply finds nothing, [`scan_walk::scan_conflicts`](crate::volume::scan_walk::scan_conflicts)
+/// mapping the variant, a cache-aware listing with a match arm of its own), so
+/// there is no shared mechanism to trust, only a shared promise. A backend that
+/// forwards its listing error keeps every OTHER conflict-scan test passing,
+/// because they all seed the destination first.
+pub async fn assert_conflict_scan_reads_a_missing_destination_as_empty(volume: &dyn Volume, dest: &Path) {
+    assert!(
+        !volume.exists(dest).await,
+        "fixture precondition: {} must not exist yet",
+        dest.display()
+    );
+
+    let source_items = [SourceItemInfo {
+        name: "pasted.txt".to_string(),
+        size: 12,
+        modified: None,
+        is_directory: false,
+    }];
+
+    let outcome = volume.scan_for_conflicts(&source_items, dest).await;
+    match outcome {
+        Ok(conflicts) => assert!(
+            conflicts.is_empty(),
+            "{} found {} conflict(s) in the not-yet-created {}, which holds nothing: {conflicts:?}",
+            volume.name(),
+            conflicts.len(),
+            dest.display(),
+        ),
+        Err(e) => panic!(
+            "scan_for_conflicts against the not-yet-created {} on {} must answer an empty list, \
+             but it reported {e:?}. The copy preview propagates that straight to the user, so it \
+             refuses a paste into a folder the transfer would have created moments later.",
+            dest.display(),
+            volume.name(),
+        ),
+    }
+}
+
+/// [`Volume::scan_for_copy_batch_with_boundary`] honors the stop it was handed,
+/// and says so with [`VolumeError::Cancelled`].
+///
+/// **Why this one is worth a shared assertion.** A scan of a cold share is the
+/// minutes-long part of a transfer, so it is where somebody presses Cancel — and
+/// a backend can stop honoring the boundary with no compile error and no visible
+/// symptom, because a scan that ignores it still returns the right numbers. The
+/// only thing that goes wrong is that the button does nothing, which nothing
+/// else in the suite would notice.
+///
+/// `dir` must already exist on `volume` and hold at least one entry.
+pub async fn assert_batch_scan_stops_when_told(volume: &dyn Volume, dir: &Path) {
+    let entries = volume
+        .list_directory(dir, None)
+        .await
+        .unwrap_or_else(|e| panic!("fixture precondition: listing {} must work, got {e:?}", dir.display()));
+    assert!(
+        !entries.is_empty(),
+        "fixture precondition: {} must hold something to walk",
+        dir.display()
+    );
+
+    let signal = TestScanStop::already_stopping();
+    let boundary = ScanBoundary::silent().stopping_at(ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>));
+    let outcome = volume
+        .scan_for_copy_batch_with_boundary(&[dir.to_path_buf()], &boundary)
+        .await;
+
+    match outcome {
+        Err(VolumeError::Cancelled(_)) => {}
+        Ok(scan) => panic!(
+            "{}'s batch scan of {} ran to completion ({} files) with the stop already armed. \
+             Cancel is a button that does nothing on this backend.",
+            volume.name(),
+            dir.display(),
+            scan.aggregate.file_count,
+        ),
+        Err(e) => panic!(
+            "{}'s batch scan of {} must report VolumeError::Cancelled when stopped, got {e:?}. \
+             Callers classify on the variant, never on the message.",
+            volume.name(),
+            dir.display(),
+        ),
+    }
+}
+
+/// [`Volume::scan_for_copy_batch_with_boundary`] asks its boundary INSIDE the
+/// walk, not only once per source path.
+///
+/// The difference is what a person feels: a backend that asks per path stops a
+/// wrong-share scan only after it has walked the whole share, which on a sleeping
+/// NAS is the entire wait the Cancel was meant to end. Run this from every
+/// backend that walks a real tree; a backend whose per-path scan is bounded and
+/// local (an archive's central directory, an in-memory map) honestly asks per
+/// path and runs only [`assert_batch_scan_stops_when_told`].
+///
+/// `dir` must hold at least `at_least` entries across its subtree.
+pub async fn assert_batch_scan_asks_inside_the_walk(volume: &dyn Volume, dir: &Path, at_least: usize) {
+    let signal = TestScanStop::new();
+    let boundary = ScanBoundary::silent().stopping_at(ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>));
+    let scan = volume
+        .scan_for_copy_batch_with_boundary(&[dir.to_path_buf()], &boundary)
+        .await
+        .unwrap_or_else(|e| panic!("nothing is stopping this scan of {}, got {e:?}", dir.display()));
+
+    assert!(
+        scan.aggregate.file_count + scan.aggregate.dir_count >= at_least,
+        // allowed-pluralize-noun: a mis-seeded-fixture panic; one entry can't prove this.
+        "fixture precondition: {} must hold at least {at_least} entries, the scan found {}",
+        dir.display(),
+        scan.aggregate.file_count + scan.aggregate.dir_count,
+    );
+    assert!(
+        signal.asks() >= at_least,
+        "{}'s batch scan of {} asked its boundary {} time(s) for {} entries. It stops per source \
+         path rather than inside the walk, so a Cancel lands only after the whole subtree is \
+         counted.",
+        volume.name(),
+        dir.display(),
+        signal.asks(),
+        at_least,
     );
 }

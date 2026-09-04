@@ -245,8 +245,16 @@ So local handlers don't test raw key flags; they ask the registry:
   — handing the caller a false "no match", the exact silent-mismatch class the option exists to prevent. Unanchored
   removal is safe because no key NAME contains `⇧` or `Shift+`. Pinned by the `comboMatchesCommand` cases in
   `shortcut-dispatch.test.ts`.
+- A `⇧<digit>` binding is ALSO matched by physical key. No layout types a bare digit with Shift held (`⇧8` is `*` on US
+  and `(` on Hungarian), so `formatKeyCombo` can never yield `⇧8` from a real keypress and the combo would be
+  unreachable. `eventMatchesCommand` therefore retries with the digit `event.code` names (`Digit8` → `8`), which makes
+  the default layout-independent. The retry is narrow on purpose: Shift must be held, the code must be `Digit<n>`, and
+  every other modifier still has to match, so `⌘8` and `⇧7` stay misses. `selection.invert` (`⇧8`, Total Commander's
+  `*`) is the only user today. It carries a bare `*` as a SECOND default for the numpad key, which the retry can't
+  reach: `NumpadMultiply` is not a `Digit<n>` code, and it reports `*` with no Shift on every layout. Pinned by the
+  `eventMatchesCommand` cases in `shortcut-dispatch.test.ts`.
 
-Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A`),
+Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A` / `⇧8` / `*`),
 `FilePane.handleOpenOrParentKey` (`nav.open` / `nav.parent` — and `⌘Backspace` falls through to `file.delete` for free,
 since it isn't `nav.parent`'s combo), `../file-explorer/pane/cursor-nav-keys.ts` (the ten cursor commands, as one gate
 in front of the per-view math), and `../file-explorer/network/ShareBrowser.svelte` (`share.back` / `share.selectShare`).

@@ -1682,3 +1682,173 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   有意不同**，那两个 locale 写的是 `in „{folder}“` / `en “{folder}”`。以后若决定各 locale 统一加引号，简体按 style
   guide 用 `“…”`。
 - 五条值都与英文不同，无需 `sameAsSourceJustification`。这批里没有撇号，ICU 的 `''` 规则用不上。
+
+## 回滚结束后的提示条
+
+覆盖 `fileOperations.cancelRollback.*` 与改写后的 `fileOperations.rollbackConfirm.body`（2026-08-31）。
+
+用户在拷贝／移动进行中按了「回滚」，撤销跑完后弹出的提示条：一句标题 + `leftBehind` 铺垫 + 一串 `reason.*`
+项目符号。全批的调子是「Cmdr 做了稳妥的处理」，不道歉、不报警。词汇全部锚在目录已有的回滚家族和
+`askCmdr.renameUndo.skipReason.*` 上，没有新造词。
+
+- **`reason.*` 整组照搬 `askCmdr.renameUndo.skipReason.*` 的句式 `保留了 X：原因。`**
+  ·两个家族是同一个东西的两次实现（撤销重命名 / 撤销传输），英文的句式也一模一样，中文跟着走，读者一眼就认出是同一类清单 ·
+  `high`。`{name}` **不加引号**，与孪生家族一致（目录别处的 `“{name}”` 用在散文句子里，这里是项目符号清单）。
+- ⚠️ **`reason.folderNotEmpty.named` / `.counted` 必须与 `askCmdr.renameUndo.skipReason.folderNotEmpty.*` 逐字相同**
+  （`保留了文件夹 {name}：里面现在有东西了。` /
+  `保留了 {countText} {count, plural, other {个文件夹}}：里面现在有东西了。`）·这两条的**英文原串完全相同**，`desktop-i18n-term-consistency`
+  会把同串异译报成分歧，而 `zh` 现在只有 `notYetReviewed` 计数（只降不升）·
+  `confirmed`。改一条就要同时改另一条。其余几条英文的撇号写法不同（`’` vs
+  `''`），归一化后不同组，所以不受这条约束，但仍然照抄了同一句式。
+- **「item」→ `个项目`**（不是
+  `个文件`）· 撤销会连同新建的文件夹一起删，所以这一批数的是「项目」；孪生的 renameUndo 只动文件，才写 `个文件` ·
+  `high`。沿用目录里 `{countText} {count, plural, other {个项目}}`
+  的量词写法（`fileOperations.trash.undonePartial`、`fileOperations.delete.overflowMore`）。
+- **「remove / delete the files it wrote」→ `删除`，不是 `移除`** · 整个回滚家族已经定死了 `删除`
+  （`rollbackConfirm.bodyUndoByDeleting`「这会删除这项操作创建的文件和文件夹」、`queue.row.reversalDeleting`
+  「正在删除新建的内容」、`transferProgress.rollbackTooltip`）· `confirmed`。`移除`
+  留给「从列表／压缩包里拿掉」（`fileOperations.delete.archiveWarningRest`）。
+- **「Put … back」→ `放回原处`** · 按 `fileOperations.trash.undone`（`已将 … 放回原处。`）走，macOS Finder `Put Back` →
+  `放回原处` 是 Tier 1，而且英文这里和废纸篓提示条用的是同一个动词 · `high`。
+- ⚠️ **待收敛：`挪回` vs `放回`。** 同一次移动回滚里，队列行写
+  `正在把文件挪回原处`（`queue.row.reversalMovingBack`），确认框写
+  `这会把文件挪回原来的位置`（`rollbackConfirm.bodyUndoByMovingBack`），而这批提示条写
+  `放回原处`。两者中文都通顺，语义也一样，英文那边三处也都是 "put/move
+  back"，所以检查抓不到。下一次做这个家族时建议统一到 `放回原处`（它是 Finder 的 Tier
+  1 词，而且明说「回到原来的位置」）· `tentative`。
+- **「the …」（doneDeleting／doneMovingBack 里那个定冠词）→ `全部`** ·英文靠 `the` 把「干净收场」和只报部分的
+  `someDeleted`／`someMovedBack` 分开，中文没有冠词，用 `全部` 扛这个对比：`已删除 Cmdr 写入的全部 …` vs `已删除 …` ·
+  `high`。⚠️ 别给 `some*` 那两条加 `全部`，它们后面紧跟着 `leftBehind`，说「全部」就是撒谎。
+- **「The rest are still there」→ `其余的都还在。`**
+  · 有意不点地点：这一条同时服务拷贝和压缩，说「目标位置」会把压缩包的情形讲拧；`都还在` 已经把「没被删掉」说清楚了 ·
+  `high`。macOS Finder 的 `剩下的项目`（「你要跳过它们并拷贝剩下的项目吗？」）是「the rest」的 Tier
+  1 依据，这里取了目录自己的 `其余的`（`operationLog.rollback.partiallyRolledBackNotice`
+  「其余的保持原样」）以保持家族一致。
+- **「The rest stayed where the move put them」→ `其余的还留在这次移动把它们放到的地方。`**
+  ·这一条必须点地点（移动的目的地），否则和「回到原处」混淆；`这次移动` 取自
+  `operationLog.rollback.refusalDirectoryMerge`（「这次移动把文件夹并入了…」）· `high`
+- **「Stopped after …ing N items」→ `…N 个项目后停止了。`**
+  · 中文把从句放前面是常规语序，英文的 "Stopped" 前置只是英文的重心习惯；`停止` 是回滚家族已定的词（macOS Finder `PE107`
+  = `停止`，见本文件回滚确认框一节）· `high`
+- **`leftBehind` 逐字复用 `跳过没有把握的部分`** · `Cmdr 会跳过没有把握的部分，所以这些都保持了原样：` ·前半句取自
+  `rollbackConfirm.bodyUndoByDeleting`，后半句的 `保持原样` 取自 `rollbackConfirm.leaveAsIs` ·
+  `confirmed`。这句的作用是**先给期待再列原因**，所以承诺必须和确认框一字不差，否则用户会觉得是两回事。结尾用全角冒号
+  `：`，因为下面接的是项目符号清单。
+- **「something else now sits where it came from」→ `它原来的位置现在被别的东西占用了。`** · `已被占用` 是 macOS Finder
+  Tier 1（`名称“^0”已被占用，请选取其他名称。`），`位置` 也是 Finder 的词（`此位置是只读的。`）· `high`。与孪生的
+  `renameUndo.skipReason.nameTaken`（`它原来的名称已被占用。`）形成 `名称`／`位置` 的对照，正是两个家族的差别所在。保留
+  `别的东西` 是为了跟英文一样具体、口语。
+- **「Couldn't undo {name}」→ `Cmdr 没能撤销 {name} 的改动。`** · 这一条**有意跳出** `保留了 X：`
+  的句式，因为它不是 Cmdr 的主动选择，而是驱动器不给写 · `high`。`撤销` 而不是 `回滚`：英文写的是 undo，而且 `回滚`
+  在目录里是**整项操作**的动作，安到单个文件上不通（见本文件近义词排查 `undo 撤销` / `roll back 回滚`）。加 `的改动`
+  是因为「撤销一个文件」在中文里不成话。`没能` 而不是 `无法`：英文暗示重试可能成功，`没能` 说的是这一次没做成，目录里
+  `fileOperations.archivePassword.retryMessage`（`这个密码没能解锁 …`）已经是这个用法。全句不出现「错误」「失败」。
+- **「Its drive may be disconnected or read-only」→ `它所在的驱动器可能未连接，或者是只读的。`** ·
+  `它们所在的驱动器未连接` 逐字取自 `fileOperations.trash.undoUnavailable`；`只读` 是 macOS
+  Finder 的词（`此位置是只读的。`）· `high`
+- **`rollbackConfirm.body` 重译**（英文加了第三句，并改口称 `Cmdr`）· 前两句保留原有译文，第三句逐字接上
+  `bodyUndoByDeleting` 的 `Cmdr 会跳过没有把握的部分，所以可能会剩下一些。`
+  —— 英文那一句在两个键里**完全相同**，中文也就必须相同 · `confirmed`
+- 18 条值都与英文不同，无需 `sameAsSourceJustification`。中文侧没有撇号，ICU 的 `''` 规则用不上； `{count}` 只写 `other`
+  分支（中文 CLDR 只有这一类）。
+
+### `cancelRollback.stagedLeftover.*`（Cmdr 自己留在目标位置的残留）
+
+2026-09-02 新增。两条文案，说的是 Cmdr 自己建的工作文件没能从目标位置清掉。它们**不属于** `reason.*`
+列表：那边是 Cmdr 在保护用户的文件，这边是 Cmdr 自己的残留。
+
+- **`unfinished copy` → `不完整副本`** · `不完整` 是 Apple 对 "incomplete" 的译法（macOS
+  `LA33`：「已损坏或不完整」），`副本` 是 `NE111` 里的名词（「保留可恢复的副本」）· `high`
+- **`at the destination` → `目标位置`** · 目录里已在用的词（`conflictsUnknown`、`stallWaitingDestination`）· `high`
+- **`transfer`（名词）→ `传输`**
+  · 目录已这样说（`errors.listing.deviceReconnecting.explanation`：「传输被取消或中断之后」）· `high`
+- 第二句用 `清掉` 而不是 `删除`：这是 Cmdr 自己的工作文件，不是用户的文件。
+- ⚠️ **写 `之后往那里传输时`，❌ 绝不写「下次」。**
+  Cmdr 的清理会跳过不满一小时的文件，所以马上重试并不会清掉它。给一个兑现不了的承诺，正是这条文案要消除的毛病。
+
+## WebKit 过旧时的拦截页（`main.oldWebkit.*`，2026-09-02）
+
+三条文案，在 Mac 的 Safari 过旧时代替 Cmdr 的界面显示。它们写在 HTML 外壳里而不是应用里，所以这是那位用户能看到的 Cmdr 的全部内容。
+
+- **`Software Update` → `软件更新`** · macOS 系统设置中该面板的名称；Finder 的 Tier
+  1 证据佐证了这个词（`Apple Device Software Update File` → `Apple设备软件更新文件`）· `high`。
+- **`Quit` → `退出`** · macOS AppKit 的 `Quit` 键 → `退出` · `high`。此前不在词汇表里，现补上。
+- **`Safari`、`Mac`、`15.4` 保持原样**，两侧按 § 间距规则加空格。`Safari` 已加入 `BRAND_WORDS`。
+- 面板名用直角引号之外的全角引号 `“软件更新”`，与目录里其余简体文案一致。
+
+## 旧版 macOS 提示（`main.oldMacos.*`，2026-09-02）
+
+低于 macOS
+12 的 Mac 上只出现一次的对话框：Cmdr 能跑，但超出了测试范围。语气坦率轻松，既不是道歉也不是警告，因为应用确实在运行。
+
+- **`supported` → `支持`** · macOS Finder（`无法完成此操作，因为不支持此操作。`）· `high`。
+- **`X and up` → `X 及更高版本`** · macOS SystemSettings（`需要OS X %@或更高版本。`）·
+  `high`。Apple 写得紧凑，我们在拉丁字符两侧加空格 (`style.md` § Numerals, punctuation, and spacing)。
+- **`best effort` → `尽力而为`** · pile 里没有对应词条（只有网络 QoS 的定义），但这是中文里现成的说法 · `high`。
+- **`look off` → `不太对`** · 口语，且避开了语气规则禁止的「错误」「失败」。
+- **最后一句是 David 的第一人称**，仍用 `你`，与 `onboarding.stepBeta.greeting` 一致。
+
+### Ask Cmdr inspect-file consent + tool labels (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+macOS zh-CN Tier 1 (Finder/AppKit pile + live Preview.app and Photos.app `zh_CN` loctables, macOS 26, `plutil`),
+Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses settled `压缩文件`, `文本`, `照片`,
+`标签`, `提供方`, `查看`, and the old `askCmdr.consent.noContents` sentences where they still hold.
+
+- **look inside files (the inspect tool line, doing/done)** · `正在查看文件内容` / `已查看文件内容` · `查看` = "look at
+  the contents" (settled; macOS `zh-CN` `NE57`, and the sibling `askCmdr.tool.appState.*` `正在查看…`); `文件内容` names
+  what the tool reads. Chinese has no number, so the plural-neutral English needs nothing extra. Same `正在…` / `已…`
+  shape and length class as `searchPhotos.*` / `imageFacts.*` / `listDir.*` · `high`
+- **look inside a file (prose, `whatsNew.body`)** · `查看你问到的文件里的内容` · same verb as the tool line so the
+  what's-new paragraph and the rail label read as one feature; `问到` = "ask about" · `high`
+- **thumbnail** · `缩略图` · macOS Finder `zh-CN` (`缩略图大小：`, `小/中等/大缩略图大小`), Microsoft TBX (`thumbnail`
+  → 缩略图), Nautilus/Thunar/TC/DC all agree; the old `noContents` value already used it · `high`
+- **whole files (never sent)** · `整个文件` · plain "the whole file"; the old `文件本身：不发送文件内容…` wording was
+  deliberately dropped because the new copy must NOT promise that no contents are ever sent · `high`
+- **camera details (a photo's EXIF: camera, lens, settings)** · `相机信息` · Photos.app `zh_CN` info panel
+  (`IPXInfoPanelLCDUnknownCamera` → `无相机信息`), Preview.app `Camera` → `相机`, catalog precedent `相机` for camera
+  devices (`settings.section.mtp`); Microsoft TBX also has `摄像头`/`照相机` but those are the webcam/device senses,
+  wrong here · `high`
+- **location / where it was taken (a photo's GPS place)** · `拍摄地点` · Photos.app `zh_CN` calls photo places `地点`
+  (`IPXPlaceBrowserTabLabel`, `你照片中的地点`) and "taken" `拍摄` (`这张照片是在…拍摄的吗？`); `拍摄地点` is the
+  everyday compound. NOT `位置`: in this catalog `位置` is a file-system location (`目标位置`, `原来的位置`), and
+  reusing it for a photo would read as the file's path · `high`
+- **some lines of text (of a text file)** · `几行文本` · settled `文本` (macOS `纯文本`, viewer `文本` mode); `几行` = a
+  few lines. Kept distinct from `文字` (the recognized text inside photos, `识别出的文字`, settled in
+  `askCmdr.consent.memory`): `文本` is file content, `文字` is writing seen in an image · `high`
+- **some text (consent list item)** · `一些文本` · same `文本`; `一些` for the vaguer "some" · `high`
+- **a few pages of a PDF** · `PDF 的几页` · `页` = page (AppKit Printing `第%ld页`, Microsoft TBX `页`, Dolphin `页数`,
+  DC `逐页`); `PDF` verbatim (settled format token), spaced from the Han text · `high`
+- **PDF pages (list item)** · `PDF 页面` · `页面` for the bare noun (Preview.app `页面大小`) · `high`
+- **title and author (of a PDF)** · `标题和作者` · Preview.app `zh_CN` PDF inspector (`INSPECTOR_FILE_INFO_PDF_TITLE` →
+  `标题`, `INSPECTOR_FILE_INFO_PDF_AUTHOR` → `作者`), AppKit `Title` → `标题`, Microsoft TBX `author` → 作者, Dolphin
+  `Author` → 作者 · `high`
+- **the list of files inside an archive** · `压缩文件里的文件列表` · settled `压缩文件` (the browsable zip/tar/7z; NOT
+  Finder's `归档`, see the archive-browsing section) + `文件列表`; the shorter list item says `压缩文件里有哪些文件`
+  ("which files are in the archive") for the English "what's inside an archive" · `high`
+- **a limited part of it** · `其中有限的一部分` · plain rendering; `有限` = limited · `high`
+- **Photo search works the same way** · `照片搜索也是同样的方式：` · the clause after the colon is reused verbatim from
+  the old `askCmdr.consent.noContents` (`Cmdr 在匹配照片中识别出的文字及其标签会发送给你的提供方，以便它找到这些照片`),
+  as is the closing sentence (`Ask Cmdr 可以建议重命名、移动和整理，在你批准之前，任何文件都不会有变化。`), so the
+  paragraph stays consistent with the rest of the consent screen · `confirmed` (previously shipped wording)
+- **"That's a bigger promise than the one you agreed to…"** · kept verbatim from the previous `whatsNew.body`
+  (`这比你当初同意的范围更大，所以这里再完整说明一次。`) · `confirmed`
+- No apostrophes on the Chinese side (the U+2019 in the English carries no ICU meaning anyway); no placeholders; no
+  `sameAsSourceJustification` needed, all five values differ from English.
+- **looks inside a file only when you ask about it (`askCmdr.empty.hint`, `settings.askCmdr.intro`)** ·
+  `只有在你问到某个文件时才会查看它的内容` · the same `查看…内容` / `问到` wording as the tool line and `whatsNew.body`
+  above; the old `从不读取文件内容` / `是只读的…从不修改任何内容` promises were removed because the English no longer
+  makes them · `high`
+- **never changes a file without your approval** · `未经你批准，绝不会更改任何文件` · `批准` matches the settled
+  `在你批准之前，任何文件都不会有变化` (`consent.contentsRule`); `更改` for "change" (macOS AppKit `复查更改…`) · `high`
+
+## 回滚按钮的两条提示 (2026-09-04；`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+新界面：按钮提示现在说清这一次回滚会对文件做什么；跨文件系统的移动一进入最后一步（所有文件都已到达目标位置，正在移除原文件），按钮就会关掉。
+
+- **`rollbackTooltipStopAndMoveBack` → `停止操作，并把目前已挪走的所有文件放回原处`** · 句式沿用同胞键
+  `rollbackTooltip`（`停止操作，并…`），`放回原处` 是目录里已定的说法（`cancelRollback.doneMovingBack`“放回原处”）·
+  `high`。❌ 不用 `删除`：回滚一次移动不删除任何东西。
+- **`rollbackAlreadyLandedTooltip`** · 前半句沿用 `cancelRollback.moveAlreadyLanded`
+  的说法（“已经在目标位置了”），`回滚` 是已定的术语（`rollbackUnavailableTooltip`），`取消`
+  直接用旁边按钮自己的标签（`fileOperations.button.cancel`），按目录惯例加上引号 · `high`。
+- 无 `sameAsSourceJustification`；两个值都不含撇号。

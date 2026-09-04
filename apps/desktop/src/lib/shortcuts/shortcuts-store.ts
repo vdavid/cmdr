@@ -283,6 +283,7 @@ export const menuCommands = [
   // Selection
   'selection.selectAll',
   'selection.deselectAll',
+  'selection.invert',
   'selection.selectFiles',
   'selection.deselectFiles',
   // Panes

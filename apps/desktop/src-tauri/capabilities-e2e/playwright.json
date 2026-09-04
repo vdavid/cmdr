@@ -1,0 +1,14 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "playwright",
+    "description": "Playwright E2E testing plugin permissions. Lives outside capabilities/ so that only playwright-e2e builds glob it; see build.rs.",
+    "windows": ["main", "settings", "viewer-*", "shortcuts", "queue"],
+    "permissions": [
+        "playwright:default",
+        "core:window:allow-title",
+        "core:window:allow-set-title",
+        "core:window:allow-set-size",
+        "core:window:allow-set-min-size",
+        "core:window:allow-set-focus"
+    ]
+}

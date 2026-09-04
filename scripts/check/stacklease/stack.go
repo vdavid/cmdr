@@ -78,17 +78,21 @@ type Stack struct {
 	// composeFiles are the files `up` layers, in order. SMB layers a vendored
 	// compose under a cmdr-owned override; a first-party stack needs one file.
 	composeFiles []string
-	// buildContextRel is the stack's image build context, relative to the
-	// compose dir, for a stack whose Dockerfile is FIRST-PARTY and edited in
-	// this repo. Declaring it does two things: the context's contents fold into
-	// the config hash, and `up` passes `--build`.
+	// buildContextsRel are the stack's image build contexts, relative to the
+	// compose dir, for a stack whose Dockerfiles are FIRST-PARTY and edited in
+	// this repo. Declaring them does two things: every context's contents fold
+	// into the config hash, and `up` passes `--build`.
 	//
-	// ❗ Without both, an edit to the image is invisible. `up -d` never rebuilds
+	// ❗ Without both, an edit to an image is invisible. `up -d` never rebuilds
 	// on its own and never recreates a healthy container, so a stack brought up
 	// before the edit keeps serving the old entrypoint for as long as it lives —
 	// which is across reboots. Empty for a stack whose images are vendored, where
 	// a rebuild is somebody else's call.
-	buildContextRel string
+	//
+	// A slice because one stack can serve two unrelated servers: WebDAV builds
+	// an httpd image and a Nextcloud one, and an edit to either has to read as
+	// staleness.
+	buildContextsRel []string
 
 	// modeServices maps a mode to the exact service set the stack's start.sh
 	// brings up for it, and must stay in lock-step with that script. A nil
@@ -201,17 +205,35 @@ func (s *Stack) EnsureKeysDir() error {
 	return os.Setenv(s.keysDirEnv, dir)
 }
 
-// BuildContextDir resolves this stack's first-party image build context, or ""
-// when it declares none or the compose dir can't be found.
-func (s *Stack) BuildContextDir() string {
-	if s.buildContextRel == "" {
-		return ""
+// BuildContextDirs resolves this stack's first-party image build contexts, in
+// declaration order. Empty when it declares none or the compose dir can't be
+// found.
+func (s *Stack) BuildContextDirs() []string {
+	if len(s.buildContextsRel) == 0 {
+		return nil
 	}
 	cd := s.composeDir()
 	if cd == "" {
-		return ""
+		return nil
 	}
-	return filepath.Join(cd, filepath.FromSlash(s.buildContextRel))
+	dirs := make([]string, 0, len(s.buildContextsRel))
+	for _, rel := range s.buildContextsRel {
+		dirs = append(dirs, filepath.Join(cd, filepath.FromSlash(rel)))
+	}
+	return dirs
+}
+
+// ServicesForMode is the exact service set a mode brings up, or nil for a mode
+// that means "every service the project defines". The check runner reads it so
+// a lane waits on the containers its own mode started and no others. A copy,
+// because the registry is the only source of stacks and a caller that sorted
+// what it got back would edit it.
+func (s *Stack) ServicesForMode(mode string) []string {
+	services := s.modeServices[mode]
+	if services == nil {
+		return nil
+	}
+	return append([]string(nil), services...)
 }
 
 // Modes lists the modes this stack serves, sorted, for error messages and the

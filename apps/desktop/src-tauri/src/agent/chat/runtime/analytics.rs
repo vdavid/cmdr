@@ -251,6 +251,7 @@ mod tests {
             AgentErrorKind::AuthFailed,
             AgentErrorKind::RateLimited,
             AgentErrorKind::BudgetExhausted,
+            AgentErrorKind::RepeatedToolCall,
             AgentErrorKind::UnfinishedReply,
             AgentErrorKind::Provider,
         ] {

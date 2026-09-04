@@ -62,7 +62,7 @@ var agentDocExclusions = []string{
 //     blocks, `fingerprint.go` + `cache.go` + `runner-sources.go` the cache
 //     itself, `common.go` the context and process handling every check runs
 //     through, and `test-log.go` the per-test record every lane records into.
-//     `fixture-stacks.go`, `smb_ports.go`, and `sftp_ports.go` are the fixture
+//     `fixture-stacks.go`, `smb_ports.go`, `sftp_ports.go`, and `webdav_ports.go` are the fixture
 //     vocabulary and the port env the orchestrator applies before any lane runs.
 //   - `go.mod` / `go.sum` and `check.sh` build and start the runner itself.
 //
@@ -87,6 +87,7 @@ var GlobalInputs = []string{
 	"scripts/check/checks/sftp_ports.go",
 	"scripts/check/checks/smb_ports.go",
 	"scripts/check/checks/test-log.go",
+	"scripts/check/checks/webdav_ports.go",
 }
 
 // A workspace member as the input sets see it: the package name cargo knows it
@@ -104,12 +105,14 @@ type rustMemberTree struct {
 
 var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr", Kind: KindApp, Glob: "apps/desktop/src-tauri/**"},
+	{Pkg: "cmdr-adb", Kind: KindApp, Glob: "crates/cmdr-adb/**"},
 	{Pkg: "cmdr-archive", Kind: KindApp, Glob: "crates/cmdr-archive/**"},
 	{Pkg: "cmdr-fs", Kind: KindApp, Glob: "crates/cmdr-fs/**"},
 	{Pkg: "cmdr-fsevent-stream", Kind: KindVendored, Glob: "crates/fsevent-stream/**"},
 	{Pkg: "cmdr-index", Kind: KindApp, Glob: "crates/cmdr-index/**"},
 	{Pkg: "cmdr-sftp", Kind: KindApp, Glob: "crates/cmdr-sftp/**"},
 	{Pkg: "cmdr-smb", Kind: KindApp, Glob: "crates/cmdr-smb/**"},
+	{Pkg: "cmdr-webdav", Kind: KindApp, Glob: "crates/cmdr-webdav/**"},
 	{Pkg: "index-query", Kind: KindTool, Glob: "crates/index-query/**"},
 	{Pkg: "operation-log-dump", Kind: KindTool, Glob: "crates/operation-log-dump/**"},
 }
@@ -200,12 +203,15 @@ var rustCompileInputs = inputs(
 	agentDocExclusions,
 )
 
-// rustFixtureServerInputs are the Docker fixture configs the integration lane runs
-// against. Only that lane reads them: a change to one changes what it tests, and
-// changes nothing any other Rust lane compiles or scans.
+// rustFixtureServerInputs are the Docker fixture configs the container-backed
+// lanes run against (`desktop-rust-integration-tests` and, for the WebDAV
+// stack's Nextcloud service, `desktop-rust-webdav-nextcloud`). Only those lanes
+// read them: a change to one changes what it tests, and changes nothing any
+// other Rust lane compiles or scans.
 var rustFixtureServerInputs = []string{
 	"apps/desktop/test/sftp-servers/**",
 	"apps/desktop/test/smb-servers/**",
+	"apps/desktop/test/webdav-servers/**",
 }
 
 // frontendSourceRoots are the directories inside `svelteInputs` that hold code
@@ -319,6 +325,16 @@ const (
 	sftpEntrypointRel = "apps/desktop/test/sftp-servers/image/entrypoint.sh"
 )
 
+// The WebDAV fixture stack's host ports and mode table, the same way: Go decides
+// them, the compose file carries the `${…:-default}` for the runner-less path,
+// `start.sh` repeats the mode table for a bare bring-up, and
+// `TestWebdavFixturePortsMatchComposeDefaults` / `TestWebdavModeServicesAgree`
+// keep the copies equal. No keys dir: HTTP publishes no key material.
+const (
+	webdavComposeRel = "apps/desktop/test/webdav-servers/docker-compose.yml"
+	webdavStartRel   = "apps/desktop/test/webdav-servers/start.sh"
+)
+
 // goTestsInputs is what `scripts-go-tests` reads, which is far more than the Go
 // trees. Fifteen tests in this package assert something about the REAL repo
 // rather than a fixture, and each can change verdict on a file no Go linter ever
@@ -333,7 +349,8 @@ const (
 //   - the frontend source roots (`TestNoFrontendSourceLoadsAgentDocs`, which is
 //     what makes `agentDocExclusions` safe),
 //   - `apps/desktop/package.json` (`TestBindingsRegenAsksCargoTheSameQuestionAsTheOtherLanes`),
-//   - the SFTP fixture quartet the fixture-path tests compare.
+//   - the SFTP fixture quartet the fixture-path tests compare, and the WebDAV
+//     compose file and start script the port and mode tests read.
 //
 // ❗ No `agentDocExclusions` here. An exclusion vetoes across the whole union, so
 // borrowing one from `rustCompileInputs` would take `scripts/check/CLAUDE.md`
@@ -348,7 +365,7 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel},
+	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

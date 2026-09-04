@@ -33,6 +33,8 @@ Frontend counterpart: `apps/desktop/src/routes/viewer/CLAUDE.md` for the viewer 
   an extended backend by value
 - `search_matcher.rs`: `Matcher` (literal or regex), `SearchMode`, `scan_line_with_matcher` helper. One matcher built
   per search; reused across every line. Huge-line chunking (1 MB windows, 256 byte overlap) lives here.
+- `headless.rs`: `open_text_backend(path, encoding, cancel) -> HeadlessBackend`, the backend pick with nothing around
+  it, for callers that read a file the viewer's way without a window. See § "Headless reads".
 - `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math, range reads,
   cancellation, encoding detection, UTF-16 newline scanning, encoding-switch rebuild + drain-and-swap
 
@@ -44,7 +46,11 @@ The viewer renders images and PDFs inline instead of showing the binary warning.
   Magic bytes decide (JPEG/PNG/GIF/WebP/BMP/TIFF/HEIC/PDF); the extension is a tiebreaker only, and only for SVG (an
   `.svg` ext AND an `<svg` root after BOM/prolog/comments/DOCTYPE). Non-local files always classify `Text` (v1 scopes
   media to local POSIX volumes; MTP has no POSIX path, SMB can block). `media_mime(head, kind)` re-sniffs the magic to
-  pick the served `Content-Type`.
+  pick the served `Content-Type`. `looks_binary(head, encoding)` is the byte-level answer the classifier doesn't give
+  (it calls every non-media file `Text` and leaves the binary warning to the FE's extension list): UTF-16 is text (its
+  NULs are code-unit halves); otherwise a NUL, or C0 controls other than `\t` `\n` `\r` form feed and ESC above 5% of
+  the head, means binary. The 5% line is `encoding::utf16_looks_like_text`'s, so the two heuristics agree. Used by the
+  agent's `inspect_file`; the viewer doesn't consult it.
 - `media.rs`: the `cmdr-media://` capability-token registry. `mint_token(entry)` stores
   `token -> { canonical_path, kind, mime }` (128-bit CSPRNG via `rand`, 32 hex chars) and returns the token;
   `resolve_token` / `drop_token` round it out. `read_image_dimensions` reads header-only pixel dimensions best-effort
@@ -140,6 +146,14 @@ Flow (in `open_session_inner`, before the media/text split):
 `remove_dir_all`s `extract_cleanup`. One temp per open — re-opening the same entry re-extracts (simple beats a dedup
 cache).
 
+**The second caller: the agent's `inspect_file`** (`agent/tools/read/inspect/archive.rs`). It calls the same
+`extract_if_archive_inner(path, volume_id)` for a FILE inside an archive, runs its per-kind pipeline on `temp_file`, and
+removes `cleanup_dir` in a `Drop` guard, so its temp lives for one read rather than a session. The contract both callers
+share, and any third one inherits: the 256 MiB cap and the refuse-before-extract guard are inside the function and stay
+there; a caller never extracts around them; and whoever receives an `ExtractedEntry` owns removing its `cleanup_dir`
+(the reaper only covers a crash). `extract_if_archive_inner_with` (explicit dir + cap) is `pub(crate)` for both
+callers' tests.
+
 **The cap is 256 MiB** (`EXTRACT_CAP_BYTES`), chosen to comfortably cover real preview content (documents, images, PDFs,
 most media) while bounding the temp write, extraction time, and decompression amplification. It's independent of the FE
 copy-selection ceiling (`COPY_REFUSE_BYTES`, 100 MiB): that caps a *selection*, this caps a whole-entry materialization.
@@ -170,6 +184,32 @@ if file_size < 1MB {
     // Upgrade to LineIndexBackend when ready
 }
 ```
+
+## Headless reads (`headless.rs`)
+
+`open_text_backend(path, encoding, cancel)` returns `HeadlessBackend { backend: Box<dyn FileViewerBackend>,
+line_numbers_exact: bool }`: the backend the viewer would end up with, and nothing else. No `SESSIONS` entry, no
+watcher, no media token, no upgrade thread. A backend is an immutable value the caller drops when done.
+
+The rule: size ≤ `FULL_LOAD_THRESHOLD` → `FullLoadBackend::open_with_encoding`; else
+`LineIndexBackend::open_with_encoding(path, encoding, cancel)` (exact lines; ~2 s per GB on an SSD), and when that
+returns `ViewerError::Cancelled` because the caller's deadline flipped `cancel`, `ByteSeekBackend::open_with_encoding`
+with `line_numbers_exact = false`. An approximate window beats no window, as long as the caller relays the flag. The
+encoding is the caller's (`encoding::detect_from_head` on a head it already read), so a file isn't sniffed twice.
+
+`open_scan_backend(path, encoding)` is the second opener, for a caller that will `search` rather than seek by line: the
+same FullLoad pick up to the threshold, else `ByteSeekBackend` with no index built. `search` streams from byte 0 on
+every backend and numbers lines exactly as it goes, and a hit's line is fetched back by `SeekTarget::ByteOffset`, which
+every backend seeks exactly (ByteSeek back-scans to the newline; a line-start offset is its own answer). So a scan has no
+use for a line index, and building one would read a large file twice; the viewer's own `search_start` runs on ByteSeek
+for the same reason. The only thing unknown past the threshold is `total_lines`.
+
+**Decision**: a separate seam rather than a flag on `open_session`. **Why**: the one caller today is the Ask Cmdr
+`inspect_file` tool (`agent/tools/read/inspect/`), which reads up to 200 files per call on blocking threads under a
+per-path deadline. A session per file would mean 200 `SESSIONS` entries, watcher subscriptions, and upgrade threads to
+tear down, for windows nobody scrolls. Kept free of session concerns on purpose so `open_session_core` could ride it too
+if it were ever split. Tests: `headless_test.rs` (the three picks, that the fallback leaves the caller's flag set, and
+that the scan opener finds a line exactly with no index).
 
 ## Tauri commands
 

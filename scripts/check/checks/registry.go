@@ -611,10 +611,28 @@ var AllChecks = []CheckDefinition{
 		DisplayName:     "integration tests (network fixtures)",
 		App:             AppDesktop,
 		Tech:            "🦀 Rust",
-		NeedsContainers: []StackMode{SmbCore, SftpCore},
+		NeedsContainers: []StackMode{SmbCore, SftpCore, WebdavCore},
 		DependsOn:       []string{"desktop-rust-clippy"},
 		Inputs:          inputs(rustCompileInputs, rustFixtureServerInputs),
 		Run:             RunRustIntegrationTests,
+	},
+	{
+		ID:          "desktop-rust-webdav-nextcloud",
+		CpuWeight:   4,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "webdav-nextcloud",
+		DisplayName: "WebDAV cells against a real Nextcloud",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		// ❗ Slow-lane, and that IS the design: bringing a Nextcloud up costs
+		// a ~1 GB pull plus a self-install before it listens, which no default
+		// `pnpm check` should pay. `--include-slow` and `pnpm check
+		// webdav-nextcloud` are the two ways in, plus CI's own step.
+		IsSlow:          true,
+		NeedsContainers: []StackMode{WebdavNextcloud},
+		DependsOn:       []string{"desktop-rust-clippy"},
+		Inputs:          inputs(rustCompileInputs, rustFixtureServerInputs),
+		Run:             RunWebdavNextcloudTests,
 	},
 	{
 		ID:          "desktop-fixture-lane-coverage",
@@ -804,6 +822,19 @@ var AllChecks = []CheckDefinition{
 		Run:         RunBarePoll,
 	},
 	{
+		ID:          "desktop-vite-build-target",
+		Nickname:    "vite-build-target",
+		DisplayName: "vite-build-target",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		IsFast:      true,
+		// Reads one file and nothing else, so it stays off `svelteInputs`: the
+		// verdict can't change on a component edit, and the whole point of the
+		// check is that it re-runs the moment the config moves.
+		Inputs: []string{viteConfigRelPath},
+		Run:    RunViteBuildTarget,
+	},
+	{
 		ID:          "desktop-svelte-check",
 		CpuWeight:   2,
 		Nickname:    "svelte-check",
@@ -908,13 +939,27 @@ var AllChecks = []CheckDefinition{
 	},
 
 	// Website checks
+	// Generates `.astro/types.d.ts`, where `astro:content` and the blog collection's
+	// schema types live. The type-aware ESLint rules need it: without it every post
+	// field is `any` and the `no-unsafe-*` rules fire ~90 false positives.
+	{
+		ID:          "website-astro-sync",
+		Nickname:    "astro-sync",
+		DisplayName: "astro sync",
+		App:         AppWebsite,
+		Tech:        "🚀 Astro",
+		NotInCI:     "CI's website job runs `pnpm exec astro sync` directly as a setup step",
+		DependsOn:   []string{"oxfmt"},
+		Inputs:      websiteInputs,
+		Run:         RunWebsiteAstroSync,
+	},
 	{
 		ID:          "website-eslint",
 		CpuWeight:   1,
 		DisplayName: "eslint",
 		App:         AppWebsite,
 		Tech:        "🚀 Astro",
-		DependsOn:   []string{"oxfmt"},
+		DependsOn:   []string{"website-astro-sync"},
 		Inputs:      websiteInputs,
 		Run:         RunWebsiteESLint,
 	},
@@ -1013,12 +1058,25 @@ var AllChecks = []CheckDefinition{
 
 	// API server checks
 	{
+		ID:          "api-server-worker-types",
+		DisplayName: "worker types",
+		App:         AppApiServer,
+		Tech:        "⸆⸉ TS",
+		DependsOn:   []string{"oxfmt"},
+		// IsFast for the same reason as `dashboard-svelte-kit-sync`: `--fast` keeps only fast
+		// entries, and `api-server-typecheck` is one. Left out, the fast lane would typecheck
+		// against a missing `worker-configuration.d.ts` and fail on every Worker global.
+		IsFast: true,
+		Inputs: apiServerInputs,
+		Run:    RunApiServerWorkerTypes,
+	},
+	{
 		ID:          "api-server-eslint",
 		CpuWeight:   2,
 		DisplayName: "eslint",
 		App:         AppApiServer,
 		Tech:        "⸆⸉ TS",
-		DependsOn:   []string{"oxfmt"},
+		DependsOn:   []string{"api-server-worker-types"},
 		Inputs:      apiServerInputs,
 		Run:         RunApiServerESLint,
 	},
@@ -1027,10 +1085,12 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "typecheck",
 		App:         AppApiServer,
 		Tech:        "⸆⸉ TS",
-		DependsOn:   []string{"api-server-eslint"},
-		IsFast:      true,
-		Inputs:      apiServerInputs,
-		Run:         RunApiServerTypecheck,
+		// Names the generator as well as the linter: `--fast` drops `api-server-eslint`, and
+		// without a second edge this check would start before the types exist.
+		DependsOn: []string{"api-server-eslint", "api-server-worker-types"},
+		IsFast:    true,
+		Inputs:    apiServerInputs,
+		Run:       RunApiServerTypecheck,
 	},
 	{
 		ID:          "api-server-tests",

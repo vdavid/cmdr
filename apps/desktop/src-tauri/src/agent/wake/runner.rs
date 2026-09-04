@@ -11,7 +11,7 @@
 use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 
-use super::channel::{WakeControl, send_control};
+use super::channel::{WakeCompletion, WakeControl, send_control};
 use super::followup::PreparedFollowUp;
 use super::indicator::{note_wake_finished, note_wake_started};
 use super::staged::announce_staged;
@@ -19,7 +19,9 @@ use super::watch::WakeToolWatch;
 use super::{PreparedWake, RunWakeParams, WakeTier, turn_params};
 use crate::agent::chat::budget;
 use crate::agent::chat::cancel;
-use crate::agent::chat::runtime::{AgentChatEvent, AppHandleDispatcher, ChatRuntime, TurnResult, UserTurn};
+use crate::agent::chat::runtime::{
+    AgentChatEvent, AgentErrorKind, AppHandleDispatcher, ChatRuntime, TurnResult, UserTurn,
+};
 use crate::agent::chat::session::{capture_envelope, local_offset};
 use crate::agent::chat::stream::{AskCmdrStreamEvent, emit_turn_event, forward_to_windows};
 use crate::agent::llm::AgentLlm;
@@ -81,6 +83,14 @@ impl BackgroundTurn {
             BackgroundTurn::FollowUp(_) => followup_token(outcome),
         }
     }
+
+    /// What this turn tells the scheduler when nothing about the provider was learned.
+    fn completion(&self) -> WakeCompletion {
+        match self {
+            BackgroundTurn::Wake(_) => WakeCompletion::Wake,
+            BackgroundTurn::FollowUp(_) => WakeCompletion::FollowUp,
+        }
+    }
 }
 
 /// ⚠️ Paired by hand because the outcome tokens are `&'static str` all the way into the
@@ -108,27 +118,28 @@ pub(super) fn spawn(app: AppHandle, slot: ResolvedSlot, turn: BackgroundTurn) {
             // stale `Thinking` would leave a spinner up forever and offer a click into a
             // thread a quiet wake has since deleted.
             note_wake_started(turn.conversation_id());
-            match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+            let completion = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
                 Ok(runtime) => runtime.block_on(run(app, slot, &turn)),
                 Err(e) => {
                     crate::log_error!(target: LOG_TARGET, "building the background turn's runtime failed: {e}");
                     let (tier, folders) = turn.scale();
                     record_outcome(turn.token("unavailable"), tier, folders, 0);
+                    turn.completion()
                 }
-            }
+            };
             note_wake_finished();
             // ⚠️ Whatever happened, the writer thread has to hear that this one is done, or it
             // will never prepare another.
-            send_control(WakeControl::WakeFinished);
+            send_control(WakeControl::WakeFinished(completion));
         });
     if let Err(e) = spawned {
         crate::log_error!(target: LOG_TARGET, "the wake thread did not start: {e}");
         note_wake_finished();
-        send_control(WakeControl::WakeFinished);
+        send_control(WakeControl::WakeFinished(WakeCompletion::Wake));
     }
 }
 
-async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
+async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) -> WakeCompletion {
     let conversation_id = turn.conversation_id();
     let (tier, folders) = turn.scale();
     // A wake's thread was created moments ago, so say so before anything slow: this is what puts
@@ -176,7 +187,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
         log::warn!(target: LOG_TARGET, "the chat runtime is not registered; the turn has nowhere to run");
         record_outcome(turn.token("unavailable"), tier, folders, 0);
-        return;
+        return turn.completion();
     };
 
     // ⚠️ A background turn owns a plain `UnboundedSender<AgentChatEvent>` and drains it itself,
@@ -223,7 +234,7 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
             emit_turn_event(conversation_id, AskCmdrStreamEvent::Discarded);
         }
         record_outcome(turn.token("quiet"), tier, folders, proposals);
-        return;
+        return turn.completion();
     }
 
     // ⚠️ Announced whatever the turn ENDED as, and before the outcome line. A cancel or a
@@ -238,11 +249,38 @@ async fn run(app: AppHandle, slot: ResolvedSlot, turn: &BackgroundTurn) {
         Ok(TurnResult::Failed(kind)) => {
             log::warn!(target: LOG_TARGET, "the background turn ended without an answer: {kind:?}");
             record_outcome(turn.token("failed"), tier, folders, proposals);
+            return completion_for_failure(kind, turn.completion());
         }
         Err(e) => {
             log::warn!(target: LOG_TARGET, "the background turn could not open the store: {e}");
             record_outcome(turn.token("unavailable"), tier, folders, proposals);
         }
+    }
+    turn.completion()
+}
+
+/// What a failed background turn tells the scheduler.
+///
+/// ❌ Classified by TYPED variant, never by the message the provider sent: `error-string-match`
+/// forbids the string match, and a provider's wording changes under us without notice.
+fn completion_for_failure(kind: AgentErrorKind, ordinary: WakeCompletion) -> WakeCompletion {
+    match kind {
+        // A rejected key, no key at all, and a spent quota are all settled facts about the rest
+        // of the day rather than something worth retrying at the ordinary pace.
+        AgentErrorKind::NoKey | AgentErrorKind::AuthFailed | AgentErrorKind::RateLimited => {
+            WakeCompletion::ProviderRefused
+        }
+        // ❌ Never fold a transient failure in here. An unreachable provider or a dropped stream
+        // says nothing about the key, and six hours of silence for one flaky request would be
+        // the agent punishing the user for their network. `NotConfigured` is a gate
+        // `resolve_slot` refuses ahead of the turn, so it costs nothing to reach again.
+        AgentErrorKind::NotConfigured
+        | AgentErrorKind::Unavailable
+        | AgentErrorKind::Timeout
+        | AgentErrorKind::BudgetExhausted
+        | AgentErrorKind::RepeatedToolCall
+        | AgentErrorKind::UnfinishedReply
+        | AgentErrorKind::Provider => ordinary,
     }
 }
 
@@ -269,4 +307,59 @@ pub(super) fn record_outcome(outcome: &'static str, tier: Option<WakeTier>, fold
             "proposals": crate::analytics::item_count_bucket(proposals),
         }),
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// ⚠️ **A dead or exhausted key is a settled fact, not a transient failure.** After the
+    /// 2026-09-03 quota died at 09:06 local the app sent 261 further requests over roughly six
+    /// hours, every one answered 403, because nothing carried the provider's answer back to the
+    /// scheduler. These three variants are what "it would refuse the next one too" looks like.
+    #[test]
+    fn a_rejected_key_or_a_spent_quota_tells_the_loop_to_stop_trying() {
+        for kind in [
+            AgentErrorKind::AuthFailed,
+            AgentErrorKind::NoKey,
+            AgentErrorKind::RateLimited,
+        ] {
+            assert_eq!(
+                completion_for_failure(kind, WakeCompletion::Wake),
+                WakeCompletion::ProviderRefused,
+                "{kind:?} would refuse the next turn identically"
+            );
+        }
+    }
+
+    /// A follow-up learns it just as a wake does: the key it could not use is the same key the
+    /// next wake would reach for.
+    #[test]
+    fn a_follow_up_that_hits_a_dead_key_reports_it_too() {
+        assert_eq!(
+            completion_for_failure(AgentErrorKind::AuthFailed, WakeCompletion::FollowUp),
+            WakeCompletion::ProviderRefused
+        );
+    }
+
+    /// ⚠️ **A transient failure must NOT earn the long backoff.** A dropped connection or a slow
+    /// provider says nothing about the key, and six hours of silence for one flaky request would
+    /// be the agent punishing the user for the network.
+    #[test]
+    fn a_transient_failure_leaves_the_ordinary_spacing_in_place() {
+        for kind in [
+            AgentErrorKind::Unavailable,
+            AgentErrorKind::Timeout,
+            AgentErrorKind::UnfinishedReply,
+            AgentErrorKind::BudgetExhausted,
+            AgentErrorKind::Provider,
+            AgentErrorKind::NotConfigured,
+        ] {
+            assert_eq!(
+                completion_for_failure(kind, WakeCompletion::Wake),
+                WakeCompletion::Wake,
+                "{kind:?} is worth trying again at the ordinary pace"
+            );
+        }
+    }
 }

@@ -12,9 +12,9 @@ use super::super::OperationEventSink;
 use super::super::operation_intent::is_cancelled;
 use super::super::state::WriteOperationState;
 use super::super::types::{WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
-use crate::file_system::volume::backends::archive::mutator::{MutationError, MutationHooks, MutationProgress};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::ignore_poison::IgnorePoison;
+use cmdr_archive::mutator::{MutationError, MutationHooks, MutationProgress};
 
 /// A planning failure that separates a user cancel (archive untouched, nothing to
 /// report as an error) from a genuine fault.

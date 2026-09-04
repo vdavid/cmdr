@@ -50,15 +50,60 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Docker volume names for persistent caches.
-# Each can be overridden via env var to a host path (starting with /) for CI,
-# where `actions/cache` can only cache host paths, not Docker named volumes.
+# Portable SHA-256 of stdin (macOS ships shasum, Linux sha256sum)
+sha256_stdin() {
+    if command -v sha256sum &> /dev/null; then
+        sha256sum | awk '{print $1}'
+    else
+        shasum -a 256 | awk '{print $1}'
+    fi
+}
+
+# ── Cache volume names: one set per checkout ────────────────────────────────
+# Every cache below holds state built FROM the sources bind-mounted at /app, and
+# /app is whichever clone or worktree launched this script. Sharing one set of
+# volumes across checkouts silently corrupts runs: the container paths are
+# identical, so cargo compares this checkout's source mtimes against an rlib
+# another checkout built, calls it fresh, and links the wrong `cmdr-fs` into
+# your binary. It surfaces as a build failure naming API your branch really does
+# have (with `Compiling cmdr` as the only compile line), which is worse than no
+# lane at all. node_modules and .svelte-kit are the same class of state (a
+# lockfile and a frontend build belong to one tree), and two checkouts running
+# at once would race inside them.
+#
+# So the volume names carry a per-checkout suffix: the checkout's directory name
+# for humans reading `docker volume ls`, plus a hash of its absolute path so two
+# worktrees named the same in different clones can't collide. Path, not branch:
+# the bind mount is what the cache actually belongs to, and a branch rename or a
+# second worktree on the same branch shouldn't move a cache.
+#
+# The cargo REGISTRY stays global. It's content-addressed by crate and version,
+# so no checkout can poison another, and it's the one cache that costs a network
+# download to refill.
+#
+# Cost of the split, measured: the first run in a new checkout pays about 1m40s
+# for the cold build (the cargo registry stays warm, so it's nowhere near a
+# from-scratch workspace), and each checkout holds its own ~4.6 GB target
+# volume. `reap_stale_cache_volumes` below drops the volumes of checkouts that
+# no longer exist. Numbers and method: test/e2e-linux/DETAILS.md § Volumes.
+CHECKOUT_SLUG="${REPO_ROOT##*/}"                          # the checkout's dir name
+CHECKOUT_SLUG="${CHECKOUT_SLUG//[^a-zA-Z0-9_.-]/-}"       # Docker volume-name charset
+CHECKOUT_KEY="${CHECKOUT_SLUG:0:24}-$(printf '%s' "$REPO_ROOT" | sha256_stdin | cut -c1-8)"
+# Marks the volumes this script owns, so the reaper can find them, and records
+# which checkout each one belongs to, so it can tell live from stale.
+CACHE_LABEL="com.cmdr.e2e-linux-cache"
+CHECKOUT_LABEL="com.cmdr.e2e-linux-checkout"
+
+# Each volume can be overridden via env var to a host path (starting with /) for
+# CI, where `actions/cache` can only cache host paths, not Docker named volumes.
+# CI checks out once per job, so an override is taken verbatim: no suffix, no
+# label, no reaping.
 CARGO_VOLUME="${CARGO_VOLUME:-cmdr-cargo-cache}"
-TARGET_VOLUME="${TARGET_VOLUME:-cmdr-target-cache}"
+TARGET_VOLUME="${TARGET_VOLUME:-cmdr-target-cache-$CHECKOUT_KEY}"
 # Two node_modules volumes: one for monorepo root, one for apps/desktop
 # This prevents Linux binaries from contaminating the host's node_modules
-ROOT_NODE_MODULES_VOLUME="${ROOT_NODE_MODULES_VOLUME:-cmdr-root-node-modules-cache}"
-DESKTOP_NODE_MODULES_VOLUME="${DESKTOP_NODE_MODULES_VOLUME:-cmdr-desktop-node-modules-cache}"
+ROOT_NODE_MODULES_VOLUME="${ROOT_NODE_MODULES_VOLUME:-cmdr-root-node-modules-cache-$CHECKOUT_KEY}"
+DESKTOP_NODE_MODULES_VOLUME="${DESKTOP_NODE_MODULES_VOLUME:-cmdr-desktop-node-modules-cache-$CHECKOUT_KEY}"
 # The frontend build state (.svelte-kit) gets its own volume for the same reason as
 # node_modules, plus a concurrency one: the repo is BIND-MOUNTED at /app, and under
 # `pnpm check --include-slow` the desktop-e2e-playwright check builds the app on the
@@ -68,7 +113,39 @@ DESKTOP_NODE_MODULES_VOLUME="${DESKTOP_NODE_MODULES_VOLUME:-cmdr-desktop-node-mo
 # redirected INSIDE this volume too (CMDR_FRONTEND_BUILD_DIR + the tauri --config
 # override in the build step below), NOT given its own volume: adapter-static rimrafs
 # its output dir on every build, and rmdir on a mount point is EBUSY.
-DESKTOP_SVELTEKIT_VOLUME="${DESKTOP_SVELTEKIT_VOLUME:-cmdr-desktop-sveltekit-cache}"
+DESKTOP_SVELTEKIT_VOLUME="${DESKTOP_SVELTEKIT_VOLUME:-cmdr-desktop-sveltekit-cache-$CHECKOUT_KEY}"
+
+# Named volumes only: an override pointing at a host path (CI) is a bind mount,
+# which Docker creates on demand and nothing here should label or remove.
+is_named_volume() { [[ "$1" != /* ]]; }
+
+# Label this checkout's volumes on the way in. `docker volume create` is
+# idempotent from the second run on, so this is the volume's birth. It has to
+# stay AHEAD of every `docker run -v` below: that flag also creates a missing
+# volume, but WITHOUT labels, and `docker volume create` silently declines to
+# add labels to a volume that already exists (verified on Docker 29.4.0, 2026-09-02)
+# — an unlabelled cache is one the reaper can never find again.
+label_cache_volumes() {
+    local volume
+    for volume in "$TARGET_VOLUME" "$ROOT_NODE_MODULES_VOLUME" "$DESKTOP_NODE_MODULES_VOLUME" "$DESKTOP_SVELTEKIT_VOLUME"; do
+        if is_named_volume "$volume"; then
+            docker volume create --label "$CACHE_LABEL=1" --label "$CHECKOUT_LABEL=$REPO_ROOT" "$volume" > /dev/null 2>&1 || true
+        fi
+    done
+}
+
+# Drop the volumes of checkouts that are gone (a deleted worktree). Without this
+# the per-checkout split would leave ~17 GB behind for every worktree ever
+# merged. In-use volumes refuse to be removed, so a concurrent run is safe.
+reap_stale_cache_volumes() {
+    local volume checkout
+    while read -r volume checkout; do
+        [[ -z "$volume" || -z "$checkout" || -d "$checkout" ]] && continue
+        if docker volume rm "$volume" > /dev/null 2>&1; then
+            log_info "Reaped cache volume of deleted checkout $checkout: $volume"
+        fi
+    done < <(docker volume ls --filter "label=$CACHE_LABEL=1" --format '{{.Name}} {{.Label "'"$CHECKOUT_LABEL"'"}}' 2> /dev/null)
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -131,7 +208,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --build-only      Build Docker images, then exit without running tests"
             echo "  --shell           Start interactive shell in container"
             echo "  --vnc             Interactive VNC mode with hot reload (pnpm dev)"
-            echo "  --clean           Clean Linux build cache (forces rebuild)"
+            echo "  --clean           Clean this checkout's Linux build cache (forces rebuild);"
+            echo "                    leaves the shared cargo registry and other checkouts alone"
             echo "  --grep <pattern>  Filter tests by title pattern (passed to Playwright --grep)"
             echo "  --help            Show this help message"
             exit 0
@@ -148,10 +226,16 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
+# Volumes of checkouts that no longer exist go on every run, not just --clean:
+# nobody remembers to clean up after deleting a worktree.
+reap_stale_cache_volumes
+
 # Clean build cache if requested
 if $CLEAN; then
-    log_info "Cleaning Linux build cache..."
-    docker volume rm "$CARGO_VOLUME" 2>/dev/null || true
+    log_info "Cleaning this checkout's Linux build cache ($CHECKOUT_KEY)..."
+    # The cargo registry is deliberately NOT dropped: it's shared with every
+    # other checkout, content-addressed (so it can't be the poisoned cache), and
+    # the only one that costs a download to refill.
     docker volume rm "$TARGET_VOLUME" 2>/dev/null || true
     docker volume rm "$ROOT_NODE_MODULES_VOLUME" 2>/dev/null || true
     docker volume rm "$DESKTOP_NODE_MODULES_VOLUME" 2>/dev/null || true
@@ -159,6 +243,8 @@ if $CLEAN; then
     log_info "Cache cleaned."
     exit 0
 fi
+
+label_cache_volumes
 
 # ── Docker images: content-addressed base + thin final layer ────────────────
 # Two-stage build so the slow system layer is never re-installed cold per run:
@@ -172,16 +258,7 @@ fi
 #   - Final image (Dockerfile): FROM base + entrypoint.sh. Cheap (~1 s), so
 #     it's rebuilt every run — entrypoint.sh edits propagate without --build.
 
-# Portable SHA-256 (macOS ships shasum, Linux sha256sum)
-file_sha256() {
-    if command -v sha256sum &> /dev/null; then
-        sha256sum "$1" | awk '{print $1}'
-    else
-        shasum -a 256 "$1" | awk '{print $1}'
-    fi
-}
-
-BASE_HASH=$(file_sha256 "$DOCKER_DIR/Dockerfile.base" | cut -c1-12)
+BASE_HASH=$(sha256_stdin < "$DOCKER_DIR/Dockerfile.base" | cut -c1-12)
 BASE_IMAGE="$BASE_IMAGE_REPO:$BASE_HASH"
 
 if $FORCE_BUILD || ! docker image inspect "$BASE_IMAGE" &> /dev/null; then

@@ -73,6 +73,7 @@ import type { BytesPerSecond, Seconds } from '$lib/units'
 import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
 import type { OperationOutcome, ScanReadout } from '../operation-session/operation-session.svelte'
 import { dispatchTransferOperation, type TransferDispatchConfig } from './transfer-dispatch'
+import { raiseCancelRollbackToast } from './cancel-rollback-toast'
 
 export interface TransferProgressStateConfig extends TransferDispatchConfig {
   /** An operation already running that this view ADOPTS instead of starting one
@@ -386,12 +387,26 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       case 'cancelled': {
         if (!settleEventReceived) return
         const event = settled.event
-        log.info('{op} cancelled after {filesProcessed} {filesNoun}, rolledBack={rolledBack}', {
-          op: operationLabel,
-          filesProcessed: event.filesProcessed,
-          filesNoun: pluralize(event.filesProcessed, 'file'),
-          rolledBack: event.rolledBack,
-        })
+        // `staged` rides along because `outcome` answers for the LEDGER only: a
+        // clean `rolledBack` can still sit on top of gigabytes of Cmdr's own
+        // scratch the destination refused to release, and a log that omitted it
+        // would be as misleading as the toast used to be.
+        log.info(
+          '{op} cancelled after {filesProcessed} {filesNoun}, rollback={rollback} ({left} left behind, {staged} staged)',
+          {
+            op: operationLabel,
+            filesProcessed: event.filesProcessed,
+            filesNoun: pluralize(event.filesProcessed, 'file'),
+            rollback: event.rollback.outcome,
+            left: event.rollback.skips.reduce((total, group) => total + group.count, 0),
+            staged: event.rollback.stagedLeftovers?.count ?? 0,
+          },
+        )
+        // Said here rather than by the parent: the reversal's report rides the
+        // cancelled event, and both the started and the adopted arms reach this
+        // one place. Raised before the close so the summary is already up when
+        // the dialog gets out of the way.
+        raiseCancelRollbackToast(event.rollback, event.operationType)
         close(() => {
           config.onCancelled(event.filesProcessed)
         })
@@ -683,9 +698,9 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    *
    *  Dispatches straight away even when a `TransferDialog` preview is still
    *  walking: the backend claims that preview at registration and its own task
-   *  waits for it, so the operation has an id, a queue row, and Background from
-   *  the first frame. (Pause stays hidden until the write starts — a scan-wait
-   *  has nothing to park, and the backend declines the flip.) */
+   *  waits for it, so the operation has an id, a queue row, Pause, and
+   *  Background from the first frame. Pause reaches the walk itself, which
+   *  parks between entries (`write_operations/scan_bridge.rs`). */
   function start(): void {
     if (adoptedOperationId !== null) {
       adopt(adoptedOperationId)

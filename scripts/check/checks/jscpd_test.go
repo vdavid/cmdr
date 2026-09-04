@@ -16,6 +16,19 @@ func writeJscpdSourceFile(t *testing.T, rootDir, relPath string) {
 	}
 }
 
+// seedJscpdAllowlistFile plants a lane allowlist at the path loadJscpdAllowlist
+// resolves, so a test can exercise the on-disk shape rather than the Go struct.
+func seedJscpdAllowlistFile(t *testing.T, rootDir, body string) {
+	t.Helper()
+	path := jscpdAllowlistPath(rootDir, "test-lane")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
 func TestJscpdPairKeySortsPathsSoOrderDoesNotMintASecondEntry(t *testing.T) {
 	forward := jscpdPairKey("b.rs", "a.rs")
 	backward := jscpdPairKey("a.rs", "b.rs")
@@ -61,15 +74,15 @@ func TestShrinkwrapJscpdAllowlistDropsGonePairsAndRatchetsShrunkOnes(t *testing.
 	report := summarizeJscpdClones([]jscpdClone{
 		{Format: "rust", Lines: 12, A: jscpdLocation{"a.rs", 1, 12}, B: jscpdLocation{"b.rs", 1, 12}},
 	})
-	list := jscpdAllowlist{Pairs: map[string]int{
-		"a.rs ↔ b.rs":    30,
-		"gone.rs ↔ x.rs": 9,
+	list := jscpdAllowlist{Pairs: map[string]jscpdPairLimit{
+		"a.rs ↔ b.rs":    {Lines: 30},
+		"gone.rs ↔ x.rs": {Lines: 9},
 	}}
 
 	changes := shrinkwrapJscpdAllowlist(t.TempDir(), &list, report)
 
-	if list.Pairs["a.rs ↔ b.rs"] != 12 {
-		t.Fatalf("ratcheted entry = %d, want 12", list.Pairs["a.rs ↔ b.rs"])
+	if list.Pairs["a.rs ↔ b.rs"].Lines != 12 {
+		t.Fatalf("ratcheted entry = %d, want 12", list.Pairs["a.rs ↔ b.rs"].Lines)
 	}
 	if _, still := list.Pairs["gone.rs ↔ x.rs"]; still {
 		t.Fatal("a pair with no clones left must be dropped")
@@ -85,9 +98,9 @@ func TestFindJscpdRegressionsFlagsUnlistedPairsAndGrownOnes(t *testing.T) {
 		{Format: "rust", Lines: 20, A: jscpdLocation{"new.rs", 1, 20}, B: jscpdLocation{"fresh.rs", 1, 20}},
 		{Format: "rust", Lines: 30, A: jscpdLocation{"ok.rs", 1, 30}, B: jscpdLocation{"fine.rs", 1, 30}},
 	})
-	list := jscpdAllowlist{Pairs: map[string]int{
-		"grew.rs ↔ other.rs": 20,
-		"fine.rs ↔ ok.rs":    30,
+	list := jscpdAllowlist{Pairs: map[string]jscpdPairLimit{
+		"grew.rs ↔ other.rs": {Lines: 20},
+		"fine.rs ↔ ok.rs":    {Lines: 30},
 	}}
 
 	regressions := findJscpdRegressions(report, list)
@@ -112,7 +125,7 @@ func TestFindJscpdRegressionsIgnoresAPairThatShrank(t *testing.T) {
 	report := summarizeJscpdClones([]jscpdClone{
 		{Format: "rust", Lines: 10, A: jscpdLocation{"a.rs", 1, 10}, B: jscpdLocation{"b.rs", 1, 10}},
 	})
-	list := jscpdAllowlist{Pairs: map[string]int{"a.rs ↔ b.rs": 40}}
+	list := jscpdAllowlist{Pairs: map[string]jscpdPairLimit{"a.rs ↔ b.rs": {Lines: 40}}}
 	if regressions := findJscpdRegressions(report, list); len(regressions) != 0 {
 		t.Fatalf("a shrinking pair must not warn, got %v", regressions)
 	}
@@ -171,7 +184,7 @@ func TestFormatJscpdRegressionsNamesEveryCloneWithFileAndLines(t *testing.T) {
 		{Format: "rust", Lines: 55, A: jscpdLocation{"commands/volumes.rs", 120, 175}, B: jscpdLocation{"commands/volumes_linux.rs", 88, 143}},
 		{Format: "rust", Lines: 12, A: jscpdLocation{"commands/volumes.rs", 300, 312}, B: jscpdLocation{"commands/volumes_linux.rs", 12, 24}},
 	})
-	regressions := findJscpdRegressions(report, jscpdAllowlist{Pairs: map[string]int{}})
+	regressions := findJscpdRegressions(report, jscpdAllowlist{Pairs: map[string]jscpdPairLimit{}})
 
 	out := formatJscpdRegressions(regressions)
 
@@ -214,7 +227,7 @@ func TestFindJscpdRegressionsSkipsAnExemptPair(t *testing.T) {
 		{Format: "rust", Lines: 12, A: jscpdLocation{"a.rs", 1, 12}, B: jscpdLocation{"b.rs", 1, 12}},
 	})
 	list := jscpdAllowlist{
-		Pairs:  map[string]int{"a.rs ↔ b.rs": 12},
+		Pairs:  map[string]jscpdPairLimit{"a.rs ↔ b.rs": {Lines: 12}},
 		Exempt: map[string]string{"gen.rs": "generated; the duplication is the generator's, not a hand-written copy"},
 	}
 
@@ -280,7 +293,7 @@ func TestShrinkwrapJscpdAllowlistDropsAPairsEntryTheExemptSectionAlreadyCovers(t
 		{Format: "rust", Lines: 39, A: jscpdLocation{"gen.rs", 128, 166}, B: jscpdLocation{"gen.rs", 88, 126}},
 	})
 	list := jscpdAllowlist{
-		Pairs:  map[string]int{"gen.rs": 39},
+		Pairs:  map[string]jscpdPairLimit{"gen.rs": {Lines: 39}},
 		Exempt: map[string]string{"gen.rs": "generated"},
 	}
 
@@ -288,5 +301,106 @@ func TestShrinkwrapJscpdAllowlistDropsAPairsEntryTheExemptSectionAlreadyCovers(t
 
 	if _, ok := list.Pairs["gen.rs"]; ok {
 		t.Fatalf("kept a redundant pairs entry beside an exempt one; changes = %v", changes)
+	}
+}
+
+func TestLoadJscpdAllowlistReadsBothPairValueShapes(t *testing.T) {
+	rootDir := t.TempDir()
+	seedJscpdAllowlistFile(t, rootDir, `{
+	  "pairs": {
+	    "a.rs ↔ b.rs": 14,
+	    "c.rs ↔ d.rs": {"lines": 62, "reason": "trait-method signatures; a macro would cost more than it saves"}
+	  }
+	}`)
+
+	list := loadJscpdAllowlist(rootDir, "test-lane")
+
+	if list.Pairs["a.rs ↔ b.rs"].Lines != 14 || list.Pairs["a.rs ↔ b.rs"].Reason != "" {
+		t.Fatalf("a bare number must read as a reasonless limit, got %+v", list.Pairs["a.rs ↔ b.rs"])
+	}
+	if list.Pairs["c.rs ↔ d.rs"].Lines != 62 {
+		t.Fatalf("object entry lines = %d, want 62", list.Pairs["c.rs ↔ d.rs"].Lines)
+	}
+	if !strings.Contains(list.Pairs["c.rs ↔ d.rs"].Reason, "trait-method signatures") {
+		t.Fatalf("object entry lost its reason, got %q", list.Pairs["c.rs ↔ d.rs"].Reason)
+	}
+}
+
+func TestJscpdAllowlistWritesABareNumberUnlessThePairCarriesAReason(t *testing.T) {
+	rootDir := t.TempDir()
+	seedJscpdAllowlistFile(t, rootDir, "{}")
+	list := jscpdAllowlist{Pairs: map[string]jscpdPairLimit{
+		"a.rs ↔ b.rs": {Lines: 14},
+		"c.rs ↔ d.rs": {Lines: 62, Reason: "trait-method signatures"},
+	}}
+
+	if err := writeJSONAllowlist(jscpdAllowlistPath(rootDir, "test-lane"), list); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	data, err := os.ReadFile(jscpdAllowlistPath(rootDir, "test-lane"))
+	if err != nil {
+		t.Fatalf("read allowlist: %v", err)
+	}
+	written := string(data)
+	if !strings.Contains(written, `"a.rs ↔ b.rs": 14`) {
+		t.Fatalf("a reasonless entry must stay a bare number, got:\n%s", written)
+	}
+	if !strings.Contains(written, `"lines": 62`) || !strings.Contains(written, `"reason": "trait-method signatures"`) {
+		t.Fatalf("an entry with a reason must write as an object, got:\n%s", written)
+	}
+}
+
+func TestShrinkwrapJscpdAllowlistKeepsAPairsReasonWhenItRatchets(t *testing.T) {
+	report := summarizeJscpdClones([]jscpdClone{
+		{Format: "rust", Lines: 40, A: jscpdLocation{"a.rs", 1, 40}, B: jscpdLocation{"b.rs", 1, 40}},
+	})
+	list := jscpdAllowlist{Pairs: map[string]jscpdPairLimit{
+		"a.rs ↔ b.rs": {Lines: 62, Reason: "trait-method signatures"},
+	}}
+
+	changes := shrinkwrapJscpdAllowlist(t.TempDir(), &list, report)
+
+	if list.Pairs["a.rs ↔ b.rs"].Lines != 40 {
+		t.Fatalf("ratcheted entry = %d, want 40 (changes = %v)", list.Pairs["a.rs ↔ b.rs"].Lines, changes)
+	}
+	if list.Pairs["a.rs ↔ b.rs"].Reason != "trait-method signatures" {
+		t.Fatalf("ratcheting dropped the reason, got %q", list.Pairs["a.rs ↔ b.rs"].Reason)
+	}
+}
+
+func TestJscpdAllowlistReasonSurvivesAWriteLoadRoundTrip(t *testing.T) {
+	rootDir := t.TempDir()
+	seedJscpdAllowlistFile(t, rootDir, `{
+	  "pairs": {"a.rs ↔ b.rs": {"lines": 62, "reason": "trait-method signatures"}}
+	}`)
+	report := summarizeJscpdClones([]jscpdClone{
+		{Format: "rust", Lines: 40, A: jscpdLocation{"a.rs", 1, 40}, B: jscpdLocation{"b.rs", 1, 40}},
+	})
+
+	list := loadJscpdAllowlist(rootDir, "test-lane")
+	shrinkwrapJscpdAllowlist(rootDir, &list, report)
+	if err := writeJSONAllowlist(jscpdAllowlistPath(rootDir, "test-lane"), list); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	reloaded := loadJscpdAllowlist(rootDir, "test-lane")
+	if reloaded.Pairs["a.rs ↔ b.rs"] != (jscpdPairLimit{Lines: 40, Reason: "trait-method signatures"}) {
+		t.Fatalf("round trip lost the ratchet or the reason, got %+v", reloaded.Pairs["a.rs ↔ b.rs"])
+	}
+}
+
+func TestFormatJscpdRegressionsPrintsTheAllowlistedReason(t *testing.T) {
+	report := summarizeJscpdClones([]jscpdClone{
+		{Format: "rust", Lines: 70, A: jscpdLocation{"a.rs", 1, 70}, B: jscpdLocation{"b.rs", 1, 70}},
+	})
+	list := jscpdAllowlist{Pairs: map[string]jscpdPairLimit{
+		"a.rs ↔ b.rs": {Lines: 62, Reason: "trait-method signatures"},
+	}}
+
+	out := formatJscpdRegressions(findJscpdRegressions(report, list))
+
+	if !strings.Contains(out, "trait-method signatures") {
+		t.Fatalf("a grown pair must show why it was accepted, got:\n%s", out)
 	}
 }

@@ -1,17 +1,18 @@
 /**
  * What a reversal will DO to the user's files, and every surface's wording for it.
  *
- * One classifier feeds two moments that must never contradict each other: the question
- * asked before a rollback starts (`RollbackConfirmDialog`), and the running bar named
- * two seconds later (the queue row, the corner chip, the progress dialog). They read
- * the same `RollbackConfirmVariant`, so a copy edit can't leave one promising a restore
- * while the other announces a delete.
+ * One vocabulary feeds every moment that must never contradict another: the question
+ * asked before a rollback starts (`RollbackConfirmDialog`), whether the operation is
+ * still running or long finished, and the running bar named two seconds later (the
+ * queue row, the corner chip, the progress dialog). They read the same
+ * `RollbackConfirmVariant`, so a copy edit can't leave one promising a restore while
+ * the other announces a delete.
  *
  * Pure, no I/O: it returns catalog KEYS, so the callers resolve them with their own
  * placeholders.
  */
 
-import type { OpKind } from '$lib/ipc/bindings'
+import type { OpKind, WriteOperationPhase } from '$lib/ipc/bindings'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
 /**
@@ -22,8 +23,10 @@ import type { MessageKey } from '$lib/intl/keys.gen'
  * inverse deletes, moves, or renames.
  */
 export type RollbackConfirmVariant =
-  /** A copy or move still running: stop it and delete what it has written. */
+  /** A copy still running: stop it and delete what it has written. */
   | 'stopAndDelete'
+  /** A move still running: stop it and carry back what it has moved so far. */
+  | 'stopAndMoveBack'
   /** Undoing a finished copy, new file/folder, or compress: delete what it made. */
   | 'undoByDeleting'
   /** Undoing a finished move or trash: the files travel back, nothing is deleted. */
@@ -58,14 +61,90 @@ export function rollbackConfirmVariant(kind: OpKind): RollbackConfirmVariant {
 }
 
 /**
+ * Which reversal a STILL-RUNNING operation earns, for the question in front of the
+ * Rollback button on a live transfer.
+ *
+ * Same fact as {@link rollbackConfirmVariant} — undoing a copy takes files away,
+ * undoing a move carries them home — asked at the other moment: the operation is
+ * mid-flight, so the wording says "so far" and owns the overwrite it can't undo.
+ * The two agree on which reversals remove files, pinned by the tests, because
+ * that is a property of the operation and not of when the button was pressed.
+ *
+ * `rename` maps to the deleting arm it can never reach: a rename is one syscall,
+ * so nothing of it is ever in flight to stop. The arm exists so a new `OpKind`
+ * is a compile error here rather than a blank body in front of a user.
+ */
+export function inFlightRollbackVariant(kind: OpKind): RollbackConfirmVariant {
+  switch (kind) {
+    case 'move':
+    case 'trash':
+      return 'stopAndMoveBack'
+    case 'copy':
+    case 'createFolder':
+    case 'createFile':
+    case 'archiveEdit':
+    case 'delete':
+    case 'rename':
+      return 'stopAndDelete'
+  }
+}
+
+/**
+ * Whether pressing Rollback RIGHT NOW could still reverse anything, which the
+ * operation's `supportsRollback` can't answer on its own: that flag is a property of
+ * the STRATEGY, decided once at spawn, and this is the other half of the question.
+ *
+ * One case needs it, and it's the last stage of a move between filesystems. That move
+ * copies into a staging folder, renames the tree into its final place, and only then
+ * removes the originals — and the engine commits its transaction before that last
+ * stage begins, so a Rollback pressed during the source sweep carries nothing home.
+ * It stops the sweep, exactly like the Cancel beside it: the moved files stay at the
+ * destination and the originals the sweep hasn't reached stay where they are, which
+ * is what `fileOperations.cancelRollback.moveAlreadyLanded` reports afterwards. So
+ * every surface that offers Rollback asks this too, or it offers a journey home the
+ * engine can no longer make.
+ *
+ * The `deleting` phase is the signal because it IS the sweep (`cross_fs.rs`'s
+ * `delete_sources_after_move` opens it with an unthrottled 0-of-total tick, the same
+ * one that retitles the dialog "Removing the originals…"). Only for a move: a delete
+ * wears the phase too, and a copy's reversal deletes what it wrote whatever phase it
+ * is in.
+ */
+export function reversalWindowClosed(kind: OpKind, phase: WriteOperationPhase | null): boolean {
+  return kind === 'move' && phase === 'deleting'
+}
+
+/**
+ * The tooltip on a LIVE Rollback button, which exists to say how this click differs
+ * from the plain Cancel beside it — so it has to name what the reversal does to the
+ * files, the same split the confirmation two clicks later makes: a copy's undo
+ * deletes what it wrote, a move's carries it back.
+ *
+ * The three `undo*` variants can't reach here (this is the button on a RUNNING
+ * transfer), and they map to the sibling that shares their direction so a new variant
+ * is a compile error rather than a copy's wording over a move.
+ */
+export function inFlightRollbackTooltipKey(variant: RollbackConfirmVariant): MessageKey {
+  switch (variant) {
+    case 'stopAndMoveBack':
+    case 'undoByMovingBack':
+      return 'fileOperations.transferProgress.rollbackTooltipStopAndMoveBack'
+    case 'stopAndDelete':
+    case 'undoByDeleting':
+    case 'undoByRenamingBack':
+      return 'fileOperations.transferProgress.rollbackTooltip'
+  }
+}
+
+/**
  * What a running reversal is called where an operation gets NAMED without room for a
  * count: the queue row's label and the corner chip's action word. Both sit beside a
  * readout or a tooltip that already carries the numbers, so these stay count-free, the
  * way `queue.row.label`'s "Copying" does.
  *
- * `stopAndDelete` can't reach here — the backend sets `reverses` only on an operation
- * that IS the reversal of a finished one — but it's mapped so a new variant is a compile
- * error rather than a blank label.
+ * The two in-flight variants can't reach here — the backend sets `reverses` only on an
+ * operation that IS the reversal of a finished one — but they're mapped so a new variant
+ * is a compile error rather than a blank label.
  */
 export function reversalLabelKey(variant: RollbackConfirmVariant): MessageKey {
   switch (variant) {
@@ -76,10 +155,12 @@ export function reversalLabelKey(variant: RollbackConfirmVariant): MessageKey {
     case 'undoByRenamingBack':
       return 'queue.row.reversalRenamingBack'
     // Unreachable: the backend sets `reverses` only on an operation that IS the
-    // reversal of a finished one. Mapped to the in-flight title so a new variant
-    // is a compile error here rather than a blank label, and so this arm costs no
-    // dead string in ten locales.
+    // reversal of a finished one, and the two in-flight variants describe one that
+    // is still running. Mapped to the in-flight title so a new variant is a compile
+    // error here rather than a blank label, and so these arms cost no dead string
+    // in ten locales.
     case 'stopAndDelete':
+    case 'stopAndMoveBack':
       return 'fileOperations.transferProgress.titleRollingBack'
   }
 }
@@ -99,6 +180,7 @@ export function reversalTitleKey(variant: RollbackConfirmVariant): MessageKey {
     case 'undoByRenamingBack':
       return 'fileOperations.transferProgress.titleReversalRenamingBack'
     case 'stopAndDelete':
+    case 'stopAndMoveBack':
       return 'fileOperations.transferProgress.titleRollingBack'
   }
 }

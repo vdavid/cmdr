@@ -15,7 +15,7 @@ export async function GET(context: APIContext) {
 
 > The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 
-Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS, built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search. Free forever for personal use, source-available under BSL 1.1.
+Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS, built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search. Free for personal use, source-available under BSL 1.1.
 
 Current version: ${version}
 
@@ -41,13 +41,14 @@ Current version: ${version}
 
 ## Pricing
 
-- **Personal**: Free forever. All features, your own devices, automatic updates. No commercial use.
+- **Personal**: Free. All features, your own devices, automatic updates. No commercial use.
 - **Commercial**: $59/year (discounted from $79 for first 1,000 licenses). All features, commercial use, per user, your own devices.
 - **Perpetual**: $199 one-time. All features, commercial use, per user, your own devices, one year of updates.
 
 ## System requirements
 
-- macOS (Apple Silicon and Intel)
+- macOS 12 or newer (Apple Silicon and Intel)
+- macOS 10.15 and 11 run on a best-effort basis: they work, but a few colors and layout details can look off, and fixes for them are a lower priority
 - Linux support in alpha
 
 ## License

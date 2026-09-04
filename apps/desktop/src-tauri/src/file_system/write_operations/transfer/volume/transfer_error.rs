@@ -233,3 +233,7 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
         },
     }
 }
+
+#[cfg(test)]
+#[path = "transfer_error_tests.rs"]
+mod tests;

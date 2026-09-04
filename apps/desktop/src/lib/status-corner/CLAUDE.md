@@ -25,8 +25,8 @@ with any `children` to their left. The chip's pick-and-measure rules are pure, i
 - **Both gates are pure, in `operation-chip.ts`** (`pickChipOperation`, `pickChipState`): add and test one there, not in
   the markup. The bar is bytes, falling back to the file count when `bytesTotal` is 0 (a same-volume move moves none);
   instant ops are excluded by TYPED `operationType`, ❌ never a substring test.
-- **A scanning operation gets a SPINNER and "Scanning…", never a bar** (both totals are 0). Its spoken label is
-  `queue.chip.scanningAriaLabel`, ❌ never the tooltip's: that drops the verb and the "Open the operation queue" tail.
+- **A scanning operation gets a SPINNER and "Scanning…", never a bar** (both totals 0); a PAUSED one neither. Spoken
+  label: `queue.chip.scanningAriaLabel`, ❌ never the tooltip's, which drops the verb and the "Open the queue" tail.
 - **A paused-only queue KEEPS the chip**, still bar, label "Paused": hiding it would re-hide the work the chip exists to
   surface. Tooltip and aria-label lead with that label, ❌ never the verb, so every `queue.chip.tooltip` clause carries
   its own leading `·`.

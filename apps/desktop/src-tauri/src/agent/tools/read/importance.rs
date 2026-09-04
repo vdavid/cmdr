@@ -85,9 +85,9 @@ pub fn important_folders_schema() -> Value {
     serde_json::json!({
         "type": "object",
         "properties": {
-            "top": { "type": "integer", "description": "How many to return, highest score first (default 20). Ignored when threshold is set." },
-            "threshold": { "type": "number", "description": "Return every folder scoring at or above this (0.0-1.0) instead of a top-N." },
-            "volume": { "type": "string", "description": "Restrict to one volume id (see list_volumes); omit to span all scored volumes." }
+            "top": { "type": "integer", "description": "Default 20; ignored when threshold is set." },
+            "threshold": { "type": "number", "description": "Every folder scoring at or above this (0-1) instead of a top-N." },
+            "volume": { "type": "string", "description": "One volume id (see list_volumes); omit for all scored volumes." }
         },
         "additionalProperties": false
     })

@@ -207,9 +207,9 @@ pub fn image_facts_schema() -> Value {
             "paths": {
                 "type": "array",
                 "items": { "type": "string" },
-                "description": "The absolute paths of the images to look up (at most 200 per call). Use this when you already know the files, for example everything in the folder the user is looking at. One answer holds only as many files as fit your context: check returned, total, and truncated, and ask about the remaining paths in a follow-up call."
+                "description": "Absolute image paths, at most 200. A page may hold fewer than asked: check returned, total, and truncated, then ask for the rest."
             },
-            "volumeId": { "type": "string", "description": "Restrict the lookup to one volume id (see list_volumes / cmdr://state). Omit to check every local and SMB volume that's indexed." }
+            "volumeId": { "type": "string", "description": "One volume id (see list_volumes); omit for every indexed local and SMB volume." }
         },
         "required": ["paths"],
         "additionalProperties": false

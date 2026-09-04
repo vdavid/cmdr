@@ -107,6 +107,10 @@ fn build_request(system: &str, tools: &[ToolDeclaration], messages: &[AgentMessa
     let chat_messages: Vec<ChatMessage> = messages
         .iter()
         .map(|message| agent_message_to_genai(message, &tool_names))
+        // A message whose every part was dropped would go out as an empty turn, which
+        // adapters reject. It happens to the pair a nameless tool call leaves behind in a
+        // thread persisted before the inbound guard existed.
+        .filter(|message| !message.content.is_empty())
         .collect();
     let mut request = ChatRequest::new(chat_messages).with_system(system);
     if !tools.is_empty() {
@@ -191,12 +195,19 @@ fn agent_part_to_genai(part: &AgentPart, tool_names: &ToolNames<'_>) -> Vec<Cont
         AgentPart::WakeDigest(digest) => vec![ContentPart::Text(digest.render())],
         // Same contract as the digest above: the only place a sweep's outcomes become English.
         AgentPart::ProposalOutcomes(outcomes) => vec![ContentPart::Text(outcomes.render())],
+        // A nameless call never reaches the wire. Threads persisted before the inbound
+        // guard still carry one, and every replay of it 400s, so this is what unwedges
+        // them.
+        AgentPart::ToolCall(call) if call.tool.is_nameless() => Vec::new(),
         AgentPart::ToolCall(call) => vec![ContentPart::ToolCall(GenaiToolCall {
             call_id: call.call_id.clone(),
             fn_name: call.tool.as_wire_name().to_string(),
-            fn_arguments: call.arguments.clone(),
+            fn_arguments: object_arguments(&call.arguments),
             thought_signatures: call.reasoning.as_ref().and_then(|r| blob_thought_signatures(&r.blob)),
         })],
+        // The result answering a dropped call goes with it: an orphan tool response is
+        // rejected in its own right.
+        AgentPart::ToolResult(result) if answers_a_nameless_call(tool_names, &result.call_id) => Vec::new(),
         AgentPart::ToolResult(result) => vec![ContentPart::ToolResponse(GenaiToolResponse {
             call_id: result.call_id.clone(),
             fn_name: tool_names.get(result.call_id.as_str()).map(|name| (*name).to_string()),
@@ -211,6 +222,26 @@ fn agent_part_to_genai(part: &AgentPart, tool_names: &ToolNames<'_>) -> Vec<Cont
                 Vec::new()
             }
         }
+    }
+}
+
+/// True when the call this result answers is nameless, and so was itself dropped from
+/// the replay. A result whose call has fallen out of the context window resolves to
+/// `None` here and stays, carrying no function name — the pre-existing shape.
+fn answers_a_nameless_call(tool_names: &ToolNames<'_>, call_id: &str) -> bool {
+    tool_names.get(call_id).is_some_and(|name| name.trim().is_empty())
+}
+
+/// Tool arguments always go out as a JSON OBJECT. A provider that truncates a tool call
+/// mid-stream leaves a bare string behind (`""` from Qwen via DashScope), and an
+/// OpenAI-compatible endpoint rejects that outright ("the `function.arguments` parameter
+/// must be in JSON format"), wedging the thread for good. An empty object reaches the
+/// tool's own validation instead, which the model can recover from.
+fn object_arguments(arguments: &serde_json::Value) -> serde_json::Value {
+    if arguments.is_object() {
+        arguments.clone()
+    } else {
+        serde_json::Value::Object(serde_json::Map::new())
     }
 }
 
@@ -238,11 +269,24 @@ fn build_agent_message_from_stream_end(end: &StreamEnd, provider: ProviderTag, a
 /// skipped when the message has tool calls (it would duplicate the tool call's
 /// reasoning).
 fn genai_content_to_agent_parts(content: &MessageContent, provider: ProviderTag) -> Vec<AgentPart> {
-    let has_tool_calls = content.parts().iter().any(|part| part.is_tool_call());
+    let has_tool_calls = content
+        .parts()
+        .iter()
+        .any(|part| matches!(part, ContentPart::ToolCall(call) if !call.fn_name.trim().is_empty()));
     let mut out = Vec::new();
     for part in content.parts() {
         match part {
             ContentPart::Text(text) => out.push(AgentPart::Text(text.clone())),
+            // A provider can finish with `tool_call` and still hand back a call carrying an
+            // id and nothing else (Qwen via DashScope). Nothing can dispatch it, and once
+            // it is in the transcript every replay 400s, so it never becomes a part.
+            ContentPart::ToolCall(call) if call.fn_name.trim().is_empty() => {
+                log::warn!(
+                    target: LOG_TARGET,
+                    "dropping a nameless tool call (call_id={}): the provider named no function",
+                    call.call_id
+                );
+            }
             ContentPart::ToolCall(call) => out.push(AgentPart::ToolCall(genai_tool_call_to_agent(call, provider))),
             ContentPart::ToolResponse(response) => out.push(AgentPart::ToolResult(AgentToolResult {
                 call_id: response.call_id.clone(),
@@ -499,6 +543,80 @@ mod tests {
             call.reasoning.as_ref().expect("reasoning on the call").blob,
             json!({ "thought_signatures": ["sig-abc"] })
         );
+    }
+
+    #[test]
+    fn a_nameless_tool_call_never_becomes_a_part() {
+        // A provider can end a stream with `finish_reason: tool_call` yet hand back a
+        // call carrying an id and nothing else (seen from Qwen via DashScope). It is
+        // not an invocation: dispatch can't run it, and replaying it wedges the thread.
+        let content = MessageContent::from_parts(vec![
+            ContentPart::Text("here goes".into()),
+            ContentPart::ToolCall(GenaiToolCall {
+                call_id: "call-empty".into(),
+                fn_name: String::new(),
+                fn_arguments: json!(""),
+                thought_signatures: None,
+            }),
+        ]);
+        let parts = genai_content_to_agent_parts(&content, ProviderTag::OpenAi);
+        assert_eq!(parts, vec![AgentPart::Text("here goes".into())]);
+    }
+
+    #[test]
+    fn a_nameless_call_and_the_result_answering_it_both_drop_out_of_the_replay() {
+        // Threads persisted BEFORE the inbound guard still carry the broken pair, and
+        // replaying it 400s forever. Dropping the call alone would leave an orphan tool
+        // response, which adapters reject in turn, so the pair goes together — and a
+        // message left with nothing in it goes with them.
+        let transcript = vec![
+            AgentMessage {
+                role: AgentRole::User,
+                parts: vec![AgentPart::Text("summarize this".into())],
+                at: 1_000,
+            },
+            AgentMessage {
+                role: AgentRole::Assistant,
+                parts: vec![AgentPart::ToolCall(AgentToolCall {
+                    call_id: "call-empty".into(),
+                    tool: ToolId::from_wire_name(""),
+                    arguments: json!(""),
+                    reasoning: None,
+                })],
+                at: 1_001,
+            },
+            AgentMessage {
+                role: AgentRole::Tool,
+                parts: vec![AgentPart::ToolResult(AgentToolResult {
+                    call_id: "call-empty".into(),
+                    content: json!({ "available": false }),
+                    elided: false,
+                })],
+                at: 1_002,
+            },
+        ];
+
+        let request = build_request("sys", &[], &transcript);
+        assert_eq!(request.messages.len(), 1, "only the user message survives the replay");
+        assert_eq!(request.messages[0].role, ChatRole::User);
+    }
+
+    #[test]
+    fn tool_arguments_always_replay_as_a_json_object() {
+        // A truncated tool call leaves a bare string behind. OpenAI-compatible endpoints
+        // reject `"arguments": ""` outright ("must be in JSON format"), so an empty object
+        // goes out instead: the tool's own validation answers it, and the model recovers.
+        let call = AgentPart::ToolCall(AgentToolCall {
+            call_id: "call-1".into(),
+            tool: ToolId::InspectFile,
+            arguments: json!(""),
+            reasoning: None,
+        });
+        let parts = agent_part_to_genai(&call, &ToolNames::new());
+        let [ContentPart::ToolCall(genai_call)] = parts.as_slice() else {
+            panic!("expected one tool call part");
+        };
+        assert_eq!(genai_call.fn_arguments, json!({}));
     }
 
     #[test]

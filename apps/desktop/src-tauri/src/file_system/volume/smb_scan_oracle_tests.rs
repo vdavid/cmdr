@@ -25,8 +25,8 @@ use crate::file_system::listing::caching_test_support::{TestListing, TestListing
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_system::volume::smb::{SmbConnectionParams, SmbVolume, connect_smb_volume};
 use crate::file_system::volume::smb_volume_id;
+use cmdr_smb::volume::{SmbConnectionParams, SmbVolume, connect_smb_volume};
 
 fn make_file_entry(name: &str, parent: &str, size: u64) -> FileEntry {
     FileEntry {

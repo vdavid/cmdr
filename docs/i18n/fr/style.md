@@ -215,6 +215,11 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   `fileOperations.trash.undonePartial` gained a `{skipped}` driver for exactly this reason, so its second half now
   accords normally : « … ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other
   {éléments sont restés}} dans la corbeille. »
+- **❌ Jamais d'article défini devant `{countText}`.** L'anglais écrit sans broncher « the {countText} items », y
+  compris quand la branche `one` donne « the 1 item » ; « les 1 élément » est simplement faux. Quand la source marque la
+  totalité par `the`, portez-la par `tout` et sortez le nombre de la portée de l'article : « Cmdr a supprimé tout ce
+  qu'il avait écrit : {countText} éléments. » Exemple travaillé : `glossary.md` § La notification après un retour en
+  arrière interrompu.
 - Write `many` identical to `other` unless the message really formats compact/large values: plain integers never select
   `many`, but parity and the plural check both want the branch. This is what the whole `fr` set does.
 
@@ -260,6 +265,10 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   notification qui porte déjà « Impossible de … : », donc la valeur commence directement par l'observation et jamais par
   un second « Impossible de … ». Elle garde sa majuscule initiale, comme toutes les valeurs `errors.*`. Exemple
   travaillé : `glossary.md` § Éjection et déconnexion refusées.
+- **« appareil photo » + « photo » dans la même proposition : passer par l'incise `pour une photo, …`.** « les détails
+  de l'appareil photo d'une photo » colle deux `photo` ; on écrit
+  `…, et, pour une photo, les détails de l'appareil photo et la localisation`. Termes et preuves : `glossary.md` § Ce
+  qu'Ask Cmdr lit à l'intérieur d'un fichier.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

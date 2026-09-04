@@ -54,8 +54,9 @@ pub fn active_watch_count() -> usize {
 
 /// Handle for a live archive content watch. Holding it keeps the watch running;
 /// dropping it stops the OS watch (via the `Debouncer`'s `Drop`) and releases the
-/// live-count slot.
-pub struct ArchiveContentWatch {
+/// live-count slot. Crate-private: `ArchiveVolume::start_content_watch` is the
+/// one caller, and the host reaches the watch only through the volume.
+pub(crate) struct ArchiveContentWatch {
     #[allow(dead_code, reason = "held only to keep the debouncer (and its OS watch) alive")]
     debouncer: Debouncer<RecommendedWatcher, RecommendedCache>,
 }
@@ -80,7 +81,7 @@ impl Drop for ArchiveContentWatch {
 /// archive. `cache` is the volume's own `ArchiveIndexCache`, shared so the
 /// callback can invalidate it. `host` supplies both the runtime the callback
 /// spawns onto and the listing seam the refresh goes through.
-pub fn start_watch(
+pub(crate) fn start_watch(
     archive_path: PathBuf,
     parent_volume_id: String,
     cache: Arc<ArchiveIndexCache>,

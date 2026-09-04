@@ -5,6 +5,9 @@
 //! its own: the breakdown must be COMPLETE (every skip counted) while staying bounded for
 //! a 1M-item op. It manages that by keeping one entry per [`SkipReason`] variant, so
 //! counts are exact and never a sample — there's no cut to disclose (invariant 9).
+//!
+//! Both reversal families tally through this: the journal-driven Roll back and the
+//! in-flight one a cancel runs (`file_system::write_operations::reversal`).
 
 use std::path::Path;
 
@@ -27,14 +30,14 @@ pub struct SkipBreakdown {
 /// Accumulates a run's skips into per-reason groups, in first-seen order (the engine's
 /// own reversal order, so the result is deterministic for a given operation).
 #[derive(Debug, Default)]
-pub(super) struct SkipTally {
+pub(crate) struct SkipTally {
     groups: Vec<SkipBreakdown>,
 }
 
 impl SkipTally {
     /// Count one skipped item. `path` is where the undo found the item; its leaf name
     /// becomes the group's example if this is the first item for `reason`.
-    pub(super) fn record(&mut self, reason: SkipReason, path: &Path) {
+    pub(crate) fn record(&mut self, reason: SkipReason, path: &Path) {
         // A linear scan over at most one entry per SkipReason variant.
         if let Some(group) = self.groups.iter_mut().find(|g| g.reason == reason) {
             group.count += 1;
@@ -50,7 +53,7 @@ impl SkipTally {
         });
     }
 
-    pub(super) fn into_breakdowns(self) -> Vec<SkipBreakdown> {
+    pub(crate) fn into_breakdowns(self) -> Vec<SkipBreakdown> {
         self.groups
     }
 }

@@ -1866,3 +1866,194 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   Inga citattecken behövs: svenskan sätter ingen kasusändelse på namnet, så vilket mappnamn som helst passar.
 - Inga `sameAsSourceJustification` · alla fem värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
   så ICU:s dubblering `''` blir aldrig aktuell. `{folder}` står oförändrad.
+
+## Toasten efter en ångrad kopia eller flytt (2026-08-31; de 18 `fileOperations.cancelRollback.*` + omskrivna `rollbackConfirm.body`)
+
+Toasten som rapporterar vad ångringen hann med: en rubrik (hel, delvis, eller stoppad ångring), raden som sätter
+förväntan, och en punktlista med ett skäl per rad. Raderna är nästan en kopia av `askCmdr.renameUndo.skipReason.*`, och
+två av dem har teckenidentisk engelska, så `i18n-terms` kräver identisk svenska. Nya beslut:
+
+- **”Left {name} alone” → `{name} lämnades som den är`** · redan satt i katalogen
+  (`askCmdr.renameUndo.skipReason.drift`/`.unverifiable`/`.folderNotEmpty`), och `folderNotEmpty.named`/`.counted` har
+  dessutom exakt samma engelska sträng som sina renameUndo-syskon, så de två värdena är kopierade tecken för tecken.
+  `unverifiable.named` är nästan identisk men inte riktigt (apostrofen är böjd i `renameUndo`, dubblerad i
+  `cancelRollback`), så `i18n-terms` binder den inte — svenskan är ändå densamma, för det är samma mening. macOS `sv`
+  belägger verbet i samma betydelse: ”Om du vill lämna filen orörd och jobba med en kopia klickar du på Duplicera” ·
+  `high`. ❌ Inte `Lät {name} vara` (som annars hade knutit an till knappen `Låt det vara`): det hade gett en engelsk
+  mening två svenska namn.
+- **”Left {name} where it is” (`spotTaken`) → `{name} lämnades där den ligger`** · engelskan byter medvetet ram just
+  här, eftersom ”lämna i fred” vid en flytt betyder att objektet blir kvar på det NYA stället; svenskan byter med ·
+  `high`.
+- **”something else now sits where it came from” → `något annat finns nu där den kom ifrån`** · `kom ifrån` är
+  katalogens egen formulering för ursprungsplatsen (`rollbackConfirm.bodyUndoByMovingBack`: ”dit de kom ifrån”) ·
+  `high`. ❌ Inte `platsen den kom ifrån är upptagen`, trots att macOS `sv` belägger `upptaget` om ett taget namn
+  (”minst ett av dem med namnet ”^0” är upptaget”): den formen låter likadant som grannskälet `nameTaken` i
+  `askCmdr.renameUndo` (”det gamla namnet är taget igen”), och två olika skäl ska gå att skilja åt. `finns nu` i stället
+  för `ligger nu` bara för att inte säga `ligger` två gånger i samma rad.
+- **”it changed after Cmdr put it there” → `den ändrades efter att Cmdr lade den där`** · systerraden
+  `askCmdr.renameUndo.skipReason.drift.named` säger `den ändrades efter namnbytet`, så bara bestämningen byts ut.
+  `lade den där` håller sig i `lägga`-familjen (`Lade tillbaka …`) och täcker både kopian som skrev filen och flytten
+  som bar den dit · `high`.
+- **”Removed …” (det ångringen tar bort) → `Raderade …`** · `radera` är katalogens ord för att ta bort filer från disk
+  (style.md § delete), och alla tre `rollbackConfirm.bodyUndo*` säger redan `raderar` om exakt den här handlingen ·
+  `high`. ❌ Inte `Tog bort`: `ta bort` är reserverat för att plocka bort något ur en lista. Samma svenska som
+  `operationLog.summary.delete` (”Raderade {countText} objekt”), fast engelskan där säger `Deleted`: svenskan skiljer
+  inte på `remove` och `delete` när det gäller filer på disk.
+- **”Put … back” → `Lade tillbaka …`** · `fileOperations.trash.undone` säger redan `Lade tillbaka` om samma handling,
+  och Finders menypost `Lägg tillbaka` är källan (§ Papperskorgs-toasten) · `high`.
+- **Bestämd totalitet (”the {countText} items”) → `allt …: {countText} objekt`** · svenskan kan inte sätta bestämd
+  artikel framför en `*Text`-placeholder, så hela och delvisa rubriker skiljs åt med `allt` plus kolon:
+  `Raderade allt Cmdr hade skrivit: {countText} objekt` mot `Raderade {countText} objekt`, och
+  `Lade tillbaka allt: {countText} objekt` mot `Lade tillbaka {countText} objekt`. Konventionen och varför artikeln inte
+  går: style.md § Plurals · `high`.
+- **”Stopped after removing …” → `Stoppade efter att ha raderat …`** · `Stoppa` är det satta verbet för att stoppa
+  själva ångringen (§ Frågan som stoppar en kö-rad; macOS Finder ”stoppa processen och behålla en delvis kopia”) ·
+  `high`. Subjektslöst preteritum som resten av toastfamiljen.
+- **”The rest are still there.” → `Resten ligger kvar.`, ”The rest stayed where the move put them.” →
+  `Resten ligger kvar där flytten lade dem.`** · `ligga kvar` är katalogens ord för något som blir stående
+  (`fileExplorer.pane.directConnection*`, `trash.undonePartial`), och `flytten` är katalogens substantiv för själva
+  flyttåtgärden (”Enheten kopplades från under flytten”) · `high`. Den korta varianten räcker för kopian: `ligga kvar`
+  säger redan ”där de är”, och det är bara flytten som behöver peka ut vilken plats.
+- **`leftBehind`: ”so these stayed where they are:” → `så det här blev kvar:`** · första halvan är ordagrant
+  `rollbackConfirm.body`/`bodyUndo*` (`Cmdr hoppar över allt som är osäkert`) och andra halvan är deras egen svans
+  (`så en del kan bli kvar`) i preteritum, så toasten läses som samma utfästelse som dialogen användaren nyss läste ·
+  `high`. ❌ Inte `så det här ligger kvar där det är:` — pleonasm, och raden står direkt under `Resten ligger kvar`.
+- **”Couldn't undo {name}.” → `Det gick inte att ångra {name}.`** · katalogens standardram för något som inte gick
+  igenom (`errors.eject.*`, `fileExplorer.pane.directConnection*`), och den lägger inte skulden på Cmdr när det är
+  enheten som sa nej · `high`. `Cmdr kunde inte ångra …` (som `askCmdr.renameUndo.refusedBatches`) är också gångbart,
+  men där har engelskan `Cmdr` utsatt och här inte.
+- **”Its drive may be disconnected or read-only.” → `Enheten den ligger på kan vara frånkopplad eller skrivskyddad.`** ·
+  `enhet`, `koppla från` → `frånkopplad` och `skrivskyddad` är alla satta sedan tidigare · `high`. `dess enhet` finns i
+  katalogen (`trash.undoUnavailable`), men blir styltigt först i en mening.
+- **`rollbackConfirm.body` fick engelskans nya tredje löfte** · andra meningen är nu teckenidentisk med
+  `bodyUndoByDeleting` (”Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.”), enligt style.md § Notes and
+  decisions om att syskonvarianter delar ram. Kommat före `och` står kvar: båda satserna är långa nog att läsaren
+  behöver pausen.
+- `item` → `objekt` och `folder` → `mapp`/`mappar` oförändrat. `objekt` och verben böjs inte för numerus, så båda
+  ICU-grenarna blir identiska; de skrivs ut ändå.
+- Inga `sameAsSourceJustification` · alla 18 värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
+  så ICU:s dubblering `''` blir aldrig aktuell.
+
+### `cancelRollback.stagedLeftover.*` (Cmdrs egna rester på målplatsen)
+
+Nya 2026-09-02. Två rader om en arbetsfil som Cmdr själv skapat och inte lyckats ta bort från målplatsen. De hör INTE
+till `reason.*`-listan: där skyddar Cmdr användarens filer, här handlar det om Cmdrs egen rest.
+
+- **`unfinished copy` → `ofullständig kopia`** · `ofullständig` är Apples ord för "incomplete" (macOS `LA33`: "skadad
+  eller ofullständig"), `kopia` substantivet i `NE111` ("behålla en återupptagbar kopia") · `high`
+- **`at the destination` → `på målplatsen`** · katalogens ord (`conflictsUnknown`, `stallWaitingDestination`) · `high`
+- **`transfer` (substantiv) → `överföring`** · katalogen säger redan så
+  (`errors.listing.deviceReconnecting.explanation`: "efter en avbruten överföring") · `high`
+- **`Cmdr clears it` → `Cmdr rensar bort den`** · `rensa bort` i stället för `radera`, eftersom det är Cmdrs egen
+  arbetsfil och inte användarens · `high`
+- ⚠️ **`vid en senare överföring`, ❌ aldrig "nästa gång".** Cmdrs rensning hoppar över allt som är yngre än en timme,
+  så ett omedelbart nytt försök rensar ingenting. Ett löfte som inte håller är precis det fel den här raden finns för
+  att ta bort.
+
+## Blockskärmen när WebKit är för gammalt (`main.oldWebkit.*`, 2026-09-02)
+
+Tre strängar som Cmdr visar i stället för sitt gränssnitt när Macens Safari är för gammalt. De bor i HTML-skalet, inte i
+appen, så det här är det enda personen kommer att se av Cmdr.
+
+- **`Software Update` → `Programuppdatering`** · macOS namn på panelen i Systeminställningar; Tier 1-spåret i Finder
+  bekräftar ordet (`Apple Device Software Update File` → `Programuppdateringsfil för Apple-enhet`) · `high`. Inte
+  `Mjukvaruuppdatering`, som är den engelskpåverkade formen.
+- **`Quit` → `Avsluta`** · macOS AppKit-nyckeln `Quit` → `Avsluta` · `high`. Saknades i glossaret, står här nu.
+- **Genitiv på varumärket går bra på svenska: `Cmdrs gränssnitt`.** (Tyskan förbjuder sitt `Cmdrs`; det är en tysk
+  regel, inte en allmän.)
+- **`Safari`, `Mac` och `15.4` står kvar.** `Safari` ligger nu i `BRAND_WORDS`.
+
+## Aviseringen om gammal macOS (`main.oldMacos.*`, 2026-09-02)
+
+En engångsdialog på en Mac under macOS 12: Cmdr startar, men ligger utanför det testade spannet. Tonen är ärlig och
+avspänd, varken ursäkt eller varning, för appen fungerar ju.
+
+- **`supported` → `har stöd för` / `stöds`** · macOS Finder (`… eftersom den inte stöds.`) · `high`.
+- **`X and up` → `X och senare`** · macOS SystemSettings (`… kräver OS X %@ eller senare.`) · `high`.
+- **`best effort` → `så gott det går`** · pilen har ingen term för det (bara QoS-definitioner för nätverk) · `high` för
+  omskrivningen. Medvetet ingen översättningslån.
+- **`look off` → `se konstiga ut`** · vardagligt, och det undviker `fel`/`misslyckades` som rösten förbjuder.
+- **Inget komma före `och` mellan de två korta huvudsatserna** i mening två, enligt § Notes and decisions i `style.md`.
+- **Sista meningen är David i jag-form**, med `du`, som `onboarding.stepBeta.greeting`.
+
+## Ask Cmdr tittar in i filer: samtyckestexten och verktygsraden (2026-09-02; `askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`)
+
+Ask Cmdr kan nu läsa en begränsad del av en fil på begäran (`inspect_file`): några rader ur en textfil, några PDF-sidor
+med titel och författare, fillistan i ett arkiv, eller en bilds EXIF-uppgifter med plats. `contentsRule` ersätter den
+gamla `consent.noContents`; dess två sista meningar (bildsökningen; förslag väntar på godkännande) är återanvända
+ordagrant från den gamla översättningen, med `Fotosökningen`/`fotona` justerade till `Bildsökningen`/`bilderna` enligt
+kvalitetspassets beslut (`photo` → `bild`, uniformt). Återanvänder `arkiv`, `bild`/`bilder`, `leverantör`, `tagg(ar)`,
+`rad`/`rader`, `namnbyte`, `upprensningar`, `bildsökningen`. Nya/satta termer:
+
+- **look inside (a file) → `titta in i`** · verktygsraden `Tittar in i filer` / `Tittade in i filer` följer syskonen
+  `Tittar på ett förslag`/`Tittade på ett förslag` och `Läser vad som finns i dina bilder` (samma verbform, samma
+  längdklass); `whatsNew.body` säger `titta in i en fil du frågar om`. Inget belägg i högen för just den här AI-frasen;
+  vald för att `titta in i` är den idiomatiska svenskan för ”look into” och tydlig med ett filobjekt efter sig (utan
+  objekt kan `titta in` betyda ”hälsa på”, men den läsningen finns inte här). `inuti` står kvar som preposition i
+  löpande text (`consent.memory`: ”känt igen inuti dina foton”) · `tentative` (stilval utan direkt belägg; syskonstyrt).
+- **thumbnail → `miniatyr`** (neutrum; plural `miniatyrer`) · MS-terminologi (`thumbnail` → `miniatyr`, neutrum), macOS
+  AppKit (`Miniatyrstorlek:`, ”liten/medelstor/stor miniatyrstorlek”), Total Commander (`&Miniatyrer`, ”Läs in markerade
+  miniatyrer på nytt”). Nautilus/Thunar säger `miniatyrbilder`; det kortare `miniatyr` är förstapartsordet och det gamla
+  `noContents` använde redan `miniatyrer` · `high`.
+- **camera details (a photo's EXIF fields: model, lens, exposure) → `kamerauppgifter`** · `kamera` är belagt överallt
+  (MS `camera` → `kamera`, macOS `NSStillCameraTemplate` → `kamera`, Thunar `Kamera`, Nautilus `Kameramärke`/
+  `Kameramodell`); efterledet `-uppgifter` är katalogens eget ord för filmetadata
+  (`askCmdr.renameReview.evidence.metadata` = ”Filuppgifter, inte innehållet”, `filuppgifterna`), så sammansättningen
+  läses som ”bildens kamera-metadata”. ❌ Inte `kameradetaljer`: `detaljer` är reserverat för det expanderbara avsnittet
+  (`tekniska detaljer`) · `high` (belagd förled + katalogets efterled).
+- **location (where a photo was taken) → `var den togs`**, inte `plats` · `plats` är det satta ordet för `location` i
+  filsystemsmening (macOS Finder `Plats`, MS `plats`, Nautilus/Thunar/Dolphin `Plats`), och direkt efter ”en bilds”
+  skulle `plats` läsas som var FILEN ligger, vilket är precis det samtyckestexten inte handlar om. Bisatsen säger vad
+  engelskans ”location”/”where it was taken” faktiskt betyder: `en bilds kamerauppgifter och var den togs`
+  (`item.contents`, `whatsNew.body`), `inklusive var den togs` (`contentsRule`) · `high` (belagd term medvetet undviken;
+  bisatsen är entydig).
+- **title and author (a PDF's document metadata) → `titel och författare`** · `titel`: macOS AppKit `Title` → `Titel`,
+  katalogen (`Chattens titel`); `författare`: MS-terminologi (`author` → `författare`). Dolphin säger `Upphovsman`, som
+  är könsmarkerat och utgår; MS:s `title` → `äganderätt` är den juridiska betydelsen och fel här.
+  `tillsammans med dess titel och författare` · `high`.
+- **page(s) (of a PDF) → `sida`/`sidor`** · MS-terminologi (`page` → `sida`); `några sidor ur en PDF`, `PDF-sidor`
+  (bindestreck efter initialförkortning som i `zip-arkiv`, `API-nyckel`). macOS Finders `Pages` är appnamnet, inte ordet
+  · `high`.
+- **the list of files inside an archive → `vilka filer som finns i ett arkiv`**; what's inside an archive →
+  `vad som finns i ett arkiv` · `listan över filerna i ett arkiv` är en kalk; svenskan säger naturligt ”vilka filer som
+  finns i”. Samma ram (`… som finns i ett arkiv`) i alla tre nycklarna så att listan och stycket läses som en röst ·
+  `high` (idiomatisk omskrivning; `arkiv` satt sedan arkivpasset).
+- **some text / some lines of text / some of its text → `lite text` / `några rader text` / `en del av texten`** · tre
+  engelska formuleringar, tre svenska efter sammanhang: listpunkten (`lite text`), stycket (`några rader text`, `rad` =
+  textrad enligt visarpasset), nyhetsrutan (`en del av texten`) · `high`.
+- **whole files → `hela filer`** · ”Cmdr skickar aldrig hela filer, bilder eller miniatyrer”; det gamla
+  `själva filerna: inget filinnehåll` gick inte att behålla eftersom texten nu just LOVAR att en del innehåll skickas ·
+  `high`.
+- **`it` (= Cmdr) i meningen ”it can read a limited part of it” → `Cmdr`** · katalogkonventionen (Ask Cmdr-passet:
+  upprepa Cmdr i stället för ett pronomen när meningen beskriver Cmdrs eget beteende); här hade `den … av den` dessutom
+  syftat på två olika saker. `så att den kan hitta dem` står kvar: `den` = leverantören i samma mening · `high`.
+- **Uppräkning vars sista led själva innehåller `och` → `samt` före sista ledet** · `item.contents`: ”lite text,
+  PDF-sidor, vad som finns i ett arkiv samt en bilds kamerauppgifter och var den togs”. Utan `samt` hade det blivit ”… i
+  ett arkiv och en bilds … och var den togs”, två `och` i rad med olika räckvidd. Regel: style.md § Notes and decisions
+  · `high`.
+- Kommat före `eller` i `contentsRule` (”…, vilka filer som finns i ett arkiv, eller en bilds kamerauppgifter, …”) står
+  kvar: leden är långa och läsaren behöver pausen (style.md § komma före `och`/`eller`). I `whatsNew.body` är leden
+  kortare och kommat borta.
+- Inga `sameAsSourceJustification` · alla fem värden skiljer sig från engelskan, och inget värde innehåller en apostrof,
+  så ICU:s dubblering `''` blir aldrig aktuell. `PDF`, `Cmdr` och `Ask Cmdr` står oböjda.
+- **Uppföljning, samma pass: `askCmdr.empty.hint` och `settings.askCmdr.intro`** · båda bar det gamla löftet ”aldrig
+  filinnehåll”/”är skrivskyddad … ändrar aldrig något”, som inte längre stämmer. Första meningen i vardera behålls
+  ordagrant; andra meningen säger nu de tre faktan med de satta orden: `läser namn, sökvägar och storlekar`,
+  `tittar in i en fil bara när du frågar om den` (samma `titta in i` som verktygsraden och `whatsNew.body`), och
+  `ändrar aldrig en fil utan ditt godkännande` (`godkänna` som i `contentsRule`: ”förrän du godkänner det”). ❌ Inte
+  `skrivskyddad`/`ändrar aldrig något`: den skriver egna anteckningar och föreslår namnbyten. Kommat före det sista
+  `och` står kvar i båda: leden är långa, och i `empty.hint` skiljer det sats-`och` från uppräknings-`och` · `high`.
+
+## Rollback-knappens två knappbeskrivningar (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Ny yta: knappbeskrivningen säger nu vad just DEN här ångringen gör med filerna, och knappen stängs av så snart en flytt
+mellan två filsystem har nått sitt sista steg (originalen tas bort, allt ligger redan på målet).
+
+- **`rollbackTooltipStopAndMoveBack` → `Stoppa och lägg tillbaka alla filer som flyttats hittills`** · syskonet
+  `rollbackTooltip` ger ramen (`Stoppa och …`), och `lägga tillbaka` är katalogens satta verb för att flytta något till
+  sin gamla plats (`cancelRollback.doneMovingBack`: ”Lade tillbaka allt”) · `high`. ❌ Inte `radera`: en flytts ångring
+  tar inte bort något.
+- **`rollbackAlreadyLandedTooltip`** · första satsen tar samma bild som `cancelRollback.moveAlreadyLanded` (”finns redan
+  på målet”), `ångra` är det satta verbet för rollback (`rollbackUnavailableTooltip`: ”går inte att ångra”), och
+  `Avbryt` är knappens egen etikett (`fileOperations.button.cancel`), så den står oböjd · `high`.
+- Inga `sameAsSourceJustification`; ingen apostrof i värdena, så ICU-dubbleringen `''` blir aldrig aktuell.

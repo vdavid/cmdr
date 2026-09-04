@@ -193,6 +193,12 @@ Dateien".
   "Cmdrs" also trips `desktop-i18n-dont-translate` (it scans for the verbatim token "Cmdr").
 - **Length: German is the worst overflow risk of the three** (often 20–35% longer than English, plus long compounds).
   Overflow-check the layout hard against the pseudolocale (`en-XA`); look for clipped buttons, labels, and toasts.
+- **Ein Rückverweis auf `{name}` nimmt das Katalogwort, nie ein Pronomen.** `{name}` trägt einen fremden Dateinamen,
+  also kein Genus, auf das sich „es“/„sie“ stützen könnte. Wo der zweite Satzteil auf das Objekt zurückkommt, steht das
+  Nomen: „Habe {name} unverändert gelassen: **das Objekt** hat sich geändert …“
+  (`fileOperations.cancelRollback.reason.*`), „… ob sich **die Datei** geändert hat“
+  (`askCmdr.renameUndo.skipReason.*`). Possessive („sein alter Ort“) fallen aus demselben Grund weg; nimm den Artikel
+  („am alten Ort“). Belege und die Wortwahl: `glossary.md` § Der Toast nach einem abgebrochenen Vorgang.
 - **Case-marked placeholders are a trap.** A `{name}` that lands in a genitive/dative slot can't be inflected by the
   catalog. Restructure the sentence so the placeholder stays nominative, or carries its own preposition.
 - **German case marking is what breaks aria containment** (the shared rule: `../../guides/i18n-translation.md` § An
@@ -231,6 +237,9 @@ Dateien".
   Fortschrittslabel und Bestätigungs-Toast denselben Stamm (`hinzufügen` → `Wird hinzugefügt …` → `hinzugefügt` →
   `kommt … hinzu`). Das Englische wechselt hier freier („add“, „join“); im Deutschen wirkt der Wechsel wie zwei
   verschiedene Vorgänge.
+- **Metadaten heißen `…angaben`, nicht `…daten` oder `…details`.** Der Katalog nennt Dateimetadaten `Dateiangaben`
+  („Dateiangaben, nicht der Inhalt“) und die EXIF-Daten eines Fotos entsprechend `Kameraangaben`. Neue Metadaten-Arten
+  folgen dem Muster. Belege: `glossary.md` § Ask Cmdr schaut jetzt in Dateien hinein.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -244,6 +253,10 @@ The formality and move calls are now settled from the sources (see above); the o
   constructions. Details and the runners-up: `glossary.md` § Stalled transfer. Also worth an eye during the overflow
   check: the queue row's German is noticeably wider than the ETA text it replaces ("Kein Fortschritt seit 2 Min. 30 s"
   vs "noch 2 Min. 30 s").
+- **`Autor` in `askCmdr.consent.contentsRule`** (tentative): the PDF metadata field is „Autor:in“ in Apple's German
+  Preview inspector, and the gender-glyph ban (screen readers) rules that form out. Shipping the bare field name
+  `Autor`; the neutral rewrites („wer es verfasst hat“, „Verfasserangabe“) read stilted inside the list. Confirm, or
+  pick a rewrite. Evidence: `glossary.md` § Ask Cmdr schaut jetzt in Dateien hinein.
 - **`Systemintegritätsschutz` vs Apple's on-screen `System-Integrationsschutz`** (product-voice call, currently shipping
   the first). `errors.mutation.sipProtected` uses Apple's German DOCUMENTATION name for System Integrity Protection.
   Apple's German Finder shows a different word in exactly one string, and it's a visible mistranslation (Integration

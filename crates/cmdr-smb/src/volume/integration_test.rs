@@ -3,8 +3,9 @@
 //! streaming smoke tests, the copy and conflict scans, and space info.
 //!
 //! The session's own behavior (connection gates, reconnect, the scan pool,
-//! supersede) is `session_integration_test.rs`; the full byte path is
-//! `streaming_integration_test.rs`.
+//! supersede) is `session_integration_test.rs`; the byte path is
+//! `read_stream_integration_test.rs`, `write_stream_integration_test.rs`, and
+//! `wire_shape_integration_test.rs`.
 //!
 //! Every test here is `#[ignore]`d so default runs skip it. Start the containers
 //! with `apps/desktop/test/smb-servers/start.sh`, then run
@@ -12,7 +13,7 @@
 
 use super::test_support::*;
 use super::*;
-use cmdr_fs::volume::InMemoryVolume;
+use cmdr_fs::volume::{InMemoryVolume, SpaceInfo};
 
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
@@ -474,7 +475,15 @@ async fn smb_integration_scan_for_conflicts() {
 async fn smb_integration_space_info() {
     let vol = make_docker_volume().await;
     let space = vol.get_space_info().await.unwrap();
-    assert!(space.total_bytes > 0);
-    assert!(space.available_bytes > 0);
-    assert!(space.used_bytes <= space.total_bytes);
+    let SpaceInfo::Bounded {
+        total_bytes,
+        available_bytes,
+        used_bytes,
+    } = space
+    else {
+        panic!("a share always has a size, got {space:?}");
+    };
+    assert!(total_bytes > 0);
+    assert!(available_bytes > 0);
+    assert!(used_bytes <= total_bytes);
 }

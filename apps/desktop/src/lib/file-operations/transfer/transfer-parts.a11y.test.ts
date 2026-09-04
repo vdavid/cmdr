@@ -1,7 +1,7 @@
 /**
- * Tier 3 a11y tests for the presentational pieces the transfer dialogs compose:
- * the compression controls, the direction arrow, the scan-phase body, and the
- * variant-derived error copy.
+ * Tier 3 a11y tests for the presentational pieces the transfer dialogs and toasts
+ * compose: the compression controls, the direction arrow, the scan-phase body,
+ * the variant-derived error copy, and the cancelled-rollback summary.
  *
  * One file per component would cost about five times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -56,6 +56,7 @@ import CompressLevelControl from './CompressLevelControl.svelte'
 import DirectionIndicator from './DirectionIndicator.svelte'
 import FallbackErrorContent from './FallbackErrorContent.svelte'
 import ScanPhaseBody from './ScanPhaseBody.svelte'
+import CancelRollbackToastContent from './CancelRollbackToastContent.svelte'
 
 /** A fresh container, appended to the document and ready to mount into. */
 function container(): HTMLDivElement {
@@ -295,6 +296,55 @@ describe('ScanPhaseBody a11y', () => {
         scanBytesPerSec: null,
         scanCurrentDir: '/Volumes/External/very/deeply/nested/folder/structure/with/many/levels/of/depth/subdir',
         currentFile: 'a-file-with-a-rather-long-name-that-exceeds-the-container-width.txt',
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `CancelRollbackToastContent.svelte`.
+ *
+ * Two shapes, because they differ structurally rather than only in wording: the
+ * one-line summary a clean reversal gets, and the headline + explanation + list
+ * a reversal that left things behind gets. The list is the half worth checking:
+ * a screen reader has to reach every leftover, not just the first.
+ */
+describe('CancelRollbackToastContent a11y', () => {
+  it('has no a11y violations on a clean reversal', async () => {
+    const target = container()
+    mount(CancelRollbackToastContent, {
+      target,
+      props: {
+        readout: {
+          headline: 'Removed the 3 items Cmdr had written.',
+          leftBehind: null,
+          reasons: [],
+          staged: null,
+          level: 'success',
+        },
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('has no a11y violations when it lists what stayed behind', async () => {
+    const target = container()
+    mount(CancelRollbackToastContent, {
+      target,
+      props: {
+        readout: {
+          headline: 'Removed 9 items.',
+          leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
+          reasons: [
+            'Left notes.md alone: it changed after Cmdr put it there.',
+            'Left 3 folders alone: they have something in them now.',
+          ],
+          staged: null,
+          level: 'info',
+        },
       },
     })
     await tick()

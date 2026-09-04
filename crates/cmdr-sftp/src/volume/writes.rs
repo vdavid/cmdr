@@ -235,7 +235,7 @@ impl SftpVolume {
                     self.remove_partial(&session, &remote).await;
                     return Err(e);
                 }
-                self.notify_created(dest).await;
+                cmdr_fs::volume::patching::patch_created(self, dest).await;
                 Ok(written)
             }
             Err(e) => {

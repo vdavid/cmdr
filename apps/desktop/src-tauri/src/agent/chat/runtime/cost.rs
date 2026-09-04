@@ -35,7 +35,11 @@ pub(super) fn meter_cost(conn: &rusqlite::Connection, params: &TurnParams<'_>, u
 
 /// The local-day `YYYY-MM-DD` for the cost meter, from the send clock and the captured
 /// offset (so the day matches the envelope's local timestamp).
-fn day_for(now_secs: i64, offset: FixedOffset) -> String {
+///
+/// ⚠️ **The one place a day is computed.** The wake loop's daily ceiling reads the meter back by
+/// this key, and a second implementation of "which day is it" would let the two disagree across
+/// a midnight or a timezone move.
+pub(crate) fn day_for(now_secs: i64, offset: FixedOffset) -> String {
     let utc = Utc
         .timestamp_opt(now_secs, 0)
         .single()

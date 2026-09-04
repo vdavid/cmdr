@@ -2229,3 +2229,207 @@ CE QUI revient : l'ancien nom.
   laisse croire que le dossier lui-même va disparaître, et c'est le bug que cette clé corrige.
 - Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais. Seul l'avis contient des apostrophes,
   doublées comme le veut l'ICU ; le `{folder}` est inchangé.
+
+## La notification après un retour en arrière interrompu (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`, 2026-08-31)
+
+Nouvelle surface : l'utilisateur a lancé une copie ou un déplacement, a demandé le retour en arrière, et cette
+notification dit ce que le retour a pu défaire. Elle empile jusqu'à trois parties : un titre (une seule des six clés),
+la ligne `leftBehind`, puis la liste à puces des `reason.*`. Le ton est « Cmdr a fait attention », jamais une excuse ni
+une alerte.
+
+- **Le moule des `reason.*` est celui d'`askCmdr.renameUndo.skipReason.*`, repris tel quel** : « {name} laissé tel quel
+  : <raison>. » et « {countText} {count, plural, …} tels quels : <raison>. » · le catalogue lui-même · high. C'est la
+  même mécanique produit (Cmdr refuse de toucher ce qu'il ne peut pas rapprocher de ce qu'il a écrit), donc les deux
+  listes doivent se lire pareil. **Deux clés ont un anglais mot pour mot identique à leur sœur `renameUndo`**
+  (`folderNotEmpty.named` et `folderNotEmpty.counted`) : leurs valeurs `fr` sont strictement identiques, sinon
+  `i18n-terms` le signale, à juste titre. `unverifiable.named` s'en approche mais n'est pas identique (l'apostrophe est
+  courbe côté `renameUndo`, doublée côté `cancelRollback`), donc `i18n-terms` ne la contraint pas : le `fr` reste
+  identique quand même, parce que c'est la même phrase.
+- **`item` → `élément`, pas `fichier`.** Les sœurs `renameUndo` disent `fichier` parce que leur anglais dit « file » ;
+  ici l'anglais dit « item » et couvre les dossiers créés par l'opération · `élément` du glossaire (macOS Tier 1) ·
+  high. Ne pas uniformiser les deux familles sur un seul nom.
+- **`laissé` reste au masculin singulier devant un `{name}` inconnu**, comme dans `renameUndo.skipReason.drift.named`.
+  Ce n'est pas un accord au petit bonheur : `fichier`, `dossier` et `élément` sont tous masculins, donc le nom implicite
+  est masculin quel que soit le nom de fichier qui arrive · high.
+- **Les titres « complets » (`doneDeleting`, `doneMovingBack`) portent la totalité par `tout`, jamais par un article
+  devant le nombre.** « Cmdr a supprimé tout ce qu'il avait écrit : {countText} éléments. » et « Cmdr a tout remis en
+  place : {countText} éléments. » ❌ Pas `les {countText} éléments` : la branche `one` donnerait « les 1 élément ».
+  L'anglais a le même problème et le règle autrement, en passant la phrase entière dans le pluriel pour que sa branche
+  `one` puisse dire « the item » sans le nombre ; le deux-points suivi du décompte met le nombre hors de portée de
+  l'article, et les deux branches françaises restent identiques · high. `remettre en place` est bien le verbe de
+  `fileOperations.trash.undone`, comme le demande la description de la clé.
+- **Les titres « partiels » (`someDeleted`, `someMovedBack`) reprennent le moule participial du catalogue** («
+  {countText} éléments supprimés. », « {countText} éléments remis en place. »), celui de `trash.undone` et de
+  `askCmdr.renameUndo.applied` · high. Le contraste complet/partiel passe donc par `Cmdr a tout …` contre un simple
+  décompte, ce qui rend exactement le `the` / pas de `the` de l'anglais sans rien promettre de trop.
+- **« Stopped after … » → `Retour en arrière arrêté après …`** · reprend les pastilles du journal
+  (`operationLog.rollback.partiallyRolledBack` « Retour en arrière partiel ») · high. ❌ Écarté : « Cmdr s'est arrêté
+  après avoir supprimé … », plus court et plus actif, mais « Cmdr s'est arrêté » se lit une demi-seconde comme « Cmdr a
+  quitté », ce qu'une notification calme ne peut pas se permettre. Nommer le retour en arrière coûte quelques caractères
+  et lève l'ambiguïté.
+- **« The rest are still there. » → `Les autres sont toujours là.` ; « The rest stayed where the move put them. » →
+  `Les autres sont restés là où le déplacement les avait mis.`** · `déplacement` du glossaire · high. `Les autres`
+  plutôt que `Le reste` : le décompte qui précède fournit l'antécédent pluriel et le participe s'accorde normalement.
+- **`leftBehind` recycle mot pour mot la promesse des confirmations** : « Cmdr laisse de côté tout ce dont il n'est pas
+  sûr » (`rollbackConfirm.bodyUndoByDeleting` et sœurs) · high. La notification répète ainsi la phrase que l'utilisateur
+  venait de lire avant de lancer le retour, ce que demande la description de la clé. La liste des `reason.*` garde
+  `laissé tel quel` : `laisser de côté` (la règle) et `laisser tel quel` (le constat, ligne par ligne) sont assez
+  proches pour ne pas dérouter et assez distincts pour que la ligne d'annonce ne se confonde pas avec ses puces.
+- **« so these stayed where they are: » → `donc voici ce qui n'a pas bougé :`** · high. `voici` annonce la liste à puces
+  qui suit, comme le fait `these` en anglais. ❌ Pas `ce qui est resté en place` : `en place` est déjà pris par
+  `remettre en place` (revenir à l'emplacement d'origine), et ces éléments-là sont justement restés à la DESTINATION.
+- **`spotTaken` : « where it is » → `sur place`, « where it came from » → `sa place d'origine`** · high. `sur place`
+  évite une seconde structure de pluriel dans la version comptée (« … laissés sur place : … leur place d'origine. »), et
+  `place d'origine` fait écho à `remettre en place` : ce qui empêche la remise en place, c'est que la place est prise.
+  Le sujet reste `quelque chose d'autre`, aussi vague que l'anglais, et jamais un pronom qui pourrait renvoyer à Cmdr.
+- **`drift` : « after Cmdr put it there » → `depuis que Cmdr l'a mis là`** · high. `depuis que` calque le
+  `depuis le renommage` de la sœur `renameUndo.skipReason.drift.named` et dit mieux qu'`après que` qu'un changement est
+  survenu entre-temps. Le participe reste invariable à l'oreille (`mis` / `mis`), donc aucun accord ne dépend du
+  `{name}`.
+- **`failed` : « Couldn't undo {name}. » → `Cmdr n'a pas pu revenir en arrière sur {name}.`** · même moule que
+  `operationLog.rollback.refusalUnexpected` (« Cmdr n'a pas pu lancer le retour en arrière. ») et
+  `askCmdr.renameUndo.refusedBatches` · high. Deux pistes écartées : `Retour en arrière impossible pour {name}`, le
+  moule `<nom verbal> impossible` de `style.md`, qui redirait mot pour mot la pastille
+  `operationLog.rollback.notRollbackable` (« pas éligible ») alors qu'ici Cmdr a essayé ; et
+  `Cmdr n'a pas pu annuler {name}`, qui rouvrirait la collision `Annuler` = Cancel que toute la famille
+  `retour en arrière` existe pour éviter.
+- **« Its drive may be disconnected or read-only. » → `Son disque est peut-être déconnecté ou en lecture seule.`** ·
+  macOS Finder `fr` (« Cet emplacement est en lecture seule. », « un volume en lecture seule », vérifié dans le corpus
+  de référence `fr/macOS/Finder/`, 2026-08-31) et le catalogue (`fileExplorer.navigation.locationUnreachableToast`, « Il
+  est peut-être déconnecté. ») · high.
+- **`rollbackConfirm.body` remis à jour** : la première moitié existante est conservée et les deux phrases sont soudées
+  par `, et` comme en anglais ; la phrase ajoutée est reprise mot pour mot de la sœur `bodyUndoByDeleting` (« Cmdr
+  laisse de côté tout ce dont il n'est pas sûr, il peut donc en rester quelques-uns. »), dont l'anglais est identique.
+- Branches CLDR `fr` `one` / `many` / `other`, `many` identique à `other`. Les clés `.counted` comptent toujours au
+  moins deux éléments, donc `tels quels` et `leur place d'origine` restent hors des branches, exactement comme les sœurs
+  `renameUndo.skipReason.*.counted`.
+- Espace ASCII avant chaque `:` , apostrophes ASCII doublées (ICU), aucun U+2019 ni U+202F. Aucun
+  `sameAsSourceJustification` : les 18 valeurs diffèrent de l'anglais.
+
+### `cancelRollback.stagedLeftover.*` (les restes de Cmdr lui-même à destination)
+
+Nouvelles le 2026-09-02. Deux lignes sur un fichier de travail créé par Cmdr et qu'il n'a pas réussi à retirer de la
+destination. Elles ne font PAS partie de la liste `reason.*` : là, Cmdr protège les fichiers de la personne ; ici, il
+s'agit de son propre reste.
+
+- **`unfinished copy` → `copie incomplète`** · `incomplet` est le mot d'Apple (macOS `LA33` : « endommagée ou incomplète
+  »), `copie` le substantif de `NE111` (« conserver une copie réactivable ») · `high`
+- **`at the destination` → `à destination`** · forme déjà employée par `conflictsUnknown` (« ce qui se trouve déjà à
+  destination ») · `high`
+- **`transfer` (substantif) → `transfert`** · déjà dans le catalogue (`errors.listing.deviceReconnecting.explanation` :
+  « après un transfert annulé ou interrompu ») · `high`
+- La deuxième phrase reprend `Cmdr` comme sujet, comme `leftBehind` (« Cmdr laisse de côté… »).
+- ⚠️ **`lors d'un transfert ultérieur`, ❌ jamais « la prochaine fois ».** Le nettoyage de Cmdr épargne tout ce qui a
+  moins d'une heure : une nouvelle tentative immédiate ne retire donc rien. Promettre le contraire serait exactement le
+  défaut que cette ligne corrige.
+
+## L’écran de blocage quand le WebKit est trop ancien (`main.oldWebkit.*`, 2026-09-02)
+
+Trois chaînes que Cmdr affiche à la place de son interface quand le Safari du Mac est trop ancien. Elles vivent dans la
+coquille HTML, pas dans l’app : c’est tout ce que cette personne verra de Cmdr.
+
+- **`Software Update` → `Mise à jour de logiciels`** · nom du volet dans les Réglages Système ; la trace Tier 1 de
+  Finder confirme le terme (`Apple Device Software Update File` → `Fichier de mise à jour logicielle d’appareil Apple`)
+  · `high`.
+- **`Quit` → `Quitter`** · déjà au glossaire (§ menus), confirmé par la clé `Quit` d’AppKit · `high`.
+- **Apostrophe typographique `’` partout** (`d’une`, `L’interface`), comme Apple. Bonus mécanique : ICU n’échappe que
+  l’apostrophe ASCII, donc rien à doubler ici.
+- **`Safari`, `Mac` et `15.4` restent tels quels.** `Safari` est désormais dans `BRAND_WORDS`.
+
+## L''avis « ancien macOS » (`main.oldMacos.*`, 2026-09-02)
+
+Une boîte de dialogue affichée une seule fois sur un Mac sous macOS 12 : Cmdr démarre, mais on est hors de la plage
+testée. Ton honnête et détendu, ni excuse ni avertissement, puisque l''app fonctionne.
+
+- **`supports` → `prend en charge`** · macOS Finder (`… car elle n''est pas prise en charge.`) · `high`. Pas `supporte`,
+  qui est un anglicisme.
+- **`X and up` → `X et les versions plus récentes`** · macOS AppKit (`… requiert une version plus récente de macOS.`) et
+  SystemSettings (`OS X %@ ou ultérieur`) · `high`.
+- **`best effort` → `il fait au mieux`** · le pile ne contient pas le terme (seulement des définitions QoS réseau) ·
+  `high` pour la paraphrase. Surtout pas `au mieux de ses efforts`, qui est du français de contrat.
+- **`look off` → `être décalés`** · registre courant, et il évite « erreur » / « échec », interdits par la voix.
+- **La dernière phrase, c''est David à la première personne**, au `vous` comme le reste du catalogue.
+- Apostrophes ICU doublées : `j''aimerais`.
+
+## Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, `askCmdr.tool.inspectFile.*`, 2026-09-02)
+
+Cinq clés ICU (apostrophes ASCII doublées, espace ASCII avant `:`). `contentsRule` remplace l'ancienne
+`askCmdr.consent.noContents` : ses deux dernières phrases (la recherche de photos ; les suggestions qui attendent votre
+accord) sont reprises mot pour mot de l'ancienne traduction, et seule la promesse d'ouverture change.
+
+- **thumbnail → `vignette`** · macOS AppKit `fr` (« Taille de vignette : », « vignette de grande taille », « vignette de
+  l’image du sélecteur d’onglets »), Total Commander `fr` (`25="&Vignettes"`), Double Commander `fr` (« Enregistrer les
+  vignettes en cache ») ; Microsoft terminologie FRA dit `miniature`, Nautilus et Thunar mélangent les deux · high
+  (macOS + les deux gestionnaires orthodoxes). L'ancienne `noContents` disait `miniatures` ; comme aucune autre clé du
+  catalogue ne porte l'un ou l'autre mot, le terme Tier 1 s'impose sans rien casser. Vérifié dans
+  `~/projects-git/vdavid/cmdr/_ignored/i18n/fr/`, 2026-09-02.
+- **camera (d'une photo) → `appareil photo`** · macOS AppKit `fr` (`NSStillCameraTemplate` → « appareil photo »),
+  Microsoft terminologie FRA (`camera` → « appareil photo », sens photo ; « caméra » est le sens vidéo/webcam) et le
+  catalogue (« Prise en charge Android/Kindle/appareil photo ») · high. **camera details →
+  `les détails de l'appareil photo`** : `détails` reprend `askCmdr.renameReview.evidence.metadata` (« Détails du
+  fichier, pas son contenu ») · high.
+- **location (d'une photo, où elle a été prise) → `localisation`** · macOS Finder `fr`, panneau d'aperçu d'une image
+  (`PV5` / `PV56` « Location » → « Localisation », à côté de « Détail de l’image » et « Exif ») : c'est exactement ce
+  champ-là · high. ❌ Pas `emplacement` : c'est le mot du catalogue (et de Dolphin) pour l'emplacement d'un FICHIER sur
+  le disque, et la phrase parle justement d'autre chose. En prose, « including where it was taken » se rend par
+  `y compris l'endroit où elle a été prise` (`contentsRule`), comme l'anglais lui-même varie entre `location` et
+  `where it was taken`.
+- **title and author (d'un PDF) → `son titre et son auteur`** · macOS AppKit `fr` (`Title` → « Titre »), KDE Dolphin
+  `fr` (« Author » → « Auteur », « Title » → « Titre »), Microsoft terminologie FRA (`author` → « auteur ») · high.
+- **page (d'un PDF) → `page`** · macOS Finder `fr` (« Page ^0 sur ^1 », « Pages ») · high. « a few pages of a PDF » →
+  `quelques pages d'un PDF` ; « PDF pages » (liste) → `des pages de PDF`.
+- **archive → `archive`** (fém.), **provider → `fournisseur`**, **tag → `tag`** : termes déjà posés, réutilisés tels
+  quels.
+- **what's inside an archive → `ce que contient une archive`** ; **the list of files inside an archive →
+  `la liste des fichiers contenus dans une archive`** · racine `contenir` dans les deux, pour éviter deux
+  `à l'intérieur` dans la même phrase de `whatsNew.body` (« regarder à l'intérieur d'un fichier … ») · high (choix
+  rédactionnel).
+- **Parts of files → `Des parties des fichiers`** · pas `extraits`, qui irait au texte et aux pages mais pas à la liste
+  d'une archive ni aux données Exif · high.
+- **When you ask about a file → `Quand vous lui posez une question sur un fichier`** ; **a file you ask about →
+  `un fichier sur lequel vous lui posez une question`** · calque de `askCmdr.empty.title` / `composer.placeholder` («
+  Posez une question sur vos fichiers ») · high.
+- **`inspectFile.doing` / `.done` → `Lecture du contenu de fichiers` / `A lu le contenu de fichiers`** · même moule que
+  la sœur `imageFacts` (« Lecture du contenu de vos photos » / « A lu le contenu de vos photos ») : nom verbal au
+  présent, `A <participe>` au passé (règle de la passe `ask-cmdr`). `contenu` dit explicitement que Cmdr lit dans le
+  fichier, ce que l'anglais `inside` veut faire entendre sur cette ligne de transparence ; « Consultation de fichiers »
+  aurait été pris pour un simple listage (`listDir` = « Consultation d'un dossier ») · high.
+
+Notes de rédaction :
+
+- **« a photo's camera details and location » se rend avec l'incise `pour une photo, …`** : « les détails de l'appareil
+  photo … d'une photo » colle deux `photo` à trois mots d'écart.
+  `… et, pour une photo, les détails de l'appareil photo et la localisation` (liste et `whatsNew.body`) ;
+  `… ou, pour une photo, les détails de l'appareil photo, y compris l'endroit où elle a été prise` (`contentsRule`). Le
+  `pour une photo` porte sur les deux compléments.
+- **« never sends whole files, photos, or thumbnails » →
+  `n'envoie jamais de fichiers entiers, de photos ni de vignettes`** : `de` répété après la négation, `ni` devant le
+  dernier terme.
+- Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais.
+- À signaler : `askCmdr.empty.hint` (anglais inchangé, « never file contents » / « jamais le contenu des fichiers »)
+  contredit désormais cette promesse-ci ; c'est une question de copie source, pas de traduction.
+- **Suite (2026-09-02) : `askCmdr.empty.hint` et `settings.askCmdr.intro` réécrits sur le nouvel anglais.** Première
+  phrase conservée dans les deux ; la seconde reprend les termes ci-dessus : « looks inside a file only when you ask
+  about it » → `ne regarde à l'intérieur d'un fichier que lorsque vous lui posez une question à son sujet`
+  (`regarder à l'intérieur` = `whatsNew.body`, `poser une question sur` = le moule du catalogue) ; « never changes a
+  file without your approval » → `ne modifie jamais un fichier sans votre approbation` (racine `approuver` de
+  `contentsRule`, « tant que vous ne l'avez pas approuvé »). ❌ Plus de `en lecture seule` ni de `ne change jamais rien`
+  : Ask Cmdr écrit ses notes et propose des renommages, la promesse porte sur l'accord de la personne, pas sur l'absence
+  d'écriture.
+
+## Les deux info-bulles du bouton Rollback (2026-09-04 ; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Nouvelle surface : l'info-bulle dit maintenant ce que CE retour en arrière fait aux fichiers, et le bouton est désactivé
+dès qu'un déplacement entre deux systèmes de fichiers atteint sa dernière étape (la suppression des originaux, alors que
+tout est déjà arrivé à destination).
+
+- **`rollbackTooltipStopAndMoveBack` → `Arrêter et remettre en place tous les fichiers déplacés jusqu'à présent`** ·
+  même cadre que le frère `rollbackTooltip` (`Arrêter et …`), et `remettre en place` est le verbe déjà retenu pour le
+  retour à l'emplacement d'origine (`cancelRollback.doneMovingBack`, « a tout remis en place ») · `high`. ❌ Pas
+  `supprimer` : annuler un déplacement ne supprime rien.
+- **`rollbackAlreadyLandedTooltip`** · la première proposition reprend l'image de `cancelRollback.moveAlreadyLanded` («
+  est déjà arrivé à destination »), `retour en arrière` est le terme retenu pour le rollback
+  (`rollbackUnavailableTooltip`), et `Annuler` est l'étiquette du bouton voisin (`fileOperations.button.cancel`), donc
+  elle passe telle quelle · `high`.
+- Pas de `sameAsSourceJustification`. Les apostrophes des valeurs sont doublées pour ICU (`jusqu''à`, `n''est`,
+  `qu''il`).

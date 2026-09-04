@@ -1,9 +1,8 @@
 //! Copy strategy routing for volume-to-volume operations.
 //!
-//! Since Phase 4, every cross-volume copy either (a) uses the APFS clonefile
-//! fast path when both sides are `LocalPosixVolume` on the same APFS volume, or
-//! (b) pipes bytes through `open_read_stream` + `write_from_stream`. The old
-//! `export_to_local` / `import_from_local` short-circuits are gone.
+//! Every cross-volume copy either (a) uses the APFS clonefile fast path when
+//! both sides are `LocalPosixVolume` on the same APFS volume, or (b) pipes bytes
+//! through `open_read_stream` + `write_from_stream`.
 //!
 //! Directories are walked here (recursively) so the user can cancel between
 //! files. Per-file transfers use the destination's `write_from_stream`.
@@ -17,7 +16,7 @@ use std::time::Duration;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
-use super::super::super::journal::CreatedFile;
+use super::super::super::ledger::WrittenFile;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::VolumeCopyConfig;
 use super::super::checkpoint_stream::CheckpointStream;
@@ -27,7 +26,7 @@ use super::super::staged_write::StagedWrite;
 use super::super::retry;
 pub(super) use super::super::staged_write::WriteStaging;
 use super::super::transfer_probe::{
-    TaskPhase, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase,
+    OperationProbe, TaskPhase, TaskRow, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase,
 };
 use super::merge::copy_directory_streaming;
 use super::preflight::SourceHint;
@@ -56,12 +55,19 @@ const FOREGROUND_YIELD_DEBOUNCE: Duration = Duration::from_millis(400);
 ///
 /// ⚠️ Don't naively raise this to a "big" number to make it look meaningful: the
 /// gate SKIPS the yield until this many bytes have moved since the last resume,
-/// so a floor ≥ a typical file size means the copy would NEVER yield to a
-/// foreground op for files smaller than the floor — i.e. it would disable
-/// navigate-during-transfer for normal files. If you want it to read as a real
-/// multi-window guard, raise it to a small multiple of `MTP_READ_WINDOW` (e.g.
-/// 2-4× = "N windows between yields"); that changes behavior, so re-verify on a
-/// real device.
+/// and the count starts at zero for EVERY file, so a floor ≥ a typical file size
+/// means the copy never yields at all for files smaller than the floor — i.e. it
+/// would disable navigate-during-transfer for normal files. If you want it to
+/// read as a real multi-window guard, raise it to a small multiple of
+/// `MTP_READ_WINDOW` (e.g. 2-4× = "N windows between yields"); that changes
+/// behavior, so re-verify on a real device.
+///
+/// The destination arm exempts a SINGLE-SHOT write from the floor for exactly
+/// that reason: such a write holds nothing open on the server while it drains, so
+/// the floor has nothing to protect, and without the exemption a folder of photos
+/// uploaded to a NAS stood aside for the user zero times. A streaming write under
+/// the floor still never yields; that gap is deferred, see `transfer/DETAILS.md`
+/// § "Foreground auto-yield".
 const MIN_PROGRESS_FLOOR_BYTES: u64 = 4 * 1024 * 1024;
 
 /// Hard cap on a SINGLE destination-side foreground park (uploads to SMB). Unlike
@@ -74,7 +80,7 @@ const MIN_PROGRESS_FLOOR_BYTES: u64 = 4 * 1024 * 1024;
 /// The share's OWN session stays warm regardless (the user's navigation rides it),
 /// so this cap protects only the write handle. ❌ Don't raise it toward any
 /// server idle-timeout; keep it a small, safe fraction. Data-safety bound; see
-/// `checkpoint_stream.rs::dest_park_continues`.
+/// `checkpoint_stream.rs::CheckpointStream::bounded_yield_to_dest_foreground`.
 const DEST_FOREGROUND_YIELD_HARD_CAP: Duration = Duration::from_secs(1);
 
 /// The (debounce, min-progress-floor, dest-yield-hard-cap) tuple a freshly-built
@@ -200,13 +206,27 @@ pub(super) struct MergeCtx<'a> {
     /// walker's argument list because a deep skip can only happen when there IS
     /// a merge context — `merge: None` overwrites blindly and never declines.
     pub on_file_skipped: &'a (dyn Fn(u64) + Sync),
-    /// The operation's live in-flight table, so each leaf a walker overlaps gets
-    /// its OWN row (and its own stall-abort token). `None` in the tests that
-    /// register no probe. A leaf runs inside its row's
+    /// The operation's live in-flight table plus the row of the source whose
+    /// subtree this walk is, so each leaf a walker overlaps gets its OWN row
+    /// (and its own stall-abort token), numbered under that source. `None` in
+    /// the tests that register no probe. A leaf runs inside its row's
     /// `CURRENT_TASK_PROBE` scope, which is what keeps the invariant every
     /// `TaskProbe` field assumes — one row, one write attempt — true once a
     /// subtree streams several files at once.
-    pub op_probe: Option<Arc<super::super::transfer_probe::OperationProbe>>,
+    pub probe: Option<MergeProbe>,
+}
+
+/// The in-flight table as a merge walk sees it: the operation's probe, plus the
+/// row of the TOP-LEVEL source this walk descends from.
+///
+/// The two travel together because a leaf row can't be opened without both: the
+/// table to open it in, and the source to number it under. Handing a walker the
+/// probe alone is what let a walker and its own first leaf both render as `#0`.
+#[derive(Clone)]
+pub(super) struct MergeProbe {
+    pub operation: Arc<OperationProbe>,
+    /// The walker's own row. Every leaf of the subtree hangs off it.
+    pub source_row: TaskRow,
 }
 
 /// Records exactly what a single `copy_single_path` call wrote to the
@@ -219,8 +239,8 @@ pub(super) struct MergeCtx<'a> {
 /// record:
 /// - `files`: every destination FILE the copy streamed, in write order, each with
 ///   the byte count it was written with. Rollback deletes these individually; the
-///   size is what lets the operation log record a verifiable snapshot for a leaf
-///   INSIDE a copied folder (see [`CreatedFile`]).
+///   size is what lets both the in-flight reversal and the operation log
+///   recognize a leaf INSIDE a copied folder (see [`WrittenFile`]).
 /// - `dirs`: every destination DIRECTORY this copy newly created (i.e. the
 ///   `create_directory` call returned `Ok`, not `AlreadyExists`), in
 ///   creation order (shallowest first). Rollback removes these with a
@@ -230,7 +250,7 @@ pub(super) struct MergeCtx<'a> {
 // one state where rollback correctly has nothing to undo.
 #[derive(Default)]
 pub(super) struct CreatedPaths {
-    pub files: Mutex<Vec<CreatedFile>>,
+    pub files: Mutex<Vec<WrittenFile>>,
     pub dirs: Mutex<Vec<PathBuf>>,
     // Children a DEEP merge resolved to Skip (a conflict the user/policy
     // declined). Invisible to the top-level driver, so tallied here; the
@@ -252,7 +272,7 @@ pub(super) struct CreatedPaths {
 
 impl CreatedPaths {
     pub(super) fn record_file(&self, path: PathBuf, size: u64) {
-        self.files.lock_ignore_poison().push(CreatedFile { path, size });
+        self.files.lock_ignore_poison().push(WrittenFile::volume(path, size));
     }
 
     pub(super) fn record_dir(&self, path: PathBuf) {
@@ -457,17 +477,24 @@ pub(super) fn staging_for(replace_after_write: &Option<PathBuf>) -> WriteStaging
 /// one frame; on a 10k-tiny-file copy to a NAS that is the whole difference).
 ///
 /// ❌ The question is single-shot-ness, never smallness, and only the
-/// destination can answer it: `size` goes to `Volume::write_is_single_shot` (the
-/// same number `write_from_stream` gets, off the same stream) and the backend
-/// answers with the very condition its one-shot path branches on. A caller-side
-/// size threshold would drift from that condition the day a backend retunes it,
-/// and drifting apart means truncated files at real names again.
+/// destination can answer it: the caller asks `Volume::write_is_single_shot`
+/// about the same `size` `write_from_stream` gets, off the same stream, and the
+/// backend answers with the very condition its one-shot path branches on. A
+/// caller-side size threshold would drift from that condition the day a backend
+/// retunes it, and drifting apart means truncated files at real names again.
+///
+/// The answer arrives as a plain `bool` rather than being probed here, because
+/// `stream_pipe_file`'s OTHER consumer needs the raw fact: the destination-side
+/// foreground yield exempts a single-shot write from the min-progress floor, and
+/// the returned enum can't tell it apart from a staged one. ❗ Ask ONCE per
+/// write and share the answer; two probes could straddle a reconnect and
+/// disagree.
 ///
 /// `AlreadyStaged` is never touched: the caller's temp keeps the ORIGINAL file
 /// in place until the new bytes are complete, which is a stronger guarantee than
 /// single-shot-ness and the caller's to land.
-pub(super) async fn resolve_staging(requested: WriteStaging, dest_volume: &Arc<dyn Volume>, size: u64) -> WriteStaging {
-    if requested == WriteStaging::Stage && dest_volume.write_is_single_shot(size).await {
+pub(super) fn resolve_staging(requested: WriteStaging, write_is_single_shot: bool) -> WriteStaging {
+    if requested == WriteStaging::Stage && write_is_single_shot {
         WriteStaging::SingleShot
     } else {
         requested
@@ -611,7 +638,11 @@ pub(super) async fn stream_pipe_file(
             opened = source_volume.open_read_stream_with_hint(source_path, source_size_hint) => opened?,
         };
         let size = stream.total_size();
-        let resolved_staging = resolve_staging(staging, dest_volume, size).await;
+        // ONE probe, two consumers: the staging decision below and the
+        // destination-side foreground yield's floor exemption (handed to the
+        // `CheckpointStream`). See `resolve_staging`.
+        let write_is_single_shot = dest_volume.write_is_single_shot(size).await;
+        let resolved_staging = resolve_staging(staging, write_is_single_shot);
         let staged = StagedWrite::begin(state, dest_path, resolved_staging);
         note_pending_for_local_dest(dest_volume, staged.target());
         // Wrap so a paused op parks (and a long copy yields to foreground)
@@ -630,10 +661,11 @@ pub(super) async fn stream_pipe_file(
             foreground_debounce,
             min_progress_floor,
             dest_yield_hard_cap,
+            write_is_single_shot,
         ));
         set_task_phase(TaskPhase::Streaming);
         set_task_bytes(0, size);
-        // The watchdog ACTING (M4.2): a task that sits inside a backend call with
+        // The watchdog ACTING: a task that sits inside a backend call with
         // zero byte movement for `STALL_ABORT_AFTER` has its wait ended here, and
         // the transport error that produces feeds straight back into the retry
         // above. It is the layer of last resort — every backend that can bound its
@@ -948,6 +980,11 @@ mod stale_handle_tests;
 #[cfg(test)]
 #[path = "strategy_test_support.rs"]
 pub(super) mod test_support;
+
+#[cfg(test)]
+#[path = "strategy_dest_yield_test_support.rs"]
+pub(super) mod dest_yield_test_support;
+
 #[cfg(test)]
 #[path = "strategy_yield_tests.rs"]
 mod yield_tests;

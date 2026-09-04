@@ -42,5 +42,29 @@
   "main.quit.operationsHeading": "Még folyamatban",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
+  },
+  "main.oldWebkit.title": "A Cmdrnek újabb Safari kell",
+  "@main.oldWebkit.title": {
+    "sourceHash": "03e502b"
+  },
+  "main.oldWebkit.body": "A Cmdr felületéhez Safari 15.4-es vagy újabb verzió kell, ezen a Macen viszont régebbi van. Nyisd meg a Szoftverfrissítést, és telepíts mindent, ami függőben van. Ez általában megoldja.",
+  "@main.oldWebkit.body": {
+    "sourceHash": "bcadac5"
+  },
+  "main.oldMacos.title": "A Cmdr macOS {version} rendszeren",
+  "@main.oldMacos.title": {
+    "sourceHash": "e75f925"
+  },
+  "main.oldMacos.body": "A Cmdr hivatalosan a macOS 12-t és az annál újabb rendszereket támogatja, itt tehát csak a tőle telhető legjobbat nyújtja. A legtöbb dolog működik, de néhány szín és apró elrendezési részlet félremehet, és a régebbi rendszerek javításai kerülnek a sor végére. Ha valami elromlottnak tűnik, azért szívesen hallanék róla.",
+  "@main.oldMacos.body": {
+    "sourceHash": "9484b91"
+  },
+  "main.oldMacos.gotIt": "Értem",
+  "@main.oldMacos.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "main.oldWebkit.quit": "Kilépés",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
   }
 }

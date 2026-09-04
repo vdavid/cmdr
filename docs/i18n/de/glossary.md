@@ -1753,3 +1753,186 @@ zurückkommt: der alte Name.
   Breite in einer Zeile, die sich das Label schon mit dem Fortschritt teilt. Kein Artikel, kein Kasus am Namen, also
   passt jeder Name.
 - Kein `sameAsSourceJustification` nötig: alle fünf Werte unterscheiden sich vom Englischen.
+
+## Der Toast nach einem abgebrochenen Vorgang: was die Rücknahme geschafft hat (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`, 2026-08-31)
+
+Neue Oberfläche: Der Nutzer hat ein Kopieren oder Bewegen mit `Rollback` abgebrochen, die Rücknahme ist durch, und ein
+Toast berichtet. Er besteht aus bis zu drei Teilen: einer Überschrift, der Erwartungszeile `leftBehind` und einer
+Aufzählung von `reason.*`-Zeilen. Grundton: Cmdr hat das Umsichtige getan. Nie entschuldigend, nie alarmierend.
+
+- **`Left {name} alone` → `Habe {name} unverändert gelassen`** · `unverändert lassen` ist macOS-Wortlaut (AppKit
+  `Document.json`, „Wenn du die Datei unverändert lassen und mit einer Kopie arbeiten möchtest …“), und der Katalog
+  fährt es schon in der Schwesterfamilie `askCmdr.renameUndo.skipReason.*` · `high`. Die ganze Aufzählung erbt damit
+  eine Stimme von der Umbenennen-Rücknahme, die derselbe Nutzer schon kennt.
+- **Ein Satz, der auf `{name}` zurückverweist, nimmt das Katalogwort, nie ein Pronomen** · „das Objekt hat sich
+  geändert“, „ob sich das Objekt geändert hat“. `{name}` trägt kein Genus, das der Katalog kennen könnte, also wäre „es
+  hat sich geändert“ eine Wette auf den Dateinamen. Die Umbenennen-Familie löst es genauso, dort mit „die Datei“ ·
+  `high`. Konvention steht auch in `style.md` § Notes.
+- **`item` → `Objekt`, auch wo die Umbenennen-Familie `Datei` sagt** · die Rücknahme entfernt auch angelegte Ordner, und
+  `Objekt` ist das Katalogwort für „Datei oder Ordner“ (Glossar `item → Objekt`, macOS Finder „Ausgewählte Objekte“) ·
+  `high`.
+- **Löschen und Zurücklegen bleiben zwei Wörter** · `Removed …` → `… entfernt` (Katalog `remove → entfernen`,
+  durchgehend: „Aus Liste entfernen“, „entfernt Cmdr zuerst die ältesten Vorgänge“), `Put … back` → `… zurückgelegt`
+  (macOS Finder `N153.1` „Zurücklegen“, wie `fileOperations.trash.undone`) · `high`. `löschen` bleibt dem englischen
+  `delete` in den Bestätigungstexten (`rollbackConfirm.body`, `bodyUndoByDeleting`); so trennt das Deutsche die drei
+  Verben genauso wie die Quelle.
+- **Das bestimmte „the N items“ trägt im Deutschen ein Doppelpunkt-Anhang, kein Artikel** · „1.234 Objekte entfernt:
+  alles, was Cmdr geschrieben hatte.“ gegenüber dem Geschwister „1.234 Objekte entfernt.“ Ein Artikel scheidet aus, weil
+  die `one`-Verzweigung „Das 1 Objekt“ ergäbe; der Anhang sagt die Vollständigkeit, um die es geht · `high`. Ebenso
+  `doneMovingBack`: „… zurückgelegt: alles ist wieder da, wo es war.“, im Ton von `refusalAlreadyRolledBack` („Das ist
+  schon wieder so wie vorher.“).
+- **`Stopped after removing …` → `Gestoppt, nachdem Cmdr … entfernt hat`** · verbal, nicht nominal („Nach 12 entfernten
+  Objekten gestoppt“ wäre die substantivlastige Fassung, vor der `style.md` § Voice and tone warnt); `stoppen` ist das
+  gesetzte Wort für `stop` (macOS Finder „Kopieren stoppen“), nie `anhalten` (= Pause) · `high`. Die Zählphrase steht im
+  Nominativ („12 Objekte“), weil keine Präposition ein Dativ-`-n` verlangt.
+- **`Left {name} where it is` → `Habe {name} am neuen Ort gelassen`, und der Grund heißt
+  `am alten Ort liegt jetzt etwas anderes`** · `Ort` statt `Platz`: im Katalog und im Finder ist `Platz` der
+  SPEICHERPLATZ („nicht genügend freier Platz“, „Kein Platz mehr“), während macOS für den Ablageort `Ort` sagt (Finder
+  `PE24`, „an spezielle Orte innerhalb des Zieles abgelegt“) · `high`. Das Paar neuer/alter Ort kommt ohne Possessiv
+  aus, also ohne Genus-Wette auf `{name}`.
+- **`after Cmdr put it there` → `seit Cmdr es dort abgelegt hat`** · `ablegen`/`legen` ist Finders Verb fürs Hinlegen an
+  einen Ort (`PE24`; „Legt Objekte in den Papierkorb“) · `high`. `seit` statt „nachdem“, passend zum Geschwister
+  `askCmdr.renameUndo.skipReason.drift.*` („seit dem Umbenennen“).
+- **Die beiden `folderNotEmpty`-Werte sind WORTGLEICH mit
+  `askCmdr.renameUndo.skipReason.folderNotEmpty.named`/`.counted`** · das Englische ist bei diesem Paar zeichengleich,
+  also würde jede andere Formulierung `desktop-i18n-term-consistency` als neue Divergenz zählen (`de` steht bei
+  `notYetReviewed: 8`, und die Zahl geht nur runter) · `high`. Wer eine der beiden Familien anfasst, ändert beide oder
+  keine.
+- **`leftBehind` sagt `überspringt alles`, genau wie die Bestätigungstexte davor** · beide Oberflächen geben dasselbe
+  Versprechen, also müssen sie dasselbe Verb tragen; das Englische tut es auch
+  (`Cmdr skips anything it isn''t sure about`, im Dialog wie im Toast) · `high`. ❌ Nicht `lässt alles unverändert`: das
+  ist der Wortlaut der Aufzählungspunkte darunter („Habe … unverändert gelassen“), und die Erwartungszeile soll an den
+  Dialog anschließen, den der Nutzer eben gelesen hat, nicht an die Liste, die sie einleitet.
+- **`rollbackConfirm.body` bekommt den dritten Satz ohne `davon`** · die Schwester `bodyUndoByDeleting` endet auf „also
+  bleibt womöglich einiges davon übrig“, hier aber stünde direkt davor „ersetzte Dateien kommen nicht zurück“, und
+  `davon` würde sich an die ersetzten Dateien hängen und das Gegenteil versprechen. Also „… also bleibt womöglich
+  einiges übrig.“ · `high`.
+- **`Couldn''t undo {name}` → `Cmdr konnte {name} nicht rückgängig machen`** · `rückgängig machen` ist das gesetzte
+  Prosa-Verb fürs Zurücknehmen eines Vorgangs (§ Operation log), und das Deutsche braucht ein Subjekt, wo das Englische
+  keins hat; `Cmdr` steht schon in `refusalUnexpected` („Cmdr konnte das Rollback nicht starten.“) · `high`. Der Hinweis
+  danach nennt das Laufwerk ohne Possessiv („Vielleicht ist das Laufwerk nicht verbunden oder schreibgeschützt.“,
+  Glossar `read-only → schreibgeschützt`), im Ton von `trash.undoUnavailable`.
+- Kein `sameAsSourceJustification` nötig: alle 18 Werte unterscheiden sich vom Englischen.
+
+### `cancelRollback.stagedLeftover.*` (Cmdrs eigene Reste am Ziel)
+
+Neu 2026-09-02. Zwei Zeilen über eine Arbeitsdatei, die Cmdr selbst angelegt und am Ziel nicht mehr weggeräumt bekommen
+hat. Sie gehören NICHT zur `reason.*`-Liste: dort schützt Cmdr die Dateien der Person, hier ist es Cmdrs eigener Rest.
+
+- **`unfinished copy` → `unvollständige Kopie`** · `unvollständig` ist Apples Wort für „incomplete" (macOS `LA33`: „…
+  beschädigt oder unvollständig ist."), `Kopie` das Substantiv aus macOS `NE111` („eine fortsetzungsfähige Kopie
+  behalten") · `high`
+- **`at the destination` → `am Ziel`** · gesetzt (`destination → Ziel`), gleiche Form wie `stallWaitingDestination` ·
+  `high`
+- **`transfer` (Substantiv) → `Übertragung`** · der Katalog sagt es schon so
+  (`errors.listing.deviceReconnecting.explanation`: „nach einer abgebrochenen oder unterbrochenen Übertragung") · `high`
+- **`Cmdr clears it` → `Cmdr räumt sie weg`** · `wegräumen` statt `löschen`, weil es Cmdrs eigene Arbeitsdatei ist und
+  nicht die der Person · `high`
+- ⚠️ **`bei einer späteren Übertragung`, ❌ nie „beim nächsten Mal".** Cmdrs Aufräumen überspringt alles, was jünger als
+  eine Stunde ist, also räumt ein sofortiger zweiter Versuch nichts weg. Ein Versprechen, das nicht hält, ist genau der
+  Fehler, den diese Zeile beseitigen soll.
+
+## Der Block-Screen bei zu altem WebKit (`main.oldWebkit.*`, 2026-09-02)
+
+Drei Strings, die Cmdr statt seiner Oberfläche zeigt, wenn das Safari des Macs zu alt ist. Sie stehen in der HTML-Hülle,
+nicht in der App, also sieht der Mensch sonst nichts von Cmdr: der Ton muss beim ersten Lesen sitzen.
+
+- **`Software Update` → `Softwareupdate`** (ein Wort, ohne Bindestrich) · macOS schreibt `Softwareupdate` als Namen der
+  Systemeinstellung; die Finder-Tier-1-Belege bestätigen das Wort (`Apple Device Software Update File` →
+  `Updatedatei für Gerätesoftware von Apple`) · `high`. Nicht „Software-Update", das ist die generische Schreibung, kein
+  Pane-Name.
+- **`Quit` → `Beenden`** · macOS Finder AppKit-Schlüssel `Quit` → `Beenden` · `high`.
+- **Kein Genitiv der Marke.** `Cmdr''s interface` wird zu `Die Oberfläche von Cmdr`, nach der Regel in `style.md` §
+  Brand and do-not-translate.
+- **`Safari` und `Mac` bleiben stehen.** `Safari` ist neu in `BRAND_WORDS`; die Versionsnummer `15.4` bleibt Ziffern.
+- Kein `sameAsSourceJustification` nötig: alle drei Werte unterscheiden sich vom Englischen.
+
+## Der Hinweis auf zu altes macOS (`main.oldMacos.*`, 2026-09-02)
+
+Ein einmaliger Dialog auf einem Mac unter macOS 12, der Cmdr zwar startet, aber außerhalb der getesteten Spanne liegt.
+Ton: ehrlich und entspannt, keine Entschuldigung und keine Warnung, denn die App läuft ja.
+
+- **`X and up` → `X und neuer`** · macOS SystemSettings (`… benötigt OS X %@ oder neuer.`) · `high`. Der Beleg schreibt
+  `oder neuer`; unser Satz zählt zwei Dinge auf, also `macOS 12 und neuer`.
+- **`supports` → `unterstützt`** · macOS Finder (`… da er nicht unterstützt wird.`) · `high`.
+- **`best effort` → `nur so gut, wie es eben geht`** · keine Quelle im Pile führt den Begriff (die einzigen Treffer sind
+  Netzwerk-QoS-Definitionen) · `high` für die Umschreibung. Bewusst KEIN Kalk: „nach bestem Bemühen“ ist Vertragsdeutsch
+  und passt nicht zu Cmdrs Stimme. Der `@key.description` weist Übersetzende ausdrücklich auf die Umschreibung hin.
+- **`look off` → `daneben liegen`** · Alltagsdeutsch, keine Quelle nötig; hält den Ton leicht und vermeidet das
+  verbotene „falsch/Fehler“-Register.
+- **Der letzte Satz ist David in der Ich-Form** und bleibt beim `du`, wie `onboarding.stepBeta.greeting`.
+
+## Ask Cmdr schaut jetzt in Dateien hinein: Zustimmungstexte und Werkzeugzeilen (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+Fünf Schlüssel rund um das `inspect_file`-Werkzeug: die beiden Werkzeugzeilen im Chat, der neue Aufzählungspunkt auf dem
+Zustimmungsbildschirm, der Absatz `contentsRule` (ersetzt `askCmdr.consent.noContents`) und der „Was ist neu“-Absatz.
+Belege: Pile `de/` (macOS Finder/AppKit, Microsoft-Terminologie, Nautilus/Thunar/Dolphin, TC/DC) plus die Live-Bundles
+`Preview.app` und `Photos.app` (`.loctable`, macOS 26.6.2, 2026-09-02).
+
+- **look inside files (Werkzeugzeile) → `Dateien werden durchgesehen` / `Dateien durchgesehen`** · `durchsehen` ist das
+  gesetzte Verb fürs Hineinschauen-und-Auflisten (§ Archive browsing, KDE Dolphin „Archive durchsehen“), und die Form
+  spiegelt die Geschwister `Deine Fotos werden durchsucht` / `Deine Fotos durchsucht` · `high`. ❌ Nicht `durchsuchen`
+  (= suchen) und nicht `Dateiinhalte werden gelesen`: Das Werkzeug liest nur einen begrenzten Teil, und `Dateiinhalte`
+  ist im Katalog das Wort für das, was Cmdr NICHT liest (`askCmdr.empty.hint`).
+- **look inside a file (Prosa) → `hineinschauen`** („kann Ask Cmdr jetzt hineinschauen und einen Teil davon lesen“) ·
+  Katalogpräzedenz aus dem alten `noContents` („was in deine Bilder hineinschaut“); umgangssprachlich, passt zum
+  `du`-Ton · `high`.
+- **thumbnail → `Miniatur` (Plural `Miniaturen`)** · Apple Tier 1: Vorschau `Thumbnails` → „Miniaturen“, Fotos
+  `Show/Hide Thumbnails` → „Miniaturen einblenden/ausblenden“, AppKit „Miniatur des Tab-Auswahl-Bilds“; auch schon im
+  alten `noContents` · `high`. Runners-up: Microsoft „Miniaturansicht“/„Miniaturbild“ (Windows), Thunar/DC/TC
+  „Vorschaubilder“ (Tier 3). ❌ Nicht `Vorschaubild`: `Vorschau` ist im Katalog der Viewer (glossary viewer → Vorschau)
+  und Apples Programmname.
+- **camera details (EXIF eines Fotos) → `Kameraangaben`** · `Kamera` ist überall gleich (Vorschau-Inspektor „Kamera“,
+  Microsoft `camera → Kamera`, Thunar „Kamera“, Nautilus „Kameramarke“/„Kameramodell“); das `-angaben` folgt dem
+  Katalog, der Metadaten `Dateiangaben` nennt (`askCmdr.renameReview.evidence.metadata` „Dateiangaben, nicht der
+  Inhalt“) · `high` für `Kamera`, `tentative` für die Zusammensetzung (keine Quelle hat „camera details“ als Begriff;
+  Runner-up „Kameradaten“ wäre ebenso gängig). Nicht `EXIF`: Das Englische vermeidet das Kürzel absichtlich.
+- **location / where it was taken (eines Fotos) → `Aufnahmeort`** · Apples Fotos-App sagt für den Ort eines Fotos
+  schlicht „Ort“ (`Assign Location` → „Ort zuweisen“, `Hide Location` → „Ort ausblenden“), Thunar/Nautilus ebenso „Ort“,
+  Microsoft `location → Standort` (Gerätesinn, Fotos-App „Standortinformationen“ beim Teilen). Auf dem
+  Zustimmungsbildschirm steht das Wort neben Dateien, wo ein bloßes „Ort“ als Speicherort gelesen würde; das Kompositum
+  aus Apples „Ort“ und dem „aufgenommen“ aus „where it was taken“ ist eindeutig · `tentative` (keine Quelle hat das
+  Kompositum selbst). In der Prosa `einschließlich des Aufnahmeorts`, in der Liste `der Aufnahmeort eines Fotos`.
+- **title and author (PDF-Metadaten) → `Titel und Autor`** · Vorschau-Inspektor `Title` → „Titel“, `Author` →
+  „Autor:in“; Microsoft `title → Titel`, `author → Autor`; Dolphin `Author` → „Autor“ · `high` für `Titel`, `tentative`
+  für `Autor`: Apple nutzt den Gender-Doppelpunkt, den unsere Regel (keine typografischen Glyphen, Screenreader)
+  ausschließt, und eine neutrale Umschreibung („wer es verfasst hat“) liest sich in der Aufzählung gestelzt. `Autor`
+  steht hier als Name des Metadatenfelds, nicht als Anrede einer Person. Siehe `style.md` § Decisions to confirm with
+  David.
+- **page (eines PDFs) → `Seite`/`Seiten`** · Vorschau `Pages` → „Seiten“, `Page Count` → „Seitenanzahl“ (auch Dolphin),
+  Microsoft `page → Seite` · `high`. `PDF-Seiten` mit Bindestrich, `einige Seiten eines PDFs` (Genitiv `des PDFs`,
+  Glossar: `das PDF`).
+- **archive → `Archiv`**, „the list of files inside an archive“ → `die Liste der Dateien in einem Archiv`, „what’s
+  inside an archive“ → `was in einem Archiv steckt` · gesetzt (§ Archive browsing); `steckt` hält den lockeren Ton des
+  Englischen `what’s inside` · `high`.
+- **provider → `Anbieter`** („gehen an deinen Anbieter, damit er sie finden kann“) · gesetzt (Microsoft), Wortlaut aus
+  dem alten `noContents` unverändert übernommen · `high`.
+- **`contentsRule`: die beiden letzten Sätze sind der alte `noContents`-Wortlaut** („Die Fotosuche …“ ist neu
+  angeschlossen mit `funktioniert genauso`; „Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen
+  an deinen Anbieter, damit er sie finden kann.“ und „Ask Cmdr kann Umbenennungen, Verschiebungen und Aufräumaktionen
+  vorschlagen, und an keiner Datei passiert etwas, bevor du zustimmst.“ wörtlich) · `high`. Der Absatz verspricht
+  bewusst NICHT „keine Dateiinhalte“ mehr, sondern `nie ganze Dateien, Fotos oder Miniaturen` und
+  `einen begrenzten Teil davon`. `es` für Cmdr wie in `askCmdr.error.noConsent` („was es sehen darf“).
+- **`whatsNew.body`: zweiter Satz unverändert** („Das ist mehr, als du damals zugestimmt hast, deshalb hier noch einmal
+  das Ganze.“); der erste Satz ist neu und nennt die vier Dinge in derselben Reihenfolge wie `contentsRule`.
+- Kein `sameAsSourceJustification` nötig: alle fünf Werte unterscheiden sich vom Englischen.
+- **„looks inside a file only when you ask about it“ → `schaut nur dann in eine Datei hinein, wenn du nach ihr fragst`**
+  (`askCmdr.empty.hint`, `settings.askCmdr.intro`) · dasselbe `hineinschauen` wie oben, und `nach ihr fragst` wie in
+  `contentsRule` („Wenn du nach einer Datei fragst“) · `high`. Beide Schlüssel haben das alte „nie Dateiinhalte“ / „ist
+  schreibgeschützt … verändert nie etwas“ verloren; die Einstellungs-Einleitung sagt jetzt
+  `verändert nie eine Datei ohne deine Zustimmung` (Zustimmung wie `bevor du zustimmst` in `contentsRule`).
+
+## Die zwei Tooltips der Rollback-Schaltfläche (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Neue Oberfläche: Der Tooltip sagt jetzt, was DIESE Rücknahme mit den Dateien macht, und die Schaltfläche wird
+abgeschaltet, sobald eine Bewegung über eine Dateisystemgrenze im letzten Schritt steht (die Originale werden entfernt,
+alles liegt schon am Ziel).
+
+- **`rollbackTooltipStopAndMoveBack` → `Stoppen und alle bisher bewegten Dateien zurücklegen`** · Rahmen vom Geschwister
+  `rollbackTooltip` (`Stoppen und …`), und `zurücklegen` ist im Katalog das Verb für ORTE (macOS Finder „Put Back“ →
+  „Zurücklegen“; `cancelRollback.doneMovingBack` „… zurückgelegt“) · `high`. ❌ Nicht `löschen`: die Rücknahme einer
+  Bewegung löscht nichts.
+- **`rollbackAlreadyLandedTooltip`** · die erste Hälfte nimmt das Bild von `cancelRollback.moveAlreadyLanded` auf („ist
+  schon am Ziel“), `zurücknehmen` ist das Verb zum schon gesetzten `Rücknahme`, und `Abbrechen` ist die Beschriftung der
+  Nachbarschaltfläche (`fileOperations.button.cancel`), also steht sie unverändert im Satz · `high`.
+- Kein `sameAsSourceJustification`; kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.

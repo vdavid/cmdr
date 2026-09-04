@@ -89,6 +89,20 @@
     "screenshot": "pane-volume-chooser.png"
   },
 
+  "fileExplorer.diskSpace.used": "{usedText} used",
+  "@fileExplorer.diskSpace.used": {
+    "description": "How much the pane's storage holds, shown INSTEAD of the free-space line when the storage has no size limit and so no free figure and no percentage: a cloud account with no quota, for example. Appears in the status bar under a pane, in the drive picker, and as the first line of the hover tooltip. Reads as a statement of fact: of what is stored there, 64 MB. The size arrives already formatted with the user's unit choice (MB/MiB), so don't add units.",
+    "placeholders": {
+      "usedText": "how much is stored, already formatted, like \"64.21 MB\""
+    },
+    "screenshot": "main-window.png"
+  },
+
+  "fileExplorer.diskSpace.noLimitNote": "This storage has no size limit, so there's no bar to fill.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "description": "Second sentence of the hover tooltip when the storage has no size limit. Explains why the usage bar the user expected isn't there. Keep it matter-of-fact; nothing is wrong. A full sentence with its own final punctuation."
+  },
+
   "fileExplorer.diskSpace.lowNote": "This bar is red to indicate that the volume is low on space.",
   "@fileExplorer.diskSpace.lowNote": {
     "description": "Second sentence of the disk-usage bar's hover tooltip when the drive is 95% full or more. Explains why the bar the user is pointing at turned red. \"Volume\" is the drive or disk being shown. A full sentence with its own final punctuation."
@@ -96,7 +110,8 @@
 
   "fileExplorer.diskSpace.somewhatLowNote": "This bar is yellow to indicate that the volume is somewhat low on space.",
   "@fileExplorer.diskSpace.somewhatLowNote": {
-    "description": "The milder twin of fileExplorer.diskSpace.lowNote, shown when the drive is between 80% and 95% full and the bar has turned yellow rather than red. Keep the two sentences parallel in wording, and keep this one's tone the calmer of the pair. A full sentence with its own final punctuation."
+    "description": "The milder twin of fileExplorer.diskSpace.lowNote, shown when the drive is between 80% and 95% full and the bar has turned yellow rather than red. Keep the two sentences parallel in wording, and keep this one's tone the calmer of the pair. A full sentence with its own final punctuation.",
+    "screenshot": "main-window.png"
   },
 
   "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}. {notes}} other {{sizes}}}",
@@ -570,8 +585,7 @@
   "fileExplorer.network.browser.status.loginNeeded": "Login needed",
   "@fileExplorer.network.browser.status.loginNeeded": {
     "description": "Status cell when the host requires login and no credentials are stored.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.timeout": "Timeout",
   "@fileExplorer.network.browser.status.timeout": {
@@ -640,8 +654,7 @@
   "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
     "description": "Hover tooltip on a host row that needs login and has no stored credentials.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
   "@fileExplorer.network.browser.tooltip.authFailed": {

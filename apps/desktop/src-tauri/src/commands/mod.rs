@@ -48,5 +48,8 @@ pub mod sync_status; // Has both macOS and non-macOS implementations
 mod util;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod volumes;
+// WebDAV: the same gate and the same reason as `sftp`. ❌ No stub counterpart.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod webdav;
 pub mod whats_new;
 pub mod window_ordering;

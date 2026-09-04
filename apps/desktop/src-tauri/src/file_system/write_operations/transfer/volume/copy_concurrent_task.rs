@@ -22,13 +22,13 @@ use std::time::{Duration, Instant};
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
-use super::super::super::journal::CreatedFile;
+use super::super::super::ledger::WrittenFile;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{VolumeCopyConfig, WriteOperationType};
 use super::super::transfer_driver::make_concurrent_per_file_progress;
-use super::super::transfer_probe::{CURRENT_TASK_PROBE, OperationProbe, TaskProbeHandle};
+use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskProbeHandle};
 use super::preflight::SourceHint;
-use super::strategy::{CreatedPaths, FileWindow, MergeCtx, copy_single_path, staging_for};
+use super::strategy::{CreatedPaths, FileWindow, MergeCtx, MergeProbe, copy_single_path, staging_for};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -52,7 +52,7 @@ pub(super) struct CopyTaskSuccess {
     /// safe-replace, or a deep-merge child overwrite). Feeds the operation-log
     /// eligibility: a copy that overwrote isn't rollbackable (the original is gone).
     pub(super) overwrote: bool,
-    pub(super) created_files: Vec<CreatedFile>,
+    pub(super) created_files: Vec<WrittenFile>,
     pub(super) created_dirs: Vec<PathBuf>,
     /// The top-level source this task copied, and how many children a deep
     /// merge skipped in its subtree. `skipped_count == 0` means the whole
@@ -95,7 +95,7 @@ pub(super) struct CopyTaskFailure {
     pub(super) cleanup_temp: bool,
     pub(super) source_is_dir: bool,
     pub(super) overwrote: bool,
-    pub(super) created_files: Vec<CreatedFile>,
+    pub(super) created_files: Vec<WrittenFile>,
     pub(super) created_dirs: Vec<PathBuf>,
 }
 
@@ -128,7 +128,9 @@ pub(super) struct CopyTask {
     pub(super) file_name: Option<String>,
     /// The operation's one file-copy window, shared with every merge walker.
     pub(super) window: FileWindow,
-    pub(super) op_probe: Option<Arc<OperationProbe>>,
+    /// The in-flight table plus this source's row, so every leaf of a directory
+    /// source's subtree opens a row numbered under it.
+    pub(super) merge_probe: Option<MergeProbe>,
     /// This task's in-flight-table row, held for the task's whole life.
     pub(super) task_probe: Option<TaskProbeHandle>,
     pub(super) files_done: Arc<AtomicUsize>,
@@ -159,7 +161,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
         replace_after_write,
         file_name,
         window,
-        op_probe,
+        merge_probe,
         // Held for the task's whole life; dropping it (completion, abort, panic)
         // removes the row from the in-flight table.
         task_probe,
@@ -206,7 +208,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
         source_hints: &merge_hints,
         on_file_skipped: &on_file_skipped,
         window: window.clone(),
-        op_probe,
+        probe: merge_probe,
     };
     let on_file_progress = make_concurrent_per_file_progress(
         Arc::clone(&events),

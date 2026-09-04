@@ -71,10 +71,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} 個檔案/秒",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "刪除",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -179,6 +175,10 @@
   "@fileOperations.shared.byteRate": {
     "sourceHash": "4a55710"
   },
+  "fileOperations.shared.fileRate": "{count, plural, other {{rateText} 個檔案/秒}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
+  },
   "fileOperations.shared.andJoin": "{a}和 {b}",
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
@@ -222,6 +222,10 @@
   "fileOperations.transferDialog.spaceInfo": "{total} 中可用 {free}",
   "@fileOperations.transferDialog.spaceInfo": {
     "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "已使用 {used}，沒有容量上限",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "sourceHash": "5d74d4d"
   },
   "fileOperations.transferDialog.smbNativeNote": "這個共享資料夾用的是系統連線，取消可能會有延遲。在卷宗選擇器裡選「直接連線」，傳輸更快，取消也更可靠。",
   "@fileOperations.transferDialog.smbNativeNote": {
@@ -371,10 +375,6 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} 個檔案/秒",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.transferProgress.scanTitleCopy": "複製前正在核對…",
   "@fileOperations.transferProgress.scanTitleCopy": {
     "sourceHash": "fd21ea9"
@@ -458,6 +458,10 @@
   "fileOperations.transferProgress.titleFlushing": "正在寫入最後一部分…",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
+  },
+  "fileOperations.transferProgress.titleRemovingOriginals": "正在移除原檔案…",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
   },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {正在複製} move {正在移動} compress {正在壓縮} delete {正在刪除} other {正在移至垃圾桶}}…",
   "@fileOperations.transferProgress.titleActive": {
@@ -599,6 +603,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "停止，並把目前為止移動過的每一個檔案放回原處",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "所有檔案都已經在目標位置了，這次移動沒辦法再復原。不過「取消」還是能在 Cmdr 移除其餘原檔案之前把它停下來。",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "已暫停",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"
@@ -663,9 +675,13 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "這會刪除這項操作到目前為止寫入的每一個檔案。被它取代掉的檔案回不來了。",
+  "fileOperations.rollbackConfirm.body": "這會刪除這項操作到目前為止寫入的每一個檔案。被它取代掉的檔案回不來了。Cmdr 會略過沒有把握的部分，所以可能會留下一些。",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
+  },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "這會把這項操作到目前為止移動過的東西全部移回原處。被它取代掉的檔案回不來了。Cmdr 會略過沒有把握的部分，所以可能有些會留在現在的地方。",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
   },
   "fileOperations.rollbackConfirm.titleFinish": "要完成這項操作的復原嗎？",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -698,6 +714,86 @@
   "fileOperations.rollbackConfirm.finishRollBack": "完成復原",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "已刪除 Cmdr 寫入的 {countText} 個{count, plural, other {項目}}。",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "ff786b9"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "已把 Cmdr 移動過的 {countText} 個{count, plural, other {項目}}放回原處。",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "c5e329e"
+  },
+  "fileOperations.cancelRollback.someDeleted": "已刪除 {countText} 個{count, plural, other {項目}}。",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "已把 {countText} 個{count, plural, other {項目}}放回原處。",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "刪除 {countText} 個{count, plural, other {項目}}之後停止了。其餘的還留在目標位置。",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "把 {countText} 個{count, plural, other {項目}}放回原處之後停止了。其餘的還留在移動過去的地方。",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr 在移除原檔案的過程中停下了，但它移動過的檔案都已經在目標位置了，會留在那裡。{count, plural, other {還有 {countText} 個原檔案留在原處。}}",
+  "@fileOperations.cancelRollback.moveAlreadyLanded": {
+    "sourceHash": "88dcf83"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr 會略過沒有把握的部分，所以這些留了下來：",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "fb28a31"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "{name} 維持原樣：它在 Cmdr 放好之後有過更動。",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們在 Cmdr 放好之後有過更動。",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} 維持原樣：Cmdr 無法確認它有沒有更動過。",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：Cmdr 無法確認它們有沒有更動過。",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} 維持原樣：它原本的位置已經被別的東西佔走了。",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：它們原本的位置已經被別的東西佔走了。",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "資料夾 {name} 維持原樣：它裡面現在有東西了。",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "有 {countText} 個{count, plural, other {資料夾}}維持原樣：它們裡面現在有東西了。",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "無法復原 {name}。它所在的磁碟機可能沒有連接，或是唯讀的。",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "無法復原 {countText} 個{count, plural, other {項目}}。它們所在的磁碟機可能沒有連接，或是唯讀的。",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.named": "無法刪除 {name}，這是留在目標位置的一個不完整副本。你可以放心刪掉它，Cmdr 之後往那裡傳輸時也會清掉它。",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "無法刪除留在目標位置的 {countText} {count, plural, other {個不完整副本}}。你可以放心刪掉它們，Cmdr 之後往那裡傳輸時也會清掉它們。",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
   },
   "fileOperations.errorDialog.technicalDetails": "技術詳細資訊",
   "@fileOperations.errorDialog.technicalDetails": {

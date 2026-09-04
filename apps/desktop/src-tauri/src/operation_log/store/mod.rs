@@ -19,7 +19,7 @@ mod migrations;
 
 use std::path::{Path, PathBuf};
 
-use rusqlite::{Connection, ErrorCode};
+use rusqlite::{Connection, ErrorCode, OptionalExtension};
 use unicode_normalization::UnicodeNormalization;
 
 pub use connection::open_read_connection;
@@ -129,6 +129,15 @@ pub struct OperationRow {
     pub rollback_state: RollbackState,
     pub not_rollbackable_reason: Option<NotRollbackableReason>,
     pub rolls_back_op_id: Option<String>,
+    /// The newest operation that rolls THIS one back, the mirror of
+    /// [`Self::rolls_back_op_id`]. `None` until something reverses this operation.
+    ///
+    /// Not a stored column: every reader resolves it through the partial
+    /// `operations_rolls_back` index right after mapping (see
+    /// [`fill_inverse_op_ids`]), so no reader can hand out a `None` that means
+    /// "I didn't look". While the row reads `rolling_back` this is the id of the
+    /// live reversal, which is how the history dialog offers it Pause and Cancel.
+    pub inverse_op_id: Option<String>,
     pub source_volume_id: Option<String>,
     pub dest_volume_id: Option<String>,
     pub started_at: i64,
@@ -342,6 +351,9 @@ pub(super) fn map_operation_row(row: &rusqlite::Row<'_>) -> Result<OperationRow,
             "not_rollbackable_reason",
         )?,
         rolls_back_op_id: row.get(7)?,
+        // Resolved by `fill_inverse_op_ids` once the query has drained: the mapper
+        // holds a `Row`, not the connection it came from.
+        inverse_op_id: None,
         source_volume_id: row.get(8)?,
         dest_volume_id: row.get(9)?,
         started_at: row.get(10)?,
@@ -355,27 +367,61 @@ pub(super) fn map_operation_row(row: &rusqlite::Row<'_>) -> Result<OperationRow,
     })
 }
 
+/// Fill [`OperationRow::inverse_op_id`] on rows that have already been mapped.
+///
+/// **Call this from every reader that hands an `OperationRow` out.** The field is
+/// the only one the mapper can't populate (it needs the connection, and the
+/// query it belongs to is still draining the one statement cache at that point),
+/// so leaving it out is how a caller would learn "nothing reverses this" from a
+/// reader that simply never asked.
+///
+/// One prepared statement reused across the batch, each probe served by the
+/// partial `operations_rolls_back` index. Newest wins, matching
+/// [`read_inverse_op`]: an operation reversed, stopped midway, and reversed again
+/// has several inverses, and the live one is the last.
+pub(super) fn fill_inverse_op_ids(conn: &Connection, rows: &mut [OperationRow]) -> Result<(), OperationLogStoreError> {
+    if rows.is_empty() {
+        return Ok(());
+    }
+    let mut stmt = conn.prepare_cached(
+        "SELECT op_id FROM operations WHERE rolls_back_op_id = ?1 ORDER BY started_at DESC, op_id DESC LIMIT 1",
+    )?;
+    for row in rows.iter_mut() {
+        row.inverse_op_id = stmt
+            .query_row(rusqlite::params![row.op_id], |r| r.get::<_, String>(0))
+            .optional()?;
+    }
+    Ok(())
+}
+
 /// Read one operation header by id, or `None` if absent.
 pub fn read_operation(conn: &Connection, op_id: &str) -> Result<Option<OperationRow>, OperationLogStoreError> {
     let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE op_id = ?1");
-    let mut stmt = conn.prepare_cached(&sql)?;
-    let mut rows = stmt.query(rusqlite::params![op_id])?;
-    match rows.next()? {
-        Some(row) => Ok(Some(map_operation_row(row)?)),
-        None => Ok(None),
-    }
+    let mut out = {
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let mut rows = stmt.query(rusqlite::params![op_id])?;
+        match rows.next()? {
+            Some(row) => vec![map_operation_row(row)?],
+            None => return Ok(None),
+        }
+    };
+    fill_inverse_op_ids(conn, &mut out)?;
+    Ok(out.pop())
 }
 
 /// The most recent operations by start time (newest first), including
 /// unfinished ones.
 pub fn recent_operations(conn: &Connection, limit: u32) -> Result<Vec<OperationRow>, OperationLogStoreError> {
     let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations ORDER BY started_at DESC, op_id DESC LIMIT ?1");
-    let mut stmt = conn.prepare_cached(&sql)?;
-    let mut rows = stmt.query(rusqlite::params![limit])?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next()? {
-        out.push(map_operation_row(row)?);
+    {
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let mut rows = stmt.query(rusqlite::params![limit])?;
+        while let Some(row) = rows.next()? {
+            out.push(map_operation_row(row)?);
+        }
     }
+    fill_inverse_op_ids(conn, &mut out)?;
     Ok(out)
 }
 
@@ -543,12 +589,15 @@ pub fn read_rollback_file_totals(conn: &Connection, op_id: &str) -> Result<(u64,
 /// recorded outcomes, or straight back to `rollbackable` when no inverse row exists.
 pub fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>, OperationLogStoreError> {
     let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE rollback_state = ?1");
-    let mut stmt = conn.prepare_cached(&sql)?;
-    let mut rows = stmt.query(rusqlite::params![RollbackState::RollingBack.as_token()])?;
     let mut out = Vec::new();
-    while let Some(row) = rows.next()? {
-        out.push(map_operation_row(row)?);
+    {
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let mut rows = stmt.query(rusqlite::params![RollbackState::RollingBack.as_token()])?;
+        while let Some(row) = rows.next()? {
+            out.push(map_operation_row(row)?);
+        }
     }
+    fill_inverse_op_ids(conn, &mut out)?;
     Ok(out)
 }
 
@@ -563,12 +612,16 @@ pub fn read_inverse_op(
         "SELECT {OPERATION_COLUMNS} FROM operations \
          WHERE rolls_back_op_id = ?1 ORDER BY started_at DESC, op_id DESC LIMIT 1"
     );
-    let mut stmt = conn.prepare_cached(&sql)?;
-    let mut rows = stmt.query(rusqlite::params![original_op_id])?;
-    match rows.next()? {
-        Some(row) => Ok(Some(map_operation_row(row)?)),
-        None => Ok(None),
-    }
+    let mut out = {
+        let mut stmt = conn.prepare_cached(&sql)?;
+        let mut rows = stmt.query(rusqlite::params![original_op_id])?;
+        match rows.next()? {
+            Some(row) => vec![map_operation_row(row)?],
+            None => return Ok(None),
+        }
+    };
+    fill_inverse_op_ids(conn, &mut out)?;
+    Ok(out.pop())
 }
 
 #[cfg(test)]

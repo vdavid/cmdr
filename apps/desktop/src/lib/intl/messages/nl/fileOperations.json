@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} bestanden/s",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Verwijder",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -181,6 +177,10 @@
     "sourceHash": "4a55710",
     "sameAsSourceJustification": "'<size></size>/s': the <size> tag renders the formatted size widget and '/s' is the per-second unit marker, identical in Dutch. No translatable text."
   },
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} bestand/s} other {{rateText} bestanden/s}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
+  },
   "fileOperations.shared.andJoin": "{a} en {b}",
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
@@ -224,6 +224,10 @@
   "fileOperations.transferDialog.spaceInfo": "{free} vrij van {total}",
   "@fileOperations.transferDialog.spaceInfo": {
     "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "{used} gebruikt, geen groottelimiet",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "sourceHash": "5d74d4d"
   },
   "fileOperations.transferDialog.smbNativeNote": "Deze share gebruikt de systeemverbinding. Annuleren kan vertraagd zijn. Gebruik ‘Verbind direct’ in de volumekiezer voor snellere overdrachten en betrouwbaar annuleren.",
   "@fileOperations.transferDialog.smbNativeNote": {
@@ -373,10 +377,6 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} bestanden/s",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.transferProgress.scanTitleCopy": "Controleren voor het kopiëren...",
   "@fileOperations.transferProgress.scanTitleCopy": {
     "sourceHash": "fd21ea9"
@@ -460,6 +460,10 @@
   "fileOperations.transferProgress.titleFlushing": "Het laatste stukje schrijven...",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
+  },
+  "fileOperations.transferProgress.titleRemovingOriginals": "De originelen verwijderen...",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
   },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}...",
   "@fileOperations.transferProgress.titleActive": {
@@ -602,6 +606,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Stop en zet elk bestand terug dat tot nu toe is verplaatst",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Alle bestanden staan al op de bestemming, dus terugdraaien kan nu niet meer. Met Annuleer stopt Cmdr nog wel voordat het de rest van de originelen verwijdert.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Gepauzeerd",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"
@@ -666,9 +678,13 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Dit verwijdert elk bestand dat de bewerking tot nu toe heeft geschreven. Wat daarbij is vervangen, komt niet terug.",
+  "fileOperations.rollbackConfirm.body": "Dit verwijdert elk bestand dat de bewerking tot nu toe heeft geschreven. Wat daarbij is vervangen, komt niet terug. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat achterblijven.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
+  },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Dit zet alles terug wat de bewerking tot nu toe heeft verplaatst. Wat daarbij is vervangen, komt niet terug. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat blijven staan.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Het terugdraaien van deze bewerking voltooien?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -701,6 +717,86 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Voltooi terugdraaien",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "Alles wat Cmdr had geschreven, is verwijderd: {countText} {count, plural, one {onderdeel} other {onderdelen}}.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "ff786b9"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "Alles is teruggezet: {countText} {count, plural, one {onderdeel} other {onderdelen}}.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "c5e329e"
+  },
+  "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} verwijderd.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "{countText} {count, plural, one {onderdeel} other {onderdelen}} teruggezet.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "Gestopt na het verwijderen van {countText} {count, plural, one {onderdeel} other {onderdelen}}. De rest staat er nog.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "Gestopt na het terugzetten van {countText} {count, plural, one {onderdeel} other {onderdelen}}. De rest staat nog op de nieuwe plek.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr is gestopt tijdens het verwijderen van de originelen, maar alles wat het heeft verplaatst, staat al op de bestemming en blijft daar. {count, plural, one {Eén origineel staat nog op de oude plek.} other {{countText} originelen staan nog op hun oude plek.}}",
+  "@fileOperations.cancelRollback.moveAlreadyLanded": {
+    "sourceHash": "88dcf83"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr slaat alles over waar het niet zeker van is, dus deze zijn blijven staan:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "fb28a31"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "{name} ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} laten staan: op de oude plek staat nu iets anders.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} laten staan: op de oude plek staat nu iets anders.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Map {name} ongemoeid gelaten: er staat nu iets in.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {map} other {mappen}} ongemoeid gelaten: er staat nu iets in.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "{name} terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.named": "{name} verwijderen lukte niet: een onvolledig exemplaar dat op de bestemming is blijven staan. Je kunt het gerust verwijderen, en Cmdr ruimt het bij een latere overdracht daarheen op.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "{countText} onvolledige {count, plural, one {exemplaar} other {exemplaren}} verwijderen lukte niet; die zijn op de bestemming blijven staan. Je kunt ze gerust verwijderen, en Cmdr ruimt ze bij een latere overdracht daarheen op.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
   },
   "fileOperations.errorDialog.technicalDetails": "Technische details",
   "@fileOperations.errorDialog.technicalDetails": {

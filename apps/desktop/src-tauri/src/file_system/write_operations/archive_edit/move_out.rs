@@ -16,15 +16,14 @@ use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, Operati
 use super::super::operation_intent::is_cancelled;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::types::{
-    WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationError,
+    CancelRollback, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::engine::{MutatorHooks, PlanError, run_managed_edit, to_write_error};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
 use crate::file_system::volume::Volume;
-use crate::file_system::volume::backends::archive;
-use crate::file_system::volume::backends::archive::mutator::{self, Changeset, MutationError};
 use crate::ignore_poison::IgnorePoison;
+use cmdr_archive::mutator::{self, Changeset, MutationError};
 
 /// Routes a MOVE whose SOURCE is inside a zip (extract-out + delete-inside) to a
 /// single managed compound op. The op extracts the selected entries to the
@@ -76,7 +75,7 @@ pub(crate) async fn route_archive_move_out(
         path: String::new(),
         message: "no entries to move".to_string(),
     })?;
-    let (archive_path, _) = archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
+    let (archive_path, _) = cmdr_archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
     // Moving OUT of a read-only archive would need to DELETE the source entries;
     // tar/7z can't be edited, so refuse (copy-out still works via the read path).
     ensure_zip_writable(&archive_path)?;
@@ -86,7 +85,7 @@ pub(crate) async fn route_archive_move_out(
     let mut inner_by_source: Vec<(PathBuf, String)> = Vec::with_capacity(source_paths.len());
     for source in &source_paths {
         let (source_archive, inner) =
-            archive::archive_boundary_candidate(source).ok_or_else(|| read_only_error(source))?;
+            cmdr_archive::archive_boundary_candidate(source).ok_or_else(|| read_only_error(source))?;
         if source_archive != archive_path {
             return Err(WriteOperationError::IoError {
                 path: source.display().to_string(),
@@ -196,7 +195,7 @@ pub(crate) async fn route_archive_move_out(
                     operation_id: op_id.clone(),
                     operation_type: WriteOperationType::Move,
                     files_processed: files_extracted,
-                    rolled_back: false,
+                    rollback: CancelRollback::none(),
                 });
                 task_guard.disarm();
                 manager::manager().on_settled(&op_id);
@@ -294,7 +293,7 @@ pub(crate) async fn route_archive_move_out(
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::Move,
                         files_processed: files_extracted,
-                        rolled_back: false,
+                        rollback: CancelRollback::none(),
                     });
                 }
                 Err(PlanError::Op(err)) => {

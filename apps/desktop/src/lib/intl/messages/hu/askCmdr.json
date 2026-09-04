@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "A Cmdr megnézheti, mit böngészel épp, a meghajtóidat és a fájlműveleti előzményeidet, hogy válaszolhasson. Csak neveket, útvonalakat és méreteket olvas, fájltartalmakat soha.",
+  "askCmdr.empty.hint": "A Cmdr megnézheti, mit böngészel épp, a meghajtóidat és a fájlműveleti előzményeidet, hogy válaszolhasson. Neveket, útvonalakat és méreteket olvas, és egy fájlba csak akkor néz bele, ha arról kérdezed.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Kérdés a fájljaidról…",
   "@askCmdr.composer.placeholder": {
@@ -111,6 +111,14 @@
   "askCmdr.tool.searchPhotos.done": "A fotóid átvizsgálva",
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
+  },
+  "askCmdr.tool.inspectFile.doing": "Fájlok átnézése",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "Fájlok átnézve",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
   },
   "askCmdr.tool.imageFacts.doing": "A fotóid tartalmának olvasása",
   "@askCmdr.tool.imageFacts.doing": {
@@ -223,6 +231,10 @@
   "askCmdr.error.budgetExhausted": "Ez elérte a korlátját, mielőtt befejezhette volna. Próbálj valami konkrétabbat kérdezni.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
+  },
+  "askCmdr.error.repeatedToolCall": "Ez újra és újra ugyanazt a keresést próbálta, de nem jutott előrébb. Próbáld másképp megkérdezni.",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "ea46ed7"
   },
   "askCmdr.error.unfinishedReply": "A válasz nem fejeződött be. Próbáld újra?",
   "@askCmdr.error.unfinishedReply": {
@@ -348,6 +360,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Részletek azokból a fájlokból, amelyeket a Cmdr megnyit, hogy válaszolhasson neked: némi szöveg, PDF-oldalak, egy archívumban lévő fájlok listája, valamint egy fotó kameraadatai és készítési helye",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "Amit épp most nézel: a jelenlegi mappád, a kurzorod, a kijelölésed és a csatlakoztatott meghajtóid",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -360,9 +376,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "A Cmdr soha nem küldi el magukat a fájlokat: sem a fájlok tartalmát, sem fotókat, sem bélyegképeket. A fotókeresés az egyetlen funkció, amely belenéz a képeidbe, és csak akkor, amikor keresel bennük: a Cmdr által a találati fotókban felismert szöveg és azok címkéi a szolgáltatódhoz kerülnek, hogy meg tudja találni őket. Az Ask Cmdr javasolhat átnevezést, áthelyezést és rendrakást, de egyetlen fájllal sem történik semmi, amíg jóvá nem hagyod.",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "A Cmdr soha nem küld el egész fájlokat, fotókat vagy bélyegképeket. Ha egy fájlról kérdezel, annak egy korlátozott részét olvashatja el: néhány sor szöveget, egy PDF néhány oldalát a címével és a szerzőjével együtt, egy archívumban lévő fájlok listáját, vagy egy fotó kameraadatait, beleértve azt, hogy hol készült. A fotókeresés ugyanígy működik: a Cmdr által a találati fotókban felismert szöveg és azok címkéi a szolgáltatódhoz kerülnek, hogy meg tudja találni őket. Az Ask Cmdr javasolhat átnevezést, áthelyezést és rendrakást, de egyetlen fájllal sem történik semmi, amíg jóvá nem hagyod.",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Az Ask Cmdr jegyzeteket ír rólad: hogyan szereted rendezni a dolgokat, mit utasítottál el korábban, és mindent, amit megkérsz, hogy jegyezzen meg. Ezek a jegyzetek minden elküldött üzenettel együtt mennek, amíg csak léteznek, és tartalmazhatnak olyan szöveget is, amelyet a Cmdr a fotóidban ismert fel. Bármikor elolvashatod vagy törölheted őket az Ask Cmdr beállításaiban.",
   "@askCmdr.consent.memory": {
@@ -392,9 +408,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Az Ask Cmdr mostantól jegyzeteket őriz rólad a beszélgetések között, és magától is elkezdhet egy beszélgetést, ha észrevesz valami említésre méltót. Ez többet ígér annál, mint amihez hozzájárultál, ezért itt van újra az egész.",
+  "askCmdr.consent.whatsNew.body": "Az Ask Cmdr mostantól belenézhet abba a fájlba, amelyről kérdezel: elolvashatja a szövegének egy részét, egy PDF néhány oldalát, egy archívumban lévő fájlok listáját, vagy egy fotó kameraadatait és készítési helyét. Ez többet ígér annál, mint amihez hozzájárultál, ezért itt van újra az egész.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "Elfelejtsen mindent, amire az Ask Cmdr emlékszik?",
   "@askCmdr.forget.title": {
@@ -601,7 +617,7 @@
   "@askCmdr.renameUndo.undoLabel": {
     "sourceHash": "fc1c08a"
   },
-  "askCmdr.renameUndo.undoJob": "Mind a {countText} {count, plural, one {csomag} other {csomag}} visszavonása",
+  "askCmdr.renameUndo.undoJob": "Az összes {count, plural, one {csomag} other {csomag}} visszavonása ({countText})",
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
@@ -625,7 +641,7 @@
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
-  "askCmdr.renameUndo.skipReason.drift.named": "A {name} változatlan maradt: az átnevezés után módosult.",
+  "askCmdr.renameUndo.skipReason.drift.named": "A(z) „{name}” változatlan maradt: az átnevezés után módosult.",
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
@@ -633,7 +649,7 @@
   "@askCmdr.renameUndo.skipReason.drift.counted": {
     "sourceHash": "217d1e8"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.named": "A {name} változatlan maradt: a régi nevét már más használja.",
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "A(z) „{name}” változatlan maradt: a régi nevét már más használja.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
@@ -641,7 +657,7 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "sourceHash": "2fd2e7a"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.named": "A {name} változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.",
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "A(z) „{name}” változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
@@ -649,7 +665,7 @@
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
     "sourceHash": "5964166"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "A {name} mappa változatlan maradt: már van benne valami.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "A(z) „{name}” mappa változatlan maradt: már van benne valami.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
@@ -657,7 +673,7 @@
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
     "sourceHash": "d2c9f56"
   },
-  "askCmdr.renameUndo.skipReason.failed.named": "A {name} változatlan maradt: a Cmdr nem tudta visszaadni a régi nevét.",
+  "askCmdr.renameUndo.skipReason.failed.named": "A(z) „{name}” változatlan maradt: a Cmdr nem tudta visszaadni a régi nevét.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },

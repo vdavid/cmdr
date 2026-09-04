@@ -270,11 +270,12 @@
             >
                 {tString('fileOperations.transferProgress.conflictCancel')}
             </button>
-            <span use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP} class="disabled-button-wrap">
-                <button class="danger-text" disabled
-                    >{tString('fileOperations.transferProgress.conflictRollback')}</button
-                >
-            </span>
+            <!-- Blocked, not `disabled`: the reason is worth reading, and a
+                 disabled button leaves the tab order with its tooltip. No click
+                 handler, so pressing it does nothing. -->
+            <button class="danger-text" aria-disabled="true" use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP}
+                >{tString('fileOperations.transferProgress.conflictRollback')}</button
+            >
         {:else if isCopy || isMove}
             <button
                 class="danger-text"
@@ -456,13 +457,6 @@
         border-top: 1px solid var(--color-border-strong);
     }
 
-    /* Host for the disabled Rollback button so the tooltip still fires (a
-       disabled button swallows its own pointer events). Mirrors
-       `.conflict-button-wrap`'s purpose for the smaller-disabled bulk action. */
-    .disabled-button-wrap {
-        display: inline-flex;
-    }
-
     /* Text-only danger button (for less prominent cancel) */
     .danger-text {
         background: transparent;
@@ -474,12 +468,16 @@
         transition: all var(--transition-base);
     }
 
-    .danger-text:disabled {
+    /* Switched off, either way it got there: `disabled` for a button with nothing
+       to explain, `aria-disabled` for one carrying a tooltip that says why (it
+       keeps its pointer events and its place in the tab order). */
+    .danger-text:disabled,
+    .danger-text[aria-disabled='true'] {
         opacity: 0.4;
         cursor: not-allowed;
     }
 
-    .danger-text:hover:not(:disabled) {
+    .danger-text:hover:not(:disabled, [aria-disabled='true']) {
         text-decoration: underline;
     }
 </style>

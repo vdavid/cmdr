@@ -30,7 +30,15 @@
     import { formatInteger } from '$lib/intl/number-format'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { stallNoticeFor } from './transfer-stall'
-    import { rollbackConfirmVariant, reversalTitleKey } from '../reversal-wording'
+    import { progressCountKind } from '../progress-readout'
+    import {
+        inFlightRollbackTooltipKey,
+        inFlightRollbackVariant,
+        reversalWindowClosed,
+        rollbackConfirmVariant,
+        reversalTitleKey,
+    } from '../reversal-wording'
+    import { opKindForTransferType } from '../op-kind'
     import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
     import { hasOtherQueuedWork } from '$lib/file-operations/queue/queue-backlog'
 
@@ -202,13 +210,25 @@
         mcpRequestId,
     })
 
-    /** Rollback is asked about before it happens: it deletes everything the
-     *  operation has written, and a file it overwrote has no backup, so one
-     *  mis-click on a button that sits beside a harmless Cancel is
-     *  unrecoverable. Both entry points (this dialog's own button and the
-     *  conflict body's) go through `handleCancel(true)`, so the question hangs
-     *  off that one call. `../DETAILS.md` § "Rollback asks first". */
+    /** Rollback is asked about before it happens: it undoes everything the
+     *  operation has written or moved, and a file it overwrote has no backup
+     *  either way, so one mis-click on a button that sits beside a harmless
+     *  Cancel is unrecoverable. Both entry points (this dialog's own button and
+     *  the conflict body's) go through `handleCancel(true)`, so the question
+     *  hangs off that one call. `../DETAILS.md` § "Rollback asks first". */
     let rollbackAsked = $state(false)
+
+    /** What rolling THIS operation back would do to the files, so the question
+     *  matches the operation: stopping a copy deletes what it wrote, stopping a
+     *  move carries back what it moved. ❌ Never a fixed `stopAndDelete` — red
+     *  "this deletes everything" over a move's harmless reversal pushes people
+     *  onto the wrong button. `../reversal-wording.ts`. */
+    const opKind = $derived(opKindForTransferType(operationType))
+    const inFlightVariant = $derived(inFlightRollbackVariant(opKind))
+    /** What the live Rollback button promises, which is the whole difference from
+     *  the Cancel beside it: a copy's reversal deletes what it wrote, a move's
+     *  carries it back. */
+    const liveRollbackTooltip = $derived(tString(inFlightRollbackTooltipKey(inFlightVariant)))
 
     // Local aliases over the factory getters so the markup reads the same names
     // it always has. Each tracks reactive state (the view's own, or the
@@ -222,6 +242,26 @@
      *  title: there the bar drains backwards and "Rolling back..." is honest. */
     const reversalVariant = $derived(reverses === null ? null : rollbackConfirmVariant(reverses))
     const rollbackUnavailable = $derived(progress.rollbackUnavailable)
+
+    /** Why Rollback is switched off right now, or `null` while it really works.
+     *  Two reasons, and they answer different halves of the question:
+     *
+     *  - the operation's STRATEGY can't reverse at all (`supportsRollback` off its
+     *    registry row — the authority wherever it has arrived, and an adopted
+     *    view's only source; the props-only same-volume-move rule stands beside it
+     *    for the frames before the first snapshot lands),
+     *  - or it could, and the moment has passed: a move between filesystems on its
+     *    source-deletion phase has already landed every file
+     *    (`../reversal-wording.ts`).
+     *
+     *  Either way the plain Cancel above stays live and stays accurate, which is
+     *  what the second tooltip points at. */
+    const rollbackBlockedTooltip = $derived.by(() => {
+        if (isSameVolumeMove || rollbackUnavailable) return ROLLBACK_UNAVAILABLE_TOOLTIP
+        if (reversalWindowClosed(opKind, phase))
+            return tString('fileOperations.transferProgress.rollbackAlreadyLandedTooltip')
+        return null
+    })
     const isCancelling = $derived(progress.isCancelling)
     const cancelEventReceived = $derived(progress.cancelEventReceived)
     const settleSlow = $derived(progress.settleSlow)
@@ -362,15 +402,25 @@
             {/if}
         {:else if conflictEvent}
             {tString('fileOperations.transferProgress.titleConflict')}
+        {:else if isPaused}
+            <!-- Before scanning, not after: a paused scan is stopped, so
+                 "Scanning to copy..." over it would describe a walk that isn't
+                 walking. -->
+            {tString('fileOperations.transferProgress.titlePaused')}
         {:else if isScanning}
             <!-- After cancelling and rolling back, not before: the phase stays
                  `scanning` while a cancel issued mid-count winds down, and the
                  title has to name what the dialog is doing NOW. -->
             {scanTitle}
-        {:else if isPaused}
-            {tString('fileOperations.transferProgress.titlePaused')}
         {:else if phase === 'flushing'}
             {tString('fileOperations.transferProgress.titleFlushing')}
+        {:else if isMove && phase === 'deleting'}
+            <!-- The closing stage of a move BETWEEN disks: the files are all at
+                 the destination and the originals are going. It has its own bar
+                 (over the top-level sources), so leaving the title on "Moving..."
+                 would be the one phase whose name says nothing about what the
+                 numbers under it are counting. -->
+            {tString('fileOperations.transferProgress.titleRemovingOriginals')}
         {:else}
             {tString('fileOperations.transferProgress.titleActive', { gerund: gerundKind })}
         {/if}
@@ -381,7 +431,7 @@
             {conflictEvent}
             {isCopy}
             {isMove}
-            rollbackUnavailable={isSameVolumeMove}
+            rollbackUnavailable={isSameVolumeMove || rollbackUnavailable}
             {isCancelling}
             {isResolvingConflict}
             onResolve={(resolution: ConflictResolution, applyToAll: boolean) => {
@@ -416,8 +466,12 @@
                  phase: the bars, their labels, and the dialog title already say
                  what's going on, so a "Copying" chip under a "Copying..." title
                  is just a second copy of the word. -->
+            <!-- The spinner is the claim that the walk is moving, so a paused
+                 scan doesn't get one: it is stopped, and the title says so. -->
             <div class="phase-banner">
-                <Spinner size="sm" />
+                {#if !isPaused}
+                    <Spinner size="sm" />
+                {/if}
                 <span>{tString('fileOperations.transferProgress.stageScanning')}</span>
             </div>
 
@@ -431,6 +485,7 @@
                     scanBytesPerSec={scan.bytesPerSecond}
                     scanCurrentDir={scan.currentDir}
                     {currentFile}
+                    paused={isPaused}
                 />
             </div>
         {:else if !phaseUnknown}
@@ -447,7 +502,7 @@
                     {filesPerSecond}
                     etaSeconds={etaSecondsDisplay}
                     {stall}
-                    countKind={operationType === 'trash' ? 'items' : 'files'}
+                    countKind={progressCountKind(opKind, phase)}
                 />
             </div>
 
@@ -511,28 +566,25 @@
                  F2 while this dialog is focused). Both show only during the active
                  copy/move/delete phases (`canPauseOrQueue`). -->
             {#if canPauseOrQueue}
-                <!-- Pause parks between files, so there's nothing to park while
-                     the operation is still counting: the backend declines a
-                     pause in its scan-wait, and offering a button that does
-                     nothing is worse than not offering it. Queue stays, and is
-                     the whole point of giving a scanning transfer an id. -->
-                {#if !isScanning}
-                    <Button
-                        variant="secondary"
-                        onclick={progress.handlePauseResume}
-                        disabled={pauseInFlight}
-                        aria-label={isPaused
-                            ? tString('fileOperations.transferProgress.resumeAria')
-                            : tString('fileOperations.transferProgress.pauseAria')}
-                    >
-                        <span class="btn-inner">
-                            <Icon name={isPaused ? 'play' : 'pause'} size={14} />
-                            {isPaused
-                                ? tString('fileOperations.transferProgress.resume')
-                                : tString('fileOperations.transferProgress.pause')}
-                        </span>
-                    </Button>
-                {/if}
+                <!-- Offered during the scan as much as during the write: the
+                     walk parks on the same gate the drivers do
+                     (`write_operations/scan_bridge.rs`), and the scan is where
+                     somebody realizes they picked the wrong destination. -->
+                <Button
+                    variant="secondary"
+                    onclick={progress.handlePauseResume}
+                    disabled={pauseInFlight}
+                    aria-label={isPaused
+                        ? tString('fileOperations.transferProgress.resumeAria')
+                        : tString('fileOperations.transferProgress.pauseAria')}
+                >
+                    <span class="btn-inner">
+                        <Icon name={isPaused ? 'play' : 'pause'} size={14} />
+                        {isPaused
+                            ? tString('fileOperations.transferProgress.resume')
+                            : tString('fileOperations.transferProgress.pause')}
+                    </span>
+                </Button>
                 <!-- One button, two words: "Queue" when there's something to
                      queue behind, "Background" when there isn't. The action, the
                      tooltip, and F2 are the same either way. -->
@@ -575,32 +627,27 @@
                 {#if isRollingBack}
                     <Button variant="danger" disabled>{tString('fileOperations.transferProgress.titleRollingBack')}</Button
                     >
-                {:else if isSameVolumeMove || rollbackUnavailable}
-                    <!-- No backend rollback for this one: either a same-volume
-                         move (which the props alone can tell), or the
-                         operation's own registry row saying so — the authority
-                         wherever it has arrived, and an adopted view's only
-                         source. Disabled with an explanatory tooltip; plain
-                         Cancel above stays reachable. -->
-                    <span use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP}>
-                        <Button variant="danger" disabled
-                            >{tString('fileOperations.transferProgress.conflictRollback')}</Button
-                        >
-                    </span>
                 {:else}
-                    <!-- Nothing has been written during the scan, so there is
-                         nothing to reverse: disabled rather than hidden, so the
-                         button row doesn't reshuffle when counting ends. -->
-                    <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
-                        <Button
-                            variant="danger"
-                            onclick={() => {
-                                rollbackAsked = true
-                            }}
-                            disabled={isCancelling || operationSettled || isScanning}
-                            >{tString('fileOperations.transferProgress.conflictRollback')}</Button
-                        >
-                    </span>
+                    <!-- One button, three readings. The two BLOCKED ones are
+                         `aria-disabled` rather than `disabled`: each has a reason
+                         worth reading, and a `disabled` button leaves the tab
+                         order, taking its tooltip with it. The press is guarded
+                         instead, so a blocked click asks nothing. `disabled` stays
+                         right for the scan and the settle window, where nothing
+                         has been written (or the operation is already over) and
+                         there is nothing to explain — and disabled rather than
+                         hidden, so the button row doesn't reshuffle when counting
+                         ends. -->
+                    <Button
+                        variant="danger"
+                        ariaDisabled={rollbackBlockedTooltip !== null}
+                        tooltipContent={rollbackBlockedTooltip ?? liveRollbackTooltip}
+                        onclick={() => {
+                            if (rollbackBlockedTooltip === null) rollbackAsked = true
+                        }}
+                        disabled={isCancelling || operationSettled || isScanning}
+                        >{tString('fileOperations.transferProgress.conflictRollback')}</Button
+                    >
                 {/if}
             {/if}
         </div>
@@ -610,10 +657,12 @@
 <!-- Stacked over the progress dialog, which is the dialog that raised it: same
      subtree, so DOM order puts it on top and the focus trap it mounts takes
      over until it goes (`$lib/ui/DETAILS.md` § ModalDialog). Withdrawn once the
-     operation settles, because there is nothing left to undo. -->
-{#if rollbackAsked && !operationSettled}
+     operation settles, because there is nothing left to undo — and the moment
+     Rollback is blocked, since a move that reaches its source-deletion phase with
+     the question up would otherwise still be promising a journey home. -->
+{#if rollbackAsked && !operationSettled && rollbackBlockedTooltip === null}
     <RollbackConfirmDialog
-        variant="stopAndDelete"
+        variant={inFlightVariant}
         onConfirm={() => {
             rollbackAsked = false
             void progress.handleCancel(true)

@@ -197,7 +197,7 @@ fn get_available_space(path: &Path) -> Option<u64> {
     #[cfg(target_os = "macos")]
     {
         if let Some(space) = crate::volumes::get_volume_space(&path.to_string_lossy()) {
-            return Some(space.available_bytes);
+            return space.available_bytes();
         }
     }
 

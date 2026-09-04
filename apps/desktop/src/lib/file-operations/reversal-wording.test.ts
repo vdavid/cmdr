@@ -16,14 +16,21 @@ import type { MessageKey } from '$lib/intl/keys.gen'
 import {
   type RollbackConfirmVariant,
   rollbackConfirmVariant,
+  inFlightRollbackVariant,
   reversalLabelKey,
   reversalTitleKey,
+  reversalWindowClosed,
+  inFlightRollbackTooltipKey,
 } from './reversal-wording'
+
+/** The three variants that describe undoing a FINISHED operation, which is what
+ *  the agreement test below is about. The other two belong to one still running. */
+type UndoVariant = Exclude<RollbackConfirmVariant, 'stopAndDelete' | 'stopAndMoveBack'>
 
 /** The confirmation body each variant raises, mirroring `RollbackConfirmDialog`'s
  *  own `wording()` map. Duplicated here on purpose: if the dialog's map is edited
  *  away from this one, the agreement test below is what notices. */
-const CONFIRM_BODY: Record<Exclude<RollbackConfirmVariant, 'stopAndDelete'>, MessageKey> = {
+const CONFIRM_BODY: Record<UndoVariant, MessageKey> = {
   undoByDeleting: 'fileOperations.rollbackConfirm.bodyUndoByDeleting',
   undoByMovingBack: 'fileOperations.rollbackConfirm.bodyUndoByMovingBack',
   undoByRenamingBack: 'fileOperations.rollbackConfirm.bodyUndoByRenamingBack',
@@ -53,6 +60,37 @@ describe('rollbackConfirmVariant', () => {
     // an operation whose reversal takes nothing away.
     expect(rollbackConfirmVariant('move')).not.toBe('undoByDeleting')
     expect(rollbackConfirmVariant('rename')).not.toBe('undoByDeleting')
+  })
+})
+
+describe('inFlightRollbackVariant', () => {
+  it('words stopping a running move as putting files back, never as a delete', () => {
+    // The defect: Rollback on a running MOVE showed the copy's "this deletes
+    // every file the operation has written so far" over a red button, for a
+    // reversal that deletes nothing and carries the files home.
+    for (const kind of ['move', 'trash'] as const) {
+      expect(inFlightRollbackVariant(kind)).toBe('stopAndMoveBack')
+    }
+  })
+
+  it('keeps the delete wording for a running copy, which really does delete what it wrote', () => {
+    for (const kind of ['copy', 'archiveEdit', 'createFolder', 'createFile', 'delete', 'rename'] as const) {
+      expect(inFlightRollbackVariant(kind)).toBe('stopAndDelete')
+    }
+  })
+
+  it('agrees with the finished-operation classifier about which reversals take something away', () => {
+    // Two classifiers, one truth: whether the reversal removes files is a fact
+    // about the OPERATION, not about when the user pressed the button.
+    const DELETING = new Set<RollbackConfirmVariant>(['stopAndDelete', 'undoByDeleting'])
+    const kinds: OpKind[] = ['copy', 'move', 'delete', 'trash', 'rename', 'createFolder', 'createFile', 'archiveEdit']
+    for (const kind of kinds) {
+      // `rename` is the one honest mismatch: nothing is renamed back mid-flight
+      // (a rename is one syscall), so the in-flight arm is the delete one it
+      // can never reach.
+      if (kind === 'rename') continue
+      expect(DELETING.has(inFlightRollbackVariant(kind))).toBe(DELETING.has(rollbackConfirmVariant(kind)))
+    }
   })
 })
 
@@ -131,9 +169,11 @@ describe('the running bar agrees with the question that raised it', () => {
 
   it.each(OPERATION_KINDS)('never promises a restore for %s and then deletes, or the reverse', (kind) => {
     const variant = rollbackConfirmVariant(kind)
-    // `stopAndDelete` is the in-flight variant; no finished operation maps to it.
+    // The two in-flight variants belong to a running operation; no finished one
+    // maps to either.
     expect(variant).not.toBe('stopAndDelete')
-    const body = tString(CONFIRM_BODY[variant as Exclude<RollbackConfirmVariant, 'stopAndDelete'>])
+    expect(variant).not.toBe('stopAndMoveBack')
+    const body = tString(CONFIRM_BODY[variant as UndoVariant])
     const label = tString(reversalLabelKey(variant))
 
     // "Deletes" in the question means "deleting" on the bar, and neither of the
@@ -148,5 +188,45 @@ describe('the running bar agrees with the question that raised it', () => {
       tString(reversalLabelKey(v)),
     )
     expect(new Set(labels).size).toBe(3)
+  })
+})
+
+describe('reversalWindowClosed', () => {
+  it('closes once a move is removing the originals: everything has landed and nothing can call it back', () => {
+    expect(reversalWindowClosed('move', 'deleting')).toBe(true)
+  })
+
+  it.each(['scanning', 'copying', 'flushing', 'rolling_back', null] as const)(
+    'stays open for a move in %s, where the engine can still carry the files home',
+    (phase) => {
+      expect(reversalWindowClosed('move', phase)).toBe(false)
+    },
+  )
+
+  it('is about the MOVE, not the phase name: a copy in a deleting phase still reverses what it wrote', () => {
+    // A delete / trash reports `supportsRollback: false`, so the button never
+    // reaches this question. The arms matter because a COPY must not be caught by
+    // it: undoing a copy deletes the copies, whatever phase it is in.
+    expect(reversalWindowClosed('copy', 'deleting')).toBe(false)
+    expect(reversalWindowClosed('delete', 'deleting')).toBe(false)
+    expect(reversalWindowClosed('trash', 'deleting')).toBe(false)
+  })
+})
+
+describe('inFlightRollbackTooltipKey', () => {
+  it('tells a move the files travel back, and never words it as a delete', () => {
+    const tip = tString(inFlightRollbackTooltipKey('stopAndMoveBack')).toLowerCase()
+    expect(tip).toContain('move back')
+    expect(tip).not.toContain('delete')
+  })
+
+  it('keeps the delete wording for a copy, which really does remove what it wrote', () => {
+    expect(tString(inFlightRollbackTooltipKey('stopAndDelete')).toLowerCase()).toContain('delete')
+  })
+
+  it('gives the two their own sentence, so the button beside Cancel says what THIS click does', () => {
+    expect(tString(inFlightRollbackTooltipKey('stopAndMoveBack'))).not.toBe(
+      tString(inFlightRollbackTooltipKey('stopAndDelete')),
+    )
   })
 })

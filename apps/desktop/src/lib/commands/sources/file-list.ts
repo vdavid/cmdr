@@ -447,6 +447,20 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: ['⌘⇧A'],
   },
   {
+    id: 'selection.invert',
+    nameKey: 'commands.selectionInvert.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    // Total Commander's invert key, both ways it's typed. `⇧8` is `*` on a US
+    // layout, matched by physical key too (`eventMatchesCommand`'s digit
+    // fallback) so it works where Shift+8 types something else; bare `*` is the
+    // numpad key, which reports `*` with no Shift on every layout. `⇧8` stays
+    // first because a menu accelerator (pushed only on a rebind) reads
+    // `shortcuts[0]`.
+    shortcuts: ['⇧8', '*'],
+    descriptionKey: 'commands.selectionInvert.description',
+  },
+  {
     id: 'selection.selectFiles',
     nameKey: 'commands.selectionSelectFiles.label',
     scope: 'Main window/File list',

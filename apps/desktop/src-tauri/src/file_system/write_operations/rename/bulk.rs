@@ -20,8 +20,8 @@ use super::super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::super::source_binding::{SourceFingerprint, normalized_path};
 use super::super::state::{WriteOperationState, WriteSettledGuard, is_cancelled, update_operation_status};
 use super::super::types::{
-    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationStartResult, WriteOperationType,
-    WriteProgressEvent, WriteSourceItemDoneEvent,
+    CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationStartResult,
+    WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::volume::{LaneKey, Volume, rename_local_exclusive};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
@@ -156,7 +156,7 @@ pub(crate) fn start_bulk_rename(
                     operation_id: operation_id_for_task.clone(),
                     operation_type: WriteOperationType::Rename,
                     files_processed: run.processed(),
-                    rolled_back: false,
+                    rollback: CancelRollback::none(),
                 });
                 super::super::journal::finalize_op(&operation_id_for_task, OpKind::Rename, ExecutionStatus::Canceled);
             } else {

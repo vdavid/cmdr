@@ -70,6 +70,22 @@ const SCHEMA_VERSION: &str = "3";
 /// Absent ⇒ generation 0 (no pass has run).
 pub(crate) const RECOMPUTE_GENERATION_KEY: &str = "recompute_generation";
 
+/// Meta key for the scoring policy the stored weights were computed under, stamped
+/// by each full pass alongside the generation bump
+/// (`classify::scoring_policy_fingerprint`).
+///
+/// A stored value that differs from this build's fingerprint, or an absent one,
+/// means every row predates the classification rules this build applies, so the
+/// volume needs a full recompute rather than being trusted. Nothing else would
+/// revisit them: a full pass runs once and an incremental only touches folders the
+/// filesystem changed, so a classification fix stays inert over a store's existing
+/// rows forever. (The local `root` volume held 188,760 of them on 2026-09-03.)
+///
+/// Why a stamp rather than a [`SCHEMA_VERSION`] bump, which would also force a
+/// rescore: the bump deletes the DB file, and the `visits` table in it is the one
+/// thing here that ISN'T regenerable. Navigation history is real user data.
+pub(crate) const SCORING_POLICY_KEY: &str = "scoring_policy";
+
 // `path_folded` is the BINARY primary key (the precomputed `normalize_for_comparison`
 // fold of the path), so equality and range lookups are index-served without the
 // custom `platform_case` collation defeating the b-tree optimization. `path` keeps the
@@ -96,10 +112,15 @@ const CREATE_TABLES_SQL: &str = "
     ) WITHOUT ROWID;
 ";
 
-/// Whether a volume's store needs an INITIAL full recompute: `true` when it carries
-/// no [`RECOMPUTE_GENERATION_KEY`] after the write-path open — a fresh install, a
-/// schema-recreated store (the prod schema-3 upgrade path), or one maintained only by
-/// incremental rescores (which never stamp a generation).
+/// Whether a volume's store needs a full recompute before its weights may be
+/// trusted. Two independent reasons, either one enough:
+///
+/// - It carries no [`RECOMPUTE_GENERATION_KEY`] — a fresh install, a
+///   schema-recreated store (the prod schema-3 upgrade path), or one maintained
+///   only by incremental rescores (which never stamp a generation).
+/// - Its [`SCORING_POLICY_KEY`] doesn't match this build's
+///   `classify::scoring_policy_fingerprint`, so every row was computed under
+///   classification rules we no longer apply.
 ///
 /// **The decision binds to the write-path open, deliberately.** The schema
 /// delete-and-recreate happens lazily, ONLY inside [`ImportanceStore::open`] on a
@@ -111,9 +132,9 @@ const CREATE_TABLES_SQL: &str = "
 /// the recreate FIRST, so the generation we read reflects the CURRENT schema. This is
 /// the exact prod-upgrade ordering; a sweep-time read probe is the trap this
 /// avoids.
-pub(crate) fn needs_initial_full_pass(data_dir: &Path, volume_id: &str) -> Result<bool, ImportanceStoreError> {
+pub(crate) fn needs_full_pass(data_dir: &Path, volume_id: &str) -> Result<bool, ImportanceStoreError> {
     let store = ImportanceStore::open(&importance_db_path(data_dir, volume_id))?;
-    Ok(store.recompute_generation()? == 0)
+    Ok(store.recompute_generation()? == 0 || store.predates_scoring_policy()?)
 }
 
 /// Resolve the `importance.db` path for a volume, beside the drive index's DB in
@@ -274,6 +295,16 @@ impl ImportanceStore {
     /// stamped). `0` when no pass has run.
     pub fn recompute_generation(&self) -> Result<u64, ImportanceStoreError> {
         read_generation(&self.read_conn)
+    }
+
+    /// Whether the stored weights were computed under a scoring policy this build
+    /// no longer applies (see [`SCORING_POLICY_KEY`]). An absent stamp counts as
+    /// stale: every store written before the stamp existed holds rows from an
+    /// older policy, and a redundant recompute costs one pass while a skipped one
+    /// leaves wrong scores in place indefinitely.
+    pub fn predates_scoring_policy(&self) -> Result<bool, ImportanceStoreError> {
+        let stored = read_meta_value(&self.read_conn, SCORING_POLICY_KEY)?;
+        Ok(stored.as_deref() != Some(&super::classify::scoring_policy_fingerprint()))
     }
 
     /// Read one folder's stored weight, or `None` if unscored. Keyed by the folded

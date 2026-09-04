@@ -2,7 +2,8 @@
 //!
 //! Two responsibilities:
 //! - **Listing candidates** for one or more selected files via `URLsForApplicationsToOpenURL:`
-//!   (modern macOS 12+ API). Multi-selection picks the intersection of per-file candidate lists.
+//!   (macOS 12+; older macOS gets the single default app from `URLForApplicationToOpenURL:`).
+//!   Multi-selection picks the intersection of per-file candidate lists.
 //!   Results are cached by lowercased extension for the session and invalidated when an app
 //!   launches or terminates.
 //! - **Launching** the chosen app with the full selection via
@@ -72,6 +73,7 @@ pub fn extension_cache_key(path: &Path) -> Option<String> {
 mod imp {
     use super::*;
     use crate::ignore_poison::IgnorePoison;
+    use crate::platform::macos_at_least;
     use objc2::rc::{Retained, autoreleasepool};
     use objc2_app_kit::{NSWorkspace, NSWorkspaceOpenConfiguration};
     use objc2_foundation::{NSArray, NSBundle, NSString, NSURL};
@@ -152,12 +154,24 @@ mod imp {
 
     /// Calls `URLsForApplicationsToOpenURL:` synchronously. Runs on the calling thread;
     /// callers should arrange to be off the main thread and on a stack ≥ 8 MB.
+    ///
+    /// Below macOS 12 that selector doesn't exist, so the menu falls back to
+    /// `URLForApplicationToOpenURL:` (macOS 10.10) and offers the one app the OS
+    /// would open the file with. A shorter menu on an old Mac; not a crash.
     fn fetch_candidates_for_path(path: &Path) -> Vec<PathBuf> {
         autoreleasepool(|_| {
             let Some(url) = nsurl_from_path(path) else {
                 return Vec::new();
             };
             let workspace = NSWorkspace::sharedWorkspace();
+            if !macos_at_least(12, 0) {
+                let default_app = workspace.URLForApplicationToOpenURL(&url);
+                return default_app
+                    .and_then(|app_url| app_url.path().map(|p| PathBuf::from(p.to_string())))
+                    .into_iter()
+                    .collect();
+            }
+            // allowed-newer-selector: guarded by the `macos_at_least(12, 0)` early return above
             let arr: Retained<NSArray<NSURL>> = workspace.URLsForApplicationsToOpenURL(&url);
             arr.iter()
                 .filter_map(|app_url| app_url.path().map(|p| PathBuf::from(p.to_string())))

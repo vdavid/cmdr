@@ -168,6 +168,41 @@ Tauri's `setup`), and the logger isn't up that early either, so a panic in the f
 milliseconds of `run()` reaches stderr only. Everything after `logging::startup::init()`
 is logged; everything after `crash_reporter::init` is also written to disk.
 
+### The one exemption: `contain_panics`
+
+`crash_reporter::contain_panics(|| …)` (`contain.rs`) runs a closure with its panic caught
+and kept out of BOTH delivery paths. It exists for exactly one caller class: a foreign
+parser that panics on untrusted input as a matter of course. `pdf-extract` carries about
+100 `unwrap` / `expect` / `panic!` sites (counted in its `src/lib.rs` at 0.12.0) and meets
+arbitrary user files through `inspect_file`; without the seam, one malformed PDF is one
+crash report, and a folder of them is a flood of reports about a library we don't own.
+
+Mechanism: a `thread_local! CONTAINED: Cell<bool>` set for the extent of the closure
+(restored to its previous value on the way out, so nesting can't unmark a caller),
+`catch_unwind(AssertUnwindSafe(f))`, `None` on a panic. The hook reads the mark FIRST and,
+when set, logs one `warn` line and returns before the crash file, the watchdog, the courier,
+and the default hook's stderr line. A thread-local read cannot panic, so the hook's own rule
+holds; the `warn` goes through `log` from the hook's thread, which the reporting path avoids
+because `log` might be what panicked, an argument that doesn't apply to a parser call we
+chose to wrap.
+
+**The `warn` line is a fixed sentence plus the thread name, never the panic message.**
+`cmdr.log` rides error reports, and a foreign parser's `expect` formats the object it choked
+on into its message: for `pdf-extract` that is bytes of the user's PDF (an object dump, a
+string from the document). The crash-report sanitizer strips paths, not that, so the message
+is withheld rather than sanitized (`contained_panic_warning`, pinned in `contain_tests.rs`).
+
+The mark is per thread and per closure: a panic on any other thread during the closure, or
+on the same thread right after it, is reported in full (pinned in `contain_tests.rs`). The
+caller wraps ONLY the foreign calls, never its own shapers around them, so a bug in our code
+keeps reporting.
+
+Testing the hook path: the panic hook is process-wide, so `contain_tests.rs` serializes every
+test that installs one behind a `static Mutex`, scopes each installed hook to the installing
+thread, and joins the courier a reported panic detached (`panic_courier::join_last_courier_for_test`)
+before releasing the lock. Plain `cargo test` (one process, parallel threads) fails without
+all three; nextest never sees the race, so a test green only under nextest is the symptom.
+
 ## Crash file lifecycle
 
 1. App crashes; the handler writes `crash-report.json`.

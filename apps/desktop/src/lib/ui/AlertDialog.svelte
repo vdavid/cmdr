@@ -15,10 +15,17 @@
          */
         path?: string
         buttonText?: string
+        /**
+         * Renders above every other modal (`ModalDialog`'s `topmost`). For an alert
+         * the APP raises over whatever the user already had open, which for alerts
+         * means exactly the old-macOS notice at startup, since it has to land over
+         * the onboarding wizard. ❌ Not for an alert a pane or a dialog raises.
+         */
+        topmost?: boolean
         onClose: () => void
     }
 
-    const { title: dialogTitle, message, path, buttonText, onClose }: Props = $props()
+    const { title: dialogTitle, message, path, buttonText, topmost = false, onClose }: Props = $props()
     const resolvedButtonText = $derived(buttonText ?? tString('ui.alertDialog.defaultButton'))
 
     /** Alert panel width: wide enough for a sentence or two, no wider. */
@@ -62,6 +69,7 @@
     ariaDescribedby="alert-dialog-message"
     containerStyle="width: {path === undefined ? WIDTH_PX : PATH_WIDTH_PX}px"
     resizable="horizontal"
+    {topmost}
 >
     {#snippet title()}{dialogTitle}{/snippet}
 

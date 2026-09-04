@@ -19,6 +19,7 @@ use super::*;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::{abort_write_operation, cancel_write_operation};
 use crate::file_system::write_operations::test_support::TestOperationGuard;
+use crate::file_system::write_operations::types::CancelRollbackOutcome;
 use cmdr_fs::testing::wait_until_async;
 use std::sync::atomic::Ordering;
 
@@ -110,7 +111,7 @@ async fn cancel_reaches_a_driver_parked_on_its_in_flight_tasks() {
         1,
         "the FE needs exactly one write-cancelled to close on"
     );
-    assert!(!cancelled[0].rolled_back);
+    assert_eq!(cancelled[0].rollback.outcome, CancelRollbackOutcome::NotRolledBack);
 }
 
 /// Rollback must reach the same parked driver, and must actually undo the files
@@ -158,7 +159,11 @@ async fn rollback_reaches_a_parked_driver_and_undoes_what_landed() {
     {
         let cancelled = events.cancelled.lock().unwrap();
         assert_eq!(cancelled.len(), 1);
-        assert!(cancelled[0].rolled_back, "the FE must be told the rollback ran");
+        assert_eq!(
+            cancelled[0].rollback.outcome,
+            CancelRollbackOutcome::RolledBack,
+            "the FE must be told the rollback ran, and that it left nothing"
+        );
     }
     assert!(
         !fx.dest_inner.exists(Path::new("/landed.txt")).await,

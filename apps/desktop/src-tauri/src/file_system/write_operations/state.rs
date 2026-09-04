@@ -5,12 +5,12 @@
 use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
-use super::eta::{EtaEstimator, EtaSample};
+use super::eta::{EtaEstimator, EtaSample, ReversalBar};
 use super::event_sinks::OperationEventSink;
 use super::human_wait::HumanWaitClock;
 use super::types::{
@@ -89,6 +89,10 @@ pub struct WriteOperationState {
     /// child alike — so `enrich_progress` can do the subtraction in ONE place.
     skipped_files: AtomicUsize,
     skipped_bytes: AtomicU64,
+    /// `true` once a reversal that DRAINS the progress bar has started. Set by
+    /// the in-flight reversals; left `false` for the history dialog's, whose bar
+    /// fills. See [`ReversalBar`].
+    reversal_drains: AtomicBool,
     /// How long this operation has spent waiting on a PERSON: the pause the user
     /// pressed, and the conflict prompts they haven't answered yet. The
     /// [`pause_gate`](Self::pause_gate) and the
@@ -210,6 +214,7 @@ impl WriteOperationState {
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
             skipped_files: AtomicUsize::new(0),
             skipped_bytes: AtomicU64::new(0),
+            reversal_drains: AtomicBool::new(false),
             backend_cancel: CancellationToken::new(),
             backend_abort: CancellationToken::new(),
             pause_gate: PauseGate::new(Arc::clone(&human_wait)),
@@ -220,6 +225,67 @@ impl WriteOperationState {
             liveness: std::sync::Mutex::new(Some(Arc::new(()))),
             claimed_names: super::unique_name::ClaimedNames::default(),
         }
+    }
+
+    /// Declare that the reversal starting now DRAINS the progress bar. Call it
+    /// before the first `RollingBack` frame, which is where the estimator
+    /// reseeds and reads the direction.
+    pub(super) fn reversal_drains_the_bar(&self) {
+        self.reversal_drains.store(true, Ordering::Relaxed);
+    }
+
+    /// Which way this operation's `RollingBack` frames run.
+    fn reversal_bar(&self) -> ReversalBar {
+        if self.reversal_drains.load(Ordering::Relaxed) {
+            ReversalBar::Drains
+        } else {
+            ReversalBar::Fills
+        }
+    }
+
+    /// The one cooperative boundary a serial loop asks at: `true` means stop
+    /// now, `false` means carry on with the next item.
+    ///
+    /// Everything a loop owes Cancel and Pause lives in here, so no caller can
+    /// get the order wrong. Cancel is read FIRST, so a stopping operation never
+    /// parks and no destructive call runs between the two reads; only a live
+    /// operation parks; and a cancel landing WHILE parked wakes the gate and is
+    /// answered `true` at that same boundary, rather than one item later.
+    ///
+    /// ❌ Ask it exactly where the loop already observes cancel, and only
+    /// there. A loop that parks less often than it can be cancelled makes Pause
+    /// the weaker of two buttons that mean the same thing to a person; one that
+    /// parks more often needs boundaries the backends don't offer. `DETAILS.md`
+    /// § "The park".
+    ///
+    /// This twin parks the calling blocking-pool thread; an async driver calls
+    /// [`stop_or_park_async`](Self::stop_or_park_async) instead. A caller whose
+    /// reading of "stop" isn't `is_cancelled` (a reversal, a detached scan
+    /// preview) drives [`PauseGate`]'s `*_until` helpers directly and names its
+    /// own predicate.
+    pub fn stop_or_park_sync(&self) -> bool {
+        if is_cancelled(&self.intent) {
+            return true;
+        }
+        self.pause_gate.wait_while_paused_sync(&self.intent);
+        is_cancelled(&self.intent)
+    }
+
+    /// Async sibling of [`stop_or_park_sync`](Self::stop_or_park_sync): same
+    /// answer, parking the calling task instead of an executor thread.
+    pub async fn stop_or_park_async(&self) -> bool {
+        if is_cancelled(&self.intent) {
+            return true;
+        }
+        self.pause_gate.wait_while_paused_async(&self.intent).await;
+        is_cancelled(&self.intent)
+    }
+
+    /// The cheap half of the boundary: `true` when there is anything to ask
+    /// about. Two atomic loads, which is what lets a copy SCAN put the boundary
+    /// on its per-entry path (`cmdr_fs::volume::ScanStopSignal`).
+    pub fn is_stopping_or_paused(&self) -> bool {
+        is_cancelled(&self.intent) || self.pause_gate.is_paused()
     }
 
     /// A handle to this operation's [`liveness`](Self::liveness), for tagging
@@ -242,6 +308,22 @@ impl WriteOperationState {
     pub fn with_journal_volumes(mut self, source_volume_id: String, dest_volume_id: String) -> Self {
         self.journal_volumes = Some((source_volume_id, dest_volume_id));
         self
+    }
+
+    /// The volume this operation's destination writes land on, when it has one.
+    ///
+    /// Read from [`journal_volumes`](Self::journal_volumes), which is where the
+    /// operation's `(source, dest)` volume identity lives. The in-flight temp
+    /// ledger needs the destination half: a staged partial is a sibling of the
+    /// destination file, so it lives in THAT volume's path space and only that
+    /// volume can delete it (`in_flight_temps`).
+    ///
+    /// `None` means no volume was named. Every volume copy/move deferred names
+    /// one; a local-FS operation doesn't (it stages through `overwrite.rs`,
+    /// which records against the local filesystem explicitly), and neither do
+    /// the tests that build a bare state.
+    pub(super) fn dest_volume_id(&self) -> Option<&str> {
+        self.journal_volumes.as_ref().map(|(_, dest)| dest.as_str())
     }
 
     /// Records that `files` files worth `bytes` were credited to the progress
@@ -292,6 +374,7 @@ impl WriteOperationState {
                 // so the rate window doesn't get to count them.
                 human_wait_total: self.human_wait.total_at(now),
                 phase: event.phase,
+                reversal_bar: self.reversal_bar(),
                 bytes_done: event.bytes_done.saturating_sub(skipped_bytes),
                 bytes_total: event.bytes_total.saturating_sub(skipped_bytes),
                 files_done: event.files_done.saturating_sub(skipped_files),
@@ -423,6 +506,29 @@ impl WriteOperationState {
     pub fn emit_progress_via_sink(&self, sink: &dyn OperationEventSink, mut event: WriteProgressEvent) {
         self.enrich_progress(&mut event);
         sink.emit_progress(event);
+    }
+}
+
+/// This operation, as the copy scan inside a `Volume` backend sees it.
+///
+/// A backend crate can't name a `WriteOperationState` (`crates/` carry no
+/// `tauri` and no app), so the scan asks a `cmdr_fs` vocabulary type and this is
+/// what answers it. ❗ Every arm forwards to the same
+/// [`stop_or_park_sync`](WriteOperationState::stop_or_park_sync) /
+/// [`stop_or_park_async`](WriteOperationState::stop_or_park_async) the rest of
+/// the operation asks, so a scan can't end up with its own reading of
+/// cancel-outranks-pause. `DETAILS.md` § "The park".
+impl cmdr_fs::volume::ScanStopSignal for WriteOperationState {
+    fn is_stopping_or_paused(&self) -> bool {
+        WriteOperationState::is_stopping_or_paused(self)
+    }
+
+    fn stop_or_park<'a>(&'a self) -> std::pin::Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(self.stop_or_park_async())
+    }
+
+    fn stop_or_park_blocking(&self) -> bool {
+        self.stop_or_park_sync()
     }
 }
 
@@ -600,269 +706,19 @@ pub use super::status_cache::{
 pub(crate) use super::status_cache::{register_external_volume_op, release_external_volume_op};
 pub(super) use super::status_cache::{register_operation_status, unregister_operation_status, update_operation_status};
 
-/// Cancels an in-progress write operation.
-///
-/// State transitions: `Running → RollingBack` (rollback=true), `Running → Stopped`
-/// (rollback=false), `RollingBack → Stopped` (cancel during rollback). Other transitions are
-/// no-ops.
-///
-/// # Arguments
-/// * `operation_id` - The operation ID to cancel
-/// * `rollback` - If true, roll back (delete created files). If false, stop and keep partial files.
-pub fn cancel_write_operation(operation_id: &str, rollback: bool) {
-    // Every exit from here logs. When Rollback appeared to do nothing in the
-    // 2026-07-31 incident, the two silent no-op exits below (unknown operation,
-    // invalid transition) were indistinguishable from "the intent was set and the
-    // driver never observed it", which left the whole failure unexplained. See
-    // `docs/notes/incidents/2026-07-31-transfer-wedge/README.md`.
-    let Some(state) = WRITE_OPERATION_STATE.get(operation_id) else {
-        log::warn!("cancel_write_operation: op={operation_id} rollback={rollback}: no such operation, ignoring");
-        return;
-    };
-    let target = if rollback {
-        OperationIntent::RollingBack
-    } else {
-        OperationIntent::Stopped
-    };
-    let current = OperationIntent::from_u8(state.intent.load(Ordering::Relaxed));
-
-    // Valid transitions: Running → RollingBack/Stopped, RollingBack → Stopped.
-    // Stopped is terminal; no further transitions.
-    let valid = matches!(
-        (current, target),
-        (OperationIntent::Running, _) | (OperationIntent::RollingBack, OperationIntent::Stopped)
-    );
-    if !valid {
-        log::info!(
-            "cancel_write_operation: op={operation_id} {current:?} -> {target:?} is not a valid transition, ignoring"
-        );
-        return;
-    }
-
-    log::info!("cancel_write_operation: op={operation_id} {current:?} -> {target:?}, signalling backends");
-    state.intent.store(target as u8, Ordering::Relaxed);
-    // Any transition out of `Running` should also stop in-flight backend
-    // I/O (per-handle MTP loops, etc.) — not just the loop above it.
-    state.backend_cancel.cancel();
-    // Drop the conflict resolution sender to unblock any waiting receiver
-    state.conflict_slot.abandon();
-    // Cancellation wins over pause: wake a paused, parked op so it observes
-    // the non-Running intent and bails. Leaves the paused flag set (the op
-    // is going away regardless).
-    state.pause_gate.wake();
-}
-
-/// TIER 1 for every live operation: stops them all, keeping partials.
-///
-/// Transitions to `Stopped` rather than `RollingBack` because a teardown must
-/// never silently delete files with no visual feedback.
-///
-/// **The quit gate is the only caller** (`crate::quit::tear_down_and_exit`, step
-/// one). A window going away is not a reason to stop work: an operation outlives
-/// the view watching it, and a frontend unload handler calling this is the exact
-/// defect the gate replaced. Pinned from the other side by
-/// `src/lib/quit/no-teardown-cancel.test.ts`; the full rule is in `DETAILS.md`
-/// § "Key patterns and gotchas (shared)".
-pub fn cancel_all_write_operations() {
-    WRITE_OPERATION_STATE.cancel_all();
-}
-
-/// TIER 2 for one operation: cancel it, and stop waiting for whatever in-flight
-/// backend call doesn't answer.
-///
-/// A plain [`cancel_write_operation`] reaches a backend through its per-chunk
-/// `on_progress` callback, so a write that never returns never sees it. This runs
-/// that cancel AND fires [`WriteOperationState::backend_abort`], which the
-/// cross-volume streaming write is raced against — so the wait ends on our clock
-/// instead of the server's.
-///
-/// ❌ Not a cancel with a shorter fuse: the backend's own partial cleanup is
-/// skipped, and the abandoned bytes are left to the staged-write sweep.
-///
-/// **Test-only, and that's the honest scope.** The one production caller is the
-/// quit deadline, and a deadline always aborts EVERYTHING (see
-/// [`abort_all_write_operations`]); there is no situation where one live
-/// operation's wait is worth ending and its neighbour's isn't. The per-op form
-/// stays because the tier-2 suites drive one operation at a time.
+// The by-id controls (cancel / abort / pause / resume / conflict answer) live in
+// `state/controls.rs`: each is a registry lookup plus one flag flip, and keeping
+// them together is what makes the two stopping tiers legible side by side.
+// Re-exported here so the established `state::cancel_write_operation` paths keep
+// resolving for every caller.
+mod controls;
 #[cfg(test)]
-pub fn abort_write_operation(operation_id: &str) {
-    cancel_write_operation(operation_id, false);
-    let Some(state) = WRITE_OPERATION_STATE.get(operation_id) else {
-        log::warn!("abort_write_operation: op={operation_id}: no such operation, ignoring");
-        return;
-    };
-    log::info!("abort_write_operation: op={operation_id}: no longer waiting for in-flight backend calls");
-    state.backend_abort.cancel();
-}
-
-/// TIER 2 for every live operation: what the quit deadline fires once the
-/// cooperative cancel has had its chance.
-///
-/// Cancels every live operation, then fires [`WriteOperationState::backend_abort`]
-/// on each: the cross-volume streaming write is raced against it, so a wait that
-/// a dead server would own ends on our clock instead. The backend's own partial
-/// cleanup is skipped; the staging layer and the startup sweep own the leftovers.
-///
-/// The caller owns the "has had its chance" part: cancel first, give the
-/// operations a beat to settle, and call this for whatever is still there.
-/// `crate::quit` is that caller, and ❌ nothing a person clicked ever is.
-pub fn abort_all_write_operations() {
-    WRITE_OPERATION_STATE.abort_all();
-}
-
-/// Sets the pause flag on the live state for `operation_id`, if present.
-/// Returns `true` if a state existed (the op is in `WRITE_OPERATION_STATE`,
-/// i.e. Running — including pause-gated Running). The op parks at its next
-/// between-files boundary. Cancellation still wins: a paused op that's then
-/// cancelled unblocks immediately. The manager record's `LifecycleStatus` is
-/// flipped separately (see `manager::set_paused`).
-pub(super) fn pause_write_operation(operation_id: &str) -> bool {
-    if let Some(state) = WRITE_OPERATION_STATE.get(operation_id) {
-        state.pause_gate.pause();
-        return true;
-    }
-    false
-}
-
-/// Clears the pause flag on the live state for `operation_id`, waking the gate.
-/// Returns `true` if a state existed. Resuming a not-paused op is a harmless
-/// no-op.
-pub(super) fn resume_write_operation(operation_id: &str) -> bool {
-    if let Some(state) = WRITE_OPERATION_STATE.get(operation_id) {
-        state.pause_gate.resume();
-        return true;
-    }
-    false
-}
-
-/// Answers a pending conflict for an in-progress write operation, and REPORTS
-/// what that answer did.
-///
-/// When an operation hits a conflict in Stop mode it emits a `WriteConflictEvent`
-/// and parks until this is called; it then carries on with the chosen resolution.
-/// The event broadcasts to every webview, so several surfaces can show the prompt
-/// and each of them can be answered. Only the first answer reaches the operation;
-/// the returned [`ConflictResolutionOutcome`] is how the rest find out, and it
-/// crosses IPC so a losing surface can take its own prompt down.
-///
-/// The answer names the clash it is FOR ([`ConflictId`], carried on the event).
-/// An operation raises its clashes one at a time, but an answer can arrive after
-/// the operation has parked on the next one, and applying it there would decide a
-/// question the user was never shown. Naming it makes that case `StaleAnswer`
-/// instead.
-///
-/// # Arguments
-/// * `operation_id` - The operation ID that has a pending conflict
-/// * `conflict_id` - Which clash of that operation is being answered
-/// * `resolution` - How to resolve the conflict (Skip, Overwrite, or Rename)
-/// * `apply_to_all` - If true, apply this resolution to all future conflicts in this operation
-pub fn resolve_write_conflict(
-    operation_id: &str,
-    conflict_id: ConflictId,
-    resolution: ConflictResolution,
-    apply_to_all: bool,
-) -> ConflictResolutionOutcome {
-    let Some(state) = WRITE_OPERATION_STATE.get(operation_id) else {
-        log::info!("resolve_write_conflict: op={operation_id}: no such operation, ignoring");
-        return ConflictResolutionOutcome::UnknownOperation;
-    };
-    let outcome = state.conflict_slot.answer(
-        conflict_id,
-        ConflictResolutionResponse {
-            resolution,
-            apply_to_all,
-        },
-    );
-    log::info!(
-        "resolve_write_conflict: op={operation_id} clash={conflict_id:?} {resolution:?} apply_to_all={apply_to_all} -> {outcome:?}"
-    );
-    outcome
-}
-
-/// The clash `operation_id` is parked on right now, or `None` when it isn't
-/// asking anything.
-///
-/// `write-conflict` is a broadcast, so it only reaches whoever was listening
-/// when it went out. This is the pull side of the same question, for a reader
-/// that arrives afterwards: `cmdr://state` renders it so an agent can see WHICH
-/// clash is owed an answer, and answer that one by id rather than guessing.
-pub fn pending_write_conflict(operation_id: &str) -> Option<WriteConflictEvent> {
-    WRITE_OPERATION_STATE.get(operation_id)?.conflict_slot.pending()
-}
-
-// ============================================================================
-// Copy transaction for rollback
-// ============================================================================
-
-/// Tracks created files/directories for rollback on failure.
-///
-/// If dropped without calling `commit()`, automatically rolls back
-/// (deletes) all recorded files and directories. This ensures cleanup
-/// even if a thread panics during the copy loop.
-#[cfg_attr(test, derive(Debug))]
-pub(crate) struct CopyTransaction {
-    /// In creation order.
-    pub created_files: Vec<PathBuf>,
-    /// In creation order.
-    pub created_dirs: Vec<PathBuf>,
-    /// Set to `true` by `commit()` to prevent rollback on drop.
-    committed: bool,
-}
-
-impl CopyTransaction {
-    pub fn new() -> Self {
-        Self {
-            created_files: Vec::new(),
-            created_dirs: Vec::new(),
-            committed: false,
-        }
-    }
-
-    pub fn record_file(&mut self, path: PathBuf) {
-        self.created_files.push(path);
-    }
-
-    pub fn record_dir(&mut self, path: PathBuf) {
-        self.created_dirs.push(path);
-    }
-
-    /// Rolls back all created files and directories.
-    ///
-    /// Intentional: rollback removes the files THIS operation created; it does
-    /// NOT restore an original that an Overwrite replaced (we keep no per-file
-    /// backup — see `overwrite::safe_overwrite_file` step 4). Keeping backups for
-    /// the whole operation risks unexpectedly filling the user's drive on a
-    /// large Overwrite. Revisit if users complain. See transfer/volume/DETAILS.md
-    /// § "Overwrite isn't reversible".
-    pub fn rollback(&self) {
-        // Delete files first (in reverse order)
-        for file in self.created_files.iter().rev() {
-            let _ = std::fs::remove_file(file);
-        }
-        // Then directories (deepest first, already in reverse due to creation order)
-        for dir in self.created_dirs.iter().rev() {
-            let _ = std::fs::remove_dir(dir);
-        }
-    }
-
-    /// Marks the transaction as committed, preventing rollback on drop.
-    pub fn commit(mut self) {
-        self.committed = true;
-    }
-}
-
-impl Drop for CopyTransaction {
-    fn drop(&mut self) {
-        if !self.committed {
-            log::warn!(
-                "CopyTransaction dropped without commit, rolling back {} files and {} dirs",
-                self.created_files.len(),
-                self.created_dirs.len()
-            );
-            self.rollback();
-        }
-    }
-}
+pub use controls::abort_write_operation;
+pub use controls::{
+    abort_all_write_operations, cancel_all_write_operations, cancel_write_operation, pending_write_conflict,
+    resolve_write_conflict,
+};
+pub(super) use controls::{pause_write_operation, resume_write_operation};
 
 #[cfg(test)]
 #[path = "state_tests.rs"]

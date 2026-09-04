@@ -6,7 +6,7 @@
 //! content claim refuses the WHOLE plan, so the user never sees a partial plan they'd read
 //! as complete.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::Path;
 
 use serde::Deserialize;
@@ -20,6 +20,7 @@ use crate::agent::llm::types::AgentToolResult;
 use crate::agent::tools::propose::evidence::{EvidenceRejection, EvidenceScope, ImageFactsLedger};
 use crate::file_system::validation::validate_filename;
 use crate::mcp::pane_state::{PaneFileEntry, PaneState, PaneStateStore};
+use crate::mcp::params::{ParamViolation, check_object, list_names};
 use crate::mcp::{ToolError, ToolResult};
 
 pub(super) const MAX_RENAMES: usize = 200;
@@ -54,16 +55,16 @@ pub fn propose_rename_plan_schema() -> Value {
             "sourcePath": { "type": "string" }, "volumeId": { "type": "string" }, "destinationName": { "type": "string" },
             "evidence": {
                 "type": "object",
-                "description": "What this name is based on. The user sees it beside the name while reviewing, and a content claim is checked against what image_facts actually returned to you.",
+                "description": "What the name is based on; the user sees it, and a content claim is checked against what image_facts returned to you.",
                 "properties": {
                     "source": {
                         "type": "string",
                         "enum": ["imageText", "imageTags", "filename", "metadata", "userInstruction"],
-                        "description": "imageText or imageTags only when image_facts returned that content to you for this exact path in this conversation. Otherwise: filename (the old name), metadata (dates, size), or userInstruction (a naming rule the user gave)."
+                        "description": "imageText or imageTags only when image_facts returned that content for this exact path in this conversation; else filename (the old name), metadata (dates, size), or userInstruction (a rule the user gave)."
                     },
                     "detail": {
                         "type": "string",
-                        "description": "Up to 160 characters. For imageText a SHORT VERBATIM QUOTE of at least 12 characters from the text image_facts returned for this path (a whole phrase, not one word); for imageTags at least one tag it returned; otherwise the concrete detail you used, for example 'Taken 2026-07-20' or 'user asked for YYYY-MM-DD prefixes'."
+                        "description": "Up to 160 characters. imageText: a VERBATIM quote of at least 12 characters (a phrase, not one word) from what image_facts returned for this path; imageTags: a tag it returned; else the concrete detail used, like 'Taken 2026-07-20'."
                     }
                 },
                 "required": ["source", "detail"], "additionalProperties": false
@@ -195,15 +196,109 @@ fn invalid_params(message: impl Into<String>) -> ProposalRefusal {
     ProposalRefusal::Problem(ToolError::invalid_params(message))
 }
 
+/// The most rows one violation names before it counts the rest, so a 200-row plan can't turn
+/// one missing field into a wall of numbers.
+const MAX_NAMED_ROWS: usize = 5;
+
+/// Why the `renames` array doesn't match the row shape the schema declares: which rows, and
+/// which field. `None` when every row's SHAPE checks out, whatever else may be wrong with the
+/// plan.
+///
+/// It exists because the refusal a model reads has to be actionable. One fixed sentence
+/// listing all four field names told a model nothing it didn't already believe it had done,
+/// and it re-sent the identical call until the turn's budget ran out
+/// (`chat/runtime/repeats.rs` now stops that too, but a refusal earning the retry is the
+/// better half of the fix).
+///
+/// The row shape comes out of [`propose_rename_plan_schema`] itself rather than a second list
+/// here, so this and the prompt can never disagree about what a row takes.
+pub(super) fn rows_problem(params: &Value) -> Option<String> {
+    let schema = propose_rename_plan_schema();
+    let row_schema = schema.get("properties")?.get("renames")?.get("items")?;
+    let rows = params.get("renames")?.as_array()?;
+
+    // Keyed by the violation so a plan that repeats one mistake reads as one sentence, and
+    // ordered by the field name for a stable refusal.
+    let mut by_violation: BTreeMap<ParamViolation, Vec<usize>> = BTreeMap::new();
+    let mut accepted = Vec::new();
+    for (index, row) in rows.iter().enumerate() {
+        let problems = check_object(row_schema, row);
+        if accepted.is_empty() {
+            accepted = problems.accepted.clone();
+        }
+        for violation in problems.violations {
+            by_violation.entry(violation).or_default().push(index + 1);
+        }
+    }
+    if by_violation.is_empty() {
+        return None;
+    }
+    let clauses: Vec<String> = by_violation
+        .into_iter()
+        .map(|(violation, at)| describe_rows(&violation, &at, rows.len()))
+        .collect();
+    Some(format!(
+        "{}. A row takes {}.",
+        join_clauses(&clauses),
+        list_names(&accepted)
+    ))
+}
+
+/// One violation as a clause naming the rows it applies to: `every rename row needs
+/// volumeId`, or `rename rows 2 and 7 have no note parameters`. Lower case, because a clause
+/// can land second in the sentence; [`join_clauses`] capitalizes the one that leads.
+fn describe_rows(violation: &ParamViolation, at: &[usize], total: usize) -> String {
+    let subject = if at.len() == total && total > 1 {
+        "every rename row".to_string()
+    } else if at.len() == 1 {
+        format!("rename row {}", at[0])
+    } else {
+        format!("rename rows {}", join_rows(at))
+    };
+    let plural = at.len() > 1 && at.len() != total;
+    match violation {
+        // allowed-pluralize-noun: `needs` is the verb and `field` is one property name, never a count plus a noun
+        ParamViolation::Missing(field) => format!("{subject} needs {field}"),
+        ParamViolation::Unknown(field) => {
+            let noun = if plural { "parameters" } else { "parameter" };
+            format!("{subject} has no {field} {noun}")
+        }
+    }
+}
+
+fn join_rows(at: &[usize]) -> String {
+    let shown: Vec<String> = at.iter().take(MAX_NAMED_ROWS).map(usize::to_string).collect();
+    match at.len().checked_sub(MAX_NAMED_ROWS) {
+        Some(rest) if rest > 0 => format!("{} and {rest} more", shown.join(", ")),
+        _ => list_names(&shown),
+    }
+}
+
+/// Each clause carries its own subject, so they join with a comma even at two, and the one
+/// that leads gets the capital: `Rename row 2 has no note parameter, and rename row 3 needs
+/// destinationName`.
+fn join_clauses(clauses: &[String]) -> String {
+    let joined = match clauses {
+        [rest @ .., last] if !rest.is_empty() => format!("{}, and {last}", rest.join(", ")),
+        [one] => one.clone(),
+        _ => String::new(),
+    };
+    let mut chars = joined.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+        None => joined,
+    }
+}
+
 fn build_draft<R: Runtime>(
     app: &AppHandle<R>,
     evidence_scope: EvidenceScope,
     params: &Value,
 ) -> Result<RenameDraft, ProposalRefusal> {
     let input: RenamePlanInput = serde_json::from_value(params.clone()).map_err(|_| {
-        ToolError::invalid_params(
-            "Provide a rename plan with sourcePath, volumeId, destinationName, and evidence for every row.",
-        )
+        ToolError::invalid_params(rows_problem(params).unwrap_or_else(|| {
+            "Provide a rename plan with sourcePath, volumeId, destinationName, and evidence for every row.".to_string()
+        }))
     })?;
     if input.renames.is_empty() {
         return Err(invalid_params("A rename plan needs at least one row."));
@@ -250,9 +345,7 @@ fn build_draft<R: Runtime>(
                 "Every source must be in the focused pane's effective scope.",
             ));
         }
-        if crate::file_system::volume::backends::archive::archive_boundary_candidate(Path::new(&rename.source_path))
-            .is_some()
-        {
+        if cmdr_archive::archive_boundary_candidate(Path::new(&rename.source_path)).is_some() {
             return Err(invalid_params("Rename plans can't include files inside an archive."));
         }
         // One group is one `start_bulk_rename` call, and that executor refuses a row whose

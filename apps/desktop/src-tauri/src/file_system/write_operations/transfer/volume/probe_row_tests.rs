@@ -27,7 +27,9 @@
 //!
 //! Shared fixtures live in `volume/move_test_support.rs` (`super::test_support`).
 
+use std::pin::Pin;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use super::super::super::transfer_probe::render_live_dump;
 use super::super::faulty_volume::forward_volume_methods;
@@ -170,6 +172,13 @@ fn folder_row(dump: &str) -> &str {
     row
 }
 
+/// The driver's phase and detail from a dump's `driver=<phase>(<detail>)` field.
+fn driver_field(dump: &str) -> &str {
+    dump.split_whitespace()
+        .find_map(|token| token.strip_prefix("driver="))
+        .unwrap_or_else(|| panic!("every dump carries a driver field, got:\n{dump}"))
+}
+
 /// The photo taken with the most leaves open at once.
 fn widest(dumps: &[String]) -> &String {
     dumps
@@ -223,6 +232,43 @@ fn assert_table_names_every_leaf(dumps: &[String], width: usize) {
         folder.contains("walking"),
         "the folder's own row names the walk, and stays in a phase the watchdog never acts on, got:\n{dump}"
     );
+
+    // The walker holds no window slot (`strategy.rs::FileWindow`), so the header
+    // must not measure it against one. Counted in, a perfectly healthy transfer
+    // renders as `in_flight=5/4` and reads as a broken limiter — which is time
+    // spent chasing the wrong thing in the middle of an incident.
+    assert!(
+        dump.contains(&format!("in_flight={width}/{width} walkers=1")),
+        "the header must count only the window's writes and name the walker apart, got:\n{dump}"
+    );
+    assert!(
+        folder.contains("(walker)"),
+        "the walker's own row must say so, or the header's arithmetic can't be read back against the table, got:\n{dump}"
+    );
+}
+
+/// The question a stall dump has to answer first: what is the DRIVER doing?
+///
+/// A serial driver streams its source itself, so it stays here for the whole of
+/// a folder copy — which is the commonest transfer there is. Reporting the
+/// initial `starting` for all of it (as it did before the driver announced
+/// itself) tells a reader nothing at all, and left two real stall dumps
+/// unreadable.
+fn assert_driver_names_the_source_it_is_streaming(dumps: &[String]) {
+    let dump = widest(dumps);
+    let driver = driver_field(dump);
+    assert!(
+        !driver.starts_with("starting"),
+        "a driver 30 s into a transfer has moved past `starting`, got:\n{dump}"
+    );
+    assert_eq!(
+        driver, "transferring-source(#0",
+        "the driver names the source it is inside, so a reader knows to go read the rows, got:\n{dump}"
+    );
+    assert!(
+        dump.contains("transferring-source(#0 /album)"),
+        "the phase detail carries the source path and its row number, got:\n{dump}"
+    );
 }
 
 /// A cross-volume MOVE of one folder is the same single-source shape a copy is,
@@ -249,6 +295,7 @@ async fn a_folder_moves_leaves_each_get_a_row_and_the_dump_declares_the_real_wid
     assert!(result.is_ok(), "the move must succeed, got {result:?}");
 
     assert_table_names_every_leaf(&dest.dumps(), 4);
+    assert_driver_names_the_source_it_is_streaming(&dest.dumps());
 }
 
 /// The same table, from the SERIAL copy driver one folder also lands on. This is
@@ -276,4 +323,68 @@ async fn a_folder_copys_leaves_each_get_a_row_and_the_dump_declares_the_real_wid
     assert!(result.is_ok(), "the copy must succeed, got {result:?}");
 
     assert_table_names_every_leaf(&dest.dumps(), 4);
+    assert_driver_names_the_source_it_is_streaming(&dest.dumps());
+}
+
+/// The number a row renders under: `#0` for a top-level source, `#0.7` for the
+/// eighth leaf under it. Always the first token of the line.
+fn row_number(row: &str) -> &str {
+    row.split_whitespace()
+        .next()
+        .unwrap_or_else(|| panic!("every row opens with its number, got:\n{row}"))
+}
+
+/// Two rows in one dump may never render under the same number.
+///
+/// A reader mid-incident matches a row against the driver's `transferring-source(#N …)`
+/// and against the other rows; a number that means two different things costs
+/// them exactly the time the table exists to save. A leaf's number also says
+/// which top-level source is producing it, which a globally unique counter
+/// wouldn't.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn every_row_in_one_dump_carries_its_own_number() {
+    let source = folder_of(12).await;
+    let dest = TablePhotographingDest::new("probe-rows-unique", 4, 4);
+    let dest_volume: Arc<dyn Volume> = Arc::clone(&dest) as Arc<dyn Volume>;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let result = super::super::copy::copy_volumes_with_progress(
+        events,
+        "probe-rows-unique",
+        &state,
+        source,
+        &[PathBuf::from("/album")],
+        Arc::clone(&dest_volume),
+        Path::new("/out"),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+    assert!(result.is_ok(), "the copy must succeed, got {result:?}");
+
+    let dumps = dest.dumps();
+    let dump = widest(&dumps);
+    let numbers: Vec<&str> = rows(dump).into_iter().map(row_number).collect();
+    let mut unique = numbers.clone();
+    unique.sort_unstable();
+    unique.dedup();
+    assert_eq!(
+        unique.len(),
+        numbers.len(),
+        "no two rows in one dump may share a number, got {numbers:?} in:\n{dump}"
+    );
+
+    // The shape that makes the numbers worth reading: the walker owns its
+    // source's number, and every leaf it hands to the window hangs off it.
+    assert_eq!(
+        row_number(folder_row(dump)),
+        "#0",
+        "the top-level source's row keeps its position in the source list, got:\n{dump}"
+    );
+    for leaf in leaf_rows(dump) {
+        assert!(
+            row_number(leaf).starts_with("#0."),
+            "a leaf names the source producing it, got:\n{dump}"
+        );
+    }
 }

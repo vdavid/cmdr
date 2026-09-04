@@ -1,11 +1,13 @@
 [workspace]
 members = [
   "apps/desktop/src-tauri",
+  "crates/cmdr-adb",
   "crates/cmdr-archive",
   "crates/cmdr-fs",
   "crates/cmdr-index",
   "crates/cmdr-sftp",
   "crates/cmdr-smb",
+  "crates/cmdr-webdav",
   "crates/fsevent-stream",
   "crates/index-query",
   "crates/operation-log-dump",

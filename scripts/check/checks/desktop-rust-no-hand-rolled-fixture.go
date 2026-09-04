@@ -23,7 +23,13 @@ const AllowHandRolledFixtureComment = "// allowed-hand-rolled-fixture:"
 // Each one carries facts about the filesystem from one subsystem to another, and
 // a hand-written literal reproduces the test author's assumptions instead of a
 // shape production actually emits.
-var handRolledFixtureTypes = []string{"CachedScanResult", "SourceHint", "VolumePreflight"}
+//
+// `WrittenFile` is what a transfer's rollback ledger claims it put on disk, and
+// its constructors are the whole point: each one names a kind of write (a local
+// entry it stats itself, a volume file with the bytes it piped, a partial that
+// was never complete), and none can produce a local entry missing its node id. A
+// literal picks those fields by hand and certifies whatever the author assumed.
+var handRolledFixtureTypes = []string{"CachedScanResult", "SourceHint", "VolumePreflight", "WrittenFile"}
 
 // handRolledFixtureRegex matches a struct-literal construction of one of those
 // types. A literal NAMES ITS TYPE at the construction site, so no type inference

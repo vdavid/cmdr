@@ -76,6 +76,12 @@ story.
 ## Open with (`open_with.rs`)
 
 - `URLsForApplicationsToOpenURL:` produces candidate apps, with multi-selection intersection across the selected files.
+  It's macOS 12+, above the bundle's 10.15 floor, so `fetch_candidates_for_path` gates on
+  `crate::platform::macos_at_least(12, 0)` and drops to `URLForApplicationToOpenURL:` (macOS 10.10) below that. Catalina
+  and Big Sur therefore see only the OS default app in the menu, which is a shorter list rather than a crash: an
+  unrecognized selector would raise `NSInvalidArgumentException` and abort the process. The `allowed-newer-selector`
+  marker on the call is what tells `desktop-rust-macos-availability` the gate exists (it reads lines, not control
+  flow).
 - A session cache keyed by lowercased extension avoids repeated lookups; it subscribes to
   `NSWorkspace.didLaunchApplicationNotification` / `didTerminateApplicationNotification` for invalidation (per the
   "Subscribe, don't poll" principle; the TTL is a fallback only).

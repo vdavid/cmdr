@@ -11,13 +11,13 @@ import (
 
 // RunDashboardSvelteCheck runs svelte-check for type and a11y validation on the dashboard.
 //
-// Uses `check:no-sync` (not `pnpm check`, which humans run standalone): the
+// Uses `typecheck:no-sync`, not the `typecheck` humans run standalone: the
 // `dashboard-svelte-kit-sync` dependency already generated `.svelte-kit/`, and re-syncing here
 // would rewrite `.svelte-kit/tsconfig.json` while the parallel `dashboard-eslint` pass reads it.
 func RunDashboardSvelteCheck(ctx *CheckContext) (CheckResult, error) {
 	dir := filepath.Join(ctx.RootDir, "apps", "analytics-dashboard")
 
-	cmd := exec.Command("pnpm", "check:no-sync")
+	cmd := exec.Command("pnpm", "typecheck:no-sync")
 	cmd.Dir = dir
 	output, err := RunCommand(cmd, true)
 	if err != nil {

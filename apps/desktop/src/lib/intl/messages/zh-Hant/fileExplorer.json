@@ -59,6 +59,14 @@
   "@fileExplorer.diskSpace.freeShort": {
     "sourceHash": "b8f52a6"
   },
+  "fileExplorer.diskSpace.used": "已使用 {usedText}",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "此儲存空間沒有容量上限，因此沒有可填滿的長條。",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "0c363c5"
+  },
   "fileExplorer.diskSpace.lowNote": "這個長條顯示為紅色，表示卷宗的可用空間不足。",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"

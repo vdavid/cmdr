@@ -6,7 +6,7 @@
     const { insight, caveat }: { insight: string; caveat?: string } = $props()
 </script>
 
-<p class="mb-4 text-xs leading-relaxed text-text-secondary">
+<p class="mb-4 text-xs/relaxed text-text-secondary">
     {insight}
     {#if caveat}<span class="text-text-tertiary">{caveat}</span>{/if}
 </p>

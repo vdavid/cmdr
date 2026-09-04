@@ -38,12 +38,18 @@ guessing: a false positive would cost the check the only thing that makes it use
 
 ### The resolver: per-locale catalogs + fallback chain
 
-At module load, `import.meta.glob('./messages/*/*.json', { eager })` pulls EVERY locale dir's catalog files, not just
-`en`. The dir segment of each glob path is the locale tag (`messages/pt-BR/foo.json` → `pt-BR`), and a `BCP47_DIR` regex
-gate keeps only directories that look like a BCP-47 tag: the `screenshots/` capture-artifact dir sits alongside the
-locale dirs under `messages/` and is globbed too, so it MUST be filtered out (it's not a locale). The dev-only `en-XA/`
+At module load, `import.meta.glob(['./messages/*/*.json', '!./messages/screenshots/**'], { eager })` pulls EVERY locale
+dir's catalog files, not just `en`. The dir segment of each glob path is the locale tag (`messages/pt-BR/foo.json` →
+`pt-BR`), and a `BCP47_DIR` regex gate keeps only directories that look like a BCP-47 tag. The dev-only `en-XA/`
 pseudolocale is globbed when present and simply absent in prod (gitignored). The result is `catalogs`: a
 `localeTag → merged metadata-stripped Catalog` map.
+
+**`screenshots/` is excluded by the glob PATTERN, and the pattern is the load-bearing half.** That dir is a sibling of
+the locale dirs holding translator tooling, and `capture-report.json` alone is ~280 kB. `BCP47_DIR` would reject it
+anyway, but only after the bundler had already shipped and the runtime parsed every byte: it was 4.5% of the whole
+frontend, riding in every silent update, until the negative pattern landed (verified in the emitted chunk, 2026-09-02).
+A runtime gate and a glob exclusion read identically in review, so `messages.svelte.test.ts` pins the pattern itself,
+not just the absence of a fake `screenshots` language.
 
 `resolveRaw(locale, key)` walks a fallback CHAIN, first hit wins: the locale's own catalog, then each ancestor tag it
 may inherit from, then `en` (the base, always present), then the key string itself, so a missing key renders as its own
@@ -75,6 +81,7 @@ accepted cost: one catalog, one `@key` schema, and one set of coverage checks fo
 than the bytes, and a translator working one pile beats a translator working two. The tempting fix (split `menu.json`
 out and exclude it from the glob) walks straight into the `screenshots/` gate above, where a glob change that
 misclassifies a directory puts a fake language in the picker, so it needs a real reason rather than a tidiness one.
+(`screenshots/` had one: 280 kB. 55 KB of unrendered menu strings does not.)
 
 ### Reactivity (load-bearing)
 

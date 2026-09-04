@@ -7,7 +7,7 @@ test.describe('Pricing page', () => {
 
     const heading = page.locator('h1')
     await expect(heading).toBeVisible()
-    await expect(heading).toContainText(/free forever for personal use/i)
+    await expect(heading).toContainText(/free for personal use/i)
   })
 
   test('displays all three pricing tiers', async ({ page }) => {

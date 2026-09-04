@@ -59,6 +59,14 @@
   "@fileExplorer.diskSpace.freeShort": {
     "sourceHash": "b8f52a6"
   },
+  "fileExplorer.diskSpace.used": "{usedText} använt",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "Det här lagringsutrymmet har ingen storleksgräns, så det finns ingen stapel att fylla.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "0c363c5"
+  },
   "fileExplorer.diskSpace.lowNote": "Den här stapeln är röd för att volymen har ont om utrymme.",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"

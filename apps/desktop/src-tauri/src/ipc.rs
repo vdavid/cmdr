@@ -504,6 +504,12 @@ macro_rules! ipc_command_manifest {
                     crate::commands::mtp::rename_mtp_object,
                     crate::commands::mtp::move_mtp_object,
                     crate::commands::mtp::scan_mtp_for_copy,
+                    // Android over ADB. ❌ No stub counterpart, like SFTP: the
+                    // backend is macOS + Linux only.
+                    crate::adb::commands::list_adb_devices,
+                    crate::adb::commands::connect_adb_device,
+                    crate::adb::commands::get_adb_install_status,
+                    crate::adb::commands::recheck_adb_install,
                 ]
                 dispatch_only: []
             }
@@ -617,6 +623,23 @@ macro_rules! ipc_command_manifest {
                     crate::commands::sftp::forget_known_sftp_server,
                     crate::commands::sftp::get_sftp_unattended_reconnect,
                     crate::commands::sftp::cancel_sftp_connect,
+                ]
+                dispatch_only: []
+            }
+            // WebDAV servers: connecting, secrets, and the server list. Same gate
+            // and same no-stub reasoning as the SFTP block above.
+            cfg(any(target_os = "macos", target_os = "linux")) {
+                typed: [
+                    crate::commands::webdav::connect_webdav_volume,
+                    crate::commands::webdav::cancel_webdav_connect,
+                    crate::commands::webdav::disconnect_webdav_volume,
+                    crate::commands::webdav::save_webdav_credentials,
+                    crate::commands::webdav::has_webdav_credentials,
+                    crate::commands::webdav::delete_webdav_credentials,
+                    crate::commands::webdav::get_known_webdav_servers,
+                    crate::commands::webdav::update_known_webdav_server,
+                    crate::commands::webdav::forget_known_webdav_server,
+                    crate::commands::webdav::get_webdav_unattended_reconnect,
                 ]
                 dispatch_only: []
             }

@@ -1,5 +1,5 @@
 import type { APIRoute, GetStaticPaths } from 'astro'
-import { getCollection } from 'astro:content'
+import { getCollection, type CollectionEntry } from 'astro:content'
 import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
 import fs from 'node:fs'
@@ -17,7 +17,10 @@ export const getStaticPaths: GetStaticPaths = async () => {
   }))
 }
 
-export const GET: APIRoute = async ({ props }) => {
+// The props come from `getStaticPaths` above. Naming their shape keeps `post.data` tied to the
+// blog collection's schema, so a renamed frontmatter field breaks the build instead of rendering
+// an OG card with `undefined` on it.
+export const GET: APIRoute<{ post: CollectionEntry<'blog'> }> = async ({ props }) => {
   const { post } = props
   const formattedDate = new Date(post.data.date).toLocaleDateString('en-US', {
     year: 'numeric',

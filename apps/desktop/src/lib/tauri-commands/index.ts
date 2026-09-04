@@ -178,7 +178,7 @@ export {
   openSystemSettingsUrl,
   openAppearanceSettings,
 } from './storage'
-export type { Location, PathVolumeResolution, ResolveLocationResult, VolumeSpaceInfo } from './storage'
+export type { Location, PathVolumeResolution, ResolveLocationResult, SpaceInfo } from './storage'
 
 // Networking (SMB, keychain, mounting)
 export {
@@ -557,6 +557,17 @@ export {
   scanVolumeForCopy,
   scanVolumeForConflicts,
 } from './mtp'
+// Android devices over ADB (device list, connect)
+export {
+  listAdbDevices,
+  connectAdbDevice,
+  getAdbInstallStatus,
+  recheckAdbInstall,
+  AdbConnectFailure,
+  asAdbConnectError,
+} from './adb'
+export type { AdbDevice, AdbDeviceState, AdbConnectOutcomeError, AdbInstallStatus } from './adb'
+
 // Archive-password commands (encrypted-archive unlock)
 export {
   setArchivePassword,
@@ -576,7 +587,6 @@ export type {
   MtpDeviceDisconnectedEvent,
   MtpObjectInfo,
   MtpScanResult,
-  VolumeSpaceInfoExtended,
   VolumeConflictInfo,
   VolumeCopyScanResult,
   VolumeCopyConfig,
@@ -839,3 +849,26 @@ export type {
   SftpHostKeyIdentity,
   SftpTarget,
 } from './sftp'
+
+// WebDAV servers: connecting, secrets, and the saved-server list
+export {
+  connectWebdavVolume,
+  cancelWebdavConnect,
+  newWebdavAttemptId,
+  disconnectWebdavVolume,
+  saveWebdavCredentials,
+  hasWebdavCredentials,
+  deleteWebdavCredentials,
+  getKnownWebdavServers,
+  updateKnownWebdavServer,
+  forgetKnownWebdavServer,
+  getWebdavUnattendedReconnect,
+} from './webdav'
+export type {
+  ConnectedWebdavVolume,
+  KnownWebdavServer,
+  SavedWebdavServer,
+  WebdavConnectResult,
+  WebdavTarget,
+  WebdavUnattendedReconnect,
+} from './webdav'

@@ -112,4 +112,8 @@ serde_json = "1"
 # freelist reclamation only mean anything against a file-backed connection.
 tempfile = "3"
 # `#[tokio::test]` needs the `macros` feature, which the lib build has no use for.
-tokio = { version = "1", features = ["macros"] }
+# `test-util` gives `volume::host::activity`'s park tests a `start_paused` clock:
+# under a frozen clock no timer can fire on its own, so a wait that resumes has to
+# have resumed on the EVENT, and the leftover quiet window can be asserted to the
+# millisecond without any test waiting out a real one.
+tokio = { version = "1", features = ["macros", "test-util"] }

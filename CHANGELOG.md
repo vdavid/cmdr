@@ -5,6 +5,24 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Connect to WebDAV servers (Nextcloud, ownCloud, Synology, Fastmail, and any generic NAS) as a volume, with the same
+  reconnect and sign-in story as SFTP. No sidebar or sign-in UI yet.
+- Run Cmdr on macOS 10.15 Catalina and 11 Big Sur. Those two are best effort: everything works, but a few colors and
+  small layout details can look off, and fixes for them come last. A one-time notice on those Macs says so, in your own
+  language. macOS 12 and up stays the supported range. (9b209272, ed324a56, e7dd3d7a)
+- Tell a Mac whose Safari is too old to draw Cmdr's interface what to do about it, in its own language, instead of
+  opening a blank window (7f2ac2df, 5707df62)
+
+### Fixed
+
+- Fix Cmdr losing most of its colors on macOS 12 Monterey: the shipped bundle is now built for the oldest macOS it
+  promises, so nothing lands there that Monterey's Safari can't read (2a4ea468)
+- Fix a narrow tab on macOS 12 keeping a close button it had no room for, which crowded out the file name (0cf38a40)
+
 ## [0.41.0] - 2026-08-26
 
 Cmdr was borked on v0.39.0 and v0.40.0 on macOS 12 Monterey and 13 Ventura. This update fixes it. Also some update flow

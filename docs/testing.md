@@ -107,6 +107,8 @@ few seconds one directory buys. Measure the directory in isolation and read the 
   crate), see § "Scratch directories (Rust)". **Never** `std::env::temp_dir().join("cmdr_something")`
 - **Wait for background work in a Rust test**: `crate::test_support::wait_until` (sync) / `wait_until_async`
   (`#[tokio::test]`), see § "Waiting for background work (Rust)". **Never** a hand-rolled poll loop or a fixed sleep
+- **A Rust test that stores a credential or an API key**: open it with `crate::test_support::isolate_secrets()`, see §
+  "Secret-store isolation (Rust)". **Never** let it run unisolated: the store panics rather than falling back
 - **`#[tauri::command]` boundary**: vitest IPC contract test using `installIpcMock()` from
   `apps/desktop/src/lib/ipc/test-helpers.ts`
 - **Frontend component logic**: vitest + svelte-testing-library in `*.test.ts`
@@ -123,8 +125,34 @@ few seconds one directory buys. Measure the directory in isolation and read the 
   `emitBackendEvent(tauriPage, '<event>', payload)`. **Never** a timing-based assertion against the real work — emit the
   terminal event to clean up, and use an id nothing real can claim
 - **Cross-component flow (return-focus, dialog stack, navigation)**: E2E (Playwright)
-- **Storage volume operation (MTP, SMB)**: Integration test against a virtual fixture (virtual-mtp feature, Docker SMB
-  containers)
+- **Storage volume operation (MTP, SMB, SFTP, WebDAV)**: Integration test against a virtual fixture (virtual-mtp
+  feature, the Docker SMB, SFTP, and WebDAV stacks)
+
+## Secret-store isolation (Rust)
+
+Any test that reaches `crate::secrets::store()` opens with `crate::test_support::isolate_secrets()` and keeps the
+returned `TestDir` bound for the whole test:
+
+```rust
+use crate::test_support::isolate_secrets;
+
+let _secrets = isolate_secrets();
+save_sftp_credentials(host, 22, "ada".into(), "pa55".into()).await.unwrap();
+```
+
+The reach is wider than it looks: `network::keychain`, `network::credential_store`, `ai::api_keys`, the
+`#[tauri::command]`s wrapping any of them, `sftp_volume_wiring` / `webdav_volume_wiring`'s connect paths, and
+`volume_host::host().credentials()` all land there.
+
+- **The helper points `CMDR_DATA_DIR` at a scratch dir**, which is the only thing that keeps the store off the
+  developer's real one (`~/Library/Application Support/com.veszelovszki.cmdr/secrets.json` on macOS). It also sets
+  `CMDR_SECRET_STORE=file`, so a target that reads the var directly agrees.
+- **Forgetting it panics** at the first store access, naming the helper: under `cfg(test)` the store is `TestStore`,
+  which refuses to resolve a directory without `CMDR_DATA_DIR`. `TestStore` exists only under `cfg(test)`, so no shipped
+  build can reach that panic.
+- **The point of the panic is the self-poisoning**, not just the mess: fixtures written to the real store come back on
+  the next run, and `commands::sftp` / `commands::webdav`'s "nothing is stored before anything is saved" opener goes red
+  on every run after the first, on any branch, looking exactly like a code regression.
 
 ## Scratch directories (Rust)
 
@@ -194,6 +222,11 @@ wait_until_async(Duration::from_secs(5), "recovery to reopen the device", || {
 }).await;
 ```
 
+- **First ask whether the subject can SIGNAL completion; a deadline is the fallback, not the default.** If the work is a
+  thread or task the code already owns, hand its join handle back and join it: the test then fails only when the work is
+  wrong, never when the machine is loaded. `write_operations::in_flight_temps::init_and_sweep` returns a `SweepHandle`
+  for exactly this — the launch path drops it, the test calls `.wait()`. `wait_until` is for work whose completion you
+  can only observe from outside (an FSEvents callback, a scheduler tick, another process).
 - Both **panic** on timeout with the caller's description and (for the sync one, via `#[track_caller]`) the caller's
   file and line. Neither returns anything, so a wait can't silently pass the way a bare `bool` helper can.
 - Phrase `description` as a noun phrase: it completes "timed out after 2.0s waiting for …".
@@ -371,6 +404,13 @@ preserved. Signal preservation is the part that's easy to lose, because nextest 
 green suite can hide the exact flake the retries exist to tolerate. `rust-tests` therefore parses nextest's `FLAKY n/m`
 lines and downgrades such a run from pass to **warn**, naming each test and the attempt that rescued it. Adding retries
 without that reporting is the anti-pattern, not retries themselves.
+
+### ❌ `--lib` alongside `--all-targets`, which silently hides the test target
+
+`cargo clippy -p cmdr --lib --all-targets` reports clean while the test target fails to compile: the two target
+selectors don't union, and `--lib` wins. On 2026-09-02 that combination stayed green through eight `E0624` visibility
+errors introduced by moving module-private methods into a new `#[path]` child; only `cargo test` surfaced them. Pass
+`--all-targets` on its own, and treat a green clippy as saying nothing about whether the tests build.
 
 ### Reading a red `rust-tests` run
 

@@ -191,6 +191,17 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   and a Column-first vertical slice as the first build**, with MCP-shaped-against-bespoke and manifest-against-types
   flagged as the two calls expensive to get wrong. ⚠️ 84 KB, most of it the survey tables backing the priority stats.
 
+- `volume-plugin-api-2026-09-02.md` — the Volume-plugin-only companion to the note above: could we tell people to write
+  their own backend, and would anyone's fit. **The trait is ready and the surround isn't**: `Volume` is object-safe and
+  async, `VolumeHost` already names every seam a backend needs, and `volume::conformance` is a runnable data-safety
+  gate, but a backend is still compile-time (per-protocol wiring, a hand-written ID constructor, closed frontend unions,
+  and `cmdr-fs` is BSL and `publish = false`). Read it before proposing a plugin API, and read the gap sections
+  regardless: **two seams it names are worth building for first-party backends anyway** (OAuth, which nothing supports,
+  and path-triggered mounting, which only archives can do), and two others closed themselves during the analysis
+  (`device_volumes.rs`, `network/connect_wiring.rs`), which is why it records what those still can't carry. Carries the
+  five volume types a third party would plausibly bring, three of which fit today, and the two cheaper rungs (publish
+  the recipe, bridge to rclone) that deliver the message without the runtime.
+
 - `disk-cleanup-advice-process.md` — how to give disk-cleanup advice without losing the user's trust, from a session
   where an agent got it wrong three times. **The heuristic is to delete only what is BOTH filesystem-idle by mtime and
   process-idle by `pgrep`, and to present candidates with their signals rather than a "safe to delete" bucket**, which
@@ -216,3 +227,16 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   unreadable directory aborts the recursive watch, the `Cmd+` menu accelerators that bind to Super rather than Ctrl, and
   the 504 macOS-specific strings in the English catalog. Contributed alongside the Linux `.deb` bundling, and kept
   because Linux isn't advertised, so nothing here has an issue behind it.
+
+**An incident diagnosis kept for the lever it rules out:**
+
+- `smb-credit-stall-2026-09-01.md` — why a 300 GB SMB-to-SMB copy stopped moving bytes 30 seconds into its copy phase,
+  and the separate defect the log exposed underneath it. **The stall itself was a weak link** (the laptop sat far from
+  the router, and both shares ride one radio); **the defect is that the compound fast-path charged SMB credits for
+  `max_read` (8 MB, 130 credits) rather than for the 4 MB file it was reading**, capping the connection at three
+  concurrent reads against a 512-credit window while the transfer launched 10. Read it before anyone raises
+  `CREDIT_TARGET`, widens the fast-path threshold, or adds adaptive concurrency backoff: the arithmetic says the charge
+  was the lever and the other three aren't. Read it also before crediting the fix with curing a slow copy — it moves the
+  ceiling from three concurrent reads to seven and does nothing for a weak link. Carries the stall dump that confirmed
+  the three-of-10 prediction exactly, the truncation guard the fix had to move, and 2026-09-02 throughput baselines for
+  the reference NAS (24.7 MB/s up, 40.2 MB/s down, 8.6 MB/s on 4 MB files) to compare against before blaming a server.

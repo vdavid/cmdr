@@ -10,14 +10,100 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
-- [ ] 2026-08-29 `unify-rollback-plan.md` - **Cmdr still carries three rollback implementations, and nobody has decided
-      whether that stays.** The journal-driven engine (the safest, since it rechecks every item against its recorded
-      snapshot before touching it) now runs behind a history-dialog button with progress, pause, and mid-file cancel;
-      the two in-memory ones (`CopyTransaction` / `MoveTransaction` and `volume_rollback_with_progress`) still handle
-      the in-flight case with no snapshot recheck. What's left is M5, collapsing the three into one, gated on three
-      named blockers rather than on cost: the cancel-predicate design (already answered by `StopMeans`), the
-      `MoveTransaction` refactor across three call paths, and the `archive_edit/move_out.rs` caller. M4's fourth gap
-      (pre-finalize eligibility) is open too, and only serves M5. Both need a go/no-go from David before anyone starts.
+- [ ] 2026-09-03 `mtp-crate-extraction.md` - **MTP is the last backend that still reaches sideways into the app.** Its
+      session layer holds a `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache and the
+      index directly, and gates real behavior on nine inline `cfg(test)`s, so the backend on the flakiest hardware is
+      the one with no scoped verification loop. Ten decisions taken; the load-bearing one is that a backend has two
+      faces: the `Volume` trait already is the file-ops face and moves untouched, so the whole job is retrofitting the
+      lifecycle face onto the host seams IN PLACE (M1, M2) before a near-mechanical move (M3), then a test split by what
+      each cell asserts (M4). The manager becomes a value the app parks; device events become a crate-local typed trait;
+      two `ListingHost` and two `IndexNotifier` additions; `UsbSpeed` moves to `cmdr-fs`. Gates: `bindings.ts` zero-diff
+      after every in-place milestone, `cargo check -p cmdr-mtp --all-targets` with no app, the E2E MTP shard, a real
+      phone. Two to three days.
+- [ ] 2026-09-04 `git-portal-volume.md` - **The virtual `.git` portal is ten `if` sites inside `LocalPosixVolume`, plus
+      English the translations never see.** Three route hooks and seven mutation guards, two more hand-enforced rules on
+      top (skip watching virtual paths, refresh on toggle), and a delete walker that lists through the hooked
+      `list_directory` and may meet six virtual folders it can't remove (verify at M0). Same mechanism archives already
+      use: a read-only `GitPortalVolume` in `crates/cmdr-git`, routed lexically by `resolve` only for `.git/<category>/`
+      paths, so `.git/` and every real file under it stay writable with no guard anywhere; the `.git/` root listing is a
+      pane-only overlay seam that scans and walkers never see. Three rules become types. `display_size` becomes a typed
+      `GitEntryMeta` the frontend words per locale; the watcher moves with a typed sink. Sequenced after
+      `mtp-crate-extraction.md`; can go first if that stalls. About three days.
+- [ ] 2026-09-03 `agent-search-tool.md` - **Ask Cmdr has 18 tools and none of them searches.** Asked to find penguin
+      pictures, the agent invented `name` / `nameMatch` arguments onto `list_dir`, the deserializer dropped them, and it
+      reported "nothing matched" four times: confident fabricated negatives on a question the index answers instantly. A
+      full `search` tool is already authored in the shared registry with `consumers: [AiClient]`, and every coverage
+      field it needs is already typed, so this is wiring and shaping. Eight decisions taken: one registry entry serving
+      both views with a typed JSON result (the text table can't report `total` / `returned` / `truncated` and has no
+      `limit` ceiling, so `limit: 5000` blows the turn's prompt); a derived `coverage.complete` beside the seven flags
+      that each say a different sentence; `ai_search` stays out, because nesting a second LLM call inside an LLM is work
+      the agent should do itself; content search answered honestly as "search names, then `inspect_file` the hits", with
+      a drive-wide content index out of scope; the one-volume ceiling held, with `list_volumes` growing the `mountPath`
+      that makes a per-drive loop expressible at all; and a schema trim, because the declaration costs ~656 tokens on a
+      5,492-token prefix every turn. Three worked scenarios say it answers. Three to four days.
+
+- [ ] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
+      user asked for "Open terminal here"; macOS has no default-terminal setting, so Cmdr keeps its own known-terminals
+      table (bundle id + launch recipe, queried live via `NSWorkspace`, no scan, no Refresh button), defaults to
+      Terminal, asks once on first use when another terminal is installed, and exposes one dropdown row in Navigation &
+      file ops plus a "Choose an app…" escape hatch. Deliberately no window-vs-tab control in v1: no universal mechanism
+      exists, so each terminal's own preference decides. Four milestones, about one agent-day.
+
+- [ ] 2026-09-02 `android-adb-ui.md` - **The ADB backend works and nobody can reach it.** No connect flow, no device
+      picker, no settings, and no words for the six ways a connect refuses. Eight decisions, taken rather than listed:
+      one switcher row per phone with MTP as the default face and ADB a mode you switch it into; non-ready devices shown
+      disabled with their reason instead of hidden; the authorize prompt resolving itself off the `track-devices` push;
+      connecting rendered in the pane, never a modal; a Settings section whose `adb` path override exists because a
+      macOS GUI app never inherits the shell `PATH`; panes opening at `/sdcard`; ADB deliberately not indexed; and
+      "Disconnect" rather than "Eject". Still gated on the real-device pass.
+
+- [ ] 2026-09-02 `servers-in-the-sidebar.md` - **Two finished backends nobody can reach.** SFTP and WebDAV connect,
+      list, read, write, and reconnect, and there is no way to open one: `volume_listing::complete` has no arm for
+      either, so nothing reaches the sidebar, and `resolve_path_volume` doesn't answer for a remote path, so a saved tab
+      couldn't be restored if it did. Five milestones, ❗ one design covering BOTH backends rather than two
+      half-matching dialogs: the sidebar section, path resolution riding with it, one protocol-first connect dialog
+      branching on typed outcomes, the sign-in banner, and SFTP's host-key step as an arm of the dialog. Every command,
+      outcome, and the reconnect model already exist and are typed; what's open is design (which section, what an eject
+      means, whether a saved-but-unconnected server shows) and copy, both David's. Roughly a week.
+
+- [ ] 2026-09-01 `webdav-backend-follow-ups.md` - **The WebDAV backend ships without a way to reach it, and trusts only
+      what the system roots vouch for.** `crates/cmdr-webdav`, its IPC surface, and the Docker fixtures are done and
+      documented in `crates/cmdr-webdav/DETAILS.md`. Open: the sidebar and sign-in UI it shares with SFTP (the big one),
+      trust-on-first-use for the self-signed certificates most NAS boxes present, Digest auth or a typed refusal,
+      Nextcloud chunked uploads, RFC 4331 quota, and three things David runs locally because this branch was built in a
+      cloud box: `bindings.ts` regeneration, `pnpm check --include-slow`, and the surface counts for
+      `index-crate-isolation`.
+- [ ] 2026-09-01 `android-adb-backend.md` - **MTP shows the tree a phone chooses to expose; developers want the real
+      one.** `crates/cmdr-adb` is a device-anchored `Volume` over the ADB server's sync service and `shell,v2`, beside
+      MTP rather than replacing it, and the development adds the seam MTP never had: `device_volumes.rs`, a provider
+      registry the volume list folds over, with `host:track-devices` as the first push-channel hotplug. The crate, the
+      seam, and the app wiring are documented beside the code (`crates/cmdr-adb/DETAILS.md`, `adb/DETAILS.md`). What
+      finishing costs: a real-device pass (authorize prompt, `unauthorized` → `device` mid-session, a 2 GB transfer, a
+      `/data` listing on a non-rooted phone), then three deliberate deferrals (`sendrecv_v2` compression off until
+      measured, wireless pairing left to the server, a settings switch for the `adb` binary path).
+
+- [x] 2026-08-31 `smb-foreground-lease-plan.md` - **Shipped, all three milestones.** A background SMB upload now stands
+      aside for the folder you're actually waiting on: a listing holds an RAII lease so "busy" is a fact rather than a
+      decaying estimate, the parked upload wakes on that lease dropping, and a single-shot write is exempt from the
+      per-file 4 MiB floor that kept every photo and document from yielding once. The design and its bounds now live
+      beside the code (`apps/desktop/src-tauri/src/priority/DETAILS.md`, `write_operations/transfer/DETAILS.md`, and
+      `crates/cmdr-smb/DETAILS.md`), the deferred pre-file yield gate for the 1 MiB–4 MiB band included. **Wipe per
+      `DETAILS.md` § "Wiping a shipped spec"** once one refusal recorded nowhere else finds a home there: no foreground
+      stamping in `path_exists` / `get_file_range` / `refresh_listing`, since background callers would pin a share
+      permanently busy. That wipe is a one-way door, so it waits for David.
+
+- [ ] 2026-08-31 `rollback-recheck-plan.md` - **Cancelling an operation deletes files it no longer wrote, and the move
+      case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and
+      refuses to touch anything that changed; the in-flight rollbacks (the transfer dialog's button) verify nothing and
+      act on a bare list of paths, so a copy that ran for hours deletes a destination something else has since touched,
+      and a move-back renames over whatever now sits at the source. Four milestones: the in-memory ledgers grow an
+      identity, all six reversal entry points verify first through the same helper the history path uses (plus the
+      non-destructive-restore guard the move path lacks), the reversal gains a way to report what it left and why, and a
+      rollback started from the history dialog gets the Pause and Cancel buttons its engine already supported. ❌
+      Explicitly NOT the unification that was considered and rejected. David reviewed and confirmed the snapshot
+      decision the plan rests on: a local snapshot is size plus inode, a volume snapshot is size only, and mtime is
+      recorded nowhere, because a 2-second-granularity destination (FAT32, a network mount) would otherwise drift every
+      file and strand a whole copy on the stick.
 
 - [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
       rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit
@@ -36,6 +122,15 @@ that lives beside the code, and git holds the history.
 Deferred future work. Unchecked by default; the folder name is the status. Each entry notes what shipped and what's
 left, so the durable intent survives the wipe.
 
+- [ ] 2026-09-02 `later/inspect-file-follow-ups.md` - **What Ask Cmdr's `inspect_file` still owes.** The tool shipped
+      whole: up to 200 paths a call on the viewer's own backends, `find` across text and PDFs, PDF text by page with
+      title and author, archive listings and files inside them, EXIF with GPS, every cut visible, and the consent copy
+      (`CONSENT_COPY_VERSION` 4, 10 languages), system prompt, and `docs/security.md` all saying so. Eight things are
+      open, each with its cost and trigger: `find` over archive entry names, files on direct SMB / MTP / SFTP volumes
+      (waits on a viewer `Volume` seam), password-protected PDFs and archives, OCR for scans, the viewer's search
+      splitting on raw `\n` before decoding (a UTF-16 file over 1 MB searches misaligned in both surfaces; a real bug),
+      an unsupported codec at extract time still reading `corrupt`, a GPS gate, and the `cfg(test)` secrets store
+      writing to the REAL `secrets.json`.
 - [ ] 2026-08-27 `later/idle-cost-follow-ups.md` - **What the idle-cost effort deliberately left.** Two structural fixes
       shipped (each CLIP tower loads on demand, and an anchor storm costs one visible sweep a day instead of a subtree
       walk each), both documented beside the code. What's open starts with a measurement rather than a fix: every number

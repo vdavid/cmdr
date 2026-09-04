@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Pour répondre, Cmdr peut consulter ce que vous parcourez, vos disques et votre historique de fichiers. Il ne lit que les noms, chemins et tailles, jamais le contenu des fichiers.",
+  "askCmdr.empty.hint": "Pour répondre, Cmdr peut consulter ce que vous parcourez, vos disques et votre historique de fichiers. Il lit les noms, chemins et tailles, et ne regarde à l''intérieur d''un fichier que lorsque vous lui posez une question à son sujet.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Posez une question sur vos fichiers…",
   "@askCmdr.composer.placeholder": {
@@ -111,6 +111,14 @@
   "askCmdr.tool.searchPhotos.done": "A cherché dans vos photos",
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
+  },
+  "askCmdr.tool.inspectFile.doing": "Lecture du contenu de fichiers",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "A lu le contenu de fichiers",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
   },
   "askCmdr.tool.imageFacts.doing": "Lecture du contenu de vos photos",
   "@askCmdr.tool.imageFacts.doing": {
@@ -223,6 +231,10 @@
   "askCmdr.error.budgetExhausted": "Celle-ci a atteint sa limite avant de terminer. Essayez de poser une question plus précise.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
+  },
+  "askCmdr.error.repeatedToolCall": "Celle-ci a répété la même consultation sans avancer. Essayez de poser la question autrement.",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "ea46ed7"
   },
   "askCmdr.error.unfinishedReply": "La réponse ne s''est pas terminée. Réessayer ?",
   "@askCmdr.error.unfinishedReply": {
@@ -348,6 +360,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Des parties des fichiers que Cmdr ouvre pour vous répondre : un peu de texte, des pages de PDF, ce que contient une archive, et, pour une photo, les détails de l''appareil photo et la localisation",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "Ce que vous regardez en ce moment : votre dossier actuel, le curseur, la sélection et les disques connectés",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -360,9 +376,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr n''envoie jamais les fichiers eux-mêmes : ni le contenu des fichiers, ni les photos, ni les miniatures. La recherche de photos est la seule chose qui regarde à l''intérieur de vos images, et uniquement quand vous l''utilisez pour les rechercher : le texte que Cmdr a reconnu dans les photos correspondantes et leurs tags sont envoyés à votre fournisseur pour qu''il puisse les trouver. Ask Cmdr peut suggérer des renommages, des déplacements et des rangements, et rien n''arrive à un fichier tant que vous ne l''avez pas approuvé.",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr n''envoie jamais de fichiers entiers, de photos ni de vignettes. Quand vous lui posez une question sur un fichier, il peut en lire une partie limitée : quelques lignes de texte, quelques pages d''un PDF avec son titre et son auteur, la liste des fichiers contenus dans une archive, ou, pour une photo, les détails de l''appareil photo, y compris l''endroit où elle a été prise. La recherche de photos fonctionne de la même façon : le texte que Cmdr a reconnu dans les photos correspondantes et leurs tags sont envoyés à votre fournisseur pour qu''il puisse les trouver. Ask Cmdr peut suggérer des renommages, des déplacements et des rangements, et rien n''arrive à un fichier tant que vous ne l''avez pas approuvé.",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr se rédige des notes sur vous : comment vous aimez ranger les choses, ce que vous avez refusé auparavant, tout ce que vous lui demandez de retenir. Ces notes accompagnent chaque message que vous envoyez, tant qu''elles existent, et elles peuvent contenir du texte que Cmdr a reconnu dans vos photos. Vous pouvez les lire, ou les effacer, à tout moment dans les réglages d''Ask Cmdr.",
   "@askCmdr.consent.memory": {
@@ -392,9 +408,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr conserve désormais des notes sur vous d''une discussion à l''autre, et il peut lancer une discussion de lui-même quand il remarque quelque chose qui mérite d''être signalé. C''est un engagement plus large que celui que vous avez accepté, alors le voici en entier.",
+  "askCmdr.consent.whatsNew.body": "Ask Cmdr peut désormais regarder à l''intérieur d''un fichier sur lequel vous lui posez une question : un peu de son texte, quelques pages d''un PDF, la liste des fichiers contenus dans une archive, ou, pour une photo, les détails de l''appareil photo et la localisation. C''est un engagement plus large que celui que vous avez accepté, alors le voici en entier.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "Oublier tout ce dont Ask Cmdr se souvient ?",
   "@askCmdr.forget.title": {

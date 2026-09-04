@@ -10,6 +10,7 @@
 
 use super::{Volume, VolumeManager};
 use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_archive::ArchiveVolume;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -263,6 +264,11 @@ impl VolumeManager {
     /// wise `starts_with` avoids a `/Volumes/XY`-matches-`/Volumes/X` false hit, and
     /// the longest-root wins so a nested mount (`/Volumes/X/Y`) beats its parent.
     ///
+    /// An on-demand `ArchiveVolume` (its root is the `.zip` file, so it would win
+    /// the longest-root race for every path inside the archive) is not a mount and
+    /// is skipped: a path inside an archive belongs to the volume that holds the
+    /// archive, which is what its callers route by.
+    ///
     /// In-memory (one `RwLock<HashMap>` read, no syscall), so it's safe on the
     /// enrichment / dir-stats hot path.
     pub fn mount_id_for_path(&self, path: &str) -> Option<String> {
@@ -271,6 +277,9 @@ impl VolumeManager {
             .read_ignore_poison()
             .iter()
             .map(|(id, entry)| (id, &entry.volume))
+            // By type, not by LRU membership: an archive is registered a moment before
+            // it enters the LRU, and a concurrent caller must not see it in that gap.
+            .filter(|(_, v)| v.as_any().downcast_ref::<ArchiveVolume>().is_none())
             .filter(|(_, v)| v.root() != Path::new("/"))
             .filter(|(_, v)| target.starts_with(v.root()))
             .max_by_key(|(_, v)| v.root().as_os_str().len())

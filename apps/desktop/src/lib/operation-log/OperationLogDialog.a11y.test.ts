@@ -41,6 +41,7 @@ function op(opId: string, kind: OperationRow['kind']): OperationRow {
     rollbackState: 'rollbackable',
     notRollbackableReason: null,
     rollsBackOpId: null,
+    inverseOpId: null,
     sourceVolumeId: 'root',
     destVolumeId: 'root',
     startedAt: 1_700_000_000_000,

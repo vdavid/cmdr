@@ -1329,6 +1329,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Avis « ancien macOS » affiché",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Interne : indique si l''avis unique destiné à un Mac en deçà de la version de macOS prise en charge a déjà été affiché. Masqué dans l''interface.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Incitation à la mise à niveau de la prise en main affichée",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -1508,9 +1516,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (\"Ask Cmdr\" is the feature's brand name); kept verbatim in every locale per the @key description."
   },
-  "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Ask Cmdr est en lecture seule : il lit les noms, chemins et tailles pour répondre, et ne change jamais rien.",
+  "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Ask Cmdr lit les noms, chemins et tailles pour répondre, ne regarde à l''intérieur d''un fichier que lorsque vous lui posez une question à son sujet, et ne modifie jamais un fichier sans votre approbation.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr est activé",
   "@settings.askCmdr.status.on": {

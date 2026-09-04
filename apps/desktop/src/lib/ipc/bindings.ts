@@ -3229,6 +3229,23 @@ export const commands = {
    */
   scanMtpForCopy: (deviceId: string, storageId: number, path: string) =>
     typedError<MtpScanResult, MtpConnectionError>(__TAURI_INVOKE('scan_mtp_for_copy', { deviceId, storageId, path })),
+  // The ADB devices the server last reported, from the cache the tracker keeps.
+  listAdbDevices: () => __TAURI_INVOKE<AdbDevice[]>('list_adb_devices'),
+  // Dials the device with `serial` and answers its volume id.
+  connectAdbDevice: (serial: string) =>
+    typedError<string, AdbConnectOutcomeError>(__TAURI_INVOKE('connect_adb_device', { serial })),
+  /**
+   *  Where the `adb` binary is and whether the device list is live, as the
+   *  settings screen renders it. Reads what is already known; ❌ no re-check.
+   */
+  getAdbInstallStatus: () => __TAURI_INVOKE<AdbInstallStatus>('get_adb_install_status'),
+  /**
+   *  Looks for `adb` again and restarts the device tracker if it turns up.
+   *
+   *  ❗ User-driven only ("I installed it now"): this is the one path allowed to
+   *  retry `adb start-server`, and a caller must not poll it.
+   */
+  recheckAdbInstall: () => __TAURI_INVOKE<AdbInstallStatus>('recheck_adb_install'),
   /**
    *  Lists all mounted volumes, including connected MTP devices, each enriched
    *  with what its registered backend can do.
@@ -3255,11 +3272,16 @@ export const commands = {
   getDefaultVolumeId: () => __TAURI_INVOKE<string>('get_default_volume_id'),
   /**
    *  Gets space information for a volume at the given path.
-   *  Returns total and available bytes for the volume.
-   *  For MTP paths (`mtp://`), fetches from the MTP connection manager instead of
-   *  asking the filesystem.
+   *
+   *  A mounted filesystem and a device storage both have a size, so everything
+   *  this command can answer is [`SpaceInfo::Bounded`]. Storage with no ceiling
+   *  reaches the frontend through the poller's `volume-space-changed` instead,
+   *  which asks the registered `Volume` rather than the mount table.
+   *
+   *  For device paths (`mtp://`, `adb://`), asks the device provider instead of
+   *  the filesystem.
    */
-  getVolumeSpace: (path: string) => __TAURI_INVOKE<TimedOut<VolumeSpaceInfo | null>>('get_volume_space', { path }),
+  getVolumeSpace: (path: string) => __TAURI_INVOKE<TimedOut<SpaceInfo | null>>('get_volume_space', { path }),
   // Gets all currently discovered network hosts.
   listNetworkHosts: () => __TAURI_INVOKE<NetworkHost[]>('list_network_hosts'),
   /**
@@ -3808,6 +3830,143 @@ export const commands = {
    */
   cancelSftpConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_sftp_connect', { attemptId }),
   /**
+   *  Opens a WebDAV volume, or says what stands in the way.
+   *
+   *  On success the volume is registered under its id and the server is added to
+   *  the known-servers list, so a picker sees it next launch.
+   *
+   *  ❗ Secrets are ❌ NOT arguments. The password comes from the secret store
+   *  (`save_webdav_credentials`) at the moment the client is built and dies with
+   *  it.
+   *
+   *  ❗ `attempt_id` is the CALLER's own name for this attempt, and
+   *  `cancel_webdav_connect` takes the same one. A fresh value per call
+   *  (`crypto.randomUUID()`) is what a dialog wants, and it has to be made BEFORE
+   *  the call: this command doesn't answer until the connect is over, which is far
+   *  too late to arm a cancel button.
+   */
+  connectWebdavVolume: (
+    displayName: string,
+    url: string,
+    username: string,
+    remoteRoot: string,
+    autoReconnect: boolean,
+    attemptId: string,
+  ) =>
+    __TAURI_INVOKE<WebdavConnectResult>('connect_webdav_volume', {
+      displayName,
+      url,
+      username,
+      remoteRoot,
+      autoReconnect,
+      attemptId,
+    }),
+  /**
+   *  Calls off the connect running under `attempt_id`, answering whether one was.
+   *
+   *  ❗ The way out of a connect that is going nowhere. The probe stops where it
+   *  stands, and `connect_webdav_volume` answers `cancelled`.
+   *
+   *  ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
+   *  and ❌ no secret written.
+   *
+   *  An id nobody is connecting under answers `false`: a cancel racing a connect
+   *  that just finished is ordinary, and there is nothing wrong to report.
+   */
+  cancelWebdavConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_webdav_connect', { attemptId }),
+  /**
+   *  Drops a WebDAV volume's client and takes it out of the volume registry.
+   *
+   *  Answers whether there was a WebDAV volume under that id.
+   */
+  disconnectWebdavVolume: (volumeId: string) => __TAURI_INVOKE<boolean>('disconnect_webdav_volume', { volumeId }),
+  /**
+   *  Saves the secret for one account on one server.
+   *
+   *  ❗ **This command IS the "remember the secret" switch.** Its meaning is exactly
+   *  "put this in the Keychain" and ❌ nothing else: `has_webdav_credentials` reads
+   *  the switch back and `delete_webdav_credentials` turns it off, so there is no
+   *  second flag anywhere that could disagree with the store.
+   *
+   *  ❗ Remembering a secret is what makes unattended reconnects POSSIBLE; it
+   *  doesn't turn them on. That is the other switch
+   *  (`update_known_webdav_server`'s `auto_reconnect`), and
+   *  `get_webdav_unattended_reconnect` is what says whether the two add up.
+   *
+   *  ❗ On a blocking task: the store can put a Keychain prompt in front of this,
+   *  and a modal dialog on the async runtime stalls every other volume.
+   */
+  saveWebdavCredentials: (url: string, username: string, secret: string) =>
+    typedError<null, KeychainError>(__TAURI_INVOKE('save_webdav_credentials', { url, username, secret })),
+  /**
+   *  Whether a secret is stored for one account on one server.
+   *
+   *  ❗ There is deliberately no command that HANDS the secret to the frontend: the
+   *  backend reads the store itself at the moment it builds a client, and a secret
+   *  that crosses IPC is a secret in a renderer process.
+   *
+   *  A store that didn't answer in time reads as `false`, which is the one place
+   *  collapsing a timeout into its fallback is harmless: both answers send the
+   *  frontend to the same place, which is to ask.
+   */
+  hasWebdavCredentials: (url: string, username: string) =>
+    __TAURI_INVOKE<boolean>('has_webdav_credentials', { url, username }),
+  // Forgets the stored secret for one account on one server.
+  deleteWebdavCredentials: (url: string, username: string) =>
+    typedError<null, KeychainError>(__TAURI_INVOKE('delete_webdav_credentials', { url, username })),
+  // Every WebDAV server the user has connected to.
+  getKnownWebdavServers: () => __TAURI_INVOKE<KnownWebdavServer[]>('get_known_webdav_servers'),
+  /**
+   *  Adds a server, or replaces the entry for the same `(url, username)`.
+   *
+   *  `connect_webdav_volume` already does this on every successful connection;
+   *  this is for editing one without connecting (renaming it, changing its root).
+   */
+  updateKnownWebdavServer: (
+    url: string,
+    username: string,
+    displayName: string,
+    remoteRoot: string,
+    autoReconnect: boolean,
+  ) => __TAURI_INVOKE<void>('update_known_webdav_server', { url, username, displayName, remoteRoot, autoReconnect }),
+  /**
+   *  Drops a server from the list, answering whether one was there.
+   *
+   *  ❌ Leaves the stored secret alone: forgetting a server from a list isn't the
+   *  same request as revoking its credential. `delete_webdav_credentials` is that.
+   */
+  forgetKnownWebdavServer: (url: string, username: string) =>
+    __TAURI_INVOKE<boolean>('forget_known_webdav_server', { url, username }),
+  /**
+   *  Whether a WebDAV volume can actually come back on its own as it stands.
+   *
+   *  ❗ **Ask this when a banner renders**: the answer depends on what is in the
+   *  secret store at that moment.
+   *
+   *  `null` when nothing WebDAV is registered under that id. That is the honest
+   *  answer rather than a guess: a saved server the user hasn't connected to yet
+   *  gets no warning, which is right — nothing is known to warn about.
+   *
+   *  ❗ May read the secret store (on a blocking task), so ❌ don't poll it.
+   */
+  getWebdavUnattendedReconnect: (volumeId: string) =>
+    __TAURI_INVOKE<
+      // On, and it works. Nothing to show.
+      | 'possible'
+      /**
+       *  The switch is off. Nothing redials on its own, whatever is remembered. A
+       *  person reconnects by hand, and that is the whole story.
+       */
+      | 'switch_off'
+      /**
+       *  ❗ On, and it can't do anything: this volume signs in from the secret store
+       *  and nothing is stored. **This is the state a UI warns about**, and the way
+       *  out is remembering the secret.
+       */
+      | 'no_stored_secret'
+      | null
+    >('get_webdav_unattended_reconnect', { volumeId }),
+  /**
    *  Tauri command: returns the current macOS accent color as a hex string.
    *
    *  `NSColor` is main-thread-only, so we hop to the AppKit main thread via
@@ -4151,6 +4310,96 @@ export type ActivityPhase =
    */
   | 'failed'
 
+/**
+ *  Why a connect didn't produce a volume, as the frontend branches on it.
+ *
+ *  A typed mirror of `cmdr_adb::AdbConnectError`, ❌ never prose: the
+ *  frontend's own copy is what a person reads. The backend's diagnostic string
+ *  goes to the log.
+ */
+export type AdbConnectOutcomeError =
+  // No `adb` binary on this machine, so no server could be started.
+  | { type: 'adbNotInstalled' }
+  // The server socket couldn't be reached.
+  | { type: 'serverUnreachable' }
+  // The device isn't attached (or vanished mid-connect).
+  | {
+      type: 'deviceGone'
+      // The serial asked for.
+      serial: string
+    }
+  // The phone hasn't accepted this computer's key; "Allow" on the device.
+  | {
+      type: 'unauthorized'
+      // The serial asked for.
+      serial: string
+    }
+  // The device's ADB predates `shell_v2` (Android 7).
+  | {
+      type: 'deviceTooOld'
+      // The serial asked for.
+      serial: string
+    }
+  // The connect ran past its budget.
+  | { type: 'timedOut' }
+  // The user called it off.
+  | { type: 'cancelled' }
+  // The transport refused or broke in a way none of the above names.
+  | { type: 'transport' }
+
+// One device the server knows about.
+export type AdbDevice = {
+  // The serial (`host:devices` column one). Identity of the volume.
+  serial: string
+  // What the server can do with it. Only [`AdbDeviceState::Ready`] mounts.
+  state: AdbDeviceState
+  // `ro.product.name`, when the server reports it.
+  product: string | null
+  // `ro.product.model`, when the server reports it. Underscores for spaces.
+  model: string | null
+  // `ro.product.device`, when the server reports it.
+  device: string | null
+  // The server's transport id, for telling two identical serials apart.
+  transportId: number | null
+}
+
+// The server's state word for a device.
+export type AdbDeviceState =
+  // `device`: authorized and online. The only mountable state.
+  | 'ready'
+  // `unauthorized`: waiting on the phone's "Allow USB debugging" prompt.
+  | 'unauthorized'
+  // `offline`: attached but `adbd` isn't answering.
+  | 'offline'
+  // `no permissions`: the host can't open the USB device (udev on Linux).
+  | 'noPermissions'
+  // `connecting`: a TCP device mid-handshake.
+  | 'connecting'
+  // `authorizing`: mid RSA handshake.
+  | 'authorizing'
+  // `recovery`: booted to recovery.
+  | 'recovery'
+  // `bootloader`: in fastboot.
+  | 'bootloader'
+  // `sideload`: recovery's sideload mode.
+  | 'sideload'
+  // A word this crate doesn't know.
+  | 'unknown'
+
+/**
+ *  Where Cmdr found the `adb` binary, and whether it is following the server.
+ *
+ *  Both halves are what a settings screen renders: a path to show, and whether
+ *  the device list is live. `binary_path` is `None` exactly when
+ *  `AdbConnectError::AdbNotInstalled` is what a connect would answer.
+ */
+export type AdbInstallStatus = {
+  // The `adb` binary in use, if one was found.
+  binaryPath: string | null
+  // Whether the `host:track-devices` subscription is live.
+  tracking: boolean
+}
+
 // The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
 export type AgentErrorKindView =
   | 'noKey'
@@ -4173,6 +4422,11 @@ export type AgentErrorKindView =
   | 'authFailed'
   | 'rateLimited'
   | 'budgetExhausted'
+  /**
+   *  The turn went in a circle: the model kept re-sending a tool call that had already come
+   *  back with a problem, after being told repeating it changes nothing.
+   */
+  | 'repeatedToolCall'
   | 'unfinishedReply'
   | 'provider'
 
@@ -4790,6 +5044,57 @@ export type BundleWriteBlocker =
   | 'readOnlyVolume'
 
 /**
+ *  What the reversal after a cancel managed to undo, and what it left alone.
+ *
+ *  Reuses [`SkipBreakdown`] so a cancelled transfer and a Roll back from history
+ *  report their leftovers in one vocabulary.
+ */
+export type CancelRollback = {
+  outcome: CancelRollbackOutcome
+  // Items undone, counting the ones already in the desired end state.
+  reversed: number
+  // One group per reason, with the complete count and one example file name.
+  skips: SkipBreakdown[]
+  /**
+   *  The staged partials the abandoned writes left that the sweep couldn't
+   *  take away. `None` in the ordinary case, where it took them all.
+   *
+   *  Independent of `outcome`: the ledger really can be reversed to the last
+   *  entry while gigabytes of scratch sit at the destination, and `outcome`
+   *  answers only for the ledger. It's the READOUT's job never to call that
+   *  combination clean (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`).
+   */
+  stagedLeftovers: StagedLeftovers | null
+  /**
+   *  The originals a landed cross-FS move was still clearing when it stopped.
+   *  `None` everywhere else, which is every other operation Cmdr can cancel.
+   *
+   *  Independent of `outcome` for the reason [`OriginalsStillInPlace`] gives,
+   *  and the READOUT owes it a line even though `outcome` is `NotRolledBack`
+   *  (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`).
+   */
+  originalsStillInPlace: OriginalsStillInPlace | null
+}
+
+/**
+ *  How much of what a cancelled operation had written got undone.
+ *
+ *  Three states, because two can't tell "no reversal ran" from "the reversal ran
+ *  and left things behind" — which it does whenever it meets a file something
+ *  else changed since.
+ */
+export type CancelRollbackOutcome =
+  /**
+   *  No reversal ran, or it stopped before reaching a single item: everything
+   *  the operation wrote is still where it landed.
+   */
+  | 'notRolledBack'
+  // Everything the operation still claimed is undone.
+  | 'rolledBack'
+  // The reversal ran but left items behind — see [`CancelRollback::skips`].
+  | 'partiallyRolledBack'
+
+/**
  *  Logical-pixel rectangle. `f64` mirrors what Tauri's `LogicalPosition` /
  *  `LogicalSize` use on the wire.
  */
@@ -5019,6 +5324,16 @@ export type ConnectedSftpVolume = {
    *  live volume, at the moment a banner asks.
    */
   rung: SftpAuthRung
+}
+
+// A live WebDAV volume, as the connect that made it saw it.
+export type ConnectedWebdavVolume = {
+  /**
+   *  The id every listing, tab, saved path, and index entry is filed under.
+   *  Derived from `host:port:username`, so two accounts on one server are two
+   *  volumes.
+   */
+  volumeId: string
 }
 
 export type ConnectionDiagnosticsDto = {
@@ -5615,16 +5930,7 @@ export type EjectError =
       volumeId: string
     }
   /**
-   *  The MTP volume id is shaped wrong: missing the `{device_id}:{storage_id}`
-   *  separator.
-   */
-  | {
-      type: 'mtpIdMissingDevicePrefix'
-      // The malformed id, verbatim.
-      volumeId: string
-    }
-  /**
-   *  The volume can't be ejected at all: not SMB, not MTP, and the OS reports
+   *  The volume can't be ejected at all: not SMB, not a device, and the OS reports
    *  it as fixed. Typical for the boot volume and other internal disks.
    */
   | {
@@ -5642,10 +5948,15 @@ export type EjectError =
       // The volume asked about.
       volumeId: string
     }
-  // The device wouldn't close its MTP session.
+  /**
+   *  The device provider wouldn't retire the volume (MTP: the device wouldn't
+   *  close its session).
+   */
   | {
-      type: 'mtpDisconnectRefused'
-      // What the MTP layer reported, for the log and the details line.
+      type: 'deviceDisconnectRefused'
+      // Which provider refused (`"mtp"`, `"adb"`).
+      provider: string
+      // What the provider reported, for the log and the details line.
       detail: string
     }
   /**
@@ -6995,6 +7306,50 @@ export type KnownSftpServer = {
    *  infer the default from that `undefined`: `getKnownSftpServers` in
    *  `tauri-commands/sftp.ts` fills it in one place, and that is the only place
    *  the default is spelled on the frontend.
+   */
+  autoReconnect?: boolean
+  /**
+   *  When this server was last connected to, ISO 8601, so a picker can sort by
+   *  recency.
+   */
+  lastConnectedAt: string
+}
+
+// One WebDAV server the user has connected to, and how to reach it again.
+export type KnownWebdavServer = {
+  /**
+   *  The base URL, as the user typed it, with a trailing slash. Scheme, host,
+   *  port, and the path the server hangs its collections under.
+   */
+  url: string
+  /**
+   *  The account to sign in as. ❗ Part of the identity: two accounts on one
+   *  server see different files under the same paths.
+   */
+  username: string
+  /**
+   *  What to call it in the UI. The user's own label, falling back to the host
+   *  when they never gave one.
+   */
+  displayName: string
+  // The remote directory to open at, relative to the base URL's path.
+  remoteRoot: string
+  /**
+   *  Whether Cmdr may redial this server unattended when its session drops.
+   *
+   *  ❗ **Independent of whether a secret is remembered**, which is the OTHER
+   *  switch and lives in the Keychain rather than here
+   *  (`has_webdav_credentials` is how to read it). Their combination has a real
+   *  precondition: `get_webdav_unattended_reconnect` is what says so, per
+   *  volume.
+   *
+   *  ❗ Defaults to on, ❌ never to off, the same as SFTP's: reading a missing
+   *  field as `false` would switch reconnects off under every server saved
+   *  before the setting existed.
+   *  ⚠️ `serde(default)` makes specta type this `autoReconnect?: boolean`. ❌
+   *  Don't let a call site infer the default from that `undefined`:
+   *  `getKnownWebdavServers` in `tauri-commands/webdav.ts` fills it in one
+   *  place, and that is the only place the default is spelled on the frontend.
    */
   autoReconnect?: boolean
   /**
@@ -8655,6 +9010,17 @@ export type OperationRow = {
   rollbackState: RollbackState
   notRollbackableReason: NotRollbackableReason | null
   rollsBackOpId: string | null
+  /**
+   *  The newest operation that rolls THIS one back, the mirror of
+   *  [`Self::rolls_back_op_id`]. `None` until something reverses this operation.
+   *
+   *  Not a stored column: every reader resolves it through the partial
+   *  `operations_rolls_back` index right after mapping (see
+   *  [`fill_inverse_op_ids`]), so no reader can hand out a `None` that means
+   *  "I didn't look". While the row reads `rolling_back` this is the id of the
+   *  live reversal, which is how the history dialog offers it Pause and Cancel.
+   */
+  inverseOpId: string | null
   sourceVolumeId: string | null
   destVolumeId: string | null
   startedAt: number
@@ -8790,6 +9156,33 @@ export type OperationUndoOutcome = {
  */
 export type OperationsChanged = {
   operations: OperationSnapshot[]
+}
+
+/**
+ *  The originals a cross-filesystem move still had in their old place when it
+ *  was stopped, once the whole copy was already at the destination.
+ *
+ *  **Independent of `outcome`, the same way [`StagedLeftovers`] is.** No
+ *  reversal ran here and none can: the bytes are across a filesystem boundary,
+ *  so carrying them home would be a second full transfer the user never asked
+ *  for. `NotRolledBack` says that truthfully and says all it can. What it can't
+ *  say is that the move ALREADY LANDED — every source's copy is at the
+ *  destination and durable, some originals are gone for good, and the ones
+ *  counted here are duplicates of files that now live somewhere else. Without
+ *  this the readout stays silent on all of it, which is the one reading a user
+ *  who pressed Rollback must not be left with.
+ *
+ *  Set only by `transfer/move_op/cross_fs.rs`'s phase-4 source sweep, which is
+ *  the only place that state exists.
+ */
+export type OriginalsStillInPlace = {
+  /**
+   *  Top-level items — the ones the user picked, files and folders alike, and
+   *  the same unit the sweep's own progress counts in. Never zero: the sweep
+   *  reads the intent at the top of each item, so a stop always leaves at
+   *  least the item it was about to take.
+   */
+  count: number
 }
 
 /**
@@ -8978,11 +9371,6 @@ export type PatternType = 'glob' | 'regex'
 export type PauseAllOutcome = {
   // Operations that flipped right now.
   applied: number
-  /**
-   *  Operations still scanning, whose request is latched for the moment the
-   *  write starts.
-   */
-  deferred: number
   // Operations already sitting where the caller wants them.
   alreadyInState: number
   /**
@@ -8999,21 +9387,16 @@ export type PauseAllOutcome = {
  *  are the same in both directions.
  *
  *  The distinction is load-bearing at the MCP boundary, where an agent acts on
- *  the answer: `Applied` and `Deferred` both mean "the queue will stop", but
- *  `NotApplicable` means nothing changed and nothing is remembered.
+ *  the answer: `Applied` means "the queue has stopped", `NotApplicable` means
+ *  nothing changed and nothing is remembered.
  */
 export type PauseOutcome =
   /**
-   *  The record flipped: `Running`→`Paused` (the driver parks at its next
-   *  between-files boundary) or `Paused`→`Running`.
+   *  The record flipped: `Running`→`Paused` (the operation parks at its next
+   *  boundary — between files while writing, between entries while scanning)
+   *  or `Paused`→`Running`.
    */
   | 'applied'
-  /**
-   *  The operation is still waiting on its scan, so there is nothing to park
-   *  yet. The request is latched and applies the moment the write starts
-   *  (`end_scan_wait`); a resume withdraws a latched pause the same way.
-   */
-  | 'deferred'
   /**
    *  The operation is already in the state asked for (pausing a `Paused` one,
    *  resuming a `Running` one). Nothing changed because nothing had to, so a
@@ -10705,6 +11088,12 @@ export type SkipBreakdown = {
  *  engine's per-item verdict, and the vocabulary of the nullable
  *  `operation_items.rollback_skip_reason` column.
  *
+ *  It is also the vocabulary the IN-FLIGHT reversals speak — the one a cancel
+ *  runs over a transfer's own ledger (`file_system::write_operations::reversal`),
+ *  which reports its verdicts on the `write-cancelled` event rather than storing
+ *  them. ❌ Don't add a parallel enum for those; the two reversals answer the same
+ *  question and a user shouldn't meet two vocabularies for it.
+ *
  *  Stored ONLY by the rollback engine, ONLY on the original op's item rows, and
  *  ONLY alongside [`ItemOutcome::Skipped`]. Everything else reads NULL, which means
  *  "reason not recorded" and never a default: a pre-v2 row, a mutation path that
@@ -10877,15 +11266,44 @@ export type SourceItemInput = {
  */
 export type SourceItemOutcome = 'done' | 'skipped' | 'failed'
 
-// Space information for a volume.
-export type SpaceInfo = {
-  // In bytes.
-  totalBytes: number
-  // In bytes.
-  availableBytes: number
-  // In bytes.
-  usedBytes: number
-}
+/**
+ *  What a volume can say about its room.
+ *
+ *  Two shapes, because two situations are genuinely different. A disk, a share,
+ *  or a quota'd account has a TOTAL, so "free" and "how full" both mean
+ *  something. Storage with no quota at all has no total, and the only honest
+ *  number is what's already stored: a stock Nextcloud account is the live case,
+ *  answering RFC 4331 `quota-available-bytes: -3` (sabre/dav's unlimited
+ *  sentinel) next to a real `quota-used-bytes`.
+ *
+ *  ❌ Three `Option`s would let a caller build an `available` with no `total`,
+ *  which is a percentage with no denominator: a fill bar at an invented figure,
+ *  and the 80% / 95% warning bands firing on a volume that can't run out. Here
+ *  that value can't be constructed, so no caller has to remember not to.
+ */
+export type SpaceInfo =
+  /**
+   *  The volume has a ceiling, so it can be full and a percentage means
+   *  something.
+   */
+  | {
+      kind: 'bounded'
+      // Capacity, in bytes.
+      totalBytes: number
+      // Room left, in bytes.
+      availableBytes: number
+      // Already stored, in bytes.
+      usedBytes: number
+    }
+  /**
+   *  No ceiling. Only what's stored is known, so there's nothing to fill a bar
+   *  against and no band to warn in.
+   */
+  | {
+      kind: 'unbounded'
+      // Already stored, in bytes.
+      usedBytes: number
+    }
 
 /**
  *  SQLite's page memory: the one process-wide slab every store's cached database
@@ -10925,6 +11343,30 @@ export type SqlitePageCache = {
    *  adds its `cache_size` to SQLite's global ceiling on retained pages.
    */
   liveReadConnections: number
+}
+
+/**
+ *  The staged `.cmdr-tmp-*` writes a cancel's sweep asked the destination to
+ *  remove and didn't get.
+ *
+ *  **Deliberately not a [`SkipBreakdown`].** A skip is a LEDGER item the
+ *  reversal walked to and chose to leave alone, named by the file the user is
+ *  looking at; these are Cmdr's own scratch files for writes that never
+ *  finished, they carry no user-facing name, and nothing chose to keep them —
+ *  the destination refused (`transfer/volume/cleanup.rs`). Folding them into
+ *  `skips` would also fold them into `reversed + skipped`, which is what the
+ *  reversal's progress bar drains over, so the bar would report progress across
+ *  items no reversal ever walks.
+ */
+export type StagedLeftovers = {
+  // Every one the sweep couldn't remove, not a sample.
+  count: number
+  /**
+   *  The on-disk leaf name of the FIRST one, so a report can name it when it's
+   *  the only one. That name is the temp's own (`photo.jpg.cmdr-tmp-<uuid>`),
+   *  which is what the user would be looking for at the destination.
+   */
+  exampleName: string
 }
 
 /**
@@ -12014,19 +12456,13 @@ export type VolumeScanError =
  *  wire event name (`volume-space-changed`) via `tauri_specta::Event`. Both the
  *  TS payload type and a typed `events.volumeSpaceChanged.listen(...)` helper are
  *  generated into `apps/desktop/src/lib/ipc/bindings.ts`.
+ *
+ *  The whole [`SpaceInfo`] rides along rather than two loose numbers, so a volume
+ *  with no ceiling stays recognizable all the way to the pane's indicator.
  */
 export type VolumeSpaceChanged = {
   volumeId: string
-  totalBytes: number
-  availableBytes: number
-}
-
-// Information about volume space.
-export type VolumeSpaceInfo = {
-  // In bytes.
-  totalBytes: number
-  // In bytes.
-  availableBytes: number
+  space: SpaceInfo
 }
 
 /**
@@ -12141,6 +12577,81 @@ export type WatcherGateError =
    */
   { kind: 'watcherStartFailed'; message: string }
 
+/**
+ *  What connecting produced.
+ *
+ *  ❗ Every outcome is a variant, including the ones that read as failures: the
+ *  sign-in UI branches on all of them, and ❌ none may be recovered from a
+ *  message.
+ */
+export type WebdavConnectResult =
+  // A live volume, already registered and already in the server list.
+  | ({ outcome: 'connected' } & ConnectedWebdavVolume)
+  /**
+   *  The URL didn't parse, or its scheme is neither `http` nor `https`. ❗ Typed
+   *  rather than a message: the form marks the field, and the user fixes it.
+   */
+  | { outcome: 'invalid_url' }
+  /**
+   *  The server refused the credential. ❗ Retrying with the same secret can
+   *  lock the account; only a freshly typed one moves this forward.
+   */
+  | { outcome: 'authentication_rejected' }
+  /**
+   *  The server wants a credential and nothing is stored. ❗ Not a rejection,
+   *  and saying "wrong password" to someone who has never entered one is what
+   *  collapsing the two does.
+   */
+  | { outcome: 'needs_credentials' }
+  /**
+   *  The server challenged with no scheme this backend speaks (a Digest-only
+   *  server). ❌ Don't offer "check your password" as the fix; the secret was
+   *  never offered.
+   */
+  | { outcome: 'auth_method_unsupported' }
+  /**
+   *  The TLS certificate isn't trusted by the OS store. ❌ Not approvable from
+   *  the app: the fix is trusting the CA where the OS keeps them.
+   */
+  | { outcome: 'certificate_untrusted' }
+  // The URL answers HTTP, but not WebDAV.
+  | { outcome: 'not_a_webdav_server' }
+  // The handshake didn't finish inside the connect budget.
+  | { outcome: 'timed_out' }
+  // No route, refused, DNS, or a transport-level breakdown.
+  | { outcome: 'unreachable' }
+  /**
+   *  `cancel_webdav_connect` was called for this attempt. ❗ Nothing was
+   *  registered, remembered, or stored, so there is nothing to say about it
+   *  beyond closing the dialog.
+   */
+  | { outcome: 'cancelled' }
+
+/**
+ *  Whether a WebDAV volume can actually come back on its own as it stands.
+ *
+ *  ❗ **The backend's answer to "the switch is on and nothing happens".** The two
+ *  switches are independent — "remember the secret" is exactly a Keychain entry
+ *  (`has_webdav_credentials` reads it, `save_webdav_credentials` / delete move
+ *  it), and "reconnect automatically" is exactly this one — but their
+ *  COMBINATION has a precondition, and this enum is where it's said out loud.
+ *  ❌ Never derive it in the frontend from a credential check.
+ */
+export type WebdavUnattendedReconnect =
+  // On, and it works. Nothing to show.
+  | 'possible'
+  /**
+   *  The switch is off. Nothing redials on its own, whatever is remembered. A
+   *  person reconnects by hand, and that is the whole story.
+   */
+  | 'switch_off'
+  /**
+   *  ❗ On, and it can't do anything: this volume signs in from the secret store
+   *  and nothing is stored. **This is the state a UI warns about**, and the way
+   *  out is remembering the secret.
+   */
+  | 'no_stored_secret'
+
 // One released version's user-facing notes.
 export type WhatsNewRelease = {
   // Semver string, for example `"0.26.0"`.
@@ -12166,8 +12677,8 @@ export type WriteCancelledEvent = {
   operationId: string
   operationType: WriteOperationType
   filesProcessed: number
-  // Whether partial files were rolled back (deleted).
-  rolledBack: boolean
+  // What the reversal undid, if one ran at all.
+  rollback: CancelRollback
 }
 
 /**

@@ -30,6 +30,7 @@
 use super::*;
 use crate::file_system::volume::{InMemoryVolume, VolumeError, VolumeReadStream};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+use crate::file_system::write_operations::ledger::{WrittenFile, WrittenIdentity};
 use crate::file_system::write_operations::types::ConflictResolution;
 use cmdr_fs::staging::STAGING_TEMP_MARKER;
 use std::collections::HashSet;
@@ -105,7 +106,7 @@ struct Harness {
     bytes_skipped: Arc<AtomicU64>,
     last_progress: Arc<std::sync::Mutex<Instant>>,
     apply_to_all: Arc<std::sync::Mutex<ApplyToAll>>,
-    copied_paths: Arc<std::sync::Mutex<Vec<PathBuf>>>,
+    copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>>,
     created_dirs: Arc<std::sync::Mutex<Vec<PathBuf>>>,
     in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>>,
 }
@@ -180,7 +181,7 @@ impl Harness {
         let outcome = drive_transfer_concurrent(self.ctx(source, dest, concurrency)).await?;
         Ok(DriverRun {
             outcome,
-            copied_paths: self.copied_paths.lock_ignore_poison().clone(),
+            copied: self.copied_paths.lock_ignore_poison().clone(),
             created_dirs: self.created_dirs.lock_ignore_poison().clone(),
             in_flight_partials: self.in_flight_partials.lock_ignore_poison().clone(),
         })
@@ -222,9 +223,17 @@ impl Harness {
 /// ledgers the phase runner reads after it returns.
 struct DriverRun {
     outcome: ConcurrentOutcome,
-    copied_paths: Vec<PathBuf>,
+    copied: Vec<WrittenFile>,
     created_dirs: Vec<PathBuf>,
     in_flight_partials: Vec<PathBuf>,
+}
+
+impl DriverRun {
+    /// Just the paths of the rollback ledger, for the assertions that are about
+    /// WHICH destinations were recorded.
+    fn copied_paths(&self) -> Vec<PathBuf> {
+        self.copied.iter().map(|entry| entry.path.clone()).collect()
+    }
 }
 
 /// A source directory of `n` files, merging into a pre-existing destination
@@ -303,33 +312,60 @@ async fn a_completed_directory_source_is_recorded_file_by_file_never_by_its_root
         run.outcome.copy_error
     );
     assert!(
-        !run.copied_paths.contains(&PathBuf::from("/album")),
+        !run.copied_paths().contains(&PathBuf::from("/album")),
         "the merged destination ROOT must never be recorded for rollback: {:?}",
-        run.copied_paths
+        run.copied_paths()
     );
     for i in 0..3 {
         let leaf = PathBuf::from(format!("/album/new{i}.bin"));
         assert!(
-            run.copied_paths.contains(&leaf),
+            run.copied_paths().contains(&leaf),
             "the directory source's own file {} must be recorded, so Rollback can undo it: {:?}",
             leaf.display(),
-            run.copied_paths
+            run.copied_paths()
         );
     }
     assert!(
-        !run.copied_paths.contains(&PathBuf::from("/album/sentinel.txt")),
+        !run.copied_paths().contains(&PathBuf::from("/album/sentinel.txt")),
         "a dest-only file the copy never wrote must not be in the rollback ledger: {:?}",
-        run.copied_paths
+        run.copied_paths()
     );
     // Both FILE sources record their landed path, which is the whole ledger for
     // them (a file source has no `created_*`).
-    assert!(run.copied_paths.contains(&PathBuf::from("/sib1.bin")));
-    assert!(run.copied_paths.contains(&PathBuf::from("/sib2.bin")));
+    assert!(run.copied_paths().contains(&PathBuf::from("/sib1.bin")));
+    assert!(run.copied_paths().contains(&PathBuf::from("/sib2.bin")));
     assert!(
         !run.created_dirs.contains(&PathBuf::from("/album")),
         "`/album` already existed, so the copy did not create it: {:?}",
         run.created_dirs
     );
+}
+
+/// Every entry in the rollback ledger carries the size it was written with —
+/// the identity an in-flight reversal rechecks the destination against.
+///
+/// The size is on hand at every recording site (the leaf copier reports the bytes
+/// it piped), and the journal's own row for the same leaf carries it. A ledger of
+/// bare paths would leave the reversal nothing to recognize the file by.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn every_recorded_destination_carries_the_size_it_was_written_with() {
+    let (source, dest, sources) = merge_batch(3).await;
+    let harness = Harness::new(&sources);
+
+    let run = harness
+        .drive(source as Arc<dyn Volume>, Arc::clone(&dest), 4)
+        .await
+        .expect("the driver only errors when conflict resolution itself fails");
+
+    assert_eq!(run.copied.len(), 5, "three merged children plus two file sources");
+    for entry in &run.copied {
+        assert_eq!(
+            entry.identity,
+            WrittenIdentity::VolumeFile { size: 20_000 },
+            "{} lost the size it was written with",
+            entry.path.display()
+        );
+    }
 }
 
 /// The same ledger has to flow out of the FAILURE arm, not just the success one.
@@ -364,14 +400,14 @@ async fn a_failed_directory_source_records_its_files_and_never_its_root_as_a_par
         run.outcome.last_dest_path
     );
     assert!(
-        !run.copied_paths.contains(&PathBuf::from("/album")),
+        !run.copied_paths().contains(&PathBuf::from("/album")),
         "the merged destination ROOT must never be recorded, on the failure arm either: {:?}",
-        run.copied_paths
+        run.copied_paths()
     );
     assert!(
-        run.copied_paths.iter().any(|p| p.starts_with("/album/")),
+        run.copied_paths().iter().any(|p| p.starts_with("/album/")),
         "the files the interrupted directory source did write must be recorded per file: {:?}",
-        run.copied_paths
+        run.copied_paths()
     );
     assert!(
         !run.in_flight_partials.contains(&PathBuf::from("/album")),

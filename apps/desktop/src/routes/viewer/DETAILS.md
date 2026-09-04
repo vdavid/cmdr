@@ -19,9 +19,10 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 - **`viewer-indexing-poll.ts`**: `viewer_get_status` poll during line-index build.
 - **`viewer-keyboard.ts`**: pure key helpers + `createViewerKeyboard`, the keydown router (modifiers, Escape ladder, ⌘A,
   bare-key dispatch).
-- Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-pointer.ts`** (pure
-  caret math, surrogate-safe), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller),
-  **`viewer-word.ts`** (word-boundary via `Intl.Segmenter`).
+- Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-caret-geometry.ts`**
+  (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter: row hit-test + character
+  rects), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller), **`viewer-word.ts`**
+  (word-boundary via `Intl.Segmenter`).
 - **`viewer-search-scroll.ts`**: pure per-axis scroll-to-match centring (`recenterOffset`, rect-based).
 - Copy: **`viewer-copy.ts`** (pure silent/confirm/refuse policy + thresholds), **`viewer-copy.svelte.ts`**
   (`createViewerCopy` + `createViewerCopyOrchestrator`). Autoscroll: **`viewer-autoscroll.ts`** (curve) +
@@ -66,6 +67,15 @@ source for the origin form). `openViewerSession` hands the result to `media.setF
   `viewer_open_as_text` (text) or `viewer_open` (re-classifies → media), swaps to it, and closes the old session
   EXPLICITLY (different id). The page tears down per-session listeners first because `openViewerSession` re-attaches
   them. No backend change: `viewer_open` re-classification is what re-derives the media kind.
+- **The image stage's checkerboard needs an explicit `background-repeat: repeat`.** The `ress` reset in `app-reset.css`
+  sets `background-repeat: no-repeat` on `*`, so the four 20px hard-stop gradients paint ONCE each in the top-left
+  corner and the whole rest of the stage stays flat base color. The symptom reads as "transparent pixels render opaque",
+  and it reproduces only inside the app: lift the rule into a standalone page and the checker draws fine, because
+  nothing resets `background-repeat` there. Any other tiled-gradient background in the app has the same trap.
+- **Its colors are the dedicated `--color-checkerboard-base` / `--color-checkerboard-tile` tokens (`app.css`), not the
+  general surface tokens.** `--color-bg-primary` vs `--color-bg-tertiary` is ~1.2:1 (light) and ~1.5:1 (dark), too faint
+  to read as a checker even when it tiles correctly. Keep the pair at roughly 1.6:1 or more per theme (Preview.app /
+  Photoshop "light" checker range).
 - CSP: the `cmdr-media:` token is in `img-src` + `object-src` (`tauri.conf.json`); `viewer-media.spec.ts` locks "no
   `cmdr-media`/`img-src`/`object-src` violation". WKWebView applies EXIF orientation by default (phone photos upright).
 
@@ -132,6 +142,71 @@ logical coordinates, independent of which lines happen to be rendered.
   before it. The boundaries themselves are correct on every engine; only the flag lies. Node's ICU gets the flag right,
   so a plain unit test can't see this: `viewer-word.test.ts` stubs a JSC-shaped segmenter to hold the line. (Verified on
   macOS 26.5.2 WKWebView vs. Node 24 and Playwright WebKit 26.5, offscreen WKWebView probe, 2026-08-13.)
+
+### Pointer → caret
+
+Resolving `(clientX, clientY)` to a `LineOffset` is geometric, top to bottom: `viewer-pointer.ts` binary-searches the
+rendered `[data-line]` rows by `y` (they're in ascending order, so it reads ~log2(rendered rows) rects), then hands the
+hit row's `.line-text` to `findOffsetByGeometry` in `viewer-caret-geometry.ts`, which binary-searches the character
+boxes for the point. `measure(offset)` builds one `Range` per probe over the line's text nodes and reads
+`getClientRects()`, so a 100k-character line costs the same ~17 probes a short one does.
+
+Decision/Why: the browser's own `caretPositionFromPoint` / `caretRangeFromPoint` are deliberately unused. Both return a
+non-null, plausible-looking result on text under `user-select: none` (which `.file-content` is) while some WebKit builds
+silently answer offset 0 for every x. That's undetectable at runtime, so there's no safe fast path to be had: one
+geometric path serves every webview.
+
+What falls out of doing it ourselves, and what the tests pin:
+
+- **Every point over `.file-content` resolves; only points outside it return `null`.** Keep it that way:
+  `handlePointerDown` bails on a `null` caret before it arms the drag, so a dead zone (the gutter, the row padding, the
+  blank area under a short file) doesn't cost the anchor, it costs the whole gesture: nothing selected, and a silent
+  no-op ⌘C after it.
+- **Left of a row's text** (gutter, padding) → the start of that visual row. **Right of it** → the end of that visual
+  row, which on a wrapped line is the wrap point, not the end of the logical line.
+- **Below the last rendered row** → the end of that line. **Above the first** → offset 0.
+- **Word wrap**: character boxes run in reading order, so the search compares row (`y`) first and `x` only within a row.
+  A wrapped logical line spans several rows and each resolves independently.
+- **Offsets stay on codepoint boundaries.** `measure` snaps onto the start of the codepoint covering the probe and
+  reports its two-unit span, so an astral character is one box and the caret can't land between its surrogates.
+- **Drag and autoscroll aim through `caretFromPointClamped`.** Past the top or bottom edge it snaps horizontally to that
+  side too, so a drag out of the viewport sweeps whole visual rows as they scroll by instead of freezing.
+
+Known gap: **a click inside a right-to-left run resolves to a wrong-but-plausible offset.** `findOffsetByGeometry`
+binary-searches the character boxes assuming reading order is monotone, which holds for LTR text but not inside an RTL
+run (Hebrew or Arabic file content), where x runs the other way as the offset grows. The damage is contained: the
+comparison only misorders when the point falls inside the RTL run's own x range, so the LTR parts of a mixed line still
+resolve correctly, and every row-level behavior above is unaffected. The fix, if it's ever worth the work, is to find
+the bidi run rect containing the point via `Range.getClientRects()` (one rect per run) and binary-search within that run
+in the run's own direction.
+
+### Click cycle (word and line selection)
+
+A second press selects the word, a third the whole logical line (offset 0 to the line's UTF-16 length, so a word-wrapped
+line still selects in full), and a fourth starts the cycle over at a plain click, which is what editors do.
+`viewer-multi-click.ts` holds the counting as a pure function of the previous press: a press restarts the cycle when it
+comes later than `MULTI_CLICK_INTERVAL_MS` (500 ms, matching the macOS default), lands further than
+`MULTI_CLICK_SLOP_PX` (4 px) from the one before it, or arrives with an earlier timestamp. Each press is compared
+against its predecessor, not against the first, so a gesture that creeps a couple of pixels per press stays one gesture.
+A shift-click is an extend gesture and resets the count.
+
+Decision/Why: the count comes from the controller's own `pointerdown` stream, and the page binds no `click` handler at
+all. Before that, the same handler read a `click` event's `detail`, and triple-click selected nothing in the app while
+double-click worked; since the two branches shared every line but the `detail` comparison, `detail` never reached 3
+there. The whole gesture vocabulary now rests on the one event stream the drag already depends on, which also makes it
+reachable from a test that dispatches plain `PointerEvent`s (`viewer.spec.ts` § "multi-click selection"): a synthetic
+`click` with a hand-set `detail` would have passed against the broken code.
+
+Gotcha/Why: which part of the native pipeline dropped that count is NOT established, so don't reach back for `detail` on
+the theory that some documented rule explains it. `preventDefault()` on `pointerdown` suppresses the compatibility
+`mousedown` / `mouseup` per the Pointer Events spec, but a plain WKWebView still fires `click` with `detail` counting 1,
+2, 3, 4, including with pointer capture held, with the pressed node replaced mid-gesture, and with DOM focus moved
+inside the handler. In other words the obvious suspect is innocent, and an isolated probe can't reproduce the app's
+failure. (Verified on macOS 26.6.2 WKWebView, offscreen WKWebView probe driving synthesized `NSEvent`s at clickCount
+1-4, 2026-09-02.)
+
+A press that counts 2 or 3 deliberately does NOT arm the drag: the gesture is already complete, and a hand twitch before
+the release would otherwise call `setFocus` and collapse the fresh word or line back to a caret.
 
 ## Title-bar overlay toolbar
 
@@ -235,12 +310,9 @@ the backend's own words. The wider split: `docs/guides/error-handling.md`.
   browser's native selection would render a competing-and-broken one on top of ours that loses its anchor as soon as the
   line scrolls out. `.status-bar` opts back in with `user-select: text` so users can still copy the file name or line
   count. `.line-number` keeps the global default (`none`), it's aria-hidden chrome.
-  - Trap: webkit2gtk 2.50.4 (Ubuntu 24.04) has a bug where `caretRangeFromPoint` returns `offset: 0` for every x-coord
-    inside `user-select: none` text, which breaks the pointer → caret path in `viewer-pointer.ts:resolveCaret`.
-    webkit2gtk 2.52.3 (Ubuntu 25.10+) doesn't have it. The Docker E2E image is pinned to `ubuntu:26.04` to avoid this;
-    see `apps/desktop/test/e2e-linux/DETAILS.md` § "webkit2gtk caret bug". If you ever need to support a webview version
-    that still has the bug (e.g. an older Linux distro target), replace this code path with a
-    `Range.getClientRects()`-based binary search that doesn't depend on the browser caret API.
+  - The browser's caret-from-point APIs are wrong on `user-select: none` text in some WebKit builds, so we don't use
+    them at all (§ "Pointer → caret"). ❌ Don't reintroduce one as a "fast path": the wrong answer looks exactly like a
+    right one.
 - **Selection offsets are UTF-16 code units, not bytes or grapheme clusters.** When you add features that compute
   offsets from a click position (caret math in `viewer-pointer.ts`) or accept them across the IPC boundary
   (`viewer_read_range`), preserve the UTF-16 convention. The backend handles the conversion to UTF-8 bytes, clamping

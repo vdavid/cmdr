@@ -5,6 +5,138 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cmdr</title>
+    <!--
+      Old-WebKit boot guard. Runs before the module bundle, and it has to: on the
+      oldest WebKit the bundle can't be PARSED (Safari 13 lacks `||=`), so a screen
+      shipped inside the bundle is unreachable on exactly the Mac that needs it.
+      Four Safari 15.4 APIs the app calls unconditionally decide it; `build.target`
+      can't help, because esbuild lowers syntax and never runtime APIs. Evidence and
+      the measured parse floor: `docs/notes/system-requirements-and-es2025.md`
+      § The two floors old WebKit crosses.
+
+      ❗ ES5 ONLY in here. No `const` / `let`, arrow functions, template literals,
+      `?.`, `??`, or class syntax: one ES6 token and this script dies on the WebKit
+      it exists for, silently, and the user gets the white screen back.
+      `apps/desktop/scripts/app-boot-guard.test.ts` fails on the ones you'd reach for.
+
+      The strings come from the message catalog, spliced in at build time by
+      `svelte.config.js` (see `scripts/gen-boot-guard-lib.ts`), so translators own
+      this copy like any other. A missing marker fails the build.
+
+      This is also the one place other than `setLocale()` that writes `<html lang>`.
+      Not a conflict: the app never boots on this path.
+    -->
+    <script>
+      ;(function () {
+        'use strict'
+        var DATA = /* cmdr:boot-guard-data */ null
+        if (!DATA) return
+
+        // Safari 15.4, the floor. Mirrored by `WEBKIT_FLOOR_CAPABILITIES` in
+        // `src/lib/utils/webkit-compat.ts`; the test holds the two together.
+        function belowFloor() {
+          if (typeof crypto === 'undefined' || typeof crypto.randomUUID !== 'function') return true
+          if (typeof Object.hasOwn !== 'function') return true
+          if (typeof Array.prototype.findLast !== 'function') return true
+          // A webview that can't answer isn't evidence against itself.
+          if (typeof CSS !== 'undefined' && typeof CSS.supports === 'function') {
+            if (!CSS.supports('selector(:has(*))')) return true
+          }
+          return false
+        }
+
+        if (!DATA.force && !belowFloor()) return
+
+        // Longest match first, dropping one subtag at a time. `DATA.aliases` already
+        // carries the script-boundary answers, so `zh-TW` lands on Traditional
+        // rather than falling through to Simplified.
+        function pickLocale() {
+          var wanted = []
+          if (navigator.languages && navigator.languages.length) {
+            wanted = [].slice.call(navigator.languages)
+          } else if (navigator.language) {
+            wanted = [navigator.language]
+          }
+          for (var i = 0; i < wanted.length; i++) {
+            var parts = String(wanted[i]).toLowerCase().split('-')
+            for (var end = parts.length; end > 0; end--) {
+              var key = parts.slice(0, end).join('-')
+              if (Object.prototype.hasOwnProperty.call(DATA.aliases, key)) return DATA.aliases[key]
+            }
+          }
+          return 'en'
+        }
+
+        // Routes through Tauri's own exit path, so the quit gate still sees it.
+        // If the invoke isn't there, the native menu bar still quits.
+        function quit() {
+          var internals = window.__TAURI_INTERNALS__
+          if (!internals || typeof internals.invoke !== 'function') return
+          try {
+            var pending = internals.invoke('plugin:process|exit', { code: 0 })
+            if (pending && typeof pending.catch === 'function') {
+              pending.catch(function () {})
+            }
+          } catch (e) {}
+        }
+
+        function blockScreenCss() {
+          return [
+            '.cmdr-boot-block{position:fixed;top:0;right:0;bottom:0;left:0;box-sizing:border-box;',
+            'display:flex;flex-direction:column;align-items:center;justify-content:center;',
+            'padding:40px 32px;text-align:center;background:var(--bg);color:var(--text);',
+            'font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;',
+            '-webkit-user-select:none;user-select:none}',
+            '.cmdr-boot-block h1{margin:0 0 10px;font-size:19px;font-weight:600}',
+            '.cmdr-boot-block p{margin:0 0 28px;max-width:30em;font-size:13px;line-height:1.5;',
+            'color:var(--muted)}',
+            '.cmdr-boot-block button{-webkit-appearance:none;appearance:none;font:inherit;font-size:13px;',
+            'border:1px solid var(--border);border-radius:6px;padding:5px 18px;color:var(--text);',
+            'background:transparent;cursor:default}',
+            '.cmdr-boot-block button:focus{outline:2px solid var(--accent);outline-offset:2px}',
+          ].join('')
+        }
+
+        function render() {
+          var tag = pickLocale()
+          var strings = DATA.strings[tag] || DATA.strings.en
+          document.documentElement.lang = tag
+
+          var style = document.createElement('style')
+          style.textContent = blockScreenCss()
+          document.head.appendChild(style)
+
+          var block = document.createElement('div')
+          block.className = 'cmdr-boot-block'
+          var heading = document.createElement('h1')
+          heading.textContent = strings.title
+          var body = document.createElement('p')
+          body.textContent = strings.body
+          var button = document.createElement('button')
+          button.type = 'button'
+          button.textContent = strings.quit
+          button.onclick = quit
+          block.appendChild(heading)
+          block.appendChild(body)
+          block.appendChild(button)
+
+          // Emptying the body detaches the element SvelteKit's boot script captured,
+          // so a bundle that DID parse mounts into a detached node and never reaches
+          // the screen.
+          while (document.body.firstChild) {
+            document.body.removeChild(document.body.firstChild)
+          }
+          document.body.appendChild(block)
+          button.focus()
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', render, false)
+        } else {
+          render()
+        }
+      })()
+    </script>
     <style>
       /* Inline critical CSS - renders before any JS.
              * Accent colors here are brand fallbacks (mustard gold from getcmdr.com).

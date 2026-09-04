@@ -53,6 +53,37 @@ async fn teardown(device_id: &str, fixture: &VirtualDeviceFixture) {
     unregister_virtual_mtp_device(fixture.location_id);
 }
 
+/// The shared `Volume::rename` no-clobber assertion, over a real `MtpVolume`.
+///
+/// MTP is the backend with no protocol-level exclusivity to lean on: PTP has no
+/// rename-if-absent, so the refusal is a hand-written `exists` probe in front of
+/// `rename_object` and nothing but this assertion would notice it going away. It
+/// wouldn't even leave a visible collision behind: the protocol happily hosts two
+/// siblings with the same name, and the virtual device's rename is a
+/// `std::fs::rename`, which replaces the destination and answers OK. Why the
+/// probe can't be anything tighter: `mtp/volume_impl.rs`, on the guard itself.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn rename_honors_the_shared_no_clobber_contract() {
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let (device_id, volume) = connect_primed_volume(&fixture).await;
+    // `resolve_path_to_handle` is cache-only, and `connect_primed_volume` stops
+    // at the root, so a nested path has to be reached through its parent.
+    volume
+        .list_directory(Path::new("/Documents"), None)
+        .await
+        .expect("priming the Documents listing");
+
+    cmdr_fs::volume::conformance::assert_rename_refuses_an_existing_destination(
+        &volume,
+        Path::new("/Documents/report.txt"),
+        Path::new("/Documents/notes.txt"),
+    )
+    .await;
+
+    teardown(&device_id, &fixture).await;
+}
+
 /// The shared `Volume::create_directory_all` honesty assertion, over a real
 /// `MtpVolume` — the backend the honesty question was written for.
 ///
@@ -123,6 +154,24 @@ async fn not_found_honors_the_shared_path_payload_contract() {
     let (device_id, volume) = connect_primed_volume(&fixture).await;
 
     cmdr_fs::volume::conformance::assert_not_found_carries_the_path(&volume, Path::new("/no-such-file.txt")).await;
+
+    teardown(&device_id, &fixture).await;
+}
+
+/// The shared conflict-scan assertion, over a real `MtpVolume`: a destination
+/// the paste would create answers "nothing clashes", not the `NotFound` the
+/// cache-aware listing hands back for a path it can't resolve.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn conflict_scan_honors_the_shared_missing_destination_contract() {
+    let _guard = virtual_device_test_lock().lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let (device_id, volume) = connect_primed_volume(&fixture).await;
+
+    cmdr_fs::volume::conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
+        &volume,
+        Path::new("/not-created-yet"),
+    )
+    .await;
 
     teardown(&device_id, &fixture).await;
 }

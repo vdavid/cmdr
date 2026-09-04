@@ -59,6 +59,14 @@
   "@fileExplorer.diskSpace.freeShort": {
     "sourceHash": "b8f52a6"
   },
+  "fileExplorer.diskSpace.used": "{usedText} belegt",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "Dieser Speicher hat keine Größenbeschränkung, deshalb gibt es keinen Balken zum Füllen.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "0c363c5"
+  },
   "fileExplorer.diskSpace.lowNote": "Der Balken ist rot, weil auf diesem Volume der Speicherplatz knapp wird.",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"

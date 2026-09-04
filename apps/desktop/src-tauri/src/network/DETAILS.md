@@ -433,6 +433,16 @@ Two details keep the table honest:
 - **A serial beside each token**, so a repeated id can't strand one: the guard only takes its OWN entry out, and a
   second connect under the same id stays cancelable.
 
+### The WebDAV twin
+
+WebDAV has one store, not two: `webdav_known_servers.rs` holds what the user has connected to (`webdav_known_servers.json`,
+keyed by the `(host, port, username)` triple `cmdr_fs::volume::webdav_volume_id` derives from) and the secret store holds
+the passwords; there is no trusted-host file because TLS trust comes from the system roots (a self-signed certificate
+answers `certificate_untrusted`, and pinning is a follow-up in `docs/specs/webdav-backend-follow-ups.md`).
+`webdav_volume_wiring.rs` is the same three steps in the same order (dial, register while retiring the incumbent via
+`on_superseded`, remember) with the same caller-owned attempt table. The connection states, the one unattended re-probe,
+and every connect outcome: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend".
+
 ❗ **`cancel_connect` on an id nobody is running answers `false`** rather than raising: a click landing just after a
 connect finished is ordinary. And a `Cancelled` outcome never reaches `register` or `remember`, so a cancelled connect
 leaves no volume, no saved server, and no secret.

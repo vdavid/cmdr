@@ -285,7 +285,7 @@ through 0.40.0, since none of those refreshes was ever submitted; the 0.36 line 
 ### System requirements
 
 ```
-macOS 12 Monterey or later, both Apple Silicon and Intel
+macOS 12 Monterey or later, both Apple Silicon and Intel. macOS 10.15 Catalina and 11 Big Sur run on a best-effort basis.
 ```
 
 ## 3. Media

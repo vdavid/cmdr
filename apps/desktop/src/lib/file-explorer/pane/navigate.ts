@@ -130,6 +130,7 @@ import {
 } from '../navigation/navigation-history'
 import { isPathOnVolume, type DetermineNavigationPathArgs } from '../navigation/path-navigation'
 import { tString } from '$lib/intl/messages.svelte'
+import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
 import type { Location } from '$lib/tauri-commands'
 
 /** Where a navigation originates. Drives focus + history-push behavior, never the destination. */
@@ -171,7 +172,13 @@ export interface NavigateIntent {
 
 /** Why a synchronous navigation refused. `message` is the exact current string — contract (L12). */
 export interface NavigateRefusal {
-  kind: 'on-network-volume' | 'smb-path-unsupported' | 'mtp-unconnected' | 'pane-unavailable' | 'no-volume-resolved'
+  kind:
+    | 'on-network-volume'
+    | 'smb-path-unsupported'
+    | 'mtp-unconnected'
+    | 'adb-unconnected'
+    | 'pane-unavailable'
+    | 'no-volume-resolved'
   /** EXACT current refusal string, forwarded verbatim as the `mcp-response` error. Pinned byte-for-byte. */
   message: string
 }
@@ -314,6 +321,32 @@ function validateMtpNavigation(path: string, volumeId: string, volumeName: strin
     return {
       kind: 'mtp-unconnected',
       message: `Pane is on the ${volumeName ?? volumeId} MTP volume. Use select_volume to switch to a local volume first.`,
+    }
+  }
+  return null
+}
+
+/**
+ * ADB capability check, the MTP twin: an `adb://<serial>/…` path is navigable only
+ * while the pane sits on that device's volume. Returns a refusal or `null`.
+ */
+function validateAdbNavigation(
+  deps: NavigateDeps,
+  path: string,
+  volumeId: string,
+  volumeName: string | undefined,
+): NavigateRefusal | null {
+  if (path.startsWith('adb://')) {
+    // The volume id (`adb-<slug>-<digest>`) isn't derivable from the serial; the
+    // volume's registered root (`adb://<serial>`) is the link.
+    const serial = /^adb:\/\/([^/]+)/.exec(path)?.[1]
+    if (!serial || !isAdbVolumeId(volumeId) || deps.getVolumePathById(volumeId) !== `adb://${serial}`) {
+      return { kind: 'adb-unconnected', message: 'Pane is not on this ADB volume. Call select_volume first.' }
+    }
+  } else if (isAdbVolumeId(volumeId)) {
+    return {
+      kind: 'adb-unconnected',
+      message: `Pane is on the ${volumeName ?? volumeId} ADB volume. Use select_volume to switch to a local volume first.`,
     }
   }
   return null
@@ -628,7 +661,9 @@ function navigateInPlace(deps: NavigateDeps, intent: NavigateIntent, path: strin
   }
 
   // MTP capability refusal (synchronous).
-  const mtpRefusal = validateMtpNavigation(path, currentVolumeId, currentVolumeName)
+  const mtpRefusal =
+    validateMtpNavigation(path, currentVolumeId, currentVolumeName) ??
+    validateAdbNavigation(deps, path, currentVolumeId, currentVolumeName)
   if (mtpRefusal) return { status: 'refused', reason: mtpRefusal }
 
   const paneRef = deps.getPaneRef(pane)

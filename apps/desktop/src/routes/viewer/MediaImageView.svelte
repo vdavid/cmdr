@@ -214,15 +214,24 @@
     justify-content: center;
     overflow: hidden;
     outline: none;
-    /* Checkerboard behind transparency, fixed in screen space (background-attachment
-       isn't needed since the stage itself doesn't scroll). Two layered gradients make
-       the classic 2-tone checker using design tokens. */
-    background-color: var(--color-bg-primary);
+    /* Checkerboard behind transparency. Four layered hard-stop gradients make the
+       classic 2-tone checker, in the dedicated `--color-checkerboard-*` pair from
+       `app.css` (the general surface tokens sit ~1.2:1 apart, too faint to read as
+       a checker).
+
+       `background-repeat: repeat` is LOAD-BEARING: the `ress` reset in
+       `app-reset.css` sets `background-repeat: no-repeat` on `*`, so without this
+       line the four 20px tiles paint once each in the top-left corner and the rest
+       of the stage is flat base color. That looks exactly like "transparency renders
+       as opaque", and it reproduces only inside the app, never in a standalone
+       snippet of this rule. */
+    background-color: var(--color-checkerboard-base);
     background-image:
-      linear-gradient(45deg, var(--color-bg-tertiary) 25%, transparent 25%),
-      linear-gradient(-45deg, var(--color-bg-tertiary) 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, var(--color-bg-tertiary) 75%),
-      linear-gradient(-45deg, transparent 75%, var(--color-bg-tertiary) 75%);
+      linear-gradient(45deg, var(--color-checkerboard-tile) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--color-checkerboard-tile) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--color-checkerboard-tile) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--color-checkerboard-tile) 75%);
+    background-repeat: repeat;
     background-size: 20px 20px;
     background-position:
       0 0,

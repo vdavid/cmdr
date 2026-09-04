@@ -27,7 +27,8 @@ import {
   type IntakeRejection,
 } from './error-report-intake'
 import { hashAmendKey, mintAmendKey, writeReportIndex } from './error-report-amend'
-import { humanReportRecipient, sendErrorReportNotificationEmail, sendErrorReportsSuppressedEmail } from '../email'
+import { humanReportRecipient } from '../email/send'
+import { sendErrorReportNotificationEmail, sendErrorReportsSuppressedEmail } from '../email/error-report'
 import {
   postErrorReportNotification,
   postEvictionBlockedNotification,

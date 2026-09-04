@@ -10,23 +10,23 @@
 //! between them, and the conflict-landing and directory-merge helpers both
 //! engines share, live in `move_op` itself.
 
-use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use super::super::super::ledger::WrittenFile;
 use super::{MoveTransaction, merge_move_directory, move_resolved_into_place};
 
 use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
-use crate::file_system::write_operations::durability::flush_created_destinations;
+use crate::file_system::write_operations::durability::flush_touched_directories;
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::state::{
-    OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
+    OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use crate::file_system::write_operations::types::{
-    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationType, WriteSourceItemDoneEvent,
+    CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::validation::path_exists_or_is_symlink;
 use crate::file_system::write_operations::{journal, journal_search};
@@ -67,8 +67,10 @@ pub(super) fn move_with_rename(
 
     let result: Result<(), WriteOperationError> = (|| {
         for source in sources {
-            // Check cancellation
-            if is_cancelled(&state.intent) {
+            // The cooperative boundary, between items. This is the whole pause
+            // story for a rename engine: a `rename(2)` is one syscall, so the
+            // item boundary is the only place to park.
+            if state.stop_or_park_sync() {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });
@@ -161,7 +163,7 @@ pub(super) fn move_with_rename(
                         // file; a rename-aside (different name) did not.
                         item_overwrote = resolved.path == dest_path;
                         landed_path = resolved.path.clone();
-                        move_resolved_into_place(source, &dest_path, &resolved, &mut move_tx)?;
+                        move_resolved_into_place(source, &dest_path, &resolved, source_meta.as_ref(), &mut move_tx)?;
                     }
                     None => {
                         // Skip this file
@@ -174,7 +176,10 @@ pub(super) fn move_with_rename(
                 crate::downloads::note_pending_write_for_cmdr(source);
                 crate::downloads::note_pending_write_for_cmdr(&dest_path);
                 fs::rename(source, &dest_path).with_path(source)?;
-                move_tx.record(source.clone(), dest_path.clone());
+                move_tx.record(
+                    source.clone(),
+                    WrittenFile::local_stat(dest_path.clone(), source_meta.as_ref()),
+                );
             }
 
             // Journal the top-level moved item as the rollback unit: one
@@ -239,35 +244,61 @@ pub(super) fn move_with_rename(
     // The outer start_write_operation wrapper treats Cancelled as "already handled",
     // so we must emit the event here.
     if let Err(WriteOperationError::Cancelled { .. }) = &result {
-        let rolled_back = match load_intent(&state.intent) {
-            OperationIntent::RollingBack => {
-                move_tx.rollback();
-                true
-            }
-            _ => false,
+        let rollback = match load_intent(&state.intent) {
+            OperationIntent::RollingBack => move_tx.rollback().into_cancel_rollback(),
+            _ => CancelRollback::none(),
         };
 
         events.emit_cancelled(WriteCancelledEvent {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Move,
             files_processed: files_done,
-            rolled_back,
+            rollback,
         });
         return result;
     }
 
     result?;
 
-    // Durability: a same-FS rename moves no data blocks (the file's contents
-    // were already durable before the move), but the new directory entries
-    // still need flushing. `flush_created_destinations` emits a `Flushing`
-    // event (so the FE shows "Writing the last piece…" for moves too) and
-    // `fdatasync`s each moved file plus its parent directory, making the
-    // rename-into-place durable. `already_synced` is empty: an `fdatasync` on
-    // an already-durable file is cheap, and the parent-dir fsync is the point.
-    let renamed_dests: Vec<PathBuf> = move_tx.renames.iter().map(|(_, dest)| dest.clone()).collect();
-    let empty_synced: HashSet<PathBuf> = HashSet::new();
-    flush_created_destinations(
+    // The loop drained, but the user may have clicked Rollback between the last
+    // item's `is_cancelled` check and the loop's exit — a rename takes a whole
+    // subtree in one call, so on a small move the entire loop fits inside that
+    // window. Read the intent once more before reporting anything: without this
+    // the operation goes on to flush and emit `write-complete`, and the person
+    // who asked for "put it back" is told "everything's where you sent it"
+    // instead. `copy/mod.rs`'s `PostLoopIntent::Completed` arm is the same guard
+    // on the copy side; the reversal itself is `MoveTransaction::rollback`,
+    // which rechecks each item and never overwrites an occupied source.
+    if load_intent(&state.intent) == OperationIntent::RollingBack {
+        log::info!(
+            "move_with_rename: rollback requested after loop completion op={}, {} items",
+            operation_id,
+            move_tx.renames.len()
+        );
+        let rollback = move_tx.rollback().into_cancel_rollback();
+        events.emit_cancelled(WriteCancelledEvent {
+            operation_id: operation_id.to_string(),
+            operation_type: WriteOperationType::Move,
+            files_processed: files_done,
+            rollback,
+        });
+        // Cancelled, like the in-loop arm above: the wrapper reads it as
+        // "already emitted its terminal event", and journals the op as canceled
+        // rather than done — which is what a reversed move is.
+        return Err(WriteOperationError::Cancelled {
+            message: "Operation cancelled by user".to_string(),
+        });
+    }
+
+    // Durability: a same-FS rename moves directory ENTRIES, so the directories
+    // on both sides of each rename are exactly what needs flushing — the moved
+    // files' data blocks and inodes were already durable before the move, and
+    // syncing them would cost an `fcntl(F_FULLFSYNC)` per file on macOS (a
+    // device-level barrier) for a write that never happened.
+    // `flush_touched_directories` emits the `Flushing` event too, so the FE
+    // shows "Writing the last piece…" for both move kinds.
+    let touched_dirs = move_tx.touched_directories();
+    flush_touched_directories(
         events,
         operation_id,
         WriteOperationType::Move,
@@ -276,8 +307,7 @@ pub(super) fn move_with_rename(
         files_done,
         0,
         0,
-        &renamed_dests,
-        &empty_synced,
+        &touched_dirs,
     );
 
     // Emit completion (instant, no progress needed)

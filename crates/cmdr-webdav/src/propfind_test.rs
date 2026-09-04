@@ -1,0 +1,238 @@
+//! Two servers' dialects, one parser.
+
+use super::{PropfindEntry, decode_href, parse_multistatus, parse_rfc3339};
+
+const NEXTCLOUD: &str = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns">
+  <d:response>
+    <d:href>/remote.php/dav/files/ada/</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:resourcetype><d:collection/></d:resourcetype>
+        <d:getlastmodified>Fri, 01 Mar 2024 12:34:56 GMT</d:getlastmodified>
+        <d:quota-available-bytes>-3</d:quota-available-bytes>
+        <d:quota-used-bytes>1024</d:quota-used-bytes>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+    <d:propstat>
+      <d:prop><d:getcontentlength/></d:prop>
+      <d:status>HTTP/1.1 404 Not Found</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/remote.php/dav/files/ada/Photos%20from%20Zs%C3%B3fi/</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:resourcetype><d:collection/></d:resourcetype>
+        <d:getlastmodified>Fri, 01 Mar 2024 12:34:56 GMT</d:getlastmodified>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/remote.php/dav/files/ada/notes.txt</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:resourcetype/>
+        <d:getcontentlength>42</d:getcontentlength>
+        <d:getlastmodified>Fri, 01 Mar 2024 12:34:56 GMT</d:getlastmodified>
+        <d:creationdate>2024-03-01T12:00:00Z</d:creationdate>
+        <d:getetag>"abc"</d:getetag>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+
+const APACHE: &str = r#"<?xml version="1.0" encoding="utf-8"?>
+<D:multistatus xmlns:D="DAV:" xmlns:ns0="DAV:">
+<D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/">
+<D:href>/dav/</D:href>
+<D:propstat>
+<D:prop>
+<lp1:resourcetype><D:collection/></lp1:resourcetype>
+<lp1:creationdate>2024-03-01T12:00:00Z</lp1:creationdate>
+<lp1:getlastmodified>Fri, 01 Mar 2024 12:34:56 GMT</lp1:getlastmodified>
+</D:prop>
+<D:status>HTTP/1.1 200 OK</D:status>
+</D:propstat>
+</D:response>
+<D:response xmlns:lp1="DAV:">
+<D:href>/dav/large.bin</D:href>
+<D:propstat>
+<D:prop>
+<lp1:resourcetype/>
+<lp1:getcontentlength>4194304</lp1:getcontentlength>
+<lp1:getlastmodified>Fri, 01 Mar 2024 12:34:56 GMT</lp1:getlastmodified>
+</D:prop>
+<D:status>HTTP/1.1 200 OK</D:status>
+</D:propstat>
+</D:response>
+</D:multistatus>"#;
+
+/// 2024-03-01T12:34:56Z.
+const STAMP: u64 = 1_709_296_496;
+
+#[test]
+fn a_nextcloud_listing_yields_decoded_hrefs_and_typed_props() {
+    let entries = parse_multistatus(NEXTCLOUD).expect("a multistatus");
+    assert_eq!(entries.len(), 3);
+    assert_eq!(entries[0].href, "/remote.php/dav/files/ada/");
+    assert!(entries[0].is_collection);
+    assert_eq!(entries[0].size, None, "a 404 propstat never contributes a size");
+    assert_eq!(entries[0].quota_available, Some(-3));
+    assert_eq!(entries[0].quota_used, Some(1024));
+    assert_eq!(entries[1].href, "/remote.php/dav/files/ada/Photos from Zsófi/");
+    assert!(entries[1].is_collection);
+    assert_eq!(
+        entries[2],
+        PropfindEntry {
+            href: "/remote.php/dav/files/ada/notes.txt".into(),
+            is_collection: false,
+            size: Some(42),
+            modified_at: Some(STAMP),
+            created_at: Some(STAMP - 34 * 60 - 56),
+            quota_available: None,
+            quota_used: None,
+            oc_size: None,
+        }
+    );
+}
+
+/// `oc:size` is read by NAMESPACE, never by the prefix the document happens to
+/// use. A server is free to bind ownCloud's namespace to any prefix, and free to
+/// bind the letters `oc` to something else entirely; both happen in this body.
+/// Matching on the literal prefix would read the decoy and miss the real one.
+#[test]
+fn oc_size_is_matched_by_namespace_rather_than_by_prefix() {
+    let body = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:xyz="http://owncloud.org/ns" xmlns:oc="http://example.invalid/decoy">
+  <d:response>
+    <d:href>/remote.php/dav/files/grace/</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:resourcetype><d:collection/></d:resourcetype>
+        <d:quota-available-bytes>-3</d:quota-available-bytes>
+        <d:quota-used-bytes>0</d:quota-used-bytes>
+        <oc:size>999</oc:size>
+        <xyz:size>64934262</xyz:size>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+    let entries = parse_multistatus(body).expect("a multistatus");
+    assert_eq!(entries.len(), 1);
+    assert_eq!(
+        entries[0].oc_size,
+        Some(64_934_262),
+        "the ownCloud namespace carries the size whatever prefix it's bound to"
+    );
+    assert_eq!(
+        entries[0].quota_used,
+        Some(0),
+        "the RFC 4331 pair is still read alongside it"
+    );
+}
+
+/// A `size` outside the ownCloud namespace is not this property, and a value
+/// that isn't a count is no value at all.
+#[test]
+fn a_foreign_or_malformed_size_leaves_oc_size_empty() {
+    let body = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns">
+  <d:response>
+    <d:href>/dav/one/</d:href>
+    <d:propstat>
+      <d:prop><s:size>1234</s:size></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/two/</d:href>
+    <d:propstat>
+      <d:prop><oc:size>-1</oc:size></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/three/</d:href>
+    <d:propstat>
+      <d:prop><oc:size/></d:prop>
+      <d:status>HTTP/1.1 404 Not Found</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+    let entries = parse_multistatus(body).expect("a multistatus");
+    assert_eq!(entries.len(), 3);
+    assert_eq!(entries[0].oc_size, None, "sabre/dav's own namespace is not ownCloud's");
+    assert_eq!(entries[1].oc_size, None, "a negative count is malformed, not a size");
+    assert_eq!(entries[2].oc_size, None, "a 404 propstat never contributes a value");
+}
+
+#[test]
+fn an_apache_listing_parses_with_its_own_prefixes() {
+    let entries = parse_multistatus(APACHE).expect("a multistatus");
+    assert_eq!(entries.len(), 2);
+    assert!(entries[0].is_collection);
+    assert_eq!(entries[0].created_at, Some(STAMP - 34 * 60 - 56));
+    assert!(!entries[1].is_collection);
+    assert_eq!(entries[1].size, Some(4_194_304));
+    assert_eq!(entries[1].modified_at, Some(STAMP));
+}
+
+#[test]
+fn an_html_page_is_not_a_multistatus() {
+    assert!(parse_multistatus("<html><body>Welcome</body></html>").is_err());
+    assert!(parse_multistatus("not xml at all <<<").is_err());
+}
+
+#[test]
+fn an_absolute_href_is_reduced_to_its_path() {
+    assert_eq!(decode_href("http://127.0.0.1:13480/dav/a%20b/"), "/dav/a b/");
+    assert_eq!(decode_href("/dav/%C3%A9.txt"), "/dav/é.txt");
+}
+
+#[test]
+fn creation_dates_read_with_and_without_an_offset() {
+    assert_eq!(parse_rfc3339("2024-03-01T12:34:56Z"), Some(STAMP));
+    assert_eq!(parse_rfc3339("2024-03-01T13:34:56+01:00"), Some(STAMP));
+    assert_eq!(parse_rfc3339("2024-03-01T12:34:56.123Z"), Some(STAMP));
+    assert_eq!(parse_rfc3339("yesterday"), None);
+}
+
+/// `quick-xml` 0.41 hands an entity over as its own `GeneralRef` event, never
+/// inside a text node (so a text-level `unescape` finds nothing and the `&`
+/// used to vanish: `a&amp;b` came out as `ab`). Resolving the reference once
+/// gives exactly `a&b`. The name comes from the `href` (the parser never
+/// reads `displayname`); both ride the same text path.
+#[test]
+fn an_escaped_entity_is_unescaped_exactly_once() {
+    let body = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/dav/a&amp;b.txt</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:displayname>a&amp;b.txt</d:displayname>
+        <d:resourcetype/>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/c%26d&amp;amp;e&#x3C;f.txt</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype/></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+    let entries = parse_multistatus(body).expect("a multistatus");
+    assert_eq!(entries.len(), 2);
+    assert_eq!(entries[0].href, "/dav/a&b.txt");
+    // Percent-decoding is a separate, later step; `&amp;amp;` is exactly `&amp;`,
+    // and a numeric reference resolves too.
+    assert_eq!(entries[1].href, "/dav/c&d&amp;e<f.txt");
+}

@@ -33,6 +33,7 @@ mod human_wait;
 mod in_flight_temps;
 mod journal;
 mod journal_search;
+mod ledger;
 mod manager;
 mod mutation_error;
 mod operation_intent;
@@ -40,6 +41,7 @@ mod overwrite;
 #[cfg(target_os = "macos")]
 mod paste_clipboard;
 mod rename;
+mod reversal;
 pub(crate) mod rollback;
 mod routing;
 mod scan;
@@ -166,46 +168,38 @@ pub use types::{
 
 // Re-export for tests (these are pub(crate) in validation.rs and state.rs)
 #[cfg(test)]
-pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is_cancelled, load_intent};
+pub(crate) use ledger::CopyTransaction;
+#[cfg(test)]
+pub(crate) use state::{OperationIntent, WriteOperationState, is_cancelled, load_intent};
 #[cfg(test)]
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
 pub(crate) use validation::{
     ensure_destination_dir, is_same_file, is_same_filesystem, validate_destination_not_inside_source,
     validate_destination_writable, validate_disk_space, validate_path_length, validate_sources,
 };
-// Exposed for cross-module integration tests (for example the SMB
-// concurrent-copy cross-contamination test in
-// `file_system::volume::smb`) that drive `copy_volumes_with_progress`
-// directly against a real SMB backend instead of the full Tauri path.
+// Exposed for the integration suites that drive `copy_volumes_with_progress`
+// directly against a real backend instead of through the full Tauri path (for
+// example `smb_stress_test`'s concurrent-copy cross-contamination cell).
 #[cfg(test)]
-#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
+#[allow(unused_imports, reason = "Used by the SMB integration suites in this module")]
 pub(crate) use event_sinks::CollectorEventSink;
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by the volume-journal capture tests")]
 pub(crate) use transfer::volume::move_volumes_with_progress;
 #[cfg(test)]
-#[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
+#[allow(unused_imports, reason = "Used by the SMB integration suites in this module")]
 pub(crate) use transfer::volume::move_within_same_volume_with_progress;
 // The four real-SMB safety cells drive the same axes the in-memory grid does:
 // a cache entry that counted files but recorded no per-source result, and a
 // volume that stops answering partway through.
 #[cfg(test)]
-#[allow(
-    unused_imports,
-    reason = "Used by SMB integration tests in file_system::volume::backends"
-)]
+#[allow(unused_imports, reason = "Used by the SMB integration suites in this module")]
 pub(crate) use delete::delete_volume_files_for_test;
 #[cfg(test)]
-#[allow(
-    unused_imports,
-    reason = "Used by SMB integration tests in file_system::volume::backends"
-)]
+#[allow(unused_imports, reason = "Used by the SMB integration suites in this module")]
 pub(crate) use scan_cache::seed_incoherent_scan_result_for_test;
 #[cfg(test)]
-#[allow(
-    unused_imports,
-    reason = "Used by SMB integration tests in file_system::volume::backends"
-)]
+#[allow(unused_imports, reason = "Used by the SMB integration suites in this module")]
 pub(crate) use transfer::volume::{FaultyOp, FaultyVolume};
 
 /// Test-only: retain a failure straight in the manager, so a suite outside this
@@ -732,15 +726,21 @@ pub async fn trash_files_start(
 
 #[cfg(test)]
 mod approved_op_parity_tests;
-// A real copy in BOTH directions against a live SFTP server, through
-// `copy_between_volumes`. Gated on the Docker fixture, and named for the
-// `sftp_integration_` lane the check runner selects on.
 #[cfg(test)]
 mod journal_capture_tests;
 #[cfg(test)]
 mod journal_capture_volume_tests;
+// The source the cancel scenario holds still at a chunk boundary.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod network_gated_source_test_support;
+// The transfer scenarios the WebDAV and SFTP suites below share, written once
+// and driven against both live servers.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod network_transfer_test_support;
 #[cfg(test)]
 mod scan_bridge_tests;
+#[cfg(test)]
+mod scan_pause_tests;
 #[cfg(test)]
 mod scan_preview_listing_progress_tests;
 #[cfg(test)]
@@ -749,11 +749,42 @@ mod scan_preview_oracle_tests;
 mod scan_watchdog_tests;
 #[cfg(test)]
 mod settle_event_tests;
+// The one cooperative-stop boundary every serial loop here asks at.
+#[cfg(test)]
+mod stop_or_park_tests;
+// Real copies in BOTH directions against a live SFTP server, through
+// `copy_between_volumes`. Gated on the Docker fixture, and named for the
+// `sftp_integration_` lane the check runner selects on.
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod sftp_transfer_integration_test;
+// The app-side SMB suites: every cell whose other half is this pipeline rather
+// than the protocol. The backend's own white-box suites live with it, in
+// `cmdr-smb`. All Docker-gated and named for the `smb_integration_` lane, except
+// the soak and stress loops, which are opt-in by hand.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_archive_integration_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_full_concurrency_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_soak_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_stream_write_integration_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_stress_test;
+// The fixture wiring those suites share, plus the two outside this directory
+// (`volume::smb_media_fetch_integration_test` and
+// `listing::smb_pane_close_watch_integration_test`), which reach it by path.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+pub(crate) mod smb_test_support;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_transfer_safety_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_transfer_semantics_test;
 #[cfg(test)]
 pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod validation_integration_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod webdav_transfer_integration_test;

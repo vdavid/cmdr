@@ -9,6 +9,11 @@
 //! `volume/move_progress_tests.rs`, and `volume/move_merge_tests.rs`.
 
 use super::*;
+// Named here rather than inherited through the glob above: the engine module
+// beside this one uses neither, so a `use` there would be dead in a release build.
+use std::pin::Pin;
+use std::time::Duration;
+
 use crate::file_system::volume::{InMemoryVolume, VolumeError};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{

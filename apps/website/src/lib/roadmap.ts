@@ -582,7 +582,7 @@ export const roadmapSections: RoadmapSection[] = [
           {
             date: '(summer?)',
             title: 'Support more file systems',
-            description: 'S3 buckets, FTP(S), SFTP, SCP, WebDAV, NFS, etc.',
+            description: 'S3 buckets, SFTP, SCP, WebDAV, NFS, etc.',
             done: false,
           },
           {

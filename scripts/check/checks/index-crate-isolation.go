@@ -35,7 +35,7 @@ import (
 // `file-length` allowlist entry. Shrinking is always fine and never fails.
 
 // guardedIndexCrates are the crates whose dependency trees must stay app-free.
-var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp"}
+var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav"}
 
 // forbiddenForIndexCrates are the packages that must not appear in a guarded
 // crate's tree. `cmdr` is the app; `tauri` and `tauri-specta` are what would let
@@ -191,6 +191,21 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   10,
 			PublicModules:  3,
 			SubsystemItems: 25,
+		},
+	},
+	{
+		// Measured 2026-09-01, at the crate's first landing, and set to exactly
+		// what it exposes. A WebDAV volume needs no host-key or auth-rung
+		// vocabulary, so the whole promise is the params, the typed connect
+		// error, the volume, its one unattended-reconnect answer, and the
+		// constructor; `volume` is the only public module, and `volume::testing`
+		// exists only behind the `testing` feature. Item-by-item:
+		// `crates/cmdr-webdav/DETAILS.md` § "The public surface is capped".
+		Name: "cmdr-webdav",
+		Ceilings: surfaceCeilings{
+			RootPromises:   6,
+			PublicModules:  1,
+			SubsystemItems: 8,
 		},
 	},
 	{

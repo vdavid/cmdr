@@ -2,7 +2,7 @@
     import { onMount, onDestroy, tick } from 'svelte'
     import { slide } from 'svelte/transition'
     import { homeDir } from '@tauri-apps/api/path'
-    import { getVolumeSpace, DEFAULT_VOLUME_ID, type VolumeSpaceInfo } from '$lib/tauri-commands'
+    import { getVolumeSpace, DEFAULT_VOLUME_ID, type SpaceInfo } from '$lib/tauri-commands'
     import type { SortColumn, SortOrder, ConflictResolution, TransferOperationType } from '$lib/file-explorer/types'
     import type { TransferConfirmPayload } from '$lib/file-explorer/pane/dialog-props'
     import { validateDirectoryPath } from '$lib/utils/filename-validation'
@@ -146,7 +146,7 @@
     let userHomePath = $state('')
 
     // Volume space info
-    let volumeSpace = $state<VolumeSpaceInfo | null>(null)
+    let volumeSpace = $state<SpaceInfo | null>(null)
 
     // Whether the user confirmed (so we don't cancel the scan on destroy)
     let confirmed = false

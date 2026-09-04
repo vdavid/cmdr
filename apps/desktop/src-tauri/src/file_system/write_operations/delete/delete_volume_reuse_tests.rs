@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use super::super::event_sinks::CollectorEventSink;
 use super::super::state::{CachedScanResult, OperationIntent, WriteOperationState, insert_scan_result};
-use super::super::types::{WriteOperationConfig, WriteOperationError};
+use super::super::types::{CancelRollbackOutcome, WriteOperationConfig, WriteOperationError};
 use super::walker::delete_volume_files_with_progress_inner;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
@@ -126,13 +126,12 @@ impl Volume for CountingVolume {
         self.inner.scan_for_copy(path)
     }
 
-    fn scan_for_copy_batch_with_progress<'a>(
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        boundary: &'a crate::file_system::volume::ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        let _ = on_progress;
-        self.inner.scan_for_copy_batch(paths)
+        self.inner.scan_for_copy_batch_with_boundary(paths, boundary)
     }
 }
 
@@ -480,7 +479,7 @@ async fn delete_cancel_during_scan_emits_write_cancelled() {
         "write-cancelled must be emitted before Cancelled propagates from scan",
     );
     assert!(
-        !cancelled.first().unwrap().rolled_back,
+        cancelled.first().unwrap().rollback.outcome == CancelRollbackOutcome::NotRolledBack,
         "scan-time cancel is a Stopped (not RollingBack) outcome"
     );
 

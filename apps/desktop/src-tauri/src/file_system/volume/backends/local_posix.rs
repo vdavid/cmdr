@@ -1,4 +1,14 @@
 //! Local POSIX file system volume implementation.
+//!
+//! The struct, the rename primitive, and the query/mutation half of
+//! `impl Volume` live here. The two concerns big enough to read on their own sit
+//! beside it, the way the MTP backend splits: `scan` (the copy-scan family) and
+//! `streams` (byte movement in and out of a file). A trait impl can't span
+//! files, so those methods stay here as one-line delegations to inherent bodies
+//! over there.
+
+mod scan;
+mod streams;
 
 use super::{
     CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
@@ -15,7 +25,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::task::spawn_blocking;
-use walkdir::WalkDir;
 
 /// How often a local listing samples its running tally and reports progress.
 ///
@@ -451,76 +460,20 @@ impl Volume for LocalPosixVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
-        let abs_path = self.resolve(path);
-        Box::pin(async move {
-            spawn_blocking(move || {
-                use std::os::unix::fs::MetadataExt;
+        self.scan_subtree(path, cmdr_fs::volume::ScanStop::none())
+    }
 
-                let mut file_count = 0;
-                let mut dir_count = 0;
-                let mut total_bytes = 0u64;
-                // `dedup_bytes` is the source's on-disk (`du`) footprint:
-                // each inode counted once. `total_bytes` keeps counting every
-                // hardlink (the cross-volume write footprint). The set is
-                // scoped to this one top-level source; cross-source hardlinks
-                // aren't deduped (rare; see `CopyScanResult::dedup_bytes`).
-                let mut dedup_bytes = 0u64;
-                let mut seen_inodes: std::collections::HashSet<u64> = std::collections::HashSet::new();
-
-                for entry in WalkDir::new(&abs_path).min_depth(0) {
-                    let entry = entry.map_err(|e| VolumeError::IoError {
-                        message: e.to_string(),
-                        raw_os_error: None,
-                    })?;
-                    let ft = entry.file_type();
-                    if ft.is_file() {
-                        file_count += 1;
-                        if let Ok(meta) = entry.metadata() {
-                            let len = meta.len();
-                            total_bytes += len;
-                            // `nlink == 1` is the overwhelmingly common case
-                            // (no hardlinks): skip the set entirely. Only
-                            // multiply-linked inodes pay the lookup.
-                            if meta.nlink() <= 1 || seen_inodes.insert(meta.ino()) {
-                                dedup_bytes += len;
-                            }
-                        }
-                    } else if ft.is_dir() {
-                        // Don't count the root itself if it's the starting point
-                        if entry.depth() > 0 {
-                            dir_count += 1;
-                        }
-                    }
-                }
-
-                // Top-level stat (also fills in single-file / empty-dir edge cases).
-                // This runs regardless so we can populate `top_level_is_directory`
-                // without re-statting downstream.
-                let top_meta = std::fs::metadata(&abs_path).ok();
-                let top_level_is_directory = top_meta.as_ref().map(|m| m.is_dir()).unwrap_or(false);
-
-                // If the path is a single file, count it
-                if let Some(ref meta) = top_meta {
-                    if meta.is_file() && file_count == 0 {
-                        file_count = 1;
-                        total_bytes = meta.len();
-                        dedup_bytes = meta.len();
-                    } else if meta.is_dir() && dir_count == 0 && file_count == 0 {
-                        dir_count = 1;
-                    }
-                }
-
-                Ok(CopyScanResult {
-                    file_count,
-                    dir_count,
-                    total_bytes,
-                    dedup_bytes,
-                    top_level_is_directory,
-                })
-            })
-            .await
-            .expect("spawn_blocking scan_for_copy closure doesn't panic and the task is uncancelable")
-        })
+    /// ❗ Overridden so `scan_subtree` gets the stop. The trait default loops
+    /// `scan_for_copy` per path, which asks only BETWEEN paths — and one path here
+    /// can be a whole mounted share: `/Volumes/naspi` over a sleeping NAS is
+    /// minutes of `readdir` with nothing in between, which is precisely the scan
+    /// somebody cancels.
+    fn scan_for_copy_batch_with_boundary<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+        boundary: &'a cmdr_fs::volume::ScanBoundary<'a>,
+    ) -> Pin<Box<dyn Future<Output = Result<cmdr_fs::volume::BatchScanResult, VolumeError>> + Send + 'a>> {
+        self.scan_for_copy_batch_with_boundary_impl(paths, boundary)
     }
 
     fn supports_streaming(&self) -> bool {
@@ -553,30 +506,7 @@ impl Volume for LocalPosixVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        let abs_path = self.resolve(path);
-        Box::pin(async move {
-            spawn_blocking(move || {
-                if let Some(routed) = git::try_open_blob_stream(&abs_path) {
-                    return routed;
-                }
-                let metadata = std::fs::metadata(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
-                if metadata.is_dir() {
-                    return Err(VolumeError::IoError {
-                        message: "Cannot stream a directory".into(),
-                        raw_os_error: None,
-                    });
-                }
-                let total_size = metadata.len();
-                let file = std::fs::File::open(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
-                Ok(Box::new(LocalPosixReadStream {
-                    file: Some(file),
-                    total_size,
-                    bytes_read: 0,
-                }) as Box<dyn VolumeReadStream>)
-            })
-            .await
-            .expect("spawn_blocking open_read_stream closure doesn't panic and the task is uncancelable")
-        })
+        self.open_read_stream_impl(path)
     }
 
     fn read_range<'a>(
@@ -585,151 +515,17 @@ impl Volume for LocalPosixVolume {
         offset: u64,
         len: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
-        let abs_path = self.resolve(path);
-        Box::pin(async move {
-            spawn_blocking(move || {
-                use std::os::unix::fs::FileExt;
-                let file = std::fs::File::open(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
-                let mut buf = vec![0u8; len];
-                let mut filled = 0usize;
-                // `read_at` is a `pread`; it may short-read, so loop until the
-                // window is full or the file ends (a read at/past EOF returns 0).
-                while filled < len {
-                    let n = file
-                        .read_at(&mut buf[filled..], offset + filled as u64)
-                        .map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
-                    if n == 0 {
-                        break;
-                    }
-                    filled += n;
-                }
-                buf.truncate(filled);
-                Ok(buf)
-            })
-            .await
-            .expect("spawn_blocking read_range closure doesn't panic and the task is uncancelable")
-        })
+        self.read_range_impl(path, offset, len)
     }
 
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,
         size: u64,
-        mut stream: Box<dyn VolumeReadStream>,
+        stream: Box<dyn VolumeReadStream>,
         on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
-        let dest_abs = self.resolve(dest);
-        if git::is_virtual(&dest_abs) {
-            return Box::pin(async { Err(VolumeError::NotSupported) });
-        }
-        Box::pin(async move {
-            // Ensure parent directory exists
-            if let Some(parent) = dest_abs.parent() {
-                let parent = parent.to_path_buf();
-                let parent_for_error = parent.clone();
-                spawn_blocking(move || std::fs::create_dir_all(&parent))
-                    .await
-                    .expect("spawn_blocking create_dir_all closure doesn't panic and the task is uncancelable")
-                    .map_err(|e| VolumeError::from_io_at(&e, &parent_for_error))?;
-            }
-
-            // Open destination file on the blocking pool.
-            let dest_for_open = dest_abs.clone();
-            let mut file = spawn_blocking(move || std::fs::File::create(&dest_for_open))
-                .await
-                .expect("spawn_blocking File::create closure doesn't panic and the task is uncancelable")
-                .map_err(|e| VolumeError::from_io_at(&e, &dest_abs))?;
-
-            let mut bytes_written = 0u64;
-            while let Some(chunk_result) = stream.next_chunk().await {
-                let chunk = chunk_result?;
-                if chunk.is_empty() {
-                    continue;
-                }
-                let chunk_len = chunk.len() as u64;
-
-                // Write the chunk on the blocking pool.
-                let (file_ret, write_res) = spawn_blocking(move || {
-                    use std::io::Write;
-                    let res = file.write_all(&chunk);
-                    (file, res)
-                })
-                .await
-                .expect("spawn_blocking write_all closure doesn't panic and the task is uncancelable");
-                file = file_ret;
-                write_res.map_err(|e| VolumeError::from_io_at(&e, &dest_abs))?;
-
-                bytes_written += chunk_len;
-
-                if on_progress(bytes_written, size) == std::ops::ControlFlow::Break(()) {
-                    // Drop the file handle and try to clean up the partial file.
-                    drop(file);
-                    let partial = dest_abs.clone();
-                    let _ = spawn_blocking(move || std::fs::remove_file(&partial)).await;
-                    return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
-                }
-            }
-
-            // Make the file durable before signalling success. A bare
-            // `file.flush()` is a userspace no-op on a raw `std::fs::File`, so
-            // without `sync_data` the bytes would live only in the OS page
-            // cache. A cross-volume copy/move landing on a local disk (MTP →
-            // Local, SMB → Local, USB import) all flows through this method, so
-            // reporting "complete" here without an fdatasync would let the user
-            // eject / sleep and lose data (on a move, from both sides). This
-            // gives the same "durable as each file completes" property the
-            // local-FS chunked copy path already has (`transfer/chunked_copy.rs`
-            // → `dst_file.sync_data()`): a crash mid-batch leaves earlier files
-            // safe.
-            //
-            // Best-effort on error, matching `durability::flush_created_destinations`:
-            // a failed `sync_data` is logged under `target: "write_durability"`,
-            // NOT propagated. The bytes are written either way, and failing a
-            // completed multi-GB transfer at the final fsync is worse UX than
-            // accepting a small durability-window risk on a filesystem that
-            // can't sync.
-            let dest_for_sync = dest_abs.clone();
-            file = spawn_blocking(move || {
-                use std::io::Write;
-                // Userspace flush first (harmless no-op on a raw File, but
-                // correct if the writer is ever wrapped in a BufWriter).
-                let _ = file.flush();
-                if let Err(e) = file.sync_data() {
-                    log::warn!(
-                        target: "write_durability",
-                        "write_from_stream: fdatasync failed for {}: {e}",
-                        dest_for_sync.display()
-                    );
-                }
-                file
-            })
-            .await
-            .expect("spawn_blocking sync_data closure doesn't panic and the task is uncancelable");
-            drop(file);
-
-            // Best-effort: fsync the parent directory so the new file's
-            // directory entry (the create) is durable too. Some filesystems
-            // reject directory fsync; log and continue.
-            if let Some(parent) = dest_abs.parent() {
-                let parent = parent.to_path_buf();
-                let _ = spawn_blocking(move || match std::fs::File::open(&parent).and_then(|d| d.sync_all()) {
-                    Ok(()) => {}
-                    Err(e) => log::debug!(
-                        target: "write_durability",
-                        "write_from_stream: parent dir fsync skipped for {}: {e}",
-                        parent.display()
-                    ),
-                })
-                .await;
-            }
-
-            // No `notify_mutation` call here: `LocalPosixVolume`'s mutation
-            // methods (create_file/delete/rename) all rely on FSEvents to
-            // patch the cache, and FSEvents is reliable on local FS. The
-            // SMB / MTP overrides need it because their out-of-band
-            // notification channels can lose events; we don't.
-            Ok(bytes_written)
-        })
+        self.write_from_stream_impl(dest, size, stream, on_progress)
     }
 
     fn scan_for_conflicts<'a>(
@@ -737,40 +533,7 @@ impl Volume for LocalPosixVolume {
         source_items: &'a [SourceItemInfo],
         dest_path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
-        let dest_abs = self.resolve(dest_path);
-        let source_items: Vec<SourceItemInfo> = source_items.to_vec();
-        Box::pin(async move {
-            spawn_blocking(move || {
-                let mut conflicts = Vec::new();
-
-                for item in &source_items {
-                    let dest_file_path = dest_abs.join(&item.name);
-                    if dest_file_path.exists()
-                        && let Ok(meta) = std::fs::metadata(&dest_file_path)
-                    {
-                        let dest_modified = meta
-                            .modified()
-                            .ok()
-                            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok().map(|d| d.as_secs() as i64));
-
-                        conflicts.push(ScanConflict {
-                            source_path: item.name.clone(),
-                            dest_path: dest_file_path.to_string_lossy().to_string(),
-                            source_size: item.size,
-                            dest_size: meta.len(),
-                            source_modified: item.modified,
-                            dest_modified,
-                            source_is_directory: item.is_directory,
-                            dest_is_directory: meta.is_dir(),
-                        });
-                    }
-                }
-
-                Ok(conflicts)
-            })
-            .await
-            .expect("spawn_blocking scan_for_conflicts closure doesn't panic and the task is uncancelable")
-        })
+        self.scan_for_conflicts_impl(source_items, dest_path)
     }
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
@@ -780,69 +543,6 @@ impl Volume for LocalPosixVolume {
                 .await
                 .expect("spawn_blocking get_space_info closure doesn't panic and the task is uncancelable")
         })
-    }
-}
-
-/// Streaming reader for `LocalPosixVolume` files.
-///
-/// Reads the file in 1 MiB chunks on the blocking thread pool via
-/// `tokio::task::spawn_blocking`. Each `next_chunk` call hands the file handle
-/// to the blocking pool, reads one chunk, and returns ownership along with the
-/// data.
-struct LocalPosixReadStream {
-    file: Option<std::fs::File>,
-    total_size: u64,
-    bytes_read: u64,
-}
-
-/// 1 MiB chunks, matching `chunked_copy.rs`'s constant.
-const LOCAL_STREAM_CHUNK_SIZE: usize = 1024 * 1024;
-
-impl VolumeReadStream for LocalPosixReadStream {
-    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
-        Box::pin(async move {
-            let mut file = self.file.take()?;
-
-            let (file_ret, result) = spawn_blocking(move || {
-                use std::io::Read;
-                let mut buf = vec![0u8; LOCAL_STREAM_CHUNK_SIZE];
-                let n = match file.read(&mut buf) {
-                    Ok(n) => n,
-                    // No path: the handle is already open, so `ENOENT` and `EACCES`
-                    // can't reach here; a mid-stream read failure is an `IoError`.
-                    Err(e) => return (file, Err(VolumeError::from_io_without_path(&e))),
-                };
-                buf.truncate(n);
-                (file, Ok(buf))
-            })
-            .await
-            .expect("spawn_blocking read-chunk closure doesn't panic and the task is uncancelable");
-
-            match result {
-                Ok(buf) if buf.is_empty() => {
-                    // EOF: drop the file handle.
-                    drop(file_ret);
-                    None
-                }
-                Ok(buf) => {
-                    self.bytes_read += buf.len() as u64;
-                    self.file = Some(file_ret);
-                    Some(Ok(buf))
-                }
-                Err(e) => {
-                    drop(file_ret);
-                    Some(Err(e))
-                }
-            }
-        })
-    }
-
-    fn total_size(&self) -> u64 {
-        self.total_size
-    }
-
-    fn bytes_read(&self) -> u64 {
-        self.bytes_read
     }
 }
 
@@ -856,13 +556,7 @@ pub(crate) fn get_space_info_for_path(path: &Path) -> Result<SpaceInfo, VolumeEr
     #[cfg(target_os = "macos")]
     {
         if let Some(space) = crate::volumes::get_volume_space(&path.to_string_lossy()) {
-            // NSURL doesn't give us used_bytes directly, compute from total - available.
-            let used_bytes = space.total_bytes.saturating_sub(space.available_bytes);
-            return Ok(SpaceInfo {
-                total_bytes: space.total_bytes,
-                available_bytes: space.available_bytes,
-                used_bytes,
-            });
+            return Ok(space);
         }
     }
 
@@ -895,7 +589,11 @@ fn get_space_info_statvfs(path: &Path) -> Result<SpaceInfo, VolumeError> {
             #[allow(clippy::unnecessary_cast, reason = "statvfs field types vary across platforms")]
             let used_bytes = total_bytes.saturating_sub((stat.f_bfree as u64) * block_size);
 
-            Ok(SpaceInfo {
+            // ❗ `used` is NOT the complement of `available` here: `statvfs`
+            // reserves blocks that are neither free to a normal user nor holding
+            // anything, so the two come from different fields and `bounded`
+            // (which derives one from the other) would be wrong.
+            Ok(SpaceInfo::Bounded {
                 total_bytes,
                 available_bytes,
                 used_bytes,

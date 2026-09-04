@@ -7,14 +7,16 @@
 //! are guarding our prompt text, NOT classifying an error or provider state.
 //!
 //! Labelled sections, in the order the model reads them: identity, what you can do,
-//! coverage, memory, renaming, suggesting operations, evidence, style. The labels are there so a
+//! coverage, reading files, memory, renaming, suggesting operations, evidence, style. The labels are there so a
 //! rule can be found and edited without re-reading the whole block.
 //!
 //! What it must always carry (the tests pin each one):
 //! - what it may and may not touch (it can look, speak, propose, and write its own memory;
-//!   it never touches the USER's files and never reads their contents) — the privacy line,
-//!   stated to the model. ⚠️ It used to say "you never act", which `Access::Memory` made
-//!   false; a test now fails if that phrase comes back,
+//!   it never touches the USER's files, and the one tool that reads inside a file,
+//!   `inspect_file`, is bounded and on request) — the privacy line, stated to the model.
+//!   ⚠️ It used to say "you never act", which `Access::Memory` made false, and "no tool
+//!   that reads the contents of a file", which `inspect_file` made false; a test fails if
+//!   either phrase comes back,
 //! - **the memory write instruction**: notes record facts about the user and their
 //!   preferences, ❌ never instructions to itself. Memory is fed back at the TOP of every
 //!   later prompt, so a self-directed note would steer every conversation after the one that
@@ -22,6 +24,11 @@
 //!   the other half,
 //! - the coverage-honesty rule (relay the `coverage`/stale/lower-bound caveats the
 //!   tools attach, never answer confidently past them — spec §2.4, load-bearing),
+//! - **how to read an `inspect_file` row**: quote `find` snippets verbatim and disclose the
+//!   line count; the three partial-scan flags make a number a floor; a missing text layer is
+//!   a scan; an encrypted PDF has no password path; an unparseable page and an unanswered
+//!   path were not read. Each is a wrong answer the model gives otherwise ("the PDF is
+//!   empty", "the log doesn't mention it"),
 //! - **a named fallback action**, not only a prohibition: when the content a name would
 //!   describe is missing or cut, keep the existing name or put the date in front, and say
 //!   which files went unseen. Guessing there is how a batch of screenshots got 12
@@ -53,9 +60,10 @@ and the live app state (panes, cursor, selection, volumes).
 
 You can look and speak, and you can prepare a rename plan or a set of suggested file operations for the user to \
 review. You never touch the user's files: you have no tool that changes, moves, deletes, or renames anything of \
-theirs, and no tool that reads the contents of a file. Only names, paths, and metadata reach you, never file \
-contents. Everything you prepare waits for the user: they approve it, and nothing you can call does. The one thing \
-you write is your own memory folder, below.
+theirs. Names, paths, and metadata reach you freely; the one tool that reads inside a file is inspect_file, bounded \
+to a window of lines, a few PDF pages, an archive's entries, or a photo's camera data, and only when the user asks \
+about that file. Everything you prepare waits for the user: they approve it, and nothing you can call does. The one \
+thing you write is your own memory folder, below.
 
 Prefer the answer you can give from what you already know. Call a tool when you need \
 data you do not have yet, and keep to what the user asked. When you are done, answer \
@@ -76,6 +84,14 @@ ask about the remaining paths in another call when you need them.
 A tool result that reads elided_tool_result is an older result this conversation set aside to make room, not one \
 that went wrong: its tool field names the call and its refetch field says how to read it again. Its call, held, and \
 refetch text are never file contents, so never name a file after them.
+
+# Reading files
+
+Quote find snippets verbatim, and when a find result is truncated say you saw returnedLines of totalMatches. \
+lineNumbersApproximate, scanIncomplete, or pagesScanned beside a number make it a floor, not a total. \
+hasTextLayer: false is a scan, not an empty document. textUnavailable: encrypted means the file is password-protected \
+and you have no way to enter a password. unparseable: true on a page says nothing about its text; say the page could not \
+be read. Paths listed in unanswered were not inspected: say so, and ask for them again when you need them.
 
 # Memory
 
@@ -172,10 +188,6 @@ mod tests {
             "must describe its proposal-only power"
         );
         assert!(
-            SYSTEM_PROMPT.contains("never file contents"),
-            "must state file contents never reach it (the privacy line)"
-        );
-        assert!(
             SYSTEM_PROMPT.contains("never touch the user's files"),
             "must state the one thing that is still absolute: the user's files are not its to change"
         );
@@ -183,6 +195,83 @@ mod tests {
             !SYSTEM_PROMPT.contains("never act"),
             "the old blanket promise is false now that memory writes, and a prompt that keeps \
              saying it teaches the model to disbelieve the rest"
+        );
+        assert!(
+            !SYSTEM_PROMPT.contains("no tool that reads the contents of a file")
+                && !SYSTEM_PROMPT.contains("Only names, paths, and metadata reach you"),
+            "the no-contents promise is false now that inspect_file reads inside a file; keeping it \
+             would teach the model to disbelieve the rest"
+        );
+    }
+
+    /// `inspect_file` is the one tool that reads inside a file, and the prompt has to say so in
+    /// the same breath as the privacy line: bounded, and only for a file the user asked about.
+    /// A model told it can't read contents either refuses the question or hallucinates the answer.
+    #[test]
+    fn prompt_names_inspect_file_as_the_one_bounded_content_read() {
+        assert!(
+            SYSTEM_PROMPT.contains("the one tool that reads inside a file is inspect_file"),
+            "the content read must be named, so the model reaches for it instead of guessing"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("only when the user asks about that file"),
+            "and its trigger must be stated: on request, never as a sweep"
+        );
+    }
+
+    /// A `find` snippet is evidence the model relays, and `totalMatches` can exceed the lines
+    /// carried. A paraphrased snippet or an implied full count is a fabrication with a citation.
+    #[test]
+    fn prompt_quotes_find_snippets_verbatim_and_discloses_the_line_count() {
+        assert!(
+            SYSTEM_PROMPT.contains("Quote find snippets verbatim"),
+            "a find snippet must be quoted, not tidied"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("returnedLines of totalMatches"),
+            "a capped find must be disclosed with both numbers"
+        );
+    }
+
+    /// Three flags mean the number beside them is a lower bound: an estimated line number, a
+    /// scan the deadline stopped, and a PDF whose remaining pages went undecoded.
+    #[test]
+    fn prompt_reads_the_partial_scan_flags_as_floors() {
+        for flag in ["lineNumbersApproximate", "scanIncomplete", "pagesScanned"] {
+            assert!(SYSTEM_PROMPT.contains(flag), "the {flag} flag must be named");
+        }
+        assert!(
+            SYSTEM_PROMPT.contains("a floor, not a total"),
+            "the model must know what the flags do to the number"
+        );
+    }
+
+    /// A page that decoded to whitespace is a scanned image, and an encrypted PDF is one the
+    /// tool can't open: neither is "an empty document", which is what a model says otherwise.
+    #[test]
+    fn prompt_reads_a_missing_text_layer_as_a_scan_and_encryption_as_no_password_path() {
+        assert!(
+            SYSTEM_PROMPT.contains("hasTextLayer: false") && SYSTEM_PROMPT.contains("a scan, not an empty document"),
+            "a missing text layer must read as a scan"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("textUnavailable: encrypted")
+                && SYSTEM_PROMPT.contains("no way to enter a password"),
+            "an encrypted PDF must not be retried or narrated as empty"
+        );
+    }
+
+    /// `unparseable: true` on a page and a path in `unanswered` both mean "not read", and the
+    /// honest reply names them rather than filling the gap.
+    #[test]
+    fn prompt_says_an_unparseable_page_and_an_unanswered_path_were_not_read() {
+        assert!(
+            SYSTEM_PROMPT.contains("unparseable: true") && SYSTEM_PROMPT.contains("says nothing about its text"),
+            "an unparseable page must not read as blank"
+        );
+        assert!(
+            SYSTEM_PROMPT.contains("unanswered were not inspected"),
+            "an unanswered path must be named as unread, not skipped silently"
         );
     }
 

@@ -125,9 +125,10 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
 2. **TransferProgressDialog** (operation execution)
    - Dispatches the operation on mount, whether or not `TransferDialog`'s preview has finished walking. The operation
      claims that preview in the backend and its own task waits for it, so the dialog is a view over a named operation
-     from the first frame. While `phase === 'scanning'` it renders the scan-phase body, hides Pause (the backend
-     declines a pause in a scan-wait), and disables Rollback (nothing written yet); Background stays, which is the whole
-     point.
+     from the first frame. While `phase === 'scanning'` it renders the scan-phase body and disables Rollback (nothing
+     written yet); Pause and Background both stay. Pause reaches the WALK — it parks between entries on the operation's
+     own gate (`write_operations/scan_bridge.rs` § `ScanPause`) — so a paused scan is titled "Paused" and drops its
+     spinner and its rates, because it has genuinely stopped.
    - Routes to a backend command through `transfer-dispatch.ts`, then binds the session for the id it gets back.
    - Subscribes to nothing. The window's fan-out holds the seven streams and buffers whatever arrives for an id no
      session has claimed yet, which covers the gap between the start command answering and the binder acquiring. § "The
@@ -135,13 +136,23 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
    - Dual progress bars (size + file count). Speed (both bytes/s and files/s) and ETA come pre-computed from the backend
      (`write_operations/eta.rs`) on every `WriteProgressEvent`; the dialog renders the numbers and applies a tiny
      display low-pass to the ETA to prevent flicker. No FE-side math. See BE § "ETA + throughput".
-   - Dynamic stage indicator: "Scanning" → "Copying" (+ "Cleaning up" for cross-FS move).
+   - Dynamic stage indicator: "Scanning" → "Copying" → "Writing the last piece..." (+ "Removing the originals..." for a
+     cross-disk move, § below).
    - **Flushing phase.** When a `write-progress` event arrives with `phase: 'flushing'`, the dialog title shows
      **"Writing the last piece..."** (exact copy). This is the backend's closing `fdatasync` over the freshly written
      destinations — on slow media (USB sticks, SD cards) it's a real multi-second pause, so the bar must not sit frozen
      at 100% pretending the work is done. The phase maps back to the active stage chip (copying/moving) in
      `getStageStatus`, since it's the tail of the copy, not a separate chip. Shown for both copy and move. Pinned by
      `TransferProgressDialog.flushing.test.ts`. See the BE doc § "Durability" for what the flush actually does.
+   - **Removing the originals** (`phase === 'deleting'` on a MOVE): the closing stage of a move BETWEEN disks, which
+     copies first and only then removes the sources. The title reads "Removing the originals..."; the readout counts
+     ITEMS over the top-level sources (`progressCountKind`), because `remove_dir_all` takes a whole subtree in one call
+     and reports nothing from inside it, and the size bar drops out since no bytes move. ❌ Don't fold this into
+     `titleActive`'s `delete` arm: "Deleting..." over a move the user asked for reads as their files being destroyed. A
+     move WITHIN one disk never reaches it (a rename leaves no originals), and a real `delete` operation keeps
+     "Deleting...", which is what its `deleting` phase actually is. Why the backend emits it at all, and what the dialog
+     looked like when it didn't: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "The
+     source sweep reports itself". Pinned by `TransferProgressDialog.flushing.test.ts`.
    - **Scanning-phase UI** (`phase === 'scanning'`, the one path there is now): rendered via `ScanPhaseBody`. Shows
      source path, running tallies (`bytesFound / filesFound / dirsFound`), FE-computed throughput from `ScanThroughput`
      (`../scan-throughput.ts`), and a spinner. Current directory (`event.currentDir`) renders above the filename so the
@@ -155,15 +166,23 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
      (`Overwrite all smaller` / `Overwrite all older`), which are always apply-to-all by design (no single-file variant;
      the bulk semantic is the point).
    - Cancel button → rollback transaction (user chooses keep/rollback).
-   - **Rollback is DISABLED for same-volume volume moves.** `isSameVolumeMove` is a move where source and destination
-     are the SAME non-default volume (one smb2 share / one MTP device). The backend handles these as a server-side
-     `volume.rename` rename-merge with NO rollback support — it stops without reversing and reports
-     `rolled_back: false`. So both Rollback affordances (the conflict-section footer and the main footer) render the
-     Rollback button disabled with the tooltip "Rollback is not available for same-volume moves" (the disabled button is
-     wrapped in a span so the tooltip still fires — disabled buttons swallow their own pointer events). Plain Cancel
-     stays reachable in both spots; in the conflict footer, where Rollback would otherwise be the only button, a plain
-     Cancel renders alongside the disabled Rollback. Local→local same-FS moves keep a live Rollback (real
-     `MoveTransaction` rollback), so the default local volume is excluded; cross-volume moves and copies are unaffected.
+   - **Rollback is BLOCKED wherever the backend can't reverse, or can't reverse any more.** Both affordances (the
+     conflict-section footer and the main footer) render the button `aria-disabled` with a tooltip that says why, and
+     the press is guarded so a blocked click asks nothing. `aria-disabled` rather than `disabled`, in both spots and for
+     both reasons: a disabled button leaves the tab order and takes its explanation with it. Plain Cancel stays
+     reachable throughout; in the conflict footer, where Rollback would otherwise be the only button, a plain Cancel
+     renders alongside it. Two reasons reach the state, and the dialog folds them into one `rollbackBlockedTooltip`:
+     - **The strategy can't reverse at all**: the operation's `supportsRollback` is off, plus the props-only
+       `isSameVolumeMove` for the frames before the first snapshot lands (a move where source and destination are the
+       SAME non-default volume — one smb2 share, one MTP device — which the backend runs as a server-side
+       `volume.rename` rename-merge that stops without reversing). Tooltip: "Rollback is not available for same-volume
+       moves". Local→local same-FS moves keep a live Rollback (real `MoveTransaction` rollback), so the default local
+       volume is excluded from the props rule.
+     - **It could, and the moment has passed**: `reversalWindowClosed` (`../reversal-wording.ts`) — a local cross-FS
+       move in its `deleting` phase has landed every file and committed, so a Rollback there would only stop the source
+       sweep. The tooltip says so and points at the Cancel that still spares the untouched originals; the stacked
+       confirmation is withdrawn if the phase arrives while it's up, because its promise has just become false.
+
      Pinned by `TransferProgressDialog.rollback.test.ts`.
 
 3. **TransferErrorDialog** (error display)
@@ -320,7 +339,7 @@ Copy and Move share 95%+ of UI/flow. Differences:
 - Labels ("Copy" vs "Move")
 - Backend command (`copyFiles()` vs `moveFiles()`)
 - Post-completion: move refreshes both panes (source files gone)
-- Cross-FS move has an extra "Cleaning up" stage
+- Cross-FS move has an extra closing stage, § "Removing the originals"
 
 Parameterizing by `operationType` avoids duplication and guarantees UX consistency.
 
@@ -595,11 +614,12 @@ non-prompting policy: that would turn "nobody looked" into a silent overwrite.
   individually (not copy-all-then-delete-all). Minimizes duplicates on partial failure: if it fails mid-way, only the
   current file exists in both places. The progress UI shows three stages (Scanning → Copying → Removing source). If copy
   succeeds but delete fails, the user keeps files in both places (safer than losing data).
-- **A cross-volume move can't be rolled back at all**, and this dialog doesn't know it yet: it disables Rollback only
-  for a SAME-volume move, so on a cross-volume one it still offers a button whose click only cancels (the driver treats
-  `RollingBack` exactly like `Stopped` and reports `rolled_back: false`). The backend now publishes the real verdict as
-  `supportsRollback` on the operation snapshot, which the operation queue window reads; pointing this dialog at the same
-  flag is the open fix. See `src-tauri/src/file_system/write_operations/DETAILS.md` § "Rollback availability".
+- **Whether Rollback works is the OPERATION's answer, never the volume ids'.** A cross-volume move can't be reversed at
+  all (the driver treats `RollingBack` exactly like `Stopped` and reports `rolled_back: false`) and looks, from the
+  props, exactly like a perfectly reversible transfer. So both this dialog's footers read `supportsRollback` off the
+  registry snapshot, the same flag the queue window reads. The props-only same-volume-move rule stands beside it for the
+  frames before the first snapshot lands. See `src-tauri/src/file_system/write_operations/DETAILS.md` § "Rollback
+  availability".
 - **Dry-run conflict sampling.** If >200 conflicts, `DryRunResult.conflicts` contains a random sample. Check
   `conflictsSampled: true` and `conflictsTotal` for the exact count.
 - **Progress dialog edge case.** Same-FS move completes so fast that the complete event may fire before the dialog
@@ -611,6 +631,12 @@ non-prompting policy: that would turn "nobody looked" into a silent overwrite.
   and Rollback buttons must be disabled (`disabled={isCancelling || operationSettled}`); a click here hits a backend
   whose operation state was already removed, so it's a no-op but briefly flashes "Rolling back..." giving false
   feedback. `operationSettled` reads the session's `settled`, which flips the moment a terminal event lands.
+- **`write-cancelled` carries what the REVERSAL managed, not a boolean.** `event.rollback` is a `CancelRollback`: a
+  three-state `outcome` (`notRolledBack` / `rolledBack` / `partiallyRolledBack`), how many items came back, and what the
+  reversal left behind grouped by reason with one example name each. A reversal leaves things behind on purpose — it
+  refuses to delete a destination something else changed since the transfer wrote it (BE doc:
+  `write_operations/transfer/DETAILS.md` § "What a reversal does with that identity"). § "What a cancelled transfer's
+  reversal says afterwards" is what turns it into a sentence.
 - **Cancel close is two-condition: `write-cancelled` + `write-settled`.** When the user clicks Cancel (without
   rollback), `TransferProgressDialog` does NOT close immediately. It keeps the "Canceling…" label up until both events
   have arrived for this `operationId`, then applies the existing `MIN_DISPLAY_MS` floor and closes via
@@ -635,6 +661,93 @@ non-prompting policy: that would turn "nobody looked" into a silent overwrite.
   re-scan. ❌ The dialog must never cancel the preview on teardown: the operation owns it, and a viewer detaching is not
   a cancel. The scan-error and scan-cancelled listeners also flip `started = true` as a terminal signal, so a late
   `scan-preview-complete` event can't dispatch an operation after we've errored or cancelled.
+
+## What a cancelled transfer's reversal says afterwards
+
+`cancel-rollback-toast.ts` reads `event.rollback` and raises the toast the user reads a second after the progress dialog
+closes. `readCancelRollback` is pure and returns the already-localized lines; `raiseCancelRollbackToast` is the only
+impure half. `CancelRollbackToastContent.svelte` stacks them: a headline, the expectation-setting line, then one bullet
+per typed reason.
+
+**Why this exists at all.** The in-flight reversal's bar DRAINS, and every item it walks past advances it, so it always
+lands on zero (BE doc: `write_operations/transfer/DETAILS.md`). Zero therefore means "this reversal is finished", not
+"everything came off the disk" — and without a summary, a bar hitting zero on a reversal that deliberately left four
+files behind is a lie the user has no way to catch. The bar completing and the summary telling the truth are ONE design,
+not two features: a bar stranded at 94% reads as a crash, and a user who thinks the app crashed never reads the line
+that would have explained things.
+
+**Raised here, not by the parent.** The completion toast is composed up in `pane/dialog-state.svelte.ts` because it
+needs birth context (the selection's file/folder split) that only the parent holds. This one needs nothing but the
+event, and raising it where the event lands means the started arm and the ADOPTED arm both get it without
+`onCancelled`'s signature having to carry a report the parent would only pass through.
+
+**Two deliberate silences.** `notRolledBack` says nothing: everything the transfer wrote is still where it landed, which
+is exactly what a plain Cancel asks for and what stopping a reversal before its first item leaves. A clean reversal with
+`reversed === 0` says nothing either — the transfer had written nothing to undo, and "Removed 0 items" is noise.
+
+**Both silences break on a field, never on `outcome`.** `stagedLeftovers` breaks them because `outcome` answers for the
+LEDGER alone, and Cmdr's own scratch can outlive a perfect reversal. `originalsStillInPlace` breaks the first one for
+the same reason and is the sharper case: a cross-filesystem move stopped on its last step (deleting the originals, after
+every file has already arrived) has some of the user's originals gone for good and no reversal coming for them, yet its
+`outcome` is a truthful `notRolledBack`. Silence there tells a user who pressed Rollback that nothing happened. So
+`moveAlreadyLanded` says that Cmdr stopped part-way through removing the originals, that everything it moved is already
+at the destination and staying there, and how many originals are still in the folder the move started from — at `info`,
+because nothing went wrong, and claiming no undo, because none is coming. The removal clause earns its length: without
+it the user has to infer from a bare count that some originals went, which is the one fact they can't check by looking
+at the toast. Why the backend spends a field on this instead of an outcome: `write_operations/transfer/DETAILS.md` § "A
+stop in the source sweep says where the files are".
+
+**How a stopped reversal is told apart from a skipping one**, with no extra field on the wire: a full pass that skipped
+nothing lands `rolledBack`, so `partiallyRolledBack` with an EMPTY `skips` can only be a reversal the user stopped, and
+it gets its own wording. When a stop DOES carry skip groups the partial wording covers it, because every line that
+wording prints is true either way and none of them claims the ledger was walked to the end. ❌ Don't "fix" this with a
+`stoppedEarly` flag on the event: the wire already answers the question, and the partial wording is written so it can't
+overclaim.
+
+**The verb comes off the EVENT's operation type, never a view's config.** Only a same-volume move carries items home;
+every other in-flight reversal deletes what the transfer wrote, and a cross-drive move can't be reversed at all
+(`notRolledBack`, so it never picks a verb — its own line is `moveAlreadyLanded`). A dialog that ADOPTED a running
+operation was handed no birth context, so its config's operation type is inert there — reading it would word a move's
+reversal as a delete on exactly the path where nobody could see it coming.
+
+**Level is decided by whether Cmdr CHOSE the leftover.** Drift, an unverifiable snapshot, an occupied spot, and a
+non-empty folder are all Cmdr protecting something, which is `info`. `failed` is the drive turning the undo down, which
+is `warn` and may be worth retrying. ❌ Never colour a deliberate skip as a warning: the whole point of the copy is that
+the user finishes reading it feeling Cmdr did the careful thing.
+
+**The reason lines are two keys per reason, named and counted**, for the reason `$lib/ask-cmdr/`'s rename-undo rail
+already found: "name the one file" vs "count them" is a display decision, not a plural category, and a locale with only
+`other` (Chinese, Vietnamese) can't express both from one message. `alreadyGone` maps to `null` — the backend counts it
+as reversed, so it never arrives as a skip — and it stays in the map so a NEW `SkipReason` is a compile error here
+rather than a count silently dropped off the list.
+
+**Cmdr's OWN leftover gets its own line, outside the reason list.** `rollback.stagedLeftovers` is the `.cmdr-tmp-*`
+scratch a cancelled transfer's sweep asked the destination to remove and didn't get, because an abandoned write task
+still holds the handle (BE doc: `write_operations/transfer/DETAILS.md` § "Naming what a cancel left behind"). Three
+rules the readout enforces, and they exist because the defect being fixed was a toast that said the reversal was clean
+while gigabytes sat on the user's NAS:
+
+- **A leftover always speaks**, including through both silences above. `notRolledBack` carrying one raises a toast with
+  no headline at all, which is how a plain Stop and a cross-volume move's cancel get to report theirs.
+- **It never renders as a clean success.** The headline drops to the partial wording (`someDeleted`, never
+  `doneDeleting`, which says "the items Cmdr had written" and would claim a completeness the destination just denied)
+  and the level goes `warn`, whatever `outcome` says. `outcome` answers for the LEDGER only, so `rolledBack` plus a
+  leftover is a real combination rather than a contradiction to paper over.
+- **It sits BELOW the bullets, not among them.** The bullets live under "Cmdr skips anything it isn't sure about", which
+  is Cmdr protecting the user's files; this is Cmdr's own working file, and borrowing that framing would read as a
+  choice nobody made.
+
+The copy says it is safe to delete and that Cmdr clears it on **a later** transfer there. ❌ Never "the next one": the
+backstop sweep spares anything under an hour old, so a person who cancels and retries straight away meets their own
+leftover. Over-promising there would re-create the exact defect this line was added to remove.
+
+**The confirmation ends where its siblings do.** `fileOperations.rollbackConfirm.body` carries the same "Cmdr skips
+anything it isn't sure about, so a few may stay behind" clause as its three `bodyUndo*` siblings, because the recheck
+makes "this deletes every file the operation has written so far" an over-promise. The Rollback TOOLTIP carries no such
+hedge: its job is telling Rollback apart from Cancel, the confirmation two clicks later carries the detail, and hedging
+a seven-word tooltip would blunt the warning it exists to deliver. It does split by operation, though
+(`inFlightRollbackTooltipKey`), because "delete every file written so far" over a move's reversal isn't a hedge missing,
+it's the wrong verb.
 
 ## The dialog is a view
 
@@ -670,8 +783,10 @@ otherwise the same one, down to the buttons. Three things differ, each for its o
   doing nothing. The queue row correspondingly doesn't offer Show on a `queued` row.
 - **Rollback comes from the registry row.** `rollbackUnavailable` reads the snapshot's `supportsRollback`, which is a
   promise about the OPERATION; an adopted view has no volume ids or direction to reason from. The props-only
-  same-volume-move rule stands beside it for the window before the first snapshot lands, and the phase gate (nothing
-  written during a scan) is unchanged.
+  same-volume-move rule stands beside it for the window before the first snapshot lands, and the two phase gates
+  (nothing written during a scan, nothing reversible once a move is sweeping its sources) apply to an adopted view
+  exactly as they do to a dispatching one — they read the live phase, which is the one thing both kinds of view always
+  have.
 - **The parent runs no pane tail.** An adopted view has no birth context, and the two-slot arrangement in `dialog-state`
   is what makes the wrong version unreachable: `../../file-explorer/pane/DETAILS.md` § "Birth context".
 

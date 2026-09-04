@@ -1,8 +1,8 @@
 //! Targeted unit tests covering survivors from `cargo mutants` on this
-//! module (state machine transitions, status-cache CRUD, and
-//! CopyTransaction commit/rollback/Drop). The `OperationIntent` /
-//! `PauseGate` state-machine tests live in `operation_intent.rs`; the
-//! `FileInfo` sort-key and scan-result TTL tests live in `scan_cache.rs`.
+//! module (state machine transitions and status-cache CRUD). The
+//! `OperationIntent` / `PauseGate` state-machine tests live in
+//! `operation_intent.rs`; the `FileInfo` sort-key and scan-result TTL tests
+//! live in `scan_cache.rs`; `CopyTransaction`'s live in `ledger_tests.rs`.
 //!
 //! Tests that touch the global `WRITE_OPERATION_STATE` /
 //! `OPERATION_STATUS_CACHE` caches key their entries per test, so they don't
@@ -288,7 +288,7 @@ fn cancel_all_wakes_a_paused_parked_op() {
     let state = registered_in(&registry, "cancel-all-paused", OperationIntent::Running);
     state.pause_gate.pause();
 
-    let woke = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let woke = Arc::new(AtomicBool::new(false));
     let state_t = Arc::clone(&state);
     let woke_t = Arc::clone(&woke);
     let handle = std::thread::spawn(move || {
@@ -579,78 +579,6 @@ fn cancelling_takes_the_pending_conflict_away() {
         resolve_write_conflict(op.id(), clash, ConflictResolution::Skip, false),
         ConflictResolutionOutcome::NoPendingConflict
     );
-}
-
-// ---- CopyTransaction ----
-
-#[test]
-fn copy_transaction_rollback_deletes_files_and_dirs_in_reverse() {
-    // Build a real on-disk transaction: nested dirs + a file, then roll
-    // back. Both removals must happen. The rollback must walk dirs in
-    // reverse-creation order so the leaf is removed before its parent.
-    let tmp = tempfile::tempdir().unwrap();
-    let outer = tmp.path().join("outer");
-    let inner = outer.join("inner");
-    std::fs::create_dir(&outer).unwrap();
-    std::fs::create_dir(&inner).unwrap();
-    let file = inner.join("data.bin");
-    std::fs::write(&file, b"hello").unwrap();
-
-    let mut tx = CopyTransaction::new();
-    tx.record_dir(outer.clone());
-    tx.record_dir(inner.clone());
-    tx.record_file(file.clone());
-
-    tx.rollback();
-
-    assert!(!file.exists(), "file must be removed on rollback");
-    assert!(!inner.exists(), "inner dir must be removed (leaf-first)");
-    assert!(!outer.exists(), "outer dir must be removed");
-}
-
-#[test]
-fn copy_transaction_commit_prevents_drop_rollback() {
-    // Kills: replace CopyTransaction::commit with (), and the `!self.committed`
-    // guard in Drop. After commit(), files must survive Drop.
-    let tmp = tempfile::tempdir().unwrap();
-    let file = tmp.path().join("kept.txt");
-    std::fs::write(&file, b"persist").unwrap();
-
-    {
-        let mut tx = CopyTransaction::new();
-        tx.record_file(file.clone());
-        tx.commit();
-    } // Drop runs here.
-
-    assert!(file.exists(), "commit() must prevent the Drop-based rollback");
-}
-
-#[test]
-fn copy_transaction_drop_rolls_back_when_not_committed() {
-    // Kills: replace <impl Drop>::drop with (), and `delete !` in Drop.
-    let tmp = tempfile::tempdir().unwrap();
-    let file = tmp.path().join("ephemeral.txt");
-    std::fs::write(&file, b"will be gone").unwrap();
-
-    {
-        let mut tx = CopyTransaction::new();
-        tx.record_file(file.clone());
-        // No commit; Drop should roll back.
-    }
-
-    assert!(!file.exists(), "Drop-on-uncommitted must remove recorded files");
-}
-
-#[test]
-fn copy_transaction_record_methods_push_in_order() {
-    // Kills: replace record_file/record_dir with ().
-    let mut tx = CopyTransaction::new();
-    tx.record_file(PathBuf::from("/a"));
-    tx.record_file(PathBuf::from("/b"));
-    tx.record_dir(PathBuf::from("/d1"));
-    assert_eq!(tx.created_files, vec![PathBuf::from("/a"), PathBuf::from("/b")]);
-    assert_eq!(tx.created_dirs, vec![PathBuf::from("/d1")]);
-    tx.commit(); // suppress Drop rollback (paths don't exist anyway, but be tidy)
 }
 
 // ── Busy-volumes set (drives "disable Eject while an op touches a device") ──

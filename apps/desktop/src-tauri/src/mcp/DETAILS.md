@@ -41,7 +41,7 @@ section below.
 
 ### Tools (`tool_registry/`)
 
-Every AI-callable tool is authored once in the `mcp_tools!` table in `tool_registry/mod.rs` — name, description, JSON
+Every AI-callable tool is authored once in the `mcp_tools!` table in `tool_registry/table.rs` — name, description, JSON
 schema, `TokenGate`, `consumers`, `access`, and handler per entry. That one table generates `get_all_tools()`
 (the ai_client `tools/list`), `agent_tool_view()` (the in-process agent's set), `execute_tool()` (consumer-gated
 dispatch), `tool_gate()` (auth), and `tool_consumers()` / `tool_access()`, so the facets can't drift and adding a tool
@@ -52,8 +52,37 @@ and pinned by `tests/tool_snapshot_tests.rs`.
 **Directory split (`tool_registry/`).** The table's `json!` schema blocks dominate the line count and serialize
 identically wherever they live, so they're hoisted into `schemas/*.rs` (one `fn <tool>_schema() -> Value` per tool,
 grouped by category) and the entries call them (`schema: schemas::copy_schema()`). `gate.rs` holds `TokenGate`;
-`mod.rs` holds the macro, the `Consumer` / `Access` dimensions, the authored table, and the generated accessors. The
-split changed no wire bytes — the snapshot passes unmodified.
+`mod.rs` holds the mechanism (the macro, the `Consumer` / `Access` dimensions, the params gate) and re-exports what the
+macro generates; `table.rs` holds nothing but the authored entries, so the file that grows per tool is pure data. The
+splits changed no wire bytes — the snapshot passes unmodified.
+
+### The schema gate (`tool_registry/params.rs`)
+
+`validate_params(name, params)` checks a call against the tool's OWN declared schema before a handler reads a field off
+it, at both dispatch entries: `execute_tool` for everything routed through the registry, and `agent/tools/view.rs`
+ahead of its branch, because `propose_rename_plan` and `propose_suggestions` need the thread's scope and never reach
+`execute_tool`. Both run for an agent call; one small object checked twice costs nothing against a provider round trip,
+and neither path has to know what the other does.
+
+It reads ONE level of ONE object schema and answers two questions: is every `required` property present, and (only when
+the schema closed itself with `additionalProperties: false`) does every property present appear in `properties`. The
+refusal names each offender AND lists what the tool accepts, so one turn is enough to self-correct, and carries the
+same facts typed on the error's `data` member.
+
+**Why it exists.** Handlers pluck fields off the raw `Value` (`params.get("path")`), and providers don't enforce
+schemas. A model called `list_dir` with `name: "penguin"` and `nameMatch: "prefix"`; both keys vanished, an ordinary
+listing came back, and the agent told the user four times over that it had searched and found nothing. Fabricating a
+zero is what `../agent/tools/CLAUDE.md`'s honesty contract exists to prevent.
+
+**Why it stops there.** Types and enums stay unchecked: a wrong type already gets an honest, specific refusal from the
+handler that reads the field, so nothing was silent there. Nesting stays unchecked: `propose_rename_plan` and
+`propose_suggestions` deserialize their rows into serde structs carrying `deny_unknown_fields`, which refuses an
+unknown field and names it. What those structs can't do is name the ROW, which is why `check_object` is public and the
+rename boundary points it at one row at a time (`../agent/tools/propose/DETAILS.md`).
+
+A schema that never declared `additionalProperties` stays open exactly as it was, so closing one is what opts a tool
+in. Every AGENT tool closes its schema, pinned by `every_agent_tool_closes_its_schema`: nobody reads an agent call
+before it runs, and its answer reaches a person as a fact. An ai-client schema may stay open, and several do.
 
 ### Consumer and access views
 
@@ -108,7 +137,7 @@ silent config mutation. That is its entire power.
 Three things make it hold rather than merely be intended:
 
 - **A hand-authored allowlist, not inference.** No structural check can prove a handler doesn't mutate, so
-  `EXPECTED_PROPOSE_TOOL_NAMES` (in `tests/tool_registry_tests.rs`) lists every `Propose` tool by name, and
+  `EXPECTED_PROPOSE_TOOL_NAMES` (in `tests/tool_registry_tests/access.rs`) lists every `Propose` tool by name, and
   `test_propose_tools_are_an_explicit_allowlist` fails if a registry entry is tagged `Propose` without being listed.
   `propose_rename_plan` is the current entry. Widening the agent's power remains a deliberate act a human signs off,
   having read the handler.
@@ -154,14 +183,14 @@ provider-egress question and `CONSENT_COPY_VERSION` are unchanged by this tier.
   precedent). Per-op actions validate the id against `list_operations` for an honest "unknown operationId" instead of a
   silent backend no-op — skipping the RETAINED FAILURES that snapshot also carries (`is_controllable`), since acting on
   one of those is precisely the no-op the guard exists to refuse. Pause / resume then answer from the manager's
-  `PauseOutcome` rather than assuming (`pause_reply` / `resume_reply`): `Applied` is the plain OK, `Deferred` is an OK
-  that says the operation is still scanning and pauses the moment it starts writing, `AlreadyInState` is an OK for a
+  `PauseOutcome` rather than assuming (`pause_reply` / `resume_reply`): `Applied` is the plain OK — it covers a
+  SCANNING operation too, since the walk parks on the same gate the drivers do — `AlreadyInState` is an OK for a
   repeated request (the intent holds, so a retrying agent isn't refused), and `NotApplicable` is a refusal —
   a QUEUED operation is the everyday case there, since pause deliberately leaves one alone, and "OK: Paused …" for it
   would send the agent on believing the queue had stopped. The SWEEPS answer the same way, from a `PauseAllOutcome`'s
   counts (`pause_all_reply` / `resume_all_reply`, sharing one assembler so the two directions can't drift): an empty set
-  reads "Nothing to pause: no operation is running", a mixed sweep names how many flipped, how many are still scanning,
-  how many were already there, and how many finished before the request reached them. ❌ Never collapse a sweep to a
+  reads "Nothing to pause: no operation is running", a mixed sweep names how many flipped, how many were already
+  there, and how many finished before the request reached them. ❌ Never collapse a sweep to a
   flat "OK: Paused every running operation" — that sentence is true of a sweep that touched nothing. Gate `IfRollback`: pause/resume/plain-cancel are `Open` (transient runtime actions on a
   crash-safe pipeline), but `rollback: true` deletes already-copied files, so it needs the token. Discover ids + status
   in `cmdr://state` `operations:`. `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID), `upgrade_smb_to_direct` (upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O; thin wrapper over the existing manual "Connect directly" Tauri command — tries Keychain creds, returns a typed result mirroring `UpgradeResult`)
@@ -251,24 +280,13 @@ does not exist, until the agent starts the copy again through the normal confirm
 
 ### Resources (`resources/`)
 
-Directory module split by resource. `resources/mod.rs` is the shared spine: the registry (`get_all_resources`), URI/query parsing (`split_uri`, `parse_query`), the `read_resource` dispatch, the `resource_round_trip` helper, and the `cmdr://state` + `cmdr://dialogs/available` builders. The independently-evolving builders live in their own files: `resources/logs.rs` (`cmdr://logs`), `resources/indexing.rs` (`cmdr://indexing`: `build_indexing_text`, `format_duration_human`, `format_number`), `resources/importance.rs` (`cmdr://importance`; tests colocated in `resources/importance/tests.rs`), `resources/operations.rs` (the `cmdr://state` `operations:` section), and `resources/volumes.rs` (the `cmdr://state` `volumes:` section: `build_volumes_yaml` over a `snapshot_volumes` seam, tests colocated). `importance.rs`, `operations.rs`, and `volumes.rs` colocate their tests; the rest live in the `tests/` directory (see below).
-
-- `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache, `recentErrors`). Every `volumes:` entry is uniformly structured (`resources/volumes.rs`, pure `build_volumes_yaml` over a snapshot so it's unit-tested off fixtures): `name`, `id`, and `kind` (`local` | `smb` | `mtp` | `virtual`) always, plus present-when-known `filesystem` (the statfs fs type), `readOnly`, `ejectable`, `indexStatus` (`fresh` | `scanning` | `stale` | `off`, sharing the one `status_token` mapping with `cmdr://indexing` so the two can't disagree), and `smbConnectionState` (`direct` | `os_mount` | `disconnected`, so agents route `upgrade_smb_to_direct` at the right shares), and `totalBytes` / `availableBytes` (raw bytes, so the reader does its own arithmetic) beside `totalHuman` / `availableHuman` (the same numbers through `search::format_size`, the one formatter, so a reader that can't run a script never divides by 1,024 in its head; all four present or all four absent). The space pair comes from the space poller's cache (`space_summary`), NEVER a `statfs` on the resource-read path: the poller holds a live value for every volume something watches (the boot volume permanently, plus whatever the panes show), and an unwatched volume omits both fields rather than rendering a zero that would read as a full disk. No more bare `- {name}` lines — agents stop guessing which entries carry ids. `indexStatus` for local/favorite/SMB entries resolves via `get_volume_index_status_for_path` (favorites and local paths → `root`, SMB paths → the share's id); MTP entries look it up by their `{device_id}:{storage_id}` id. Per-pane `volumeId` still rides each pane block, and a pane whose mount didn't go through carries `mountError:` (`share`, `message`) beside it. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs); `recentErrors` is the last 20 directory-listing failures with `atUnixMs`, `listingId`, `volumeId`, `path`, `message` (see `listing_errors.rs` and the freshness contract below); the `path` and `message` fields are run through `crate::redact::redact_line` before serialization, since failed-listing errors can carry SMB URIs / home paths the user never saw rendered. The `favorites:` section lists the user's favorites (`id`, `name`, `path`) so agents can discover the ids the `favorites` tool's rename / remove / reorder actions take; paths render unredacted like `listings:` (user-chosen navigation targets, not error/log leakage). File entries carry a `[tags:red,blue]` marker (colored tags as their color name, colorless custom tags by name) when they have Finder tags — mirrored from the FE listing (`PaneFileEntry.tags`), filled visible-range-first by `enrich_tags`, zero cost when absent. Supports `?include=panes,volumes,dialogs,listings,recentErrors,operations,favorites` projection (defaults to all) and `?compact=true` (drops the `files:` list inside each pane while keeping every summary field). Example: `cmdr://state?include=listings,recentErrors` is the minimal payload for "did the last listing succeed?".
-- `cmdr://dialogs/available`: Static metadata about available dialogs
-- `operations:` (inside `cmdr://state`, also `?include=operations`): every queued, running, or paused write operation (copy/move/delete/trash/compress/archive-edit) with `operationId`, `type`, `status` (`running`/`paused`/`queued`/`failed`), source/dest summary (redacted), and — for running/paused ops — progress, current file (redacted), whole-run average speed, and ETA. **Two-source join** (`resources/operations.rs`): membership + lifecycle status come from the operation manager's registry (`list_operations`, whose `OperationSnapshot` carries no progress by design); progress/speed/ETA come from the separate write-operations status cache (`get_operation_status`), joined by id. A queued op has no status-cache entry, so it renders status-only. A retained `failed` row carries `error:`, the failure's typed variant name (`source_not_found`, `insufficient_space`, `permission_denied`) taken from its own serde tag. The TAG only: the payload's paths already ride the row, and its `message` fields carry raw OS text that would need its own redaction pass. Without it an agent read `status: failed` and had to guess between a vanished source, a full disk, and a permission refusal, which decide completely different next moves.
-
-A RUNNING row also carries `waitingOn` — `moving`, `paused`, `destination`, `source`, `conflict`, or `unknown` — plus `stillForSeconds` and `inFlight` when those carry a finding (a zero of either is what a healthy transfer or a table-less backend always reports, so rendering them would read as a measurement). It comes from `OperationStatus.activity`, classified live at read time by the ONE classifier the `write-progress` event stream also uses (`write_operations/DETAILS.md` § "Naming a wait"), so a poller and a subscriber can't disagree. This is what separates a slow copy from a wedged mount from a transfer parked on a clash: `status: running` alone reads the same for all three, and `unknown` keeps the wedge shape — nothing moving, nothing explaining it, the only one worth escalating on — from hiding among the waits that DO have a reason. Absent when the backend can't classify itself (a local copy keeps no in-flight table), which reads as "can't tell" and never as a stand-in `moving`.
-
-A row parked on a Stop-mode name clash also carries a `pendingConflict:` block — `conflictId`, source, destination, both sizes (`unknown` when the backend couldn't read one, ❌ never a `0` an agent would compare against), `destinationIsNewer`, and a pointer at `resolve_conflict`. It comes from `write_operations::pending_write_conflict`, i.e. the conflict slot's own armed question, because `write-conflict` is a broadcast and only reaches whoever was listening. Without it a parked operation reads as `running` with counters that never move and no way to learn why. Its two paths are rendered VERBATIM, unlike the row's `source:` / `destination:` summaries: `redact_line` would leave `<file>.txt`, and a clash an agent can't name is one it can't answer — while the same read already lists that directory by name in `panes:`. This is the discovery surface for the `queue` and `resolve_conflict` tools. A completed or cancelled op leaves both sources immediately (removal-on-terminal), so its outcome lives only in the terminal-ops ring (below); a FAILED op is retained by the manager until the user dismisses it, so it keeps appearing here as a `failed` row (`write_operations/DETAILS.md` § "Retained failures"). (Renamed from `transfers:`; a deliberate wire break.)
-- `cmdr://indexing`: Per-volume drive indexing status in plain text (`resources/indexing.rs`). Default: one summary block per known (registered) volume — freshness (`fresh`/`scanning`/`stale`/`off`), current phase, live scan progress (counts + percent + ETA while scanning), a step checklist while scanning, DB entry/dir counts + file size, and the last completed scan. `?volume=<id>` adds a deep debug view for one volume (watcher / live-event stats, DB internals, and the phase timeline with triggers); an unknown id returns an honest "no index found". The builders (`build_indexing_text` / `build_volume_debug_text`) are pure over an injected `VolumeIndexingSnapshot` (the `transfers.rs` snapshot-then-format precedent, `now_unix_s` injected), so formatting is unit-tested without a live index; `snapshot_indexing` / `snapshot_volume_indexing` do the reads via `get_volume_index_status` + `get_debug_status` (freshness is never re-derived). Volumes come from `all_registered_volume_ids` (root first, then sorted). The `?volume=` debug view also carries the guard-activation counters: verification's two teeth (`verify_declined_dirs`, `verify_truncated_dirs`) and the reconcile cost budget (`reconcile_budget_subtrees`, `reconcile_budget_skipped_dirs`, see `indexing/DETAILS.md` § "The reconcile cost budget"). Those count how often a guard FIRED, which nothing else can report. "How common are enormous directories?" is a different question, answered by a SQL query over an existing index instead (`indexing/DETAILS.md` § "How to measure pathological directories").
-- `cmdr://importance`: Folder-importance scores in plain text (`resources/importance.rs`), **offline-capable** — the per-volume `importance.db` stores outlive their volume's mount, so this answers about unmounted drives (the importance subsystem's headline). Four query modes: `?path=<abs-path>` (one folder's `WeightLookup` — Scored with score + the `explain` signal breakdown, Floored with the typed reason, or Unscored; `~` expands to `$HOME`), `?top=<n>&volume=<id>` (top-N by score, volume optional ⇒ merged across all scored volumes, `n` capped at 500), `?threshold=<f>` (folders scoring ≥ `f`, capped at 100 rows with a truncation note — a low threshold can match every scored folder), and no query (a usage summary plus a per-volume overview: id, kind, generation, folder count, so a blind first read teaches the syntax). Every read goes through `ImportanceIndex` (never raw SQLite — the subsystem's consumer-entry-point invariant); scored volumes are enumerated from the `importance-{id}.db` files on disk via `read::scored_volume_ids` (MTP is never background-scored, so it never appears). The `build_*` builders are pure over the snapshot + an injected `now_secs` (the `indexing.rs` snapshot-then-format precedent), so formatting is unit-tested without a live app; the explain breakdown opens the index with the volume kind's `signal_availability` mask so it sums to the stored score (SMB drops Spotlight `last_used`). A missing DB reads as empty / unscored, never an error.
-- `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).
-- `cmdr://logs`: Tail of the live `cmdr.log` file. Query: `?since=<iso>&filter=<substring>&limit=<n>`. `limit` defaults to 100, capped at 1000; `filter` is a case-sensitive substring match (no regex dep); `since` drops lines whose ISO-8601 timestamp prefix is ≤ the given value (lines without a timestamp prefix, like a Rust panic, are kept). Reads the last ~5 MB of the file from the end so a 50 MB rotated log doesn't blow up MCP memory. Returns oldest-first. **Each returned line is run through `crate::redact::redact_line`** (in the pure, unit-tested `select_log_lines` helper) so the resource honors the same PII-redaction contract as the crash + error reporters — a loopback caller without filesystem read can't lift home paths, SMB URIs, emails, or device names out of the log. The `filter` substring matches against the RAW (pre-redaction) line, since redaction runs last.
+The `cmdr://` read-only views: what each one carries, its query shapes, and the gotchas an agent acting on the
+numbers has to know. `resources/DETAILS.md`, with the must-knows in `resources/CLAUDE.md`.
 
 ### Executor (`executor/`)
 
 The tool handlers and the ack contract live in `executor/`. Dispatch itself (`execute_tool`) is generated by the
-`mcp_tools!` table in `tool_registry/mod.rs`, which calls these handlers by path; that's why the category submodules are
+`mcp_tools!` table in `tool_registry/table.rs`, which calls these handlers by path; that's why the category submodules are
 `pub(crate)` (a sibling module reaching their `pub` handler fns). The category split (`app.rs`, `view.rs`, `nav.rs`,
 `file_ops.rs`, `dialogs.rs`, `quit.rs`, `async_tools.rs`, `search.rs`, `downloads.rs`), the `AckSignal` variants and budgets, and
 the `mcp_round_trip` pattern for tools that need an explicit FE response are all documented in
@@ -309,7 +327,7 @@ Frontend syncs state to these stores via Tauri commands (`update_left_pane_state
 
 Directory module split by test category:
 - `protocol_tests.rs`: tool name validation, schema checks, tool count
-- `tool_registry_tests.rs`: the `mcp_tools!` table's schema-shape, token-gate, and consumer/access tests (kept out of `tool_registry/mod.rs` so the authored table stays lean)
+- `tool_registry_tests/`: the `mcp_tools!` table's structural tests, one file per property pinned — `schemas.rs` (the tool set and each declared schema), `gate.rs` (the token classification), `access.rs` (the consumer views and the no-write gate), `schema_gate.rs` (`validate_params`). Kept out of `tool_registry/` so the authored table stays lean
 - `resource_tests.rs`: resource URI validation, count, mime types (the public `get_all_resources` surface)
 - `resource_state_tests.rs`: `cmdr://state` builder — URI/query parsing, pane/tab/file formatting
 - `resource_log_tests.rs`: `cmdr://logs` builder — option parsing, line selection, `since` filter, the PII-redaction contract
@@ -360,11 +378,6 @@ leaving this side hand-written.
 
 The original design mirrored keyboard shortcuts (43 tools like `nav_up`, `nav_down`). This forced agents to make dozens of calls to find a file. The agent-centric redesign consolidated to semantic tools (`move_cursor(index=42)`, `nav_to_path("/Users")`). This reduced round-trips from 6+ reads to 1 (`cmdr://state` resource).
 
-### Why YAML over JSON for resources?
-
-LLMs consume resources, not machines. YAML is 30-40% smaller and more readable. The `cmdr://state` resource is optimized for LLM token usage, not parsing speed.
-
-### Why plain text responses?
 
 Tool results and resource content are consumed by LLMs, not parsed by code. Output doesn't need to be JSON, YAML, or any structured format. Anything that reads well to a human and is concise works. Tool results are plain text (`"OK: Navigated to /Users"`, aligned columns for search results), resources use YAML or plain text. Errors are still JSON-RPC error objects, but the `content` field is plain text. Optimize for readability and token efficiency, not parseability.
 
@@ -420,7 +433,7 @@ The bearer token is required for **only the calls that bypass the user's in-app 
 
 **Everything else needs no token**: resource reads (`cmdr://state`, `cmdr://logs`, etc.), navigation, search, and the destructive ops that still pop the confirmation dialog (`autoConfirm` absent/false).
 
-The classification is **sourced from the tool registry, not a separate string list** — this is the by-construction win. Each tool declares a `TokenGate` (`Open` / `Always` / `IfAutoConfirm` / `IfConfirmAction` / `IfRollback`) on its `mcp_tools!` entry in `tool_registry/mod.rs`. `auth::tool_call_requires_token(method, params)` (a pure, unit-tested predicate) returns true iff `method == "tools/call"` and `tool_gate(name)` reports a gate whose `requires_token(arguments)` is true. Because the gate is a required field on every entry, a new destructive tool can't ship with the gate forgotten — and two structural tests (`test_autoconfirm_tools_are_gated`, `test_rollback_tools_are_gated`) fail if a tool exposing `autoConfirm` / `rollback` is left `Open`, while a full-table set-equality test forces a conscious gate for any newly-added tool. `TokenGate::IfConfirmAction` / `IfRollback` read the tool's own typed `action` / `rollback` field, not a message substring.
+The classification is **sourced from the tool registry, not a separate string list** — this is the by-construction win. Each tool declares a `TokenGate` (`Open` / `Always` / `IfAutoConfirm` / `IfConfirmAction` / `IfRollback`) on its `mcp_tools!` entry in `tool_registry/table.rs`. `auth::tool_call_requires_token(method, params)` (a pure, unit-tested predicate) returns true iff `method == "tools/call"` and `tool_gate(name)` reports a gate whose `requires_token(arguments)` is true. Because the gate is a required field on every entry, a new destructive tool can't ship with the gate forgotten — and two structural tests (`test_autoconfirm_tools_are_gated`, `test_rollback_tools_are_gated`) fail if a tool exposing `autoConfirm` / `rollback` is left `Open`, while a full-table set-equality test forces a conscious gate for any newly-added tool. `TokenGate::IfConfirmAction` / `IfRollback` read the tool's own typed `action` / `rollback` field, not a message substring.
 
 The POST handler runs `if tool_call_requires_token(..) && validate_token(..).is_err() { reject }`. `GET /mcp` (SSE) carries no tool call, so it's never gated. `GET /mcp/health` stays open for liveness probes.
 
@@ -478,24 +491,6 @@ There are two start paths. **Startup** (`start_mcp_server` → `start_mcp_server
 
 The live-control commands (`set_mcp_enabled`, `set_mcp_port`, no restart needed) return a typed `McpServerOutcome` (`Running { port }` / `Stopped` / `PortInUse { requested }`) so the frontend branches on `kind`, never a message string; the wire shape is pinned by `mcp_server_outcome_json_shape`. The frontend shows "(ephemeral)" when the setting was 0, "(port N was in use)" when a *startup* probe landed off the pinned port, and on `PortInUse` keeps the server on its current port while offering the suggested free port (`findAvailablePort`). If the server crashes mid-serve, `MCP_ACTUAL_PORT` resets to 0 but the on-disk file may linger; external readers retry on `ECONNREFUSED`. Check logs for "MCP server crashed" errors.
 
-### `cmdr://state` lists no real volumes on Linux
-
-**Known gap, unfixed.** `resources/volumes.rs::snapshot_volumes` enumerates every discovered location under
-`#[cfg(target_os = "macos")]`: `volumes::list_locations()` plus `enrich_from_volume_registry`, inside a 2 s
-`spawn_blocking` guard, then the synthetic `Network` root. Linux falls into the `#[cfg(not(target_os = "macos"))]`
-branch, which pushes ONE hardcoded `root` entry and nothing else. MTP storages are appended for both.
-
-So an agent reading `cmdr://state` on Linux sees `root` and any connected phone, and no external drives, CIFS or GVFS
-shares, or cloud drives — and no `Network` root, so it can't tell that browsing shares is even possible. Nothing
-reports the gap; the section is present and plausible, just short.
-
-Fixing it means a Linux branch calling `volume_listing::discover_local` + `volume_listing::complete` (the same pipeline
-the IPC command and the `volumes-changed` push use) and its own summary mapping: Linux `LocationInfo` carries
-`smb_connection_state: Option<String>` rather than the macOS `SmbConnectionState` enum, and `is_smb_fs_type` lives in
-the macOS-only `volumes/fs_type.rs`, so the `VolumeKind::Smb` classification needs a home both platforms can reach
-before this can just be shared. Roughly 40 lines plus that move. Found during the volume-command dedupe; deliberately
-left out of that branch because it's an agent-facing behavior change, not duplication.
-
 ### Live MCP control only works from the settings window
 
 `McpServerSection.svelte` subscribes to `developer.mcpEnabled` and `developer.mcpPort` changes and calls the Tauri commands directly. The main window's `settings-applier.ts` intentionally does NOT handle these settings to avoid double-firing (both windows receive setting change events). This means if an MCP tool changes `developer.mcpEnabled` via the settings bridge while the settings window is closed, the setting is saved but the server state doesn't change until the next app restart. This is acceptable, since an MCP tool toggling its own server is circular.
@@ -507,40 +502,6 @@ Frontend calls `update_left_pane_state()` after loading files, but there's no gu
 ### Dialog state is "soft"
 
 `SoftDialogTracker` stores which dialogs MCP thinks are open, but if a dialog is closed manually (not via MCP), the tracker isn't updated. The `cmdr://state` resource double-checks reality by querying Tauri windows.
-
-### View mode affects resource detail
-
-`cmdr://state` shows file details differently based on view mode:
-- Full mode: all file info inline (`i:42 f package.json 1.2K 2025-01-10`)
-- Brief mode: only cursor file gets details, rest are just names (`i:42 f package.json`)
-
-This prevents overwhelming agents with data they can't see in the UI.
-
-### Directory sizes say how much they're worth
-
-A directory's recursive size is a claim of varying strength, and `cmdr://state` renders the same distinctions the file list does (`resources/mod.rs`: `recursive_size_text`, `on_disk_marker`; the model itself is `crates/cmdr-index/src/indexing/writer/DETAILS.md` § "Honest sizes"):
-
-- **`≥4 GB`** — the indexer hasn't finished covering the subtree, so this is a LOWER BOUND, not a total. Same `≥` glyph as the UI's `LOWER_BOUND_GLYPH`.
-- **no size at all** — incomplete AND nothing known below yet. `≥0 B` would read as a measurement; the UI shows its `<dir>` placeholder for the same reason.
-- **`[size-pending]`** — writes in flight for this dir or a descendant (the "size updating" hourglass). A status, so it shows with or without details.
-- **`[size-stale]`** — exact, but computed at an older volume epoch.
-- **`(1 GB on disk)`** — the allocated-blocks total (`recursivePhysicalSize`), included only when it diverges from the logical total by BOTH ≥50% relative and ≥200 MB absolute. Same threshold as the UI's `hasSizeMismatch` (`full-list-utils.ts`), so the two surfaces never disagree about which folders are worth a second look; below it the second number is pure tokens.
-
-**Gotcha**: on-disk counts every hard link and every APFS clone in full, so it is NOT "what deleting this would free". A `target/` dir with rustc's hard-linked codegen objects, or an APFS-cloned worktree, reports the same bytes twice over. Deduplicating needs `DISTINCT inode` over the subtree, which doesn't roll up into `dir_stats` the way a sum does.
-
-**Why this is sharper for agents than for people**: someone watching a folder mid-scan sees the hourglass and waits. An agent reads the number and acts on it, so an uncounted total presented as settled becomes a confident wrong answer (a 129 GB tree reported as 28.8 GB).
-
-### Pane state includes pagination
-
-Large directories (50k+ files) are paginated. The `totalFiles`, `loadedStart`, `loadedEnd` fields indicate what's currently loaded. Agents must use `scroll_to(index)` to load different regions.
-
-### Resources don't require initialization
-
-Unlike tools (which need a session via `initialize`), resources can be read immediately after server start. This is by design for debugging with curl.
-
-### Settings are fetched on-demand, not synced
-
-The `cmdr://settings` resource and `set_setting` tool both use round-trips to the main window frontend. This means settings are always fetched fresh from the source of truth, rather than being synced to a Rust-side store. The tradeoff is a ~5s timeout if the frontend is unresponsive, but this avoids stale state issues.
 
 ### `select_volume` polls for `volume_name` match, not path change
 

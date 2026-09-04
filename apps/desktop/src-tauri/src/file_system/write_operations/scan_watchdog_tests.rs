@@ -120,6 +120,48 @@ async fn a_walk_that_keeps_counting_is_left_alone() {
     release_preview(&preview_id);
 }
 
+/// A PAUSED walk counts nothing, which looks exactly like a volume that stopped
+/// answering. Without the parked flag, holding Pause for longer than the budget
+/// would end the scan with "stopped responding" — the user's own click reported
+/// back to them as a dead share.
+#[tokio::test]
+async fn a_walk_parked_on_a_pause_is_never_called_unresponsive() {
+    let (preview_id, state) = in_flight_preview();
+    let events = Arc::new(CollectorScanPreviewSink::new());
+    let watchdog = ScanWatchdog::start(
+        preview_id.clone(),
+        String::from("a share someone paused"),
+        TEST_LIMIT,
+        state,
+        Arc::clone(&events) as Arc<dyn ScanPreviewEventSink>,
+    );
+
+    watchdog.note_progress(7, 1, 1_024);
+    watchdog.note_parked();
+
+    // allowed-test-sleep: the claim is that nothing happens across several
+    // budgets' worth of silence, and silence is the whole input.
+    tokio::time::sleep(TEST_LIMIT * 5).await;
+
+    assert!(
+        poll_claim(&preview_id).is_none(),
+        "a parked walk has not settled: the person is still deciding"
+    );
+    assert!(
+        events.errors.lock_ignore_poison().is_empty(),
+        "and nothing told the dialog the volume died"
+    );
+
+    // Resuming restarts the clock rather than resuming it mid-flight, so the
+    // pause itself is never charged against the budget.
+    watchdog.note_resumed();
+    // allowed-test-sleep: just under a budget, which must not fire on its own.
+    tokio::time::sleep(TEST_LIMIT / 2).await;
+    assert!(events.errors.lock_ignore_poison().is_empty());
+
+    release_preview(&preview_id);
+}
+
 /// The race: a walk that finishes at the same moment the watchdog gives up. One
 /// of them publishes; the loser stays quiet. Here the WORKER wins, so no timeout
 /// may reach the dialog afterwards.

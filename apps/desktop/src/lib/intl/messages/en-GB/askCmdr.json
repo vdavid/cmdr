@@ -1,7 +1,7 @@
 {
-  "askCmdr.consent.noContents": "Cmdr doesn’t send the files themselves: no file contents, no photos, no thumbnails. Photo search is the one thing that reaches inside your images, and only when you have it search them: the text Cmdr recognised inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When you ask about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognised inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr writes itself notes about you: how you like things organised, what you’ve turned down before, anything you ask it to remember. Those notes ride along with every message you send, for as long as they exist, and they can include text Cmdr recognised inside your photos. You can read them, or wipe them, any time in the Ask Cmdr settings.",
   "@askCmdr.consent.memory": {

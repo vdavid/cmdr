@@ -21,6 +21,7 @@ use crate::operation_log::types::{
 use crate::operation_log::writer::{JournalItem, OpenOperation};
 use crate::operation_log::{journal_finalize, journal_open, journal_record_items};
 
+use super::ledger::WrittenFile;
 use super::types::{WriteOperationError, WriteOperationType};
 
 /// Map the pipeline's op type to the journal taxonomy (1:1). The `archive_edit`
@@ -196,24 +197,6 @@ pub(super) fn record_volume_leaf(
     );
 }
 
-/// One destination FILE a transfer created, with the byte count it was written
-/// with.
-///
-/// The size is the point. It is the snapshot a reversal rechecks the destination
-/// against, and without one an item is `UnverifiablePrecondition` — safe, but
-/// never reversible. The volume paths get it for free (the leaf copier returns
-/// the bytes it piped), so carrying it alongside the path is what makes a file
-/// INSIDE a copied folder as reversible as a top-level one.
-///
-/// ❌ Don't add an mtime here. The volume write path doesn't preserve the
-/// source's, so recording it would flip every leaf from "unverifiable" to
-/// "drifted", which reads to the user as "you changed this file".
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) struct CreatedFile {
-    pub(super) path: PathBuf,
-    pub(super) size: u64,
-}
-
 /// Record the per-file `rollback_unit` rows a volume copy / cross-volume move
 /// landed for ONE top-level source. A FILE source records one leaf (`created_files`
 /// empty, `dest_root` = the landed dest path, `file_size` known). A DIRECTORY
@@ -232,7 +215,7 @@ pub(super) fn record_volume_transfer_source(
     dest_volume_id: &str,
     dest_root: &Path,
     source_is_dir: bool,
-    created_files: &[CreatedFile],
+    created_files: &[WrittenFile],
     file_size: Option<i64>,
     overwrote: bool,
 ) {
@@ -246,7 +229,7 @@ pub(super) fn record_volume_transfer_source(
                 source_volume_id,
                 &source_leaf,
                 Some((dest_volume_id, &leaf.path)),
-                i64::try_from(leaf.size).ok(),
+                leaf.identity.recorded_size().and_then(|size| i64::try_from(size).ok()),
                 None,
                 overwrote,
                 ItemOutcome::Done,

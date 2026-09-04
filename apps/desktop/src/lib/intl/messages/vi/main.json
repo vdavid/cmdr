@@ -42,5 +42,29 @@
   "main.quit.operationsHeading": "Vẫn đang chạy",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
+  },
+  "main.oldWebkit.title": "Cmdr cần phiên bản Safari mới hơn",
+  "@main.oldWebkit.title": {
+    "sourceHash": "03e502b"
+  },
+  "main.oldWebkit.body": "Giao diện của Cmdr cần Safari 15.4 trở lên, còn máy Mac này đang dùng phiên bản cũ hơn. Hãy mở Cập nhật phần mềm và cài mọi bản cập nhật đang chờ. Như vậy thường là xong.",
+  "@main.oldWebkit.body": {
+    "sourceHash": "bcadac5"
+  },
+  "main.oldMacos.title": "Cmdr trên macOS {version}",
+  "@main.oldMacos.title": {
+    "sourceHash": "e75f925"
+  },
+  "main.oldMacos.body": "Cmdr chính thức hỗ trợ macOS 12 trở lên, nên ở đây nó chỉ cố hết sức thôi. Hầu hết mọi thứ đều chạy được, nhưng vài màu sắc và các chi tiết bố cục nhỏ có thể trông không đúng lắm, và việc khắc phục cho các hệ thống cũ sẽ được làm sau cùng. Nếu bạn gặp thứ gì đó hỏng, mình vẫn rất muốn nghe.",
+  "@main.oldMacos.body": {
+    "sourceHash": "9484b91"
+  },
+  "main.oldMacos.gotIt": "Đã hiểu",
+  "@main.oldMacos.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "main.oldWebkit.quit": "Thoát",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
   }
 }

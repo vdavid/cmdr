@@ -191,9 +191,29 @@ async fn test_get_space_info_not_supported_by_default() {
 async fn test_get_space_info_with_configured_space() {
     let volume = InMemoryVolume::new("Test").with_space_info(1_000_000, 500_000);
     let space = volume.get_space_info().await.unwrap();
-    assert_eq!(space.total_bytes, 1_000_000);
-    assert_eq!(space.available_bytes, 500_000);
-    assert_eq!(space.used_bytes, 500_000);
+    assert_eq!(
+        space,
+        SpaceInfo::Bounded {
+            total_bytes: 1_000_000,
+            available_bytes: 500_000,
+            used_bytes: 500_000,
+        }
+    );
+}
+
+#[tokio::test]
+async fn storage_with_no_ceiling_reports_what_is_stored_and_nothing_else() {
+    // ❗ The shape a quota-less Nextcloud account produces. `available_bytes()`
+    // has to answer `None` here, because that is what the copy pre-flight reads
+    // as "can't tell, go ahead" and what the pane reads as "draw no bar".
+    let volume = InMemoryVolume::new("Test").with_unbounded_space_info(64 * 1024 * 1024);
+
+    let space = volume.get_space_info().await.unwrap();
+
+    assert_eq!(space, SpaceInfo::Unbounded { used_bytes: 67_108_864 });
+    assert_eq!(space.used_bytes(), 67_108_864);
+    assert_eq!(space.available_bytes(), None);
+    assert_eq!(space.total_bytes(), None);
 }
 
 // ============================================================================

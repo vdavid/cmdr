@@ -19,26 +19,17 @@ use super::channel::{self, FolderActivity, ForcedWake, WakeControl, WakeMessage}
 use super::followup::{self, FollowUpQueue};
 use super::importance::ImportanceCache;
 use super::runner::{self, BackgroundTurn, ResolvedSlot};
+use super::schedule;
 use super::settings::{self, WakeSettings};
 use super::snapshot::readiness_snapshot;
+use super::spend;
 use super::{Inbox, PrepareOutcome, PrepareParams, persist, prepare_wake};
 use crate::agent::chat::budget;
-use crate::agent::chat::session::{AgentSlot, resolve_agent_llm, resolve_prompt_budget};
+use crate::agent::chat::runtime::day_for;
+use crate::agent::chat::session::{AgentSlot, local_offset, resolve_agent_llm, resolve_prompt_budget};
 use crate::agent::store;
 
 const LOG_TARGET: &str = "agent::wake";
-
-/// How long the loop waits with nothing scheduled. It would be correct to wait forever (every
-/// arrival is a message), but a bounded park means a clock jump or a missed re-arm costs one
-/// minute of latency rather than a loop that never wakes again.
-const IDLE_POLL: Duration = Duration::from_secs(60);
-
-/// ⚠️ **How long a declined attempt waits before trying again, and why the loop needs one at
-/// all.** A deadline that has passed stays passed. Without a backoff the park would compute to
-/// zero, `recv_timeout` would return instantly, and the loop would spin a core flat for as long
-/// as an overdue row sits there — the ordinary state for anybody without consent or an API key.
-/// A gate or settings change clears it, so opening the gate is felt at once.
-const DECLINED_WAKE_BACKOFF: Duration = Duration::from_secs(5 * 60);
 
 /// Start the wake loop. Called once, from `agent::start`, after the store handle and the chat
 /// runtime are registered.
@@ -78,6 +69,7 @@ fn run(app: AppHandle, db_path: PathBuf, data_dir: PathBuf, receiver: Receiver<W
         not_before: 0,
         forced: None,
         follow_ups: FollowUpQueue::default(),
+        budget_noted: None,
         app,
         conn,
     };
@@ -136,7 +128,7 @@ struct WakeLoop {
     /// Whether a wake thread is running right now. See [`WakeLoop::try_wake`].
     wake_in_flight: bool,
     /// Unix seconds before which no wake is attempted, however overdue the inbox looks. See
-    /// [`DECLINED_WAKE_BACKOFF`].
+    /// `schedule.rs`.
     not_before: u64,
     /// A [`WakeControl::ForceWake`] is outstanding: act on the inbox now, whatever the timer
     /// and the proactive toggle say, and on whatever the request narrows it to. Cleared once
@@ -146,6 +138,9 @@ struct WakeLoop {
     /// Sweeps the user turned something down in, waiting out their coalescing window. One
     /// entry per sweep, which is what makes "reject all" one model call.
     follow_ups: FollowUpQueue,
+    /// The local day the daily ceiling was last reported for, so it is said once rather than
+    /// every few minutes. See [`WakeLoop::note_budget_spent`].
+    budget_noted: Option<String>,
 }
 
 impl WakeLoop {
@@ -156,8 +151,8 @@ impl WakeLoop {
     /// something unrelated woke the loop.
     fn park(&self) -> Duration {
         let now = now_secs();
-        park_with_follow_up(
-            park_for(self.inbox.next_deadline(), self.not_before, now),
+        schedule::park_with_follow_up(
+            schedule::park_for(self.inbox.next_deadline(), self.not_before, now),
             self.follow_ups.next_due(),
             now,
         )
@@ -207,17 +202,20 @@ impl WakeLoop {
         }
     }
 
+    /// Act on one control message, then let `schedule.rs` say when the loop may next speak.
+    ///
+    /// ⚠️ **The stamp is computed BEFORE the match consumes the message**, so the two stay one
+    /// decision per variant rather than drifting apart.
     fn handle_control(&mut self, control: WakeControl) {
+        let stamped = schedule::stamp_after(&control, self.not_before, now_secs());
         match control {
             WakeControl::SettingsChanged => self.reload_settings(),
             WakeControl::ReadinessChanged => self.purge_inbox_if_not_permitted(),
-            WakeControl::WakeFinished => self.wake_in_flight = false,
+            WakeControl::WakeFinished(_) => self.wake_in_flight = false,
             WakeControl::ForceWake(request) => self.forced = Some(request),
             WakeControl::SweepRejected { set_id } => self.note_rejection(set_id),
         }
-        // Every control message is a reason the last decision may no longer hold: the gate the
-        // wake was refused by may have opened, or the wake it was waiting on may have finished.
-        self.not_before = 0;
+        self.not_before = stamped;
     }
 
     /// Throw the backlog away, on disk as well as in memory, when the gates stopped permitting
@@ -277,13 +275,13 @@ impl WakeLoop {
     fn try_wake(&mut self) {
         let now = now_secs();
         let forced = self.forced.is_some();
-        if !forced && (now < self.not_before || !self.inbox.due_at(now)) {
+        if !schedule::may_attempt(forced, self.inbox.due_at(now), self.not_before, now) {
             return;
         }
         // ⚠️ Whatever happens below, don't come straight back: the deadline that brought us here
         // has passed and will keep having passed, and a zero-length park is a spin. This is set
         // BEFORE every remaining early return, the in-flight one included.
-        self.not_before = now.saturating_add(DECLINED_WAKE_BACKOFF.as_secs());
+        self.not_before = now.saturating_add(schedule::DECLINED_WAKE_BACKOFF.as_secs());
 
         // At most one wake in flight. A second prepared while the first runs would queue behind
         // the same conversation lock for a whole model call, holding rows the first could have
@@ -301,6 +299,16 @@ impl WakeLoop {
         // forced wake is a developer asking for one, so it is the one thing that skips it — the
         // three gates that protect the USER are still checked below.
         if !forced && !self.settings.proactive {
+            return;
+        }
+        // The fifth gate, and the only one counted in money rather than permission: what
+        // proactive work has already spent today. Checked before the slot is resolved, so a
+        // spent day costs one indexed read per attempt and nothing else. ⚠️ A force skips it,
+        // like the `proactive` toggle above; a user-typed turn never reaches this function at
+        // all, so nothing the user asks for is ever capped.
+        let today = day_for(now as i64, local_offset());
+        if !spend::may_spend(forced, spend::spent_today(&self.conn, &today)) {
+            self.note_budget_spent(today);
             return;
         }
         let readiness = readiness_snapshot();
@@ -347,6 +355,19 @@ impl WakeLoop {
             PrepareOutcome::NothingDue => runner::record_outcome("nothing_due", None, self.inbox.len(), 0),
             PrepareOutcome::Unavailable => runner::record_outcome("unavailable", None, self.inbox.len(), 0),
         }
+    }
+
+    /// Report the daily ceiling ONCE per day, the first time it refuses a wake.
+    ///
+    /// ⚠️ **Once, ❌ never per attempt.** A spent day is the ordinary state for the rest of that
+    /// day, and the loop re-checks every few minutes: a line each would bury `cmdr.log` and turn
+    /// one categorical analytics fact into hundreds. Same reasoning the `proactive` gate carries.
+    fn note_budget_spent(&mut self, day: String) {
+        if self.budget_noted.as_deref() == Some(day.as_str()) {
+            return;
+        }
+        self.budget_noted = Some(day);
+        runner::record_outcome("budget_spent", None, self.inbox.len(), 0);
     }
 
     /// Cut the inbox down to the one folder a forced wake staged, on disk as well as in memory.
@@ -449,112 +470,9 @@ impl PendingSlot {
     }
 }
 
-/// How long to park, given what is waiting and when a wake may next be attempted.
-///
-/// ⚠️ Capped at [`IDLE_POLL`] and floored by `not_before`. The floor is the load-bearing half: a
-/// deadline in the past yields a zero-length park, and a zero-length `recv_timeout` returns
-/// instantly, so without it an overdue row the loop declines to act on spins a core flat.
-/// Fold a waiting follow-up's coalescing window into the park the inbox asked for.
-///
-/// ⚠️ **An OVERDUE follow-up must not shorten the park**, which is the same spin trap
-/// [`park_for`] guards for the inbox and it bites for a different reason. A window that has
-/// closed and is still waiting means this pass declined to act on it, and the only reason it
-/// can is that a background turn is already running. That turn takes minutes, and a
-/// zero-length `recv_timeout` for its whole duration would spin a core flat. The
-/// `WakeFinished` control message wakes the loop the moment it can be acted on.
-fn park_with_follow_up(wake: Duration, next_follow_up: Option<u64>, now: u64) -> Duration {
-    match next_follow_up {
-        Some(due) if due > now => wake.min(Duration::from_secs(due - now)),
-        _ => wake,
-    }
-}
-
-fn park_for(next_deadline: Option<u64>, not_before: u64, now: u64) -> Duration {
-    let Some(due) = next_deadline else {
-        return IDLE_POLL;
-    };
-    Duration::from_secs(due.max(not_before).saturating_sub(now)).min(IDLE_POLL)
-}
-
 fn now_secs() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|since| since.as_secs())
         .unwrap_or(0)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// ⚠️ The spin guard. A deadline that has passed keeps having passed, so a park computed
-    /// from it alone is zero-length, and a zero-length `recv_timeout` returns instantly. An
-    /// overdue row the loop declines to act on is the ordinary state for anybody without
-    /// consent or an API key — this is the difference between a parked thread and a hot core.
-    #[test]
-    fn an_overdue_row_the_loop_declined_parks_instead_of_spinning() {
-        let overdue = Some(1_780_000_000);
-        let now = 1_780_000_500;
-
-        assert_eq!(park_for(overdue, 0, now), Duration::ZERO, "the deadline alone says now");
-        assert_eq!(
-            park_for(overdue, now + 30, now),
-            Duration::from_secs(30),
-            "the backoff is what keeps the thread asleep"
-        );
-        assert_eq!(
-            park_for(overdue, now + DECLINED_WAKE_BACKOFF.as_secs(), now),
-            IDLE_POLL,
-            "a longer backoff still re-checks once a minute; `try_wake`'s own guard holds the rest"
-        );
-    }
-
-    /// A deadline still ahead is honoured to the second, so the agent stays as attentive as the
-    /// cadence setting asks.
-    #[test]
-    fn a_future_deadline_is_parked_for_exactly() {
-        assert_eq!(park_for(Some(1_780_000_030), 0, 1_780_000_000), Duration::from_secs(30));
-    }
-
-    /// An empty inbox, or one holding only cold rows, waits out the idle poll rather than
-    /// forever: a clock jump or a missed re-arm then costs a minute, not the rest of the run.
-    #[test]
-    fn nothing_waiting_falls_back_to_the_idle_poll() {
-        assert_eq!(park_for(None, 0, 1_780_000_000), IDLE_POLL);
-        assert_eq!(
-            park_for(Some(1_780_009_999), 0, 1_780_000_000),
-            IDLE_POLL,
-            "and a distant deadline is capped, so the loop re-checks its own arithmetic"
-        );
-    }
-
-    /// A rejection's coalescing window is the second clock the loop parks against, so a window
-    /// closing soon has to shorten the wait: otherwise the ask sits until something unrelated
-    /// wakes the loop.
-    #[test]
-    fn a_coalescing_window_closing_soon_shortens_the_park() {
-        let now = 1_780_000_000;
-
-        assert_eq!(
-            park_with_follow_up(IDLE_POLL, Some(now + 5), now),
-            Duration::from_secs(5)
-        );
-        assert_eq!(
-            park_with_follow_up(Duration::from_secs(2), Some(now + 5), now),
-            Duration::from_secs(2),
-            "and the shorter of the two clocks wins"
-        );
-    }
-
-    /// ⚠️ The follow-up half of the spin guard. A window that closed and is STILL waiting means
-    /// a background turn is running, and that turn takes minutes: a zero-length park for its
-    /// whole duration would spin a core flat. `WakeFinished` is what wakes the loop instead.
-    #[test]
-    fn an_overdue_follow_up_the_loop_declined_parks_instead_of_spinning() {
-        let now = 1_780_000_000;
-
-        assert_eq!(park_with_follow_up(IDLE_POLL, Some(now - 300), now), IDLE_POLL);
-        assert_eq!(park_with_follow_up(IDLE_POLL, Some(now), now), IDLE_POLL);
-        assert_eq!(park_with_follow_up(IDLE_POLL, None, now), IDLE_POLL);
-    }
 }

@@ -232,7 +232,18 @@ describe('seeding', () => {
       fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 900 }) })
       fanout._testEmit({
         kind: 'cancelled',
-        event: { operationId: 'a', operationType: 'copy', filesProcessed: 4, rolledBack: false },
+        event: {
+          operationId: 'a',
+          operationType: 'copy',
+          filesProcessed: 4,
+          rollback: {
+            outcome: 'notRolledBack',
+            reversed: 0,
+            skips: [],
+            stagedLeftovers: null,
+            originalsStillInPlace: null,
+          },
+        },
       })
     })
 
@@ -281,7 +292,18 @@ describe('derived read state', () => {
     })
     fanout._testEmit({
       kind: 'cancelled',
-      event: { operationId: 'a', operationType: 'copy', filesProcessed: 2, rolledBack: false },
+      event: {
+        operationId: 'a',
+        operationType: 'copy',
+        filesProcessed: 2,
+        rollback: {
+          outcome: 'notRolledBack',
+          reversed: 0,
+          skips: [],
+          stagedLeftovers: null,
+          originalsStillInPlace: null,
+        },
+      },
     })
 
     expect(session.outcome?.kind).toBe('complete')
@@ -383,6 +405,30 @@ describe('derived read state', () => {
     expect(session.scan.filesPerSecond).toBeNull()
     // The write phase's first ETA is adopted as-is, never blended with the scan's.
     expect(session.etaSecondsDisplay).toBe(60)
+    dispose()
+  })
+
+  it('drops the scan rates while the operation is paused, and keeps the tallies', () => {
+    // A paused walk parks between entries and emits nothing, so the last
+    // measured rate would sit on screen describing a scan that is standing
+    // still — the same reason the write phase's speed goes away. The counts
+    // stay: they are what the walk found, and that is still true.
+    vi.useFakeTimers()
+    const { fanout, session, dispose } = harness()
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    fanout._testEmit({ kind: 'progress', event: progress('a', { phase: 'scanning', filesDone: 10, bytesDone: 100 }) })
+    vi.advanceTimersByTime(1000)
+    fanout._testEmit({ kind: 'progress', event: progress('a', { phase: 'scanning', filesDone: 30, bytesDone: 300 }) })
+    expect(session.scan.filesPerSecond).toBe(20)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
+    expect(session.scan.filesPerSecond).toBeNull()
+    expect(session.scan.bytesPerSecond).toBeNull()
+    expect(session.scan.filesFound).toBe(30)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'running')] })
+    expect(session.scan.filesPerSecond).toBe(20)
     dispose()
   })
 
@@ -521,6 +567,55 @@ describe('commands', () => {
 
     expect(commandMocks.cancelOperation).toHaveBeenCalledWith('a')
     expect(session.cancelling).toBe(true)
+    dispose()
+  })
+})
+
+describe('leaving the registry', () => {
+  it('says so once a snapshot arrives without the operation it held', () => {
+    const { session, fanout, dispose } = harness((f) => {
+      f._testEmit({ kind: 'snapshot', operations: [snapshot('a')] })
+    })
+
+    expect(session.leftRegistry).toBe(false)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [] })
+
+    expect(session.leftRegistry).toBe(true)
+    // Membership, not an outcome. The backend let the operation go; nothing here
+    // knows HOW it ended, and claiming otherwise would let a removal that beat
+    // its own `write-complete` across the channels write the wrong ending.
+    expect(session.settled).toBe(false)
+    expect(session.outcome).toBeNull()
+    dispose()
+  })
+
+  it('ignores a snapshot that arrives before the operation ever appears in one', () => {
+    // The reversal is registered before its dispatch returns, but the
+    // `operations-changed` naming it can land after the view has already bound.
+    // A snapshot in that window doesn't carry the operation, and reading that as
+    // "it left" would take the controls off one about to start.
+    const { session, fanout, dispose } = harness()
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('someone-else')] })
+    expect(session.leftRegistry).toBe(false)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a')] })
+    expect(session.leftRegistry).toBe(false)
+    expect(session.status).toBe('running')
+    dispose()
+  })
+
+  it('takes the operation back when the registry names it again', () => {
+    const { session, fanout, dispose } = harness((f) => {
+      f._testEmit({ kind: 'snapshot', operations: [snapshot('a')] })
+    })
+
+    fanout._testEmit({ kind: 'snapshot', operations: [] })
+    expect(session.leftRegistry).toBe(true)
+
+    fanout._testEmit({ kind: 'snapshot', operations: [snapshot('a', 'paused')] })
+    expect(session.leftRegistry).toBe(false)
     dispose()
   })
 })

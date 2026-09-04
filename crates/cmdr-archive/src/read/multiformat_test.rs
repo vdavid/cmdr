@@ -444,6 +444,7 @@ async fn read_all_pw(
 #[tokio::test]
 async fn sevenz_browses_and_extracts() {
     let (index, src) = parse_7z(build_7z(&[("readme.txt", b"hello 7z"), ("dir/inner.bin", b"nested")]));
+    assert!(!index.has_encrypted_entries(), "a plaintext 7z flags nothing");
 
     let names = |p: &str| -> Vec<String> { index.list(p).unwrap().into_iter().map(|n| n.name).collect() };
     assert_eq!(names(""), vec!["dir", "readme.txt"]);
@@ -482,6 +483,15 @@ async fn sevenz_content_encrypted_lists_without_password_and_decrypts_with_one()
     ));
     let names = |p: &str| -> Vec<String> { index.list(p).unwrap().into_iter().map(|n| n.name).collect() };
     assert_eq!(names(""), vec!["dir", "readme.txt"], "listing works with no password");
+    // The flag comes from the entry's block coders (an AES coder in the chain), so a
+    // listing can say up front that extraction will need a password.
+    assert!(index.has_encrypted_entries());
+    assert!(index.get("readme.txt").unwrap().encrypted);
+    assert!(index.get("dir/inner.bin").unwrap().encrypted);
+    assert!(
+        !index.get("dir").unwrap().encrypted,
+        "a directory has no block to decrypt"
+    );
 
     let got = read_all_pw(&index, src, "dir/inner.bin", "hunter2")
         .await

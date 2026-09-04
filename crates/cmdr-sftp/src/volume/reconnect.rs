@@ -38,7 +38,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use cmdr_fs::volume::host::credentials::StoredCredentials;
+use cmdr_fs::volume::secret_store;
 use cmdr_fs::volume::{SelfHandle, VolumeError};
 use log::{debug, info, warn};
 use tokio_util::sync::CancellationToken;
@@ -317,12 +317,7 @@ impl SftpVolumeInner {
     /// modal dialog on the async runtime stalls every other volume. ❌ The secret
     /// itself is dropped on the spot; only its existence comes back.
     async fn stored_secret_exists(&self) -> bool {
-        let host = self.host.clone();
-        let service = self.params.credential_service();
-        let scope = self.params.username.clone();
-        tokio::task::spawn_blocking(move || host.credentials().credentials(&service, Some(&scope)).is_some())
-            .await
-            .unwrap_or(false)
+        secret_store::has_stored_secret(&self.host, &self.params.credential_service(), &self.params.username).await
     }
 
     /// Reports the stall and turns it into the trait's vocabulary.
@@ -379,22 +374,10 @@ impl SftpVolumeInner {
     /// volume. A refusal is non-fatal — only the "silent next time" guarantee is
     /// lost.
     async fn refresh_remembered_secret(&self, username: &str, secret: &str) {
-        let host = self.host.clone();
-        let service = self.params.credential_service();
-        let scope = username.to_string();
-        let stored = StoredCredentials {
-            username: username.to_string(),
-            secret: secret.to_string(),
-        };
-        let written = tokio::task::spawn_blocking(move || {
-            let store = host.credentials();
-            if store.credentials(&service, Some(&scope)).is_none() {
-                return Ok(());
-            }
-            store.save_credentials(&service, Some(&scope), &stored)
-        })
-        .await;
-        if !matches!(written, Ok(Ok(()))) {
+        let took =
+            secret_store::refresh_remembered_secret(&self.host, &self.params.credential_service(), username, secret)
+                .await;
+        if !took {
             warn!(
                 target: "volume",
                 "sftp volume '{}': the secret store didn't take the new secret; this session still came up",

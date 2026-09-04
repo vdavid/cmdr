@@ -32,8 +32,9 @@ use super::super::super::state::{
     OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
 use super::super::super::types::{
-    VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
+    CancelRollback, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    WriteProgressEvent,
 };
 use super::super::dest_name_index::DestNameIndex;
 use super::super::transfer_driver::build_pre_skip_set;
@@ -42,6 +43,7 @@ use crate::file_system::volume::{DirectoryCreation, SourceItemInfo, SpaceInfo, V
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
+use super::super::super::ledger::WrittenFile;
 use super::cleanup::{clean_partial_writes, volume_rollback_with_progress};
 use super::conflict::is_the_same_item;
 use super::transfer_error::{PathRole, WriteFailure, write_error_event_from};
@@ -374,13 +376,30 @@ pub async fn copy_between_volumes(
 /// Both pre-flights go through here, so the tolerance can't drift between the
 /// dialog's preview and the transfer that follows it.
 /// `a_destination_that_cant_report_free_space_is_still_copyable_into` and its
-/// sibling in `copy_tests.rs` hold both sides.
+/// sibling in `copy_space_tests.rs` hold both sides.
 async fn dest_space_if_known(dest_volume: &dyn Volume) -> Result<Option<SpaceInfo>, VolumeError> {
     match dest_volume.get_space_info().await {
         Ok(info) => Ok(Some(info)),
         Err(VolumeError::NotSupported) => Ok(None),
         Err(other) => Err(other),
     }
+}
+
+/// The figure the free-space pre-flight compares against, or `None` when there
+/// isn't one to compare against.
+///
+/// TWO different silences collapse here deliberately, because a copy owes them
+/// the same answer:
+///
+/// - the backend refused to measure (`dest_space_if_known` gave `None`), and
+/// - the backend measured and there is no ceiling ([`SpaceInfo::Unbounded`]),
+///   which a Nextcloud account with no quota reports.
+///
+/// ❌ Neither may read as "no room". The first is ignorance; the second is the
+/// one destination a copy is guaranteed to fit into. Pinned by
+/// `copy_space_tests.rs::{a_destination_with_no_ceiling_accepts_a_copy_bigger_than_anything_it_holds, a_preview_of_a_destination_with_no_ceiling_carries_what_it_holds}`.
+fn room_to_check(dest_space: Option<SpaceInfo>) -> Option<u64> {
+    dest_space.and_then(|space| space.available_bytes())
 }
 
 /// Performs a pre-flight scan for volume copy without executing.
@@ -432,15 +451,16 @@ pub async fn scan_for_volume_copy(
     // What the destination has room for, or `None` when it genuinely can't tell.
     let dest_space = dest_space_if_known(dest_volume).await?;
 
-    // ❗ Only a volume that ANSWERED gets checked. `None` is "can't tell", and a
-    // preview the user can't even open is the wrong way to say that.
-    if let Some(space) = &dest_space
-        && space.available_bytes < total_bytes
+    // ❗ Only a volume that answered with a CEILING gets checked. See
+    // `room_to_check`: a silent backend and a bottomless one both mean "don't
+    // compare", and a preview the user can't even open is the wrong way to say so.
+    if let Some(available) = room_to_check(dest_space)
+        && available < total_bytes
     {
         return Err(VolumeError::IoError {
             message: format!(
-                "Not enough space: need {} bytes, only {} available",
-                total_bytes, space.available_bytes
+                "Not enough space: need {}, only {available} available",
+                cmdr_fs::pluralize::pluralize(total_bytes, "byte")
             ),
             raw_os_error: None,
         });
@@ -679,12 +699,12 @@ pub(crate) async fn copy_volumes_with_progress(
     let dest_space = dest_space_if_known(&*dest_volume)
         .await
         .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
-    if let Some(space) = dest_space
-        && space.available_bytes < total_bytes
+    if let Some(available) = room_to_check(dest_space)
+        && available < total_bytes
     {
         return Err(WriteFailure::synthetic(WriteOperationError::InsufficientSpace {
             required: total_bytes,
-            available: space.available_bytes,
+            available,
             volume_name: Some(dest_volume.name().to_string()),
         }));
     }
@@ -858,7 +878,7 @@ pub(crate) async fn copy_volumes_with_progress(
     // into the (possibly pre-existing) dest directory — NOT the directory root
     // — so rollback never recursively deletes a merged directory and destroys
     // dest-only files the user already had there.
-    let copied_paths: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let copied_paths: Arc<std::sync::Mutex<Vec<WrittenFile>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
     // Destination directories this operation NEWLY created (create_directory
     // returned Ok, not AlreadyExists), in creation order (shallowest first).
     // Rollback removes these AFTER the files, deepest first, with a
@@ -990,7 +1010,7 @@ pub(crate) async fn copy_volumes_with_progress(
     bytes_skipped += deep_skipped_bytes.load(Ordering::Relaxed);
 
     // Unwrap shared containers for post-loop logic.
-    let mut copied_paths: Vec<PathBuf> = Arc::try_unwrap(copied_paths)
+    let mut copied_paths: Vec<WrittenFile> = Arc::try_unwrap(copied_paths)
         .map(|m| m.into_inner().unwrap_or_default())
         .unwrap_or_else(|arc| arc.lock_ignore_poison().clone());
     let created_dirs: Vec<PathBuf> = Arc::try_unwrap(created_dirs)
@@ -1058,24 +1078,16 @@ pub(crate) async fn copy_volumes_with_progress(
     // Cancelled or errored. Before either branch, remove the staged partials of
     // tasks the driver abandoned mid-write: their futures were dropped, so
     // nothing else will. A temp whose write finished is already off this list, so
-    // committed data is never in scope here.
-    super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+    // committed data is never in scope here. Whatever the destination wouldn't
+    // let go of rides out on the cancel summary, so a Rollback that couldn't
+    // clear the destination never reads as one that did.
+    let staged_leftovers = super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
 
     // Decide between rollback and cancel.
     if intent == OperationIntent::RollingBack {
-        // Include the last in-progress item in rollback (it was partially created)
-        if let Some(partial_path) = last_dest_path.take() {
-            copied_paths.push(partial_path);
-        }
-        // Under concurrency there can be multiple partials. The tasks we
-        // dropped on abort each left a .cmdr-tmp-<uuid> that the backend's
-        // writer.abort() cleaned up, but the destination path itself may have
-        // an already-renamed file. Roll those back too.
-        for partial in in_flight_partials.iter() {
-            if !copied_paths.contains(partial) {
-                copied_paths.push(partial.clone());
-            }
-        }
+        // The writes still in flight when the user clicked go into the ledger as
+        // this operation's OWN partials, which the reversal removes on sight.
+        super::cleanup::append_own_partials(&mut copied_paths, last_dest_path.take(), &in_flight_partials);
 
         // User requested rollback: delete all copied files in reverse order with progress
         log::info!(
@@ -1084,9 +1096,9 @@ pub(crate) async fn copy_volumes_with_progress(
             copied_paths.len()
         );
 
-        let rollback_completed = volume_rollback_with_progress(
+        let reversal = volume_rollback_with_progress(
             &dest_volume,
-            &copied_paths,
+            &mut copied_paths,
             &created_dirs,
             &*events,
             operation_id,
@@ -1102,7 +1114,7 @@ pub(crate) async fn copy_volumes_with_progress(
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Copy,
             files_processed: files_done,
-            rolled_back: rollback_completed,
+            rollback: reversal.into_cancel_rollback().with_staged_leftovers(&staged_leftovers),
         });
     } else {
         // Stopped or error: keep completed files, clean up partial files.
@@ -1131,7 +1143,10 @@ pub(crate) async fn copy_volumes_with_progress(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Copy,
                 files_processed: files_done,
-                rolled_back: false,
+                // A plain Stop keeps what it wrote, so there is no reversal to
+                // report — but a staged partial the destination wouldn't take
+                // back is still news, and this is the only event that carries it.
+                rollback: CancelRollback::none().with_staged_leftovers(&staged_leftovers),
             });
         }
     }
@@ -1145,10 +1160,13 @@ pub(crate) async fn copy_volumes_with_progress(
     }))
 }
 
-// The `volume/copy_tests.rs` suite was split for size. The crash-safety and
-// rollback suites live in their own files; both share `make_state` /
-// `make_volumes` from `tests` (`super::tests`). The bench suite is a single
-// `#[ignore]`d, network-gated test.
+// The copy suite is one file per contract, and `tests` (`copy_tests.rs`) is the
+// general one rather than the default: a new test goes to the sibling whose
+// contract it pins, and only here when it pins none of them. Every sibling
+// shares `make_state` / `make_volumes` from `tests` (`super::tests`). Tests for
+// a symbol another module owns go to THAT module's suite. What each file holds:
+// `volume/DETAILS.md` § Files. The bench suites are `#[ignore]`d and
+// network-gated.
 #[cfg(test)]
 #[path = "copy_bench.rs"]
 mod bench;
@@ -1174,6 +1192,9 @@ mod merge_dir_vs_dir_tests;
 #[path = "merge_dispatch_mutex_tests.rs"]
 mod merge_dispatch_mutex_tests;
 #[cfg(test)]
+#[path = "merge_pause_tests.rs"]
+mod merge_pause_tests;
+#[cfg(test)]
 #[path = "merge_tests.rs"]
 mod merge_tests;
 #[cfg(test)]
@@ -1183,6 +1204,9 @@ mod merge_window_tests;
 #[path = "copy_precheck_tests.rs"]
 mod precheck_tests;
 #[cfg(test)]
+#[path = "copy_prescan_reuse_tests.rs"]
+mod prescan_reuse_tests;
+#[cfg(test)]
 #[path = "copy_retry_tests.rs"]
 mod retry_tests;
 #[cfg(test)]
@@ -1191,6 +1215,9 @@ mod rollback_tests;
 #[cfg(test)]
 #[path = "copy_source_hint_tests.rs"]
 mod source_hint_tests;
+#[cfg(test)]
+#[path = "copy_space_tests.rs"]
+mod space_tests;
 #[cfg(test)]
 #[path = "copy_staged_write_tests.rs"]
 mod staged_write_tests;

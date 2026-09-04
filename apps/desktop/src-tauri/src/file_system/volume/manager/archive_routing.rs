@@ -7,13 +7,13 @@
 //! impl can span files within a crate), so every method stays at
 //! `VolumeManager::…` regardless of which file it's in.
 
-use super::super::backends::archive::{
-    ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, archive_boundary_candidate, bytes_match_archive_magic,
-    confirm_archive_boundary, format_for_path,
-};
 use super::super::{Volume, WatchCoverage};
 use super::VolumeManager;
 use crate::ignore_poison::IgnorePoison;
+use cmdr_archive::{
+    ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, archive_boundary_candidate, bytes_match_archive_magic,
+    confirm_archive_boundary, format_for_path,
+};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -146,10 +146,9 @@ impl VolumeManager {
     }
 
     /// Async, parent-aware sibling of the sync
-    /// [`archive::path_is_inside_archive`](super::super::backends::archive::path_is_inside_archive):
-    /// true when `path` points INSIDE a confirmed archive (a non-empty inner
-    /// path), for BOTH local and remote (direct SMB / MTP) parents. The `.zip`
-    /// file itself is a plain file → false.
+    /// [`cmdr_archive::path_is_inside_archive`]: true when `path` points INSIDE a
+    /// confirmed archive (a non-empty inner path), for BOTH local and remote
+    /// (direct SMB / MTP) parents. The `.zip` file itself is a plain file → false.
     ///
     /// The write-routing seams (delete / rename / copy-out source) use this so a
     /// remote archive-inner write reaches the managed edit driver instead of
@@ -165,9 +164,9 @@ impl VolumeManager {
     }
 
     /// Async, parent-aware sibling of the sync
-    /// [`archive::path_crosses_archive_boundary`](super::super::backends::archive::path_crosses_archive_boundary):
-    /// true when `path` crosses into a confirmed archive — the `.zip` file itself
-    /// (empty inner) OR a path inside it.
+    /// [`cmdr_archive::path_crosses_archive_boundary`]: true when `path` crosses
+    /// into a confirmed archive — the `.zip` file itself (empty inner) OR a path
+    /// inside it.
     ///
     /// `create` uses this (not [`path_is_inside_archive`](Self::path_is_inside_archive)):
     /// a new entry's parent can BE the `.zip` file (creating at the archive root),
@@ -455,6 +454,31 @@ mod tests {
         let b = manager.resolve("root", &zip.join("b")).await.volume.expect("b");
         // register_if_absent means the second resolve reuses the first volume.
         assert!(Arc::ptr_eq(&a, &b));
+    }
+
+    #[tokio::test]
+    async fn mount_id_for_path_skips_a_registered_archive_and_names_its_parent_mount() {
+        // An `ArchiveVolume`'s root is the `.zip` itself, the longest prefix of every
+        // path inside it. It is not a mount: a path inside the archive belongs to the
+        // volume holding the `.zip` (what `inspect_file` and the index router route by).
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("bundle.zip");
+        write_zip_magic(&zip);
+
+        let manager = VolumeManager::new();
+        manager.register(
+            "ext",
+            Arc::new(InMemoryVolume::new("Ext").with_root(dir.path()).with_local_fs_access()),
+        );
+        let inner = zip.join("docs/readme.txt");
+        assert!(manager.resolve("ext", &inner).await.is_archive);
+
+        let inner = inner.to_string_lossy();
+        assert_eq!(manager.mount_id_for_path(&inner).as_deref(), Some("ext"));
+        assert_eq!(
+            manager.mount_id_for_path(&zip.to_string_lossy()).as_deref(),
+            Some("ext")
+        );
     }
 
     #[tokio::test]

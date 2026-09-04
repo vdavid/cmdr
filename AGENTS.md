@@ -2,9 +2,8 @@
 
 This file is for AI agents. Human contributors, see `CONTRIBUTING.md`.
 
-Cmdr is an extremely fast, keyboard-first two-pane file manager in Rust, free forever for personal use on macOS (BSL
-license), at [getcmdr.com](https://getcmdr.com). Started 2025-12-25; in open beta with a few dozen early-stage-aware
-users.
+Cmdr is an extremely fast, keyboard-first two-pane file manager in Rust, free for personal use on macOS (BSL license),
+at [getcmdr.com](https://getcmdr.com). Started 2025-12-25; in open beta with a few dozen early-stage-aware users.
 
 This is a monorepo of four apps:
 
@@ -106,9 +105,9 @@ Rules for writing them:
 - `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker E2E,
   SMB fixtures), `scripts/`. The other three apps are listed above.
 - `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file index, media index, folder
-  importance), `cmdr-archive` (the zip/tar/7z backend, and the model a new backend crate copies), and `cmdr-smb` (the
-  SMB backend and its protocol layer) carry no `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a
-  vendored `fsevent-stream` fork. Details: `docs/architecture.md`.
+  importance), `cmdr-archive` (the zip/tar/7z backend, and the model a new backend crate copies), `cmdr-smb` (the SMB
+  backend and its protocol layer), and `cmdr-adb` (Android over ADB) carry no `tauri`, enforced by
+  `index-crate-isolation`; plus two dev CLIs and a vendored `fsevent-stream` fork. Details: `docs/architecture.md`.
 - `brand/`: tracked brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/specs/index.md` (per-development plans, periodically wiped), `docs/notes/README.md` (benchmarks and analysis),

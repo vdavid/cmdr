@@ -4,12 +4,15 @@
 //! - **Panic hook**: full stdlib access, writes JSON crash file directly
 //! - **Signal handler**: async-signal-safe only, writes raw addresses to a pre-opened fd
 
+mod contain;
 mod panic_courier;
 #[cfg(unix)]
 mod signal_handler;
 mod survival;
 mod symbolicate;
 
+#[cfg(test)]
+mod contain_tests;
 #[cfg(test)]
 mod panic_courier_tests;
 #[cfg(test)]
@@ -20,6 +23,7 @@ mod tests;
 use crate::config;
 use crate::redact;
 use crate::settings;
+pub use contain::contain_panics;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -254,11 +258,38 @@ pub fn install_panic_hook() {
     HOOK_INSTALLED.call_once(|| {
         let default_hook = std::panic::take_hook();
         std::panic::set_hook(Box::new(move |info| {
-            handle_panic(info);
-            // Call the default hook so the app still aborts normally
-            default_hook(info);
+            let disposition = handle_panic(
+                info,
+                CRASH_PATH.get().map(PathBuf::as_path),
+                &SESSION_CRASH_FILE_WRITTEN,
+            );
+            // Call the default hook so the app still aborts normally. A contained panic
+            // is expected behavior, not an incident, so it skips the stderr line too.
+            if disposition == PanicDisposition::Reported {
+                default_hook(info);
+            }
         }));
     });
+}
+
+/// The one line a contained panic leaves in the log: a fixed sentence plus the thread name,
+/// never the panic message. `cmdr.log` rides error reports, and a foreign parser's `expect`
+/// formats the object it choked on into its message, which for `pdf-extract` is bytes of the
+/// user's PDF. The sanitizer a crash report's message goes through strips paths, not that.
+fn contained_panic_warning(_info: &std::panic::PanicHookInfo<'_>) -> String {
+    format!(
+        "Contained a panic inside a foreign parser on thread {}; the message is withheld because it can quote the file",
+        std::thread::current().name().unwrap_or("<unnamed>")
+    )
+}
+
+/// What the hook did with a panic.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PanicDisposition {
+    /// Inside a [`contain_panics`] closure: one warning line, nothing else.
+    Contained,
+    /// Crash file (keep-first), watchdog, courier.
+    Reported,
 }
 
 /// The hook body: write the crash file, then hand a notice to the courier thread.
@@ -267,20 +298,31 @@ pub fn install_panic_hook() {
 /// process before unwinding starts, so `catch_unwind` here would not help; see
 /// [`panic_courier`] for the mechanism. That's also why in-session delivery runs on
 /// another thread instead of calling the dispatcher from here.
-fn handle_panic(info: &std::panic::PanicHookInfo<'_>) {
+///
+/// `crash_path` and `already_written` are [`CRASH_PATH`] and [`SESSION_CRASH_FILE_WRITTEN`]
+/// in production and a temp path with a fresh flag in tests, which is what lets a test
+/// prove the contained branch wrote nothing without burning the process-wide ones.
+fn handle_panic(
+    info: &std::panic::PanicHookInfo<'_>,
+    crash_path: Option<&Path>,
+    already_written: &AtomicBool,
+) -> PanicDisposition {
+    // The containment mark first: a panic inside `contain_panics` is a parser choking on
+    // untrusted input, not a crash. One warning, then nothing else.
+    if contain::panic_is_contained() {
+        log::warn!("{}", contained_panic_warning(info));
+        return PanicDisposition::Contained;
+    }
+
     let report = build_panic_report(info);
 
     // Disk first, and unchanged: for a panic that kills the app this is the ONLY delivery
     // path, and the process may be gone microseconds from now.
-    let wrote_crash_file = write_first_crash_report(
-        CRASH_PATH.get().map(PathBuf::as_path),
-        &SESSION_CRASH_FILE_WRITTEN,
-        &report,
-    );
+    let wrote_crash_file = write_first_crash_report(crash_path, already_written, &report);
 
     // Then the survival watchdog, for the same panic. Keep-first means only the panic
     // that owns the crash file arms one, so there's at most one per session.
-    if wrote_crash_file && let Some(crash_path) = CRASH_PATH.get() {
+    if wrote_crash_file && let Some(crash_path) = crash_path {
         survival::arm(crash_path);
     }
 
@@ -295,6 +337,7 @@ fn handle_panic(info: &std::panic::PanicHookInfo<'_>) {
         backtrace_frames: report.backtrace_frames.clone(),
         crash_file_short_id: wrote_crash_file.then(|| report.short_id.clone()).flatten(),
     });
+    PanicDisposition::Reported
 }
 
 /// Writes `report` to `crash_path`, unless there's no path or `already_written` is already

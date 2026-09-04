@@ -333,6 +333,13 @@ symbol, because the failure is otherwise invisible: the menu builds fine, just w
 **Gotcha**: an accelerator update replaces the menu item (see "Accelerator sync"), and the fresh
 `NSMenuItem` carries no image, so `update_menu_accelerator` re-applies the icons afterwards.
 
+**Below macOS 11 there are no SF Symbols at all**, and the bundle's floor is 10.15, so `set_sf_symbol`
+returns early on `crate::platform::macos_at_least(11, 0)`. Catalina gets menu items with no icons,
+which is the feature degrading; calling `imageWithSystemSymbolName:accessibilityDescription:` there
+would raise an unrecognized-selector exception and abort the process instead. The
+`allowed-newer-selector` marker on the call is what tells `desktop-rust-macos-availability` the gate
+exists, since it reads lines rather than control flow.
+
 Context menus don't get SF Symbols for our own items because Tauri doesn't expose the raw `NSMenu`
 pointer for context menus, and rasterized SF Symbol bitmaps via `IconMenuItem` look poor (no
 template auto-tinting). However, **full-color non-template images do render correctly** through
@@ -363,8 +370,11 @@ selected item would have to land in its own real folder, which one transfer can'
 `plus.square.on.square`, the Linux mnemonic is `D&uplicate`. What the command does once dispatched:
 `apps/desktop/src/lib/file-explorer/pane/DETAILS.md`.
 
-The **Select** submenu (between Edit and View) holds the four selection commands: `Select all` (⌘A), `Deselect all`
-(⌘⇧A), `Select files…` (no menu accelerator), and `Deselect files…` (no menu accelerator). The two `…` items open the
+The **Select** submenu (between Edit and View) holds the five selection commands: `Select all` (⌘A), `Deselect all`
+(⌘⇧A), `Invert selection` (no menu accelerator: neither of its defaults, `⇧8` and the numpad `*`, carries ⌘, and a
+bare `Shift+8` or `*` accelerator would swallow `*` in every text field, so `FilePane`'s keydown handler binds them,
+`⇧8` matched by physical key via `eventMatchesCommand`), `Select files…` (no menu accelerator), and `Deselect files…`
+(no menu accelerator). The two `…` items open the
 Selection dialog (see `apps/desktop/src/lib/selection-dialog/CLAUDE.md`); their keystrokes (bare `+` / `-`) are bound in
 `FilePane`'s keydown handler because macOS menu accelerators always carry the ⌘ modifier and bare `+` / `-` aren't
 valid accelerator strings. The items are still registered in `MenuState.items` so a user-customized shortcut could flow

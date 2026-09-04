@@ -2,11 +2,15 @@
  * Pointer / drag / context-menu controller for the viewer.
  *
  * Owns the stateful side of text selection by pointer: the active drag's
- * `pointerId` + last `clientY`, the in-app context-menu position, and the
- * drag-autoscroll RAF loop. The pure caret-from-point math lives in
- * `viewer-pointer.ts`; the autoscroll speed curve and RAF driver live in
+ * `pointerId` + last pointer position, the click cycle behind word / line selection, the
+ * in-app context-menu position, and the drag-autoscroll RAF loop. Point → caret
+ * resolution lives in `viewer-pointer.ts` (over `viewer-caret-geometry.ts`), the click
+ * cycle in `viewer-multi-click.ts`, and the autoscroll speed curve and RAF driver in
  * `viewer-autoscroll.ts` / `viewer-autoscroll.svelte.ts`. This controller wires
  * those together against the page's selection model and scroll composable.
+ *
+ * Every gesture rides the `pointerdown` stream, `click` included: the controller counts
+ * presses itself rather than reading a mouse event's `detail`.
  *
  * The page provides getters/callbacks for the scroll container ref, the line
  * cache (for double / triple-click word/line selection), and the selection
@@ -14,9 +18,10 @@
  * element and the `<svelte:window on:blur>` safety net.
  */
 
-import { caretFromPoint } from './viewer-pointer'
+import { caretFromPoint, caretFromPointClamped } from './viewer-pointer'
 import { computeAutoscrollPxPerFrame } from './viewer-autoscroll'
 import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
+import { advanceMultiClick, type MultiClickState } from './viewer-multi-click'
 import { findWordBoundsAt } from './viewer-word'
 import type { LineOffset } from './selection.svelte'
 
@@ -48,22 +53,26 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
    */
   let dragPointerId: number | null = null
 
-  /** The pointer's most-recent Y position, used by the autoscroll RAF loop. */
+  /** The pointer's most-recent position, used by the autoscroll RAF loop. */
+  let dragPointerX = 0
   let dragPointerY = 0
 
   /** Position of the in-app context menu while it's open, or `null`. */
   let contextMenuPos = $state<{ x: number; y: number } | null>(null)
 
+  /** The last press and where it sat in the click cycle, or `null` before the first one. */
+  let lastPress: MultiClickState | null = null
+
   /**
-   * Re-resolves the caret after each autoscroll step. Uses the X position one px
-   * past the left edge of `.file-content` so the caret lands inside the line text
-   * (not the line-number gutter, which sits flush to the left edge).
+   * Re-resolves the caret after each autoscroll step. The pointer is past a viewport
+   * edge by definition here (that's what started the autoscroll), so the aim is clamped
+   * into `.file-content` and the selection sweeps whole rows of the newly-scrolled-in
+   * text.
    */
   function reAimAfterAutoscroll(pointerY: number): void {
     const content = deps.getContentRef()
     if (!content) return
-    const rect = content.getBoundingClientRect()
-    const caret = caretFromPoint(document, rect.left + 1, pointerY)
+    const caret = caretFromPointClamped(content, dragPointerX, pointerY)
     if (caret !== null) deps.setFocus(caret)
   }
 
@@ -84,19 +93,33 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
     // click in the document takes focus off any editor's find field.
     deps.takeFocus()
 
-    const caret = caretFromPoint(document, e.clientX, e.clientY)
+    const content = deps.getContentRef()
+    if (!content) return
+    const caret = caretFromPoint(content, e.clientX, e.clientY)
     if (caret === null) return
     e.preventDefault()
 
+    const press = advanceMultiClick(lastPress, { x: e.clientX, y: e.clientY, time: e.timeStamp })
+    lastPress = press
+
     // Shift-click extends the existing selection from its anchor to the clicked
     // position. If there's no current selection, treat shift-click as a plain click.
+    // It's an extend gesture, never part of a word/line cycle, so the count restarts.
     if (e.shiftKey && deps.hasSelection()) {
+      lastPress = { ...press, count: 1 }
       deps.setFocus(caret)
-    } else {
+    } else if (press.count === 1) {
       deps.setAnchor(caret)
+    } else {
+      // Second press selects the word, third the whole line. Neither arms the drag: the
+      // gesture is finished at this point, and a twitch before the release would
+      // otherwise collapse the fresh selection back to a caret.
+      selectAroundCaret(caret, press.count)
+      return
     }
 
     dragPointerId = e.pointerId
+    dragPointerX = e.clientX
     dragPointerY = e.clientY
     // Capture so we keep receiving pointer events even if the cursor leaves the
     // webview (the user dragged past the edge into another macOS window or the
@@ -111,13 +134,17 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
 
   function handlePointerMove(e: PointerEvent): void {
     if (dragPointerId === null || e.pointerId !== dragPointerId) return
+    dragPointerX = e.clientX
     dragPointerY = e.clientY
-    const caret = caretFromPoint(document, e.clientX, e.clientY)
+
+    const content = deps.getContentRef()
+    if (!content) return
+    // Clamped: a drag that has left the viewport still extends the selection to the
+    // nearest edge of the rendered text instead of freezing where it crossed out.
+    const caret = caretFromPointClamped(content, e.clientX, e.clientY)
     if (caret !== null) deps.setFocus(caret)
 
     // Check whether the pointer is near a viewport edge; start/stop autoscroll as needed.
-    const content = deps.getContentRef()
-    if (!content) return
     const rect = content.getBoundingClientRect()
     const delta = computeAutoscrollPxPerFrame(e.clientY, rect.top, rect.bottom)
     if (delta !== 0) {
@@ -148,26 +175,15 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
   }
 
   /**
-   * Selects the word under the pointer on double-click, or the whole line on
-   * triple-click. The browser delivers consecutive clicks with `detail = 2` and
-   * `detail = 3`; we read the click count from there.
+   * Selects the word under `caret` (second press) or its whole logical line (third).
+   * The line runs from offset 0 to the line's UTF-16 length whatever the wrap does, so a
+   * line spread over several visual rows selects in full.
    */
-  function handleClick(e: MouseEvent): void {
-    if (e.detail !== 2 && e.detail !== 3) return
-    const caret = caretFromPoint(document, e.clientX, e.clientY)
-    if (caret === null) return
+  function selectAroundCaret(caret: LineOffset, count: 2 | 3): void {
     const lineText = deps.getLineText(caret.line) ?? ''
-
-    if (e.detail === 2) {
-      const { start, end } = findWordBoundsAt(lineText, caret.offset)
-      deps.setAnchor({ line: caret.line, offset: start })
-      deps.setFocus({ line: caret.line, offset: end })
-      return
-    }
-
-    // Triple-click: select the whole line.
-    deps.setAnchor({ line: caret.line, offset: 0 })
-    deps.setFocus({ line: caret.line, offset: lineText.length })
+    const { start, end } = count === 2 ? findWordBoundsAt(lineText, caret.offset) : { start: 0, end: lineText.length }
+    deps.setAnchor({ line: caret.line, offset: start })
+    deps.setFocus({ line: caret.line, offset: end })
   }
 
   function closeContextMenu(): void {
@@ -195,7 +211,6 @@ export function createViewerPointerDrag(deps: PointerDragDeps) {
     handlePointerUp,
     handlePointerCancel,
     handleContextMenu,
-    handleClick,
     closeContextMenu,
     handleWindowBlur,
   }

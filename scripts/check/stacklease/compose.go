@@ -145,7 +145,7 @@ func (d dockerComposer) upArgs(services, fileArgs []string) []string {
 	// Dockerfile or the entrypoint never reaches a container that's already
 	// running, and the stack quietly keeps serving the old one. Docker's layer
 	// cache makes the no-change case a few hundred milliseconds.
-	if d.stack.buildContextRel != "" {
+	if len(d.stack.buildContextsRel) != 0 {
 		args = append(args, "--build")
 	}
 	return append(args, services...)

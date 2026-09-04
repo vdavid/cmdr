@@ -8,17 +8,52 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { handleCrashNotifications } from './index'
 import { createBaseEnv, createMockD1 } from './cron-test-helpers'
 
+/** The fields of the Resend payload these tests read back. */
+interface SentEmail {
+  from: string
+  to: string
+  subject: string
+  html: string
+}
+
+/** Resend reports a rejected send in the response rather than throwing, so both shapes are valid. */
+type SendOutcome = { id: string; error?: never } | { id?: never; error: { message: string } }
+
 // Mock Resend: intercept email sends
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock stands in for Resend's send; a precise signature adds no test value
-const mockSend = vi.fn<any>(() => Promise.resolve({ id: 'test-email-id' }))
+const mockSend = vi.fn<(payload: SentEmail) => Promise<SendOutcome>>(() => Promise.resolve({ id: 'test-email-id' }))
 vi.mock('resend', () => ({
   Resend: class {
     emails = { send: mockSend }
   },
 }))
 
-function lastEmailCall(): { subject: string; to: string; from: string; html: string } {
-  return mockSend.mock.lastCall?.[0] as { subject: string; to: string; from: string; html: string }
+function lastEmailCall(): SentEmail {
+  const payload = mockSend.mock.lastCall?.[0]
+  if (!payload) throw new Error('No email was sent')
+  return payload
+}
+
+/** Minimal un-notified `crash_reports` rows, for the tests that care about ordering, not rendering. */
+function crashRows(overrides: Record<string, unknown>[]): Map<string, unknown> {
+  return new Map<string, unknown>([
+    [
+      'SELECT id',
+      {
+        results: overrides.map((o, i) => ({
+          id: i + 1,
+          app_version: '1.0.0',
+          os_version: '15.3',
+          arch: 'arm64',
+          signal: 'SIGSEGV',
+          top_function: 'cmdr::sync::run',
+          created_at: '2026-03-23T10:00:00Z',
+          build_mode: 'release',
+          short_id: 'CRASH-A2345',
+          ...o,
+        })),
+      },
+    ],
+  ])
 }
 
 beforeEach(() => {
@@ -182,6 +217,33 @@ describe('handleCrashNotifications', () => {
     expect(bindings[1]).toBe(1)
     expect(bindings[2]).toBe(2)
     expect(bindings[3]).toBe(3)
+  })
+
+  it('stamps notified_at only after the send succeeds', async () => {
+    const { db, calls } = createMockD1(crashRows([{ id: 1 }, { id: 2 }]))
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    let stampedBeforeSend: boolean | undefined
+    mockSend.mockImplementationOnce(() => {
+      stampedBeforeSend = calls.some((call) => call.sql.includes('UPDATE crash_reports'))
+      return Promise.resolve({ id: 'test-email-id' })
+    })
+
+    await handleCrashNotifications(env as never)
+
+    expect(stampedBeforeSend).toBe(false)
+    expect(calls.find((call) => call.sql.includes('UPDATE crash_reports'))).toBeDefined()
+  })
+
+  it('leaves the rows un-notified when the send is rejected, so the next tick retries', async () => {
+    const { db, calls } = createMockD1(crashRows([{ id: 1 }]))
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    mockSend.mockImplementationOnce(() => Promise.resolve({ error: { message: 'API key is invalid' } }))
+
+    await expect(handleCrashNotifications(env as never)).rejects.toThrow()
+
+    expect(calls.find((call) => call.sql.includes('UPDATE crash_reports'))).toBeUndefined()
   })
 
   it('surfaces the attached contact email so the maintainer can reply', async () => {

@@ -139,6 +139,7 @@ import {
 } from '$lib/tauri-commands'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import { addToast } from '$lib/ui/toast'
+import type { CancelRollbackReadout } from './cancel-rollback-toast'
 import { createEtaSmoother } from '../progress-readout'
 import {
   destroyOperationSessions,
@@ -526,7 +527,18 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
     expect(state.settleSlow).toBe(true)
 
     if (!cancelledCb || !settledCb) throw new Error('cancel/settle subscribers never registered')
-    cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 4, rolledBack: false })
+    cancelledCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      filesProcessed: 4,
+      rollback: {
+        outcome: 'notRolledBack',
+        reversed: 0,
+        skips: [],
+        stagedLeftovers: null,
+        originalsStillInPlace: null,
+      },
+    })
     flushSync()
     expect(state.operationSettled).toBe(true)
     expect(config.onCancelled).not.toHaveBeenCalled()
@@ -601,11 +613,75 @@ describe('createTransferProgressState: rollback', () => {
     expect(cancelWriteOperation).toHaveBeenCalledWith('op-1', true)
 
     if (!cancelledCb || !settledCb) throw new Error('cancel/settle subscribers never registered')
-    cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 2, rolledBack: true })
+    cancelledCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      filesProcessed: 2,
+      rollback: { outcome: 'rolledBack', reversed: 2, skips: [], stagedLeftovers: null, originalsStillInPlace: null },
+    })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
     flushSync()
     vi.advanceTimersByTime(450)
     expect(config.onCancelled).toHaveBeenCalledWith(2)
+  })
+
+  it('says what the reversal left behind, rather than closing on a bar that drained to zero', async () => {
+    // The join this covers: the reversal's report rides `write-cancelled`, and the
+    // bar always lands on zero whether items came off the disk or were left alone.
+    // Without a summary, "the bar hit zero" reads as "everything was removed".
+    const { state } = await startedState()
+    if (!progressCb) throw new Error('progress subscriber never registered')
+    progressCb(progressEvent())
+    void state.handleCancel(true)
+    await settle()
+
+    if (!cancelledCb || !settledCb) throw new Error('cancel/settle subscribers never registered')
+    cancelledCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      filesProcessed: 4,
+      rollback: {
+        outcome: 'partiallyRolledBack',
+        reversed: 3,
+        skips: [{ reason: 'drift', count: 1, exampleName: 'notes.md' }],
+        stagedLeftovers: null,
+        originalsStillInPlace: null,
+      },
+    })
+    settledCb({ operationId: 'op-1', operationType: 'copy' })
+    flushSync()
+    vi.advanceTimersByTime(450)
+
+    expect(vi.mocked(addToast)).toHaveBeenCalledTimes(1)
+    const [, options] = vi.mocked(addToast).mock.calls[0]
+    expect(options?.level).toBe('info')
+    const readout = options?.props?.readout as CancelRollbackReadout
+    expect(readout.reasons).toHaveLength(1)
+  })
+
+  it('stays quiet when a plain Cancel kept what was written', async () => {
+    const { state } = await startedState()
+    void state.handleCancel(false)
+    await settle()
+
+    if (!cancelledCb || !settledCb) throw new Error('cancel/settle subscribers never registered')
+    cancelledCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      filesProcessed: 4,
+      rollback: {
+        outcome: 'notRolledBack',
+        reversed: 0,
+        skips: [],
+        stagedLeftovers: null,
+        originalsStillInPlace: null,
+      },
+    })
+    settledCb({ operationId: 'op-1', operationType: 'copy' })
+    flushSync()
+    vi.advanceTimersByTime(450)
+
+    expect(vi.mocked(addToast)).not.toHaveBeenCalled()
   })
 
   it('cancels an in-progress rollback (keep remaining files)', async () => {
@@ -790,7 +866,18 @@ describe('createTransferProgressState: foreground-operation ownership', () => {
     void state.handleCancel(false)
     await settle()
     if (!cancelledCb || !settledCb) throw new Error('cancel subscribers never registered')
-    cancelledCb({ operationId: 'op-1', operationType: 'copy', filesProcessed: 0, rolledBack: false })
+    cancelledCb({
+      operationId: 'op-1',
+      operationType: 'copy',
+      filesProcessed: 0,
+      rollback: {
+        outcome: 'notRolledBack',
+        reversed: 0,
+        skips: [],
+        stagedLeftovers: null,
+        originalsStillInPlace: null,
+      },
+    })
     settledCb({ operationId: 'op-1', operationType: 'copy' })
     state.destroy()
     expect(getForegroundOperationId()).toBeNull()
@@ -1107,8 +1194,7 @@ describe('createTransferProgressState: a still-scanning transfer', () => {
   it('offers Background while the operation is still scanning', async () => {
     // The shipped bug: `canPauseOrQueue` used to require the scan to be over,
     // so a large transfer could not be backgrounded for as long as it counted.
-    // Pause is a separate question and stays HIDDEN during a scan (the markup
-    // gates it on `!isScanning`, and the backend declines the flip anyway).
+    // It now covers Pause during the scan as well, since the walk parks.
     const { state } = await startedState({ previewId: 'prev-1' })
 
     expect(state.canPauseOrQueue).toBe(true)

@@ -57,10 +57,12 @@ mod cmdr_md;
 mod cost;
 mod dispatch;
 mod events;
+mod repeats;
 mod turn;
 mod types;
 
 pub(crate) use analytics::send_refused;
+pub(crate) use cost::day_for;
 pub use dispatch::{AppHandleDispatcher, ToolDispatchOutcome, ToolDispatcher, dispatch_ok};
 pub use events::{AgentChatEvent, AgentErrorKind, ChatEventSink};
 pub use turn::run_turn;
@@ -286,6 +288,15 @@ pub(crate) fn now_secs() -> i64 {
         .unwrap_or(0)
 }
 
+#[cfg(test)]
+mod test_support;
+
+#[cfg(test)]
+mod context_budget_tests;
+#[cfg(test)]
+mod model_change_tests;
+#[cfg(test)]
+mod repeat_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

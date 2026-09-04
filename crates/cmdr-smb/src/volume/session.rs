@@ -43,7 +43,7 @@ impl SmbVolume {
     /// `Arc::clone`; all clones multiplex frames over the same SMB session),
     /// and releases the lock. Also reads out an `Arc<Tree>`. Returns both.
     ///
-    /// Callers can then drive `Tree::download` / `Tree::read_file_compound` /
+    /// Callers can then drive `Tree::download` / `Tree::read_file_compound_sized` /
     /// `Tree::write_file_compound` on the owned `Connection` without holding
     /// any lock, enabling multiple concurrent copies on a single `SmbVolume`.
     pub(super) async fn clone_session(&self) -> Result<(Arc<Tree>, smb2::client::Connection), VolumeError> {
@@ -85,6 +85,14 @@ impl SmbVolume {
             );
             c
         };
+        // Refresh what the credit window can carry, while a `Connection` is in
+        // hand: `Volume::max_concurrent_ops` is sync and can't reach one, and
+        // this is the single place every read and write passes through. See
+        // `REPRESENTATIVE_COPY_REQUEST_BYTES`.
+        self.inner.credit_copy_capacity.store(
+            conn.credit_capacity_for(super::REPRESENTATIVE_COPY_REQUEST_BYTES),
+            Ordering::Relaxed,
+        );
         Ok((tree, conn))
     }
 

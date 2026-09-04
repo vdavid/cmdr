@@ -73,6 +73,14 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
     },
+    adb: {
+      kind: 'adb',
+      hasBackendListing: true,
+      canWrite: true,
+      canBeSource: true,
+      hasParentRow: true,
+      syncsToMcp: true,
+    },
     network: {
       kind: 'network',
       hasBackendListing: false,
@@ -146,6 +154,7 @@ describe('volumeKindOf — the unified superset classifier', () => {
     expect(volumeKindOf('some-id', 'smbfs', undefined)).toBe('smb')
     expect(volumeKindOf('mtp-336592896:65537', undefined, 'mobile_device')).toBe('mtp')
     expect(volumeKindOf('0-5:65537', undefined, undefined)).toBe('mtp')
+    expect(volumeKindOf('adb-pixel-7-a1b2c3d', 'adb', 'mobile_device')).toBe('adb')
   })
 
   it('the favorite edge resolves to its containing real volume kind (local)', () => {
@@ -170,6 +179,7 @@ describe('volumeKindOf — the unified superset classifier', () => {
       ['search-results', undefined, undefined],
       ['root', 'apfs', 'main_volume'],
       ['mtp-1:1', undefined, 'mobile_device'],
+      ['adb-pixel-7-a1b2c3d', 'adb', 'mobile_device'],
       ['x', 'smbfs', undefined],
       ['fav', undefined, 'favorite'],
       ['weird', undefined, undefined],

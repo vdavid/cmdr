@@ -2,7 +2,7 @@
 //! path-derived volume-name fallback, per-path icon fetching, and volume-space
 //! reporting. The blocking macOS enrichment layer, only run for local mounts.
 
-use serde::{Deserialize, Serialize};
+use crate::file_system::volume::SpaceInfo;
 use std::path::Path;
 
 /// Display name derived purely from a mount path: the last path component, or
@@ -114,18 +114,12 @@ fn get_u64_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<u64> {
     })
 }
 
-/// Information about volume space.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VolumeSpaceInfo {
-    /// In bytes.
-    pub total_bytes: u64,
-    /// In bytes.
-    pub available_bytes: u64,
-}
-
 /// Get space information for a volume containing the given path.
-pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
+///
+/// A mounted filesystem always has a capacity, so this is always
+/// [`SpaceInfo::Bounded`]. NSURL reports no used figure of its own, so
+/// [`SpaceInfo::bounded`] derives it.
+pub fn get_volume_space(path: &str) -> Option<SpaceInfo> {
     use objc2::rc::autoreleasepool;
     use objc2_foundation::NSURL;
 
@@ -139,10 +133,7 @@ pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
             .filter(|&v| v > 0)
             .or_else(|| get_u64_resource(&url, "NSURLVolumeAvailableCapacityKey"))?;
 
-        Some(VolumeSpaceInfo {
-            total_bytes: total,
-            available_bytes: available,
-        })
+        Some(SpaceInfo::bounded(total, available))
     })
 }
 
@@ -166,17 +157,20 @@ mod tests {
     }
 
     #[test]
-    fn test_get_volume_space_root() {
-        let space = get_volume_space("/");
-        assert!(space.is_some(), "Should get space info for root volume");
+    fn the_boot_volume_reports_a_bounded_capacity_it_has_not_filled() {
+        let space = get_volume_space("/").expect("macOS reports space for the boot volume");
 
-        let space = space.unwrap();
-        assert!(space.total_bytes > 0, "Total bytes should be positive");
-        assert!(space.available_bytes > 0, "Available bytes should be positive");
-        assert!(
-            space.available_bytes <= space.total_bytes,
-            "Available should be <= total"
-        );
+        let SpaceInfo::Bounded {
+            total_bytes,
+            available_bytes,
+            ..
+        } = space
+        else {
+            panic!("a mounted filesystem always has a capacity, got {space:?}");
+        };
+        assert!(total_bytes > 0, "total should be positive");
+        assert!(available_bytes > 0, "available should be positive");
+        assert!(available_bytes <= total_bytes, "available should be at most total");
     }
 
     #[test]

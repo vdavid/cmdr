@@ -70,10 +70,10 @@ pub(crate) fn to_volume_snapshots(summaries: &[VolumeSummary]) -> Vec<VolumeSnap
             ejectable: v.ejectable,
             index_status: v.index_status.map(|s| s.to_string()),
             smb_connection_state: v.smb_connection_state.map(|s| s.to_string()),
-            total_bytes: v.space.map(|s| s.total_bytes),
-            total_human: v.space.map(|s| format_size(s.total_bytes)),
-            available_bytes: v.space.map(|s| s.available_bytes),
-            available_human: v.space.map(|s| format_size(s.available_bytes)),
+            total_bytes: v.space.and_then(|s| s.total_bytes()),
+            total_human: v.space.and_then(|s| s.total_bytes()).map(format_size),
+            available_bytes: v.space.and_then(|s| s.available_bytes()),
+            available_human: v.space.and_then(|s| s.available_bytes()).map(format_size),
         })
         .collect()
 }
@@ -92,7 +92,8 @@ pub async fn execute_list_volumes<R: Runtime>(_app: &AppHandle<R>, _params: &Val
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mcp::resources::volumes::{VolumeKind, VolumeSpace};
+    use crate::file_system::volume::SpaceInfo;
+    use crate::mcp::resources::volumes::VolumeKind;
 
     fn summary(
         name: &str,
@@ -134,10 +135,7 @@ mod tests {
         // The agent can't divide by 1,024 reliably, so "how full is it" has to arrive
         // already spelled out; the raw bytes stay for anything that needs arithmetic.
         let mut v = summary("Macintosh HD", VolumeKind::Local, Some("fresh"), None);
-        v.space = Some(VolumeSpace {
-            total_bytes: 2_000_000_000_000,
-            available_bytes: 214_300_000_000,
-        });
+        v.space = Some(SpaceInfo::bounded(2_000_000_000_000, 214_300_000_000));
         let out = to_volume_snapshots(&[v]);
         assert_eq!(out[0].total_bytes, Some(2_000_000_000_000));
         assert_eq!(

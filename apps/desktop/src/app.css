@@ -22,6 +22,12 @@
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f5f5f5;
   --color-bg-tertiary: #e8e8e8;
+  /* Checkerboard behind transparent image pixels (file viewer's image stage). A
+     dedicated pair, not primary/tertiary: those sit ~1.2:1 apart, too faint to read
+     as a checker. Tile vs base is ~1.6:1 here, the Preview.app / Photoshop "light"
+     checker range. */
+  --color-checkerboard-base: #ffffff;
+  --color-checkerboard-tile: #cccccc;
   /* Inactive tab surface — slightly darker than `--color-bg-secondary` in
      light mode, slightly lighter in dark mode. The contrast against the
      active tab (which uses `bg-secondary`) is what conveys "this tab
@@ -455,8 +461,9 @@
   /* One rung above every other modal, for the rare dialog that must be answerable
      even while another one is up. Modals otherwise all share `--z-modal` and
      stack by DOM order, which is not a contract a window-level prompt can rest
-     on. `ModalDialog`'s `topmost` prop is the only way in; keep it that way, or
-     "above everything" stops meaning anything. */
+     on. `ModalDialog`'s `topmost` prop is the only way in, and its two callers are
+     ordered against each other in the markup; keep both true, or "above
+     everything" stops meaning anything. */
   --z-modal-top: 350;
   --z-notification: 400;
   /* Tooltips (above all other layers) */
@@ -659,6 +666,10 @@
     --color-bg-primary: #1e1e1e;
     --color-bg-secondary: #2a2a2a;
     --color-bg-tertiary: #333333;
+    /* Checkerboard pair for dark mode: lifted off `--color-bg-primary` so the stage
+       reads as a distinct surface, tile ~1.7:1 against base. */
+    --color-checkerboard-base: #262626;
+    --color-checkerboard-tile: #404040;
     /* Inactive tab surface: darker than secondary so unselected tabs read
        as recessed against the active tab. Tab-bar uses this too. */
     --color-bg-tab-inactive: #1e1e1e;

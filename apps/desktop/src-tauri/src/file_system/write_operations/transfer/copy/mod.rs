@@ -15,13 +15,13 @@ use super::super::cancellable::run_cancellable;
 use super::super::conflict::ApplyToAll;
 use super::super::durability::flush_created_destinations;
 use super::super::event_sinks::OperationEventSink;
+use super::super::ledger::CopyTransaction;
+use super::super::reversal::reverse_copy_transaction;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
-use super::super::state::{
-    CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
-};
+use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::super::types::{
-    ConflictResolution, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    CancelRollback, ConflictResolution, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
@@ -513,10 +513,10 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 log::info!(
                     "copy_files_with_progress: rollback requested after loop completion op={}, {} files",
                     operation_id,
-                    transaction.created_files.len()
+                    transaction.created_files().len()
                 );
-                let rollback_completed = rollback_with_progress(
-                    &transaction,
+                let reversal = rollback_with_progress(
+                    &mut transaction,
                     events,
                     operation_id,
                     state,
@@ -532,7 +532,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                     operation_id: operation_id.to_string(),
                     operation_type: WriteOperationType::Copy,
                     files_processed: files_done,
-                    rolled_back: rollback_completed,
+                    rollback: reversal.into_cancel_rollback(),
                 });
                 return Ok(());
             }
@@ -558,10 +558,13 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                         operation_id: operation_id.to_string(),
                         operation_type: WriteOperationType::Copy,
                         files_processed: files_done,
-                        rolled_back: false,
+                        rollback: CancelRollback::none(),
                     });
                 } else {
-                    transaction.rollback();
+                    // Error cleanup, and it rechecks like the Rollback button
+                    // does: deleting a file somebody else has modified is wrong
+                    // whatever brought Cmdr here.
+                    reverse_copy_transaction(&mut transaction);
                     events.emit_error(WriteErrorEvent::new(
                         operation_id.to_string(),
                         WriteOperationType::Copy,
@@ -585,7 +588,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 file_count,
                 bytes_done,
                 total_bytes,
-                &transaction.created_files,
+                &transaction.created_file_paths(),
                 &already_synced,
             );
             commit_journaling_created_dirs(transaction, operation_id);
@@ -618,10 +621,10 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                     log::info!(
                         "copy_files_with_progress: rolling back op={}, {} files",
                         operation_id,
-                        transaction.created_files.len()
+                        transaction.created_files().len()
                     );
-                    let rollback_completed = rollback_with_progress(
-                        &transaction,
+                    let reversal = rollback_with_progress(
+                        &mut transaction,
                         events,
                         operation_id,
                         state,
@@ -636,7 +639,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                         operation_id: operation_id.to_string(),
                         operation_type: WriteOperationType::Copy,
                         files_processed: files_done,
-                        rolled_back: rollback_completed,
+                        rollback: reversal.into_cancel_rollback(),
                     });
                 }
                 _ => {
@@ -646,14 +649,14 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                     log::info!(
                         "copy_files_with_progress: cancelled op={}, keeping {} partial files",
                         operation_id,
-                        transaction.created_files.len()
+                        transaction.created_files().len()
                     );
                     commit_journaling_created_dirs(transaction, operation_id);
                     events.emit_cancelled(WriteCancelledEvent {
                         operation_id: operation_id.to_string(),
                         operation_type: WriteOperationType::Copy,
                         files_processed: files_done,
-                        rolled_back: false,
+                        rollback: CancelRollback::none(),
                     });
                 }
             }
@@ -668,7 +671,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 operation_id,
                 e,
             );
-            transaction.rollback();
+            reverse_copy_transaction(&mut transaction);
             events.emit_error(WriteErrorEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Copy,

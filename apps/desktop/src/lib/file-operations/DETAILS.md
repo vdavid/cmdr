@@ -27,6 +27,9 @@ Umbrella-level files:
   no name yet, so ambient main-window surfaces stay quiet about all three (§ below).
 - `foreground-request.ts`: `adoptedOperationFor(rows, id)`, the pure half of the queue's Show button, resolving the id
   that crossed the window boundary against the MAIN window's own snapshot.
+- `reversal-wording.ts` + `op-kind.ts`: what a reversal will DO to the files, and every surface's wording for it (§
+  "Rollback asks first"). `op-kind.ts` is the two `Record`s that turn the registry snapshot's `WriteOperationType` and
+  the progress dialog's `TransferOperationType` into the `OpKind` those decisions are taken in.
 - `settled-operations.ts`: one `write-settled` subscription per window plus `whenOperationSettled(id)`, the wait a
   follow-up takes before reading an operation's journal rows. It REMEMBERS recent settles, because the event lands
   before anyone asks: it follows its terminal event by microseconds while the completion handling is held for
@@ -110,10 +113,20 @@ catalog keys.
   "(100%)", "999 MB/s"). This is the point of the component, not a detail: the bars' width then depends only on the
   window, and nothing shifts as digits come and go. The columns are `minmax(…, auto)` so a rarer outlier (a byte-scale
   pair) grows instead of clipping.
-- **Live sizes are ROUNDED** (`<Size rounded>`, "7 GB" not "7.09 GB"), amounts and speed alike. A number that changes
-  several times a second doesn't earn decimals nobody can read at that rate; a size column, where people compare and
-  copy values, still gets them. Rounding is half-up, so a nearly-finished transfer can read "23 GB / 23 GB" — the
-  percent beside it is what stays exact.
+- **Live sizes take the COARSE form** (`<Size rounded>`: a tenth below ten, whole units above, so "1.7 GB" and "24 GB"),
+  amounts and speed alike. A number that changes several times a second doesn't earn two decimals nobody can read at
+  that rate; a size column, where people compare and copy values, still gets them. ❌ Not whole units at every scale,
+  tempting as it looks: that printed "2 GB / 2 GB (80%)" for a 1.7-of-2.4 GB copy, and every transfer in the 1-10 GB
+  range stepped a whole gigabyte at a time. Where the tenth comes from and why it costs no column width:
+  `$lib/units/byte-size.ts::formatSizeLive`.
+- **No denominator, no fraction.** A `filesTotal` of 0 is the backend saying it hasn't decided the number yet (what a
+  scanning operation reports on both axes), ❌ never "nothing to do", so the count row keeps its tally and drops the bar
+  and the percentage until a real total lands — the same answer `hasBytesRow` gives the size axis, and the same one the
+  corner chip gives a scanning operation. Both callers gate the whole readout on the phase anyway; this is here so a
+  third surface that forgets can't invent "(0%)" over an operation that's moving.
+- **The count row's noun comes from `progressCountKind`**, not from the operation type alone: a trash moves ITEMS, and
+  so does the closing stage of a cross-disk move, whose bar runs over the top-level sources rather than the leaves the
+  copy stage counted; that stage is `transfer/DETAILS.md` § "Removing the originals".
 - **The time left has its own row**, spanning the grid and right-aligned. It keeps the bars wide, and lets an estimate
   firm up from "1h 8m left" to "56m 24s left" without moving anything above it. The row renders even while empty (a
   `:empty::before` no-break space), so the estimator warming up doesn't shove the rest of the dialog down.
@@ -272,12 +285,26 @@ the button reads the same on every surface.
 
 **What it says depends on what the reversal DOES** (`variant`, in `reversal-wording.ts`):
 
-- `stopAndDelete`, for a copy or move still RUNNING. Two facts: it removes everything written so far (not only the
-  half-written file a plain Cancel drops), and a file it replaced won't come back.
+- `stopAndDelete`, for a COPY (or a compress) still RUNNING. Three facts: it deletes the files the operation has written
+  (not only the half-written one a plain Cancel drops), a file it replaced won't come back, and Cmdr skips anything it
+  isn't sure about, so the reversal can come out partial. ❌ Don't restore the old "removes everything written so far":
+  the recheck makes that an over-promise, and the third sentence is what keeps it parallel with its siblings.
+- `stopAndMoveBack`, for a MOVE (or a trash) still RUNNING. Same three facts with the first one inverted: what the move
+  has carried across travels back, and NOTHING is deleted, so it takes `primary` rather than `danger`. ❌ Never let a
+  running move share the copy's arm: "this deletes every file the operation has written so far" over a red button, for a
+  reversal that takes nothing away, pushes people onto Cancel — which is the choice that actually leaves their files
+  split across two folders.
 - `undoByDeleting` / `undoByMovingBack` / `undoByRenamingBack`, for undoing a FINISHED operation from the history
   dialog. Each names the inverse action, then admits the reversal may come out partial. They mirror the backend's
   `inverse_kind`; the picker is `rollbackConfirmVariant` in `reversal-wording.ts`, and the reasoning behind the wording
   is `$lib/operation-log/DETAILS.md` § "Decision: the confirmation is worded by the inverse".
+
+**Two pickers, one vocabulary.** `inFlightRollbackVariant(kind)` answers for an operation still running and
+`rollbackConfirmVariant(kind)` for undoing a finished one; both live in `reversal-wording.ts` and the tests pin them to
+agree on the only fact that matters, whether the reversal takes files away. The kind reaches each caller under a
+different name — the dialog holds a `TransferOperationType`, the queue row and the main window's clash prompt hold the
+snapshot's `WriteOperationType` — so `op-kind.ts` maps both onto `OpKind`, the operation log's vocabulary, with a
+`Record` over each source type so a new operation type is a compile error rather than a silent "worded as a copy".
 
 **A second axis, orthogonal to `variant`: `finishing`.** An operation that's already PARTLY rolled back offers to pick
 its reversal back up rather than to start one, so the dialog swaps its title
@@ -292,9 +319,9 @@ this a fresh reversal or the rest of one", and neither has to know about the oth
 operation SKIPPED, so any number here would be wrong on exactly the operation that had clashes — which is most of the
 ones anybody rolls back. The undo variants say nothing about a count either, and nothing that promises completeness.
 
-**The two deleting variants get `danger`; the other two get `primary`.** Red on "put my files back" cries wolf, and this
-app spends that colour on operations that take something away. The safe answer holds focus in every variant, so a reflex
-Enter never reverses anything.
+**The two deleting variants get `danger`; the other three get `primary`.** Red on "put my files back" cries wolf, and
+this app spends that colour on operations that take something away. The safe answer holds focus in every variant, so a
+reflex Enter never reverses anything.
 
 **Raised by the surface, not the session.** Four hosts hold the pending question in their own `$state`
 (`TransferProgressDialog`, `OperationConflictDialog`, `QueueRow`, and `$lib/operation-log/OperationLogDialog.svelte`),
@@ -347,11 +374,22 @@ word, since it really is deleting the partials.
 
 **A settled operation withdraws the question** rather than leaving one that answers to nothing: the progress dialog
 gates on `operationSettled`, the queue row on `canRollback`, and the history row on the operation still reading
-`rollbackable` (a reversal started in another window, by the agent, or over MCP takes the question down with it).
+`rollbackable` (a reversal started in another window, by the agent, or over MCP takes the question down with it). The
+dialog withdraws it on a BLOCKED Rollback too, which is how a move reaching its source-deletion phase with the question
+up stops promising a journey home.
 
-**The Rollback tooltip is part of this.** It used to read "Cancel and delete any partial target files created", which
-describes CANCEL. A user who reads that and clicks has been misled before the question ever appears, so the tooltip
-names what the button does: "Stop, and delete every file written so far".
+**The Rollback tooltip is part of this**, and it comes in the same two flavours the question does
+(`inFlightRollbackTooltipKey`): "Stop, and delete every file written so far" for a copy, "Stop, and move back every file
+moved so far" for a move. One tooltip for both would describe CANCEL on one of them, and a user who reads it and clicks
+has been misled before the question ever appears.
+
+**A Rollback that is switched off says WHY, on a button that can still be focused.** Both surfaces that block it use
+`aria-disabled` plus a tooltip rather than the bare `disabled` attribute, because a disabled button leaves the tab order
+and takes its explanation with it — exactly away from the keyboard and screen-reader users the app is built for. The
+press is guarded instead, so a blocked click asks nothing. Two reasons reach the state: the operation's strategy can't
+reverse at all (`supportsRollback`), or the moment has passed (`reversalWindowClosed`; the tooltip there names the
+Cancel that still works). The `disabled` attribute stays right for the scan phase and the settle window, where the
+button is inert for a moment rather than for a reason.
 
 ## `scan-throughput.ts`
 

@@ -42,5 +42,29 @@
   "main.quit.operationsHeading": "仍在進行",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
+  },
+  "main.oldWebkit.title": "Cmdr 需要較新版本的 Safari",
+  "@main.oldWebkit.title": {
+    "sourceHash": "03e502b"
+  },
+  "main.oldWebkit.body": "Cmdr 的介面需要 Safari 15.4 或更新版本，而這台 Mac 上的版本較舊。請打開「軟體更新」，安裝所有待處理的更新，通常就能解決。",
+  "@main.oldWebkit.body": {
+    "sourceHash": "bcadac5"
+  },
+  "main.oldMacos.title": "macOS {version} 上的 Cmdr",
+  "@main.oldMacos.title": {
+    "sourceHash": "e75f925"
+  },
+  "main.oldMacos.body": "Cmdr 官方支援 macOS 12 以上的版本，在這裡只能盡力而為。大部分功能都能用，但有些顏色和細小的版面配置可能會不太對，針對舊系統的修正也會排在最後。要是你碰到什麼壞掉的地方，我還是很想知道。",
+  "@main.oldMacos.body": {
+    "sourceHash": "9484b91"
+  },
+  "main.oldMacos.gotIt": "知道了",
+  "@main.oldMacos.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "main.oldWebkit.quit": "結束",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
   }
 }

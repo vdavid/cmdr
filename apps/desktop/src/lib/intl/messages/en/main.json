@@ -3,22 +3,18 @@
   "@main.instanceLock.alertTitle": {
     "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Title of the native macOS alert shown when someone launches a second Cmdr against the same data folder, which the app refuses because two copies writing one index would corrupt it. It is drawn by the operating system BEFORE any Cmdr window exists, so it is the very first thing that user sees. \"Cmdr\" is the product name and must stay verbatim. It states a fact rather than blaming anyone; the way out is in main.instanceLock.alertBody."
   },
-
   "main.instanceLock.alertBody": "Another copy of Cmdr is using this data folder. Switch to the running app, or quit it and try again.",
   "@main.instanceLock.alertBody": {
     "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Body of the native macOS alert under main.instanceLock.alertTitle, drawn before any Cmdr window exists. It says what is happening (another Cmdr owns this data folder) and gives the two ways out: go to the copy that is already running, or quit it and launch again. \"data folder\" is where Cmdr keeps its index and settings; \"Cmdr\" is the product name and must stay verbatim. The alert has a single OK button, so this text is the whole explanation."
   },
-
   "main.upgradeNudge.mac": "We''ve added new onboarding options. Open Cmdr > Onboarding… to review them.",
   "@main.upgradeNudge.mac": {
     "description": "Info toast (macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Cmdr > Onboarding…\" is a menu path the user follows; \"Cmdr\" is the brand name and \"Onboarding…\" is the menu item label (keep its trailing ellipsis). Paired with main.upgradeNudge.other for non-macOS."
   },
-
   "main.upgradeNudge.other": "We''ve added new onboarding options. Open the command palette and run Onboarding… to review them.",
   "@main.upgradeNudge.other": {
     "description": "Info toast (non-macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Command palette\" and \"Onboarding…\" match the names used elsewhere in the app (keep the trailing ellipsis on \"Onboarding…\"). Paired with main.upgradeNudge.mac for macOS."
   },
-
   "main.quit.title": "{count, plural, one {Quit while an operation is running?} other {Quit while {countText} operations are running?}}",
   "@main.quit.title": {
     "description": "Title of the dialog that appears when the user quits Cmdr (⌘Q, the menu, or closing the main window) while copies, moves, deletes, or trash operations are still going. It asks whether to go ahead. \"Operation\" is the category word covering all of them, the same one the operation queue window uses; keep the two consistent in your language. Near-instant things like renaming never reach this dialog.",
@@ -28,13 +24,11 @@
     },
     "screenshot": "quit-confirmation-one-copy.png"
   },
-
   "main.quit.body": "Whatever''s finished stays done. Anything still being written stops where it is, and Cmdr clears away what it leaves half-written.",
   "@main.quit.body": {
     "description": "Body text of the quit-while-running dialog, directly under the title. It reassures the user that quitting is safe: completed files are kept, nothing is undone, and anything caught mid-write is cleaned up rather than left looking complete. IMPORTANT: keep this number-neutral. One operation can be writing several files at once, and several operations can run at once, so the sentence must read correctly whether one file or many are interrupted — do NOT introduce a singular that commits to exactly one. Keep the reassuring, matter-of-fact tone; this is not a warning.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
-
   "main.quit.countdown": "{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}",
   "@main.quit.countdown": {
     "description": "Live line under the body of the quit-while-running dialog, counting down out loud. It explains WHY Cmdr quits on its own instead of waiting forever: an app that holds up a system restart or logout is worse than one that stops. The number ticks down once a second and reaches zero, at which point Cmdr quits. \"Restart\" and \"logout\" are the operating system''s, not Cmdr''s.",
@@ -44,28 +38,51 @@
     },
     "screenshot": "quit-confirmation-one-copy.png"
   },
-
   "main.quit.countdownAria": "Time until Cmdr quits on its own",
   "@main.quit.countdownAria": {
     "description": "Screen-reader label for the countdown region of the quit-while-running dialog. The visible text spells out the seconds; this names what the number measures. Keep it short.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
-
   "main.quit.keepWorking": "Keep working",
   "@main.quit.keepWorking": {
     "description": "Button on the quit-while-running dialog that calls the quit off. It is NOT a \"remind me later\": the countdown is removed entirely and the operations carry on as if nothing happened. Avoid a word that suggests postponing. It sits left of the Quit button, which is the primary action.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
-
   "main.quit.quitNow": "Quit now",
   "@main.quit.quitNow": {
     "description": "Primary button on the quit-while-running dialog, confirming the quit. \"Now\" is doing real work here: the app quits either way when the countdown ends, and this button skips the wait. It is styled as the destructive choice.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
-
   "main.quit.operationsHeading": "Still running",
   "@main.quit.operationsHeading": {
     "description": "Small heading above the list of operations in the quit-while-running dialog, naming what the rows below are. Each row shows what the operation is doing and the names it is working on, for example \"Copying · Holiday.mov → Backup\". Keep it to a couple of words.",
     "screenshot": "quit-confirmation-one-copy.png"
+  },
+  "main.oldWebkit.title": "Cmdr needs a newer Safari",
+  "@main.oldWebkit.title": {
+    "description": "Heading of the full-screen notice Cmdr shows instead of its interface when the Mac's WebKit is too old to run the app at all. It replaces the whole window, so this is the first and only thing the person sees. \"Cmdr\" is the product name and stays untranslated; \"Safari\" is Apple's browser and keeps whatever name Apple uses in the target language. Cmdr's interface is drawn by the system WebKit, which tracks the Safari version, so \"a newer Safari\" is literally what is needed. Keep it short: it is a heading."
+  },
+  "main.oldWebkit.body": "Cmdr''s interface needs Safari 15.4 or newer, and this Mac has an older one. Open Software Update and install everything pending. That should sort it out.",
+  "@main.oldWebkit.body": {
+    "description": "Body of the notice under main.oldWebkit.title. It says what is missing and what to do about it. \"Software Update\" is the macOS system settings pane: use the name Apple uses for it in the target language, since the person has to find it. \"15.4\" is a Safari version number and stays as digits. \"Cmdr\" is the product name and stays untranslated. Tone is calm and practical, not an apology: this is fixable by installing pending macOS updates, and on most old Macs it is."
+  },
+  "main.oldMacos.title": "Cmdr on macOS {version}",
+  "@main.oldMacos.title": {
+    "description": "Title of the one-time dialog Cmdr shows on a Mac older than the oldest macOS it is developed and tested against. It names the version the person is actually on so the message reads as being about THEIR Mac, not a generic warning. \"Cmdr\" is the product name and \"macOS\" is Apple's OS name; both stay untranslated. It is a statement, not a warning or an apology: the app is running fine, and the body explains the caveats.",
+    "placeholders": {
+      "version": "the macOS version this Mac is running, already written the way people say it (\"10.15\" for Catalina, \"11\" for Big Sur). It is a version label, not a number: never reformat its digits or its dot for the target language."
+    }
+  },
+  "main.oldMacos.body": "Cmdr officially supports macOS 12 and up, so here it''s best effort. Most of it works, but some colors and small layout details can look off, and fixes for older systems come last. If you hit something broken, I''d still like to hear about it.",
+  "@main.oldMacos.body": {
+    "description": "Body of the one-time old-macOS dialog under main.oldMacos.title, shown once per machine and never again. Three things, in order: this macOS is outside the tested range, what that costs in practice (some colors and small layout details can be wrong), and an invitation to report anything broken anyway. \"12\" is a macOS version number and stays as digits. \"Best effort\" means Cmdr tries but makes no promises here; use whatever phrase carries that in the target language rather than a literal rendering. \"Come last\" means such fixes are the lowest priority, not that they never happen. The last sentence is Cmdr's maker speaking in the first person, which is deliberate; keep it warm and personal, and use the informal register if the language has one. Tone throughout is honest and relaxed, NOT an apology and NOT a warning."
+  },
+  "main.oldMacos.gotIt": "Got it",
+  "@main.oldMacos.gotIt": {
+    "description": "Label of the only button on the old-macOS dialog. Pressing it dismisses the dialog, which then never comes back. It acknowledges rather than agrees to anything, so it is an everyday \"understood\", not a formal \"OK\" or \"Accept\". Keep it to one or two short words: it is a button."
+  },
+  "main.oldWebkit.quit": "Quit",
+  "@main.oldWebkit.quit": {
+    "description": "Label of the only button on the notice under main.oldWebkit.title. Pressing it quits Cmdr. It is a VERB (the action the button performs), not a noun, and it should match how the target language labels the standard macOS Quit menu item."
   }
 }

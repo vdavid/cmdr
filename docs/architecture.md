@@ -138,11 +138,10 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics
 - `file_system/volume/`: `VolumeManager` plus the `backends/` umbrella, re-exporting the `Volume` trait and its types
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
-- `file_system/volume/backends/`: the umbrella every backend is reached through, holding the two `Volume` impls that are
-  still app-resident, `LocalPosixVolume` and `MtpVolume`
-- `file_system/volume/backends/`'s `archive.rs` and `smb.rs`: re-exports of the `cmdr-archive` and `cmdr-smb` crates
-  under their original paths, plus the app-side half of each one's suites. What stays app-side is what needs the app:
-  archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving for both
+- `file_system/volume/backends/`: only the `Volume` impls that live in the app, `LocalPosixVolume` and `MtpVolume`.
+  Every crate backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`) is imported by crate name at
+  its call sites, and each one's app-side tests sit beside the app code they assert on. What stays app-side is what
+  needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving
 - `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
   hooks, typed git-error classification (`FriendlyGitErrorKind`)
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
@@ -152,6 +151,13 @@ All under `apps/desktop/src-tauri/src/`.
 - `secrets/`: Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. SMB creds +
   AI keys
 - `mtp/`: MTP device management, file ops, event-based watching
+- `adb/`: the app-side half of the Android-over-ADB backend (`crates/cmdr-adb/`): the `host:track-devices` task, the
+  `AdbDeviceProvider`, lazy connect on first navigation, eject (forget the device client-side), and the IPC commands.
+  See `adb/CLAUDE.md`
+- `device_volumes.rs`: the device-provider seam. A `DeviceVolumeProvider` per device backend (`MtpDeviceProvider`,
+  `AdbDeviceProvider`), a registry `volume_listing::complete` folds over, and `notify_devices_changed`, the one hotplug
+  push channel (it emits `volumes-changed`). Contract in the module doc; the checklist step in
+  `file_system/volume/DETAILS.md` § "Building a new volume"
 - `mcp/`: MCP server (tools, YAML resources, agent-centric API)
 - `ai/`: llama-server lifecycle, model download, inference client
 - `analytics/`: Anonymous beta usage analytics: hourly `/heartbeat` sender (true DAU + a PII-free config-shape snapshot
@@ -182,7 +188,9 @@ All under `apps/desktop/src-tauri/src/`.
   plus the thread that owns the inbox, the timer, and the wakes it hands off. Its `agent/memory/` is the one place the
   agent writes: a jailed, capped Markdown folder under the app data dir, fed back into every turn's prefix. Its
   `agent/outcomes.rs` closes the loop, recording what the user did with each proposal on the two channels that reach
-  them and the agent. See its `apps/desktop/src-tauri/src/agent/CLAUDE.md`
+  them and the agent. Its `agent/tools/` is the in-process toolset the chat dispatches; `agent/tools/read/inspect/` is
+  the one tool that reads file contents, through `file_viewer`'s headless seam. See its
+  `apps/desktop/src-tauri/src/agent/CLAUDE.md`
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
@@ -208,8 +216,9 @@ All under `apps/desktop/src-tauri/src/`.
   `file_system/volume/`. `get_favorites()` reads the `favorites/` store
 - `volumes_linux/`: Linux equivalent: location discovery + mount/unmount via `/proc/mounts` and GVFS
 - `volume_listing.rs`: the one volume-list pipeline. Aliases whichever discovery module the platform has, bounds it with
-  a timeout, appends the MTP storages, and enriches from the registry; `commands/volumes.rs` and `volume_broadcast.rs`
-  both publish what it returns. See `apps/desktop/src-tauri/src/volumes/CLAUDE.md`
+  a timeout, appends every device provider's storages (`device_volumes.rs`), and enriches from the registry;
+  `commands/volumes.rs` and `volume_broadcast.rs` both publish what it returns. See
+  `apps/desktop/src-tauri/src/volumes/CLAUDE.md`
 - `space_poller.rs`: Live disk-space polling (per-volume-type intervals) plus the low-disk-space hysteresis warning
 - `fda_gate.rs`: Full Disk Access startup gate: blocks TCC reads + `NSWorkspace` icon calls until FDA is decided. See
   the `tauri-apis` rule in `.claude/rules/`
@@ -248,10 +257,11 @@ All under `apps/desktop/src-tauri/src/`.
 
 ## Workspace crates
 
-All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` carry
-no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces that against the `cargo metadata`
-graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, and `cmdr-sftp` at the numbers their
-audits landed on. The two dev CLIs and the vendored fork are ordinary members.
+All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
+`cmdr-webdav`, and `cmdr-adb` carry no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces
+that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`,
+`cmdr-sftp`, and `cmdr-webdav` at the numbers their audits landed on. The two dev CLIs and the vendored fork are
+ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -276,6 +286,22 @@ audits landed on. The two dev CLIs and the vendored fork are ordinary members.
   `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend". Its guardrails, the two crate hazards it is shaped
   around, and which side a test lives on: `crates/cmdr-sftp/CLAUDE.md`. Which crate it is built on and why:
   `docs/notes/sftp-crate-evaluation-2026-08-22.md`. Its Docker servers: `apps/desktop/test/sftp-servers/README.md`.
+- `crates/cmdr-webdav/`: everything Cmdr says to a WebDAV server (Nextcloud, ownCloud, Synology, Fastmail, a generic
+  NAS). `WebdavVolume` over `reqwest` + `quick-xml`: PROPFIND listings, ranged GET reads, staged PUT+MOVE writes so a
+  partial upload never wears the user's filename, Basic auth out of the `CredentialStore` seam, TLS trust from the
+  system roots (no host keys), and a three-valued connection state with one unattended re-probe before it asks a person.
+  No Digest auth, no watcher, no locks. The app-side halves are the saved-server list and the connect wiring
+  (`apps/desktop/src-tauri/src/network/webdav_*.rs`) plus the IPC surface
+  (`apps/desktop/src-tauri/src/commands/webdav.rs`); reconnect and sign-in ride the backend-neutral commands. What the
+  frontend calls and what each answer means: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend". Its
+  guardrails and which side a test lives on: `crates/cmdr-webdav/CLAUDE.md`. Its Docker servers:
+  `apps/desktop/test/webdav-servers/README.md`. What it still owes: `docs/specs/webdav-backend-follow-ups.md`.
+- `crates/cmdr-adb/`: everything Cmdr says to an Android device over ADB. `AdbVolume` per attached device, rooted at the
+  device's real `/`, spoken to the ADB server on loopback (the sync service for stat, list, and transfers, `shell,v2`
+  for the verbs it lacks, `host:track-devices` for hotplug), with a typed errno-based error policy and a fake ADB server
+  for its suites. The device-side twin of `cmdr-sftp`; the app-side half (tracker task, device provider, lazy connect,
+  eject, IPC) is `apps/desktop/src-tauri/src/adb/`. Wire contract, `Volume` answers, and gaps:
+  `crates/cmdr-adb/DETAILS.md`; guardrails: `crates/cmdr-adb/CLAUDE.md`
 - `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
   watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address
   building, `smb2::Error` classification, the share-listing vocabulary). The second backend in its own crate; what

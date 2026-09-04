@@ -143,6 +143,10 @@ fn _x() { let _ = msg.to_string().contains("x"); }
 		"agent/tests/mod.rs": `
 fn _x() { let _ = stderr.contains("x"); }
 `,
+		// And a `tests/` dir that grew its own submodule dir is still all test code.
+		"mcp/tests/registry_tests/gate.rs": `
+fn _x() { let _ = err.message.contains("x"); }
+`,
 	})
 	if err != nil {
 		t.Fatalf("expected success on test files, got: %v", err)

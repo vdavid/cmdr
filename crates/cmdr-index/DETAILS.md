@@ -122,6 +122,20 @@ That makes it per test BINARY, and the host has its own. Cmdr keeps a trimmed co
 by failing to compile**, so that test asserts a non-zero measurement before it asserts a budget. Note for anyone
 comparing memory numbers: Rust test runs are measured under the counting allocator, not mimalloc.
 
+## One fingerprint helper, two policy stamps (`fingerprint.rs`)
+
+All three databases here are disposable caches, and two of them persist a stamp saying which compile-time policy their
+rows were written under: the index's scan exclusions (`indexing/scanner/exclusions.rs::exclusion_policy_fingerprint`,
+gating `index_predates_exclusion_policy`) and importance's classification rules
+(`importance/classify.rs::scoring_policy_fingerprint`, gating `store::needs_full_pass`). Both hash their constant lists
+through `fingerprint::fingerprint_of`, so editing a list re-arms every existing DB with no version number for anyone to
+forget to bump.
+
+The mixing is FNV-1a rather than `DefaultHasher` because the value goes to disk and must not shift with a toolchain
+upgrade. It's crate-internal and shared rather than copied per subsystem, so ONE golden test
+(`the_fingerprint_mixes_its_input`) covers both: a hash that collided two policies into one value would pass every
+symmetric stamp-and-compare test while silently skipping the work the stamp exists to trigger.
+
 ## What deliberately stayed with the host
 
 - **Every real-storage `Volume` backend** (local POSIX, SMB, MTP, archive) with its `smb2` / `mtp-rs` / git /

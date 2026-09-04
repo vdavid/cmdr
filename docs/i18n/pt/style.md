@@ -163,6 +163,29 @@ Two mechanics that bite in Portuguese specifically:
   fala do app que encerrou; `keptRunning` e `unknown` descrevem um problema que o Cmdr atravessou (ou pode ter
   atravessado), então nelas não entram `falha`, `encerrou`, `fechou`, `parou` nem `travou`, e o relatório fica
   **relatório** sem o `de falha`. Evidência e os termos recusados: `glossary.md` § Diálogo de falha.
+- **"Put back" tem TRÊS verbos em `pt`, e cada um é de uma família.** `colocar de volta` tira do Lixo, `restaurar`
+  devolve o NOME anterior, e `levar de volta` é a reversão levando o arquivo ao lugar de origem. O inglês usa um verbo
+  só e as `@key` chegam a mandar unificar; em português não dá. Evidência e as chaves de cada família: `glossary.md` § O
+  aviso do que a reversão conseguiu.
+- **Uma frase de resultado nunca fica sem sujeito.** `Apagou {countText} itens…` também se lê como `você apagou`, e a §
+  Variant acima já lista o `você` omitido como indício pt-PT. As manchetes de aviso escrevem `O Cmdr` ou `A reversão`
+  por extenso, ainda que o inglês elida o sujeito; as linhas de motivo escapam disso pondo o ITEM como sujeito
+  (`{name} ficou como está: …`), o molde que `askCmdr.renameUndo.skipReason.*` já publica. Evidência: `glossary.md` § O
+  aviso do que a reversão conseguiu.
+- **Duas chaves com o MESMO inglês precisam do mesmo português, mesmo em telas diferentes.** O
+  `desktop-i18n-term-consistency` pareia por valor inglês, então `fileOperations.cancelRollback.reason.folderNotEmpty.*`
+  copia byte a byte as gêmeas do `askCmdr.renameUndo.skipReason.*` (o inglês é idêntico), inclusive uma concordância que
+  a chave original deixou fora do plural. Quando isso acontecer, alinhe a FAMÍLIA inteira ao molde já publicado: um
+  aviso com cinco linhas em dois moldes é uma inconsistência que a pessoa vê de um golpe só, enquanto a diferença entre
+  telas ninguém vê lado a lado.
+- **Nada concorda com um `{name}`**: ele pode ser arquivo ou pasta, então nenhum particípio, adjetivo ou possessivo pode
+  se apoiar nele; só verbos e preposições sem artigo. Quando a linha precisa do gênero, ela escreve o substantivo
+  (`a pasta {name}`). Mesma lógica dos tokens de painel do macOS, § acima.
+
+- **O Ask Cmdr agora lê partes de um arquivo, e nenhuma frase pode prometer o contrário.** A tela de consentimento diz
+  `arquivos inteiros, fotos ou miniaturas` (nunca enviados) e `uma parte limitada dele` (o que pode sair); o verbo de
+  espiar é `olhar dentro de`, os metadados de foto são `detalhes da câmera` e o lugar é `localização` /
+  `onde ela foi tirada`. Evidência: `glossary.md` § O que o Ask Cmdr lê dentro de um arquivo.
 
 ## Decisions to confirm with David
 

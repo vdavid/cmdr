@@ -42,5 +42,29 @@
   "main.quit.operationsHeading": "Aún en curso",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
+  },
+  "main.oldWebkit.title": "Cmdr necesita una versión más reciente de Safari",
+  "@main.oldWebkit.title": {
+    "sourceHash": "03e502b"
+  },
+  "main.oldWebkit.body": "La interfaz de Cmdr necesita Safari 15.4 o posterior, y este Mac tiene una versión anterior. Abre Actualización de software e instala todo lo que esté pendiente. Con eso debería bastar.",
+  "@main.oldWebkit.body": {
+    "sourceHash": "bcadac5"
+  },
+  "main.oldMacos.title": "Cmdr en macOS {version}",
+  "@main.oldMacos.title": {
+    "sourceHash": "e75f925"
+  },
+  "main.oldMacos.body": "Cmdr es compatible oficialmente con macOS 12 o posterior, así que aquí hace lo que puede. Casi todo funciona, pero algunos colores y pequeños detalles de diseño pueden verse raros, y los arreglos para sistemas antiguos van los últimos. Si te topas con algo roto, aun así me gustaría que me lo contaras.",
+  "@main.oldMacos.body": {
+    "sourceHash": "9484b91"
+  },
+  "main.oldMacos.gotIt": "Entendido",
+  "@main.oldMacos.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "main.oldWebkit.quit": "Salir",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
   }
 }

@@ -429,7 +429,13 @@ var realTreeReadingTests = map[string][]string{
 	"TestTheFixtureEntrypointRegeneratesAKeyItCanNoLongerBack": {sftpEntrypointRel},
 	"TestSftpFixturePortsBindToLoopback":                       {sftpComposeRel},
 	"TestSftpFixturePortsMatchComposeDefaults":                 {sftpComposeRel, sftpTestingRel},
-	"TestSiblingToolDirsAreFingerprintedByTheirCheck":          {"scripts/check-a11y-contrast", "scripts/check-css-unused", "scripts/check-btn-restyle"},
+	"TestWebdavFixturePortsBindToLoopback":                     {webdavComposeRel},
+	"TestWebdavFixturePortsMatchComposeDefaults":               {webdavComposeRel},
+	"TestWebdavModeServicesAgree":                              {webdavStartRel},
+	// Reads only the crate directories `fixtureIntegrationFilter` stats to
+	// decide whether a `package(…)` clause parses.
+	"TestEveryOwnLaneFixtureHasALaneOfItsOwn":         {"Cargo.toml", "crates/cmdr-webdav/Cargo.toml"},
+	"TestSiblingToolDirsAreFingerprintedByTheirCheck": {"scripts/check-a11y-contrast", "scripts/check-css-unused", "scripts/check-btn-restyle"},
 }
 
 // TestGoTestsInputsCoverTheRealTreeItsTestsRead is the guard behind

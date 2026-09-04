@@ -1,6 +1,6 @@
 //! Single source of truth for MCP tools.
 //!
-//! Each tool is authored exactly once in the `mcp_tools!` table below, bundling its name,
+//! Each tool is authored exactly once in the `mcp_tools!` table in `table.rs`, bundling its name,
 //! description, JSON input schema, bearer-token gate, consumer exposure, access class, and
 //! handler. The macro expands that one table into every consumer, so the facets can't drift:
 //!
@@ -35,22 +35,20 @@
 //! `tool_snapshot_tests` fixture pins it. Schema keys serialize alphabetically (serde_json `Map`
 //! is a `BTreeMap`; `preserve_order` is off), so authored key order never affects the bytes.
 //!
-//! Layering: this module depends on the `executor` handlers and its own `schemas`; `auth` depends
-//! on this module. It must not depend on `server` or `auth` (that would cycle).
+//! Split: this file is the mechanism (the two view dimensions, the params gate, and the
+//! `mcp_tools!` macro); `table.rs` is the data the macro expands. Layering: the table depends on the
+//! `executor` handlers and on `schemas`; `auth` depends on this module. Neither may depend on
+//! `server` or `auth` (that would cycle).
 
 mod gate;
+pub mod params;
 mod schemas;
 
 pub use gate::TokenGate;
 
 use serde_json::Value;
 
-use super::executor::{ToolError, ToolResult};
-use super::executor::{
-    app, archive_password, async_tools, conflicts, dialogs, downloads, eject, favorites, file_ops, image_facts,
-    indexing, nav, operation_log, photos, queue, quit, search, tags, view,
-};
-use super::tools::Tool;
+use super::executor::ToolError;
 
 /// Which AI consumer a tool is exposed to. One authored registry, per-consumer views (D49):
 /// the MCP HTTP server dispatches the [`AiClient`](Consumer::AiClient) view, the in-process agent
@@ -106,6 +104,20 @@ pub enum Access {
 /// decision is on the typed [`Consumer`] set, never a string.
 pub fn tool_available_to(name: &str, consumer: Consumer) -> bool {
     tool_consumers(name).is_some_and(|cs| cs.contains(&consumer))
+}
+
+/// Refuse a params object its tool's own declared schema doesn't allow, before a handler
+/// reads a single field off it.
+///
+/// Handlers pluck fields off the raw value, so without this an undeclared property is
+/// swallowed in silence and the call runs as something the caller never asked for. What the
+/// check does and (just as deliberately) doesn't look at: [`params`]. An unknown name passes
+/// through untouched — the dispatch paths refuse it on their own, with their own wording.
+pub fn validate_params(name: &str, params: &Value) -> Result<(), ToolError> {
+    match tool_schema(name) {
+        Some(schema) => params::gate(name, &schema, params),
+        None => Ok(()),
+    }
 }
 
 /// Declarative tool table → the consumers (`get_all_tools`, `agent_tool_view`, `execute_tool`,
@@ -189,6 +201,16 @@ macro_rules! mcp_tools {
             }
         }
 
+        /// The input schema a tool declares, or `None` for an unknown name. The same value
+        /// both views publish, so [`validate_params`] gates a call against exactly what the
+        /// caller was told the tool takes.
+        pub fn tool_schema(name: &str) -> Option<Value> {
+            match name {
+                $( $name => Some($schema), )*
+                _ => None,
+            }
+        }
+
         /// The `tools/call` dispatch, gated to `consumer`'s view. A name outside that view (an
         /// agent-only name over MCP, an `ai_client`-only name through the agent runtime, or an
         /// unknown name) is refused before dispatch with the same `INVALID_PARAMS` "Unknown tool"
@@ -203,6 +225,7 @@ macro_rules! mcp_tools {
             if !tool_available_to(name, consumer) {
                 return Err(ToolError::invalid_params(format!("Unknown tool: {name}")));
             }
+            validate_params(name, params)?;
             match name {
                 $( $name => mcp_tools!(@call $shape $path, $name, app, params), )*
                 _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
@@ -222,554 +245,6 @@ macro_rules! mcp_tools {
     (@call nav_params      $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $name, $params).await };
 }
 
-mcp_tools! {
-    // ── Navigation ──────────────────────────────────────────────────────────
-    "select_volume" => {
-        desc: "Switch a pane to a volume by name (as listed in cmdr://state volumes): a disk, SMB share, MTP device, or Network. To move within the current volume, use nav_to_path instead.",
-        schema: schemas::select_volume_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: nav_params nav::execute_nav_command_with_params
-    },
-    "nav_to_path" => {
-        desc: "Navigate a pane to a path: absolute, ~-relative, or mtp:// (smb:// is not navigable; reach a share with select_volume). Prefer this over nav_to_parent when you know the target. Archive paths are transparent, so foo.zip/inner navigates inside the archive.",
-        schema: schemas::nav_to_path_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: nav_params nav::execute_nav_command_with_params
-    },
-    "nav_to_parent" => {
-        desc: "Navigate the focused pane up to its parent folder.",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: nav nav::execute_nav_command
-    },
-    "nav_back" => {
-        desc: "Go back to the focused pane's previous folder in its navigation history.",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: nav nav::execute_nav_command
-    },
-    "nav_forward" => {
-        desc: "Go forward again (undo a nav_back) in the focused pane's navigation history.",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: nav nav::execute_nav_command
-    },
-    "scroll_to" => {
-        desc: "Load the file window around an index in a large (paginated) directory so those rows appear in cmdr://state. Needed before move_cursor / select can reach a row outside the currently loaded range.",
-        schema: schemas::scroll_to_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: nav_params nav::execute_nav_command_with_params
-    },
+mod table;
 
-    // ── Cursor ──────────────────────────────────────────────────────────────
-    "move_cursor" => {
-        desc: "Focus a pane and move its cursor to a row, by zero-based index or by filename (give one). Flushes pane state, so a following copy / move / delete / rename acts on this row. A missing filename or out-of-range index is an honest error, never a silent no-op.",
-        schema: schemas::move_cursor_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: nav_params nav::execute_nav_command_with_params
-    },
-    "open_under_cursor" => {
-        desc: "Open the item under the cursor, like pressing Enter: enter a folder, open a file, or connect a network host / share.",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: nav nav::execute_nav_command
-    },
-
-    // ── Selection ───────────────────────────────────────────────────────────
-    "select" => {
-        desc: "Select files in a pane by names, by an index range (start + count), or all; count=0 clears. Focuses the pane and flushes state, so a following copy / move / delete / compress acts on this selection. names errors if any name isn't in the listing.",
-        schema: schemas::select_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params file_ops::execute_select_command
-    },
-
-    // ── File operations ─────────────────────────────────────────────────────
-    "copy" => {
-        desc: "Copy the selection (else the cursor item) into the folder the other pane shows; already there duplicates each as name (1). Without autoConfirm, opens the confirm dialog. With autoConfirm, starts and returns the operationId. onConflict resolves clashes.",
-        schema: schemas::copy_schema(),
-        gate: TokenGate::IfAutoConfirm,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params file_ops::execute_copy
-    },
-    "move" => {
-        desc: "Move the selection (else the cursor item) to the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete, or steer with queue). onConflict resolves file clashes.",
-        schema: schemas::move_schema(),
-        gate: TokenGate::IfAutoConfirm,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params file_ops::execute_move
-    },
-    "compress" => {
-        desc: "Zip the selection into a new archive in the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts and returns the operationId — unless the target archive exists, where the dialog stays open to confirm the overwrite.",
-        schema: schemas::compress_schema(),
-        gate: TokenGate::IfAutoConfirm,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params file_ops::execute_compress
-    },
-    "delete" => {
-        desc: "Delete the selection (else the cursor item). Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete on it). mode presets trash vs permanent; omit for the pane's default.",
-        schema: schemas::delete_schema(),
-        gate: TokenGate::IfAutoConfirm,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params file_ops::execute_delete
-    },
-    "rename" => {
-        desc: "Rename an item (the named item, else the cursor item) in a pane. Without autoConfirm, \
-               opens the inline rename editor prefilled with newName for the user to confirm. With \
-               autoConfirm, renames directly (errors if the name already exists).",
-        schema: schemas::rename_schema(),
-        gate: TokenGate::IfAutoConfirm,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params file_ops::execute_rename
-    },
-    "mkdir" => {
-        desc: "Create a folder in the focused pane, or pass pane to target the other. No name opens the naming \
-               dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on \
-               a name conflict).",
-        schema: schemas::mkdir_schema(),
-        gate: TokenGate::IfAutoConfirm,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params file_ops::execute_mkdir
-    },
-    "mkfile" => {
-        desc: "Create an empty file in the focused pane, or pass pane to target the other. No name opens the naming \
-               dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on \
-               a name conflict).",
-        schema: schemas::mkfile_schema(),
-        gate: TokenGate::IfAutoConfirm,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params file_ops::execute_mkfile
-    },
-    "refresh" => {
-        desc: "Force a re-read of the focused pane's listing (from disk on local volumes; the watcher cache short-circuits on MTP / SMB). Use after an out-of-band change; navigation and file ops already refresh on their own.",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_only file_ops::execute_refresh
-    },
-    "tag" => {
-        desc: "Set macOS Finder color tags on files by name (else selection, else cursor). set: \
-               make the colors exactly (keeps colorless tags). toggle: flip each color. clear: \
-               remove all. macOS only; tags show in cmdr://state as [tags:red,blue].",
-        schema: schemas::tag_schema(),
-        gate: TokenGate::Always,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params tags::execute_tag
-    },
-
-    // ── View ────────────────────────────────────────────────────────────────
-    "toggle_hidden" => {
-        desc: "Toggle whether hidden (dotfile) files show in the file lists (the showHidden flag in cmdr://state).",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_only view::execute_toggle_hidden
-    },
-    "set_view_mode" => {
-        desc: "Set a pane's view mode: brief (names, only the cursor row detailed) or full (size and date on every row). full makes cmdr://state carry those details for all rows, not just the cursor.",
-        schema: schemas::set_view_mode_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params view::execute_set_view_mode
-    },
-    "sort" => {
-        desc: "Sort a pane by a field (name, ext, size, modified, created) and order (asc / desc).",
-        schema: schemas::sort_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params view::execute_sort
-    },
-
-    // ── Tabs ────────────────────────────────────────────────────────────────
-    "tab" => {
-        desc: "Manage a pane's tabs: new, close, close_others, activate, set_pinned, or reopen (restore the last-closed tab). tabId defaults to the active tab where it applies; see each pane's tabs in cmdr://state.",
-        schema: schemas::tab_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params app::execute_tab
-    },
-
-    // ── Dialogs ─────────────────────────────────────────────────────────────
-    "dialog" => {
-        desc: "Open, focus, close, or confirm a dialog. Open/focus: settings, file-viewer, about, onboarding. Close: any id from cmdr://dialogs/available. confirm (token-gated) accepts an open confirmation. cmdr://state lists what's open.",
-        schema: schemas::dialog_schema(),
-        gate: TokenGate::IfConfirmAction,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params dialogs::execute_dialog_command
-    },
-    "open_search_dialog" => {
-        desc: "Open the search dialog with optional pre-filled query and filters. If autoRun (default true), runs the search immediately. Acks once the dialog has mounted; does not wait for results to render.",
-        schema: schemas::open_search_dialog_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params dialogs::execute_open_search_dialog
-    },
-
-    // ── App ─────────────────────────────────────────────────────────────────
-    "quit" => {
-        desc: "Quit Cmdr, via the gate Cmd-Q uses. Nothing running: outcome 'quitting'. A copy, move, or delete still going: it does NOT quit; 'held' names them and the ms left. Answer with dialog confirm/close on quit-confirmation, or the countdown quits anyway.",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: sync_app quit::execute_quit
-    },
-    "switch_pane" => {
-        desc: "Toggle focus to the other pane. Takes no parameters (a pane arg is ignored). To focus a SPECIFIC pane, use select (with count 0 to clear) or select_volume / nav_to_path on that pane, which focus it.",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: sync_app app::execute_switch_pane
-    },
-    "swap_panes" => {
-        desc: "Swap left and right pane directories, view modes, sort orders, and selections",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: sync_app app::execute_swap_panes
-    },
-
-    // ── Search ──────────────────────────────────────────────────────────────
-    "search" => {
-        desc: "Search one drive by filename pattern, size, date, or type; returns paths (no UI). Reads the index where it covers the scope and walks the folders it doesn't, so an unindexed drive still answers, only slower. Set countOnly:true for the total alone.",
-        schema: schemas::search_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Read,
-        run: params_only search::execute_search
-    },
-    "ai_search" => {
-        desc: "Search with a natural-language query; the configured LLM turns it into a structured search over one drive, reading the index and walking whatever it hasn't covered. Use search instead when you can express the query as a pattern or filter (no LLM call).",
-        schema: schemas::ai_search_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Read,
-        run: params_only search::execute_ai_search
-    },
-
-    // ── Settings ────────────────────────────────────────────────────────────
-    "set_setting" => {
-        desc: "Set a setting value. Use the cmdr://settings resource to discover available settings and their constraints.",
-        schema: schemas::set_setting_schema(),
-        gate: TokenGate::Always,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params async_tools::execute_set_setting
-    },
-
-    // ── Indexing ────────────────────────────────────────────────────────────
-    "indexing" => {
-        desc: "Control one volume's drive indexing. Actions: enable (on, starts first scan), \
-               disable (off, keeps DB), rescan (fresh full scan), forget (delete DB). enable/rescan \
-               return once scanning starts; poll await index_status fresh for done. See cmdr://indexing.",
-        schema: schemas::indexing_schema(),
-        gate: TokenGate::Always,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: params_only indexing::execute_indexing
-    },
-
-    // ── Queue ───────────────────────────────────────────────────────────────
-    "queue" => {
-        desc: "Control the operation queue: pause / resume / cancel one operationId, or \
-               pause_all / resume_all. cancel also takes operationIds (array) for several; \
-               rollback: true deletes already-copied files (single op, token-gated). See \
-               cmdr://state operations for ids.",
-        schema: schemas::queue_schema(),
-        gate: TokenGate::IfRollback,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: params_only queue::execute_queue
-    },
-    "resolve_conflict" => {
-        desc: "Answer ONE name clash a running operation is parked on: skip / overwrite / rename that file, \
-               applyToAll for the rest. Read cmdr://state operations first for the pendingConflict block. \
-               Returns a typed outcome; refuses rather than pretending. Token-gated.",
-        schema: schemas::resolve_conflict_schema(),
-        gate: TokenGate::Always,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: params_only conflicts::execute_resolve_conflict
-    },
-    "unlock_archive" => {
-        desc: "Answer the archive-password prompt in cmdr://state, naming its archivePath. \
-               browse mode: it re-lists and you're in. transfer mode: it stores the password ONLY, since \
-               supplying one never starts a write; run copy or move again to extract. Token-gated.",
-        schema: schemas::unlock_archive_schema(),
-        gate: TokenGate::Always,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params archive_password::execute_unlock_archive
-    },
-
-    // ── Favorites ───────────────────────────────────────────────────────────
-    "favorites" => {
-        desc: "Manage the user's favorites (the switcher's Favorites section). add: path (+ \
-               optional name). rename: id + name. remove: id. reorder: orderedIds, the COMPLETE \
-               new ordering. Discover ids in cmdr://state favorites.",
-        schema: schemas::favorites_schema(),
-        gate: TokenGate::Always,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: params_only favorites::execute_favorites
-    },
-
-    // ── Network ─────────────────────────────────────────────────────────────
-    "connect_to_server" => {
-        desc: "Add a manual SMB server by address. Checks TCP reachability then adds to the host list.",
-        schema: schemas::connect_to_server_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params async_tools::execute_connect_to_server
-    },
-    "remove_manual_server" => {
-        desc: "Remove a manually-added server from the host list.",
-        schema: schemas::remove_manual_server_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: sync_app_params async_tools::execute_remove_manual_server
-    },
-    "upgrade_smb_to_direct" => {
-        desc: "Upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O. Uses \
-               Keychain creds. Returns OK, NeedsCredentials, or NetworkError. See \
-               cmdr://state volumes for each SMB share's smbConnectionState.",
-        schema: schemas::upgrade_smb_to_direct_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params async_tools::execute_upgrade_smb_to_direct
-    },
-    "eject" => {
-        desc: "Eject an ejectable volume by id (disk or MTP). Refuses honestly while an operation \
-               is reading from or writing to the volume, and for non-ejectable volumes. See \
-               cmdr://state volumes for ids.",
-        schema: schemas::eject_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: params_only eject::execute_eject
-    },
-
-    // ── Async ───────────────────────────────────────────────────────────────
-    "await" => {
-        desc: "Wait until a condition is met, after fire-and-forget actions or async events. Pane conditions watch a pane; index_status watches a volume's indexing freshness; operation_complete / operations_idle watch the write-operation queue.",
-        schema: schemas::await_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Read,
-        run: app_params async_tools::execute_await
-    },
-
-    // ── Downloads ───────────────────────────────────────────────────────────
-    "go_to_latest_download" => {
-        desc: "Navigate the focused pane to the most recently observed eligible file in ~/Downloads and select it. Errors if no eligible file exists or Cmdr lacks Full Disk Access.",
-        schema: schemas::no_params_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_only downloads::execute_go_to_latest_download
-    },
-
-    // ── Operation log ─────────────────────────────────────────────────────────
-    "operations_list" => {
-        desc: "List past operations from the durable operation log (copy, move, delete, trash, rename, create, compress), newest first. Filter by time, item name, kind, initiator, status; paged. In-flight ops live in cmdr://state operations + the queue tool.",
-        schema: schemas::operations_list_schema(),
-        gate: TokenGate::Open,
-        // Shared read: the agent runtime uses the same core (the schemas fit unchanged).
-        consumers: &[Consumer::AiClient, Consumer::Agent],
-        access: Access::Read,
-        run: app_params operation_log::execute_operations_list
-    },
-    "operations_get" => {
-        desc: "Get one operation's header plus a page of its item rows (full source/dest paths, per-item outcome). Use after operations_list; poll this to watch a rollback settle (rollbackState leaves 'rollingBack').",
-        schema: schemas::operations_get_schema(),
-        gate: TokenGate::Open,
-        // Shared read: the agent runtime uses the same core (the schemas fit unchanged).
-        consumers: &[Consumer::AiClient, Consumer::Agent],
-        access: Access::Read,
-        run: app_params operation_log::execute_operations_get
-    },
-    "operations_rollback" => {
-        desc: "Reverse a logged operation (delete the copies, move back, restore from trash). Rechecks each item and never overwrites; a drifted or occupied item is skipped. Returns after dispatch: poll operations_get until rollbackState leaves 'rollingBack'.",
-        schema: schemas::operations_rollback_schema(),
-        gate: TokenGate::IfAutoConfirm,
-        consumers: &[Consumer::AiClient],
-        access: Access::Write,
-        run: app_params operation_log::execute_operations_rollback
-    },
-
-    // ── Photo search ──────────────────────────────────────────────────────────
-    // Shared read (agent-spec D49: one authored entry, both consumer views). The in-app
-    // Ask Cmdr agent AND external MCP clients search enriched photos. `access: Read` — it
-    // only reads the media index. Handler shapes the `media_index` read API and never emits
-    // image bytes (text-only DTO). PRIVACY: paths + the in-image OCR snippet / tag it returns
-    // are image-derived text that egresses to the agent's provider — see `executor/photos.rs`.
-    "search_photos" => {
-        desc: "Find the user's photos by content: a scene description, text inside the image (OCR), or a tag. Returns matching file paths plus a short reason, read from the on-device index (no uploads). Omit mode to combine description + OCR. Needs image indexing on.",
-        schema: photos::search_photos_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient, Consumer::Agent],
-        access: Access::Read,
-        run: app_params photos::execute_search_photos
-    },
-    // The LOOKUP direction of the same index (`search_photos` is the query direction): the
-    // caller already has the paths and needs to know what's IN each image. Same sharing,
-    // access, and gate as its sibling. PRIVACY: it returns the FULL stored OCR text, not a
-    // snippet — the most sensitive thing either photo tool emits. See
-    // `executor/image_facts.rs`.
-    "image_facts" => {
-        desc: "Look up what Cmdr's image index stored for images you already have: the full recognized text (OCR) plus Vision tags, per path. Use it to name or describe files you already know. Up to 200 paths; each answers indexed or notIndexed. Needs image indexing on.",
-        schema: image_facts::image_facts_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient, Consumer::Agent],
-        access: Access::Read,
-        run: app_params image_facts::execute_image_facts
-    },
-
-    // ── Agent read-only tools ─────────────────────────────────────────────────
-    // The Ask Cmdr agent's own read-only surface (agent-spec D49: one authored registry, two
-    // consumer views). `consumers: [Agent]`, `access: Read` — filtered out of `get_all_tools()`,
-    // so the ai-client wire snapshot is unchanged. Handlers, schemas, and typed result shapes are
-    // colocated in `crate::agent::tools::read` (feature-organized). `gate: Open` is inert here (the
-    // agent never crosses the MCP auth boundary); it's the honest classification for a read.
-    "app_state" => {
-        desc: "Snapshot the live app state: both panes (current folder, cursor item, selection, view mode, sort) and the mounted volumes with their index freshness and connectivity. Use this to ground an answer in what the user is looking at right now.",
-        schema: crate::agent::tools::read::state::app_state_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::read::state::execute_app_state
-    },
-    "propose_rename_plan" => {
-        desc: "Prepare a same-folder image-file rename plan for the user to review. It stages no filesystem change, never approves a proposal, and accepts at most 200 rows.",
-        schema: crate::agent::tools::propose::rename::propose_rename_plan_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Propose,
-        run: app_params crate::agent::tools::propose::rename::execute_propose_rename_plan
-    },
-    "list_dir" => {
-        desc: "List a folder's children from the drive index, plus its own recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes. Index-only, never the disk.",
-        schema: crate::agent::tools::read::listing::list_dir_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient, Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::read::listing::execute_list_dir
-    },
-    "list_pane_files" => {
-        desc: "List up to 200 entries from the focused pane's current backend listing cache, using the selection when one exists and otherwise the folder. Returns the exact volume ID and shared parent path needed for a rename proposal. It never reads the drive index or filesystem.",
-        schema: crate::agent::tools::read::pane_listing::list_pane_files_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::read::pane_listing::execute_list_pane_files
-    },
-    "important_folders" => {
-        desc: "List the most important folders across scored volumes (top-N, or those at or above a score threshold), highest first. Importance is Cmdr's own offline signal, so it answers even for an unmounted-but-scored drive. Each row carries its volume and score.",
-        schema: crate::agent::tools::read::importance::important_folders_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::read::importance::execute_important_folders
-    },
-    "folder_importance" => {
-        desc: "Explain one folder's importance: scored (with its 0-1 score, the signal breakdown, and whether the score is stale relative to the latest scan), floored to zero by design (with the reason), or unscored. Offline-capable.",
-        schema: crate::agent::tools::read::importance::folder_importance_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::read::importance::execute_folder_importance
-    },
-    "list_suggestions" => {
-        desc: "List the file operations Ask Cmdr has already proposed, as sweeps and groups with op COUNTS, never the ops themselves. Default status pending: what is still waiting on the user.",
-        schema: crate::agent::tools::suggestions::list_suggestions_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::suggestions::execute_list_suggestions
-    },
-    "get_suggestion_group" => {
-        desc: "Read one proposed group: its verb, target, reversibility, and a page of the files it would act on, with total / returned / truncated so you can page with offset. Its sizes and dates are what the index held when the group was proposed, not what the files are now.",
-        schema: crate::agent::tools::suggestions::get_suggestion_group_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::suggestions::execute_get_suggestion_group
-    },
-    "propose_suggestions" => {
-        desc: "Propose file operations (move, copy, trash, delete, rename, compress, extract) for the user to review, grouped so each group is approved or rejected on its own. It stages a proposal and changes nothing: only the user approves, and no tool can. Name up to 200 paths per group, or describe thousands with a selector, which Cmdr resolves against the drive index once, now. A whole folder is ONE op: give its path. Pass sweepId plus a groupId to replace a pending group you proposed earlier.",
-        schema: crate::agent::tools::suggestions::propose_suggestions_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Propose,
-        run: app_params crate::agent::tools::suggestions::execute_propose_suggestions
-    },
-    "nothing_to_suggest" => {
-        desc: "Say that the activity you were shown is not worth telling the user about, and stop. Call it instead of proposing anything when nothing you found deserves a person's attention. It changes nothing and shows nothing.",
-        schema: crate::agent::tools::quiet::nothing_to_suggest_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::quiet::execute_nothing_to_suggest
-    },
-    "memory_write" => {
-        desc: "Save a note about the user in your own memory folder, creating the file or replacing it whole. Facts about them and how they like things, never instructions to yourself. AGENTS.md is the file to use unless you have a reason not to.",
-        schema: crate::agent::tools::memory::memory_write_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Memory,
-        run: app_params crate::agent::tools::memory::execute_memory_write
-    },
-    "memory_edit" => {
-        desc: "Change or drop one part of a memory file: oldString must appear exactly once, and an empty newString deletes it. Use it to prune what has gone stale rather than rewriting the whole file.",
-        schema: crate::agent::tools::memory::memory_edit_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Memory,
-        run: app_params crate::agent::tools::memory::execute_memory_edit
-    },
-    "list_volumes" => {
-        desc: "List every volume Cmdr can see (local disks, SMB shares, MTP devices, and the Network root) with each one's kind, index freshness (fresh / scanning / stale / off), and — for SMB — its connection state (direct / os_mount / disconnected).",
-        schema: crate::agent::tools::read::volumes::list_volumes_schema(),
-        gate: TokenGate::Open,
-        consumers: &[Consumer::Agent],
-        access: Access::Read,
-        run: app_params crate::agent::tools::read::volumes::execute_list_volumes
-    },
-}
+pub use table::{agent_tool_view, execute_tool, get_all_tools, tool_access, tool_consumers, tool_gate, tool_schema};

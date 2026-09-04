@@ -631,18 +631,34 @@ describe('TransferProgressDialog background/queue button label', () => {
 })
 
 describe('TransferProgressDialog while the operation is still counting', () => {
-  it('offers Background but not Pause', async () => {
+  it('offers Background and Pause', async () => {
     // The shipped bug, from the other side: a confirmed transfer had no
     // `operationId` while its preview walked, so neither control rendered and a
-    // large copy could not be sent to the background. Now it can — and Pause
-    // stays away, because the backend declines a pause in its scan-wait.
+    // large copy could not be sent to the background. Both are here now, and
+    // Pause among them: the walk parks on the same gate the drivers do, and the
+    // scan is when somebody notices they picked the wrong destination.
     const { target } = await mountScanningDialog()
 
-    expect(queryButton(target, 'Pause this operation'), 'a scan has nothing to park').toBeNull()
+    expect(queryButton(target, 'Pause this transfer'), 'the scan parks, so the button does something').not.toBeNull()
     expect(
       queryButton(target, BACKGROUND_ARIA) ?? queryButton(target, QUEUE_ARIA),
       'backgrounding a scanning transfer is the whole point',
     ).not.toBeNull()
+  })
+
+  it('titles a PAUSED scan "Paused", and offers Resume', async () => {
+    // The title check runs before the scanning arm on purpose: a paused walk
+    // has stopped, so "Scanning to copy…" over it would describe work that
+    // isn't happening. And without Resume here, a scan paused from "Pause all"
+    // had no way back but Cancel.
+    const { target } = await mountScanningDialog()
+
+    emitSnapshot(snapshot('paused'))
+    await tick()
+
+    expect(target.textContent).toContain('Paused')
+    expect(target.textContent, 'the title must not still claim it is counting').not.toContain('Scanning to copy')
+    expect(queryButton(target, 'Resume this transfer')).not.toBeNull()
   })
 
   it('backgrounds a scanning operation without cancelling it', async () => {

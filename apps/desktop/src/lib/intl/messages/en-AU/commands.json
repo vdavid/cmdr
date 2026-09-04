@@ -51,6 +51,10 @@
   "@commands.selectionDeselectFiles.description": {
     "sourceHash": "2a6f82f"
   },
+  "commands.selectionInvert.description": "Selects every unselected file and unselects every selected one",
+  "@commands.selectionInvert.description": {
+    "sourceHash": "b63ce32"
+  },
   "commands.handler.favoriteAdded": "Added \"{name}\" to favourites",
   "@commands.handler.favoriteAdded": {
     "sourceHash": "a68dd8f"

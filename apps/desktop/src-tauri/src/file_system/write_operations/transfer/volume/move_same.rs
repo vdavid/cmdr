@@ -19,8 +19,8 @@ use super::super::super::journal;
 use super::super::super::manager;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
-    SourceItemOutcome, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
-    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteSourceItemDoneEvent,
+    CancelRollback, SourceItemOutcome, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use super::super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
@@ -718,7 +718,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_moved,
-                rolled_back: false,
+                rollback: CancelRollback::none(),
             });
             Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),

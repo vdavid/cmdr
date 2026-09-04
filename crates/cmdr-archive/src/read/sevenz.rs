@@ -23,7 +23,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use sevenz_rust2::{ArchiveReader, Password};
+use sevenz_rust2::{ArchiveReader, EncoderMethod, Password};
 
 use super::error::ArchiveError;
 use super::extract::{SubtreeMember, SubtreeTx};
@@ -86,8 +86,24 @@ pub(super) fn parse(
     let archive = archive.archive();
 
     let mut out: Vec<(RawEntry, ())> = Vec::with_capacity(archive.files.len());
-    for entry in &archive.files {
+    for (file_index, entry) in archive.files.iter().enumerate() {
         let is_dir = entry.is_directory();
+        // Encryption in 7z is a property of the entry's compression block (an
+        // `AES256_SHA256` coder in its chain), not of the entry; an entry with no
+        // data (a directory, an empty file) has no block and nothing to decrypt.
+        let encrypted = archive
+            .stream_map
+            .file_block_index
+            .get(file_index)
+            .copied()
+            .flatten()
+            .and_then(|block| archive.blocks.get(block))
+            .is_some_and(|block| {
+                block
+                    .coders
+                    .iter()
+                    .any(|coder| coder.encoder_method_id() == EncoderMethod::ID_AES256_SHA256)
+            });
         out.push((
             RawEntry {
                 name: entry.name().to_string(),
@@ -98,7 +114,7 @@ pub(super) fn parse(
                 size: if is_dir { 0 } else { entry.size() },
                 compressed_size: if is_dir { 0 } else { entry.size() },
                 modified: unix_seconds(entry),
-                encrypted: false,
+                encrypted,
             },
             (),
         ));

@@ -230,7 +230,7 @@ slow-timeout = { period = "40s", terminate-after = 1 }
 # signature rather than a defect, and each takes well under a second when idle.
 filter = '''
     test(file_system::listing::caching_reaper_test::)
-  + test(file_system::volume::backends::archive::watch_integration_test::)
+  + test(file_system::listing::archive_watch_integration_test::)
   + test(file_system::volume::backends::local_posix_test::test_listing_watch_coverage_flips_with_watcher_lifecycle)
   + test(downloads::commands::tests::go_to_latest_)
   + test(downloads::runtime::tests::note_pending_write_for_cmdr_)
@@ -317,6 +317,23 @@ slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2
 
 [[profile.default.overrides]]
+# The sabre/dav cells (`crates/cmdr-webdav/src/volume/nextcloud_test.rs`), which
+# `desktop-rust-webdav-nextcloud` runs against a real Nextcloud in Docker.
+#
+# Same contention signature as the arming-only block above: on 2026-09-02 they
+# timed out together during a run that overlapped four other worktrees' Rust
+# builds, and the check runner cleared two of them by re-running alone at the
+# SAME 8 s deadline — starvation, not a defect. What makes this class slower than
+# every other fixture cell is where the work happens: each request goes through
+# PHP and SQLite rather than `mod_dav`'s C, and a cell is tens of round trips
+# (MKCOL, a staged 1 MiB PUT, a MOVE, a read back, then a recursive clean-up).
+# ❌ Don't read 30 s as a runtime — idle they fit inside the global 8 s cap, which
+# is why they were only ever red under load. It is a hang backstop with enough
+# headroom that a busy host doesn't decide the verdict.
+filter = 'test(volume::nextcloud_test::)'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # The SFTP window measurements, read and write (`crates/cmdr-sftp/src/volume/streams_bench.rs`).
 # ❗ Deliberately NOT `#[ignore]`d — the integration lane runs `--run-ignored only`
 # over that whole package, so an ignored measurement would gate CI on a throughput
@@ -396,6 +413,31 @@ retries = 0
 fail-fast = false
 failure-output = "immediate"
 slow-timeout = { period = "40s", terminate-after = 1 }
+
+[profile.own-server]
+# For `CMDR_WEBDAV_TEST_URL`: the `cmdr-webdav` suite aimed at a real server
+# (a Nextcloud, a Synology, a Fastmail account) instead of the Docker fixtures.
+# `apps/desktop/test/webdav-servers/README.md` § "Against a server of your own"
+# is the recipe; this is the profile it tells you to pass.
+#
+# ❗ No `inherits`, so the per-test caps above don't apply. They are tuned for a
+# `mod_dav` container on loopback, and every one of these cells is tens of round
+# trips: aimed at a real server the same cells all died at the global 8 s cap
+# (13 of 26, measured 2026-09-02 against the Nextcloud fixture, which is only a
+# PHP hop away — a server across the internet is worse). 120 s is a hang
+# backstop, not a runtime.
+#
+# ❌ Not the default profile's problem to solve. Against the fixtures these cells
+# run in milliseconds, and loosening the global cap for everyone would spend the
+# fast feedback the 8 s policy buys on a case nothing automated ever hits.
+# `test-threads = 4` because the far side is somebody's real account, not a
+# container we own.
+test-threads = 4
+retries = 0
+fail-fast = false
+failure-output = "immediate"
+success-output = "immediate"
+slow-timeout = { period = "120s", terminate-after = 1 }
 
 [profile.ci]
 # Inherit from default profile

@@ -236,6 +236,9 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
       case 'selectAll':
         paneRef.selectAll()
         break
+      case 'invert':
+        paneRef.invertSelection()
+        break
       case 'toggleAtCursor':
         paneRef.toggleSelectionAtCursor()
         break

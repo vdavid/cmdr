@@ -19,6 +19,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use uuid::Uuid;
 
+use super::in_flight_temps::TempHome;
 use super::state::WriteOperationState;
 use super::types::WriteOperationError;
 use crate::file_system::staging::StagingTemp;
@@ -91,7 +92,7 @@ where
     // unlike the async cross-volume path (`transfer/staged_write.rs`), landing
     // here is one synchronous syscall, so there is no window in which the temp
     // holds the only complete copy of anything.
-    super::in_flight_temps::register(state, temp_path);
+    super::in_flight_temps::register(state, temp_path, Some(TempHome::LocalFs));
 
     // Step 1: fill the temp.
     let bytes = match write_bytes(temp_path) {
@@ -144,7 +145,7 @@ where
         });
     }
     // The temp is gone (it IS `dest` now), so it stops being a partial.
-    super::in_flight_temps::deregister(state, temp_path);
+    super::in_flight_temps::deregister(state, temp_path, Some(TempHome::LocalFs));
 
     // Step 4: Delete the renamed-aside original (non-critical, ignore errors).
     // Use remove_dir_all for directory asides (file-over-folder overwrite).
@@ -173,7 +174,7 @@ where
 /// holds open may refuse to go, which is why it wears a recognizable name.
 fn discard_temp(state: &Arc<WriteOperationState>, temp_path: &Path) {
     let _ = fs::remove_file(temp_path);
-    super::in_flight_temps::deregister(state, temp_path);
+    super::in_flight_temps::deregister(state, temp_path, Some(TempHome::LocalFs));
 }
 
 /// Renames `temp` onto `dest`, refusing to replace an existing entry unless
@@ -188,15 +189,16 @@ fn land_temp(temp: &Path, dest: &Path, replacing: bool) -> std::io::Result<()> {
 
 /// `rename(2)` that fails with `AlreadyExists` instead of clobbering `dest`.
 ///
-/// Staging moved the create off the destination name, and a plain POSIX rename
-/// replaces silently — so without this a non-overwrite copy would quietly
-/// destroy a file that appeared between the conflict check and the landing,
-/// where the old direct-create-with-`O_EXCL`/`COPYFILE_EXCL` refused. Uses the
+/// A plain POSIX rename replaces silently, so every rename that isn't meant to
+/// overwrite comes through here: a copy landing its temp on a name the conflict
+/// check found free, and a cancelled move renaming an item back to its original
+/// source. Both have a window between the check and the rename in which a file
+/// can appear, and destroying it would be silent and unrecoverable. Uses the
 /// kernel's atomic flag where there is one (`RENAME_EXCL` on macOS,
 /// `RENAME_NOREPLACE` on Linux) and degrades to a check-then-rename on a
 /// filesystem that doesn't support it, which is racy but still strictly better
 /// than an unconditional clobber.
-fn rename_no_replace(temp: &Path, dest: &Path) -> std::io::Result<()> {
+pub(super) fn rename_no_replace(temp: &Path, dest: &Path) -> std::io::Result<()> {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
         use std::ffi::CString;

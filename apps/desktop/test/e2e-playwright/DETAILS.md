@@ -566,10 +566,11 @@ needs a THIRD app-code gate, the mode is the cleaner shape. Consequence of the c
 from OUTSIDE, per shot, through System Events (`osascript`), because the harness cannot take the front position from
 inside.
 
-**Decision**: `build.rs` conditionally generates `capabilities/playwright.json`. **Why**: The plugin's IPC permissions
-(`playwright:default`) are only available when the `playwright-e2e` Cargo feature is enabled. Adding it to
-`default.json` breaks non-feature builds. So `build.rs` generates the capability file when the feature is active and
-removes it when the feature is not active. The file is gitignored.
+**Decision**: the plugin's capability is a committed file in `src-tauri/capabilities-e2e/`, which only `playwright-e2e`
+builds glob. **Why**: its IPC permissions (`playwright:default`) exist only when the Cargo feature is enabled, so
+putting the capability in `capabilities/` (which every build globs) breaks non-feature builds. `build.rs` widens its
+capability glob under the feature instead of writing anything to the source tree; see
+`src-tauri/capabilities/DETAILS.md` § The E2E capability.
 
 ## Pressing buttons
 
@@ -633,9 +634,19 @@ tests. Use the two-helper API in `helpers.ts`:
 - **`dismissOverlay(tauriPage)`** — close the topmost open overlay.
 - **`escapeOverlayUntilGone(tauriPage, selector)`** — close ONE named overlay, re-pressing Escape until it unmounts.
 - **`expectAndDismissToast(tauriPage, substring)`** — assert a toast containing `substring` appeared, then dismiss it.
+- **`dismissAllToasts(tauriPage)`** — clear every open toast without asserting anything.
 
-There is no separate "just dismiss toasts" helper on purpose: tests that trigger a user-facing toast should care that it
-appeared (the wording IS the contract), not just clean up after it.
+**Reach for `expectAndDismissToast` by default**: a test that triggers a user-facing toast should care that it appeared,
+because the wording IS the contract. `dismissAllToasts` is the narrow exception, for a toast whose CONTENT the test
+deliberately doesn't pin. `conflict-move.spec.ts`'s move-rollback spec is the worked example: how many items the
+reversal carries home depends on what the move had processed before the clash paused it, and it may be none, in which
+case there is no toast at all. Asserting there would pin a number the test's own comment says isn't pinnable. When you
+use it, say in a comment which spec DOES own the wording assertion (`conflict-edge-cases.spec.ts`, for that pair).
+
+**A cancelled transfer now raises a toast, so any spec that presses Rollback on a running one owes the guard
+something.** The reversal summarizes itself (`$lib/file-operations/transfer/cancel-rollback-toast.ts`), so a spec that
+cancels with Rollback and then ends leaks a toast into the `afterEach`. Match the CLEAN wording's stable half
+(`Cmdr had written`) rather than its count, which varies with how far the copy got.
 
 **A SOFT SHEET is not covered by either helper, and neither is the leak guard.** `dismissOverlay` walks a fixed list
 (`.ui-popover`, `.palette-overlay`, `.search-overlay`, `.modal-overlay`, `.volume-dropdown`) and the `afterEach` leak
@@ -803,6 +814,11 @@ test.afterEach(() => {
 
 `restoreFixtureTree` is surgical: it rewrites only the entries that drifted, so an untouched `sample.zip` keeps its
 inode and an archive spec's watch on it survives. On a clean tree it changes nothing at all.
+
+**A spec needing content the tree doesn't have writes it OUTSIDE the tree**, to `os.tmpdir()` in a `beforeAll`, and
+removes it in `afterAll`. Adding a file to `fixtures.ts` for one spec puts it in the manifest, the pane-readiness
+expectations, and every other spec's guard run. `viewer.spec.ts` § "multi-click selection" is the worked example: it
+needs a line with several words, which the 1 KB block of `A`s can't give it, and the viewer opens any absolute path.
 
 **Ordering, when the spec also leaves an operation in flight.** The restore DELETES a spec-made source dir (it isn't in
 the pristine manifest), so a copy still reading that dir dies with `SourceNotFound`. That's not a quiet death: the

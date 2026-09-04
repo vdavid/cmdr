@@ -66,6 +66,7 @@ pub(super) fn make_test_volume_with(volume_id: &str, host: VolumeHost) -> SmbVol
             me: me.clone(),
             scan_pool: tokio::sync::RwLock::new(None),
             scan_session_refs: AtomicUsize::new(0),
+            credit_copy_capacity: AtomicUsize::new(0),
             active_mount_path: Arc::new(StdRwLock::new(mount_path)),
             host,
         }),
@@ -78,4 +79,17 @@ pub(super) fn make_test_volume_direct() -> SmbVolume {
     let vol = make_test_volume();
     vol.inner.state.store(ConnectionState::Direct as u8, Ordering::Relaxed);
     vol
+}
+
+/// Drains a read stream to the end and hands back everything it produced.
+///
+/// Shared, because both byte-path suites need it: the read suite drains a
+/// hinted read whose size drifted, and the wire-shape suite drains one while
+/// counting the frames it cost.
+pub(super) async fn drain(mut stream: Box<dyn VolumeReadStream>) -> Vec<u8> {
+    let mut out = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        out.extend_from_slice(&chunk.expect("no read error"));
+    }
+    out
 }

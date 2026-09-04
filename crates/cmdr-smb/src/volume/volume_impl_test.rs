@@ -249,3 +249,58 @@ async fn foreground_pending_tracks_navigation_on_this_share_only() {
     let vol = make_test_volume_with(volume_id, here);
     assert!(vol.foreground_pending().await, "browsing this share parks the copy");
 }
+
+// ── Copy concurrency against the credit window ─────────────────
+
+/// A `BackendSettings` that answers one fixed number, so a test can pin what the
+/// user asked for and assert only what the credit window did to it.
+struct FixedConcurrency(usize);
+
+impl cmdr_fs::volume::host::settings::BackendSettings for FixedConcurrency {
+    fn max_concurrent_operations(&self, _backend: cmdr_fs::volume::host::settings::BackendName) -> usize {
+        self.0
+    }
+}
+
+/// A volume whose setting says `requested` and whose connection last measured
+/// room for `capacity` concurrent copy requests (`0` = never measured).
+fn volume_with_credit_capacity(requested: usize, capacity: usize) -> SmbVolume {
+    let host = VolumeHost::builder()
+        .settings(Arc::new(FixedConcurrency(requested)))
+        .build();
+    let vol = make_test_volume_with("smb-credit-capacity", host);
+    vol.inner.credit_copy_capacity.store(capacity, Ordering::Relaxed);
+    vol
+}
+
+/// Until a session has been cloned there's no measurement, and a made-up cap
+/// would be worse than none: the user's setting stands.
+#[test]
+fn concurrency_is_the_setting_while_the_window_is_unmeasured() {
+    assert_eq!(volume_with_credit_capacity(10, 0).max_concurrent_ops(), 10);
+}
+
+/// The whole point of the cap: a window that can't carry ten concurrent copies
+/// must not be handed ten, or the extra slots park on credits while reporting no
+/// progress (a 300 GB SMB-to-SMB copy stalled exactly this way).
+#[test]
+fn concurrency_drops_to_what_the_credit_window_carries() {
+    assert_eq!(volume_with_credit_capacity(10, 3).max_concurrent_ops(), 3);
+}
+
+/// It only ever LOWERS the setting. A roomy window doesn't get to overrule the
+/// number the user chose, which is also a statement about the server's appetite,
+/// not just about credits.
+#[test]
+fn a_roomy_window_never_raises_the_users_setting() {
+    assert_eq!(volume_with_credit_capacity(10, 64).max_concurrent_ops(), 10);
+}
+
+/// One slot is the floor on both sides. A copy engine handed `0` slots does
+/// nothing at all, which is a hang rather than a slow copy, so a window with
+/// room for a single request still yields a working (serial) copy.
+#[test]
+fn concurrency_never_falls_below_one() {
+    assert_eq!(volume_with_credit_capacity(10, 1).max_concurrent_ops(), 1);
+    assert_eq!(volume_with_credit_capacity(1, 8).max_concurrent_ops(), 1);
+}

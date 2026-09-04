@@ -164,6 +164,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   participles inflect for number ("öppen … skriven" vs "öppna … skrivna"), so a shared tail is wrong in one branch.
   Duplicate the tail into `one` and `other` instead. The placeholder set stays identical, so parity still passes
   (`fileOperations.transferProgress.stallInFlight` is the worked example).
+- **Bestämd totalitet framför ett `*Text`-tal skrivs om till `allt`.** Engelskan markerar med `the` att det var ALLT
+  ("Removed the {countText} items"), men svenskan kan inte sätta artikel framför en färdigformaterad talsträng:
+  `de 1 objekt` blir fel i `one`-grenen, och `det enda objektet` tappar `{countText}`, som måste stå i båda grenarna.
+  Skriv i stället `allt` plus kolon och antalet: `Raderade allt Cmdr hade skrivit: {countText} objekt` mot den partiella
+  systersträngens `Raderade {countText} objekt`. Kontrasten mellan hel och delvis ångring överlever, och båda grenarna
+  blir grammatiska (`fileOperations.cancelRollback.doneDeleting`/`.someDeleted` är det utskrivna exemplet).
 
 ## Notes and decisions
 
@@ -227,6 +233,13 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **`koppla från`, `koppla ur` och `dra ur` är tre olika saker.** Programmässig frånkoppling, enheten ur porten, kabeln
   ur uttaget. Engelskan har `disconnect` och `unplug`; svenskan skiljer dem tydligare, så välj efter vad som faktiskt
   händer. Belägg: `glossary.md` § Utmatning och frånkoppling.
+- **`samt` före sista ledet när det ledet själva innehåller `och`.** Engelskans Oxford-komma bär upp ”…, an archive, and
+  a photo’s camera details and location”; svenskan har inget serie-komma, och två `och` i rad med olika räckvidd blir
+  otydligt. Byt det yttre `och` mot `samt`: ”…, vad som finns i ett arkiv samt en bilds kamerauppgifter och var den
+  togs”. Belägg: `glossary.md` § Ask Cmdr tittar in i filer.
+- **`plats` är var en fil ligger; var en bild togs skrivs ut som bisats.** `plats` är det satta ordet för `location` i
+  filsystemsmening, så direkt efter ”en bilds” läses det som filens plats. Skriv `var den togs` när engelskan menar
+  fotots geoposition. Belägg: `glossary.md` § Ask Cmdr tittar in i filer.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

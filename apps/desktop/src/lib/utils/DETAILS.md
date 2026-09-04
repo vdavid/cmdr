@@ -93,6 +93,24 @@ through the HOUSE tooltip. Never a native `title`: its delay and chrome are the 
 dialogs, and result lists alike, which would otherwise hover three different ways. `tooltipWhenTruncated?: boolean`
 narrows the tooltip to strings truncation actually trimmed (default `false`: hover always shows the full text).
 
+## inline-size-action.ts
+
+`useInlineSize(node, { onResize })` is the house stand-in for a CSS container query: it reports an element's content-box
+inline size at mount and on every resize, so Svelte can branch in markup where CSS would have used `@container`.
+
+Why it exists: `@container` / `container-type` need Safari 16, and Cmdr's WebKit floor is Safari 15 (`build.target` in
+`apps/desktop/vite.config.js`, guarded by the `desktop-vite-build-target` check). Old WebKit drops an unsupported
+at-rule block whole and in silence, so the styling inside it never applies and nothing reports it. `ResizeObserver` is
+Safari 13.1+, below every floor Cmdr targets. Stylelint's `at-rule-disallowed-list` / `property-disallowed-list` keep
+the CSS form from coming back.
+
+It reports `entry.contentRect.width`, the same content box a size query reads, so a threshold ported from
+`@container (max-width: Npx)` keeps its meaning. (`entry.contentBoxSize` says the same thing, but only from Safari 15.4,
+above the floor this action exists for.) The seed call at mount reads `clientWidth` minus the computed horizontal
+padding, because the observer's own first callback lands after the next layout and one frame of unmeasured styling is
+visible. A reported `0` means "not measured", not "narrower than everything", so callers gate on `> 0`; `TabBar.svelte`
+is the reference caller.
+
 ## srgb-mix.ts / webkit-compat.ts
 
 `webkit-compat.ts` exposes `hasColorMix` (computed once at module load) so consumers can branch, and `logWebkitCompat()`
@@ -101,11 +119,77 @@ also exports `relativeLuminance`, `contrastRatio`, and `readableFgOn`. `readable
 `#ffffff` by whichever has the higher WCAG contrast against the accent; used by `accent-color.ts` to compute
 `--color-accent-fg` per runtime accent, and mirrored in `scripts/check-a11y-contrast/accent_matrix.go`.
 
-**Dev override**: `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` forces the fallback path on modern WebKit. At module load it
-flips `hasColorMix` to `false` (routing the JS-mix branches) and sets `data-force-old-webkit` on `<html>` (activating
-the `:root[data-force-old-webkit]` blocks in `app.css` that mirror the `@supports not (...)` fallbacks). Use it to
-verify the old-WebKit look without a real Safari 15.x environment. See `docs/guides/releasing.md` § "Pre-release smoke
-test on old macOS".
+### The two old-WebKit answers
+
+`webkit-compat.ts` answers two different questions, and mixing them up is the easy mistake.
+
+- `hasColorMix` is **degraded but working**: Safari below 16.2 can't parse `color-mix()`, so the accent and volume-tint
+  paths mix in JS. Everything else about the app is fine.
+- `meetsWebkitFloor` is **below the floor**: `crypto.randomUUID`, `Object.hasOwn`, `Array.prototype.findLast`, and
+  `:has()` all arrived in Safari 15.4, the app calls them unconditionally, and esbuild's `build.target` lowers syntax
+  and never runtime APIs. `missingWebkitCapabilities` names which ones are absent, and `WEBKIT_FLOOR_CAPABILITIES` is
+  the list both this module and the `app.html` guard probe.
+
+In a shipped build `meetsWebkitFloor` is effectively always `true`, because the guard in `src/app.html` replaces the
+page before the bundle loads. It exists for the dev override and so app code can reason about the floor without
+re-probing. `logWebkitCompat()` (called from the main layout at boot) emits `error` when it's false and the usual
+`debug`/`info` line for `hasColorMix`, so an affected user shows up in error reports.
+
+`isBelowSupportedMacOs(macosMajor)` is a third, unrelated answer: whether this Mac is older than `SUPPORTED_MACOS_MAJOR`
+(12), the range Cmdr is developed and tested against. The bundle's `minimumSystemVersion` is 10.15, deliberately lower,
+so 10 and 11 are best-effort and this predicate is where "best effort" is defined. It takes the number rather than
+fetching it, which keeps the module free of IPC: callers pass what `commands.getMacosMajorVersion()` returned (Catalina
+reports `10`, not `10.15`), and a version that didn't parse reads as supported. Floor rationale and the version
+evidence: `docs/notes/system-requirements-and-es2025.md`. The one caller is `maybeShowOldMacosNotice` in
+`routes/(main)/startup-gates.ts`, which turns a `true` into the once-per-machine best-effort dialog.
+
+`macosVersionLabel(macosMajor)` writes that same number the way copy has to say it. Catalina's major is `10`, and "macOS
+10" names a release nobody recognizes, so it becomes `10.15` (safe: `minimumSystemVersion` is 10.15, so a `10` that got
+as far as running Cmdr can only be that one). Everything from Big Sur on is its bare major. It returns a string on
+purpose: routed through a locale's number formatting, 10.15 would reach half of Europe as "10,15".
+
+**Dev override**, two levels, both read at module load so they must be set before `pnpm dev` starts:
+
+- `VITE_CMDR_FORCE_OLD_WEBKIT=1` (or `=old`) forces the `color-mix()` fallback path on modern WebKit. It flips
+  `hasColorMix` to `false` (routing the JS-mix branches) and sets `data-force-old-webkit` on `<html>` (activating the
+  `:root[data-force-old-webkit]` blocks in `app.css` that mirror the `@supports not (...)` fallbacks).
+- `VITE_CMDR_FORCE_OLD_WEBKIT=unsupported` does that AND forces `meetsWebkitFloor` to `false`.
+
+Use them to verify the old-WebKit paths without a real Safari 15.x environment. See `docs/guides/releasing.md` §
+"Pre-release smoke test on old macOS".
+
+## Old-WebKit boot guard
+
+The screen a below-floor Mac gets instead of a white window. It lives in `src/app.html`, not here, and that placement is
+the whole design: Safari 13.x can't PARSE the bundle (measured, `docs/notes/system-requirements-and-es2025.md` § The two
+floors old WebKit crosses), so anything shipped inside the bundle is unreachable on exactly the Mac that needs it. The
+guard is an inline ES5 `<script>` in `<head>` that probes the four Safari 15.4 capabilities and, if any is missing,
+empties `<body>` and paints a title, a sentence, and a Quit button.
+
+Emptying the body is what makes it deterministic. SvelteKit's boot script captures `#app-root` while the body parses and
+mounts into that captured element later; once the body is emptied, a bundle that DID parse mounts into a detached node
+and never reaches the screen. So the guard wins whichever order the two run in.
+
+**Its copy comes from the message catalog**, which is the other half of the design. The guard runs before any module, so
+it can't call `t()`. `svelte.config.js` resolves the three `boot-guard-keys.ts` keys against every shipped catalog at
+config-load time, formats the ICU away (the values carry `''` escaping the guard would otherwise show verbatim), and
+splices the answers into a copy of the shell at `.svelte-kit/cmdr-app.html`, which is what `kit.files.appTemplate`
+points at. Nothing is committed, so nothing can go stale; a missing marker fails the build rather than shipping a
+stringless guard. Locale matching is precomputed too, because the guard can't run the script-boundary rule: the payload
+carries a flat lowercase alias map so `zh-TW` lands on Traditional and never falls through to Simplified. Details:
+`apps/desktop/scripts/gen-boot-guard-lib.ts`.
+
+**Gotcha**: because `appTemplate` is the generated path, `pnpm dev` does NOT hot-reload an edit to `src/app.html`.
+Restart the dev server after touching the shell.
+
+**❗ ES5 only in the guard.** One arrow function or template literal and it dies silently on the WebKit it exists for.
+`apps/desktop/scripts/app-boot-guard.test.ts` extracts the real script, sweeps it for the ES6 syntax you'd reach for,
+and runs it against a stubbed environment with each capability removed in turn (globals arrive as function parameters,
+so a test can take `Object.hasOwn` away from the guard without taking it away from vitest). That test is also what holds
+the guard's probes and `WEBKIT_FLOOR_CAPABILITIES` together, since the guard can't import the list.
+
+The Quit button calls `window.__TAURI_INTERNALS__.invoke('plugin:process|exit')`, the only raw invoke in the tree, and
+it still routes through the quit gate: `src-tauri/capabilities/DETAILS.md` § The boot guard's exit.
 
 ## Decisions
 

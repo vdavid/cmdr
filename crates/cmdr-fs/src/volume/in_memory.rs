@@ -264,13 +264,18 @@ impl InMemoryVolume {
         self
     }
 
-    /// Sets configurable space info so get_space_info() works in tests.
+    /// Sets configurable BOUNDED space info so get_space_info() works in tests.
     pub fn with_space_info(mut self, total_bytes: u64, available_bytes: u64) -> Self {
-        self.space_info = Some(SpaceInfo {
-            total_bytes,
-            available_bytes,
-            used_bytes: total_bytes.saturating_sub(available_bytes),
-        });
+        self.space_info = Some(SpaceInfo::bounded(total_bytes, available_bytes));
+        self
+    }
+
+    /// Sets configurable UNBOUNDED space info: storage with no ceiling, where
+    /// only what's stored is known (an unlimited Nextcloud account). Lets a test
+    /// drive the pre-flight's "can't tell, go ahead" path with a volume that
+    /// nonetheless answers.
+    pub fn with_unbounded_space_info(mut self, used_bytes: u64) -> Self {
+        self.space_info = Some(SpaceInfo::Unbounded { used_bytes });
         self
     }
 
@@ -934,7 +939,7 @@ impl Volume for InMemoryVolume {
     }
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.space_info.clone().ok_or(VolumeError::NotSupported) })
+        Box::pin(async move { self.space_info.ok_or(VolumeError::NotSupported) })
     }
 
     fn supports_local_fs_access(&self) -> bool {
@@ -956,25 +961,7 @@ impl Volume for InMemoryVolume {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let dest_entries = self.list_directory(dest_path, None).await?;
-            let mut conflicts = Vec::new();
-
-            for item in source_items {
-                if let Some(existing) = dest_entries.iter().find(|e| e.name == item.name) {
-                    let dest_modified = existing.modified_at.map(|s| s as i64);
-                    conflicts.push(ScanConflict {
-                        source_path: item.name.clone(),
-                        dest_path: existing.path.clone(),
-                        source_size: item.size,
-                        dest_size: existing.size.unwrap_or(0),
-                        source_modified: item.modified,
-                        dest_modified,
-                        source_is_directory: item.is_directory,
-                        dest_is_directory: existing.is_directory,
-                    });
-                }
-            }
-
-            Ok(conflicts)
+            Ok(super::scan_walk::conflicts_against(source_items, &dest_entries))
         })
     }
 }

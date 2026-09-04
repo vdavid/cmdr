@@ -187,6 +187,10 @@
   "@menu.select.deselectAll": {
     "sourceHash": "9675494"
   },
+  "menu.select.invert": "Invertera markering",
+  "@menu.select.invert": {
+    "sourceHash": "d2e128a"
+  },
   "menu.select.files": "Markera filer…",
   "@menu.select.files": {
     "sourceHash": "b7f202e"

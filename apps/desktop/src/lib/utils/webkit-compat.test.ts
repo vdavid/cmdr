@@ -6,6 +6,9 @@ import * as webkitCompatModule from './webkit-compat'
 // Sanity touch — also asserts the public API shape stays in sync.
 void webkitCompatModule.hasColorMix
 void webkitCompatModule.logWebkitCompat
+void webkitCompatModule.meetsWebkitFloor
+void webkitCompatModule.isBelowSupportedMacOs
+void webkitCompatModule.SUPPORTED_MACOS_MAJOR
 
 // We don't read `hasColorMix` from the static import in the cases because it's
 // evaluated once at module load. Instead, each test stubs `CSS.supports`
@@ -81,5 +84,82 @@ describe('logWebkitCompat', () => {
     mod.logWebkitCompat()
     mod.logWebkitCompat()
     expect(logSink.debug).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('meetsWebkitFloor', () => {
+  /** Puts a working stand-in for each Safari 15.4 capability on `globalThis`. */
+  function stubModernWebkit() {
+    globalThis.CSS = { supports: vi.fn(() => true) } as unknown as typeof CSS
+    vi.stubGlobal('crypto', { randomUUID: () => '00000000-0000-4000-8000-000000000000' })
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is true on a WebKit that has every capability the app needs', async () => {
+    stubModernWebkit()
+    const mod = await import('./webkit-compat')
+    expect(mod.meetsWebkitFloor).toBe(true)
+  })
+
+  it('is false without `crypto.randomUUID` (Safari 15.4)', async () => {
+    stubModernWebkit()
+    vi.stubGlobal('crypto', {})
+    const mod = await import('./webkit-compat')
+    expect(mod.meetsWebkitFloor).toBe(false)
+  })
+
+  it('is false without `:has()` support (Safari 15.4)', async () => {
+    stubModernWebkit()
+    globalThis.CSS = { supports: vi.fn((arg: string) => !arg.includes('selector(')) } as unknown as typeof CSS
+    const mod = await import('./webkit-compat')
+    expect(mod.meetsWebkitFloor).toBe(false)
+  })
+
+  it('assumes the floor is met when `CSS.supports` is missing entirely', async () => {
+    // Same posture as `hasColorMix`: a webview that can't answer isn't evidence
+    // against itself, and blocking the app on a missing probe would be worse
+    // than the white screen we're preventing.
+    stubModernWebkit()
+    // @ts-expect-error - simulate an environment without `CSS.supports`
+    delete globalThis.CSS
+    const mod = await import('./webkit-compat')
+    expect(mod.meetsWebkitFloor).toBe(true)
+  })
+})
+
+describe('isBelowSupportedMacOs', () => {
+  it('calls Catalina and Big Sur below the supported range', async () => {
+    const mod = await import('./webkit-compat')
+    // `get_macos_major_version` reports `10` on Catalina, not `10.15`.
+    expect(mod.isBelowSupportedMacOs(10)).toBe(true)
+    expect(mod.isBelowSupportedMacOs(11)).toBe(true)
+  })
+
+  it('calls Monterey and newer supported', async () => {
+    const mod = await import('./webkit-compat')
+    expect(mod.isBelowSupportedMacOs(12)).toBe(false)
+    expect(mod.isBelowSupportedMacOs(26)).toBe(false)
+  })
+
+  it('treats an unreadable version as supported, so a probe that fails stays quiet', async () => {
+    const mod = await import('./webkit-compat')
+    expect(mod.isBelowSupportedMacOs(0)).toBe(false)
+    expect(mod.isBelowSupportedMacOs(Number.NaN)).toBe(false)
+  })
+})
+
+describe('macosVersionLabel', () => {
+  it('writes Catalina as 10.15, the only 10.x the bundle can launch on', async () => {
+    const mod = await import('./webkit-compat')
+    expect(mod.macosVersionLabel(10)).toBe('10.15')
+  })
+
+  it('leaves every later release as its bare major', async () => {
+    const mod = await import('./webkit-compat')
+    expect(mod.macosVersionLabel(11)).toBe('11')
+    expect(mod.macosVersionLabel(26)).toBe('26')
   })
 })

@@ -1,0 +1,108 @@
+# The WebDAV fixture stack: three real Apache httpd servers with `mod_dav` (one
+# per auth scheme a WebDAV client has to answer, plus one that ignores `Range`),
+# and one real Nextcloud.
+#
+# ❗ The project is `webdav-fixture` and every service name carries that prefix.
+# `desktop-fixture-lane-coverage` identifies a WebDAV cell by an `#[ignore]`
+# reason naming `webdav-servers/start.sh` or `webdav-fixture`, so renaming a
+# service out of the prefix quietly drops it from the guard's view.
+#
+# Host ports are pinned to 13480+, a range of this stack's own: SFTP owns 12480+,
+# SMB's vendored consumer stack owns 11480+, and smb2's own harness defaults to
+# 10480+. Two stacks sharing a range made them mutually exclusive on one machine.
+# The check runner exports every `WEBDAV_FIXTURE_*_PORT` before bring-up
+# (`ApplyWebdavPortEnv`).
+#
+# ❗ Every port publishes to 127.0.0.1 via the `${WEBDAV_BIND_ADDR:-127.0.0.1}`
+# prefix. ❌ Never a bare `port:80` mapping: Docker then binds all interfaces, and
+# a writable DAV export whose credentials this repo documents in public (`ada` /
+# `openthedoor`) lands on the LAN and the tailnet of whoever runs the suite.
+# These containers routinely outlive the run that started them.
+# `TestWebdavFixturePortsBindToLoopback` fails the run if a mapping loses it.
+# Set `WEBDAV_BIND_ADDR=0.0.0.0` to reach the fixtures from a NAT'd VM or a
+# second machine, which hit the host by gateway IP and can't see loopback.
+#
+# Nothing here bind-mounts host state: HTTP has no key material to publish, so
+# there is no third machine-wide path beside the lock and the lease dir.
+#
+# One image, `image/`. What differs between the httpd services is env, so an auth
+# scheme or a `Range` policy is a line here rather than a Dockerfile to keep in
+# sync.
+
+x-fixture: &fixture
+  build: ./image
+  image: cmdr-webdav-fixture:latest
+  restart: unless-stopped
+  # Principle 5 applies to CI too: three idle httpd containers should cost about
+  # what one does.
+  mem_limit: 256m
+  cpus: 0.5
+
+services:
+  # The stock server: Basic auth over a writable `/dav/` export. The default
+  # target for anything not testing an auth scheme.
+  webdav-fixture-apache:
+    <<: *fixture
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_APACHE_PORT:-13480}:80']
+
+  # Digest ONLY, realm `cmdr`: the same export behind a server that offers no
+  # Basic scheme at all. Its job is proving the client answers a typed refusal
+  # rather than looping or sending the password in the clear anyway.
+  webdav-fixture-digest:
+    <<: *fixture
+    environment:
+      AUTH: digest
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_DIGEST_PORT:-13481}:80']
+
+  # The same export behind a server that IGNORES `Range` and answers 200 with
+  # the whole file. RFC 9110 § 14.2 makes ranges optional, so `streams.rs` skips
+  # `offset` bytes locally rather than trusting a 200 as a window; this is the
+  # server that makes that branch run. `MaxRanges none` is the whole difference
+  # (see `image/entrypoint.sh`).
+  webdav-fixture-norange:
+    <<: *fixture
+    environment:
+      RANGES: ignore
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_NORANGE_PORT:-13483}:80']
+
+  # A real Nextcloud (sabre/dav), and the ONLY service here that isn't Apache
+  # `mod_dav`. It exists so three claims about real servers are observations:
+  # what a ranged GET answers, what a chunked PUT answers, and whether RFC 4331
+  # quota reports the ACCOUNT's numbers. `crates/cmdr-webdav/src/volume/nextcloud_test.rs`
+  # holds the cells; `DETAILS.md` carries what they observed.
+  #
+  # ❗ NOT in `core`, so no default `pnpm check` and no `start.sh` without an
+  # argument brings it up: first boot installs Nextcloud before it binds a port
+  # (~25 s on a warm laptop), and the image is ~1 GB against httpd's ~60 MB.
+  # `./start.sh nextcloud` and `pnpm check desktop-rust-webdav-nextcloud` are the
+  # two ways in.
+  webdav-fixture-nextcloud:
+    build: ./image-nextcloud
+    image: cmdr-webdav-fixture-nextcloud:latest
+    restart: unless-stopped
+    # ❗ Four times the httpd pair's 256m and 0.5, deliberately, for two
+    # different reasons — and a cap is not a reservation, so an idle machine
+    # gives up nothing for it.
+    #
+    #   - **First boot.** PHP running `occ maintenance:install` is the heaviest
+    #     moment of this stack's life, and it happens BEFORE the port binds, so
+    #     starving it turns a 25 s install into a readiness timeout that reads
+    #     as a broken fixture.
+    #   - **Serving under a contended host.** This is a shared machine-wide
+    #     stack: several worktrees' suites hit one container at once, and a cell
+    #     here is tens of round trips through PHP where the same cell against
+    #     `mod_dav` is tens through C. On 2026-09-02, four parallel Rust builds
+    #     were enough to push these cells past nextest's global 8 s cap. The
+    #     headroom is what keeps a busy laptop from deciding the verdict; the
+    #     matching per-test cap lives in `.config/nextest.toml`.
+    mem_limit: 1g
+    cpus: 2.0
+    environment:
+      # SQLite keeps this to one container. Supplying the admin account here is
+      # what makes the image install itself unattended instead of waiting for a
+      # person in the setup wizard.
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: ada
+      NEXTCLOUD_ADMIN_PASSWORD: openthedoor
+      NEXTCLOUD_TRUSTED_DOMAINS: '127.0.0.1 localhost'
+    ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_NEXTCLOUD_PORT:-13482}:80']

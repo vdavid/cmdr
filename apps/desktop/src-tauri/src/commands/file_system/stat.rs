@@ -68,8 +68,7 @@ pub async fn stat_paths_kinds(paths: Vec<String>) -> TimedOut<Vec<Option<bool>>>
     // does no I/O unless a component carries a `.zip` extension.
     if !result.timed_out {
         for (kind, path) in result.data.iter_mut().zip(paths.iter()) {
-            if kind.is_some() || !crate::file_system::volume::backends::archive::path_is_inside_archive(Path::new(path))
-            {
+            if kind.is_some() || !cmdr_archive::path_is_inside_archive(Path::new(path)) {
                 continue;
             }
             let resolved = crate::file_system::volume::manager::get_volume_manager()

@@ -26,7 +26,7 @@ mcp/
 └── tests/            # Test suite, split by category
 ```
 
-Every tool is authored **exactly once** in the `mcp_tools!` table in `tool_registry/mod.rs`. That one table generates
+Every tool is authored **exactly once** in the `mcp_tools!` table in `tool_registry/table.rs`. That one table generates
 every view, so they can't drift:
 
 - `get_all_tools()` — the ai_client `tools/list` payload (entries whose `consumers` include `AiClient`).
@@ -47,7 +47,8 @@ the `TokenGate`.
 2. **Parsing** → `protocol.rs` parses and validates it.
 3. **Auth** → for `tools/call`, `auth::tool_call_requires_token` looks up the tool's `TokenGate` and requires the bearer
    token only for calls that bypass the user's confirmation dialog.
-4. **Routing** → `tools/call` dispatches through the generated `execute_tool()` in `tool_registry/mod.rs`.
+4. **Routing** → `tools/call` dispatches through the generated `execute_tool()` (the macro in `tool_registry/mod.rs`
+   expands it over `table.rs`).
 5. **Execution** → the handler in the matching `executor/` category file emits a Tauri event (or queries state) and
    waits for the frontend ack before returning `OK`.
 6. **Frontend** → `mcp-listeners.ts` validate-parses the event payload and dispatches on the typed command bus, then
@@ -79,7 +80,7 @@ pub async fn execute_my_action<R: Runtime>(app: &AppHandle<R>, params: &Value) -
 Follow the executor must-knows: read path params through `user_path_param`, choose the right ack (`wait_for_ack` vs
 `mcp_round_trip`), and never return `OK` without waiting for the ack.
 
-### Step 2: add the schema to `schemas/` and ONE entry to the `mcp_tools!` table in `tool_registry/mod.rs`
+### Step 2: add the schema to `schemas/` and ONE entry to the `mcp_tools!` table in `tool_registry/table.rs`
 
 Add a `fn <tool>_schema() -> Value` to the matching `schemas/<category>.rs` (a no-parameter tool reuses
 `schemas::no_params_schema()`):
@@ -136,6 +137,11 @@ add a handler the dispatch doesn't know about, so schema/dispatch/auth/exposure 
 - **Schema keys** serialize alphabetically (serde_json `Map` is a `BTreeMap`), so authored key order doesn't affect the
   wire bytes. A tools/list snapshot test (`tests/tool_snapshot_tests.rs`) pins the exact output; run it after any schema
   edit and update the fixture when the change is intentional.
+- **The schema is ENFORCED, so author it as the truth.** `validate_params` refuses a call whose params miss a `required`
+  property, and (on a schema declaring `additionalProperties: false`) one carrying a property `properties` doesn't list,
+  before your handler runs. Don't mark a field `required` the handler is happy without. An `[Agent]` tool MUST declare
+  `additionalProperties: false` (a structural test fails otherwise): its calls reach a person as facts, and a swallowed
+  argument becomes a confident wrong answer. `mcp/DETAILS.md` § The schema gate.
 
 That's the whole change. No separate dispatch match, no auth string-list, and no hand-bumped tool count — the count and
 coverage tests are cheap guards over a property that's now true by construction.
@@ -149,7 +155,7 @@ payload into a typed command and dispatches on the command bus. No business logi
 ### Step 4: add tests
 
 Look tools up by name in `get_all_tools()`; there are no per-category list functions. Schema-shape and token-gate tests
-live in `tests/tool_registry_tests.rs` (beside the other suites, so the authored `mcp_tools!` table stays a lean,
+live in `tests/tool_registry_tests/` (beside the other suites, so the authored `mcp_tools!` table stays a lean,
 single-purpose source); cross-cutting checks (name charset, no `fs.`/`shell.` tools) live in `tests/security_tests.rs`.
 
 ```rust
@@ -245,7 +251,7 @@ cd apps/desktop/src-tauri && cargo check
 ### Tests failing
 
 ```bash
-cargo test mcp::tests::tool_registry_tests::test_my_action_schema -- --nocapture
+cargo test mcp::tests::tool_registry_tests::schemas::test_my_action_schema -- --nocapture
 ```
 
 ### Events not reaching the frontend

@@ -406,6 +406,42 @@ CI only reports what a local run would change. A pair missing from the allowlist
 under the same consent contract as the length allowlists (`.claude/rules/file-length-allowlist.md`). The allowlist also
 doubles as the complete inventory: every duplicated file pair in the repo is a line in it.
 
+### A `pairs` entry can carry its reason
+
+A `pairs` value reads and writes two shapes, and `jscpdPairLimit`'s own `MarshalJSON` / `UnmarshalJSON` pick between
+them:
+
+```json
+{
+  "pairs": {
+    "a.rs ↔ b.rs": 14,
+    "c.rs ↔ d.rs": { "lines": 62, "reason": "trait-method signatures; a macro emitting them costs more than it saves" }
+  }
+}
+```
+
+A bare number is the ordinary entry: duplication nobody has extracted yet, where the number is the whole story. The
+object form is for a pair somebody looked at and decided to keep, and its `reason` says what the duplication IS, why
+extracting it is worse than living with it, and what would flip that judgment. The reason is the one part of a `pairs`
+entry a human writes by hand; the number beside it still comes from the check.
+
+**Decision**: the reason rides ON the entry rather than in a parallel `pairReasons` map. **Why**: shrink-wrap ratchets
+numbers down and drops dead entries, and a second map would need every one of those edits applied twice, with a reason
+dangling beside a pair that no longer exists as the failure mode. One value, one lifetime.
+
+**Decision**: the bare number stays the default rather than migrating every entry to an object. **Why**: most pairs want
+no reason, and an allowlist where every entry is four lines instead of one stops being something a reader scans. The
+number-or-object union costs one small codec and keeps the file legible; the existing numeric entries needed no edit.
+
+- Shrink-wrap preserves the reason when it ratchets the number, and drops it with the entry when the duplication is
+  gone. A pair that comes back later comes back reasonless, which is right: the judgment was made about duplication that
+  no longer exists.
+- A regression on a pair that carries a reason prints it under the clone list (`Allowlisted because: …`), so whoever
+  reads the warn gets the case for the old duplication next to the growth, and can tell a still-good judgment from a
+  stale one.
+- An unparsable value fails the whole file's decode, which empties the allowlist and warns on every pair. Loud, and it
+  can't silently drop one entry's budget.
+
 ### The `exempt` section: generated files, no number
 
 Beside `pairs`, each lane's allowlist carries an `exempt` map from the same pair key to a REASON string, mirroring
@@ -1278,6 +1314,14 @@ How it decides:
   wins, and a name some class has carried since 10.x is never flagged, and (b) a selector has to carry an uppercase
   letter to count, because `bytes`, `close`, and `title` are selectors AND ordinary Rust method names. Both trade recall
   for a zero-noise list. Only files that mention `objc2` are read for calls, for the same reason.
+- **A gated call opts out per line**, with `// allowed-newer-selector: <reason>` above the call or trailing on it. The
+  check reads lines, never control flow, so it can't see a `crate::platform::macos_at_least(major, minor)` gate: the
+  comment is the claim and the reason is what makes it checkable by a human, so name the gate in it. An opt-out that
+  excuses no call is reported as an orphan (same `directiveTracker` every other opt-out uses), which is what stops a
+  stale one rotting in place after the call moves. Two calls carry it today, both degrading a feature rather than faking
+  it: `URLsForApplicationsToOpenURL` (macOS 12) in `file_system/open_with.rs` drops to the single default app from
+  `URLForApplicationToOpenURL`, and `imageWithSystemSymbolName_accessibilityDescription` (macOS 11) in
+  `menu/macos_appkit.rs` leaves menu items iconless.
 
 ## Apps and check counts
 
@@ -1299,20 +1343,20 @@ Checks by app and tech:
   `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
   fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
   opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
-  `CachedScanResult` / `SourceHint` / `VolumePreflight` in test code, so a fixture can only be one of the shapes a named
-  constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
-  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
-  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
-  `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
-  the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
-  `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
-  deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a function that
-  returns NOTHING while dropping a typed answer from the free function it delegates to; three of these shipped before it
-  existed, and each ended as an IPC command or MCP tool inventing a success. `Result` and `Option` returns are
-  deliberately out of scope: `Result` is `#[must_use]`, so the compiler already warns, and an `Option` discard is the
-  map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome type. Every
-  ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return type, a method
-  call — because a check people learn to ignore is worse than none. Opt out with
+  `CachedScanResult` / `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of
+  the shapes a named constructor actually builds; it ships with ZERO findings on purpose and is a regression fence
+  rather than a finder — the shapes are already clean, and the point is that the next test author can't undo that by
+  copy-pasting an old literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and
+  `cmdr-fs` carries a `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information",
+  it's a claim about the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in
+  production `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the
+  branch that deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a
+  function that returns NOTHING while dropping a typed answer from the free function it delegates to; three of these
+  shipped before it existed, and each ended as an IPC command or MCP tool inventing a success. `Result` and `Option`
+  returns are deliberately out of scope: `Result` is `#[must_use]`, so the compiler already warns, and an `Option`
+  discard is the map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome
+  type. Every ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return
+  type, a method call — because a check people learn to ignore is worse than none. Opt out with
   `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout, mtp-no-transport-reset,
   bindings-fresh, ipc-enum-camelcase, shipped-locales-fresh (regenerate-and-diff `intl/shipped_locales.gen.rs` from the
   message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
@@ -1383,15 +1427,30 @@ doubles as production code.
   echoes the script's own last line as its success message, so the untriaged-divergence total is stated once, by the
   layer that computed it. Then bundle-size (warn-only; builds a production-shaped frontend into a private dir and
   compares its total against a committed baseline, since the app embeds this output so every byte ships in each silent
-  update and is parsed before first paint), knip, type-drift, tests, e2e-linux-typecheck, e2e-linux (slow),
-  e2e-playwright (slow)
+  update and is parsed before first paint), vite-build-target (ERROR; `apps/desktop/vite.config.js` must pin
+  `build.target` to a `safari<major>`, because Vite's default is a MOVING "widely available" baseline: leave it unset
+  and a routine Vite major bump raises the browser floor above the `minimumSystemVersion` the bundle claims, silently,
+  with a green build. It parses the config structurally (comments blanked, string literals masked, then brace-matched)
+  so the comment explaining the pin can neither fake one nor hide one, and so a `target` under `server` or
+  `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER bound against the plist: mapping a macOS
+  version to "the WebKit we must assume" is a product call, not a fact), knip, type-drift, tests, e2e-linux-typecheck,
+  e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`; the accepted-license list is derived from
   `deny.toml` rather than duplicated, the output is pinned to be identical on macOS and Linux, and the runner's input
   fingerprint is what keeps it off unrelated runs)
-- **Website / Astro**: prettier, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e
+- **Website / Astro**: prettier, astro-sync, eslint, typecheck, build, html-validate, bundle-size (warn-only), e2e.
+  `astro-sync` generates Astro's gitignored `types.d.ts` and `website-eslint` depends on it: the type-aware rules read
+  `astro:content` through it, and on an unsynced tree every blog-post field is `any`, so the `no-unsafe-*` rules bury
+  the run in ~90 false positives. `website-eslint` refuses to run when the file is missing rather than report those.
 - **Website / Docker**: docker-build
-- **API server / TS**: oxfmt, eslint, typecheck, tests
+- **API server / TS**: oxfmt, worker-types, eslint, typecheck, tests. `api-server-worker-types` runs `wrangler types`,
+  which writes the gitignored `worker-configuration.d.ts` (Worker runtime globals at the Worker's `compatibility_date`,
+  plus the `Env` its bindings imply); `api-server-eslint` and `api-server-typecheck` depend on it, and both would
+  otherwise see `KVNamespace` and friends resolve to nothing. Same shape as `website-astro-sync`, down to
+  `api-server-eslint` refusing to run when the file is missing rather than reporting the `no-unsafe-*` fallout. It
+  regenerates instead of diffing, so there's no freshness contract to break; `api-server-typecheck` calls
+  `typecheck:no-gen` so it doesn't rewrite the file under the parallel ESLint pass.
 - **Analytics dashboard / Svelte**: svelte-kit-sync, eslint, stylelint, svelte-check, import-cycles, knip, tests, build,
   settings-defaults (regenerates the defaults manifest from the desktop settings registry and diffs it). Stylelint,
   knip, and import-cycles run through the same `runStylelintCheck` / `runKnipCheck` / `runImportCyclesCheck` helpers the
@@ -1642,12 +1701,13 @@ clone or worktree) nothing else creates it before the checks run. Without it, ty
 build a program: every imported type resolves to "could not be resolved", type-aware rules go silent, their
 `eslint-disable` directives look unused, and the local `--fix` deletes them — this once stripped directives from 7
 source files in a fresh worktree. The sync check (~1 s) is the single serialized syncer: `eslint-typecheck-svelte`,
-`eslint-typecheck-ts`, and `svelte-check` depend on it. `RunSvelteCheck` calls `check:no-sync` (not `pnpm check`) so it
-doesn't rewrite `.svelte-kit/` while the parallel eslint passes read it; humans keep using `pnpm check`, which still
-syncs. As defense in depth, `runScopedESLintTypecheck` refuses to run when `.svelte-kit/tsconfig.json` is missing
-(relevant for targeted `--check eslint-typecheck-*` runs, where the dependency is treated as satisfied if not selected),
-so a degraded projectService can never strip directives again. `apps/desktop` also has `"prepare": "svelte-kit sync"` so
-plain installs and IDE flows generate the file.
+`eslint-typecheck-ts`, and `svelte-check` depend on it. `RunSvelteCheck` calls `typecheck:no-sync` so it doesn't rewrite
+`.svelte-kit/` while the parallel eslint passes read it; a human standing in `apps/desktop` runs `pnpm typecheck`, which
+still syncs. Those scripts are named `typecheck`, not `check`, so that a stray cwd can't make `pnpm check` mean this one
+narrow pass instead of the root runner. As defense in depth, `runScopedESLintTypecheck` refuses to run when
+`.svelte-kit/tsconfig.json` is missing (relevant for targeted `--check eslint-typecheck-*` runs, where the dependency is
+treated as satisfied if not selected), so a degraded projectService can never strip directives again. `apps/desktop`
+also has `"prepare": "svelte-kit sync"` so plain installs and IDE flows generate the file.
 
 **Decision**: Clippy runs the enforcing pass (`-D warnings`) first, and only invokes `cargo clippy --fix` if that fails
 (and we're not in CI). **Why**: Running `--fix` speculatively before every check doubled wall time on the happy path (no

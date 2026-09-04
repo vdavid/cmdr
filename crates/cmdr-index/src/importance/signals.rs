@@ -11,8 +11,8 @@
 //! Pure: values in (an mtime, a child aggregate, a path), a [`FolderSignals`] out.
 //! No I/O — the caller reads the index; this only classifies.
 
-use super::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class};
-use super::scorer::{FolderSignals, PathClass};
+use super::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class_with_marker};
+use super::scorer::FolderSignals;
 
 /// The optional, backend-dependent signals for a folder, resolved by the caller
 /// from `importance.db`'s visit table and (macOS-local) Spotlight sampling.
@@ -74,12 +74,9 @@ pub fn signals_for_dir(
 
     // A folder with a project marker (here or below) reads as a project root; its
     // path-class prior is raised to `ProjectRoot`, the strongest prior. Otherwise
-    // the path alone classifies it.
-    let path_class = if has_project_marker {
-        PathClass::ProjectRoot
-    } else {
-        path_class(path, home)
-    };
+    // the path alone classifies it. `$HOME`, volume roots, and system/cache paths
+    // are exempt from the promotion; see `classify::path_class_with_marker`.
+    let path_class = path_class_with_marker(path, home, has_project_marker);
 
     FolderSignals {
         name_denylisted,
@@ -98,6 +95,7 @@ pub fn signals_for_dir(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::importance::scorer::PathClass;
 
     #[test]
     fn a_node_modules_dir_is_denylisted() {
@@ -162,6 +160,117 @@ mod tests {
             Default::default(),
         );
         assert!(s.has_project_marker, "a marker in a descendant still raises the folder");
+    }
+
+    /// A busy folder that looks like a working directory: recent, mixed contents,
+    /// and a project marker among its children.
+    fn busy_children() -> ChildAggregate {
+        ChildAggregate {
+            distinct_extension_count: 6,
+            file_count: 20,
+            has_direct_marker: true,
+        }
+    }
+
+    #[test]
+    fn a_marker_in_home_doesnt_make_home_a_project_root() {
+        // A `.git` or `Makefile` sitting directly in `$HOME` means dotfiles, not a
+        // project the user is working in. Observed 2026-09-03: `$HOME` stored at
+        // `score=0.954, pathClass=projectRoot`, which pushed the agent's wake
+        // interest over its 0.7 hot threshold for every file written anywhere in it.
+        let s = signals_for_dir(
+            Some(100),
+            busy_children(),
+            "/Users/me",
+            "/Users/me",
+            false,
+            false,
+            Default::default(),
+        );
+        assert_ne!(
+            s.path_class,
+            PathClass::ProjectRoot,
+            "$HOME never earns the project-root prior"
+        );
+        assert!(
+            !s.hidden_or_system,
+            "$HOME must NOT floor — that would propagate to the whole home directory"
+        );
+    }
+
+    #[test]
+    fn a_marker_at_a_volume_root_doesnt_promote_the_whole_disk() {
+        for root in volume_roots() {
+            let s = signals_for_dir(
+                Some(100),
+                busy_children(),
+                root,
+                "/Users/me",
+                false,
+                false,
+                Default::default(),
+            );
+            assert_ne!(
+                s.path_class,
+                PathClass::ProjectRoot,
+                "{root} is a volume root, not a project"
+            );
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    fn volume_roots() -> &'static [&'static str] {
+        &["/", "/Volumes/backup"]
+    }
+    #[cfg(target_os = "linux")]
+    fn volume_roots() -> &'static [&'static str] {
+        &["/", "/mnt/backup", "/media/backup"]
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    fn volume_roots() -> &'static [&'static str] {
+        &["/"]
+    }
+
+    #[test]
+    fn a_real_project_dir_still_becomes_a_project_root_and_scores_high() {
+        use crate::importance::scorer::{SignalSet, Weights, score};
+
+        let now = 1_800_000_000;
+        let s = signals_for_dir(
+            Some(now - 60),
+            busy_children(),
+            "/Users/me/projects-git/vdavid/cmdr",
+            "/Users/me",
+            false,
+            false,
+            Default::default(),
+        );
+        assert_eq!(
+            s.path_class,
+            PathClass::ProjectRoot,
+            "an ordinary project dir keeps the strongest prior"
+        );
+        let scored = score(&s, &SignalSet::listing_only(), &Weights::default(), now);
+        assert!(
+            scored.value() > 0.7,
+            "an active project must stay well above the agent's hot threshold, got {}",
+            scored.value()
+        );
+    }
+
+    #[test]
+    fn a_temp_root_floors_instead_of_scoring() {
+        let s = signals_for_dir(
+            Some(100),
+            busy_children(),
+            "/private/tmp",
+            "/Users/me",
+            false,
+            false,
+            Default::default(),
+        );
+        assert!(s.hidden_or_system, "a system temp root is system-owned, so it floors");
+        assert_eq!(s.path_class, PathClass::SystemOrCache);
     }
 
     #[test]

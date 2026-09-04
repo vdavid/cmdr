@@ -4,7 +4,7 @@ import NewsletterForm from './NewsletterForm.astro'
 const currentYear = new Date().getFullYear()
 ---
 
-<footer class="border-t border-[var(--color-border-subtle)] px-6 py-12">
+<footer class="border-t border-border-subtle px-6 py-12">
     <div class="mx-auto max-w-6xl">
         <div class="mb-8 grid grid-cols-2 gap-8 md:grid-cols-4">
             <!-- Logo -->
@@ -16,21 +16,21 @@ const currentYear = new Date().getFullYear()
                         alt=""
                         width="32"
                         height="32"
-                        class="h-6 w-6"
+                        class="size-6"
                     />
                     <span class="font-semibold">Cmdr</span>
                 </a>
-                <p class="mt-2 text-sm text-[var(--color-text-tertiary)]">Fast, keyboard-driven file manager</p>
+                <p class="mt-2 text-sm text-text-tertiary">Fast, keyboard-driven file manager</p>
             </div>
 
             <!-- Product -->
             <div>
-                <p class="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">Product</p>
+                <p class="mb-3 text-sm font-semibold text-text-primary">Product</p>
                 <ul class="space-y-2 text-sm">
                     <li>
                         <a
                             href="/features"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Features
                         </a>
@@ -38,7 +38,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="/pricing"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Pricing
                         </a>
@@ -46,7 +46,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="/#download"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Download
                         </a>
@@ -56,12 +56,12 @@ const currentYear = new Date().getFullYear()
 
             <!-- Resources -->
             <div>
-                <p class="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">Resources</p>
+                <p class="mb-3 text-sm font-semibold text-text-primary">Resources</p>
                 <ul class="space-y-2 text-sm">
                     <li>
                         <a
                             href="/blog"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Blog
                         </a>
@@ -69,7 +69,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="/blog/total-commander-for-macos"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Total Commander for Mac
                         </a>
@@ -77,7 +77,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="https://github.com/vdavid/cmdr"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             GitHub
                         </a>
@@ -85,7 +85,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="https://discord.gg/4BVafBneKJ"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Discord
                         </a>
@@ -93,7 +93,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="https://github.com/vdavid/cmdr/issues"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Report an issue
                         </a>
@@ -101,7 +101,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="https://github.com/vdavid/cmdr/blob/main/LICENSE"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Source license
                         </a>
@@ -111,12 +111,12 @@ const currentYear = new Date().getFullYear()
 
             <!-- Legal -->
             <div>
-                <p class="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">Legal</p>
+                <p class="mb-3 text-sm font-semibold text-text-primary">Legal</p>
                 <ul class="space-y-2 text-sm">
                     <li>
                         <a
                             href="/terms-and-conditions"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Terms of service
                         </a>
@@ -124,7 +124,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="/privacy-policy"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Privacy policy
                         </a>
@@ -132,7 +132,7 @@ const currentYear = new Date().getFullYear()
                     <li>
                         <a
                             href="/refund"
-                            class="text-[var(--color-text-secondary)] link-muted hover:text-[var(--color-text-primary)]"
+                            class="link-muted text-text-secondary hover:text-text-primary"
                         >
                             Refund policy
                         </a>
@@ -143,11 +143,11 @@ const currentYear = new Date().getFullYear()
 
         <!-- Newsletter -->
         <div
-            class="mb-8 flex flex-col items-start gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 md:flex-row md:items-center md:justify-between"
+            class="mb-8 flex flex-col items-start gap-4 rounded-xl border border-border bg-surface p-6 md:flex-row md:items-center md:justify-between"
         >
             <div>
-                <p class="font-semibold text-[var(--color-text-primary)]">Stay in the loop</p>
-                <p class="text-sm text-[var(--color-text-secondary)]">Product updates and news. No spam, ever.</p>
+                <p class="font-semibold text-text-primary">Stay in the loop</p>
+                <p class="text-sm text-text-secondary">Product updates and news. No spam, ever.</p>
             </div>
             <div class="w-full md:w-auto md:min-w-[320px]">
                 <NewsletterForm variant="inline" />
@@ -156,14 +156,14 @@ const currentYear = new Date().getFullYear()
 
         <!-- Bottom bar -->
         <div
-            class="flex flex-wrap items-center justify-center gap-x-1 border-t border-[var(--color-border-subtle)] pt-8 text-sm text-[var(--color-text-tertiary)]"
+            class="flex flex-wrap items-center justify-center gap-x-1 border-t border-border-subtle pt-8 text-sm text-text-tertiary"
         >
             <span>© {currentYear} David Veszelovszki ·</span>
             <a
                 href="https://veszelovszki.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="link-muted -mx-1 -my-1 inline-block px-2 py-1 hover:text-[var(--color-text-primary)]"
+                class="link-muted -m-1 inline-block px-2 py-1 hover:text-text-primary"
                 >veszelovszki.com</a
             >
             <span>·</span>
@@ -171,7 +171,7 @@ const currentYear = new Date().getFullYear()
                 href="https://github.com/vdavid"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="link-muted -mx-1 -my-1 inline-block px-2 py-1 hover:text-[var(--color-text-primary)]"
+                class="link-muted -m-1 inline-block px-2 py-1 hover:text-text-primary"
                 >GitHub</a
             >
             <span>·</span>
@@ -179,7 +179,7 @@ const currentYear = new Date().getFullYear()
                 href="https://x.com/vdavid"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="link-muted -mx-1 -my-1 inline-block px-2 py-1 hover:text-[var(--color-text-primary)]"
+                class="link-muted -m-1 inline-block px-2 py-1 hover:text-text-primary"
                 >X</a
             >
             <span>·</span>
@@ -187,14 +187,14 @@ const currentYear = new Date().getFullYear()
                 href="https://www.linkedin.com/in/veszelovszki/"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="link-muted -mx-1 -my-1 inline-block px-2 py-1 hover:text-[var(--color-text-primary)]"
+                class="link-muted -m-1 inline-block px-2 py-1 hover:text-text-primary"
                 >LinkedIn</a
             >
         </div>
 
         <!-- Company identifiers. Required on the website by lagen (2002:562) om elektronisk handel 8 § and
              aktiebolagslagen 28 kap. 5 §, which want the org number reachable from anywhere, not just the terms page. -->
-        <p class="mt-4 text-center text-xs text-[var(--color-text-tertiary)]">
+        <p class="mt-4 text-center text-xs text-text-tertiary">
             Cmdr is made by Rymdskottkärra AB, Järfälla, Sweden · Org. nr 559471-0401 · VAT SE559471040101
         </p>
     </div>

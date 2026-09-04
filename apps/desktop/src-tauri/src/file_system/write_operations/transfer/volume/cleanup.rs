@@ -16,12 +16,16 @@ use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use super::super::super::event_sinks::OperationEventSink;
+use super::super::super::ledger::{WrittenFile, WrittenIdentity};
+use super::super::super::reversal::{PresentRecheck, ReversalTally, drained, recheck_volume};
 use super::super::super::state::{StopMeans, WriteOperationState, update_operation_status};
 use super::super::super::types::{WriteOperationPhase, WriteOperationType, WriteProgressEvent};
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
+use crate::operation_log::rollback::ItemResult;
+use crate::operation_log::types::SkipReason;
 
 use cmdr_fs::staging::STAGING_TEMP_MARKER as TEMP_INFIX;
 
@@ -39,23 +43,30 @@ const STALE_TEMP_MIN_AGE: Duration = Duration::from_secs(60 * 60);
 /// directories are removed before the directories themselves.
 ///
 /// `copied_paths` are the individual destination FILES the operation wrote (never a merged
-/// directory root). After deleting them, `created_dirs` — the directories this operation
-/// NEWLY created — are pruned deepest-first, empty-only. A directory that still holds a
-/// pre-existing sibling (a dest-only file the user already had, or a kept-partial under
-/// cancel) is left in place, so rollback never destroys data this operation didn't write.
+/// directory root), each with the identity it landed with. It's a **stack**: every entry is
+/// popped as it's reversed, so a reversal the user stops halfway leaves a ledger that
+/// claims exactly what's still on the volume. After the files, `created_dirs` — the
+/// directories this operation NEWLY created — are pruned deepest-first, empty-only. A
+/// directory that still holds a pre-existing sibling (a dest-only file the user already
+/// had, or a kept-partial under cancel) is left in place, so rollback never destroys data
+/// this operation didn't write.
 ///
 /// Neither loop can recurse: they call [`delete_written_file`] and
 /// [`prune_created_dir_if_empty`], so a directory that reaches this ledger by mistake costs
 /// the user a leftover, never a file.
 ///
-/// Returns `true` if rollback completed fully, `false` if the user cancelled it.
+/// Every entry is rechecked against the size it landed with immediately before the delete;
+/// one the backend now reports differently is left alone and counted, never removed. The
+/// bar drains over the LEDGER's own length, so it reaches zero whether an entry was removed,
+/// left alone, or refused to go. What got left, and why, comes back in the returned
+/// [`ReversalTally`].
 #[allow(
     clippy::too_many_arguments,
     reason = "Needs the full progress state at cancellation time to emit reverse progress"
 )]
 pub(super) async fn volume_rollback_with_progress(
     volume: &Arc<dyn Volume>,
-    copied_paths: &[PathBuf],
+    copied_paths: &mut Vec<WrittenFile>,
     created_dirs: &[PathBuf],
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -64,94 +75,77 @@ pub(super) async fn volume_rollback_with_progress(
     bytes_at_cancel: u64,
     files_total: usize,
     bytes_total: u64,
-) -> bool {
-    let paths_to_delete = copied_paths.len();
-    let mut paths_deleted = 0usize;
+) -> ReversalTally {
+    let paths_to_process = copied_paths.len();
+    let mut tally = ReversalTally::default();
     let mut last_progress_time = Instant::now();
 
-    // Emit initial rollback phase event
-    state.emit_progress_via_sink(
-        events,
-        WriteProgressEvent::new(
-            operation_id.to_string(),
-            WriteOperationType::Copy,
-            WriteOperationPhase::RollingBack,
-            None,
-            files_at_cancel,
-            files_total,
-            bytes_at_cancel,
-            bytes_total,
-        ),
-    );
-    update_operation_status(
-        operation_id,
-        WriteOperationPhase::RollingBack,
-        None,
-        files_at_cancel,
-        files_total,
-        bytes_at_cancel,
-        bytes_total,
-    );
+    // The bar drains from here, so tell the estimator which way it runs before
+    // the first frame.
+    state.reversal_drains_the_bar();
 
-    // Delete in reverse order (newest first)
-    for path in copied_paths.iter().rev() {
+    let emit = |current_file: Option<String>, files_left: usize, bytes_left: u64| {
+        state.emit_progress_via_sink(
+            events,
+            WriteProgressEvent::new(
+                operation_id.to_string(),
+                WriteOperationType::Copy,
+                WriteOperationPhase::RollingBack,
+                current_file.clone(),
+                files_left,
+                files_total,
+                bytes_left,
+                bytes_total,
+            ),
+        );
+        update_operation_status(
+            operation_id,
+            WriteOperationPhase::RollingBack,
+            current_file,
+            files_left,
+            files_total,
+            bytes_left,
+            bytes_total,
+        );
+    };
+    emit(None, files_at_cancel, bytes_at_cancel);
+
+    // Delete newest first, draining the ledger as they go. The intent is read
+    // BEFORE the pop: an entry taken off the ledger and then left standing would
+    // be a file on the volume nothing claims any more.
+    loop {
         // Check if the user cancelled the rollback itself. This runs UNDER an
         // operation whose intent already reads `RollingBack`, so only `Stopped`
         // means stop (see `StopMeans`).
         if StopMeans::IntentReachesStopped.requested(&state.intent) {
             log::info!(
                 "volume_rollback_with_progress: rollback cancelled at {}/{} paths, keeping remaining",
-                paths_deleted,
-                paths_to_delete,
+                tally.processed(),
+                paths_to_process,
             );
-            return false;
+            tally.mark_canceled();
+            return tally;
         }
 
-        // One node each: these are the FILES this operation wrote.
-        if let Err(e) = delete_written_file(volume, path).await {
-            log::warn!(
-                "volume_rollback_with_progress: couldn't delete {}: {:?}",
-                e.path.display(),
-                e.error
-            );
-        }
-        paths_deleted += 1;
+        let Some(entry) = copied_paths.pop() else {
+            break;
+        };
+        // Rechecked here, one item before the act — ❌ never in a batch, where a
+        // verification would age while other items were processed.
+        let result = reverse_written_file(volume, &entry).await;
+        tally.record(result, &entry.path);
 
-        // Throttled progress events with decreasing values
+        // Throttled progress events with decreasing values. The counters advance
+        // for every entry the reversal walked past, removed or not.
         if last_progress_time.elapsed() >= state.progress_interval {
-            let remaining_files = files_at_cancel.saturating_sub(paths_deleted);
-            let remaining_bytes = if paths_to_delete > 0 {
-                bytes_at_cancel - (bytes_at_cancel as f64 * paths_deleted as f64 / paths_to_delete as f64) as u64
-            } else {
-                0
-            };
-
-            let current_file_name = path
+            let (files_left, bytes_left) =
+                drained(files_at_cancel, bytes_at_cancel, tally.processed(), paths_to_process);
+            let current_file_name = entry
+                .path
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_default();
-            state.emit_progress_via_sink(
-                events,
-                WriteProgressEvent::new(
-                    operation_id.to_string(),
-                    WriteOperationType::Copy,
-                    WriteOperationPhase::RollingBack,
-                    Some(current_file_name.clone()),
-                    remaining_files,
-                    files_total,
-                    remaining_bytes,
-                    bytes_total,
-                ),
-            );
-            update_operation_status(
-                operation_id,
-                WriteOperationPhase::RollingBack,
-                Some(current_file_name),
-                remaining_files,
-                files_total,
-                remaining_bytes,
-                bytes_total,
-            );
+            emit(Some(current_file_name), files_left, bytes_left);
             last_progress_time = Instant::now();
         }
     }
@@ -161,12 +155,90 @@ pub(super) async fn volume_rollback_with_progress(
     // reverse empties leaves before their parents are tried.
     for dir in created_dirs.iter().rev() {
         if StopMeans::IntentReachesStopped.requested(&state.intent) {
-            return false;
+            tally.mark_canceled();
+            return tally;
         }
-        prune_created_dir_if_empty(volume, dir).await;
+        tally.record(prune_created_dir_if_empty(volume, dir).await, dir);
     }
 
-    true
+    // The frame that lands on zero, so a run whose last items fell inside the
+    // throttle window still ends where it ended.
+    emit(None, 0, 0);
+    tally
+}
+
+/// Remove ONE destination file this operation wrote, if the backend still reports
+/// the file this operation wrote.
+///
+/// A partial goes without asking: it has no complete file to recognize, and
+/// leaving one behind is the failure cancelling mid-file exists to prevent
+/// ([`super::super::super::ledger::WrittenIdentity::OwnPartial`]).
+async fn reverse_written_file(volume: &Arc<dyn Volume>, entry: &WrittenFile) -> ItemResult {
+    if !matches!(entry.identity, WrittenIdentity::OwnPartial) {
+        let live_size = match volume.get_metadata(&entry.path).await {
+            Ok(live) => live.size,
+            // Already gone ⇒ the end state we wanted already holds.
+            Err(VolumeError::NotFound(_)) => return ItemResult::Skipped(SkipReason::AlreadyGone),
+            Err(e) => {
+                log::warn!(
+                    "volume_rollback_with_progress: couldn't recheck {}: {e:?}",
+                    entry.path.display()
+                );
+                return ItemResult::Skipped(SkipReason::UnverifiablePrecondition);
+            }
+        };
+        match recheck_volume(entry, live_size) {
+            PresentRecheck::Act => {}
+            PresentRecheck::Skip(reason) => {
+                log::info!(
+                    "volume_rollback_with_progress: leaving {} alone ({reason:?})",
+                    entry.path.display()
+                );
+                return ItemResult::Skipped(reason);
+            }
+        }
+    }
+    // One node each: these are the FILES this operation wrote.
+    match delete_written_file(volume, &entry.path).await {
+        Ok(()) => ItemResult::Reversed,
+        Err(e) => {
+            log::warn!(
+                "volume_rollback_with_progress: couldn't delete {}: {:?}",
+                e.path.display(),
+                e.error
+            );
+            ItemResult::Skipped(SkipReason::Failed)
+        }
+    }
+}
+
+/// Folds the writes that were still in flight into the rollback ledger, marked as
+/// this operation's OWN partials: the serial driver's single `last_dest_path`
+/// plus the concurrent driver's one-per-in-flight-task set.
+///
+/// **They go in as `WrittenIdentity::OwnPartial`, never as files whose identity
+/// is unknown.** A partial has no size and no complete file to recognize, by
+/// construction — so a reversal that treated "can't verify it" as "leave it
+/// alone" would strand a truncated file at the destination, which is the exact
+/// outcome cancelling mid-file exists to avoid. Nothing but this operation can
+/// plausibly own a destination path that never held a complete file, so these are
+/// removed on sight. Pinned by the E2E "cancelling inside one large file leaves
+/// no partial behind".
+///
+/// A path the ledger already carries stays as it is: the completed write it
+/// describes is the better record of the two, and pushing a second entry would
+/// make the reversal walk the same path twice.
+pub(super) fn append_own_partials(
+    ledger: &mut Vec<WrittenFile>,
+    last_dest_path: Option<PathBuf>,
+    in_flight_partials: &[PathBuf],
+) {
+    for partial in last_dest_path.into_iter().chain(in_flight_partials.iter().cloned()) {
+        if ledger.iter().any(|entry| entry.path == partial) {
+            continue;
+        }
+        ledger.push(WrittenFile::own_partial(partial));
+    }
 }
 
 /// Removes the destination partials a Stopped or errored copy left behind: the
@@ -203,8 +275,14 @@ pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[P
 /// entry before landing, so a temp holding committed data (a landing that failed
 /// after the bytes were complete) is never in this set and is never touched here.
 ///
-/// Best-effort: a temp whose task is wedged with an open handle may refuse to
-/// delete, which is why it wears a recognizable name.
+/// A temp whose task is wedged with an open handle refuses to delete — an
+/// abandoned SMB2 write keeps its handle, and the server answers the delete with
+/// a sharing violation until that session ends. **Those come back to the caller**
+/// rather than living only in a WARN: a user who chose Rollback asked for the
+/// destination to be cleared, and multi-gigabyte scratch files staying behind is
+/// news they have to be told (`types::events::StagedLeftovers`). Retrying here
+/// can't help — the handle belongs to a session that outlives this operation —
+/// so the honest report is the whole remedy this function owns.
 ///
 /// **Skipped entirely once tier 2 has fired** (`state.backend_abort`). Every
 /// delete here is a round trip through the destination, and the reason the abort
@@ -212,33 +290,45 @@ pub(super) async fn clean_partial_writes(volume: &Arc<dyn Volume>, partials: &[P
 /// quit deadline for a second time, right after the streaming write stopped
 /// holding it. The entries stay in both ledgers instead, and
 /// `write_operations::in_flight_temps`'s startup sweep clears them at the next
-/// launch, with no age gate, off the launch thread.
-pub(super) async fn clean_abandoned_staged_writes(volume: &Arc<dyn Volume>, state: &Arc<WriteOperationState>) {
+/// launch, with no age gate, off the launch thread. Nothing is reported in that
+/// case: the app is on its way out and there is no toast left to read it.
+pub(super) async fn clean_abandoned_staged_writes(
+    volume: &Arc<dyn Volume>,
+    state: &Arc<WriteOperationState>,
+) -> Vec<PathBuf> {
     if state.backend_abort.is_cancelled() {
         log::info!(
             target: "copy",
             "clean_abandoned_staged_writes: the app is shutting down, leaving the staged partial(s) to the startup sweep"
         );
-        return;
+        return Vec::new();
     }
     let temps: Vec<PathBuf> = std::mem::take(&mut *state.in_flight_temps.lock_ignore_poison());
     if temps.is_empty() {
-        return;
+        return Vec::new();
     }
     log::info!(
         target: "copy",
         "clean_abandoned_staged_writes: removing {} staged partial(s) left by abandoned tasks",
         temps.len()
     );
+    let mut unremoved = Vec::new();
     for temp in temps {
-        if let Err(e) = volume.delete(&temp).await {
+        // Via `delete_written_file`, so a temp that's already gone counts as
+        // removed — the end state this sweep wants already holds, and reporting
+        // it as a leftover would send the user hunting for a file that isn't
+        // there.
+        if let Err(e) = delete_written_file(volume, &temp).await {
             log::warn!(
                 target: "copy",
-                "clean_abandoned_staged_writes: couldn't remove {}: {e}",
-                temp.display()
+                "clean_abandoned_staged_writes: couldn't remove {}: {:?}",
+                e.path.display(),
+                e.error
             );
+            unremoved.push(temp);
         }
     }
+    unremoved
 }
 
 /// Reaps `.cmdr-tmp-*` leftovers a crash or force-quit left in the destination
@@ -339,28 +429,37 @@ async fn delete_written_file(volume: &Arc<dyn Volume>, path: &Path) -> Result<()
 ///
 /// Best-effort and quiet — a directory kept because it still holds something is
 /// the normal outcome, not a failure.
-async fn prune_created_dir_if_empty(volume: &Arc<dyn Volume>, dir: &Path) {
+async fn prune_created_dir_if_empty(volume: &Arc<dyn Volume>, dir: &Path) -> ItemResult {
     match volume.list_directory(dir, None).await {
-        Ok(entries) if entries.is_empty() => {
-            if let Err(e) = volume.delete(dir).await {
+        Ok(entries) if entries.is_empty() => match volume.delete(dir).await {
+            Ok(()) => ItemResult::Reversed,
+            Err(VolumeError::NotFound(_)) => ItemResult::Skipped(SkipReason::AlreadyGone),
+            Err(e) => {
                 log::debug!(
                     "prune_created_dir_if_empty: couldn't remove empty created dir {}: {:?}",
                     dir.display(),
                     e
                 );
+                ItemResult::Skipped(SkipReason::Failed)
             }
+        },
+        Ok(entries) => {
+            log::debug!(
+                "prune_created_dir_if_empty: keeping created dir {}, it still holds {} entr{}",
+                dir.display(),
+                entries.len(),
+                if entries.len() == 1 { "y" } else { "ies" }
+            );
+            ItemResult::Skipped(SkipReason::DirNotEmpty)
         }
-        Ok(entries) => log::debug!(
-            "prune_created_dir_if_empty: keeping created dir {}, it still holds {} entr{}",
-            dir.display(),
-            entries.len(),
-            if entries.len() == 1 { "y" } else { "ies" }
-        ),
-        Err(e) => log::debug!(
-            "prune_created_dir_if_empty: keeping created dir {}, couldn't list it: {:?}",
-            dir.display(),
-            e
-        ),
+        Err(e) => {
+            log::debug!(
+                "prune_created_dir_if_empty: keeping created dir {}, couldn't list it: {:?}",
+                dir.display(),
+                e
+            );
+            ItemResult::Skipped(SkipReason::Failed)
+        }
     }
 }
 

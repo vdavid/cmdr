@@ -407,11 +407,11 @@ fn record_visit_accumulates_count_and_recency() {
 /// naive sweep-time READ of the generation reads "already scored" and skips the full
 /// recompute — and THEN the schema recreate fires on the first write-path open,
 /// wiping the generation, leaving the volume stuck at "never scored" forever.
-/// `needs_initial_full_pass` avoids the trap by binding the decision to the write-path
+/// `needs_full_pass` avoids the trap by binding the decision to the write-path
 /// open: it forces the recreate FIRST, so the generation it reads reflects the current
 /// schema and it correctly reports "needs a full pass".
 #[test]
-fn needs_initial_full_pass_binds_to_the_write_path_open_not_a_read_probe() {
+fn needs_full_pass_binds_to_the_write_path_open_not_a_read_probe() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
 
@@ -444,7 +444,7 @@ fn needs_initial_full_pass_binds_to_the_write_path_open_not_a_read_probe() {
     // The fix: the write-path-bound probe forces the delete-and-recreate first
     // (schema 2 → 3), so it reads generation 0 and reports "needs a full pass".
     assert!(
-        needs_initial_full_pass(dir.path(), "root").expect("probe"),
+        needs_full_pass(dir.path(), "root").expect("probe"),
         "binding to the write-path open recreates the store, so no generation remains ⇒ full pass needed"
     );
 
@@ -464,13 +464,24 @@ fn needs_initial_full_pass_binds_to_the_write_path_open_not_a_read_probe() {
     );
 }
 
-/// A store already carrying a generation (the normal case) does NOT need an initial
-/// full pass — so a scheduler gating on this never rescores every volume on launch.
+/// A store already carrying a generation AND the current scoring-policy stamp (the
+/// normal case) does NOT need a full pass — so a scheduler gating on this never
+/// rescores every volume on launch.
 #[test]
-fn needs_initial_full_pass_is_false_for_an_already_scored_store() {
+fn needs_full_pass_is_false_for_an_already_scored_store() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
-    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    write_one_full_pass(&path);
+
+    assert!(
+        !needs_full_pass(dir.path(), "root").expect("probe"),
+        "a generation-stamped store scored under the current policy is done ⇒ no full pass"
+    );
+}
+
+/// Run one full pass over a store, the way the scheduler's recompute does.
+fn write_one_full_pass(path: &Path) {
+    let writer = ImportanceWriter::spawn(path).expect("spawn");
     writer
         .write_weights(
             1,
@@ -483,10 +494,115 @@ fn needs_initial_full_pass_is_false_for_an_already_scored_store() {
         .expect("write");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
+}
+
+/// A full pass stamps the scoring policy its rows were computed under, in the same
+/// transaction as the generation bump. Without the stamp nothing ever re-arms: a
+/// full pass runs once and an incremental only touches folders the filesystem
+/// changed, so a classification fix would stay inert over the ~189,000 rows a
+/// scored volume holds (observed on the local `root` volume, 2026-09-03).
+#[test]
+fn a_full_pass_stamps_the_scoring_policy_it_scored_under() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    write_one_full_pass(&path);
+
+    let store = ImportanceStore::open(&path).expect("open");
+    assert_eq!(
+        read_meta_value(store.read_conn(), SCORING_POLICY_KEY)
+            .expect("read stamp")
+            .as_deref(),
+        Some(crate::importance::classify::scoring_policy_fingerprint().as_str()),
+        "a full pass stamps this build's scoring policy"
+    );
+    assert!(
+        !store.predates_scoring_policy().expect("probe"),
+        "so the store no longer predates the policy"
+    );
+}
+
+/// A store whose rows were scored under a SUPERSEDED policy needs a full pass even
+/// though it carries a generation. This is what makes a classification change
+/// (a new temp root, a changed marker-promotion rule) actually reach the rows a
+/// user's volume already holds.
+#[test]
+fn a_store_scored_under_a_superseded_policy_needs_a_full_pass() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    write_one_full_pass(&path);
+    assert!(
+        !needs_full_pass(dir.path(), "root").expect("probe"),
+        "test setup: freshly scored, so no pass is due yet"
+    );
+
+    // Rewind the stamp to an older policy, the way a user's store looks after the
+    // app upgrades into new classification rules.
+    {
+        let conn = open_write_connection(&path).expect("conn");
+        conn.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, 'an-older-policy')",
+            rusqlite::params![SCORING_POLICY_KEY],
+        )
+        .expect("rewind stamp");
+    }
 
     assert!(
-        !needs_initial_full_pass(dir.path(), "root").expect("probe"),
-        "a generation-stamped store is already scored ⇒ no initial full pass"
+        needs_full_pass(dir.path(), "root").expect("probe"),
+        "rows computed under a policy we no longer apply can't be trusted ⇒ full pass"
+    );
+}
+
+/// A store written before the stamp existed carries none, and that counts as stale.
+/// Every such store holds rows from an older policy by definition; a redundant
+/// recompute costs one pass, while a skipped one leaves wrong scores in place
+/// indefinitely.
+#[test]
+fn an_unstamped_store_needs_a_full_pass() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    write_one_full_pass(&path);
+
+    {
+        let conn = open_write_connection(&path).expect("conn");
+        conn.execute("DELETE FROM meta WHERE key = ?1", rusqlite::params![SCORING_POLICY_KEY])
+            .expect("drop stamp");
+    }
+
+    assert!(
+        needs_full_pass(dir.path(), "root").expect("probe"),
+        "an absent stamp is stale, not trusted"
+    );
+}
+
+/// The rescore is forced by a STAMP rather than a [`SCHEMA_VERSION`] bump, and this
+/// is why: a bump deletes the DB file, and `visits` is the one table here that isn't
+/// regenerable. A superseded policy must re-arm the weights while the user's
+/// navigation history survives.
+#[test]
+fn re_arming_the_scoring_policy_keeps_the_visit_history() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    writer.record_visit("/Users/me/projects/thing", 1_000).expect("visit");
+    writer.flush_blocking().expect("flush");
+    writer.shutdown();
+    write_one_full_pass(&path);
+
+    {
+        let conn = open_write_connection(&path).expect("conn");
+        conn.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, 'an-older-policy')",
+            rusqlite::params![SCORING_POLICY_KEY],
+        )
+        .expect("rewind stamp");
+    }
+    assert!(needs_full_pass(dir.path(), "root").expect("probe"), "a pass is due");
+
+    let store = ImportanceStore::open(&path).expect("reopen");
+    assert_eq!(
+        store.visit_for("/Users/me/projects/thing").expect("visit"),
+        Some((1, 1_000)),
+        "the probe re-arms the weights without touching the visit history"
     );
 }
 

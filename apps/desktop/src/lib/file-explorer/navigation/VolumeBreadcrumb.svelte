@@ -18,7 +18,7 @@
     import type { UnlistenFn } from '@tauri-apps/api/event'
     import { connectDirectly } from '../network/direct-connect'
     import { addToast } from '$lib/ui/toast'
-    import { getDiskUsageLevel, getUsedPercent, formatDiskSpaceShort } from '../disk-space-utils'
+    import { getUsageBar, formatDiskSpaceShort } from '../disk-space-utils'
     import {
         getNetworkEnabled,
         getUseAppIconsForDocuments,
@@ -63,6 +63,7 @@
     /** Tooltip shown on a disabled Eject control while a transfer touches the volume. */
     const EJECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.ejectBusyTooltip'))
     import { groupByCategory, getIconForVolume } from './volume-grouping'
+    import { deviceVolumeLabel } from '$lib/adb/adb-volume-label'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
@@ -902,7 +903,7 @@
                                 aria-label={tString('fileExplorer.navigation.renameFavoriteAriaLabel')}
                             />
                         {:else}
-                            <span class="volume-label">{volume.name}</span>
+                            <span class="volume-label">{deviceVolumeLabel(volume, volumes)}</span>
                         {/if}
                         {#if fsLabel}
                             <span class="volume-fs">{fsLabel}</span>
@@ -965,6 +966,7 @@
                     {#if volumeSpaceMap.has(volume.id)}
                         {@const space = volumeSpaceMap.get(volume.id)}
                         {#if space}
+                            {@const bar = getUsageBar(space)}
                             <!-- svelte-ignore a11y_click_events_have_key_events -->
                             <!-- svelte-ignore a11y_no_static_element_interactions -->
                             <!-- svelte-ignore a11y_mouse_events_have_key_events -->
@@ -973,13 +975,17 @@
                                 onclick={() => { void handleVolumeSelect(volume) }}
                                 onmouseover={() => { handleVolumeHover(volume) }}
                             >
-                                <div class="volume-space-bar">
-                                    <div
-                                        class="volume-space-fill"
-                                        style:width="{getUsedPercent(space)}%"
-                                        style:background-color="var({getDiskUsageLevel(getUsedPercent(space)).cssVar})"
-                                    ></div>
-                                </div>
+                                <!-- No bar where there is no total to fill it against: the
+                                     line carries the used figure on its own. -->
+                                {#if bar}
+                                    <div class="volume-space-bar">
+                                        <div
+                                            class="volume-space-fill"
+                                            style:width="{bar.usedPercent}%"
+                                            style:background-color="var({bar.cssVar})"
+                                        ></div>
+                                    </div>
+                                {/if}
                                 <span class="volume-space-text">{formatDiskSpaceShort(space, formatByteSize)}</span>
                             </div>
                         {/if}

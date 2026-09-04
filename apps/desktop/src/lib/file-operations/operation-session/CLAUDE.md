@@ -18,11 +18,14 @@ operation is now plus what you can do to it. Views bind and command through it; 
 - **Claim → flush → go live is ONE sync block**; ❌ no `await` in it, or an older sample lands after a newer one and
   corrupts the smoother. DETAILS § "The three rules".
 - **Settle comes from the terminal EVENTS, ❌ never from leaving the snapshot** (completed, cancelled, and never-existed
-  all look "removed"). The seeding miss is the one exception: `outcome: 'gone'`.
+  all look "removed"). The seeding miss is the one exception: `outcome: 'gone'`. Leaving the snapshot is its own,
+  separate answer, `leftRegistry`: membership, ❌ never an ending, for the operation-log reversal, which emits no
+  terminal event at all. DETAILS § "Leaving the registry".
 - **The fan-out BUFFERS what `queue/operations-store.svelte.ts` DROPS**, bounded on purpose: newest event of each kind
   per unclaimed id, plus the newest tick of each live one. ❌ Not a gate, ❌ not a log. DETAILS § "The buffer's bound".
 - **Render `bytesPerSecondDisplay` / `filesPerSecondDisplay` / `etaSecondsDisplay`, ❌ never a rate or ETA off the raw
-  tick**: the rates go `null` while a person decides, the ETA survives that wait. DETAILS § "Read surface".
+  tick**: every rate goes `null` while a person decides (the SCAN's two included), the ETA survives that wait. DETAILS §
+  "Read surface".
 - **❌ No `$derived` in a session** (it outlives the view that created it). Compose in the getter.
 - **A scanning operation reads as live and counting, never 0%**: totals stay 0, so branch on `phase === 'scanning'`.
 - **No command throws, and each says whether it landed**: `false` or a `null` verdict means nothing was sent, so leave

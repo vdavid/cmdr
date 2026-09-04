@@ -32,14 +32,10 @@ pub(super) fn directory_entry_to_file_entry(
     fe
 }
 
-/// Converts an `smb2::FsInfo` to `SpaceInfo`.
+/// Converts an `smb2::FsInfo` to `SpaceInfo`. A share always has a size, so it
+/// is always [`SpaceInfo::Bounded`].
 pub(super) fn fs_info_to_space_info(info: &smb2::client::tree::FsInfo) -> SpaceInfo {
-    let used = info.total_bytes.saturating_sub(info.free_bytes);
-    SpaceInfo {
-        total_bytes: info.total_bytes,
-        available_bytes: info.free_bytes,
-        used_bytes: used,
-    }
+    SpaceInfo::bounded(info.total_bytes, info.free_bytes)
 }
 
 /// Converts an `smb2::Error` to `VolumeError`, for an operation on `path`.

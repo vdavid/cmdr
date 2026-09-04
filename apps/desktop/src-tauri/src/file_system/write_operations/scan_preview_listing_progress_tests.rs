@@ -100,16 +100,18 @@ impl Volume for ProgressEmittingVolume {
         self.inner.scan_for_copy(path)
     }
 
-    fn scan_for_copy_batch_with_progress<'a>(
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        boundary: &'a crate::file_system::volume::ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         let emit = self.emit;
         Box::pin(async move {
             // Simulate a backend that has accumulated some progress and reports
             // running (files, dirs, bytes) before returning the final result.
-            if let Some(cb) = on_progress {
+            // Through `raw_progress` because this double stands in for MTP, which
+            // reports that way (`ScanBoundary::raw_progress`).
+            if let Some(cb) = boundary.raw_progress() {
                 cb(emit);
             }
             // Aggregate must match what we emitted via on_progress so the
@@ -199,7 +201,7 @@ async fn run_oracle_aware_batch_scan_forwards_dirs_and_bytes_from_backend() {
     let recorder = Recorder::default();
     let on_progress = |p: ListingProgress| recorder.record(p);
 
-    let _ = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, &on_progress)
+    let _ = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, None, &on_progress)
         .await
         .expect("oracle-aware batch scan should succeed");
 
@@ -251,7 +253,7 @@ async fn dirs_and_bytes_baseline_shifts_across_parent_groups() {
     let recorder = Recorder::default();
     let on_progress = |p: ListingProgress| recorder.record(p);
 
-    let _ = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, &on_progress)
+    let _ = run_oracle_aware_batch_scan(vol.as_ref(), &vid, &sources, &is_cancelled, None, &on_progress)
         .await
         .expect("oracle-aware batch scan should succeed");
 

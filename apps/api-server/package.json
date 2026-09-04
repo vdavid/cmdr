@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
+    "prepare": "wrangler types",
     "dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",
     "setup-infra": "./scripts/setup-cf-infra.sh",
@@ -14,7 +15,9 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
+    "types:gen": "wrangler types",
+    "typecheck": "wrangler types && tsc --noEmit",
+    "typecheck:no-gen": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -25,7 +28,6 @@
     "resend": "^6.17.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260702.1",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",

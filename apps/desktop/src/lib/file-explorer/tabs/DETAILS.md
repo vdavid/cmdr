@@ -117,3 +117,21 @@ toasts "Tab limit reached" and leaves the stack untouched.
 `TabBar.svelte`'s `ondblclick` routes to `onNewTab` when the target isn't inside `.tab`, `.close-btn`, or
 `.new-tab-btn`, so the bar's right padding strip and the trailing flex space of `.tab-list` both count as "new tab"
 surfaces.
+
+## Narrow tabs drop their close button
+
+A tab whose content box shrinks to 80px or less loses its close button; there isn't room for a label and a button both.
+
+The threshold is measured in JS, not queried in CSS. `TabBar.svelte` puts `useInlineSize`
+(`$lib/utils/inline-size-action`) on every `.tab`, keeps the ids that are under the threshold in a `SvelteSet`, and
+renders `class:narrow` from it; `.tab.narrow .close-btn { display: none }` does the rest. `useInlineSize` reports the
+same content box a size query reads, so the number is the one the old `@container (max-width: 80px)` rule used.
+
+**Why not a container query**: `@container` and `container-type` need Safari 16, and Cmdr's WebKit floor is Safari 15
+(macOS 12 Monterey ships 15.0). Old WebKit drops the block whole and in silence, so on the oldest macOS Cmdr supports
+every tab kept a close button it had no room for, with nothing to say so. Stylelint now rejects both spellings; see
+`apps/desktop/src/lib/utils/DETAILS.md` § `inline-size-action.ts`.
+
+A width of 0 reads as "not measured yet", never as narrow: the observer's first callback lands after the first paint,
+and treating it as narrow would blink every close button out and back in on mount. Closing a tab leaves its id in the
+set, so an `$effect` prunes ids no longer in `tabs`.

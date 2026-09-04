@@ -23,7 +23,7 @@ export async function GET(context: APIContext) {
 
 > The fastest two-pane file manager for macOS. Every folder sized. Every file found.
 
-Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search and keyboard-driven everything. AI features (smart search, natural language rename, batch operations) are in active development. Free forever for personal use, source-available under BSL 1.1.
+Cmdr is an extremely fast, keyboard-driven, two-pane file manager for macOS (Linux in alpha), built with Rust, Tauri 2, and Svelte 5. It indexes your entire drive in minutes, shows directory sizes everywhere, and offers instant search and keyboard-driven everything. AI features (smart search, natural language rename, batch operations) are in active development. Free for personal use, source-available under BSL 1.1.
 
 Current version: ${version}
 Release date: ${latestRelease.pub_date.split('T')[0]}
@@ -79,7 +79,7 @@ Release date: ${latestRelease.pub_date.split('T')[0]}
 
 ## Pricing
 
-### Personal (free forever)
+### Personal (free)
 
 - All features included
 - Unlimited machines
@@ -131,7 +131,8 @@ Each person needs their own license. For teams of five or more, email legal@getc
 
 ## System requirements
 
-- **macOS**: Apple Silicon (M1 and later) and Intel. Separate DMG installers for each architecture, plus a universal build.
+- **macOS**: 12 or newer, on Apple Silicon (M1 and later) and Intel. Separate DMG installers for each architecture, plus a universal build.
+- **Older macOS**: 10.15 Catalina and 11 Big Sur install and run on a best-effort basis. Everything works, but a few colors and layout details can look off, and fixes for those systems are a lower priority.
 - **Linux**: Alpha support. Volumes via /proc/mounts, file ops with reflink support, trash via FreeDesktop spec, inotify file watching, native file icons via freedesktop-icons.
 
 ## License

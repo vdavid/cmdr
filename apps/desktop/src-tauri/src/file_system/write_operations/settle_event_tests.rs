@@ -17,7 +17,7 @@ use std::time::Duration;
 use super::copy_files_start;
 use super::event_sinks::{CollectorEventSink, OperationEventSink};
 use super::state::WriteSettledGuard;
-use super::types::{WriteOperationConfig, WriteOperationType, WriteSettledEvent};
+use super::types::{CancelRollback, WriteOperationConfig, WriteOperationType, WriteSettledEvent};
 use crate::test_support::TestDir;
 
 /// Bridge sink that keeps a direct handle to the underlying `CollectorEventSink`
@@ -154,7 +154,7 @@ fn settled_event_order_is_after_terminal_outcome_event() {
             operation_id: op_id.clone(),
             operation_type: WriteOperationType::Delete,
             files_processed: 7,
-            rolled_back: false,
+            rollback: CancelRollback::none(),
         });
         // Guard's Drop runs at end of scope, AFTER the cancelled emit above.
     }

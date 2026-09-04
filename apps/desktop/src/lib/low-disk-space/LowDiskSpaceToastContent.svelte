@@ -50,8 +50,12 @@
         let disposed = false
         void onVolumeSpaceChanged((payload) => {
             if (payload.volumeId !== volumeId) return
-            available = payload.availableBytes
-            total = payload.totalBytes
+            // A volume with no ceiling can't be low on space, so it has no figures
+            // to move this toast's numbers with. The backend never fires the warning
+            // for one either; ignoring it here keeps the two ends agreeing.
+            if (payload.space.kind !== 'bounded') return
+            available = payload.space.availableBytes
+            total = payload.space.totalBytes
         }).then((fn) => {
             // If the toast was dismissed before the listener resolved, unsubscribe now.
             if (disposed) fn()

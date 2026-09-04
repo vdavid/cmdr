@@ -16,7 +16,7 @@ import {
   watchVolumeSpace,
   unwatchVolumeSpace,
   onVolumeSpaceChanged,
-  type VolumeSpaceInfo,
+  type SpaceInfo,
   type UnlistenFn,
 } from '$lib/tauri-commands'
 import { pathInsideArchive } from './volume-capabilities'
@@ -41,7 +41,7 @@ export interface VolumeSpaceDeps {
 
 export interface VolumeSpace {
   /** Live space for the pane's volume, or null (disk image / not yet fetched / virtual). */
-  readonly volumeSpace: VolumeSpaceInfo | null
+  readonly volumeSpace: SpaceInfo | null
   /** Fetch space for the current path. A disk image clears the readout instead. */
   refresh: () => Promise<void>
   /** Register for live backend disk-space events. Call once from `onMount`. */
@@ -57,7 +57,7 @@ export interface VolumeSpace {
 }
 
 export function createVolumeSpace(deps: VolumeSpaceDeps): VolumeSpace {
-  let volumeSpace = $state<VolumeSpaceInfo | null>(null)
+  let volumeSpace = $state<SpaceInfo | null>(null)
   let unlistenSpaceChanged: UnlistenFn | undefined
 
   async function refresh(): Promise<void> {
@@ -81,10 +81,7 @@ export function createVolumeSpace(deps: VolumeSpaceDeps): VolumeSpace {
     // this is a belt-and-suspenders guard against a late/stray event.
     void onVolumeSpaceChanged((payload) => {
       if (payload.volumeId === deps.getVolumeId() && !deps.getIsDiskImage()) {
-        volumeSpace = {
-          totalBytes: payload.totalBytes,
-          availableBytes: payload.availableBytes,
-        }
+        volumeSpace = payload.space
       }
     }).then((fn) => {
       unlistenSpaceChanged = fn

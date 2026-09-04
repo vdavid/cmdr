@@ -31,7 +31,7 @@ pub(super) mod volume;
 // pre-split `write_operations::CopyTransaction` test path).
 #[cfg(test)]
 #[allow(unused_imports, reason = "used by transaction_integration_test")]
-pub(crate) use super::state::CopyTransaction;
+pub(crate) use super::ledger::CopyTransaction;
 
 #[cfg(test)]
 pub(crate) mod conflict_responder_test_support;

@@ -39,10 +39,9 @@ function raw(key: MessageKey): string {
 const EJECT_MESSAGE: { [K in EjectError['type']]: () => string } = {
   busy: () => raw('errors.eject.busy'),
   volumeNotFound: () => raw('errors.eject.volumeNotFound'),
-  mtpIdMissingDevicePrefix: () => raw('errors.eject.mtpIdMissingDevicePrefix'),
   notEjectable: () => raw('errors.eject.notEjectable'),
   notAnSmbVolume: () => raw('errors.eject.notAnSmbVolume'),
-  mtpDisconnectRefused: () => raw('errors.eject.mtpDisconnectRefused'),
+  deviceDisconnectRefused: () => raw('errors.eject.deviceDisconnectRefused'),
   unmountRefused: () => raw('errors.eject.unmountRefused'),
   timedOut: () => raw('errors.eject.timedOut'),
   // The single honest fallback. ❌ `detail` is never the message; it goes to
@@ -56,7 +55,7 @@ export function renderEjectError(error: EjectError): string {
 }
 
 /** `EjectError` variants that carry their own free-text `detail` field. */
-const DETAIL_BEARING_VARIANTS = new Set<EjectError['type']>(['unmountRefused', 'mtpDisconnectRefused', 'unexpected'])
+const DETAIL_BEARING_VARIANTS = new Set<EjectError['type']>(['unmountRefused', 'deviceDisconnectRefused', 'unexpected'])
 
 /**
  * The backend's own words for this refusal (usually `diskutil`'s stderr, which

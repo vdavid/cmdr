@@ -60,6 +60,15 @@ vi.mock('$lib/commands/command-registry', () => ({
       showInPalette: false,
       shortcuts: ['⌘A'],
     },
+    // A Shift+digit default: `⇧8` is never what a layout types, so the matcher's
+    // physical-key fallback is what makes it bindable at all.
+    {
+      id: 'selection.invert',
+      name: 'Invert selection',
+      scope: 'Main window/File list',
+      showInPalette: true,
+      shortcuts: ['⇧8'],
+    },
   ],
 }))
 
@@ -239,6 +248,22 @@ describe('shortcut-dispatch', () => {
 
       expect(eventMatchesCommand(cmdA, 'selection.selectAll')).toBe(true)
       expect(eventMatchesCommand(optCmdA, 'selection.selectAll')).toBe(false)
+    })
+
+    it('matches a ⇧<digit> default by the physical key, whatever the layout types', () => {
+      const usStar = new KeyboardEvent('keydown', { key: '*', code: 'Digit8', shiftKey: true })
+      const huParen = new KeyboardEvent('keydown', { key: '(', code: 'Digit8', shiftKey: true })
+      expect(eventMatchesCommand(usStar, 'selection.invert')).toBe(true)
+      expect(eventMatchesCommand(huParen, 'selection.invert')).toBe(true)
+    })
+
+    it('keeps the fallback exact: no Shift, another digit, or an extra modifier is not ⇧8', () => {
+      const plainEight = new KeyboardEvent('keydown', { key: '8', code: 'Digit8' })
+      const shiftSeven = new KeyboardEvent('keydown', { key: '&', code: 'Digit7', shiftKey: true })
+      const cmdShiftEight = new KeyboardEvent('keydown', { key: '*', code: 'Digit8', shiftKey: true, metaKey: true })
+      expect(eventMatchesCommand(plainEight, 'selection.invert')).toBe(false)
+      expect(eventMatchesCommand(shiftSeven, 'selection.invert')).toBe(false)
+      expect(eventMatchesCommand(cmdShiftEight, 'selection.invert')).toBe(false)
     })
   })
 

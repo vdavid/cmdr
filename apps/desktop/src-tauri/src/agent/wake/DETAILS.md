@@ -214,6 +214,32 @@ they are what somebody searching their threads would actually type.
 
 ## The inbox, and what a restart does
 
+**A floored folder never gets in** (`Inbox::admit_if_permitted`). A `Floored` weight is `0.0`, so interest is `0.0`
+however much churn the folder sees and the row can never earn a deadline. Refusing at the door rather than at digest
+time buys three things: the digest shrinks, `agent_inbox` stops holding a record of Chrome's cache activity (this
+module's own contract says those rows are a record of what the USER has been doing), and it stays one decision instead
+of one per consumer. `Inbox::admit`, the unconditional one, is unchanged: the gate lives in the one place the tap goes
+through, matching how consent is gated.
+
+Evidence: across 263 wake digests captured from `llm-logs/` on 2026-09-03, the most common folders were the Claude CLI
+MCP logs (449 appearances), JetBrains `LocalHistory` (447), `~/Library/Preferences` (340), the macOS temp dir (326),
+Chrome's cache (289), Cmdr's own data dir (260), and Cmdr's own `llm-logs/` (251). Every one of those wakes came back
+`nothing_to_suggest`, reasoning "all caches, logs, temp files, and internal app state".
+
+❌ **`Floored` only, never `Unknown`.** `Unknown` carries `UNKNOWN_IMPORTANCE_WEIGHT` (0.35) and means a folder the
+scorer has not reached yet, like a project cloned five minutes ago. Collapsing the two would have the agent ignore
+every new folder on the disk, and the symptom ("it just isn't very good at noticing things") points nowhere near the
+cause. `a_floored_folder_is_refused_at_the_door` and
+`an_unscored_folder_still_gets_in_and_earns_a_warm_deadline` pin both halves.
+
+**Cmdr's own data directory falls out of this rather than being named.** `~/Library/Application
+Support/com.veszelovszki.cmdr*` sits under `~/Library`, which `cmdr_index::importance::classify` puts in
+`PathClass::SystemOrCache`, so it floors like any other cache and the refusal covers it. ❌ Don't add a self-naming
+exclusion: a path the classifier already answers correctly is one fewer list to keep in sync.
+
+Floored rows written before this landed are still on disk. They load back cold (interest `0.0`, no deadline) and go at
+the next wake's drain, which clears the table, so no migration is needed.
+
 A merge can only pull a deadline earlier and can only raise the stored interest. The asymmetry is a starvation guard,
 and it also stops a later, duller contribution from demoting what an earlier burst established.
 
@@ -357,9 +383,9 @@ thread keeps a flag and clears it on the `WakeFinished` control message.
 ⚠️ **A declined attempt backs off, and that is not a nicety.** The timer parks with
 `recv_timeout`, and a deadline that has passed keeps having passed, so a park computed from the
 inbox alone is zero-length and the thread spins a core flat. "Due and declined" is the ordinary
-state for anybody without consent or an API key, not a rare one. `park_for` is floored by a `not_before` stamp that
-every path through `try_wake` sets, and any control message clears it, so a gate opening is felt
-at once rather than after the backoff.
+state for anybody without consent or an API key, not a rare one. `park_for` is floored by a
+`not_before` stamp that every path through `try_wake` sets. What each control message then does to
+that stamp is the next section.
 
 ⚠️ **That means TWO write connections to `main.db`**, the writer thread's and the turn's. WAL
 makes it fine, and the writer thread's writes are single-row and never held across an await, so
@@ -368,6 +394,91 @@ the worst case is a brief wait on the busy timeout rather than a multi-second st
 ⚠️ **The wake thread is not a tokio task.** `run_turn` holds a rusqlite `Connection` across
 awaits, which is why `ask_cmdr_send_message` spawns a dedicated `std::thread` with a
 current-thread runtime. `runner.rs` copies that shape.
+
+## The three seatbelts on what a wake may cost
+
+⚠️ **These are backstops, ❌ never a substitute for calibration.** An agent that reaches any of
+them on an ordinary day is miscalibrated, and the fix is upstream in `importance.rs` and
+`interest.rs`. They exist because a wake is the only thing in Cmdr that spends the user's money
+without being asked, so a miscalibration must not be able to cost a day's quota before anybody
+notices. All three are proactive-only: a user-typed turn goes through `ask_cmdr_send_message` and
+reaches none of this code, and is never throttled, capped, or delayed.
+
+The incident they were written for, 2026-09-03: the wake loop made 43 model calls in seven
+minutes, spent 374,127 tokens, and exhausted the provider quota at 09:06 local. It then kept
+firing for roughly six hours, 261 further requests, every one answered 403.
+
+### One: minimum spacing between wakes (`schedule.rs`)
+
+`MIN_WAKE_SPACING` is 15 minutes, and `WakeControl::WakeFinished(WakeCompletion::Wake)` stamps
+`not_before` that far ahead.
+
+⚠️ **It is a different knob from the cadence slider, and conflating them is what caused the
+incident.** The slider (`WAKE_DELAY_STOPS`, five seconds at its attentive end) says how QUICKLY
+the agent reacts to something interesting. Spacing says how OFTEN it may speak at all. Before
+this, `handle_control` cleared the stamp for EVERY control message including `WakeFinished`, so
+the five-minute declined-attempt backoff only ever guarded a wake that never started; a wake that
+RAN came straight back as soon as the next deadline was due.
+
+Fifteen minutes caps a miscalibration at 96 wakes a day, against the roughly 8,800 that day's
+rate extrapolates to. Two things skip it:
+
+- **A force** (`WakeControl::ForceWake`) is a developer explicitly asking for a wake, and already
+  skips the timer and the `proactive` toggle.
+- **The follow-up a rejected sweep earns** (`followup.rs`). It answers something the user did
+  seconds ago and speaks in THEIR thread, so it is not the agent arriving uninvited.
+  `WakeCompletion::FollowUp` therefore neither earns a spacing nor lifts one: clearing the stamp
+  would let a rejection the user clicked through pull an unrelated wake in ahead of its turn.
+
+### Two: a daily proactive token budget (`spend.rs`)
+
+`DAILY_PROACTIVE_TOKEN_BUDGET` is 200,000 tokens (prompt plus completion) per local day. Checked
+in `try_wake` before the slot is resolved, so a spent day costs one read per attempt and nothing
+else.
+
+⚠️ **Scoped by `conversations.origin`, ❌ never the whole meter.** `store::proactive_tokens_for_day`
+joins `cost_meter` to `conversations` and counts only `ConversationOrigin::Notification` (a wake's
+thread) and `QuietWakes` (the reserved row a quiet wake's spend is folded onto before its thread is
+deleted). A user-started thread has a NULL origin and never counts. One number for both would let
+a chatty afternoon on the rail starve the wake loop, or a runaway wake loop eat the user's own
+budget: they are different money.
+
+The arithmetic: a wake's cheapest turn is roughly 7,000 prompt tokens, so 200,000 buys about 28 of
+them; the longest single tool loop seen cost about 180,000, so one deep dive plus change also
+fits. It sits well under 374,127, which is the number it exists to have refused.
+
+Two deliberate shapes:
+
+- **The refusal is reported ONCE per day** (`WakeLoop::note_budget_spent`, outcome token
+  `budget_spent`), not per attempt. A spent day is the ordinary state for the rest of that day and
+  the loop re-checks every few minutes; a line each would bury `cmdr.log` and turn one categorical
+  analytics fact into hundreds. Same reasoning the `proactive` gate carries.
+- **A meter read that fails, fails OPEN.** A broken read means the store is broken, and silencing
+  the agent for a whole day over one SQLite hiccup is a worse answer than what the spacing and the
+  refusal backoff already give. It is logged, so it is not silent.
+- **A force skips it**, or a spent day would make the E2E hook silently do nothing.
+
+The local day comes from `chat::runtime::day_for`, the same function the meter writes its key
+with, so the two cannot disagree across a midnight or a timezone move.
+
+### Three: a hard backoff on a dead key (`schedule.rs`, `runner.rs`)
+
+`PROVIDER_REFUSAL_BACKOFF` is six hours, which turns that day's 261 doomed retries into four.
+
+`runner::completion_for_failure` classifies a failed turn by TYPED variant (❌ never by the
+provider's wording; `error-string-match` forbids it and wording drifts). `AgentErrorKind::NoKey`,
+`AuthFailed`, and `RateLimited` become `WakeCompletion::ProviderRefused`: all three are settled
+facts about the rest of the day rather than something worth retrying at the ordinary pace. The
+verdict rides home on the `WakeFinished` message the turn thread already sends, which is the only
+path by which a provider's answer reaches the scheduler.
+
+⚠️ **Transient failures must NOT fold in here.** `Unavailable`, `Timeout`, `UnfinishedReply`,
+`BudgetExhausted`, and `Provider` say nothing about the key, and six hours of silence for one
+flaky request would be the agent punishing the user for their network. `NotConfigured` is a gate
+`resolve_slot` refuses ahead of the turn, so reaching it again costs nothing.
+
+`SettingsChanged` and `ReadinessChanged` clear the stamp outright, and `refresh_readiness` is what
+a key change already sends, so fixing the key is felt at once rather than six hours later.
 
 ## The channel, and why it is a process-global
 
@@ -577,8 +688,11 @@ answer means differ. Three things a follow-up does NOT do:
   it with them.
 - ❌ **Never emit `Started`.** The thread has been in the session list all along, and claiming it was
   just created would put a duplicate row there.
-- It shares `wake_in_flight`, so at most one background turn runs at a time whichever kind it is, and
-  it reports through the same `WakeControl::WakeFinished` message.
+- It shares `wake_in_flight`, so at most one background turn runs at a time whichever kind it is,
+  and it reports through the same `WakeControl::WakeFinished` message, carrying
+  `WakeCompletion::FollowUp`. It is not subject to the wake spacing or the daily ceiling (it
+  answers a user action), but a dead key it runs into still earns the refusal backoff: that is
+  the same key the next wake would reach for.
 
 Its opener is a `ProposalOutcomes` part, structured for exactly the reason a digest is: the row is
 persisted, and rendered English would freeze one locale's copy in `main.db`.
@@ -586,8 +700,8 @@ persisted, and rendered English would freeze one locale's copy in `main.db`.
 ## What the wake loop reports
 
 Nothing else reports on it at all, so `runner::record_outcome` writes one counted log line per
-outcome (`ran`, `quiet`, `nothing_due`, `not_ready`, `unavailable`, `cancelled`, `failed`, and the
-`followup_*` twins for the other kind of turn) with the tier that triggered it, plus the matching
+outcome (`ran`, `quiet`, `nothing_due`, `not_ready`, `unavailable`, `budget_spent`, `cancelled`,
+`failed`, and the `followup_*` twins for the other kind of turn) with the tier that triggered it, plus the matching
 anonymous `agent_wake` analytics event. Without it the two
 deferred tuning knobs can only be ranked by a support message, and "the agent is twitchy" arrives
 as a complaint rather than a number. ❌ Every property is categorical: an outcome token, a tier

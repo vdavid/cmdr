@@ -74,6 +74,7 @@ fn the_connect_outcome_names_itself_on_the_wire() {
 /// differently.
 #[tokio::test]
 async fn the_credential_trio_agrees_on_where_a_secret_lives() {
+    let _secrets = crate::test_support::isolate_secrets();
     let host = "credential-trio.sftp.test";
 
     assert!(

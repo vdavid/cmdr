@@ -20,9 +20,15 @@ same-volume rename-merge in § "Key decisions"). The cross-volume engine documen
 (the archive route included, § "One-pass sequential extract"). Only the layout
 facts that none of those carry live here:
 
-- **`copy/mod.rs`'s post-loop dispatch keeps a three-arm `PostLoopIntent` shape** (Completed / Cancelled / Failed)
-  including a post-completion `RollingBack` recheck, for the rollback-clicked-in-the-last-millisecond race (commit
-  `1de4255d`). Pre-flight scan, dry-run, disk-space, and bulk-skip filtering stay OUTSIDE the driver, in `copy/mod.rs`.
+- **Both local engines recheck the rollback intent AFTER their loop drains**, for the
+  rollback-clicked-in-the-last-millisecond race: `copy/mod.rs` in its three-arm `PostLoopIntent` dispatch (Completed /
+  Cancelled / Failed), `move_op/same_fs.rs` in a matching arm before its flush. A loop that returns `Ok` never looks at
+  the intent again, so without the recheck the click is discarded and the operation reports complete — and a same-FS
+  move renames a whole subtree per call, so on a small move the entire loop fits inside that window. The move's
+  reversal is `MoveTransaction::rollback` (per-item recheck, non-clobbering restore) and the engine returns
+  `Cancelled`, so the wrapper journals the op canceled rather than done. Pinned by
+  `move_op_tests.rs::a_rollback_clicked_as_the_last_item_lands_puts_the_move_back`. Pre-flight scan, dry-run,
+  disk-space, and bulk-skip filtering stay OUTSIDE the driver, in `copy/mod.rs`.
 - **`move_op/` splits the local move by engine**: `mod.rs` picks between them on `is_same_filesystem` and owns what
   both need (`MoveTransaction`, `move_resolved_into_place`, `merge_move_directory` — the last is written for two
   callers at once), `same_fs.rs` holds the `rename(2)` engine, `cross_fs.rs` the five-phase staging engine. Both
@@ -31,7 +37,8 @@ facts that none of those carry live here:
   `move_op/move_journal_tests.rs` (the journal + reversal full loop), over the rig in `move_op/test_support.rs`.
 - **`volume/` holds the whole cross-volume engine and is a facade** (`volume/mod.rs`): copy phases (`copy.rs` + the two
   drivers, serial in `copy_serial.rs` and concurrent across `copy_concurrent{,_source,_task}.rs`), move (`move.rs`, declared `mod r#move;` because `move` is a
-  keyword, plus `move_same.rs` and `rename_merge.rs` for the same-volume rename path), the merge/staging engine
+  keyword, and only the strategy dispatcher; the cross-volume copy-then-delete engine it routes to is `move_cross.rs`,
+  plus `move_same.rs` and `rename_merge.rs` for the same-volume rename path), the merge/staging engine
   (`strategy.rs`, `sequential_extract.rs`), and the supporting `conflict.rs`, `cleanup.rs`, `preflight.rs`,
   `transfer_error.rs`. Every one of those is PRIVATE to `volume`; `mod.rs` re-exports the nine items outside code calls,
   so a caller writes `transfer::volume::<item>`. Adding a caller means adding a re-export, not widening a submodule —
@@ -43,18 +50,152 @@ facts that none of those carry live here:
 - **`transfer_probe_tests.rs` is a `#[path]` sibling, not an inline `mod tests`**, for the same reason every other big
   module here splits: the probe plus its watchdog cases is 1.3k lines in one file. `retry.rs`'s policy tests stay inline
   (the module is small and the tests read as its specification).
+- **`transfer_probe_vocabulary.rs` is the probe's value half**, a `#[path]` child re-exported by `transfer_probe.rs`, so
+  every caller still writes `transfer_probe::<item>`. It holds what a row and a driver can SAY (`TaskPhase`,
+  `DriverPhase`, `TaskRole`, `TaskRow`) with each one's `label` and its round trip out of the `AtomicU8` it is stored
+  in; the live table, the registry, and the watchdog stay in `transfer_probe.rs`. The seam is that nothing in the
+  vocabulary takes a lock, holds an `Arc`, or reads the registry. ❌ Don't put a probe field or a counter here.
 
 ## Copy + move semantics
 
-**`CopyTransaction` rollback: sync with progress.** `rollback()` (synchronous, for error paths) and tracked `rollback_with_progress()` in `copy.rs` (for user-initiated rollback, emits `write-progress` events with `phase: RollingBack`, checks for `Stopped` between file deletions so the user can cancel the rollback). Auto-rollback via `Drop` remains as a panic safety net.
+**A local copy's ledger has two reversals and one net.** `reversal.rs::reverse_copy_transaction` is the synchronous one the error-cleanup arms take; `copy/rollback.rs::rollback_with_progress` is the Rollback button's, emitting `write-progress` with `phase: RollingBack` and reading the intent between deletions so the user can stop the reversal itself. Both recheck each entry. `CopyTransaction`'s `Drop` is the panic net, and the only unconditional sweep.
+
+### What the in-flight ledgers record
+
+Three ledgers say what an operation currently has at the destination, and each one feeds a reversal that deletes or renames back: `CopyTransaction` (local copy, `state.rs`), `MoveTransaction` (local move, `move_op/mod.rs`), and the volume path's `copied_paths` (`volume/copy.rs`, fed from `CreatedPaths.files`). They share one vocabulary, `ledger.rs`'s `WrittenFile`: a destination path plus the identity it landed with.
+
+**Why an identity at all.** A reversal acts destructively at a path the operation may have written hours ago. A bare path can only answer "is something here", and "something is here" is what deletes the file a sync client, another app, or the user replaced in the meantime.
+
+**The identity differs by backend, and the cases are separate variants** so no call site can record half of one:
+
+- **Local: size plus `(dev, ino)`.** The node id is what makes the check exact. Size alone passes a file swapped for a DIFFERENT file of the same size, which is exactly what an editor's write-temp-then-rename produces (the most common real drift there is); a rename-into-place preserves no node id, so the check correctly refuses. Nothing changes a node id without someone touching the file, so it adds no false alarms of its own.
+- **Volume (SMB, MTP, archive): size only.** No backend but the local filesystem offers a stable node id, so these carry the same-size exposure the operation log's own reversal has always carried.
+- **A partial is its own case**, not "a file whose identity we don't know". See below.
+- **Unverifiable** is the honest answer when the stat that would have snapshotted an entry failed, and the only route to it.
+
+**❌ No mtime, on any path.** The obvious rule — mtime locally, since local copies preserve it deliberately, size only on volumes — keys on how Cmdr WRITES, while the failure keys on what the destination filesystem STORES. Snapshots are whole seconds; FAT32 stores mtime at 2-second granularity and network mounts round too, so copy to a USB stick, cancel, roll back, and every preserved mtime reads back truncated: every file "drifted", the whole copy left on the stick. Symlinks are worse, and unconditionally: the snapshot is the link's, but `copy_symlink` creates a fresh link with no mtime preservation, so every copied link would be left behind.
+
+**Where each snapshot comes from.**
+
+- **Local copy** (`copy/single_item.rs`): one `symlink_metadata` of the destination after the write lands. It describes the file that actually arrived, which is what a recheck compares against, and `symlink_metadata` is why a copied symlink describes ITSELF (a `metadata` snapshot of a link whose target is missing reads as absent, and the link gets left behind). **A recheck must stat the same way.**
+- **Same-FS move** (`move_op/same_fs.rs`): the source's own metadata, taken before the rename for the journal row. A rename carries the node id across untouched, so the pre-rename snapshot IS the landed item's identity.
+- **The directory-merge move branch** (`move_op/mod.rs::merge_move_directory`): one `symlink_metadata` per child, added for this. It's the case that matters most — the journal marks a merge `not_rollbackable`, so the in-memory ledger is the ONLY thing a cancelled folder-into-folder move can reverse from. Recording nothing there would mean a later "leave anything I can't verify" rule reverses nothing at all, which is worse than the drift it guards against.
+- **Volume** (`volume/strategy.rs::CreatedPaths`): the byte count the leaf copier reports, which the journal row for the same leaf already carries. `copied_paths` and `CreatedPaths.files` are the same entries, so the size rides through instead of being dropped at the hand-off.
+
+**A cross-FS move's copy phase records STAGED paths**, since `copy_single_item` writes under `.cmdr-staging-<op>/`. That's the right thing to reverse while phase 2 is running (the `Drop` net removes exactly those files), and it can't go stale afterwards: phase 3 renames the tree into place and commits the transaction, so nothing ever reverses off a staging path that no longer exists. The rename preserves each node id anyway.
+
+**A local directory records its node and no size.** A directory's reported size changes as children come and go, so it proves nothing about identity and would report a folder as changed for nothing more than a file dropped into it.
+
+**The ledgers are stacks.** Each entry is popped as it's reversed, before the destructive call, so at every instant the ledger claims exactly what this operation still has on disk — which is what lets a reversal the user stops halfway report honestly on what stayed. The intent is read BEFORE the pop, or a stopped reversal would drop an entry it never reversed. `CopyTransaction`'s created-DIRS list is not a stack: `commit_journaling_created_dirs` journals it after a reversal runs, so it has to survive one.
+
+### What a reversal does with that identity
+
+`reversal.rs` holds the decision, and every reversal a person can observe routes through it: `reverse_copy_transaction` (the copy's error-cleanup arms), `copy/rollback.rs::rollback_with_progress` (the Rollback button), `move_op/mod.rs::MoveTransaction::rollback`, and `volume/cleanup.rs::volume_rollback_with_progress`.
+
+**Recheck immediately before acting, one item at a time.** ❌ Never verify a batch and then act on it: a verification that aged while other items were processed no longer authorizes anything. `operation_log/DETAILS.md` explains why the history engine's loop has the same shape.
+
+**One vocabulary with the history path.** `operation_log::rollback::verify_snapshot` decides what "the size changed" means for both, and the verdicts are `SkipReason`s (`Drift`, `UnverifiablePrecondition`, `RestoreTargetOccupied`, `DirNotEmpty`, `AlreadyGone`, `Failed`). ❌ Don't fork either: a user shouldn't meet two answers to one question. Locally the node id is checked first (exact), then the size through `verify_snapshot`; on a volume the size is all there is.
+
+**`AlreadyGone` counts as reversed**, not as a skip: the end state the reversal wanted already holds, and a person doesn't need telling about it.
+
+**The move path carries a SECOND guard**, the one the history engine pins alongside the recheck: the restore is non-destructive. `fs::rename` replaces its target silently and there is no backup to put back, so an original source somebody has since filled skips with `RestoreTargetOccupied`. **The stat that reports that is advisory; the refusal lives in the rename** (`move_op/mod.rs::restore_rename`), which goes through `overwrite::rename_no_replace` — the kernel's atomic no-replace flag, degrading to a check-then-rename only where the filesystem has neither. A stat can only say what was there when it looked, so a check-then-`fs::rename` pair would still destroy a file created in the window between them, silently and with nothing to restore from. The carve-out is the case-only self-collision — a case-insensitive filesystem folds `dog.jpg` and `DOG.jpg` onto one entry, so a case-only move finds its own destination sitting at the source. Same node id ⇒ the same entry ⇒ the rename back is a case correction. One local filesystem means `(dev, ino)` settles it exactly, with no path folding needed.
+
+**The `Drop` net stays unconditional**, and it keeps its own sweep in `ledger.rs` (`CopyTransaction::remove_everything`) rather than routing through `reversal.rs`. It runs because a thread panicked mid-copy, where a destination is as likely half-written as complete and nobody is left to read a report. ❌ Aligning it with the guarded reversals strands partials after a crash. Keeping it there is also what keeps the direction one-way: `ledger.rs` is the vocabulary, `reversal.rs` is the policy over it, and `module-cycles` notices the moment that reverses.
+
+**The bar always reaches its end.** Both progress-reporting reversals advance for every item they walk past — removed, left alone, or refused — and interpolate both axes over the ledger's own length, landing on zero whatever they managed. A bar stranded partway reads as a crash, and a user who thinks the app crashed never reads the summary that explains what stayed. The created-directory prune establishes emptiness itself, so a directory a left-behind file keeps alive reports `DirNotEmpty` rather than a bare failure.
+
+**What comes back** is a `ReversalTally`, folded into the `CancelRollback` the `write-cancelled` event carries: a three-state outcome plus the reversed count and the per-reason `SkipBreakdown` groups (complete counts, one example name each) the history dialog's report already uses.
+
+### Naming what a cancel left behind
+
+`CancelRollback` reports THREE kinds of leftover, and they are separate fields on purpose.
+
+`skips` is per-reason `SkipBreakdown` groups: ledger entries a reversal walked to and DECIDED to leave, named by the file the user is looking at. `staged_leftovers` is a `StagedLeftovers { count, example_name }` for the `.cmdr-tmp-*` scratch the abandoned-write sweep asked the destination to remove and didn't get (§ "Staged writes"). Three reasons they don't merge:
+
+- **Nothing chose to keep a staged leftover.** Every `SkipReason` is a decision (drift, unprovable, occupied, non-empty) except `Failed`, and even `Failed` is a ledger item that may come back on a retry from history. A staged leftover is Cmdr's own working file for a write that never finished, kept by a handle the operation no longer controls — an open gap on purpose, and ❌ not one a retry can close: § "Staged writes" has the measurement and the two fixes that would.
+- **It has no user-facing name.** `SkipBreakdown::example_name` is documented as "the name the file carries right now, which is the one the user is looking at". A `photo.jpg.cmdr-tmp-<uuid>` is a name Cmdr invented, which is why the toast words it differently and says it is safe to delete.
+- **The counts have a job.** `reversed + skipped` is what the reversal's progress bar drains over (`reversal::drained`), and a staged temp is not a ledger entry any reversal walks. Folding it in would make the bar report progress across items nothing processes.
+
+**`outcome` stays about the LEDGER**, so `RolledBack` with leftovers is a real and honest combination: the reversal did walk every entry. ❌ Don't force it to `PartiallyRolledBack` — the frontend reads `partiallyRolledBack` with empty `skips` as "the user stopped it partway", and that inference is what tells the two apart. Instead, the READOUT (`src/lib/file-operations/transfer/cancel-rollback-toast.ts`) never lets a leftover render as a clean success: it drops the completeness wording (`someDeleted`, never `doneDeleting`) and the `success` level whenever `staged_leftovers` is present, and it prints the line OUTSIDE the reason list, which sits under "Cmdr skips anything it isn't sure about".
+
+The three volume emit sites all attach it — the copy's Rollback branch, the copy's plain-Stop branch, and the cross-volume move's cancel — so a leftover speaks even where there is no reversal at all to report.
+
+`originals_still_in_place` is the third, an `OriginalsStillInPlace { count }` set at exactly one site: `move_op/cross_fs.rs`'s phase-4 cancel. It counts the user's own originals, not Cmdr's leavings, and it is the one place `NotRolledBack` carries real news. Why the state needs a field rather than an `outcome` variant, and what the count includes: the "A stop in the source sweep says where the files are" block below.
+
+### The partials carve-out
+
+`volume/cleanup.rs::append_own_partials` folds the writes still in flight when the user clicked into the rollback ledger, marked `WrittenIdentity::OwnPartial`.
+
+**They are NOT entries whose identity is unknown.** A partial has no size and no complete file to recognize, by construction, so a uniform "can't verify it, leave it alone" rule would strand a truncated file at the destination — the exact failure the mid-file-cancel work exists to prevent, pinned by `test/e2e-playwright/operation-log-rollback.spec.ts` ("cancelling inside one large file leaves no partial behind"). Nothing but this operation can plausibly own a destination path that never held a complete file, so a reversal removes one on sight. The type keeps the two apart so the distinction can't be lost in a later pass.
+
+The local path needs no equivalent: `chunked_copy.rs` removes its own partial and never records it, and every local write stages (§ "Local copies stage"), so an abandoned one wears a `.cmdr-tmp-*` name instead of the destination's.
 
 **Move strategy.** Same filesystem detected via device ID comparison (`MetadataExt::dev`). Cross-filesystem move uses a `.cmdr-staging-<uuid>` dir at the destination root, then atomic `rename` into place, then source deletion.
 
+**A cross-FS move removes its staging folder on EVERY path out of Phase 4, cancel included.** Phase 5's
+`remove_dir(&staging_dir)` sits after the Phase-4 source delete, which returns `Err` on cancel — so with a bare `?` a
+cancel there left a stray `.cmdr-staging-<op>` folder in the user's destination for good (reproduced 3/3). The engine
+now keeps Phase 4's result, runs Phase 5, and only then propagates. Safe by construction: Phase 3 already renamed the
+staged tree into place, so the folder is an empty shell whichever way Phase 4 ended, and `remove_dir` refuses a
+non-empty directory. Pinned by `move_op_tests.rs::a_cancelled_cross_fs_move_takes_its_staging_folder_with_it`.
+
+**The source sweep reports itself.** Phase 4 (`delete_sources_after_move`) emits `Deleting`-phase progress: an opening
+tick at zero before the loop, throttled ticks inside it, and a closing tick at full — the same shape
+`delete/walker.rs` uses. It ran silently until it didn't, and the cost was a lie on every surface: the last progress the
+frontend had was Phase 2's `files_done == files_total`, so the dialog sat at "17,238 / 17,238 (100%)" for the whole
+sweep, and a user who pressed Pause here (the loop parks at its item boundary) got "Paused" over a
+full bar with the entire source removal still ahead. The sweep is real, unbounded work — one `remove_file` or
+`remove_dir_all` per top-level source, over however large a tree — so it owes a bar of its own.
+
+The denominator is the TOP-LEVEL sources, not the leaves Phase 2 counted: `remove_dir_all` takes a subtree in one call
+and reports nothing from inside it, so a leaf-granular bar here would be invented. A source SKIPPED at Phase 3 counts
+too — the sweep is as finished with it as with a deleted one, and leaving it out would strand the bar short of full.
+Bytes stay zero throughout, which is how the readout knows to drop its size bar instead of freezing it at whatever the
+copy left. The frontend titles the phase "Removing the originals..." rather than "Deleting"
+(`apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "Removing the originals"). Cross-VOLUME moves need none of
+this: `volume/move.rs` copies and deletes PER FILE, so its bar already covers the deletion. Same-FS moves have no Phase
+4 at all. Pinned by `move_progress_tests.rs::cross_fs_local_move_reports_the_source_deletion_instead_of_sitting_at_full`.
+
 **Cross-FS move source-delete preserves Skipped sources.** `move_with_staging`'s Phase 3 (staging → final rename) resolves conflicts; a Skip discards the staged copy so the file never lands at the destination. Phase 4 (`delete_sources_after_move`) must therefore NOT delete that source — the user clicked Skip to keep both copies, and deleting the only original would be silent data loss. Phase 3 records every Skipped original in a `skipped_source_paths: HashSet<PathBuf>` (whole top-level source for a single-file / type-mismatch Skip; per-child paths remapped from the staging prefix back to the source prefix for a directory merge). Phase 4 skips whole sources in the set, removes a clean source dir wholesale (`remove_dir_all`), and for a source dir that holds a Skipped descendant walks it via `delete_dir_preserving_skipped` (deletes non-skipped children, removes a dir only once empty), so the Skipped child's original survives inside a surviving source directory. The same-FS path (`move_with_rename`) is inherently correct: it renames originals directly, and a Skipped child just leaves the source dir non-empty. Pinned by `move_op_tests.rs::{cross_fs_move_skip_preserves_source_and_dest, cross_fs_move_dir_merge_skip_child_preserves_source_child}`.
 
-**Empty directories land via the scanned-dirs pass (`copy/scanned_dirs.rs::create_scanned_dirs_at_destination`).** The per-file loop creates directories only as FILE parents, so an empty directory — or a branch holding nothing but empty directories — has no file to hang its creation on and used to complete "successfully" while never arriving (and on a cross-FS move, Phase 4 then deleted the source: the empty dir was destroyed without ever landing). The pass runs over `ScanResult.dirs` on the local copy's Completed arm and after the move's staging loop (destination = the staging dir, so empty dirs ride the normal Phase-3 rename + cleanup). Mapping mirrors `FileInfo::dest_path`; created dirs are recorded for rollback. Data-safety: a dest path that already holds anything (dir = merge, file = type clash) is left untouched — an empty source dir never replaces user data. Pinned by `copy_tests.rs::{copy_creates_empty_directory_at_destination, copy_creates_nested_empty_directories, copy_empty_directory_does_not_clobber_same_named_dest_file}` and `move_op_tests.rs::cross_fs_move_preserves_empty_directories`. The volume (MTP/SMB) pipeline doesn't share the hole — `copy_directory_streaming` creates each dir before walking its children.
+**Empty directories land via the scanned-dirs pass (`copy/scanned_dirs.rs::create_scanned_dirs_at_destination`).** The per-file loop creates directories only as FILE parents, so an empty directory — or a branch holding nothing but empty directories — has no file to hang its creation on and used to complete "successfully" while never arriving (and on a cross-FS move, Phase 4 then deleted the source: the empty dir was destroyed without ever landing). The pass runs over `ScanResult.dirs` on the local copy's Completed arm and after the move's staging loop (destination = the staging dir, so empty dirs ride the normal Phase-3 rename + cleanup). Mapping mirrors `FileInfo::dest_path`; created dirs are recorded for rollback. Data-safety: a dest path that already holds anything (dir = merge, file = type clash) is left untouched — an empty source dir never replaces user data. The pass parks per directory like every other loop (`../DETAILS.md` § "Pause / resume"), which matters because it starts AFTER the per-file loop: "Paused" is already on screen by then, so an ungated pass kept building the destination skeleton. Pinned by `copy_tests.rs::{copy_creates_empty_directory_at_destination, copy_creates_nested_empty_directories, copy_empty_directory_does_not_clobber_same_named_dest_file, a_paused_copy_stops_landing_scanned_dirs_until_it_resumes}` and `move_op_tests.rs::cross_fs_move_preserves_empty_directories`. The volume (MTP/SMB) pipeline doesn't share the hole — `copy_directory_streaming` creates each dir before walking its children.
 
-**Move rollback (same-FS).** `MoveTransaction` in `move_op/mod.rs` tracks `(source, dest)` pairs for each rename. On cancellation, renames are reversed in reverse order. Same-FS rename rollback is instant (just another rename), so it runs synchronously. Cross-FS move rollback is handled by `CopyTransaction` (deletes the staging directory).
+**A stop in the source sweep says where the files are.** A cancel inside Phase 4 carries `originals_still_in_place`, and
+that is the only honest thing it can carry. By the time the sweep runs, every source's copy has landed at the
+destination (Phase 3) and been flushed (§ Durability), and each loop turn deletes one more original. So a stop there
+leaves a state no other cancel in the app produces: the move effectively SUCCEEDED, some originals are gone for good,
+and the rest are duplicates of files that now live somewhere else. Reversing it is out of scope by design — the bytes
+are across a filesystem boundary, so putting an original back means copying it home, minutes of I/O the user never asked
+for — which is why `outcome` says `NotRolledBack`, truthfully. Emitting a bare `CancelRollback::none()` was the problem:
+the readout renders `notRolledBack` with nothing attached as SILENCE (a plain Cancel keeps what it wrote, and announcing
+that would announce nothing happened), so a user who pressed Rollback after 200 of their 400 originals were gone was
+told nothing at all.
+
+- **Why a field, not a new `CancelRollbackOutcome`.** The count is the news, and `outcome` is a payload-free enum, so a
+  variant would need the field anyway. Worse, the frontend reads `partiallyRolledBack` with empty `skips` as "the user
+  stopped the reversal partway" (§ "Naming what a cancel left behind"), and every outcome that fits this state either
+  carries that inference or is a lie. The field mirrors `staged_leftovers` exactly: independent of `outcome`, additive
+  on the wire, and it obliges the readout to speak where `outcome` alone would stay quiet.
+- **What the count counts.** Top-level sources, the same unit as the sweep's own bar: the ones the loop never reached
+  PLUS the Skipped ones it walked past on purpose, both of which the user still has in the source folder. Never zero —
+  the intent is read at the top of each turn, so a stop always leaves at least the item it was about to take. The
+  already-deleted ones are deliberately absent: they aren't actionable (their content is whole at the destination), and
+  a second number would need its own wording for the stop-before-the-first-delete case.
+- **What it reads as.** `fileOperations.cancelRollback.moveAlreadyLanded`, at `info` level, in the order what-happened →
+  why-that's-fine → the number: Cmdr stopped part-way through removing the originals (so the user reads that some are
+  gone, rather than inferring it from the count), everything it moved is already at the destination and stays there,
+  then how many originals are still in their old place. It claims nothing about an undo, because none is coming, and it
+  carries no hint of a warning, because nothing went wrong.
+- **`cross_fs.rs` has no post-loop intent check**, unlike `copy/mod.rs`'s `PostLoopIntent`. A Rollback pressed after the
+  Phase-2 copy loop drains does NOT stop the operation there: Phase 3 renames the whole tree into place and the flush
+  runs regardless, and the sweep's first `is_cancelled` is what catches the click. The report stays honest either way
+  (every original is still in place, and the message says exactly that), but the operation carried on for one more phase
+  after the click. Closing that gap means deciding what a Rollback in that window should DO, which is the same deferred
+  product question as reversing Phase 4 itself.
+
+Pinned by `move_interruption_tests.rs::{a_rollback_during_the_source_sweep_reports_the_originals_it_did_not_reach, a_rollback_before_the_sweep_starts_reports_every_original_still_in_place, the_sweeps_account_counts_a_skipped_source_as_still_in_place}` and, for the wording, `cancel-rollback-toast.test.ts`.
+
+**Move rollback (same-FS).** `MoveTransaction` in `move_op/mod.rs` tracks `(original_source, landed)` pairs for each rename and reverses them newest-first, under both guards above. Same-FS rename rollback is instant (just another rename), so it runs synchronously. Cross-FS move rollback is handled by `CopyTransaction` (removes the staging directory).
 
 **Intentional duplication: `merge_move_directory` vs `copy_single_item`.** Both implement recursive merge with conflict resolution, but differ in every detail: copy has progress tracking, symlink handling, byte counting, strategy selection, and `CopyTransaction` recording. Move uses simple `fs::rename`. A shared abstraction would be forced and fragile. Cross-references are in the doc comments of both functions.
 
@@ -153,7 +294,7 @@ Both drivers emit `write-source-item-done` per top-level source, carrying an out
 Copy and move don't report `write-complete` until the freshly written destinations are durable on disk — "complete" means "you can eject now," not "buffered in the page cache." Two layers:
 
 1. **Per-file, as it completes.** `chunked_copy.rs` calls `dst_file.sync_data()` (fdatasync) on each file before returning. On a long transfer, a crash mid-batch leaves every already-completed file safe.
-2. **End-of-op pass.** Before `write-complete`, the copy/move handlers call `durability::flush_created_destinations`, which emits a `Flushing`-phase `write-progress` event (the FE renders **"Writing the last piece..."** instead of a bar frozen at 100% — see the FE doc), then `fdatasync`s every recorded destination, plus a best-effort `fsync` of each distinct parent directory so the rename-into-place is durable. It reuses `CopyTransaction.created_files` and skips an `already_synced` set (chunked-synced files + clonefile/reflink dests, which are CoW-shared and moot to flush).
+2. **End-of-op pass.** Before `write-complete`, every handler that wrote bytes calls `durability::flush_created_destinations` (the same-FS move, which wrote none, takes the directory-only sibling below), which emits a `Flushing`-phase `write-progress` event (the FE renders **"Writing the last piece..."** instead of a bar frozen at 100% — see the FE doc), then `fdatasync`s every recorded destination, plus a best-effort `fsync` of each distinct parent directory so the rename-into-place is durable. It reuses `CopyTransaction.created_files` and skips an `already_synced` set (chunked-synced files + clonefile/reflink dests, which are CoW-shared and moot to flush).
 
 **Per-path specifics:**
 - **Local copy** (`copy_files_with_progress_inner`): `copy_single_item` populates `already_synced` from `StrategyCopyOutcome::already_durable`; the pass flushes only the strategies that don't flush themselves (Linux `copy_file_range`, the std fallback). On macOS the pass does no extra `fdatasync` (clonefile moot, chunked already synced) — it exists for the `Flushing` UI state.
@@ -161,7 +302,7 @@ Copy and move don't report `write-complete` until the freshly written destinatio
 
 **Decision**: `flush_created_destinations` runs BEFORE Phase 4's `delete_sources_after_move`, not after.
 **Why**: The source originals are the only other copy of the data through Phase 3. If the source delete ran first (the historic order: Phase 4 → Phase 5 → flush), a power loss in the gap between the delete and the final dir-entry fsync could leave the file absent from its final path (the Phase-3 rename-into-place not yet durable) AND the source already gone — recoverable only as orphaned blocks or a stray `.cmdr-staging-*` entry, at neither expected name. Flushing first upholds the move invariant "never delete the source if the destination isn't fully in place," matching the cross-volume move (`volume/move.rs`, which finalizes before deleting the source). Zero happy-path cost: Phase 2 already `sync_data`d every file's bytes, so this only reorders the cheap dir-entry fsync ahead of the delete. Cancellation handling is unchanged — Phase 4 still owns the in-loop cancel check and the `write-cancelled` emit; staging cleanup (Phase 5) still runs after flush so it never races the final-path reads. Pinned by `move_op_tests.rs::cross_fs_local_move_flushes_final_dests_before_deleting_sources` (a custom sink snapshots that the source still exists at the instant the `Flushing` event fires).
-- **Same-FS move** (`move_with_rename`): a rename moves no data, so the pass `fdatasync`s the moved files (cheap — already durable) and their parent dirs to make the new directory entries durable. Emits the `Flushing` event too, so the UI is consistent across both move kinds.
+- **Same-FS move** (`move_with_rename`): flushes DIRECTORIES, never the moved files, through the sibling pass `durability::flush_touched_directories`. A `rename(2)` moves a directory ENTRY: the file's data blocks and inode are untouched, so an `fdatasync` on the file buys nothing, and on macOS `File::sync_data` is `fcntl(F_FULLFSYNC)` — a device-level barrier costing ~4.3 ms per file whether or not the file is dirty, versus ~0.03 ms for a plain `fsync(2)` (measured on APFS, internal SSD, 2,000 4 KiB files, 2026-09-02). What the move changed is the directory an entry left and the directory it arrived in, so `MoveTransaction::touched_directories` collects both sides of every recorded rename, de-duped, and the pass `fsync`s each once: on those 2,000 files, 8.53 s of per-file syncs became 10.1 ms of two directory syncs (847x). Both sides matter — fsyncing only the destination leaves the entry's removal from the source directory unflushed, which is half a durable rename. Emits the `Flushing` event too, so the UI is consistent across both move kinds. Pinned by `move_ledger_tests.rs::a_move_flushes_one_entry_per_directory_it_touched` (one entry per directory, and every entry IS a directory) and `move_progress_tests.rs::same_fs_local_move_emits_flushing_phase_before_complete`.
 
 The flush is best-effort on error (logged under `target: "write_durability"`, not propagated): the bytes are already written, and failing the whole op at the final flush is worse UX. Delete and trash don't flush at all — see `../delete/CLAUDE.md`.
 
@@ -208,6 +349,27 @@ DROPPED mid-write — the concurrent driver drops the rest of its window on canc
 `volume::cleanup::clean_abandoned_staged_writes` removes those, and the deep-merge children that were never tracked at
 all are now covered too.
 
+**What that sweep can't remove, it REPORTS.** A dropped write task never closes its handle, and an SMB2 server answers
+the delete with a sharing violation for as long as that session lives (measured: refused continuously to t+191 s on a
+real share, then deleted instantly from a fresh session). Retrying is provably useless from inside the operation, so
+`clean_abandoned_staged_writes` returns the paths it couldn't take, and both volume drivers hang them on the
+`write-cancelled` event as `CancelRollback::staged_leftovers`. That is the whole remedy this layer owns: without it a
+user who chose Rollback was told the destination was clear while 519 MB across four files (2.2 GB in another run) sat on
+their NAS. ❌ Don't fold them into `CancelRollback::skips` — a skip is a LEDGER item a reversal walked to and chose to
+leave, and `reversed + skipped` is what the reversal's bar drains over. See § "Naming what a cancel left behind".
+
+**Known gap, deliberately open: the abandoned SMB handle.** The reason that sweep is refused is the handle itself. A copy
+task abandoned mid-write has its future dropped, so the SMB2 `CLOSE` for the destination file is never sent, and the
+server holds the file open for the rest of the session. So the leftover isn't a race the app lost, it's a handle the app
+still owns and can't reach. ❌ **Retry with backoff cannot fix it** — that's what the t+191 s measurement above settles,
+and a delete from a FRESH session succeeded instantly on the same file. Two shapes would: send the `CLOSE` on the abandon
+path, or re-establish the session before sweeping. The second is the safer one, because it needs no cooperation from a
+task that may be wedged — which is exactly why the first is unattractive: the abandon path is the one hardened after the
+2026-07-31 incident, and a hang on cancel is worse for a person than a leftover file. So neither is wired, and the
+consequence is survivable rather than permanent: the startup orphan sweep is volume-aware (§ "Which path space a
+recorded partial lives in"), so a refused temp is removed on a later launch, and the leftover toast is what tells the
+user in the meantime.
+
 Registration goes through `write_operations::in_flight_temps`, which keeps the operation's in-memory list AND a
 process-wide log in the app data dir. Local copies register there too (`overwrite::stage_and_land_file`), so
 `in_flight_temps` is no longer cross-volume-only — though only the cross-volume drivers run
@@ -223,15 +385,22 @@ left is a thread that never came back.
   paths carrying the scratch marker, so a corrupted log can't become a delete-anything primitive. The deletes run on
   their own thread, ❌ never inline in `setup`: a recorded partial can sit on a Finder-mounted NAS that stopped
   answering, and an `unlink` there blocks for a minute or two, which on the startup thread reads as an app that won't
-  launch. Granularity and why there is no fsync: `in_flight_temps.rs` module docs.
-- **The rest, on the next transfer into that directory.** `volume::cleanup::reap_stale_transfer_temps` runs once at the
-  start of each cross-volume copy, over the destination directory only: one `list_directory`, then a `delete` for each
+  launch. Granularity and why there is no fsync: `in_flight_temps.rs` module docs. Each record names the path space it
+  lives in, and a volume's may be deferred; see § "Which path space a recorded partial lives in" below.
+- **The rest, on a later transfer into that directory.** `volume::cleanup::reap_stale_transfer_temps` runs once at the
+  start of each cross-volume copy AND each cross-volume move, over the destination directory only: one `list_directory`, then a `delete` for each
   `.cmdr-tmp-*` FILE whose mtime is at least `STALE_TEMP_MIN_AGE` (1 hour) old. The age gate is what makes it safe
   against a concurrent instance — a live staged write touches its temp every chunk, and even a destination-side
   foreground park is capped at a second — and an entry with no reported mtime is spared. It mirrors
   `archive_remote_edit::reap_remote_temps`. This is the backstop for anything the log missed (a power loss, a
   non-UTF-8 path); a leftover deeper inside a copied subtree waits for a transfer into that directory, and there is no
-  global filesystem sweep and there shouldn't be.
+  global filesystem sweep and there shouldn't be. ⚠️ It runs on both transfer verbs because a destination folder a
+  person only ever MOVES into would otherwise keep its leftovers forever; the copy path pays for one extra customer of
+  the listing (its `DestNameIndex`), the move path discards it.
+
+  ⚠️ **The age gate means this is not "the next transfer clears it".** A person who cancels and retries straight away
+  meets their own leftover: it is minutes old, so the gate spares it. That's why the leftover toast says "a later
+  transfer" and offers deleting it by hand, and why the `@key` descriptions forbid promising the next one.
 
 **Cost**: one extra rename per staged file. On SMB that is one round trip, which roughly doubles the wire cost of a file
 that would otherwise take the compound CREATE+WRITE+FLUSH+CLOSE fast path — the exemption below is what keeps a
@@ -241,6 +410,57 @@ the file unstaged (a `NotSupported` landing), which no production backend trigge
 Pinned by `volume/copy_staged_write_tests.rs` (abandon the copy future mid-stream — the in-process equivalent of the
 force-quit — and assert nothing sits at a final name, for a fresh copy, an overwrite, and a merge child) and
 `staged_write::tests`.
+
+## Which path space a recorded partial lives in
+
+A staged temp is a sibling of the destination file, so it lives wherever the destination does: on the local filesystem
+for a local copy, and inside an SMB / SFTP / WebDAV / MTP volume's own namespace for a transfer to one. A path can't
+tell those apart, so every persisted record carries an `in_flight_temps::TempHome` (`LocalFs`, or a volume ID), and
+the sweep deletes through the volume that wrote it. `staged_write.rs` reads the volume from
+`WriteOperationState::dest_volume_id()` (the destination half of `journal_volumes`, which every volume copy/move
+deferred sets); `overwrite.rs` names `LocalFs` outright. An operation that names neither has its partial kept in the
+operation's own in-memory ledger and NOT persisted: that ledger's sweep holds the volume handle already, while a
+persisted path with no path space is one the next launch could resolve against the local filesystem and act on there.
+
+**Decision: the record keys on the volume ID, not the mount root.** The ledger's whole point is surviving a restart, and
+a root doesn't: macOS remounts the same share at `/Volumes/naspi-1` after a wedge. A volume ID is identity by
+construction (`cmdr_fs::volume::ids`) and is what the index DB and `lastUsedPaths` already key on.
+
+**Decision: an unreachable volume keeps its record; the sweep never goes looking.** `init_and_sweep` runs before
+`init_volume_manager`, and a NAS registers later still, so a volume-borne record is normally re-recorded and held
+pending. ❌ The sweep must not mount, dial, reconnect, or authenticate to reach one: a launch that blocks on a dead
+mount, or that pops a password box, is worse than the leftover it was chasing. Dropping the record instead would forget
+the only trace of a multi-gigabyte partial.
+
+**What makes the deferral terminate** is `VolumeManager::on_volume_arrival`: the ledger subscribes (once, and only when
+a launch actually has something waiting), and the moment that volume ID lands in the registry the records waiting on it
+are claimed and deleted on a task. A registration is the one moment a volume is known-usable without probing anything.
+The listener takes only the ID and the registry hands the volume back through `resolve`, which keeps the dependency
+pointing one way: the registry knows nothing about the ledger, so the two subtrees stay acyclic. A delete the volume
+refuses puts the record back, so a later arrival or a later launch tries again.
+
+**The sweep reports.** `SweepHandle::wait()` answers a `SweepTally` (swept / already gone / deferred / left alone) and
+the same numbers go out as one `info` line. Every record lands in exactly one counter, which is what makes a
+"the sweep quietly did nothing" regression visible instead of inferred.
+
+## Pause in the local move engine
+
+**Every per-item loop in `move_op/` parks** (cancel wins; the park returns immediately once the intent stops being
+`Running`). Five loops, because a local move can spend all its time in any one of them: `same_fs.rs`'s top-level rename
+loop, `mod.rs`'s `merge_move_directory` child loop (a folder-into-folder move does ALL its renaming there, so the
+top-level gate never sees it), and `cross_fs.rs`'s Phase-2 staging copy, Phase-3 rename-into-place, and Phase-4 source
+delete. Three of them ask `state.stop_or_park_sync()`, the one boundary question (`../DETAILS.md` § "Pause / resume").
+The Phase-2 and Phase-3 loops call `pause_gate.wait_while_paused_sync` on its own, because their cancel checks live one
+level down inside `copy_single_item` / the merge, so there is no cancel arm at the boundary to fold the park into.
+Phase-2 is the one a user who hits Pause usually means: it's the phase that moves bytes.
+
+A rename is a single syscall, so the item boundary is the only place a rename engine CAN park — there's no equivalent
+of the streaming path's between-chunks checkpoint below.
+
+**Why it matters**: `manager::set_paused` flips the record to `Paused` and `wait_reason` reports it, so the UI says
+"Paused" whether or not the engine parks. An engine that keeps renaming makes that a lie, and the person who paused
+because they picked the wrong destination is told they have time to intervene when they don't. Pinned by
+`move_op_tests.rs::a_paused_move_stops_renaming_until_it_resumes` and `a_paused_folder_merge_stops_renaming_its_children`.
 
 ## Pause reaches between chunks (cross-volume streaming path)
 
@@ -305,6 +525,38 @@ everything because a person is being asked a question; a pause is authoritative 
 only claimed when EVERY in-flight task agrees, since one task still streaming means something else is holding things
 up; otherwise `Unknown`, which is the shape the 2026-07-31 wedge took.
 
+**The dump's in-flight count measures the WINDOW, and a walker is not in it.** Every row declares a `TaskRole`: `File`
+for a merge leaf or a top-level file source, `Walker` for a directory source's walk. A walker deliberately holds no
+`FileWindow` permit (one held across a recursive descent deadlocks the operation at width 1), so it was never one of the
+writes the width bounds — yet counting it printed `in_flight=11/10` on a perfectly healthy 10-wide copy, which reads as
+a broken limiter and costs a reader their first minutes during an incident. `render_dump` counts only `File` rows
+against the width and reports `walkers=N` separately, and the walker's own row carries a ` (walker)` marker so the
+header's arithmetic can be read back against the table. `TransferActivity::in_flight`, which the UI renders, still
+counts every row: it answers "how many things are open", not "how full is the window".
+
+**A row's number is unique within the dump, and says where the row sits.** Every row carries a `TaskRow`: a TOP-LEVEL
+source renders as `#<its position in the source list>`, and a leaf its walker hands to the window renders as
+`#<that source>.<leaf>`. So `#3.7` tells a reader which of the operation's sources is producing the work, and `#3` is the
+walker to read for the walk it came out of, which a globally unique counter couldn't say. Depth doesn't enter the label:
+one walker numbers every leaf of its whole subtree from a single counter (`LeafPool.next_leaf`, which only climbs), so
+the number stays short and is never reused inside one operation.
+
+Two shapes keep it that way. `begin_task` takes the `TaskRow`, the same way it takes a `TaskRole`, so a new row can't
+join the table without deciding where it sits. And `MergeCtx` carries a `MergeProbe` (`strategy.rs`: the operation's
+probe PLUS the walker's own row) rather than a bare probe, so a walk can't be handed the table without being told which
+source to number its leaves under. ❗ Hand a walker a numbering scheme of its own and the collision is back: a source and
+its first leaf both reading `#0`, once per walker, is what the ` (walker)` marker alone had to disambiguate. The drivers'
+`transferring-source(#N …)` and `preparing-next(#N …)` details render through the same `TaskRow::label`, so the phase and
+the table can't drift apart.
+
+**Every driver sets its `DriverPhase`, and one that forgets says nothing.** The field is initialised to `Starting`, so a
+driver that never advances it reports `driver=starting()` however long it has been running. Both drivers set it now:
+`PreparingNext` around the destination-metadata fetch, `ResolvingConflict` around the resolver (parking on a person is
+unbounded by design, so naming it explains the whole stall, where `paused=` only covers the pause gate),
+`TransferringSource` for the whole of a serial source, and `PostLoop` once the driver returns. The serial driver has no
+window to drain, which is why it reports `TransferringSource` rather than the concurrent driver's `AwaitingTasks`: the
+phase's job there is to say the wedge can only be in the rows below.
+
 **A conflict prompt is read from the responder slot, NOT from task phases.** `wait_reason` and `watchdog_step` both
 check `state.conflict_slot.is_awaiting()` first. `TaskPhase::ResolvingConflict` only ever covers a deep-merge
 child, because TOP-LEVEL conflict resolution runs on the DRIVER, between tasks — so a scan of task phases misses the
@@ -358,19 +610,33 @@ write — the one window where a row exists.
 **The probe surface.** Two backends opt in; `LocalPosixVolume`, `InMemoryVolume`, and `ArchiveVolume` use the trait defaults (`false` / no-op) and never auto-yield.
 
 - **`MtpVolume`** (which holds `device_id` and reaches the global `connection_manager()`): `supports_foreground_yield() → true`, `foreground_pending()` → `MtpConnectionManager::foreground_pending(device_id)` (the per-device gate's `foreground_pending()`, `false` if the device is absent), and `wait_until_foreground_idle()` → `MtpConnectionManager::background_yield_point(device_id)` (parks until the gate's pending count hits zero).
-- **`SmbVolume`**: same three methods, delegating to `crates/cmdr-smb/src/volume/foreground_yield.rs`. **Decision/Why a timestamp, not a gate:** MTP can answer "a foreground op is in flight RIGHT NOW" because a PTP session is a single scarce resource with an explicit holder. SMB has no holder — every `SmbVolume` clone multiplexes frames over one connection — so there's nothing to count. The signal is instead "was there a navigation ON THIS SHARE in the last `TRANSFER_FOREGROUND_IDLE_THRESHOLD` (500 ms)", read off `priority::foreground`'s per-volume timestamp. The window is deliberately far shorter than the index scan's 2 s: a scan yield merely drops the listing budget, while a transfer yield PARKS, and `FOREGROUND_YIELD_DEBOUNCE` stacks another 400 ms on top. **Decision/Why per-volume scope:** a transfer is work the user asked for and is watching a progress bar for, so it must only stand aside for the share it actually contends with; the app-wide signal would park a NAS copy because the user clicked around a local folder. Starvation is already handled by `MIN_PROGRESS_FLOOR_BYTES`, so this layer needs no floor of its own. Pinned by `smb::foreground_yield::tests::*` and `smb_test::{supports_foreground_yield_is_on, foreground_pending_tracks_navigation_on_this_share_only}`.
+- **`SmbVolume`**: same three methods, delegating to `crates/cmdr-smb/src/volume/foreground_yield.rs`. **Decision/Why a lease AND a timestamp:** the share is busy while a foreground operation holds a lease on it, and for `TRANSFER_FOREGROUND_IDLE_THRESHOLD` (500 ms) after the last one ends. The two halves are composed in exactly one place, `cmdr_fs::volume::host::activity::volume_busy_for_user`; the signal itself lives in `priority::foreground` (which owns the full rationale). Each half covers what the other can't. A timestamp alone decays while the operation it protects is still running: SMB returns a whole listing in one round trip, so there is no per-batch hook to re-stamp from, and a folder that took 10.7 s was protected for its first half-second while the upload competed for the rest of the user's wait. A lease alone says nothing about the moment between two listings, which is what turns a burst of arrow-key presses into one park instead of one per keystroke. The window stays far shorter than the index scan's 2 s: a scan yield merely drops the listing budget, while a transfer yield PARKS, and `FOREGROUND_YIELD_DEBOUNCE` stacks another 400 ms on top.
 
-**The DESTINATION-side yield (uploads: local → SMB).** The source arm above probes the SOURCE volume, so an upload's source (a local disk) never opts in and that arm is inert. A SECOND arm (`CheckpointStream::bounded_yield_to_dest_foreground`, right after the source arm in `checkpoint`) stands aside for the DESTINATION share instead, so an upload to a share the user is browsing doesn't make the pane sluggish. It fires when ALL hold: the destination opts in (`Volume::supports_foreground_yield_as_destination()`), not cancelled, `bytes_yielded < total_size`, the min-progress floor is satisfied (shared with the source arm; in practice only one arm is active per transfer since source XOR destination is the SMB side), and `dest_volume.foreground_pending().await` is true (the same per-share timestamp the source arm reads).
+  **Why a LISTING can hold a lease even though an SMB CONNECTION can't.** MTP answers "a foreground op is in flight RIGHT NOW" from a per-device gate, because a PTP session is a single scarce resource with an explicit holder. The SMB connection has no such holder — every `SmbVolume` clone multiplexes frames over one session, so there is nothing there to count, and that is why this signal was time-based to begin with. But a listing is a scoped operation with a beginning and an end, so it can hold a claim of its own; the holder is the WORK, not the transport. ❌ Don't reach for the connection to make this exact.
+
+  **Decision/Why per-volume scope:** a transfer is work the user asked for and is watching a progress bar for, so it must only stand aside for the share it actually contends with; the app-wide signal would park a NAS copy because the user clicked around a local folder. Starvation is handled below this layer, so it needs no floor of its own, and a lease can't route around it: a streaming write earns forward progress from `MIN_PROGRESS_FLOOR_BYTES`, a single-shot write (exempt from the floor) from the per-park hard cap, and what bounds a held lease is in `priority/DETAILS.md` § "How long a lease can be held". Pinned by `smb::foreground_yield::tests::*`, `cmdr_fs::volume::host::activity::tests::*`, and `smb_test::{supports_foreground_yield_is_on, foreground_pending_tracks_navigation_on_this_share_only}`.
+
+**The DESTINATION-side yield (uploads: local → SMB).** The source arm above probes the SOURCE volume, so an upload's source (a local disk) never opts in and that arm is inert. A SECOND arm (`CheckpointStream::bounded_yield_to_dest_foreground`, right after the source arm in `checkpoint`) stands aside for the DESTINATION share instead, so an upload to a share the user is browsing doesn't make the pane sluggish. It fires when ALL hold: the destination opts in (`Volume::supports_foreground_yield_as_destination()`), not cancelled, `bytes_yielded < total_size`, the min-progress floor is satisfied OR the write is single-shot (below), and `dest_volume.foreground_pending().await` is true (the same per-share signal the source arm reads). The floor is otherwise shared with the source arm; in practice only one arm is active per transfer, since source XOR destination is the SMB side.
 
 **Decision/Why a SEPARATE opt-in, not `supports_foreground_yield()`.** The read flag can't be reused for writes: an MTP upload streams chunks inside ONE `SendObject` PTP transaction, so parking mid-write would PIN the device session (the opposite of the read side, where a bounded window holds nothing between chunks). So MTP must NEVER opt into the destination flag, and it doesn't (default `false`). SMB writes are discrete SMB2 WRITE chunks with NO oplock or lease requested (`create_file_writer` → `OplockLevel::None`, no durable context; `crates/cmdr-smb/src/volume/streams.rs`), so a brief park between them is safe. Only `SmbVolume` overrides `supports_foreground_yield_as_destination() → true`.
 
-**Decision/Why the destination park is HARD-CAPPED (data-safety bound, load-bearing).** Unlike the source arm's `wait_until_foreground_idle` (unbounded: a read holds nothing scarce between windows), an upload holds an OPEN SMB write handle across the park (the wrapped source read sits between two `writer.write_chunk` calls inside the destination's `write_from_stream`). An unbounded park under continuous browsing would let that handle sit idle long enough for the server/OS to reap it (`smb2` logs "idle teardown" when a quiet session is reaped), breaking the transfer. So `bounded_yield_to_dest_foreground` parks in short slices (`DEST_PARK_POLL_SLICE`, 50 ms) but never past `DEST_FOREGROUND_YIELD_HARD_CAP` (`volume/strategy.rs`, 1 s): at the cap it resumes and writes the next chunk, keeping the handle warm, then re-parks if the share is still busy. The share's own SESSION stays warm regardless (the user's navigation rides it), so the cap protects only the write handle. Resuming leaves the source offset untouched, so no desync; bytes reassemble exactly. The pure decision is `checkpoint_stream.rs::dest_park_continues(foreground_pending, parked_for, hard_cap)`, unit-tested against a fake clock like `priority::foreground::is_idle`. ❌ Don't convert this park to the unbounded source path, and ❌ don't raise the cap toward any server idle-timeout. Cancel-awareness is the same as the source arm (a cancel breaks the park loop promptly, and the next chunk flows to `on_progress` cleanup). Pinned by `volume::strategy::dest_yield_tests::{dest_yield_parks_before_next_write_then_resumes_byte_exact, dest_yield_hard_cap_bounds_the_park_under_continuous_browsing, dest_yield_cancel_while_parked_returns_cancelled_promptly, non_opting_dest_never_dest_yields}`, `checkpoint_stream::tests::*`, and `smb_test::supports_foreground_yield_as_destination_is_on`.
+**Decision/Why the destination park is HARD-CAPPED (data-safety bound, load-bearing).** The source arm takes `wait_until_foreground_idle` unbounded, because a read holds nothing scarce between windows. An upload can't: it holds an OPEN SMB write handle across the park (the wrapped source read sits between two `writer.write_chunk` calls inside the destination's `write_from_stream`), and under continuous browsing an unbounded park would let that handle sit idle long enough for the server/OS to reap it (`smb2` logs "idle teardown" when a quiet session is reaped), breaking the transfer. So `bounded_yield_to_dest_foreground` takes the SAME wait and races it, in one `select!`, against a single `sleep(DEST_FOREGROUND_YIELD_HARD_CAP)` (`volume/strategy.rs`, 1 s) and the cancel. At the cap it resumes and writes the next chunk, keeping the handle warm, then re-parks at the next checkpoint if the share is still busy. The share's own SESSION stays warm regardless (the user's navigation rides it), so the cap protects only the write handle. Resuming leaves the source offset untouched, so no desync; bytes reassemble exactly.
 
-**Debounce + min-progress floor (load-bearing, named constants in `volume/strategy.rs`).** Each park suspends the copy, so naive per-window yielding thrashes under rapid nav. Two guards: (1) **debounce** (`FOREGROUND_YIELD_DEBOUNCE`, ~400 ms) — after foreground drains, stay parked until the device is quiet for the window; if a new foreground op arrives during it, re-park. A burst of listings is served as ONE suspension, not one park per window. (2) **min-progress floor** (`MIN_PROGRESS_FLOOR_BYTES`, ~4 MiB) — after a resume, the copy must move at least the floor before honoring the next yield, so continuous foreground nav can't starve the copy to zero throughput. The floor is currently SMALLER than one read window (`MTP_READ_WINDOW`, 8 MiB), so it's effectively "one window"; re-tune both together on real hardware. The floor baseline (`last_resume_offset`) resets at the end of the arm on every resume. Both durations/sizes are injectable fields on `CheckpointStream` (defaulting to the constants) so tests set debounce ≈ 0 and a tiny floor for determinism; the production constants are tuned against a real device.
+The cap is a sleep to an instant rather than a condition anyone re-checks, so it can't be missed; the wait resolves on the EVENT of the user's listing ending, so the upload resumes then rather than up to a tick later; and neither arm can starve the other, because `select!` takes whichever lands first. ❌ Don't leave the wait without the cap racing it, and ❌ don't raise the cap toward any server idle-timeout. Cancel is the third arm and needs to be: no foreground signal ever announces a cancel. Pinned by `volume::strategy::dest_yield_tests::{dest_yield_parks_before_next_write_then_resumes_byte_exact, dest_yield_waits_on_the_share_instead_of_re_asking_it, dest_yield_hard_cap_bounds_the_park_under_continuous_browsing, dest_yield_cancel_while_parked_returns_cancelled_promptly, non_opting_dest_never_dest_yields}` and `smb_test::supports_foreground_yield_as_destination_is_on`. The wait's own guarantees (no lost wakeup, one computed sleep for the quiet window's tail) are pinned against a frozen clock in `cmdr_fs::volume::host::activity::tests`.
 
-**Cancel-awareness.** A cancel during an auto-yield must not be slept through and must not hang. The debounce wait (`sleep_cancel_aware`) slices its sleep and re-checks `is_cancelled` between slices; the `wait_until_foreground_idle` park is RACED against cancellation via `select!` + `poll_until_cancelled` (the gate only wakes when foreground drains, and a cancel doesn't clear the foreground signal, so it needs a separate waker). On cancel the arm bails out and lets the next chunk flow to the backend's `on_progress` `is_cancelled` cleanup — identical to cancel-while-paused. Pinned by `volume::strategy::tests::auto_yield_parks_before_next_window_then_resumes_byte_exact` (parks without releasing + byte-exact assembly + single open at offset 0 + op stays Running), `auto_yield_debounces_a_burst_into_one_park` (the copy stays parked across both listings in the burst), `auto_yield_min_progress_floor_prevents_starvation`, `auto_yield_cancel_while_yielding_keeps_no_partial`, the regression guard `non_mtp_source_never_auto_yields_for_foreground`, and `yield_capable_source_with_no_foreground_pending_never_self_yields` (no self-yield livelock — a yield-capable source with nothing pending must never park itself).
+**Decision/Why a SINGLE-SHOT write skips the min-progress floor.** The floor is counted from zero for every file (each file gets a fresh `CheckpointStream`), so a file SMALLER than the floor can never satisfy it and yields exactly zero times. That made the protection weakest where it is needed most: a folder of photos or documents going to a NAS stood aside for the user not once. The floor exists to keep an OPEN write handle warm, and a single-shot write has none while it matters: `crates/cmdr-smb/src/volume/streams.rs` drains the source fully into a buffer and only then sends CREATE+WRITE+FLUSH+CLOSE as one frame, so during the drain — which is where every checkpoint happens — nothing is open on the server. So the arm skips the floor when the destination answers `Volume::write_is_single_shot` for this file, and a small upload can stand aside. Pinned by `dest_yield_tests::single_shot_upload_stands_aside_even_below_the_min_progress_floor`, which parks a 200 KiB upload against the PRODUCTION floor.
 
-**Composition with the scan.** A transfer and the index scan both yield to foreground, so foreground always preempts both; the two background users don't priority-invert (lane budget 1 on the MTP device means the only foreground contender is a listing/nav/metadata op, never a second transfer). On MTP they share one signal (the device gate); on SMB they read the same per-volume timestamp through different thresholds and different responses — the scan throttles its listing budget (`indexing/network_scanner/scan_pace.rs`, which owns the reasoning for the whole yield-to-navigation design), the transfer parks. The runtime-level `tokio::task::yield_now()` (worker fairness) is a different layer and stays alongside this session-level yield.
+**Why the carrier is the raw boolean, ❌ not `WriteStaging::SingleShot`.** `resolve_staging` upgrades only a `Stage` request, so an `AlreadyStaged` write (a caller's safe-replace temp) reports `AlreadyStaged` however single-shot it is — the enum under-reports. Staging is a different question anyway: what the arm needs to know is whether a handle is open, which is a property of `write_from_stream`'s branch alone. `stream_pipe_file` therefore probes `write_is_single_shot` ONCE, hands the answer to `resolve_staging` and to `CheckpointStream::new`, and both consumers see the same answer; two probes could straddle a reconnect and disagree. What makes the answer trustworthy is the backend contract in `volume/DETAILS.md` § "The single-shot exemption": `write_is_single_shot` and `write_from_stream` branch on the same predicate.
+
+**The cap still races the exempt park, and must.** The single-shot answer and the write happen at different moments; a reconnect in between can renegotiate `max_write_size` and put the file on the streaming path, which does hold a handle open. The cap makes that race harmless, so it is ❌ never made conditional on the answer. Pinned by `dest_yield_tests::single_shot_dest_yield_is_still_hard_capped_under_continuous_browsing`.
+
+**Deferred: the band between one compound write and the floor.** A file bigger than the negotiated `max_write_size` (typically ~1 MiB) but smaller than the 4 MiB floor still never yields — it takes the streaming path, so the floor rightly applies, and it is under the floor, so the floor never clears. Closing that needs a pre-file yield gate in `stream_pipe_file` (stand aside BEFORE opening the file, where no handle exists yet for any write). ❌ Not built: it trades upload throughput against browsing responsiveness for every file in a batch, and wants benchmarking on real hardware first. Pinned as current behavior by `dest_yield_tests::a_streaming_upload_below_the_floor_still_does_not_yield`.
+
+**Debounce + min-progress floor (load-bearing, named constants in `volume/strategy.rs`).** Each park suspends the copy, so naive per-window yielding thrashes under rapid nav. Two guards: (1) **debounce** (`FOREGROUND_YIELD_DEBOUNCE`, ~400 ms) — after foreground drains, stay parked until the device is quiet for the window; if a new foreground op arrives during it, re-park. A burst of listings is served as ONE suspension, not one park per window. (2) **min-progress floor** (`MIN_PROGRESS_FLOOR_BYTES`, ~4 MiB) — after a resume, the copy must move at least the floor before honoring the next yield, so continuous foreground nav can't starve the copy to zero throughput. The floor is currently SMALLER than one read window (`MTP_READ_WINDOW`, 8 MiB), so it's effectively "one window"; re-tune both together on real hardware. The destination arm exempts a single-shot write from it (§ above); the source arm never does, since a read window is a read window whatever the destination promised. The floor baseline (`last_resume_offset`) resets at the end of the arm on every resume. Both durations/sizes are injectable fields on `CheckpointStream` (defaulting to the constants) so tests set debounce ≈ 0 and a tiny floor for determinism; the production constants are tuned against a real device.
+
+**Cancel-awareness.** A cancel during an auto-yield must not be slept through and must not hang. The debounce wait (`sleep_cancel_aware`) slices its sleep and re-checks `is_cancelled` between slices; every `wait_until_foreground_idle` park (both arms) is RACED against cancellation via `select!` + `poll_until_cancelled`, because the wait only resolves when foreground drains and a cancel doesn't clear the foreground signal, so it needs a separate waker. `poll_until_cancelled` is the one tick left on this path, and it bounds cancel latency alone (the intent is a bare atomic with nothing to subscribe to); the foreground wait itself is event-driven. On cancel the arm bails out and lets the next chunk flow to the backend's `on_progress` `is_cancelled` cleanup — identical to cancel-while-paused. Pinned by `volume::strategy::tests::auto_yield_parks_before_next_window_then_resumes_byte_exact` (parks without releasing + byte-exact assembly + single open at offset 0 + op stays Running), `auto_yield_debounces_a_burst_into_one_park` (the copy stays parked across both listings in the burst), `auto_yield_min_progress_floor_prevents_starvation`, `auto_yield_cancel_while_yielding_keeps_no_partial`, the regression guard `non_mtp_source_never_auto_yields_for_foreground`, and `yield_capable_source_with_no_foreground_pending_never_self_yields` (no self-yield livelock — a yield-capable source with nothing pending must never park itself).
+
+**Composition with the scan.** A transfer and the index scan both yield to foreground, so foreground always preempts both; the two background users don't priority-invert (lane budget 1 on the MTP device means the only foreground contender is a listing/nav/metadata op, never a second transfer). On MTP they share one signal (the device gate); on SMB they read the same per-volume signal through different thresholds and different responses — the scan throttles its listing budget (`indexing/network_scanner/scan_pace.rs`, which owns the reasoning for the whole yield-to-navigation design), the transfer parks. The runtime-level `tokio::task::yield_now()` (worker fairness) is a different layer and stays alongside this session-level yield.
 
 **Scoped out: the local-FS sync chunk loop.** `chunked_copy.rs::copy_data_chunked` (and the macOS `copyfile` / Linux `copy_file_range` strategies) receive only the cancel `intent` atom, not the `PauseGate` (which lives on `WriteOperationState`). So a local→local copy of one huge file pauses only at the next file boundary, not mid-file. Threading the gate through `copy_strategy.rs` + the native paths is the v2 follow-up; the user-reported case is MTP→local (the volume streaming path), which is fully covered.
 
@@ -580,8 +846,8 @@ naming the backoff; and `retries=N` (plus `stall-aborts=N`) on every task row in
 A file that exhausts its attempts still ends the operation, exactly as before. Skipping it and carrying on would need a
 terminal event shape that can say "finished, with N files missing", a frontend that shows which ones, and journal
 semantics for a partially-successful op — and, more importantly, a product decision about whether a user wants 700
-files copied with three quietly absent. That is a bigger change than M4.1 asked for and a worse default to guess at, so
-it is deliberately left for David to call.
+files copied with three quietly absent. That is a bigger change than the retry policy asked for and a worse default to
+guess at, so it is deliberately left for David to call.
 
 ## Two tiers of cancel
 
@@ -715,13 +981,13 @@ with nothing left at a real name.
 **Why**: The serial path originally captured FROZEN snapshots (`bytes_done_so_far`, `files_done_so_far`) per top-level source. For a directory source every inner file emitted against the same `(0, 0)` snapshot, so the Size bar reset to 0 at each inner file and the File bar sat at 0 for the whole folder (observed moving a 9-file folder, ~10.6 GB, USB → SMB NAS). The frozen snapshot also can't survive multiple directory sources. The byte axis predates this: the move site once shipped a no-op `Continue(())` callback because the old move code sent `bytes_total = 0`; once `volume/preflight.rs` populated `bytes_total`, the Size bar pinned at 0 through a multi-minute upload (SMB dest, 3.7 GB file, "Moving... 0 bytes" the whole time) — DON'T reintroduce a no-op progress callback. The concurrent variant carries a per-task `last_file_bytes: Arc<AtomicU64>` so the orchestrating task can detect "volume never invoked on_progress" and credit the file's bytes as a compensation; its byte aggregation still loses one chunk per leaf across a DIRECTORY source boundary (a latent under-count; the concurrent path needs ≥3 directory top-level sources to hit it). Pinned by `test_cross_volume_copy_directory_source_progress_is_leaf_granular`, `cross_volume_move_directory_source_progress_is_leaf_granular`, `cross_volume_move_emits_intra_file_progress`, `test_cross_volume_copy_serial_emits_intra_file_progress`, and `test_cross_volume_copy_concurrent_emits_intra_file_progress`.
 
 **Decision**: The per-file milestone (the bypass-throttle emit that guarantees the axes cross `N/N` even when chunked emits ate the throttle window) lives at the unit-of-work layer, not the driver. Serial volume paths: `SerialLeafProgress::on_leaf_complete` fires it per leaf. Concurrent path: the task-complete branch (`copy_volumes_with_progress::Some(Ok(...))`). Sync local-FS path: `copy_single_item` via `copy::record_file_done`. The async driver's `Transferred` arm emits a per-source milestone ONLY when `DriverConfig::emit_per_source_milestone` is `true` — set for the same-volume rename-merge, whose `transfer_one` does a bare `rename` with no streaming and thus no closure emit, so the driver milestone is its only Copying event. The streaming paths set it `false`: a top-level-granular driver milestone after a directory source would regress the File bar (9/9 → 1/9). `drive_transfer_serial_sync`'s `Transferred` arm never emits (the closure owns it). Mirrors the sync/async conflict-resolution split (sync driver delegates to closure, async driver dispatches itself).
-**Why**: Chunked `on_progress` emits inside `transfer_one` (async) or `copy_single_item` (sync) carry `files_done_so_far` (the driver's iteration snapshot taken before this file started), so for single-file ops the chunked path never crosses `N/N` — the user would see "Copying... 99% / 0 of 1 files" jump straight to the complete toast, never observing the final "1 of 1" milestone. Putting the milestone in `copy_single_item` (a function called by both `copy_files_with_progress_inner` *and* `move_with_staging`'s direct copy loop) means a cross-FS local move sees the same milestone shape as a regular local copy — without `move_with_staging` needing its own duplicate emit. The throttle bypass is deliberate: per-file milestones are bounded by file count (not noisy), and throttle suppression of this event is exactly the bug being fixed. The emit fires at every `Ok`-return site in `copy_single_item` (regular copy, symlink copy, per-file Skip, type-mismatch parent Skip, same-file no-op) via a `PerFileCtx` struct that bundles the six operation-wide values so the six call sites stay one-liners. `cross_volume_move_cancel_mid_batch_preserves_completed` still passes because the async driver's milestone observes `files_done >= N` between sources before the next-iter cancellation check fires. Pinned by `cross_volume_move_emits_intra_file_progress`, `test_cross_volume_copy_serial_reaches_files_done_n`, `test_cross_volume_copy_concurrent_reaches_files_done_n`, `local_copy_single_file_reaches_files_done_n`, and `cross_fs_local_move_single_file_reaches_files_done_n`.
+**Why**: Chunked `on_progress` emits inside `transfer_one` (async) or `copy_single_item` (sync) carry `files_done_so_far` (the driver's iteration snapshot taken before this file started), so for single-file ops the chunked path never crosses `N/N` — the user would see "Copying... 99% / 0 of 1 files" jump straight to the complete toast, never observing the final "1 of 1" milestone. Putting the milestone in `copy_single_item` (a function called by both `copy_files_with_progress_inner` *and* `move_with_staging`'s direct copy loop) means a cross-FS local move sees the same milestone shape as a regular local copy — without `move_with_staging` needing its own duplicate emit. The throttle bypass is deliberate: per-file milestones are bounded by file count (not noisy), and throttle suppression of this event is exactly the bug being fixed. The emit fires at every `Ok`-return site in `copy_single_item` (regular copy, symlink copy, per-file Skip, type-mismatch parent Skip, same-file no-op) via a `PerFileCtx` struct that bundles the six operation-wide values so the six call sites stay one-liners. `cross_volume_move_cancel_mid_batch_preserves_completed` still passes because the async driver's milestone observes `files_done >= N` between sources before the next-iter cancellation check fires. Pinned by `cross_volume_move_emits_intra_file_progress`, `test_cross_volume_copy_serial_reaches_files_done_n`, `test_cross_volume_copy_concurrent_reaches_files_done_n`, `local_copy_single_file_reaches_files_done_n`, and `cross_fs_local_move_single_file_reaches_files_done_n` (the last two in `move_op/move_progress_tests.rs`).
 
-**Decision**: `scan_volume_sources` emits climbing `Scanning`-phase tallies via `scan_for_copy_batch_with_progress`.
-**Why**: Without a cached `preview_id` (programmatic moves, MCP-triggered ops), the operation's scan phase used to emit a single `0/0/0` event up front, then sit silent through the entire `scan_for_copy_batch` call before flipping to `Copying`. On slow sources (cold MTP listing, large SMB tree) the FE shows "Scanning... 0 bytes / 0 files / 0 dirs" the whole duration. The scan-preview pipeline emits its own climbing tallies into the preview's event channel, not the operation's, so the operation needs to wire its own. The fix: pass a throttled `Fn(ListingProgress)` callback through `scan_for_copy_batch_with_progress` (the existing `_with_progress` trait variant) that emits a `Scanning`-phase event per tick, plus a final throttle-bypassed emit with the aggregate totals so a fast scan whose per-listing emits all got throttled still lands on the right number. The kickoff + final emits frame the per-tick stream. Pinned by `cross_volume_move_emits_scan_phase_tallies_during_walk`.
+**Decision**: `scan_volume_sources` emits climbing `Scanning`-phase tallies via `scan_for_copy_batch_with_boundary`.
+**Why**: Without a cached `preview_id` (programmatic moves, MCP-triggered ops), the operation's scan phase used to emit a single `0/0/0` event up front, then sit silent through the entire `scan_for_copy_batch` call before flipping to `Copying`. On slow sources (cold MTP listing, large SMB tree) the FE shows "Scanning... 0 bytes / 0 files / 0 dirs" the whole duration. The scan-preview pipeline emits its own climbing tallies into the preview's event channel, not the operation's, so the operation needs to wire its own. The fix: pass a throttled `Fn(ListingProgress)` callback through `scan_for_copy_batch_with_boundary` (the boundary-taking trait method) that emits a `Scanning`-phase event per tick, plus a final throttle-bypassed emit with the aggregate totals so a fast scan whose per-listing emits all got throttled still lands on the right number. The kickoff + final emits frame the per-tick stream. Pinned by `cross_volume_move_emits_scan_phase_tallies_during_walk`.
 
 **Decision**: Cross-volume move runs the same preflight scan as volume copy (`scan_volume_sources` in `volume/preflight.rs`); the SAME-volume move does NOT — it's a rename-merge with top-level hints only and `bytes_total = 0`.
-**Why**: The two move paths have different cost models. **Cross-volume move** (`move_volumes_with_progress`, copy+delete) genuinely transfers bytes, so it shares `scan_volume_sources` with copy: a cached `TransferDialog` preview when available, else `volume.scan_for_copy_batch_with_progress`, giving the real `(total_files, total_bytes, source_hints)` triple so the FE's Size bar tracks. **Same-volume move** (`move_within_same_volume_with_progress`) is a server-side rename — it moves ZERO bytes — so a deep recursive pre-flight scan there was pure waste that cost 30–40 s of "Verifying before move…" on a NAS (a real field incident: a same-NAS folder move blocked for 30–40 s before the 100 ms rename). It now calls `top_level_move_hints` instead: top-level `is_directory`/size hints only (one `list_directory` per distinct parent, O(distinct parents), never a subtree walk), `files_total` = number of selected top-level items, `bytes_total = 0`. The FE hides the Size bar on `bytes_total == 0`, which is honest — a rename moves no bytes, so a Size bar would be a lie. `known_directory_paths` (keeps bulk-skip file-only) comes from the same top-level hints. The perf contract is pinned by `volume/rename_merge_tests.rs::non_conflicting_move_does_no_subtree_walk` (a counting volume asserts no interior listing + O(top-level) stat count) and the SMB integration pin `smb_integration_same_share_nonconflicting_move_no_subtree_walk`.
+**Why**: The two move paths have different cost models. **Cross-volume move** (`move_volumes_with_progress`, copy+delete) genuinely transfers bytes, so it shares `scan_volume_sources` with copy: a cached `TransferDialog` preview when available, else `volume.scan_for_copy_batch_with_boundary`, giving the real `(total_files, total_bytes, source_hints)` triple so the FE's Size bar tracks. **Same-volume move** (`move_within_same_volume_with_progress`) is a server-side rename — it moves ZERO bytes — so a deep recursive pre-flight scan there was pure waste that cost 30–40 s of "Verifying before move…" on a NAS (a real field incident: a same-NAS folder move blocked for 30–40 s before the 100 ms rename). It now calls `top_level_move_hints` instead: top-level `is_directory`/size hints only (one `list_directory` per distinct parent, O(distinct parents), never a subtree walk), `files_total` = number of selected top-level items, `bytes_total = 0`. The FE hides the Size bar on `bytes_total == 0`, which is honest — a rename moves no bytes, so a Size bar would be a lie. `known_directory_paths` (keeps bulk-skip file-only) comes from the same top-level hints. The perf contract is pinned by `volume/rename_merge_tests.rs::non_conflicting_move_does_no_subtree_walk` (a counting volume asserts no interior listing + O(top-level) stat count) and the SMB integration pin `smb_integration_same_share_nonconflicting_move_no_subtree_walk`.
 
 **Decision**: Same-volume folder collisions merge via a recursive rename-merge (`volume/rename_merge.rs`), entered directly — no resolver round-trip for the folder.
 **Why**: A flat `rename(source_dir, dest_dir, force=false)` onto an existing same-named dest dir fails `AlreadyExists`, so the move used to ERROR on a top-level folder collision instead of merging. The rename-merge walks the source folder level by level: it lists the source level + (pre-existing) dest level once each, then per child — no dest map hit → one `rename(child_src, child_dest, force=false)` (a whole subtree rides along, never descended); dir-vs-dir hit → recurse; file / cross-type hit → route through `resolve_volume_conflict` (folders never prompt; only files do). A file Overwrite collapses to the legacy delete-then-rename shape (the safe-replace temp dance buys nothing for a non-streaming rename). All renames are `force=false`. **Late-detected collisions** (case-insensitive SMB/APFS, TOCTOU): an unexpected `AlreadyExists` from a child rename is treated as a conflict routed through the resolver, NEVER a hard error — scoped to children with no exact-match hit, branching on a per-level `name → resolution` map so an already-resolved child finalizes its stored decision instead of re-prompting (this per-level map is orthogonal to the op-wide apply-to-all latch). **Source-dir cleanup is inside-out, empty-only**: after a level completes, `volume.delete(source_dir)` is attempted; `Volume::delete`'s "file or EMPTY directory only" contract means a non-empty source (skipped/errored/unmoved child) fails benignly and the dir — plus all its ancestors — survives. An all-moved spine deletes deepest-first via the recursion unwind. Symlinks move as opaque entries (one rename, never descended). The downloads-watcher hook fires on BOTH halves of every child rename. Cancel mid-merge keeps already-renamed children (existing contract) and never deletes a dir still holding unmoved content. Pinned by `volume/rename_merge_tests.rs` (zero-folder-prompt, skip/overwrite/rename/stop policies, cancel, source-dir cleanup matrix, dest-inside-source, case-fold prompts-once / no-double-prompt, symlink) and the SMB integration pin `smb_integration_same_share_move_merges_with_no_folder_prompt`.

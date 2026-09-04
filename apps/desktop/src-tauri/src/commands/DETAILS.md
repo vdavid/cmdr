@@ -76,6 +76,13 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   - ❗ **`connect_sftp_volume`'s `attempt_id` is the CALLER's, made before the call**, and `cancel_sftp_connect` takes
     the same one. The command doesn't answer for up to 30 s, so an id it returned would be useless for arming a cancel
     button. The table behind it: `network/DETAILS.md` § "The attempt table, and why the id is the caller's".
+- **`webdav.rs`**: the WebDAV surface, shaped like `sftp.rs` minus host keys: `connect_webdav_volume` (a tagged
+  connect result, never a string; `invalid_url` is the one outcome the app adds to the crate's), `cancel_webdav_connect`,
+  `disconnect_webdav_volume`, the credential trio (`save` / `has` / `delete`, keyed `scheme://host:port` + username),
+  the known-servers trio (`get` / `update` / `forget`), and `get_webdav_unattended_reconnect`. Same rules as SFTP: the
+  `attempt_id` is the caller's, reconnect and sign-in go through `network.rs`, and no command returns a stored secret.
+  The flow is `network::webdav_volume_wiring`; the contract is `crates/cmdr-webdav/DETAILS.md` § "Connecting from the
+  frontend".
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   in-place reconnect (`reconnect_smb_volume`: backend single-flighted via `Volume::attempt_reconnect`;
   `reconnect_smb_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via

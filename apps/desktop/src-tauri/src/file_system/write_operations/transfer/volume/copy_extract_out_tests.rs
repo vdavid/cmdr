@@ -49,7 +49,7 @@ async fn read_dest_file(dest: &Arc<dyn Volume>, path: &str) -> Vec<u8> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn extract_out_copies_a_file_and_a_directory_subtree_out_of_a_zip() {
-    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_archive::{ArchiveFormat, ArchiveVolume};
     use cmdr_fs::volume::host::VolumeHost;
 
     let (_tmp, zip_path) = build_extract_out_fixture();
@@ -105,7 +105,7 @@ async fn extract_out_copies_a_file_and_a_directory_subtree_out_of_a_zip() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn extracting_a_symlink_entry_writes_a_regular_file_never_a_symlink() {
-    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_archive::{ArchiveFormat, ArchiveVolume};
     use cmdr_fs::volume::host::VolumeHost;
 
     // Pins that extraction never CREATES a symlink from archive data: a symlink

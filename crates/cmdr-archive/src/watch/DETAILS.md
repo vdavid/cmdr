@@ -108,10 +108,10 @@ prefix-similar rejection) is unit-tested inline.
 inode swap (the case a file-pinned watch would miss), and a remote parent establishing no watch and claiming no
 freshness. It asserts against a `RecordingListings` host, so it needs no listing cache and no `VolumeManager`.
 
-The app-side companion (`file_system/volume/backends/archive_watch_integration_test.rs`) owns what a refresh DOES: a
-refresh through `AppListings` reflected in an open listing while an outside listing is left untouched (scoping), a
-truncated mid-write keeping the previous listing, and LRU eviction releasing the archive's watch (`Arc::strong_count`
-drops to the test's own after eviction). It drives refreshes directly, so no FSEvents timing lives there.
+The app-side companion (`file_system/listing/archive_watch_integration_test.rs`) owns what a refresh DOES: a refresh
+through `AppListings` reflected in an open listing while an outside listing is left untouched (scoping), a truncated
+mid-write keeping the previous listing, and LRU eviction releasing the archive's watch (`Arc::strong_count` drops to the
+test's own after eviction). It drives refreshes directly, so no FSEvents timing lives there.
 
 The FSEvents-driven tests are **self-healing** under a saturated suite, not retry-dependent: each redoes the zip rewrite
 on a 750 ms cadence until the watch delivers, inside one 15 s budget. This defeats both the just-registered arming

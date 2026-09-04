@@ -371,14 +371,26 @@ describe('QueueRow while the operation is still counting', () => {
     expect(target.textContent).toContain('1,284')
   })
 
-  it('offers no Pause: a scan has nothing to park', () => {
+  it('offers Pause during the scan: the walk parks on the same gate the write does', () => {
     render({ row: buildRow('running', 'copy', scanning()) })
 
-    expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
+    expect(target.querySelector('[aria-label="Pause this operation"]')).not.toBeNull()
     expect(
       target.querySelector('[aria-label="Cancel this operation"]'),
       'Cancel stays: it is the control that works during a scan',
     ).not.toBeNull()
+  })
+
+  it('offers Resume on a paused scan, and stops claiming it is counting', () => {
+    // The row a "Pause all" leaves behind. Without Resume its only way back is
+    // Cancel, which throws the scan away.
+    render({ row: buildRow('paused', 'copy', scanning()) })
+
+    expect(target.querySelector('[aria-label="Resume this operation"]')).not.toBeNull()
+    expect(
+      target.querySelector('[aria-label="Scanning\u2026"]'),
+      'the spinner claims the walk is moving, and it is parked',
+    ).toBeNull()
   })
 
   it('offers no Rollback: nothing has been written to reverse', () => {
@@ -391,6 +403,49 @@ describe('QueueRow while the operation is still counting', () => {
     render({
       row: buildRow('running', 'copy', { ...scanning(), phase: 'copying', filesTotal: 4, bytesTotal: 100 }, true),
     })
+
+    expect(rollbackButton()).not.toBeNull()
+  })
+})
+
+describe('QueueRow: a move on its last stage', () => {
+  /** A move between two filesystems in its source-deletion phase: every file has
+   *  landed at the destination and Cmdr is removing the originals. The strategy
+   *  reports `supportsRollback: true` (it really can reverse, up to here), so the
+   *  phase is the only thing that says the moment has passed. */
+  function sweeping(phase: 'copying' | 'deleting'): OperationRow {
+    return buildRow(
+      'running',
+      'move',
+      {
+        operationId: 'op-1',
+        operationType: 'move',
+        phase,
+        currentFile: 'report.pdf',
+        filesDone: 1,
+        filesTotal: 4,
+        bytesDone: 25,
+        bytesTotal: 100,
+      },
+      true,
+    )
+  }
+
+  it('offers no Rollback while the originals are going: nothing can be carried back', () => {
+    // Pre-fix the row offered a button whose click only stopped the sweep, the
+    // same thing Cancel beside it does, while the confirmation promised the files
+    // would travel home.
+    render({ row: sweeping('deleting') })
+
+    expect(rollbackButton()).toBeNull()
+    expect(
+      target.querySelector('[aria-label="Cancel this operation"]'),
+      'Cancel stays: it still spares the originals the sweep has not reached',
+    ).not.toBeNull()
+  })
+
+  it('offers Rollback during the copy stage of the same move', () => {
+    render({ row: sweeping('copying') })
 
     expect(rollbackButton()).not.toBeNull()
   })

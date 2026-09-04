@@ -29,4 +29,11 @@ var (
 	// servers, because the lane runs the whole `cmdr-sftp` package and each
 	// server exists for a cell in it.
 	SftpCore = StackMode{Stack: "sftp", Mode: "core"}
+	// WebdavCore is the WebDAV integration set: the Basic-auth server and the
+	// Digest-only one.
+	WebdavCore = StackMode{Stack: "webdav", Mode: "core"}
+	// WebdavNextcloud is the sabre/dav server, alone. ❗ Its own mode because it
+	// is ~1 GB and installs itself before it listens; only the slow-lane
+	// `desktop-rust-webdav-nextcloud` asks for it.
+	WebdavNextcloud = StackMode{Stack: "webdav", Mode: "nextcloud"}
 )

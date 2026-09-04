@@ -29,7 +29,10 @@ func TestEveryDeclaredStackModeResolves(t *testing.T) {
 // The pairs a check can name must each resolve too, so one is ready to be
 // declared rather than debugged.
 func TestDeclarableStackModesResolve(t *testing.T) {
-	for _, want := range []checks.StackMode{checks.SmbCore, checks.SmbE2E, checks.SftpCore} {
+	for _, want := range []checks.StackMode{
+		checks.SmbCore, checks.SmbE2E, checks.SftpCore,
+		checks.WebdavCore, checks.WebdavNextcloud,
+	} {
 		stack, err := stacklease.Lookup(want.Stack)
 		if err != nil {
 			t.Errorf("%s: %v", want, err)

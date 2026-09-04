@@ -35,6 +35,7 @@ fn check_rollbackable_gates_state_and_connectivity() {
         rollback_state: state,
         not_rollbackable_reason: reason,
         rolls_back_op_id: None,
+        inverse_op_id: None,
         source_volume_id: Some("src".into()),
         dest_volume_id: dst.map(str::to_string),
         started_at: 1,

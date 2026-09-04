@@ -350,7 +350,15 @@ and the `rename_file` command (local FS renames). `emit_synthetic_entry_diff` re
 `refresh_archive_listings(volume_id, archive_path)` is a sibling entry point for the archive content watch: it
 `FullRefresh`es every open listing at or inside a changed `.zip` (parent drive id + full path) WITHOUT the drive-index
 sync `notify_directory_changed` runs, since an archive-inner path isn't a real filesystem path. Rationale and the watch
-that drives it: `crates/cmdr-archive/src/watch/DETAILS.md`.
+that drives it: `crates/cmdr-archive/src/watch/DETAILS.md`. What a refresh DOES to this cache is
+`archive_watch_integration_test.rs`, here: a refresh through `AppListings` reflected in an open listing while an outside
+listing is untouched, a truncated mid-write keeping the previous listing, and LRU eviction releasing the watch. No
+FSEvents timing lives in it; the backend's half of the seam is `cmdr-archive`'s `watch/host_seam_test.rs`.
+
+`smb_pane_close_watch_integration_test.rs` is the other cell here whose other half is a backend: closing a pane's
+listing (`list_directory_end`) drops a cache entry and its FSEvents `WatchedDirectory`, and must not reach the volume's
+own watcher, which the index depends on with no pane open. It runs over a real `cmdr-smb` session because that watcher
+is the one at stake, and it takes its fixture from `write_operations::smb_test_support`.
 
 ## Diff event coalescing (diff_emitter.rs)
 
@@ -412,7 +420,7 @@ mtime touch, chmod) would blank a file's dots until the next enrich. `carry_forw
 the incoming entry already has tags), so it never masks a real change; clearing flows solely through the enrich path's
 unconditional replace.
 
-**Write path (Phase 2).** `tags.rs::set_tags(path, &[TagRef])` encodes the full desired set as a **binary** plist
+**Write path.** `tags.rs::set_tags(path, &[TagRef])` encodes the full desired set as a **binary** plist
 (`plist::Value::to_writer_binary` — `plist` defaults to XML, which is NOT Finder-compatible) of `"Name\nN"` strings
 (always with the `\nN` suffix, even color 0, matching Finder), and `xattr::set`s it. An empty set REMOVES the xattr
 (matching Finder clearing all tags), guarded so an already-untagged file doesn't surface a spurious ENOATTR. The
@@ -435,6 +443,29 @@ zeroing it would destroy custom folder icons and break `has_custom_folder_icon`.
 file is never half-written; a multi-file toggle that fails mid-loop leaves earlier files updated and propagates the
 error (the IPC command logs it rather than surfacing a hard failure — tags are low-stakes and the panes still reflect
 what's on disk).
+
+## The foreground lease a listing holds
+
+`read_directory_with_progress` takes a `priority::foreground` lease on the volume as its FIRST statement and holds it
+for the whole body. That is what tells a background SMB upload and the index scan that the user is waiting on this
+share right now, for however long the folder actually takes to come back. The command entry point
+(`commands/file_system/listing.rs`) still stamps the volume's timestamp on the way in: it covers the non-streaming path
+and seeds the debounce, and the lease covers the listing itself. Design, both halves, and what bounds a held lease:
+`priority/DETAILS.md`.
+
+**It is RAII and nothing else.** Every exit gives it back with no code on the path: the error return, the three
+cancellation returns, the restricted-empty-root return, a panic inside the task, and the task's future being dropped
+when the runtime shuts down. The two things that would break it are binding the guard to `_` (which drops it
+immediately) and adding a manual release beside the drop.
+
+**Cancel releases it, deliberately.** The `select!` cancel arm returns while the detached backend task is still
+unwinding, so the lease goes back before the wire work has finished. That is the right answer, not a leak: the pane has
+already moved on, so nobody is waiting on that listing any more, and the transfer it was holding off should resume.
+
+**The lease keys on the volume id the frontend asked with**, so a `.zip` opened on a share leases the SHARE (the
+archive's own volume is resolved below this point and contends for nothing). Pinned by
+`streaming_test::{a_listing_holds_a_foreground_lease_for_its_whole_duration, a_listing_that_fails_gives_its_lease_back,
+two_concurrent_listings_on_one_volume_both_have_to_finish, dropping_the_listing_task_mid_flight_gives_the_lease_back}`.
 
 ## Cancelling a listing detaches, never aborts
 

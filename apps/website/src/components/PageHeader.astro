@@ -1,0 +1,29 @@
+---
+/**
+ * The site's standard page hero: a left-aligned `h1` plus an optional subtitle.
+ * Pages use this rather than hand-rolling their own heading block, so the type scale,
+ * spacing, and alignment stay consistent. Alignment is deliberately not a prop: the
+ * site reads left-aligned, and centering a page hero is the kind of one-off override
+ * that made the pages drift apart in the first place.
+ */
+interface Props {
+    title: string
+    /** Bottom-margin override for pages whose first section wants to sit tighter. */
+    class?: string
+}
+
+const { title, class: className = 'mb-14' } = Astro.props
+---
+
+<header class:list={[className]}>
+    <h1 class="mb-4 text-3xl font-bold tracking-tight text-text-primary md:text-4xl lg:text-5xl">
+        {title}
+    </h1>
+    {
+        Astro.slots.has('default') && (
+            <p class="max-w-2xl text-lg text-text-secondary">
+                <slot />
+            </p>
+        )
+    }
+</header>

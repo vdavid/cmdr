@@ -41,9 +41,8 @@ specific to retrofitting an existing backend:
 **Was specific to a retrofit, and a greenfield backend skips it.**
 
 - Rewriting `crate::…` paths, and re-homing the app-side tests that had grown into the backend's directory.
-- A facade module in the app (`apps/desktop/src-tauri/src/file_system/volume/backends/archive.rs`, a
-  `pub use cmdr_archive::*`) so ~40 existing call sites keep their original paths. A new backend has no existing call
-  sites to preserve.
+- Rewriting the app's call sites onto `cmdr_archive::…`. A new backend is imported by crate name from the start, so it
+  has no existing paths to rewrite.
 - Two rustdoc intra-doc links that stopped resolving across the boundary. One pointed at an app symbol
   (`VolumeManager::resolve`) and became prose; the other pointed at `Volume::extraction_is_sequential` and simply
   re-anchored on `cmdr_fs::`. Only app-side symbols genuinely have to go.
@@ -77,7 +76,11 @@ strips the archive-path prefix (the FE sends full absolute paths), accepts an al
 empty path / `.` as the root `""`. `node_to_entry` builds each `FileEntry`'s full path as `archive_path/inner`; the root
 node (`""`) carries the archive's own file name and path. `ArchiveNode::modified` is Unix seconds, matching `FileEntry`
 (a negative timestamp is dropped); `extended_metadata_loaded` is `true` — the archive listing is complete in one pass,
-no deferred enrichment.
+no deferred enrichment. `FileEntry` has no `encrypted` field, so `index()` is `pub`: a host caller that must name
+encryption (the Ask Cmdr `inspect_file` tool) queries the same cached `ArchiveIndex` the listing maps from (`get` /
+`list` / `has_encrypted_entries`, keyed by the inner path `archive_boundary_candidate` splits off), so the two never
+disagree. For 7z the per-entry flag is derived from the entry's block: an `AES256_SHA256` coder in its chain
+(`sevenz.rs`); an entry with no block (a directory, an empty file) is never flagged.
 
 **Streaming reads.** `open_read_stream` / `open_read_stream_at_offset` parse the index (cached) and open the byte source
 on `spawn_blocking`, then wrap `ArchiveEntryReader` as an `ArchiveVolumeReadStream`. A compressed entry has no random

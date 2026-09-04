@@ -414,8 +414,12 @@ or doubles a real shortcut. Every handler here therefore resolves through `event
 (`$lib/shortcuts`) instead of testing `e.key` plus a modifier flag:
 
 - `selection-keys.ts` — the pure `classifySelectionKey`, mapping a keypress to `selection.toggle` / `toggleAndDown` /
-  `selectAll` / `deselectAll`. Its arms all `stopPropagation()`, so each command runs exactly once (`⌘A` used to run
-  twice, locally and centrally; invisible only because both did the same thing).
+  `selectAll` / `deselectAll` / `invert`. Its arms all `stopPropagation()`, so each command runs exactly once (`⌘A` used
+  to run twice, locally and centrally; invisible only because both did the same thing). `invert` defaults to `⇧8` plus a
+  bare `*`. No layout types `⇧8` as `8` (`*` on US, `(` on Hungarian), so `eventMatchesCommand` also tries the physical
+  `Digit<n>` key for a Shift+digit press and the binding stays layout-independent; the bare `*` is the numpad key, which
+  that retry can't reach (`NumpadMultiply` is not a `Digit<n>` code). The menu item carries no accelerator for the same
+  reason `+` / `-` don't: a bare `Shift+8` accelerator would eat `*` in every text field.
 - `handleOpenOrParentKey` — `nav.open` (`Enter` / `⌘↓`) and `nav.parent` (`Backspace` / `⌘↑`). The `⌘Backspace`
   carve-out is now structural rather than a hand-written `!e.metaKey`: it's `file.delete`'s combo, not `nav.parent`'s,
   so it falls through to the dispatcher and deletes.

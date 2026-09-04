@@ -47,9 +47,6 @@ coverage/
 # Rust build artifacts
 target/
 
-# Auto-generated capability file for playwright-e2e feature (created by build.rs)
-apps/desktop/src-tauri/capabilities/playwright.json
-
 # Go-built binaries (one per tool dir, named after the dir by `go build`)
 scripts/check/check
 scripts/check-a11y-contrast/check-a11y-contrast

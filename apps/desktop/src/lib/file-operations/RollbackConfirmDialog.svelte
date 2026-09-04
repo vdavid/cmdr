@@ -39,8 +39,10 @@
 
     /**
      * Body + cancel wording + whether the confirming button reads as destructive.
-     * Only the two deleting variants get `danger`: red on "put my files back" would
-     * cry wolf, and this app spends that colour on operations that take something away.
+     * Only the two DELETING variants get `danger`: red on "put my files back" would
+     * cry wolf, and this app spends that colour on operations that take something
+     * away. That's why a running move takes `stopAndMoveBack` rather than sharing
+     * the running copy's arm — its reversal removes nothing.
      */
     function wording(v: RollbackConfirmVariant): { body: MessageKey; cancel: MessageKey; destructive: boolean } {
         switch (v) {
@@ -49,6 +51,12 @@
                     body: 'fileOperations.rollbackConfirm.body',
                     cancel: 'fileOperations.rollbackConfirm.keep',
                     destructive: true,
+                }
+            case 'stopAndMoveBack':
+                return {
+                    body: 'fileOperations.rollbackConfirm.bodyStopAndMoveBack',
+                    cancel: 'fileOperations.rollbackConfirm.keep',
+                    destructive: false,
                 }
             case 'undoByDeleting':
                 return {

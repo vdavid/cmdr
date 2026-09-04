@@ -47,8 +47,10 @@ This shape also satisfies a future `Homebrew/homebrew-cask` resubmission, so kee
 - **`livecheck` reads `https://getcmdr.com/latest.json`**, the same Tauri updater manifest the app polls. The release
   flow already publishes it.
 - **`auto_updates true`**: Cmdr ships its own updater, so `brew upgrade` skips it unless `--greedy`.
-- **`depends_on macos: :monterey`** means "Monterey or later" (current Homebrew semantics) and matches
-  `minimumSystemVersion` in `tauri.conf.json`. Floor rationale: `../notes/system-requirements-and-es2025.md`.
+- **`depends_on macos: :catalina`** means "Catalina or later" (current Homebrew semantics) and matches
+  `minimumSystemVersion` in `tauri.conf.json`. Everything from Catalina up to Monterey is best-effort, and the app
+  itself says so at launch when the WebKit under it is too old. Floor rationale:
+  `../notes/system-requirements-and-es2025.md`.
 - **`zap` paths** were verified on a prod machine. `~/Library/HTTPStorages/` is deliberately absent (Cmdr doesn't create
   it).
 

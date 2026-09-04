@@ -86,6 +86,15 @@ export interface EvictionInfo {
   newTotalBytes: number
 }
 
+export interface CronFailureInfo {
+  /** The job that threw, named as `index.ts` labels it (for example `Crash notifications`). */
+  job: string
+  /** The tick's `scheduledTime` as ISO 8601, so the alert lines up with the Workers log. */
+  when: string
+  /** The thrown value, stringified. Capped in the payload; Discord rejects a body over 2000 chars. */
+  detail: string
+}
+
 const ERROR_REPORT_EMBED_COLOR = 0xff6b6b
 const USER_NOTE_EMBED_CAP = 500
 const FEEDBACK_EMBED_COLOR = 0x5bc0de
@@ -231,6 +240,36 @@ export function buildNotificationsSuppressedPayload(info: NotificationsSuppresse
   }
 }
 
+/**
+ * How much of a thrown error survives into the alert. Discord rejects a `content` over 2000
+ * characters outright, and a rejected alert is the same as no alarm at all, so the cap is generous
+ * enough for a stack's useful head and still leaves room for the surrounding prose.
+ */
+const CRON_FAILURE_DETAIL_CAP = 1200
+
+/**
+ * Build the Discord webhook JSON body for a cron job that threw.
+ *
+ * Plain `content`, deliberately: an embed is a nested shape Discord can reject on a field it
+ * doesn't like, and this is the message that carries the news that something is broken. It's the
+ * one alert that must not have its own failure mode.
+ */
+export function buildCronFailurePayload(info: CronFailureInfo): unknown {
+  const detail =
+    info.detail.length > CRON_FAILURE_DETAIL_CAP
+      ? `${info.detail.slice(0, CRON_FAILURE_DETAIL_CAP)}… (truncated)`
+      : info.detail
+
+  return {
+    content:
+      `Cron job **${info.job}** threw on the ${info.when} tick, so its work didn't happen.\n` +
+      '```\n' +
+      detail.replace(/```/g, "'''") +
+      '\n```\n' +
+      'The other jobs on that tick still ran. Full stack: the `cmdr-license-server` Workers logs.',
+  }
+}
+
 async function postOnce(url: string, body: unknown): Promise<Response> {
   return fetch(url, {
     method: 'POST',
@@ -284,6 +323,10 @@ export async function postNotificationsSuppressedNotification(
   info: NotificationsSuppressedInfo,
 ): Promise<void> {
   await postWithRetry(webhookUrl, buildNotificationsSuppressedPayload(info), 'notifications-suppressed')
+}
+
+export async function postCronFailureNotification(webhookUrl: string, info: CronFailureInfo): Promise<void> {
+  await postWithRetry(webhookUrl, buildCronFailurePayload(info), 'cron-failure')
 }
 
 export async function postFeedbackNotification(webhookUrl: string, notification: FeedbackNotification): Promise<void> {

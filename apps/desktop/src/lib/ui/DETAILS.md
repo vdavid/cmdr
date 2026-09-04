@@ -180,10 +180,13 @@ filter popover. Those three props exist so it gets the standard chrome without f
   can. It's a structural hook, not a styling escape hatch.
 - `topmost` exists because every modal shares `--z-modal`, so two open at once stack by DOM ORDER. That's fine between
   dialogs the same subtree raises, and useless for one the APP raises over whatever the user was already answering. It
-  adds `--z-modal-top` (350) to the overlay, so both the panel and its scrim cover the dialog underneath. Exactly one
-  caller today, the quit prompt (`lib/quit/`), and it should stay that way: two topmost dialogs are back to racing on
-  DOM order, and the guarantee stops meaning anything. Pinned by `lib/quit/QuitConfirmationDialog.svelte.test.ts` and
-  measured in the real app by `test/e2e-playwright/quit-gate.spec.ts`.
+  adds `--z-modal-top` (350) to the overlay, so both the panel and its scrim cover the dialog underneath. Two callers,
+  and they only stay unambiguous because they're ordered against each other in the markup: the old-macOS notice
+  (`routes/(main)/+page.svelte`, over the onboarding wizard) renders inside the layout's `{@render children}`, and the
+  quit prompt (`lib/quit/`) after it, so the quit prompt wins. ❌ Don't add a third without deciding where it sits in
+  that order and pinning it; unordered topmost dialogs are back to racing, and the guarantee stops meaning anything.
+  Pinned by `lib/quit/QuitConfirmationDialog.svelte.test.ts`, `lib/ui/AlertDialog.svelte.test.ts`, and
+  `routes/(main)/startup-gates.test.ts`; measured in the real app by `test/e2e-playwright/quit-gate.spec.ts`.
 
 **`footerLeading`** puts a control on the SAME line as the action buttons, pinned left (`margin-right: auto` on the
 wrapper, so the buttons stay hard right at any leading width). Use it for a modifier on the primary action, the way

@@ -80,7 +80,7 @@ of either data point.
 
 ## Startup gates
 
-`startup-gates.ts` holds the four decisions that determine what a launch actually shows, so each is exercisable without
+`startup-gates.ts` holds the five decisions that determine what a launch actually shows, so each is exercisable without
 mounting the shell (`startup-gates.test.ts`). They're the highest-stakes branches in the route: getting one wrong either
 re-prompts someone who already answered the FDA question, or drops a first-run user into an explorer with no disk
 access, and neither is visible from a passing type-check.
@@ -92,6 +92,15 @@ access, and neither is visible from a passing type-check.
 - **`maybeFireUpgradeNudge()`**: the one-time toast. Called only from the two branches that skip the wizard, which is
   why it needs no visibility check of its own. Copy and the E2E suppression: `lib/onboarding/DETAILS.md` § "Upgrade
   nudge".
+- **`maybeShowOldMacosNotice(ctx)`**: the once-per-machine best-effort notice for a Mac below `SUPPORTED_MACOS_MAJOR`
+  (`lib/utils/webkit-compat.ts`). Guards run cheapest-first, so only an old Mac that hasn't been told yet pays for the
+  `getMacosMajorVersion` round trip; a probe that throws counts as supported, because warning somebody on the strength
+  of a broken probe is worse than staying quiet. It marks the setting when the notice is RAISED, like the upgrade nudge:
+  a crash before the button costs one reading of a cosmetic heads-up, while persisting on dismissal risks repeating it
+  forever. `+page.svelte` renders it as a `topmost` `AlertDialog` after the wizard, which is what puts it over
+  onboarding; `lib/ui/DETAILS.md` § ModalDialog owns that ordering contract. The copy lives at `main.oldMacos.*`. This
+  is the SOFT half of the macOS floor; the hard block for a WebKit that can't run the app at all is the inline guard in
+  `src/app.html`.
 - **`maybeRunWhatsNew(ctx, force)`**: the boot check plus the re-attempt after the wizard closes. It only gathers the
   gate inputs; the decision is `whats-new-trigger`'s.
 - **`openOnboardingFromMenuOrPalette(ctx, source)`**: re-entry. Both `menu` and `palette` open at the first reachable

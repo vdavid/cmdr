@@ -737,6 +737,123 @@ already ships; nothing was coined.
 - All five values differ from English, so none needs a `sameAsSourceJustification`. No apostrophes in the batch, so
   ICU's `''` rule doesn't bite here.
 
+### What a cancelled rollback reports (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`, 2026-08-31)
+
+The toast shown after a Rollback finishes: a headline, then `leftBehind`, then a bulleted list of `reason.*` lines. It
+is written as **Cmdr did the careful thing**, never as an apology, so no `失敗` and no `錯誤` anywhere in the batch
+(`style.md` § Voice and tone). The whole family is anchored on `askCmdr.renameUndo.skipReason.*`, which already solved
+this exact shape for the rename undo.
+
+- **"Left … alone" (a skipped item)** · `維持原樣` · lifted from `fileOperations.rollbackConfirm.leaveAsIs` and the
+  whole `askCmdr.renameUndo.skipReason.*` family · `high`. It carries "Left {name} alone" AND "Left {name} where it is"
+  (`spotTaken`), because Chinese needs no separate word for the second: staying put IS 維持原樣.
+- **The named-vs-counted pair shape** · `{name} 維持原樣：它…。` and
+  `有 {countText} 個{count, plural, other {項目}}維持原樣：它們…。` · `high`. Copied verbatim from
+  `askCmdr.renameUndo.skipReason.*.named` / `.counted`, so the two reason lists read as one feature. The leading `有`
+  and the switch from `它` to `它們` are the only differences between the halves; keep it that way, and never collapse
+  the pair into one plural (Chinese has only `other`, so the display choice can't live in the plural).
+- **`folderNotEmpty.named` / `.counted` must stay byte-identical with their `askCmdr.renameUndo.skipReason` twins** ·
+  `資料夾 {name} 維持原樣：它裡面現在有東西了。` and
+  `有 {countText} 個{count, plural, other {資料夾}}維持原樣：它們裡面現在有東西了。` · `high`. The English of all four
+  is one and the same string, so `i18n-terms` would warn on two renderings inside the locale. Reword neither alone.
+- **"it changed after Cmdr put it there" (`drift`)** · `它在 Cmdr 放好之後有過更動` · `high`. Same frame as the rename
+  twin's `它在重新命名之後有過更動`, with the rename swapped for `Cmdr 放好`. `放好` covers both branches this key
+  serves (a copy WROTE the file, a move CARRIED it there) with one verb, which no more literal rendering does.
+- **"something else now sits where it came from" (`spotTaken`)** · `它原本的位置已經被別的東西佔走了` · `high`.
+  Deliberately parallel to `askCmdr.renameUndo.skipReason.nameTaken` (`它原本的名稱又被佔走了`): the two reasons are the
+  same event on different axes, a taken NAME and a taken PLACE, so they share the `原本的…被…佔走了` frame with `名稱` →
+  `位置`. `佔走` is not in the pile (Apple's only `佔` is `佔用空間`, disk usage), but it is already shipped in this
+  catalog for the name case, and the sibling catalog outranks the pile on which rendering this app uses (`style.md` §
+  "This is NOT a character conversion").
+- **"Couldn't undo {name}" (`failed`)** · `無法復原 {name}。` · `high`. English says "undo", but the act is the
+  ROLLBACK, so it takes `復原`, not the `還原` this catalog spends on Undo (see § Progress, rollback, and destructive
+  actions). `無法` + verb is the house failure shape. **"Its drive may be disconnected or read-only"** →
+  `它所在的磁碟機可能沒有連接，或是唯讀的。`, reusing the drive clause `fileOperations.trash.undoUnavailable` already
+  ships (`它們所在的磁碟機沒有連接`) and the catalog's `唯讀` (`errors.listing.readOnly.*`).
+- **`leftBehind`** · `Cmdr 會略過沒有把握的部分，所以這些留了下來：` · `high`. Repeats the Rollback confirmations'
+  promise verb for verb, because the English does the same (`Cmdr skips anything it isn''t sure about`, in the dialog
+  and in the toast): `會略過沒有把握的部分` is lifted straight from `fileOperations.rollbackConfirm.bodyUndoByDeleting`
+  (`Cmdr 會略過沒有把握的部分，所以可能會留下一些。`). Full-width colon, because a bulleted list follows. ❌ Not
+  `維持原樣` here: that is the reason lines' word below, and this line has to reconnect with the dialog the user just
+  read.
+- **"Removed …" in the headlines** · `刪除`, never `移除` · `high`. Apple splits them (`移除` = take out of a list or a
+  container, `刪除` = destroy), and this really destroys files. It also has to agree with what the user was just
+  promised and just watched: `fileOperations.rollbackConfirm.bodyUndoByDeleting` (`這會刪除…`),
+  `transferProgress.rollbackTooltip` (`停止，並刪除…`), and `queue.row.reversalDeleting` (`正在刪除這項操作建立的東西`).
+- **"Put … back"** · `放回原處` · `high`. The verb `fileOperations.trash.undone` already uses (`已把 … 放回原處。`), and
+  `queue.row.reversalMovingBack` (`正在把檔案放回原處`), so the toast closes the sentence its own progress row opened.
+- ⚠️ **English's definite article is what tells `doneX` from `someX`, and Chinese has no article.** `doneDeleting` /
+  `doneMovingBack` (the undo managed everything) differ from `someDeleted` / `someMovedBack` (some things stayed) only
+  by "the" in English. Rendered literally both pairs collapse into one Chinese sentence, and the clean-case toast would
+  stop promising the destination is clear. The fix: the `done*` pair names the SET by who made it, the `some*` pair just
+  counts. `已刪除 Cmdr 寫入的 {countText} 個項目。` and `已把 Cmdr 移動過的 {countText} 個項目放回原處。` against
+  `已刪除 {countText} 個項目。` and `已把 {countText} 個項目放回原處。` `Cmdr 寫入的` is English's own wording in
+  `doneDeleting`; `Cmdr 移動過的` extends the same device to the move headline, which English didn't need. ❌ Don't
+  "simplify" the `done*` pair down to the `some*` wording: that erases the distinction the four keys exist for.
+- **"The rest are still there"** · `其餘的還留在目標位置。` (after a cancelled copy) and **"The rest stayed where the
+  move put them"** · `其餘的還留在移動過去的地方。` · `high`. `其餘的` is Apple's own word in almost this sentence
+  (`無法拷貝一個或多個項目。是否要略過並拷貝其餘的項目？`, Finder zh-TW). ❗ Both need an explicit PLACE, because a bare
+  "still there" has no Chinese equivalent that couldn't be read as `原處` = _back where they came from_, which is the
+  opposite of what happened. `目標位置` is the glossary's destination term and already user-facing
+  (`transferProgress.stallWaitingDestination`).
+- **`fileOperations.rollbackConfirm.body` gained the family's third sentence** ·
+  `這會刪除這項操作到目前為止寫入的每一個檔案。被它取代掉的檔案回不來了。Cmdr 會略過沒有把握的部分，所以可能會留下一些。`
+  · `high`. The added sentence is `bodyUndoByDeleting`'s verbatim, which is the point: all four `rollbackConfirm.body*`
+  keys make one promise in one wording, and `leftBehind` echoes it when the promise pays out.
+- All 18 values differ from English, so none needs a `sameAsSourceJustification`. Chinese needs no apostrophe, so the
+  doubled `''` in the English sources has no counterpart here.
+
+### Ask Cmdr looks inside files (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+Sources: the live macOS 26.6.2 bundles (Photos.app `.loctable`s with zh_TW and zh_HK side by side, and the Spotlight
+metadata schema at `Metadata.framework/Versions/A/Resources/zh_TW.lproj/schema.strings` + `zh_HK.lproj`), plus the
+pile's AppKit, Nautilus, Dolphin, Thunar, Double Commander, and the Microsoft TBX.
+
+- **look inside a file (the inspect tool)** · `查看…裡的內容` (`正在查看檔案裡的內容` / `已查看檔案裡的內容`;
+  `可以查看你問到的檔案裡的內容` in the what's-new paragraph) · composed on the catalog's own tool-line pairs:
+  `askCmdr.tool.listVolumes.*` already renders "look at" as `查看`, and `askCmdr.tool.imageFacts.*` renders "read what's
+  in your photos" as `讀取你照片裡的內容` · `high`. `查看` (look at) rather than `讀取` (read) where the English says
+  "look inside"; `讀取` stays for the `contentsRule` sentence, where the English says "read".
+- **camera details (a photo's EXIF)** · `相機資訊` · AP Photos live TW (`No camera information` → `沒有相機資訊`; HK
+  `沒有相機資料`, the HK `資料` variant this catalog already ruled against under _info_). `相機` alone is AP-TW = AP-HK
+  (Photos `camera`, AppKit `NSStillCameraTemplate`), THU (`Camera` → 相機), NAU (`Camera Model` → 相機型號), MS (4×相機)
+  · `high`. ❗ Not `EXIF 資料`: the consent copy is plain-language by design, and the English says "camera details".
+- **where a photo was taken / a photo's location** · `拍攝地點` · composed from AP Photos live TW = HK: `拍攝` is the
+  shooting verb (`Capture Date` → `拍攝日期`, `拍攝日期為…`), and `地點` is Photos' word for a place in a photo (`Place`
+  / `Places` → `地點`, `你照片中的地點`) · `high`. ❗ Not `位置`, this catalog's word for a place in the FILESYSTEM (the
+  path sense; see _location_ above). Photos draws the same line, so the boundary the _location_ entry predicted holds:
+  `地點` for a physical place, `位置` for a path.
+- **thumbnail** · `縮圖` · reused from § Viewer, media, and image metadata; MS `thumbnail` → 縮圖 (2), THU + DC
+  `Thumbnails` → 縮圖 · `high`
+- **archive (in the consent copy)** · `封存檔` · the glossary's general-archive noun (AP-TW = AP-HK `Archive` → 封存,
+  NAU `Archive` → 封存檔, MS `archive file` → 封存檔案), and what `askCmdr.json` itself already ships (`verbCompress` =
+  `壓縮成封存檔`) · `high`. The consent copy names the general concept (zip, tar, and 7z alike), so the zip-specific
+  `壓縮檔` that `settings.*` and `errors.*` use for actual zip files doesn't apply here.
+- **title and author (of a PDF)** · `標題` / `作者` · AP Spotlight schema TW = HK (`kMDItemTitle` → 標題,
+  `kMDItemAuthors` → 作者), NAU + DOL (`Title` → 標題, `Author` → 作者), MS (`author` → 作者 4/5) · `high`
+- **text (some lines of a text file)** · `文字` (`幾行文字`, `一些文字`) · AP Spotlight schema TW = HK
+  (`kMDItemTextContent` → `文字內容`); consistent with the `純文字` ruling for _plain text_ · `high`
+- **a few pages of a PDF** · `PDF 的幾頁` · on the _page_ entry (`頁` counts pages; never `分頁`, the tab word);
+  Spotlight `kMDItemNumberOfPages` → `頁數` TW = HK · `high`
+- **the list of files inside an archive** · `封存檔裡的檔案列表` · on the _list_ ruling (`列表`, never `清單`) · `high`
+- **"Cmdr never sends whole files…"** · `Cmdr 絕不會送出整個檔案、照片或縮圖。` · `絕不會` is the catalog's own
+  strong-negation form for a privacy promise (`askCmdr.consent.logsNote` `絕不會送到任何地方`, the telemetry settings'
+  `絕不會傳送檔名`); `整個檔案` (whole files) replaces the retired `檔案本身：不送檔案內容`, which promised that no
+  contents ever leave, a promise the new English deliberately withdraws · `high`
+- The two sentences carried over from the retired `askCmdr.consent.noContents` (photo search; "nothing happens to a file
+  until you approve it") are reused verbatim. Only the opener changed: `照片搜尋也是同樣的做法：` ("works the same way")
+  replaces the old "is the one thing that reaches inside your images", which is no longer true.
+- **"looks inside a file only when you ask about it"** (`askCmdr.empty.hint`, `settings.askCmdr.intro`) ·
+  `只有在你問到某個檔案時，才會查看它裡面的內容` · the same `問到某個檔案` + `查看…裡面的內容` pair as `contentsRule`,
+  so the rail, the settings intro, and the consent screen make one promise in one wording · `high`. The retired
+  `絕不讀取檔案內容` / `Ask Cmdr 是唯讀的…絕不會更動任何東西` are gone: both promised more than the new English does.
+- **"never changes a file without your approval"** · `沒有你的同意，絕不會更動任何檔案` · `同意` is the catalog's
+  _approve_ word (`askCmdr.decision.approved`, `contentsRule` `在你同意之前`); `任何檔案` rather than `任何東西`,
+  because the assistant does write its own notes · `high`
+- `provider` stays `提供者` (in the reused sentence), and `Ask Cmdr` / `Cmdr` / `PDF` stay Latin and spaced. All five
+  values differ from English, so none needs a `sameAsSourceJustification`; the U+2019 apostrophes in the English have no
+  counterpart in Chinese.
+
 ## Notes
 
 - **AP-TW's ellipsis glyph is `⋯` (U+22EF)** in strings quoted throughout this file (`連接伺服器⋯`). That's Apple's
@@ -785,3 +902,53 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
   string (`user@example.com` likewise). Compare Vietnamese, where the same source DOES localize the local part. So a
   Latin-script local part is the Chinese convention, all three keys already agree, and the existing
   `sameAsSourceJustification` stands. `example.com` is RFC 2606's reserved domain. · `high`
+
+### `cancelRollback.stagedLeftover.*`（Cmdr 自己留在目標位置的殘留）
+
+2026-09-02 新增。兩條文案，說的是 Cmdr 自己建立的工作檔案沒能從目標位置清掉。它們**不屬於** `reason.*`
+清單：那邊是 Cmdr 在保護使用者的檔案，這邊是 Cmdr 自己的殘留。
+
+- **`unfinished copy` → `不完整副本`** · `不完整` 是 Apple 對 "incomplete" 的譯法（macOS
+  `LA33`：「已損毀或不完整」），`副本` 是 `NE111` 裡的名詞（「保留可恢復的副本」）· `high`
+- **`at the destination` → `目標位置`** · 目錄裡已在用的詞（`conflictsUnknown`）· `high`
+- **`transfer`（名詞）→ `傳輸`**
+  · 目錄已這樣說（`errors.listing.deviceReconnecting.explanation`：「傳輸被取消或中斷之後」）· `high`
+- 第二句用 `清掉` 而不是 `刪除`：這是 Cmdr 自己的工作檔案，不是使用者的檔案。
+- ⚠️ **寫 `之後往那裡傳輸時`，❌ 絕不寫「下次」。**
+  Cmdr 的清理會跳過不滿一小時的檔案，所以立刻重試並不會清掉它。給一個兌現不了的承諾，正是這條文案要消除的毛病。
+
+## WebKit 過舊時的攔截頁（`main.oldWebkit.*`，2026-09-02）
+
+三條文案，在 Mac 的 Safari 過舊時代替 Cmdr 的介面顯示。它們寫在 HTML 外殼裡而不是 app 裡，所以這是那位使用者能看到的 Cmdr 的全部內容。
+
+- **`Software Update` → `軟體更新`** · macOS 系統設定中該面板的名稱；Finder 的 Tier
+  1 證據佐證了這個詞（`Apple Device Software Update File` → `Apple裝置軟體更新檔案`）· `high`。
+- **`Quit` → `結束`** · macOS AppKit 的 `Quit` 鍵 → `結束` ·
+  `high`。簡體用「退出」，繁體用「結束」，兩份目錄不互相轉換。
+- **`Safari`、`Mac`、`15.4` 保持原樣**，兩側依 § Spacing 加空格。`Safari` 已加入 `BRAND_WORDS`。
+- 面板名用直角引號 `「軟體更新」`，與目錄裡其餘繁體文案一致。
+
+## 舊版 macOS 提示（`main.oldMacos.*`，2026-09-02）
+
+低於 macOS
+12 的 Mac 上只出現一次的對話框：Cmdr 跑得動，但超出了測試範圍。語氣坦率輕鬆，既不是道歉也不是警告，因為應用程式確實在跑。
+
+- **`supported` → `支援`** · macOS Finder zh-TW（`無法完成此項操作，因為不支援此項操作。`）· `high`。
+- **`X and up` → `X 以上的版本`** · macOS SystemSettings zh-TW（`需要OS X %@或以上版本。`）·
+  `high`。Apple 寫得緊湊，我們在拉丁字元兩側加空格 (`style.md` § Spacing)。
+- **`best effort` → `盡力而為`** · pile 裡沒有對應詞條（只有網路 QoS 的定義），但這是現成的中文說法 · `high`。
+- **`layout` → `版面配置`** · Microsoft zh-Hant 的標準譯法 · `high`。
+- **`look off` → `不太對`** · 口語，且避開語氣規則禁止的「錯誤」「失敗」。
+- **最後一句是 David 的第一人稱**，仍用 `你`，與 `onboarding.stepBeta.greeting` 一致。
+
+## 復原按鈕的兩條提示 (2026-09-04；`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+新介面：按鈕提示現在說清這一次復原會對檔案做什麼；跨檔案系統的移動一進入最後一步（所有檔案都已抵達目標位置，正在移除原檔案），按鈕就會關掉。
+
+- **`rollbackTooltipStopAndMoveBack` → `停止，並把目前為止移動過的每一個檔案放回原處`** · 句式沿用同胞鍵
+  `rollbackTooltip`（`停止，並…`），`放回原處` 是目錄裡已定的說法（`cancelRollback.doneMovingBack`「放回原處」）·
+  `high`。❌ 不用 `刪除`：復原一次移動不會刪掉任何東西。
+- **`rollbackAlreadyLandedTooltip`** · 前半句沿用 `cancelRollback.moveAlreadyLanded`
+  的說法（「已經在目標位置了」），`復原` 是已定的術語（`rollbackUnavailableTooltip`），`取消`
+  直接用旁邊按鈕自己的標籤（`fileOperations.button.cancel`），依目錄慣例加上引號 · `high`。
+- 無 `sameAsSourceJustification`；兩個值都不含撇號。

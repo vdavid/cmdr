@@ -50,11 +50,12 @@
             <li>{tString('askCmdr.consent.item.messages')}</li>
             <li>{tString('askCmdr.consent.item.names')}</li>
             <li>{tString('askCmdr.consent.item.sizes')}</li>
+            <li>{tString('askCmdr.consent.item.contents')}</li>
             <li>{tString('askCmdr.consent.item.envelope')}</li>
             <li>{tString('askCmdr.consent.item.attachments')}</li>
             <li>{tString('askCmdr.consent.item.memory')}</li>
         </ul>
-        <p class="consent-para">{tString('askCmdr.consent.noContents')}</p>
+        <p class="consent-para">{tString('askCmdr.consent.contentsRule')}</p>
         <p class="consent-para">{tString('askCmdr.consent.memory')}</p>
         <p class="consent-para">{tString('askCmdr.consent.proactive')}</p>
         <p class="consent-para">{tString('askCmdr.consent.local')}</p>

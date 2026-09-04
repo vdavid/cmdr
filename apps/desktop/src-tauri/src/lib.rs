@@ -62,6 +62,9 @@ use tauri_plugin_updater as _;
 // mtp-rs is used in mtp/ module for Android device support (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use mtp_rs as _;
+// cmdr-adb is used in the adb/ module for Android-over-ADB support (macOS + Linux)
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+use cmdr_adb as _;
 
 // These host primitives live in `cmdr-fs` so every crate in the workspace shares
 // one copy, and are re-exported here at their original paths: poison-free
@@ -80,6 +83,8 @@ mod logging;
 mod accent_color;
 #[cfg(target_os = "linux")]
 mod accent_color_linux;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod adb;
 pub mod agent;
 mod ai;
 mod analytics;
@@ -95,6 +100,7 @@ mod crash_reporter;
 /// real tree to scan. Never in a shipped build.
 #[cfg(any(debug_assertions, feature = "playwright-e2e"))]
 pub mod dev_fixtures;
+mod device_volumes;
 mod diagnostics_snapshot;
 mod downloads;
 #[cfg(target_os = "macos")]
@@ -428,9 +434,14 @@ pub fn run() {
                 // Point the in-flight transfer-partial ledger at the data dir and
                 // clear the `.cmdr-tmp-*` partials an earlier run recorded and never
                 // finished (a quit or a crash mid-copy). Before any copy can start,
-                // so nothing we're about to write is in the list we sweep. See
+                // so nothing we're about to write is in the list we sweep. The
+                // returned handle is dropped on purpose: a recorded partial can
+                // sit on a dead mount where `unlink` blocks for minutes, and a
+                // launch must never wait on that. Runs before the volume registry
+                // below by design: a partial on a share is held and swept when
+                // that volume arrives, rather than chased from here. See
                 // `file_system/write_operations/in_flight_temps.rs`.
-                file_system::write_operations::init_and_sweep_in_flight_temps(&data_dir);
+                drop(file_system::write_operations::init_and_sweep_in_flight_temps(&data_dir));
             }
 
             // Initialize the volume manager with the root volume
@@ -472,6 +483,12 @@ pub fn run() {
             // are the two things that can connect one.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             mtp::volume_wiring::install_volume_registrar();
+            // File MTP as a device provider, so the volume list, eject, and path
+            // resolution see its storages. `device_volumes` is the seam.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            mtp::volume_wiring::install_device_provider();
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            adb::volume_wiring::install_device_provider();
 
             // Wire the "busy volumes" emitter so write ops can broadcast
             // `volumes-busy-changed` (drives disabling Eject while a transfer touches a
@@ -571,6 +588,13 @@ pub fn run() {
                 mtp::start_mtp_watcher(app.handle());
             }
 
+            // Follow the ADB server's device list (`host:track-devices`). Talks
+            // only to the local server socket, never to USB, so no TCC prompt and
+            // no FDA gate; with no `adb` installed the tracker stops itself
+            // rather than retrying for the session (`recheck_adb_install` revives it).
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            adb::start_adb_tracker(app.handle());
+
             // Emit initial volume list (after watchers start so MTP devices can connect)
             volume_broadcast::emit_volumes_changed_now();
 
@@ -582,6 +606,8 @@ pub fn run() {
             // servers. Before any volume is built, so the first dial of a session
             // recognizes a server the user already trusted instead of asking again.
             network::load_sftp_stores(app.handle());
+            // And the WebDAV server list, for the same picker.
+            network::load_webdav_stores(app.handle());
 
             // Load persisted recent search history into the in-memory cache.
             search::history::RECENT_SEARCHES.load(app.handle());
@@ -763,12 +789,17 @@ pub fn run() {
                 }
             });
 
-            // Start the importance scheduler: it sweeps the index registry for
-            // already-ready volumes and subscribes to the scan-completion bus, so a
-            // volume's folder weights recompute when its index finishes scanning (or
-            // is Fresh at launch). Independent of whether indexing auto-starts here —
-            // the bus fires whenever any scan completes. See
-            // `importance/scheduler.rs` and the plan (Decision 4 / 5).
+            // Start the importance scheduler: it subscribes to the volume-registration
+            // bus, then sweeps the index registry for already-ready volumes, so a
+            // volume's folder weights recompute when its index finishes scanning (or is
+            // Fresh at launch). Independent of whether indexing auto-starts here — the
+            // bus fires whenever any volume registers or any scan completes.
+            //
+            // ⚠️ The root index above starts on a SPAWNED task, so the sweep here
+            // usually sees an empty registry and root reaches the scheduler on the
+            // registration bus instead. Everything the scheduler owes a volume
+            // therefore hangs off `wire_volume`, which both paths share, never off the
+            // sweep alone. See `crates/cmdr-index/src/importance/scheduler/DETAILS.md`.
             if let Some(scheduler) = cmdr_index::importance::scheduler::ImportanceScheduler::start() {
                 // Reachable from the IPC layer: `record_visit` resolves it here.
                 app.manage(scheduler);

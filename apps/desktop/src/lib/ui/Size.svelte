@@ -7,9 +7,10 @@
         bytes: number | null | undefined
         /** Text shown when `bytes` is null/undefined. Defaults to empty string. */
         fallback?: string
-        /** Whole units, no decimals ("7 GB", not "7.09 GB"). For a LIVE readout,
-         *  where a number changing several times a second reads better coarse;
-         *  a size someone compares or copies keeps its decimals. */
+        /** The live form: a tenth below ten, whole units above ("1.7 GB",
+         *  "24 GB", not "1.70 GB"). For a LIVE readout, where a number changing
+         *  several times a second reads better coarse; a size someone compares
+         *  or copies keeps its two decimals. */
         rounded?: boolean
     }
 

@@ -511,6 +511,42 @@ fn cost_rollup_sums_across_threads_per_day() {
     );
 }
 
+/// ⚠️ **What the agent spent on its own initiative, and nothing else.** The wake loop's daily
+/// ceiling reads this, and capping ALL agent spend would be two different budgets sharing one
+/// number: a chatty afternoon on the rail would starve the wake loop, and a runaway wake loop
+/// would eat the user's own. A user-started thread has a NULL origin and must not count.
+#[test]
+fn the_proactive_day_total_counts_only_what_the_agent_started() {
+    let conn = migrated_conn();
+    let mine = create_conversation(&conn, "Mine", 1, None).expect("create mine");
+    let woke = create_conversation(&conn, "Woke", 1, Some(ConversationOrigin::Notification)).expect("create woke");
+    let quiet = quiet_wakes_conversation(&conn).expect("the reserved row");
+    record_cost(
+        &conn,
+        &cost("2026-09-03", mine, ProviderTag::Anthropic, 900_000, 100_000, 1),
+    )
+    .expect("mine");
+    record_cost(&conn, &cost("2026-09-03", woke, ProviderTag::Anthropic, 7_000, 300, 1)).expect("woke");
+    record_cost(&conn, &cost("2026-09-03", quiet, ProviderTag::Anthropic, 5_000, 100, 1)).expect("quiet");
+    record_cost(
+        &conn,
+        &cost("2026-09-02", woke, ProviderTag::Anthropic, 400_000, 1_000, 1),
+    )
+    .expect("yesterday");
+
+    let today = proactive_tokens_for_day(&conn, "2026-09-03").expect("today");
+
+    assert_eq!(
+        today, 12_400,
+        "a wake's thread and the quiet-wake row, prompt plus completion"
+    );
+    assert_eq!(
+        proactive_tokens_for_day(&conn, "2026-09-04").expect("tomorrow"),
+        0,
+        "and yesterday's spend never carries into a new day"
+    );
+}
+
 #[test]
 fn cost_rollup_marks_a_day_unpriced_when_any_row_is_unpriced() {
     let conn = migrated_conn();

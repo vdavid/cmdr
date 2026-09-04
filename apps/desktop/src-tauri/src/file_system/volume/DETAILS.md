@@ -10,8 +10,8 @@ every backend to turn raw OS errors into warm user-facing copy) lives in `friend
 ## Purpose
 
 Every file system operation (listing, copy, rename, delete, indexing, watching) goes through a `Volume`. The trait hides
-the differences between a local POSIX path, an MTP device, an in-memory test fixture, and future backends (SMB, S3,
-FTP). Callers never touch the filesystem directly; they call `Volume` methods with **paths relative to the volume root**.
+the differences between a local POSIX path, an MTP or ADB device, an archive, an SMB / SFTP / WebDAV server, and an
+in-memory test fixture. Callers never touch the filesystem directly; they call `Volume` methods with **paths relative to the volume root**.
 
 ## Key files
 
@@ -23,19 +23,62 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 - **`manager.rs`** (+ `manager/roots.rs`): `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default
   volume. Also holds the process-wide instance and its `get_volume_manager()` accessor. `roots.rs` holds the mount-root
   set each entry owns and the promotion rules over it
-- **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See `backends/CLAUDE.md`.
+- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume`, `MtpVolume`) and their tests, and nothing else. Every crate backend is imported by crate name at its call sites. See `backends/CLAUDE.md`.
 - **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
 ## Architecture
 
+The layers, bottom to top, in plain words. Each layer only talks to the one below it through a named interface, and
+the crate boundary is what makes that a compile error rather than a habit.
+
+1. **The vocabulary: `crates/cmdr-fs`.** The `Volume` trait, every type it speaks in (`FileEntry`, `VolumeError`,
+   `MutationEvent`, the scan results), the shared walkers (`scan_walk`, `patching`), the conformance assertions, and
+   the **host seams** (`src/volume/host/`): the eight questions a backend may ask the app around it (report a listing
+   change, ask the fresh-listing oracle, get a runtime handle, report a connection transition, read credentials, trust
+   a host key, notify the index, read a setting). No `tauri`, no English.
+2. **The backends.** One `impl Volume` per storage kind. A backend has TWO faces, and the trait is only one of them:
+   - The **file-ops face** is the `Volume` trait, and it is 100% of what the transfer engine, the panes, the delete
+     walker, and the indexer's BFS use. Nothing above this layer knows which backend it holds; a copy from a phone to a
+     NAS is `open_read_stream` on one `Arc<dyn Volume>` and `write_from_stream` on another.
+   - The **lifecycle face** is everything that happens around the trait: discovering the server or device, connecting,
+     hotplug, reconnect after a dropped session, live change events, feeding the index, and saying "I need
+     credentials". This face has no trait. A crate backend routes it through the host seams (typed values, no prose)
+     plus a `VolumeHost` handed in at construction; the app's adapters turn each answer into a frontend event or a
+     cache write.
+   - Crate backends (no `tauri`, verified alone by `cargo check -p <crate>`): `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
+     `cmdr-webdav`, `cmdr-adb`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanent: the git portal
+     is implemented as its hooks) and `MtpVolume` (`backends/mtp/` over `src/mtp/`), which predates the seams and does
+     its lifecycle face the old way: the session layer holds a `tauri::AppHandle`, emits seven `tauri_specta::Event`
+     payloads itself, and reaches the listing cache, the registry, and `device_volumes` directly. `InMemoryVolume` (in
+     `cmdr-fs`) is the test and stress fixture.
+3. **The app-side half of each backend.** What a backend can't answer from its protocol alone, and what must know the
+   concrete type: discovery UI, the keychain, the OS mount, the ptpcamerad workaround, and REGISTRATION. A backend never
+   registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
+   `network/webdav_volume_wiring.rs`, `adb/`, `mtp/volume_wiring.rs`) mints the volume, hands it the app's `VolumeHost`
+   (`src-tauri/src/volume_host.rs`), and inserts it. Device backends also register a `DeviceVolumeProvider`
+   (`device_volumes.rs`) so the volume list and eject can fold over them.
+4. **The registry: `VolumeManager`** (`manager.rs`). Volume id → `Arc<dyn Volume>`, plus the mount-root set per entry,
+   archive routing in `resolve`, retirement on removal, and the arrival subscription.
+5. **The consumers.** `write_operations/` (copy, move, delete, the cross-volume engine), `listing/` (panes and the
+   listing cache), `indexing/`'s BFS scanner, `file_viewer/`, and the MCP tools. All of them hold `Arc<dyn Volume>` and
+   nothing more specific; `VolumeKind` branches exist only for eject and for the local scanner's fast path.
+
 ```
-VolumeManager (registry)
-  └─ Arc<dyn Volume>  (async trait: most methods return Pin<Box<dyn Future>>)
-        ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O)
-        ├─ MtpVolume          → direct async MTP ops
-        ├─ SmbVolume          → direct async smb2 ops (direct protocol, not OS mount)
-        └─ InMemoryVolume     → HashMap, test/stress use only
+consumers: transfer engine, panes, delete, indexer BFS, viewer, MCP
+        │  Arc<dyn Volume>
+VolumeManager (registry; resolve routes .zip paths to ArchiveVolume)
+        │
+backends ── file-ops face: impl Volume ──────────────────────────────┐
+  crate:  Archive  Smb  Sftp  WebDav  Adb                            │ cmdr-fs: Volume trait,
+  app:    LocalPosix (permanent)  Mtp (pre-seam)  InMemory (tests)   │ types, walkers, host seams
+        │  lifecycle face: VolumeHost seams (crates) / direct reaches (MTP)
+app-side halves: wiring + registration, discovery, keychain, mounts, ptpcamerad, DeviceVolumeProvider, tauri events
 ```
+
+Moving a backend into a crate is therefore never only a file move: the file-ops face already is the trait, so the work
+is entirely on the lifecycle face, replacing each direct reach with a seam and each `tauri` event with a typed value
+the app maps. SMB's retrofit is the worked example; the cost model and the two things a crate does NOT buy:
+`crates/cmdr-fs/src/volume/host/DETAILS.md` § "What a backend crate buys".
 
 **Drive indexing does NOT go through `Volume`.** The local scanner and the FSEvents watcher are called directly by the
 indexing lifecycle (`indexing::scanner::{scan_volume, scan_subtree}`, `DriveWatcher::start`), dispatched on
@@ -68,10 +111,10 @@ because confirming that boundary on a remote parent (direct SMB / MTP) costs a `
 Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new volume types can be added incrementally. Key capability flags:
 
 - `can_watch_listings()`: enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the drive-index watcher, which the indexing lifecycle owns). `MtpVolume` returns `false` (it has its own USB event loop).
-- `supports_export()`: "this volume can stream its bytes via `open_read_stream`" (so it can act as a source in a cross-volume copy). Gates the copy dialog's "copy from this volume" UI, and `copy_between_volumes` refuses a `false` source synchronously, before it opens anything and without logging a line. Local, MTP, SMB, Archive, SFTP, and InMemory return `true`. ❗ Implementing the read path does NOT declare it, and that gap is invisible from inside a backend: `SftpVolume` shipped with `open_read_stream`, `read_range`, and `supports_streaming()` all working and this predicate defaulted to `false`, so every copy off a server was refused with nothing failing anywhere. `conformance::assert_export_matches_the_bytes_offered` now streams a seeded file back byte for byte and holds the declaration to what happened, in both directions; every backend's suite runs it.
+- `supports_export()`: "this volume can stream its bytes via `open_read_stream`" (so it can act as a source in a cross-volume copy). Gates the copy dialog's "copy from this volume" UI, and `copy_between_volumes` refuses a `false` source synchronously, before it opens anything and without logging a line. Local, MTP, SMB, Archive, SFTP, WebDAV, and InMemory return `true`. ❗ Implementing the read path does NOT declare it, and that gap is invisible from inside a backend: `SftpVolume` shipped with `open_read_stream`, `read_range`, and `supports_streaming()` all working and this predicate defaulted to `false`, so every copy off a server was refused with nothing failing anywhere. `conformance::assert_export_matches_the_bytes_offered` now streams a seeded file back byte for byte and holds the declaration to what happened, in both directions; every backend's suite runs it.
 - `is_writable()`: whether the backend accepts mutations at all (create, rename, delete). Default `false`, matching the `NotSupported` default of every mutation method, so a backend opts in when it implements them. `true` for `LocalPosixVolume`, `SmbVolume`, `MtpVolume`, and `InMemoryVolume`; `ArchiveVolume` restates `false` explicitly, because writing INTO a zip is the app's managed archive-edit rewrite and never mutates through the volume. It is a claim about the BACKEND, so a read-only MOUNT of a writable backend still answers `true` — that mount's own read-only flag travels separately as the location's `mountIsReadOnly`. The predicate keeps the bare name while the published field spells its subject out (`backend_can_write`): inside a `Volume` impl the subject can only be the backend, while the published struct sits next to the location's mount flag, where it can't. This is the one capability predicate whose answer reaches the user as UI state (New folder / New file / Rename / Paste render enabled off it), so `conformance::assert_writability_matches_the_mutations_offered` pins it against real behavior in both directions.
 - `capabilities()`: the published fold of the predicates above into `VolumeCapabilities` (`backend_can_write`, `can_export`), the struct that travels over IPC so the frontend receives capability as DATA. ❌ Never override it and never compute an answer inside it: growing the surface means adding a predicate and folding it there. Only what a consumer OUTSIDE the backend acts on belongs in the struct; the predicates that steer the operations engine stay predicates. Published onto each `LocationInfo` by `volumes::enrich_from_volume_registry` (and its Linux twin), which is also why a location with no registered volume carries `capabilities: null` and lets the frontend fall back to its per-kind defaults.
-- `supports_streaming()`: enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, `ArchiveVolume`, `SftpVolume`, and `InMemoryVolume` all return `true`. This is the universal byte path for every non-APFS-clone copy. A new backend implements the two streaming methods AND states both this and `supports_export()`; nothing in production reads this predicate on its own, so `assert_export_matches_the_bytes_offered` is what keeps it honest alongside the one that is read.
+- `supports_streaming()`: enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, `ArchiveVolume`, `SftpVolume`, `WebdavVolume`, and `InMemoryVolume` all return `true`. This is the universal byte path for every non-APFS-clone copy. A new backend implements the two streaming methods AND states both this and `supports_export()`; nothing in production reads this predicate on its own, so `assert_export_matches_the_bytes_offered` is what keeps it honest alongside the one that is read.
 - `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path resolves a pair through `transfer_concurrency` (`write_operations/transfer/volume/copy.rs`), clamped to 32, and spawns that many `FuturesUnordered` tasks. It is NOT a plain `min()`: a volume answering `operations_are_local() == true` reports a CPU guard-rail rather than a transport limit, so its cap doesn't bound a remote peer. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16 (local); `SmbVolume` returns the `network.smbConcurrency` setting, default 10, range 1..=32; `MtpVolume` returns 1 (USB bulk transport is serial, and that 1 is what routes a phone to the serial driver); `InMemoryVolume` returns 32 (local).
 - `operations_are_local()`: whether one operation here is a local syscall rather than a transport round trip. A claim about COST, so it is a different question from `supports_local_fs_access` (an OS-mounted SMB share is `true` there, `false` here). Default `false`, the conservative answer in both directions. `true` for `LocalPosixVolume` and `InMemoryVolume` only.
 - `create_directory_all()`: reports `DirectoryCreation::{Created, AlreadyExisted}` for the LEAF. The copy driver skips its destination conflict pre-check entirely on `Created` (`transfer/DETAILS.md` § "Answering the pre-check from one listing"), so an overriding backend must answer honestly and answer `AlreadyExisted` when unsure — including when it lost a create race.
@@ -166,7 +209,7 @@ Without these, the volume can't even appear in the UI:
 - [ ] Implement `list_directory(path, on_progress)`: the core read. **Feed `on_progress` as you enumerate**, and don't rename the parameter to `_on_progress` to quiet the compiler. It drives the pane's "Loaded N files..." readout, which is all the user sees while a big folder reads; dropping it leaves them on "Opening folder..." for the whole wait, and nothing fails to say so. If your enumeration happens on a thread the callback can't reach (it's `Sync` but not `Send`, so `spawn_blocking` is out), publish counts into a shared tally and sample it from the async side: `LocalPosixVolume` is the worked example, described in `listing/DETAILS.md` § "Local listing progress".
 - [ ] Implement `get_metadata(path)`: per-entry stat.
 - [ ] Implement `exists(path)` and `is_directory(path)`. On backends where these would issue two round-trips, implement them in terms of `get_metadata` to share the cost.
-- [ ] Implement `get_space_info()`: for the volume usage bar and pre-copy space checks. Return zeros if the backend doesn't report it.
+- [ ] Implement `get_space_info()`: for the volume usage bar and pre-copy space checks. Answer `SpaceInfo::Bounded` where the backend knows a capacity, `SpaceInfo::Unbounded { used_bytes }` where the storage has no ceiling but reports what it holds (a quota-less WebDAV account), and `VolumeError::NotSupported` where the protocol can't say at all. ❌ Never zeros: the pre-flight reads a zero `available` as "no room" and refuses every copy.
 - [ ] Register the volume via `VolumeManager::register_if_absent` (not `register`; see "Key decisions" below).
 - [ ] Add unit tests using a fake/in-memory harness or real fixtures.
 
@@ -178,7 +221,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] After each successful mutation, call `self.notify_mutation(&volume_id, parent_path, MutationEvent::...)` so the listing cache updates immediately. Override `notify_mutation` on the trait if your backend can answer `get_metadata` faster than `std::fs::metadata` would (MTP and SMB do this).
 - [ ] Return `supports_streaming() = true` and implement `open_read_stream` + `write_from_stream`. These are the byte path for every cross-volume copy. The Copy dialog uses them for "this volume ↔ anywhere" transfers.
 - [ ] Return `supports_export() = true` if the volume should appear as a copy source in the UI.
-- [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight. `scan_for_conflicts` takes a `SourceItemInfo` per source and emits a `ScanConflict` per collision; see "Conflict classification fields" above for the `is_directory` flags it must populate.
+- [ ] Implement `scan_for_copy` (count + bytes) and `scan_for_conflicts` (destination collision detection). These feed the Copy dialog's pre-flight. `scan_for_conflicts` takes a `SourceItemInfo` per source and emits a `ScanConflict` per collision; see "Conflict classification fields" above for the `is_directory` flags it must populate. ❗ A destination that isn't there yet holds nothing, so it answers an empty list rather than the `NotFound` its listing hit: pasting into a folder the transfer is about to create is ordinary, and the caller propagates what you return.
 - [ ] Map your backend's errors through a `map_*_error` function that takes the PATH the failure was about and returns `VolumeError`. The path-carrying variants (`NotFound`, `PermissionDenied`, `AlreadyExists`, `IsADirectory`, `DeletePending`) must get the path, never your layer's wording; `assert_not_found_carries_the_path` holds you to it. Connection-loss errors should trigger a state transition (see `SmbVolume::handle_smb_result` as a reference) so subsequent calls fail fast.
 - [ ] **No full-file buffering in per-file transfer paths.** Don't drain the incoming `VolumeReadStream` into a `Vec<u8>` before writing, and don't collect the remote file into a `Vec<u8>` before yielding. An 8 GB copy would allocate 8 GB of RAM. See the "Streaming requirement" section on each trait method's doc comment: `open_read_stream`, `write_from_stream`.
 
@@ -194,12 +237,13 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 - [ ] If your backend holds a session that can drop (FTP, S3, SFTP, anything network-bound), emit `volume-connection-changed` (`network::VolumeConnectionChanged` + the `VolumeConnection` enum) on every transition and you inherit the whole frontend recovery story for free: the unreachable banner, the per-volume backoff cycle, and the "Sign in" prompt when saved credentials go stale. ❌ Don't add a backend-named connection event alongside it; the channel is backend-neutral on purpose. Map your internal state machine onto the wire enum the way `From<ConnectionState> for VolumeConnection` does in `crates/cmdr-smb/src/volume/state.rs`, and emit `NeedsCredentials` straight from your reconnect give-up path (no backend rests in it). Flow: `crates/cmdr-smb/DETAILS.md` § "SMB live-reconnect lifecycle".
 - [ ] If the volume needs async teardown (session close, handle drop), implement `on_unmount`. The default is a no-op.
 - [ ] If tearing that state down mid-flight would break a caller still holding an `Arc`, also implement `on_superseded` (it defaults to `on_unmount`).
+- [ ] If the volume is a DEVICE (a phone or a camera: something that appears and leaves on its own rather than being mounted or signed into), register a `device_volumes::DeviceVolumeProvider` at startup and call `device_volumes::notify_devices_changed(id)` on every hotplug edge. `volume_listing::complete` folds over every provider, and eject and path resolution ask the registry which provider owns an id or a path, so nothing outside `device_volumes.rs` names your backend. Answer `entries()` from cached state, ❌ never from the wire: the listing runs on every `volumes-changed`. `MtpDeviceProvider` (`mtp/volume_wiring.rs`) and `AdbDeviceProvider` (`adb/`) are the two; a network volume is not a device and stays out of it (the sidebar arm for one is its own design question, `docs/specs/later/sftp-follow-ups.md`).
 - [ ] Add a branch to `detect_provider` / `provider_suggestion` in `friendly_error/provider.rs` (see `friendly_error/CLAUDE.md`) if there's a recognizable path shape or fs type worth calling out in friendly errors.
 - [ ] Add a capability-matrix row below and update the `docs/architecture.md` volume line if the shape changes meaningfully.
 
 ### Tier 4: E2E and friendly-error polish
 
-- [ ] **Call every `cmdr_fs::volume::conformance` assertion your backend can run.** These are the promises that only a comment would otherwise hold, each one load-bearing for data safety: `delete` never recurses, `rename(force = false)` refuses an existing destination, `create_file` refuses rather than truncates, `create_directory_all` reports a pre-existing leaf as `AlreadyExisted`. Every existing backend calls the ones it implements, and skipping yours is how a backend claims a contract by implementing the trait and breaks it where nobody looks (MTP's `delete` did exactly that, for years). What each one is for: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
+- [ ] **Call every `cmdr_fs::volume::conformance` assertion your backend can run.** These are the promises that only a comment would otherwise hold, each one load-bearing for data safety: `delete` never recurses, `rename(force = false)` refuses an existing destination, `create_file` refuses rather than truncates, `create_directory_all` reports a pre-existing leaf as `AlreadyExisted`, `scan_for_conflicts` reads a destination that isn't there yet as empty, the two capability declarations match the methods they speak for, and `NotFound` carries the path. Every existing backend calls the ones it implements, and skipping yours is how a backend claims a contract by implementing the trait and breaks it where nobody looks (MTP's `delete` did exactly that, for years). What each one is for: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
 - [ ] Add integration tests (real fixtures if possible; see the Docker SMB containers for inspiration).
 - [ ] Verify your backend's common failure modes classify well: each one should reach a `ListingErrorReason` that words up usefully, not the generic I/O fallback. The Rust side ships no prose, so check the reason in `friendly_error/tests.rs` and the rendered copy through the debug window's error-pane preview. `docs/guides/error-handling.md`.
 - [ ] Stress-test concurrent reads and writes (the `stress_tests_*` modules in indexing are the reference pattern).
@@ -336,19 +380,20 @@ trait it dispatches over. `commands::eject::eject_volume` is a thin delegate; th
 1. **Busy gate**: refuse (`EjectError::Busy`) if a write op is touching the volume (`file_system::busy_volume_ids`), so
    a transfer can't be truncated. The picker already disables Eject for busy volumes; this defends against a race or an
    MCP/automation caller.
-2. **Classify**: MTP (id shaped `{device_id}:{storage_id}`, confirmed against the live device list) → disconnect the
-   session; a registered `SmbVolume` (`smb_connection_state().is_some()`) → `diskutil unmount` (FSEvents drives smb2
+2. **Classify**: a device volume (a `device_volumes::DeviceVolumeProvider` answers `owns_volume_id` from live state;
+   MTP, ADB) → that provider's `eject`; a registered `SmbVolume` (`smb_connection_state().is_some()`) → `diskutil unmount` (FSEvents drives smb2
    teardown via `on_unmount`); otherwise NSURL/`/sys/block` ejectability → `diskutil eject` (powers down USB, detaches
    DMGs). The pure `decide_eject_action` makes this choice and is unit-tested without touching the FS.
-3. **Execute**: MTP disconnect, or a `diskutil`/`umount` subprocess under a 15 s timeout.
+3. **Execute**: the provider's eject (MTP closes the session; ADB only retires the volume, since `adb` has no
+   per-client detach), or a `diskutil`/`umount` subprocess under a 15 s timeout.
 
 The MCP `eject` tool wraps `eject::eject` directly (not the command), surfacing `Busy` / non-ejectable as honest tool errors; see `mcp/DETAILS.md`.
 
-Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `MtpIdMissingDevicePrefix`, `NotEjectable`,
-`NotAnSmbVolume`, `MtpDisconnectRefused`, `UnmountRefused`, `TimedOut`, `Unexpected`), and it IS the wire type:
+Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `NotEjectable`,
+`NotAnSmbVolume`, `DeviceDisconnectRefused`, `UnmountRefused`, `TimedOut`, `Unexpected`), and it IS the wire type:
 `commands::eject` passes it straight through, so nothing is flattened on the way out and the frontend words each
 variant from `errors.eject.*` (`src/lib/file-explorer/navigation/DETAILS.md` § "Eject button + row context menu").
-`diskutil`'s own stderr rides in the `detail` field of `UnmountRefused` / `MtpDisconnectRefused` and goes to the LOG,
+`diskutil`'s own stderr rides in the `detail` field of `UnmountRefused` / `DeviceDisconnectRefused` and goes to the LOG,
 never into the toast.
 Returns once teardown is *initiated* — `volume-unmounted` / `mtp-device-disconnected` fire
 shortly after and panes rooted at the volume redirect to root. `disconnect_smb_volume` (in `commands::network`) is the
@@ -399,11 +444,37 @@ Retirement is one-way, so a volume that comes back is a fresh instance under a f
 re-register path already builds. Full rationale, and the `SelfHandle` a backend reads the flag through:
 `crates/cmdr-fs/src/volume/host/DETAILS.md` § "The two registry reach-backs".
 
+### Telling someone a volume arrived
+
+**Decision**: `VolumeManager::on_volume_arrival` takes listeners, and `register`, `register_if_absent` (when it
+inserts), and `force_register` announce the ID to them once the `volumes` guard is gone.
+
+**Why**: some work can only run when a volume is there, and has no way to go looking for it. The in-flight temp ledger
+holds the `.cmdr-tmp-*` partials an interrupted transfer left on a share, and its startup sweep runs before
+`init_volume_manager`; a NAS registers later still, or a session later. Without an announcement those records would ride
+from launch to launch and never be acted on, which is the dead backstop this exists to end
+(`write_operations/transfer/DETAILS.md` § "Which path space a recorded partial lives in").
+
+**The listener takes the ID, not the handle.** It asks the registry back through `resolve`, so it can't act on a volume
+a racing registration has already replaced, and the registry stays ignorant of who listens, which is what keeps the
+`volume` and `write_operations` subtrees acyclic. ❌ A listener runs INSIDE the registration, so it must return
+immediately: real work goes to a task, and a registration must never wait on a share.
+
+**Announced after the guard drops, and unconditionally on `register`.** A listener asking the registry for what it was
+just told about would otherwise deadlock, and every `register` arm (insert, replace, identity-conflict-refused) leaves
+a usable volume serving that ID. Pinned by
+`in_flight_temps_tests.rs::every_registration_path_announces_the_volume`.
+
 ### A volume ID owns a set of mount roots
 
 **Decision**: a registry entry (`manager/roots.rs::Registration`) is the volume plus the SET of mount roots known to
 carry its ID, exactly one of them ACTIVE (the one `volume.root()` returns). `remove_root` and `mark_root_stale` move the
 ID between them; `unregister` drops the whole entry.
+
+`mount_id_for_path` (the longest non-`/` root over a path, for the index router and `inspect_file`'s parent-volume
+lookup) skips every registered `ArchiveVolume`: an archive's root is the `.zip` file, the longest prefix of every path
+inside it, but it is not a mount, and a path inside an archive belongs to the volume holding the `.zip`. Filtered by
+type rather than by LRU membership, because an archive is registered a moment before it enters the LRU.
 
 **Why**: one filesystem can be reached through several mount points and they all derive one volume ID (an SMB share keys
 on `(server, port, share)`, a local disk on its filesystem UUID). Binding the ID to one root chosen purely by path shape
@@ -476,8 +547,8 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 **Decision**: All cross-volume copy flows through `open_read_stream` / `write_from_stream`
 **Why**: The three plausible copy paths (local↔local, local↔volume, volume↔volume) all reduce to "open a reader, pipe to a writer." The APFS clonefile fast path is the only one with a real capability difference. Routing the other two through a single streaming path means new backends (S3, WebDAV, FTP) implement two methods instead of four, concurrency lives in one place (`volume/copy.rs`), and features like resume / checksum / progress benefit every direction at once. Don't reintroduce `export_to_local` / `import_from_local`. See `docs/notes/phase4-volume-copy-unification.md`.
 
-**Decision**: `Volume::list_directory` / `scan_for_copy_batch_with_progress` callbacks take a `ListingProgress { files, dirs, bytes }` struct (not `Fn(usize)` — files-only).
-**Why**: A files-only count makes MTP and Direct SMB scan previews show "0 bytes / N files / 0 dirs" climbing through the scan, because `run_volume_scan_preview` has nothing else to forward to the mid-stream `scan-preview-progress` event. The struct lets each backend track running file count, dir count, and byte total as it enumerates entries (MTP per-handle in `mtp/connection/directory_ops.rs`, SMB in a single tally pass after `list_directory_impl`, the default trait impl in `scan_for_copy_batch_with_progress`). Self-documenting field semantics; room to grow (symlinks, special files). Streaming-listing UI callers (`commands/file_system/listing.rs`) read `progress.entries()` (= `files + dirs`) which preserves their "Loaded N entries…" display. The baseline-shift logic in `run_oracle_aware_batch_scan` shifts files / dirs / bytes together so cross-group accumulation stays cumulative. Pinned by `scan_preview_listing_progress_tests`.
+**Decision**: `Volume::list_directory` / `scan_for_copy_batch_with_boundary` callbacks take a `ListingProgress { files, dirs, bytes }` struct (not `Fn(usize)` — files-only).
+**Why**: A files-only count makes MTP and Direct SMB scan previews show "0 bytes / N files / 0 dirs" climbing through the scan, because `run_volume_scan_preview` has nothing else to forward to the mid-stream `scan-preview-progress` event. The struct lets each backend track running file count, dir count, and byte total as it enumerates entries (MTP per-handle in `mtp/connection/directory_ops.rs`, SMB in a single tally pass after `list_directory_impl`, the default trait impl in `scan_for_copy_batch_with_boundary`). Self-documenting field semantics; room to grow (symlinks, special files). Streaming-listing UI callers (`commands/file_system/listing.rs`) read `progress.entries()` (= `files + dirs`) which preserves their "Loaded N entries…" display. The baseline-shift logic in `run_oracle_aware_batch_scan` shifts files / dirs / bytes together so cross-group accumulation stays cumulative. Pinned by `scan_preview_listing_progress_tests`.
 
 **Decision**: Progress callbacks use `&dyn Fn(u64, u64) -> ControlFlow<()>`, not `FnMut`
 **Why**: The Volume trait is object-safe (`dyn Volume`), so callbacks must be `Fn` (not `FnMut`). Callers use `AtomicU64` for byte counters and `Cell<Instant>` for timestamps to mutate state inside a `Fn` closure. This avoids needing `RefCell` or `Mutex` in the hot path.
@@ -493,6 +564,9 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 **Gotcha**: `write_from_stream` is a mutation; call `notify_mutation` on success on backends with unreliable out-of-band notifications
 **Why**: `write_from_stream` originally relied on the SMB CHANGE_NOTIFY watcher / MTP USB event loop to patch `LISTING_CACHE` after a cross-volume copy. Both are lossy under load: the smb2 watcher keeps one outstanding `CHANGE_NOTIFY` request at a time, and Samba drops events that arrive between consecutive responses (real reproduction: 9 files copied, 4 events delivered, destination pane showed 4 files until the user navigated away and back — files written fine, only the cache was stale). Many MTP devices emit no self-mutation events at all. The other mutation methods (`create_file`, `create_directory`, `delete`, `rename`) already call `self.notify_mutation(...)` after success; `write_from_stream` must too. `LocalPosixVolume` is the exception: FSEvents is reliable, so local mutations don't need the extra patch. The "After each successful mutation, call `self.notify_mutation(...)`" rule in the Tier 2 checklist includes `write_from_stream`.
 
+**Decision**: `SpaceInfo` is a two-variant enum (`Bounded` / `Unbounded`), not three `Option`s
+**Why**: A volume either has a total or it doesn't, and the two answers need different UI. Storage with no ceiling still knows what it holds, and a stock Nextcloud account is exactly that: RFC 4331 answers `quota-available-bytes: -3` (sabre/dav's unlimited sentinel) beside a real `quota-used-bytes`. Three `Option`s would let a caller build an `available` with no `total`, which is a percentage with no denominator, and every consumer would then owe a guard: the pane's bar would fill at an invented width, and the 80% / 95% severity bands would fire on a volume that can't run out. As an enum that value can't be constructed, so the guard is the type rather than a rule. `available_bytes()` returns `Option<u64>` and is the one accessor the free-space pre-flight reads (`write_operations/transfer/volume/DETAILS.md`); the frontend's `getUsageBar` is its twin, answering `null` where there's no bar to draw (`src/lib/file-explorer/DETAILS.md`). The whole enum crosses IPC, so an unbounded reading survives all the way to the indicator.
+
 **Gotcha**: On macOS, never use `statvfs` alone for disk space. Use `NSURLVolumeAvailableCapacityForImportantUsageKey`
 **Why**: `statvfs` reports only physically free blocks and ignores purgeable space (APFS snapshots, iCloud caches), which can be tens of GB. This causes inconsistent numbers between the status bar (NSURL API) and copy validation (`statvfs`), and prematurely blocks copies that would succeed. `get_space_info_for_path` calls `crate::volumes::get_volume_space()` on macOS and falls back to `statvfs` on Linux.
 
@@ -502,9 +576,13 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 - `inmemory_test.rs`: integration tests combining `InMemoryVolume` + `VolumeManager`, streaming state, sort helpers
 - `manager.rs` inline tests: concurrent registration/read/write-mix scenarios
 - `mtp_scan_oracle_tests.rs`, `smb_scan_oracle_tests.rs`: oracle-aware batch-scan integration tests for MTP and SMB
+- `smb_index_scan_test.rs`, `smb_media_fetch_integration_test.rs`: the two Docker-gated cells where `cmdr-index` meets a
+  real `cmdr-smb` session (the BFS scanner, and media enrichment's byte fetcher). They live app-side because only this
+  side can build both halves; the fixtures come from `write_operations::smb_test_support`
 
-Per-backend tests live colocated with their backend in `backends/`. See `backends/DETAILS.md` §
-"Testing".
+`LocalPosixVolume`'s and `MtpVolume`'s own tests are colocated in `backends/` (`backends/DETAILS.md` § "Testing"). A
+crate backend's app-side cells sit beside the app code they assert on, not here or there:
+`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
 
 ### Test isolation for the global `VolumeManager`
 

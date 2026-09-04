@@ -47,26 +47,68 @@ describe('TransferProgressReadout', () => {
     expect(texts('.percent')).toEqual(['(25%)'])
   })
 
+  it('draws no bar and no percentage while the count total is still unknown', () => {
+    // A total of zero is the backend saying "still counting", not "nothing to
+    // do". A fraction against it is a fraction against a number that hasn't been
+    // decided, and it renders as a bar frozen at 0% beside "(0%)" on an
+    // operation that is moving. So the readout reports what it knows — how many
+    // it has got through — and waits for a denominator before drawing one.
+    render({ bytesDone: 0, bytesTotal: 0, filesDone: 17_238, filesTotal: 0 })
+    expect(target.querySelectorAll('[role="progressbar"]').length).toBe(0)
+    expect(texts('.amount')).toEqual(['17,238'])
+    expect(texts('.percent')).toEqual([''])
+  })
+
+  it('never shows 100% off a total that only equals the done count because both are zero', () => {
+    render({ bytesDone: 0, bytesTotal: 0, filesDone: 0, filesTotal: 0 })
+    expect(texts('.percent')).toEqual([''])
+  })
+
   it('shows both amounts: bytes done/total and files done/total', () => {
     render(halfway)
     expect(texts('.amount')).toEqual(['50 bytes / 200 bytes', '1 / 4'])
   })
 
-  it('rounds live sizes to whole units, so digits stop churning under the eye', () => {
-    // 7.61 GB / 22.66 GB, at 11.96 MB/s. A size column elsewhere keeps its
-    // decimals; a number that changes several times a second doesn't earn them.
+  it('coarsens live sizes so digits stop churning, without losing a whole gigabyte', () => {
+    // 7.61 GB / 22.66 GB, at 11.96 MB/s. A size column elsewhere keeps its two
+    // decimals; a number that changes several times a second doesn't earn them,
+    // but it doesn't get to round away the difference between the two either.
     render({ ...halfway, bytesDone: 7_610_000_000, bytesTotal: 22_660_000_000, bytesPerSecond: 11_960_000 })
-    expect(texts('.amount')[0]).toBe('8 GB / 23 GB')
+    expect(texts('.amount')[0]).toBe('7.6 GB / 23 GB')
     expect(texts('.rate')[0]).toBe('12 MB/s')
+  })
+
+  it('never prints the same number twice for two different sizes', () => {
+    // Pre-fix this read "2 GB / 2 GB (70%)": whole units at every scale, so a
+    // 1.7 GB / 2.4 GB transfer showed two identical numbers beside a percentage
+    // that contradicted them. Every transfer in the 1-10 GB range hit it.
+    render({ ...halfway, bytesDone: 1_700_000_000, bytesTotal: 2_400_000_000 })
+    expect(texts('.amount')[0]).toBe('1.7 GB / 2.4 GB')
+    expect(texts('.percent')[0]).toBe('(71%)')
   })
 
   it('shows both rates, and neither before the estimator warms up', () => {
     render({ ...halfway, bytesPerSecond: 1_500_000, filesPerSecond: 27 })
-    expect(texts('.rate')).toEqual(['2 MB/s', '27 files/s'])
+    expect(texts('.rate')).toEqual(['1.5 MB/s', '27 files/s'])
 
     document.body.innerHTML = ''
     render(halfway)
     expect(texts('.rate')).toEqual(['', ''])
+  })
+
+  it('takes the file rate from the catalog, singular included', () => {
+    // The marker used to be an English literal in the formatter, so "files/s"
+    // shipped to all thirteen locales. It comes from
+    // `fileOperations.shared.fileRate` now, which is also where the singular is.
+    // A rate rounding to one prints a bare "1", never "1.0": CLDR reads a shown
+    // "1.0" as `other` ("1.0 files") while the selector for 1 is `one`, so a
+    // tenth here would render "1.0 file/s".
+    render({ ...halfway, filesPerSecond: 0.97 })
+    expect(texts('.rate')[1]).toBe('1 file/s')
+
+    document.body.innerHTML = ''
+    render({ ...halfway, filesPerSecond: 0.4 })
+    expect(texts('.rate')[1]).toBe('0.4 files/s')
   })
 
   it('renders the time left, and keeps the cell in place before an ETA lands', () => {

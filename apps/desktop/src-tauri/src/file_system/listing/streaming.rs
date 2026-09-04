@@ -347,7 +347,7 @@ pub async fn list_directory_start_streaming(
                     // enrichment (no cloud suggestion on a password prompt).
                     archive_needs_password_listing_error(wrong_attempt)
                 } else if matches!(e, VolumeError::NotSupported | VolumeError::IoError { .. })
-                    && crate::file_system::volume::backends::archive::path_targets_archive_file(&path_for_error)
+                    && cmdr_archive::path_targets_archive_file(&path_for_error)
                 {
                     archive_unreadable_listing_error()
                 } else {
@@ -410,6 +410,17 @@ pub(crate) async fn read_directory_with_progress(
     sort_order: SortOrder,
     dir_sort_mode: DirectorySortMode,
 ) -> Result<(), VolumeError> {
+    // Hold the volume busy for the REAL duration of this listing. The command
+    // entry point's timestamp seeds the debounce but decays in half a second,
+    // while an SMB listing of a big folder can take ten; without the lease a
+    // background upload or index scan resumes and competes for the rest of the
+    // user's wait. Released by drop on every exit — error, cancel, panic, or the
+    // task being dropped at shutdown — so no path can leak it and pin the share
+    // busy. Cancel releases it deliberately: the pane has moved on, so the user
+    // is no longer waiting on this listing even while the backend unwinds behind
+    // it. `priority/foreground.rs` owns the signal.
+    let _foreground_lease = crate::priority::foreground::lease_foreground_on(volume_id);
+
     benchmark::log_event("read_directory_with_progress START");
     log::debug!(
         "read_directory_with_progress: listing_id={}, volume_id={}, path={}",
@@ -614,7 +625,7 @@ pub(crate) async fn read_directory_with_progress(
     let to_complete_emit_ms = emit_t.elapsed().as_millis();
     let total_ms = total_start.elapsed().as_millis();
 
-    // Consolidated INFO log for the listing pipeline (Phase 1 instrumentation).
+    // Consolidated INFO log for the listing pipeline.
     // Grepable single-line structured record. See stall_probe::listing target.
     log::info!(
         target: "stall_probe::listing",

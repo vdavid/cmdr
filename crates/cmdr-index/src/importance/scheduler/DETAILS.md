@@ -9,13 +9,20 @@ Two triggers, unified through one coalescing core:
 
 - **The lifecycle bus** (`indexing/lifecycle/lifecycle_bus.rs`, mechanism documented in `../../indexing/DETAILS.md`,
   single-source): the scheduler subscribes per volume; a `ScanCompleted` publish ⇒ recompute.
-- **The startup registry sweep** (`indexing::ready_volumes_with_kind`): a volume already Fresh at launch never re-fires
-  `ScanCompleted` (its retained bus value stays `Pending`), so wiring its subscription alone never recomputes it — the
-  common restart case. The sweep wires each ready volume WITH its typed kind (so MTP is excluded and SMB degrades
-  correctly), then runs `enqueue_initial_full_pass_if_unscored` per volume to actually score a fresh or recreated store.
-- **The registration bus** (`lifecycle_bus::subscribe_registrations`): a volume that registers AFTER the sweep (a share
-  mounted mid-session) is wired then. The scheduler subscribes to it BEFORE the sweep, so no volume registering in the
-  gap is lost. The registration event carries the typed kind, so the same score/degrade/exclude policy applies.
+- **The initial-pass probe**, run by `wire_volume` for every volume it wires (see § The initial full pass below): a
+  volume already Fresh at launch never re-fires `ScanCompleted` (its retained bus value stays `Pending`), so wiring its
+  subscription alone never recomputes it — the common restart case.
+
+Both of those reach a volume through one of two wiring paths, and `wire_volume` is the single body both share, so a
+volume gets identical treatment either way:
+
+- **The startup registry sweep** (`indexing::ready_volumes_with_kind`): every volume already ready at launch, WITH its
+  typed kind (so MTP is excluded and SMB degrades correctly).
+- **The registration bus** (`lifecycle_bus::subscribe_registrations`): every volume that becomes ready afterwards — a
+  share mounted mid-session, and on a normal launch the ROOT volume too, whose index starts on a spawned task while
+  `ImportanceScheduler::start()` runs synchronously right after it, so the sweep usually sees an empty registry. The
+  scheduler subscribes BEFORE the sweep, so no volume registering in the gap is lost. The registration event carries the
+  typed kind, so the same score/degrade/exclude policy applies.
 
 `PassCoordinator` is the pure, unit-tested coalescing core: it guarantees ONE pass per `volume_id` at a time — a request
 arriving mid-pass sets a single re-run flag rather than starting a second pass (so the sweep plus a concurrent
@@ -36,26 +43,36 @@ not the generation (`ImportanceIndex::is_scored`).
 
 ## The initial full pass (the fresh/recreated-store trigger)
 
-**A fresh or recreated store must get a full pass — the invariant.** Because a Fresh-at-launch volume never fires
-`ScanCompleted`, the bus subscription alone never scores it. The sweep therefore runs
-`enqueue_initial_full_pass_if_unscored` per ready volume: it enqueues a full recompute IFF the store carries no
-generation. Gating on "no generation" (not an unconditional kick) is deliberate — importance is expensive, so an
-unconditional kick would rescore every volume on every launch; media's kick is unconditional because a redundant
-enrichment pass is a cheap staleness no-op. The policies differ on purpose.
+**A fresh, recreated, or policy-superseded store must get a full pass — the invariant.** Because a Fresh-at-launch
+volume never fires `ScanCompleted`, the bus subscription alone never scores it. So `wire_volume` runs
+`enqueue_full_pass_if_needed` for every volume it wires: it enqueues a full recompute IFF the store carries no
+generation, or its `SCORING_POLICY_KEY` doesn't match this build's classifiers.
+
+❌ **The probe belongs in `wire_volume`, never in the startup sweep alone.** The root index starts on a spawned task
+while `ImportanceScheduler::start()` runs synchronously right after it (`apps/desktop/src-tauri/src/lib.rs`), so on a
+real launch the sweep sees an empty registry and root arrives on the registration bus instead. A sweep-only probe is
+therefore unreachable in production, and it fails SILENTLY: neither log branch prints, the incremental path keeps the
+store looking alive, and a classifier fix stays inert over the volume's existing rows forever (caught on 2026-09-03,
+with the root store holding no `scoring_policy` row after an hour of uptime on the fixed binary). `wiring_tests.rs` pins
+both halves: the registration path probes, and an already-scored volume still isn't kicked.
+
+That policy-superseded reason is the ONLY thing that ever re-scores rows a scored volume already holds; see
+`../store/DETAILS.md` § The scoring-policy stamp. Gating on those two conditions rather than kicking unconditionally is
+deliberate — importance is expensive, so an unconditional kick would rescore every volume on every launch; media's kick
+is unconditional because a redundant enrichment pass is a cheap staleness no-op. The policies differ on purpose.
 
 **The recreate-ordering trap, and why the decision binds to the write-path open.** The schema delete-and-recreate
 happens LAZILY, only inside `ImportanceStore::open` on a WRITE-path open (`open_write_connection`); the read path never
-recreates. So on a schema-upgrade launch, the DB is still on the OLD schema at sweep time WITH its old stamped
-generation. A naive sweep-time generation READ would read that non-zero generation, decide "already scored", skip the
+recreates. So on a schema-upgrade launch, the DB is still on the OLD schema at probe time WITH its old stamped
+generation. A naive read-path generation probe would read that non-zero generation, decide "already scored", skip the
 full pass — and THEN the recreate fires on the first incremental write, wiping the generation and leaving the volume
-stuck at "never scored" forever. `store::needs_initial_full_pass` avoids this by opening the store on the WRITE path
-FIRST (forcing the recreate), then reading the generation, so the decision reflects the current schema. ❌ Never probe
-the generation via the read path before the write-path open.
+stuck at "never scored" forever. `store::needs_full_pass` avoids this by opening the store on the WRITE path FIRST
+(forcing the recreate), then reading the generation, so the decision reflects the current schema. ❌ Never probe the
+generation via the read path before the write-path open.
 
-`should_enqueue_initial_full_pass` is the combined kind + store-state decision, extracted so it's testable without
-spawning a recompute (which needs a read pool). The probe itself is a DB open, so it runs on a blocking task, and when
-the volume is unscored it hands off to the normal coordinated `spawn_recompute`, so a concurrent `ScanCompleted`
-coalesces correctly.
+`should_enqueue_full_pass` is the combined kind + store-state decision, extracted so it's testable without spawning a
+recompute (which needs a read pool). The probe itself is a DB open, so it runs on a blocking task, and when a pass is
+due it hands off to the normal coordinated `spawn_recompute`, so a concurrent `ScanCompleted` coalesces correctly.
 
 ## The walk is O(dirs) in a small constant (`walk.rs`)
 

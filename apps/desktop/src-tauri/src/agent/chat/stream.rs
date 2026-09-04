@@ -139,6 +139,9 @@ pub enum AgentErrorKindView {
     AuthFailed,
     RateLimited,
     BudgetExhausted,
+    /// The turn went in a circle: the model kept re-sending a tool call that had already come
+    /// back with a problem, after being told repeating it changes nothing.
+    RepeatedToolCall,
     UnfinishedReply,
     Provider,
 }
@@ -161,6 +164,7 @@ impl AgentErrorKindView {
             AgentErrorKindView::AuthFailed => "auth_failed",
             AgentErrorKindView::RateLimited => "rate_limited",
             AgentErrorKindView::BudgetExhausted => "budget_exhausted",
+            AgentErrorKindView::RepeatedToolCall => "repeated_tool_call",
             AgentErrorKindView::UnfinishedReply => "unfinished_reply",
             AgentErrorKindView::Provider => "provider",
         }
@@ -177,6 +181,7 @@ impl From<AgentErrorKind> for AgentErrorKindView {
             AgentErrorKind::AuthFailed => Self::AuthFailed,
             AgentErrorKind::RateLimited => Self::RateLimited,
             AgentErrorKind::BudgetExhausted => Self::BudgetExhausted,
+            AgentErrorKind::RepeatedToolCall => Self::RepeatedToolCall,
             AgentErrorKind::UnfinishedReply => Self::UnfinishedReply,
             AgentErrorKind::Provider => Self::Provider,
         }

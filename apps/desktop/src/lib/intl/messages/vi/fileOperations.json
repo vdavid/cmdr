@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} tệp/giây",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Xóa",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -180,6 +176,10 @@
   "@fileOperations.shared.byteRate": {
     "sourceHash": "4a55710"
   },
+  "fileOperations.shared.fileRate": "{count, plural, other {{rateText} tệp/giây}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
+  },
   "fileOperations.shared.andJoin": "{a} và {b}",
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
@@ -223,6 +223,10 @@
   "fileOperations.transferDialog.spaceInfo": "Còn trống {free} trên {total}",
   "@fileOperations.transferDialog.spaceInfo": {
     "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "Đã dùng {used}, không giới hạn dung lượng",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "sourceHash": "5d74d4d"
   },
   "fileOperations.transferDialog.smbNativeNote": "Chia sẻ này dùng kết nối hệ thống. Việc hủy có thể bị trễ. Dùng \"Kết nối trực tiếp\" trong bộ chọn ổ đĩa để truyền nhanh hơn và hủy đáng tin cậy.",
   "@fileOperations.transferDialog.smbNativeNote": {
@@ -372,10 +376,6 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} tệp/giây",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.transferProgress.scanTitleCopy": "Đang xác minh trước khi sao chép...",
   "@fileOperations.transferProgress.scanTitleCopy": {
     "sourceHash": "fd21ea9"
@@ -459,6 +459,10 @@
   "fileOperations.transferProgress.titleFlushing": "Đang ghi phần cuối cùng...",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
+  },
+  "fileOperations.transferProgress.titleRemovingOriginals": "Đang xóa các bản gốc...",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
   },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}...",
   "@fileOperations.transferProgress.titleActive": {
@@ -600,6 +604,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Dừng lại và đưa trở lại mọi tệp đã di chuyển đến giờ",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Mọi tệp đều đã ở đích, nên không thể hoàn tác lần di chuyển này nữa. Hủy vẫn dừng Cmdr lại trước khi nó xóa những bản gốc còn lại.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Đã tạm dừng",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"
@@ -664,9 +676,13 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Việc này sẽ xóa mọi tệp mà thao tác đã ghi đến giờ. Những tệp bị ghi đè sẽ không lấy lại được.",
+  "fileOperations.rollbackConfirm.body": "Việc này sẽ xóa mọi tệp mà thao tác đã ghi đến giờ, và những tệp bị nó ghi đè sẽ không lấy lại được. Cmdr bỏ qua những gì nó không chắc chắn, nên có thể còn sót lại vài thứ.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
+  },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Việc này sẽ đưa về lại mọi thứ mà thao tác đã chuyển đến giờ, và những tệp bị nó ghi đè sẽ không lấy lại được. Cmdr bỏ qua những gì nó không chắc chắn, nên vài tệp có thể vẫn nằm nguyên chỗ cũ.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Tiếp tục hoàn tác thao tác này?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -699,6 +715,86 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Tiếp tục hoàn tác",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "Đã xóa cả {countText} {count, plural, other {mục}} mà Cmdr đã ghi.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "ff786b9"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "Đã đưa trở lại cả {countText} {count, plural, other {mục}}.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "c5e329e"
+  },
+  "fileOperations.cancelRollback.someDeleted": "Đã xóa {countText} {count, plural, other {mục}}.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "Đã đưa trở lại {countText} {count, plural, other {mục}}.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "Đã dừng sau khi xóa {countText} {count, plural, other {mục}}. Các mục còn lại vẫn nằm ở đó.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "Đã dừng sau khi đưa trở lại {countText} {count, plural, other {mục}}. Các mục còn lại vẫn ở nơi thao tác di chuyển đã đưa chúng tới.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr đã dừng giữa lúc xóa các bản gốc, nhưng mọi thứ Cmdr đã di chuyển đều đã ở đích và sẽ ở lại đó. {count, plural, other {{countText} bản gốc vẫn nằm ở chỗ cũ.}}",
+  "@fileOperations.cancelRollback.moveAlreadyLanded": {
+    "sourceHash": "88dcf83"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr bỏ qua những gì nó không chắc chắn, nên những mục sau vẫn ở nguyên chỗ:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "fb28a31"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "Giữ nguyên {name}: mục này đã thay đổi sau khi Cmdr đưa nó tới đó.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: chúng đã thay đổi sau khi Cmdr đưa chúng tới đó.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "Giữ nguyên {name}: Cmdr không kiểm tra được mục này có thay đổi hay không.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: Cmdr không kiểm tra được chúng có thay đổi hay không.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "Giữ nguyên {name}: nơi nó xuất phát bây giờ đã có thứ khác.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "Giữ nguyên {countText} {count, plural, other {mục}}: nơi chúng xuất phát bây giờ đã có thứ khác.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Giữ nguyên thư mục {name}: bây giờ trong đó đã có thứ gì.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "Giữ nguyên {countText} {count, plural, other {thư mục}}: bây giờ trong đó đã có thứ gì.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "Không hoàn tác được {name}. Ổ đĩa của nó có thể chưa được kết nối hoặc là chỉ đọc.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "Không hoàn tác được {countText} {count, plural, other {mục}}. Ổ đĩa của chúng có thể chưa được kết nối hoặc là chỉ đọc.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Không xóa được {name}, một bản sao chưa hoàn chỉnh còn lại ở đích. Bạn có thể xóa nó mà không mất gì, và Cmdr cũng sẽ dọn nó trong một lần truyền sau tới đó.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Không xóa được {countText} {count, plural, other {bản sao}} chưa hoàn chỉnh còn lại ở đích. Bạn có thể xóa chúng mà không mất gì, và Cmdr cũng sẽ dọn chúng trong một lần truyền sau tới đó.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
   },
   "fileOperations.errorDialog.technicalDetails": "Chi tiết kỹ thuật",
   "@fileOperations.errorDialog.technicalDetails": {

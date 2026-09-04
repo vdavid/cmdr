@@ -15,7 +15,7 @@ function makeVolume(id: string, path = `/${id}`, category: VolumeInfo['category'
   return { id, name: id, path, category, isEjectable: false }
 }
 
-const spaceInfo = { totalBytes: 1_000_000, availableBytes: 500_000 }
+const spaceInfo = { kind: 'bounded', totalBytes: 1_000_000, availableBytes: 500_000, usedBytes: 500_000 } as const
 
 beforeEach(() => {
   vi.clearAllMocks()

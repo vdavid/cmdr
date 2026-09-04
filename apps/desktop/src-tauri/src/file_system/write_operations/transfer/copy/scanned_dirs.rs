@@ -6,7 +6,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crate::file_system::write_operations::state::{CopyTransaction, WriteOperationState, is_cancelled};
+use crate::file_system::write_operations::ledger::CopyTransaction;
+use crate::file_system::write_operations::state::WriteOperationState;
 use crate::file_system::write_operations::types::WriteOperationError;
 use crate::file_system::write_operations::validation::path_exists_or_is_symlink;
 
@@ -39,7 +40,9 @@ pub(in crate::file_system::write_operations::transfer) fn create_scanned_dirs_at
     // `scanned_dirs` is deepest-first (the delete order); reverse so parents
     // come before children.
     for dir in scanned_dirs.iter().rev() {
-        if is_cancelled(&state.intent) {
+        // The cooperative boundary, per directory. This pass runs after the
+        // per-file loop, so "Paused" is already on screen when it starts.
+        if state.stop_or_park_sync() {
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });

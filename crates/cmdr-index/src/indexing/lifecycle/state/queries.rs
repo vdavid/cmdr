@@ -25,9 +25,12 @@ use crate::indexing::volume::{IndexVolumeKind, VolumeId};
 /// A volume that loaded `Fresh` at launch from its persisted `scan_completed_at` never
 /// re-fires a `ScanCompleted`, so a scheduler that only waited on the bus would never
 /// act on it (its retained bus value stays `Pending`) — the common restart case. This
-/// snapshot is how the sweeps find those volumes; wiring their subscriptions is NOT
-/// enough on its own, so each scheduler pairs this with an explicit startup enqueue
-/// (media's `kick_all_ready_passes`, importance's `enqueue_initial_full_pass_if_unscored`).
+/// snapshot is how the sweeps find those volumes; subscribing them to the bus is NOT
+/// enough on its own, so each scheduler's `wire_volume` also carries an explicit
+/// enqueue (media's `spawn_pass`, importance's `enqueue_full_pass_if_needed`). ❌ Don't
+/// hang that enqueue off this sweep alone: a volume that becomes ready AFTER the sweep
+/// arrives only on the registration bus, and on a normal launch the root volume is
+/// exactly that.
 /// ⚠️ A volume being covered in PHASES is admitted on its home-coverage marker
 /// too, and is deliberately NOT `Fresh` while it is: the drive genuinely isn't
 /// covered yet. Without this the early media kick works on the first run and never

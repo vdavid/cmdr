@@ -12,6 +12,7 @@
 
 use std::panic::AssertUnwindSafe;
 
+use crate::platform::macos_at_least;
 use objc2::MainThreadMarker;
 use objc2::rc::Retained;
 use objc2_app_kit::{
@@ -29,11 +30,11 @@ use super::{
     EDIT_MENU_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_DUPLICATE_ID, FILE_MENU_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
     FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID, GO_HOME_ID, GO_LATEST_DOWNLOAD_ID, GO_MENU_ID, GO_PARENT_ID,
-    GO_TO_PATH_ID, HELP_MENU_ID, HELP_SEND_ERROR_REPORT_ID, HELP_WHATS_NEW_ID, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
-    OPEN_ONBOARDING_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID, SELECT_ALL_ID,
-    SELECT_FILES_ID, SELECT_MENU_ID, SETTINGS_ID, SHOW_IN_FINDER_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID,
-    SORT_BY_EXTENSION_ID, SORT_BY_MENU_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID,
-    SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID, VIEW_MENU_ID,
+    GO_TO_PATH_ID, HELP_MENU_ID, HELP_SEND_ERROR_REPORT_ID, HELP_WHATS_NEW_ID, INVERT_SELECTION_ID, NEW_TAB_ID,
+    NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUICK_LOOK_ID, RENAME_ID, SEARCH_FILES_ID,
+    SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID, SETTINGS_ID, SHOW_IN_FINDER_ID, SORT_ASCENDING_ID,
+    SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MENU_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
+    SORT_DESCENDING_ID, SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID, VIEW_MENU_ID,
 };
 
 pub(crate) fn cleanup_macos_menus<R: Runtime>(app: &AppHandle<R>) {
@@ -202,6 +203,7 @@ const MENU_BAR_ICONS: &[MenuIcons] = &[
         items: &[
             (SELECT_ALL_ID, "checkmark.circle"),
             (DESELECT_ALL_ID, "circle"),
+            (INVERT_SELECTION_ID, "circle.lefthalf.filled"),
             (SELECT_FILES_ID, "plus.circle"),
             (DESELECT_FILES_ID, "minus.circle"),
         ],
@@ -358,8 +360,16 @@ fn find_ns_item(menu: &NSMenu, title: &str) -> Option<Retained<NSMenuItemAppKit>
         .find(|item| !item.isSeparatorItem() && item.title().to_string() == title)
 }
 
+/// Puts an SF Symbol on a menu item, where the OS has SF Symbols at all.
+///
+/// They arrived with macOS 11, and the bundle's floor is 10.15, so Catalina gets
+/// menu items with no icons rather than an unrecognized-selector abort.
 fn set_sf_symbol(item: &NSMenuItemAppKit, symbol_name: &str) {
+    if !macos_at_least(11, 0) {
+        return;
+    }
     let name = NSString::from_str(symbol_name);
+    // allowed-newer-selector: guarded by the `macos_at_least(11, 0)` early return above
     if let Some(image) = NSImage::imageWithSystemSymbolName_accessibilityDescription(&name, None) {
         item.setImage(Some(&image));
     } else {

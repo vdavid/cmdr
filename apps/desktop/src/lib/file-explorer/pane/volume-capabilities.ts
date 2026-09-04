@@ -46,7 +46,7 @@
  * ## One classifier, not two
  *
  * `volume-tint.svelte.ts::volumeKindFor` classifies into
- * `'local' | 'smb' | 'mtp' | 'other'` for tinting, collapsing the two virtual
+ * `'local' | 'smb' | 'mtp' | 'adb' | 'other'` for tinting, collapsing the two virtual
  * kinds + favorites into the untinted `'other'`. `volumeKindOf` here is the
  * SUPERSET: it adds the two virtual kinds as first-class, then DELEGATES to
  * `volumeKindFor` for the real kinds, overriding only its `'other'` fall-through
@@ -76,6 +76,7 @@ export type VolumeKind =
   | 'local' // real filesystem volume (root, attached, cloud_drive, main_volume)
   | 'smb' // mounted SMB share (real backend listing, smb path scheme on the share)
   | 'mtp' // connected MTP storage (real backend listing, mtp:// scheme, no system clipboard)
+  | 'adb' // an Android device over ADB (real backend listing, adb:// scheme, no system clipboard)
   | 'network' // the synthetic SMB browser virtual volume (host/share list, smb:// namespace)
   | 'search-results' // the snapshot virtual volume (search-results:// namespace, flat result set)
   | 'archive' // a pane inside a supported archive (kind-from-path; zip is writable, see the row)
@@ -149,6 +150,16 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     hasParentRow: true,
     syncsToMcp: true,
   }),
+  adb: Object.freeze({
+    // Same shape as `mtp`: a device-anchored real listing. The transport differs
+    // (`adb sync`, a real filesystem), the pane's structure doesn't.
+    kind: 'adb',
+    hasBackendListing: true,
+    canWrite: true,
+    canBeSource: true,
+    hasParentRow: true,
+    syncsToMcp: true,
+  }),
   network: Object.freeze({
     kind: 'network',
     // The strictest kind: no listing, no source ops (the host/share list isn't
@@ -211,7 +222,7 @@ export function volumeKindOf(
   if (volumeId === 'network') return 'network'
   if (volumeId === 'search-results') return 'search-results'
   const tintKind = volumeKindFor(volumeId, fsType, category)
-  // `volumeKindFor` returns 'local' | 'smb' | 'mtp' | 'other'. The first three
+  // `volumeKindFor` returns 'local' | 'smb' | 'mtp' | 'adb' | 'other'. The first four
   // are real kinds in our union; 'other' (favorites + real-but-unclassified)
   // defaults to 'local' — the only sane capability set for a listable volume.
   return tintKind === 'other' ? 'local' : tintKind

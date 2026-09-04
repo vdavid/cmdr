@@ -2,7 +2,8 @@
 //! classification, mount-point resolution, and free-space queries. All read
 //! `/proc/mounts` or call `statvfs`, never the mounted filesystem itself.
 
-use super::{VolumeSpaceInfo, linux_mounts};
+use super::linux_mounts;
+use crate::file_system::volume::SpaceInfo;
 use std::path::Path;
 
 /// Virtual filesystem types to filter out of mount listings.
@@ -77,7 +78,10 @@ pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
 }
 
 /// Get space information for a volume using `statvfs`.
-pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
+///
+/// A mounted filesystem always has a capacity, so this is always
+/// [`SpaceInfo::Bounded`].
+pub fn get_volume_space(path: &str) -> Option<SpaceInfo> {
     use std::ffi::CString;
 
     let c_path = CString::new(path).ok()?;
@@ -89,10 +93,10 @@ pub fn get_volume_space(path: &str) -> Option<VolumeSpaceInfo> {
         let mut stat: libc::statvfs = std::mem::zeroed();
         if libc::statvfs(c_path.as_ptr(), &mut stat) == 0 {
             let block_size = stat.f_frsize;
-            Some(VolumeSpaceInfo {
-                total_bytes: stat.f_blocks * block_size,
-                available_bytes: stat.f_bavail * block_size,
-            })
+            Some(SpaceInfo::bounded(
+                stat.f_blocks * block_size,
+                stat.f_bavail * block_size,
+            ))
         } else {
             None
         }
@@ -151,9 +155,14 @@ mod tests {
     fn test_get_volume_space_root() {
         let space = get_volume_space("/");
         // statvfs works on both macOS and Linux
-        if let Some(space) = space {
-            assert!(space.total_bytes > 0);
-            assert!(space.available_bytes <= space.total_bytes);
+        if let Some(SpaceInfo::Bounded {
+            total_bytes,
+            available_bytes,
+            ..
+        }) = space
+        {
+            assert!(total_bytes > 0);
+            assert!(available_bytes <= total_bytes);
         }
     }
 

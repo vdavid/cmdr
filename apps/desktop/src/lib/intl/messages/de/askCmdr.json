@@ -16,9 +16,9 @@
   "@askCmdr.empty.title": {
     "sourceHash": "b2251fc"
   },
-  "askCmdr.empty.hint": "Cmdr kann sich ansehen, was du gerade durchsiehst, deine Laufwerke und deinen Verlauf, um zu antworten. Dabei liest Cmdr nur Namen, Pfade und Größen, nie Dateiinhalte.",
+  "askCmdr.empty.hint": "Cmdr kann sich ansehen, was du gerade durchsiehst, deine Laufwerke und deinen Verlauf, um zu antworten. Dabei liest Cmdr Namen, Pfade und Größen und schaut nur dann in eine Datei hinein, wenn du nach ihr fragst.",
   "@askCmdr.empty.hint": {
-    "sourceHash": "6ccad75"
+    "sourceHash": "487071b"
   },
   "askCmdr.composer.placeholder": "Frag nach deinen Dateien …",
   "@askCmdr.composer.placeholder": {
@@ -111,6 +111,14 @@
   "askCmdr.tool.searchPhotos.done": "Deine Fotos durchsucht",
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
+  },
+  "askCmdr.tool.inspectFile.doing": "Dateien werden durchgesehen",
+  "@askCmdr.tool.inspectFile.doing": {
+    "sourceHash": "e7ba22a"
+  },
+  "askCmdr.tool.inspectFile.done": "Dateien durchgesehen",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "9b24f57"
   },
   "askCmdr.tool.imageFacts.doing": "Inhalte deiner Fotos werden gelesen",
   "@askCmdr.tool.imageFacts.doing": {
@@ -223,6 +231,10 @@
   "askCmdr.error.budgetExhausted": "Diese Antwort hat ihr Limit erreicht, bevor sie fertig war. Frag etwas Genaueres.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
+  },
+  "askCmdr.error.repeatedToolCall": "Diese Antwort hat immer wieder dieselbe Abfrage versucht, ohne weiterzukommen. Frag es anders.",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "ea46ed7"
   },
   "askCmdr.error.unfinishedReply": "Die Antwort wurde nicht abgeschlossen. Erneut versuchen?",
   "@askCmdr.error.unfinishedReply": {
@@ -350,6 +362,10 @@
   "@askCmdr.consent.item.sizes": {
     "sourceHash": "2484530"
   },
+  "askCmdr.consent.item.contents": "Teile der Dateien, die Cmdr öffnet, um dir zu antworten: etwas Text, PDF-Seiten, was in einem Archiv steckt, sowie die Kameraangaben und der Aufnahmeort eines Fotos",
+  "@askCmdr.consent.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
   "askCmdr.consent.item.envelope": "Was du dir gerade ansiehst: dein aktueller Ordner, der Cursor, die Auswahl und verbundene Laufwerke",
   "@askCmdr.consent.item.envelope": {
     "sourceHash": "2e5a0ef"
@@ -362,9 +378,9 @@
   "@askCmdr.consent.item.memory": {
     "sourceHash": "54bee04"
   },
-  "askCmdr.consent.noContents": "Cmdr sendet die Dateien selbst nie: keine Dateiinhalte, keine Fotos, keine Miniaturen. Die Fotosuche ist das Einzige, was in deine Bilder hineinschaut, und nur, wenn du sie damit durchsuchst: Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen an deinen Anbieter, damit er sie finden kann. Ask Cmdr kann Umbenennungen, Verschiebungen und Aufräumaktionen vorschlagen, und an keiner Datei passiert etwas, bevor du zustimmst.",
-  "@askCmdr.consent.noContents": {
-    "sourceHash": "99f9add"
+  "askCmdr.consent.contentsRule": "Cmdr sendet nie ganze Dateien, Fotos oder Miniaturen. Wenn du nach einer Datei fragst, kann es einen begrenzten Teil davon lesen: ein paar Zeilen Text, einige Seiten eines PDFs samt Titel und Autor, die Liste der Dateien in einem Archiv oder die Kameraangaben eines Fotos, einschließlich des Aufnahmeorts. Die Fotosuche funktioniert genauso: Der Text, den Cmdr in den passenden Fotos erkannt hat, und deren Tags gehen an deinen Anbieter, damit er sie finden kann. Ask Cmdr kann Umbenennungen, Verschiebungen und Aufräumaktionen vorschlagen, und an keiner Datei passiert etwas, bevor du zustimmst.",
+  "@askCmdr.consent.contentsRule": {
+    "sourceHash": "11b2e0a"
   },
   "askCmdr.consent.memory": "Ask Cmdr schreibt sich Notizen über dich: wie du Dinge gern sortierst, was du früher abgelehnt hast, alles, worum du es bittest. Diese Notizen gehen mit jeder Nachricht mit, die du sendest, solange es sie gibt, und sie können Text enthalten, den Cmdr in deinen Fotos erkannt hat. Du kannst sie jederzeit in den Ask-Cmdr-Einstellungen lesen oder löschen.",
   "@askCmdr.consent.memory": {
@@ -394,9 +410,9 @@
   "@askCmdr.consent.whatsNew.title": {
     "sourceHash": "641705c"
   },
-  "askCmdr.consent.whatsNew.body": "Ask Cmdr merkt sich jetzt Notizen über dich von Chat zu Chat, und es kann von selbst ein Gespräch beginnen, wenn ihm etwas Erwähnenswertes auffällt. Das ist mehr, als du damals zugestimmt hast, deshalb hier noch einmal das Ganze.",
+  "askCmdr.consent.whatsNew.body": "Wenn du nach einer Datei fragst, kann Ask Cmdr jetzt hineinschauen und einen Teil davon lesen: etwas Text, ein paar Seiten eines PDFs, die Liste der Dateien in einem Archiv oder die Kameraangaben und den Aufnahmeort eines Fotos. Das ist mehr, als du damals zugestimmt hast, deshalb hier noch einmal das Ganze.",
   "@askCmdr.consent.whatsNew.body": {
-    "sourceHash": "88751a5"
+    "sourceHash": "fd59b19"
   },
   "askCmdr.forget.title": "Alles vergessen, woran sich Ask Cmdr erinnert?",
   "@askCmdr.forget.title": {

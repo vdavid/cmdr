@@ -305,7 +305,9 @@ What's specific to this app's configs:
 
 - **ESLint** (`eslint.config.js`) mirrors the api-server's `strictTypeChecked` base plus the desktop app's Svelte parser
   blocks. Type-aware rules need `.svelte-kit/tsconfig.json`, which `tsconfig.json` extends, so `svelte-kit sync` has to
-  run first; the `dashboard-eslint` check hard-fails when it's missing rather than let the rules quietly no-op.
+  run first; the `dashboard-eslint` check hard-fails when it's missing rather than let the rules quietly no-op. It also
+  carries the website's `eslint-plugin-better-tailwindcss` rule set (`src/app.css` as the entry point); the rationale
+  per rule is in `apps/website/DETAILS.md` § Tailwind class hygiene.
 - Config files (`svelte.config.js`, `vite.config.ts`, `vitest.config.ts`) lint with `disableTypeChecked`. They sit
   outside the generated tsconfig's include list, and adding them to the TS project purely to satisfy the linter would be
   the tail wagging the dog.

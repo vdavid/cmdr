@@ -29,10 +29,9 @@ afterAll(() => {
 const EJECT_CASES: EjectError[] = [
   { type: 'busy' },
   { type: 'volumeNotFound', volumeId: 'volumes-usb-drive' },
-  { type: 'mtpIdMissingDevicePrefix', volumeId: 'no-colon-id' },
   { type: 'notEjectable', volumeId: 'root' },
   { type: 'notAnSmbVolume', volumeId: 'volumes-usb-drive' },
-  { type: 'mtpDisconnectRefused', detail: 'PTP CloseSession timed out' },
+  { type: 'deviceDisconnectRefused', provider: 'mtp', detail: 'PTP CloseSession timed out' },
   { type: 'unmountRefused', detail: 'Unmount failed for /Volumes/Trip: in use by process 1234 (mds)' },
   { type: 'timedOut' },
   { type: 'unexpected', detail: 'the eject task panicked' },

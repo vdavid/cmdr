@@ -3,6 +3,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
+    import { formatFilesPerSecond } from '$lib/units'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import Trans from '$lib/intl/Trans.svelte'
     import { t, tString } from '$lib/intl/messages.svelte'
@@ -23,6 +24,10 @@
         scanBytesPerSec: number | null
         scanCurrentDir: string | null
         currentFile: string | null
+        /** The walk is parked on a pause. The spinner is a claim that it's
+         *  moving, so it goes away; the tallies stay, because they're what it
+         *  found before it stopped. */
+        paused?: boolean
     }
 
     const {
@@ -35,9 +40,16 @@
         scanBytesPerSec,
         scanCurrentDir,
         currentFile,
+        paused = false,
     }: Props = $props()
 
     const isCompact = $derived(density === 'compact')
+
+    /** The walk's speed, through the one files-per-second policy the transfer
+     *  bars use, so a slow scan reads "0.4 files/s" instead of the "0 files/s" a
+     *  bare `Math.round` produced. `null` once it rounds to nothing, which is
+     *  also what hides the whole line. */
+    const scanRate = $derived(scanFilesPerSec === null ? null : formatFilesPerSecond(scanFilesPerSec))
 </script>
 
 <!-- Source path -->
@@ -63,22 +75,25 @@
         <span class="scan-value">{formatNumber(scanDirsFound)}</span>
         <span class="scan-label">{t('fileOperations.scanPhase.scanDir', { count: scanDirsFound })}</span>
     </div>
-    <span
-        class="scan-status"
-        role="img"
-        aria-label={tString('fileOperations.shared.scanningTooltip')}
-        use:tooltip={{ text: tString('fileOperations.shared.scanningTooltip') }}
-    >
-        <Spinner size="sm" />
-    </span>
+    {#if !paused}
+        <span
+            class="scan-status"
+            role="img"
+            aria-label={tString('fileOperations.shared.scanningTooltip')}
+            use:tooltip={{ text: tString('fileOperations.shared.scanningTooltip') }}
+        >
+            <Spinner size="sm" />
+        </span>
+    {/if}
 </div>
 
 <!-- Throughput -->
-{#if scanFilesPerSec !== null && scanFilesPerSec > 0}
+{#if scanRate !== null}
     <div class="scan-throughput">
         <span class="scan-throughput-value"
-            >{tString('fileOperations.scanPhase.throughputFiles', {
-                rateText: formatNumber(Math.round(scanFilesPerSec)),
+            >{tString('fileOperations.shared.fileRate', {
+                count: scanRate.value,
+                rateText: scanRate.text,
             })}</span
         >
         {#if scanBytesPerSec !== null && scanBytesPerSec > 0}

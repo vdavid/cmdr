@@ -2,7 +2,7 @@
 //! guardrail that refuses a WHOLE plan rather than staging part of one.
 
 use super::super::plan::{
-    ProposalRefusal, RenameInput, check_row_evidence, missing_local_child, refusal_content, scoped_files,
+    ProposalRefusal, RenameInput, check_row_evidence, missing_local_child, refusal_content, rows_problem, scoped_files,
     validate_destination_name,
 };
 use super::{THREAD, draft_row};
@@ -202,6 +202,51 @@ fn a_rename_row_without_evidence_does_not_parse() {
         "evidence": { "source": "filename", "detail": "the old name" }
     });
     assert!(serde_json::from_value::<RenameInput>(with).is_ok());
+}
+
+/// From a live transcript: the model sent a plan whose rows all lacked `volumeId`, got back one
+/// fixed sentence naming all four fields, and re-sent the identical call eight times until the
+/// turn's budget ran out. A refusal has to say WHICH rows and WHICH field, or a model with
+/// nothing new to read has nothing new to try.
+#[test]
+fn a_row_that_misses_a_field_is_refused_by_row_and_by_field() {
+    let params = serde_json::json!({ "renames": [
+        { "sourcePath": "/x/a.png", "destinationName": "b.png", "evidence": { "source": "filename", "detail": "old" } },
+        { "sourcePath": "/x/c.png", "destinationName": "d.png", "evidence": { "source": "filename", "detail": "old" } }
+    ]});
+    assert_eq!(
+        rows_problem(&params).expect("the rows don't match the declared row shape"),
+        "Every rename row needs volumeId. A row takes destinationName, evidence, sourcePath, and volumeId."
+    );
+}
+
+#[test]
+fn a_refusal_names_the_rows_it_means_and_keeps_the_kinds_apart() {
+    let params = serde_json::json!({ "renames": [
+        { "sourcePath": "/x/a.png", "volumeId": "root", "destinationName": "b.png",
+          "evidence": { "source": "filename", "detail": "old" } },
+        { "sourcePath": "/x/c.png", "volumeId": "root", "destinationName": "d.png",
+          "evidence": { "source": "filename", "detail": "old" }, "note": "why not" },
+        { "sourcePath": "/x/e.png", "volumeId": "root",
+          "evidence": { "source": "filename", "detail": "old" } }
+    ]});
+    assert_eq!(
+        rows_problem(&params).expect("row 2 carries an extra field and row 3 misses one"),
+        "Rename row 2 has no note parameter, and rename row 3 needs destinationName. \
+         A row takes destinationName, evidence, sourcePath, and volumeId."
+    );
+}
+
+#[test]
+fn a_plan_whose_rows_all_check_out_has_nothing_to_report() {
+    // Whatever else is wrong with the call (a bad name, a row out of scope, unbacked
+    // evidence), it isn't the row SHAPE, and this must not claim otherwise.
+    let params = serde_json::json!({ "renames": [
+        { "sourcePath": "/x/a.png", "volumeId": "root", "destinationName": "b.png",
+          "evidence": { "source": "filename", "detail": "old" } }
+    ]});
+    assert_eq!(rows_problem(&params), None);
+    assert_eq!(rows_problem(&serde_json::json!({ "renames": "not an array" })), None);
 }
 
 /// `userEdited` is the review dialog's word for a name the USER typed, so the model may never

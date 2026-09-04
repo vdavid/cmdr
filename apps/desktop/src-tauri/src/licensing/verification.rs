@@ -416,10 +416,10 @@ mod tests {
     #[test]
     fn test_full_cryptographic_roundtrip() {
         use ed25519_dalek::{Signer, SigningKey};
-        use rand_core::OsRng;
+        use getrandom::{SysRng, rand_core::UnwrapErr};
 
         // Generate a test key pair
-        let signing_key = SigningKey::generate(&mut OsRng);
+        let signing_key = SigningKey::generate(&mut UnwrapErr(SysRng));
         let verifying_key = signing_key.verifying_key();
 
         // Convert to hex for our functions
@@ -462,9 +462,9 @@ mod tests {
     #[test]
     fn test_tampered_license_key_rejected() {
         use ed25519_dalek::{Signer, SigningKey};
-        use rand_core::OsRng;
+        use getrandom::{SysRng, rand_core::UnwrapErr};
 
-        let signing_key = SigningKey::generate(&mut OsRng);
+        let signing_key = SigningKey::generate(&mut UnwrapErr(SysRng));
         let verifying_key = signing_key.verifying_key();
         let public_key_hex: String = verifying_key.as_bytes().iter().map(|b| format!("{:02x}", b)).collect();
 
@@ -504,11 +504,11 @@ mod tests {
     #[test]
     fn test_wrong_public_key_rejects_license() {
         use ed25519_dalek::{Signer, SigningKey};
-        use rand_core::OsRng;
+        use getrandom::{SysRng, rand_core::UnwrapErr};
 
         // Generate two different key pairs
-        let signing_key = SigningKey::generate(&mut OsRng);
-        let wrong_key = SigningKey::generate(&mut OsRng);
+        let signing_key = SigningKey::generate(&mut UnwrapErr(SysRng));
+        let wrong_key = SigningKey::generate(&mut UnwrapErr(SysRng));
         let wrong_public_hex: String = wrong_key
             .verifying_key()
             .as_bytes()

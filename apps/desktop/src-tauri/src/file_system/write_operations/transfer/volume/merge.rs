@@ -34,9 +34,11 @@ use futures_util::stream::FuturesUnordered;
 
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::WriteOperationError;
-use super::super::transfer_probe::{CURRENT_TASK_PROBE, OperationProbe, TaskPhase, TaskProbeHandle, set_task_phase};
+use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskPhase, TaskProbeHandle, TaskRole, set_task_phase};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
-use super::strategy::{CreatedPaths, FileWindow, MergeCtx, note_pending_for_local_dest, staging_for, stream_pipe_file};
+use super::strategy::{
+    CreatedPaths, FileWindow, MergeCtx, MergeProbe, note_pending_for_local_dest, staging_for, stream_pipe_file,
+};
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -63,10 +65,12 @@ struct LeafRow {
 /// but it cannot start one without a slot from the single op-wide window.
 struct LeafPool<'a> {
     window: FileWindow,
-    op_probe: Option<Arc<OperationProbe>>,
-    /// Row number for the next leaf's entry in the in-flight table. Per walker,
-    /// which is enough to tell two rows of the same subtree apart in a dump.
-    next_row: usize,
+    /// The in-flight table and the row of the source this walk descends from,
+    /// which is what every leaf row is numbered under.
+    probe: Option<MergeProbe>,
+    /// Which leaf of this source the next row is. Only ever climbs, so a number
+    /// is never reused inside one dump.
+    next_leaf: usize,
     in_flight: FuturesUnordered<Pin<Box<dyn Future<Output = LeafResult> + Send + 'a>>>,
     bytes: u64,
     /// The FIRST leaf failure. Later ones are dropped: the walker reports the
@@ -76,11 +80,11 @@ struct LeafPool<'a> {
 }
 
 impl<'a> LeafPool<'a> {
-    fn new(window: FileWindow, op_probe: Option<Arc<OperationProbe>>) -> Self {
+    fn new(window: FileWindow, probe: Option<MergeProbe>) -> Self {
         Self {
             window,
-            op_probe,
-            next_row: 0,
+            probe,
+            next_leaf: 0,
             in_flight: FuturesUnordered::new(),
             bytes: 0,
             first_error: None,
@@ -163,13 +167,18 @@ impl<'a> LeafPool<'a> {
         // leaves sharing a row would clobber each other's stall-abort signal and
         // keep resetting the watchdog's stillness clock. Dropping the handle with
         // the future takes the row away again.
-        let table_row = self.op_probe.as_ref().map(|probe| {
-            let handle = probe.begin_task(
-                self.next_row,
+        let table_row = self.probe.as_ref().map(|probe| {
+            let handle = probe.operation.begin_task(
+                // Under this source's own row, so the dump says which top-level
+                // source is producing the leaf and no two rows collide.
+                probe.source_row.leaf(self.next_leaf),
+                // Every row this walker opens is one leaf FILE's byte copy,
+                // holding the permit reserved just above.
+                TaskRole::File,
                 &row.source.display().to_string(),
                 &row.dest.display().to_string(),
             );
-            self.next_row += 1;
+            self.next_leaf += 1;
             handle
         });
         self.in_flight.push(Box::pin(async move {
@@ -323,7 +332,7 @@ pub(super) async fn copy_directory_streaming(
     // with a file at depth 1 instead of opening one of its own per level.
     let mut pool = LeafPool::new(
         merge.map_or_else(FileWindow::serial, |ctx| ctx.window.clone()),
-        merge.and_then(|ctx| ctx.op_probe.clone()),
+        merge.and_then(|ctx| ctx.probe.clone()),
     );
     let walked = merge_level(
         source_volume,
@@ -473,7 +482,11 @@ async fn merge_level<'a>(
     let entries = entries.at(source_path)?;
 
     for entry in &entries {
-        if super::super::super::state::is_cancelled(&state.intent) {
+        // The cooperative boundary, per entry. The walk's own work (listings,
+        // destination creation, a conflict decision per child) never passes
+        // through the between-chunks checkpoint the byte path parks at, so this
+        // is the only thing that stops a paused merge from walking on.
+        if state.stop_or_park_async().await {
             return Err(VolumeError::Cancelled("Operation cancelled by user".to_string())).at(source_path);
         }
 

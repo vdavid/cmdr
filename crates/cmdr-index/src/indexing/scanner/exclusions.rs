@@ -362,10 +362,10 @@ pub(in crate::indexing) fn exclusion_policy_stamp_message() -> WriteMessage {
 /// index under `store::EXCLUSION_POLICY_KEY`.
 ///
 /// Content-derived, so editing any of the lists re-arms every existing index with
-/// no version constant for anyone to forget to bump. FNV-1a rather than
-/// `DefaultHasher` because the value goes to disk and must not shift with a
-/// toolchain upgrade. Platform-specific by construction (the constants are), which
-/// is fine: an index DB never moves between platforms.
+/// no version constant for anyone to forget to bump. The mixing is
+/// [`crate::fingerprint::fingerprint_of`], shared with the importance subsystem's
+/// scoring-policy stamp. Platform-specific by construction (the constants are),
+/// which is fine: an index DB never moves between platforms.
 ///
 /// `CMDR_E2E_START_PATH` is deliberately NOT folded in. It narrows the effective
 /// policy at runtime, but it's a per-run fixture path rather than a shipped rule,
@@ -384,29 +384,7 @@ pub(in crate::indexing) fn exclusion_policy_fingerprint() -> String {
         parts.push("firmlinked");
         parts.extend_from_slice(FIRMLINKED_SYSTEM_PREFIXES);
     }
-    fingerprint_of(&parts)
-}
-
-/// FNV-1a over newline-separated parts, as 16 hex digits.
-///
-/// Split out from [`exclusion_policy_fingerprint`] so the mixing is testable
-/// against a fixed input. A fingerprint the caller feeds its own constants to can
-/// only be tested symmetrically — stamp with it, read with it, agree — and that
-/// agrees just as happily with a broken hash that collides two different policies
-/// into one value, which would silently skip the re-walk the whole mechanism
-/// exists for. `the_policy_fingerprint_mixes_its_input` pins this against a golden
-/// over a test-only input, so it needs no maintenance when the real lists change.
-fn fingerprint_of(parts: &[&str]) -> String {
-    const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
-    const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
-    let mut hash = FNV_OFFSET;
-    for part in parts {
-        for byte in part.bytes().chain(std::iter::once(b'\n')) {
-            hash ^= u64::from(byte);
-            hash = hash.wrapping_mul(FNV_PRIME);
-        }
-    }
-    format!("{hash:016x}")
+    crate::fingerprint::fingerprint_of(&parts)
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────

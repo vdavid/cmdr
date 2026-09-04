@@ -1898,3 +1898,178 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   Việt không biến hình nên tên thư mục nào cũng vừa, và không cần thêm dấu ngoặc kép.
 - Cả năm giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
   không phát sinh `''` của ICU; `{folder}` giữ nguyên.
+
+## Toast sau khi hoàn tác thao tác đang chạy (`fileOperations.cancelRollback.*` + `rollbackConfirm.body`, 2026-08-31)
+
+Người dùng bấm `Hoàn tác` trên một lần sao chép/di chuyển đang chạy, lượt hoàn tác chạy xong, và toast này báo nó làm
+được tới đâu. Toast xếp tối đa ba phần: một dòng tiêu đề (`doneDeleting` / `doneMovingBack` / `someDeleted` /
+`someMovedBack` / `stoppedDeleting` / `stoppedMovingBack`), rồi `leftBehind`, rồi danh sách gạch đầu dòng `reason.*`.
+Giọng xuyên suốt: **Cmdr đã làm phần cẩn thận**, không xin lỗi, không báo động.
+
+- **Cả bộ `reason.*` đi theo họ `Giữ nguyên` của `askCmdr.renameUndo.skipReason.*`** · tiếng Anh của hai bộ gần như
+  trùng nhau ("Left {name} alone: …"), cùng một khái niệm (Cmdr từ chối động vào thứ nó không đối chiếu được), nên hai
+  bộ phải đọc như một tính năng · `high`. Hai khóa `folderNotEmpty.*` có chuỗi tiếng Anh **giống hệt** bên `renameUndo`,
+  nên giá trị vi dùng lại **nguyên văn**: `Giữ nguyên thư mục {name}: bây giờ trong đó đã có thứ gì.` và
+  `Giữ nguyên {countText} {count, plural, other {thư mục}}: bây giờ trong đó đã có thứ gì.` Sửa thì sửa cả hai bộ.
+- **`mục`, không phải `tệp`, trong bộ này** · tiếng Anh của `cancelRollback` đếm "item" (lượt hoàn tác xóa cả thư mục nó
+  đã tạo), còn `renameUndo` đếm "file". Đây là khác biệt duy nhất giữa hai bộ, đừng san phẳng · `high`.
+- **`Left X where it is` gộp vào `Giữ nguyên`, không tách riêng** · tiếng Anh đổi "alone" → "where it is" ở
+  `spotTaken.*` để nhắc rằng mục vẫn nằm ở đích. `Giữ nguyên` trong tiếng Việt đã mang sẵn nghĩa "để yên tại chỗ", nên
+  tách ra sẽ dựng lên một phân biệt tiếng Việt không cần; vế sau (`nơi nó xuất phát bây giờ đã có thứ khác`) đã nói rõ
+  chỗ nào bị chiếm · `high`.
+- **"something else now sits where it came from" → `nơi nó xuất phát bây giờ đã có thứ khác`** · `nơi … xuất phát` lấy
+  nguyên của `fileOperations.rollbackConfirm.bodyUndoByMovingBack` (`đưa các tệp về lại nơi chúng xuất phát`), còn
+  `đã có thứ khác` là cách nói của `renameUndo.skipReason.nameTaken` (`tên cũ đã có thứ khác dùng`). Finder `vi` có đúng
+  tình huống này ở `PE1.1` (`Vị trí mà bạn đang khôi phục “^0” đến đã có một mục với cùng tên.`), nhưng tiếng Anh của
+  Cmdr cố tình nói mơ hồ ("something else"), nên giữ `thứ khác` thay vì `một mục với cùng tên` · `high`.
+- **"after Cmdr put it there" → `sau khi Cmdr đưa nó tới đó`** · động từ `đưa` là gốc chung của cả họ hoàn tác trong
+  catalog (`đưa trở lại`, `Đang đưa các tệp về chỗ cũ`), và nó phủ được cả hai thao tác mà câu này dùng chung: bản sao
+  thì Cmdr ghi tệp tới đó, bản di chuyển thì Cmdr mang tệp tới đó. ❌ Đừng viết `ghi nó vào đó`: chỉ đúng cho lượt sao
+  chép · `high`.
+- **`failed.*` cố ý ra khỏi họ `Giữ nguyên`** · năm lý do kia là lựa chọn có chủ ý, riêng lý do này thì không (ổ đĩa từ
+  chối), nên tiếng Anh đổi khung câu và tiếng Việt cũng đổi: `Không hoàn tác được {name}.` Bỏ chủ ngữ đúng như tiếng
+  Anh, và `không … được` giữ giọng nhẹ, tránh hẳn `lỗi`/`thất bại` · `high`. Vế sau lấy chữ có sẵn: `chưa được kết nối`
+  (`fileOperations.trash.undoUnavailable`) và `chỉ đọc` (`errors.volume.readOnly` = `Ổ đĩa này là chỉ đọc.`), nên viết
+  `Ổ đĩa của nó có thể chưa được kết nối hoặc là chỉ đọc.`
+- **`leftBehind` mở bằng `bỏ qua`, đúng như các hộp thoại xác nhận** · `rollbackConfirm.body` và ba khóa `bodyUndo*` đều
+  hứa `Cmdr bỏ qua những gì nó không chắc chắn`, và tiếng Anh dùng cùng một động từ ở cả hai bề mặt, nên tiếng Việt cũng
+  vậy: một lời hứa thì một chữ · `high`. Trọn câu:
+  `Cmdr bỏ qua những gì nó không chắc chắn, nên những mục sau vẫn ở nguyên chỗ:` ❌ Đừng dùng `giữ nguyên` ở đây: đó là
+  chữ của các gạch đầu dòng bên dưới (`Giữ nguyên {name}: …`), còn dòng này phải nối lại với hộp thoại người dùng vừa
+  đọc.
+- **Mạo từ "trọn vẹn" của tiếng Anh → `cả`** · `doneDeleting`/`doneMovingBack` nói "the N items" để hàm ý tất cả, còn
+  `someDeleted`/`someMovedBack` cố tình bỏ mạo từ vì còn sót lại. Tiếng Việt không có mạo từ, nên khác biệt đó nằm ở
+  `cả`: `Đã đưa trở lại cả {countText} mục.` (trọn vẹn) so với `Đã đưa trở lại {countText} mục.` (một phần). Catalog đã
+  dùng đúng chữ này cho "all N" ở `askCmdr.renameUndo.undoJob` (`Hoàn tác cả {countText} lô`) · `high`. ❌ Đừng thêm
+  `tất cả`: dài hơn và đọc như một nút chọn hết.
+- **"put back" (bộ move) → `đưa trở lại`**, đúng động từ Tier 1 của `fileOperations.trash.undone` · `high`. Nó cùng gốc
+  `đưa` với tiêu đề đang chạy mà người dùng vừa nhìn (`Đang đưa các tệp về chỗ cũ`), nên hai màn hình khớp nhau.
+- **"Stopped after …" → `Đã dừng sau khi …`** · `Dừng` là động từ dừng của macOS `vi` (Finder `Dừng xóa`, `Dừng nén`,
+  `MT14`/`AR30`) · `high`. Đây là trần thuật một việc đã xảy ra nên dùng `Đã dừng`, khác với nhãn nút `Dừng lại` đã chốt
+  cho tooltip hoàn tác. Không đụng `Đã hủy` (Cancel).
+- **"The rest" → `Các mục còn lại`** · Finder `vi` có đúng cụm này (`bỏ qua chúng và sao chép các mục còn lại`), AppKit
+  có `phần còn lại của câu` · `high`. `stoppedMovingBack` nói rõ chúng nằm đâu:
+  `Các mục còn lại vẫn ở nơi thao tác di chuyển đã đưa chúng tới.`
+- **`rollbackConfirm.body` viết lại** · tiếng Anh nay thêm lời hứa thứ ba, nên bản vi nối vế "ghi đè" vào câu đầu và
+  mượn **nguyên văn** câu đuôi của `bodyUndoByDeleting`:
+  `Cmdr bỏ qua những gì nó không chắc chắn, nên có thể còn sót lại vài thứ.` Bốn khóa `body*` là bốn biến thể của một
+  hộp thoại, nên phần đuôi chung phải giống nhau từng chữ · `high`.
+- Cả 18 giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
+  không phát sinh `''` của ICU; mọi `{countText}` / `{count}` / `{name}` giữ nguyên, và mỗi `plural` chỉ có một nhánh
+  `other`.
+
+### `cancelRollback.stagedLeftover.*` (phần Cmdr tự để lại ở đích)
+
+Thêm ngày 2026-09-02. Hai dòng về một tệp làm việc do chính Cmdr tạo ra và không xóa được khỏi đích. Chúng KHÔNG thuộc
+danh sách `reason.*`: ở đó Cmdr bảo vệ tệp của người dùng, còn đây là phần thừa của chính Cmdr.
+
+- **`unfinished copy` → `bản sao chưa hoàn chỉnh`** · `bản sao` là danh từ trong macOS `NE111` ("giữ lại bản sao có thể
+  tiếp tục"), `hoàn chỉnh` là từ Apple dùng cho "complete" (macOS `LA33`: "không hoàn chỉnh"); dùng `chưa` thay cho
+  `không` vì việc sao chép chỉ mới dừng giữa chừng · `high`
+- **`at the destination` → `ở đích`** · từ của catalog (`conflictsUnknown`) · `high`
+- **`transfer` (danh từ) → `lần truyền`** · catalog đã dùng (`errors.listing.deviceReconnecting.explanation`: "sau một
+  lần truyền bị hủy hoặc bị gián đoạn") · `high`
+- ⚠️ **`trong một lần truyền sau`, ❌ không bao giờ "lần tới".** Việc dọn dẹp của Cmdr bỏ qua mọi thứ chưa đủ một giờ,
+  nên thử lại ngay sẽ không dọn được gì. Một lời hứa không giữ được chính là lỗi mà dòng này sinh ra để loại bỏ.
+
+## Màn hình chặn khi WebKit quá cũ (`main.oldWebkit.*`, 2026-09-02)
+
+Ba chuỗi Cmdr hiển thị thay cho giao diện khi Safari của máy Mac quá cũ. Chúng nằm trong lớp vỏ HTML chứ không nằm trong
+app, nên đây là thứ duy nhất người dùng đó thấy được của Cmdr.
+
+- **`Software Update` → `Cập nhật phần mềm`** · tên bảng trong Cài đặt hệ thống của macOS; dấu vết Tier 1 từ Finder xác
+  nhận cụm từ (`Apple Device Software Update File` → `Tệp cập nhật phần mềm thiết bị Apple`) · `high`.
+- **`Quit` → `Thoát`** · đã có trong glossary, khớp với macOS AppKit · `high`.
+- **`Safari`, `Mac` và `15.4` giữ nguyên.** `Safari` nay nằm trong `BRAND_WORDS`.
+- Dấu thanh đầy đủ ở mọi chữ, theo quyết định trong `style.md`.
+
+## Thông báo về macOS cũ (`main.oldMacos.*`, 2026-09-02)
+
+Hộp thoại hiện đúng một lần trên máy Mac thấp hơn macOS 12: Cmdr vẫn chạy, nhưng nằm ngoài dải đã kiểm thử. Giọng thành
+thật và thoải mái, không xin lỗi và không cảnh báo, vì ứng dụng vẫn chạy được.
+
+- **`supported` → `hỗ trợ`** · macOS Finder (`… vì thao tác không được hỗ trợ.`) · `high`.
+- **`X and up` → `X trở lên`** · macOS SystemSettings (`… yêu cầu OS X %@ trở lên.`) · `high`.
+- **`best effort` → `chỉ cố hết sức thôi`** · pile không có thuật ngữ này (chỉ có định nghĩa QoS mạng) · `high` cho cách
+  diễn đạt. Cố ý không dịch sát.
+- **`fixes` → `việc khắc phục`, không phải `sửa lỗi`** · `lỗi` thuộc thanh ghi mà giọng nói tránh; `khắc phục` nói đúng
+  việc mà không mang chữ đó.
+- **Câu cuối là David ở ngôi thứ nhất, dùng `mình`**, đúng như `onboarding.stepBeta.greeting`; người dùng vẫn là `bạn`.
+
+## Ask Cmdr xem bên trong tệp: hai nhãn công cụ + ba khóa đồng ý (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+Năm khóa cho công cụ `inspect_file` (Ask Cmdr đọc một phần có giới hạn của tệp khi được hỏi) và màn hình đồng ý viết lại
+quanh nó. Dùng lại các thuật ngữ đã chốt (tệp nén → `tệp nén`, văn bản → `văn bản`, dòng → `dòng`, ảnh → `ảnh`, thẻ →
+`thẻ`, nhà cung cấp → `nhà cung cấp`, đề xuất → `đề xuất`, phê duyệt → `phê duyệt`). Hai câu cuối của `contentsRule`
+(tìm kiếm ảnh; đề xuất chờ phê duyệt) lấy **nguyên văn** từ khóa cũ `askCmdr.consent.noContents`, và câu thứ hai của
+`whatsNew.body` giữ nguyên. Thuật ngữ mới:
+
+- **thumbnail → `hình thu nhỏ`** · macOS AppKit `WindowTabs` ("thumbnail of the tab picker image" →
+  `hình thu nhỏ của hình ảnh bộ chọn tab`), thuật ngữ Microsoft (`thumbnail` → `hình thu nhỏ`), KDE Dolphin và Xfce
+  Thunar (`Thumbnails` → `Hình thu nhỏ`); chỉ GNOME Nautilus nói `ảnh thu nhỏ` · `high`. Khóa `noContents` cũ (nay đã
+  bỏ) từng viết `ảnh thu nhỏ`, và không chỗ nào khác trong catalog dùng từ này, nên đổi theo phe macOS + MS không gây
+  lệch. Thêm một lý do ngữ nghĩa: trong câu `toàn bộ tệp, ảnh hay hình thu nhỏ`, chữ `hình` tách "thumbnail" khỏi
+  "photo" (`ảnh`) đứng ngay trước nó.
+- **camera (của một bức ảnh) → `máy ảnh`; "camera details" → `thông tin máy ảnh`** · macOS AppKit
+  (`NSStillCameraTemplate` → `máy ảnh`), thuật ngữ Microsoft (`camera` → `máy ảnh`), GNOME Nautilus (`Camera Brand` →
+  `Nhãn hiệu máy ảnh`, `Camera Model` → `Kiểu máy ảnh`); catalog đã có `daemon máy ảnh của macOS` (`mtp.connectedToast`)
+  · `high`. Xfce Thunar nói `Hiệu máy` (bỏ chữ ảnh) nhưng là thiểu số. "details" ở đây là thông tin EXIF, nên viết
+  `thông tin` (cùng chữ với `Thông tin tệp, không phải nội dung` ở `askCmdr.renameReview.evidence.metadata`), không phải
+  `chi tiết` (macOS `Hiển thị Chi tiết` là nút mở rộng một hộp thoại, nghĩa khác).
+- **location / "where it was taken" (của ảnh) → `vị trí chụp`** · `vị trí` là "location" của macOS Finder (`Location` →
+  `Vị trí`, `Get Location` → `Lấy vị trí`) và Microsoft (`location` → `vị trí`, nghĩa địa lý → `vị trí địa lý`); `chụp`
+  (chụp ảnh) nói rõ đây là nơi bấm máy, không phải đường dẫn tệp (catalog dùng `vị trí` cho đường dẫn/thư mục ở
+  `fileExplorer.navigation.locationUnreachableToast`, `commands.paneCopyPath*`) · `high`. Dùng cùng một cụm cho cả
+  "location" (`item.contents`, `whatsNew.body`) lẫn "including where it was taken" (`kể cả vị trí chụp` trong
+  `contentsRule`), để ba khóa trên một màn hình gọi cùng một thứ bằng cùng một tên.
+- **page (của PDF) → `trang`** · macOS AppKit `Printing` (`Page %ld` → `Trang %ld`, `No pages from the document` →
+  `Chưa chọn trang nào`), thuật ngữ Microsoft (`page` → `trang`), KDE Dolphin (`Page Count` → `Số trang`) · `high`. "PDF
+  pages" → `vài trang PDF`; "a few pages of a PDF" → `vài trang của một tệp PDF`. `PDF` giữ nguyên (tên chuẩn).
+- **title and author (của PDF) → `tiêu đề và tác giả`** · title: macOS AppKit `Common` (`Title` → `Tiêu đề`), Microsoft
+  (`Title` → `Tiêu đề`), Dolphin (`Tiêu đề`); catalog đã dùng `Tiêu đề trò chuyện`. author: Microsoft (`author` →
+  `tác giả`, biến thể `người tạo` là nghĩa "creator"), Dolphin (`Author` → `Tác giả`); macOS không có chuỗi "author"
+  trong kho · `high`.
+- **"what's inside an archive" → `những gì bên trong một tệp nén`; "the list of files inside an archive" →
+  `danh sách các tệp bên trong một tệp nén`** · `bên trong` là cách catalog đã nói "inside"
+  (`Cmdr không đọc gì bên trong tệp này`, `văn bản bên trong hình ảnh`), và `những gì` là khung của khóa chị em
+  `item.envelope` (`Những gì bạn đang xem ngay bây giờ`) · `high`.
+- **"look inside files" (nhãn công cụ) → `Đang xem bên trong tệp` / `Đã xem bên trong tệp`** · cùng khuôn
+  `Đang … / Đã …` với các nhãn chị em (`Đang liệt kê một thư mục`, `Đang đọc nội dung trong ảnh của bạn`), cùng chữ
+  `bên trong` như trên; `tệp` trần vì tiếng Việt không đánh dấu số, nên nhãn trung tính cho một hay 200 tệp · `high`.
+  Cùng gốc `xem bên trong` được dùng lại ở `whatsNew.body` (`có thể xem bên trong tệp mà bạn hỏi đến`).
+- **"a photo's …" → `… của một bức ảnh`** · catalog dùng `ảnh` trần cho "photo", nhưng `thông tin máy ảnh của ảnh` lặp
+  chữ `ảnh` hai lần liền và đọc rối; loại từ `bức` là cách tiếng Việt chuẩn đếm một tấm ảnh, và Photos của Apple viết
+  `Chọn ảnh` / `Cắt ảnh` (không loại từ) chỉ ở nhãn nút, không ở câu văn · `tentative` (không có nguồn kho cho loại từ;
+  chỉ dùng khi "ảnh" đứng cạnh "máy ảnh"). Ở chỗ "photos" không đứng cạnh "máy ảnh" thì vẫn `ảnh` trần
+  (`toàn bộ tệp, ảnh hay hình thu nhỏ`, `Tìm kiếm ảnh`, `các ảnh khớp`).
+- **"whole files" → `toàn bộ tệp`** · catalog đã có `toàn bộ đĩa`, `toàn bộ đường dẫn`,
+  `bỏ qua toàn bộ {skippedText} tệp` · `high`. Không dùng `chính các tệp` của khóa cũ: câu mới không còn hứa "không gửi
+  nội dung tệp", nên `toàn bộ` (whole) là chữ mang đúng ranh giới mới.
+- **"a limited part of it" → `một phần có giới hạn của tệp đó`** · `có giới hạn` đã có trong catalog
+  (`một hệ thống tệp có giới hạn`) · `high`. "some lines of text" → `vài dòng văn bản`; "some text" / "some of its text"
+  → `một ít văn bản` / `một phần văn bản của tệp` (không có nguồn kho cho lượng từ; chữ thường ngày) · `tentative`.
+- **"works the same way" → `cũng hoạt động theo cách đó`** · `hoạt động` là "work/operate" của Microsoft; viết
+  `cũng … theo cách đó` để nối vào câu trước · `tentative` (không có mẫu câu trong kho).
+- Không giá trị nào chứa dấu nháy đơn ASCII nên không phát sinh `''` của ICU; không giá trị nào giống tiếng Anh nên
+  không cần `sameAsSourceJustification`. Dấu phẩy trước `và` trong danh sách bỏ đi theo các khóa chị em
+  (`thư mục hiện tại, con trỏ, mục đã chọn và các ổ đĩa`).
+- **Hai câu "chỉ xem bên trong khi bạn hỏi" (`askCmdr.empty.hint`, `settings.askCmdr.intro`)** · câu đầu của cả hai giữ
+  nguyên; câu thứ hai viết lại theo tiếng Anh mới: "looks inside a file only when you ask about it" →
+  `chỉ xem bên trong một tệp khi bạn hỏi về tệp đó` (cùng gốc `xem bên trong` với nhãn công cụ ở trên), "never changes a
+  file without your approval" → `không bao giờ thay đổi một tệp khi chưa được bạn phê duyệt` (`phê duyệt` là chữ của
+  `contentsRule`) · `high`. ❌ Bỏ hẳn `chỉ đọc` / `không bao giờ đọc nội dung tệp` /
+  `không bao giờ thay đổi bất cứ điều gì` của bản cũ: tiếng Anh mới không còn hứa những điều đó.
+
+## Hai chú giải của nút Rollback (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Bề mặt mới: chú giải của nút giờ nói rõ lần hoàn tác NÀY làm gì với các tệp, và nút bị tắt ngay khi một lần di chuyển
+giữa hai hệ thống tệp bước sang chặng cuối (xóa các bản gốc, khi mọi thứ đã ở đích).
+
+- **`rollbackTooltipStopAndMoveBack` → `Dừng lại và đưa trở lại mọi tệp đã di chuyển đến giờ`** · khung câu lấy từ khóa
+  cùng cặp `rollbackTooltip` (`Dừng lại và …`), còn `đưa trở lại` là cách nói đã chốt cho việc về chỗ cũ
+  (`cancelRollback.doneMovingBack`: „Đã đưa trở lại…”) · `high`. ❌ Không dùng `xóa`: hoàn tác một lần di chuyển không
+  xóa gì.
+- **`rollbackAlreadyLandedTooltip`** · câu đầu lặp lại hình ảnh của `cancelRollback.moveAlreadyLanded` („đều đã ở
+  đích”), `hoàn tác` là từ đã chốt cho rollback (`rollbackUnavailableTooltip`), và `Hủy` là nhãn của nút bên cạnh
+  (`fileOperations.button.cancel`) nên giữ nguyên · `high`.
+- Không có `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.

@@ -55,6 +55,7 @@ const AU_DIVERGES_FROM_GB: readonly string[] = [
   'commands.selectionDeselectAll.label',
   'commands.selectionDeselectFiles.label',
   'commands.selectionDeselectFiles.description',
+  'commands.selectionInvert.description',
   'menu.select.deselectAll',
   'menu.select.deselectFiles',
   'settings.selection.recentSelections.maxCount.description',

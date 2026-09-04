@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::VolumeHost;
-use super::activity::BusyVolumes;
+use super::activity::{self, BusyVolumes};
 use super::analytics::RecordingAnalytics;
 use super::credentials::{InMemoryCredentials, StoredCredentials};
 use super::events::{RecordingVolumeEvents, VolumeConnection};
@@ -46,7 +46,7 @@ fn a_detached_host_answers_every_seam() {
     host.indexing().watch_gap("vol", WatchGap::WatcherStopped);
     host.indexing().resume_after_reconnect("vol");
     assert!(
-        host.activity().volume_idle_for("vol", Duration::from_millis(500)),
+        activity::volume_idle_for(host.activity(), "vol", Duration::from_millis(500)),
         "with no user around, bulk work must never stand aside"
     );
     host.analytics().record("something_happened", &[("outcome", "fine")]);

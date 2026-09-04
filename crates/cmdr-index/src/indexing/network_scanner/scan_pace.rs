@@ -13,6 +13,13 @@
 //! claims arrive through the host policy seam (`indexing::host::policy`), asked once
 //! per top-up and never per entry.
 //!
+//! "Browsing" covers a listing's REAL duration, not a window after it started: the
+//! host holds a per-volume lease for as long as a foreground listing runs, so a
+//! folder that takes ten seconds to come back holds this walk at one listing in
+//! flight for those ten seconds. That is exactly the case the 10.7 s measurement
+//! above describes, and it costs nothing structurally, because of the next
+//! paragraph.
+//!
 //! **Forward progress is structural, not a floor.** The yielding budget is 1, never
 //! 0, so there is no starvation case to defend against with a quota or a
 //! consecutive-yield cap: a user who browses the share continuously for an hour
@@ -50,11 +57,12 @@ pub(crate) const FULL_LISTING_BUDGET: usize = 64;
 /// listing at a time is slow, never stopped.
 pub(crate) const YIELDING_LISTING_BUDGET: usize = 1;
 
-/// How long after a navigation a share still counts as "in use". Long enough to
-/// span the gaps in real browsing (a person opens a folder every second or so), so
-/// a session of clicking around is ONE throttled stretch rather than a flapping
-/// budget; short enough that the scan is back at full speed a couple of seconds
-/// after the user stops.
+/// How long after a foreground operation ENDS a share still counts as "in use". The
+/// window that covers the GAPS in real browsing (a person opens a folder every
+/// second or so), so a session of clicking around is ONE throttled stretch rather
+/// than a flapping budget; short enough that the scan is back at full speed a couple
+/// of seconds after the user stops. The operations themselves are covered exactly,
+/// by the host's leases, so this number no longer has to guess how long one takes.
 pub(crate) const SCAN_FOREGROUND_IDLE_THRESHOLD: Duration = Duration::from_secs(2);
 
 /// PURE: the in-flight listing budget for a share the host reports `clearance` on.

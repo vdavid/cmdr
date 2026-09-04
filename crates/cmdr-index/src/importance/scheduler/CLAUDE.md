@@ -1,16 +1,20 @@
 # Importance scheduler
 
 Fills each volume's store: `mod.rs` (the `ImportanceScheduler` handle, `ScoringPolicy`, `PassCoordinator`, the pass),
-`wiring.rs` (construction, bus subscriptions + sweep, throttle, spawns), `walk.rs` (the O(dirs) full pass),
+`wiring.rs` (construction, `wire_volume` + its two callers, throttle, spawns), `walk.rs` (the O(dirs) full pass),
 `scoped_walk.rs` (the O(touched) incremental walk + batch plan), `recompute.rs` (signals + score + write),
 `differential.rs` (the two-walk harness). Volume-kind policy and floors: `../CLAUDE.md`.
 
 ## Must-knows
 
-- **Drive full recompute off the bus `ScanCompleted`, the startup sweep, and the hourly `FULL_REFRESH_INTERVAL` tick, ❌
-  NEVER phase events** (network volumes never emit them). A volume Fresh at launch never re-fires, so the sweep also
-  runs `enqueue_initial_full_pass_if_unscored`. Subscribe to registrations BEFORE the sweep, or a share mounted in the
-  gap is never wired.
+- **Drive full recompute off the bus `ScanCompleted`, `wire_volume`'s initial-pass probe, and the hourly
+  `FULL_REFRESH_INTERVAL` tick, ❌ NEVER phase events** (network volumes never emit them). A volume Fresh at launch
+  never re-fires, so `enqueue_full_pass_if_needed` is what scores it. Subscribe to registrations BEFORE the sweep, or a
+  share mounted in the gap is never wired.
+- **❌ Never move that probe back into the startup sweep alone.** Root's index starts on a spawned task while `start()`
+  runs right after it, so the sweep usually sees an EMPTY registry and root arrives on the registration bus — a
+  sweep-only probe is unreachable in prod and fails silently (a classifier fix then never reaches existing rows). Keep
+  it in `wire_volume`, which both paths share. `wiring_tests.rs`.
 - **Coalesce per volume through `PassCoordinator`**: one pass plus one re-run. Incremental has its OWN key, so a rescore
   and a full pass never block each other.
 - **The full walk is O(dirs) in a SMALL CONSTANT, every part of that shape measured.** Dirs live in the shared

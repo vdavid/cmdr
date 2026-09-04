@@ -59,6 +59,14 @@
   "@fileExplorer.diskSpace.freeShort": {
     "sourceHash": "b8f52a6"
   },
+  "fileExplorer.diskSpace.used": "Használt: {usedText}",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "Ennek a tárhelynek nincs méretkorlátja, ezért a sávban nincs mit megtölteni.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "0c363c5"
+  },
   "fileExplorer.diskSpace.lowNote": "Ez a sáv azért piros, mert a köteten kevés a szabad hely.",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"

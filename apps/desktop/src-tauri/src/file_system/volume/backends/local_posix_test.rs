@@ -344,6 +344,44 @@ async fn test_scan_for_copy_directory() {
     assert_eq!(result.dedup_bytes, 10);
 }
 
+/// The shared stop assertions, over the backend that serves every OS-mounted
+/// network share.
+///
+/// ❗ This is the `/Volumes/<share>` case, and it is the one that hurts most: a
+/// `readdir` on a NAS that has spun its disks down takes seconds and a subtree
+/// takes minutes, all of it inside one `spawn_blocking`. The boundary here is per
+/// entry, through the blocking twin that parks the pool thread.
+#[tokio::test]
+async fn a_batch_scan_stops_when_it_is_told_to() {
+    use std::fs;
+
+    let test_dir = TestDir::new("scan_stop_told");
+    let tree = test_dir.join("tree");
+    fs::create_dir(&tree).unwrap();
+    fs::write(tree.join("a.txt"), "a").unwrap();
+    fs::write(tree.join("b.txt"), "bb").unwrap();
+
+    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    cmdr_fs::volume::conformance::assert_batch_scan_stops_when_told(&volume, Path::new("tree")).await;
+}
+
+#[tokio::test]
+async fn a_batch_scan_asks_its_boundary_inside_the_walk() {
+    use std::fs;
+
+    let test_dir = TestDir::new("scan_stop_per_entry");
+    let tree = test_dir.join("tree");
+    fs::create_dir(&tree).unwrap();
+    fs::write(tree.join("a.txt"), "a").unwrap();
+    fs::write(tree.join("b.txt"), "bb").unwrap();
+    let nested = tree.join("nested");
+    fs::create_dir(&nested).unwrap();
+    fs::write(nested.join("c.txt"), "ccc").unwrap();
+
+    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    cmdr_fs::volume::conformance::assert_batch_scan_asks_inside_the_walk(&volume, Path::new("tree"), 4).await;
+}
+
 /// A tree where one 1 KiB inode is shared by three hardlinks plus one
 /// standalone 4 KiB file. `total_bytes` is the cross-volume write footprint
 /// (every link materializes separately at the destination): 3 * 1024 + 4096
@@ -550,10 +588,19 @@ async fn test_get_space_info() {
     let volume = LocalPosixVolume::new("Test", "/tmp");
     let space = volume.get_space_info().await.unwrap();
 
-    // Basic sanity checks
-    assert!(space.total_bytes > 0);
-    assert!(space.available_bytes <= space.total_bytes);
-    assert!(space.used_bytes <= space.total_bytes);
+    // Basic sanity checks. A mounted filesystem always has a ceiling, so the
+    // reading is always `Bounded`.
+    let SpaceInfo::Bounded {
+        total_bytes,
+        available_bytes,
+        used_bytes,
+    } = space
+    else {
+        panic!("a local filesystem always has a capacity, got {space:?}");
+    };
+    assert!(total_bytes > 0);
+    assert!(available_bytes <= total_bytes);
+    assert!(used_bytes <= total_bytes);
 }
 
 #[tokio::test]

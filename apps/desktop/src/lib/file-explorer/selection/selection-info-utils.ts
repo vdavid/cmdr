@@ -73,7 +73,7 @@ export function tierClassForUnit(unit: string): string {
  * the user's at-a-glance "how big is this" signal stays meaningful even when
  * every row uses the same fixed unit.
  *
- * `opts.rounded` drops the fraction digits, for a live readout where the number
+ * `opts.rounded` is the live form (a tenth below ten, whole units above), for a readout where the number
  * changes several times a second (see `formatFileSizeWithFormat`). It doesn't
  * apply to `'bytes'` mode, which has no fraction digits to drop.
  */

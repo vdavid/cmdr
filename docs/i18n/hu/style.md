@@ -142,6 +142,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   slots (`msgstr[0]` = "%'d mappa kijelölve" AND `msgstr[1]` = "%'d mappa kijelölve", never "mappák"). This is the
   single biggest plural gotcha for Hungarian.
 - No grammatical gender, which removes a whole class of agreement problems.
+- **A numeral subject takes a SINGULAR predicate; a later clause may go plural.** `3 elem változatlan maradt`, never
+  `3 elem változatlanok maradtak`. Once the sentence moves past the colon (or into a second clause) it refers to the
+  set, so a plural verb is fine and idiomatic there: `3 elem változatlan maradt: módosultak, …`. Shipped example:
+  `askCmdr.renameUndo.skipReason.drift.counted`.
 
 ## Notes and decisions
 
@@ -154,7 +158,28 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   Restructure so a placeholder isn't suffixed: put it after a postposition or in a neutral slot ("itt: {path}", not
   "{path}-ban").
 - **Definite vs indefinite conjugation and the `a`/`az` article** depend on the following word, so phrasing around a
-  placeholder needs care; prefer constructions that don't hinge on the inserted value's first sound.
+  placeholder needs care; prefer constructions that don't hinge on the inserted value's first sound. **When an article
+  genuinely has to precede a name placeholder, write `A(z) „{name}”`** — the `a(z)` house form plus `„…”` quotes, both
+  macOS Tier 1 (`A(z) „^0” elemet…`) and the catalog's majority. ❌ Never a bare `A {name}`: it renders "A alma.txt" on
+  every vowel-initial name. Nothing is needed after a colon or in a possessive (`Letöltve: {fileName}`). Evidence and
+  the families that were corrected to it: `glossary.md` § A megszakított visszagörgetés eredményértesítése.
+  - **Quotes only around a NAME the user typed or owns.** A brand or provider placeholder takes bare `a(z) {name}`
+    (`a(z) **{name}** kezeli`): the bold or the sentence already delimits it, and `„Dropbox”` reads as scare quotes.
+  - **A placeholder with ONE possible value gets the real article, never the hedge.** `errors.provider.iCloud.*`'s
+    `{name}` is always `iCloud Drive`, so it's `az **{name}**`. The `a(z)` form answers an UNKNOWN first sound; where
+    nothing is unknown it's just noise.
+  - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
+    carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on leaves
+    a half-corrected family, which is worse than either end state.
+  - **In front of a NUMBER the article varies too, so ❌ never a bare `a {countText}`.** It follows the numeral's
+    pronunciation: `a három`, `a négy`, but `az öt`, `a száz` but `az ezer`. In running prose the hedge is the answer
+    and two shipped keys use it (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`); don't sweep
+    those.
+  - **For the phrase "all N X" specifically, prefer `Az összes X ({N})` over `Mind a(z) N X`.** macOS Hungarian words it
+    that way (`Az összes lemez (^0) kiadásához…`), and it's strictly better: the article now agrees with `összes`, a
+    word we choose, so nothing hinges on the runtime value at all. Worth the swap wherever the count can move to a
+    parenthetical or behind a colon, and near-mandatory in a short button, where the hedge is most visible. Worked case:
+    `glossary.md` § `askCmdr.renameUndo.undoJob`.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
 - **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`.** `Cmdr` is pronounced "commander", so
@@ -199,6 +224,17 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Menübe irányításkor a `-ból/-ből` alak a természetes**: `küldj új jelentést a Súgó menüből`. A macOS ugyanezt önöző
   felszólításként írja (`válassza az Apple menü > Rendszerbeállítások elemet`), a menü NEVE onnan jön, a MONDAT a miénk,
   tehát tegező marad.
+- **Ha két funkció ANGOLJA betű szerint azonos, a magyarnak is egynek kell lennie** (`desktop-i18n-term-consistency`),
+  és ilyenkor a szállított alak nyer, még ha egy újabb kulcscsalád szebb keretet találna is. Ha a kényszerített alak
+  csak a család EGY sorát érintené, az egész családot igazítsd hozzá: az olvasó egy felsorolásban látja őket egyszerre,
+  a két funkció eltérését viszont soha. Eset és érvelés: `glossary.md` § A megszakított visszagörgetés
+  eredményértesítése.
+- **Egy PDF oldala `oldal`, soha nem `lap`**: a `lap` a `tab` foglalt szava. Összetételben kötőjellel: `PDF-oldalak`.
+  Fotó esetén a hely `hol készült` / `készítési helye`, a gép adatai `kameraadatok`. Forrás: `glossary.md` § Belenézés a
+  fájlokba.
+- **Az `askCmdr.tool.*` címkepár akkor is a családi mintát követi, ha a próza más igét használ**: a hozzájárulási szöveg
+  `belenéz`-e az eszközsoron `Fájlok átnézése` / `Fájlok átnézve` lesz, mert a `belenéz`-nek nincs állapotot mondó
+  `-va/-ve` alakja. Indoklás: `glossary.md` § Belenézés a fájlokba.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

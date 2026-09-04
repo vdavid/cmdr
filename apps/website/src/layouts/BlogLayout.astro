@@ -52,13 +52,13 @@ if (ogImage) {
     <main class="mx-auto max-w-3xl px-6 pt-32 pb-24">
         <script type="application/ld+json" set:html={JSON.stringify(blogPostingSchema)} />
         <header class="mb-12">
-            <time class="text-sm text-[var(--color-text-tertiary)]" datetime={date}>
+            <time class="text-sm text-text-tertiary" datetime={date}>
                 {formattedDate}
             </time>
-            <h1 class="mt-2 mb-4 text-4xl font-bold tracking-tight text-[var(--color-text-primary)]">
+            <h1 class="mt-2 mb-4 text-4xl font-bold tracking-tight text-text-primary">
                 {title}
             </h1>
-            <p class="text-lg text-[var(--color-text-secondary)]">
+            <p class="text-lg text-text-secondary">
                 {description}
             </p>
         </header>

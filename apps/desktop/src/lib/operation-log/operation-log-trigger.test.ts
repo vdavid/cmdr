@@ -36,6 +36,7 @@ function row(opId: string): OperationRow {
     rollbackState: 'rollbackable',
     notRollbackableReason: null,
     rollsBackOpId: null,
+    inverseOpId: null,
     sourceVolumeId: 'root',
     destVolumeId: null,
     startedAt: 1_700_000_000,

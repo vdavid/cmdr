@@ -5,7 +5,7 @@
 
 use super::test_support::*;
 use super::*;
-use crate::file_system::volume::backends::archive::mutator::{AddEntry, AddSource};
+use cmdr_archive::mutator::{AddEntry, AddSource};
 
 #[tokio::test]
 async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled() {

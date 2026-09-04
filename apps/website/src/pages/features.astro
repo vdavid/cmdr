@@ -4,21 +4,46 @@ import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import DownloadButton from '../components/DownloadButton.astro'
 import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro'
+import PageHeader from '../components/PageHeader.astro'
 import StatusPill from '../components/StatusPill.astro'
 import Icon from '../components/icons/Icon.astro'
 import type { IconName } from '../components/icons/icon-map'
 import { features, type Feature } from '../lib/feature-status'
 
 /**
- * Presentation map over the repo-root `feature-status.json`: one flat bento grid, no
- * sections. Each card carries a yellow category chip and a cyan status pill; flagship
- * cards span two columns with a trimmed blurb, the rest render the JSON's honest
- * one-line note. The completeness check below fails the build when the JSON and this
- * map drift, so a new feature can't silently miss the page.
+ * Presentation map over the repo-root `feature-status.json`: three tiers (Core, Indexing,
+ * AI), each a bento grid. Each card carries a cyan status pill, plus a yellow sub-category
+ * chip when it says something the tier heading doesn't; flagship cards span two columns
+ * with a trimmed blurb, the rest render the JSON's honest one-line note. The completeness
+ * check below fails the build when the JSON and this map drift, so a new feature can't
+ * silently miss the page.
  */
+const tierOrder = ['Core', 'Indexing', 'AI'] as const
+type Tier = (typeof tierOrder)[number]
+
+const tierMeta: Record<Tier, { id: string; title: string; description: string }> = {
+    Core: {
+        id: 'core',
+        title: 'Core',
+        description: 'The file manager itself: two panes, safe file operations, and everything you reach for daily.',
+    },
+    Indexing: {
+        id: 'indexing',
+        title: 'Indexing',
+        description: 'Cmdr knows your whole drive, so finding a file takes a second instead of a coffee break.',
+    },
+    AI: {
+        id: 'ai',
+        title: 'AI',
+        description: 'A model that runs on your Mac, plus your own cloud keys when you want a smarter one.',
+    },
+}
+
 interface CardSpec {
     id: string
-    category: 'Find stuff' | 'AI' | 'Core' | 'Keyboard' | 'Connect' | 'Extras'
+    tier: Tier
+    /** Sub-category chip; skipped when it just repeats the tier heading. */
+    category: 'Find stuff' | 'AI' | 'Core' | 'Keyboard' | 'Connect' | 'Extras' | 'Indexing'
     icon: IconName
     flagship?: boolean
     /** Marketing title override; defaults to the JSON name. */
@@ -28,60 +53,68 @@ interface CardSpec {
 }
 
 const cards: CardSpec[] = [
-    // Three highlights up top (the only flagship-width cards), each paired with a related
-    // small card that fills the third column.
+    // Core: the flagship up top, then files, navigation, keyboard, connectivity, extras.
+    {
+        id: 'file-explorer',
+        tier: 'Core',
+        category: 'Core',
+        icon: 'folder',
+        flagship: true,
+        title: 'Dual-pane file explorer',
+        blurb: 'Two panes, virtual scrolling through 100k+ files, live file watching, and Quick Look. The heart of the app.',
+    },
+    { id: 'file-operations', tier: 'Core', category: 'Core', icon: 'copy' },
+    { id: 'file-viewer', tier: 'Core', category: 'Core', icon: 'eye' },
+    { id: 'tabs', tier: 'Core', category: 'Core', icon: 'app-window' },
+    { id: 'drag-and-drop', tier: 'Core', category: 'Core', icon: 'pointer' },
+    { id: 'operation-log', tier: 'Core', category: 'Core', icon: 'history' },
+    { id: 'archives', tier: 'Core', category: 'Core', icon: 'file-archive' },
+    { id: 'select-files', tier: 'Core', category: 'Core', icon: 'list-checks' },
+    { id: 'go-to-path', tier: 'Core', category: 'Core', icon: 'navigation' },
+    { id: 'keyboard-shortcuts', tier: 'Core', category: 'Keyboard', icon: 'keyboard' },
+    { id: 'command-palette', tier: 'Core', category: 'Keyboard', icon: 'square-chevron-right' },
+    { id: 'network-drives', tier: 'Core', category: 'Connect', icon: 'server' },
+    { id: 'android-devices', tier: 'Core', category: 'Connect', icon: 'smartphone' },
+    { id: 'more-file-systems', tier: 'Core', category: 'Connect', icon: 'cloud' },
+    { id: 'windows-linux', tier: 'Core', category: 'Connect', icon: 'monitor' },
+    { id: 'git-browser', tier: 'Core', category: 'Extras', icon: 'git-branch' },
+    { id: 'download-notifications', tier: 'Core', category: 'Extras', icon: 'bell' },
+    { id: 'plugins', tier: 'Core', category: 'Extras', icon: 'puzzle' },
+    // Indexing: two flagships, each paired with a small card that fills the third column.
     {
         id: 'full-disk-index',
-        category: 'Find stuff',
+        tier: 'Indexing',
+        category: 'Indexing',
         icon: 'database',
         flagship: true,
         title: 'Live full-disk index',
-        blurb: 'Indexes your whole drive in ~4 minutes, then stays current by watching real-time file system events. Folder sizes show right in the listing, and a background verifier makes sure they don\'t drift.',
+        blurb: "Indexes your whole drive in ~4 minutes, then stays current by watching real-time file system events. Folder sizes show right in the listing, and a background verifier makes sure they don't drift.",
     },
-    { id: 'go-to-path', category: 'Find stuff', icon: 'navigation' },
+    { id: 'image-search', tier: 'Indexing', category: 'Find stuff', icon: 'scan-text' },
     {
         id: 'search',
+        tier: 'Indexing',
         category: 'Find stuff',
         icon: 'search',
         flagship: true,
         title: 'Smart search',
         blurb: 'Find files like "that PDF contract from last month". AI turns it into filters, see hits in a second.',
     },
-    { id: 'select-files', category: 'Core', icon: 'list-checks' },
-    { id: 'image-search', category: 'Find stuff', icon: 'scan-text' },
+    { id: 'disk-space-visualizer', tier: 'Indexing', category: 'Indexing', icon: 'chart-pie' },
+    // AI: the local model up top, then what it powers.
     {
         id: 'local-ai',
+        tier: 'AI',
         category: 'AI',
         icon: 'sparkles',
         flagship: true,
         title: 'Private LLM included',
         blurb: 'Cmdr ships with a 3B language model that runs on your Mac. Nothing leaves your machine. For a smarter AI, you can connect OpenAI/Anthropic/Google/etc., or any OpenAI-compatible endpoint.',
     },
-    { id: 'ai-rename', category: 'AI', icon: 'brain' },
-    // Core
-    { id: 'file-explorer', category: 'Core', icon: 'folder' },
-    { id: 'file-operations', category: 'Core', icon: 'copy' },
-    { id: 'operation-log', category: 'Core', icon: 'history' },
-    { id: 'file-viewer', category: 'Core', icon: 'eye' },
-    { id: 'tabs', category: 'Core', icon: 'app-window' },
-    { id: 'drag-and-drop', category: 'Core', icon: 'pointer' },
-    { id: 'archives', category: 'Core', icon: 'file-archive' },
-    // Details: keyboard + connectivity
-    { id: 'keyboard-shortcuts', category: 'Keyboard', icon: 'keyboard' },
-    { id: 'command-palette', category: 'Keyboard', icon: 'square-chevron-right' },
-    { id: 'network-drives', category: 'Connect', icon: 'server' },
-    { id: 'android-devices', category: 'Connect', icon: 'smartphone' },
-    { id: 'more-file-systems', category: 'Connect', icon: 'cloud' },
-    { id: 'windows-linux', category: 'Connect', icon: 'monitor' },
-    // AI, the rest
-    { id: 'ask-cmdr', category: 'AI', icon: 'messages-square' },
-    { id: 'ai-batch', category: 'AI', icon: 'zap' },
-    { id: 'ai-tell-me', category: 'AI', icon: 'message-circle-question-mark' },
-    // Extras
-    { id: 'git-browser', category: 'Extras', icon: 'git-branch' },
-    { id: 'download-notifications', category: 'Extras', icon: 'bell' },
-    { id: 'disk-space-visualizer', category: 'Extras', icon: 'chart-pie' },
-    { id: 'plugins', category: 'Extras', icon: 'puzzle' },
+    { id: 'ask-cmdr', tier: 'AI', category: 'AI', icon: 'messages-square' },
+    { id: 'ai-rename', tier: 'AI', category: 'AI', icon: 'brain' },
+    { id: 'ai-batch', tier: 'AI', category: 'AI', icon: 'zap' },
+    { id: 'ai-tell-me', tier: 'AI', category: 'AI', icon: 'message-circle-question-mark' },
 ]
 
 // Completeness check: the page must place every JSON feature exactly once.
@@ -101,6 +134,11 @@ const resolved = cards.map((card) => {
     const feature = idToFeatureMap.get(card.id)!
     return { ...card, feature, title: card.title ?? feature.name }
 })
+
+const tiers = tierOrder.map((tier) => ({
+    ...tierMeta[tier],
+    cards: resolved.filter((card) => card.tier === tier),
+}))
 ---
 
 <Layout
@@ -110,93 +148,96 @@ const resolved = cards.map((card) => {
     <Header />
     <main class="mx-auto max-w-6xl px-6 pt-32 pb-24">
         <!-- Hero -->
-        <header class="mb-14 text-center">
-            <h1 class="mb-4 text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl lg:text-5xl">
-                What Cmdr can do
-            </h1>
-            <p class="mx-auto max-w-2xl text-lg text-[var(--color-text-secondary)]">
-                Built in Rust, designed around your keyboard. Cmdr is in open beta: every feature carries an honest
-                status pill, and hovering a pill explains what the status means.
-            </p>
-        </header>
+        <PageHeader title="What Cmdr can do" class="mb-6">
+            Built in Rust, designed around your keyboard. Cmdr is in open beta: every feature carries an honest status
+            pill, and hovering a pill explains what the status means.
+        </PageHeader>
 
         <!-- Total Commander switcher callout -->
-        <p class="mb-10 text-center text-sm text-[var(--color-text-tertiary)]">
+        <p class="mb-14 text-sm text-text-tertiary">
             Switching from Total Commander? See <a href="/blog/total-commander-for-macos" class="link-muted"
                 >how Cmdr compares</a
             >.
         </p>
 
-        <!-- One bento: every feature, one card each -->
-        <div class="grid grid-cols-1 gap-4 [grid-auto-flow:dense] md:grid-cols-2 lg:grid-cols-3">
-            {
-                resolved.map((card) => (
-                    <section
-                        id={card.id}
-                        class:list={[
-                            'flex scroll-mt-24 flex-col gap-2 rounded-2xl border bg-[var(--color-surface)] p-5',
-                            card.flagship && 'md:col-span-2',
-                            card.feature.status === 'planned'
-                                ? 'border-dashed border-[var(--color-border)]'
-                                : 'border-[var(--color-border)]',
-                        ]}
-                    >
-                        <div class="flex items-center gap-2.5">
-                            <Icon name={card.icon} size={24} />
-                            <h2 class="text-base font-semibold text-[var(--color-text-primary)]">{card.title}</h2>
-                        </div>
-                        <p class="flex-1 text-sm text-[var(--color-text-secondary)]">
-                            {card.flagship ? card.blurb : card.feature.note}
-                        </p>
-                        <div class="mt-1 flex flex-wrap items-center gap-2">
-                            <span
-                                class="rounded-full bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-[var(--color-accent-text)]"
+        <!-- Three tiers, one bento each: every feature, one card -->
+        {
+            tiers.map((tier) => (
+                <section id={tier.id} class="mb-14 scroll-mt-24 last:mb-0">
+                    <h2 class="text-2xl font-bold tracking-tight text-text-primary">{tier.title}</h2>
+                    <p class="mt-2 mb-6 text-text-secondary">{tier.description}</p>
+                    <div class="grid grid-flow-dense grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {tier.cards.map((card) => (
+                            <article
+                                id={card.id}
+                                class:list={[
+                                    'flex scroll-mt-24 flex-col gap-2 rounded-2xl border bg-surface p-5',
+                                    card.flagship && 'md:col-span-2',
+                                    card.feature.status === 'planned'
+                                        ? 'border-dashed border-border'
+                                        : 'border-border',
+                                ]}
                             >
-                                {card.category}
-                            </span>
-                            <StatusPill status={card.feature.status} link={false} />
-                            {card.feature.issueUrl && (
-                                <a
-                                    href={card.feature.issueUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="text-xs text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
-                                >
-                                    Track on GitHub
-                                </a>
-                            )}
-                        </div>
-                    </section>
-                ))
-            }
-        </div>
+                                <div class="flex items-center gap-2.5">
+                                    <Icon name={card.icon} size={24} />
+                                    <h3 class="text-base font-semibold text-text-primary">
+                                        {card.title}
+                                    </h3>
+                                </div>
+                                <p class="flex-1 text-sm text-text-secondary">
+                                    {card.flagship ? card.blurb : card.feature.note}
+                                </p>
+                                <div class="mt-1 flex flex-wrap items-center gap-2">
+                                    {card.category !== card.tier && (
+                                        <span class="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-accent-text">
+                                            {card.category}
+                                        </span>
+                                    )}
+                                    <StatusPill status={card.feature.status} link={false} />
+                                    {card.feature.issueUrl && (
+                                        <a
+                                            href={card.feature.issueUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="text-xs text-accent-text underline underline-offset-2 hover:text-accent-hover"
+                                        >
+                                            Track on GitHub
+                                        </a>
+                                    )}
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                </section>
+            ))
+        }
 
-        <p class="mt-10 text-center text-sm text-[var(--color-text-tertiary)]">
+        <p class="mt-10 text-center text-sm text-text-tertiary">
             Found something rough that's not listed? <a
                 href="https://github.com/vdavid/cmdr/issues"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                class="text-accent-text underline underline-offset-2 hover:text-accent-hover"
                 >Report an issue</a
             > and it gets fixed faster. For timing, see the <a
                 href="/roadmap"
-                class="text-[var(--color-accent-text)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"
+                class="text-accent-text underline underline-offset-2 hover:text-accent-hover"
                 >roadmap</a
             >.
         </p>
 
         <!-- Download CTA -->
         <div class="mt-20 text-center">
-            <h2 class="mb-4 text-2xl font-bold text-[var(--color-text-primary)]">
+            <h2 class="mb-4 text-2xl font-bold text-text-primary">
                 Wanna see it for yourself? Get Cmdr now.
             </h2>
-            <p class="mb-8 text-[var(--color-text-secondary)]">
-                Free forever for personal use. No signup, no trial period.
+            <p class="mb-8 text-text-secondary">
+                Free for personal use. No signup, no trial period.
             </p>
             <div class="mx-auto max-w-xs">
                 <DownloadButton variant="card" class="w-full" />
             </div>
-            <p class="mt-3 text-sm text-[var(--color-text-tertiary)]">macOS only · Source-available (BSL 1.1)</p>
+            <p class="mt-3 text-sm text-text-tertiary">macOS only · Source-available (BSL 1.1)</p>
         </div>
 
         <!-- Newsletter -->

@@ -59,17 +59,53 @@ In the `ci.yml` `desktop-e2e-linux` job, runners start fresh, so the base image 
 script builds the base, and an `Export E2E base image` step re-creates the tar for the cache post-step. No registry
 involved.
 
-### Volumes (cargo, target, node_modules)
+### Volumes (cargo, target, node_modules, .svelte-kit)
 
-- `cmdr-cargo-cache`: cargo registry + compiled deps. Remove to force a full crate re-download.
-- `cmdr-target-cache`: compiled Tauri binary. Remove to force app recompilation (fast with cargo cache). Most common
-  operation: `docker volume rm cmdr-target-cache` after Rust/Svelte or feature-flag changes.
-- `cmdr-root-node-modules-cache`: root `node_modules/`. Remove to force `pnpm install`.
-- `cmdr-desktop-node-modules-cache`: desktop `node_modules/`. Remove to force `pnpm install`.
+One volume is global, because it's content-addressed and expensive to refill:
 
-All four are overridable via `CARGO_VOLUME`, `TARGET_VOLUME`, `ROOT_NODE_MODULES_VOLUME`, `DESKTOP_NODE_MODULES_VOLUME`.
-CI sets them to host bind-mount paths (`/tmp/cmdr-docker-cache/...`) so `actions/cache` can persist them (it can't cache
-Docker named volumes).
+- `cmdr-cargo-cache` → `/root/.cargo/registry`: the downloaded crate index and `.crate` sources (NOT compiled
+  artifacts). Remove to force a full crate re-download.
+
+The other four are **per checkout**, suffixed `-<dir name>-<8 hex of the checkout's absolute path>` (so
+`cmdr-target-cache-transfer-fixes-25dacb0e` for a worktree at `.claude/worktrees/transfer-fixes`):
+
+- `cmdr-target-cache-<key>` → `/target`: the whole Linux `CARGO_TARGET_DIR`, ~4.6 GB fresh. Remove to force a full app
+  recompile.
+- `cmdr-root-node-modules-cache-<key>` → `/app/node_modules`: root `node_modules/`. Remove to force `pnpm install`.
+- `cmdr-desktop-node-modules-cache-<key>` → `/app/apps/desktop/node_modules`: same for the desktop package.
+- `cmdr-desktop-sveltekit-cache-<key>` → `/app/apps/desktop/.svelte-kit`: the frontend build state, including the
+  container-private adapter output (`CMDR_FRONTEND_BUILD_DIR`).
+
+`./scripts/e2e-linux.sh --clean` drops exactly this checkout's four; it leaves the shared registry and every other
+checkout alone.
+
+**Why they're keyed, and what it costs.** All four hold state built from the sources bind-mounted at `/app`, and `/app`
+is whichever clone or worktree launched the script. Under one shared set the container paths are identical across
+checkouts, so cargo compares your source mtimes against an rlib another worktree built, calls it fresh, and links a
+`cmdr-fs` from someone else's branch. The tell is a build failure naming API your branch legitimately has
+(`no volume_busy_for_user in volume::host::activity`) with `Compiling cmdr` as the ONLY compile line. `node_modules` and
+`.svelte-kit` are the same class of state, and two checkouts running at once would race inside them. Keying on the path
+rather than the branch is deliberate: the bind mount is what the cache belongs to, so a branch rename or a second
+worktree on the same branch doesn't move a cache.
+
+**What the split costs, measured** (M4 Max, 2026-09-02, `pnpm check desktop-e2e-linux` wall clock; the shared cargo
+registry was warm throughout, and the 320-test run dominates every number): 8m55s on a cold target volume, 8m15s with
+one Rust file edited, 7m13s with nothing to rebuild. So a new checkout pays about **1m40s once**, not a fresh
+workspace's worth of compiling, and a fresh volume weighs ~4.6 GB. Worth knowing before optimizing this: the single
+shared volume it replaced had drifted to 17.4 GB of artifacts from branches long gone, so per-checkout volumes plus the
+reaper below use LESS disk in practice, not more.
+
+**Stale volumes reap themselves.** The script labels the four with `com.cmdr.e2e-linux-cache=1` and
+`com.cmdr.e2e-linux-checkout=<abs path>`, and every run removes labelled volumes whose checkout path is gone from disk;
+in-use volumes refuse removal, so a concurrent run is safe. Labelling happens BEFORE any `docker run -v`, which matters:
+`-v` also creates a missing volume but without labels, and `docker volume create` won't add labels to a volume that
+already exists (verified on Docker 29.4.0, 2026-09-02), so a volume born from `-v` would be invisible to the reaper
+forever.
+
+`CARGO_VOLUME`, `TARGET_VOLUME`, `ROOT_NODE_MODULES_VOLUME`, `DESKTOP_NODE_MODULES_VOLUME`, and
+`DESKTOP_SVELTEKIT_VOLUME` each override the name. An override is taken verbatim: no suffix, no label, no reaping. CI
+sets the first two to host bind-mount paths (`/tmp/cmdr-docker-cache/...`) so `actions/cache` can persist them (it can't
+cache Docker named volumes), and a CI runner has one checkout anyway.
 
 ## SMB E2E networking
 
@@ -102,10 +138,15 @@ both OK to Cmdr-side SMB code, both FAIL to infra / Docker networking.
 ## webkit2gtk caret bug (why the base is `ubuntu:26.04`)
 
 webkit2gtk 2.50.4 (ships with Ubuntu 24.04) returns `startOffset: 0` from `document.caretRangeFromPoint(x, y)` for ALL
-x-coordinates inside text whose ancestor chain has `user-select: none`. Caret resolution is the first step in the
-viewer's pointer-drag → selection pipeline (`routes/viewer/viewer-pointer.ts:resolveCaret`), so `viewer.spec.ts` "drag
-within viewport selects the dragged range" failed on every E2E run: the drag produced an empty selection, `runCopy()`
-returned `{ kind: 'empty' }`, no toast appeared, the test timed out.
+x-coordinates inside text whose ancestor chain has `user-select: none`. It's what put this base image on 26.04:
+`viewer.spec.ts` "drag within viewport selects the dragged range" got an empty selection, `runCopy()` returned
+`{ kind: 'empty' }`, no toast appeared, the test timed out.
+
+The production caret path doesn't touch that API. `routes/viewer/viewer-pointer.ts` hit-tests the rendered rows and
+binary-searches `Range.getClientRects()` boxes; the reasoning is in `apps/desktop/src/routes/viewer/DETAILS.md` §
+"Pointer → caret". So this bug alone doesn't decide the base image any more, and the pin is a plain "26.04 is what the
+suite is green on". ❌ Still don't move it casually: the rest of the stack (Playwright's platform-registry workarounds
+below, the apt package set) is tuned to 26.04, and only a full suite run can tell you an older base is fine.
 
 How we know it's this: probed at x = 25, 35, 50, 75, 200, 500 on `.line-text` (`user-select: none`); all return offset 0
 on 2.50.4, but offset 1, 4, 7, 25, 68 (monotonic per-character) on 2.52.3 on the same Xvfb display server. Control:
@@ -116,8 +157,8 @@ probing the status-bar text (`user-select: text`) returns sensible offsets even 
   in both); GDK backend (Xwayland and Xvfb both work with 2.52.3). Real Linux users (Wayland or X11 with a real display
   server) were never affected, only the synthetic-pointer-event test path.
 
-To drop back to an older base image, skip this single test or replace the production caret-from-point with a JS-side
-`Range.getClientRects()`-based binary search that bypasses the buggy API.
+Kept because it's cheap evidence: if a future caret regression shows up only on Linux, this probe (offsets on
+`user-select: none` text vs. the `user-select: text` status bar) is how you tell a webview bug from ours.
 
 ## Playwright on the 26.04 base image (and bumping Playwright)
 

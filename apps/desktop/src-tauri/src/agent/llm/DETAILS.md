@@ -32,7 +32,9 @@ Agent → genai (request / replay), per `agent_part_to_genai`:
 
 - `Text(s)` → `ContentPart::Text(s)`.
 - `ToolCall{call_id, tool, arguments, reasoning}` → `ContentPart::ToolCall{call_id, fn_name = tool.as_wire_name(),
-  fn_arguments = arguments, thought_signatures = blob.thought_signatures}`.
+  fn_arguments = arguments, thought_signatures = blob.thought_signatures}`, except that a nameless call
+  (`ToolId::is_nameless`) maps to nothing, and `fn_arguments` that isn't a JSON object goes out as `{}`. See
+  "Degenerate tool calls" below.
 - `ToolResult{call_id, content}` → `ContentPart::ToolResponse{call_id, fn_name, content = JSON string}` (a bare string
   passes through unquoted so it round-trips; a structured value serializes to JSON text). `AgentToolResult` carries no
   tool name of its own, so `build_request` first indexes the whole assembled transcript by `call_id`
@@ -48,7 +50,8 @@ genai → agent (parse), per `genai_content_to_agent_parts(content, provider)`:
 
 - `Text` → `Text`; `ToolResponse` → `ToolResult`; `ReasoningContent` → `Reasoning{reasoning_content}`.
 - `ToolCall` → `AgentToolCall`, with `tool = ToolId::from_wire_name(fn_name)` and reasoning captured from
-  `thought_signatures` (tagged with `provider`).
+  `thought_signatures` (tagged with `provider`). A call with a blank `fn_name` is dropped instead, and doesn't count
+  toward the `has_tool_calls` test the `ThoughtSignature` rule below reads.
 - `ThoughtSignature` (standalone) → a `Reasoning` part **only when the message has no tool calls**. genai attaches
   captured thought signatures BOTH to the first tool call AND as leading standalone parts (see genai `StreamEnd::from`),
   so mapping both would duplicate the reasoning; the tool call is the canonical home when tool calls exist.
@@ -58,6 +61,34 @@ Stream events → `AgentDelta` (`map_stream_event`): `Chunk` → `Text` (empty c
 `ThoughtSignatureChunk` → `ReasoningTick` (content never surfaced); `ToolCallChunk` → `ToolCallStarted`; `End` →
 `End{stop, usage, message}` built from the captured content, stop reason, and usage; a stream error → mapped
 `AgentLlmError`.
+
+## Degenerate tool calls
+
+A provider can end a stream with a tool-call stop reason and still hand back a call carrying an id and nothing else.
+Observed from Qwen (`qwen3.7-plus` via DashScope's OpenAI-compatible endpoint, 2026-09-03, captured in the app's
+`llm-logs/`): `call_id` set, `fn_name` empty, `fn_arguments` the empty string, `finish_reason: tool_calls`. Replaying
+that identical request nine times produced a well-formed stream every time, so it's an intermittent provider emission
+rather than a genai assembly bug; genai 0.6.5's `capture_tool_call` merges the normal DashScope chunk shape correctly.
+
+Left alone it wedges a thread permanently. `ToolId::from_wire_name("")` gives `Unrecognized("")`, which dispatch
+refuses (correctly), and the next turn replays the assistant part verbatim as `"arguments": ""`. DashScope answers that
+with a 400 (`InternalError.Algo.InvalidParameter: The "function.arguments" parameter of the code model must be in JSON
+format`), and since the broken part is persisted, every later message in that thread re-sends it and 400s again.
+
+Three guards, and all three earn their place:
+
+- **Inbound** (`genai_content_to_agent_parts`): a blank `fn_name` never becomes an `AgentPart`, so it never reaches the
+  store. This is the one that prevents the problem.
+- **Outbound** (`agent_part_to_genai` + `build_request`): a nameless call already in a persisted transcript is dropped
+  from the replay, along with the tool result answering it (`answers_a_nameless_call`), because an orphan tool response
+  is rejected in its own right; a message left with no parts is then filtered out of the request. This is the one that
+  unwedges threads persisted before the inbound guard existed.
+- **Arguments** (`object_arguments`): `fn_arguments` always goes out as a JSON object. It covers the near-miss where the
+  name survives but the argument chunks don't; an empty object reaches the tool's own validation, which the model can
+  recover from, instead of 400ing the whole request.
+
+Downstream, `runtime/turn.rs` treats an assistant message with no parts as `UnfinishedReply` rather than an answer, so
+what's left after the inbound drop fails honestly and persists nothing instead of showing a blank bubble.
 
 ## Reasoning posture (spike verdict)
 

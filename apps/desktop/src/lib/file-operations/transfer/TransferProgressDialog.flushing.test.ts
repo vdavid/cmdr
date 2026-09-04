@@ -1,15 +1,18 @@
 /**
- * The closing `Flushing` phase must surface the honest "Writing the last
- * piece…" label so the bar doesn't sit frozen at 100% while the backend
- * `fdatasync`s the freshly written destinations on slow media. Must show for
- * both copy and move. See `lib/file-operations/transfer/CLAUDE.md`
- * § "Durability" and the BE doc § "Flushing phase".
+ * What the dialog says after the bytes are copied, which is the stretch where a
+ * bar sitting at 100% would be a lie.
+ *
+ * Two phases live here. `Flushing` must surface the honest "Writing the last
+ * piece…" label while the backend `fdatasync`s the freshly written destinations
+ * on slow media (both copy and move; see `CLAUDE.md` § "Durability" and the BE
+ * doc § "Flushing phase"). `Deleting` on a MOVE is the cross-disk sweep that
+ * removes the originals — real, unbounded work with its own bar over the
+ * top-level sources.
  *
  * The window's session registry is inited per test: it is what subscribes the
  * event fan-out (through the mocked helpers below), and the mounted dialog binds
- * to the session for its operation. The test then drives a synthesised
- * `flushing` progress event through the captured callback and asserts the
- * rendered title.
+ * to the session for its operation. The test then drives a synthesised progress
+ * event through the captured callback and asserts what the dialog renders.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -99,7 +102,9 @@ async function flushPromises(): Promise<void> {
   }
 }
 
-function flushingEvent(operationType: 'copy' | 'move'): WriteProgressEvent {
+type DialogOperationType = 'copy' | 'move' | 'delete'
+
+function flushingEvent(operationType: DialogOperationType): WriteProgressEvent {
   return {
     operationId: 'op-1',
     operationType,
@@ -109,6 +114,25 @@ function flushingEvent(operationType: 'copy' | 'move'): WriteProgressEvent {
     filesTotal: 4,
     bytesDone: 1000,
     bytesTotal: 1000,
+    dirsDone: 0,
+    bytesPerSecond: null,
+    filesPerSecond: null,
+    etaSeconds: null,
+  }
+}
+
+/** A cross-disk move's source sweep, one tick in: one of three top-level
+ *  sources gone, no bytes moving. */
+function sourceSweepEvent(operationType: DialogOperationType, filesDone = 1): WriteProgressEvent {
+  return {
+    operationId: 'op-1',
+    operationType,
+    phase: 'deleting',
+    currentFile: 'holiday',
+    filesDone,
+    filesTotal: 3,
+    bytesDone: 0,
+    bytesTotal: 0,
     dirsDone: 0,
     bytesPerSecond: null,
     filesPerSecond: null,
@@ -127,7 +151,7 @@ afterEach(() => {
   destroyOperationSessions()
 })
 
-async function mountDialog(operationType: 'copy' | 'move'): Promise<{
+async function mountDialog(operationType: DialogOperationType): Promise<{
   component: ReturnType<typeof mount>
   target: HTMLDivElement
 }> {
@@ -175,6 +199,62 @@ describe('TransferProgressDialog flushing phase', () => {
     await tick()
 
     expect(target.textContent).toContain('Writing the last piece...')
+    void unmount(component)
+  })
+})
+
+describe("TransferProgressDialog: a cross-disk move's source sweep", () => {
+  it('names the stage instead of leaving "Moving..." over a bar that means something else', async () => {
+    const { component, target } = await mountDialog('move')
+    if (!progressCb) throw new Error('subscriber never registered')
+
+    progressCb(sourceSweepEvent('move'))
+    await tick()
+
+    expect(target.textContent).toContain('Removing the originals...')
+    expect(target.textContent).not.toContain('Moving...')
+    void unmount(component)
+  })
+
+  it('counts the sources it is clearing, never claiming the operation is finished', async () => {
+    // Pre-fix this phase emitted nothing at all, so the dialog kept the copy's
+    // last tick — `filesDone === filesTotal`, "(100%)" — through the whole
+    // sweep, and a Pause here read "Paused" over a full bar.
+    const { component, target } = await mountDialog('move')
+    if (!progressCb) throw new Error('subscriber never registered')
+
+    progressCb(sourceSweepEvent('move'))
+    await tick()
+
+    const amounts = [...target.querySelectorAll('.amount')].map((el) => el.textContent.trim())
+    const percents = [...target.querySelectorAll('.percent')].map((el) => el.textContent.trim())
+    // No size bar: nothing is transferred here, so the count bar is the only one.
+    expect(amounts).toEqual(['1 / 3'])
+    expect(percents).toEqual(['(33%)'])
+    void unmount(component)
+  })
+
+  it('counts ITEMS, because the sweep takes a whole folder in one step', async () => {
+    const { component, target } = await mountDialog('move')
+    if (!progressCb) throw new Error('subscriber never registered')
+
+    progressCb(sourceSweepEvent('move'))
+    await tick()
+
+    const labels = [...target.querySelectorAll('.bar-label')].map((el) => el.textContent.trim())
+    expect(labels).toEqual(['Items'])
+    void unmount(component)
+  })
+
+  it('leaves a DELETE alone, whose deleting phase is the operation itself', async () => {
+    const { component, target } = await mountDialog('delete')
+    if (!progressCb) throw new Error('subscriber never registered')
+
+    progressCb(sourceSweepEvent('delete'))
+    await tick()
+
+    expect(target.textContent).toContain('Deleting...')
+    expect(target.textContent).not.toContain('Removing the originals...')
     void unmount(component)
   })
 })

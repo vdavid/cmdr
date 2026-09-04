@@ -30,17 +30,36 @@ Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`.
 The full top-level inventory is here:
 
 - `mod.rs` (public API + the `start_write_operation` lifecycle), `manager.rs` (registry + lane admission), `state.rs`
-  (`WriteOperationRegistry`, `WriteOperationState`, `CopyTransaction`, the settle guard, the cancel/abort commands),
+  (`WriteOperationRegistry`, `WriteOperationState`, the settle guard, plus `state/controls.rs`:
+  the by-id cancel / abort / pause / resume / conflict-answer entry points, re-exported through `state`),
   `status_cache.rs` (the status cache, the busy-volumes set it derives, the external drag-out seam, and
   `list_active_operations` / `get_operation_status`), `operation_intent.rs` (`OperationIntent`, `PauseGate`), `human_wait.rs` (how long a person has kept the operation waiting),
   `archive_edit/` (the zip-edit driver).
-- Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `compress_estimate.rs`. Conflicts and overwrite:
+- The in-flight ledgers and what reverses them: `ledger.rs` (`CopyTransaction` and `WrittenFile`, the vocabulary of what
+  an operation currently has at the destination, plus the `Drop` panic net) and `reversal.rs` (the policy over it: the
+  recheck before each destructive act, and `ReversalTally`). That recheck shares `verify_snapshot` + `SkipReason` with
+  the operation-log history engine — ❌ never a batch or a fork of either, so one reversal can't quietly grow a laxer
+  rule than the other; only the `Drop` net is unconditional. `in_flight_temps.rs` registers every `.cmdr-` temp WITH
+  the path space it lives in (local filesystem, or a volume ID) so a startup sweep can find one an abandoned run left
+  behind and delete it through the right backend; `transfer/DETAILS.md` § "Which path space a recorded partial lives
+  in" holds the decisions, and § "Testing the in-flight temp ledger" below the rules its process-wide singleton imposes
+  on tests.
+- Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs` (the scan-progress seam the drivers
+  feed, and `ScanPause`, the park that lets a walk honor its owner's Pause), `scan_watchdog.rs` (the inactivity bound on
+  a preview), `compress_estimate.rs`. Conflicts and overwrite:
   `conflict.rs` (policy), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
   `resolve_write_conflict`), `overwrite.rs`. Cancellation and durability: `cancellable.rs`, `rollback.rs`, `durability.rs`.
-- Vocabulary and edges: `types.rs`, `event_sinks.rs`, `error_classification.rs`, `validation.rs`, `analytics.rs`,
-  `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. Remote archive I/O: `archive_remote_edit.rs`,
-  `scratch_dir.rs`. Entry points: `create/` + `create.rs`, `rename/` + `rename.rs`, `paste_clipboard.rs`. Fixtures:
-  `test_support.rs`.
+  `rollback.rs` wears two hats: the history dialog's reversal, and the executor the operation-log engine injects.
+- Vocabulary and edges: `types.rs` (+ `types/events.rs`, every `#[tauri_specta(event_name)]` payload, re-exported
+  through `types`), `event_sinks.rs`, `error_classification.rs`, `mutation_error.rs` (the typed refusal an instant
+  mutation returns), `validation.rs`, `analytics.rs`, `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. Remote
+  archive I/O: `archive_remote_edit.rs`, `scratch_dir.rs`. Entry points: `create/` + `create.rs`, `rename/` +
+  `rename.rs`, `paste_clipboard.rs`, `routing.rs` (the one routing every cross-volume transfer takes:
+  `start_volume_{copy,move,compress}`). `source_binding.rs` is the optional set of sources an op may touch. Fixtures:
+  `test_support.rs`, plus `network_transfer_test_support.rs` and `network_gated_source_test_support.rs` (the
+  backend-blind transfer scenarios the WebDAV and SFTP Docker suites both drive, and the chunk-gated source one of them
+  needs; see § "The network transfer suites") and `smb_test_support.rs` (the app-wired fixture volume the `smb_*` Docker
+  suites share; see § "The SMB app-side suites").
 
 What the mechanisms DO is in the sections below: the registry, lanes, and `run_instant` in § "Operation manager";
 the zip-edit driver in § "Archive edits"; cancellation, pause, Stop-mode conflicts, safe overwrite, scan-preview caching,
@@ -54,9 +73,13 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   vocabulary floor (§ "Why `types` imports nothing"), so a sink, a classifier, or a lifecycle name is imported from the
   module that DEFINES it. `OperationEventSink` and `TauriEventSink` are re-exported at the `write_operations` module
   root (and up through `file_system`) for the IPC edge.
-- **Event structs and their builders live apart on purpose**: the struct definitions in `types.rs`, the
+- **Event structs and their builders live apart on purpose**: the struct definitions in `types/events.rs`, the
   `WriteProgressEvent` (`new` / `with_scan_meta`) and `WriteErrorEvent` (`new`) impls in `event_sinks.rs` beside the
   sinks that emit them.
+- **What splits `types.rs` from `types/events.rs` is one rule**: a struct carrying `#[tauri_specta(event_name = ...)]`
+  goes in `events.rs`, and so does an enum whose only carrier is one of them (`SourceItemOutcome`,
+  `CancelRollbackOutcome`). A name two homes speak stays in `types.rs`, which is why `TransferActivity` sits there:
+  `WriteProgressEvent` carries it AND so does `OperationStatus`, a snapshot nobody emits.
 - **`analytics.rs` is `pub(super)` and reached ONLY from `TauriEventSink::emit_complete`.** Every property is
   categorical (op kind, a count bucket, a bool): no names, no paths ever. Copy/Move → `file_transfer_completed`,
   Delete/Trash → `delete_used`.
@@ -140,7 +163,9 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
 ## Why `types` imports nothing
 
 `types.rs` is the vocabulary floor: every other module here speaks its enums, event structs, error types, and
-configuration, and it speaks nobody else's. Nothing in it may `use` a sibling (the `CLAUDE.md` rule).
+configuration, and it speaks nobody else's. Nothing in it may `use` a sibling (the `CLAUDE.md` rule), and that covers
+`types/events.rs` too: a child of the floor is still the floor, so it imports from `super` and from outside
+`write_operations`, never sideways.
 
 **Why the rule is absolute.** The dependency graph under `write_operations` is a fan-in: 30-odd modules point at
 `types`, and `types` is the sink. A single upward import from the sink closes a circle through everything that fans in
@@ -194,9 +219,9 @@ Frontend
               → throttled write-progress events (200ms default)
           → success (copy/move): flush_created_destinations() → emit write-progress (phase: flushing) → fdatasync dests → CopyTransaction::commit(), emit write-complete
           → success (delete/trash): emit write-complete (no sync)
-          → cancel (Stopped): CopyTransaction::commit(), emit write-cancelled (rolled_back: false)
-          → cancel (RollingBack): rollback_with_progress() → emit write-progress (phase: rolling_back) → emit write-cancelled
-          → error: CopyTransaction::rollback(), emit write-error
+          → cancel (Stopped): CopyTransaction::commit(), emit write-cancelled (rollback: notRolledBack)
+          → cancel (RollingBack): rollback_with_progress() → emit write-progress (phase: rolling_back) → emit write-cancelled (rollback: what the reversal managed)
+          → error: reverse_copy_transaction() (rechecks each entry, leaves a drifted one standing), emit write-error
       → safety net: start_write_operation emits write-error for unhandled handler errors
   → state removed from both caches
 ```
@@ -257,8 +282,8 @@ An operation waiting on a person emits nothing: it is holding still on purpose, 
 **`OperationIntent` state machine.** Replaces the old `cancelled: AtomicBool` + `skip_rollback: AtomicBool` pair with a single `AtomicU8`-backed enum: `Running → RollingBack` (user clicks Rollback), `Running → Stopped` (user clicks Cancel or teardown), `RollingBack → Stopped` (user cancels the rollback). `Stopped` is terminal. The `is_cancelled()` helper returns true for both `RollingBack` and `Stopped`, so the 40+ cancellation check sites just call `is_cancelled(&state.intent)`.
 
 **Cancel vs Rollback: distinct behaviors:**
-- **Cancel (`Stopped`)**: Stop immediately. Keep all fully-copied files. Delete only the last *partial* file (a half-written file is corrupted data, not useful to keep). `rolled_back: false`.
-- **Rollback (`RollingBack`)**: Stop copying, then delete ALL files copied so far in reverse order with progress events (`phase: RollingBack`). The progress bars go backwards. User can cancel the rollback (→ `Stopped`), which keeps whatever hasn't been deleted yet. `rolled_back: true`.
+- **Cancel (`Stopped`)**: Stop immediately. Keep all fully-copied files. Delete only the last *partial* file (a half-written file is corrupted data, not useful to keep). Reports `rollback.outcome: notRolledBack`.
+- **Rollback (`RollingBack`)**: Stop copying, then reverse what this operation wrote, newest first, with progress events (`phase: RollingBack`). Each entry is rechecked before it goes, and one something else changed since is left alone and reported (`transfer/DETAILS.md` § "What a reversal does with that identity"). The progress bars drain, and reach zero whatever the reversal managed. The user can cancel the rollback (→ `Stopped`), which keeps whatever hasn't been reversed yet. Reports `rolledBack` or `partiallyRolledBack`.
 - Both are triggered from the same `cancel_write_operation` IPC call, distinguished by the `rollback` parameter.
 
 **Two-layer cancellation.** `AtomicU8` (`OperationIntent`) for fast in-loop checks in local file operations. Volume operations (MTP, SMB) use the same `AtomicU8` checks but run on the async executor (no `spawn_blocking`). `run_cancellable` wraps blocking local operations (for example, network-mount copies that may block indefinitely) in a separate thread, polling the flag every 100 ms via `mpsc::channel`.
@@ -370,7 +395,7 @@ See also: `apps/desktop/src-tauri/src/downloads/CLAUDE.md` for the watcher archi
 - **`write-progress`**: Every ~200 ms during copy/move/delete/trash
 - **`write-conflict`**: Stop mode hit a conflicting destination file
 - **`write-complete`**: Operation finished successfully
-- **`write-cancelled`**: Operation cancelled (includes `rolled_back` flag)
+- **`write-cancelled`**: Operation cancelled. Carries `rollback: CancelRollback` — the three-state outcome (`notRolledBack` / `rolledBack` / `partiallyRolledBack`), how many items the reversal undid, and what it left behind grouped by `SkipReason`.
 - **`write-error`**: Operation could not complete. Carries only `error: WriteOperationError` (typed, word-free); no rendered prose crosses IPC. The FE renders the title/explanation/suggestion + category from this typed error via `transfer-error-messages.ts` in `TransferErrorDialog` and applies category-based colors.
 - **`write-settled`**: Emitted once per op after the spawned background task fully returns. See [Settle contract](#settle-contract).
 - **`volumes-busy-changed`**: The set of volume IDs with an in-flight op changed (an op started or finished). Payload is `string[]`. See [Busy-volumes set](#busy-volumes-set).
@@ -483,33 +508,37 @@ Every construction site states its own verdict (a struct literal, so a new spawn
   `MoveTransaction` renames them back), and volume copy (`volume/cleanup.rs` deletes the destination copies).
 - **`false`** — delete and trash (the files are already gone; there's nothing to put back); a SAME-volume move (a
   server-side rename-merge that stops without reversing); a CROSS-volume move, which copies and deletes the source per
-  file and whose driver treats `RollingBack` exactly like `Stopped`, reporting `rolled_back: false`; archive edits (an
+  file and whose driver treats `RollingBack` exactly like `Stopped`, reporting `notRolledBack`; archive edits (an
   all-or-nothing temp+rename rewrite); instant metadata ops; and the operation-log rollback's own inverse op (rolling
   back a rollback would re-apply what the person just undid).
 
-⚠️ The progress DIALOG doesn't read this flag yet: it decides from the volume ids it holds, disabling Rollback only for
-a same-volume move. So it still offers Rollback on a cross-volume move, where the click only cancels. Pointing the
-dialog at this flag (or teaching the cross-volume move driver to reverse) is the fix; until then, the operation queue window
-is the honest one.
+Both surfaces read it. The progress dialog blocks Rollback whenever the flag is off, so a cross-volume move no longer
+offers a button whose click only cancels; its own props-only same-volume-move rule stands beside the flag for the frames
+before the first snapshot lands, and never contradicts it.
 
 The flag is a property of the op's STRATEGY, so it never changes over the op's life. Whether Rollback is offered *right
-now* is the UI's call on top of it: the queue row also requires a running/paused op that isn't already rolling back
-(which it reads from the live `write-progress` phase, since rollback is an `OperationIntent`, not a `LifecycleStatus`).
+now* is the UI's call on top of it, and both surfaces ask the same three questions: a running/paused op, not already
+rolling back (read from the live `write-progress` phase, since rollback is an `OperationIntent`, not a
+`LifecycleStatus`), and not past the point where a reversal can still do anything. That last one is the local cross-FS
+move: `cross_fs.rs` commits its transaction before Phase 4, so a Rollback pressed during the `Deleting`-phase source
+sweep reverses nothing and only stops the sweep. The frontend names that window in one place,
+`file-operations/reversal-wording.ts`'s `reversalWindowClosed`, which the dialog and the queue row both call.
 
 ### IPC
 
-`list_operations` (the thin snapshot), `cancel_operation(id)`, `cancel_operations(ids)` (the queue window's "Cancel selected"), `pause_operation(id)` / `resume_operation(id)`, and `pause_all` / `resume_all`. Cancel routes through `cancel_operation`: a Queued op is dropped from the registry without ever spawning (`cancel_if_queued`); a Running/Paused op falls through to the existing `cancel_write_operation(id, rollback=false)` keep-partials path. Pause/resume flip BOTH the live `WriteOperationState` pause gate (so the driver parks) AND the manager record's `LifecycleStatus` (so the UI shows Paused), via `set_paused`, and both RETURN a `PauseOutcome` (`Applied` / `Deferred` / `NotApplicable`) that rides out through `bindings.ts` ([Pause / resume](#pause--resume)). Plus `dismiss_failed_operation(id)` / `dismiss_all_failed_operations()`, which drop retained failures and re-emit ([Retained failures](#retained-failures)). Registered in the `ipc.rs` manifest; `OperationSnapshot` / `LifecycleStatus` / `OperationsChanged` ride into `bindings.ts`. No capability change: manager commands go through the invoke handler, not the ACL.
+`list_operations` (the thin snapshot), `cancel_operation(id)`, `cancel_operations(ids)` (the queue window's "Cancel selected"), `pause_operation(id)` / `resume_operation(id)`, and `pause_all` / `resume_all`. Cancel routes through `cancel_operation`: a Queued op is dropped from the registry without ever spawning (`cancel_if_queued`); a Running/Paused op falls through to the existing `cancel_write_operation(id, rollback=false)` keep-partials path. Pause/resume flip BOTH the live `WriteOperationState` pause gate (so the driver parks) AND the manager record's `LifecycleStatus` (so the UI shows Paused), via `set_paused`, and both RETURN a `PauseOutcome` (`Applied` / `AlreadyInState` / `NotApplicable`) that rides out through `bindings.ts` ([Pause / resume](#pause--resume)). Plus `dismiss_failed_operation(id)` / `dismiss_all_failed_operations()`, which drop retained failures and re-emit ([Retained failures](#retained-failures)). Registered in the `ipc.rs` manifest; `OperationSnapshot` / `LifecycleStatus` / `OperationsChanged` ride into `bindings.ts`. No capability change: manager commands go through the invoke handler, not the ACL.
 
 ### Pause / resume
 
 The paused bit has TWO homes, kept in sync by the IPC layer: a `PauseGate` on `WriteOperationState` (the runtime gate the drivers honor) and the manager record's `LifecycleStatus::Paused` (what the UI sees in `operations-changed`). Pause is **orthogonal to `OperationIntent`** (which stays the cancel/rollback machine) — it never perturbs the validated `Running → RollingBack/Stopped` transitions — and it is **not a `WriteOperationPhase`** (a paused op may be mid-`Copying`).
 
-- **`PauseGate`** (`operation_intent.rs`): a `paused: AtomicBool` plus a `std::sync::Condvar` (for the sync driver, which parks inside `spawn_blocking`) and a `tokio::sync::Notify` (for the async volume drivers). `pause()` sets the flag and opens the operation's human-wait clock; `resume()` clears the flag, closes the clock, and wakes both waiters; `wake()` wakes both WITHOUT clearing the flag (the cancel path uses it) but DOES close the clock — the operation is winding down, so nobody is being waited on any more, and a clock left open would make the rollback that follows measure no rate at all. `wait_while_paused_sync(&intent)` / `wait_while_paused_async(&intent).await` park while `paused && !cancelled` and return immediately on cancel.
-- **Gate placement** (between-files boundaries, immediately AFTER the `is_cancelled` check so the data-safety ordering — cancel/skip before any destructive call — is preserved): both transfer drivers' per-source loop tops (`transfer_driver.rs`), and the delete-phase loops in both delete walkers (files then dirs, `delete/walker.rs`). The delete SCAN recursion is NOT gated (pausing mid-enumeration would freeze a half-counted "Scanning…"). The cross-volume streaming copy path ALSO parks BETWEEN CHUNKS via the `CheckpointStream` wrapper in `transfer/volume/strategy.rs` (the sync per-chunk `on_progress` callback can't `.await`, so the async stream decorator owns mid-file parking + a `yield_now`), so a paused single large file (e.g. MTP→local) stops mid-stream holding only its `.cmdr-tmp-<uuid>`. The local-FS sync chunk loop (`chunked_copy.rs`) still pauses only between files — it receives the cancel atom, not the `PauseGate`. Full rationale + scope: `transfer/DETAILS.md` § "Pause reaches between chunks".
+- **`PauseGate`** (`operation_intent.rs`): a `paused: AtomicBool` plus a `std::sync::Condvar` (for the sync driver, which parks inside `spawn_blocking`) and a `tokio::sync::Notify` (for the async volume drivers). `pause()` sets the flag and opens the operation's human-wait clock; `resume()` clears the flag, closes the clock, and wakes both waiters; `wake()` wakes both WITHOUT clearing the flag (the cancel path uses it) but DOES close the clock — the operation is winding down, so nobody is being waited on any more, and a clock left open would make the rollback that follows measure no rate at all. `wait_while_paused_sync(&intent)` / `wait_while_paused_async(&intent).await` park while `paused && !cancelled` and return immediately on cancel; ordinary loops reach them through `stop_or_park_*` below rather than calling them directly.
+- **One question per boundary: `WriteOperationState::stop_or_park_sync()` / `stop_or_park_async()`.** `true` means stop, `false` means carry on with the next item. It owns the whole contract, so no loop can spell it wrong: cancel is read FIRST (a stopping op never parks, and nothing destructive runs between the two reads), only a live op parks, and the intent is re-read after the wake, so a cancel landing WHILE parked is answered at that same boundary instead of one item later. A caller whose reading of "stop" ISN'T `is_cancelled` — a reversal running under `RollingBack` (`rollback.rs`'s `StopMeans`), a detached scan preview watching its own flag — drives `PauseGate`'s `*_until` helpers instead and names its own predicate.
+- **Gate placement: exactly where the loop already observes cancel, and only there** ([The park](#the-park) has the reasoning). Every serial loop that can spend real time asks: both transfer drivers' per-source loop tops (`transfer_driver/{sync,async}_driver.rs`), both delete walkers' delete-phase file and dir loops (`delete/walker.rs`), trash's per-item loop (`delete/trash.rs`), all of `move_op/`'s per-item loops (`transfer/DETAILS.md` § "Pause in the local move engine"), the copy's scanned-dirs pass (`transfer/copy/scanned_dirs.rs`), the two cross-volume merge walks and the sequential extractor's member loop (`transfer/volume/DETAILS.md` § "Pause in the volume walks"), the archive mutator through `MutationHooks::wait_if_paused`, and every SCAN boundary that already observes cancel. The cross-volume streaming copy path ALSO parks BETWEEN CHUNKS via the `CheckpointStream` wrapper in `transfer/volume/strategy.rs` (the sync per-chunk `on_progress` callback can't `.await`, so the async stream decorator owns mid-file parking + a `yield_now`), so a paused single large file (e.g. MTP→local) stops mid-stream holding only its `.cmdr-tmp-<uuid>`. Two paths still pause only at a file boundary, both for the same reason — no stream to park between chunks and nothing freed by parking: the local-FS sync chunk loop (`chunked_copy.rs`, which receives the cancel atom, not the `PauseGate`) and a server-side `copy_within` (`transfer/volume/strategy.rs`'s `try_server_side_copy`). Full rationale + scope: `transfer/DETAILS.md` § "Pause reaches between chunks".
 - **Cancellation always wins over pause.** `cancel_write_operation` / `cancel_all_write_operations` flip the intent AND call `pause_gate.wake()`, so a paused, parked op unblocks, observes the non-`Running` intent, and bails through the existing keep-partials path (keeping already-copied files, deleting only the last partial). Without that wake a paused op parked on the condvar would never see the cancel.
 - **A paused Running op keeps its lane slots** (`set_paused` never touches lanes), so a same-lane Queued op can't start and then fight it on resume. Resume runs NO admission pass (the op never freed its lanes). Pausing a Queued op is a v1 no-op (it isn't touching a device yet; it stays Queued and admits normally when its lanes free). Pinned by `manager::tests::{set_paused_flips_running_op_to_paused_and_keeps_its_lane, paused_running_op_does_not_admit_a_queued_same_lane_op}`.
-- **The request reports what it did**, as a `PauseOutcome`: `Applied` (the record flipped), `Deferred` (a scan-waiting op, so the request is latched, see [The scan-wait](#the-scan-wait)), `AlreadyInState` (asked for what it already is, so the caller's intent holds and a retry isn't a refusal), `NotApplicable` (queued, over, or unknown — nothing changed and nothing is remembered). It travels the whole way out: `set_paused` → `pause_operation` / `resume_operation` → the IPC commands → `bindings.ts`. The MCP `queue` tool is the consumer that needs it, since an agent acts on the answer; the queue window ignores it and reads the live status from `operations-changed` instead.
-- **A sweep reports counts, not a verdict.** `pause_all` / `resume_all` ask every eligible op, so they fold the per-op outcomes into a `PauseAllOutcome` (`applied` / `deferred` / `already_in_state` / `not_applicable`) and hand that out the same way, through the IPC commands into `bindings.ts`. "No operation was running", "three parked", and "one is still scanning" are three different situations, and a flat "OK" for all three is what sent an agent on believing a device had gone quiet. `took_effect_anywhere()` is the one derived question worth a name: `applied + deferred > 0`, since a latched pause HAS taken effect, just not yet. From a sweep, `not_applicable` can only be the settle race (the snapshot named an op that finished before the call landed) — a queued op never enters the walk. The fold is `impl FromIterator<PauseOutcome> for PauseAllOutcome`, which is what makes it testable without touching the process-global manager (`manager::tests::a_sweep_counts_every_outcome_it_collected`); ❌ never drive a real `pause_all()` from a test, it would park a sibling test's operation.
+- **The request reports what it did**, as a `PauseOutcome`: `Applied` (the record flipped), `AlreadyInState` (asked for what it already is, so the caller's intent holds and a retry isn't a refusal), `NotApplicable` (queued, over, or unknown — nothing changed and nothing is remembered). It travels the whole way out: `set_paused` → `pause_operation` / `resume_operation` → the IPC commands → `bindings.ts`. The MCP `queue` tool is the consumer that needs it, since an agent acts on the answer; the queue window ignores it and reads the live status from `operations-changed` instead.
+- **A sweep reports counts, not a verdict.** `pause_all` / `resume_all` ask every eligible op, so they fold the per-op outcomes into a `PauseAllOutcome` (`applied` / `already_in_state` / `not_applicable`) and hand that out the same way, through the IPC commands into `bindings.ts`. "No operation was running", "three parked", and "two were already paused" are three different situations, and a flat "OK" for all three is what sent an agent on believing a device had gone quiet. `took_effect_anywhere()` is the one derived question worth a name. From a sweep, `not_applicable` can only be the settle race (the snapshot named an op that finished before the call landed) — a queued op never enters the walk. The fold is `impl FromIterator<PauseOutcome> for PauseAllOutcome`, which is what makes it testable without touching the process-global manager (`manager::tests::a_sweep_counts_every_outcome_it_collected`); ❌ never drive a real `pause_all()` from a test, it would park a sibling test's operation.
 - **Concurrent copy path.** `copy_volumes_with_progress`'s `FuturesUnordered` path has no single between-files boundary, and its per-file `on_progress` callback stays cancel-only (pinned by `transfer_driver::tests::concurrent_per_file_callback_is_cancel_only_not_pause_aware`). But its in-flight files stream through the shared `stream_pipe_file`, so each parks between chunks via `CheckpointStream` when paused; the admission loop adds no new files while everyone is parked, so the batch effectively halts. Serial paths (local copy/move, cross-volume serial, delete) honor pause between files; the cross-volume paths additionally park between chunks. See `transfer/volume/DETAILS.md` § "Pause and the concurrent copy path".
 - **Accepted resource asymmetry** (principle 5): `wait_while_paused_sync` parks the op's `spawn_blocking` pool thread for the whole pause — the same thing the deferred-start design avoids for *queued* ops. A paused Running op legitimately holds its lane and is rarer than queued ops, so v1 accepts this; many simultaneously-paused local ops could pressure the blocking pool. v2 may bound concurrent paused-and-parked ops if it proves real.
 - **Connection-idle caveat** (document, don't fully solve in v1): a long pause holds SMB/MTP connections idle and may hit server/USB timeouts. v1 accepts that resume may surface a normal transient error (SMB already reconnects; MTP stale-handle has a one-shot retry). v2 adds keep-alive / explicit reconnect-on-resume.
@@ -555,6 +584,58 @@ cancelled walk returns an error (the local walk's `on_cancelled` string, the vol
 `"Scan failed: {VolumeError::Cancelled}"`), so classifying on the event would reach the operation as a failure whose
 message merely says "cancelled", and recovering the truth from that message would be string-matching on the control
 path. Both workers' arms were reconciled to match.
+
+## The park
+
+Pausing during the scan is the case Pause exists for: the scan is the minutes-long part of a big transfer, so it is
+when somebody realizes they picked the wrong destination. `scan_bridge::ScanPause` is the one primitive that makes it
+real, for both scans — the detached preview worker, and the scan an operation runs for itself when it has no result to
+consume.
+
+**Where it parks: exactly where the walk already observes cancel, and only there.** A walk that stopped less often
+than it can be cancelled would make Pause the weaker of two buttons that mean the same thing to a person; one that
+stopped more often would need park points the volume backends don't offer. So every gate sits immediately after the
+existing `is_cancelled` check (cancel outranks pause, and a cancelled walk must never park on its way out), and pause
+inherits cancel's granularity for free:
+
+- **Local walk** — per entry, via `WalkContext::park_while_paused` in `walk_dir_recursive` and `walk_cached_entries`.
+- **Oracle-aware volume walk** — per entry, in `scan_subtree_with_oracle`.
+- **Cold-cache volume group** — per source group in `run_oracle_aware_batch_scan`, and then per entry INSIDE the
+  backend's own walk, through the `ScanBoundary` that call hands it.
+- **An operation's own VOLUME scan** (`transfer/volume/preflight.rs`, the path a programmatic or MCP-started transfer
+  takes when it has no preview to consume) — inside the backend's walk, same way, through a boundary armed with the
+  operation's own stop.
+
+**How a stop reaches inside a backend.** A backend crate can't name a `WriteOperationState` (`crates/` carry no
+`tauri`), so the vocabulary is `cmdr_fs::volume`'s: a `ScanStop` handle over a `ScanStopSignal` the owner implements.
+`WriteOperationState`'s impl forwards to `stop_or_park_sync` / `_async`, and `ScanPause`'s carries the preview's two
+routes to "stop" — so neither can end up with its own reading of cancel-outranks-pause. The walk never touches the stop
+directly: it threads a `ScanBoundary`, where reporting an entry and asking the boundary are one call
+(`boundary.file(size).await?`), which is what makes a walk that counts entries without ever asking unwritable. Per-backend
+granularity, what a stopped scan returns, and why it's an error rather than a partial result:
+`crates/cmdr-fs/src/volume/scan_stop.rs` and `Volume::scan_for_copy_batch_with_boundary`'s doc. Cost measured at ~2 ns
+per entry for the stop check, against ~1–3 µs for the syscall or round trip the entry already costs.
+
+Two shared assertions in `volume::conformance` keep it honest per backend, since a scan that ignores its boundary still
+returns the right numbers and nothing else in the suite would notice: `assert_batch_scan_stops_when_told` (all
+backends) and `assert_batch_scan_asks_inside_the_walk` (the ones that walk a real tree).
+
+**Why the owner is resolved lazily.** A preview walks detached from the operation that will consume it: the walk holds
+a `preview_id`, the gate hangs off the operation, and the claim joining them lands when the user confirms — possibly
+after the walk started. So `ScanPause::resolve_owner` runs at the walk's PROGRESS TICK, which is already off the
+per-entry path, and a `OnceLock` keeps the answer for life (a claim is one-shot, and the `Arc` outlives the record).
+❌ Don't move the lookup onto the per-entry path: what makes this free is that an unpaused entry costs one atomic load,
+the same as the cancel check beside it.
+
+**The park's exit names every way the walk can be told to stop**: the operation's intent (which `cancel_write_operation`
+sets BEFORE it wakes the gate) and the preview's own `cancelled` flag (which `abandon_claim` sets). ❌ Dropping either
+leaves the thread on a gate nobody will open — the async volume walk parks on `wait_while_paused_until`, the local one
+on the sync twin `wait_while_paused_sync_until`, and neither re-checks on a timer.
+
+**The watchdog has to know.** A paused scan counts nothing, which is precisely what `ScanWatchdog`'s 60 s inactivity
+bound fires on, so holding Pause would have ended the scan with "stopped responding" — the user's own click reported
+back as a dead share. `note_parked` suspends the budget; `note_resumed` restarts the clock from now, so the pause is
+never charged against it.
 
 ## Bounding the scan
 
@@ -622,27 +703,12 @@ row stays blank — exactly the case the tick exists for. So `emit_initial_scan_
 minutes). `scan_bridge_tests` asserts the ordering against the manager's broadcast counter, not merely the tick's
 existence.
 
-**Pause is refused, and the refusal is LATCHED.** `set_paused` flips any `Running` record, and a scan-waiting operation
-is `Running`, so without a rule the snapshot would say `Paused`, the dialog title would say "Paused", and the walk
-would carry on at full speed — while `set_paused` deliberately keeps the lane slots, so a "paused" scan would hold its
-lane indefinitely doing nothing. The refusal is one match arm on the record's `in_scan_wait` flag, and it is
-observable everywhere it matters: no surface flips optimistically, so a deferred pause shows as "the status stayed
-`running`, the button still says Pause". It reports itself as `PauseOutcome::Deferred`, which is what lets the MCP
-`queue` tool answer "it pauses the moment it starts writing" rather than either lie.
-
-The latch is the part that would otherwise ship as a real defect. `pause_all` walks `running_ids()` calling
-`pause_operation`, which sets the driver's park gate only on `PauseOutcome::Applied` — so a bare refusal would drop the
-request on the floor, and minutes later that one operation starts writing at full speed while every other operation is
-paused and the user believes the device is free. The refusing arm records the request on the record, and
-`end_scan_wait` applies it the moment the wait ends. Withdrawing (a resume during the scan) clears it the same way.
-Nothing surfaces the PENDING pause: the row keeps saying "Running", then flips to "Paused" on its own when the write
-would have begun. Showing "pause pending" would mean a new snapshot field and a new string, and the harm being fixed is
-the silent full-speed write, not the surprise. Revisit if the delayed flip confuses anyone.
-
-**Real parking was rejected**, and the volume path settles it rather than taste: a local walk could poll a pause flag
-per entry the way it polls `cancelled`, but a volume scan sits inside `scan_for_copy_batch_with_progress` for a whole
-batch, so there is no park point, and on MTP the batch can be the entire scan. Pausing would therefore work on the
-volume kind that needs it least.
+**Pause is NOT a special case here.** A scan-waiting operation is `Running`, and it pauses like any other `Running`
+operation: the record flips to `Paused`, the gate is set, and the walk it is waiting on parks on that same gate
+([The park](#the-park)). ❌ Don't reintroduce a refusal. The refusal that used to live here answered "it pauses the
+moment it starts writing" and then let an 80,000-file move run to completion, because the scan is the minutes-long
+part of a big transfer and nothing parked during it. The gate also carries the request across the handover: whatever
+sets it during the walk is still set when the driver takes over, so `pause_all` issued mid-scan cannot be lost.
 
 **Two leaks the wait creates, and their hooks.** (1) Every exit from the scan-wait has to reach `on_settled` or the row
 leaks and its lane stays reserved; the operation's task owns that, not the detached scan worker, and `free_and_remove`
@@ -786,10 +852,10 @@ add a second feed site (see `../../priority/CLAUDE.md`).
 **Why**: Decouples the copy/move/delete/trash orchestration from the Tauri framework. `TauriEventSink` wraps AppHandle for production; `CollectorEventSink` stores events for test assertions. The whole managed layer — `start_write_operation`, the four starters, the volume entry points (`copy_between_volumes` / `move_between_volumes` / `move_within_same_volume`), every `*_with_progress` function, and `WriteSettledGuard` — takes `&dyn OperationEventSink` / `Arc<dyn OperationEventSink>`, never an `AppHandle`. Each command builds `Arc::new(TauriEventSink::new(app))` once and passes it in (grep confirms zero `TauriEventSink::new` under `write_operations/`). This lets the full pipeline (multi-file copy, cancellation, conflict resolution, progress, the managed spawn path, and settle) run end-to-end under a `CollectorEventSink` with no Tauri runtime — see `tests.rs::injected_sink_receives_complete_and_settled_for_local_copy` and the trash unit tests (`delete/trash.rs::tests::trash_*_via_sink`). `state.emit_progress_via_sink` is the only progress-emit method — `emit_progress_via_app` is gone. The write-error safety-net arms in each deferred also route through `sink.emit_error(...)` rather than a string-named `app.emit("write-error", ...)`.
 
 **Decision**: Scan preview reuses watched listings (the "fresh-listing oracle").
-**Why**: Pre-flight scans for copy/move on MTP (and to a lesser degree SMB and big local trees) used to duplicate work the backend already had in `LISTING_CACHE`. Selecting 135 photos in a watched `/DCIM/Camera` (~15k entries) and pressing F5 would re-list the parent dir over USB just to look up size by name — ~17 s of "Verifying before copy…" while the listing was already fresh on the pane behind the dialog. `run_volume_scan_preview` now groups input sources by parent dir and consults `try_get_authoritative_listing(volume_id, parent)` first. On hit, sizes and `is_directory` flags come from the cached `FileEntry` for top-level files; top-level directories recurse via `scan_subtree_with_oracle`, which re-applies the oracle at every level (so a subfolder open in another pane also short-circuits). On miss, the call falls through to `volume.scan_for_copy_batch_with_progress(paths_in_group, ...)` — same code path as before — so MTP's parent-grouping and SMB's pipelined-stat optimizations still run for cold-cache parents. The local-FS walker (`walk_dir_recursive` in `scan.rs`) also takes an oracle check at the top of each recursive call, with `volume_id = "root"` plumbed through from `scan_sources_internal` and `run_scan_preview`. The freshness contract is bright-line at the watcher boundary: no "5 seconds is fresh enough" TTL, just "the volume's `listing_watch_coverage(path)` returned `EveryWriter`." See `file_system/listing/caching.rs::try_get_authoritative_listing` for the per-backend debounce windows that contract tolerates.
+**Why**: Pre-flight scans for copy/move on MTP (and to a lesser degree SMB and big local trees) used to duplicate work the backend already had in `LISTING_CACHE`. Selecting 135 photos in a watched `/DCIM/Camera` (~15k entries) and pressing F5 would re-list the parent dir over USB just to look up size by name — ~17 s of "Verifying before copy…" while the listing was already fresh on the pane behind the dialog. `run_volume_scan_preview` now groups input sources by parent dir and consults `try_get_authoritative_listing(volume_id, parent)` first. On hit, sizes and `is_directory` flags come from the cached `FileEntry` for top-level files; top-level directories recurse via `scan_subtree_with_oracle`, which re-applies the oracle at every level (so a subfolder open in another pane also short-circuits). On miss, the call falls through to `volume.scan_for_copy_batch_with_boundary(paths_in_group, ...)` — same code path as before — so MTP's parent-grouping and SMB's pipelined-stat optimizations still run for cold-cache parents. The local-FS walker (`walk_dir_recursive` in `scan.rs`) also takes an oracle check at the top of each recursive call, with `volume_id = "root"` plumbed through from `scan_sources_internal` and `run_scan_preview`. The freshness contract is bright-line at the watcher boundary: no "5 seconds is fresh enough" TTL, just "the volume's `listing_watch_coverage(path)` returned `EveryWriter`." See `file_system/listing/caching.rs::try_get_authoritative_listing` for the per-backend debounce windows that contract tolerates.
 
 **Decision**: Copy and move are durable before they report complete: per-file `sync_data` (fdatasync) in chunked copy, plus an end-of-op targeted `fdatasync` pass over the transaction's recorded destinations for the strategies that don't flush themselves. Delete and trash don't sync at all.
-**Why**: "Complete" must mean "durable on disk," not "buffered in the OS page cache." Without it, a user who copies to a USB stick / SD card and ejects (or the machine sleeps) right after "Copy finished" loses the file — and on a move it's gone from both source and dest. The flush is targeted, not a whole-machine `libc::sync()`: that global sync also stalled unrelated apps (AGENTS.md principle #5). The mechanism: (1) `transfer/chunked_copy.rs` calls `dst_file.sync_data()` per file, so each file is durable as it completes — a crash mid-batch on a long transfer leaves earlier files safe. (2) Before emitting `write-complete`, `durability::flush_created_destinations` emits a `Flushing`-phase progress event, then `fdatasync`s every recorded destination that wasn't already flushed, plus a best-effort `fsync` of each distinct parent directory so the rename-into-place (temp+rename / cross-FS staging) is durable too. It reuses `CopyTransaction.created_files` (no parallel dest-tracking) and skips an `already_synced: HashSet` of paths the strategy already made durable: chunked-synced files and APFS-clonefile / reflink dests (those share copy-on-write extents with the source, so a flush is moot). On macOS every produced-bytes path is either clonefile (moot) or chunked (already synced), so the end-of-op pass does no extra `fdatasync` there — its job on macOS is purely the honest `Flushing` UI state; on Linux it's the real flush for `copy_file_range` dests. Cross-FS move flushes the FINAL paths (Phase 3 renames staging → destination, so the staging entries in `created_files` are remapped to their final prefix before the pass — this also covers the Phase-3 `throwaway_tx` renames that aren't in the real transaction). Same-FS move (pure rename) writes no data, so its flush just `fdatasync`s the moved files (cheap) and their parent dirs to make the new directory entries durable. The flush is best-effort on error: a failed `sync_data` is logged (`target: "write_durability"`), not propagated — the bytes are written either way and failing the whole op at the final flush is worse UX. Pinned by `transfer/copy_tests.rs::local_copy_emits_flushing_phase_before_complete` and `transfer/move_op/move_op_tests.rs::cross_fs_local_move_emits_flushing_phase_before_complete`; FE label by `TransferProgressDialog.flushing.test.ts`. **Cross-volume copy/move landing on a local disk** (MTP → Local, SMB → Local, USB import) doesn't go through this local-FS engine — it flows through `LocalPosixVolume::write_from_stream`, which keeps the same promise by `sync_data`-ing each file (plus a best-effort parent-dir fsync for the directory entry) before it returns, so each file is durable as it completes. That path doesn't yet emit the `Flushing` UI phase (the volume copy/move handlers don't call `flush_created_destinations`); a follow-up could route them through the end-of-op pass for UI consistency, but the per-file `sync_data` already makes them durable.
+**Why**: "Complete" must mean "durable on disk," not "buffered in the OS page cache." Without it, a user who copies to a USB stick / SD card and ejects (or the machine sleeps) right after "Copy finished" loses the file — and on a move it's gone from both source and dest. The flush is targeted, not a whole-machine `libc::sync()`: that global sync also stalled unrelated apps (AGENTS.md principle #5). The mechanism: (1) `transfer/chunked_copy.rs` calls `dst_file.sync_data()` per file, so each file is durable as it completes — a crash mid-batch on a long transfer leaves earlier files safe. (2) Before emitting `write-complete`, `durability::flush_created_destinations` emits a `Flushing`-phase progress event, then `fdatasync`s every recorded destination that wasn't already flushed, plus a best-effort `fsync` of each distinct parent directory so the rename-into-place (temp+rename / cross-FS staging) is durable too. It reuses `CopyTransaction.created_files` (no parallel dest-tracking) and skips an `already_synced: HashSet` of paths the strategy already made durable: chunked-synced files and APFS-clonefile / reflink dests (those share copy-on-write extents with the source, so a flush is moot). On macOS every produced-bytes path is either clonefile (moot) or chunked (already synced), so the end-of-op pass does no extra `fdatasync` there — its job on macOS is purely the honest `Flushing` UI state; on Linux it's the real flush for `copy_file_range` dests. Cross-FS move flushes the FINAL paths (Phase 3 renames staging → destination, so the staging entries in `created_files` are remapped to their final prefix before the pass — this also covers the Phase-3 `throwaway_tx` renames that aren't in the real transaction). Same-FS move (pure rename) writes no data at all, so it takes the sibling pass `flush_touched_directories`: one `fsync` per DIRECTORY the renames touched (each source parent and each destination parent), and none on the moved files — syncing those would cost an `F_FULLFSYNC` device barrier each for bytes nothing wrote. `transfer/DETAILS.md` § "Durability (flush before reporting complete)" has the measurements. The flush is best-effort on error: a failed `sync_data` is logged (`target: "write_durability"`), not propagated — the bytes are written either way and failing the whole op at the final flush is worse UX. Pinned by `transfer/copy_tests.rs::local_copy_emits_flushing_phase_before_complete` and `transfer/move_op/move_progress_tests.rs::cross_fs_local_move_emits_flushing_phase_before_complete`; FE label by `TransferProgressDialog.flushing.test.ts`. **Cross-volume copy/move landing on a local disk** (MTP → Local, SMB → Local, USB import) doesn't go through this local-FS engine — it flows through `LocalPosixVolume::write_from_stream`, which keeps the same promise by `sync_data`-ing each file (plus a best-effort parent-dir fsync for the directory entry) before it returns, so each file is durable as it completes. That path doesn't yet emit the `Flushing` UI phase (the volume copy/move handlers don't call `flush_created_destinations`); a follow-up could route them through the end-of-op pass for UI consistency, but the per-file `sync_data` already makes them durable.
 
 **Decision**: `types.rs` is the floor of `write_operations` and imports no sibling. `state.rs` keeps its `operation_intent` + `scan_cache` + `status_cache` re-export facade, and `mod.rs` keeps its `transfer::*` + `delete::*` one.
 **Why**: See § "Why `types` imports nothing" for the floor. The two surviving facades sit ABOVE the floor and point down, so neither can close a circle: `state` and `mod.rs` already depend on everything they re-export. Both front a broad name surface (`operation_intent` at ~35 sites across ~20 files, every cancellation check; the `scan_cache` types across `scan.rs`, `scan_preview.rs`, `validation.rs`, and two test files), which is a legitimate shape for a facade that costs nothing structurally.
@@ -800,7 +866,7 @@ add a second feed site (see `../../priority/CLAUDE.md`).
 **Why**: `statvfs` reports only physically free blocks. On APFS, purgeable space (iCloud caches, APFS snapshots) can account for tens of GB that macOS will reclaim on demand. Using `statvfs` causes the "insufficient space" error to reject copies that would actually succeed, and shows a different available-space number than the status bar (which uses the NSURL API). `validate_disk_space` in `validation.rs` calls `crate::volumes::get_volume_space()` on macOS and falls back to `statvfs` on Linux.
 
 **Gotcha**: Volume-side `on_progress` callbacks report counts LOCAL to the current scan operation, not cumulative.
-**Why**: `Volume::scan_for_copy_batch_with_progress` and `scan_subtree_with_oracle` both invoke `on_progress(count)` with a count local to the current `list_directory` call / subtree (starts at 1 each time). Forwarding that unchanged through `run_volume_scan_preview`'s closure made the FE's running tally drop visibly between parent groups, between sibling top-level dirs in a cache-hit branch, and between recursion frames inside `scan_subtree_with_oracle`. `run_oracle_aware_batch_scan` now wraps `on_progress` with a `baseline = aggregate.file_count` shift before each scan call (cold-cache batch + cache-hit subtree), and `scan_subtree_with_oracle` does the same at its own recursion site (`baseline = totals.file_count`). The visible FE count stays cumulative across the entire scan. Direct `on_progress(aggregate.file_count)` emit sites in `run_oracle_aware_batch_scan` (cache-hit per-file paths, fallthrough `scan_for_copy` after a name miss) stay unwrapped — they're already cumulative. Future scan call sites that delegate to a volume backend or to `scan_subtree_with_oracle` need the same baseline wrap.
+**Why**: `Volume::scan_for_copy_batch_with_boundary` and `scan_subtree_with_oracle` both invoke `on_progress(count)` with a count local to the current `list_directory` call / subtree (starts at 1 each time). Forwarding that unchanged through `run_volume_scan_preview`'s closure made the FE's running tally drop visibly between parent groups, between sibling top-level dirs in a cache-hit branch, and between recursion frames inside `scan_subtree_with_oracle`. `run_oracle_aware_batch_scan` now wraps `on_progress` with a `baseline = aggregate.file_count` shift before each scan call (cold-cache batch + cache-hit subtree), and `scan_subtree_with_oracle` does the same at its own recursion site (`baseline = totals.file_count`). The visible FE count stays cumulative across the entire scan. Direct `on_progress(aggregate.file_count)` emit sites in `run_oracle_aware_batch_scan` (cache-hit per-file paths, fallthrough `scan_for_copy` after a name miss) stay unwrapped — they're already cumulative. Future scan call sites that delegate to a volume backend or to `scan_subtree_with_oracle` need the same baseline wrap.
 
 **Gotcha**: Copy's bar/space-check use the write footprint (`total_bytes`), not the dedup'd source size — by design.
 **Why**: A copy of a hardlink-heavy tree writes every link in full, so the bar fills against the write footprint and the disk-space check reserves it (the headline can legitimately read "80 GB" for a 60 GB-`du` `target/`). This is correct, not a bug — `scan_subtree_with_oracle` and `copy_volumes_with_progress` both carry the un-dedup'd `total_bytes` for copy, while the dedup'd `dedup_bytes` rides alongside purely to drive the dialog's clarifying note. Don't "fix" copy to show the dedup'd number: that would under-reserve disk space and stall the bar on dupes. The cross-volume copy path (`copy_volumes_with_progress` → `volume::strategy::copy_directory_streaming`) credits raw streamed bytes per file, which already equals the write footprint, so no dedup wiring is needed there. The one residual approximation: `dedup_bytes` over the cross-source-hardlink case (a file hardlinked into two separately-selected sources) counts twice, slightly understating the dedup savings shown in the note — safe direction, documented on `CopyScanResult::dedup_bytes`.
@@ -887,6 +953,91 @@ handle threaded through its callers needs none of it.
 
 See also: `docs/testing.md` for the project-wide testing playbook.
 
+## The network transfer suites
+
+`webdav_transfer_integration_test.rs` and `sftp_transfer_integration_test.rs` copy real bytes between local disk and a
+live fixture server through `copy_between_volumes`, which is the seam neither backend crate can reach: both directions
+of an actual copy were once broken in the app while `cmdr-sftp`'s own Docker suite was fully green (a `supports_export`
+predicate the crate never states, and a free-space pre-flight reading `NotSupported` as "no room").
+
+- **The scenarios are backend-blind and live in `network_transfer_test_support.rs`.** Everything they touch is
+  `dyn Volume`, so a claim proved against WebDAV is proved in the same words against SFTP and the two suites can't
+  drift. Each backend file connects its own fixture, mints a scratch dir, and delegates.
+- **❗ The cells themselves must stay in the two backend files, on the `webdav_integration_` / `sftp_integration_` name
+  prefix.** The integration lane selects the app crate's Docker cells by NAME (`scripts/check/checks/fixture-lane-coverage.go`,
+  enforced by `desktop-fixture-lane-coverage`), so a scenario promoted to a `#[tokio::test]` in the shared file would
+  compile, look like coverage, and never run anywhere.
+- **What the shared scenarios pin**: a nested directory tree lands intact in both directions (structure and bytes, as
+  one `tree_fingerprint` comparison); a copy cancelled mid-upload leaves neither the user's filename nor a
+  `.cmdr-tmp-*` sibling; an Overwrite answer travels out as a `write-conflict` and back through
+  `resolve_write_conflict` and lands the source bytes; a PRE-EXISTING destination folder still probes each name under
+  the concurrent driver (what a wrongly-`Created` `DirectoryCreation` would turn into a silent overwrite of every
+  clashing file); and awkward names (`&`, `+`, `%`, `#`, non-ASCII) plus a zero-byte file survive a full round trip.
+- **Nothing here waits on a stopwatch to decide a verdict.** The fixture stack is machine-wide and shared with every
+  sibling worktree, so a wait that expires says "the containers were busy" at least as loudly as it says "the code is
+  wrong". Two consequences to keep: a wait for a clash also ends when the operation SETTLES, so a destination probe that
+  never happened fails as a sentence rather than as a timeout; and the cancel cell's premise is a chunk COUNT, not a
+  duration.
+- **The cancel cell holds the source at a chunk boundary rather than racing a timer.** Its `GatedUploadSource`
+  (`network_gated_source_test_support.rs`, split out so neither file crosses the `file-length` warn threshold) hands
+  out one chunk per semaphore permit, so the destination provably holds an open, incomplete staging sibling when the
+  cancel lands; it then insists a `write-cancelled` was emitted and no `write-complete` was, so neither a copy that
+  finished nor a run the host starved can satisfy the later claims for the wrong reason. It waits for TWO chunks, not
+  one: the stream is polled again only once the destination has taken the previous chunk, so the second hand-out is what
+  proves the first reached the server. That also keeps the cell inside the workspace-wide 8 s nextest cap,
+  which a payload big enough to outrun a stopwatch would not.
+
+## The SMB app-side suites
+
+Every SMB cell whose other half is this app rather than the protocol lives here: `smb_transfer_semantics_test.rs`,
+`smb_transfer_safety_test.rs`, `smb_full_concurrency_test.rs`, `smb_stress_test.rs`, `smb_soak_test.rs`,
+`smb_archive_integration_test.rs` (remote-backed zips: browse, extract-out, and the pull-apply-upload-swap edit), and
+`smb_stream_write_integration_test.rs` (a `LocalPosixVolume` source streaming onto the share). They connect through
+`cmdr_smb::volume::testing`, wrapped by `smb_test_support.rs` so the volume they get carries the app's real
+`VolumeHost` and the listing cache, index, and activity tracker see what the share reports. Two cells that assert on
+other modules reach `smb_test_support` from there: `listing/smb_pane_close_watch_integration_test.rs` and
+`volume/smb_media_fetch_integration_test.rs`.
+
+- **Docker SMB integration tests**: `#[ignore]` tests that require Docker SMB containers (start with
+  `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`. Connect via
+  `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()`
+  (10488), `slow_port()` (10493, 200ms latency). See `apps/desktop/test/smb-servers/README.md` for the full container
+  list and env var overrides.
+- **❗ A cell must carry the `smb_integration_` name prefix**, the same rule the WebDAV and SFTP suites above follow:
+  the integration lane selects the app crate's Docker cells by NAME
+  (`scripts/check/checks/fixture-lane-coverage.go`, enforced by `desktop-fixture-lane-coverage`), so anything else
+  compiles, reviews clean, and runs nowhere.
+- **Full-concurrency copy** (`smb_full_concurrency_test.rs`): the automated net under the 2026-07-31 transfer wedge
+  (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). 400 local sources onto the share through
+  `copy_volumes_with_progress` at the driver's own concurrency, with sizes on BOTH SMB write paths: the large ones are
+  sized off the session's negotiated `max_write` at runtime, not hardcoded, so they always land on the staged streaming
+  writer. Beyond byte-exactness it asserts three things a content check alone would miss: the concurrency window really
+  filled (peak `TransferActivity::in_flight` off the progress events, against a floor rather than the driver's own
+  formula, so a change to it can't fail this suite for the wrong reason), a `.cmdr-tmp-*` really appeared during the
+  copy (else the "no leftovers" check passes vacuously), and none survived it.
+
+  Both tests there bound their own wait and, on expiry, panic with `transfer_probe`'s LIVE in-flight table via
+  `render_live_transfer_dump` — a `#[cfg(test)]` accessor over the probe registry. They time out on the copy's
+  `JoinHandle`, never on the copy future: timing out the future DROPS it, which drops the probe guard and empties the
+  registry before there is anything to dump. `smb_integration_a_wedged_copy_is_caught_and_names_its_phase` is the test
+  of that mechanism — it parks a copy on the pause gate and asserts the bound fires with a dump naming the operation,
+  the driver phase, the window fill, and `parked(pause)`. Without it the deadline and the dump are untested
+  scaffolding, and a suite meant to catch a hang becomes one. The wedge is staged through the pause gate rather than a
+  silenced server because what is under test is the harness at expiry, and a pause reaches that state deterministically
+  without holding the shared Docker stack hostage. `.config/nextest.toml` grants the big test a 75 s cap so its own 45 s
+  deadline stays authoritative; a cap kill would leave no diagnostic.
+- **The stress test's hung-run diagnostic gates on the log TARGET** (`MutexCaptureLogger::enabled` in
+  `smb_stress_test.rs`): `cmdr_smb::*` for the `client-mutex:` records and `smb2::*` for `recv:`. Without that gate the
+  whole process-wide trace stream flows through `log()` and gets `format!`-ed per record, which pushed
+  `smb_integration_concurrent_streaming_writes_no_deadlock` past its own deadline. ❗ The target is the EMITTING crate's
+  module path, so moving where the SMB client lives silently empties the capture rather than failing anything.
+- **SMB soak test** (`smb_soak_copy_loop` in `smb_soak_test.rs`): repeats the SMB→Local copy pipeline for hundreds to
+  thousands of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches
+  accumulating bugs the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown).
+  Default mode: `CMDR_SOAK_ITERATIONS=100` (≈5 s against Docker). Long mode: `CMDR_SOAK_DURATION_SECS=1800` (30 min,
+  via `./scripts/soak-smb.sh`). CI has a `workflow_dispatch`-only job in `slow-checks.yml`. It is deliberately outside
+  the gating lane, so it carries no `smb_integration_` prefix.
+
 ## Bulk rename's hop log
 
 `BulkRenameRecorder` (`rename/bulk.rs`) journals every filesystem hop the moment it lands, and the rows that never moved
@@ -914,3 +1065,31 @@ the operation log stops claiming a smaller batch than the one that ran (they wer
 reach undo: `read_rollback_units_page` binds `ItemOutcome::Done`, which is why `restore_move`'s non-`Done` guard is
 defensive rather than reachable. Pinned by
 `a_skipped_row_is_logged_but_never_offered_to_undo_as_a_rollback_unit`.
+
+## Testing the in-flight temp ledger
+
+`in_flight_temps.rs` keeps ONE process-wide `STORE` for the whole test binary, and three rules follow from that. Ignore
+either and the tests fail on load rather than on a break, which is worse than not having them.
+
+- **Take `test_support::take_store()` (or `use_store_in`) for the WHOLE test body**, ❌ never for just the part that
+  writes. Installing a log into the singleton redirects every `register` in the process into that file, from any
+  thread, so two tests doing it at once put one test's records in the other's log — and leave a startup-sweep fixture
+  replaying an empty log, sweeping nothing. The guard holds a `SINGLE_FILE` mutex that serializes them; releasing it
+  early hands the singleton to the next test while this one is still recording. `simulate_process_exit()` is how a test
+  detaches the process's handle (the crash it's reproducing) without giving the singleton back.
+- **Assert about the path under test, ❌ never about the whole ledger.** `live_paths()` and the log file are shared with
+  every transfer test that stages a write without holding the guard, so `live_paths().is_empty()` and
+  `read_recorded(..).is_empty()` are assertions about the rest of the suite. Ask `contains(&subject)` instead; it pins
+  the same regression.
+- **A volume-borne cell picks a volume ID nothing else uses.** The ledger's arrival listener is installed once per
+  process and stays for the rest of the test binary, so a shared ID lets one cell's registration claim another's
+  pending records.
+
+**The sweep signals completion, so no test needs a deadline.** `init_and_sweep` returns a `SweepHandle`; the launch path
+drops it (waiting there would block on a dead mount for minutes), and a test calls `.wait()` to join the sweep thread,
+which also answers a `SweepTally`: assert on that rather than on a log line. Joining keeps the sweep from outliving the
+`TestDir` it is walking. The volume-arrival half runs on a task instead, so a cell waits for it with
+`wait_until_async`.
+
+The cells live in `in_flight_temps_tests.rs`, included as `in_flight_temps`'s own `tests` module so they reach its
+private record types.

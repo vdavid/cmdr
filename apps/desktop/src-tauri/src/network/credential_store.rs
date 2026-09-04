@@ -54,6 +54,7 @@ impl CredentialStore for KeychainCredentials {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::isolate_secrets;
 
     fn creds(username: &str, secret: &str) -> StoredCredentials {
         StoredCredentials {
@@ -67,6 +68,7 @@ mod tests {
     /// calls its second field.
     #[test]
     fn a_saved_secret_comes_back_intact() {
+        let _secrets = isolate_secrets();
         let server = "credential-store-test.local";
         KeychainCredentials
             .save_credentials(server, None, &creds("ada", "pa55"))
@@ -84,6 +86,7 @@ mod tests {
     /// server-level one or a user would silently sign in to the wrong share.
     #[test]
     fn a_share_scoped_entry_is_separate_from_the_server_wide_one() {
+        let _secrets = isolate_secrets();
         let server = "credential-store-scopes.local";
         KeychainCredentials
             .save_credentials(server, None, &creds("wide", "wide-secret"))
@@ -105,6 +108,7 @@ mod tests {
     /// Nothing stored reads as `None`, not as an error a backend has to classify.
     #[test]
     fn nothing_stored_reads_as_a_miss() {
+        let _secrets = isolate_secrets();
         assert!(
             KeychainCredentials
                 .credentials("credential-store-never-saved.local", None)

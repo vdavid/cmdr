@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import {
   buildBetaSignupPayload,
+  buildCronFailurePayload,
   buildErrorReportPayload,
   buildEvictionPayload,
   buildFeedbackPayload,
@@ -327,5 +328,34 @@ describe('postEvictionNotification', () => {
     const body = JSON.parse(init.body as string) as { content?: string; embeds?: unknown[] }
     expect(body.content).toContain('Eviction sweep')
     expect(body.embeds).toBeUndefined()
+  })
+})
+
+describe('buildCronFailurePayload', () => {
+  const failure = {
+    job: 'Crash notifications',
+    when: '2026-09-02T03:00:00.000Z',
+    detail: 'Error: Resend rejected the crash notification email: API key is invalid',
+  }
+
+  it('names the job, the tick, and the cause', () => {
+    const payload = buildCronFailurePayload(failure) as { content: string }
+
+    expect(payload.content).toContain('Crash notifications')
+    expect(payload.content).toContain('2026-09-02T03:00:00.000Z')
+    expect(payload.content).toContain('API key is invalid')
+  })
+
+  it('sends plain content, so a malformed embed can never swallow the alert', () => {
+    const payload = buildCronFailurePayload(failure) as { content: string; embeds?: unknown[] }
+
+    expect(payload.embeds).toBeUndefined()
+  })
+
+  it('caps a runaway error so Discord accepts the message', () => {
+    const payload = buildCronFailurePayload({ ...failure, detail: 'x'.repeat(9000) }) as { content: string }
+
+    expect(payload.content.length).toBeLessThan(2000)
+    expect(payload.content).toContain('truncated')
   })
 })

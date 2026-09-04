@@ -30,9 +30,11 @@ service is stopped.
 
 **To switch back**: set `runs-on: [self-hosted, macOS, ARM64]`, restart the service with
 `cd ~/actions-runner && ./svc.sh start`, and fix the Finder Automation grant first, or the DMG step hangs ~2 minutes and
-fails every job. Worth doing if hosted minutes get expensive or cold builds get painful; the whole workflow still
-carries the self-hosted-specific guards (the stale-`/Volumes/Cmdr` detach, the keychain search-list restore), so nothing
-else has to change.
+fails every job. Check the runner version too: `tauri-action` v1 declares `runs.using: node24`, which needs
+`actions-runner` 2.327.0 or newer (added in that release, 2025-07-22); an older runner rejects the step outright. Worth
+doing if hosted minutes get expensive or cold builds get painful; the whole workflow still carries the
+self-hosted-specific guards (the stale-`/Volumes/Cmdr` detach, the keychain search-list restore), so nothing else has to
+change.
 
 Re-enabling the persistent cargo target dir belongs with that switch, not before it: the old `CARGO_TARGET_DIR`
 (`~/.cache/cmdr-release-target`, outside the workspace `actions/checkout` wipes) was safe ONLY because the jobs ran
@@ -62,17 +64,19 @@ tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, two are worth know
 
 ## Pre-release smoke test on old macOS
 
-Cmdr targets macOS 12 Monterey and up. The bundled Safari there can be 15.x, which doesn't support `color-mix()` (16.2+)
-or `oklch` color (16.4+). We carry static sRGB fallbacks for both in `app.css` (`@supports not (color: color-mix(...))`
-blocks) and via JS in `accent-color.ts` / `volume-tint.svelte.ts`. The fallbacks have to stay in sync as new tokens
-land.
+Cmdr opens on macOS 10.15 Catalina and up, which means two different old-WebKit paths, and both want a look before a
+tag. The floor rationale and version evidence: `docs/notes/system-requirements-and-es2025.md`.
 
-Before tagging a release:
+### Degraded but working: the `color-mix()` fallbacks
 
-1. On any Mac, run `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` from the repo root. This forces the fallback path on modern
-   WebKit by faking `hasColorMix = false` (routes the JS branches through sRGB mix) and setting `data-force-old-webkit`
-   on `<html>` (activates the mirror of the `@supports not (...)` blocks in `app.css`). It doesn't perfectly replicate
-   Safari 15.x's renderer, but it does prove the fallback values look reasonable.
+Safari below 16.2 doesn't support `color-mix()`, and below 16.4 not `color-mix(in oklch, …)`. We carry static sRGB
+fallbacks in `app.css` (`@supports not (color: color-mix(...))` blocks) and via JS in `accent-color.ts` /
+`volume-tint.svelte.ts`. They have to stay in sync as new tokens land.
+
+1. On any Mac, run `VITE_CMDR_FORCE_OLD_WEBKIT=1 pnpm dev` from the repo root. This fakes `hasColorMix = false` (routing
+   the JS branches through sRGB mix) and sets `data-force-old-webkit` on `<html>` (activating the mirror of the
+   `@supports not (...)` blocks). It doesn't replicate Safari 15.x's renderer, but it proves the fallback values look
+   reasonable.
 2. Optionally, boot a Monterey 12.7+ VM or a real old Mac and open the dev build. Note that ARM Monterey VMs ship with
    current Safari (17.x), so the bug isn't reproducible there without an early-12.x IPSW.
 3. Either way, confirm the four user-visible spots aren't broken:
@@ -86,6 +90,25 @@ Before tagging a release:
 If a new `color-mix()` token lands without a matching entry in the `@supports not` blocks, those four spots silently
 break on old WebKit. Keep the lists in `app.css` in sync, and prefer the JS-derivation pattern (`accent-color.ts`,
 `volume-tint.svelte.ts`) for any token that depends on the live macOS accent color.
+
+### Below the floor: the boot guard
+
+Under Safari 15.4 the app can't run at all, and the inline guard in `apps/desktop/src/app.html` replaces the window with
+a translated "Cmdr needs a newer Safari" screen instead of leaving a white one. Nobody on the team has that Safari, so
+the dev override is the only routine way to see it.
+
+1. Run `VITE_CMDR_FORCE_OLD_WEBKIT=unsupported pnpm dev` from the repo root. The flag is read at BUILD time by
+   `svelte.config.js`, so it has to be set before the dev server starts; restarting an already-running one won't pick it
+   up.
+2. Confirm the screen paints: title, one paragraph, one Quit button, centered, correct in both light and dark mode.
+3. Click Quit. The app should exit. (It goes through `plugin:process|exit`, so the quit gate sees it like ⌘Q.)
+4. Check a second language: set macOS to one of the shipped locales, or run the same command after temporarily pointing
+   `navigator.language`'s answer at another tag in the dev tools. Copy comes from `main.oldWebkit.*` in the catalog, so
+   any locale you can pick in Settings is one the guard can show.
+
+Nothing here needs a real old Mac: `apps/desktop/scripts/app-boot-guard.test.ts` runs the actual guard with each Safari
+15.4 capability removed in turn, and fails on ES6 syntax that old WebKit couldn't parse. The smoke test is about how the
+screen LOOKS, which no test can judge.
 
 ## Keep the Mac awake during the build (self-hosted only)
 
@@ -150,6 +173,35 @@ Then hand David the submission link: https://member.macupdate.com/content/submit
 the top takes the app name and loads the current listing. MacUpdate prefers updating an existing listing over a new one
 (downloads keep accumulating, version history stays catalogued, and Watch List users get notified).
 
+## What a release publishes
+
+One GitHub release per tag, carrying these assets for each of the three arches (`aarch64`, `x64`, `universal`):
+
+- `Cmdr_<version>_<arch>.dmg`: what people download. `getcmdr.com/download/latest/<arch>`, the website's download
+  buttons, and the Homebrew cask each rebuild this name from the version, so it's the one asset name the rest of the
+  repo hard-codes.
+- `Cmdr_<version>_<arch>.app.tar.gz` plus its `.sig`: the updater payload and its minisign signature.
+- `latest.json`, whose copy in `apps/website/public/latest.json` (committed by the publish job) is what
+  `getcmdr.com/latest.json` serves.
+
+Two naming details are load-bearing:
+
+- **File names say `x64`, never `x86_64`.** Tauri's CLI names the Intel bundles that way, while the rest of the repo
+  (URL paths, D1 columns, Rust target triples) says `x86_64`. The mapping happens at the file-name boundary only; see
+  `apps/api-server/src/telemetry/DETAILS.md` § Gotchas.
+- **Every bundle name carries the app version, `.app.tar.gz[.sig]` included.** That last part arrived with
+  `tauri-action` v1 (verified on tauri-action v1.0.0, reading its `getAssetName` name builder, 2026-09-02); v0 left the
+  tarballs unversioned, so releases up to 0.41.0 carry `Cmdr_<arch>.app.tar.gz` instead.
+
+**The publish job owns `latest.json`, not `tauri-action`.** From v1 the action writes download URLs in GitHub's API form
+(`api.github.com/repos/.../releases/assets/<id>`), which hands back the binary only to a caller sending
+`Accept: application/octet-stream`. Cmdr's updater does a plain `reqwest` GET (`download_update` in
+`apps/desktop/src-tauri/src/updater/mod.rs`), so it would read JSON metadata and fail signature verification. The
+workflow passes `uploadUpdaterJson: false` and builds the manifest itself with
+`https://github.com/<repo>/releases/download/<tag>/<file>` URLs. Before uploading it, the job asserts that every URL in
+it names an asset actually on the release: a name that drifts from what the action uploaded would strand every install
+in the field, with no fallback in the app to recover.
+
 ## How updates work
 
 - App checks `https://getcmdr.com/latest.json` on start and every 60 min
@@ -194,13 +246,23 @@ the build will complete in minutes.
 
 Use "Re-run failed jobs" (not "Re-run all jobs") to avoid rebuilding architectures that already succeeded.
 
+### The release notes reverted to "See CHANGELOG.md for details."
+
+`tauri-action` rewrites an existing release's name and body on every run (since v1). A build job re-run after the
+publish job already wrote the changelog therefore puts the placeholder body back. Re-run the publish job afterwards: it
+re-extracts the CHANGELOG section, regenerates `latest.json`, and re-commits the website copy.
+
 ### Publish job failed but builds succeeded
 
 The publish job downloads signatures from the release, generates `latest.json`, updates the release body, commits to
 main, and triggers a website deploy. If it fails:
 
 - **Missing signatures**: check that all 3 build jobs uploaded their `.sig` files. The publish job validates this
-  upfront and fails fast with a clear message.
+  upfront and fails fast with a clear message. It looks for `Cmdr_<version>_<arch>.app.tar.gz.sig`, so a `tauri-action`
+  bump that changes bundle naming lands here first.
+- **`latest.json` points at an asset that isn't on the release**: same cause, caught by the assertion the job runs
+  before uploading the manifest. Compare `gh release view <tag> --json assets` against the names the workflow builds,
+  and fix the workflow rather than the release.
 - **Git push failed**: another commit was pushed to main between checkout and push. Re-run the publish job; it does
   `git pull --rebase` to handle this, but if the rebase itself conflicts (someone else edited `latest.json`), it needs
   manual resolution.

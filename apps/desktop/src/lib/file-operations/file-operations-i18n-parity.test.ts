@@ -102,7 +102,8 @@ describe('delete dialog chrome (en)', () => {
     expect(t('fileOperations.delete.scanFile', { count: 2 })).toBe('files')
     expect(t('fileOperations.delete.scanDir', { count: 1 })).toBe('dir')
     expect(t('fileOperations.delete.scanDir', { count: 2 })).toBe('dirs')
-    expect(t('fileOperations.delete.throughputFiles', { rateText: '1,200' })).toBe('1,200 files/s')
+    // The rate itself is the ONE shared key both scan lines and the transfer
+    // bars read; see the "shared" block below.
   })
 })
 
@@ -170,7 +171,8 @@ describe('scan-phase body (en)', () => {
     expect(tString('fileOperations.scanPhase.fromLabel')).toBe('From:')
     expect(t('fileOperations.scanPhase.scanFile', { count: 1 })).toBe('file')
     expect(t('fileOperations.scanPhase.scanDir', { count: 2 })).toBe('dirs')
-    expect(t('fileOperations.scanPhase.throughputFiles', { rateText: '900' })).toBe('900 files/s')
+    expect(t('fileOperations.shared.fileRate', { count: 900, rateText: '900' })).toBe('900 files/s')
+    expect(t('fileOperations.shared.fileRate', { count: 1, rateText: '1.0' })).toBe('1.0 file/s')
   })
 })
 
@@ -232,6 +234,13 @@ describe('transfer progress dialog chrome (en)', () => {
     )
     expect(tString('fileOperations.transferProgress.rollbackTooltip')).toBe(
       'Stop, and delete every file written so far',
+    )
+    // Its move sibling: the same button, and the opposite promise about the files.
+    expect(tString('fileOperations.transferProgress.rollbackTooltipStopAndMoveBack')).toBe(
+      'Stop, and move back every file moved so far',
+    )
+    expect(tString('fileOperations.transferProgress.rollbackAlreadyLandedTooltip')).toBe(
+      "Every file is already at the destination, so Cmdr can't undo the move now. Cancel still stops it from removing the rest of the originals.",
     )
     expect(tString('fileOperations.transferProgress.smallerDisabledTooltip')).toBe(
       "Can't compare: target folder size is unknown.",

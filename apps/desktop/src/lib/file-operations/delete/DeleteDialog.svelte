@@ -22,6 +22,7 @@
         type DeleteSourceItem,
     } from './delete-dialog-utils'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
+    import { formatFilesPerSecond } from '$lib/units'
     import Size from '$lib/ui/Size.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -127,6 +128,12 @@
     const throughput = new ScanThroughput()
     let filesPerSec = $state<number | null>(null)
     let bytesPerSec = $state<number | null>(null)
+
+    /** The walk's speed, through the one files-per-second policy the transfer
+     *  bars use, so a slow scan reads "0.4 files/s" instead of the "0 files/s" a
+     *  bare `Math.round` produced. `null` once it rounds to nothing, which is
+     *  also what hides the line. */
+    const scanRate = $derived(filesPerSec === null ? null : formatFilesPerSecond(filesPerSec))
     let unlisteners: UnlistenFn[] = []
 
     /** Accepts the event if it belongs to our scan, filtering stale events from previous scans. */
@@ -405,11 +412,12 @@
         </div>
 
         <!-- Throughput -->
-        {#if isScanning && filesPerSec !== null && filesPerSec > 0}
+        {#if isScanning && scanRate !== null}
             <div class="scan-throughput">
                 <span class="scan-throughput-value"
-                    >{tString('fileOperations.delete.throughputFiles', {
-                        rateText: formatNumber(Math.round(filesPerSec)),
+                    >{tString('fileOperations.shared.fileRate', {
+                        count: scanRate.value,
+                        rateText: scanRate.text,
                     })}</span
                 >
                 {#if bytesPerSec !== null && bytesPerSec > 0}

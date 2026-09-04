@@ -1325,6 +1325,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Aviso de macOS antigo exibido",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Interno: acompanha se o aviso único para um Mac abaixo da versão compatível do macOS já apareceu. Oculto da interface.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Aviso de atualização da introdução exibido",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -1498,9 +1506,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr chat rail); kept verbatim in every locale (do-not-translate list)."
   },
-  "settings.askCmdr.intro": "Converse com uma IA sobre seus arquivos, discos e histórico. O Ask Cmdr é somente leitura: ele lê nomes, caminhos e tamanhos para responder, e nunca muda nada.",
+  "settings.askCmdr.intro": "Converse com uma IA sobre seus arquivos, discos e histórico. O Ask Cmdr lê nomes, caminhos e tamanhos para responder, só olha dentro de um arquivo quando você pergunta sobre ele e nunca muda um arquivo sem a sua aprovação.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "O Ask Cmdr está ativado",
   "@settings.askCmdr.status.on": {

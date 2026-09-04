@@ -51,6 +51,7 @@ in [CLAUDE.md](CLAUDE.md).
    npx wrangler secret put PADDLE_ENVIRONMENT              # "live"
    npx wrangler secret put PRICE_ID_COMMERCIAL_SUBSCRIPTION # live price ID
    npx wrangler secret put PRICE_ID_COMMERCIAL_PERPETUAL   # live price ID
+   npx wrangler secret put HEALTHCHECKS_PING_URL           # optional: cron dead-man's switch
    ```
 10. **`.dev.vars`** (local dev, sandbox values): see [CLAUDE.md](CLAUDE.md#configuration) for the full table.
 11. Save `keys/private.key` in a secure store, then delete it from the filesystem.

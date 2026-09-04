@@ -366,7 +366,9 @@ async fn the_watchdog_ends_a_wedged_write_and_the_file_runs_again() {
         Arc::clone(guard.state()),
         Arc::new(crate::file_system::write_operations::event_sinks::CollectorEventSink::new()),
     );
-    let task = op_probe.probe().begin_task(0, "/a.txt", "/a.txt");
+    let task = op_probe
+        .probe()
+        .begin_task(TaskRow::source(0), transfer_probe::TaskRole::File, "/a.txt", "/a.txt");
     let handle = task.probe();
 
     let bytes = transfer_probe::CURRENT_TASK_PROBE
@@ -405,7 +407,9 @@ async fn a_retry_shows_up_in_the_in_flight_table() {
         Arc::clone(guard.state()),
         Arc::new(crate::file_system::write_operations::event_sinks::CollectorEventSink::new()),
     );
-    let task = op_probe.probe().begin_task(0, "/a.txt", "/a.txt");
+    let task = op_probe
+        .probe()
+        .begin_task(TaskRow::source(0), transfer_probe::TaskRole::File, "/a.txt", "/a.txt");
     let handle = task.probe();
 
     transfer_probe::CURRENT_TASK_PROBE

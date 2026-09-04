@@ -8,7 +8,8 @@ Must-know invariants and gotchas live in `CLAUDE.md`. The trait shape, capabilit
 ## Key files
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` §
-Module map. `mtp/` splits into `mod.rs` and `scan.rs`. What each piece DOES is in the sections below (§ "SMB
+Module map. `mtp/` splits into `mod.rs`, `volume_impl.rs`, `streams.rs`, `mapping.rs`, `cancel.rs`, and `scan.rs`;
+`local_posix.rs` into itself plus `local_posix/scan.rs` and `local_posix/streams.rs`. What each piece DOES is in the sections below (§ "SMB
 auto-upgrade lifecycle", § "Per-backend decisions", § Testing), or in `crates/cmdr-archive/DETAILS.md` for
 `ArchiveVolume` and `crates/cmdr-smb/DETAILS.md` for `SmbVolume`. Only the layout facts that none of those carry live
 here:
@@ -99,10 +100,11 @@ The failure this prevents: two "Connect directly" clicks nine seconds apart repl
 
 ## The SMB backend
 
-Everything about `SmbVolume` itself — the reconnect lifecycle, the scan-connection pool, re-rooting, the archive
-push-refresh, and its decisions — moved with the code to `crates/cmdr-smb/DETAILS.md`. What stays on this side is the
-auto-upgrade lifecycle above (it is `network/`'s, not the backend's) and the app-side half of the suites, in
-`smb_app_integration_test.rs`.
+`SmbVolume` itself — the reconnect lifecycle, the scan-connection pool, re-rooting, the archive push-refresh, and its
+decisions — is `crates/cmdr-smb/DETAILS.md`. What stays on this side is the auto-upgrade lifecycle above (it is
+`network/`'s, not the backend's). The app-side suites sit with the app code they assert on; the map is
+`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on", and what they pin is
+`file_system/write_operations/DETAILS.md` § "The SMB app-side suites".
 
 
 ## Per-backend decisions
@@ -110,14 +112,14 @@ auto-upgrade lifecycle above (it is `network/`'s, not the backend's) and the app
 **Decision**: `SmbVolume` and `MtpVolume` store `volume_id: String` for listing cache lookups
 **Why**: `notify_mutation` needs to call `host.listings().directory_changed(volume_id, ...)` to find the right cached listings. The volume_id is computed at creation time (`smb_volume_id(server, port, share)` for SMB so two same-named shares on different servers don't collide — see `volumes/CLAUDE.md` § "Volume IDs"; `"{device_id}:{storage_id}"` for MTP) and stored on the struct rather than recomputed on every mutation.
 
-**Decision**: `MtpVolume` overrides `scan_for_copy_batch_with_progress` to group selected paths by parent and list each parent once
+**Decision**: `MtpVolume` overrides `scan_for_copy_batch_with_boundary` to group selected paths by parent and list each parent once
 **Why**: MTP has no single-file stat call: `get_metadata(path)` lists the parent directory and searches by name. A naive scan that called `get_metadata` per path would re-list `/DCIM/Camera` (15k entries, ~17 s over USB) for every selected photo. The override groups the input paths by parent, calls `list_directory(parent, on_progress)` once per unique parent, and indexes the entries by name for O(1) lookups. **Oracle layered on top**: before listing a parent, the override consults `try_get_authoritative_listing(volume_id, parent)`; on hit, the cached entries replace the listing call entirely (no USB I/O for that parent). On miss the single-listing-per-parent path runs, so cold-cache perf is preserved. Decision is per-parent; one batch can mix watcher-fresh and cold parents.
 
 **Decision**: `LocalPosixVolume::write_from_stream` `sync_data`s each file (+ best-effort parent-dir fsync) before it returns
 **Why**: Every cross-volume copy/move that lands on a local disk (MTP → Local, SMB → Local, USB import) flows through this one method. A bare `file.flush()` finish is a userspace no-op on a raw `std::fs::File`, so the bytes would sit only in the OS page cache when the op reports "complete" — letting the user eject / sleep and lose data (on a move, from both sides, since the source delete runs after the copy reports Ok). The `sync_data` (fdatasync) gives the "durable as each file completes" property the local-FS chunked copy already has (`transfer/chunked_copy.rs`), so a crash mid-batch leaves earlier files safe. The parent-dir fsync makes the file's directory entry durable too. Both are best-effort on error: a failure logs under `target: "write_durability"` and continues rather than failing a completed multi-GB transfer at the final fsync (matching `durability::flush_created_destinations`). Non-local backends (MTP/SMB/InMemory) need no equivalent — durability there is the device/server's concern. Pinned by `local_posix_test::test_write_from_stream_multichunk_is_durable_and_correct` (content-correctness regression guard; the fdatasync itself isn't observable from a unit test).
 
 **Decision**: `local_posix` stays in the app crate permanently; it is NOT a candidate for a backend crate
-**Why**: it looks like the smallest backend (887 lines, measured 2026-08-21) and is the hardest extraction of the four. It calls `crate::file_system::git` at ten sites (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`, and seven `is_virtual` guards), and `file_system/git/` is 6,327 lines including a `gix`-backed repo walker and a `.git` watcher: the git portal is *implemented as* `LocalPosixVolume` hooks, so extracting the backend means extracting git or inventing a git seam with exactly one implementor forever. It is also the only caller of the real-FS reader in `listing/reading.rs`, which serves the non-volume listing path too, and it's the FSEvents watcher's peer. It's the sole caller of `find_listings_for_path_on_volume` and `patch_listing_after_local_mutation`, and the latter is *definitionally* local — it `std::fs`-stats the changed entry, which no backend on a protocol can do. ❌ Don't propose this as "completing the set" once FTP and S3 are crates: the set is deliberately incomplete. Seam rationale: `crates/cmdr-fs/src/volume/host/DETAILS.md`.
+**Why**: it looks like the smallest backend (1,056 lines across `local_posix.rs` + `local_posix/`, measured 2026-09-04) and is the hardest extraction of the four. It calls `crate::file_system::git` at ten sites (`try_route_listing`, `try_route_metadata`, `try_open_blob_stream`, and seven `is_virtual` guards), and `file_system/git/` is 6,327 lines including a `gix`-backed repo walker and a `.git` watcher: the git portal is *implemented as* `LocalPosixVolume` hooks, so extracting the backend means extracting git or inventing a git seam with exactly one implementor forever. It is also the only caller of the real-FS reader in `listing/reading.rs`, which serves the non-volume listing path too, and it's the FSEvents watcher's peer. It's the sole caller of `find_listings_for_path_on_volume` and `patch_listing_after_local_mutation`, and the latter is *definitionally* local — it `std::fs`-stats the changed entry, which no backend on a protocol can do. ❌ Don't propose this as "completing the set" once FTP and S3 are crates: the set is deliberately incomplete. Seam rationale: `crates/cmdr-fs/src/volume/host/DETAILS.md`.
 
 **Decision**: MTP stays in the app crate too, and moving it would be a project rather than a milestone
 **Why**: three things make it a redesign instead of a mechanical move. Event payload types carry `specta::Type` + `tauri_specta::Event` derives **inside the transport layer** (13 derives across `mtp/{types,watcher}.rs` and `mtp/connection/{mod,directory_ops}.rs`, measured 2026-08-21), so the presentation boundary runs through the middle of the code that talks to the device. Nine inline `#[cfg(test)]` gates gate real behavior rather than declaring a test module (`mtp/virtual_device.rs` ×5, `mtp/connection/{file_ops.rs,mod.rs}` ×2 each), and `cfg(test)` is set only for a crate's own test target, so each would silently flip the moment the code became a dependency (this project has been bitten by that three times). And `backends/mtp/mod.rs:147`'s `test_hooks` is `pub(in crate::file_system::volume)`, a visibility with **no cross-crate spelling** — it becomes `#[cfg(any(test, feature = "testing"))] pub`, a real widening of the public surface, or its tests move with it. On top of that, `backends/mtp/` (1,331 lines) is a veneer over `src/mtp/` (7,294 lines), so extracting one without the other buys nothing.
@@ -193,43 +195,10 @@ Resolving the id instead would answer with the SUCCESSOR after a swap and mark a
 - `in_memory_test.rs`: unit tests for `InMemoryVolume` (CRUD, sorting, concurrency, stress 50k entries)
 - `local_posix_test.rs`: real-FS tests (write ops, symlinks, copy, space info) using `std::env::temp_dir()`
 - `mtp/` inline tests: path conversion and capability flags (no device needed)
-- **The SMB suites are split across the crate boundary**, and which side a cell lives on is decided by what it
-  asserts, not by what it connects to: `crates/cmdr-smb/DETAILS.md` § "Which side a test lives on". The cells that stay
-  here are the ones driving THIS app — the transfer pipeline (`smb_transfer_semantics_test.rs`,
-  `smb_transfer_safety_test.rs`, `smb_full_concurrency_test.rs`, `smb_stress_test.rs`, `smb_soak_test.rs`), archive
-  routing (`smb_archive_integration_test.rs`), media enrichment (`smb_media_fetch_integration_test.rs`), and the two
-  odd ones out in `smb_app_integration_test.rs`. They connect through `cmdr_smb::volume::testing`, wrapped by
-  `smb_test_support.rs` so the volume they get is wired to the app's real `VolumeHost`.
-- **Docker SMB integration tests**: `#[ignore]` tests that require Docker SMB containers (start with
-  `apps/desktop/test/smb-servers/start.sh`). Run with `cargo nextest run smb_integration --run-ignored all`. Connect via
-  `smb2::testing::guest_port()` (10480, guest/no-auth), `auth_port()` (10481, `testuser`/`testpass`), `readonly_port()`
-  (10488), `slow_port()` (10493, 200ms latency). See `apps/desktop/test/smb-servers/README.md` for the full container
-  list and env var overrides.
-- **Full-concurrency copy** (`smb_full_concurrency_test.rs`): the automated net under the 2026-07-31 transfer wedge
-  (`docs/notes/incidents/2026-07-31-transfer-wedge/README.md`). 400 local sources onto the share through
-  `copy_volumes_with_progress` at the driver's own concurrency, with sizes on BOTH SMB write paths: the large ones are
-  sized off the session's negotiated `max_write` at runtime, not hardcoded, so they always land on the staged streaming
-  writer. Beyond byte-exactness it asserts three things a content check alone would miss: the concurrency window really
-  filled (peak `TransferActivity::in_flight` off the progress events, against a floor rather than the driver's own
-  formula, so a change to it can't fail this suite for the wrong reason), a `.cmdr-tmp-*` really appeared during the
-  copy (else the
-  "no leftovers" check passes vacuously), and none survived it.
-
-  Both tests here bound their own wait and, on expiry, panic with `transfer_probe`'s LIVE in-flight table via
-  `write_operations::render_live_transfer_dump` — a `#[cfg(test)]` accessor over the probe registry. They time out on
-  the copy's `JoinHandle`, never on the copy future: timing out the future DROPS it, which drops the probe guard and
-  empties the registry before there is anything to dump. `smb_integration_a_wedged_copy_is_caught_and_names_its_phase`
-  is the test of that mechanism — it parks a copy on the pause gate and asserts the bound fires with a dump naming the
-  operation, the driver phase, the window fill, and `parked(pause)`. Without it the deadline and the dump are untested
-  scaffolding, and a suite meant to catch a hang becomes one. The wedge is staged through the pause gate rather than a
-  silenced server because what is under test is the harness at expiry, and a pause reaches that state deterministically
-  without holding the shared Docker stack hostage. `.config/nextest.toml` grants the big test a 75 s cap so its own 45 s
-  deadline stays authoritative; a cap kill would leave no diagnostic, which is the exact outcome the milestone ends.
-- **SMB soak test** (`smb_soak_copy_loop` in `smb_soak_test.rs`): Repeats the SMB→Local copy pipeline for hundreds to
-  thousands of iterations and watches RSS, open FDs, SMB credits, and per-iteration wall-clock drift. Catches accumulating bugs
-  the single-shot integration tests can't see (credit leak, FD leak, memory growth, slowdown). Default mode:
-  `CMDR_SOAK_ITERATIONS=100` (≈5 s against Docker). Long mode: `CMDR_SOAK_DURATION_SECS=1800` (30 min, via
-  `./scripts/soak-smb.sh`). CI has a `workflow_dispatch`-only job in `slow-checks.yml`.
+- **No SMB or archive cell lives here.** Which side of the crate boundary one belongs on is decided by what it asserts,
+  not by what it connects to (`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on"), and the app-side ones then
+  sit beside the app code they assert on. What they pin, the Docker fixture ports, and the soak and wedge harnesses:
+  `file_system/write_operations/DETAILS.md` § "The SMB app-side suites".
 `LocalPosixVolume` routes every non-forced rename through the shared atomic-exclusive primitive. This applies equally
 to `/`, attached disks, Dropbox, iCloud, and other local POSIX roots registered with non-root volume IDs. Forced
 renames retain normal POSIX replacement semantics because the caller explicitly authorized replacement.
@@ -237,9 +206,35 @@ renames retain normal POSIX replacement semantics because the caller explicitly 
 ## Where the shared conformance assertions live
 
 `cmdr_fs::volume::conformance` holds the promises no backend may quietly opt out of, and each backend runs the ones it
-can: `mtp_conformance_test.rs` and `cmdr-smb`'s `conformance_test.rs` collect them per backend, LocalPosix keeps its in
-`local_posix_test.rs`, and `mtp_delete_test.rs` stays separate because the non-recursion contract is the one MTP has to
-IMPLEMENT rather than inherit (`MtpDeleteScope`), with enough scaffolding to earn its own file.
+can: `mtp_conformance_test.rs`, `local_posix_conformance_test.rs`, and each remote crate's own `conformance_test.rs`
+collect them per backend, and `mtp_delete_test.rs` stays separate because the non-recursion contract is the one MTP has
+to IMPLEMENT rather than inherit (`MtpDeleteScope`), with enough scaffolding to earn its own file. The roster and what
+each one defends: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
+
+**Decision**: MTP settles a conflict scan's missing destination through `get_metadata`, not through a `NotFound` arm.
+**Why**: every other backend reads a `VolumeError::NotFound` from the destination listing as "nothing clashes" and
+answers an empty list. MTP can't: `resolve_path_to_handle` is cache-only, so a path nobody has browsed to fails as a
+generic `IoError` ("path not in cache"), which is honest, because it means UNKNOWN rather than absent. Reading every
+listing failure as absence would let a disconnected device pass for an empty folder and clear the copy to run.
+`get_metadata` settles it by listing the PARENT, so only a confirmed-absent destination reads as empty and every other
+failure stays the caller's to see. It costs one extra parent listing, on the error path only.
+
+## MTP's no-clobber rename is check-then-act
+
+`MtpVolume::rename` earns the `force == false` refusal by asking `exists(to)` and then moving. Every other backend
+claims the name with a primitive the other end refuses (`renamex_np(RENAME_EXCL)`, an SFTP `create_new` placeholder or
+plain `SSH_FXP_RENAME`, WebDAV's `Overwrite: F`, SMB's `ReplaceIfExists == false`), so MTP is the only one whose refusal
+has a window in it. The conformance cell is `mtp_conformance_test.rs`'s
+`rename_honors_the_shared_no_clobber_contract`.
+
+**Decision**: leave the window open and say so, rather than build machinery around it. **Why**: MTP offers nothing
+tighter to build on (verified on `mtp-rs` 0.32.0, source read, 2026-09-02). A same-directory rename is
+`SetObjectPropValue(0x9804)` on `ObjectFileName(0xDC07)`, and a cross-directory move is `MoveObject(0x1019)` with
+params `[handle, storage_id, parent]`; neither operation takes an overwrite or exclusive flag, and PTP's response-code
+enum has no collision code to read one out of (`StoreFull`, `AccessDenied`, `InvalidParameter`, and no
+`ObjectAlreadyExists`). The protocol also permits two siblings with the same name, so a device asked to collide doesn't
+refuse: it complies, and the user ends up with a duplicate. ❌ Don't reach for a lock or a retry loop here. Cmdr isn't the only writer — the phone's own apps and MTP's
+other clients mutate the same storage — so a lock this side would buy nothing and read like a guarantee.
 
 **Gotcha: a virtual-MTP test must UNREGISTER its device, not just disconnect.** `setup_virtual_mtp_device()` registers a
 device over a fresh `TempDir`; leaving it registered means the next test in the same binary connects to a stale storage

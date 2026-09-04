@@ -72,10 +72,6 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.delete.throughputFiles": "{rateText} filer/s",
-  "@fileOperations.delete.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.delete.confirmDelete": "Radera",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
@@ -181,6 +177,10 @@
     "sourceHash": "4a55710",
     "sameAsSourceJustification": "Structure-only value: '<size></size>/s' - a widget tag with no inner text plus the identical unit suffix '/s' (per second). No translatable text."
   },
+  "fileOperations.shared.fileRate": "{count, plural, one {{rateText} fil/s} other {{rateText} filer/s}}",
+  "@fileOperations.shared.fileRate": {
+    "sourceHash": "ca7c75b"
+  },
   "fileOperations.shared.andJoin": "{a} och {b}",
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
@@ -224,6 +224,10 @@
   "fileOperations.transferDialog.spaceInfo": "{free} ledigt av {total}",
   "@fileOperations.transferDialog.spaceInfo": {
     "sourceHash": "a46cd4e"
+  },
+  "fileOperations.transferDialog.spaceInfoUnbounded": "{used} använt, ingen storleksgräns",
+  "@fileOperations.transferDialog.spaceInfoUnbounded": {
+    "sourceHash": "5d74d4d"
   },
   "fileOperations.transferDialog.smbNativeNote": "Den här delade mappen använder systemanslutningen. Avbrytning kan fördröjas. Använd ”Anslut direkt” i volymväljaren för snabbare överföringar och tillförlitlig avbrytning.",
   "@fileOperations.transferDialog.smbNativeNote": {
@@ -373,10 +377,6 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.scanPhase.throughputFiles": "{rateText} filer/s",
-  "@fileOperations.scanPhase.throughputFiles": {
-    "sourceHash": "c3b28a4"
-  },
   "fileOperations.transferProgress.scanTitleCopy": "Verifierar före kopiering...",
   "@fileOperations.transferProgress.scanTitleCopy": {
     "sourceHash": "fd21ea9"
@@ -460,6 +460,10 @@
   "fileOperations.transferProgress.titleFlushing": "Skriver den sista biten...",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
+  },
+  "fileOperations.transferProgress.titleRemovingOriginals": "Tar bort originalen...",
+  "@fileOperations.transferProgress.titleRemovingOriginals": {
+    "sourceHash": "71465d5"
   },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Kopierar} move {Flyttar} compress {Komprimerar} delete {Raderar} other {Flyttar till papperskorgen}}...",
   "@fileOperations.transferProgress.titleActive": {
@@ -601,6 +605,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Stoppa och lägg tillbaka alla filer som flyttats hittills",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Alla filer finns redan på målet, så flytten går inte att ångra längre. Avbryt stoppar ändå Cmdr innan resten av originalen tas bort.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Pausad",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"
@@ -665,9 +677,13 @@
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Det här raderar alla filer som åtgärden har skrivit hittills. Filer som den har skrivit över kommer inte tillbaka.",
+  "fileOperations.rollbackConfirm.body": "Det här raderar alla filer som åtgärden har skrivit hittills, och filer som den har skrivit över kommer inte tillbaka. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "8d61f81"
+    "sourceHash": "740e974"
+  },
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Det här flyttar tillbaka allt som åtgärden har flyttat hittills, och filer som den har skrivit över kommer inte tillbaka. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar där de är.",
+  "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
+    "sourceHash": "a489eb2"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Ångra klart den här åtgärden?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -700,6 +716,86 @@
   "fileOperations.rollbackConfirm.finishRollBack": "Ångra klart",
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
+  },
+  "fileOperations.cancelRollback.doneDeleting": "Raderade allt Cmdr hade skrivit: {countText} {count, plural, one {objekt} other {objekt}}.",
+  "@fileOperations.cancelRollback.doneDeleting": {
+    "sourceHash": "ff786b9"
+  },
+  "fileOperations.cancelRollback.doneMovingBack": "Lade tillbaka allt: {countText} {count, plural, one {objekt} other {objekt}}.",
+  "@fileOperations.cancelRollback.doneMovingBack": {
+    "sourceHash": "c5e329e"
+  },
+  "fileOperations.cancelRollback.someDeleted": "Raderade {countText} {count, plural, one {objekt} other {objekt}}.",
+  "@fileOperations.cancelRollback.someDeleted": {
+    "sourceHash": "58cda63"
+  },
+  "fileOperations.cancelRollback.someMovedBack": "Lade tillbaka {countText} {count, plural, one {objekt} other {objekt}}.",
+  "@fileOperations.cancelRollback.someMovedBack": {
+    "sourceHash": "0099d44"
+  },
+  "fileOperations.cancelRollback.stoppedDeleting": "Stoppade efter att ha raderat {countText} {count, plural, one {objekt} other {objekt}}. Resten ligger kvar.",
+  "@fileOperations.cancelRollback.stoppedDeleting": {
+    "sourceHash": "d624541"
+  },
+  "fileOperations.cancelRollback.stoppedMovingBack": "Stoppade efter att ha lagt tillbaka {countText} {count, plural, one {objekt} other {objekt}}. Resten ligger kvar där flytten lade dem.",
+  "@fileOperations.cancelRollback.stoppedMovingBack": {
+    "sourceHash": "f536342"
+  },
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr stoppade mitt i borttagningen av originalen, men allt Cmdr flyttade finns redan på målet och stannar där. {count, plural, one {Ett original ligger kvar på sin gamla plats.} other {{countText} original ligger kvar på sina gamla platser.}}",
+  "@fileOperations.cancelRollback.moveAlreadyLanded": {
+    "sourceHash": "88dcf83"
+  },
+  "fileOperations.cancelRollback.leftBehind": "Cmdr hoppar över allt som är osäkert, så det här blev kvar:",
+  "@fileOperations.cancelRollback.leftBehind": {
+    "sourceHash": "fb28a31"
+  },
+  "fileOperations.cancelRollback.reason.drift.named": "{name} lämnades som den är: den ändrades efter att Cmdr lade den där.",
+  "@fileOperations.cancelRollback.reason.drift.named": {
+    "sourceHash": "e227f3b"
+  },
+  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades som de är: de ändrades efter att Cmdr lade dem där.",
+  "@fileOperations.cancelRollback.reason.drift.counted": {
+    "sourceHash": "233b2f5"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} lämnades som den är: Cmdr kunde inte kontrollera om den ändrats.",
+  "@fileOperations.cancelRollback.reason.unverifiable.named": {
+    "sourceHash": "29c32b9"
+  },
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades som de är: Cmdr kunde inte kontrollera om de ändrats.",
+  "@fileOperations.cancelRollback.reason.unverifiable.counted": {
+    "sourceHash": "e40696b"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} lämnades där den ligger: något annat finns nu där den kom ifrån.",
+  "@fileOperations.cancelRollback.reason.spotTaken.named": {
+    "sourceHash": "5e38d8d"
+  },
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades där de ligger: något annat finns nu där de kom ifrån.",
+  "@fileOperations.cancelRollback.reason.spotTaken.counted": {
+    "sourceHash": "a55ac9a"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Mappen {name} lämnades som den är: det ligger något i den nu.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
+    "sourceHash": "b487d24"
+  },
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {mapp} other {mappar}} lämnades som de är: det ligger något i dem nu.",
+  "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
+    "sourceHash": "d2c9f56"
+  },
+  "fileOperations.cancelRollback.reason.failed.named": "Det gick inte att ångra {name}. Enheten den ligger på kan vara frånkopplad eller skrivskyddad.",
+  "@fileOperations.cancelRollback.reason.failed.named": {
+    "sourceHash": "5c9d51d"
+  },
+  "fileOperations.cancelRollback.reason.failed.counted": "Det gick inte att ångra {countText} {count, plural, one {objekt} other {objekt}}. Enheten de ligger på kan vara frånkopplad eller skrivskyddad.",
+  "@fileOperations.cancelRollback.reason.failed.counted": {
+    "sourceHash": "92c8b00"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.named": "Det gick inte att radera {name}, en ofullständig kopia som blev kvar på målplatsen. Du kan radera den utan risk, och Cmdr rensar bort den vid en senare överföring dit.",
+  "@fileOperations.cancelRollback.stagedLeftover.named": {
+    "sourceHash": "4aeaddc"
+  },
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Det gick inte att radera {countText} {count, plural, one {ofullständig kopia} other {ofullständiga kopior}} som blev kvar på målplatsen. Du kan radera dem utan risk, och Cmdr rensar bort dem vid en senare överföring dit.",
+  "@fileOperations.cancelRollback.stagedLeftover.counted": {
+    "sourceHash": "becfef5"
   },
   "fileOperations.errorDialog.technicalDetails": "Tekniska detaljer",
   "@fileOperations.errorDialog.technicalDetails": {

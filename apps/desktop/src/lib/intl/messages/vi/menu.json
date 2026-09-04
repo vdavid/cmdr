@@ -188,6 +188,10 @@
   "@menu.select.deselectAll": {
     "sourceHash": "9675494"
   },
+  "menu.select.invert": "Đảo ngược lựa chọn",
+  "@menu.select.invert": {
+    "sourceHash": "d2e128a"
+  },
   "menu.select.files": "Chọn tệp…",
   "@menu.select.files": {
     "sourceHash": "b7f202e"

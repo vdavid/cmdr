@@ -37,6 +37,13 @@ pub(super) struct WalkContext<'a, E> {
     pub(super) on_cancelled: &'a dyn Fn() -> E,
     pub(super) on_symlink_loop: &'a dyn Fn(&Path) -> E,
     pub(super) on_progress: &'a dyn Fn(usize, usize, u64, Option<String>, Option<String>),
+    /// Parks the walk while the owning operation is paused, called at every
+    /// boundary the cancel check uses. The scan is the minutes-long part of a
+    /// big transfer, so it is where Pause gets pressed; a walk that ran on
+    /// regardless made the button a lie for exactly as long as it mattered.
+    /// A walk with no operation behind it (a dry run, a test) passes a no-op.
+    /// See `super::scan_bridge::ScanPause`.
+    pub(super) park_while_paused: &'a dyn Fn(),
     /// Optional per-regular-file hook `(path, size)`, fired once for each file
     /// (not dirs or symlinks) as the walk discovers it. The compress-size
     /// estimator uses it to feed a sampling worker off the walk thread; all
@@ -165,6 +172,9 @@ pub(super) fn walk_dir_recursive<E>(
     if (ctx.is_cancelled)() {
         return Err((ctx.on_cancelled)());
     }
+    // After the cancel check, never before it: cancel outranks pause, so a
+    // cancelled walk must never park on its way out.
+    (ctx.park_while_paused)();
 
     let metadata = fs::symlink_metadata(path).map_err(|e| (ctx.on_io_error)(path, e))?;
 
@@ -291,6 +301,7 @@ fn walk_cached_entries<E>(
         if (ctx.is_cancelled)() {
             return Err((ctx.on_cancelled)());
         }
+        (ctx.park_while_paused)();
         let child_path = PathBuf::from(&entry.path);
         if entry.is_directory && !entry.is_symlink {
             // Recurse: the oracle re-applies inside `walk_dir_recursive`, so a
@@ -388,11 +399,16 @@ pub(super) struct SubtreeTotals {
 /// Cancellation: the future polls `is_cancelled` between entries. Symlinks
 /// (cached `is_symlink == true`) are counted as one entry and not recursed,
 /// matching the local-FS walker's policy.
+///
+/// `pause` parks the walk at those same boundaries when the owning operation is
+/// paused (`super::scan_bridge::ScanPause`), so pause is exactly as responsive
+/// as cancel here.
 pub(super) async fn scan_subtree_with_oracle(
     volume: &dyn Volume,
     volume_id: &str,
     path: &Path,
     is_cancelled: &(dyn Fn() -> bool + Sync),
+    pause: Option<&super::scan_bridge::ScanPause>,
     on_progress: Option<&(dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
     seen_inodes: &mut HashSet<u64>,
 ) -> Result<SubtreeTotals, VolumeError> {
@@ -400,6 +416,9 @@ pub(super) async fn scan_subtree_with_oracle(
 
     if is_cancelled() {
         return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+    }
+    if let Some(pause) = pause {
+        pause.park_while_paused_async().await;
     }
 
     // Load entries from oracle or the volume itself.
@@ -419,6 +438,10 @@ pub(super) async fn scan_subtree_with_oracle(
     for entry in entries {
         if is_cancelled() {
             return Err(VolumeError::Cancelled("Operation cancelled by user".to_string()));
+        }
+        // After the cancel check, never before: cancel outranks pause.
+        if let Some(pause) = pause {
+            pause.park_while_paused_async().await;
         }
         let child_path = PathBuf::from(&entry.path);
         if entry.is_directory && !entry.is_symlink {
@@ -441,6 +464,7 @@ pub(super) async fn scan_subtree_with_oracle(
                         volume_id,
                         &child_path,
                         is_cancelled,
+                        pause,
                         Some(&shifted),
                         seen_inodes,
                     ))
@@ -452,6 +476,7 @@ pub(super) async fn scan_subtree_with_oracle(
                         volume_id,
                         &child_path,
                         is_cancelled,
+                        pause,
                         None,
                         seen_inodes,
                     ))
@@ -705,9 +730,13 @@ fn scan_sources_internal(
             .unwrap_or_else(|| "(not available)".to_string())
     );
 
+    // The operation owns this walk, so it knows its own gate: no claim to
+    // resolve and no watchdog (that bounds a PREVIEW, not an operation's scan).
+    let pause = super::scan_bridge::ScanPause::for_operation(Arc::clone(state));
     let ctx = WalkContext {
         progress_interval,
         is_cancelled: &|| super::state::is_cancelled(&state.intent),
+        park_while_paused: &|| pause.park_while_paused(),
         on_io_error: &|path, e| WriteOperationError::IoError {
             path: path.display().to_string(),
             message: e.to_string(),

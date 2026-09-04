@@ -16,6 +16,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Instant;
 
 use super::super::copy::{JournalDestUnder, copy_single_item, create_scanned_dirs_at_destination};
 use super::MoveTransaction;
@@ -28,13 +29,12 @@ use crate::file_system::write_operations::durability::flush_created_destinations
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::journal;
+use crate::file_system::write_operations::ledger::CopyTransaction;
 use crate::file_system::write_operations::scan::{SourceItemTracker, scan_sources};
 use crate::file_system::write_operations::scan_cache::take_cached_scan_result;
-use crate::file_system::write_operations::state::{
-    CopyTransaction, WriteOperationState, is_cancelled, update_operation_status,
-};
+use crate::file_system::write_operations::state::{WriteOperationState, update_operation_status};
 use crate::file_system::write_operations::types::{
-    SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
+    CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::validation::validate_file_sizes_for_filesystem;
@@ -161,6 +161,12 @@ pub(super) fn move_with_staging(
 
     let copy_result: Result<(), WriteOperationError> = (|| {
         for file_info in &scan_result.files {
+            // Pause gate at the file boundary. This is the phase that actually
+            // moves bytes, so it's the one a user who hits Pause means: the
+            // per-file cancel checks live inside `copy_single_item`, and this
+            // park returns immediately once one of them is due to fire.
+            state.pause_gate.wait_while_paused_sync(&state.intent);
+
             log::debug!(
                 "move_with_staging: copying file {} ({} bytes) to staging",
                 file_info.path.display(),
@@ -257,6 +263,10 @@ pub(super) fn move_with_staging(
     // Phase 3: Atomic rename from staging to final destination
     let rename_result: Result<(), WriteOperationError> = (|| {
         for source in sources {
+            // Pause gate at the item boundary, so every loop in the engine parks
+            // on the same promise. The recursive merge below carries its own.
+            state.pause_gate.wait_while_paused_sync(&state.intent);
+
             let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
                 path: source.display().to_string(),
                 message: "Invalid source path".to_string(),
@@ -332,7 +342,7 @@ pub(super) fn move_with_staging(
                                 crate::operation_log::types::NotRollbackableReason::StagedConflictResolved
                             },
                         );
-                        move_resolved_into_place(&staged_path, &final_path, &resolved, &mut throwaway_tx)?;
+                        move_resolved_into_place(&staged_path, &final_path, &resolved, None, &mut throwaway_tx)?;
                     }
                     None => {
                         // Skip: discard the staged copy and remember the original
@@ -399,7 +409,7 @@ pub(super) fn move_with_staging(
             Err(_) => p.to_path_buf(),
         }
     };
-    let final_dests: Vec<PathBuf> = transaction.created_files.iter().map(|p| remap(p)).collect();
+    let final_dests: Vec<PathBuf> = transaction.created_file_paths().iter().map(|p| remap(p)).collect();
     let final_already_synced: HashSet<PathBuf> = already_synced.iter().map(|p| remap(p)).collect();
     // Journal the destination directories this move created, under the paths they
     // LIVE at — the same staging→final rebase the leaf rows already got, since
@@ -429,10 +439,16 @@ pub(super) fn move_with_staging(
     // Phase 4: Delete source files (only after the destination is durable on
     // disk), skipping any source (or source child) whose copy was discarded on
     // Skip.
-    delete_sources_after_move(events, operation_id, state, sources, files_done, &skipped_source_paths)?;
+    let delete_result =
+        delete_sources_after_move(events, operation_id, state, sources, files_done, &skipped_source_paths);
 
-    // Phase 5: Remove empty staging directory
+    // Phase 5: Remove the staging directory, on EVERY path out of Phase 4. Phase
+    // 3 renamed the staged tree away, so this is an empty shell whichever way
+    // Phase 4 ended; leaving it behind on a cancel puts a stray
+    // `.cmdr-staging-<op>` folder in the user's destination for good. `remove_dir`
+    // refuses a non-empty directory, so a surprise leaves the contents alone.
     let _ = fs::remove_dir(&staging_dir);
+    delete_result?;
 
     // Emit completion
     events.emit_complete(WriteCompleteEvent {
@@ -456,6 +472,32 @@ pub(super) fn move_with_staging(
 /// is walked: every non-skipped child is deleted and directories are removed
 /// only once they're empty, so the skipped child's original survives inside a
 /// surviving source directory.
+///
+/// ## Why this phase reports progress
+///
+/// It is the last real work of the move and it is unbounded: one `remove_file`
+/// or `remove_dir_all` per top-level source, over however large a tree. Running
+/// it silently left the frontend on the copy phase's last tick, `files_done ==
+/// files_total`, so the dialog read 100% (and "Paused" over a full bar if the
+/// user parked it here) with the whole sweep still ahead — the exact "looks
+/// finished when it isn't" the honest-progress principle forbids.
+///
+/// The denominator is the TOP-LEVEL sources, because that's what the loop
+/// iterates: `remove_dir_all` takes a subtree in one call and reports nothing
+/// from inside it, so a leaf-granular bar here would be an invention. Bytes stay
+/// zero throughout — nothing is transferred — which is how the readout knows to
+/// drop its size bar rather than freeze it at whatever the copy left.
+///
+/// ## What a stop here reports
+///
+/// Nothing is reversed and nothing can be: the copy is across a filesystem
+/// boundary already, so `outcome` is `NotRolledBack`. But the state this leaves
+/// is worth a sentence — the whole copy landed and was flushed before the sweep
+/// began, some originals are gone for good, and the rest are duplicates of files
+/// that now live at the destination. So the cancel carries
+/// `originals_still_in_place`: the sources the sweep never reached, plus the
+/// Skipped ones it walked past on purpose, both of which the user still has in
+/// the source folder. Counted in the same top-level items as the bar above.
 fn delete_sources_after_move(
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -464,14 +506,37 @@ fn delete_sources_after_move(
     files_done: usize,
     skipped_source_paths: &HashSet<PathBuf>,
 ) -> Result<(), WriteOperationError> {
+    let sources_total = sources.len();
+    let mut sources_done = 0usize;
+    // Originals the sweep has walked past and deliberately left where they are.
+    // A stop has to count these alongside the ones it never reached: both are
+    // still sitting in the user's source folder.
+    let mut originals_spared = 0usize;
+    let mut last_progress_time = Instant::now();
+
+    // The opening tick, unthrottled: it's what flips the frontend off the copy's
+    // full bar and onto this phase's own, and the first source can take minutes.
+    emit_source_sweep_progress(events, state, operation_id, None, 0, sources_total);
+
     for source in sources {
-        // Check cancellation
-        if is_cancelled(&state.intent) {
+        // The cooperative boundary, like every other loop in the engine. The
+        // destination is already durable by now, so parking here holds the
+        // originals in place, which is exactly what a paused move should look
+        // like.
+        if state.stop_or_park_sync() {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Move,
                 files_processed: files_done,
-                rolled_back: false, // Source deletion phase - nothing to rollback
+                // No reversal, and none is possible: the copy is already across
+                // a filesystem boundary. What the report CAN say is where the
+                // user's files are — the whole copy landed and was flushed
+                // before this phase began, and these originals are still in
+                // their old place. ❌ Never emit a bare `none()` here: the
+                // readout renders that as SILENCE, and every original the sweep
+                // already reached is gone for good.
+                rollback: CancelRollback::none()
+                    .with_originals_still_in_place((sources_total - sources_done + originals_spared) as u32),
             });
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
@@ -490,6 +555,11 @@ fn delete_sources_after_move(
                 source_removed: false,
                 outcome: SourceItemOutcome::Skipped,
             });
+            // Counted anyway: the bar measures how far through the sources the
+            // sweep has got, and a deliberate skip is as finished with as a
+            // deletion. Leaving it out would strand the bar short of full.
+            sources_done += 1;
+            originals_spared += 1;
             continue;
         }
 
@@ -517,9 +587,55 @@ fn delete_sources_after_move(
                 outcome: SourceItemOutcome::Done,
             });
         }
+
+        sources_done += 1;
+        if last_progress_time.elapsed() >= state.progress_interval {
+            let name = source.file_name().map(|n| n.to_string_lossy().into_owned());
+            emit_source_sweep_progress(events, state, operation_id, name, sources_done, sources_total);
+            last_progress_time = Instant::now();
+        }
     }
 
+    // The closing tick, unthrottled for the same reason as the opening one: the
+    // throttle would otherwise leave the bar short of full on a fast sweep, and
+    // the next thing the user sees is `write-complete`.
+    emit_source_sweep_progress(events, state, operation_id, None, sources_done, sources_total);
+
     Ok(())
+}
+
+/// One `Deleting`-phase tick for the source sweep, paired with its status-cache
+/// update so no caller can emit one without the other.
+fn emit_source_sweep_progress(
+    events: &dyn OperationEventSink,
+    state: &Arc<WriteOperationState>,
+    operation_id: &str,
+    current_file: Option<String>,
+    sources_done: usize,
+    sources_total: usize,
+) {
+    state.emit_progress_via_sink(
+        events,
+        WriteProgressEvent::new(
+            operation_id.to_string(),
+            WriteOperationType::Move,
+            WriteOperationPhase::Deleting,
+            current_file.clone(),
+            sources_done,
+            sources_total,
+            0,
+            0,
+        ),
+    );
+    update_operation_status(
+        operation_id,
+        WriteOperationPhase::Deleting,
+        current_file,
+        sources_done,
+        sources_total,
+        0,
+        0,
+    );
 }
 
 /// Recursively deletes `dir`'s contents, skipping any path in

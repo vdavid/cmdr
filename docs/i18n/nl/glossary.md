@@ -2083,3 +2083,216 @@ eigen woorden, en meteen ook de kale gebiedende wijs die `style.md` voor knoppen
 - **Overloop nakijken in het bewerkingslogboek.** De dialoogtitel is 45 tekens tegen 25 in het Engels, en de knop
   `Voltooi terugdraaien` is 20 tegen 19, maar die knop vervangt in een lijstrij het veel kortere `Terugdraaien` (12),
   naast het label `Gedeeltelijk teruggedraaid`. Controleer beide tegen de pseudolocale voordat de locale meegaat.
+
+## De terugdraaimelding: wat er weg is, en wat Cmdr met rust liet (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`, 2026-08-31)
+
+Achttien sleutels. De gebruiker heeft een lopende kopie of verplaatsing met `Terugdraaien` afgebroken, en deze melding
+vertelt wat het terugdraaien heeft gered. Cmdr weigert bewust iets te verwijderen of terug te zetten wat het niet kan
+herkennen als het bestand dat het zelf schreef, dus een terugdraaiing mag eerlijk gedeeltelijk uitvallen. De toon is
+overal **Cmdr heeft de zorgvuldige keuze gemaakt**: nooit verontschuldigend, nooit alarmerend, nooit "er ging iets mis".
+
+- **"leave alone" (als Cmdr iets bewust niet aanraakt) → `ongemoeid laten` / `ongemoeid gelaten`** · de al verzonden
+  `askCmdr.renameUndo.skipReason.*`-familie zegt precies dit voor precies deze Engelse zin, en twee van de acht
+  redenregels hieronder dragen zelfs BYTE-IDENTIEK Engels met die familie · high. Niets in de pile kent het register
+  (gecontroleerd op `macOS/`, `gnome-nautilus`, `kde-dolphin`, `xfce-thunar`, `double-commander` en
+  `microsoft-terminology`, 2026-08-31), dus de al verzonden zus is hier de hoogste beschikbare bron.
+  - ❌ NIET `overgeslagen` in de redenregels: dat is in deze catalogus al `Skipped` (`operationLog.outcome.skipped`).
+    Het Engels splitst hier net zo: `Left {name} alone` in de lijst, `skips` in de belofte erboven.
+- **`leftBehind` zegt `slaat alles over`, net als de bevestiging ervoor** · beide oppervlakken doen dezelfde belofte,
+  dus dragen ze hetzelfde werkwoord, en het Engels doet het ook (`Cmdr skips anything it isn''t sure about`, in de
+  dialoog én in de melding) · high. Volledige zin:
+  `Cmdr slaat alles over waar het niet zeker van is, dus deze zijn blijven staan:`
+  - ❌ NIET `met rust gelaten`: warmer, maar gemunt én het zou de melding uiteen laten vallen. Vier bullets met de ene
+    vorm en één met de andere staan in ÉÉN melding onder elkaar; het verschil tussen de twee features ziet niemand ooit
+    naast elkaar. De interne consistentie van de melding wint dus, en dat kan alleen met één vorm overal.
+- **`reason.folderNotEmpty.named`/`.counted` moeten LETTERLIJK gelijk blijven aan
+  `askCmdr.renameUndo.skipReason.folderNotEmpty.named`/`.counted`**
+  (`Map {name} ongemoeid gelaten: er staat nu iets in.` en de getelde zus): het Engels is byte-identiek, dus
+  `desktop-i18n-term-consistency` eist één Nederlandse weergave. Daarom draagt `named` hier `Map {name}` zonder lidwoord
+  en `er staat nu iets in` in plaats van `daar staat nu iets in`. Wijzig ze samen of geen van beide.
+- **"Left {name} where it is" → `{name} laten staan`**, dus NIET `met rust gelaten` · het Engels gebruikt hier een
+  andere vorm dan bij de drie `alone`-redenen, omdat het onderdeel bij een verplaatsing juist op de BESTEMMING blijft in
+  plaats van terug te gaan. `blijven staan` is het gevestigde beeld in deze familie
+  (`rollbackConfirm.bodyUndoByMovingBack`: "dus er kan wat blijven staan") · high.
+- **Elke redenregel is genderloos en getalloos gebouwd, want `{name}` kan een bestand (`het`) of een map (`de`) zijn.**
+  Een voornaamwoord zou dus in de helft van de gevallen fout staan. De uitweg is steeds het voornaamwoordelijk bijwoord,
+  dat voor beide geslachten én beide getallen werkt: `daar is iets aan gewijzigd`, `daar staat nu iets in`,
+  `of daar iets aan gewijzigd is`. ❌ Schrijf hier nooit `het is gewijzigd` of `er staat iets in hem`.
+  - Daarom dragen de `.named`- en de `.counted`-variant van elke reden EXACT dezelfde redenzin en verschillen ze alleen
+    in de kop: zonder voornaamwoord is er niets meer dat met het getal hoeft mee te buigen, dus houdt de getelde variant
+    één `plural`-blok over (het getelde zelfstandig naamwoord) in plaats van drie.
+  - `folderNotEmpty.named` mag wél een lidwoord dragen (`De map {name}`), want het Engels noemt daar zelf het soort
+    onderdeel, en `map` is een de-woord.
+- **"after Cmdr put it there" → `nadat Cmdr er klaar mee was`** · `er … mee` is genderloos en getalloos, waar
+  `nadat Cmdr het daar had neergezet` een geslacht zou kiezen · `tentative`. De plaatsbepaling ("there") valt weg; wat
+  telt is dat de wijziging ná Cmdrs werk kwam, en dat blijft staan.
+- **"Cmdr couldn't check whether it changed" → `Cmdr kon niet controleren of daar iets aan gewijzigd is`** ·
+  `controleren` is het gevestigde werkwoord voor een controle in deze catalogus (`Controleren op wijzigingen`,
+  `Bezig met controleren op conflicten`) en `gewijzigd` het gevestigde deelwoord voor een veranderd bestand
+  (`Laatst gewijzigd`) · high.
+  - **`controleren` geldt voor BEIDE families.** `askCmdr.renameUndo.skipReason.unverifiable.named`/`.counted` zeiden
+    `Cmdr kon niet nagaan of …` en zijn op 2026-09-02 meegetrokken; `controleren` staat er nu 99 keer tegenover de twee
+    `nagaan` die weg zijn. Het Engels van de twee sleutels veranderde niet, dus hun `sourceHash` bleef staan.
+  - ⚠️ **Geen enkele check bewaakt dit paar, deze regel is de enige bewaker.** Het Engels van de twee families verschilt
+    alléén in het apostrofteken (`couldn''t` in `fileOperations`, `couldn’t` in `askCmdr`), dus
+    `desktop-i18n-term-consistency` ziet twee verschillende bronzinnen en legt ze nooit naast elkaar. Een terugval naar
+    `nagaan` zou dus groen door de build komen.
+  - `nagaan` blijft wél staan in `queryUi.results.live.resolvingCoverage`: daar zegt het Engels "Working out what's
+    already indexed", geen "check", dus dat is een eigen keuze en geen restant van deze divergentie.
+- **"Couldn't undo {name}" → `{name} terugdraaien lukte niet`** · de catalogusbrede weergave van "couldn't X" is
+  `X lukte niet` (`Bundel bewaren lukte niet`, `{volumeName} uitwerpen lukte niet`, `Je notitie toevoegen lukte niet`),
+  en `terugdraaien` is het vastgelegde werkwoord van deze hele familie (Microsoft bevestigt `roll back` →
+  `terugdraaien`) · high. Geen `fout` en geen `mislukt`, volgens de stemregel.
+  - `Its drive may be …` → `De schijf is misschien niet verbonden of alleen-lezen.` · `hun schijf is niet verbonden`
+    staat al in `fileOperations.trash.undoUnavailable`, en `alleen-lezen` is macOS + Microsoft · high. Het lidwoord
+    vervangt het Engelse bezittelijk voornaamwoord, zodat de enkelvouds- en de meervoudsvariant dezelfde zin delen.
+- **De kop van een volledige terugdraaiing begint met `Alles`, niet met het getal.** Het Engels zegt "the {countText}
+  items", maar het Nederlands kan geen bepaald lidwoord vóór een telwoord zetten (`De 1 onderdeel` is fout), dus staat
+  het getal in een bijstelling achter de dubbele punt: `Alles wat Cmdr had geschreven, is verwijderd: {countText} …` en
+  `Alles is teruggezet: {countText} …`. Zo klopt de zin bij élk getal en blijft de belofte ("dit was alles") overeind.
+  De `some*`-broers dragen juist géén `Alles` en beginnen met het deelwoord (`{countText} onderdelen verwijderd.`),
+  precies zoals `operationLog.summary.delete` · high.
+- **`verwijderen` (weghalen) en `terugzetten` (op de oude plek terugbrengen) blijven strikt uit elkaar**, ook in de
+  `Gestopt na het …`-koppen. `terugzetten` is Finders `Put Back` (`fileOperations.trash.undone` gebruikt het al) en
+  `verwijderen` is macOS' `Delete`. ❌ Gebruik `terugdraaien` nooit voor één onderdeel, behalve in `reason.failed.*`,
+  waar het Engels zelf van redenzin naar handelingszin overschakelt.
+- **"The rest are still there" → `De rest staat er nog.`** en **"The rest stayed where the move put them" →
+  `De rest staat nog op de nieuwe plek.`** · `de rest` is enkelvoud in het Nederlands, dus `staat` · high op `de rest`,
+  `tentative` op `op de nieuwe plek`. `waar de verplaatsing ze had neergezet` viel af: een verplaatsing als handelend
+  onderwerp is geen Nederlandse UI-vorm, en `de bestemming` zou technischer klinken dan het Engels.
+- **`rollbackConfirm.body` erft de derde zin letterlijk van `bodyUndoByDeleting`** ("Cmdr slaat alles over waar het niet
+  zeker van is, dus er kan wat achterblijven."), zoals de `@key` vraagt. De eerste twee zinnen blijven ongewijzigd; die
+  waren in de terugdraaironde van 2026-08-13 al beslist.
+- Geen `sameAsSourceJustification` nodig: alle achttien waarden verschillen van het Engels.
+
+REVIEW FLAGS: `nadat Cmdr er klaar mee was` ruilt de plaatsbepaling van het Engels in voor genderneutraliteit; dat is de
+eerste regel om aan een moedertaalspreker voor te leggen. De `controleren`/`nagaan`-divergentie met
+`askCmdr.renameUndo.skipReason.unverifiable.*` die hier stond, is op 2026-09-02 opgeruimd; de reden dat geen check haar
+zag staat nu bij het `controleren`-lemma hierboven.
+
+**Overloop nakijken op de melding.** De redenregels lopen 75–90 tekens tegen 50–60 in het Engels, en
+`reason.failed.counted` is de langste van de achttien. Controleer ze tegen de pseudolocale in een smalle melding.
+
+### `cancelRollback.stagedLeftover.*` (Cmdrs eigen restanten op de bestemming)
+
+Nieuw op 2026-09-02. Twee regels over een werkbestand dat Cmdr zelf heeft aangemaakt en niet van de bestemming
+weggekregen heeft. Ze horen NIET bij de `reason.*`-lijst: daar beschermt Cmdr de bestanden van de gebruiker, hier gaat
+het om een restant van Cmdr zelf.
+
+- **`unfinished copy` → `onvolledig exemplaar`** · `onvolledig` is Apples woord voor „incomplete" (macOS `LA33`:
+  „beschadigd of onvolledig"), en macOS `NE111` gebruikt `exemplaar` als zelfstandig naamwoord voor een kopie („een
+  hervatbaar exemplaar bewaren") · `high`
+- **`at the destination` → `op de bestemming`** · het woord uit de catalogus (`conflictsUnknown`) · `high`
+- **`transfer` (zelfstandig naamwoord) → `overdracht`** · de catalogus zegt het al zo
+  (`errors.listing.deviceReconnecting.explanation`: „na een geannuleerde of onderbroken overdracht") · `high`
+- **`Cmdr clears it` → `Cmdr ruimt het op`** · `opruimen` in plaats van `verwijderen`, omdat het Cmdrs eigen werkbestand
+  is · `high`
+- ⚠️ **`bij een latere overdracht`, ❌ nooit „de volgende keer".** Cmdrs opruiming slaat alles over dat jonger is dan
+  een uur, dus een directe tweede poging ruimt niets op. Een belofte die niet uitkomt is precies de fout die deze regel
+  wegneemt.
+
+## Het blokkeerscherm bij te oude WebKit (`main.oldWebkit.*`, 2026-09-02)
+
+Drie strings die Cmdr toont in plaats van zijn interface als de Safari van de Mac te oud is. Ze staan in het
+HTML-omhulsel, niet in de app, dus dit is het enige wat die persoon van Cmdr ziet.
+
+- **`Software Update` → `Software-update`** (met streepje) · macOS noemt het paneel zo; het Tier-1-spoor uit Finder
+  bevestigt de schrijfwijze (`Apple Device Software Update File` → `Software-updatebestand Apple apparaat`) · `high`.
+- **`Quit` → `Stop`** · al in het glossarium vastgelegd (macOS gebruikt `Stop`, niet `Afsluiten`) · `high`.
+- **`Safari`, `Mac` en `15.4` blijven staan.** `Safari` staat nu in `BRAND_WORDS`.
+- Geen `sameAsSourceJustification` nodig: alle drie de waarden wijken af van het Engels.
+
+## De melding over een oude macOS (`main.oldMacos.*`, 2026-09-02)
+
+Een eenmalig dialoogvenster op een Mac onder macOS 12: Cmdr start wel, maar valt buiten het geteste bereik. Toon:
+eerlijk en ontspannen, geen excuus en geen waarschuwing, want de app doet het gewoon.
+
+- **`supported` → `ondersteund`** · macOS Finder (`… omdat deze niet wordt ondersteund.`) · `high`.
+- **`X and up` → `X en nieuwer`** · macOS SystemSettings (`… is OS X %@ of nieuwer vereist.`) · `high`.
+- **`best effort` → `doet het zijn best zonder garanties`** · het pile kent de term niet (alleen QoS-definities voor
+  netwerken) · `high` voor de omschrijving. Bewust geen leenvertaling.
+- **`look off` → `er raar uitzien`** · alledaags, en het vermijdt `fout`/`mislukt`, die de stem verbiedt.
+- **Geen `z''n`**: de samentrekking zou een ICU-apostrof nodig hebben, en `zijn best` leest even natuurlijk.
+- **De laatste zin is David in de ik-vorm**, met `je`, net als `onboarding.stepBeta.greeting`.
+
+## Ask Cmdr looks inside files: the `inspectFile` tool line and the reworded consent screen (`askCmdr.tool.inspectFile.*`, `askCmdr.consent.item.contents`, `askCmdr.consent.contentsRule`, `askCmdr.consent.whatsNew.body`, 2026-09-02)
+
+Five keys, mined `_ignored/i18n/nl/` (macOS Finder/AppKit, Microsoft `DUTCH.tbx`, Nautilus, Thunar, Dolphin, Total
+Commander, Double Commander). The consent paragraph `contentsRule` replaces the old `noContents`; its photo-search and
+approval sentences are carried over from that key verbatim so the screen keeps one voice.
+
+- look inside files (tool line, `inspectFile.doing` / `.done`) → `Kijkt in bestanden` / `In bestanden gekeken` · no pile
+  precedent (AI tool-status lines), coined in the shape of the settled siblings (`Doorzoekt je foto''s` /
+  `Je foto''s doorzocht`, `Haalt mapinhoud op` / `Mapinhoud opgehaald`): present tense without subject for doing,
+  participle-led for done. Bare plural `bestanden` keeps it plural-neutral (one call covers up to 200 files) · tentative
+- thumbnail → `miniatuur` (plural `miniaturen`) · macOS Finder ("klein/normaal/groot formaat miniaturen",
+  "Miniatuurgrootte:"), Microsoft terminology ("thumbnail"→"miniatuur", NLD/BEL), Nautilus/Thunar/Double Commander all
+  "miniaturen"; already in the old `noContents` · high
+- camera details (a photo's EXIF: make, model, exposure, and so on) → `cameragegevens` · compound of camera→`camera`
+  (Microsoft terminology "camera"→"camera"; macOS Finder "camera's"; in-catalog "camera''s") + `gegevens`, the word this
+  catalog already uses for a file's metadata (`Bestandsgegevens, niet de inhoud`, `de bestandsgegevens`). Nautilus names
+  the individual fields "Merk camera" / "Model camera", so `camera` is the settled head; no source has a collective noun
+  for the whole block · tentative
+- location (where a photo was taken) → `locatie` · macOS Finder ("Location"→"Locatie", "Get Location"→"Haal locatie
+  op"), Microsoft terminology ("location"→"locatie"), Nautilus/Thunar/Dolphin "Locatie" · high
+- where it was taken (of a photo, spelled out) → `waar die gemaakt is` · standard Dutch takes a photo with `maken`
+  (in-catalog `foto''s … kopiëren`, macOS "Foto's"); `die` refers back to `foto` (de-word) · high
+- page (of a PDF) → `pagina` (plural `pagina''s`, ICU-doubled apostrophe) · macOS Finder ("Webpagina's"), Dolphin ("Page
+  Count"→"Aantal pagina's"), in-catalog `Pagina omhoog` · high. Microsoft's "page"→"page" is the memory-paging sense
+  (mining trap 4), not this one.
+- PDF pages → `PDF-pagina''s` · brand+hyphen+noun compound like `Zip-archief`, `Finder-tag` · high
+- title and author (PDF document metadata) → `titel en auteur` · Nautilus ("Title"→"Titel"), Dolphin
+  ("Author"→"Auteur"), Microsoft terminology ("author"→"auteur") · high. Microsoft's "title"→"functie" is the job-title
+  sense (trap 4); `titel` is the document sense and matches in-catalog `Chattitel`.
+- archive (zip/tar/7z, and what's inside it) → `archief`; "the list of files inside an archive" →
+  `de lijst met bestanden in een archief`; "what's inside an archive" → `wat er in een archief zit` · settled glossary
+  term (macOS "Zip-archief", "Soort is Archief"); the `in een archief` shape follows in-catalog
+  `Er is geen prullenmand in een archief` · high
+- some text / some lines of text → `wat tekst` / `wat regels tekst` · text→`tekst` is macOS Finder ("Text"→"Tekst",
+  "Platte tekst"); the informal quantifier `wat` matches the `je`-register of the screen · high on `tekst`, tentative on
+  `wat`
+- a limited part of it → `een beperkt deel ervan` · plain Dutch; `ervan` keeps the referent (a file) neutral · high
+- photo search (the feature) → `de fotozoekfunctie` · inherited from the old `noContents` key · tentative (no pile
+  precedent for the feature name; the consent screen is its only prose mention)
+- provider (AI) → `aanbieder` · settled glossary term, reused ("naar je aanbieder") · high
+- "nothing happens to a file until you approve it" → `er gebeurt niets met een bestand tot jij het goedkeurt` ·
+  inherited verbatim from the old `noContents`; stressed `jij` marks the contrast (the assistant proposes, you decide),
+  per the style guide's `jij`-for-emphasis rule · high
+- "Cmdr never sends whole files, photos, or thumbnails" → `Cmdr verstuurt nooit hele bestanden, foto''s of miniaturen` ·
+  send→`versturen` settled; `hele bestanden` (whole files) deliberately replaces the old key's `geen bestandsinhoud`,
+  which promised no contents at all and would now be false · high
+- No `sameAsSourceJustification` needed: all five values differ from English.
+
+REVIEW FLAGS (inspect-file pass):
+
+- `cameragegevens` is a coined compound (no source carries a collective noun for a photo's EXIF block). Confirm it reads
+  as "what the camera recorded" and not as "data about the camera"; `camera-informatie` is the fallback.
+- `wat tekst` / `wat regels tekst` for "some text" / "some lines of text": the informal `wat` fits the `je` register but
+  `een deel van de tekst` (used in `whatsNew.body`) is the safer form. Confirm the three keys can share one shape.
+- `De fotozoekfunctie werkt net zo` for "Photo search works the same way": `net zo` is colloquial; confirm it doesn't
+  read as clipped in a consent paragraph (`op dezelfde manier` is the formal fallback).
+- `Ask Cmdr kan hernoemen, verplaatsen en opruimen voorstellen` is inherited from the old key and still says
+  `hernoemen`, which the rename-as-noun decision (`naamwijziging`) argues against; it's part of the pending locale-wide
+  sweep already flagged in `style.md`.
+- Overflow: `contentsRule` runs 545 characters against the English 492; it's a wrapping paragraph, so the risk is
+  height, not clipping. Eyeball it in the Settings disclosure.
+- Follow-up, same pass: `askCmdr.empty.hint` and `settings.askCmdr.intro` drop the old "never file contents" /
+  "alleen-lezen" promise. "looks inside a file only when you ask about it" →
+  `kijkt alleen in een bestand als je ernaar vraagt` (same `in een bestand kijken` as `whatsNew.body`); "never changes a
+  file without your approval" → `verandert nooit een bestand zonder jouw goedkeuring` (goedkeuren already settled in
+  `contentsRule`; stressed `jouw` marks the contrast) · high. First sentences of both keys kept verbatim.
+
+## De twee tooltips van de Rollback-knop (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Nieuwe surface: de tooltip zegt nu wat DEZE terugdraaiing met de bestanden doet, en de knop gaat uit zodra een
+verplaatsing tussen twee bestandssystemen bij de laatste stap is (de originelen verwijderen, terwijl alles al op de
+bestemming staat).
+
+- **`rollbackTooltipStopAndMoveBack` → `Stop en zet elk bestand terug dat tot nu toe is verplaatst`** · het zusje
+  `rollbackTooltip` geeft het kader (`Stop en …`), en `terugzetten` is het vaste werkwoord voor terug naar de oude plek
+  (`cancelRollback.doneMovingBack`: „Alles is teruggezet”) · `high`. ❌ Niet `verwijderen`: het terugdraaien van een
+  verplaatsing verwijdert niets.
+- **`rollbackAlreadyLandedTooltip`** · de eerste zin volgt `cancelRollback.moveAlreadyLanded` („staat al op de
+  bestemming”), `terugdraaien` is de vaste term voor rollback (`rollbackUnavailableTooltip`), en `Annuleer` is het label
+  van de knop ernaast (`fileOperations.button.cancel`), dus het staat er onveranderd in · `high`.
+- Geen `sameAsSourceJustification`; geen apostrof in de waarden.

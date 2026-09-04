@@ -87,6 +87,12 @@ non-obvious choices:
   `search_coverage_reason`, and an optional dev-only `dev_summary`. **No stored rendered summary**: the UI label is
   formatted client-side from the typed fields so it localizes per viewer; `dev_summary` is dev-only and never shown
   in the alpha dialog.
+- **`OperationRow.inverse_op_id` is read-side only, and every reader fills it.** It's the mirror of the stored
+  `rolls_back_op_id` (the newest operation reversing THIS one), resolved through the partial `operations_rolls_back`
+  index by `store::fill_inverse_op_ids` right after the mapper runs, because the mapper holds a `Row` and not the
+  connection. Every reader that hands an `OperationRow` out calls it, so a `None` always means "nothing reverses this"
+  rather than "this reader did not look". While a row reads `rolling_back` the field names the LIVE reversal, which is
+  what lets the history dialog offer it Pause and Cancel without a second round trip.
 - **`operation_items` — per-item rows.** `seq` (order within the op, for grouped display and reverse-order rollback),
   typed `entry_type` (file/dir) and `row_role` (`rollback_unit` / `search_only`), interned `source_dir_id` +
   `source_name` (+ folded) and nullable dest equivalents, `size`, `mtime`, typed `outcome`, `overwrote`, and the nullable
@@ -417,7 +423,14 @@ what running a reversal under the original operation's own wind-down would have 
 ### The two data-safety guards
 
 Every item passes two independent guards before anything is touched; failing either SKIPS the item (never operates on
-it), feeding a `partially_rolled_back` result:
+it), feeding a `partially_rolled_back` result.
+
+**Both guards, and this vocabulary, are shared with the IN-FLIGHT reversals** a cancel runs over a transfer's own
+ledger (`file_system/write_operations/reversal.rs`, and `transfer/DETAILS.md` § "What a reversal does with that
+identity"). `verify_snapshot`, `SnapshotVerdict`, `SkipReason`, and `SkipTally` have one definition each: a user
+shouldn't meet two answers to "did this file change". The in-flight side reports its verdicts on the `write-cancelled`
+event rather than storing them, and adds a local-only node-id check that this path has no equivalent for (no `Volume`
+backend offers one). ❌ Don't fork any of them.
 
 1. **Snapshot recheck** (`verify_snapshot`). The item must still match the size/mtime the journal recorded. Every
    recorded field must have a present, equal live value; a recorded field whose live counterpart is absent (an MTP/SMB
@@ -566,7 +579,7 @@ checkpointing for the whole file-I/O duration) — it's the `rolling_back` state
 Every leaf of a volume (SMB/MTP) copy records its **size**, top-level and inner alike, so a cross-volume directory
 rollback reverses the whole tree rather than skipping its contents. The byte count costs nothing extra: `copy_leaf`
 returns what it piped, off a size hint the walker's `list_directory` already paid for, and `CreatedPaths` carries a
-`CreatedFile { path, size }` per destination so it rides through to the row (`journal.rs`).
+`WrittenFile` per destination (`write_operations/ledger.rs`) so it rides through to the row (`journal.rs`).
 
 ❌ **A volume leaf records NO mtime, and adding one would make things worse.** The volume write path doesn't preserve
 the source's, so the live value would differ from anything captured at read time — flipping every leaf from

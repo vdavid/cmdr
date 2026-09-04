@@ -28,11 +28,12 @@ fn stock_params() -> SftpConnectionParams {
     SftpConnectionParams::new("127.0.0.1", fixture_port("OPENSSH", 12480), FIXTURE_USER, FIXTURE_ROOT).without_agent()
 }
 
-/// Seeds the real secret store and the real trust store, the way a user who had
-/// signed in once would leave them.
+/// Seeds the secret store and the real trust store, the way a user who had signed
+/// in once would leave them.
 ///
 /// The trust store is in-memory in a test binary (nothing has named a file), and
-/// the secret store is the test backend, so this leaves nothing on disk.
+/// the secret store is the test backend, which writes inside the caller's
+/// `isolate_secrets()` scratch dir and goes with it.
 async fn signed_in_already(params: &SftpConnectionParams) {
     keychain::save_credentials(
         &params.credential_service(),
@@ -59,6 +60,7 @@ async fn signed_in_already(params: &SftpConnectionParams) {
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_server() {
+    let _secrets = crate::test_support::isolate_secrets();
     let params = stock_params();
     signed_in_already(&params).await;
 
@@ -94,6 +96,7 @@ async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_serv
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn sftp_integration_disconnecting_drops_the_session_and_unregisters_the_volume() {
+    let _secrets = crate::test_support::isolate_secrets();
     let params = stock_params();
     signed_in_already(&params).await;
     let SftpConnection::Connected { volume_id, .. } =
@@ -137,6 +140,7 @@ async fn disconnecting_a_volume_that_is_not_sftp_does_nothing() {
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn sftp_integration_an_unapproved_server_asks_before_it_connects() {
+    let _secrets = crate::test_support::isolate_secrets();
     // A port of its own so this cell is first contact whatever else ran before
     // it; `sftp-fixture-twokeys` is a different identity from the stock server.
     let params = SftpConnectionParams::new("127.0.0.1", fixture_port("TWOKEYS", 12484), FIXTURE_USER, FIXTURE_ROOT)
@@ -187,6 +191,7 @@ async fn cancelling_an_attempt_nobody_is_running_is_a_plain_no() {
 /// sign-in dialog with it.
 #[tokio::test]
 async fn cancelling_a_hanging_connect_ends_it_and_registers_nothing() {
+    let _secrets = crate::test_support::isolate_secrets();
     const ATTEMPT: &str = "sftp-cancel-a-hanging-connect";
     let params = SftpConnectionParams::new("192.0.2.1", 22, "nobody", "/nowhere").without_agent();
     let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);

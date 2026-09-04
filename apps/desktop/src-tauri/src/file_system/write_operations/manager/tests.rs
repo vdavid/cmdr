@@ -569,7 +569,6 @@ async fn set_paused_is_noop_for_queued_or_absent_ops() {
 fn a_sweep_counts_every_outcome_it_collected() {
     let totals: PauseAllOutcome = [
         PauseOutcome::Applied,
-        PauseOutcome::Deferred,
         PauseOutcome::Applied,
         PauseOutcome::AlreadyInState,
         PauseOutcome::NotApplicable,
@@ -578,10 +577,9 @@ fn a_sweep_counts_every_outcome_it_collected() {
     .collect();
 
     assert_eq!(totals.applied, 2);
-    assert_eq!(totals.deferred, 1);
     assert_eq!(totals.already_in_state, 1);
     assert_eq!(totals.not_applicable, 1);
-    assert_eq!(totals.total(), 5);
+    assert_eq!(totals.total(), 4);
     assert!(totals.took_effect_anywhere());
 }
 
@@ -600,9 +598,11 @@ fn a_sweep_over_nothing_is_distinguishable_from_one_that_worked() {
     assert!(!no_ops.took_effect_anywhere());
     assert_eq!(no_ops.total(), 2);
 
-    // A latched pause DID take effect, just not yet.
-    let latched: PauseAllOutcome = [PauseOutcome::Deferred].into_iter().collect();
-    assert!(latched.took_effect_anywhere());
+    // One flip among refusals is still a sweep that took effect.
+    let one_flip: PauseAllOutcome = [PauseOutcome::NotApplicable, PauseOutcome::Applied]
+        .into_iter()
+        .collect();
+    assert!(one_flip.took_effect_anywhere());
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

@@ -1687,6 +1687,14 @@
     "screenshot": "settings-advanced.png"
   },
 
+  "settings.advanced.oldMacosNoticeShown.label": "Old macOS notice shown",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "description": "Internal, hidden-from-UI label for a flag tracking whether the one-time \"this Mac is older than the macOS versions Cmdr is tested on\" dialog has already been shown. Not user-facing. \"macOS\" is Apple's OS name and stays untranslated."
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Internal: tracks whether the one-time best-effort notice for a Mac below the supported macOS version has been shown. Hidden from the UI.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "description": "Internal help text for the old-macOS notice flag (not user-facing). \"Best effort\" means Cmdr runs there but promises nothing about it."
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Onboarding upgrade nudge shown",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "description": "Internal, hidden-from-UI label for a flag tracking whether a one-time onboarding nudge toast fired. Surfaces only in settings search. \"nudge\" = a gentle prompt."
@@ -1888,9 +1896,9 @@
     "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr is read-only: it reads names, paths, and sizes to answer, and never changes anything.",
+  "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr reads names, paths, and sizes to answer, looks inside a file only when you ask about it, and never changes a file without your approval.",
   "@settings.askCmdr.intro": {
-    "description": "Intro paragraph at the top of the Ask Cmdr settings section.",
+    "description": "Intro paragraph at the top of the Ask Cmdr settings section. Three facts: it reads names, paths, and sizes; it looks inside a file only when the user asks about that file; it never changes a file without the user's approval (it proposes renames and moves and writes its own notes, so do not say it changes nothing or is read-only).",
     "screenshot": "settings-ai-ask-cmdr.png"
   },
   "settings.askCmdr.status.on": "Ask Cmdr is on",

@@ -82,7 +82,7 @@ pub fn propose_suggestions_schema() -> Value {
                         "overwritesExisting": { "type": "boolean", "description": "compress only: that archive exists, so the group can't be undone." },
                         "parent": { "type": "string", "description": "rename only: the folder every source shares." },
                         "sourceVolumeId": { "type": "string", "description": "The sources' volume. With paths or renames; a selector supplies its own." },
-                        "displayName": { "type": "string", "description": "The group's title for the user. With paths or renames; a selector is named by its pattern." },
+                        "displayName": { "type": "string", "description": "The group's title. With paths or renames; a selector is named by its pattern." },
                         "rationale": { "type": "string", "description": "Why this group, shown as your words." },
                         "paths": {
                             "type": "array",

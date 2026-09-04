@@ -3,6 +3,7 @@
     import DualPaneExplorer from '$lib/file-explorer/pane/DualPaneExplorer.svelte'
     import FunctionKeyBar from '$lib/file-explorer/pane/FunctionKeyBar.svelte'
     import OnboardingWizard from '$lib/onboarding/OnboardingWizard.svelte'
+    import AlertDialog from '$lib/ui/AlertDialog.svelte'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
     import CommercialReminderModal from '$lib/licensing/CommercialReminderModal.svelte'
     import AboutWindow from '$lib/licensing/AboutWindow.svelte'
@@ -43,11 +44,12 @@
     import { resolveGlobalKeyAction } from './global-keydown'
     import { resolveGlobalContextMenuAction } from './global-contextmenu'
     import { isMacOS } from '$lib/shortcuts/key-capture'
-    import { getMessage } from '$lib/intl/messages.svelte'
+    import { getMessage, tString } from '$lib/intl/messages.svelte'
     import { showMainOnMount } from './show-main-on-mount'
     import {
         type StartupGatesContext,
         maybeRunWhatsNew,
+        maybeShowOldMacosNotice,
         openOnboardingFromMenuOrPalette,
         resolveOnboardingMount,
     } from './startup-gates'
@@ -87,6 +89,13 @@
      */
     let showOnboarding = $state(false)
     let showApp = $state(false)
+    /**
+     * The macOS version to name in the best-effort notice ('10.15', '11'), or
+     * `null` when there's nothing to say. Set once per machine by
+     * `maybeShowOldMacosNotice`; the button clears it and the setting keeps it
+     * cleared on every later launch.
+     */
+    let oldMacosNoticeVersion = $state<string | null>(null)
     let showExpiredModal = $state(false)
     let expiredOrgName = $state<string | null>(null)
     let expiredAt = $state<string>('')
@@ -263,6 +272,9 @@
             showApp = true
         },
         isOtherStartupModalOpen: () => showExpiredModal || showCommercialReminder,
+        showOldMacosNotice: (versionLabel: string) => {
+            oldMacosNoticeVersion = versionLabel
+        },
     }
 
     onMount(async () => {
@@ -322,6 +334,11 @@
         await initSystemStrings()
 
         await resolveOnboardingMount(startupGatesCtx)
+
+        // The best-effort notice for a Mac below the supported floor. Fire-and-forget:
+        // it costs an IPC round trip, it's a once-per-machine cosmetic heads-up, and
+        // nothing below it depends on the answer.
+        void maybeShowOldMacosNotice(startupGatesCtx)
 
         // Automatic "What's new" post-update check. Runs after onboarding resolves so it can
         // see whether the wizard is up; if it is (or another startup modal), the check waits
@@ -684,6 +701,21 @@
 
         {#if showOnboarding}
             <OnboardingWizard onComplete={handleWizardComplete} />
+        {/if}
+
+        <!-- `topmost`, and after the wizard in the markup: this lands over onboarding,
+             which owns a full-screen overlay at `--z-modal`. The quit prompt is topmost
+             too and renders later still (in `+layout.svelte`), so it keeps winning. -->
+        {#if oldMacosNoticeVersion !== null}
+            <AlertDialog
+                topmost
+                title={tString('main.oldMacos.title', { version: oldMacosNoticeVersion })}
+                message={tString('main.oldMacos.body')}
+                buttonText={tString('main.oldMacos.gotIt')}
+                onClose={() => {
+                    oldMacosNoticeVersion = null
+                }}
+            />
         {/if}
 
         {#if showApp}

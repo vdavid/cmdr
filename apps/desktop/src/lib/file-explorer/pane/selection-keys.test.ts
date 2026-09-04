@@ -36,6 +36,23 @@ describe('classifySelectionKey', () => {
     expect(classifySelectionKey(keydown({ key: 'a', metaKey: true, shiftKey: true }))).toBe('selection.deselectAll')
   })
 
+  it('maps ⇧8 to invert by its physical key, whatever the layout types', () => {
+    // US QWERTY types `*`, Hungarian types `(`; both are the Digit8 key with Shift.
+    expect(classifySelectionKey(keydown({ key: '*', code: 'Digit8', shiftKey: true }))).toBe('selection.invert')
+    expect(classifySelectionKey(keydown({ key: '(', code: 'Digit8', shiftKey: true }))).toBe('selection.invert')
+  })
+
+  it('maps the numpad `*` to invert, the other way Total Commander users type it', () => {
+    // The numpad key reports `*` with NO Shift on every layout, so it needs its own
+    // default; the Digit8 fallback can't reach it (`NumpadMultiply` is not `Digit<n>`).
+    expect(classifySelectionKey(keydown({ key: '*', code: 'NumpadMultiply' }))).toBe('selection.invert')
+  })
+
+  it('ignores an unshifted 8 and a ⌘-carrying ⇧8', () => {
+    expect(classifySelectionKey(keydown({ key: '8', code: 'Digit8' }))).toBeNull()
+    expect(classifySelectionKey(keydown({ key: '*', code: 'Digit8', shiftKey: true, metaKey: true }))).toBeNull()
+  })
+
   it('ignores ⌥⌘A, so Ask Cmdr does not also select every file', () => {
     expect(classifySelectionKey(keydown({ key: 'a', metaKey: true, altKey: true }))).toBeNull()
   })

@@ -1092,7 +1092,6 @@
             onpointerup={pointerDrag.handlePointerUp}
             onpointercancel={pointerDrag.handlePointerCancel}
             oncontextmenu={pointerDrag.handleContextMenu}
-            onclick={pointerDrag.handleClick}
         >
             <div
                 class="scroll-spacer"

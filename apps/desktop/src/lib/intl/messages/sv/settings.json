@@ -1326,6 +1326,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Avisering om gammal macOS visad",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Internt: håller reda på om engångsaviseringen för en Mac under den macOS-version som stöds redan har visats. Dold i gränssnittet.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Uppgraderingspåminnelse för introduktion visad",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -1504,9 +1512,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
   },
-  "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Ask Cmdr är skrivskyddad: den läser namn, sökvägar och storlekar för att svara, och ändrar aldrig något.",
+  "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Ask Cmdr läser namn, sökvägar och storlekar för att svara, tittar in i en fil bara när du frågar om den, och ändrar aldrig en fil utan ditt godkännande.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr är på",
   "@settings.askCmdr.status.on": {

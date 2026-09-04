@@ -12,6 +12,8 @@
 
 use serde::Serialize;
 
+use super::encoding::FileEncoding;
+
 /// What the viewer should render a file as. The frontend branches on this:
 /// `Image` -> `<img>`, `Pdf` -> `<embed>`, `Text` -> the line pipeline.
 ///
@@ -56,6 +58,39 @@ pub fn classify_viewer_content(head: &[u8], ext: Option<&str>, is_local: bool) -
     }
 
     ViewerContentKind::Text
+}
+
+/// Share of C0 control bytes (outside the text set below) past which a head reads as
+/// binary. The same 5% line `encoding::utf16_looks_like_text` draws for the mirror case
+/// (UTF-16 code units that decode to controls), so the two heuristics agree.
+const MAX_CONTROL_BYTE_RATIO: f64 = 0.05;
+
+/// Whether a head that isn't media should be read as binary rather than text. Pure.
+///
+/// The viewer classifies every non-media file `Text` and leaves the warning to the
+/// frontend's extension list; the agent needs the byte-level answer. Rule:
+///
+/// - A UTF-16 head is text: every other byte is a NUL by construction, so the NUL rule
+///   below would call all of it binary. `detect_from_head` already required it to decode
+///   to mostly-printable code units before naming it UTF-16.
+/// - Otherwise a NUL anywhere means binary (no text encoding this viewer decodes puts a
+///   bare NUL in text), and so does a share of C0 controls beyond `\t` `\n` `\r`, form
+///   feed, and ESC (ANSI colour codes in a log are text) above [`MAX_CONTROL_BYTE_RATIO`].
+pub fn looks_binary(head: &[u8], encoding: FileEncoding) -> bool {
+    if matches!(encoding, FileEncoding::Utf16Le | FileEncoding::Utf16Be) {
+        return false;
+    }
+    if head.is_empty() {
+        return false;
+    }
+    if head.contains(&0) {
+        return true;
+    }
+    let controls = head
+        .iter()
+        .filter(|b| matches!(b, 0x00..=0x1F) && !matches!(b, b'\t' | b'\n' | b'\r' | 0x0C | 0x1B))
+        .count();
+    (controls as f64 / head.len() as f64) > MAX_CONTROL_BYTE_RATIO
 }
 
 /// The MIME type to serve for a media kind, derived from the same magic bytes the

@@ -142,6 +142,12 @@ strings are counted, so no plural branches are needed there.
   `fileOperations.trash.undonePartial` gained a `{skipped}` driver for exactly this reason, so its second half now
   conjugates normally ("…; {skippedText} {skipped, plural, one {elemento se quedó} many {elementos se quedaron} other
   {elementos se quedaron}} en la papelera.").
+- **A definite "the {countText} items" drops the numeral in the `one` branch.** `el 1 elemento` is ungrammatical in
+  Spanish, so write `Se eliminó el elemento que Cmdr había creado.` for `one` and keep `{countText}` in `many`/`other`
+  (`fileOperations.cancelRollback.doneDeleting`). The catalog already does it where English itself drops the count
+  (`transferProgress.titleReversalDeleting`, "Deleting the file it created" → "Eliminando el archivo creado"), and
+  `desktop-i18n-parity` compares the placeholder set of the WHOLE value, so the check still passes. Keep the article
+  itself, though: it is often the only thing separating a "that was all of it" toast from its partial sibling.
 
 ## Notes and decisions
 
@@ -174,7 +180,19 @@ strings are counted, so no plural branches are needed there.
 - **Never say something went wrong, say what is happening.** The ban on "error"/"failed" covers Spanish "error", "ha
   fallado", and "fallo" in these status lines. For a transfer that stalls, `ha dejado de avanzar` carries the fact
   without the verdict; `se ha detenido` / `se ha quedado parada` are also off-limits for a different reason (they read
-  as "paused", which the queue labels `En pausa`).
+  as "paused", which the queue labels `En pausa`). That second ban covers a PROGRESS line only: when the user really did
+  stop something and the line reports the finished result, `detener` is the right verb and the one macOS uses ("Detener
+  copia"), so `La reversión se detuvo después de …` (`fileOperations.cancelRollback.stopped*`) is fine. Naming the
+  subject is what keeps it from reading as a pause.
+- **Nothing may agree with a `{name}`.** The name comes off the disk and can be a file (`archivo`, masculine) or a
+  folder (`carpeta`, feminine), so any clitic, article, or participle that agrees with it is wrong half the time. Put
+  the item in the SUBJECT slot and use a verb that carries no gender ("{name} se quedó como está"), reach for a dative
+  ("Cmdr no pudo devolverle su nombre anterior"), or say the noun outright when the key is folder-only ("La carpeta
+  {name}"). The `askCmdr.renameUndo.skipReason.*` and `fileOperations.cancelRollback.reason.*` families are the worked
+  examples. Watch the second constraint that usually rides along: a brand word in the English (`Cmdr`) has to survive
+  the restructuring too (`desktop-i18n-dont-translate`), so "after Cmdr put it there" can drop neither the agreement nor
+  the brand; it became `cambió después de que Cmdr terminara de escribir ahí`, with Cmdr as the subject of a subordinate
+  clause and a place instead of an object pronoun.
 - **Watch the quiet gendered words in emphatic English.** "yourself", "busy", "sure", "ready" all reach for a `-o`/`-a`
   adjective in Spanish and silently gender the reader. Restructure with the pronoun instead of the adjective: "Pick the
   folders yourself" → "Elige tú las carpetas" (not "Elige las carpetas tú mismo"); "while you're not busy" → "mientras
@@ -183,6 +201,10 @@ strings are counted, so no plural branches are needed there.
 - **Length: Spanish runs ~15–25% longer than English.** Overflow-check tight buttons ("Copiar", "Descartar", "Enviar
   informe") against the pseudolocale (`en-XA`). Watch `queue.row.stalled` in particular: "Sin progreso desde hace 45 s"
   is ~40% longer than the English it replaces, in the narrow ETA slot of an operation row.
+- **Photos are "taken" with `tomar`, never `hacer` or `sacar`.** "where it was taken" → `el lugar donde se tomó`
+  (`askCmdr.consent.contentsRule`). Spain says `hacer una foto` and Latin America `tomar una foto`; `tomar` reads fine
+  on both sides, which is what the pan-regional base wants, and `sacar` is the colloquial one. Same shape as the `coste`
+  / preterite decisions above. Evidence: `glossary.md` § Mirar dentro de un archivo.
 - **`ejecutarse` names an OPERATION that keeps running, never the app.** The catalog already spends it on "Sigue
   ejecutándose en segundo plano" (`transferProgress.backgroundedToast`), so an app that survived a problem
   `siguió funcionando`. Putting `ejecutándose` right after `en segundo plano` would read as the operation, not Cmdr.

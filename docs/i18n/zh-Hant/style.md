@@ -334,6 +334,20 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
 - **Toast strings that follow a colon carry the wrapper's verb, so don't repeat it.** Several error values are dropped
   into a wrapper key and read as the sentence AFTER the colon; write them to continue that sentence and pick a different
   construction for the second clause. Same mechanic the `zh` catalog documents.
+- **When English's only distinction is `the`, rebuild it or the two keys collapse.** Chinese has no article, so a pair
+  of sibling keys separated in English by nothing but a definite article ("Removed the 12 items" = all of them vs
+  "Removed 12 items" = some of them) renders as one identical sentence, and the total/partial distinction the pair
+  exists for disappears. Rebuild it with a modifier that names the SET on the total member (`Cmdr 寫入的`,
+  `Cmdr 移動過的`) and leave the partial member as a bare count. Worked example and the four keys it decided:
+  `glossary.md` § What a cancelled rollback reports.
+- **A vague English place word needs an explicit Chinese one.** "The rest are still there" has no Chinese rendering that
+  couldn't be read as `原處` (_back where they came from_), which in a rollback toast is the opposite of what happened.
+  Name the place (`目標位置`, `移動過去的地方`) rather than gesturing at it.
+- **Ask Cmdr tool-line labels are a `正在…` / `已…` pair sharing one object phrase verbatim.** `askCmdr.tool.*.doing` /
+  `.done` differ only in the aspect marker (`正在查看檔案裡的內容` / `已查看檔案裡的內容`, `正在搜尋你的照片` /
+  `已搜尋你的照片`), so a new tool label copies the sibling shape rather than restating the object two ways. "Look
+  inside" a file is `查看…裡的內容`; a photo's place is `拍攝地點`, a path's is `位置` (`glossary.md` § Ask Cmdr looks
+  inside files).
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.

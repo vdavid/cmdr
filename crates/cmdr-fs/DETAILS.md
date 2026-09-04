@@ -234,16 +234,37 @@ The API contract says this crate emits no user-facing strings. Two things look l
 
 Anyone grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.
 
-## `ScanTicker`: one ticker, so the promise can't drift
+## `ScanBoundary`: one seam, so a walk can't count without asking
 
-`Volume::scan_for_copy_batch_with_progress` promises counts that are **cumulative for the call** — callers shift by
+`Volume::scan_for_copy_batch_with_boundary` promises counts that are **cumulative for the call** — callers shift by
 their own baseline across several calls, so a per-path reset makes the scan dialog's counters jump backwards. Every
 remote backend needs exactly that, and two hand-rolled copies would drift on precisely the part that matters. So the
-ticker lives here and both `cmdr-smb` and `cmdr-sftp` count through it.
+boundary lives here and every backend counts through it.
 
-⚠️ It exists at all because a recursive scan over a network backend reports nothing until it returns: the transfer
-dialog sits on "0 files" for the length of the walk, and `write_operations/scan_watchdog.rs` — which bounds a preview by
-INACTIVITY — can't tell a slow tree from a server that stopped answering.
+⚠️ The counting exists at all because a recursive scan over a network backend reports nothing until it returns: the
+transfer dialog sits on "0 files" for the length of the walk, and `write_operations/scan_watchdog.rs` — which bounds a
+preview by INACTIVITY — can't tell a slow tree from a server that stopped answering.
+
+**Reporting and stopping are one call, deliberately.** `boundary.file(size).await?` and `boundary.dir().await?` count
+the entry AND answer the user's Cancel and Pause, so a backend author reaches the stop by writing `?` on a call they
+were already making. The alternative — a separate stop parameter beside the callback — is a thing a backend can be
+handed and quietly not use, and the only symptom of that is a Cancel button doing nothing on one backend while the
+numbers stay perfectly correct. ❗ Ask BEFORE a round trip, never after: a boundary on the far side of a listing is a
+boundary the user waits out, which over a sleeping NAS is seconds per directory.
+
+**What the owner implements** is `ScanStopSignal` (`scan_stop.rs`), not anything in this crate: `crates/` carry no
+`tauri` and can't name a write operation. The handle is `ScanStop`, `Arc`-held so a backend walking inside
+`spawn_blocking` can carry one across the closure, cloned once per scan and never per entry. Cost is ~2 ns per entry
+against the ~1–3 µs syscall or round trip the entry already costs.
+
+**A stopped scan returns `VolumeError::Cancelled`, ❌ never a partial `BatchScanResult`.** Callers read a scan's totals
+as the size of the transfer they're about to run, so a truncated total that looks successful is a progress bar finishing
+at 30% and a free-space check passing when it shouldn't.
+
+**Granularity is per backend, and uniformity would be a lie.** A backend that walks a real tree (local, SMB, MTP, and
+everything on `scan_walk`) asks per entry; one whose per-path scan is a bounded walk over an already-loaded index
+(in-memory, archive) asks per source path, which is the smallest unit of waiting it has. `volume::conformance`'s
+`assert_batch_scan_stops_when_told` and `assert_batch_scan_asks_inside_the_walk` pin which is which.
 
 ## `Volume::copy_within`: letting a server copy for itself
 
@@ -298,7 +319,7 @@ The double is the oracle: these `Volume` contracts have to hold in it, not just 
 
 ### The shared assertions in `volume::conformance`
 
-The four contracts above that are CROSS-BACKEND live as shared assertions rather than as per-backend tests, so a backend
+The contracts above that are CROSS-BACKEND live as shared assertions rather than as per-backend tests, so a backend
 can't quietly opt out of one. Each takes an already-seeded fixture, because seeding is the one part that can't be shared
 (a local volume needs a temp dir, MTP a backing dir plus a rescan, SMB a share); what the assertion checks is identical
 everywhere, which is the point.
@@ -308,6 +329,8 @@ everywhere, which is the point.
 - `assert_rename_refuses_an_existing_destination` — `force` is the only thing between a move and the file it would
   replace, and each backend earns the refusal differently (`renamex_np(RENAME_EXCL)`, an SMB `stat` plus the server's
   `ReplaceIfExists == false`, an MTP `exists` probe, a map lookup). No shared mechanism to trust, only a shared promise.
+  MTP's is the one that can't be atomic, and that's a property of the protocol rather than of the code:
+  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "MTP's no-clobber rename is check-then-act".
 - `assert_create_file_refuses_to_clobber` — the New File command renders the refusal as "that name is taken", so a
   clobbering backend silently empties a file and reports success.
 - `assert_create_directory_all_reports_an_existing_dir_honestly` — `Created` promises the leaf was empty, and the
@@ -316,10 +339,24 @@ everywhere, which is the point.
   in doubt, answer `AlreadyExisted`". MTP is the backend this matters most for: it answers
   `create_directory_errors_on_existing_dir() == false`, so the default walk learns "already there" from its `exists`
   probe rather than from a collision error.
+- `assert_conflict_scan_reads_a_missing_destination_as_empty` — a destination that isn't there yet holds nothing, so
+  `scan_for_conflicts` answers an empty list rather than the `NotFound` its listing hit. `scan_volume_copy` propagates
+  what comes back, so the wrong answer isn't an odd conflict entry: it's the whole copy preview refusing to open, on the
+  ordinary act of pasting into a folder the transfer would have created moments later. Three backends kept it by
+  accident (a per-item `exists()` that finds nothing, `scan_walk::scan_conflicts`' match arm, a double that lists a
+  missing directory as empty) and two forwarded their listing error, because every other conflict-scan test seeds the
+  destination first.
+- `assert_writability_matches_the_mutations_offered` and `assert_export_matches_the_bytes_offered` — the two capability
+  DECLARATIONS that reach the user as UI state. Nothing but a test stops either drifting from the methods it speaks for.
+- `assert_not_found_carries_the_path` — the payload the frontend renders as the missing file's name.
 
-`InMemoryVolume`, `LocalPosixVolume`, and `SmbVolume` (Docker-gated) run all four; `MtpVolume` runs every one but
-`create_file`, which it doesn't implement. `ArchiveVolume` is read-only and pins the same ground with
-`every_mutation_is_unsupported`. A backend that adds a mutation adds the matching call.
+`InMemoryVolume`, `LocalPosixVolume`, `AdbVolume`, and the Docker-gated `SmbVolume`, `SftpVolume`, and `WebdavVolume`
+run every one (InMemory's writability cell sits in `capabilities_test.rs`, next to the predicate it speaks for).
+`MtpVolume` runs all but `create_file`, which it doesn't implement (an upload there is `write_from_stream`, one
+`SendObject` transaction); its `delete` cell lives in `mtp_delete_test.rs` for the scaffolding that contract needs.
+`ArchiveVolume` is read-only: it runs the three that don't mutate and pins the rest of the ground with
+`every_mutation_is_unsupported`, and it is deliberately outside the conflict-scan one, since nothing copies INTO an
+archive through the volume. A backend that adds a mutation adds the matching call.
 
 ## The faults `InMemoryVolume` can be told to have
 
@@ -378,3 +415,30 @@ MiB block absent from the map entirely (verified on macOS 26.5, 2026-08-21).
 
 Cost is one syscall per map entry, so it is snapshot-only — never per watchdog tick or per log line, unlike the
 `task_info` readers beside it.
+
+## Bodies a backend gets for free
+
+A backend whose only tools are a stat and a listing (SFTP, WebDAV) writes almost no `Volume` body of its own. Four
+modules under `volume/` carry the arithmetic, each behind a trait the backend implements in a handful of lines:
+
+- **`scan_walk.rs`** (`ScanSource`: `scan_stat` + `scan_list`) answers `scan_for_copy`, `scan_for_copy_batch`, and
+  `scan_for_conflicts`. The walk lists and ❌ never stats a child, so a 1,000-file folder costs one round trip per
+  DIRECTORY; `dedup_bytes` tracks `total_bytes` because a backend reaching this walk has no link count. ❌ Nothing here
+  consults `authoritative_listing`: that shortcut needs a watcher behind it, and these backends have none. ❗ A
+  symlinked directory counts as the ONE entry it is and is never walked: following one double-counts its target
+  (Android's `/sdcard` and `/storage/emulated/0` are the same bytes) and a link aimed at an ancestor never terminates.
+  `scan_preview.rs` makes the same promise app-side, so a copy estimate reads the same whichever walker produced it.
+- **`mkdir_all.rs`** (`MakesDirectories`) answers `create_directory_all`, leaf first so the common case costs one
+  request. ❗ Its `DirectoryCreation` answer is the load-bearing part: the transfer driver spends a `Created` by
+  skipping its per-file destination conflict probe, so anything short of certainty (a lost race included) answers
+  `AlreadyExisted`. It also reports the SHALLOWEST directory it created, which is the one listing worth patching.
+- **`patching.rs`** (`PatchSource`) answers `notify_mutation` and the created / deleted / renamed patches around it. A
+  patch is a courtesy and ❌ never fails the mutation that earned it, so every function returns `()`. A rename across
+  directories is two changes, ❗ never one `Renamed`.
+- **`secret_store.rs`** is the only place a backend reads or refreshes a stored secret, always on a blocking task: the
+  store can put a Keychain prompt in front of a call, and a modal dialog on the async runtime holds every other volume.
+  It REFRESHES and ❌ never seeds, because an empty store is the user having declined to remember.
+
+SMB and MTP keep their own cache-aware batch scans (their watchers back the `authoritative_listing` shortcut) and borrow
+only the pure halves, `conflicts_against` and `fold_batch`, so every backend hands a conflict dialog the same shape and
+folds a batch the same way.

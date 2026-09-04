@@ -18,8 +18,9 @@ The main window's view of a held quit. The backend owns the decision and the clo
 - **`initQuitPrompt()` runs synchronously at the top of `onMount`**, before the awaited setup. The gate can hold a quit
   at any moment, and a missed `quit-requested` means the app quits on its own countdown with no dialog ever shown.
 - **The dialog is `topmost`** (`--z-modal-top`), so it's answerable over a modal conflict prompt or a progress dialog.
-  That prop exists for this one dialog; ❌ don't spend it elsewhere (two topmost dialogs are back to racing on DOM
-  order). Pinned by `QuitConfirmationDialog.svelte.test.ts`.
+  The old-macOS notice is the only other `topmost` caller, and `+layout.svelte` raises this one AFTER the page, so the
+  quit prompt still wins. ❌ Don't spend the prop again without settling that order: unordered topmost dialogs race on
+  DOM position. Pinned by `QuitConfirmationDialog.svelte.test.ts`.
 - **Escape and the × mean "keep working"**, the answer that loses nothing. So does `dialog close quit-confirmation` over
   MCP, which answers the GATE, not this store.
 - **`quit-called-off` closes the prompt, and `dismiss()` doesn't answer back.** An agent's "keep working" releases the

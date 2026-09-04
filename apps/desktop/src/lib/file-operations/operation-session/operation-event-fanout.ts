@@ -56,11 +56,20 @@ export type OperationEventDelivery =
   | { kind: 'conflict'; event: WriteConflictEvent }
   | { kind: 'conflictResolved'; event: WriteConflictResolvedEvent }
 
-/** What a session receives: a write-stream event, or its own row out of the
- *  registry snapshot. A row is only ever delivered when the operation is IN the
- *  snapshot; absence is never delivered, because "removed" is what a completed,
- *  a cancelled, and a never-existed operation all look like. */
-export type OperationDelivery = OperationEventDelivery | { kind: 'snapshot'; snapshot: OperationSnapshot }
+/** What a session receives: a write-stream event, its own row out of the registry
+ *  snapshot, or word that a snapshot came without it.
+ *
+ *  `absent` says only that: the registry didn't name this operation in the
+ *  snapshot it just published. It is NOT an ending — "removed" is what a
+ *  completed, a cancelled, and a never-existed operation all look like, and the
+ *  terminal EVENTS are what say which. Only a session that has already held a row
+ *  can read it as "it left", and that's the one thing it's for: an operation that
+ *  emits no terminal event of its own (the operation-log reversal) leaves the
+ *  registry and says nothing else. See `OperationSession.leftRegistry`. */
+export type OperationDelivery =
+  | OperationEventDelivery
+  | { kind: 'snapshot'; snapshot: OperationSnapshot }
+  | { kind: 'absent' }
 
 /** What the backend emits: the write streams as they arrive, plus the whole
  *  registry snapshot. The fan-out demultiplexes; `_testEmit` takes this shape so
@@ -193,8 +202,14 @@ export function createOperationEventFanout(): OperationEventFanout {
   function applySnapshot(operations: OperationSnapshot[]): void {
     receivedSnapshot = true
     latestSnapshot = operations
+    const present = new Set(operations.map((row) => row.operationId))
     for (const row of operations) {
       sinks.get(row.operationId)?.({ kind: 'snapshot', snapshot: row })
+    }
+    // And tell the rest that this snapshot came without them. A session decides
+    // for itself what that means; here it is only the fact.
+    for (const [operationId, sink] of sinks) {
+      if (!present.has(operationId)) sink({ kind: 'absent' })
     }
   }
 

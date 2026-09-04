@@ -1,0 +1,6 @@
+{
+  "main.oldMacos.body": "Cmdr officially supports macOS 12 and up, so here it''s best effort. Most of it works, but some colours and small layout details can look off, and fixes for older systems come last. If you hit something broken, I''d still like to hear about it.",
+  "@main.oldMacos.body": {
+    "sourceHash": "9484b91"
+  }
+}

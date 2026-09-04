@@ -1141,6 +1141,7 @@
     "advanced.logLlmCalls": false,
     "advanced.maxLogStorageMb": 200,
     "advanced.mountTimeout": 20000,
+    "advanced.oldMacosNoticeShown": false,
     "advanced.prefetchBufferSize": 200,
     "advanced.serviceResolveTimeout": 5000,
     "advanced.showSafeSaveFiles": true,

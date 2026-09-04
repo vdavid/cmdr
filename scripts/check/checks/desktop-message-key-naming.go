@@ -39,6 +39,7 @@ var messageKeyKnownAreas = map[string]bool{
 	"ai":             true,
 	"goToPath":       true,
 	"mtp":            true,
+	"adb":            true,
 	"ui":             true,
 	"updates":        true,
 	"whatsNew":       true,

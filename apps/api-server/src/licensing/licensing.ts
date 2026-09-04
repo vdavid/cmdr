@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { generateLicenseKey, generateShortCode, isValidShortCode, licenseTypes, type LicenseType } from './license'
-import { sendLicenseEmail, sendDeviceCountAlert } from '../email'
+import { sendLicenseEmail } from '../email/license'
+import { sendDeviceCountAlert } from '../email/ops-alerts'
 import { constantTimeEqual, verifyPaddleWebhookMulti } from './paddle'
 import {
   getSubscriptionStatus,

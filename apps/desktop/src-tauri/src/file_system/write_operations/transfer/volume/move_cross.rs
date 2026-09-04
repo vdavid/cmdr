@@ -1,0 +1,743 @@
+//! Cross-volume move: the copy-then-delete engine.
+//!
+//! `rename(2)` can't cross a volume boundary any more than it can cross a
+//! filesystem, so a move between two volumes becomes a copy whose source only
+//! goes once the destination is in place. Unlike the LOCAL cross-FS move there
+//! is no staging tree: this engine copies and deletes PER FILE, which is why its
+//! bar already accounts for the deletion and why a stop leaves every file either
+//! at its source or at its destination, never both and never neither.
+//!
+//! The dispatcher that routes here, and the same-volume rename it routes to
+//! instead, are `volume::r#move` and `volume::move_same`. The three mirror the
+//! local engines' shape in `write_operations/transfer/move_op/`.
+//!
+//! Semantics, flows, and decisions: `../DETAILS.md` § "Volume copy + move".
+
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Instant;
+
+use super::super::super::conflict::ApplyToAll;
+use super::super::super::event_sinks::OperationEventSink;
+use super::super::super::journal;
+use super::super::super::state::WriteOperationState;
+use super::super::super::types::{
+    CancelRollback, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteOperationError,
+    WriteOperationPhase, WriteOperationType,
+};
+use super::super::transfer_driver::{
+    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
+    TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
+};
+use super::cleanup::{TreeRemoval, remove_tree};
+use super::conflict::resolve_volume_conflict;
+use super::r#move::{FetchFut, ResolveFut, TransferFut};
+use super::preflight::{SourceHint, scan_volume_sources};
+use super::strategy::{copy_single_path, resolve_source_is_directory};
+use super::transfer_error::{AtPath, PathRole, WriteFailure, map_volume_error};
+use crate::file_system::volume::Volume;
+use crate::ignore_poison::IgnorePoison;
+
+/// Internal cross-volume move body. Takes a sink for event emission so unit
+/// tests can drive the full pipeline with a `CollectorEventSink` instead of
+/// spinning up a Tauri app. The public `move_between_volumes` wraps this in
+/// the `tokio::spawn` + state-cache lifecycle.
+///
+/// Takes `Arc<dyn OperationEventSink>` (not `&dyn`) so closures passed to
+/// `drive_transfer_serial_async` can `Arc::clone(&events)` into their
+/// environment without borrowing outer-fn refs (the driver's
+/// `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` bound rejects
+/// those — see `copy_volumes_with_progress` for the full rationale).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Volume move requires passing multiple context parameters"
+)]
+pub(crate) async fn move_volumes_with_progress(
+    events: Arc<dyn OperationEventSink>,
+    operation_id: &str,
+    state: &Arc<WriteOperationState>,
+    source_volume: Arc<dyn Volume>,
+    source_paths: &[PathBuf],
+    dest_volume: Arc<dyn Volume>,
+    dest_path: &Path,
+    config: &VolumeCopyConfig,
+) -> Result<(), WriteFailure> {
+    // Phase 0: Ensure the destination directory exists, creating it and any
+    // missing ancestors on the dest volume (local, SMB, MTP, in-memory), so a
+    // cross-volume move into a not-yet-existing folder just works on every
+    // backend (parity with the local-FS `ensure_destination_dir`). Source and
+    // dest are different volumes here, so the dest-inside-source guard doesn't
+    // apply. A move into an already-existing dest is a no-op create.
+    // The move pipeline is serial across TOP-LEVEL sources, so it builds no
+    // destination name index and has no use for the `DirectoryCreation` answer
+    // that gates one (see `volume/copy.rs`, Phase 0.5). Its subtree walk still
+    // fans out; that width is the `FileWindow`'s, further down.
+    dest_volume
+        .create_directory_all(dest_path)
+        .await
+        .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
+
+    // Phase 1: Preflight scan. Same helper the copy pipeline uses; we need
+    // it for `total_bytes` (so the FE's Size progress bar isn't pinned at
+    // zero) and for per-source `is_directory` / `size` hints (which save an
+    // `is_directory` probe per source inside the copy+delete loop on MTP).
+    //
+    // Copy+delete per file: on partial failure, already-moved files exist at
+    // dest, remaining files stay at source. No data loss, but the move is
+    // partial.
+    let preflight = scan_volume_sources(
+        &source_volume,
+        source_paths,
+        config,
+        operation_id,
+        WriteOperationType::Move,
+        state,
+        &*events,
+    )
+    .await?;
+    let total_files = preflight.total_files;
+    let total_bytes = preflight.total_bytes;
+    let known_directory_paths = preflight.known_directory_paths();
+    let source_hints: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(preflight.source_hints);
+
+    // The operation-log journal target (real source + dest volume ids), set by the
+    // `move_between_volumes` deferred. `None` in tests / the both-local shortcut,
+    // where the per-leaf record point below no-ops.
+    let journal_volumes = state.journal_volumes.clone();
+
+    // Bulk-skip is **file-only** (a top-level directory matching a pre-known
+    // conflict means only SOME of its children collide — dropping the whole
+    // subtree would lose non-conflicting files).
+    let pre_skip_paths = build_pre_skip_set(
+        source_paths,
+        config.conflict_resolution,
+        &config.pre_known_conflicts,
+        &known_directory_paths,
+    );
+    let mut bulk_skip_files = 0usize;
+    let mut bulk_skip_bytes = 0u64;
+    for path in &pre_skip_paths {
+        let size = source_hints
+            .get(path)
+            .map(|h| if h.is_directory { 0 } else { h.size })
+            .unwrap_or(0);
+        bulk_skip_files += 1;
+        bulk_skip_bytes += size;
+    }
+
+    let driver_config = DriverConfig {
+        operation_type: WriteOperationType::Move,
+        phase: WriteOperationPhase::Copying,
+        conflict_resolution: config.conflict_resolution,
+        pre_known_conflicts: config.pre_known_conflicts.clone(),
+        // Streaming path: `SerialLeafProgress` owns leaf-granular milestones.
+        emit_per_source_milestone: false,
+    };
+
+    // Per-source state shared with the driver's closures via interior
+    // mutability. The conflict resolver's apply-to-all latch lives in a cell so
+    // the closure stays `Fn`-shaped (the driver's `for<'a> FnMut(...) ->
+    // Pin<Box<dyn Future + Send + 'a>>` bound rejects `&mut` captures of
+    // outer-fn locals).
+    let apply_to_all_cell: Arc<std::sync::Mutex<ApplyToAll>> = Arc::new(std::sync::Mutex::new(ApplyToAll::default()));
+
+    // Closure captures: `config` and `operation_id` clone cheaply; `events`
+    // is already an `Arc<dyn OperationEventSink>` on entry, so each closure
+    // `Arc::clone(&events)`s into its environment. See
+    // `volume::copy::copy_volumes_with_progress` for the full rationale.
+    let config_owned: VolumeCopyConfig = config.clone();
+    let operation_id_owned: String = operation_id.to_string();
+
+    // Operation-wide leaf-file counter for the File progress bar. The driver's
+    // own `files_done` counts TOP-LEVEL sources (one folder = 1), but the bar's
+    // denominator is the preflight LEAF count, so the bar reads from this shared
+    // counter, which `SerialLeafProgress::on_leaf_complete` bumps once per inner
+    // file. Seeded with the bulk-skipped leaves the driver credits up front.
+    let leaf_files_done = Arc::new(AtomicUsize::new(bulk_skip_files));
+
+    // Children a deep merge skipped. The driver only sees TOP-LEVEL sources, so
+    // without this fold a folder move that skipped half its children would
+    // report "0 skipped" — and the completion toast would read as if everything
+    // moved. Mirrors `volume/copy_serial.rs`'s `deep_skipped_files`.
+    let deep_skipped_files = Arc::new(AtomicUsize::new(0));
+
+    // Live in-flight table + stall watchdog, the same registration
+    // `volume/copy.rs` makes for both of its paths. Without it
+    // `state.rs::enrich_progress` misses the lookup, every `write-progress`
+    // event goes out with `activity: None`, and a wedged move shows a frozen bar
+    // with a confident ETA and no stall notice at all — silent, on the one
+    // operation that has the user's ONLY copy of the data in flight. Dropping
+    // the guard when this function returns deregisters the operation and stops
+    // the watchdog on its next tick.
+    //
+    // The width it declares is the FAN-OUT's, not the source loop's: one
+    // top-level source rides at a time up here, but a DIRECTORY source's subtree
+    // streams this many files at once through the `FileWindow` below, and the
+    // dump's `in_flight=<open>/<width>` is the one output a wedge investigation
+    // reads.
+    let concurrency = super::copy::transfer_concurrency(&*source_volume, &*dest_volume);
+    let probe_guard = super::super::transfer_probe::register_operation(
+        operation_id,
+        concurrency,
+        total_files,
+        // Both ends, so the watchdog can ask whether either connection has been
+        // PROVEN dead before it acts on a stall (no backend can answer that yet
+        // — see `Volume::connection_liveness`).
+        vec![Arc::clone(&source_volume), Arc::clone(&dest_volume)],
+        Arc::clone(state),
+        Arc::clone(&events),
+    );
+    let op_probe = probe_guard.probe();
+
+    // Phase 0.6: clear `.cmdr-tmp-*` partials a crash or force-quit left in this
+    // destination, exactly as the copy path does before its own loop. A folder
+    // somebody only ever MOVES into is as good an occasion to reap as one they
+    // copy into, and it used to get no sweep at all. Age-gated, so a temp another
+    // transfer is streaming into right now is never touched. The move pipeline
+    // builds no destination name index, so the listing it returns has no second
+    // customer here.
+    super::cleanup::reap_stale_transfer_temps(&dest_volume, dest_path).await;
+
+    let outcome = drive_transfer_serial_async(
+        &*events,
+        state,
+        operation_id,
+        source_paths,
+        dest_path,
+        total_files,
+        total_bytes,
+        bulk_skip_files,
+        bulk_skip_bytes,
+        &pre_skip_paths,
+        &driver_config,
+        {
+            let dest_volume = Arc::clone(&dest_volume);
+            let op_probe_precheck = Arc::clone(&op_probe);
+            move |p: &Path| -> FetchFut<'_> {
+                let dest_volume = Arc::clone(&dest_volume);
+                let op_probe_precheck = Arc::clone(&op_probe_precheck);
+                let p_owned = p.to_path_buf();
+                Box::pin(async move {
+                    // Recorded BEFORE the await: a `get_metadata` on a wedged
+                    // share returns to nobody, and a dump has to be able to name
+                    // it as the step in progress.
+                    op_probe_precheck.set_driver_phase(
+                        super::super::transfer_probe::DriverPhase::PreparingNext,
+                        &p_owned.display().to_string(),
+                    );
+                    dest_volume
+                        .get_metadata(&p_owned)
+                        .await
+                        .ok()
+                        .map(|m| m.size.unwrap_or(0))
+                })
+            }
+        },
+        {
+            let source_volume = Arc::clone(&source_volume);
+            let dest_volume = Arc::clone(&dest_volume);
+            let state = Arc::clone(state);
+            let events = Arc::clone(&events);
+            let apply_to_all = Arc::clone(&apply_to_all_cell);
+            let source_hints = Arc::clone(&source_hints);
+            let config = config_owned.clone();
+            let operation_id = operation_id_owned.clone();
+            let op_probe_conflict = Arc::clone(&op_probe);
+            move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+                let source_volume = Arc::clone(&source_volume);
+                let dest_volume = Arc::clone(&dest_volume);
+                let state = Arc::clone(&state);
+                let events = Arc::clone(&events);
+                let apply_to_all = Arc::clone(&apply_to_all);
+                let source_hints = Arc::clone(&source_hints);
+                let config = config.clone();
+                let operation_id = operation_id.clone();
+                let op_probe_conflict = Arc::clone(&op_probe_conflict);
+                let source_path_owned = input.source_path.to_path_buf();
+                let initial_dest_owned = input.initial_dest_path.to_path_buf();
+                let dest_size_hint = input.dest_size_hint;
+                Box::pin(async move {
+                    log::debug!(
+                        "move_between_volumes: conflict detected at {}",
+                        initial_dest_owned.display()
+                    );
+                    // Parked on a PERSON, unbounded by design and with nothing
+                    // else running. A dump that names it has explained the whole
+                    // stall; `paused=` covers the pause gate and nothing else
+                    // covered this.
+                    op_probe_conflict.set_driver_phase(
+                        super::super::transfer_probe::DriverPhase::ResolvingConflict,
+                        &initial_dest_owned.display().to_string(),
+                    );
+                    // Reuse the cached scan hint so the conflict dialog
+                    // doesn't re-list the parent dir per conflict on MTP.
+                    let source_hint = source_hints.get(&source_path_owned).copied();
+                    let source_size_hint = source_hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                    // `Some` only when the preflight produced a hint, so the
+                    // resolver keeps its trait-call fallback for the no-hint case.
+                    let source_is_directory_hint = source_hint.map(|h| h.is_directory);
+                    let mut latched = *apply_to_all.lock_ignore_poison();
+                    let resolved = resolve_volume_conflict(
+                        &source_volume,
+                        &source_path_owned,
+                        &dest_volume,
+                        &initial_dest_owned,
+                        &config,
+                        &*events,
+                        &operation_id,
+                        &state,
+                        &mut latched,
+                        source_size_hint,
+                        dest_size_hint,
+                        source_is_directory_hint,
+                    )
+                    .await;
+                    *apply_to_all.lock_ignore_poison() = latched;
+                    let resolved = resolved?;
+                    Ok(match resolved {
+                        None => {
+                            log::debug!(
+                                "move_between_volumes: skipping {} due to conflict resolution",
+                                source_path_owned.display()
+                            );
+                            // Credit the source's byte size so the Size bar
+                            // matches the file counter when every source is
+                            // skipped. Dirs report 0 in `source_hints` (the
+                            // recursive total isn't tracked there).
+                            let bytes_accounted = source_hint.map(|h| h.size).unwrap_or(0);
+                            ConflictDecision::Skip { bytes_accounted }
+                        }
+                        Some(rc) => ConflictDecision::Proceed {
+                            dest_path: rc.write_path,
+                            replace_after_write: rc.replace_after_write,
+                        },
+                    })
+                })
+            }
+        },
+        {
+            let source_volume = Arc::clone(&source_volume);
+            let dest_volume = Arc::clone(&dest_volume);
+            let progress_interval = state.progress_interval;
+            let state = Arc::clone(state);
+            let events = Arc::clone(&events);
+            let source_hints = Arc::clone(&source_hints);
+            let operation_id = operation_id_owned.clone();
+            let config_for_merge = config_owned.clone();
+            let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
+            // A cross-volume move copies one source at a time, so a folder move
+            // is the same single-source shape a folder copy is: without a window
+            // its whole subtree streams one file at a time. Same width as the
+            // copy driver's, and the same number the in-flight table declares.
+            let file_window = super::strategy::FileWindow::new(concurrency);
+            let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
+            let leaf_files_done = Arc::clone(&leaf_files_done);
+            let deep_skipped_files = Arc::clone(&deep_skipped_files);
+            let journal_volumes = journal_volumes.clone();
+            // The move keeps an in-flight table like the copy driver's, so a
+            // frozen bar during a folder move gets the same "waiting on the
+            // destination" answer: a row for the top-level source in hand, plus
+            // one per leaf the window holds (`MergeCtx.op_probe`, below). The
+            // counter only labels the source rows in a dump; sources run one at
+            // a time here.
+            let op_probe = Arc::clone(&op_probe);
+            let source_index = Arc::new(AtomicUsize::new(0));
+            move |ctx: TransferContext<'_>| -> TransferFut<'_> {
+                let op_probe = Arc::clone(&op_probe);
+                let source_index = Arc::clone(&source_index);
+                let source_volume = Arc::clone(&source_volume);
+                let dest_volume = Arc::clone(&dest_volume);
+                let state = Arc::clone(&state);
+                let events = Arc::clone(&events);
+                let source_hints = Arc::clone(&source_hints);
+                let operation_id = operation_id.clone();
+                let config_for_merge = config_for_merge.clone();
+                let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
+                let file_window = file_window.clone();
+                let last_progress_time = Arc::clone(&last_progress_time);
+                let leaf_files_done = Arc::clone(&leaf_files_done);
+                let deep_skipped_files = Arc::clone(&deep_skipped_files);
+                let journal_volumes = journal_volumes.clone();
+                let source_path = ctx.source_path.to_path_buf();
+                let dest_item_path = ctx
+                    .dest_path
+                    .expect("async driver always supplies dest_path")
+                    .to_path_buf();
+                // `Some(orig)` ⇒ `dest_item_path` is a temp sibling on the dest
+                // volume; after the copy lands, swap it over `orig` BEFORE
+                // deleting the source (a move must never delete the source if
+                // the destination isn't fully in place).
+                let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
+                let bytes_done_so_far = ctx.bytes_done_so_far;
+                Box::pin(async move {
+                    // Use the cached scan hint for type + size. A missing hint
+                    // means UNKNOWN, so it falls back to a per-source
+                    // `is_directory` probe (a cached preview without per-path
+                    // data, or a future backend that doesn't populate it).
+                    let hint = source_hints.get(&source_path).copied();
+                    let source_is_dir =
+                        match resolve_source_is_directory(&source_volume, &source_path, hint.map(|h| h.is_directory))
+                            .await
+                        {
+                            Ok(is_dir) => is_dir,
+                            Err(e) => return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e)),
+                        };
+                    let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
+
+                    let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
+                    let leaf_progress = SerialLeafProgress::new(
+                        Arc::clone(&events),
+                        Arc::clone(&state),
+                        operation_id.clone(),
+                        WriteOperationType::Move,
+                        file_name.clone(),
+                        bytes_done_so_far,
+                        Arc::clone(&leaf_files_done),
+                        total_files,
+                        total_bytes,
+                        Arc::clone(&last_progress_time),
+                        progress_interval,
+                    );
+                    let on_file_progress = {
+                        let leaf_progress = Arc::clone(&leaf_progress);
+                        move |file_bytes_done: u64, _file_bytes_total: u64| leaf_progress.on_chunk(file_bytes_done)
+                    };
+                    let on_file_complete = {
+                        let leaf_progress = Arc::clone(&leaf_progress);
+                        move |leaf_bytes: u64| leaf_progress.on_leaf_complete(leaf_bytes)
+                    };
+                    let on_file_skipped = {
+                        let leaf_progress = Arc::clone(&leaf_progress);
+                        move |leaf_bytes: u64| leaf_progress.on_leaf_skipped(leaf_bytes)
+                    };
+                    // The copy phase's per-file ledger. Cross-volume move's own
+                    // rollback reverses renames / cleans staging separately, but
+                    // the operation-log capture harvests it below for the per-leaf
+                    // journal rows.
+                    let created = super::strategy::CreatedPaths::default();
+                    // This source's row in the in-flight table, and the number
+                    // every leaf row below it hangs off. Sources run one at a
+                    // time here, so the counter labels the source rows in order.
+                    let source_row = super::super::transfer_probe::TaskRow::source(
+                        source_index.fetch_add(1, Ordering::Relaxed),
+                    );
+
+                    // Merge context: when a source folder lands on a same-named
+                    // dest folder, deep file clashes inside honor the file policy
+                    // (Stop-wait, latch, conditional reduce, type mismatches) —
+                    // the same granularity the top-level move already has.
+                    let merge_ctx = super::strategy::MergeCtx {
+                        events: &*events,
+                        operation_id: &operation_id,
+                        config: &config_for_merge,
+                        state: &state,
+                        apply_to_all: &merge_apply_to_all,
+                        source_hints: &source_hints,
+                        on_file_skipped: &on_file_skipped,
+                        window: file_window,
+                        // ❗ Every leaf the window holds opens a row of its OWN
+                        // through this, numbered under `source_row`, and that is
+                        // the invariant every `TaskProbe` field is built on:
+                        // `arm_stall_abort` REPLACES the row's token per attempt
+                        // and `set_bytes` STORES (never adds) that attempt's
+                        // count. `None` here would leave every leaf reporting
+                        // into the enclosing SOURCE's row through the task-local
+                        // below, so concurrent writes would clobber one row's
+                        // stall-abort token and byte count and the dump would
+                        // name the folder instead of the file that wedged.
+                        probe: Some(super::strategy::MergeProbe {
+                            operation: Arc::clone(&op_probe),
+                            source_row,
+                        }),
+                    };
+                    // This driver streams the source ITSELF, so from here until
+                    // the next iteration nothing else could be stuck: the phase
+                    // points a reader straight at the rows below. It stands
+                    // through the copy AND the source sweep after it, which the
+                    // row's own `Finalizing` phase separates.
+                    op_probe.set_driver_phase(
+                        super::super::transfer_probe::DriverPhase::TransferringSource,
+                        &format!("{} {}", source_row.label(), source_path.display()),
+                    );
+                    // Held for this source's whole transfer, copy phase AND
+                    // source sweep; dropping it clears the row. Mirrors
+                    // `volume/copy_serial.rs`.
+                    let task_probe = op_probe.begin_task(
+                        source_row,
+                        // A directory source walks and feeds the window; only a
+                        // FILE source copies bytes on this row.
+                        if source_is_dir {
+                            super::super::transfer_probe::TaskRole::Walker
+                        } else {
+                            super::super::transfer_probe::TaskRole::File
+                        },
+                        &source_path.display().to_string(),
+                        &dest_item_path.display().to_string(),
+                    );
+                    let probe = task_probe.probe();
+                    let copy_fut = copy_single_path(
+                        &source_volume,
+                        &source_path,
+                        Some(source_is_dir),
+                        source_size_hint,
+                        &dest_volume,
+                        &dest_item_path,
+                        &state,
+                        &created,
+                        &on_file_progress,
+                        &on_file_complete,
+                        Some(&merge_ctx),
+                        super::strategy::staging_for(&replace_after_write),
+                    );
+                    // Bind this source's probe as a task-local for the whole
+                    // copy phase, so `stream_pipe_file` and `CheckpointStream`
+                    // record their phases with no signature threading. Without
+                    // it the row stays parked at `spawned`, `wait_reason` can
+                    // never answer `Source` or `Destination`, and
+                    // `stream_pipe_file` can't arm a stall-abort.
+                    let bytes = match super::super::transfer_probe::CURRENT_TASK_PROBE
+                        .scope(Arc::clone(&probe), copy_fut)
+                        .await
+                    {
+                        Ok(b) => b,
+                        Err(e) => {
+                            // Log and report the path the walker actually failed
+                            // on, which for a directory source is a file deep
+                            // inside it — ❌ never `source_path`, the top-level
+                            // item, which tells the user nothing they can act on.
+                            log::warn!(
+                                target: "move",
+                                "move_between_volumes: copy phase failed for {} (under {} -> {}): {}",
+                                e.path.display(),
+                                source_path.display(),
+                                dest_item_path.display(),
+                                e.error
+                            );
+                            return Err(map_volume_error(&e.path.display().to_string(), PathRole::Source, e.error));
+                        }
+                    };
+                    // Past the last byte. Set directly on the handle rather than
+                    // through the task-local, whose scope ended with the copy:
+                    // everything below (the safe-replace finalize, then the
+                    // source sweep) is a move's most dangerous stretch, and a
+                    // dump taken during it must not still claim the task is
+                    // streaming.
+                    probe.set_phase(super::super::transfer_probe::TaskPhase::Finalizing);
+                    // Overwrote iff the top-level file→file safe-replace fires below
+                    // OR a deep-merge child replaced a dest file. Captured before
+                    // `replace_after_write` is consumed; feeds move eligibility.
+                    let source_overwrote = replace_after_write.is_some() || created.any_overwrote();
+                    // Where a FILE source actually lands: `orig` after a safe-replace
+                    // (the temp `dest_item_path` gets renamed onto it below), else
+                    // `dest_item_path`. A DIR source's dest root is `dest_item_path`.
+                    let landed_dest = if source_is_dir {
+                        dest_item_path.clone()
+                    } else {
+                        replace_after_write.clone().unwrap_or_else(|| dest_item_path.clone())
+                    };
+
+                    // Safe-replace finalize (file→file Overwrite): the temp on
+                    // the dest volume now holds the complete new data. Delete
+                    // the original dest and rename the temp into place. This
+                    // MUST happen before deleting the source: if the finalize
+                    // fails, the source is untouched, the original dest is
+                    // intact, and the new data survives in the temp.
+                    if let Some(orig) = replace_after_write
+                        && let Err(e) =
+                            super::conflict::finalize_safe_replace(&dest_volume, &dest_item_path, &orig).await
+                        {
+                            log::warn!(
+                                target: "move",
+                                "move_between_volumes: safe-replace finalize failed for {} (temp {} preserved, source {} untouched): {}",
+                                orig.display(),
+                                dest_item_path.display(),
+                                source_path.display(),
+                                e
+                            );
+                            return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e));
+                        }
+
+                    // Delete source. `Volume::delete` is contractually for
+                    // files or *empty* directories (LocalPosix uses
+                    // `std::fs::remove_dir`, which fails ENOTEMPTY), so
+                    // directory sources need a recursive sweep. Cross-volume
+                    // copy doesn't touch the source, so its tree is intact.
+                    //
+                    // ❗ The sweep SPARES every child the merge skipped. A
+                    // skipped child never landed at the destination, so its
+                    // source is the only copy in existence and deleting it
+                    // destroys exactly the data the user declined to move — and
+                    // the conditional policies reduce to Skip per file, so
+                    // "Overwrite all smaller / older" hits this constantly.
+                    // Their ancestor directories survive with them.
+                    let delete_result = if source_is_dir {
+                        let skipped = created.skipped_source_paths();
+                        deep_skipped_files.fetch_add(skipped.len(), Ordering::Relaxed);
+                        remove_tree(
+                            &source_volume,
+                            &source_path,
+                            &skipped,
+                            TreeRemoval::MoveSourceAfterDestinationLanded,
+                        )
+                        .await
+                    } else {
+                        source_volume.delete(&source_path).await.at(&source_path)
+                    };
+                    if let Err(e) = delete_result {
+                        // Same rule as the copy phase: name the file that
+                        // actually refused to go, which for a directory source
+                        // is a leaf inside it — ❌ never `source_path`, whose
+                        // own `ENOTEMPTY` is just the symptom.
+                        log::warn!(
+                            target: "move",
+                            "move_between_volumes: source delete failed for {} (under {}) after successful copy: {}",
+                            e.path.display(),
+                            source_path.display(),
+                            e.error
+                        );
+                        return Err(map_volume_error(&e.path.display().to_string(), PathRole::Source, e.error));
+                    }
+
+                    // Journal the moved leaves under the REAL volume ids: a file
+                    // source → one leaf (source on the source volume, dest on the
+                    // dest volume); a dir source → one leaf per copied file (source
+                    // rebased from the dest tail) plus the created dest dirs after
+                    // them. Per-source here (not post-loop) because the throwaway
+                    // ledger is drained per iteration; the created dirs land right
+                    // after this source's files, so their `seq` still follows the
+                    // contents within the subtree.
+                    if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
+                        let files = std::mem::take(&mut *created.files.lock_ignore_poison());
+                        let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
+                        journal::record_volume_transfer_source(
+                            &operation_id,
+                            src_vol,
+                            &source_path,
+                            dst_vol,
+                            &landed_dest,
+                            source_is_dir,
+                            &files,
+                            (!source_is_dir).then_some(bytes as i64),
+                            source_overwrote,
+                        );
+                        journal::record_created_dirs_on(&operation_id, dst_vol, &dirs);
+                    }
+
+                    // Per-file milestone emit (bumped `files_done = N`,
+                    // bumped `bytes_done`) now lives in the driver's
+                    // `Transferred` arm — fires uniformly across copy + move
+                    // and pins the FE's files-axis even when the chunked
+                    // emits absorbed the throttle window. See
+                    // `transfer_driver.rs::drive_transfer_serial_async`.
+                    Ok(TransferOutcome::Transferred { bytes })
+                })
+            }
+        },
+    )
+    .await;
+
+    // Every source is done (or the loop bailed); the abandoned-temp sweep and
+    // the terminal emits below are all that is left. Mirrors
+    // `ConcurrentDriver::finish` and `copy_serial.rs`.
+    op_probe.set_driver_phase(
+        super::super::transfer_probe::DriverPhase::PostLoop,
+        "post-loop bookkeeping",
+    );
+
+    let files_done = outcome.files_done;
+    let bytes_done = outcome.bytes_done;
+    // Top-level skips the driver counted, PLUS the deep-merge children skipped
+    // inside folder sources (invisible to the driver).
+    let files_skipped = outcome.files_skipped + deep_skipped_files.load(Ordering::Relaxed);
+
+    // Remove any staged `.cmdr-tmp-*` partial whose write didn't finish. The
+    // serial driver's own error path usually cleans up as it goes; this covers
+    // whatever it couldn't reach. A temp whose write COMPLETED is already off the
+    // list, so committed data is never in scope.
+    // Whatever the destination wouldn't let go of rides out on the cancel event
+    // below, so a cancel that left scratch behind never reports a clear
+    // destination.
+    let staged_leftovers = super::cleanup::clean_abandoned_staged_writes(&dest_volume, state).await;
+
+    match outcome.intent {
+        PostLoopIntent::Completed => {
+            log::info!(
+                "move_between_volumes: completed op={}, files={}, bytes={}",
+                operation_id,
+                files_done,
+                bytes_done
+            );
+            events.emit_complete(WriteCompleteEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Move,
+                files_processed: files_done,
+                files_skipped,
+                bytes_processed: bytes_done,
+            });
+            Ok(())
+        }
+        PostLoopIntent::Cancelled => {
+            // Move has no rollback (it's copy+delete-source per file);
+            // cancelling leaves whatever's already at dest alone and stops
+            // further work. Emit `write-cancelled` here so the FE sees the
+            // cancel for the move path too (mirrors
+            // `copy_volumes_with_progress`); without it the outer wrapper
+            // would only log the cancel and the dialog would never close.
+            events.emit_cancelled(WriteCancelledEvent {
+                operation_id: operation_id.to_string(),
+                operation_type: WriteOperationType::Move,
+                files_processed: files_done,
+                // A cross-volume move has no reversal to report, but a staged
+                // partial the destination wouldn't take back is still news.
+                rollback: CancelRollback::none().with_staged_leftovers(&staged_leftovers),
+            });
+            Err(WriteFailure::synthetic(WriteOperationError::Cancelled {
+                message: "Operation cancelled by user".to_string(),
+            }))
+        }
+        PostLoopIntent::Failed(err) => {
+            // `err` is already the typed `WriteOperationError` the FE renders from.
+            Err(WriteFailure::synthetic(err))
+        }
+    }
+}
+
+// The move suite is split by subject: cross-volume (`tests`), same-volume
+// rename, cancel, failure/error-naming, progress reporting, and folder merge.
+// Shared fixtures and doubles live in `test_support`, which they all reach
+// through `super::test_support`.
+//
+// The whole cluster hangs off THIS module rather than the dispatcher next door,
+// including the same-volume suite: they reach the engine's vocabulary through
+// `use super::*`, and `test_support` has to stay one module so its fixtures are
+// one type everywhere. `super::super` is `volume` either way, so the paths that
+// cross to a sibling engine are unchanged.
+#[cfg(test)]
+#[path = "move_cancel_tests.rs"]
+mod cancel_tests;
+#[cfg(test)]
+#[path = "move_failure_tests.rs"]
+mod failure_tests;
+#[cfg(test)]
+#[path = "move_merge_tests.rs"]
+mod merge_tests;
+// Both drivers' in-flight tables, pinned side by side: a folder fans out the
+// same way whether it is moved or copied, so the table it renders is one
+// subject rather than two.
+#[cfg(test)]
+#[path = "probe_row_tests.rs"]
+mod probe_row_tests;
+#[cfg(test)]
+#[path = "move_progress_tests.rs"]
+mod progress_tests;
+#[cfg(test)]
+#[path = "move_same_tests.rs"]
+mod same_tests;
+#[cfg(test)]
+#[path = "move_test_support.rs"]
+mod test_support;
+#[cfg(test)]
+#[path = "move_tests.rs"]
+mod tests;

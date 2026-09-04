@@ -52,6 +52,14 @@ export default {
       // Use --color-accent-text for foreground text (auto-darkened for a11y).
       color: ['/var\\(--color-accent\\)/'],
     },
+    // Container queries need Safari 16; Cmdr's WebKit floor is Safari 15 (see
+    // `build.target` in `vite.config.js`). Old WebKit drops an `@container`
+    // block whole and in silence, so the styling inside it just never applies
+    // and nothing says so. Measure instead: `useInlineSize` in
+    // `src/lib/utils/inline-size-action.ts` reports the same content box a size
+    // query reads, so a threshold ports over unchanged.
+    'at-rule-disallowed-list': ['container'],
+    'property-disallowed-list': ['container', 'container-type', 'container-name'],
     'declaration-no-important': true,
     'declaration-property-value-allowed-list': {
       'font-weight': ['400', '500', '600', 'normal', 'inherit'],

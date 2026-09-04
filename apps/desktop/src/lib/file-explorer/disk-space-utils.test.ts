@@ -3,16 +3,24 @@ import { _setLocaleForTests } from '$lib/intl/locale'
 import {
   getDiskUsageLevel,
   getUsedPercent,
+  getUsageBar,
   formatDiskSpaceStatus,
   formatDiskSpaceShort,
+  formatSpaceNotes,
   formatBarTooltip,
+  type BoundedSpaceInfo,
 } from './disk-space-utils'
-import type { VolumeSpaceInfo } from '$lib/tauri-commands'
+import type { SpaceInfo } from '$lib/ipc/bindings'
 
 const mockFormatSize = (bytes: number): string => `${String(bytes)} B`
 
-function createSpace(totalBytes: number, availableBytes: number): VolumeSpaceInfo {
-  return { totalBytes, availableBytes }
+function createSpace(totalBytes: number, availableBytes: number): BoundedSpaceInfo {
+  return { kind: 'bounded', totalBytes, availableBytes, usedBytes: totalBytes - availableBytes }
+}
+
+/** Storage with no ceiling: what a quota-less Nextcloud account reports. */
+function createUnbounded(usedBytes: number): SpaceInfo {
+  return { kind: 'unbounded', usedBytes }
 }
 
 // The sentences resolve through the i18n catalog (`tString`) and the percentage
@@ -210,5 +218,54 @@ describe('formatBarTooltip', () => {
     const space = createSpace(1000, 395)
     expect(formatBarTooltip(space, mockFormatSize)).toBe(formatDiskSpaceStatus(space, mockFormatSize))
     expect(formatBarTooltip(space, mockFormatSize)).toBe('395 B of 1000 B free (40%)')
+  })
+})
+
+// ── Storage with no ceiling ──────────────────────────────────────────
+//
+// ❗ The shape a stock Nextcloud account reports, which is the COMMON case for
+// real users rather than an edge one. Everything here is about NOT inventing a
+// denominator: no bar, no percentage, and above all no warning band, because you
+// can't run out of storage that has no limit.
+
+describe('storage with no ceiling', () => {
+  it('has no bar to draw', () => {
+    expect(getUsageBar(createUnbounded(64_000_000))).toBeNull()
+  })
+
+  it('still draws a bar wherever a total exists', () => {
+    expect(getUsageBar(createSpace(1000, 400))).toEqual({
+      usedPercent: 60,
+      severity: 'ok',
+      cssVar: '--color-disk-ok',
+    })
+  })
+
+  it('states what is stored instead of what is free', () => {
+    expect(formatDiskSpaceStatus(createUnbounded(64_000_000), mockFormatSize)).toBe('64000000 B used')
+  })
+
+  it('states the same thing in the narrow drive picker', () => {
+    expect(formatDiskSpaceShort(createUnbounded(64_000_000), mockFormatSize)).toBe('64000000 B used')
+  })
+
+  it('never fires a low-space warning, however much is stored', () => {
+    // The whole point. A band keyed off a percentage would compute 0 or NaN here
+    // and could land anywhere; there is no honest band to be in.
+    const notes = formatSpaceNotes(createUnbounded(999_999_999_999))
+    expect(notes).not.toContain('low on space')
+    expect(notes).toBe("This storage has no size limit, so there's no bar to fill.")
+  })
+
+  it('explains in the tooltip why there is no bar', () => {
+    expect(formatBarTooltip(createUnbounded(64_000_000), mockFormatSize)).toBe(
+      "64000000 B used. This storage has no size limit, so there's no bar to fill.",
+    )
+  })
+
+  it('still carries the phone-storage hint after its own note', () => {
+    expect(formatBarTooltip(createUnbounded(64_000_000), mockFormatSize, 'Phones hide app data.')).toBe(
+      "64000000 B used. This storage has no size limit, so there's no bar to fill. Phones hide app data.",
+    )
   })
 })

@@ -81,7 +81,7 @@ impl Volume for FailingWriteVolume {
 /// `test_support::unique_lane_id` for the isolation rationale).
 fn archive_source_volume(archive_path: &Path) -> Arc<dyn Volume> {
     use crate::file_system::volume::InMemoryVolume;
-    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_archive::{ArchiveFormat, ArchiveVolume};
     use cmdr_fs::volume::host::VolumeHost;
     let parent: Arc<dyn Volume> = Arc::new(
         InMemoryVolume::new("parent")

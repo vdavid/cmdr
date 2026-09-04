@@ -77,6 +77,26 @@ fn journal_op(
     writer.flush_blocking().expect("flush");
 }
 
+/// Journal one reversal of `original`: an operation whose `rolls_back_op_id`
+/// points back at the one it undoes, which is what makes the pair discoverable
+/// from either end.
+fn journal_inverse_of(writer: &OperationLogWriter, inverse_op_id: &str, original: &str, started_at: i64) {
+    writer
+        .open_operation(OpenOperation {
+            op_id: inverse_op_id.to_string(),
+            kind: OpKind::Delete,
+            initiator: Initiator::User,
+            source_volume_id: Some("vol-1".to_string()),
+            dest_volume_id: None,
+            item_count: 0,
+            started_at,
+            rolls_back_op_id: Some(original.to_string()),
+            execution_status: ExecutionStatus::Running,
+        })
+        .expect("open the inverse");
+    writer.flush_blocking().expect("flush");
+}
+
 fn leaf(seq: i64, dir: &str, name: &str, role: RowRole) -> JournalItem {
     JournalItem {
         seq,
@@ -356,6 +376,63 @@ fn recent_paging_is_stable() {
         .collect();
     // Newest-first, every op exactly once.
     assert_eq!(ids, vec!["op-4", "op-3", "op-2", "op-1", "op-0"]);
+
+    writer.shutdown();
+}
+
+/// Every operation the read API hands out says what reverses it, so a surface
+/// watching a rollback can name the operation to pause or cancel without a
+/// second round trip. The newest inverse wins: an operation reversed, stopped
+/// midway, and reversed again has several, and only the last one is live.
+#[test]
+fn a_row_names_the_newest_operation_that_rolls_it_back() {
+    let (store, writer, _dir) = fresh();
+    journal_op(
+        &writer,
+        "op-copy",
+        OpKind::Copy,
+        Initiator::User,
+        1,
+        2,
+        SearchCoverage::Full,
+        None,
+        vec![],
+    );
+    journal_op(
+        &writer,
+        "op-untouched",
+        OpKind::Copy,
+        Initiator::User,
+        1,
+        2,
+        SearchCoverage::Full,
+        None,
+        vec![],
+    );
+    journal_inverse_of(&writer, "inv-first", "op-copy", 3);
+    journal_inverse_of(&writer, "inv-second", "op-copy", 4);
+
+    let feed = recent_operations(store.conn(), 10, 0).expect("feed");
+    let copy = feed
+        .iter()
+        .find(|o| o.op_id == "op-copy")
+        .expect("the copy is in the feed");
+    assert_eq!(copy.inverse_op_id.as_deref(), Some("inv-second"));
+    let untouched = feed
+        .iter()
+        .find(|o| o.op_id == "op-untouched")
+        .expect("the untouched op is in the feed");
+    assert_eq!(
+        untouched.inverse_op_id, None,
+        "nothing reverses it, so it names nothing"
+    );
+
+    // The detail read answers the same, so a surface can't learn one thing from
+    // the feed and another from the row it expanded.
+    let detail = get_operation(store.conn(), "op-copy", 10, 0)
+        .expect("detail read")
+        .expect("the operation exists");
+    assert_eq!(detail.operation.inverse_op_id.as_deref(), Some("inv-second"));
 
     writer.shutdown();
 }

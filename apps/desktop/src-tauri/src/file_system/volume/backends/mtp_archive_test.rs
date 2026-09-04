@@ -97,7 +97,7 @@ async fn read_device_zip(vol: &MtpVolume, path: &Path) -> std::collections::Hash
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
-    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_archive::{ArchiveFormat, ArchiveVolume};
     use cmdr_fs::volume::host::VolumeHost;
     use std::sync::Arc;
 
@@ -150,8 +150,8 @@ async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device() {
-    use crate::file_system::volume::backends::archive::mutator::{self, Changeset, MutationHooks};
     use crate::file_system::write_operations::{RemoteEditError, WriteOperationState, pull_apply_upload_swap};
+    use cmdr_archive::mutator::{self, Changeset, MutationHooks};
     use std::sync::Arc;
     use std::time::Duration;
 

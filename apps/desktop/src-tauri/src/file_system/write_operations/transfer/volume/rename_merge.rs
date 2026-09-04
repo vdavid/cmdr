@@ -146,7 +146,11 @@ pub(super) async fn rename_merge_directory(
     let mut resolved_children: HashMap<String, MergeChildResolution> = HashMap::new();
 
     for entry in &source_entries {
-        if is_cancelled(&ctx.state.intent) {
+        // The cooperative boundary, per child. A child with no destination
+        // counterpart rides one server-side rename that carries its WHOLE
+        // subtree, so this is the only place a paused merge can stop, and a
+        // single iteration is unbounded.
+        if ctx.state.stop_or_park_async().await {
             return Err(WriteOperationError::Cancelled {
                 message: "Operation cancelled by user".to_string(),
             });

@@ -1321,6 +1321,14 @@
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
+  "settings.advanced.oldMacosNoticeShown.label": "Đã hiển thị thông báo về macOS cũ",
+  "@settings.advanced.oldMacosNoticeShown.label": {
+    "sourceHash": "21b14e0"
+  },
+  "settings.advanced.oldMacosNoticeShown.description": "Nội bộ: theo dõi việc thông báo một lần dành cho máy Mac thấp hơn phiên bản macOS được hỗ trợ đã hiện hay chưa. Ẩn khỏi giao diện.",
+  "@settings.advanced.oldMacosNoticeShown.description": {
+    "sourceHash": "8ae26f2"
+  },
   "settings.onboarding.upgradeNudgeShown.label": "Đã hiển thị nhắc nâng cấp khi nhập môn",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
@@ -1495,9 +1503,9 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (Ask Cmdr); kept verbatim in every locale per the do-not-translate rule."
   },
-  "settings.askCmdr.intro": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn. Ask Cmdr chỉ đọc: đọc tên, đường dẫn và kích cỡ để trả lời, không bao giờ thay đổi bất cứ điều gì.",
+  "settings.askCmdr.intro": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn. Ask Cmdr đọc tên, đường dẫn và kích cỡ để trả lời, chỉ xem bên trong một tệp khi bạn hỏi về tệp đó, và không bao giờ thay đổi một tệp khi chưa được bạn phê duyệt.",
   "@settings.askCmdr.intro": {
-    "sourceHash": "124b2d5"
+    "sourceHash": "5a81d7a"
   },
   "settings.askCmdr.status.on": "Ask Cmdr đang bật",
   "@settings.askCmdr.status.on": {

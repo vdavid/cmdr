@@ -1613,10 +1613,6 @@
   "@errors.eject.volumeNotFound": {
     "sourceHash": "62a3af2"
   },
-  "errors.eject.mtpIdMissingDevicePrefix": "Cmdr kan niet bepalen welk apparaat dit is en kan het daarom niet loskoppelen.",
-  "@errors.eject.mtpIdMissingDevicePrefix": {
-    "sourceHash": "d26b57b"
-  },
   "errors.eject.notEjectable": "Deze schijf kun je niet uitwerpen, dus hij blijft aangesloten.",
   "@errors.eject.notEjectable": {
     "sourceHash": "bb88249"
@@ -1625,8 +1621,8 @@
   "@errors.eject.notAnSmbVolume": {
     "sourceHash": "d49623e"
   },
-  "errors.eject.mtpDisconnectRefused": "Het apparaat wilde de verbinding niet verbreken. Koppel het los zodra het niet meer bezig is.",
-  "@errors.eject.mtpDisconnectRefused": {
+  "errors.eject.deviceDisconnectRefused": "Het apparaat wilde de verbinding niet verbreken. Koppel het los zodra het niet meer bezig is.",
+  "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "d49861f"
   },
   "errors.eject.unmountRefused": "Deze schijf is nog in gebruik. Sluit open bestanden, stop geopende apps en werp hem daarna opnieuw uit.",

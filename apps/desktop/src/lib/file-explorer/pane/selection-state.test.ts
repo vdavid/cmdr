@@ -191,6 +191,50 @@ describe('createSelectionState', () => {
     })
   })
 
+  describe('invertSelection', () => {
+    it('flips every row: selected become unselected and vice versa', () => {
+      const onChanged = vi.fn()
+      const state = createSelectionState({ onChanged })
+      state.toggleAt(1, false)
+      state.toggleAt(3, false)
+      state.invertSelection(false, 5)
+      expect(state.getSelectedIndices()).toEqual([0, 2, 4])
+      expect(onChanged).toHaveBeenCalledTimes(3)
+    })
+
+    it('never touches `..` at index 0 when hasParent', () => {
+      const state = createSelectionState()
+      state.toggleAt(2, true)
+      state.invertSelection(true, 4)
+      expect(state.getSelectedIndices()).toEqual([1, 3])
+      state.invertSelection(true, 4)
+      expect(state.getSelectedIndices()).toEqual([2])
+    })
+
+    it('selects everything from an empty selection and clears a full one', () => {
+      const state = createSelectionState()
+      state.invertSelection(false, 3)
+      expect(state.getSelectedIndices()).toEqual([0, 1, 2])
+      state.invertSelection(false, 3)
+      expect(state.getSelectedIndices()).toEqual([])
+    })
+
+    it('drops stale indices past the visible count instead of keeping them', () => {
+      const state = createSelectionState()
+      state.toggleAt(7, false) // stale: the list shrank to 3 rows
+      state.invertSelection(false, 3)
+      expect(state.getSelectedIndices()).toEqual([0, 1, 2])
+    })
+
+    it('clears the range anchor like selectAll does', () => {
+      const state = createSelectionState()
+      state.handleShiftMouseNavigation(2, 0, false)
+      expect(state.anchorIndex).toBe(0)
+      state.invertSelection(false, 3)
+      expect(state.anchorIndex).toBeNull()
+    })
+  })
+
   describe('selectRange', () => {
     it('selects indices in range inclusive', () => {
       const state = createSelectionState()

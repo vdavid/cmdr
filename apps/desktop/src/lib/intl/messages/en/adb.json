@@ -1,0 +1,10 @@
+{
+  "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
+  "@adb.volumeLabelWithSuffix": {
+    "description": "Volume switcher label for a phone reached over ADB when the same phone is also listed over MTP, so the two rows stay apart. ADB is the Android Debug Bridge tool name; keep it verbatim.",
+    "placeholders": {
+      "deviceName": "the device's model name, for example Pixel 7"
+    },
+    "screenshotNote": "Not captured yet: the ADB connect flow has no UI surface in the app yet."
+  }
+}

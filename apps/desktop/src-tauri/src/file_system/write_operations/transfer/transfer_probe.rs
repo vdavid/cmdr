@@ -152,157 +152,23 @@ impl Drop for StallAbortGuard {
 /// than the point where a person starts wondering whether the app has died.
 pub(super) const HEARTBEAT_AFTER_SECS: u64 = 3;
 
-/// What a single copy task is doing. Ordinals are stable only within a build;
-/// nothing persists them.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub(super) enum TaskPhase {
-    /// Spawned into the window, not yet doing I/O.
-    Spawned = 0,
-    /// Opening the source stream (a device round-trip on MTP / SMB).
-    OpeningSource = 1,
-    /// Actively piping chunks.
-    Streaming = 2,
-    /// Parked between windows because the user paused.
-    ParkedPause = 3,
-    /// Parked between windows for foreground work on the SOURCE device
-    /// (unbounded by design).
-    ParkedSourceYield = 4,
-    /// Parked between windows for foreground work on the DESTINATION share
-    /// (hard-capped; it holds an open write handle).
-    ParkedDestYield = 5,
-    /// Past the last byte: safe-replace finalize, journal, cleanup.
-    Finalizing = 6,
-    /// Resolving a nested conflict inside a directory source (may be waiting on
-    /// the human).
-    ResolvingConflict = 7,
-    /// Between attempts at the same file: a transport blip took the last one out
-    /// and the backoff is running (`retry.rs`).
-    WaitingToRetry = 8,
-    /// Walking a directory source's tree: listing a level and resolving what is
-    /// already there, before any of its files can be handed to the window.
-    ///
-    /// On a cross-share merge this is a full network round trip per level, and
-    /// on a tree of many small folders it is most of the transfer's wall clock.
-    /// Without a phase of its own the walk reported `spawned`, and a dump of a
-    /// perfectly healthy transfer read as a task that had never started
-    /// (`ERR-AYVM4`, 54 s in).
-    Walking = 9,
-}
+/// What a row and a driver can SAY: [`TaskPhase`], [`DriverPhase`], [`TaskRole`],
+/// and [`TaskRow`]. Kept apart from the live table below because they are pure
+/// values, and re-exported here so every caller still names them as
+/// `transfer_probe::<item>`.
+#[path = "transfer_probe_vocabulary.rs"]
+mod vocabulary;
 
-impl TaskPhase {
-    const fn label(self) -> &'static str {
-        match self {
-            Self::Spawned => "spawned",
-            Self::OpeningSource => "opening-source",
-            Self::Streaming => "streaming",
-            Self::ParkedPause => "parked(pause)",
-            Self::ParkedSourceYield => "parked(source-yield)",
-            Self::ParkedDestYield => "parked(dest-yield)",
-            Self::Finalizing => "finalizing",
-            Self::ResolvingConflict => "resolving-conflict",
-            Self::WaitingToRetry => "waiting-to-retry",
-            Self::Walking => "walking",
-        }
-    }
-
-    /// What a task in this phase is waiting on, or `None` when the phase means
-    /// "working" and so explains nothing about a stall.
-    ///
-    /// `ParkedPause` maps to `None` on purpose: the pause is reported from the
-    /// operation's pause gate, which is authoritative, and a task can still be
-    /// mid-chunk when the gate flips.
-    const fn wait_reason(self) -> Option<TransferWaitReason> {
-        match self {
-            Self::ParkedDestYield => Some(TransferWaitReason::Destination),
-            Self::ParkedSourceYield => Some(TransferWaitReason::Source),
-            Self::ResolvingConflict => Some(TransferWaitReason::Conflict),
-            Self::Spawned
-            | Self::OpeningSource
-            | Self::Streaming
-            | Self::ParkedPause
-            | Self::Finalizing
-            // A backoff is our own doing, not a wait on a device or a person, and
-            // it is over in a second or less. The dump names the phase; the UI
-            // keeps whatever reason the stall itself produced.
-            | Self::WaitingToRetry
-            // Walking is WORKING — listing levels and resolving what's there.
-            // It waits on the source and the destination in turn, so naming
-            // either one would be a guess.
-            | Self::Walking => None,
-        }
-    }
-
-    /// May the watchdog abort a task sitting in this phase when nothing has moved
-    /// for a very long time?
-    ///
-    /// Only the two phases that mean "inside a backend call, waiting on the wire".
-    /// Every park is deliberate and self-limiting — a pause ends when the user
-    /// resumes, a yield when foreground drains (and the destination yield is
-    /// hard-capped), a conflict when the human answers, a retry backoff on its own
-    /// timer — so aborting one would break something that was working as designed.
-    const fn is_abortable_on_stall(self) -> bool {
-        matches!(self, Self::OpeningSource | Self::Streaming)
-    }
-
-    const fn from_u8(v: u8) -> Self {
-        match v {
-            1 => Self::OpeningSource,
-            2 => Self::Streaming,
-            3 => Self::ParkedPause,
-            4 => Self::ParkedSourceYield,
-            5 => Self::ParkedDestYield,
-            6 => Self::Finalizing,
-            7 => Self::ResolvingConflict,
-            8 => Self::WaitingToRetry,
-            9 => Self::Walking,
-            _ => Self::Spawned,
-        }
-    }
-}
-
-/// What the DRIVER (the loop that fills and drains the concurrency window) is
-/// doing. Distinguishing this from the tasks is the point: in the incident the
-/// driver stopped after a destination `get_metadata` pre-check with six of eight
-/// slots free, and nothing recorded that.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub(super) enum DriverPhase {
-    Starting = 0,
-    /// Running the destination pre-check / conflict resolution for the next
-    /// source, before it can be spawned.
-    PreparingNext = 1,
-    /// Window full or sources exhausted: awaiting the next task to finish.
-    AwaitingTasks = 2,
-    /// Loop finished; running cleanup, rollback, or finalize.
-    PostLoop = 3,
-}
-
-impl DriverPhase {
-    const fn label(self) -> &'static str {
-        match self {
-            Self::Starting => "starting",
-            Self::PreparingNext => "preparing-next",
-            Self::AwaitingTasks => "awaiting-tasks",
-            Self::PostLoop => "post-loop",
-        }
-    }
-
-    const fn from_u8(v: u8) -> Self {
-        match v {
-            1 => Self::PreparingNext,
-            2 => Self::AwaitingTasks,
-            3 => Self::PostLoop,
-            _ => Self::Starting,
-        }
-    }
-}
+pub(super) use vocabulary::{DriverPhase, TaskPhase, TaskRole, TaskRow};
 
 /// One in-flight copy task's live state.
 pub(super) struct TaskProbe {
-    /// Position of this source in the operation's source list, so a dump can be
-    /// read against the spawn log.
-    index: usize,
+    /// Where this row sits in the operation, so a dump can be read against the
+    /// spawn log and against the driver's phase detail.
+    row: TaskRow,
+    /// Whether this row holds one of the window's slots. Fixed for the row's
+    /// life: a walker never becomes a file copy or the reverse.
+    role: TaskRole,
     source: String,
     dest: String,
     phase: AtomicU8,
@@ -397,8 +263,13 @@ impl TaskProbe {
         let stall_aborts = self.stall_aborts.load(Ordering::Relaxed);
         format!(
             // allowed-pluralize-noun: a byte count in a diagnostic dump; the compact form is the point.
-            "#{idx} {phase} for {held}ms, {done}/{total} bytes, retries={retries}{aborted}, {source} -> {dest}",
-            idx = self.index,
+            "{row}{role} {phase} for {held}ms, {done}/{total} bytes, retries={retries}{aborted}, {source} -> {dest}",
+            row = self.row.label(),
+            // Named here too, so the header's `walkers=` can be read back against the table.
+            role = match self.role {
+                TaskRole::File => "",
+                TaskRole::Walker => " (walker)",
+            },
             phase = phase.label(),
             held = now_ms.saturating_sub(since_ms),
             done = self.bytes_done.load(Ordering::Relaxed),
@@ -482,9 +353,22 @@ impl OperationProbe {
 
     /// Register a task entering the window. The returned handle removes it on
     /// drop, so a task that panics or is aborted still leaves the table clean.
-    pub(super) fn begin_task(self: &Arc<Self>, index: usize, source: &str, dest: &str) -> TaskProbeHandle {
+    ///
+    /// `row` says where the row sits in the operation ([`TaskRow`]) and is what
+    /// the dump renders it under; `role` says whether it holds one of the
+    /// window's slots ([`TaskRole`]); a DIRECTORY source is always a walker and
+    /// a file copy is always a `File`, so it is `source_is_dir` at every real
+    /// call site.
+    pub(super) fn begin_task(
+        self: &Arc<Self>,
+        row: TaskRow,
+        role: TaskRole,
+        source: &str,
+        dest: &str,
+    ) -> TaskProbeHandle {
         let probe = Arc::new(TaskProbe {
-            index,
+            row,
+            role,
             source: source.to_owned(),
             dest: dest.to_owned(),
             phase: AtomicU8::new(TaskPhase::Spawned as u8),
@@ -801,9 +685,12 @@ impl OperationProbe {
             OperationIntent::RollingBack => "rolling-back",
             OperationIntent::Stopped => "stopped",
         };
+        // Only the file rows take a window slot, so only they may be measured against
+        // it: counting the walkers too rendered a healthy transfer as `in_flight=11/10`.
+        let walkers = tasks.iter().filter(|t| t.role == TaskRole::Walker).count();
         let mut out = format!(
             "transfer probe ({reason}): op={op} elapsed={elapsed}s bytes_done={bytes} files_total={files} \
-             driver={driver}({detail}) intent={intent} paused={paused} in_flight={in_flight}/{concurrency}",
+             driver={driver}({detail}) intent={intent} paused={paused} in_flight={in_flight}/{concurrency}{walkers}",
             op = self.operation_id,
             elapsed = self.started.elapsed().as_secs(),
             bytes = self.bytes_done(),
@@ -811,8 +698,13 @@ impl OperationProbe {
             driver = driver.label(),
             detail = self.driver_detail.lock_ignore_poison(),
             paused = self.state.pause_gate.is_paused(),
-            in_flight = tasks.len(),
+            in_flight = tasks.len() - walkers,
             concurrency = self.concurrency,
+            walkers = if walkers > 0 {
+                format!(" walkers={walkers}")
+            } else {
+                String::new()
+            },
         );
         if tasks.is_empty() {
             out.push_str("\n  (no tasks in flight)");

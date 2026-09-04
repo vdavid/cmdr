@@ -46,6 +46,21 @@ pub use state::ConnectionState;
 use reconnect::spawn_watcher_death_reconnect;
 use session::build_session;
 
+/// The request size `max_concurrent_ops` asks the credit window about.
+///
+/// A copy slot's credit charge follows the size of the request it sends, so
+/// there is no single true figure here; what the cap must avoid is being
+/// SMALLER than the typical request. Credits and in-flight bytes are the same
+/// quantity (one credit buys 64 KB), so the window carries the same number of
+/// bytes however many slots the driver opens: too many slots only park the
+/// extras until a peer finishes, while too few leave the window half empty and
+/// cost real throughput. Sizing the question at one pipelined streaming READ
+/// (smb2 chunks a download at ~512 KB) keeps the answer above every ordinary
+/// copy, so the cap stays out of the way on a healthy session and only bites
+/// where it must: a server whose whole credit window can't carry the slots the
+/// setting asks for. `DETAILS.md` § "Copy concurrency and the credit window".
+const REPRESENTATIVE_COPY_REQUEST_BYTES: u64 = 512 * 1024;
+
 /// This backend's settings namespace, for everything it reads through
 /// [`VolumeHost::settings`]. A namespace, not a classification: nothing branches
 /// on it, and the app resolves it through a table
@@ -66,7 +81,7 @@ const BACKEND: BackendName = "smb";
 /// hold an `Arc<Tree>` without touching the client mutex. Concurrent copies
 /// on a single volume briefly lock the client to clone its `Connection` (a
 /// cheap `Arc::clone`), release the lock, and drive `Tree::download` /
-/// `Tree::read_file_compound` / `Tree::write_file_compound` on the cloned
+/// `Tree::read_file_compound_sized` / `Tree::write_file_compound` on the cloned
 /// `Connection`, so N downloads run pipelined on one SMB session instead of
 /// serializing through the mutex. The `watcher_cancel` field uses
 /// `std::sync::Mutex` because it is only accessed briefly (no awaits while
@@ -207,6 +222,15 @@ struct SmbVolumeInner {
     /// of leaving the watcher feeding a mount that's gone. ❌ Not a second source
     /// of truth for `root()`: an instance's own `mount_path` is what it addresses.
     active_mount_path: Arc<StdRwLock<PathBuf>>,
+    /// What the live connection's credit window can carry, in concurrent copy
+    /// requests of [`REPRESENTATIVE_COPY_REQUEST_BYTES`], as last measured.
+    ///
+    /// `0` means "not measured yet": no session has been cloned, so
+    /// `max_concurrent_ops` has nothing to clamp with and answers the setting
+    /// alone. Kept as an atomic because that method is sync and the connection
+    /// lives behind an async mutex; `clone_session` refreshes it on the way
+    /// through, which is every read and write this backend sends.
+    credit_copy_capacity: AtomicUsize,
     /// Everything this backend asks the application around it: the pane listings,
     /// the secret store, the file index, the frontend event channel, the live
     /// concurrency knob, and the runtime background work spawns onto. A value the
@@ -256,6 +280,7 @@ impl SmbVolume {
                 me: me.clone(),
                 scan_pool: tokio::sync::RwLock::new(None),
                 scan_session_refs: AtomicUsize::new(0),
+                credit_copy_capacity: AtomicUsize::new(0),
                 active_mount_path: Arc::new(StdRwLock::new(mount_path)),
                 host,
             }),
@@ -429,10 +454,14 @@ mod host_seam_test;
 #[cfg(test)]
 mod integration_test;
 #[cfg(test)]
+mod read_stream_integration_test;
+#[cfg(test)]
 mod retirement_test;
 #[cfg(test)]
 mod session_integration_test;
 #[cfg(test)]
-mod streaming_integration_test;
-#[cfg(test)]
 mod test_support;
+#[cfg(test)]
+mod wire_shape_integration_test;
+#[cfg(test)]
+mod write_stream_integration_test;

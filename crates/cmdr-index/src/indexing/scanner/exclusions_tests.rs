@@ -277,25 +277,3 @@ fn the_policy_fingerprint_is_stable() {
     assert_eq!(exclusion_policy_fingerprint(), exclusion_policy_fingerprint());
     assert_eq!(exclusion_policy_fingerprint().len(), 16, "a 64-bit FNV-1a in hex");
 }
-
-/// The hash actually MIXES, pinned against a golden over a fixed input.
-///
-/// Everything else about the stamp is symmetric — write it, read it, compare —
-/// and a hash that collided two different policies into one value would pass
-/// every one of those tests while silently skipping the re-walk a policy change
-/// is supposed to trigger. The input here is test-only, so the golden never
-/// needs touching when the real lists change.
-#[test]
-fn the_policy_fingerprint_mixes_its_input() {
-    assert_eq!(fingerprint_of(&["a", "b"]), "78ed6781f136a14e");
-    assert_ne!(
-        fingerprint_of(&["a", "b"]),
-        fingerprint_of(&["b", "a"]),
-        "order has to matter, or moving a name between lists reads as no change"
-    );
-    assert_ne!(
-        fingerprint_of(&["a", "b"]),
-        fingerprint_of(&["ab"]),
-        "the separator has to matter, or two lists concatenate ambiguously"
-    );
-}

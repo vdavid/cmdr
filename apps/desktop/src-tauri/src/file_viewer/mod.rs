@@ -6,17 +6,18 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 pub(crate) mod analytics;
-mod archive_extract;
+pub(crate) mod archive_extract;
 mod byte_seek;
 pub mod content_kind;
 pub mod encoding;
 mod full_load;
+pub(crate) mod headless;
 mod line_index;
 pub mod media;
 mod media_backend;
 pub mod media_protocol;
 mod media_session;
-mod range_read;
+pub(crate) mod range_read;
 mod search_matcher;
 pub mod session;
 pub mod watcher;
@@ -33,6 +34,8 @@ mod content_kind_test;
 mod encoding_test;
 #[cfg(test)]
 mod full_load_test;
+#[cfg(test)]
+mod headless_test;
 #[cfg(test)]
 mod line_index_test;
 #[cfg(test)]
@@ -75,7 +78,7 @@ const MAX_BACKWARD_SCAN: usize = 8192;
 /// Maximum number of matches stored during search. Once reached, the search stops entirely.
 /// The frontend highlights additional matches client-side on visible lines, so stopping early
 /// doesn't lose highlighting: it only caps the prev/next navigation index.
-const MAX_SEARCH_MATCHES: usize = 10_000;
+pub(crate) const MAX_SEARCH_MATCHES: usize = 10_000;
 
 /// Which kind of seek the caller is asking for, as a value the wire enforces.
 ///

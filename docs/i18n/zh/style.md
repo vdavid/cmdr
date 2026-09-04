@@ -205,8 +205,21 @@ inflection.
   brand words (Cmdr, macOS) as-is.
 - **Each script is its own pass.** Never machine-convert Simplified↔Traditional (one-to-many mappings + divergent
   terms); cross-check each variant against its own macOS source.
+- **Undo/skip reason lists share one sentence shape: `保留了 X：原因。`** Every family that undoes something and then
+  reports what it deliberately left alone (`askCmdr.renameUndo.skipReason.*`, `fileOperations.cancelRollback.reason.*`)
+  renders its bulleted reasons this way, with a bare `{name}` (no `“…”`, unlike prose strings) and a full-width colon.
+  Break the shape only for a reason that is NOT a deliberate choice (the `failed.*` arms, where the drive turned the
+  undo down). Some of these keys carry byte-identical English across families, so `desktop-i18n-term-consistency`
+  requires identical values; per-key evidence and the pairs that are locked together: `glossary.md`
+  § 回滚结束后的提示条.
 - **Quotation marks:** this catalog quotes filenames with `“…”`, following macOS zh-CN. Traditional uses corner brackets
   instead, which is one more reason a converted catalog reads wrong; its rule is in `../zh-Hant/style.md`.
+- **Ask Cmdr tool-line labels are a `正在…` / `已…` pair, with `查看` for reading contents.** Every
+  `askCmdr.tool.*.doing` opens with `正在` and its `.done` twin with `已`, on the same verb phrase (`正在查看文件内容` /
+  `已查看文件内容`). Reading what's inside something is `查看…内容` (or `读取` for the photo facts tool); keep `显示`
+  for the View menu. Per-term evidence: `glossary.md` § Ask Cmdr inspect-file consent.
+- **A photo's place is `拍摄地点`, never `位置`.** `位置` is reserved for a file-system location in this catalog
+  (`目标位置`, `原来的位置`); Photos.app calls photo places `地点`. Camera EXIF is `相机信息` (Photos.app `无相机信息`).
 
 ### ICU mechanics (catalog-level, easy to miss)
 

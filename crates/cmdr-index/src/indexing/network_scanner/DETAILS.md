@@ -123,6 +123,11 @@ bulk writes via `BulkReconcileGuard`. The remaining lever is fewer round trips p
 
 ## Yielding to navigation and transfers (`scan_pace.rs`)
 
+The host's per-volume "is the user waiting on this share?" answer combines a LEASE held for the real duration of a
+foreground listing with a quiet window after it ends, so this walk narrows for as long as the user is genuinely waiting
+rather than for a fixed window after a navigation started. The signal and both halves live in the app's
+`priority/DETAILS.md`; the never-zero budget below is what keeps that safe however long a lease is held.
+
 The walk's listing budget isn't a constant: at every top-up it asks `ScanPacer::listing_budget()`, which returns
 `FULL_LISTING_BUDGET` (64) while the share is quiet and `YIELDING_LISTING_BUDGET` (1) while a higher-priority claim
 holds it — the user browsing it, OR a user-initiated transfer touching it (the host's order: interactive > transfers >
@@ -134,12 +139,13 @@ navigation behind the backlog — a 40-entry folder took **10.7 s** to open mid-
 entries, 2026-07-19) and was instant the second the scan finished. That's also the first impression the app makes on
 someone who connects a NAS and enables indexing because it sounds good.
 
-**The signals** are `priority::foreground`'s per-volume timestamp, stamped by the listing IPC
-(`note_foreground_activity_on`) on every navigation, and `priority::transfers`' per-volume gauge, raised for the whole
-life of a write operation touching the volume. A browsed share counts as in use for `SCAN_FOREGROUND_IDLE_THRESHOLD` (2
-s) after the last navigation — long enough to span the gaps in real browsing so a session of clicking around is ONE
-throttled stretch, short enough to be back at full speed a couple of seconds after the user stops. There's no separate
-debounce: the window IS the debounce. The transfer signal needs no window at all (an op's start and finish are exact).
+**The signals** are `priority::foreground`'s per-volume answer (an in-flight LEASE held for a foreground listing's real
+duration, plus the timestamp the listing IPC stamps) and `priority::transfers`' per-volume gauge, raised for the whole
+life of a write operation touching the volume. A share counts as in use while a listing is running on it and for
+`SCAN_FOREGROUND_IDLE_THRESHOLD` (2 s) after the last one ends — long enough to span the gaps in real browsing so a
+session of clicking around is ONE throttled stretch, short enough to be back at full speed a couple of seconds after the
+user stops. There's no separate debounce: the window IS the debounce, and it no longer has to guess how long a listing
+takes. The transfer signal needs no window at all (an op's start and finish are exact).
 
 **Decision/Why throttle instead of park, and why no anti-starvation floor.** The obvious gate ("only scan while idle")
 converts "indexing is in the way" into "indexing never finishes", and then needs a quota, a minimum-progress floor, or a

@@ -15,8 +15,8 @@ use super::{SmbVolume, foreground_yield};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::SmbConnectionState;
 use cmdr_fs::volume::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
-    VolumeError, VolumeReadStream, WatchCoverage,
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanBoundary, ScanConflict, SourceItemInfo, SpaceInfo,
+    Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
 use cmdr_fs::volume::{ListingProgress, Retirement};
 use log::debug;
@@ -302,13 +302,15 @@ impl Volume for SmbVolume {
 
     /// The scan preview's entry point. Reporting as the walk goes is what keeps
     /// the dialog's counters climbing on a folder-sized SMB scan, and what tells
-    /// the scan watchdog this share is still answering.
-    fn scan_for_copy_batch_with_progress<'a>(
+    /// the scan watchdog this share is still answering; the same boundary is
+    /// what lets a person cancel a walk over a share that has spun its disks
+    /// down, which used to run to the end whatever they pressed.
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.scan_for_copy_batch_impl(paths, on_progress)
+        self.scan_for_copy_batch_impl(paths, boundary)
     }
 
     fn scan_for_conflicts<'a>(
@@ -328,7 +330,21 @@ impl Volume for SmbVolume {
         // the slider and the next batch picks it up, with no remount. What the
         // host resolves the `"smb"` namespace to is its business (today the
         // `network.smbConcurrency` setting, default 10, clamped to 1..=32).
-        self.inner.host().settings().max_concurrent_operations(super::BACKEND)
+        let requested = self.inner.host().settings().max_concurrent_operations(super::BACKEND);
+        // Then bounded by what the session's credit window can actually carry:
+        // a slot the window can't serve parks on credits instead of copying,
+        // holding a transfer slot that reports no progress. Only copy slots read
+        // this method (the transfer driver is its sole caller), so listings,
+        // stats, and the watcher keep their own share of the window either way.
+        // The measurement is the connection's, refreshed by `clone_session`;
+        // `0` means no session has been cloned yet, so there's nothing to clamp
+        // with. `DETAILS.md` § "Copy concurrency and the credit window".
+        match self.inner.credit_copy_capacity.load(Ordering::Relaxed) {
+            0 => requested,
+            // `credit_capacity_for` never answers 0, and neither may this: a
+            // copy engine handed zero slots does nothing at all.
+            capacity => requested.clamp(1, capacity),
+        }
     }
 
     fn open_read_stream<'a>(
@@ -360,12 +376,24 @@ impl Volume for SmbVolume {
             // send CREATE+READ+CLOSE as a single compound frame (1 RTT) instead
             // of the 3-RTT streaming open. Drives the compound on a cloned
             // `Connection` with no lock held, so N concurrent small reads
-            // pipeline over one SMB session. Falls through to the streaming
-            // path when the hint is missing or too large, or when the file
-            // changed size since the scan: shrunk files come back short
-            // (`data.len() != size`), grown-past-`max_read` files come back as
-            // a typed `ErrorKind::TooLarge` (smb2 refuses to truncate a file
-            // that no longer fits in one READ).
+            // pipeline over one SMB session.
+            //
+            // The READ is sized to the HINT, never to `max_read`: the credit
+            // charge follows the response size the request asks for, so an
+            // unsized read of a 4 MB file books the whole 8 MB window (128
+            // credits) and a handful of them exhaust the connection's budget
+            // while barely filling the wire.
+            //
+            // Falls through to the streaming path when the hint is missing or
+            // bigger than one READ, or when the file changed size since the
+            // scan. `expected_size` is a HARD bound, so the two drift arms split
+            // cleanly and TOGETHER are what keeps a changed file from being
+            // copied truncated: a file that SHRANK comes back short of the hint
+            // (`data.len() != size`), and one that GREW comes back as a typed
+            // `ErrorKind::TooLarge`, because smb2 compares the server's
+            // authoritative size against the length asked for and refuses rather
+            // than hand back a prefix. ❌ Neither arm is decoration; dropping
+            // either one copies a changed file under its final name, short.
             if let Some(size) = size_hint {
                 let (tree, mut conn) = self.clone_session().await?;
                 let max_read = conn.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
@@ -374,10 +402,10 @@ impl Volume for SmbVolume {
                         "SmbVolume::open_read_stream_with_hint: share={}, path={:?}, size={}; using compound fast-path",
                         self.inner.share_name, smb_path, size
                     );
-                    match tree.read_file_compound(&mut conn, &smb_path).await {
+                    match tree.read_file_compound_sized(&mut conn, &smb_path, size).await {
                         Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => {
                             debug!(
-                                "SmbVolume::open_read_stream_with_hint: file grew past max_read since the scan ({}); falling back to streaming",
+                                "SmbVolume::open_read_stream_with_hint: file grew past the hinted size since the scan ({}); falling back to streaming",
                                 e
                             );
                         }

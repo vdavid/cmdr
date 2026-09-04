@@ -29,6 +29,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use super::super::in_flight_temps::TempHome;
 use super::super::state::WriteOperationState;
 use super::transfer_probe::{TaskPhase, set_task_phase};
 use crate::file_system::staging::StagingTemp;
@@ -91,7 +92,7 @@ impl StagedWrite {
         match staging {
             WriteStaging::Stage => {
                 let staged = StagingTemp::mint(final_path, state.liveness_token());
-                super::super::in_flight_temps::register(state, staged.path());
+                super::super::in_flight_temps::register(state, staged.path(), dest_home(state));
                 temp = Some(staged);
             }
             // The caller's temp is the caller's to land; all we take is
@@ -212,8 +213,20 @@ impl StagedWrite {
     }
 
     fn deregister(&self, temp: &Path) {
-        super::super::in_flight_temps::deregister(&self.state, temp);
+        super::super::in_flight_temps::deregister(&self.state, temp, dest_home(&self.state));
     }
+}
+
+/// The path space this operation's staged partials live in: the DESTINATION
+/// volume's, since a staged temp is a sibling of the file being written.
+///
+/// `None` when the operation didn't name that volume, which every volume
+/// copy/move deferred does and only a bare test state doesn't. The persisted
+/// ledger then skips the path rather than guessing at a path space (see
+/// `in_flight_temps::register`); the operation's own in-memory ledger still
+/// carries it, and that one deletes through the volume handle it already holds.
+fn dest_home(state: &WriteOperationState) -> Option<TempHome<'_>> {
+    state.dest_volume_id().map(TempHome::Volume)
 }
 
 /// Moves a completed temp onto `final_path`.

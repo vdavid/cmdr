@@ -174,9 +174,12 @@ walking (`apps/desktop/src-tauri/src/file_system/write_operations/scan_bridge.rs
 - **`queued` rows render it too.** `showReadout` requires `isRunning || isPaused`, so without this an operation admitted
   behind another on the same lane shows "Waiting" over an empty row for its whole scan — on a busy lane the common case,
   and it reads as a hung queue. "Waiting" over a moving file count is exactly what is happening.
-- **No Pause, no Rollback.** The backend declines a pause in a scan-wait (there is nothing to park, and a "paused" scan
-  would hold its lane doing nothing), and a scanning operation has written nothing to reverse. `supportsRollback` stays
-  true throughout: it is a promise about the OPERATION, so the phase is what decides which controls make sense now.
+- **Pause yes, Rollback no.** Pause parks the WALK (`write_operations/scan_bridge.rs` § `ScanPause`), so the row offers
+  it during the scan exactly as it does during the write, and offers Resume on a scan paused from "Pause all" — without
+  that, such a row's only way back was Cancel. A scanning operation has written nothing to reverse, so Rollback stays
+  away; `supportsRollback` stays true throughout, since it is a promise about the OPERATION and the phase is what
+  decides which controls make sense now. A PAUSED scanning row drops `ScanPhaseBody`'s spinner and its rates: the
+  spinner is the claim that the walk is moving.
 - **The status column still says "Running"**, and that is deliberate. `queue.row.status` is a `select` over the
   LIFECYCLE status, which genuinely is `running`; the readout names the activity, and the scan-phase line already says
   "Counting…" in the user's language. A "Scanning" arm would mix two axes into one column and would need a `phase` input
@@ -281,9 +284,16 @@ rather than handed up to the page: which way Pause goes is decided from the life
 and the guards it carries are shared with every other view of that operation, so a Cancel pressed here is visible to
 whatever else is watching. The page keeps the fleet actions (Pause all, Resume all, Cancel selected) and Dismiss, none
 of which is a command on one operation. Rollback is styled `danger` exactly like the progress dialog's, since the same
-click deletes the same files. Rollback hides again once the op IS rolling back, which the row reads off the live
-`write-progress` phase: rollback is an `OperationIntent`, so the lifecycle status stays `running` throughout, and the
-status cell shows "Rolling back..." instead.
+click stops the same operation, and its tooltip splits by what the reversal DOES the same way the dialog's does
+(`inFlightRollbackTooltipKey`): a move's says the files travel back, never that they're deleted. Rollback hides again
+once the op IS rolling back, which the row reads off the live `write-progress` phase: rollback is an `OperationIntent`,
+so the lifecycle status stays `running` throughout, and the status cell shows "Rolling back..." instead.
+
+It also hides once a local cross-FS move reaches its `deleting` phase, where every file has landed and the engine has
+committed, so a reversal can no longer carry anything home (`reversalWindowClosed` in `../reversal-wording.ts`, shared
+with the progress dialog). The row HIDES rather than blocking with an explanation, as it already does during a scan: a
+compact list of live operations is not where a reason gets read, and the dialog one Show away is the surface that
+explains itself. Same verdict either way, so the two can't contradict each other.
 
 The summary beside the label is `basename(source)`, then an arrow and `basename(destination)` when there is one, with
 the full paths in tooltips. A REMOVAL reversal (undoing a copy, a new file or folder, or a compress) has no destination,

@@ -1,6 +1,5 @@
-//! Rollback / dest-inside-source / cancel-mid-stream tests for `volume::copy`,
-//! split out of `volume/copy_tests.rs`. These cover user-initiated Rollback at
-//! various points (after the first file, mid-merge-stream, after a finalize
+//! Rollback / dest-inside-source / cancel-mid-stream tests for `volume::copy`.
+//! These cover user-initiated Rollback at various points (after the first file, mid-merge-stream, after a finalize
 //! rename), the rejection of copying a directory into its own descendant, and
 //! cancel-mid-stream data preservation. The `RollbackAfterFirstFileSink`,
 //! `TripIntentOnFirstByteSink`, and `TripIntentAtFilesDoneSink` doubles trip the

@@ -43,6 +43,10 @@ mod indexing;
 pub mod importance;
 pub mod media_index;
 
+// Crate-internal, promising a host nothing: the one content-fingerprint helper
+// behind both disposable caches' policy stamps.
+mod fingerprint;
+
 //noinspection RsUnusedImport
 // We dev-depend on ourselves so the `testing` and `tooling` features are on for
 // dev targets and off for the lib (see `Cargo.toml`). That makes `cmdr_index` an
