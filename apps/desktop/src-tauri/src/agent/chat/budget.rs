@@ -264,10 +264,26 @@ const OPENAI_COMPATIBLE_FAMILIES: &[ModelFamily] = &[
         prefix: "ministral",
         window_tokens: 128_000,
     },
-    // Llama 3.x and 4 across the hosts that serve them: `llama-3.3-70b-versatile` (Groq),
-    // `llama-v3p3-70b-instruct` (Fireworks), `Llama-4-Maverick-…` (Together). Llama 2 is
-    // absent on purpose (a 4,096-token window), which is why these prefixes carry the
-    // generation.
+    // OpenAI's open-weight line, served by the hosts rather than by OpenAI: `gpt-oss-20b` and
+    // `gpt-oss-120b` (Groq, Fireworks). Both report a 131,072-token window in their hosts'
+    // model lists (verified 2026-09-04). It sits below the `gpt-` rows above only in reading
+    // order; the prefixes don't overlap.
+    ModelFamily {
+        prefix: "gpt-oss",
+        window_tokens: 131_072,
+    },
+    // Zhipu's GLM line, which is what Fireworks serves in place of the Llamas it dropped.
+    // Fireworks reports 1,048,576 for `glm-5p3` (verified 2026-09-04), but a 128,000 floor
+    // already saturates the 60,000-token prompt cap, so claiming more buys nothing and this
+    // stays true for a smaller GLM on another host.
+    ModelFamily {
+        prefix: "glm-",
+        window_tokens: 128_000,
+    },
+    // Llama 3.x and 4 across the hosts that serve them: `Llama-4-Maverick-…` (Together).
+    // Groq and Fireworks both retired their Llama models in 2026, but a user can still name
+    // one on another host, and Llama 2 is absent on purpose (a 4,096-token window), which is
+    // why these prefixes carry the generation.
     ModelFamily {
         prefix: "llama-3",
         window_tokens: 128_000,
@@ -483,9 +499,9 @@ mod tests {
             "gpt-4.1-mini",                                      // OpenAI, Azure OpenAI
             "claude-sonnet-4-5",                                 // Anthropic
             "gemini-2.5-flash",                                  // Google Gemini
-            "llama-3.3-70b-versatile",                           // Groq
+            "openai/gpt-oss-120b",                               // Groq
             "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8", // Together AI
-            "accounts/fireworks/models/llama-v3p3-70b-instruct", // Fireworks AI
+            "accounts/fireworks/models/glm-5p3",                 // Fireworks AI
             "mistral-small-latest",                              // Mistral AI
             "openai/gpt-4.1-mini",                               // OpenRouter
             "deepseek-chat",                                     // DeepSeek

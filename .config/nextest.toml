@@ -334,6 +334,23 @@ filter = 'test(volume::nextcloud_test::)'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The real-API provider smokes (`ai::client_real_*_test`, `#[ignore]`-gated, run only by the
+# `<provider>-smoke` check lanes). A live LLM round trip is the one thing they exist to do, so
+# the global 8 s cap can't be met without deleting the coverage — the exception the policy at
+# the top of this file describes.
+#
+# ❌ Don't read 60 s as a runtime. Measured 2026-09-04 on an idle M3 Max: Groq 1.2 s, Fireworks
+# 4.5–7.5 s. But every provider's small model reasons before it answers now, so latency is set
+# by how long the model thinks, not by us; the OpenAI Responses leg is the slowest. Fireworks
+# already blew the 8 s cap on its first lane run. 60 s is a hang backstop with enough headroom
+# that a thinking model or a busy provider doesn't decide the verdict.
+#
+# No `test-group`: each lane runs one provider's module and the lanes are `Exclusive` on the
+# cargo build dir, so they never overlap. Nothing here contends with anything.
+filter = 'test(ai::client_real_)'
+slow-timeout = { period = "60s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # The SFTP window measurements, read and write (`crates/cmdr-sftp/src/volume/streams_bench.rs`).
 # ❗ Deliberately NOT `#[ignore]`d — the integration lane runs `--run-ignored only`
 # over that whole package, so an ignored measurement would gate CI on a throughput

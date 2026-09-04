@@ -604,6 +604,17 @@ pub(crate) fn map_genai_error(e: genai::Error) -> AiError {
     use genai::Error as G;
     use genai::webc::Error as W;
 
+    // A failure on the STREAMING path arrives differently: `genai` wraps the response error in
+    // `WebStream { error: BoxError }`, where the box holds a `genai::Error::HttpError` carrying
+    // the status. Without this arm every streaming failure fell through to the catch-all below,
+    // so a rejected key or an exhausted quota reached the UI as a generic server error — on the
+    // path the agent and folder suggestions actually use.
+    if let G::WebStream { error, .. } = &e
+        && let Some(G::HttpError { status, body, .. }) = error.downcast_ref::<G>()
+    {
+        return ai_error_for_status(status.as_u16(), provider_error_detail(status, body));
+    }
+
     let webc = match &e {
         G::WebAdapterCall { webc_error, .. } | G::WebModelCall { webc_error, .. } => Some(webc_error),
         _ => None,
@@ -786,6 +797,45 @@ mod tests {
         // 404: a model id the provider doesn't serve (decommissioned, or a typo), or a base
         // URL with the wrong path. The `<provider>-smoke` lanes branch on this variant.
         assert!(matches!(ai_error_for_status(404, "x".into()), AiError::NotFound(_)));
+    }
+
+    /// A streaming failure reaches us wrapped twice (`WebStream` holding a boxed `HttpError`),
+    /// and until that shape was unwrapped every one of them fell to the catch-all: a rejected
+    /// key showed as a generic server error on the very path the agent and folder suggestions
+    /// use. Classification must match the non-streaming path exactly.
+    #[test]
+    fn a_streaming_http_error_classifies_by_status_like_any_other() {
+        fn stream_error(status: u16, body: &str) -> genai::Error {
+            // `genai::Error::HttpError` carries a `reqwest::StatusCode`; we depend on the same
+            // `reqwest` major, so this is the same type.
+            let status = reqwest::StatusCode::from_u16(status).expect("valid status");
+            genai::Error::WebStream {
+                model_iden: ModelIden::new(AdapterKind::OpenAI, "some-model"),
+                cause: String::from("HTTP error"),
+                error: Box::new(genai::Error::HttpError {
+                    status,
+                    canonical_reason: status.canonical_reason().unwrap_or("Unknown").to_string(),
+                    body: body.to_string(),
+                }),
+            }
+        }
+
+        assert!(matches!(
+            map_genai_error(stream_error(404, r#"{"error":{"message":"no such model"}}"#)),
+            AiError::NotFound(_)
+        ));
+        assert!(matches!(map_genai_error(stream_error(401, "nope")), AiError::AuthFailed(_)));
+        assert!(matches!(
+            map_genai_error(stream_error(429, "slow down")),
+            AiError::RateLimited(_)
+        ));
+        assert!(matches!(map_genai_error(stream_error(500, "boom")), AiError::ServerError(_)));
+
+        // The provider's own sentence rides along for display, same as the non-streaming path.
+        let AiError::NotFound(detail) = map_genai_error(stream_error(404, r#"{"error":{"message":"gone"}}"#)) else {
+            panic!("404 should classify as NotFound");
+        };
+        assert_eq!(detail, "HTTP 404 Not Found: gone");
     }
 
     #[test]

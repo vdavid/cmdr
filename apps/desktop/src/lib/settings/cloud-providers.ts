@@ -44,7 +44,9 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     id: 'groq',
     name: 'Groq',
     baseUrl: 'https://api.groq.com/openai/v1',
-    defaultModel: 'llama-3.3-70b-versatile',
+    // Groq retired the whole Llama line on 2026-08-16 (console.groq.com/docs/deprecations);
+    // this is its named replacement for the 70B, and a current production model.
+    defaultModel: 'openai/gpt-oss-120b',
     requiresApiKey: true,
     supportsModelList: true,
     isLocal: false,
@@ -64,7 +66,9 @@ export const cloudProviderPresets: CloudProviderPreset[] = [
     id: 'fireworks-ai',
     name: 'Fireworks AI',
     baseUrl: 'https://api.fireworks.ai/inference/v1',
-    defaultModel: 'accounts/fireworks/models/llama-v3p3-70b-instruct',
+    // The Llama 3.3 id this used to name 404s: Fireworks no longer serves it (verified
+    // 2026-09-04 against `GET /inference/v1/models`).
+    defaultModel: 'accounts/fireworks/models/glm-5p3',
     requiresApiKey: true,
     supportsModelList: true,
     isLocal: false,

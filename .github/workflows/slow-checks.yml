@@ -82,14 +82,33 @@ jobs:
       - name: Run govulncheck
         run: ./scripts/check/check --check scripts-go-govulncheck --ci
 
-      # Real-API smoke against Groq (OpenAI-compatible, free tier). Self-skips when the
-      # GROQ_API_KEY secret is absent, so this never fails the workflow before the secret
-      # is added in repo settings. Catches adapter-routing / auth / parse regressions that
-      # the wiremock tests can't (e.g. the genai Ollama-fallback bug for `llama-*` models).
+      # Real-API smokes, one per provider whose key we hold. They catch adapter-routing /
+      # auth / parse regressions the wiremock tests can't, plus the thing that only a live
+      # call can see: a provider retiring the model we call.
+      #
+      # ⚠️ Each self-skips when its secret is absent, and a skip is a GREEN step. That is
+      # how the Groq lane sat here for months without ever calling Groq. Every secret below
+      # has to exist in repo settings for these to be worth anything; if you add a lane,
+      # add its secret.
       - name: Run Groq smoke (real API)
         run: ./scripts/check/check --check desktop-rust-groq-smoke --ci
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+      - name: Run Fireworks AI smoke (real API)
+        run: ./scripts/check/check --check desktop-rust-fireworks-smoke --ci
+        env:
+          FIREWORKS_AI_API_KEY: ${{ secrets.FIREWORKS_AI_API_KEY }}
+
+      - name: Run Anthropic smoke (real API)
+        run: ./scripts/check/check --check desktop-rust-anthropic-smoke --ci
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Run OpenAI smoke (real API)
+        run: ./scripts/check/check --check desktop-rust-openai-smoke --ci
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
   # ===========================================
   # Type-aware ESLint (too slow for per-push CI)

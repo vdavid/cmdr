@@ -113,9 +113,12 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-webdav-nextcloud":  "`--workspace` via HostCargoLaneArgs, narrowed to one module of `cmdr-webdav`; the cells the shared fixture lane subtracts",
 	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
 	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate; the regen itself is `--workspace` via `pnpm bindings:regen`",
-	// Not a coverage lane: one named test against a live endpoint, self-skipping
-	// without a key. It reaches the app crate on purpose and nothing else.
-	"desktop-rust-groq-smoke": "one `--lib` test in the app crate; a targeted smoke, not a sweep (selected via HostCargoLaneArgs so it shares the other lanes' artifacts)",
+	// Not coverage lanes: a handful of named tests against a live endpoint, each
+	// self-skipping without its key. They reach the app crate on purpose and nothing else.
+	"desktop-rust-groq-smoke":      "one `--lib` test module in the app crate; a targeted smoke, not a sweep (selected via HostCargoLaneArgs so it shares the other lanes' artifacts)",
+	"desktop-rust-fireworks-smoke": "one `--lib` test module in the app crate; same shape as the Groq smoke",
+	"desktop-rust-anthropic-smoke": "one `--lib` test module in the app crate; same shape as the Groq smoke",
+	"desktop-rust-openai-smoke":    "one `--lib` test module in the app crate; same shape as the Groq smoke",
 }
 
 // memberCoverageRegistry is assigned in init() rather than read from AllChecks
