@@ -465,9 +465,14 @@ maintainability.
 
 Props:
 
-- `items: SelectItem[]` — `{ value, label, description?, group? }`. `description` renders as quieter inline text after
-  the label (used by `SettingSelect`); `group`, when present on any item, buckets items under Ark `ItemGroup` /
-  `ItemGroupLabel` headings (used by the viewer's `EncodingPicker` for Unicode / Western).
+- `items: SelectItem[]` — `{ value, label, description?, group?, iconUrl? }`. `description` renders as quieter inline
+  text after the label (used by `SettingSelect`); `group`, when present on any item, buckets items under Ark `ItemGroup`
+  / `ItemGroupLabel` headings (used by the viewer's `EncodingPicker` for Unicode / Western); `iconUrl` puts a 16px image
+  before the label. Icons are decorative (`alt=""`), so a label must never lean on one to be understandable. As soon as
+  ONE item carries an icon every row reserves the slot, keeping labels in a single column, and the trigger shows the
+  selected item's icon so the button reads like the row it came from. The one caller today is the settings row that
+  picks a terminal app (`../settings/sections/TerminalAppSelect.svelte`), which hands over app icons the backend read
+  out of each `.app` bundle as base64 WebP data URLs.
 - `value: string` — the selected item's `value` (empty string → nothing selected, shows `placeholder`).
 - `onChange: (value: string) => void`.
 - `onHighlightChange?: (highlightedValue: string | null) => void` — fires on keyboard / pointer highlight.
