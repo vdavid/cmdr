@@ -19,7 +19,7 @@ use crate::agent::llm::AgentDeltaStream;
 
 // Common re-exports the test bodies reference by bare name (they also serve
 // test_support's own helpers below).
-pub(super) use std::sync::{Arc, Mutex};
+pub(super) use std::sync::Mutex;
 pub(super) use std::time::Duration;
 
 pub(super) use chrono::FixedOffset;
