@@ -12,6 +12,11 @@
  */
 
 export interface RepresentativeMapping {
+  /**
+   * Matched with `startsWith`, so a whole KEY works as well as a family prefix
+   * when one string needs a note of its own. `representativeFor` takes the first
+   * match, so a specific entry has to precede the broader one it lives under.
+   */
   prefix: string
   screenshot: string
   note: string
@@ -161,6 +166,23 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     note:
       'The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive ' +
       'or symlink warning, or the progress line it shows while scanning.',
+  },
+  {
+    // A single KEY, not a family. Both rollback tooltips sit on the dialog's
+    // Rollback button, so the phase-and-progress-bar note below misdescribes
+    // them; they're listed BEFORE it because `representativeFor` takes the first
+    // matching prefix. Any future full-key entry under this family goes here too,
+    // longest key first, since a shorter key is a prefix of a longer sibling.
+    prefix: 'fileOperations.transferProgress.rollbackTooltipStopAndMoveBack',
+    screenshot: 'transfer-dialog.png',
+    note: 'The copy/move progress dialog, pictured here. Your string is the tooltip on its Rollback button.',
+  },
+  {
+    prefix: 'fileOperations.transferProgress.rollbackAlreadyLandedTooltip',
+    screenshot: 'transfer-dialog.png',
+    note:
+      'The copy/move progress dialog, pictured here. Your string is the tooltip on its Rollback button while the ' +
+      'dialog\'s title reads "Removing the originals…".',
   },
   {
     // The transfer progress dialog's other phases (scan, pause, queue, flush).
