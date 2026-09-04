@@ -264,7 +264,7 @@ mcp_tools! {
     // ai-client-only — the agent is already an LLM holding the user's prose, so a second model
     // call to translate it would bill twice and hide the translation from the caller.
     "search" => {
-        desc: "Find files across ONE whole drive by name pattern, size, date, or type; returns paths, no UI. list_dir ranks one folder's children instead. Reads the index, walks the rest. Names and metadata only: inspect_file reads contents, and a date is when a file last CHANGED, never saved or opened. Disk space: sortBy size with excludeSystemDirs false. No paging, so narrow instead. Cover the drive the question is about and say which one you covered.",
+        desc: "Find files across ONE whole drive by name pattern, size, date, or type. list_dir ranks one folder's children instead. Reads the index and walks the rest, so an unindexed drive still answers, only slower. Names and metadata only: inspect_file reads contents, and a date is when a file last CHANGED, never saved or opened. Disk space: sortBy size with excludeSystemDirs false. No paging, so narrow instead. Cover the drive the question is about and say which one you covered.",
         schema: schemas::search_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient, Consumer::Agent],

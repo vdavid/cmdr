@@ -91,8 +91,8 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 /// It grows whenever a tool joins the view, and every call pays it whether or not it uses
 /// that tool: the suggested-ops trio cost about 1,100 tokens of schema between them, which
 /// is roughly four files off a 16,000-token rename batch, and `search`, the most expensive
-/// single declaration, costs 552 even trimmed. Keep a new schema terse.
-pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 6_255;
+/// single declaration, costs 560 even trimmed. Keep a new schema terse.
+pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 6_263;
 
 /// What one `image_facts` row costs at the corpus' average OCR length.
 pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;
@@ -704,7 +704,7 @@ mod tests {
 
     #[test]
     fn a_batch_hint_derives_from_the_budget() {
-        // (budget − 10% headroom − 6,255 of prefix) / 349 per file, while the prompt is what
+        // (budget − 10% headroom − 6,263 of prefix) / 349 per file, while the prompt is what
         // binds.
         assert_eq!(files_per_batch(16_000), 23);
         assert_eq!(files_per_batch(32_000), 64);

@@ -96,7 +96,7 @@ export const aiSettings: SettingDefinitionSource[] = [
     type: 'enum',
     // 32,768 is the floor Ask Cmdr needs for one working turn
     // (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`, which this default mirrors): the
-    // system prompt plus the tool declarations cost ~6,255 tokens before the user says a
+    // system prompt plus the tool declarations cost ~6,263 tokens before the user says a
     // word, and one paged tool result can spend 8,000 more. Nothing smaller is offered, and
     // a smaller stored size from an earlier build no longer validates, so it reads as this
     // default instead of leaving a tester with a chat that can't complete a single message.
