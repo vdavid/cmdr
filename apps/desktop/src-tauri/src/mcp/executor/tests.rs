@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use super::search::{format_search_results, parse_human_size};
+use super::search::parse_human_size;
 use super::*;
 
 #[test]
@@ -233,47 +233,6 @@ fn test_parse_human_size_decimal() {
 fn test_parse_human_size_invalid() {
     assert!(parse_human_size("abc").is_err());
     assert!(parse_human_size("MB").is_err());
-}
-
-#[test]
-fn test_format_search_results_empty() {
-    assert_eq!(format_search_results(&[], 0, 30), "No files found matching the query.");
-}
-
-#[test]
-fn test_format_search_results_with_entries() {
-    use crate::search::SearchResultEntry;
-    let rows = vec![SearchResultEntry {
-        name: "test.pdf".to_string(),
-        path: "/Users/test/Documents/test.pdf".to_string(),
-        parent_path: "~/Documents".to_string(),
-        is_directory: false,
-        size: Some(340_000),
-        modified_at: Some(1_735_689_600),
-        icon_id: "pdf".to_string(),
-        entry_id: 1,
-    }];
-    let formatted = format_search_results(&rows, 1, 30);
-    assert!(formatted.contains("1 of 1 result:"), "and never \"1 of 1 results\"");
-    assert!(formatted.contains("test.pdf"));
-    assert!(formatted.contains("~/Documents"));
-}
-
-#[test]
-fn test_format_search_results_directory_trailing_slash() {
-    use crate::search::SearchResultEntry;
-    let rows = vec![SearchResultEntry {
-        name: "Projects".to_string(),
-        path: "/Users/test/Projects".to_string(),
-        parent_path: "~".to_string(),
-        is_directory: true,
-        size: Some(1_200_000),
-        modified_at: Some(1_735_689_600),
-        icon_id: "dir".to_string(),
-        entry_id: 2,
-    }];
-    let formatted = format_search_results(&rows, 1, 30);
-    assert!(formatted.contains("Projects/"));
 }
 
 // === parse_mcp_response: the per-request completion signal ===

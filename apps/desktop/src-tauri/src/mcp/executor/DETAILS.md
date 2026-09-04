@@ -31,8 +31,8 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   SAME live run the dialog starts, walking whatever the index doesn't cover, folded into one reply because a tool call
   can't carry a stream (`search/DETAILS.md` § "Decision 10"). ❌ No walk-versus-don't parameter. `maxWaitSeconds` is a
   transport budget only: when it runs out the reply carries what had arrived plus a typed note, and the walk keeps
-  going. `coverage_note` renders the typed coverage signal above the results, including the two unreadable lists
-  (a refused folder offers Full Disk Access when granting it would help; a declined snapshot tree explains instead).
+  going. `limit` clamps to the house `MAX_LIMIT` of 200. The result shape and every rule about it live in
+  `search/result.rs` (§ The search result, below).
 - **`queue.rs`**: the `queue` tool (pause / resume / cancel one id, pause_all / resume_all). Thin adapter over the
   manager: no FE action, so no ack.
 - **`conflicts.rs`**: `resolve_conflict` — answers ONE Stop-mode clash a running operation is parked on. Same adapter
@@ -74,6 +74,45 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   cut) and 2,000 characters of text per file (a cut sets `textTruncated`). Params parse, truncation, the
   first-volume-wins merge, and the no-bytes property are unit-tested in-file.
 - **`tests.rs`**: unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.
+
+## The search result
+
+`search/result.rs` folds a `LiveAnswer` into the ONE typed JSON shape both search tools answer with. It is pure, so
+every rule below is unit-tested against fabricated answers with no harness and no running search.
+
+```
+{ targetVolumeId, matchCount, matchCountHuman, returned, truncated,
+  entries: [{ name, path, parentPath, isDirectory, sizeBytes, sizeHuman, modified, modifiedHuman }],
+  coverage: { complete, stillWalking, foldersFound, capped, hiddenByExcludes,
+              permissionDenied[], declined[], stillCovering[], unresolvedScopes[],
+              abandonedGround, abandonedLocations },
+  notes: [ "…" ] }
+```
+
+`ai_search` returns the same object with `interpretedQuery` flattened on top, and the translator's caveat as the first
+note.
+
+- **`matchCount` is ❌ NOT the `total` the paged tools report.** There, `total` is what the page was cut from, so
+  `returned == total` means "you saw everything". Here the engine stops emitting rows at the row cap while the count
+  keeps rising, so `matchCount` can exceed `returned` by orders of magnitude with nothing wrong; `coverage.capped` says
+  which. `entries` goes through `fit_to_result_budget` on top of the 200-row cap, and `returned` / `truncated` ride out
+  with it.
+- **`coverage.complete` is the one field to read before saying "that's all of them"**: settled, walk finished (or
+  nothing to walk), and `permissionDenied` / `declined` / `stillCovering` / `unresolvedScopes` / `abandonedGround` all
+  clear. It exists because a seven-way conjunction is one a model gets wrong once in ten. The seven stay beside it,
+  because each one is a different sentence to the user.
+- **`capped` and `hiddenByExcludes` deliberately don't clear `complete`.** Neither is ground Cmdr failed to cover: the
+  first stopped the rows and not the count, the second is the caller's own filter. Both still make the number a floor,
+  which is why `matchCountHuman` wears `≥` for the first and the second always gets a note.
+- **The uncertainty rides INSIDE `matchCountHuman`** (`≥ 1,240 matches` versus `1,240 matches`), because a flag a
+  sibling field carries is a flag the model sheds the moment it restates the number. It is `≥` whenever `complete` is
+  false or the cap was hit.
+- **`sizeHuman` / `modifiedHuman` come from `search::format_size` / `format_timestamp`**, the dialog's own pair.
+  ❌ Never a second formatter. `iconId` is dropped: a model can't render an icon. An absent size stays absent, ❌ never
+  `0` (a NULL logical size is a hardlink-deduped row).
+- **`notes` keeps the authored prose beside the typed flags**, because one line is genuinely actionable copy no flag
+  replaces ("granting Cmdr Full Disk Access … opens them"). Same pattern as `SearchPhotosResult::ImageIndexingOff`'s
+  `note`. ❌ Not a `summary` field: it never restates what the fields already carry.
 
 ## Ack contract
 

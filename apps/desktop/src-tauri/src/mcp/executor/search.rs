@@ -6,21 +6,36 @@
 //! walk-versus-don't parameter and no agent-specific policy — an agent's search
 //! walks exactly like a person's, and the only thing the transport changes is
 //! that the answer arrives once instead of in batches (`search/live/collect.rs`).
+//!
+//! This file parses the call and runs it. The typed JSON both tools answer with,
+//! and every rule about its counts and its coverage, live in `search/result.rs`.
 
 use std::time::Duration;
 
-use serde_json::{Value, json};
+use serde_json::Value;
+
+mod result;
+
+use result::{AiSearchResult, shape_answer};
 
 use super::{ToolError, ToolResult};
 use crate::search::PatternType;
-use crate::search::{
-    self, AnswerEnding, LiveAnswer, SearchQuery, SearchResultEntry, format_size, format_timestamp, summarize_query,
-};
+use crate::search::{self, AnswerEnding, LiveAnswer, SearchQuery, summarize_query};
 
 /// The least time worth starting `ai_search`'s widened retry with. Below it the
 /// retry would report "still walking" over ground it barely touched, which is
 /// noise on top of an answer that already said it found nothing.
 const FALLBACK_FLOOR: Duration = Duration::from_secs(2);
+
+/// The row cap when the caller doesn't ask for one, and the ceiling on any value
+/// they do ask for — the house cap `inspect_file`, `image_facts`, and
+/// `list_pane_files` all use.
+///
+/// It bounds the ROWS. `result::shape_answer` still cuts the page to what one
+/// tool result may carry, because 200 rows of long paths isn't a bounded payload
+/// either.
+const DEFAULT_LIMIT: u32 = 30;
+const MAX_LIMIT: u32 = 200;
 
 /// Parse a human-readable size string into bytes.
 /// Supports B, KB, MB, GB, TB (case-insensitive, with or without space).
@@ -66,200 +81,6 @@ pub fn parse_human_size(s: &str) -> Result<u64, ToolError> {
     Ok((num * multiplier as f64) as u64)
 }
 
-/// Format search results as a human-readable table.
-pub fn format_search_results(rows: &[SearchResultEntry], total_count: u32, limit: u32) -> String {
-    if rows.is_empty() {
-        return "No files found matching the query.".to_string();
-    }
-
-    let shown = rows.len().min(limit as usize);
-    let entries = &rows[..shown];
-
-    // Compute column widths
-    let max_name = entries
-        .iter()
-        .map(|e| {
-            let display_name = if e.is_directory {
-                format!("{}/", e.name)
-            } else {
-                e.name.clone()
-            };
-            display_name.len()
-        })
-        .max()
-        .unwrap_or(0)
-        .max(4);
-
-    let max_parent = entries.iter().map(|e| e.parent_path.len()).max().unwrap_or(0).max(4);
-
-    let mut lines = Vec::with_capacity(entries.len() + 1);
-    lines.push(format!(
-        "{shown} of {}:",
-        crate::pluralize::pluralize(u64::from(total_count), "result")
-    ));
-
-    for entry in entries {
-        let display_name = if entry.is_directory {
-            format!("{}/", entry.name)
-        } else {
-            entry.name.clone()
-        };
-
-        let size_str = match entry.size {
-            Some(s) => format_size(s),
-            None => String::new(),
-        };
-
-        let date_str = match entry.modified_at {
-            Some(ts) => format_timestamp(ts),
-            None => String::new(),
-        };
-
-        lines.push(format!(
-            "  {:<name_w$}  {:<parent_w$}  {:>8}  {}",
-            display_name,
-            entry.parent_path,
-            size_str,
-            date_str,
-            name_w = max_name,
-            parent_w = max_parent,
-        ));
-    }
-
-    lines.join("\n")
-}
-
-/// Everything the run couldn't answer for, as lines above the results.
-///
-/// Every one of these comes off a TYPED field, never a message match.
-/// It is the one thing MCP has always
-/// rendered that the dialog didn't, and the reason an agent can't read an empty
-/// list as "there's nothing there": each line says which ground the answer
-/// doesn't speak for, and what would open it.
-fn coverage_note(answer: &LiveAnswer, system_dirs_excluded: bool) -> Option<String> {
-    let mut notes = Vec::new();
-
-    if let AnswerEnding::Settled(coverage) = &answer.ending {
-        if !coverage.unresolved_scopes.is_empty() {
-            notes.push(format!(
-                "Note: Cmdr couldn't resolve {}: a typo, or a folder nothing has walked yet.",
-                coverage.unresolved_scopes.join(", ")
-            ));
-        }
-        if !coverage.permission_denied.is_empty() {
-            notes.push(refusal_note(&coverage.permission_denied, full_disk_access_would_help()));
-        }
-        if !coverage.declined.is_empty() {
-            notes.push(format!(
-                "Note: Cmdr never reads snapshot folders (each one is a hardlinked copy of the whole share), so it skipped {}.",
-                coverage.declined.join(", ")
-            ));
-        }
-        if !coverage.still_covering.is_empty() {
-            notes.push(format!(
-                "Note: another search is already walking {}, so this run left it alone. Those results land in the index; run this search again to pick them up.",
-                coverage.still_covering.join(", ")
-            ));
-        }
-        if coverage.hidden_by_excludes > 0 {
-            // The count is filtered and nothing else on the wire says so. It's the
-            // difference between "27 files match" and "27, plus 400 inside caches" —
-            // and for a disk-space question the hidden ones ARE usually the answer.
-            // The advice only fits while the default tier is still on: with it
-            // already off, everything hidden came from the caller's own `!` excludes.
-            let (matches, are) = if coverage.hidden_by_excludes == 1 {
-                ("match", "is")
-            } else {
-                ("matches", "are")
-            };
-            notes.push(if system_dirs_excluded {
-                format!(
-                    "Note: {} more {} {} inside excluded folders and NOT in the count above: the system, cache, and build tier (node_modules, .git, Caches, …) that's hidden by default, plus any ! excludes in the scope. Pass excludeSystemDirs: false to include the default tier — do that when you're asking where disk space is going, because those folders are usually the answer.",
-                    coverage.hidden_by_excludes, matches, are
-                )
-            } else {
-                format!(
-                    "Note: {} more {} {} inside the ! excludes in the scope, and NOT in the count above.",
-                    coverage.hidden_by_excludes, matches, are
-                )
-            });
-        }
-        if coverage.abandoned_ground {
-            // The count is places, not folders: a mount that went to sleep marks
-            // every directory the walk had reached inside it, and an agent reading
-            // "1,497 folders" would conclude the drive is broken.
-            notes.push(if coverage.abandoned_locations > 0 {
-                format!(
-                    "Note: the walk gave up on {} that stopped responding, so this list is a lower bound. Cmdr retries them on its own.",
-                    cmdr_fs::pluralize::pluralize(u64::from(coverage.abandoned_locations), "place"),
-                )
-            } else {
-                "Note: the walk gave up on folders that stopped responding, so this list is a lower bound. Cmdr retries them on its own.".to_string()
-            });
-        }
-        match coverage.walk {
-            search::WalkEnding::Interrupted => notes.push(
-                "Note: the walk stopped before covering everything (the drive went away, or a folder wouldn't read), so this list is a lower bound. Running the search again picks up the rest."
-                    .to_string(),
-            ),
-            search::WalkEnding::Cancelled => notes.push(
-                "Note: the search was stopped before it finished, so this list is a lower bound.".to_string(),
-            ),
-            // Nothing to say: the index covered the whole scope, or the walk
-            // covered everything it took. `dirs_found` still reports the work.
-            search::WalkEnding::NothingToWalk | search::WalkEnding::Completed => {}
-        }
-        if answer.dirs_found > 0 && coverage.walk == search::WalkEnding::Completed {
-            notes.push(format!(
-                "Cmdr walked {} folders it hadn't indexed yet, so the next search over them is instant.",
-                answer.dirs_found
-            ));
-        }
-    }
-
-    if matches!(answer.ending, AnswerEnding::StillWalking) {
-        notes.push(format!(
-            "Note: Cmdr is still walking {} ({} folders so far), so this list and count are a lower bound. The walk keeps filling the index, so running this search again picks up where it left off, or pass a bigger maxWaitSeconds to wait it out.",
-            answer.target_volume_id, answer.dirs_found
-        ));
-    }
-
-    (!notes.is_empty()).then(|| notes.join("\n"))
-}
-
-/// Whether pointing at Full Disk Access would actually open a refused folder:
-/// on macOS, and only while Cmdr doesn't already hold it. With FDA granted the
-/// refusal is something else (a locked folder), and the advice would do nothing.
-/// The dialog gates its offer on the same conditions
-/// (`coverage-note.ts::offersFullDiskAccess`).
-///
-/// ⚠️ The platform half is a `#[cfg]`, ❌ never `cfg!(target_os = "macos") && …`:
-/// `cfg!` is a runtime value, so the `crate::permissions` call still has to COMPILE
-/// on Linux, where that module doesn't exist. It didn't.
-#[cfg(target_os = "macos")]
-fn full_disk_access_would_help() -> bool {
-    !crate::permissions::check_full_disk_access_quiet()
-}
-
-/// No such permission exists off macOS: a refusal there is ordinary file
-/// permissions, which Cmdr can't grant itself either.
-#[cfg(not(target_os = "macos"))]
-fn full_disk_access_would_help() -> bool {
-    false
-}
-
-/// The line for folders the OS refused a walk: the only half of the unreadable
-/// ground somebody can act on, so it offers the fix when there is one.
-fn refusal_note(paths: &[String], offer_full_disk_access: bool) -> String {
-    let refused = format!("Note: the OS refused to let Cmdr read {}.", paths.join(", "));
-    if offer_full_disk_access {
-        return format!(
-            "{refused} Granting Cmdr Full Disk Access in System Settings > Privacy & Security opens them, and the next search covers them."
-        );
-    }
-    refused
-}
-
 /// Run a search over its one target volume and wait for the answer.
 ///
 /// Shared by `search` and `ai_search`, and the SAME path the dialog takes: an
@@ -283,6 +104,18 @@ async fn run_search(query: SearchQuery, budget: Duration) -> Result<LiveAnswer, 
         });
     }
     Ok(answer)
+}
+
+/// How many rows the caller asked for, clamped to [`MAX_LIMIT`].
+///
+/// Clamped rather than refused: a caller asking for 5,000 wants "as many as you
+/// can", and 200 IS as many as one tool result can carry. `returned` and
+/// `truncated` in the reply say what they actually got.
+fn requested_limit(params: &Value) -> u32 {
+    params
+        .get("limit")
+        .and_then(|v| v.as_u64())
+        .map_or(DEFAULT_LIMIT, |n| n.clamp(1, u64::from(MAX_LIMIT)) as u32)
 }
 
 /// How long this call may wait for its answer, from the caller's `maxWaitSeconds`.
@@ -332,7 +165,7 @@ pub async fn execute_search(params: &Value) -> ToolResult {
         Some("dir") => Some(true),
         _ => None,
     };
-    let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
+    let limit = requested_limit(params);
 
     // Parse scope if provided (routing to the owning volume(s) happens in the runner).
     let scope_str = params.get("scope").and_then(|v| v.as_str());
@@ -389,34 +222,15 @@ pub async fn execute_search(params: &Value) -> ToolResult {
 
     let answer = run_search(query, wait_budget(params)).await?;
 
-    // Count-only replaces the table with a bare count; the coverage note (if the
-    // run couldn't speak for some ground) still rides along so the count isn't
-    // misread as complete.
-    let body = if count_only {
-        format_match_count(answer.match_count, is_directory)
-    } else {
-        format_search_results(&answer.entries, answer.match_count, limit)
-    };
-    let output = match coverage_note(&answer, exclude_system_dirs != Some(false)) {
-        Some(note) => format!("{note}\n\n{body}"),
-        None => body,
-    };
-    Ok(json!(output))
+    // Count-only needs no branch: the run returns no rows, so `entries` is empty
+    // and `matchCount` carries the answer. The coverage still rides along, so the
+    // count is never misread as complete.
+    shape(shape_answer(answer, exclude_system_dirs != Some(false)))
 }
 
-/// Concise count-only response, e.g. "1,234 files match". The noun reflects the
-/// type filter (files / folders / items); singular for a count of one.
-fn format_match_count(count: u32, is_directory: Option<bool>) -> String {
-    let (singular, plural) = match is_directory {
-        Some(false) => ("file", "files"),
-        Some(true) => ("folder", "folders"),
-        None => ("item", "items"),
-    };
-    if count == 1 {
-        format!("1 {singular} matches")
-    } else {
-        format!("{count} {plural} match")
-    }
+/// Serialize a result DTO to the tool's JSON value.
+fn shape<T: serde::Serialize>(result: T) -> ToolResult {
+    serde_json::to_value(result).map_err(|e| ToolError::internal(e.to_string()))
 }
 
 /// Build a `SearchQuery` from a `TranslateResult`, merging in caller-provided scope
@@ -476,7 +290,7 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         log::warn!("MCP ai_search: missing 'query' parameter, returning error");
         ToolError::invalid_params("Missing 'query' parameter")
     })?;
-    let limit = params.get("limit").and_then(|v| v.as_u64()).unwrap_or(30) as u32;
+    let limit = requested_limit(params);
     let scope_str = params.get("scope").and_then(|v| v.as_str());
     let total_t = std::time::Instant::now();
     log::info!("MCP ai_search: handler entered, query={natural_query:?}, limit={limit}, scope={scope_str:?}");
@@ -568,162 +382,28 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         (answer, query)
     };
 
-    let interpreted = summarize_query(&query);
-    let formatted = format_search_results(&answer.entries, answer.match_count, limit);
-    let caveat_line = translate_result
-        .caveat
-        .as_deref()
-        .map(|c| format!("Note: {c}\n"))
-        .unwrap_or_default();
-    let coverage_line = coverage_note(&answer, translate_result.query.exclude_system_dirs != Some(false))
-        .map(|n| format!("{n}\n"))
-        .unwrap_or_default();
-    let output = format!(
-        "{} hits\n\nInterpreted query: {interpreted}\n{caveat_line}{coverage_line}\n{formatted}",
-        answer.match_count
-    );
+    let match_count = answer.match_count;
+    let mut search = shape_answer(answer, translate_result.query.exclude_system_dirs != Some(false));
+    // The translator's caveat leads the notes: it says the query may not be the
+    // one the caller meant, which every other note is downstream of.
+    if let Some(caveat) = translate_result.caveat.as_deref() {
+        search.notes.insert(0, format!("Note: {caveat}"));
+    }
     log::info!(
-        "MCP ai_search: completed in {:.1}s, output length={}",
+        "MCP ai_search: completed in {:.1}s, {} of {match_count} rows returned",
         total_t.elapsed().as_secs_f64(),
-        output.len()
+        search.returned
     );
-    Ok(json!(output))
+    shape(AiSearchResult {
+        interpreted_query: summarize_query(&query),
+        search,
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::search::WalkEnding;
-    use crate::search::live::{CoverageKind, SearchRunCoverage};
-
-    /// A run that covered everything, over `volume`.
-    fn covered(volume: &str) -> SearchRunCoverage {
-        SearchRunCoverage {
-            walk: WalkEnding::NothingToWalk,
-            kind: CoverageKind::Covered,
-            permission_denied: Vec::new(),
-            declined: Vec::new(),
-            still_covering: Vec::new(),
-            unresolved_scopes: Vec::new(),
-            abandoned_ground: false,
-            abandoned_locations: 0,
-            capped: false,
-            target_volume_id: volume.to_string(),
-            hidden_by_excludes: 0,
-        }
-    }
-
-    fn answer(ending: AnswerEnding, dirs_found: u64) -> LiveAnswer {
-        LiveAnswer {
-            target_volume_id: "naspi".to_string(),
-            entries: Vec::new(),
-            match_count: 0,
-            dirs_found,
-            ending,
-        }
-    }
-
-    #[test]
-    fn a_run_that_covered_its_scope_from_the_index_says_nothing() {
-        // The note exists to name ground the answer doesn't speak for. A complete
-        // answer has none, and a line per search would train an agent to skip
-        // them all.
-        let settled = answer(AnswerEnding::Settled(Box::new(covered("naspi"))), 0);
-        assert_eq!(coverage_note(&settled, true), None);
-    }
-
-    #[test]
-    fn matches_hidden_by_the_default_exclusions_are_never_silent() {
-        // The failure this prevents: "27 files match" over a machine where 400 more
-        // sit in node_modules and Caches. Silently filtering a COUNT is how an agent
-        // states a wrong conclusion confidently, and a disk-space question is
-        // answered mostly by the folders the defaults hide.
-        let coverage = SearchRunCoverage {
-            hidden_by_excludes: 400,
-            ..covered("root")
-        };
-        let note = coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 0), true)
-            .expect("a filtered count always says so");
-        assert!(note.contains("400"), "{note}");
-        assert!(
-            note.contains("excludeSystemDirs"),
-            "the way to see them is named: {note}"
-        );
-    }
-
-    #[test]
-    fn with_the_default_tier_already_off_the_note_stops_advising_it() {
-        // Everything hidden then came from the caller's own `!` excludes, and
-        // telling them to pass a flag they already passed is noise.
-        let coverage = SearchRunCoverage {
-            hidden_by_excludes: 3,
-            ..covered("root")
-        };
-        let note = coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 0), false)
-            .expect("hidden matches are still reported");
-        assert!(note.contains('3'), "{note}");
-        assert!(!note.contains("excludeSystemDirs"), "{note}");
-    }
-
-    #[test]
-    fn the_two_unreadable_lists_get_two_different_sentences() {
-        // The typed unreadable cause, end to end: one half is a permission somebody can
-        // grant, the other is ground Cmdr declines to read. ❌ Never one list and
-        // never one sentence — offering Full Disk Access over a snapshot folder
-        // is advice that does nothing.
-        let coverage = SearchRunCoverage {
-            walk: WalkEnding::Completed,
-            kind: CoverageKind::Live,
-            permission_denied: vec!["/Users/dave/Documents".to_string()],
-            declined: vec!["/Volumes/naspi/@eaDir".to_string()],
-            ..covered("naspi")
-        };
-        let note = coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 12), true)
-            .expect("unreadable ground is always reported");
-        assert!(note.contains("/Users/dave/Documents"), "{note}");
-        assert!(note.contains("/Volumes/naspi/@eaDir"), "{note}");
-        assert!(note.contains("snapshot folders"), "{note}");
-        assert!(
-            note.lines().count() >= 3,
-            "each cause gets its own sentence, plus the walk's own line: {note}"
-        );
-    }
-
-    #[test]
-    fn full_disk_access_is_offered_only_when_granting_it_would_help() {
-        let refused = vec!["/Users/dave/Downloads".to_string()];
-        let offered = refusal_note(&refused, true);
-        assert!(offered.contains("/Users/dave/Downloads"));
-        assert!(offered.contains("Full Disk Access"));
-        // Cmdr already has it (or this isn't macOS): the folder is still named,
-        // and no advice that would do nothing.
-        let plain = refusal_note(&refused, false);
-        assert!(plain.contains("/Users/dave/Downloads"));
-        assert!(!plain.contains("Full Disk Access"));
-    }
-
-    #[test]
-    fn a_walk_still_running_says_so_and_says_what_to_do_about_it() {
-        // The one thing an agent must not do with a partial answer is read it as
-        // complete. It names the drive, the work so far, and the two ways on.
-        let note =
-            coverage_note(&answer(AnswerEnding::StillWalking, 480), true).expect("a partial answer always says so");
-        assert!(note.contains("still walking"), "{note}");
-        assert!(note.contains("naspi") && note.contains("480"), "{note}");
-        assert!(note.contains("again") && note.contains("maxWaitSeconds"), "{note}");
-    }
-
-    #[test]
-    fn an_interrupted_walk_says_the_list_is_a_lower_bound() {
-        let coverage = SearchRunCoverage {
-            walk: WalkEnding::Interrupted,
-            kind: CoverageKind::Live,
-            ..covered("naspi")
-        };
-        let note =
-            coverage_note(&answer(AnswerEnding::Settled(Box::new(coverage)), 3), true).expect("a short answer says so");
-        assert!(note.contains("lower bound"), "{note}");
-    }
+    use serde_json::json;
 
     #[test]
     fn the_wait_budget_defaults_and_clamps() {
@@ -736,13 +416,14 @@ mod tests {
     }
 
     #[test]
-    fn format_match_count_reflects_type_and_plurality() {
-        assert_eq!(format_match_count(1234, Some(false)), "1234 files match");
-        assert_eq!(format_match_count(1, Some(false)), "1 file matches");
-        assert_eq!(format_match_count(3, Some(true)), "3 folders match");
-        assert_eq!(format_match_count(1, Some(true)), "1 folder matches");
-        assert_eq!(format_match_count(42, None), "42 items match");
-        assert_eq!(format_match_count(1, None), "1 item matches");
-        assert_eq!(format_match_count(0, None), "0 items match");
+    fn the_row_limit_defaults_and_clamps_to_the_house_cap() {
+        // `limit: 5000` used to reach the engine untouched and serialize every
+        // row it found, which is the payload that pushed a caller's turn out of
+        // its own prompt.
+        assert_eq!(requested_limit(&json!({})), DEFAULT_LIMIT);
+        assert_eq!(requested_limit(&json!({ "limit": 5 })), 5);
+        assert_eq!(requested_limit(&json!({ "limit": 5_000 })), MAX_LIMIT);
+        assert_eq!(requested_limit(&json!({ "limit": u64::MAX })), MAX_LIMIT);
+        assert_eq!(requested_limit(&json!({ "limit": 0 })), 1);
     }
 }
