@@ -122,6 +122,14 @@ test.describe('Search dialog: a walk that outlives its dialog', () => {
   })
 
   test.afterAll(async () => {
+    // ⚠️ An `afterAll` hook gets the CONFIG timeout (15 s), ❌ never the 90 s the
+    // `describe.configure` above sets — that reaches tests, not hooks. And
+    // `restoreLocalVolumeIndex` is allowed up to 50 s by its own waits (30 s for
+    // `fresh`, then 20 s for an answer a search can actually read). At 15 s the
+    // restore was killed mid-rebuild and the shared app carried a half-built
+    // index into every later spec in the shard: CI run 33909203247 lost nine
+    // specs downstream of exactly that, all reported as their own failures.
+    test.setTimeout(90_000)
     removeWalkGround()
     await restoreLocalVolumeIndex()
   })

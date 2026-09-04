@@ -1103,6 +1103,35 @@ paper over either one with a longer wait or a retry inside `selectItemsByName` �
 wait is long enough, and the same defect is reachable by a user during any heavy external burst (an unzip, a
 `git checkout`, an rsync into a watched folder).
 
+### An index assertion has to make its own ground current
+
+`get_dir_stats` reads what the index HOLDS, and the verifier is what reconciles a directory against disk. The verifier
+is LISTING-driven: it diffs a directory when a pane lists it, and runs for no directory nobody visits. So a spec that
+churns the tree and then reads `get_dir_stats` is asserting on a row nothing has refreshed.
+
+`indexing.spec.ts` recreates the fixture tree in `beforeEach` and then polls `get_dir_stats` on `left/sub-dir`, so its
+baseline is stale by construction. It passed anyway for as long as some earlier spec in the shard happened to wander
+through `sub-dir` first. Its `beforeEach` now lists `sub-dir` and then `left` itself, which is the precondition it was
+borrowing.
+
+The failure has no symptom but a poll that never converges, which makes it expensive: CI run 33909203247 spent 13
+minutes on three of these timing out, and that run holds no verifier pass on `left/sub-dir` anywhere. The run before it
+verified `sub-dir` 27 s ahead of the first test, which then passed in 264 ms. ❌ Don't answer a non-converging index
+poll with a longer timeout; ask what was supposed to refresh the row.
+
+### An `afterAll` hook gets the CONFIG timeout, not the describe's
+
+`test.describe.configure({ timeout })` reaches TESTS, ❌ never `beforeAll` / `afterAll`. Those get
+`playwright.config.ts`'s 15 s however generous the describe is, and Playwright reports it as
+`"afterAll" hook timeout of 15000ms exceeded`. A hook that legitimately needs longer calls `test.setTimeout()` in its
+own body.
+
+This matters most for a hook that repairs SHARED app state. `restoreLocalVolumeIndex` (`search-walk-ground.ts`) is
+allowed up to 50 s by its own waits — 30 s for `fresh`, then 20 s for an answer a search can actually read — so at 15 s
+it was killed mid-rebuild, and the half-built index it left behind was inherited by every later spec in the shard. In
+run 33909203247 that turned one slow restore into nine additional failures, each reported against a spec that had done
+nothing wrong. Both callers (`search-live.spec.ts`, `search-walk-handoff.spec.ts`) now set their own hook budget.
+
 ### Draining a held operation
 
 `drainOperations(tauriPage)` (`helpers/app-lifecycle.ts`) cancels everything `list_operations` reports and polls until
