@@ -15,6 +15,9 @@
 //! 3. Prefer the smallest production chat model. These run nightly against real billing.
 //! 4. Re-anchor the `(verified …)` note on the constant you touched.
 
+use std::fs::OpenOptions;
+use std::io::Write;
+
 use super::client::AiError;
 
 /// Endpoint + model identity for one provider's real-API smoke.
@@ -94,6 +97,35 @@ pub(super) const ANTHROPIC: SmokeProvider = SmokeProvider {
     model_list_url: "https://api.anthropic.com/v1/models",
     const_name: "ANTHROPIC",
     check_nickname: "anthropic-smoke",
+};
+
+/// Google Gemini. The SECOND native (non-OpenAI) protocol we ship: `remote_model_iden` leaves
+/// `gemini-*` un-namespaced, so `genai` picks its Gemini adapter, which POSTs
+/// `{base_url}models/{model}:generateContent` (and `:streamGenerateContent?alt=sse`) instead of
+/// `/chat/completions`. Nothing else in the suite touches that path.
+///
+/// **Generation lives on `v1`, listing on either.** `genai 0.6.5`'s own default endpoint is
+/// `v1beta/`, and a `gemini-3.x` id there doesn't route at all — so this base URL is
+/// load-bearing rather than cosmetic, and a wrong one looks exactly like an outage (see
+/// `client_real_gemini_test.rs`).
+///
+/// `gemini-3.5-flash-lite` is the smallest current non-preview model, and Google's own named
+/// replacement for the withdrawn `gemini-2.5-flash-lite`. ❌ Never repoint this at
+/// `gemini-flash-latest` / `gemini-flash-lite-latest`: a moving alias changes what it serves
+/// underneath us, which is the exact change this lane exists to notice.
+///
+/// (verified on 2026-09-04: present in `GET /v1/models` with `generateContent` among its
+/// `supportedGenerationMethods`, and answers a 300-token request with visible text.
+/// `gemini-2.5-flash-lite` answers 404 with "no longer available to new users", naming this
+/// model as its replacement.)
+pub(super) const GEMINI: SmokeProvider = SmokeProvider {
+    name: "Google Gemini",
+    env_var: "GEMINI_API_KEY",
+    base_url: "https://generativelanguage.googleapis.com/v1/",
+    model: "gemini-3.5-flash-lite",
+    model_list_url: "https://generativelanguage.googleapis.com/v1/models",
+    const_name: "GEMINI",
+    check_nickname: "gemini-smoke",
 };
 
 /// OpenAI, plain chat-completions leg. `gpt-4.1-mini` is also the app's shipped OpenAI
@@ -188,5 +220,57 @@ pub(super) fn expect_ok<T>(provider: &SmokeProvider, model: &str, result: Result
             const_name = provider.const_name,
             list = provider.model_list_url,
         ),
+    }
+}
+
+/// Env var naming the file a smoke writes an "inconclusive" report into. The check lane
+/// creates the path, passes it here, and turns a non-empty file into a WARN
+/// (`scripts/check/checks/desktop-rust-provider-smoke.go`).
+pub(super) const STATUS_FILE_ENV: &str = "CMDR_SMOKE_STATUS_FILE";
+
+/// Records that a smoke reached NO verdict — it never got a usable answer, and it never got
+/// the provider to say the model is gone either — then returns so the test can finish green.
+///
+/// Why a third outcome exists at all: Gemini's free tier answered the identical request with
+/// 200, then 503, then a bodyless 404, inside a few minutes (observed 2026-09-04). Failing on
+/// that teaches everyone to ignore the nightly, and passing quietly is how the Groq lane sat
+/// green for months without calling Groq. The lane's WARN is the middle: yellow, printed even
+/// in quiet mode, and impossible to mistake for coverage.
+///
+/// It travels through a FILE because nextest discards a passing test's stdout
+/// (`success-output = "never"` in `.config/nextest.toml`), so a `println!` would vanish
+/// exactly when we need it. Appending keeps two concurrent test processes (nextest forks one
+/// per test) from truncating each other's line.
+///
+/// ❗ With no status file set, this PANICS instead of returning. That's the hand-run case
+/// (`cargo nextest run …` straight), where there's nothing to read the file back, and a
+/// vacuous pass would be the same silent-skip trap in a new costume.
+pub(super) fn report_inconclusive(provider: &SmokeProvider, reason: &str) {
+    let line = format!("{}: {reason}\n", provider.name);
+    let path = match std::env::var(STATUS_FILE_ENV) {
+        Ok(path) if !path.trim().is_empty() => path,
+        _ => panic!(
+            "The {name} smoke reached no verdict, and {env} isn't set to report it through.\n\
+             \n\
+             {line}\n\
+             This is NOT a stale model pin: {name} never answered clearly enough to say either way.\n\
+             Run it through the check lane, which collects this as a warning:\n\
+             \x20 pnpm check {nickname}",
+            name = provider.name,
+            env = STATUS_FILE_ENV,
+            nickname = provider.check_nickname,
+        ),
+    };
+
+    let written = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .and_then(|mut file| file.write_all(line.as_bytes()));
+    if let Err(err) = written {
+        panic!(
+            "couldn't record the inconclusive {} smoke to {path}: {err}\n{line}",
+            provider.name
+        );
     }
 }

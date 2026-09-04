@@ -119,6 +119,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-fireworks-smoke": "one `--lib` test module in the app crate; same shape as the Groq smoke",
 	"desktop-rust-anthropic-smoke": "one `--lib` test module in the app crate; same shape as the Groq smoke",
 	"desktop-rust-openai-smoke":    "one `--lib` test module in the app crate; same shape as the Groq smoke",
+	"desktop-rust-gemini-smoke":    "one `--lib` test module in the app crate; same shape as the Groq smoke",
 }
 
 // memberCoverageRegistry is assigned in init() rather than read from AllChecks

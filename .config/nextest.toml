@@ -334,6 +334,19 @@ filter = 'test(volume::nextcloud_test::)'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# Gemini alone, ahead of the general provider-smoke cap below so it wins (nextest: the first
+# matching override per setting wins). Its free tier flaps — the identical request answered
+# 200, then 503, then a bodyless 404 inside a few minutes on 2026-09-04 — so
+# `client_real_gemini_test` retries four times with 5/10/20 s backoff before it will call the
+# run inconclusive. That's ~35 s of deliberate waiting plus four live round trips, which the
+# 60 s cap below would SIGKILL mid-retry, turning "Google was busy" into a red lane: exactly
+# the false alarm the retry exists to prevent. 150 s keeps the test's own budget authoritative
+# with the cap as a hang backstop. ❌ Don't read it as a runtime: a healthy attempt answers
+# first try in ~2 s.
+filter = 'test(ai::client_real_gemini_)'
+slow-timeout = { period = "150s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # The real-API provider smokes (`ai::client_real_*_test`, `#[ignore]`-gated, run only by the
 # `<provider>-smoke` check lanes). A live LLM round trip is the one thing they exist to do, so
 # the global 8 s cap can't be met without deleting the coverage — the exception the policy at

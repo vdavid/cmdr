@@ -110,6 +110,15 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
+      # Gemini's free tier flaps hard (200, 503, and a bodyless 404 to the same request
+      # within minutes), so this lane has a THIRD outcome: it retries, and reports a yellow
+      # warn rather than a red step when it still can't get through. A warn is a passing
+      # step — read the log, don't assume green means Gemini answered.
+      - name: Run Google Gemini smoke (real API)
+        run: ./scripts/check/check --check desktop-rust-gemini-smoke --ci
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
   # ===========================================
   # Type-aware ESLint (too slow for per-push CI)
   # ===========================================

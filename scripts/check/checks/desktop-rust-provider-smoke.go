@@ -4,7 +4,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
+
+// smokeStatusFileEnv names the file a smoke test writes an "inconclusive" report into. Its
+// Rust counterpart is `smoke_providers::STATUS_FILE_ENV`, which explains why the report
+// travels through a file rather than the console: nextest discards a passing test's stdout.
+const smokeStatusFileEnv = "CMDR_SMOKE_STATUS_FILE"
 
 // providerSmoke describes one real-API smoke lane: which Rust test module to run, which
 // secret feeds it, and how to name the provider in the check's own output.
@@ -67,6 +74,16 @@ func RunOpenAiSmoke(ctx *CheckContext) (CheckResult, error) {
 	})
 }
 
+// RunGeminiSmoke covers the SECOND native wire format we ship, and the only provider whose
+// free tier flaps hard enough to need a third outcome — see `inconclusive` below.
+func RunGeminiSmoke(ctx *CheckContext) (CheckResult, error) {
+	return runProviderSmoke(ctx, providerSmoke{
+		name:       "Google Gemini",
+		envVar:     "GEMINI_API_KEY",
+		testModule: "ai::client_real_gemini_test",
+	})
+}
+
 func runProviderSmoke(ctx *CheckContext, provider providerSmoke) (CheckResult, error) {
 	key := ResolveDevSecret(provider.envVar)
 	if key == "" {
@@ -87,13 +104,61 @@ func runProviderSmoke(ctx *CheckContext, provider providerSmoke) (CheckResult, e
 		return CheckResult{}, err
 	}
 
+	// Where the tests report "I never got a verdict" (see `inconclusive` below). Handed to
+	// every provider, so any lane can start reporting one without new plumbing.
+	statusDir, err := os.MkdirTemp("", "cmdr-smoke-status")
+	if err != nil {
+		return CheckResult{}, err
+	}
+	defer func() { _ = os.RemoveAll(statusDir) }()
+	statusFile := filepath.Join(statusDir, "inconclusive.txt")
+
 	args := append([]string{"nextest", "run", "--locked", "--lib", "--run-ignored", "only"}, laneArgs...)
 	cmd := exec.Command("cargo", append(args, provider.testModule)...)
 	cmd.Dir = ctx.RootDir
-	cmd.Env = append(os.Environ(), provider.envVar+"="+key)
+	cmd.Env = append(os.Environ(), provider.envVar+"="+key, smokeStatusFileEnv+"="+statusFile)
 	output, err := RunCommand(cmd, true)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("the %s smoke test failed\n%s", provider.name, indentOutput(output))
 	}
+	if reasons := inconclusive(statusFile); reasons != "" {
+		return CheckResult{
+			Code: ResultWarning,
+			Message: fmt.Sprintf(
+				"%s couldn't be reached well enough to prove anything (NOT a pass, NOT a stale model pin)\n%s",
+				provider.name, indentOutput(reasons)),
+			Total: -1, Issues: -1, Changes: -1,
+		}, nil
+	}
 	return Success(provider.name + " real-API smoke passed"), nil
+}
+
+// inconclusive reads back what the tests wrote to the status file, or "" when they wrote
+// nothing.
+//
+// ⚠️ This is the THIRD outcome, and it deliberately isn't a pass or a failure. A provider
+// that flaps (Gemini's free tier answers 200, 503, and a bodyless 404 to the same request
+// within minutes) would otherwise force a choice between a red lane nobody trusts and a green
+// one that proves nothing — the second being exactly how the Groq lane sat green for months.
+// A warn prints in yellow even in quiet mode and can't be mistaken for coverage.
+//
+// A missing file is the normal case: a lane only writes here when it gives up. Identical
+// lines collapse: every test in a module gives up for the same reason, and repeating it once
+// per test buries the one sentence that matters.
+func inconclusive(statusFile string) string {
+	contents, err := os.ReadFile(statusFile)
+	if err != nil {
+		return ""
+	}
+	seen := map[string]bool{}
+	var unique []string
+	for _, line := range strings.Split(string(contents), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || seen[line] {
+			continue
+		}
+		seen[line] = true
+		unique = append(unique, line)
+	}
+	return strings.Join(unique, "\n")
 }

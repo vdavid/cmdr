@@ -57,8 +57,11 @@ fn remote_model_iden_forces_openai_for_compatible_providers() {
 fn smoke_provider_models_route_to_their_intended_adapters() {
     use crate::ai::smoke_providers as sp;
 
-    // Anthropic keeps its native protocol; anything else would test the wrong wire format.
+    // The two native protocols keep theirs; anything else would test the wrong wire format.
+    // Gemini especially: an `openai::` namespace here routes it to chat-completions, and the
+    // whole `gemini-smoke` lane would then pass against a path it isn't meant to cover.
     assert_eq!(remote_model_iden(sp::ANTHROPIC.model), sp::ANTHROPIC.model);
+    assert_eq!(remote_model_iden(sp::GEMINI.model), sp::GEMINI.model);
     // OpenAI proper is left alone so genai can auto-route Responses vs chat-completions.
     for model in [
         sp::OPENAI.model,

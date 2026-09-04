@@ -33,6 +33,8 @@ detail: DETAILS.md.
   an empty key is allowed. The rejection IS the gate, not a warning.
 - **A model id lives in `smoke_providers.rs` only.** Groq's 2026-08 retirement cost three edits because the id sat in a
   doc comment and a unit assertion too. Refresh pins there; the header has the recipe (ask the live model list).
+- **A red `gemini-smoke` means the model is gone; its WARN means Google was flaky.** That tier answers 200, 503, and a
+  bodyless 404 to one request within minutes, so the lane retries, then warns. ❌ Never quiet a warn by loosening it.
 - **Classify a provider failure by HTTP status, never its sentence.** `map_genai_error` must reach
   `ai_error_for_status` from BOTH `genai` shapes: `Web{Adapter,Model}Call`, AND the `WebStream` wrapping a boxed
   `HttpError`. Missing the stream one degrades every streaming failure to `ServerError` — the agent's own path.

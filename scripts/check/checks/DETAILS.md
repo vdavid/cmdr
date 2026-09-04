@@ -64,7 +64,7 @@ CheckDefinition{
   cold one.
 - **`CIOnly: true`** runs the check only under `--ci` (or when named explicitly). Two uses: the slow-but-authoritative
   variant of a check whose fast local variant lives elsewhere (`cargo-udeps` paired with `cargo-machete`), and a check
-  whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, the four `<provider>-smoke` lanes).
+  whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, the five `<provider>-smoke` lanes).
 - **`DependsOn`** is a flat slice of IDs. Formatters before linters, linters before tests, type checkers before tests.
   Blocked checks (dep failed) get `StatusBlocked` automatically.
 - **`CpuWeight`** is the average number of CPU cores the check keeps busy while running (cold/working profile, rounded).
@@ -840,7 +840,7 @@ resolves dependency features for one package instead of the workspace and rebuil
 s. Full runs: `docs/notes/cargo-lane-feature-thrash.md`.
 
 So **`HostCargoLaneArgs` (`cargo-workspace.go`) is the one answer**, and every host lane that compiles builds its
-command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, the four `desktop-rust-<provider>-smoke`
+command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, the five `desktop-rust-<provider>-smoke`
 lanes, and (spelled out by hand, see below) `pnpm bindings:regen`. It returns the workspace selection plus
 `SharedTargetFeatureArgs()` = `--features cmdr/virtual-mtp`. A lane that needs a genuinely different feature set needs
 its own `CARGO_TARGET_DIR`, not its own flags.
@@ -1358,14 +1358,17 @@ Checks by app and tech:
   type. Every ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return
   type, a method call — because a check people learn to ignore is worse than none. Opt out with
   `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout, mtp-no-transport-reset,
-  bindings-fresh, ipc-enum-camelcase, shipped-locales-fresh (regenerate-and-diff `intl/shipped_locales.gen.rs` from the
-  message-catalog dirs, so the locale resolver's CLDR script table can't go stale and leave a new locale both
-  unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module components per crate with
-  parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a mismatched box skips rather
-  than mis-measures — see § "Rust module cycles"), fixture-lane-coverage (a Docker-gated cell in the app crate whose
-  name the integration lane's filter won't select never runs anywhere, so it's a finding; one cell lived its whole life
-  that way, and it was the sole caller of the crate extraction's one sanctioned public-surface widening — see § "Fixture
-  lane coverage"), tests, integration-tests (Docker network fixtures), tests-linux (slow)
+  bindings-fresh, ipc-enum-camelcase, the five `<provider>-smoke` lanes (CI-only: one `--lib` module each against a live
+  provider, self-skipping without its key; `gemini-smoke` additionally has a warn-level "inconclusive" outcome — see §
+  "Decision: a smoke lane has a THIRD outcome"), shipped-locales-fresh (regenerate-and-diff
+  `intl/shipped_locales.gen.rs` from the message-catalog dirs, so the locale resolver's CLDR script table can't go stale
+  and leave a new locale both unreachable and unguarded), module-cycles (slow, warn-only; strongly-connected module
+  components per crate with parent-child hubs collapsed, on a per-home ratchet, behind a pinned `cargo-modules` that a
+  mismatched box skips rather than mis-measures — see § "Rust module cycles"), fixture-lane-coverage (a Docker-gated
+  cell in the app crate whose name the integration lane's filter won't select never runs anywhere, so it's a finding;
+  one cell lived its whole life that way, and it was the sole caller of the crate extraction's one sanctioned
+  public-surface widening — see § "Fixture lane coverage"), tests, integration-tests (Docker network fixtures),
+  tests-linux (slow)
 
 The last three share one region tracker, `rustTestModState` / `advanceTestModRegion` (`desktop-rust-test-sleep.go`), in
 opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test module, derive-default and
@@ -1754,10 +1757,22 @@ place they run.
 **Decision**: one smoke lane per provider whose key we hold, not one for the cheapest. **Why**: a single-provider lane
 only ever notices that provider's schedule. Groq retired `llama-3.1-8b-instant` on 2026-08-16 and `groq-smoke` caught
 it; the Anthropic test had meanwhile been pinned to a model retired six months earlier and nothing said a word, because
-no lane ran it. Four lanes now (`groq`, `fireworks`, `anthropic`, `openai`), sharing `runProviderSmoke` in
-`desktop-rust-provider-smoke.go` so a fifth is a descriptor rather than a file. Which providers can have one is a
+no lane ran it. Five lanes now (`groq`, `fireworks`, `anthropic`, `openai`, `gemini`), sharing `runProviderSmoke` in
+`desktop-rust-provider-smoke.go` so a sixth is a descriptor rather than a file. Which providers can have one is a
 question about keys, not about code: OpenRouter has no lane (no credit on the key, its free pool 429s upstream, and its
-`openai::` path is already covered by Groq and Fireworks), and Gemini — the one uncovered ADAPTER — has no key at all.
+`openai::` path is already covered by Groq and Fireworks). Every ADAPTER we ship now has a lane, so a sixth would have
+to buy a protocol rather than a vendor.
+
+**Decision**: a smoke lane has a THIRD outcome, `ResultWarning`, fed by a status file the tests write. **Why**: Gemini's
+free tier answers the identical request with 200, then 503, then a zero-byte-body 404, inside a few minutes (verified
+2026-09-04). Reporting that red teaches everyone to ignore the nightly; reporting it green is the silent-skip trap in a
+new costume. So `client_real_gemini_test` retries, decides decommission-vs-outage from the SHAPE of Google's answer (its
+JSON error envelope present or absent, never the sentence inside it), and on giving up calls
+`smoke_providers::report_inconclusive`. That writes to the path in `CMDR_SMOKE_STATUS_FILE`, which `runProviderSmoke`
+creates for EVERY provider and reads back — a file rather than stdout because nextest's `success-output = "never"`
+discards a passing test's output. A warn prints yellow even in quiet mode and can't read as coverage. Run by hand with
+no status file, `report_inconclusive` panics instead of passing vacuously. Full triage rationale and the evidence:
+`apps/desktop/src-tauri/src/ai/DETAILS.md`.
 
 **Gotcha**: a lane self-skips without its key, and a skip is a green step. `GROQ_API_KEY` was never added to the repo
 secrets, so the nightly Groq step reported SKIPPED for months while reading as coverage; the decommission was caught by

@@ -27,6 +27,8 @@ mod client_real_anthropic_test;
 #[cfg(test)]
 mod client_real_fireworks_test;
 #[cfg(test)]
+mod client_real_gemini_test;
+#[cfg(test)]
 mod client_real_groq_test;
 #[cfg(test)]
 mod client_real_openai_test;

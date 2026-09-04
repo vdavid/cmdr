@@ -666,7 +666,7 @@ var AllChecks = []CheckDefinition{
 	// decommission or a contract break at ANY of them should surface here rather than in a
 	// user's app — a single-provider lane only ever notices that one provider's schedule.
 	//
-	// All four share the same treatment: a live network call validating a third-party
+	// All five share the same treatment: a live network call validating a third-party
 	// contract rather than our code, so it can only go red on the provider's schedule and
 	// has no business gating local work (24 days of the Groq lane: 106 runs, 9 211
 	// CPU-seconds, 70 s median, four catches). CIOnly keeps them out of every local lane
@@ -716,6 +716,20 @@ var AllChecks = []CheckDefinition{
 		DependsOn:   []string{"desktop-rust-clippy"},
 		Inputs:      rustCompileInputs,
 		Run:         RunAnthropicSmoke,
+	},
+	{
+		ID:          "desktop-rust-gemini-smoke",
+		CpuWeight:   2,
+		Exclusive:   ResourceCargoBuildDir,
+		Nickname:    "gemini-smoke",
+		DisplayName: "Google Gemini smoke (real API)",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		CIOnly:      true,
+		IsSlow:      true,
+		DependsOn:   []string{"desktop-rust-clippy"},
+		Inputs:      rustCompileInputs,
+		Run:         RunGeminiSmoke,
 	},
 	{
 		ID:          "desktop-rust-openai-smoke",
