@@ -132,7 +132,7 @@ impl DeviceVolumeProvider for MtpDeviceProvider {
             crate::mtp::connection_manager()
                 .disconnect(
                     device_id,
-                    None::<&tauri::AppHandle>,
+                    &crate::mtp::events::device_events(),
                     crate::mtp::MtpDisconnectReason::User,
                 )
                 .await

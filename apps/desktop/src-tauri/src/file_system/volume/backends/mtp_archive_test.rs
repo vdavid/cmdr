@@ -11,7 +11,9 @@
 //! reaches the backend re-exports (`MtpVolume`, `Volume`).
 
 use super::*;
+use crate::mtp::connection::DeviceWatch;
 use crate::mtp::connection::connection_manager;
+use crate::mtp::connection::events::no_device_events;
 use crate::mtp::virtual_device::VirtualDeviceFixture;
 use std::path::Path;
 
@@ -48,7 +50,7 @@ async fn connect_virtual_device_with_zip(zip_bytes: &[u8]) -> (String, u32, Virt
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("a storage").id;
@@ -64,7 +66,11 @@ async fn connect_virtual_device_with_zip(zip_bytes: &[u8]) -> (String, u32, Virt
 #[cfg(feature = "virtual-mtp")]
 async fn teardown(device_id: &str, fixture: VirtualDeviceFixture) {
     connection_manager()
-        .disconnect(device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .ok();
     crate::mtp::virtual_device::unregister_virtual_mtp_device(fixture.location_id);

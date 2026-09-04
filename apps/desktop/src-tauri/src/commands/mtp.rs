@@ -61,7 +61,13 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
 #[tauri::command]
 #[specta::specta]
 pub async fn connect_mtp_device(app: AppHandle, device_id: String) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
-    mtp::connection_manager().connect(&device_id, Some(&app)).await
+    mtp::connection_manager()
+        .connect(
+            &device_id,
+            &mtp::events::device_events_for(&app),
+            mtp::connection::DeviceWatch::Live,
+        )
+        .await
 }
 
 /// Disconnects from an MTP device.
@@ -76,7 +82,11 @@ pub async fn connect_mtp_device(app: AppHandle, device_id: String) -> Result<Con
 #[specta::specta]
 pub async fn disconnect_mtp_device(app: AppHandle, device_id: String) -> Result<(), MtpConnectionError> {
     mtp::connection_manager()
-        .disconnect(&device_id, Some(&app), mtp::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &mtp::events::device_events_for(&app),
+            mtp::MtpDisconnectReason::User,
+        )
         .await
 }
 

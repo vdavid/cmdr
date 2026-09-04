@@ -17,6 +17,7 @@ mod cache;
 mod directory_ops;
 pub(super) mod errors;
 mod event_loop;
+pub mod events;
 mod file_ops;
 mod handle_resolver;
 mod mutation_ops;
@@ -30,6 +31,7 @@ mod volume_registrar;
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
 pub use errors::MtpConnectionError;
 use errors::map_mtp_error;
+use events::{MtpDeviceEvent, MtpDeviceEvents};
 pub(crate) use file_ops::MtpReadSession;
 pub(crate) use mutation_ops::MtpDeleteScope;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
@@ -43,8 +45,6 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock, RwLock};
 use std::time::Duration;
-use tauri::AppHandle;
-use tauri_specta::Event;
 use tokio::sync::{Mutex, broadcast};
 
 use super::types::{MtpDeviceInfo, MtpStorageInfo};
@@ -99,63 +99,31 @@ pub enum MtpDisconnectReason {
     Removed,
 }
 
-// ============================================================================
-// Typed device-lifecycle events (kebab-cased struct name = wire event name)
-// ============================================================================
-
-/// Emitted when an MTP device connects, or when a late-arriving storage is
-/// registered on an already-connected device (in which case `device_name` is
-/// empty and `storages` carries only the new storage).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpDeviceConnected {
-    pub device_id: String,
-    pub device_name: String,
-    pub storages: Vec<MtpStorageInfo>,
+/// Whether a connect also runs the device's change watch.
+///
+/// The two halves an `Option<AppHandle>` used to carry at once: where lifecycle
+/// events go, and whether to poll the device. They're separate questions, and a
+/// caller driving a session directly wants a real events sink with no polling.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeviceWatch {
+    /// Poll the device for object and storage events, so open panes and the file
+    /// index follow what changes on the phone. What the running app asks for.
+    Live,
+    /// Don't poll. For a test or a tool driving the session itself: there are no
+    /// panes to keep fresh, and a loop reacting to the caller's own writes would
+    /// race the reads it is making. A virtual device queues a
+    /// `StorageInfoChanged` for every file that lands in its backing directory,
+    /// so a watched fixture drops the cached storage handle under a test that is
+    /// counting round trips.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "only a caller driving the session itself turns the watch off, and that is a test"
+        )
+    )]
+    Off,
 }
-
-/// Emitted when an MTP device disconnects (user toggle or USB removal).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpDeviceDisconnected {
-    pub device_id: String,
-    pub reason: MtpDisconnectReason,
-}
-
-/// Emitted when a storage area is removed from a connected device.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpStorageRemoved {
-    pub device_id: String,
-    pub storage_id: u32,
-}
-
-/// Emitted when opening a device fails because another process holds exclusive
-/// access (typically `ptpcamerad` on macOS). The frontend shows the workaround
-/// dialog with `blocking_process` (the claiming process name, from `ioreg`).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpExclusiveAccessError {
-    pub device_id: String,
-    pub blocking_process: Option<String>,
-}
-
-/// Emitted when opening a device fails for lack of USB permission (Linux:
-/// missing udev rules). The frontend shows a copyable udev install command.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpPermissionError {
-    pub device_id: String,
-}
-
-/// Emitted (macOS) when Cmdr suppresses `ptpcamerad` to claim a device.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-pub struct MtpPtpcameradSuppressed;
-
-/// Emitted (macOS) when Cmdr restores `ptpcamerad` (MTP disabled or no devices
-/// remain connected).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
-pub struct MtpPtpcameradRestored;
 
 /// Information about an object on the device (returned after creation).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -270,7 +238,8 @@ impl MtpConnectionManager {
     pub async fn connect(
         &self,
         device_id: &str,
-        app: Option<&AppHandle>,
+        events: &Arc<dyn MtpDeviceEvents>,
+        watch: DeviceWatch,
     ) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
         // Check if already connected - if so, return existing connection info (idempotent)
         {
@@ -309,14 +278,11 @@ impl MtpConnectionManager {
                     #[cfg(not(target_os = "macos"))]
                     let blocking_process: Option<String> = None;
 
-                    // Emit event for frontend to show dialog
-                    if let Some(app) = app {
-                        let _ = MtpExclusiveAccessError {
-                            device_id: device_id.to_string(),
-                            blocking_process: blocking_process.clone(),
-                        }
-                        .emit(app);
-                    }
+                    // Report it so the app can offer the workaround.
+                    events.device_event(MtpDeviceEvent::ExclusiveAccess {
+                        device_id: device_id.to_string(),
+                        blocking_process: blocking_process.clone(),
+                    });
 
                     return Err(MtpConnectionError::ExclusiveAccess {
                         device_id: device_id.to_string(),
@@ -333,12 +299,9 @@ impl MtpConnectionManager {
                 #[cfg(target_os = "linux")]
                 {
                     if e.is_permission_denied() {
-                        if let Some(app) = app {
-                            let _ = MtpPermissionError {
-                                device_id: device_id.to_string(),
-                            }
-                            .emit(app);
-                        }
+                        events.device_event(MtpDeviceEvent::PermissionDenied {
+                            device_id: device_id.to_string(),
+                        });
                         return Err(MtpConnectionError::PermissionDenied {
                             device_id: device_id.to_string(),
                         });
@@ -449,20 +412,17 @@ impl MtpConnectionManager {
             attach_storage_volume(device_id, storage.id, &storage.name);
         }
 
-        // Start the event loop for file watching (requires AppHandle)
-        if let Some(app) = app {
-            self.start_event_loop(device_id.to_string(), device_arc, app.clone());
+        // Start the event loop for file watching.
+        if watch == DeviceWatch::Live {
+            self.start_event_loop(device_id.to_string(), device_arc, Arc::clone(events));
         }
 
-        // Emit connected event
-        if let Some(app) = app {
-            let _ = MtpDeviceConnected {
-                device_id: device_id.to_string(),
-                device_name: connected_info.device.product.clone().unwrap_or_default(),
-                storages: connected_info.storages.clone(),
-            }
-            .emit(app);
-        }
+        // Report the device as up.
+        events.device_event(MtpDeviceEvent::Connected {
+            device_id: device_id.to_string(),
+            device_name: connected_info.device.product.clone().unwrap_or_default(),
+            storages: connected_info.storages.clone(),
+        });
 
         // PII-free analytics: an MTP device connected. No device / product / storage identifiers
         // ever cross.
@@ -488,7 +448,7 @@ impl MtpConnectionManager {
     pub async fn disconnect(
         &self,
         device_id: &str,
-        app: Option<&AppHandle>,
+        events: &Arc<dyn MtpDeviceEvents>,
         reason: MtpDisconnectReason,
     ) -> Result<(), MtpConnectionError> {
         info!("Disconnecting from MTP device: {} (reason: {:?})", device_id, reason);
@@ -520,14 +480,11 @@ impl MtpConnectionManager {
         // We just drop the entry here - the device handle going out of scope handles cleanup.
         drop(entry);
 
-        // Emit disconnected event
-        if let Some(app) = app {
-            let _ = MtpDeviceDisconnected {
-                device_id: device_id.to_string(),
-                reason,
-            }
-            .emit(app);
-        }
+        // Report the device as gone.
+        events.device_event(MtpDeviceEvent::Disconnected {
+            device_id: device_id.to_string(),
+            reason,
+        });
 
         // Broadcast updated volume list (MTP volume removed)
         crate::volume_broadcast::emit_volumes_changed();
@@ -616,7 +573,7 @@ impl MtpConnectionManager {
 
     /// Handles a StoreAdded event: queries the new storage, registers its volume,
     /// and broadcasts the change so the frontend picks it up.
-    pub async fn handle_storage_added(&self, device_id: &str, storage_id: u32, app: &AppHandle) {
+    pub async fn handle_storage_added(&self, device_id: &str, storage_id: u32, events: &Arc<dyn MtpDeviceEvents>) {
         let device_arc = {
             let devices = self.devices.lock().await;
             match devices.get(device_id) {
@@ -701,13 +658,13 @@ impl MtpConnectionManager {
             }
         }
 
-        // Emit updated device info so the frontend knows about the new storage
-        let _ = MtpDeviceConnected {
+        // Report the new storage. An empty `device_name` is what marks this as an
+        // addition to a device that is already up rather than a fresh connect.
+        events.device_event(MtpDeviceEvent::Connected {
             device_id: device_id.to_string(),
             device_name: String::new(),
             storages: vec![storage_info],
-        }
-        .emit(app);
+        });
 
         // Broadcast volume list change
         crate::volume_broadcast::emit_volumes_changed();
@@ -794,7 +751,7 @@ impl MtpConnectionManager {
     }
 
     /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
-    pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32, app: &AppHandle) {
+    pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32, events: &Arc<dyn MtpDeviceEvents>) {
         // Remove from DeviceEntry
         {
             let mut devices = self.devices.lock().await;
@@ -810,12 +767,11 @@ impl MtpConnectionManager {
         detach_storage_volume(device_id, storage_id);
         info!("MTP storage {storage_id} removed from {device_id}");
 
-        // Emit event so frontend updates
-        let _ = MtpStorageRemoved {
+        // Report it so the frontend drops the storage from the sidebar.
+        events.device_event(MtpDeviceEvent::StorageRemoved {
             device_id: device_id.to_string(),
             storage_id,
-        }
-        .emit(app);
+        });
 
         // Broadcast volume list change
         crate::volume_broadcast::emit_volumes_changed();

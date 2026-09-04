@@ -7,12 +7,12 @@ use log::{debug, info, warn};
 use mtp_rs::MtpDevice;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::AppHandle;
 use tokio::sync::{Mutex, broadcast};
 
 use mtp_rs::ObjectHandle;
 
 use super::cache::{EVENT_DEBOUNCE_MS, EventDebouncer};
+use super::events::MtpDeviceEvents;
 use super::{MtpConnectionManager, connection_manager, normalize_mtp_path};
 use crate::file_system::listing::compute_diff;
 use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
@@ -25,7 +25,12 @@ impl MtpConnectionManager {
     ///
     /// This spawns a background task that polls for MTP device events and emits
     /// `mtp-directory-changed` events to the frontend when files change on the device.
-    pub(super) fn start_event_loop(&self, device_id: String, device: Arc<Mutex<MtpDevice>>, app: AppHandle) {
+    pub(super) fn start_event_loop(
+        &self,
+        device_id: String,
+        device: Arc<Mutex<MtpDevice>>,
+        events: Arc<dyn MtpDeviceEvents>,
+    ) {
         let (shutdown_tx, _) = broadcast::channel(1);
 
         // Store shutdown sender
@@ -70,7 +75,7 @@ impl MtpConnectionManager {
 
                 match poll_result {
                     Ok(event) => {
-                        Self::handle_device_event(&device_id_clone, event, &app);
+                        Self::handle_device_event(&device_id_clone, event, &events);
                     }
                     Err(mtp_rs::Error::Timeout) => {
                         // No event within timeout period - continue polling
@@ -83,7 +88,7 @@ impl MtpConnectionManager {
                         // IMPORTANT: Call handle_device_disconnected to remove from devices registry
                         // so reconnection attempts don't fail with "already connected"
                         connection_manager()
-                            .handle_device_disconnected(&device_id_clone, Some(&app))
+                            .handle_device_disconnected(&device_id_clone, &events)
                             .await;
                         break;
                     }
@@ -115,7 +120,7 @@ impl MtpConnectionManager {
     }
 
     /// Handles a device event and emits to frontend if appropriate.
-    fn handle_device_event(device_id: &str, event: mtp_rs::mtp::DeviceEvent, app: &AppHandle) {
+    fn handle_device_event(device_id: &str, event: mtp_rs::mtp::DeviceEvent, events: &Arc<dyn MtpDeviceEvents>) {
         use mtp_rs::mtp::DeviceEvent;
 
         match event {
@@ -132,17 +137,17 @@ impl MtpConnectionManager {
             // dual-consumer wiring).
             DeviceEvent::ObjectAdded { handle } => {
                 debug!("MTP object added: {:?} on {}", handle, device_id);
-                Self::emit_change_for_handle(device_id, handle, app);
+                Self::emit_change_for_handle(device_id, handle);
                 Self::feed_index_added_or_changed(device_id, handle);
             }
             DeviceEvent::ObjectRemoved { handle } => {
                 debug!("MTP object removed: {:?} on {}", handle, device_id);
-                Self::emit_directory_changed(device_id, app);
+                Self::emit_directory_changed(device_id);
                 Self::feed_index_removed(device_id, handle);
             }
             DeviceEvent::ObjectInfoChanged { handle } => {
                 debug!("MTP object changed: {:?} on {}", handle, device_id);
-                Self::emit_change_for_handle(device_id, handle, app);
+                Self::emit_change_for_handle(device_id, handle);
                 Self::feed_index_added_or_changed(device_id, handle);
             }
             DeviceEvent::StorageInfoChanged { storage_id } => {
@@ -161,20 +166,20 @@ impl MtpConnectionManager {
             DeviceEvent::StoreAdded { storage_id } => {
                 info!("MTP storage added: {:?} on {}", storage_id, device_id);
                 let device_id = device_id.to_string();
-                let app = app.clone();
+                let events = Arc::clone(events);
                 tokio::spawn(async move {
                     connection_manager()
-                        .handle_storage_added(&device_id, storage_id.0 as u32, &app)
+                        .handle_storage_added(&device_id, storage_id.0 as u32, &events)
                         .await;
                 });
             }
             DeviceEvent::StoreRemoved { storage_id } => {
                 info!("MTP storage removed: {:?} on {}", storage_id, device_id);
                 let device_id = device_id.to_string();
-                let app = app.clone();
+                let events = Arc::clone(events);
                 tokio::spawn(async move {
                     connection_manager()
-                        .handle_storage_removed(&device_id, storage_id.0 as u32, &app)
+                        .handle_storage_removed(&device_id, storage_id.0 as u32, &events)
                         .await;
                 });
             }
@@ -220,9 +225,8 @@ impl MtpConnectionManager {
     /// re-read. On any resolution failure (handle invalid, parent uncached and
     /// the walk fails, timeout) we fall back to the blanket refresh, so an update
     /// is never lost — just less precise.
-    fn emit_change_for_handle(device_id: &str, handle: ObjectHandle, app: &AppHandle) {
+    fn emit_change_for_handle(device_id: &str, handle: ObjectHandle) {
         let device_id = device_id.to_string();
-        let app = app.clone();
         tokio::spawn(async move {
             // Distinct storage IDs with at least one open listing on this device.
             let listings = get_listings_by_volume_prefix(&device_id);
@@ -245,7 +249,7 @@ impl MtpConnectionManager {
                         let affected_dir = object_path
                             .parent()
                             .map_or_else(|| PathBuf::from("/"), Path::to_path_buf);
-                        if Self::emit_directory_changed_targeted(&device_id, storage_id, &affected_dir, &app) {
+                        if Self::emit_directory_changed_targeted(&device_id, storage_id, &affected_dir) {
                             // Targeted refresh fired for an open listing; done.
                             return;
                         }
@@ -264,7 +268,7 @@ impl MtpConnectionManager {
             // No storage produced a targeted refresh: fall back to blanket so the
             // update is never dropped (e.g. the change is in a non-open subdir, or
             // resolution failed on every storage).
-            Self::emit_directory_changed(&device_id, &app);
+            Self::emit_directory_changed(&device_id);
         });
     }
 
@@ -274,7 +278,7 @@ impl MtpConnectionManager {
     ///
     /// Goes through the same debouncer as the blanket path so a burst of resolved
     /// events still collapses to one re-read per window.
-    fn emit_directory_changed_targeted(device_id: &str, storage_id: u32, affected_dir: &Path, app: &AppHandle) -> bool {
+    fn emit_directory_changed_targeted(device_id: &str, storage_id: u32, affected_dir: &Path) -> bool {
         // Match the affected dir against this device's open listings by their
         // normalized inner MTP path. Listings carry a `mtp://…` or `/`-rooted
         // path; `listing_inner_mtp_path` reduces both to the comparable form.
@@ -313,13 +317,12 @@ impl MtpConnectionManager {
             );
             let device_id = device_id.to_string();
             let affected_dir = affected_dir.to_path_buf();
-            let app = app.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(EVENT_DEBOUNCE_MS + 50)).await;
                 // Release BEFORE re-emitting, so an event arriving during the
                 // re-emit can still claim the following window.
                 connection_manager().event_debouncer.release_trailing(&key);
-                Self::emit_directory_changed_targeted(&device_id, storage_id, &affected_dir, &app);
+                Self::emit_directory_changed_targeted(&device_id, storage_id, &affected_dir);
             });
             return true;
         }
@@ -343,7 +346,7 @@ impl MtpConnectionManager {
     ///
     /// Uses the unified diff system shared with local file watching, providing
     /// smooth incremental UI updates without full directory reloads.
-    fn emit_directory_changed(device_id: &str, app: &AppHandle) {
+    fn emit_directory_changed(device_id: &str) {
         // Check debouncer via the global connection manager.
         // When suppressed, schedule a trailing emit after the debounce window
         // so the last event in a burst is never permanently dropped.
@@ -364,7 +367,6 @@ impl MtpConnectionManager {
                 device_id, EVENT_DEBOUNCE_MS
             );
             let device_id_owned = device_id.to_string();
-            let app_clone = app.clone();
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(EVENT_DEBOUNCE_MS + 50)).await;
                 // Release BEFORE re-emitting, so an event arriving during the
@@ -372,7 +374,7 @@ impl MtpConnectionManager {
                 connection_manager().event_debouncer.release_trailing(&device_id_owned);
                 // Re-emit; this goes through the debouncer again (which will pass
                 // since the window has expired) to avoid duplicate processing.
-                Self::emit_directory_changed(&device_id_owned, &app_clone);
+                Self::emit_directory_changed(&device_id_owned);
             });
             return;
         }

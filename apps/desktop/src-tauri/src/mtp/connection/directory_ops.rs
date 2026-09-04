@@ -5,14 +5,13 @@ use mtp_rs::{CancelToken, ListingItem, ObjectHandle, StorageId};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
-use tauri::AppHandle;
-use tauri_specta::Event;
 
 use super::cache::{CachedListing, LISTING_CACHE_TTL_SECS};
 use super::errors::MtpConnectionError;
+use super::events::{MtpDeviceEvent, MtpDeviceEvents};
 use super::{
-    DeviceEntry, MtpConnectionManager, MtpDeviceDisconnected, MtpDisconnectReason, acquire_device_lock,
-    convert_mtp_datetime, get_mtp_icon_id, map_mtp_error, normalize_mtp_path,
+    DeviceEntry, MtpConnectionManager, MtpDisconnectReason, acquire_device_lock, convert_mtp_datetime, get_mtp_icon_id,
+    map_mtp_error, normalize_mtp_path,
 };
 use cmdr_fs::entry::FileEntry;
 use cmdr_index::{WatchGap, WatchScope};
@@ -861,7 +860,7 @@ impl MtpConnectionManager {
     /// reopenable, so it goes through `handle_device_session_reset` instead (see
     /// `session_reset.rs`). Emitting `Removed` for it would drop a live device
     /// out of the sidebar.
-    pub(super) async fn handle_device_disconnected(&self, device_id: &str, app: Option<&AppHandle>) {
+    pub(super) async fn handle_device_disconnected(&self, device_id: &str, events: &Arc<dyn MtpDeviceEvents>) {
         #[cfg(all(test, feature = "virtual-mtp"))]
         disconnect_test_hooks::bump_count();
 
@@ -893,17 +892,11 @@ impl MtpConnectionManager {
         if removed {
             info!("MTP device disconnected and removed from registry: {}", device_id);
 
-            if let Some(app) = app {
-                let _ = MtpDeviceDisconnected {
-                    device_id: device_id.to_string(),
-                    reason: MtpDisconnectReason::Removed,
-                }
-                .emit(app);
-                debug!(
-                    "handle_device_disconnected: emitted mtp-device-disconnected event for {}",
-                    device_id
-                );
-            }
+            events.device_event(MtpDeviceEvent::Disconnected {
+                device_id: device_id.to_string(),
+                reason: MtpDisconnectReason::Removed,
+            });
+            debug!("handle_device_disconnected: reported the disconnect for {}", device_id);
 
             // Broadcast updated volume list (MTP volume removed)
             crate::volume_broadcast::emit_volumes_changed();
@@ -967,7 +960,7 @@ fn convert_object_infos(
 /// Pins the negative half of the reset/disconnect split: a `SessionReset` must
 /// never reach the disconnect teardown, and nothing else observable tells the two
 /// apart in a unit test (both drop the entry, both flip the index Stale; the
-/// `Removed` event needs an `AppHandle`). Asserted by `session_reset.rs`.
+/// `Removed` event needs a device-events sink). Asserted by `session_reset.rs`.
 #[cfg(all(test, feature = "virtual-mtp"))]
 pub(super) mod disconnect_test_hooks {
     use std::sync::atomic::{AtomicUsize, Ordering};

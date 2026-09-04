@@ -10,6 +10,8 @@ MTP for Android devices and PTP cameras over USB. macOS and Linux only; on Linux
   `MTP_ENABLED` gate), `types.rs` (camelCase JSON), `macos_workaround.rs` (ptpcamerad suppression).
 - `connection/`: the per-device session layer (`MtpConnectionManager` singleton, event loop, list / read / write /
   mutate / bulk ops). See its `CLAUDE.md` for locks, caches, and gotchas.
+- `events.rs`: the seven `tauri_specta` payload structs and the adapter mapping the session layer's typed
+  `MtpDeviceEvent`s onto five of them. The struct name kebab-cases to the wire event name.
 - `volume_wiring.rs` registers a storage as an `MtpVolume` (twin of `network/smb_upgrade.rs`); `virtual_device.rs` is
   the E2E and dev device behind the `virtual-mtp` feature (`docs/tooling/virtual-mtp.md`).
 
@@ -39,6 +41,9 @@ MTP for Android devices and PTP cameras over USB. macOS and Linux only; on Linux
   MTP being disabled; `ensure_ptpcamerad_enabled()` at startup covers a crash. A failed one falls back to the
   `ExclusiveAccess` dialog. `needs_ptpcamerad_suppression` keeps it off a device set that's only VIRTUAL: disabling a
   real macOS daemon for a fixture is how an E2E run took `ptpcamerad` down on the developer's machine.
+- **The session layer holds no `AppHandle`.** It reports typed `MtpDeviceEvent`s into an `MtpDeviceEvents` sink and
+  `events.rs` maps them; ❌ don't reach for an app handle inside `connection/`. The `ptpcamerad` pair stays the
+  watcher's to emit.
 - **Error events the frontend depends on**: `mtp-exclusive-access-error` (ptpcamerad still holds the device; carries
   the blocking process name from `ioreg`, `None` on Linux) and `mtp-permission-error` (Linux udev rules missing →
   `MtpPermissionDialog`).

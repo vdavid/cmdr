@@ -31,7 +31,9 @@
 
 use super::MtpVolume;
 use super::Volume;
+use crate::mtp::connection::DeviceWatch;
 use crate::mtp::connection::connection_manager;
+use crate::mtp::connection::events::no_device_events;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -94,7 +96,7 @@ async fn mtp_read_range_hardware_bench() {
         .unwrap_or_else(|| panic!("no MTP device with serial {serial} is attached"));
 
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("connect to the benchmark device");
     let storage = info.storages.first().expect("a storage").clone();
@@ -139,7 +141,11 @@ async fn mtp_read_range_hardware_bench() {
     );
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .ok();
     #[cfg(target_os = "macos")]

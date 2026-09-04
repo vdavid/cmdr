@@ -13,6 +13,8 @@
 use super::*;
 use std::path::Path;
 
+use crate::mtp::connection::DeviceWatch;
+use crate::mtp::connection::events::no_device_events;
 use crate::mtp::connection::{MtpConnectionError, connection_manager};
 
 /// Connects the virtual device and builds an `MtpVolume` over its writable
@@ -28,7 +30,7 @@ async fn connect_virtual_volume(
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -94,7 +96,11 @@ async fn delete_refuses_a_non_empty_folder_with_a_typed_error() {
     );
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
@@ -128,7 +134,11 @@ async fn delete_still_removes_an_empty_folder() {
     );
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
@@ -159,7 +169,11 @@ async fn delete_honors_the_shared_non_recursion_contract() {
     .await;
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
@@ -200,7 +214,11 @@ async fn tree_scope_still_removes_a_whole_subtree() {
     );
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);

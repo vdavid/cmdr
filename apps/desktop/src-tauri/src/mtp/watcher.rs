@@ -152,10 +152,13 @@ fn initial_known_devices(enabled: bool, discovered: &HashSet<String>) -> HashSet
 
 /// Spawns an async task to connect a newly detected MTP device.
 fn auto_connect_device(device_id: String) {
-    let app = APP_HANDLE.get().cloned();
+    let events = super::events::device_events();
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
-        match cm.connect(&device_id, app.as_ref()).await {
+        match cm
+            .connect(&device_id, &events, super::connection::DeviceWatch::Live)
+            .await
+        {
             Ok(info) => {
                 info!(
                     "Auto-connected MTP device: {} ({} storages)",
@@ -174,10 +177,10 @@ fn auto_connect_device(device_id: String) {
 
 /// Spawns an async task to disconnect a removed MTP device.
 fn auto_disconnect_device(device_id: String, reason: MtpDisconnectReason) {
-    let app = APP_HANDLE.get().cloned();
+    let events = super::events::device_events();
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
-        if let Err(e) = cm.disconnect(&device_id, app.as_ref(), reason).await {
+        if let Err(e) = cm.disconnect(&device_id, &events, reason).await {
             // NotConnected is fine: device may not have been connected yet
             debug!("Disconnect for removed device {} returned: {:?}", device_id, e);
         }
@@ -316,7 +319,7 @@ fn needs_ptpcamerad_suppression<'a>(devices: impl IntoIterator<Item = &'a str>) 
 /// needs it. Emits `mtp-ptpcamerad-suppressed` on success so the frontend can toast.
 #[cfg(target_os = "macos")]
 fn suppress_ptpcamerad_if_needed<'a>(devices: impl IntoIterator<Item = &'a str>) {
-    use super::connection::MtpPtpcameradSuppressed;
+    use super::events::MtpPtpcameradSuppressed;
     use tauri_specta::Event;
 
     if !needs_ptpcamerad_suppression(devices) {
@@ -345,7 +348,7 @@ fn suppress_ptpcamerad_if_needed<'a>(devices: impl IntoIterator<Item = &'a str>)
 /// Emits `mtp-ptpcamerad-restored` event on success.
 #[cfg(target_os = "macos")]
 fn restore_ptpcamerad_unconditionally() {
-    use super::connection::MtpPtpcameradRestored;
+    use super::events::MtpPtpcameradRestored;
     use tauri_specta::Event;
 
     match super::macos_workaround::restore_ptpcamerad() {
@@ -364,7 +367,7 @@ fn restore_ptpcamerad_unconditionally() {
 /// Emits `mtp-ptpcamerad-restored` event on success.
 #[cfg(target_os = "macos")]
 fn restore_ptpcamerad_if_no_devices() {
-    use super::connection::MtpPtpcameradRestored;
+    use super::events::MtpPtpcameradRestored;
     use tauri_specta::Event;
 
     let remaining = get_current_mtp_devices();

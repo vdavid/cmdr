@@ -7,7 +7,9 @@
 //! one per device, and must re-issue after an invalidation.
 
 use super::*;
+use crate::mtp::connection::DeviceWatch;
 use crate::mtp::connection::connection_manager;
+use crate::mtp::connection::events::no_device_events;
 use std::path::Path;
 
 /// Deterministic bytes: byte `i` is `(i * 31 + 7) % 251`, so any window is
@@ -41,7 +43,7 @@ async fn connect_device_with_blob(bytes: &[u8]) -> Device {
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("a storage").id;
@@ -59,7 +61,11 @@ async fn connect_device_with_blob(bytes: &[u8]) -> Device {
 
 async fn teardown(device: Device) {
     connection_manager()
-        .disconnect(&device.id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device.id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .ok();
     crate::mtp::virtual_device::unregister_virtual_mtp_device(device.location_id);

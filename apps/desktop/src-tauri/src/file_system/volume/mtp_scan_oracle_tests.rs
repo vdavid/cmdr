@@ -24,6 +24,8 @@ use crate::file_system::listing::caching_test_support::{TestListing, TestListing
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{MtpVolume, ScanBoundary, Volume, WatchCoverage};
+use crate::mtp::connection::DeviceWatch;
+use crate::mtp::connection::events::no_device_events;
 use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
 use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
@@ -90,7 +92,7 @@ async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String, VirtualDev
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect");
     let storage_id = info.storages.first().expect("at least one virtual storage").id;
@@ -152,7 +154,7 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
 
     get_volume_manager().unregister(&vid);
     connection_manager()
-        .disconnect(&device_id, None, MtpDisconnectReason::User)
+        .disconnect(&device_id, &no_device_events(), MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect");
 }
@@ -236,7 +238,7 @@ async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
 
     get_volume_manager().unregister(&vid);
     connection_manager()
-        .disconnect(&device_id, None, MtpDisconnectReason::User)
+        .disconnect(&device_id, &no_device_events(), MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect");
 }
@@ -263,7 +265,7 @@ async fn mtp_batch_scan_stops_when_it_is_told_to() {
 
     get_volume_manager().unregister(&vid);
     connection_manager()
-        .disconnect(&device_id, None, MtpDisconnectReason::User)
+        .disconnect(&device_id, &no_device_events(), MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect");
 }
@@ -281,7 +283,7 @@ async fn mtp_batch_scan_asks_its_boundary_inside_the_walk() {
 
     get_volume_manager().unregister(&vid);
     connection_manager()
-        .disconnect(&device_id, None, MtpDisconnectReason::User)
+        .disconnect(&device_id, &no_device_events(), MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect");
 }

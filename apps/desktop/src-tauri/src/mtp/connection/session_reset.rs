@@ -7,13 +7,13 @@
 //! § "Session reset is not a disconnect".
 
 use std::collections::HashSet;
-use std::sync::{LazyLock, Mutex as StdMutex};
+use std::sync::{Arc, LazyLock, Mutex as StdMutex};
 use std::time::Duration;
 
 use log::{info, warn};
-use tauri::AppHandle;
 
-use super::{MtpConnectionError, MtpConnectionManager, connection_manager};
+use super::events::MtpDeviceEvents;
+use super::{DeviceWatch, MtpConnectionError, MtpConnectionManager, connection_manager};
 use crate::ignore_poison::IgnorePoison;
 use cmdr_index::{WatchGap, WatchScope};
 
@@ -73,9 +73,9 @@ pub(super) fn schedule_recovery(device_id: &str) {
     }
     let device_id = device_id.to_string();
     tokio::spawn(async move {
-        let app = crate::mtp::watcher::app_handle();
+        let events = crate::mtp::events::device_events();
         connection_manager()
-            .handle_device_session_reset(&device_id, app.as_ref())
+            .handle_device_session_reset(&device_id, &events, DeviceWatch::Live)
             .await;
         release_recovery(&device_id);
     });
@@ -91,11 +91,16 @@ impl MtpConnectionManager {
     /// a kill switch that costs the user a replug, and the reopen self-heals
     /// without it. Evidence: [DETAILS.md](DETAILS.md) § "No transport reset in
     /// recovery"; enforced by `pnpm check mtp-no-transport-reset`.
-    pub(super) async fn handle_device_session_reset(&self, device_id: &str, app: Option<&AppHandle>) {
+    pub(super) async fn handle_device_session_reset(
+        &self,
+        device_id: &str,
+        events: &Arc<dyn MtpDeviceEvents>,
+        watch: DeviceWatch,
+    ) {
         if !self.tear_down_reset_session(device_id).await {
             return;
         }
-        self.reopen_after_session_reset(device_id, app).await;
+        self.reopen_after_session_reset(device_id, events, watch).await;
     }
 
     /// Drops the dead session: removes the `DeviceEntry` (closing the `MtpDevice`
@@ -139,7 +144,12 @@ impl MtpConnectionManager {
     /// third succeeded; giving up early would declare a live device dead. And
     /// don't tighten the spacing either — hammering re-wedges the device. See
     /// [DETAILS.md](DETAILS.md) § "Session reset is not a disconnect".
-    pub(super) async fn reopen_after_session_reset(&self, device_id: &str, app: Option<&AppHandle>) {
+    pub(super) async fn reopen_after_session_reset(
+        &self,
+        device_id: &str,
+        events: &Arc<dyn MtpDeviceEvents>,
+        watch: DeviceWatch,
+    ) {
         for attempt in 0..MAX_REOPEN_ATTEMPTS {
             tokio::time::sleep(reopen_delay(attempt)).await;
 
@@ -148,7 +158,7 @@ impl MtpConnectionManager {
                 return;
             }
 
-            match self.connect(device_id, app).await {
+            match self.connect(device_id, events, watch).await {
                 Ok(info) => {
                     info!(
                         "MTP {device_id}: reopened after a session reset on attempt {} ({} storages)",
@@ -162,7 +172,7 @@ impl MtpConnectionManager {
                 // IS a disconnect now: run the real teardown and stop retrying.
                 Err(MtpConnectionError::DeviceNotFound { .. }) => {
                     info!("MTP {device_id}: gone while recovering from a session reset, treating it as a disconnect");
-                    self.handle_device_disconnected(device_id, app).await;
+                    self.handle_device_disconnected(device_id, events).await;
                     return;
                 }
                 Err(e) => {
@@ -175,7 +185,7 @@ impl MtpConnectionManager {
         }
         // allowed-pluralize-noun: MAX_REOPEN_ATTEMPTS is a compile-time constant of 10, never 1
         warn!("MTP {device_id}: couldn't reopen after {MAX_REOPEN_ATTEMPTS} attempts; unplug and replug the device");
-        self.handle_device_disconnected(device_id, app).await;
+        self.handle_device_disconnected(device_id, events).await;
     }
 }
 
@@ -239,6 +249,8 @@ mod tests {
 /// what it throws away.
 #[cfg(all(test, feature = "virtual-mtp"))]
 mod device_tests {
+    use super::super::DeviceWatch;
+    use super::super::events::no_device_events;
     use super::*;
     use crate::mtp::virtual_device::{
         VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
@@ -262,7 +274,7 @@ mod device_tests {
             .map(|d| d.id)
             .expect("the virtual device must appear in discovery");
         let info = connection_manager()
-            .connect(&device_id, None)
+            .connect(&device_id, &no_device_events(), DeviceWatch::Off)
             .await
             .expect("virtual-mtp connect should succeed");
         let storage_id = info.storages.first().expect("a storage").id;
@@ -283,7 +295,11 @@ mod device_tests {
 
     async fn teardown(device: Device) {
         connection_manager()
-            .disconnect(&device.id, None, crate::mtp::connection::MtpDisconnectReason::User)
+            .disconnect(
+                &device.id,
+                &no_device_events(),
+                crate::mtp::connection::MtpDisconnectReason::User,
+            )
             .await
             .ok();
         unregister_virtual_mtp_device(device.fixture.location_id);
@@ -360,7 +376,9 @@ mod device_tests {
             "the dead session must be gone before the reopen",
         );
 
-        connection_manager().reopen_after_session_reset(&device.id, None).await;
+        connection_manager()
+            .reopen_after_session_reset(&device.id, &no_device_events(), DeviceWatch::Off)
+            .await;
 
         assert_eq!(
             super::super::directory_ops::disconnect_test_hooks::count(),

@@ -6,7 +6,8 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
 ## File map
 
 - Session: `mod.rs` (manager singleton, connect/disconnect), `errors.rs`, `scheduler.rs` (`DevicePriorityGate`),
-  `cache.rs` (path ↔ handle + 5 s-TTL listing caches, `EventDebouncer`), `volume_registrar.rs`, `session_reset.rs`.
+  `cache.rs` (path ↔ handle + 5 s-TTL listing caches, `EventDebouncer`), `events.rs` (`MtpDeviceEvents`),
+  `volume_registrar.rs`, `session_reset.rs`.
 - Ops: `directory_ops.rs` (listings, path → handle), `bulk_ops.rs` (copy pre-scan), `handle_resolver.rs` (handle →
   path), `event_loop.rs` (per-device poll, feeding the pane AND the per-volume index), `file_ops.rs` (windowed and
   ranged reads, uploads), `mutation_ops.rs` (delete, create, rename, move).
@@ -39,6 +40,12 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
   `Mutex`.
 - **A ranged read takes `read_range_direct`, ❌ NOT `open_read_session`**, and ❌ not for COPY, which needs `total_size`
   for progress and the yield checkpoint.
+- **❌ Nothing here names a `tauri` type.** A device's lifecycle goes out as a typed `MtpDeviceEvent` through the
+  `MtpDeviceEvents` sink the caller passes in; `crate::mtp::events` holds the payload structs, their derives, and the
+  one match that maps them. A caller with no window passes `no_device_events()`, so ❌ there is no `Option` to unwrap
+  and no "was anyone listening?" to branch on. Whether the device is POLLED is the separate `DeviceWatch` argument: a
+  virtual fixture queues a `StorageInfoChanged` per file that lands in its backing dir, so a test that watches drops
+  the cached storage handle under its own writes.
 - **`MtpDisconnectReason::User` is only the settings toggle or an explicit disconnect**; hotplug loss and I/O drops are
   `Removed`, else unstable USB reads as repeated unplugs.
 

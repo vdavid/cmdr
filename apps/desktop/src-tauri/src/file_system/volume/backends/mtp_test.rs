@@ -15,6 +15,10 @@ use std::pin::Pin;
 #[cfg(feature = "virtual-mtp")]
 use super::mtp::test_window;
 #[cfg(feature = "virtual-mtp")]
+use crate::mtp::connection::DeviceWatch;
+#[cfg(feature = "virtual-mtp")]
+use crate::mtp::connection::events::no_device_events;
+#[cfg(feature = "virtual-mtp")]
 use crate::mtp::connection::{MtpConnectionError, connection_manager};
 
 #[test]
@@ -227,7 +231,7 @@ async fn test_listing_watch_coverage_flips_with_connection() {
 
     // Connect, then assert coverage.
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     // Use whatever storage_id the virtual device reported (we don't care
@@ -242,7 +246,11 @@ async fn test_listing_watch_coverage_flips_with_connection() {
 
     // Disconnect, then assert it drops again.
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
     assert_eq!(
@@ -279,7 +287,7 @@ async fn connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_the
         .expect("the virtual device must appear in discovery");
 
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     assert!(
@@ -300,7 +308,11 @@ async fn connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_the
     }
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
     for volume_id in &volume_ids {
@@ -353,7 +365,7 @@ async fn upload_failure_deletes_partial_object_on_device() {
         .expect("the virtual device must appear in discovery");
 
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -391,7 +403,11 @@ async fn upload_failure_deletes_partial_object_on_device() {
     );
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -440,7 +456,7 @@ async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
         .expect("the virtual device must appear in discovery");
 
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -478,7 +494,11 @@ async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
     );
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -524,7 +544,7 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
         .expect("the virtual device must appear in discovery");
 
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -595,7 +615,11 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
     );
 
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -634,7 +658,7 @@ async fn bounded_window_read_assembles_byte_exact() {
     test_window::set(1000);
 
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -693,7 +717,11 @@ async fn bounded_window_read_assembles_byte_exact() {
 
     test_window::set(0);
     connection_manager()
-        .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            &device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
 }

@@ -132,6 +132,32 @@ stops within one round trip; heal-to-rescan, freshness, and buffer/replay/overfl
 
 **Design history** is in git (former `docs/specs/mtp-device-scheduler-plan.md`).
 
+## Device lifecycle leaves as a value (`events.rs`)
+
+Five things happen to a device that the user has to see: it came up, it went away, a storage left it, another process
+holds it, or the OS refused it. The session layer reports each as an `MtpDeviceEvent` through an `MtpDeviceEvents`
+sink it is handed, and `crate::mtp::events` turns them into the `tauri_specta` events the frontend subscribes to. So
+the code that talks to the device names no `tauri` type, carries no `specta` derive, and writes no English beyond a
+log line.
+
+**Who passes what.** An IPC command already holds the handle its call came in on (`device_events_for`). Background
+work asks `crate::mtp::events::device_events()`, which answers with the hotplug watcher's stored handle or, before
+startup wiring and in every test binary, the detached sink. A test that wants to assert on the sequence passes
+`RecordingMtpDeviceEvents`.
+
+**Where events go and whether to poll are two questions.** The `Option<AppHandle>` this replaced answered both at
+once, so a caller with no window silently also got no device watch. `connect` now takes the sink AND a `DeviceWatch`:
+the app asks for `Live`, and a caller driving the session itself asks for `Off`. That matters against the virtual
+device, which queues a `StorageInfoChanged` for every file that appears in a backing directory: a watched fixture
+invalidates its own cached storage handle, and a cell counting `GetStorageInfo` round trips goes red at random.
+
+**The two `ptpcamerad` events are not in the enum.** `watcher.rs` emits them directly, because suppressing and
+restoring a macOS daemon is the app's business, not a device's lifecycle.
+
+**A report answers nothing.** `device_event` returns `()`, deliberately: a device's lifecycle can't wait on a window,
+and a caller that could learn "nobody heard that" would start branching on it. An emit failure is logged where the
+mapping happens and dropped there.
+
 ## Upload partial cleanup (two-phase PTP uploads)
 
 PTP uploads are two-phase: `SendObjectInfo` creates the object on the device, then `SendObject` streams the bytes. If the

@@ -14,7 +14,9 @@
 use super::*;
 use std::path::Path;
 
+use crate::mtp::connection::DeviceWatch;
 use crate::mtp::connection::connection_manager;
+use crate::mtp::connection::events::no_device_events;
 use crate::mtp::virtual_device::{
     VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
@@ -29,7 +31,7 @@ async fn connect_primed_volume(fixture: &VirtualDeviceFixture) -> (String, MtpVo
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, None)
+        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -47,7 +49,11 @@ async fn connect_primed_volume(fixture: &VirtualDeviceFixture) -> (String, MtpVo
 /// first write with a bare protocol error.
 async fn teardown(device_id: &str, fixture: &VirtualDeviceFixture) {
     connection_manager()
-        .disconnect(device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(
+            device_id,
+            &no_device_events(),
+            crate::mtp::connection::MtpDisconnectReason::User,
+        )
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
