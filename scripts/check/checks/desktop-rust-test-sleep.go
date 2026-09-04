@@ -132,16 +132,17 @@ func scanForTestSleep(rootDir, srcDir string) ([]testSleepSite, []orphanDirectiv
 
 // isRustTestPath reports whether every line of a file is test code. That's the
 // conventional test-file names (isRustTestFile), plus any file under a `/tests/`
-// module directory (e.g. `indexing/tests/external_drive_fixture.rs`,
-// `mcp/tests/mod.rs`), plus a `*test_support*.rs` or `*test_fixtures*.rs` helper
-// module. A production file that merely carries an inline `#[cfg(test)] mod tests`
-// is NOT one of these; its test lines are found by the region tracker instead.
+// or `/<subject>_tests/` module directory (e.g. `indexing/tests/external_drive_fixture.rs`,
+// `mcp/tests/mod.rs`, `transfer/volume/copy_tests/progress.rs`), plus a
+// `*test_support*.rs` or `*test_fixtures*.rs` helper module. A production file
+// that merely carries an inline `#[cfg(test)] mod tests` is NOT one of these;
+// its test lines are found by the region tracker instead.
 //
 // The helper-module clauses match on the FILE name because such a module is
 // gated at its declaration site (`#[cfg(test)] mod test_fixtures;`), leaving
 // nothing inside the file for the region tracker to find.
 func isRustTestPath(relPath, baseName string) bool {
-	if isRustTestFile(baseName) {
+	if isRustTestFile(baseName) || isRustTestFile(relPath) {
 		return true
 	}
 	if strings.Contains(relPath, "/tests/") {

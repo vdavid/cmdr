@@ -200,14 +200,16 @@ func hasAllowErrorStringMatchComment(line string) bool {
 }
 
 // isRustTestFile recognizes the conventional Rust test-file layouts, by PATH rather than by
-// base name: a module that outgrows one file becomes a `tests/` directory (as
-// `agent/store/proposals/tests/` and `agent/tools/propose/rename/tests/` are), and every file
-// in one is as much a dedicated test file as the `tests.rs` it was split out of. A `tests/`
-// dir that grows its own submodule dirs (`mcp/tests/tool_registry_tests/`) is still all test
-// code, so ANY `tests` segment on the path counts, not just the immediate parent.
+// base name: a module that outgrows one file becomes a directory, and every file in one is as
+// much a dedicated test file as the `tests.rs` it was split out of. Two spellings of that
+// directory count, and at ANY depth rather than only as the immediate parent: a bare `tests/`
+// (`agent/store/proposals/tests/`, and `mcp/tests/tool_registry_tests/` once it grows submodule
+// dirs of its own), and the same convention with the subject kept in the name, where a suite
+// that outgrows `copy_tests.rs` becomes `copy_tests/progress.rs`. Splitting a long test file
+// must not enroll its halves in a production-code scanner.
 func isRustTestFile(path string) bool {
 	for _, segment := range strings.Split(filepath.ToSlash(filepath.Dir(path)), "/") {
-		if segment == "tests" {
+		if segment == "tests" || strings.HasSuffix(segment, "_tests") || strings.HasSuffix(segment, "_test") {
 			return true
 		}
 	}
