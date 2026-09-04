@@ -59,7 +59,7 @@ const PROMPT_BUDGET_WINDOW_PERCENT: usize = 60;
 /// [`FIXED_PROMPT_OVERHEAD_TOKENS`] before the user has said a word, and one paged tool
 /// result can spend [`MAX_TOOL_RESULT_TOKENS`] more. At 32,768 the resolved budget is
 /// 19,660, which clears that pair with room for the conversation itself; one window down,
-/// 16,384 resolves to 9,830 and can hold the prefix plus barely half a paged result, which
+/// 16,384 resolves to 9,830, which falls short of the prefix plus half a paged result and
 /// is not a working chat. The setting offers nothing smaller, and a window that still comes
 /// in under this is refused honestly ([`BudgetRefusal`]) rather than assembled against.
 ///
@@ -178,10 +178,11 @@ pub fn wake_digest_budget(prompt_tokens: usize) -> usize {
 /// system string is never elided (`context::assemble_prompt` tightens tool results only), so
 /// every byte of memory is a permanent tax on every turn of every thread. Run the numbers a
 /// flat 8 KB would give at the smallest window the app supports: [`MIN_LOCAL_CONTEXT_TOKENS`]
-/// resolves to a 9,830-token budget, the fixed overhead takes ~5,500 of it, and 8 KB of memory
-/// at [`CHARS_PER_TOKEN_ESTIMATE`] takes 2,048 more — leaving under 2,500 tokens for the
-/// digest, the envelope, the history, and every tool result. **And the agent writes this file
-/// itself**, so a flat cap lets it permanently degrade its own chat with no way back.
+/// resolves to a 19,660-token budget, the fixed overhead takes 6,263 of it, and 8 KB of memory
+/// at [`CHARS_PER_TOKEN_ESTIMATE`] takes 2,048 more, so memory alone would claim about a sixth
+/// of what is left for the digest, the envelope, the history, and every tool result, and it would
+/// claim the same 2,048 on a window a tenth the size. **And the agent writes this file itself**,
+/// so a flat cap lets it permanently degrade its own chat with no way back.
 const MEMORY_BUDGET_PERCENT: usize = 10;
 
 /// How many BYTES of memory this turn carries, out of its resolved prompt budget. Bytes rather

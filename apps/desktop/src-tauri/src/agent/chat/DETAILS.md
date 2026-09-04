@@ -309,9 +309,10 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 the test and this section together.
 
 - **Fixed overhead: 6,263 tokens** on every single call — 1,994 for `SYSTEM_PROMPT` and 4,269 for the 19 tool
-  declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
-  12-file one did not. **It grows with the tool view**: the suggested-ops trio is ~1,000 tokens of schema, which every
-  call pays whether or not it suggests anything, and which costs a 16k budget about four files of rename batch. Even
+  declarations. The old flat 8k budget, against a prefix half this size, still left only ~4.9k for the actual work, so
+  an 11-file `image_facts` batch fit and a 12-file one did not. **It grows with the tool view**: the suggested-ops trio
+  is ~1,000 tokens of schema, which every call pays whether or not it suggests anything, and which costs a 16k budget
+  about four files of rename batch. Even
   `nothing_to_suggest`, one string argument and a two-sentence description, is 97 of them, paid by every rail turn that
   will never call it. `memory_write` + `memory_edit` cost 252 between them, and the prompt's memory section another 265.
   A new tool's schema is prefix, so keep its descriptions terse and say the rest once, in the registry line or the

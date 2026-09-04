@@ -92,9 +92,9 @@ fn assert_near(measured: usize, documented: usize, what: &str) {
     );
 }
 
-/// What every single call pays before the user's question is even in the prompt. It is why a
-/// flat 8k budget left only ~4.9k for the actual work, which is how an 11-file `image_facts`
-/// batch fit and a 12-file one did not.
+/// What every single call pays before the user's question is even in the prompt. Against a
+/// prefix half this size, a flat 8k budget left only ~4.9k for the actual work, which is how
+/// an 11-file `image_facts` batch fit and a 12-file one did not.
 #[test]
 fn every_call_pays_about_3_500_tokens_of_fixed_overhead() {
     let tools = crate::agent::tools::agent_tool_declarations();
