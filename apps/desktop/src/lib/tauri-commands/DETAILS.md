@@ -16,8 +16,9 @@ commands, and notable non-obvious placements.
   wrap menu, encoding pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`),
   `viewerReload`.
 - **`file-actions.ts`**: open file/URL, Finder reveal, Quick Look, Get Info, context menu (file / breadcrumb /
-  volume-selector-row / parent-row), clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` /
-  `cloudRemoveDownload`, iCloud Drive only).
+  volume-selector-row / parent-row), clipboard, open in editor, `listTerminalApps` (which terminal apps are installed,
+  for the "Open terminal here uses" settings row; the caller passes the stored choice down, since the frontend owns the
+  settings store), cloud actions (`cloudMakeAvailableOffline` / `cloudRemoveDownload`, iCloud Drive only).
 - **`favorites.ts`**: user-editable switcher favorites: `addFavorite`, `removeFavorite`, `renameFavorite`,
   `reorderFavorites`, plus `stripFavoritePrefix` (recover the bare id from a `fav-…` switcher id). Listing rides
   `listVolumes` / `volumes-changed`; there's no `listFavorites`.
