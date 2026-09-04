@@ -6,9 +6,11 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
 ## Module map
 
 - **Only the backends that live IN the app are here**: `local_posix.rs` and `mtp/`, with their own tests.
-  `InMemoryVolume` rides with the trait in `cmdr-fs`. MTP splits by concern the way the remote backends do:
-  `volume_impl` is the whole `impl Volume`, with `streams`, `mapping`, and `scan` beside it (SMB carries the pattern
-  further; see `crates/cmdr-smb/CLAUDE.md`).
+  `InMemoryVolume` rides with the trait in `cmdr-fs`. Both split by concern the way the remote backends do: MTP's
+  `volume_impl` is the whole `impl Volume`, with `streams`, `mapping`, `cancel`, and `scan` beside it, and
+  `local_posix.rs` keeps the struct and the query/mutation methods with `local_posix/{scan,streams}.rs` beside it. A
+  trait impl can't span files, so a moved method stays a one-line delegation to a `pub(super)` inherent body (SMB
+  carries the pattern further; see `crates/cmdr-smb/CLAUDE.md`).
 - **Every other backend is a crate**, imported by crate name at its call sites, never re-exported through here:
   `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, and `cmdr-adb`. ❌ Don't add a `pub use <crate>::*;` module
   here to spare a call site the crate name: it puts the backend back in a directory it doesn't live in, and it becomes
