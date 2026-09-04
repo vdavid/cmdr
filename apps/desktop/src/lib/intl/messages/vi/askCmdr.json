@@ -216,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr cần cửa sổ ngữ cảnh lớn hơn mức mô hình cục bộ của bạn đang chạy. Hãy chọn 16.384 token trở lên trong cài đặt, ở phần AI.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr cần cửa sổ ngữ cảnh lớn hơn mức mô hình cục bộ của bạn đang chạy. Hãy chọn 32.768 token trở lên trong cài đặt, ở phần AI.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Không thể kết nối với nhà cung cấp AI. Kiểm tra kết nối của bạn rồi thử lại.",
   "@askCmdr.error.unavailable": {

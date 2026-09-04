@@ -217,9 +217,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr heeft een groter contextvenster nodig dan je lokale model heeft. Kies 16.384 tokens of meer in instellingen, onder AI.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr heeft een groter contextvenster nodig dan je lokale model heeft. Kies 32.768 tokens of meer in instellingen, onder AI.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Kon de AI-aanbieder niet bereiken. Controleer je verbinding en probeer het opnieuw.",
   "@askCmdr.error.unavailable": {

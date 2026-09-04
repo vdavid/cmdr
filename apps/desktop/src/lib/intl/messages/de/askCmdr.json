@@ -216,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr braucht ein größeres Kontextfenster, als dein lokales Modell hat. Wähle in den Einstellungen unter KI 16.384 Token oder mehr.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr braucht ein größeres Kontextfenster, als dein lokales Modell hat. Wähle in den Einstellungen unter KI 32.768 Token oder mehr.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Der KI-Anbieter ließ sich nicht erreichen. Prüfe deine Verbindung und versuch es erneut.",
   "@askCmdr.error.unavailable": {

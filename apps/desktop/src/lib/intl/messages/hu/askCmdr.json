@@ -216,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Az Ask Cmdrnek nagyobb kontextusablak kell, mint amivel a helyi modell fut. Válassz 16 384 tokent vagy többet a beállításokban, az AI résznél.",
+  "askCmdr.error.localWindowTooSmall": "Az Ask Cmdrnek nagyobb kontextusablak kell, mint amivel a helyi modell fut. Válassz 32 768 tokent vagy többet a beállításokban, az AI résznél.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Nem sikerült elérni az AI-szolgáltatót. Ellenőrizd a kapcsolatodat, és próbáld újra.",
   "@askCmdr.error.unavailable": {

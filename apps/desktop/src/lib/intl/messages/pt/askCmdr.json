@@ -216,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "O Ask Cmdr precisa de uma janela de contexto maior do que a do seu modelo local. Escolha 16.384 tokens ou mais nos ajustes, em IA.",
+  "askCmdr.error.localWindowTooSmall": "O Ask Cmdr precisa de uma janela de contexto maior do que a do seu modelo local. Escolha 32.768 tokens ou mais nos ajustes, em IA.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Não foi possível falar com o provedor de IA. Verifique sua conexão e tente novamente.",
   "@askCmdr.error.unavailable": {

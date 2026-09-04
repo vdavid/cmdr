@@ -87,9 +87,9 @@ keep answering as if it had.
 fixed overhead. It is a SHARE rather than a constant for two reasons that a byte cap can't cover:
 
 - The system string is never elided (`context::assemble_prompt` tightens tool results only), so every byte of memory is
-  a permanent tax on every turn of every thread. At `MIN_LOCAL_CONTEXT_TOKENS` the resolved budget is 9,830 tokens and
-  the prefix takes ~5,800 of it; a flat 8 KB of memory would take 2,048 more and leave under 2,500 for the digest, the
-  envelope, the history, and every tool result.
+  a permanent tax on every turn of every thread. At `MIN_LOCAL_CONTEXT_TOKENS` the resolved budget is 19,660 tokens and
+  the prefix takes 6,173 of it; a flat 8 KB of memory would take 2,048 more, on top of a paged tool result's 8,000,
+  leaving little for the digest, the envelope, the history, and everything else the turn carries.
 - **The agent writes this file itself.** A flat cap lets it permanently degrade its own chat, and nothing in the loop
   would tell anybody why the replies got worse.
 

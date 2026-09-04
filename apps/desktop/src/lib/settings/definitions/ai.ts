@@ -94,16 +94,16 @@ export const aiSettings: SettingDefinitionSource[] = [
     descriptionKey: 'settings.ai.localContextSize.description',
     keywords: ['context', 'window', 'tokens', 'memory', 'size', 'local'],
     type: 'enum',
-    // 16,384 is the floor Ask Cmdr needs for one working turn
+    // 32,768 is the floor Ask Cmdr needs for one working turn
     // (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`, which this default mirrors): the
-    // system prompt plus the tool declarations cost ~3,124 tokens before the user says a
-    // word. Nothing smaller is offered, and a stored 2,048 / 4,096 / 8,192 from an earlier
-    // build no longer validates, so it reads as this default instead of leaving a tester
-    // with a chat that can't complete a single message.
-    default: '16384',
+    // system prompt plus the tool declarations cost ~6,173 tokens before the user says a
+    // word, and one paged tool result can spend 8,000 more. Nothing smaller is offered, and
+    // a smaller stored size from an earlier build no longer validates, so it reads as this
+    // default instead of leaving a tester with a chat that can't complete a single message.
+    default: '32768',
     component: 'select',
     constraints: {
-      options: [tokenOption(16384), tokenOption(32768), tokenOption(65536), tokenOption(131072), tokenOption(262144)],
+      options: [tokenOption(32768), tokenOption(65536), tokenOption(131072), tokenOption(262144)],
     },
   },
 

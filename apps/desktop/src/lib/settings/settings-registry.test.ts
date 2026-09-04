@@ -605,16 +605,16 @@ describe('askCmdr.chatMemorySize (how much of a chat one message carries)', () =
 })
 
 describe('ai.localContextSize (the local model’s window)', () => {
-  it('starts at the 16,384 floor and defaults to it', () => {
-    // Below 16,384 an Ask Cmdr turn cannot fit its own prefix, so those sizes are gone from
-    // the picker and a stored one resolves to this default instead.
-    expect(getDefaultValue('ai.localContextSize')).toBe('16384')
+  it('starts at the 32,768 floor and defaults to it', () => {
+    // Below 32,768 an Ask Cmdr turn cannot fit its own prefix plus a paged tool result, so
+    // those sizes are gone from the picker and a stored one resolves to this default instead.
+    expect(getDefaultValue('ai.localContextSize')).toBe('32768')
     const options = getSettingDefinition('ai.localContextSize')?.constraints?.options ?? []
-    expect(options.map((o) => o.value)).toEqual(['16384', '32768', '65536', '131072', '262144'])
+    expect(options.map((o) => o.value)).toEqual(['32768', '65536', '131072', '262144'])
   })
 
   it('rejects the sizes an earlier build offered', () => {
-    for (const value of ['2048', '4096', '8192']) {
+    for (const value of ['2048', '4096', '8192', '16384']) {
       expect(() => {
         validateSettingValue('ai.localContextSize', value)
       }).toThrow()

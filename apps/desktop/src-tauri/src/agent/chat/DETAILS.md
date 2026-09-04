@@ -191,9 +191,10 @@ In `budget.rs` (how many tokens a prompt and a tool result may spend):
   holding a 200-row listing plus a full `image_facts` batch.
 - `PROMPT_BUDGET_WINDOW_PERCENT = 60` — the share of a window one prompt may claim, cloud and local alike. The rest is
   the reply's, which comes out of the same window.
-- `MIN_LOCAL_CONTEXT_TOKENS = 16_384` — the smallest local window one turn can run in, mirrored by
-  `ai.localContextSize`'s default and its smallest option. See § A local window too small to use.
-- `FIXED_PROMPT_OVERHEAD_TOKENS = 3_124` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
+- `MIN_LOCAL_CONTEXT_TOKENS = 32_768` — the smallest local window one turn can run in, mirrored by
+  `ai.localContextSize`'s default and its smallest option. It tracks the prefix, so it moves when the tool view grows.
+  See § A local window too small to use.
+- `FIXED_PROMPT_OVERHEAD_TOKENS = 6_173` / `RENAME_TOKENS_PER_FILE = 349` / `BATCH_HINT_HEADROOM_PERCENT = 10` — what
   `files_per_batch` divides. See § Sizing a batch from the budget.
 - `MAX_TOOL_RESULT_TOKENS = DEFAULT_PROMPT_TOKEN_BUDGET / 2` — the most ONE tool result may spend. Derived from the
   conservative default, not the resolved budget, because a tool handler doesn't know the model (and may be answering an
@@ -235,10 +236,15 @@ same shape as the interactive model override.
 
 ### A local window too small to use
 
-`prompt_budget_for_local_context(4096)` was 2,457 tokens against 5,605 of fixed overhead: the shipped default could not
-complete one turn. So `MIN_LOCAL_CONTEXT_TOKENS = 16_384` is the floor, `ai.localContextSize` offers nothing smaller,
-and a stored 2,048 / 4,096 / 8,192 no longer validates (it resolves to the 16,384 default on load, migrating an early
-tester instead of leaving them broken).
+A window only 60% of which one prompt may claim has to hold `FIXED_PROMPT_OVERHEAD_TOKENS` (6,173) plus a paged tool
+result before it holds a single word of the conversation, so the floor is `MIN_LOCAL_CONTEXT_TOKENS = 32_768`, which
+resolves to 19,660. `ai.localContextSize` offers nothing smaller, and a smaller stored size no longer validates (it
+resolves to the 32,768 default on load, migrating an early tester instead of leaving them broken).
+
+**The floor is derived, not chosen**, and `budget.rs`'s `the_floor_leaves_room_for_a_prefix_and_a_paged_result` is what
+holds it: one window down, 16,384 resolves to 9,830 and cannot fit the prefix plus half a paged result. Every tool that
+joins the agent view grows the prefix, so that assertion is answered by raising the floor or shrinking the prefix, never
+by lowering its fraction.
 
 A window UNDER the floor is still reachable — a local server Cmdr didn't launch at the current setting — and it is
 refused, not assembled: `BudgetRefusal::LocalWindowBelowFloor` reaches the rail as

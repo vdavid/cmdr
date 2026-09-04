@@ -97,8 +97,9 @@ sections compose).
   - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the
     `{#if modelInstalled && shouldShow('ai.localContextSize')}` guard, so no empty card renders before the model is
     installed. The `.status-card`, install/`.actions` buttons, and the delete dialog stay OUTSIDE any card on purpose
-    (already visually distinct full-bleed blocks). **The window starts at 16,384**: below that an Ask Cmdr turn can't
-    fit its own prefix, so smaller sizes were dropped from the picker and a stored one resolves to the 16,384 default
+    (already visually distinct full-bleed blocks). **The window starts at 32,768**: below that an Ask Cmdr turn can't
+    fit its own prefix plus a paged tool result, so smaller sizes are absent from the picker and a stored one resolves
+    to the 32,768 default
     (`agent/chat/DETAILS.md` § A local window too small to use).
 - **`DeleteAiModelDialog.svelte`**: the "Delete the local AI model?" confirmation `AiLocalSection` opens
   (`dialogId: 'delete-ai-model'`, `role="alertdialog"`). Props are `modelSizeFormatted` / `isDeleting` / `onConfirm` /

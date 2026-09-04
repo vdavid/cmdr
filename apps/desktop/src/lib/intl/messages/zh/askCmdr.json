@@ -216,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要比你本地模型更大的上下文窗口。请在设置的 AI 部分选择 16,384 个 token 或更多。",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr 需要比你本地模型更大的上下文窗口。请在设置的 AI 部分选择 32,768 个 token 或更多。",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "无法连接到 AI 提供方，请检查网络连接后重试。",
   "@askCmdr.error.unavailable": {

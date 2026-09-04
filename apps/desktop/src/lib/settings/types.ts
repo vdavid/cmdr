@@ -214,12 +214,12 @@ export type LowDiskSpaceNotificationsMode = 'in-app' | 'macos' | 'off'
 
 export type AiProvider = 'off' | 'cloud' | 'local'
 /**
- * The local llama-server context window. Starts at 16,384: below that, one Ask Cmdr turn
- * cannot fit its own prefix (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`). A stored
- * 2,048 / 4,096 / 8,192 from an earlier build no longer validates, so it reads as the
- * 16,384 default.
+ * The local llama-server context window. Starts at 32,768: below that, one Ask Cmdr turn
+ * cannot fit its own prefix plus a paged tool result
+ * (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`). A smaller stored size from an earlier
+ * build no longer validates, so it reads as the 32,768 default.
  */
-export type AiLocalContextSize = '16384' | '32768' | '65536' | '131072' | '262144'
+export type AiLocalContextSize = '32768' | '65536' | '131072' | '262144'
 
 /**
  * How much of an Ask Cmdr thread one message may carry. `'auto'` follows the model's known

@@ -57,11 +57,16 @@ const PROMPT_BUDGET_WINDOW_PERCENT: usize = 60;
 /// The smallest local context window Ask Cmdr can run a turn in
 /// (`ai.localContextSize`). Below it the numbers don't work: every call pays
 /// [`FIXED_PROMPT_OVERHEAD_TOKENS`] before the user has said a word, and one paged tool
-/// result can spend [`MAX_TOOL_RESULT_TOKENS`] more, so a 4,096-token window (an earlier
-/// shipped default) left 2,457 tokens for a 3,124-token prefix: not one working turn. The
-/// setting offers nothing smaller, and a window that still comes in under this is refused
-/// honestly ([`BudgetRefusal`]) rather than assembled against.
-pub const MIN_LOCAL_CONTEXT_TOKENS: u32 = 16_384;
+/// result can spend [`MAX_TOOL_RESULT_TOKENS`] more. At 32,768 the resolved budget is
+/// 19,660, which clears that pair with room for the conversation itself; one window down,
+/// 16,384 resolves to 9,830 and can hold the prefix plus barely half a paged result, which
+/// is not a working chat. The setting offers nothing smaller, and a window that still comes
+/// in under this is refused honestly ([`BudgetRefusal`]) rather than assembled against.
+///
+/// ⚠️ **This floor is derived from the prefix, so a tool joining the view can outgrow it.**
+/// `the_floor_leaves_room_for_a_prefix_and_a_paged_result` is what catches that; answer it
+/// by raising this number or shrinking the prefix, never by loosening the assertion.
+pub const MIN_LOCAL_CONTEXT_TOKENS: u32 = 32_768;
 
 /// The most estimated tokens ONE tool result may spend on its items: half of
 /// [`DEFAULT_PROMPT_TOKEN_BUDGET`], expressed as a fraction so the two numbers can't drift
@@ -651,15 +656,10 @@ mod tests {
         );
     }
 
-    /// ⚠️ **Currently failing, on purpose, pending a decision.** `search` joining the agent
-    /// view took the prefix to 6,173, and the floor budget is 9,830, so the prefix plus half a
-    /// paged result no longer fits by 343 tokens. Trimming the `search` schema does not save
-    /// it: that lands the prefix near 5,992, still 162 over. So the smallest local window the
-    /// app accepts (16,384) can no longer hold a working turn, and the fix is a product call
-    /// between raising [`MIN_LOCAL_CONTEXT_TOKENS`] (honest: the refusal path already exists
-    /// and says why), shrinking [`MAX_TOOL_RESULT_TOKENS`] for every user to serve the
-    /// smallest window, or accepting a thinner guarantee here. ❌ Don't quiet this by lowering
-    /// the fraction: the assertion is the only thing that noticed.
+    /// The assertion that decides where [`MIN_LOCAL_CONTEXT_TOKENS`] has to sit. A tool
+    /// joining the agent view grows the prefix, and this is what notices when the growth has
+    /// left the smallest window unable to hold a turn. ❌ Don't answer a failure here by
+    /// lowering the fraction; raise the floor, or make the prefix smaller.
     #[test]
     fn the_floor_leaves_room_for_a_prefix_and_a_paged_result() {
         let floored = budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize);

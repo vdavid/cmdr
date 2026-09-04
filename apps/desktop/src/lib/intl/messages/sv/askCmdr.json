@@ -216,9 +216,9 @@
   "@askCmdr.error.noConsent": {
     "sourceHash": "30d75d8"
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr behöver ett större kontextfönster än din lokala modell har. Välj 16 384 token eller mer i inställningarna, under AI.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr behöver ett större kontextfönster än din lokala modell har. Välj 32 768 token eller mer i inställningarna, under AI.",
   "@askCmdr.error.localWindowTooSmall": {
-    "sourceHash": "d546a0c"
+    "sourceHash": "6c2334b"
   },
   "askCmdr.error.unavailable": "Det gick inte att nå AI-leverantören. Kontrollera din anslutning och försök igen.",
   "@askCmdr.error.unavailable": {

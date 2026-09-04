@@ -223,7 +223,7 @@
   "@askCmdr.error.noConsent": {
     "description": "Shown when the user hasn't opted into Ask Cmdr yet (or the consent copy changed and needs re-accepting), so the backend refused to send. Friendly and actionable; avoids the words error and failed; points the user at the opt-in screen."
   },
-  "askCmdr.error.localWindowTooSmall": "Ask Cmdr needs a bigger context window than your local model has. Pick 16,384 tokens or more in settings, under AI.",
+  "askCmdr.error.localWindowTooSmall": "Ask Cmdr needs a bigger context window than your local model has. Pick 32,768 tokens or more in settings, under AI.",
   "@askCmdr.error.localWindowTooSmall": {
     "description": "Shown in the Ask Cmdr chat when the local AI server is running with a context window too small to hold one message, so Cmdr refused to send rather than have the model reject it. Names the number to pick and where. Friendly and actionable; avoids the words error and failed. Group the number the way the language does. Sentence case."
   },
