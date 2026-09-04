@@ -390,7 +390,7 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         search.notes.insert(0, format!("Note: {caveat}"));
     }
     log::info!(
-        "MCP ai_search: completed in {:.1}s, {} of {match_count} rows returned",
+        "MCP ai_search: completed in {:.1}s, {} returned of {match_count} matched",
         total_t.elapsed().as_secs_f64(),
         search.returned
     );

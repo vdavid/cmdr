@@ -307,7 +307,7 @@ fn coverage_notes(answer: &LiveAnswer, system_dirs_excluded: bool) -> Vec<String
         if answer.dirs_found > 0 && coverage.walk == WalkEnding::Completed {
             notes.push(format!(
                 "Cmdr walked {} folders it hadn't indexed yet, so the next search over them is instant.",
-                answer.dirs_found
+                grouped(answer.dirs_found)
             ));
         }
     }
@@ -315,7 +315,8 @@ fn coverage_notes(answer: &LiveAnswer, system_dirs_excluded: bool) -> Vec<String
     if matches!(answer.ending, AnswerEnding::StillWalking) {
         notes.push(format!(
             "Note: Cmdr is still walking {} ({} folders so far), so this list and count are a lower bound. The walk keeps filling the index, so running this search again picks up where it left off, or pass a bigger maxWaitSeconds to wait it out.",
-            answer.target_volume_id, answer.dirs_found
+            answer.target_volume_id,
+            grouped(answer.dirs_found)
         ));
     }
 

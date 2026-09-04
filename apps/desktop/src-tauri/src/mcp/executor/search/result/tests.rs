@@ -224,13 +224,13 @@ fn coverage_complete_is_false_when_any_gap_is_set() {
     ];
     for (what, coverage) in gaps {
         let result = shape_answer(answer(settled(coverage), 0), true);
-        assert!(!result.coverage.complete, "{what} leaves the answer incomplete");
+        assert!(!result.coverage.complete, "{what}: the answer isn't complete");
         assert!(
             result.match_count_human.starts_with('≥'),
-            "{what} makes the count a floor: {}",
+            "{what}: the count is a floor, got {}",
             result.match_count_human
         );
-        assert!(!result.notes.is_empty(), "{what} always gets a sentence");
+        assert!(!result.notes.is_empty(), "{what}: the gap gets its own sentence");
     }
 }
 
@@ -380,13 +380,14 @@ fn a_completed_walk_reports_the_ground_it_added_to_the_index() {
         kind: CoverageKind::Live,
         ..covered("naspi")
     };
-    let result = shape_answer(answer(settled(coverage), 482), true);
+    let result = shape_answer(answer(settled(coverage), 21_482), true);
     assert!(
         result.coverage.complete,
         "a completed walk over clean ground is complete"
     );
-    assert_eq!(result.coverage.folders_found, 482);
-    assert!(joined(&result.notes).contains("482"), "{:?}", result.notes);
+    assert_eq!(result.coverage.folders_found, 21_482);
+    // Spoken, so the count carries its thousands separator like every other one.
+    assert!(joined(&result.notes).contains("21,482"), "{:?}", result.notes);
 }
 
 // ── The serialized shape ─────────────────────────────────────────────────────
