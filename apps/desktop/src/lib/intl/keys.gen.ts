@@ -287,6 +287,8 @@ export type MessageKey =
   | 'askCmdr.tool.proposeSuggestions.doing'
   | 'askCmdr.tool.proposeSuggestions.done'
   | 'askCmdr.tool.refused'
+  | 'askCmdr.tool.search.doing'
+  | 'askCmdr.tool.search.done'
   | 'askCmdr.tool.searchPhotos.doing'
   | 'askCmdr.tool.searchPhotos.done'
   | 'askCmdr.tool.unknown.doing'

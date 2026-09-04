@@ -259,11 +259,15 @@ mcp_tools! {
     },
 
     // ── Search ──────────────────────────────────────────────────────────────
+    // Shared by the Ask Cmdr agent and external MCP clients: it is the only tool either one
+    // has for finding a file by name, and both read the same typed result. `ai_search` stays
+    // ai-client-only — the agent is already an LLM holding the user's prose, so a second model
+    // call to translate it would bill twice and hide the translation from the caller.
     "search" => {
         desc: "Search one drive by filename pattern, size, date, or type; returns paths (no UI). Reads the index where it covers the scope and walks the folders it doesn't, so an unindexed drive still answers, only slower. Set countOnly:true for the total alone.",
         schema: schemas::search_schema(),
         gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
+        consumers: &[Consumer::AiClient, Consumer::Agent],
         access: Access::Read,
         run: params_only search::execute_search
     },

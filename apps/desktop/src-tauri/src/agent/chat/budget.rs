@@ -81,12 +81,13 @@ const _: () = assert!(MAX_TOOL_RESULT_TOKENS < DEFAULT_PROMPT_TOKEN_BUDGET);
 /// What every call pays before the user has said a word: the system prompt plus the tool
 /// declarations. Measured against the shipped assets, and pinned there —
 /// `context/cost_tests.rs` fails if the real prefix drifts away from this figure. The system
-/// prompt is 1,809 of it, the 18 tool declarations the rest.
+/// prompt is 1,809 of it, the 19 tool declarations the rest.
 ///
 /// It grows whenever a tool joins the view, and every call pays it whether or not it uses
 /// that tool: the suggested-ops trio cost about 1,100 tokens of schema between them, which
-/// is roughly four files off a 16,000-token rename batch. Keep a new schema terse.
-pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 5_492;
+/// is roughly four files off a 16,000-token rename batch, and `search` joining the view cost
+/// another ~680. Keep a new schema terse.
+pub const FIXED_PROMPT_OVERHEAD_TOKENS: usize = 6_173;
 
 /// What one `image_facts` row costs at the corpus' average OCR length.
 pub const IMAGE_FACTS_TOKENS_PER_FILE: usize = 269;
@@ -650,6 +651,15 @@ mod tests {
         );
     }
 
+    /// ⚠️ **Currently failing, on purpose, pending a decision.** `search` joining the agent
+    /// view took the prefix to 6,173, and the floor budget is 9,830, so the prefix plus half a
+    /// paged result no longer fits by 343 tokens. Trimming the `search` schema does not save
+    /// it: that lands the prefix near 5,992, still 162 over. So the smallest local window the
+    /// app accepts (16,384) can no longer hold a working turn, and the fix is a product call
+    /// between raising [`MIN_LOCAL_CONTEXT_TOKENS`] (honest: the refusal path already exists
+    /// and says why), shrinking [`MAX_TOOL_RESULT_TOKENS`] for every user to serve the
+    /// smallest window, or accepting a thinner guarantee here. ❌ Don't quiet this by lowering
+    /// the fraction: the assertion is the only thing that noticed.
     #[test]
     fn the_floor_leaves_room_for_a_prefix_and_a_paged_result() {
         let floored = budget_for_window(MIN_LOCAL_CONTEXT_TOKENS as usize);
@@ -694,10 +704,10 @@ mod tests {
 
     #[test]
     fn a_batch_hint_derives_from_the_budget() {
-        // (budget − 10% headroom − 5,492 of prefix) / 349 per file, while the prompt is what
+        // (budget − 10% headroom − 6,173 of prefix) / 349 per file, while the prompt is what
         // binds.
-        assert_eq!(files_per_batch(16_000), 25);
-        assert_eq!(files_per_batch(32_000), 66);
+        assert_eq!(files_per_batch(16_000), 23);
+        assert_eq!(files_per_batch(32_000), 64);
         // Past roughly 45,000 the reply's own ceiling binds instead, and the hint stops
         // growing with the budget: 6,000 emittable tokens / 59 per row.
         assert_eq!(files_per_batch(60_000), 101);

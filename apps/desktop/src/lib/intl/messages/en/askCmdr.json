@@ -111,6 +111,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "description": "Past-tense label after the assistant read one file operation's detail."
   },
+  "askCmdr.tool.search.doing": "Searching your files",
+  "@askCmdr.tool.search.doing": {
+    "description": "Present-tense status on a tool line in the Ask Cmdr chat rail, shown while the assistant looks for files and folders on one drive by name, size, date, or type. It searches names and details, never what is inside a file, so avoid a word that implies reading the contents. Keep it short: it sits on one line beside a spinner. Pairs with askCmdr.tool.search.done."
+  },
+  "askCmdr.tool.search.done": "Searched your files",
+  "@askCmdr.tool.search.done": {
+    "description": "Past-tense label on the same tool line once the file search finished. Pairs with askCmdr.tool.search.doing; keep both the same length where the language allows."
+  },
   "askCmdr.tool.searchPhotos.doing": "Searching your photos",
   "@askCmdr.tool.searchPhotos.doing": {
     "description": "Present-tense status on a tool line in the Ask Cmdr chat rail, shown while the assistant searches the user's photos by description, by text recognized inside them, or by tag. Keep it short: it sits on one line beside a spinner."

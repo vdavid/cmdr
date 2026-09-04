@@ -20,8 +20,11 @@ use crate::mcp::tool_registry::{
 
 /// The exact set of tool names in the agent's read-only view. Pins the set so a stray
 /// agent-visible tool (or a dropped one) is a hard failure, mirroring `EXPECTED_TOOL_NAMES`
-/// for the ai_client view. `operations_list` / `operations_get` are shared with the
-/// ai_client view (`consumers: [AiClient, Agent]`); the rest are agent-only read entries.
+/// for the ai_client view. `operations_list` / `operations_get` / `search` / `search_photos` /
+/// `image_facts` are shared with the ai_client view (`consumers: [AiClient, Agent]`); the rest are
+/// agent-only read entries. `ai_search` is deliberately absent: Ask Cmdr is already an LLM holding
+/// the user's prose, so it writes the structured query itself instead of paying a second model
+/// call to translate it.
 const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "app_state",
     "list_dir",
@@ -32,6 +35,7 @@ const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
     "list_volumes",
     "operations_list",
     "operations_get",
+    "search",
     "search_photos",
     "image_facts",
     "propose_rename_plan",

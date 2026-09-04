@@ -266,13 +266,13 @@ all. A persist problem is logged and dropped — a gauge is worth no turn.
 `files_per_batch(prompt_tokens)` answers how many files one content-based rename batch fits, as the **smaller of two
 limits**:
 
-- what the PROMPT holds: `(budget − 10% headroom − 5,492 of prefix) / 349 per file`. The headroom exists because the
+- what the PROMPT holds: `(budget − 10% headroom − 6,173 of prefix) / 349 per file`. The headroom exists because the
   measured 100-file turn came in ~4% above what the per-file costs account for (the paths the calls name, the envelope,
   the user's sentence, JSON scaffolding).
 - what one REPLY can emit: `AGENT_MAX_OUTPUT_TOKENS` (12,000), less a half-slot reasoning reserve, divided by the plan
   row's 59 tokens, so **101**.
 
-25 files at 16,000, 66 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
+23 files at 16,000, 64 at 32,000, then **101 from roughly 50,000 upward** — including at 200,000, because past that
 crossover the reply's ceiling binds and a bigger window buys no bigger batch.
 
 **Both limits are load-bearing.** The number is advertised to the model as "propose this many files" and the model
@@ -302,7 +302,7 @@ Estimated tokens from the shipped assets and `estimate_prompt_tokens`. Every fig
 `context/cost_tests.rs`, whose constants block is the single copy; a failure there names both numbers and says to update
 the test and this section together.
 
-- **Fixed overhead: 5,492 tokens** on every single call — 1,809 for `SYSTEM_PROMPT` and 3,683 for the 18 tool
+- **Fixed overhead: 6,173 tokens** on every single call — 1,809 for `SYSTEM_PROMPT` and 4,364 for the 19 tool
   declarations. It's why the old flat 8k left only ~4.9k for the actual work, so an 11-file `image_facts` batch fit and a
   12-file one did not. **It grows with the tool view**: the suggested-ops trio is ~1,000 tokens of schema, which every
   call pays whether or not it suggests anything, and which costs a 16k budget about four files of rename batch. Even

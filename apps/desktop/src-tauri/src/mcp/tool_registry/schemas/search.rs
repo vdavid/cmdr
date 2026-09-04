@@ -66,7 +66,11 @@ pub fn search_schema() -> Value {
                 "description": "How long to wait for the answer, 1-120. Cmdr walks whatever the index hasn't covered yet, so a first search of a folder takes as long as reading it does. When the wait runs out you get what was found so far plus a note; the walk keeps going, so running the same search again picks up the rest. Default: 20"
             }
         },
-        "required": []
+        "required": [],
+        // Closed because `search` is in the agent view, where nobody reads a call before it
+        // runs: an undeclared property (a guessed `name`, a guessed `contains`) is refused by
+        // `validate_params` instead of being swallowed into a confident empty answer.
+        "additionalProperties": false
     })
 }
 

@@ -105,6 +105,14 @@
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
+  "askCmdr.tool.search.doing": "Doorzoekt je bestanden",
+  "@askCmdr.tool.search.doing": {
+    "sourceHash": "892be3e"
+  },
+  "askCmdr.tool.search.done": "Je bestanden doorzocht",
+  "@askCmdr.tool.search.done": {
+    "sourceHash": "995a356"
+  },
   "askCmdr.tool.searchPhotos.doing": "Doorzoekt je foto''s",
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
