@@ -236,6 +236,11 @@ in `crates/cmdr-fs/DETAILS.md` § "`ScanBoundary`". `conformance::assert_batch_s
 `assert_batch_scan_asks_inside_the_walk` both run against the Docker share (`volume/conformance_test.rs`), because a
 walk that ignores its boundary still returns the right numbers and nothing else in the suite would notice.
 
+**What the batch scan owns, and what it borrows.** The oracle short-circuit is this backend's: the watcher is what earns
+an `authoritative_listing` shortcut, so only a backend with one can take it. The conflict matcher and the batch fold are
+`cmdr_fs::volume::scan_walk`'s, deliberately, so every backend hands the conflict dialog the same shape rather than each
+growing its own near-miss.
+
 ## SMB scan-connection pool
 
 Canonical home for the per-scan connection pool (`crates/cmdr-smb/src/volume/scan_pool.rs`).
@@ -631,6 +636,9 @@ the ETA was built on bytes nothing had committed, and the transfer watchdog read
 acknowledged count per chunk and one final call credits the last window. The per-chunk call still happens even when the
 count hasn't moved, because it doubles as the cancel poll.
 
+❗ **Size any test that means to reach this path off `negotiated_max_write()`.** A payload that fits one compound write
+silently takes the fast path instead, so the test passes without ever touching the pipelined loop it was written for.
+
 The compound fast-path reports differently on purpose: it has no acknowledgement to report until the one all-or-nothing
 frame returns, so it reports bytes buffered during the source drain. That lie is bounded by `max_write_size` and the
 frame either lands whole or creates nothing.
@@ -671,6 +679,15 @@ directories and constructing display paths.
 **Gotcha**: Watcher filenames are NFC (from server) but macOS mount paths are NFD **Why**: SMB servers return
 NFC-normalized filenames. macOS filesystem paths use NFD. The watcher NFD-normalizes filenames before constructing
 display paths used for cache lookups.
+
+**Gotcha**: a share name reaches the wire NFC, so `SmbConnectionParams` must be built with `new` **Why**: `new` runs the
+NFC normalization; a struct literal filled from a raw `statfs` mount name carries macOS's NFD spelling straight to the
+server, which answers `STATUS_BAD_NETWORK_NAME` for a share whose name has any composed character in it. The failure is
+loud and immediate, which is the only reason this doesn't sit in `CLAUDE.md`.
+
+**Gotcha**: `specta` is pinned to the app's exact version, and a bump has to move both **Why**: `tauri-specta` collects
+the app's commands transitively, so the `Type` impls this crate derives have to come from the SAME `specta` crate the
+app links. Two `specta` nodes in one graph make them different traits, and the collection stops compiling.
 
 ## The suites
 
