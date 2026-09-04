@@ -614,6 +614,13 @@ else
     # them a stalled MTP listing leaves NOTHING in the log after `task started`:
     # a run where every MTP listing stopped completing was undiagnosable for
     # exactly this reason. The extra volume is a few lines per listing.
+    #
+    # `stall_probe::reconciler=debug` is there for the same reason on the index
+    # side. The live event loop beats every 5 s while it has work and once a
+    # minute while it doesn't, so the target is what separates "idle" from
+    # "dead" — and at info the two read identically: silence. CI run
+    # 33909203247 had the index emit nothing for 13 minutes and the log could
+    # not say which it was. Once a minute per idle volume is the whole cost.
     set +e
     docker_test_status=0
     docker run --rm \
@@ -630,7 +637,7 @@ else
         -e CI=true \
         -e "E2E_GREP=${GREP_FILTER:-}" \
         -e "CMDR_E2E_JSON_REPORT=$CONTAINER_E2E_JSON_REPORT" \
-        -e "RUST_LOG=${RUST_LOG:-info,cmdr_lib::mtp=debug}" \
+        -e "RUST_LOG=${RUST_LOG:-info,cmdr_lib::mtp=debug,stall_probe::reconciler=debug}" \
         $SMB_ENV_ARGS \
         "$IMAGE_NAME" \
         bash -c '

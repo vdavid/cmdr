@@ -335,9 +335,18 @@ impl DriveWatcher {
         for root in roots {
             watch_one(&watcher, root)?;
         }
+        // Name the roots, ❌ never just count them. A branch watch covering
+        // ground the user isn't working in reads identically to one covering the
+        // right ground when the line is a bare number, and "the index went quiet"
+        // is then unfalsifiable from a log alone (CI run 33909203247).
         log::info!(
-            "Watcher: started on {} path(s) (inotify, recursive)",
-            roots.len().max(1)
+            "Watcher: started on {} path(s) (inotify, recursive): {}",
+            roots.len().max(1),
+            roots
+                .iter()
+                .map(|r| r.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         );
 
         let running_clone = Arc::clone(&running);
@@ -390,10 +399,9 @@ impl DriveWatcher {
         let watcher = Arc::clone(&self.watcher);
         let branch = branch.to_path_buf();
         crate::indexing::host::runtime::spawn(async move {
-            let _ = tokio::task::spawn_blocking(move || {
-                if let Err(e) = watch_one(&watcher, &branch) {
-                    log::warn!("Watcher: can't watch {}: {e}", branch.display());
-                }
+            let _ = tokio::task::spawn_blocking(move || match watch_one(&watcher, &branch) {
+                Ok(()) => log::info!("Watcher: now watching branch {}", branch.display()),
+                Err(e) => log::warn!("Watcher: can't watch {}: {e}", branch.display()),
             })
             .await;
         });
