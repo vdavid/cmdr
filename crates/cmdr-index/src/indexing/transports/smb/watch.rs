@@ -424,10 +424,15 @@ fn resolve_change(conn: &rusqlite::Connection, parent_rel: &str, change: &Direct
                 Some(ResolvedWrite::DeleteFile(entry_id))
             }
         }
-        DirectoryChange::FullRefresh => {
+        DirectoryChange::FullRefresh | DirectoryChange::Replaced(_) => {
             // Overflow / bulk change. The index can't translate this to a targeted
             // write here; the watcher-lifetime layer handles overflow policy
             // (targeted subtree rescan, see `transports/smb/index`/`manager`). No-op here.
+            //
+            // `Replaced` carries the directory's new contents, and folding them in
+            // would be a write per entry on a path that fires per device event. The
+            // backend that reports it feeds this index through its own transport
+            // (`transports/mtp/`, by object handle), which is the cheaper half.
             None
         }
     }

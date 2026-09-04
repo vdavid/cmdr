@@ -61,6 +61,35 @@ pub trait IndexNotifier: Send + Sync {
     /// Reconnecting does NOT make a stale index fresh again; only a rescan does.
     /// This asks the index to resume, not to forget the gap it was told about.
     fn resume_after_reconnect(&self, volume_id: &str);
+
+    /// One object on `device_id` appeared or changed, named by the bare protocol
+    /// handle the device reported.
+    ///
+    /// For a device backend whose events name an opaque handle rather than a
+    /// path: an MTP phone reports `ObjectAdded { handle }` and says nothing about
+    /// which storage it lives in or what it's called. ❌ Don't resolve it first —
+    /// that's a round trip per event, and the index may be mid-walk and about to
+    /// read the object anyway, so it owns the routing and the
+    /// gate-before-resolve decision.
+    ///
+    /// Keyed by DEVICE, not by volume, because one session carries every storage
+    /// on the phone and the handle namespace spans them all.
+    ///
+    /// Defaults to doing nothing: a host with no device index has nowhere to put
+    /// this, and a backend must be able to report blindly.
+    fn device_object_changed(&self, device_id: &str, handle: u32) {
+        let _ = (device_id, handle);
+    }
+
+    /// One object on `device_id` is gone, named by the handle it had.
+    ///
+    /// Costs the index no round trip: the object no longer exists to be asked
+    /// about, so each indexed storage matches on the handle it stored. Same
+    /// device-level keying and same no-op default as
+    /// [`device_object_changed`](Self::device_object_changed).
+    fn device_object_removed(&self, device_id: &str, handle: u32) {
+        let _ = (device_id, handle);
+    }
 }
 
 /// Nothing is indexed, so nothing needs telling.
@@ -87,6 +116,8 @@ mod recording {
     pub struct RecordingIndexNotifier {
         gaps: Mutex<Vec<(String, WatchGap)>>,
         resumes: Mutex<Vec<String>>,
+        objects_changed: Mutex<Vec<(String, u32)>>,
+        objects_removed: Mutex<Vec<(String, u32)>>,
     }
 
     impl RecordingIndexNotifier {
@@ -104,6 +135,16 @@ mod recording {
         pub fn resumes(&self) -> Vec<String> {
             self.resumes.lock_ignore_poison().clone()
         }
+
+        /// Every `(device_id, handle)` reported as appeared-or-changed, in order.
+        pub fn device_objects_changed(&self) -> Vec<(String, u32)> {
+            self.objects_changed.lock_ignore_poison().clone()
+        }
+
+        /// Every `(device_id, handle)` reported as gone, in order.
+        pub fn device_objects_removed(&self) -> Vec<(String, u32)> {
+            self.objects_removed.lock_ignore_poison().clone()
+        }
     }
 
     impl IndexNotifier for RecordingIndexNotifier {
@@ -113,6 +154,18 @@ mod recording {
 
         fn resume_after_reconnect(&self, volume_id: &str) {
             self.resumes.lock_ignore_poison().push(volume_id.to_string());
+        }
+
+        fn device_object_changed(&self, device_id: &str, handle: u32) {
+            self.objects_changed
+                .lock_ignore_poison()
+                .push((device_id.to_string(), handle));
+        }
+
+        fn device_object_removed(&self, device_id: &str, handle: u32) {
+            self.objects_removed
+                .lock_ignore_poison()
+                .push((device_id.to_string(), handle));
         }
     }
 }

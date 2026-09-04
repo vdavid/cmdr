@@ -77,13 +77,14 @@ lifetime, not just while a pane shows the share, so the index must update even w
   `IndexPathSpace::resolve_abs` — the single mount-strip, never a second copy.
 - **Translation (`resolve_change`, pure over DB state, unit-tested).** `Added`/`Modified` → `UpsertEntryV2` under the
   resolved `parent_id`; `Renamed` → upsert the new entry (same-dir, so ancestor totals hold); `Removed` → resolve the
-  child id and `DeleteEntryById` (file) / `DeleteSubtreeById` (dir); `FullRefresh` → no targeted write (overflow is
-  handled by the freshness path). A `Removed` for a name the index never had is a no-op — **resolve-deletes-against-the-
-  index**, NOT a live stat: SMB does not stat the volume per delete, so a false removal (atomic-rename old name,
-  coalesced delete-then-recreate) with no matching index row enqueues nothing, and a recreate heals via the separate
-  `Added`. SMB entries carry no stable inode, so `inode`/`nlink` are `None` (no hardlink dedup). The writer
-  auto-propagates the size/count delta on upsert AND delete, so the translator never sends a separate
-  `PropagateDeltaById`.
+  child id and `DeleteEntryById` (file) / `DeleteSubtreeById` (dir); `FullRefresh` and `Replaced` → no targeted write
+  (overflow is handled by the freshness path; `Replaced` carries a whole re-read directory, and folding it in would be a
+  write per entry on a path that fires per device event, which the reporting backend's own transport does more cheaply
+  by object handle). A `Removed` for a name the index never had is a no-op — **resolve-deletes-against-the- index**, NOT
+  a live stat: SMB does not stat the volume per delete, so a false removal (atomic-rename old name, coalesced
+  delete-then-recreate) with no matching index row enqueues nothing, and a recreate heals via the separate `Added`. SMB
+  entries carry no stable inode, so `inode`/`nlink` are `None` (no hardlink dedup). The writer auto-propagates the
+  size/count delta on upsert AND delete, so the translator never sends a separate `PropagateDeltaById`.
 - **The recursion exclusion applies live, not only to the walk.** `resolve_change` returns `None` for any change whose
   index-relative PARENT path has a component matching `network_scanner::is_recursion_excluded_dir` (checked before the
   `resolve_path`, so it costs nothing on the hot path). **Decision/Why:** the excluded dir keeps its own row, so its

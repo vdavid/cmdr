@@ -337,7 +337,16 @@ directory changed on a volume. `DirectoryChange` variants:
 - `Removed(String)`: single remove by name, patches via `remove_entry_by_name` (name match, not full path — see above).
 - `Modified(FileEntry)`: single modify, patches via `update_entry_sorted`.
 - `Renamed { old_name, new_entry }`: same-dir rename (remove old + insert new).
+- `Replaced(Vec<FileEntry>)`: the backend already re-read the directory and hands the contents over; the host sorts them
+  the listing's way, diffs, stores, and publishes (`publish_replacement`).
 - `FullRefresh`: re-reads via the Volume trait, computes a diff against the cache.
+
+`Replaced` and `FullRefresh` differ only in who does the read, and both end in the same `publish_replacement`. Report
+`Replaced` when the entries are already in hand (a device event loop that has to invalidate its own path cache and
+re-list anyway); report `FullRefresh` when the host should go and get them, which also gets the volume-wide fallback
+when no listing matches the exact path. ❗ Sorting before the diff is load-bearing, not a double sort: a backend answers
+in its protocol's order (MTP by object handle), so a diff computed against that order carries indices pointing at the
+wrong rows in a pane sorted any other way.
 
 All variants enrich entries with index data and queue `directory-diff` events through `diff_emitter::enqueue_diff`.
 A re-stat whose sort-relevant fields changed re-inserts the entry at its new sorted position and reports one

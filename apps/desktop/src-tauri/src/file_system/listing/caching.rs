@@ -717,6 +717,16 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
                 notify_added(listing_id, new_entry.clone());
             }
         }
+        DirectoryChange::Replaced(entries) => {
+            // The backend already re-read the directory, so there's nothing to ask
+            // it for: enrich once for the volume, then publish per listing. This is
+            // where the diffing a device backend used to do for itself lives now.
+            let mut entries = entries;
+            crate::index_host::index().enrich(volume_id, &mut entries);
+            for (listing_id, ..) in &listings {
+                publish_replacement(listing_id, entries.clone());
+            }
+        }
         DirectoryChange::FullRefresh => {
             if listings.is_empty() {
                 // No listing matches this exact path. For STATUS_NOTIFY_ENUM_DIR the
@@ -899,16 +909,58 @@ pub(super) async fn notify_full_refresh(
     notify_full_refresh_locked(volume_id, parent_path, listings).await;
 }
 
+/// Makes `entries` the contents of `listing_id` and queues what changed for the
+/// next coalesced flush.
+///
+/// Sorts the way that listing sorts BEFORE diffing, which is the whole reason a
+/// backend hands entries over instead of patching the cache itself: a protocol
+/// answers in its own order (MTP by object handle), and a diff computed against
+/// that order carries indices that point at the wrong rows in a pane sorted any
+/// other way.
+///
+/// `entries` must already be enriched with index data, so the rows the frontend
+/// receives carry the recursive sizes the cache is about to hold. Callers enrich
+/// ONCE per directory rather than once per listing.
+pub(super) fn publish_replacement(listing_id: &str, entries: Vec<FileEntry>) {
+    use crate::file_system::listing::diff::compute_diff;
+    use crate::file_system::listing::diff_emitter::enqueue_diff;
+    use crate::file_system::listing::sorting::sort_entries;
+
+    let mut sorted = entries;
+    let old_entries = {
+        let cache = match LISTING_CACHE.read() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        // The listing closed between the backend's re-read and this call, which is
+        // the ordinary race on a device that unplugs mid-refresh.
+        let Some(listing) = cache.get(listing_id) else {
+            return;
+        };
+        sort_entries(
+            &mut sorted,
+            listing.sort_by,
+            listing.sort_order,
+            listing.directory_sort_mode,
+        );
+        listing.entries().to_vec()
+    };
+
+    let changes = compute_diff(&old_entries, &sorted);
+    if changes.is_empty() {
+        return;
+    }
+
+    crate::file_system::listing::operations::update_listing_entries(listing_id, sorted);
+    enqueue_diff(listing_id, changes);
+}
+
 /// The body of one refresh, with the directory's turn already held.
 async fn notify_full_refresh_locked(
     volume_id: String,
     parent_path: PathBuf,
     listings: Vec<(String, SortColumn, SortOrder, DirectorySortMode)>,
 ) {
-    use crate::file_system::listing::diff::compute_diff;
-    use crate::file_system::listing::diff_emitter::enqueue_diff;
-    use crate::file_system::listing::sorting::sort_entries;
-
     // Re-resolve from `(volume_id, parent_path)` so a `.zip`-crossing listing hits
     // the same `ArchiveVolume` the read used (the cache keys on the parent drive
     // id, and a re-resolve re-registers a lazily-evicted archive).
@@ -941,32 +993,8 @@ async fn notify_full_refresh_locked(
         crate::index_host::index().enrich(&volume_id, &mut new_entries);
     }
 
-    for (listing_id, sort_by, sort_order, dir_sort_mode) in &listings {
-        // Re-sort to match this listing's sort params
-        let mut sorted = new_entries.clone();
-        sort_entries(&mut sorted, *sort_by, *sort_order, *dir_sort_mode);
-
-        // Get old entries for diff computation
-        let old_entries = {
-            let cache = match LISTING_CACHE.read() {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            match cache.get(listing_id.as_str()) {
-                Some(listing) => listing.entries().to_vec(),
-                None => continue,
-            }
-        };
-
-        let changes = compute_diff(&old_entries, &sorted);
-        if changes.is_empty() {
-            continue;
-        }
-
-        // Update cache
-        crate::file_system::listing::operations::update_listing_entries(listing_id, sorted);
-
-        enqueue_diff(listing_id, changes);
+    for (listing_id, ..) in &listings {
+        publish_replacement(listing_id, new_entries.clone());
     }
 }
 

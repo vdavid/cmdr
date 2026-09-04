@@ -171,6 +171,14 @@ impl cmdr_fs::volume::host::indexing::IndexNotifier for VolumeIndexNotifier {
     fn resume_after_reconnect(&self, volume_id: &str) {
         index().resume_after_reconnect(volume_id.to_string());
     }
+
+    fn device_object_changed(&self, device_id: &str, handle: u32) {
+        index().on_device_object_changed(device_id, handle);
+    }
+
+    fn device_object_removed(&self, device_id: &str, handle: u32) {
+        index().on_device_object_removed(device_id, handle);
+    }
 }
 
 #[cfg(test)]
@@ -192,5 +200,17 @@ mod tests {
         VolumeIndexNotifier.watch_gap(volume_id, WatchGap::EventsOverflowed);
         VolumeIndexNotifier.watch_gap(volume_id, WatchGap::ConnectionReset);
         VolumeIndexNotifier.resume_after_reconnect(volume_id);
+    }
+
+    /// A device backend reports every object event blindly, by bare handle, for a
+    /// device nothing has ever indexed. If that cost anything the backend would
+    /// start filtering, and the events it filtered out are the ones that leave a
+    /// storage's index quietly wrong.
+    #[test]
+    fn reporting_object_changes_for_an_unindexed_device_costs_nothing() {
+        let device_id = "mtp-index-notifier-never-indexed";
+
+        VolumeIndexNotifier.device_object_changed(device_id, 1);
+        VolumeIndexNotifier.device_object_removed(device_id, 1);
     }
 }

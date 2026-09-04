@@ -88,6 +88,18 @@ most entangled one, with archive, MTP, and local POSIX checked for anything SMB 
   unique parent directory by SMB's and MTP's batch scans.
 - `refresh_archive_listings` ⇐ `listing::caching::refresh_archive_listings`. Two callers, both watching the drive that
   HOLDS an archive rather than the archive itself: the local archive content watch and the SMB share watcher.
+- `volumes_with_open_listings` ⇐ `listing::get_listings_by_volume_prefix`, reduced to the ids. For a DEVICE backend, one
+  level above the volumes it serves: an MTP phone's event names a bare PTP handle, and resolving it costs a round trip
+  per storage, so the backend asks which storages a pane is showing and searches only those.
+
+**`DirectoryChange::Replaced` is the variant a device backend reports.** It carries the directory's new contents, so the
+host sorts them the way each pane sorts, diffs, and patches. `FullRefresh` asks the host to do the read instead; report
+`Replaced` when the entries are already in hand. Both are ONE call however many entries came back, which is what keeps a
+device event out of a per-entry loop.
+
+**A `directory_changed` call answers nothing**, `Replaced` included, so a backend can't learn whether a targeted refresh
+found a pane to land on. That's deliberate: the seam is fire-and-forget in both directions, and a backend that wants a
+safety net reports `FullRefresh` for the volume, which the host fans out to every listing on it.
 
 **Two of the five listing functions the survey listed are NOT seams.** `find_listings_for_path_on_volume` and
 `patch_listing_after_local_mutation` have exactly one caller between them, `local_posix.rs`, which is permanently
@@ -174,6 +186,12 @@ here is the seam's own, and the app's adapter maps it.
 **`WatchScope` isn't here.** Its `Device` variant exists for MTP, where one PTP session carries several volumes and a
 reset invalidates all of them at once. That's the transport layer's shape, and MTP is app-resident. A volume backend
 reports per volume id; the adapter wraps it.
+
+`device_object_changed` / `device_object_removed` ⇐ `index_host::index().on_device_object_changed / _removed`, the MTP
+event loop's two index reaches. Keyed by DEVICE rather than by volume, because one PTP session carries every storage on
+the phone and the handle namespace spans them all. They carry the bare protocol handle and nothing else: resolving it
+first would be a device round trip per event, and the index may be mid-walk and about to read the object anyway, so it
+owns the routing. Both default to no-ops, so a host with no device index answers them by existing.
 
 The `#[cfg(any(target_os = "macos", target_os = "linux"))]` guards that surround the app's own index call sites don't
 cross the seam: `Index::on_watch_gap` compiles on every platform and gates its own MTP arm, so both the adapter and a

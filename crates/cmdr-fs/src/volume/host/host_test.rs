@@ -11,6 +11,7 @@ use super::credentials::{InMemoryCredentials, StoredCredentials};
 use super::events::{RecordingVolumeEvents, VolumeConnection};
 use super::indexing::{RecordingIndexNotifier, WatchGap};
 use super::listings::{ListingHost, RecordingListings};
+use crate::entry::FileEntry;
 use crate::volume::DirectoryChange;
 
 /// The promise that lets a backend hold a plain `VolumeHost` instead of an
@@ -43,8 +44,14 @@ fn a_detached_host_answers_every_seam() {
             .is_err(),
         "there's no store, so saving has to report that it didn't happen"
     );
+    assert!(
+        host.listings().volumes_with_open_listings("vol").is_empty(),
+        "no pane is open, so a targeted refresh has nothing to aim at"
+    );
     host.indexing().watch_gap("vol", WatchGap::WatcherStopped);
     host.indexing().resume_after_reconnect("vol");
+    host.indexing().device_object_changed("device", 42);
+    host.indexing().device_object_removed("device", 42);
     assert!(
         activity::volume_idle_for(host.activity(), "vol", Duration::from_millis(500)),
         "with no user around, bulk work must never stand aside"
@@ -175,4 +182,74 @@ fn the_change_counter_separates_per_mutation_from_per_entry() {
         251,
         "the counter has to see every call, or it can't catch a seam that slipped into a loop"
     );
+}
+
+/// A re-listed directory is ONE piece of news however many entries it carries.
+/// The backend that re-read it hands over the contents and the host does the
+/// diffing, which is the only shape that keeps a 250-entry refresh from becoming
+/// 250 seam calls (§ "The dispatch rule").
+#[test]
+fn a_replaced_directory_is_one_change_however_many_entries_it_carries() {
+    let listings = RecordingListings::new();
+    let dir = Path::new("/share/big");
+
+    let entries: Vec<FileEntry> = (0..250)
+        .map(|i| {
+            FileEntry::new(
+                format!("file-{i}.txt"),
+                format!("/share/big/file-{i}.txt"),
+                false,
+                false,
+            )
+        })
+        .collect();
+
+    listings.directory_changed("share", dir, DirectoryChange::Replaced(entries));
+
+    assert_eq!(listings.change_count(), 1, "250 entries, one change");
+    let (volume_id, path, change) = listings.changes().remove(0);
+    assert_eq!(volume_id, "share");
+    assert_eq!(path, dir);
+    match change {
+        DirectoryChange::Replaced(entries) => assert_eq!(entries.len(), 250),
+        _ => panic!("the recorder has to keep the contents, or a backend test can't assert on them"),
+    }
+}
+
+/// A device backend resolves an opaque handle against the storages a pane is
+/// actually showing, so it asks which volumes under its device id have an open
+/// listing. Answering per PREFIX is what lets one device id cover every storage
+/// on the phone without the backend enumerating panes itself.
+#[test]
+fn open_listings_are_answered_by_volume_id_prefix() {
+    let listings = RecordingListings::new()
+        .with_open_listing("mtp-0-1:65537")
+        .with_open_listing("mtp-0-1:131073")
+        .with_authoritative_listing("mtp-0-2:65537", "/DCIM", Vec::new());
+
+    let mut open = listings.volumes_with_open_listings("mtp-0-1");
+    open.sort();
+    assert_eq!(open, ["mtp-0-1:131073", "mtp-0-1:65537"]);
+
+    assert_eq!(
+        listings.volumes_with_open_listings("mtp-0-2"),
+        ["mtp-0-2:65537"],
+        "a listing the oracle can answer for is by definition one a pane is showing"
+    );
+    assert!(listings.volumes_with_open_listings("mtp-0-3").is_empty());
+}
+
+/// A device reports object changes by bare PTP handle, and the index resolves
+/// what they are. The seam carries the handle and nothing else, so a backend
+/// never pays a device round trip the index may be about to make anyway.
+#[test]
+fn device_object_changes_reach_the_index_seam_by_handle() {
+    let indexing = Arc::new(RecordingIndexNotifier::new());
+    let host = VolumeHost::builder().indexing(indexing.clone()).build();
+
+    host.indexing().device_object_changed("mtp-0-1", 17);
+    host.indexing().device_object_removed("mtp-0-1", 18);
+
+    assert_eq!(indexing.device_objects_changed(), vec![("mtp-0-1".to_string(), 17)]);
+    assert_eq!(indexing.device_objects_removed(), vec![("mtp-0-1".to_string(), 18)]);
 }

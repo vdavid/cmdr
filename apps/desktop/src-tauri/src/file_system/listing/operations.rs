@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+
 use crate::benchmark;
 use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::FileEntry;
@@ -423,6 +425,27 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
         );
         listing.set_entries(entries);
     }
+}
+
+/// The distinct volume ids under `prefix` that have at least one cached listing.
+///
+/// The cheap half of [`get_listings_by_volume_prefix`]: a device backend asking
+/// "which of my storages is a pane showing?" wants the ids, not a clone of every
+/// entry in every open directory.
+pub(crate) fn volume_ids_with_listings(prefix: &str) -> Vec<String> {
+    // Recover rather than answer empty: an empty answer reads as "no pane is
+    // showing anything", which sends a device backend down the blanket-refresh
+    // path for as long as the process lives.
+    let cache = LISTING_CACHE.read_ignore_poison();
+
+    let mut ids: Vec<String> = cache
+        .values()
+        .filter(|listing| listing.volume_id.starts_with(prefix))
+        .map(|listing| listing.volume_id.clone())
+        .collect();
+    ids.sort_unstable();
+    ids.dedup();
+    ids
 }
 
 /// Gets all listings for volumes matching a specific prefix.
