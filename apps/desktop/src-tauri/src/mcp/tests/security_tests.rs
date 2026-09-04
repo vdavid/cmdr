@@ -73,11 +73,11 @@ fn test_no_exec_tools_exist() {
 /// `FIXED_PROMPT_OVERHEAD_TOKENS`.
 ///
 /// Most entries sit far below the cap, and the handful that approach it were trimmed to
-/// stay under. The two that legitimately run longer are the ROUTING descriptions —
-/// `search` and `inspect_file` — which each have to draw a line against a neighbouring
-/// tool (`search` vs `list_dir`, `inspect_file` vs `image_facts`) and state what the tool
-/// cannot answer. Getting that wrong costs a whole wrong tool call, which is worth more
-/// than the bytes.
+/// stay under. The one that legitimately runs longer is `search`, a ROUTING description:
+/// it draws the line against `list_dir` (a whole drive versus one folder's children) and
+/// says what a name search cannot answer. Getting that wrong costs a whole wrong tool
+/// call, which is worth more than the bytes. `inspect_file` runs longer still, for the
+/// same reason, in the agent view this test doesn't reach.
 const MAX_TOOL_DESCRIPTION_CHARS: usize = 512;
 
 #[test]
