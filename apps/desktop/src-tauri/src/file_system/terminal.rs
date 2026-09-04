@@ -415,7 +415,7 @@ pub fn open_terminal_here(
         return Ok(OpenTerminalOutcome::NotALocalPath);
     }
     let (choice, outcome) = resolve_choice(setting, |choice| choice_app_path(choice).is_some());
-    launch(&launch_argv(&choice, dir))?;
+    launch(&launch_argv(&choice, dir), dir)?;
     log::info!(
         target: "terminal",
         "opened {dir:?} in {} ({outcome:?})",
@@ -448,7 +448,7 @@ fn volume_paths_are_os_visible(volume_id: &str) -> bool {
 /// Spawns the built argv. Fire and forget: `open` returns as soon as
 /// LaunchServices has the request.
 #[cfg(not(feature = "playwright-e2e"))]
-fn launch(argv: &[String]) -> Result<(), OpenTerminalError> {
+fn launch(argv: &[String], _dir: &Path) -> Result<(), OpenTerminalError> {
     let (program, args) = argv.split_first().expect("every recipe puts `open` at argv[0]");
     std::process::Command::new(program)
         .args(args)
@@ -460,15 +460,15 @@ fn launch(argv: &[String]) -> Result<(), OpenTerminalError> {
 }
 
 /// E2E variant: record the folder instead of launching a terminal, so a suite
-/// run doesn't pile up windows nothing can close. Same store as `open_path`
-/// and `open_in_editor`, read back through `e2e_opened_paths`.
+/// run doesn't pile up windows nothing can close. Same store as `open_path` and
+/// `open_in_editor`, read back through `e2e_opened_paths`.
+///
+/// It records the FOLDER, never `argv`: Warp's recipe ends in a URI rather than a
+/// path, so a spec reading `argv` would assert something different for one app in
+/// the table than for the other seven.
 #[cfg(feature = "playwright-e2e")]
-fn launch(argv: &[String]) -> Result<(), OpenTerminalError> {
-    crate::open_mock::record(
-        argv.last()
-            .cloned()
-            .expect("every recipe ends with the folder or the URI naming it"),
-    );
+fn launch(_argv: &[String], dir: &Path) -> Result<(), OpenTerminalError> {
+    crate::open_mock::record(dir.to_string_lossy().into_owned());
     Ok(())
 }
 

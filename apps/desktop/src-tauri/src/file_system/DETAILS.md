@@ -131,7 +131,9 @@ Marta, and Raycast do.
 - **The chosen app is passed in, never read here.** The frontend owns the settings store; Rust's own loader is the
   startup-time read only (`settings/CLAUDE.md`). Both commands take the stored value as an argument.
 - The `playwright-e2e` build records the folder into `crate::open_mock` instead of launching, alongside `open_path` and
-  `open_in_editor`, so a suite run doesn't pile up terminal windows nothing can close.
+  `open_in_editor`, so a suite run doesn't pile up terminal windows nothing can close. It records the FOLDER, never the
+  argv: Warp's recipe ends in a URI rather than a path, so a spec reading the argv would assert something different for
+  one app in the table than for the other seven.
 
 ## Finder tags MCP consumer (`tags.rs`)
 
