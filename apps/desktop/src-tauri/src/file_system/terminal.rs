@@ -280,8 +280,9 @@ pub struct TerminalApp {
 }
 
 /// The terminal apps installed on this machine, plus which one is chosen.
-// DEFAULT-OK: an empty list with nothing chosen is exactly what a non-macOS build
-// (and a machine mid-query) has to report, and it renders as "Terminal only".
+// DEFAULT-OK: an empty list with nothing chosen is what the command's deadline has
+// to answer with, and it's honest: "the query didn't finish" carries no claim about
+// which terminals exist. The `TimedOut` flag beside it says which case it was.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TerminalAppList {
