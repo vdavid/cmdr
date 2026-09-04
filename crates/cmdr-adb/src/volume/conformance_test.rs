@@ -234,3 +234,20 @@ async fn conflict_scan_reads_a_missing_destination_as_empty() {
     )
     .await;
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_batch_scan_stops_when_it_is_told_to() {
+    // A phone reached over `adb exec-out` answers a listing in tens of
+    // milliseconds each; a `/sdcard/DCIM` with thousands of photos is where
+    // somebody presses Cancel.
+    let (_server, volume) = seeded().await;
+    conformance::assert_batch_scan_stops_when_told(volume.as_ref(), Path::new("/sdcard")).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_batch_scan_asks_its_boundary_inside_the_walk() {
+    // This backend's scan is `scan_walk`'s, so the boundary is per entry. The
+    // fixture holds four files, a subdirectory, and that subdirectory's child.
+    let (_server, volume) = seeded().await;
+    conformance::assert_batch_scan_asks_inside_the_walk(volume.as_ref(), Path::new("/sdcard"), 6).await;
+}

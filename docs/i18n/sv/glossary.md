@@ -2043,3 +2043,17 @@ kvalitetspassets beslut (`photo` → `bild`, uniformt). Återanvänder `arkiv`, 
   `ändrar aldrig en fil utan ditt godkännande` (`godkänna` som i `contentsRule`: ”förrän du godkänner det”). ❌ Inte
   `skrivskyddad`/`ändrar aldrig något`: den skriver egna anteckningar och föreslår namnbyten. Kommat före det sista
   `och` står kvar i båda: leden är långa, och i `empty.hint` skiljer det sats-`och` från uppräknings-`och` · `high`.
+
+## Rollback-knappens två knappbeskrivningar (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Ny yta: knappbeskrivningen säger nu vad just DEN här ångringen gör med filerna, och knappen stängs av så snart en flytt
+mellan två filsystem har nått sitt sista steg (originalen tas bort, allt ligger redan på målet).
+
+- **`rollbackTooltipStopAndMoveBack` → `Stoppa och lägg tillbaka alla filer som flyttats hittills`** · syskonet
+  `rollbackTooltip` ger ramen (`Stoppa och …`), och `lägga tillbaka` är katalogens satta verb för att flytta något till
+  sin gamla plats (`cancelRollback.doneMovingBack`: ”Lade tillbaka allt”) · `high`. ❌ Inte `radera`: en flytts ångring
+  tar inte bort något.
+- **`rollbackAlreadyLandedTooltip`** · första satsen tar samma bild som `cancelRollback.moveAlreadyLanded` (”finns redan
+  på målet”), `ångra` är det satta verbet för rollback (`rollbackUnavailableTooltip`: ”går inte att ångra”), och
+  `Avbryt` är knappens egen etikett (`fileOperations.button.cancel`), så den står oböjd · `high`.
+- Inga `sameAsSourceJustification`; ingen apostrof i värdena, så ICU-dubbleringen `''` blir aldrig aktuell.

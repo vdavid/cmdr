@@ -23,13 +23,19 @@
 //! ❌ **A scan reports no listing change.** It crosses every entry in a tree, and
 //! one seam call per entry would sweep every cached listing on the volume
 //! thousands of times.
+//!
+//! ❗ **Every entry passes the [`ScanBoundary`].** `boundary.dir()` runs BEFORE
+//! the listing round trip and `boundary.file()` on every leaf, so a walk over a
+//! sleeping share stops within one round trip of a Cancel and stands still on a
+//! Pause. A backend that takes its own walk owes the same two calls; nothing else
+//! makes Cancel work for it.
 
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 
 use crate::entry::FileEntry;
 use crate::volume::VolumeError;
-use crate::volume::{BatchScanResult, CopyScanResult, ListingProgress, ScanConflict, ScanTicker, SourceItemInfo};
+use crate::volume::{BatchScanResult, CopyScanResult, ScanBoundary, ScanConflict, SourceItemInfo};
 
 /// A future the walk can recurse through. `async fn` can't call itself, so every
 /// step of the walk hands back a boxed one, and so does every [`ScanSource`]
@@ -58,13 +64,13 @@ pub trait ScanSource: Sync {
 pub fn scan_tree<'a>(
     source: &'a dyn ScanSource,
     path: &'a Path,
-    ticker: &'a ScanTicker<'a>,
+    boundary: &'a ScanBoundary<'a>,
 ) -> Walking<'a, CopyScanResult> {
     Box::pin(async move {
         let top = source.scan_stat(path).await?;
         if !top.is_directory {
             let size = top.size.unwrap_or(0);
-            ticker.file(size);
+            boundary.file(size).await?;
             return Ok(CopyScanResult {
                 file_count: 1,
                 dir_count: 0,
@@ -80,38 +86,39 @@ pub fn scan_tree<'a>(
             dedup_bytes: 0,
             top_level_is_directory: true,
         };
-        walk_directory(source, path, ticker, &mut result).await?;
+        walk_directory(source, path, boundary, &mut result).await?;
         Ok(result)
     })
 }
 
-/// One subtree, with nothing to report progress to.
+/// One subtree, with nothing to report to and nobody to answer to.
 ///
-/// ❗ The single-path trait method takes no callback, so a ticker here would
-/// have nowhere to send its counts. [`scan_trees`] is the one a scan preview
-/// drives.
+/// ❗ The single-path trait method takes neither a callback nor a stop, so a
+/// boundary here would have nowhere to send its counts and nothing to ask.
+/// [`scan_trees`] is the one a scan preview drives, and the one a person can
+/// cancel.
 pub fn scan_one<'a>(source: &'a dyn ScanSource, path: &'a Path) -> Walking<'a, CopyScanResult> {
     Box::pin(async move {
-        let ticker = ScanTicker::new(None);
-        scan_tree(source, path, &ticker).await
+        let boundary = ScanBoundary::silent();
+        scan_tree(source, path, &boundary).await
     })
 }
 
 /// Several subtrees, with the counts climbing across all of them.
 ///
-/// ❗ One ticker for the whole call, so a preview's counters keep rising through
-/// path two rather than restarting: cumulative-for-the-call is what the trait
-/// promises.
+/// ❗ One boundary for the whole call, so a preview's counters keep rising
+/// through path two rather than restarting: cumulative-for-the-call is what the
+/// trait promises. It is also what carries the stop, so every path in the batch
+/// answers to the same Cancel.
 pub fn scan_trees<'a>(
     source: &'a dyn ScanSource,
     paths: &'a [PathBuf],
-    on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    boundary: &'a ScanBoundary<'a>,
 ) -> Walking<'a, BatchScanResult> {
     Box::pin(async move {
-        let ticker = ScanTicker::new(on_progress);
         let mut per_path = Vec::with_capacity(paths.len());
         for path in paths {
-            per_path.push((path.clone(), scan_tree(source, path, &ticker).await?));
+            per_path.push((path.clone(), scan_tree(source, path, boundary).await?));
         }
         Ok(fold_batch(per_path))
     })
@@ -198,12 +205,12 @@ pub fn scan_conflicts<'a>(
 fn walk_directory<'a>(
     source: &'a dyn ScanSource,
     dir: &'a Path,
-    ticker: &'a ScanTicker<'a>,
+    boundary: &'a ScanBoundary<'a>,
     into: &'a mut CopyScanResult,
 ) -> Walking<'a, ()> {
     Box::pin(async move {
         into.dir_count += 1;
-        ticker.dir();
+        boundary.dir().await?;
         for entry in source.scan_list(dir).await? {
             let child = dir.join(&entry.name);
             // ❗ A symlinked directory is ONE entry, never a subtree. Following
@@ -213,13 +220,13 @@ fn walk_directory<'a>(
             // the same promise app-side, so a copy estimate reads the same
             // whichever walker produced it.
             if entry.is_directory && !entry.is_symlink {
-                walk_directory(source, &child, ticker, into).await?;
+                walk_directory(source, &child, boundary, into).await?;
             } else {
                 let size = entry.size.unwrap_or(0);
                 into.file_count += 1;
                 into.total_bytes += size;
                 into.dedup_bytes += size;
-                ticker.file(size);
+                boundary.file(size).await?;
             }
         }
         Ok(())

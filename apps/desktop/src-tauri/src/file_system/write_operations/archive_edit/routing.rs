@@ -11,9 +11,8 @@ use std::sync::Arc;
 use super::super::OperationEventSink;
 use super::super::manager;
 use super::super::types::WriteOperationError;
-use crate::file_system::volume::backends::archive;
-use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 use crate::file_system::volume::manager::get_volume_manager;
+use cmdr_archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 
 /// Builds a Tauri-backed event sink from the startup-wired app handle, for
 /// routing an archive-target instant op (mkdir / mkfile / rename) to the managed
@@ -58,7 +57,7 @@ pub(super) fn read_only_error(path: &Path) -> WriteOperationError {
 /// routing predicates stay format-agnostic (they also gate reads and navigation);
 /// this is the single write-side chokepoint.
 pub(crate) fn ensure_zip_writable(archive_path: &Path) -> Result<(), WriteOperationError> {
-    match archive::format_for_path(archive_path) {
+    match cmdr_archive::format_for_path(archive_path) {
         Some(ArchiveFormat::Zip) => Ok(()),
         _ => Err(read_only_error(archive_path)),
     }

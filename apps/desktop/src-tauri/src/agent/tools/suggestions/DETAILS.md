@@ -15,7 +15,7 @@ stays `Propose` — but a standalone `amend` tool would be a stored-state mutati
 the enum's own tiebreaker makes it `Write` and `test_agent_tool_view_never_writes` would refuse it. Folding the amend
 into `propose_suggestions` is what keeps the surface honest.
 
-Only `propose_suggestions` joins `EXPECTED_PROPOSE_TOOL_NAMES` (`mcp/tests/tool_registry_tests.rs`), a hand-authored
+Only `propose_suggestions` joins `EXPECTED_PROPOSE_TOOL_NAMES` (`mcp/tests/tool_registry_tests/access.rs`), a hand-authored
 allowlist by design: no structural check can prove a handler doesn't mutate.
 
 ## `propose_suggestions`: resolve, check, then write

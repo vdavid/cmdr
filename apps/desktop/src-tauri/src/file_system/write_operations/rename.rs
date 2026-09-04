@@ -20,9 +20,8 @@ use super::archive_edit::{self, ArchiveEditRequest};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::mutation_error::MutationError;
 use super::types::WriteOperationType;
-use crate::file_system::volume::backends::archive;
-use crate::file_system::volume::backends::archive::mutator::Changeset;
 use crate::operation_log::types::{Initiator, OpKind};
+use cmdr_archive::mutator::Changeset;
 
 mod bulk;
 
@@ -241,8 +240,9 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
     // `std::fs` confirm would wrongly fail. A `to` with no archive component means a
     // rename OUT of the archive (a move), which is refused here.
     let (from_archive, from_inner) =
-        archive::archive_boundary_candidate(from).ok_or(MutationError::ArchiveNotEditable)?;
-    let (to_archive, to_inner) = archive::archive_boundary_candidate(to).ok_or(MutationError::RenameOutOfArchive)?;
+        cmdr_archive::archive_boundary_candidate(from).ok_or(MutationError::ArchiveNotEditable)?;
+    let (to_archive, to_inner) =
+        cmdr_archive::archive_boundary_candidate(to).ok_or(MutationError::RenameOutOfArchive)?;
     if from_archive != to_archive {
         return Err(MutationError::RenameAcrossArchives);
     }

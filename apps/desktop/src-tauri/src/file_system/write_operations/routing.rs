@@ -28,7 +28,6 @@ use super::source_binding::ExpectedSources;
 use super::transfer::volume::{copy_between_volumes, move_between_volumes};
 use super::types::{VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
 use crate::file_system::volume::Volume;
-use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
@@ -107,7 +106,7 @@ pub(crate) async fn resolve_source_volume(
     // (empty inner) is a plain file copied via its parent volume. This is a pure
     // string pre-filter, so a plain local/remote path skips the resolve below.
     let is_inner_candidate =
-        archive::archive_boundary_candidate(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
+        cmdr_archive::archive_boundary_candidate(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
     if !is_inner_candidate {
         return manager.get(volume_id).map(|v| (v, false));
     }

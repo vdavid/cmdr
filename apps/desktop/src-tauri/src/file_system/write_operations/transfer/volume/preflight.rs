@@ -38,7 +38,7 @@ use super::super::super::types::{
     WriteOperationType, WriteProgressEvent,
 };
 use super::transfer_error::{PathRole, WriteFailure};
-use crate::file_system::volume::{ListingProgress, Volume};
+use crate::file_system::volume::{ListingProgress, ScanBoundary, ScanStop, ScanStopSignal, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
 /// Per-source hint collected during the scan: whether the top-level path is a
@@ -98,16 +98,19 @@ impl VolumePreflight {
 /// Scans the source paths up front, reusing a cached preview when one is
 /// available.
 ///
-/// Emits one `WriteProgressEvent { phase: Scanning, … }` so the FE sees the
-/// scan stage even on the fast cached-hit path; the throttled scan-progress
-/// events from `scan_for_copy_batch_with_progress` are not wired through here
-/// (the scan-preview pipeline already emits those into the preview's own
-/// event channel, not the operation's).
+/// Emits one `WriteProgressEvent { phase: Scanning, … }` so the FE sees the scan
+/// stage even on the fast cached-hit path, then a throttled tally as the walk
+/// goes. This is the operation's OWN event channel: the scan-preview pipeline
+/// emits its climbing tallies into the preview's, so an operation with no preview
+/// to consume (a programmatic or MCP-started transfer) needs its own.
 ///
-/// Cancellation: checked once after the initial emit and before the scan
-/// dispatch. The scan itself doesn't internally honor cancellation (the trait
-/// pre-dates that need); a long MTP listing in flight will run to completion,
-/// then the post-loop cancel check picks it up.
+/// **Cancel and Pause reach INSIDE the walk.** The `ScanBoundary` handed to the
+/// backend carries this operation's stop, so a scan over a cold share ends within
+/// a round trip of the click and a paused one stands still. Whether that is per
+/// entry or per round trip is the backend's own granularity
+/// (`Volume::scan_for_copy_batch_with_boundary`); a stopped scan comes back as
+/// `VolumeError::Cancelled` and leaves through the same one-`write-cancelled`
+/// exit the pre-scan check uses.
 pub(super) async fn scan_volume_sources(
     volume: &Arc<dyn Volume>,
     source_paths: &[PathBuf],
@@ -222,10 +225,25 @@ pub(super) async fn scan_volume_sources(
     // by parent dir; SMB pipelines stats over one session. Either way, one
     // call per operation here. `_with_progress` threads the throttled scan
     // callback through so the FE sees tallies climb during the walk.
+    // The boundary carries BOTH halves into the backend's own walk: the throttled
+    // tally above, and this operation's Cancel and Pause. ❗ Without the stop the
+    // scan is uninterruptible — one call over every source, minutes of it on a
+    // cold share — and Cancel is a button that does nothing for exactly as long
+    // as it matters. `ScanStop` is `Arc`-held so a backend walking inside
+    // `spawn_blocking` (the local one) can carry it across the closure.
+    let stop = ScanStop::new(Arc::clone(state) as Arc<dyn ScanStopSignal>);
+    let boundary = ScanBoundary::new(Some(&scan_progress)).stopping_at(stop);
     let batch = volume
-        .scan_for_copy_batch_with_progress(source_paths, Some(&scan_progress))
+        .scan_for_copy_batch_with_boundary(source_paths, &boundary)
         .await
         .map_err(|e| {
+            // ❗ A stopped scan takes the operation's own cancel exit, so the
+            // frontend gets the one `write-cancelled` it closes its dialog on.
+            // Reported as a failure instead, it would reach the user as an error
+            // about a share that was fine, over their own click.
+            if matches!(e, VolumeError::Cancelled(_)) {
+                return cancelled_failure(events, operation_id, operation_type);
+            }
             let path = source_paths.first().cloned().unwrap_or_default();
             WriteFailure::from_volume(&path, PathRole::Source, e)
         })?;
@@ -314,7 +332,7 @@ impl TopLevelMoveHints {
 /// / size from it, never re-walking. Otherwise, groups the top-level sources by
 /// PARENT and lists each distinct parent ONCE (`list_directory` is one
 /// round-trip per parent: a single pipelined op on SMB, one parent listing on
-/// MTP — the same shape `MtpVolume`'s `scan_for_copy_batch_with_progress` uses,
+/// MTP — the same shape `MtpVolume`'s `scan_for_copy_batch_with_boundary` uses,
 /// minus the recursion). Cost is O(distinct parents), never O(subtree).
 pub(super) async fn top_level_move_hints(
     volume: &Arc<dyn Volume>,

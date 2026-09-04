@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
-use cmdr_fs::volume::{ListingProgress, SourceItemInfo, Volume};
+use cmdr_fs::volume::{ListingProgress, ScanBoundary, SourceItemInfo, Volume};
 
 use super::testing::*;
 
@@ -97,8 +97,9 @@ async fn sftp_integration_a_batch_scan_reports_while_it_walks() {
 
     let seen: Mutex<Vec<ListingProgress>> = Mutex::new(Vec::new());
     let record = |progress: ListingProgress| seen.lock_ignore_poison().push(progress);
+    let boundary = ScanBoundary::new(Some(&record));
     let batch = volume
-        .scan_for_copy_batch_with_progress(&[PathBuf::from(&dir)], Some(&record))
+        .scan_for_copy_batch_with_boundary(&[PathBuf::from(&dir)], &boundary)
         .await
         .expect(FIXTURE);
 

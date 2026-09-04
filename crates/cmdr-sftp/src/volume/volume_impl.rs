@@ -17,7 +17,8 @@ use cmdr_fs::volume::patching;
 use cmdr_fs::volume::scan_walk;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
-    ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
+    ScanBoundary, ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    WatchCoverage,
 };
 
 use crate::auth::AuthRungUsed;
@@ -298,12 +299,12 @@ impl Volume for SftpVolume {
     /// ❗ Overridden for the progress alone. The trait default reports only
     /// between paths, so a single deep source leaves the scan dialog frozen and
     /// the scan watchdog unable to tell a slow walk from a stopped server.
-    fn scan_for_copy_batch_with_progress<'a>(
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        Box::pin(self.noting(scan_walk::scan_trees(self, paths, on_progress)))
+        Box::pin(self.noting(scan_walk::scan_trees(self, paths, boundary)))
     }
 
     /// One listing of the destination, ❗ never one `exists()` per source item.

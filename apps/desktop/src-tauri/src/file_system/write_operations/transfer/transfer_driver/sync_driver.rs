@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
-use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled};
+use crate::file_system::write_operations::state::WriteOperationState;
 use crate::file_system::write_operations::types::WriteOperationError;
 
 use super::{
@@ -106,8 +106,14 @@ where
 
     // ---- Main loop. ----
     for source_path in sources {
-        // CRITICAL: cancellation check is BEFORE any destructive call.
-        if is_cancelled(&state.intent) {
+        // CRITICAL: the cooperative boundary is BEFORE any destructive call.
+        // This is the BETWEEN-FILES one; the cross-volume streaming path also
+        // parks BETWEEN CHUNKS (`volume/strategy.rs` `CheckpointStream`). The
+        // local-FS sync chunk loop (`chunked_copy.rs`) is the one path that
+        // still pauses only between files — it receives just the cancel atom,
+        // not the `PauseGate` (see transfer/DETAILS.md § "Pause reaches between
+        // chunks").
+        if state.stop_or_park_sync() {
             log::debug!(
                 "drive_transfer_serial_sync: cancellation observed at {} (of {}) for op={}",
                 files_done,
@@ -122,17 +128,6 @@ where
                 intent: PostLoopIntent::Cancelled,
             };
         }
-
-        // Pause gate: park here (between files, after the cancel check so the
-        // data-safety ordering holds) while the op is paused. Returns
-        // immediately if cancelled — the next loop iteration's `is_cancelled`
-        // check then bails. This is the BETWEEN-FILES boundary; the cross-volume
-        // streaming path also parks BETWEEN CHUNKS (`volume/strategy.rs`
-        // `CheckpointStream`). The local-FS sync chunk loop
-        // (`chunked_copy.rs`) is the one path that still pauses only between
-        // files — it receives just the cancel atom, not the `PauseGate` (see
-        // transfer/DETAILS.md § "Pause reaches between chunks").
-        state.pause_gate.wait_while_paused_sync(&state.intent);
 
         // CRITICAL: pre-skip check is BEFORE any closure invocation. The
         // closure must NEVER see a pre-known-conflict source.

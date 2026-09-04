@@ -259,8 +259,10 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
     let mut last_progress_time = Instant::now();
 
     for (i, source) in sources.iter().enumerate() {
-        // Check cancellation between items
-        if super::super::state::is_cancelled(&state.intent) {
+        // The cooperative boundary, between items. Trash hands a whole tree to
+        // the OS in one call, so this is the only place it can stop, and it's
+        // the same boundary the two delete walkers park at.
+        if state.stop_or_park_sync() {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Trash,

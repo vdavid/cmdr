@@ -23,10 +23,10 @@ use crate::file_system::listing::listing_host::AppListings;
 use crate::file_system::volume::InMemoryVolume;
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::WatchCoverage;
-use crate::file_system::volume::backends::archive::ArchiveVolume;
 use crate::file_system::volume::manager::get_volume_manager;
+use cmdr_archive::ArchiveVolume;
 
-use crate::file_system::volume::backends::archive::test_fixtures::{FixtureFile, build_zip, stored};
+use cmdr_archive::test_fixtures::{FixtureFile, build_zip, stored};
 
 /// Starts the content watch on a resolved archive volume. `VolumeManager::resolve`
 /// only auto-starts the watch when an app handle is registered (production); a

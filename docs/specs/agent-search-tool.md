@@ -25,7 +25,7 @@ Almost everything. This is a wiring and shaping job, not a search project.
   `permission_denied`, `declined`, `still_covering`, `unresolved_scopes`, `abandoned_ground`, `abandoned_locations`,
   `capped`, `target_volume_id`, and `hidden_by_excludes`, each documented as a field a caller branches on rather than a
   message it string-matches. That is exactly the shape the agent honesty contract demands, and it predates it.
-- **A `search` tool is already authored** in the shared registry (`mcp/tool_registry/mod.rs`), with
+- **A `search` tool is already authored** in the shared registry (`mcp/tool_registry/table.rs`), with
   `consumers: &[Consumer::AiClient]`, `access: Access::Read`, `schemas::search_schema()`, and
   `run: params_only search::execute_search`. It runs the same live path a person's search takes: it reads the index
   where the index covers the scope, and walks the folders it does not.

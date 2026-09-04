@@ -47,6 +47,8 @@ mod hardlink_progress_tests;
 #[cfg(test)]
 mod preview_binding_tests;
 #[cfg(test)]
+mod trash_pause_tests;
+#[cfg(test)]
 mod volume_cancel_tests;
 #[cfg(test)]
 mod volume_hardlink_progress_tests;

@@ -940,3 +940,15 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
 - **`layout` → `版面配置`** · Microsoft zh-Hant 的標準譯法 · `high`。
 - **`look off` → `不太對`** · 口語，且避開語氣規則禁止的「錯誤」「失敗」。
 - **最後一句是 David 的第一人稱**，仍用 `你`，與 `onboarding.stepBeta.greeting` 一致。
+
+## 復原按鈕的兩條提示 (2026-09-04；`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+新介面：按鈕提示現在說清這一次復原會對檔案做什麼；跨檔案系統的移動一進入最後一步（所有檔案都已抵達目標位置，正在移除原檔案），按鈕就會關掉。
+
+- **`rollbackTooltipStopAndMoveBack` → `停止，並把目前為止移動過的每一個檔案放回原處`** · 句式沿用同胞鍵
+  `rollbackTooltip`（`停止，並…`），`放回原處` 是目錄裡已定的說法（`cancelRollback.doneMovingBack`「放回原處」）·
+  `high`。❌ 不用 `刪除`：復原一次移動不會刪掉任何東西。
+- **`rollbackAlreadyLandedTooltip`** · 前半句沿用 `cancelRollback.moveAlreadyLanded`
+  的說法（「已經在目標位置了」），`復原` 是已定的術語（`rollbackUnavailableTooltip`），`取消`
+  直接用旁邊按鈕自己的標籤（`fileOperations.button.cancel`），依目錄慣例加上引號 · `high`。
+- 無 `sameAsSourceJustification`；兩個值都不含撇號。

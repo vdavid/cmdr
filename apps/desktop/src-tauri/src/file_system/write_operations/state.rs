@@ -243,6 +243,51 @@ impl WriteOperationState {
         }
     }
 
+    /// The one cooperative boundary a serial loop asks at: `true` means stop
+    /// now, `false` means carry on with the next item.
+    ///
+    /// Everything a loop owes Cancel and Pause lives in here, so no caller can
+    /// get the order wrong. Cancel is read FIRST, so a stopping operation never
+    /// parks and no destructive call runs between the two reads; only a live
+    /// operation parks; and a cancel landing WHILE parked wakes the gate and is
+    /// answered `true` at that same boundary, rather than one item later.
+    ///
+    /// ❌ Ask it exactly where the loop already observes cancel, and only
+    /// there. A loop that parks less often than it can be cancelled makes Pause
+    /// the weaker of two buttons that mean the same thing to a person; one that
+    /// parks more often needs boundaries the backends don't offer. `DETAILS.md`
+    /// § "The park".
+    ///
+    /// This twin parks the calling blocking-pool thread; an async driver calls
+    /// [`stop_or_park_async`](Self::stop_or_park_async) instead. A caller whose
+    /// reading of "stop" isn't `is_cancelled` (a reversal, a detached scan
+    /// preview) drives [`PauseGate`]'s `*_until` helpers directly and names its
+    /// own predicate.
+    pub fn stop_or_park_sync(&self) -> bool {
+        if is_cancelled(&self.intent) {
+            return true;
+        }
+        self.pause_gate.wait_while_paused_sync(&self.intent);
+        is_cancelled(&self.intent)
+    }
+
+    /// Async sibling of [`stop_or_park_sync`](Self::stop_or_park_sync): same
+    /// answer, parking the calling task instead of an executor thread.
+    pub async fn stop_or_park_async(&self) -> bool {
+        if is_cancelled(&self.intent) {
+            return true;
+        }
+        self.pause_gate.wait_while_paused_async(&self.intent).await;
+        is_cancelled(&self.intent)
+    }
+
+    /// The cheap half of the boundary: `true` when there is anything to ask
+    /// about. Two atomic loads, which is what lets a copy SCAN put the boundary
+    /// on its per-entry path (`cmdr_fs::volume::ScanStopSignal`).
+    pub fn is_stopping_or_paused(&self) -> bool {
+        is_cancelled(&self.intent) || self.pause_gate.is_paused()
+    }
+
     /// A handle to this operation's [`liveness`](Self::liveness), for tagging
     /// the scratch files it stages.
     pub fn liveness_token(&self) -> Option<std::sync::Weak<()>> {
@@ -461,6 +506,29 @@ impl WriteOperationState {
     pub fn emit_progress_via_sink(&self, sink: &dyn OperationEventSink, mut event: WriteProgressEvent) {
         self.enrich_progress(&mut event);
         sink.emit_progress(event);
+    }
+}
+
+/// This operation, as the copy scan inside a `Volume` backend sees it.
+///
+/// A backend crate can't name a `WriteOperationState` (`crates/` carry no
+/// `tauri` and no app), so the scan asks a `cmdr_fs` vocabulary type and this is
+/// what answers it. ❗ Every arm forwards to the same
+/// [`stop_or_park_sync`](WriteOperationState::stop_or_park_sync) /
+/// [`stop_or_park_async`](WriteOperationState::stop_or_park_async) the rest of
+/// the operation asks, so a scan can't end up with its own reading of
+/// cancel-outranks-pause. `DETAILS.md` § "The park".
+impl cmdr_fs::volume::ScanStopSignal for WriteOperationState {
+    fn is_stopping_or_paused(&self) -> bool {
+        WriteOperationState::is_stopping_or_paused(self)
+    }
+
+    fn stop_or_park<'a>(&'a self) -> std::pin::Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(self.stop_or_park_async())
+    }
+
+    fn stop_or_park_blocking(&self) -> bool {
+        self.stop_or_park_sync()
     }
 }
 

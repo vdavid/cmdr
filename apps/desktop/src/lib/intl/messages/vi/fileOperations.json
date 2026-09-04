@@ -604,6 +604,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Dừng lại và đưa trở lại mọi tệp đã di chuyển đến giờ",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Mọi tệp đều đã ở đích, nên không thể hoàn tác lần di chuyển này nữa. Hủy vẫn dừng Cmdr lại trước khi nó xóa những bản gốc còn lại.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Đã tạm dừng",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"

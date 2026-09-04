@@ -157,7 +157,13 @@ async fn settled_outcome(preview_id: &str) -> ScanOutcome {
 /// puts [`park_while_paused`](Self::park_while_paused) immediately after its
 /// existing cancel check, and pause inherits cancel's granularity for free: per
 /// entry on the local walk and the oracle-aware volume walk, per source group
-/// inside a cold-cache volume batch.
+/// around a cold-cache volume batch.
+///
+/// **Inside that batch it speaks as a `ScanStopSignal`** (the impl below), which
+/// is how both of a preview's routes to "stop" reach a backend crate that can
+/// name neither this type nor an operation. The backend threads a
+/// `cmdr_fs::volume::ScanBoundary` and gets a boundary per entry or per round
+/// trip, whichever it can honestly offer.
 ///
 /// **Why the owner is resolved lazily.** A preview walks detached from the
 /// operation that will consume it: the walk holds a `preview_id`, the gate hangs
@@ -231,9 +237,7 @@ impl ScanPause {
     pub(super) fn park_while_paused(&self) {
         let Some(owner) = self.paused_owner() else { return };
         self.enter_park();
-        owner
-            .pause_gate
-            .wait_while_paused_sync_until(&|| self.should_stop(owner));
+        owner.pause_gate.wait_while_paused_sync_until(&|| self.told_to_stop());
         self.leave_park();
     }
 
@@ -243,10 +247,7 @@ impl ScanPause {
     pub(super) async fn park_while_paused_async(&self) {
         let Some(owner) = self.paused_owner() else { return };
         self.enter_park();
-        owner
-            .pause_gate
-            .wait_while_paused_until(&|| self.should_stop(owner))
-            .await;
+        owner.pause_gate.wait_while_paused_until(&|| self.told_to_stop()).await;
         self.leave_park();
     }
 
@@ -255,19 +256,6 @@ impl ScanPause {
     fn paused_owner(&self) -> Option<&Arc<WriteOperationState>> {
         let owner = self.owner.get()?;
         owner.pause_gate.is_paused().then_some(owner)
-    }
-
-    /// Everything that must end the park. The operation's intent covers a cancel
-    /// aimed at the operation (which wakes the gate); the preview's own flag
-    /// covers a walk told to stop directly. ❌ Dropping either leaves the thread
-    /// on a gate nobody will open.
-    fn should_stop(&self, owner: &WriteOperationState) -> bool {
-        if is_cancelled(&owner.intent) {
-            return true;
-        }
-        self.claim
-            .as_ref()
-            .is_some_and(|claim| claim.state.cancelled.load(Ordering::Relaxed))
     }
 
     fn enter_park(&self) {
@@ -280,6 +268,61 @@ impl ScanPause {
         if let Some(watchdog) = &self.watchdog {
             watchdog.note_resumed();
         }
+    }
+
+    /// Everything that must end the park, and everything that must stop the
+    /// walk: the operation's intent covers a cancel aimed at the operation
+    /// (which wakes the gate), and the preview's own flag covers a walk told to
+    /// stop directly. ❌ Dropping either leaves the thread on a gate nobody will
+    /// open.
+    ///
+    /// An UNRESOLVED owner means the claim hasn't landed yet, so only the
+    /// preview's own flag can speak — which is right: an operation that doesn't
+    /// exist yet has nothing to cancel.
+    fn told_to_stop(&self) -> bool {
+        if let Some(owner) = self.owner.get()
+            && is_cancelled(&owner.intent)
+        {
+            return true;
+        }
+        self.claim
+            .as_ref()
+            .is_some_and(|claim| claim.state.cancelled.load(Ordering::Relaxed))
+    }
+}
+
+/// This walk's owner, as the copy scan inside a `Volume` backend sees it.
+///
+/// The backend crates know nothing about a preview or an operation, so they ask
+/// a `cmdr_fs` vocabulary type and this is what answers it — for the DETACHED
+/// preview worker, whose two ways of being told to stop (its own flag, and the
+/// intent of the operation that later claimed it) both have to reach the walk.
+/// The operation's own scan uses `WriteOperationState`'s impl instead, which
+/// needs neither.
+impl cmdr_fs::volume::ScanStopSignal for ScanPause {
+    fn is_stopping_or_paused(&self) -> bool {
+        // Three atomic loads at worst, and the walk asks this per entry: ❌ don't
+        // grow it into a map lookup. `resolve_owner` stays on the progress tick
+        // for exactly that reason.
+        self.told_to_stop() || self.owner.get().is_some_and(|owner| owner.pause_gate.is_paused())
+    }
+
+    fn stop_or_park<'a>(&'a self) -> std::pin::Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move {
+            if self.told_to_stop() {
+                return true;
+            }
+            self.park_while_paused_async().await;
+            self.told_to_stop()
+        })
+    }
+
+    fn stop_or_park_blocking(&self) -> bool {
+        if self.told_to_stop() {
+            return true;
+        }
+        self.park_while_paused();
+        self.told_to_stop()
     }
 }
 

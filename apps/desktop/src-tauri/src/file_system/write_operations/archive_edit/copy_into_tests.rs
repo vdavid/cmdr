@@ -276,7 +276,7 @@ async fn overwrite_older_overwrites_only_a_strictly_older_entry() {
     // Case C: EQUAL mtimes → skip (the comparison is strict `<`, not `<=`). Derive
     // the source mtime from the archive entry's ACTUAL parsed value so the two are
     // bit-for-bit equal regardless of DOS-datetime timezone conversion.
-    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
+    use cmdr_archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
     let archive_c = tmp.path().join("c.zip");
     write_zip_with_mtime(&archive_c, "d/f.txt", b"KEEP", old);
     let parsed_mtime = {

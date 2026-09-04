@@ -21,9 +21,8 @@ use super::super::types::{
 use super::engine::{MutatorHooks, PlanError, delete_move_sources, run_managed_edit, to_write_error};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
 use crate::file_system::volume::LaneKey;
-use crate::file_system::volume::backends::archive;
-use crate::file_system::volume::backends::archive::mutator::{self, Changeset, MutationError};
 use crate::file_system::volume::manager::get_volume_manager;
+use cmdr_archive::mutator::{self, Changeset, MutationError};
 
 /// Everything the driver needs to run one archive edit.
 pub(crate) struct ArchiveEditRequest {
@@ -70,13 +69,13 @@ pub(crate) async fn route_archive_delete(
         path: String::new(),
         message: "no entries to delete".to_string(),
     })?;
-    let (archive_path, _) = archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
+    let (archive_path, _) = cmdr_archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
     ensure_zip_writable(&archive_path)?;
 
     let mut deletes = Vec::with_capacity(sources.len());
     for source in sources {
         let (source_archive, inner) =
-            archive::archive_boundary_candidate(source).ok_or_else(|| read_only_error(source))?;
+            cmdr_archive::archive_boundary_candidate(source).ok_or_else(|| read_only_error(source))?;
         if source_archive != archive_path {
             return Err(WriteOperationError::IoError {
                 path: source.display().to_string(),

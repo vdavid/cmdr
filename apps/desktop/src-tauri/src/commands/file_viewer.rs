@@ -30,9 +30,8 @@ const VIEWER_ARCHIVE_TIMEOUT: Duration = Duration::from_secs(30);
 /// budget to a mislabeled `.zip` is harmless (the open fails fast on its own).
 fn open_timeout_for(path: &str) -> Duration {
     let expanded = crate::commands::file_system::expand_tilde(path);
-    let looks_archive_inner =
-        crate::file_system::volume::backends::archive::archive_boundary_candidate(std::path::Path::new(&expanded))
-            .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
+    let looks_archive_inner = cmdr_archive::archive_boundary_candidate(std::path::Path::new(&expanded))
+        .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
     if looks_archive_inner {
         VIEWER_ARCHIVE_TIMEOUT
     } else {
@@ -261,9 +260,9 @@ pub async fn viewer_write_range_to_file(
     // read-only in this phase. Saving over a `.zip` file itself is a normal file
     // overwrite (allowed); only a path inside one is refused. Typed error, matching
     // the write-path guards.
-    if crate::file_system::volume::backends::archive::path_is_inside_archive(std::path::Path::new(
-        &crate::commands::file_system::expand_tilde(&dest_path),
-    )) {
+    if cmdr_archive::path_is_inside_archive(std::path::Path::new(&crate::commands::file_system::expand_tilde(
+        &dest_path,
+    ))) {
         return Err(ViewerError::DestinationInsideArchive);
     }
     match tokio::time::timeout(

@@ -299,14 +299,20 @@ The coupler writes screenshots in two passes:
 - **Direct**: a key that rendered on a captured surface gets that surface's screenshot (no note). It assigns each key
   its FIRST surface in the report's order (surfaces ordered narrow-to-broad, so the most-specific surface wins).
 - **Representative**: for a key STILL uncoupled after the direct pass that matches a curated prefix in
-  `REPRESENTATIVE_SCREENSHOTS` (in `scripts/couple-screenshots.ts`), the coupler writes a STAND-IN screenshot (a real
-  capture of the same panel/toast/dialog where the string appears), plus a `@key.screenshotNote` explaining the mapping.
-  This sets translators up for success on families with no captured surface of their own: the dynamic `errors.*` tail
-  (mapped to one captured error pane, `error-message-example.png`), AI/cloud states, SMB/MTP connection states, the
-  crash-report dialog, and the shortcuts window. Honesty rules baked into the mechanism: direct ALWAYS wins (a stand-in
-  never overwrites a precise capture), a key that later gains its own capture sheds its representative note, and a
-  representative only points at an image the run actually produced. Add a mapping only where the layout/position
+  `REPRESENTATIVE_SCREENSHOTS` (in `scripts/representative-screenshots.ts`), the coupler writes a STAND-IN screenshot (a
+  real capture of the same panel/toast/dialog where the string appears), plus a `@key.screenshotNote` explaining the
+  mapping. This sets translators up for success on families with no captured surface of their own: the dynamic
+  `errors.*` tail (mapped to one captured error pane, `error-message-example.png`), AI/cloud states, SMB/MTP connection
+  states, the crash-report dialog, and the shortcuts window. Honesty rules baked into the mechanism: direct ALWAYS wins
+  (a stand-in never overwrites a precise capture), a key that later gains its own capture sheds its representative note,
+  and a representative only points at an image the run actually produced. Add a mapping only where the layout/position
   genuinely matches; otherwise leave the cluster uncoupled (it shows in the coverage report).
+
+**Gotcha: one string needing its own note still goes in the table, never in the catalog.** `screenshotNote` is a
+GENERATED field, so a note typed straight into `en/*.json` is unregenerable and the next `pnpm i18n:shots` silently
+replaces it with the family's note (or deletes it). `prefix` is matched with `startsWith`, so a whole KEY works as an
+entry; list it BEFORE the family entry it lives under, because `representativeFor` takes the first match, and among
+full-key entries put the longest first, since a shorter key is a prefix of a longer sibling.
 
 ❗ **Renaming or splitting a surface silently empties every representative mapping aimed at its old PNG.** "Only points
 at an image the run produced" is the honesty guarantee AND the failure mode: the coupler drops the mapping rather than

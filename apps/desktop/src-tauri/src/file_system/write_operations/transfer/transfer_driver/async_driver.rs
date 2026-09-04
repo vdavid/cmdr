@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
-use crate::file_system::write_operations::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent};
+use crate::file_system::write_operations::state::{OperationIntent, WriteOperationState, load_intent};
 use crate::file_system::write_operations::types::WriteOperationError;
 
 use super::{
@@ -131,9 +131,15 @@ where
 
     // ---- Main loop. ----
     for source_path in sources {
-        // CRITICAL: cancellation check is BEFORE pre-skip, which is BEFORE
-        // any closure / conflict-resolver / destructive call.
-        if is_cancelled(&state.intent) {
+        // CRITICAL: the cooperative boundary is BEFORE pre-skip, which is
+        // BEFORE any closure / conflict-resolver / destructive call. The
+        // cross-volume streaming path ALSO parks between chunks
+        // (`checkpoint_stream.rs` `CheckpointStream`), so a paused single large
+        // file stops mid-stream rather than streaming to completion. The
+        // concurrent `copy_volumes_with_progress` `FuturesUnordered` path has no
+        // between-files boundary and does NOT honor mid-batch pause (see
+        // transfer/DETAILS.md § "Pause and the concurrent copy path").
+        if state.stop_or_park_async().await {
             log::debug!(
                 "drive_transfer_serial_async: cancellation observed at {} (of {}) for op={}",
                 files_done,
@@ -148,17 +154,6 @@ where
                 intent: PostLoopIntent::Cancelled,
             };
         }
-
-        // Pause gate: park here (between files, after the cancel check) while
-        // the op is paused, without blocking an executor thread. Returns
-        // immediately if cancelled — the next iteration's `is_cancelled` bails.
-        // The cross-volume streaming path ALSO parks between chunks
-        // (`checkpoint_stream.rs` `CheckpointStream`), so a paused single large
-        // file stops mid-stream rather than streaming to completion. The
-        // concurrent `copy_volumes_with_progress` `FuturesUnordered` path has no
-        // between-files boundary and does NOT honor mid-batch pause (see
-        // transfer/DETAILS.md § "Pause and the concurrent copy path").
-        state.pause_gate.wait_while_paused_async(&state.intent).await;
 
         if pre_skip_paths.contains(source_path) {
             continue;

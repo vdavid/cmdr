@@ -14,7 +14,8 @@ use std::time::Duration;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
-    ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
+    ScanBoundary, ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    WatchCoverage,
 };
 use cmdr_fs::volume::{patching, scan_walk};
 use tokio_util::sync::CancellationToken;
@@ -271,12 +272,12 @@ impl Volume for AdbVolume {
         Box::pin(self.noting(scan_walk::scan_one(self, path)))
     }
 
-    fn scan_for_copy_batch_with_progress<'a>(
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        Box::pin(self.noting(scan_walk::scan_trees(self, paths, on_progress)))
+        Box::pin(self.noting(scan_walk::scan_trees(self, paths, boundary)))
     }
 
     fn scan_for_conflicts<'a>(

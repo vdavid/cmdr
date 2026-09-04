@@ -1879,3 +1879,17 @@ Fontes: `_ignored/i18n/pt-BR/` (macOS Finder + SystemSettings, terminologia da M
   `… só olha dentro de um arquivo quando você pergunta sobre ele e nunca muda um arquivo sem a sua aprovação`. O antigo
   `é somente leitura` e o `nunca muda nada` saíram: o Ask Cmdr propõe renomeações e escreve as próprias anotações, então
   só a aprovação pode ser prometida · high.
+
+## As duas dicas do botão Rollback (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Superfície nova: a dica do botão agora diz o que ESTA reversão faz com os arquivos, e o botão é desligado quando uma
+movimentação entre dois sistemas de arquivos chega ao último passo (apagar os originais, com tudo já no destino).
+
+- **`rollbackTooltipStopAndMoveBack` → `Parar e levar de volta todos os arquivos movidos até agora`** · o irmão
+  `rollbackTooltip` dá o molde (`Parar e …`), e `levar de volta` é a forma já assentada para o retorno ao lugar de
+  origem (`cancelRollback.doneMovingBack`: «O Cmdr levou o item de volta») · `high`. ❌ Não `apagar`: reverter uma
+  movimentação não apaga nada.
+- **`rollbackAlreadyLandedTooltip`** · a primeira oração retoma `cancelRollback.moveAlreadyLanded` («já está no
+  destino»), `reversão` é o termo assentado para o rollback (`rollbackUnavailableTooltip`), e `Cancelar` é o rótulo do
+  botão ao lado (`fileOperations.button.cancel`), então entra sem mudança · `high`.
+- Sem `sameAsSourceJustification`; nenhum valor tem apóstrofo.

@@ -126,8 +126,10 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
 
     // Delete files
     for file_info in &scan_result.files {
-        // Check cancellation
-        if super::super::state::is_cancelled(&state.intent) {
+        // The cooperative boundary, between files in the destructive phase.
+        // Only the delete phase is gated; the scan recursion is not, so pausing
+        // mid-scan can't freeze a half-counted "Scanning…".
+        if state.stop_or_park_sync() {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
@@ -138,12 +140,6 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
                 message: "Operation cancelled by user".to_string(),
             });
         }
-
-        // Pause gate: park between files in the destructive phase, after the
-        // cancel check (returns immediately if cancelled). Only the delete
-        // phase is gated; the scan recursion is not, so pausing mid-scan can't
-        // freeze a half-counted "Scanning…".
-        state.pause_gate.wait_while_paused_sync(&state.intent);
 
         // Use `progress_bytes` (dedup'd per file) so the numerator stays in
         // lockstep with the `dedup_bytes` denominator: a hardlinked inode is
@@ -216,8 +212,8 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
 
     // Delete directories (in reverse order - deepest first)
     for dir in scan_result.dirs.iter().rev() {
-        // Check cancellation
-        if super::super::state::is_cancelled(&state.intent) {
+        // The cooperative boundary (delete phase, between dirs).
+        if state.stop_or_park_sync() {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
@@ -228,9 +224,6 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
                 message: "Operation cancelled by user".to_string(),
             });
         }
-
-        // Pause gate (delete phase, between dirs, after the cancel check).
-        state.pause_gate.wait_while_paused_sync(&state.intent);
 
         // Only remove if empty (files should already be deleted)
         crate::downloads::note_pending_write_for_cmdr(dir);
@@ -833,7 +826,10 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
 
     // Delete files
     for entry in entries.iter().filter(|e| !e.is_dir) {
-        if super::super::state::is_cancelled(&state.intent) {
+        // The cooperative boundary, between files in the destructive phase. The
+        // scan recursion above is NOT gated, so pausing mid-enumeration can't
+        // freeze a half-counted "Scanning…".
+        if state.stop_or_park_async().await {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
@@ -844,12 +840,6 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                 message: "Operation cancelled by user".to_string(),
             });
         }
-
-        // Pause gate: park between files in the destructive phase, after the
-        // cancel check (returns immediately if cancelled). The scan recursion
-        // above is NOT gated, so pausing mid-enumeration can't freeze a
-        // half-counted "Scanning…".
-        state.pause_gate.wait_while_paused_async(&state.intent).await;
 
         // E2E throttle so cancel-during-delete tests on fast virtual MTP have a
         // deterministic window in which to click Cancel before all files are
@@ -938,7 +928,8 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
 
     // Delete directories (already in deepest-first order from scan_volume_recursive)
     for entry in entries.iter().filter(|e| e.is_dir) {
-        if super::super::state::is_cancelled(&state.intent) {
+        // The cooperative boundary (delete phase, between dirs).
+        if state.stop_or_park_async().await {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
                 operation_type: WriteOperationType::Delete,
@@ -949,9 +940,6 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
                 message: "Operation cancelled by user".to_string(),
             });
         }
-
-        // Pause gate (delete phase, between dirs, after the cancel check).
-        state.pause_gate.wait_while_paused_async(&state.intent).await;
 
         // Best-effort directory removal (may fail if not empty due to partial delete)
         let _ = volume

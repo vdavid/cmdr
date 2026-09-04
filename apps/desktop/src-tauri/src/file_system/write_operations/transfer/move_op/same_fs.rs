@@ -22,7 +22,7 @@ use crate::file_system::write_operations::durability::flush_touched_directories;
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::state::{
-    OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
+    OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use crate::file_system::write_operations::types::{
     CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
@@ -67,21 +67,14 @@ pub(super) fn move_with_rename(
 
     let result: Result<(), WriteOperationError> = (|| {
         for source in sources {
-            // Check cancellation
-            if is_cancelled(&state.intent) {
+            // The cooperative boundary, between items. This is the whole pause
+            // story for a rename engine: a `rename(2)` is one syscall, so the
+            // item boundary is the only place to park.
+            if state.stop_or_park_sync() {
                 return Err(WriteOperationError::Cancelled {
                     message: "Operation cancelled by user".to_string(),
                 });
             }
-
-            // Pause gate: park here, between items, while the op is paused —
-            // AFTER the cancel check, so cancellation still wins and no
-            // destructive call runs before either is read. This is the whole
-            // pause story for a rename engine: a `rename(2)` is one syscall,
-            // so the item boundary is the only place to park. Returns
-            // immediately if cancelled; the next iteration's `is_cancelled`
-            // then bails.
-            state.pause_gate.wait_while_paused_sync(&state.intent);
 
             let file_name = source.file_name().ok_or_else(|| WriteOperationError::IoError {
                 path: source.display().to_string(),

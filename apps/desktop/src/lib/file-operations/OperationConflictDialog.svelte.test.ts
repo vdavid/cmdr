@@ -189,13 +189,16 @@ describe('OperationConflictDialog', () => {
 
   it('offers a plain Cancel when the backend cannot reverse the operation', () => {
     // A same-volume move renames server-side and a cross-volume one has nothing
-    // staged; both say so through `supportsRollback`, which is more than the
-    // progress dialog knows about the second case.
+    // staged; both say so through `supportsRollback`, which every surface that
+    // offers Rollback now reads.
     prompt = makePrompt({ snapshot: snapshot({ operationType: 'move', supportsRollback: false }) })
     const host = render()
 
     const buttons = [...host.querySelectorAll('button')]
-    expect(buttons.find((b) => b.textContent.trim() === 'Rollback')?.disabled).toBe(true)
+    const rollback = buttons.find((b) => b.textContent.trim() === 'Rollback')
+    // Blocked rather than `disabled`, so the tooltip saying why is reachable by
+    // keyboard.
+    expect(rollback?.getAttribute('aria-disabled')).toBe('true')
     buttons.find((b) => b.textContent.trim() === 'Cancel')?.click()
 
     expect(cancelConflictPrompt).toHaveBeenCalledWith(false)

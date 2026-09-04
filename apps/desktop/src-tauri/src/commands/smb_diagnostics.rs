@@ -27,8 +27,8 @@
 //! Cmdr's own `transfer_probe` dump covers the transfer side of the same
 //! question in the meantime.
 
-use crate::file_system::SmbVolume;
 use crate::file_system::volume::manager::get_volume_manager;
+use cmdr_smb::volume::SmbVolume;
 
 // ── DTO mirror types ──────────────────────────────────────────────────
 

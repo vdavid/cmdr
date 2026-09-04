@@ -2567,7 +2567,6 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -2666,7 +2665,6 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -2905,9 +2903,11 @@
       "fileExplorer.network.browser.refreshAriaLabel",
       "fileExplorer.network.browser.refreshHint",
       "fileExplorer.network.browser.searching",
+      "fileExplorer.network.browser.status.loginNeeded",
       "fileExplorer.network.browser.status.notChecked",
       "fileExplorer.network.browser.status.resolving",
       "fileExplorer.network.browser.tooltip.doubleClickToConnect",
+      "fileExplorer.network.browser.tooltip.requiresLogin",
       "fileExplorer.network.browser.tooltip.resolving",
       "fileExplorer.network.browser.unknown",
       "fileExplorer.network.cancel",
@@ -3210,7 +3210,13 @@
   },
   "toast-tab": {
     "screenshot": "toast-tab.png",
-    "keys": ["commands.handler.noRecentlyClosedTabs", "ui.toast.dismissAria"]
+    "keys": [
+      "commands.handler.noRecentlyClosedTabs",
+      "fileExplorer.diskSpace.barTooltip",
+      "fileExplorer.diskSpace.free",
+      "fileExplorer.diskSpace.somewhatLowNote",
+      "ui.toast.dismissAria"
+    ]
   },
   "toast-zoom-in": {
     "screenshot": "toast-zoom-in.png",
@@ -3226,9 +3232,6 @@
       "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
-      "fileExplorer.diskSpace.barTooltip",
-      "fileExplorer.diskSpace.free",
-      "fileExplorer.diskSpace.somewhatLowNote",
       "ui.toast.dismissAria"
     ]
   },
@@ -3389,6 +3392,7 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
+      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -3451,6 +3455,7 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
+      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -3537,6 +3542,7 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
+      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -3621,6 +3627,7 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
+      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -3844,15 +3851,6 @@
   "quick-look-hint": {
     "screenshot": "quick-look-hint.png",
     "keys": [
-      "fileExplorer.columns.ext",
-      "fileExplorer.columns.modified",
-      "fileExplorer.columns.size",
-      "fileExplorer.dirSize.contentLabel",
-      "fileExplorer.dirSize.fileCount",
-      "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
-      "fileExplorer.dirSize.noFolders",
-      "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.quickLookHint.configurable",
       "fileExplorer.quickLookHint.dontShowAgain",
       "fileExplorer.quickLookHint.enterOpens",
@@ -4456,7 +4454,8 @@
       "ui.loadingIcon.openingFolder",
       "ui.modalDialog.close",
       "ui.select.placeholder"
-    ]
+    ],
+    "uiZoom": 90
   },
   "transfer-confirmation-copy-single": {
     "screenshot": "transfer-confirmation-copy-single.png",
@@ -8497,11 +8496,12 @@
       "fileExplorer.columns.name",
       "fileExplorer.columns.size",
       "fileExplorer.dirSize.contentLabel",
+      "fileExplorer.dirSize.dirPlaceholder",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.lowerBoundLine",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
+      "fileExplorer.dirSize.unknownTooltip",
       "fileExplorer.diskSpace.barTooltip",
       "fileExplorer.diskSpace.free",
       "fileExplorer.diskSpace.somewhatLowNote",
@@ -8559,11 +8559,12 @@
       "fileExplorer.columns.name",
       "fileExplorer.columns.size",
       "fileExplorer.dirSize.contentLabel",
+      "fileExplorer.dirSize.dirPlaceholder",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.lowerBoundLine",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
+      "fileExplorer.dirSize.unknownTooltip",
       "fileExplorer.diskSpace.barTooltip",
       "fileExplorer.diskSpace.free",
       "fileExplorer.diskSpace.somewhatLowNote",

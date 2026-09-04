@@ -10,8 +10,8 @@ every backend to turn raw OS errors into warm user-facing copy) lives in `friend
 ## Purpose
 
 Every file system operation (listing, copy, rename, delete, indexing, watching) goes through a `Volume`. The trait hides
-the differences between a local POSIX path, an MTP device, an in-memory test fixture, and future backends (SMB, S3,
-FTP). Callers never touch the filesystem directly; they call `Volume` methods with **paths relative to the volume root**.
+the differences between a local POSIX path, an MTP or ADB device, an archive, an SMB / SFTP / WebDAV server, and an
+in-memory test fixture. Callers never touch the filesystem directly; they call `Volume` methods with **paths relative to the volume root**.
 
 ## Key files
 
@@ -23,19 +23,62 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 - **`manager.rs`** (+ `manager/roots.rs`): `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default
   volume. Also holds the process-wide instance and its `get_volume_manager()` accessor. `roots.rs` holds the mount-root
   set each entry owns and the promotion rules over it
-- **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See `backends/CLAUDE.md`.
+- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume`, `MtpVolume`) and their tests, and nothing else. Every crate backend is imported by crate name at its call sites. See `backends/CLAUDE.md`.
 - **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
 ## Architecture
 
+The layers, bottom to top, in plain words. Each layer only talks to the one below it through a named interface, and
+the crate boundary is what makes that a compile error rather than a habit.
+
+1. **The vocabulary: `crates/cmdr-fs`.** The `Volume` trait, every type it speaks in (`FileEntry`, `VolumeError`,
+   `MutationEvent`, the scan results), the shared walkers (`scan_walk`, `patching`), the conformance assertions, and
+   the **host seams** (`src/volume/host/`): the eight questions a backend may ask the app around it (report a listing
+   change, ask the fresh-listing oracle, get a runtime handle, report a connection transition, read credentials, trust
+   a host key, notify the index, read a setting). No `tauri`, no English.
+2. **The backends.** One `impl Volume` per storage kind. A backend has TWO faces, and the trait is only one of them:
+   - The **file-ops face** is the `Volume` trait, and it is 100% of what the transfer engine, the panes, the delete
+     walker, and the indexer's BFS use. Nothing above this layer knows which backend it holds; a copy from a phone to a
+     NAS is `open_read_stream` on one `Arc<dyn Volume>` and `write_from_stream` on another.
+   - The **lifecycle face** is everything that happens around the trait: discovering the server or device, connecting,
+     hotplug, reconnect after a dropped session, live change events, feeding the index, and saying "I need
+     credentials". This face has no trait. A crate backend routes it through the host seams (typed values, no prose)
+     plus a `VolumeHost` handed in at construction; the app's adapters turn each answer into a frontend event or a
+     cache write.
+   - Crate backends (no `tauri`, verified alone by `cargo check -p <crate>`): `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
+     `cmdr-webdav`, `cmdr-adb`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanent: the git portal
+     is implemented as its hooks) and `MtpVolume` (`backends/mtp/` over `src/mtp/`), which predates the seams and does
+     its lifecycle face the old way: the session layer holds a `tauri::AppHandle`, emits seven `tauri_specta::Event`
+     payloads itself, and reaches the listing cache, the registry, and `device_volumes` directly. `InMemoryVolume` (in
+     `cmdr-fs`) is the test and stress fixture.
+3. **The app-side half of each backend.** What a backend can't answer from its protocol alone, and what must know the
+   concrete type: discovery UI, the keychain, the OS mount, the ptpcamerad workaround, and REGISTRATION. A backend never
+   registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
+   `network/webdav_volume_wiring.rs`, `adb/`, `mtp/volume_wiring.rs`) mints the volume, hands it the app's `VolumeHost`
+   (`src-tauri/src/volume_host.rs`), and inserts it. Device backends also register a `DeviceVolumeProvider`
+   (`device_volumes.rs`) so the volume list and eject can fold over them.
+4. **The registry: `VolumeManager`** (`manager.rs`). Volume id → `Arc<dyn Volume>`, plus the mount-root set per entry,
+   archive routing in `resolve`, retirement on removal, and the arrival subscription.
+5. **The consumers.** `write_operations/` (copy, move, delete, the cross-volume engine), `listing/` (panes and the
+   listing cache), `indexing/`'s BFS scanner, `file_viewer/`, and the MCP tools. All of them hold `Arc<dyn Volume>` and
+   nothing more specific; `VolumeKind` branches exist only for eject and for the local scanner's fast path.
+
 ```
-VolumeManager (registry)
-  └─ Arc<dyn Volume>  (async trait: most methods return Pin<Box<dyn Future>>)
-        ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O)
-        ├─ MtpVolume          → direct async MTP ops
-        ├─ SmbVolume          → direct async smb2 ops (direct protocol, not OS mount)
-        └─ InMemoryVolume     → HashMap, test/stress use only
+consumers: transfer engine, panes, delete, indexer BFS, viewer, MCP
+        │  Arc<dyn Volume>
+VolumeManager (registry; resolve routes .zip paths to ArchiveVolume)
+        │
+backends ── file-ops face: impl Volume ──────────────────────────────┐
+  crate:  Archive  Smb  Sftp  WebDav  Adb                            │ cmdr-fs: Volume trait,
+  app:    LocalPosix (permanent)  Mtp (pre-seam)  InMemory (tests)   │ types, walkers, host seams
+        │  lifecycle face: VolumeHost seams (crates) / direct reaches (MTP)
+app-side halves: wiring + registration, discovery, keychain, mounts, ptpcamerad, DeviceVolumeProvider, tauri events
 ```
+
+Moving a backend into a crate is therefore never only a file move: the file-ops face already is the trait, so the work
+is entirely on the lifecycle face, replacing each direct reach with a seam and each `tauri` event with a typed value
+the app maps. SMB's retrofit is the worked example; the cost model and the two things a crate does NOT buy:
+`crates/cmdr-fs/src/volume/host/DETAILS.md` § "What a backend crate buys".
 
 **Drive indexing does NOT go through `Volume`.** The local scanner and the FSEvents watcher are called directly by the
 indexing lifecycle (`indexing::scanner::{scan_volume, scan_subtree}`, `DriveWatcher::start`), dispatched on
@@ -504,8 +547,8 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 **Decision**: All cross-volume copy flows through `open_read_stream` / `write_from_stream`
 **Why**: The three plausible copy paths (local↔local, local↔volume, volume↔volume) all reduce to "open a reader, pipe to a writer." The APFS clonefile fast path is the only one with a real capability difference. Routing the other two through a single streaming path means new backends (S3, WebDAV, FTP) implement two methods instead of four, concurrency lives in one place (`volume/copy.rs`), and features like resume / checksum / progress benefit every direction at once. Don't reintroduce `export_to_local` / `import_from_local`. See `docs/notes/phase4-volume-copy-unification.md`.
 
-**Decision**: `Volume::list_directory` / `scan_for_copy_batch_with_progress` callbacks take a `ListingProgress { files, dirs, bytes }` struct (not `Fn(usize)` — files-only).
-**Why**: A files-only count makes MTP and Direct SMB scan previews show "0 bytes / N files / 0 dirs" climbing through the scan, because `run_volume_scan_preview` has nothing else to forward to the mid-stream `scan-preview-progress` event. The struct lets each backend track running file count, dir count, and byte total as it enumerates entries (MTP per-handle in `mtp/connection/directory_ops.rs`, SMB in a single tally pass after `list_directory_impl`, the default trait impl in `scan_for_copy_batch_with_progress`). Self-documenting field semantics; room to grow (symlinks, special files). Streaming-listing UI callers (`commands/file_system/listing.rs`) read `progress.entries()` (= `files + dirs`) which preserves their "Loaded N entries…" display. The baseline-shift logic in `run_oracle_aware_batch_scan` shifts files / dirs / bytes together so cross-group accumulation stays cumulative. Pinned by `scan_preview_listing_progress_tests`.
+**Decision**: `Volume::list_directory` / `scan_for_copy_batch_with_boundary` callbacks take a `ListingProgress { files, dirs, bytes }` struct (not `Fn(usize)` — files-only).
+**Why**: A files-only count makes MTP and Direct SMB scan previews show "0 bytes / N files / 0 dirs" climbing through the scan, because `run_volume_scan_preview` has nothing else to forward to the mid-stream `scan-preview-progress` event. The struct lets each backend track running file count, dir count, and byte total as it enumerates entries (MTP per-handle in `mtp/connection/directory_ops.rs`, SMB in a single tally pass after `list_directory_impl`, the default trait impl in `scan_for_copy_batch_with_boundary`). Self-documenting field semantics; room to grow (symlinks, special files). Streaming-listing UI callers (`commands/file_system/listing.rs`) read `progress.entries()` (= `files + dirs`) which preserves their "Loaded N entries…" display. The baseline-shift logic in `run_oracle_aware_batch_scan` shifts files / dirs / bytes together so cross-group accumulation stays cumulative. Pinned by `scan_preview_listing_progress_tests`.
 
 **Decision**: Progress callbacks use `&dyn Fn(u64, u64) -> ControlFlow<()>`, not `FnMut`
 **Why**: The Volume trait is object-safe (`dyn Volume`), so callbacks must be `Fn` (not `FnMut`). Callers use `AtomicU64` for byte counters and `Cell<Instant>` for timestamps to mutate state inside a `Fn` closure. This avoids needing `RefCell` or `Mutex` in the hot path.
@@ -533,9 +576,13 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 - `inmemory_test.rs`: integration tests combining `InMemoryVolume` + `VolumeManager`, streaming state, sort helpers
 - `manager.rs` inline tests: concurrent registration/read/write-mix scenarios
 - `mtp_scan_oracle_tests.rs`, `smb_scan_oracle_tests.rs`: oracle-aware batch-scan integration tests for MTP and SMB
+- `smb_index_scan_test.rs`, `smb_media_fetch_integration_test.rs`: the two Docker-gated cells where `cmdr-index` meets a
+  real `cmdr-smb` session (the BFS scanner, and media enrichment's byte fetcher). They live app-side because only this
+  side can build both halves; the fixtures come from `write_operations::smb_test_support`
 
-Per-backend tests live colocated with their backend in `backends/`. See `backends/DETAILS.md` §
-"Testing".
+`LocalPosixVolume`'s and `MtpVolume`'s own tests are colocated in `backends/` (`backends/DETAILS.md` § "Testing"). A
+crate backend's app-side cells sit beside the app code they assert on, not here or there:
+`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
 
 ### Test isolation for the global `VolumeManager`
 

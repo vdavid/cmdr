@@ -134,8 +134,8 @@ pub(crate) fn extract_if_archive_inner_with(
     // inner "" would address the archive ROOT — a directory — and error). Pure
     // string pre-filter (no I/O); `resolve` below does the parent-aware confirm, so
     // a mislabeled `.zip` or a remote-only archive is handled there.
-    let is_inner_candidate = crate::file_system::volume::backends::archive::archive_boundary_candidate(requested)
-        .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
+    let is_inner_candidate =
+        cmdr_archive::archive_boundary_candidate(requested).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
     if !is_inner_candidate {
         return Ok(None);
     }

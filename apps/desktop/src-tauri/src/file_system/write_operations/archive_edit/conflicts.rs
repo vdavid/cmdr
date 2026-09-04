@@ -15,7 +15,7 @@ use super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_re
 use super::super::state::{ConflictResolutionResponse, WriteOperationState};
 use super::super::types::{ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent};
 use super::engine::PlanError;
-use crate::file_system::volume::backends::archive::ArchiveIndex;
+use cmdr_archive::ArchiveIndex;
 
 /// How a copy/move-into resolves collisions with existing archive entries.
 pub(super) enum ConflictMode<'a> {

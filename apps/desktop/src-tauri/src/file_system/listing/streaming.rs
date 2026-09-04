@@ -347,7 +347,7 @@ pub async fn list_directory_start_streaming(
                     // enrichment (no cloud suggestion on a password prompt).
                     archive_needs_password_listing_error(wrong_attempt)
                 } else if matches!(e, VolumeError::NotSupported | VolumeError::IoError { .. })
-                    && crate::file_system::volume::backends::archive::path_targets_archive_file(&path_for_error)
+                    && cmdr_archive::path_targets_archive_file(&path_for_error)
                 {
                     archive_unreadable_listing_error()
                 } else {

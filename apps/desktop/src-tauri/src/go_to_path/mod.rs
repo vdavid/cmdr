@@ -154,7 +154,7 @@ pub fn resolve(input: &str, base_dir: &str) -> GoToPathResolution {
     // disk — so typing it in the path bar enters the archive. Confirm the boundary
     // (a real archive FILE + zip magic) so a directory named `foo.zip` or a
     // mislabeled file still classifies normally below.
-    if crate::file_system::volume::backends::archive::path_crosses_archive_boundary(&normalized) {
+    if cmdr_archive::path_crosses_archive_boundary(&normalized) {
         return GoToPathResolution::Directory { path: normalized_str };
     }
 

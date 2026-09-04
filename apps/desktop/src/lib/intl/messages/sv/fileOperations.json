@@ -605,6 +605,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Stoppa och lägg tillbaka alla filer som flyttats hittills",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Alla filer finns redan på målet, så flytten går inte att ångra längre. Avbryt stoppar ändå Cmdr innan resten av originalen tas bort.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "Pausad",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"

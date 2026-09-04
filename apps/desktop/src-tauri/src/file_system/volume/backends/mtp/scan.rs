@@ -1,5 +1,5 @@
 //! The `scan_for_copy` family's inherent bodies (`scan_for_copy_impl`,
-//! `scan_for_copy_batch_with_progress_impl`, `scan_for_conflicts_impl`), which
+//! `scan_for_copy_batch_with_boundary_impl`, `scan_for_conflicts_impl`), which
 //! the trait methods in `mod.rs` delegate to.
 //!
 //! Split out for the same reason `crates/cmdr-smb/src/volume/scan.rs` is: the oracle-aware batch scan is
@@ -11,6 +11,7 @@ use super::super::{BatchScanResult, CopyScanResult, ScanConflict, SourceItemInfo
 use super::MtpVolume;
 use super::mapping::map_mtp_error;
 use cmdr_fs::volume::scan_walk::conflicts_against;
+use cmdr_fs::volume::{ScanBoundary, ScanStop};
 
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
@@ -40,6 +41,23 @@ impl MtpVolume {
         })
     }
 
+    /// [`scan_for_copy_impl`](Self::scan_for_copy_impl) that honors `stop`, for
+    /// the batch body below. The trait's single-path method hands one in nowhere,
+    /// so it can't share this.
+    fn scan_subtree_with_stop<'a>(
+        &'a self,
+        path: &'a Path,
+        stop: &'a ScanStop,
+    ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mtp_path = self.to_mtp_path(path);
+            connection_manager()
+                .scan_for_copy_with_stop(&self.device_id, self.storage_id, &mtp_path, stop)
+                .await
+                .map_err(map_mtp_error)
+        })
+    }
+
     /// Batch scan with parent-grouping + fresh-listing oracle.
     ///
     /// Decision flow:
@@ -56,12 +74,18 @@ impl MtpVolume {
     /// `list_directory_with_progress` callbacks fire for that parent, so the
     /// FE's scan-preview counter doesn't tick for those entries; the final
     /// `BatchScanResult.aggregate` still reflects them.
-    pub(super) fn scan_for_copy_batch_with_progress_impl<'a>(
+    pub(super) fn scan_for_copy_batch_with_boundary_impl<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            // ❗ Progress goes down to `list_directory` verbatim
+            // (`ScanBoundary::raw_progress` says why a backend must pick ONE
+            // reporter), so this body counts into its own `aggregate` and asks the
+            // boundary only for the stop.
+            let on_progress = boundary.raw_progress();
+            let stop = boundary.stop();
             if paths.is_empty() {
                 return Ok(BatchScanResult {
                     aggregate: CopyScanResult {
@@ -129,6 +153,12 @@ impl MtpVolume {
             };
 
             for group in groups.values() {
+                // Before the parent listing: on a cold cache that call is the
+                // ~17 s of USB round trips this whole backend is shaped around,
+                // and a boundary on the far side of it is a Cancel the person
+                // waits out.
+                boundary.check().await?;
+
                 // Oracle short-circuit: if the parent is watcher-fresh, use
                 // the cached listing instead of touching the device. The
                 // freshness contract for MTP is volume-level: when this
@@ -167,12 +197,13 @@ impl MtpVolume {
                     entries.iter().map(|e| (e.name.as_str(), e)).collect();
 
                 for child_path in &group.children {
+                    boundary.check().await?;
                     let mtp_path = self.to_mtp_path(child_path);
                     let name = Path::new(&mtp_path).file_name().and_then(|n| n.to_str()).unwrap_or("");
 
                     if let Some(entry) = entries_by_name.get(name).copied() {
                         if entry.is_directory {
-                            let scan = self.scan_for_copy(child_path).await?;
+                            let scan = self.scan_subtree_with_stop(child_path, &stop).await?;
                             aggregate.file_count += scan.file_count;
                             aggregate.dir_count += scan.dir_count;
                             aggregate.total_bytes += scan.total_bytes;

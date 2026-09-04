@@ -495,12 +495,12 @@ impl Volume for MtpVolume {
         self.scan_for_copy_impl(path)
     }
 
-    fn scan_for_copy_batch_with_progress<'a>(
+    fn scan_for_copy_batch_with_boundary<'a>(
         &'a self,
         paths: &'a [PathBuf],
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        boundary: &'a cmdr_fs::volume::ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
-        self.scan_for_copy_batch_with_progress_impl(paths, on_progress)
+        self.scan_for_copy_batch_with_boundary_impl(paths, boundary)
     }
 
     fn scan_for_conflicts<'a>(

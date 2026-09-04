@@ -1147,13 +1147,13 @@ async fn async_driver_cancel_while_paused_unblocks_and_cancels() {
         matches!(outcome.intent, PostLoopIntent::Cancelled),
         "cancel wins over pause"
     );
-    // Cancel wakes the parked file; the driver has no second cancel check between
-    // the pause wait and the transfer, so that ONE file completes, then the next
-    // iteration's loop-top `is_cancelled` bails. So exactly one more transfers.
+    // The cancel is answered at the boundary the loop is already parked on:
+    // `stop_or_park_async` re-reads the intent after the wake, so the woken
+    // source is never started and NOTHING further transfers.
     assert_eq!(
         transferred.load(Ordering::SeqCst),
-        done_at_cancel + 1,
-        "the woken file finishes, then the loop bails; no further sources transfer"
+        done_at_cancel,
+        "a cancel that lands while parked bails at that boundary, transferring nothing more"
     );
     assert_eq!(
         super::super::super::state::load_intent(&state.intent),

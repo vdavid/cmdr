@@ -31,7 +31,13 @@
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { stallNoticeFor } from './transfer-stall'
     import { progressCountKind } from '../progress-readout'
-    import { inFlightRollbackVariant, rollbackConfirmVariant, reversalTitleKey } from '../reversal-wording'
+    import {
+        inFlightRollbackTooltipKey,
+        inFlightRollbackVariant,
+        reversalWindowClosed,
+        rollbackConfirmVariant,
+        reversalTitleKey,
+    } from '../reversal-wording'
     import { opKindForTransferType } from '../op-kind'
     import { getMainWindowOperationRows } from '$lib/file-operations/queue/main-window-operations.svelte'
     import { hasOtherQueuedWork } from '$lib/file-operations/queue/queue-backlog'
@@ -219,6 +225,10 @@
      *  onto the wrong button. `../reversal-wording.ts`. */
     const opKind = $derived(opKindForTransferType(operationType))
     const inFlightVariant = $derived(inFlightRollbackVariant(opKind))
+    /** What the live Rollback button promises, which is the whole difference from
+     *  the Cancel beside it: a copy's reversal deletes what it wrote, a move's
+     *  carries it back. */
+    const liveRollbackTooltip = $derived(tString(inFlightRollbackTooltipKey(inFlightVariant)))
 
     // Local aliases over the factory getters so the markup reads the same names
     // it always has. Each tracks reactive state (the view's own, or the
@@ -232,6 +242,26 @@
      *  title: there the bar drains backwards and "Rolling back..." is honest. */
     const reversalVariant = $derived(reverses === null ? null : rollbackConfirmVariant(reverses))
     const rollbackUnavailable = $derived(progress.rollbackUnavailable)
+
+    /** Why Rollback is switched off right now, or `null` while it really works.
+     *  Two reasons, and they answer different halves of the question:
+     *
+     *  - the operation's STRATEGY can't reverse at all (`supportsRollback` off its
+     *    registry row — the authority wherever it has arrived, and an adopted
+     *    view's only source; the props-only same-volume-move rule stands beside it
+     *    for the frames before the first snapshot lands),
+     *  - or it could, and the moment has passed: a move between filesystems on its
+     *    source-deletion phase has already landed every file
+     *    (`../reversal-wording.ts`).
+     *
+     *  Either way the plain Cancel above stays live and stays accurate, which is
+     *  what the second tooltip points at. */
+    const rollbackBlockedTooltip = $derived.by(() => {
+        if (isSameVolumeMove || rollbackUnavailable) return ROLLBACK_UNAVAILABLE_TOOLTIP
+        if (reversalWindowClosed(opKind, phase))
+            return tString('fileOperations.transferProgress.rollbackAlreadyLandedTooltip')
+        return null
+    })
     const isCancelling = $derived(progress.isCancelling)
     const cancelEventReceived = $derived(progress.cancelEventReceived)
     const settleSlow = $derived(progress.settleSlow)
@@ -401,7 +431,7 @@
             {conflictEvent}
             {isCopy}
             {isMove}
-            rollbackUnavailable={isSameVolumeMove}
+            rollbackUnavailable={isSameVolumeMove || rollbackUnavailable}
             {isCancelling}
             {isResolvingConflict}
             onResolve={(resolution: ConflictResolution, applyToAll: boolean) => {
@@ -597,32 +627,27 @@
                 {#if isRollingBack}
                     <Button variant="danger" disabled>{tString('fileOperations.transferProgress.titleRollingBack')}</Button
                     >
-                {:else if isSameVolumeMove || rollbackUnavailable}
-                    <!-- No backend rollback for this one: either a same-volume
-                         move (which the props alone can tell), or the
-                         operation's own registry row saying so — the authority
-                         wherever it has arrived, and an adopted view's only
-                         source. Disabled with an explanatory tooltip; plain
-                         Cancel above stays reachable. -->
-                    <span use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP}>
-                        <Button variant="danger" disabled
-                            >{tString('fileOperations.transferProgress.conflictRollback')}</Button
-                        >
-                    </span>
                 {:else}
-                    <!-- Nothing has been written during the scan, so there is
-                         nothing to reverse: disabled rather than hidden, so the
-                         button row doesn't reshuffle when counting ends. -->
-                    <span use:tooltip={tString('fileOperations.transferProgress.rollbackTooltip')}>
-                        <Button
-                            variant="danger"
-                            onclick={() => {
-                                rollbackAsked = true
-                            }}
-                            disabled={isCancelling || operationSettled || isScanning}
-                            >{tString('fileOperations.transferProgress.conflictRollback')}</Button
-                        >
-                    </span>
+                    <!-- One button, three readings. The two BLOCKED ones are
+                         `aria-disabled` rather than `disabled`: each has a reason
+                         worth reading, and a `disabled` button leaves the tab
+                         order, taking its tooltip with it. The press is guarded
+                         instead, so a blocked click asks nothing. `disabled` stays
+                         right for the scan and the settle window, where nothing
+                         has been written (or the operation is already over) and
+                         there is nothing to explain — and disabled rather than
+                         hidden, so the button row doesn't reshuffle when counting
+                         ends. -->
+                    <Button
+                        variant="danger"
+                        ariaDisabled={rollbackBlockedTooltip !== null}
+                        tooltipContent={rollbackBlockedTooltip ?? liveRollbackTooltip}
+                        onclick={() => {
+                            if (rollbackBlockedTooltip === null) rollbackAsked = true
+                        }}
+                        disabled={isCancelling || operationSettled || isScanning}
+                        >{tString('fileOperations.transferProgress.conflictRollback')}</Button
+                    >
                 {/if}
             {/if}
         </div>
@@ -632,8 +657,10 @@
 <!-- Stacked over the progress dialog, which is the dialog that raised it: same
      subtree, so DOM order puts it on top and the focus trap it mounts takes
      over until it goes (`$lib/ui/DETAILS.md` § ModalDialog). Withdrawn once the
-     operation settles, because there is nothing left to undo. -->
-{#if rollbackAsked && !operationSettled}
+     operation settles, because there is nothing left to undo — and the moment
+     Rollback is blocked, since a move that reaches its source-deletion phase with
+     the question up would otherwise still be promising a journey home. -->
+{#if rollbackAsked && !operationSettled && rollbackBlockedTooltip === null}
     <RollbackConfirmDialog
         variant={inFlightVariant}
         onConfirm={() => {

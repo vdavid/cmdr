@@ -230,7 +230,7 @@ slow-timeout = { period = "40s", terminate-after = 1 }
 # signature rather than a defect, and each takes well under a second when idle.
 filter = '''
     test(file_system::listing::caching_reaper_test::)
-  + test(file_system::volume::backends::archive::watch_integration_test::)
+  + test(file_system::listing::archive_watch_integration_test::)
   + test(file_system::volume::backends::local_posix_test::test_listing_watch_coverage_flips_with_watcher_lifecycle)
   + test(downloads::commands::tests::go_to_latest_)
   + test(downloads::runtime::tests::note_pending_write_for_cmdr_)

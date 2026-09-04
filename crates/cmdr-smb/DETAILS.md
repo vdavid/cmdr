@@ -5,9 +5,11 @@
 Two boundaries run through this crate, and they answer different questions.
 
 **The backend / app boundary** is the `Volume` trait plus the `VolumeHost` seams: `SmbVolume` implements one and asks
-everything else through the other, so nothing here names the app. What stayed up there is what genuinely needs the app —
-finding a share and mounting it, deciding when to replace a kernel mount with a direct session, and driving transfers.
-`apps/desktop/src-tauri/src/file_system/volume/backends/smb.rs` lists it.
+everything else through the other, so nothing here names the app. What stayed up there is what genuinely needs the app:
+finding a share and mounting it (`apps/desktop/src-tauri/src/network/`), minting an `SmbVolume` and registering it
+(`network/smb_upgrade.rs`), and driving every copy, move, and delete with the real event sink and pause gate
+(`apps/desktop/src-tauri/src/file_system/write_operations/`). App call sites import this crate by name, the way they do
+`cmdr-sftp` and `cmdr-webdav`.
 
 **The protocol / app boundary** is older and sits inside `network/`, which grew as one pile: mDNS discovery, share
 listing, mounting, the keychain, the auto-upgrade passes, and the Tauri events, plus a handful of pure functions over
@@ -128,10 +130,14 @@ The suites split by what a cell ASSERTS, never by what it connects to. Both side
 - **Here**, if the assertion is about this backend: the `Volume` contract against a real server, the byte path, the
   shared conformance promises, the retirement wiring, the watcher's archive-refresh routing, and every session-free unit
   case. § "The suites" below has the file-by-file map.
-- **In the app**, if the assertion is about what the APP does with a share: every cell driving `write_operations`, the
-  volume registry, the listing cache, archive routing, or media enrichment. The app's `smb_app_integration_test.rs`
-  holds the two that don't fit either heading — a pane close must not kill the watcher (the pane-close IPC is the
-  app's), and a local file streams onto the share (`LocalPosixVolume` is the app's).
+- **In the app**, if the assertion is about what the APP does with a share, and the cell sits beside the app code it
+  asserts on rather than beside the backend. `file_system/write_operations/` holds the transfer suites
+  (`smb_transfer_safety_test.rs`, `smb_transfer_semantics_test.rs`, `smb_full_concurrency_test.rs`,
+  `smb_stress_test.rs`, `smb_soak_test.rs`), the remote-archive cells (`smb_archive_integration_test.rs`), the
+  local-source stream write (`smb_stream_write_integration_test.rs`), and the fixture wiring they share
+  (`smb_test_support.rs`). `file_system/listing/` holds the pane-close watcher regression
+  (`smb_pane_close_watch_integration_test.rs`), and `file_system/volume/` holds the two cells where the index crate
+  meets a real share (`smb_index_scan_test.rs`, `smb_media_fetch_integration_test.rs`).
 
 **These are WHITE-BOX tests, and that is why they're here.** They build an `SmbVolumeInner` by struct literal, drive
 `do_attempt_reconnect` directly, and read the client, tree, and scan pool out of the session. ❌ Don't widen the
@@ -209,6 +215,31 @@ hooks close that, both funneling through the ONE reconnect path (`do_attempt_rec
   media scheduler resumes enrichment with no scheduler changes. The resumed index loads Stale (we weren't watching while
   disconnected); a rescan restores Fresh. Canonical detail lives in `indexing/DETAILS.md` § "SMB indexing and the
   freshness model"; this bullet is the volume-side trigger map.
+
+## Scanning: where the copy scan asks whether to carry on
+
+`scan_recursive` threads a `cmdr_fs::volume::ScanBoundary` and asks it at three places: once before the top-level stat,
+`dir()` before every directory listing, and `file()` on every leaf. That is what a person's Cancel and Pause reach, and
+before it existed the whole batch scan was one uninterruptible call — a wrong-share scan over a NAS whose disks had spun
+down ran to completion whatever the user pressed.
+
+❗ **`dir()` goes BEFORE the listing, never after.** A listing is the round trip, seconds of it on a cold share, so a
+boundary on its far side is a Cancel the user waits out.
+
+❌ **Don't ask inside the pipelined top-level stat drain.** Those futures each hold a cloned `Connection`, and parking
+mid-drain would hold every one of them idle for as long as a person is thinking. The sizes it resolves are reported to
+the boundary once the drain is over; the drain itself is O(top-level paths) and pipelined, so the wait it can add is
+bounded, and the recursion after it is the long part.
+
+A stopped scan comes back as `VolumeError::Cancelled`, ❌ never a short total — the shared contract, with the reasoning
+in `crates/cmdr-fs/DETAILS.md` § "`ScanBoundary`". `conformance::assert_batch_scan_stops_when_told` and
+`assert_batch_scan_asks_inside_the_walk` both run against the Docker share (`volume/conformance_test.rs`), because a
+walk that ignores its boundary still returns the right numbers and nothing else in the suite would notice.
+
+**What the batch scan owns, and what it borrows.** The oracle short-circuit is this backend's: the watcher is what earns
+an `authoritative_listing` shortcut, so only a backend with one can take it. The conflict matcher and the batch fold are
+`cmdr_fs::volume::scan_walk`'s, deliberately, so every backend hands the conflict dialog the same shape rather than each
+growing its own near-miss.
 
 ## SMB scan-connection pool
 
@@ -605,6 +636,9 @@ the ETA was built on bytes nothing had committed, and the transfer watchdog read
 acknowledged count per chunk and one final call credits the last window. The per-chunk call still happens even when the
 count hasn't moved, because it doubles as the cancel poll.
 
+❗ **Size any test that means to reach this path off `negotiated_max_write()`.** A payload that fits one compound write
+silently takes the fast path instead, so the test passes without ever touching the pipelined loop it was written for.
+
 The compound fast-path reports differently on purpose: it has no acknowledgement to report until the one all-or-nothing
 frame returns, so it reports bytes buffered during the source drain. That lie is bounded by `max_write_size` and the
 frame either lands whole or creates nothing.
@@ -645,6 +679,15 @@ directories and constructing display paths.
 **Gotcha**: Watcher filenames are NFC (from server) but macOS mount paths are NFD **Why**: SMB servers return
 NFC-normalized filenames. macOS filesystem paths use NFD. The watcher NFD-normalizes filenames before constructing
 display paths used for cache lookups.
+
+**Gotcha**: a share name reaches the wire NFC, so `SmbConnectionParams` must be built with `new` **Why**: `new` runs the
+NFC normalization; a struct literal filled from a raw `statfs` mount name carries macOS's NFD spelling straight to the
+server, which answers `STATUS_BAD_NETWORK_NAME` for a share whose name has any composed character in it. The failure is
+loud and immediate, which is the only reason this doesn't sit in `CLAUDE.md`.
+
+**Gotcha**: `specta` is pinned to the app's exact version, and a bump has to move both **Why**: `tauri-specta` collects
+the app's commands transitively, so the `Type` impls this crate derives have to come from the SAME `specta` crate the
+app links. Two `specta` nodes in one graph make them different traits, and the collection stops compiling.
 
 ## The suites
 

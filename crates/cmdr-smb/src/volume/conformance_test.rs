@@ -196,3 +196,57 @@ async fn smb_integration_conflict_scan_honors_the_shared_missing_destination_con
 
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// The shared stop assertions, against a real SMB server.
+///
+/// ❗ This is the backend the ⚠️ was about: a share whose disks have spun down
+/// answers a listing in seconds, and the whole scan used to be one call with no
+/// boundary in it, so Cancel did nothing until the walk was over. The seam is per
+/// entry, and per directory BEFORE its listing goes out.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_batch_scan_stops_when_it_is_told_to() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    smb_vol
+        .create_file(Path::new(&format!("{base}/a.txt")), b"a")
+        .await
+        .unwrap();
+    smb_vol
+        .create_file(Path::new(&format!("{base}/b.txt")), b"bb")
+        .await
+        .unwrap();
+
+    cmdr_fs::volume::conformance::assert_batch_scan_stops_when_told(smb_vol.as_ref(), Path::new(&base)).await;
+
+    ensure_clean(&smb_vol, &base).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_batch_scan_asks_its_boundary_inside_the_walk() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    smb_vol
+        .create_directory(Path::new(&format!("{base}/nested")))
+        .await
+        .unwrap();
+    smb_vol
+        .create_file(Path::new(&format!("{base}/a.txt")), b"a")
+        .await
+        .unwrap();
+    smb_vol
+        .create_file(Path::new(&format!("{base}/nested/c.txt")), b"ccc")
+        .await
+        .unwrap();
+
+    cmdr_fs::volume::conformance::assert_batch_scan_asks_inside_the_walk(smb_vol.as_ref(), Path::new(&base), 3).await;
+
+    ensure_clean(&smb_vol, &base).await;
+}

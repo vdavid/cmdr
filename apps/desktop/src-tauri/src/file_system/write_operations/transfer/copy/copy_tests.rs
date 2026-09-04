@@ -649,3 +649,71 @@ impl OperationEventSink for StopTheReversalSink {
         self.inner.emit_dry_run_complete(r);
     }
 }
+
+/// The scanned-dirs pass runs AFTER the per-file loop, so "Paused" is already on
+/// screen by the time it starts: it has to park like every other loop, or a
+/// paused copy keeps building the destination skeleton.
+#[test]
+fn a_paused_copy_stops_landing_scanned_dirs_until_it_resumes() {
+    use crate::file_system::write_operations::ledger::CopyTransaction;
+    use std::collections::{HashMap, HashSet};
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let source = tmp.path().join("src/album");
+    let destination = tmp.path().join("dst");
+    let empties = ["e1", "e2", "e3", "e4"];
+    for name in empties {
+        fs::create_dir_all(source.join(name)).unwrap();
+    }
+    fs::create_dir_all(&destination).unwrap();
+
+    // Deepest-first, the order the scan hands them over, and the order this pass
+    // reverses so parents land before children.
+    let mut scanned_dirs: Vec<PathBuf> = empties.iter().map(|n| source.join(n)).collect();
+    scanned_dirs.push(source.clone());
+
+    let state = make_state(0);
+    state.pause_gate.pause();
+
+    let sources = vec![source.clone()];
+    let destination_for_pass = destination.clone();
+    let state_for_pass = Arc::clone(&state);
+    let pass = std::thread::spawn(move || {
+        let mut transaction = CopyTransaction::new();
+        let mut created_dirs: HashSet<PathBuf> = HashSet::new();
+        let result = create_scanned_dirs_at_destination(
+            &scanned_dirs,
+            &sources,
+            &destination_for_pass,
+            &state_for_pass,
+            &mut transaction,
+            &mut created_dirs,
+            &HashMap::new(),
+        );
+        // The production caller commits what the pass created on every terminal
+        // path; an uncommitted transaction's `Drop` net would delete the very
+        // directories this test is about to look for.
+        transaction.commit();
+        result
+    });
+
+    // Parking has no "parked now" signal, so hold a window open: an ungated pass
+    // would have built the whole skeleton many times over inside it.
+    // allowed-test-sleep: negative assertion over a window; the park has nothing to await.
+    std::thread::sleep(Duration::from_millis(150));
+    assert!(
+        !destination.join("album").exists(),
+        "a paused copy lands no destination directory at all"
+    );
+
+    state.pause_gate.resume();
+
+    let result = pass.join().expect("the pass thread joins");
+    assert!(result.is_ok(), "the resumed pass completes, got {result:?}");
+    for name in empties {
+        assert!(
+            destination.join("album").join(name).exists(),
+            "and every scanned dir lands once the user resumes: {name}"
+        );
+    }
+}

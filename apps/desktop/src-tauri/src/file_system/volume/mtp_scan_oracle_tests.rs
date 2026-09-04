@@ -1,5 +1,5 @@
 //! Integration tests for the fresh-listing oracle layered on top of
-//! `MtpVolume::scan_for_copy_batch_with_progress`.
+//! `MtpVolume::scan_for_copy_batch_with_boundary`.
 //!
 //! Two scenarios pinned:
 //!
@@ -23,7 +23,7 @@ use std::sync::Arc;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_system::volume::{MtpVolume, Volume, WatchCoverage};
+use crate::file_system::volume::{MtpVolume, ScanBoundary, Volume, WatchCoverage};
 use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
 use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
@@ -136,7 +136,7 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
 
     test_hooks::reset_list_directory_call_count();
     let result = vol
-        .scan_for_copy_batch_with_progress(&paths, None)
+        .scan_for_copy_batch_with_boundary(&paths, &ScanBoundary::silent())
         .await
         .expect("oracle-served batch scan");
 
@@ -217,7 +217,7 @@ async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
     ];
 
     let result = vol
-        .scan_for_copy_batch_with_progress(&paths, None)
+        .scan_for_copy_batch_with_boundary(&paths, &ScanBoundary::silent())
         .await
         .expect("cold batch scan");
 
@@ -233,6 +233,51 @@ async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
         unique_inputs.len(),
         "per_path should have one entry per unique input path"
     );
+
+    get_volume_manager().unregister(&vid);
+    connection_manager()
+        .disconnect(&device_id, None, MtpDisconnectReason::User)
+        .await
+        .expect("virtual-mtp disconnect");
+}
+
+/// The shared stop assertion, against the virtual MTP device.
+///
+/// MTP is the one backend with no real hardware in any lane, so this stands in
+/// for it. A cold `/DCIM/Camera` listing is ~17 s of USB round trips on a real
+/// phone; the seams are per parent group (before that listing), per selected
+/// child, and per entry inside the subtree recursion in
+/// `mtp/connection/bulk_ops.rs`.
+///
+/// Shares the virtual device with the two cells above, so it takes the same
+/// `virtual_device_test_lock`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn mtp_batch_scan_stops_when_it_is_told_to() {
+    let (device_id, vol, vid, _guard) = connect_virtual_device().await;
+    get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
+    // MTP resolves a path through a cache that browsing populates, so walk root
+    // first or `/DCIM` isn't addressable yet.
+    vol.list_directory(Path::new("/"), None).await.expect("listing /");
+
+    cmdr_fs::volume::conformance::assert_batch_scan_stops_when_told(vol.as_ref(), Path::new("/DCIM")).await;
+
+    get_volume_manager().unregister(&vid);
+    connection_manager()
+        .disconnect(&device_id, None, MtpDisconnectReason::User)
+        .await
+        .expect("virtual-mtp disconnect");
+}
+
+/// The boundary is asked INSIDE the subtree recursion, not once per source path:
+/// `/DCIM` holds `photo-001.jpg` plus a `Burst/` directory with its own child, so
+/// a backend asking only per path would come up short here.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn mtp_batch_scan_asks_its_boundary_inside_the_walk() {
+    let (device_id, vol, vid, _guard) = connect_virtual_device().await;
+    get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
+    vol.list_directory(Path::new("/"), None).await.expect("listing /");
+
+    cmdr_fs::volume::conformance::assert_batch_scan_asks_inside_the_walk(vol.as_ref(), Path::new("/DCIM"), 3).await;
 
     get_volume_manager().unregister(&vid);
     connection_manager()

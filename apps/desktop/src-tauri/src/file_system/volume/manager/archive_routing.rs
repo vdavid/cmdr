@@ -7,13 +7,13 @@
 //! impl can span files within a crate), so every method stays at
 //! `VolumeManager::…` regardless of which file it's in.
 
-use super::super::backends::archive::{
-    ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, archive_boundary_candidate, bytes_match_archive_magic,
-    confirm_archive_boundary, format_for_path,
-};
 use super::super::{Volume, WatchCoverage};
 use super::VolumeManager;
 use crate::ignore_poison::IgnorePoison;
+use cmdr_archive::{
+    ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, archive_boundary_candidate, bytes_match_archive_magic,
+    confirm_archive_boundary, format_for_path,
+};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -146,10 +146,9 @@ impl VolumeManager {
     }
 
     /// Async, parent-aware sibling of the sync
-    /// [`archive::path_is_inside_archive`](super::super::backends::archive::path_is_inside_archive):
-    /// true when `path` points INSIDE a confirmed archive (a non-empty inner
-    /// path), for BOTH local and remote (direct SMB / MTP) parents. The `.zip`
-    /// file itself is a plain file → false.
+    /// [`cmdr_archive::path_is_inside_archive`]: true when `path` points INSIDE a
+    /// confirmed archive (a non-empty inner path), for BOTH local and remote
+    /// (direct SMB / MTP) parents. The `.zip` file itself is a plain file → false.
     ///
     /// The write-routing seams (delete / rename / copy-out source) use this so a
     /// remote archive-inner write reaches the managed edit driver instead of
@@ -165,9 +164,9 @@ impl VolumeManager {
     }
 
     /// Async, parent-aware sibling of the sync
-    /// [`archive::path_crosses_archive_boundary`](super::super::backends::archive::path_crosses_archive_boundary):
-    /// true when `path` crosses into a confirmed archive — the `.zip` file itself
-    /// (empty inner) OR a path inside it.
+    /// [`cmdr_archive::path_crosses_archive_boundary`]: true when `path` crosses
+    /// into a confirmed archive — the `.zip` file itself (empty inner) OR a path
+    /// inside it.
     ///
     /// `create` uses this (not [`path_is_inside_archive`](Self::path_is_inside_archive)):
     /// a new entry's parent can BE the `.zip` file (creating at the archive root),

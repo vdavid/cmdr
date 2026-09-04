@@ -15,8 +15,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume, TarCodec};
 use crate::file_system::volume::{InMemoryVolume, Volume, VolumeError};
+use cmdr_archive::{ArchiveFormat, ArchiveVolume, TarCodec};
 use cmdr_fs::volume::host::VolumeHost;
 
 use crate::file_system::write_operations::state::OperationIntent;
@@ -301,4 +301,83 @@ async fn sequential_extract_cancels_between_members() {
     );
     assert!(!dest.exists(Path::new("/out/b.txt")).await, "second file never started");
     assert!(!dest.exists(Path::new("/out/c.txt")).await, "third file never started");
+}
+
+/// The same boundary honors Pause, and resuming finishes the extract.
+///
+/// One decode pass over a solid archive can't be re-entered, so the member
+/// boundary is the only place this path can stop, and one iteration covers the
+/// remainder of the subtree once skipped members are drained through it. Without
+/// the gate, "Paused" stood over an extract running to completion.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn sequential_extract_pauses_between_members_and_resumes() {
+    let fixture = TarGzFixture::new(&[
+        ("docs/a.txt", b"alpha"),
+        ("docs/b.txt", b"bravo"),
+        ("docs/c.txt", b"charlie"),
+    ]);
+    let source = fixture.volume();
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("dest"));
+    let state = make_state();
+
+    // Pause right after the FIRST member lands, so the pause is tied to the
+    // extract's own progress rather than a wall clock.
+    let completed = Arc::new(AtomicUsize::new(0));
+    let source_root = fixture.inner("docs");
+    let dest_for_extract = Arc::clone(&dest);
+    let state_for_extract = Arc::clone(&state);
+    let completed_for_extract = Arc::clone(&completed);
+    let state_for_hook = Arc::clone(&state);
+    let extractor = tokio::spawn(async move {
+        let on_complete = move |_bytes: u64| {
+            if completed_for_extract.fetch_add(1, Ordering::SeqCst) == 0 {
+                state_for_hook.pause_gate.pause();
+            }
+        };
+        copy_single_path(
+            &source,
+            &source_root,
+            Some(true),
+            None,
+            &dest_for_extract,
+            Path::new("/out"),
+            &state_for_extract,
+            &CreatedPaths::default(),
+            &|_, _| ControlFlow::Continue(()),
+            &on_complete,
+            None,
+            WriteStaging::Stage,
+        )
+        .await
+    });
+
+    crate::test_support::wait_until_async(Duration::from_secs(5), "the first member to land", || {
+        completed.load(Ordering::SeqCst) >= 1
+    })
+    .await;
+
+    // Parking has no "parked now" signal, so hold a window open: an ungated pass
+    // would have decoded the remaining members many times over inside it.
+    // allowed-test-sleep: negative assertion over a window; the park has nothing to await.
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(
+        completed.load(Ordering::SeqCst),
+        1,
+        "a paused extract holds at the member boundary"
+    );
+    assert!(
+        !dest.exists(Path::new("/out/b.txt")).await,
+        "the second member hasn't been written"
+    );
+
+    state.pause_gate.resume();
+
+    let bytes = tokio::time::timeout(Duration::from_secs(10), extractor)
+        .await
+        .expect("a resumed extract finishes")
+        .expect("the extract task joins")
+        .expect("sequential extract");
+    assert_eq!(bytes, 5 + 5 + 7, "every member's bytes land once the user resumes");
+    assert_eq!(read_dest(&dest, "/out/b.txt").await.unwrap(), b"bravo");
+    assert_eq!(read_dest(&dest, "/out/c.txt").await.unwrap(), b"charlie");
 }

@@ -1921,3 +1921,18 @@ Belege: Pile `de/` (macOS Finder/AppKit, Microsoft-Terminologie, Nautilus/Thunar
   `contentsRule` („Wenn du nach einer Datei fragst“) · `high`. Beide Schlüssel haben das alte „nie Dateiinhalte“ / „ist
   schreibgeschützt … verändert nie etwas“ verloren; die Einstellungs-Einleitung sagt jetzt
   `verändert nie eine Datei ohne deine Zustimmung` (Zustimmung wie `bevor du zustimmst` in `contentsRule`).
+
+## Die zwei Tooltips der Rollback-Schaltfläche (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+Neue Oberfläche: Der Tooltip sagt jetzt, was DIESE Rücknahme mit den Dateien macht, und die Schaltfläche wird
+abgeschaltet, sobald eine Bewegung über eine Dateisystemgrenze im letzten Schritt steht (die Originale werden entfernt,
+alles liegt schon am Ziel).
+
+- **`rollbackTooltipStopAndMoveBack` → `Stoppen und alle bisher bewegten Dateien zurücklegen`** · Rahmen vom Geschwister
+  `rollbackTooltip` (`Stoppen und …`), und `zurücklegen` ist im Katalog das Verb für ORTE (macOS Finder „Put Back“ →
+  „Zurücklegen“; `cancelRollback.doneMovingBack` „… zurückgelegt“) · `high`. ❌ Nicht `löschen`: die Rücknahme einer
+  Bewegung löscht nichts.
+- **`rollbackAlreadyLandedTooltip`** · die erste Hälfte nimmt das Bild von `cancelRollback.moveAlreadyLanded` auf („ist
+  schon am Ziel“), `zurücknehmen` ist das Verb zum schon gesetzten `Rücknahme`, und `Abbrechen` ist die Beschriftung der
+  Nachbarschaltfläche (`fileOperations.button.cancel`), also steht sie unverändert im Satz · `high`.
+- Kein `sameAsSourceJustification`; kein Apostroph in den Werten, die ICU-Dopplung `''` entfällt.

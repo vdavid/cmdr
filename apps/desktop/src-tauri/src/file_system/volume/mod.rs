@@ -26,14 +26,9 @@ pub(crate) mod manager;
 pub mod reconnect_error;
 
 pub use backends::LocalPosixVolume;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use backends::MtpVolume;
 pub(crate) use backends::rename_local_exclusive;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use backends::{MtpVolume, SmbVolume};
-
-// `smb` is re-exported as a module path because callers reach into it for
-// `SmbConnectionParams` / `connect_smb_volume` / `set_app_handle`.
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use backends::smb;
 
 /// Observe a failed volume operation and, when its errno PROVES the active mount
 /// root is gone, hand the volume's ID to a live sibling mount.
@@ -84,5 +79,10 @@ mod inmemory_test;
 mod mtp_scan_oracle_tests;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod smb_index_scan_test;
+// The media index's byte fetcher over a real `cmdr-smb` session, next to the
+// index-scan cell above: both prove the app's own backend works with the index
+// crate, which is a question only this side can build both halves of.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_media_fetch_integration_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod smb_scan_oracle_tests;

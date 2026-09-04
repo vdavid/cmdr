@@ -349,7 +349,7 @@ pub(crate) async fn register_smb_volume(
     password: Option<&str>,
     port: u16,
 ) {
-    use crate::file_system::volume::smb::connect_smb_volume;
+    use cmdr_smb::volume::connect_smb_volume;
     use std::sync::Arc;
 
     // Resolve mDNS service names (like "Naspolya._smb._tcp.local") to an IP
@@ -381,8 +381,7 @@ pub(crate) async fn register_smb_volume(
         share
     );
 
-    let params =
-        crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
+    let params = cmdr_smb::volume::SmbConnectionParams::new(&resolved_server, share, port, username, password);
     match connect_with_retry(|| {
         connect_smb_volume(
             share,
@@ -460,8 +459,8 @@ pub(crate) async fn try_smb_upgrade(
     port: u16,
     volume_id: &str,
 ) -> Result<(), UpgradeError> {
-    use crate::file_system::volume::smb::connect_smb_volume;
     use cmdr_smb::is_auth_error;
+    use cmdr_smb::volume::connect_smb_volume;
     use std::sync::Arc;
 
     // Resolve mDNS service names to connectable addresses
@@ -477,8 +476,7 @@ pub(crate) async fn try_smb_upgrade(
         return Ok(());
     }
 
-    let params =
-        crate::file_system::volume::smb::SmbConnectionParams::new(&resolved_server, share, port, username, password);
+    let params = cmdr_smb::volume::SmbConnectionParams::new(&resolved_server, share, port, username, password);
     match connect_with_retry(|| {
         connect_smb_volume(share, mount_path, volume_id, params.clone(), crate::volume_host::host())
     })

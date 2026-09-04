@@ -5,10 +5,11 @@
 //! number under the user's decision to proceed.
 
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use super::*;
 use crate::ignore_poison::IgnorePoison;
+use crate::volume::{ListingProgress, ScanStop, ScanStopSignal};
 
 /// A tree with no server under it: a map of directory path to its children.
 struct FakeTree {
@@ -108,9 +109,9 @@ async fn a_subtree_counts_every_level_and_keeps_dedup_in_lockstep() {
     let tree = FakeTree::new()
         .with_dir("/top", &[("a.txt", false, 10), ("deep", true, 0)])
         .with_dir("/top/deep", &[("b.txt", false, 32), ("c.txt", false, 8)]);
-    let ticker = ScanTicker::new(None);
+    let boundary = ScanBoundary::silent();
 
-    let scan = scan_tree(&tree, Path::new("/top"), &ticker).await.expect("the walk");
+    let scan = scan_tree(&tree, Path::new("/top"), &boundary).await.expect("the walk");
 
     assert_eq!(scan.file_count, 3);
     assert_eq!(scan.dir_count, 2, "the top and the nested directory both count");
@@ -125,9 +126,9 @@ async fn a_subtree_counts_every_level_and_keeps_dedup_in_lockstep() {
 #[tokio::test]
 async fn a_single_file_is_one_file_and_no_directory() {
     let tree = FakeTree::new().with_dir("/top", &[("a.txt", false, 10)]);
-    let ticker = ScanTicker::new(None);
+    let boundary = ScanBoundary::silent();
 
-    let scan = scan_tree(&tree, Path::new("/top/a.txt"), &ticker)
+    let scan = scan_tree(&tree, Path::new("/top/a.txt"), &boundary)
         .await
         .expect("the walk");
 
@@ -142,9 +143,9 @@ async fn the_walk_lists_each_directory_once_and_stats_no_child() {
     let tree = FakeTree::new()
         .with_dir("/top", &[("a.txt", false, 1), ("b.txt", false, 2), ("deep", true, 0)])
         .with_dir("/top/deep", &[("c.txt", false, 4)]);
-    let ticker = ScanTicker::new(None);
+    let boundary = ScanBoundary::silent();
 
-    scan_tree(&tree, Path::new("/top"), &ticker).await.expect("the walk");
+    scan_tree(&tree, Path::new("/top"), &boundary).await.expect("the walk");
 
     assert_eq!(tree.listings_of("/top"), 1);
     assert_eq!(tree.listings_of("/top/deep"), 1);
@@ -157,10 +158,11 @@ async fn a_batch_keeps_climbing_across_paths_rather_than_restarting() {
     let seen: Mutex<Vec<ListingProgress>> = Mutex::new(Vec::new());
     let on_progress = |progress: ListingProgress| seen.lock_ignore_poison().push(progress);
 
+    let boundary = ScanBoundary::new(Some(&on_progress));
     let batch = scan_trees(
         &tree,
         &[PathBuf::from("/top/a.txt"), PathBuf::from("/top/b.txt")],
-        Some(&on_progress),
+        &boundary,
     )
     .await
     .expect("the batch");
@@ -181,14 +183,18 @@ async fn a_batch_of_one_carries_the_top_level_type_and_a_batch_of_two_does_not()
         .with_dir("/top", &[("only", true, 0), ("a.txt", false, 3)])
         .with_dir("/top/only", &[]);
 
-    let one = scan_trees(&tree, &[PathBuf::from("/top/only")], None)
+    let one = scan_trees(&tree, &[PathBuf::from("/top/only")], &ScanBoundary::silent())
         .await
         .expect("the batch");
     assert!(one.aggregate.top_level_is_directory);
 
-    let two = scan_trees(&tree, &[PathBuf::from("/top/only"), PathBuf::from("/top/a.txt")], None)
-        .await
-        .expect("the batch");
+    let two = scan_trees(
+        &tree,
+        &[PathBuf::from("/top/only"), PathBuf::from("/top/a.txt")],
+        &ScanBoundary::silent(),
+    )
+    .await
+    .expect("the batch");
     assert!(!two.aggregate.top_level_is_directory);
 }
 
@@ -268,4 +274,129 @@ async fn a_symlinked_directory_counts_as_one_entry_and_is_never_walked() {
         0,
         "the walk must never list through a symlink"
     );
+}
+
+// ============================================================================
+// The stop boundary
+// ============================================================================
+
+/// A big-enough tree to tell "stopped early" from "ran to the end".
+fn stoppable_tree() -> FakeTree {
+    FakeTree::new()
+        .with_dir("/top", &[("a.txt", false, 1), ("b.txt", false, 2), ("deep", true, 0)])
+        .with_dir("/top/deep", &[("c.txt", false, 4), ("d.txt", false, 8)])
+}
+
+/// The stop as a walk-driven backend receives it.
+fn stop_from(signal: &Arc<crate::volume::scan_stop::TestScanStop>) -> ScanStop {
+    ScanStop::new(Arc::clone(signal) as Arc<dyn ScanStopSignal>)
+}
+
+/// ❗ A cancelled scan comes back as `VolumeError::Cancelled`, ❌ never as a
+/// partial `BatchScanResult`: a caller reads the totals as the size of the
+/// transfer it is about to run.
+#[tokio::test]
+async fn a_stopped_walk_returns_cancelled_rather_than_a_short_total() {
+    let tree = stoppable_tree();
+    let signal = crate::volume::scan_stop::TestScanStop::already_stopping();
+    let boundary = ScanBoundary::silent().stopping_at(stop_from(&signal));
+
+    let outcome = scan_trees(&tree, &[PathBuf::from("/top")], &boundary).await;
+
+    assert!(
+        matches!(outcome, Err(VolumeError::Cancelled(_))),
+        "a stopped walk must say so; got {outcome:?}"
+    );
+}
+
+/// The boundary sits BEFORE the listing round trip, which is the expensive part:
+/// over a sleeping share, a boundary on the far side of one is a boundary the
+/// user waits out.
+#[tokio::test]
+async fn a_stopped_walk_never_issues_the_listing_it_was_about_to() {
+    let tree = stoppable_tree();
+    let signal = crate::volume::scan_stop::TestScanStop::already_stopping();
+    let boundary = ScanBoundary::silent().stopping_at(stop_from(&signal));
+
+    let _ = scan_trees(&tree, &[PathBuf::from("/top")], &boundary).await;
+
+    assert_eq!(
+        tree.listings_of("/top"),
+        0,
+        "the walk asked before listing, so nothing went to the far end"
+    );
+}
+
+/// Cancel mid-walk: the boundary is per entry, so a stop that lands part-way
+/// through doesn't have to wait for the tree to finish.
+#[tokio::test]
+async fn a_walk_stops_at_the_boundary_the_cancel_landed_on() {
+    let tree = stoppable_tree();
+    let signal = crate::volume::scan_stop::TestScanStop::new();
+    let stop_after = Arc::clone(&signal);
+    // Report-driven: the third entry the walk counts flips the signal, so the
+    // walk must refuse at that same boundary.
+    let trip = move |progress: ListingProgress| {
+        if progress.files + progress.dirs >= 3 {
+            stop_after.stop();
+        }
+    };
+    let boundary = ScanBoundary::new(Some(&trip)).stopping_at(stop_from(&signal));
+
+    let outcome = scan_trees(&tree, &[PathBuf::from("/top")], &boundary).await;
+
+    assert!(matches!(outcome, Err(VolumeError::Cancelled(_))), "got {outcome:?}");
+    let counts = boundary.counts();
+    assert_eq!(
+        counts.files + counts.dirs,
+        3,
+        "the walk stopped where the cancel landed, not at the end of the tree"
+    );
+    assert_eq!(
+        tree.listings_of("/top/deep"),
+        0,
+        "and never reached the nested directory"
+    );
+}
+
+/// A paused walk stands still and then carries on to a complete, correct total:
+/// Pause is not a slower Cancel.
+#[tokio::test]
+async fn a_paused_walk_resumes_and_still_reports_the_whole_tree() {
+    let tree = stoppable_tree();
+    let signal = crate::volume::scan_stop::TestScanStop::new();
+    signal.pause();
+    let resumer = Arc::clone(&signal);
+    let released = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let released_flag = Arc::clone(&released);
+    tokio::spawn(async move {
+        // allowed-test-sleep: the resume must arrive while the walk is parked, and
+        // the assertion below is that it did — a poll would race the thing it's
+        // measuring.
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        released_flag.store(true, std::sync::atomic::Ordering::Release);
+        resumer.resume();
+    });
+
+    let boundary = ScanBoundary::silent().stopping_at(stop_from(&signal));
+    let scan = scan_trees(&tree, &[PathBuf::from("/top")], &boundary)
+        .await
+        .expect("a resumed walk finishes");
+
+    assert!(
+        released.load(std::sync::atomic::Ordering::Acquire),
+        "the walk must have parked until the resume, not run straight through"
+    );
+    assert_eq!(scan.aggregate.file_count, 4);
+    assert_eq!(scan.aggregate.total_bytes, 15);
+}
+
+/// The single-path `scan_for_copy` body answers to nobody, and that is the
+/// honest state: the trait method hands it no stop. Pinned so nobody reads the
+/// silence as a walk ignoring one it was given.
+#[tokio::test]
+async fn the_single_path_body_has_no_stop_to_honor() {
+    let tree = stoppable_tree();
+    let scan = scan_one(&tree, Path::new("/top")).await.expect("the walk");
+    assert_eq!(scan.file_count, 4);
 }

@@ -17,10 +17,10 @@ pub(super) use super::super::event_sinks::CollectorEventSink;
 pub(super) use super::super::manager::OperationSummaryText;
 pub(super) use super::super::types::{ConflictId, ConflictResolution, WriteOperationError, WriteOperationType};
 pub(super) use crate::file_system::volume::Volume;
-pub(super) use crate::file_system::volume::backends::archive::mutator::Changeset;
 pub(super) use crate::file_system::volume::manager::get_volume_manager;
 pub(super) use crate::ignore_poison::IgnorePoison;
 pub(super) use crate::test_support::wait_until_async;
+pub(super) use cmdr_archive::mutator::Changeset;
 pub(super) use zip::write::SimpleFileOptions;
 pub(super) use zip::{ZipArchive, ZipWriter};
 

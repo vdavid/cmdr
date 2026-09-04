@@ -120,13 +120,13 @@ async fn same_volume_move_reports_zero_bytes_total() {
 }
 
 /// Cross-volume move (no `preview_id`) emits multiple `Scanning`-phase
-/// progress events with climbing tallies as `scan_for_copy_batch_with_progress`
+/// progress events with climbing tallies as `scan_for_copy_batch_with_boundary`
 /// walks the source list, not just one frozen event at `0/0/0/0`. Without the
 /// per-listing progress wiring, programmatic / MCP-triggered moves against a
 /// slow source (cold MTP, large SMB tree) sit on "Scanning... 0 bytes / 0
 /// files / 0 dirs" for the entire scan duration.
 ///
-/// `InMemoryVolume` inherits the default `scan_for_copy_batch_with_progress`,
+/// `InMemoryVolume` inherits the default `scan_for_copy_batch_with_boundary`,
 /// which fires `on_progress` once per top-level path. With 4 sources we
 /// expect the kickoff emit plus at least one mid-scan event showing a partial
 /// tally before the scan finishes.

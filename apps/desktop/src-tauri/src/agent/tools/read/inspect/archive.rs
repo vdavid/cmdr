@@ -18,12 +18,12 @@ use serde::Serialize;
 
 use super::{Content, FileRow, ReadFailure, TextAsk, UnreadableReason, ok_row, spoken_modified, status_for};
 use crate::file_system::volume::VolumeError;
-use crate::file_system::volume::backends::archive::{ArchiveVolume, archive_boundary_candidate, format_for_path};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_viewer::ViewerError;
 use crate::file_viewer::archive_extract::ExtractedEntry;
 use crate::search::format_size;
 use cmdr_archive::ArchiveNode;
+use cmdr_archive::{ArchiveVolume, archive_boundary_candidate, format_for_path};
 
 /// Immediate children one archive row lists. Past it the row says `truncated` and the
 /// model asks about a subfolder; paging an archive's children is a follow-up.

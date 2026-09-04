@@ -10,6 +10,25 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-03 `mtp-crate-extraction.md` - **MTP is the last backend that still reaches sideways into the app.** Its
+      session layer holds a `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache and the
+      index directly, and gates real behavior on nine inline `cfg(test)`s, so the backend on the flakiest hardware is
+      the one with no scoped verification loop. Ten decisions taken; the load-bearing one is that a backend has two
+      faces: the `Volume` trait already is the file-ops face and moves untouched, so the whole job is retrofitting the
+      lifecycle face onto the host seams IN PLACE (M1, M2) before a near-mechanical move (M3), then a test split by what
+      each cell asserts (M4). The manager becomes a value the app parks; device events become a crate-local typed trait;
+      two `ListingHost` and two `IndexNotifier` additions; `UsbSpeed` moves to `cmdr-fs`. Gates: `bindings.ts` zero-diff
+      after every in-place milestone, `cargo check -p cmdr-mtp --all-targets` with no app, the E2E MTP shard, a real
+      phone. Two to three days.
+- [ ] 2026-09-04 `git-portal-volume.md` - **The virtual `.git` portal is ten `if` sites inside `LocalPosixVolume`, plus
+      English the translations never see.** Three route hooks and seven mutation guards, two more hand-enforced rules on
+      top (skip watching virtual paths, refresh on toggle), and a delete walker that lists through the hooked
+      `list_directory` and may meet six virtual folders it can't remove (verify at M0). Same mechanism archives already
+      use: a read-only `GitPortalVolume` in `crates/cmdr-git`, routed lexically by `resolve` only for `.git/<category>/`
+      paths, so `.git/` and every real file under it stay writable with no guard anywhere; the `.git/` root listing is a
+      pane-only overlay seam that scans and walkers never see. Three rules become types. `display_size` becomes a typed
+      `GitEntryMeta` the frontend words per locale; the watcher moves with a typed sink. Sequenced after
+      `mtp-crate-extraction.md`; can go first if that stalls. About three days.
 - [ ] 2026-09-03 `agent-search-tool.md` - **Ask Cmdr has 18 tools and none of them searches.** Asked to find penguin
       pictures, the agent invented `name` / `nameMatch` arguments onto `list_dir`, the deserializer dropped them, and it
       reported "nothing matched" four times: confident fabricated negatives on a question the index answers instantly. A

@@ -1052,8 +1052,22 @@
 
   "fileOperations.transferProgress.rollbackTooltip": "Stop, and delete every file written so far",
   "@fileOperations.transferProgress.rollbackTooltip": {
-    "description": "Tooltip on the Rollback button. It must not read like plain Cancel, which stops the operation and KEEPS the completed files, dropping only the one half-written file: Rollback deletes all of them. The user is asked to confirm before anything is deleted.",
+    "description": "Tooltip on the Rollback button of a running COPY (or a compress). It must not read like plain Cancel, which stops the operation and KEEPS the completed files, dropping only the one half-written file: Rollback deletes all of them. The user is asked to confirm before anything is deleted. The sibling fileOperations.transferProgress.rollbackTooltipStopAndMoveBack covers a running move, where nothing is deleted.",
     "screenshot": "conflict-dialog.png"
+  },
+
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Stop, and move back every file moved so far",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "description": "Tooltip on the Rollback button of a running MOVE (or a move to the trash). The sibling of fileOperations.transferProgress.rollbackTooltip, which covers a running copy, and the difference is the whole point: rolling back a move deletes nothing, it carries the files back where they came from. So keep the tone calm rather than a warning and never word it as a delete. It must still not read like the plain Cancel beside it, which stops the move and LEAVES the files it has already moved at the destination. Use the same verb as fileOperations.rollbackConfirm.bodyStopAndMoveBack, which is the confirmation this button opens. No final full stop, like its sibling.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is the tooltip on its Rollback button."
+  },
+
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Every file is already at the destination, so Cmdr can''t undo the move now. Cancel still stops it from removing the rest of the originals.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "description": "Tooltip on the Rollback button of a move between two drives once Cmdr has reached its last step: every file has arrived at the destination and Cmdr is removing the originals one by one. The button is switched off there, and this says why plus what still works. Two jobs, in this order: (a) the move has landed, so there is no undoing it any more, (b) the Cancel button beside it still works and stops Cmdr before it removes the originals it hasn't reached yet. Never suggest the undo might partly work. 'Cancel' is that button's own label (fileOperations.button.cancel), so use the same word you translated it with. 'Cmdr' is the app name and stays as it is. The toast the user reads afterwards, fileOperations.cancelRollback.moveAlreadyLanded, tells the same story, so keep the two consistent. Sentence case; the apostrophe is doubled for ICU and renders as one.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string is the tooltip on its Rollback button while the dialog's title reads \"Removing the originals…\"."
   },
 
   "fileOperations.transferProgress.titlePaused": "Paused",

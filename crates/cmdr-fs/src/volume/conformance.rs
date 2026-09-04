@@ -12,8 +12,10 @@
 //! identical everywhere, which is the point.
 
 use std::path::Path;
+use std::sync::Arc;
 
-use super::{DirectoryCreation, SourceItemInfo, Volume, VolumeError};
+use super::scan_stop::TestScanStop;
+use super::{DirectoryCreation, ScanBoundary, ScanStop, ScanStopSignal, SourceItemInfo, Volume, VolumeError};
 
 /// The size `path` reports right now, for a fixture precondition or an
 /// after-the-fact "nothing was overwritten" check.
@@ -439,4 +441,88 @@ pub async fn assert_conflict_scan_reads_a_missing_destination_as_empty(volume: &
             volume.name(),
         ),
     }
+}
+
+/// [`Volume::scan_for_copy_batch_with_boundary`] honors the stop it was handed,
+/// and says so with [`VolumeError::Cancelled`].
+///
+/// **Why this one is worth a shared assertion.** A scan of a cold share is the
+/// minutes-long part of a transfer, so it is where somebody presses Cancel — and
+/// a backend can stop honoring the boundary with no compile error and no visible
+/// symptom, because a scan that ignores it still returns the right numbers. The
+/// only thing that goes wrong is that the button does nothing, which nothing
+/// else in the suite would notice.
+///
+/// `dir` must already exist on `volume` and hold at least one entry.
+pub async fn assert_batch_scan_stops_when_told(volume: &dyn Volume, dir: &Path) {
+    let entries = volume
+        .list_directory(dir, None)
+        .await
+        .unwrap_or_else(|e| panic!("fixture precondition: listing {} must work, got {e:?}", dir.display()));
+    assert!(
+        !entries.is_empty(),
+        "fixture precondition: {} must hold something to walk",
+        dir.display()
+    );
+
+    let signal = TestScanStop::already_stopping();
+    let boundary = ScanBoundary::silent().stopping_at(ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>));
+    let outcome = volume
+        .scan_for_copy_batch_with_boundary(&[dir.to_path_buf()], &boundary)
+        .await;
+
+    match outcome {
+        Err(VolumeError::Cancelled(_)) => {}
+        Ok(scan) => panic!(
+            "{}'s batch scan of {} ran to completion ({} files) with the stop already armed. \
+             Cancel is a button that does nothing on this backend.",
+            volume.name(),
+            dir.display(),
+            scan.aggregate.file_count,
+        ),
+        Err(e) => panic!(
+            "{}'s batch scan of {} must report VolumeError::Cancelled when stopped, got {e:?}. \
+             Callers classify on the variant, never on the message.",
+            volume.name(),
+            dir.display(),
+        ),
+    }
+}
+
+/// [`Volume::scan_for_copy_batch_with_boundary`] asks its boundary INSIDE the
+/// walk, not only once per source path.
+///
+/// The difference is what a person feels: a backend that asks per path stops a
+/// wrong-share scan only after it has walked the whole share, which on a sleeping
+/// NAS is the entire wait the Cancel was meant to end. Run this from every
+/// backend that walks a real tree; a backend whose per-path scan is bounded and
+/// local (an archive's central directory, an in-memory map) honestly asks per
+/// path and runs only [`assert_batch_scan_stops_when_told`].
+///
+/// `dir` must hold at least `at_least` entries across its subtree.
+pub async fn assert_batch_scan_asks_inside_the_walk(volume: &dyn Volume, dir: &Path, at_least: usize) {
+    let signal = TestScanStop::new();
+    let boundary = ScanBoundary::silent().stopping_at(ScanStop::new(Arc::clone(&signal) as Arc<dyn ScanStopSignal>));
+    let scan = volume
+        .scan_for_copy_batch_with_boundary(&[dir.to_path_buf()], &boundary)
+        .await
+        .unwrap_or_else(|e| panic!("nothing is stopping this scan of {}, got {e:?}", dir.display()));
+
+    assert!(
+        scan.aggregate.file_count + scan.aggregate.dir_count >= at_least,
+        // allowed-pluralize-noun: a mis-seeded-fixture panic; one entry can't prove this.
+        "fixture precondition: {} must hold at least {at_least} entries, the scan found {}",
+        dir.display(),
+        scan.aggregate.file_count + scan.aggregate.dir_count,
+    );
+    assert!(
+        signal.asks() >= at_least,
+        "{}'s batch scan of {} asked its boundary {} time(s) for {} entries. It stops per source \
+         path rather than inside the walk, so a Cancel lands only after the whole subtree is \
+         counted.",
+        volume.name(),
+        dir.display(),
+        signal.asks(),
+        at_least,
+    );
 }

@@ -1840,3 +1840,15 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
   makes them · `high`
 - **never changes a file without your approval** · `未经你批准，绝不会更改任何文件` · `批准` matches the settled
   `在你批准之前，任何文件都不会有变化` (`consent.contentsRule`); `更改` for "change" (macOS AppKit `复查更改…`) · `high`
+
+## 回滚按钮的两条提示 (2026-09-04；`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+
+新界面：按钮提示现在说清这一次回滚会对文件做什么；跨文件系统的移动一进入最后一步（所有文件都已到达目标位置，正在移除原文件），按钮就会关掉。
+
+- **`rollbackTooltipStopAndMoveBack` → `停止操作，并把目前已挪走的所有文件放回原处`** · 句式沿用同胞键
+  `rollbackTooltip`（`停止操作，并…`），`放回原处` 是目录里已定的说法（`cancelRollback.doneMovingBack`“放回原处”）·
+  `high`。❌ 不用 `删除`：回滚一次移动不删除任何东西。
+- **`rollbackAlreadyLandedTooltip`** · 前半句沿用 `cancelRollback.moveAlreadyLanded`
+  的说法（“已经在目标位置了”），`回滚` 是已定的术语（`rollbackUnavailableTooltip`），`取消`
+  直接用旁边按钮自己的标签（`fileOperations.button.cancel`），按目录惯例加上引号 · `high`。
+- 无 `sameAsSourceJustification`；两个值都不含撇号。

@@ -46,6 +46,10 @@ pub(crate) use caching::{
 pub(crate) use operations::get_listings_by_volume_prefix;
 pub(crate) use operations::{get_listing_entries, update_listing_entries};
 
+// The app's half of `cmdr-archive`'s live-content watch: what a refresh does to
+// the listing cache, which is this module's side of the seam.
+#[cfg(test)]
+mod archive_watch_integration_test;
 #[cfg(test)]
 mod brief_columns_test;
 #[cfg(test)]
@@ -68,6 +72,11 @@ mod operations_test;
 mod path_index_test;
 #[cfg(test)]
 mod row_beside_test;
+// A pane close drops a listing, and must not reach the volume's own watcher.
+// Docker-gated, over a real `cmdr-smb` session, because the SMB watcher's
+// lifetime is what the regression was about.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod smb_pane_close_watch_integration_test;
 #[cfg(test)]
 mod sorting_test;
 #[cfg(test)]

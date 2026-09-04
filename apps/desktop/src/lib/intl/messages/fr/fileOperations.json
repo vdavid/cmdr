@@ -606,6 +606,14 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Arrêter et remettre en place tous les fichiers déplacés jusqu''à présent",
+  "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
+    "sourceHash": "193c682"
+  },
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Tous les fichiers sont déjà arrivés à destination, le retour en arrière n''est donc plus possible. Annuler arrête tout de même Cmdr avant qu''il ne supprime le reste des originaux.",
+  "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
+    "sourceHash": "5f8b044"
+  },
   "fileOperations.transferProgress.titlePaused": "En pause",
   "@fileOperations.transferProgress.titlePaused": {
     "sourceHash": "e159b06"

@@ -20,17 +20,19 @@
 //! `#[ignore]`d like every `smb_integration_` test; the
 //! `desktop-rust-integration-tests` check boots the Docker Samba stack and runs
 //! them. Locally: `./apps/desktop/test/smb-servers/start.sh`, then
-//! `cargo nextest run smb_integration_ --run-ignored all`. Declared as a
-//! `#[cfg(test)]` submodule of `smb`; shared helpers come from
-//! `super::smb_test_support`.
+//! `cargo nextest run smb_integration_ --run-ignored all`. Shared helpers come
+//! from `super::smb_test_support`.
 
 use super::smb_test_support::*;
-use super::*;
+use cmdr_smb::volume::*;
 use std::sync::atomic::AtomicBool;
 
 use crate::file_system::write_operations::test_support::TestOperationGuard;
 use crate::file_system::write_operations::{
-    CollectorEventSink, VolumeCopyConfig, WriteProgressEvent, copy_volumes_with_progress, render_live_transfer_dump,
+    CollectorEventSink, ConflictInfo, DryRunResult, ScanProgressEvent, VolumeCopyConfig, WriteCancelledEvent,
+    WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteOperationPhase,
+    WriteOperationState, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent, copy_volumes_with_progress,
+    render_live_transfer_dump,
 };
 use crate::ignore_poison::IgnorePoison;
 
@@ -143,6 +145,61 @@ async fn await_copy_or_probe_dump<T>(
             copy.abort();
             Err(dump)
         }
+    }
+}
+
+/// A collector that pauses the operation the instant it emits its first
+/// COPYING-phase frame, and forwards everything unchanged.
+///
+/// This is how `a_wedged_copy_is_caught_and_names_its_phase` stages its wedge in
+/// the STREAMING phase rather than in the pre-flight scan. Pausing before the
+/// operation starts parks it at the scan's first boundary instead — correct
+/// behavior, and no use to a test about the transfer probe, which has nothing
+/// registered until the driver is running. Driven from the driver's own emit, so
+/// there is no window in which the copy could finish first.
+struct PauseOnFirstCopyFrame {
+    inner: Arc<CollectorEventSink>,
+    state: Arc<WriteOperationState>,
+}
+
+impl crate::file_system::OperationEventSink for PauseOnFirstCopyFrame {
+    fn emit_progress(&self, event: WriteProgressEvent) {
+        let reached_the_copy = matches!(event.phase, WriteOperationPhase::Copying);
+        self.inner.emit_progress(event);
+        if reached_the_copy {
+            // Idempotent: `pause()` on an already-paused gate changes nothing.
+            self.state.pause_gate.pause();
+        }
+    }
+    fn emit_complete(&self, event: WriteCompleteEvent) {
+        self.inner.emit_complete(event);
+    }
+    fn emit_cancelled(&self, event: WriteCancelledEvent) {
+        self.inner.emit_cancelled(event);
+    }
+    fn emit_error(&self, event: WriteErrorEvent) {
+        self.inner.emit_error(event);
+    }
+    fn emit_conflict(&self, event: WriteConflictEvent) {
+        self.inner.emit_conflict(event);
+    }
+    fn emit_conflict_resolved(&self, event: WriteConflictResolvedEvent) {
+        self.inner.emit_conflict_resolved(event);
+    }
+    fn emit_source_item_done(&self, event: WriteSourceItemDoneEvent) {
+        self.inner.emit_source_item_done(event);
+    }
+    fn emit_scan_progress(&self, event: ScanProgressEvent) {
+        self.inner.emit_scan_progress(event);
+    }
+    fn emit_scan_conflict(&self, conflict: ConflictInfo) {
+        self.inner.emit_scan_conflict(conflict);
+    }
+    fn emit_dry_run_complete(&self, result: DryRunResult) {
+        self.inner.emit_dry_run_complete(result);
+    }
+    fn emit_settled(&self, event: WriteSettledEvent) {
+        self.inner.emit_settled(event);
     }
 }
 
@@ -449,8 +506,16 @@ async fn smb_integration_a_wedged_copy_is_caught_and_names_its_phase() {
     let state = Arc::clone(guard.state());
     let events = Arc::new(CollectorEventSink::new());
 
-    // Park the operation before it starts, so it can never reach completion.
-    state.pause_gate.pause();
+    // ❗ Parked at the first COPYING frame, ❌ not before the operation starts. A
+    // pre-pause parks the operation in its pre-flight SCAN, which now honors the
+    // gate too — and a scan-phase park registers no transfer probe, so the dump
+    // this test is about would have nothing to print. Pausing from inside the
+    // driver's own first progress emit is what puts the wedge in the streaming
+    // phase, deterministically and on the real code path.
+    let events = Arc::new(PauseOnFirstCopyFrame {
+        inner: Arc::clone(&events),
+        state: Arc::clone(&state),
+    });
 
     let mut copy = tokio::spawn({
         let events = Arc::clone(&events) as Arc<dyn crate::file_system::OperationEventSink>;

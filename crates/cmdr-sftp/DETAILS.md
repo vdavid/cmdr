@@ -262,14 +262,15 @@ are the same volume instance (`write_operations/transfer/volume/strategy.rs::try
 
 ## Scanning, before a copy runs
 
-`scan.rs` answers `scan_for_copy`, `scan_for_copy_batch_with_progress`, and `scan_for_conflicts`.
+`scan.rs` answers `scan_for_copy`, `scan_for_copy_batch_with_boundary`, and `scan_for_conflicts`.
 
 - **One listing per DIRECTORY, ❌ never a stat per child.** A listing already carries every child's size and type, so a
   1 000-file folder is one round trip rather than a thousand. Over a 50 ms link that is a second against a minute.
-- ❗ **The batch method is overridden for its PROGRESS.** The trait default reports only between paths, so one deep
-  source leaves the scan dialog frozen and leaves the scan watchdog — which bounds a preview by INACTIVITY — unable to
-  tell a slow tree from a server that stopped answering. The ticker is `cmdr_fs::volume::ScanTicker`, shared with SMB so
-  the cumulative-for-the-call promise can't drift between the two.
+- ❗ **The batch method is overridden for its BOUNDARY.** The trait default asks only between paths, so one deep source
+  leaves the scan dialog frozen, leaves the scan watchdog — which bounds a preview by INACTIVITY — unable to tell a slow
+  tree from a server that stopped answering, and leaves Cancel with nothing to land on until the whole subtree is
+  counted. The boundary is `cmdr_fs::volume::ScanBoundary`, threaded by `scan_walk`, so both the cumulative-for-the-call
+  promise and the per-entry stop come for free and can't drift from the other backends'.
 - ⚠️ **The batch walks EVERY path's whole subtree, one path at a time.** There's no pipelined-stat shortcut here (SMB
   has one; this backend runs `scan_recursive` per path and only borrows the single path's `top_level_is_directory` for
   the aggregate). So a batch of one directory is a full recursive walk, ❌ never a cheap "what is this path?". A caller
@@ -810,7 +811,7 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
   pane) or skipping the temp's patch entirely, and both need the app's listing-mutation contract read first.
 - **`paths_are_os_visible` → false, `local_path` → `None`.** Answering otherwise would let a drag hand Finder a path
   that resolves to nothing, or worse to a local file of the same name.
-- **`scan_for_copy`, `scan_for_copy_batch_with_progress`, and `scan_for_conflicts` are all answered** (§ "Scanning,
+- **`scan_for_copy`, `scan_for_copy_batch_with_boundary`, and `scan_for_conflicts` are all answered** (§ "Scanning,
   before a copy runs"). ❗ `begin_scan_session` / `end_scan_session` keep their no-op defaults and are a DIFFERENT
   thing: they bracket the index scan's background walk, ❌ never `scan_for_copy`. There is no scan-connection pool to
   set up or tear down, because a second connection is a second authentication.

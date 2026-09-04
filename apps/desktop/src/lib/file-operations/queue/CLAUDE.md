@@ -38,11 +38,11 @@ queue (⌥⌘Q) or the palette. Backend: `apps/desktop/src-tauri/src/file_system
   MARKUP through `{@html}`; the pipeline's title is dropped in the row.
 - **Show hands a row's operation back to the main window's progress dialog**, over `foreground-operation` carrying the
   id alone. ❌ Not a command on the operation, ❌ never offered on a `queued` row. DETAILS § Show.
-- **A row commands its own operation through its session** (`../operation-session/CLAUDE.md`); the page keeps only what
-  ISN'T per-operation (Pause all / Resume all / Cancel selected, dismissing one).
+- **A row commands its own operation through its session** (`../operation-session/CLAUDE.md`); the page keeps only the
+  fleet actions (Pause all / Resume all / Cancel selected, Dismiss).
 - **Cancel keeps partials; Rollback is the separate, opt-in undo.** `session.cancel()` → `cancel_operation`: no
-  rollback, no confirm (why `capabilities/queue.json` DROPS `dialog:allow-ask` and `store:default`).
-  `session.rollback()` shows ONLY where `supportsRollback` says so, ❌ never inferred from the type.
+  rollback, no confirm (why `capabilities/queue.json` DROPS `dialog:allow-ask`/`store:default`). `session.rollback()`
+  shows ONLY where `supportsRollback` and `reversalWindowClosed` allow it, ❌ never inferred from the type.
 - **Window perms fail SILENTLY**: `await` every Tauri call in try/catch with a `log.warn`, and smoke-test with
   `pnpm dev` after a perm change. Being its own webview, the page inits its own i18n / theme / transparency / text size
   (`initWindowSettings()`, `lib/settings/CLAUDE.md`).

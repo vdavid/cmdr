@@ -22,12 +22,12 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::smb::{SmbConnectionParams, connect_smb_volume};
 use cmdr_fs::volume::{Volume, smb_volume_id};
 use cmdr_index::store::{IndexStore, ROOT_ID};
 use cmdr_index::testing::scan::IndexWriter;
 use cmdr_index::testing::scan::ScanProgress;
 use cmdr_index::testing::scan::scan_volume_via_trait;
+use cmdr_smb::volume::{SmbConnectionParams, connect_smb_volume};
 
 /// Where the test volume is mounted. Every path handed to it must be absolute
 /// UNDER this root, exactly like the paths a real pane sends: `to_smb_path`
