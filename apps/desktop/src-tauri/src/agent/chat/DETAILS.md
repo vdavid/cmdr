@@ -609,8 +609,12 @@ live types into `context`'s pure `EnvelopeFreshness` / `EnvelopeConnectivity` mi
 The context tests are four modules under `context/`, split by concern: `tests.rs` (the prefix,
 the envelope, elision, the budget), `stub_tests.rs` (what a dropped result says, and that a plan
 can't cite it), `cost_tests.rs` (what the real shapes cost), and `test_support.rs` (the
-transcript builders and budgets they share). Put a new context test in the module whose concern
-it matches rather than growing `tests.rs`.
+transcript builders and budgets they share). The runtime tests split the same way, over
+`runtime/test_support.rs`: `tests.rs` (single-flight, the per-message budgets, cancellation,
+the crash cases, cost, the typed error surface, and the attachment + consent gates),
+`repeat_tests.rs` (the repeat breaker), `context_budget_tests.rs`, `model_change_tests.rs`, and
+`wake_tests.rs`. Put a new test in the module whose concern it matches rather than growing
+`tests.rs`.
 
 Every `context.rs` test runs with no tokio runtime (the core is pure). The runtime tests
 use a local `ProgrammableLlm` (per-turn text / tool calls / usage / a mid-stream drop with

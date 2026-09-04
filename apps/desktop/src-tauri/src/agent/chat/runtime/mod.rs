@@ -296,6 +296,8 @@ mod context_budget_tests;
 #[cfg(test)]
 mod model_change_tests;
 #[cfg(test)]
+mod repeat_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod wake_tests;
