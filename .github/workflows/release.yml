@@ -9,8 +9,56 @@ permissions:
   contents: write
 
 jobs:
+  # Gates everything below. A `v*` tag push runs this whole workflow, and the `publish` job
+  # rewrites `apps/website/public/latest.json` for whatever tag fired it, with no regard for
+  # which version that is. Every user's updater reads that file, so re-pushing an old tag
+  # points the whole install base at an old build. That has happened: retagging `v0.4.0` onto
+  # its rebased commit rebuilt a January release, re-uploaded its assets, and committed a
+  # manifest naming 0.4.0 over the live 0.41.0. Only the `[skip ci]` on that commit kept it off
+  # the website.
+  #
+  # This runs in seconds and gates `build`, so a mistaken push costs nothing: no three parallel
+  # 90-minute macOS builds, and no assets overwritten on an old release.
+  guard:
+    name: Check this tag moves the release forward
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Refuse to move the update manifest backwards
+        env:
+          # Repository variable, deliberately out-of-band from git: no combination of tag pushes
+          # can satisfy it by accident, which matters because a tag push IS the mistake class.
+          # It must name the exact tag, so a stale value can never act as a blanket "always
+          # allow" — it only ever unblocks the one tag written in it.
+          REPUBLISH: ${{ vars.RELEASE_REPUBLISH_TAG }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          CURRENT=$(jq -r .version apps/website/public/latest.json)
+
+          if [ "$REPUBLISH" = "$TAG" ]; then
+            echo "::warning::RELEASE_REPUBLISH_TAG names $TAG, so publishing $VERSION over $CURRENT is deliberate. Clear that variable once this run finishes."
+            exit 0
+          fi
+
+          # `sort -V` orders the two plain X.Y.Z versions; the tag has to come out on top, and a
+          # re-push of the current version is refused too (it would rebuild and re-sign a release
+          # users already have).
+          NEWEST=$(printf '%s\n%s\n' "$CURRENT" "$VERSION" | sort -V | tail -1)
+          if [ "$VERSION" = "$CURRENT" ] || [ "$NEWEST" != "$VERSION" ]; then
+            echo "::error::$TAG would set the update manifest to $VERSION, but it currently advertises $CURRENT. Every user's updater reads that file, so publishing an older build offers the whole install base a downgrade."
+            echo "If this is a deliberate rollback: set the repository variable RELEASE_REPUBLISH_TAG to exactly '$TAG', re-run this workflow, then clear the variable. Full procedure: docs/guides/releasing.md § Rolling back a release."
+            exit 1
+          fi
+
+          echo "$TAG moves the manifest $CURRENT -> $VERSION. Proceeding."
+
   build:
     name: Build (${{ matrix.arch }})
+    needs: [guard]
     # Two runners can build this: GitHub's hosted macOS images, and David's self-hosted M3 MBP
     # (`[self-hosted, macOS, ARM64]`). GitHub-hosted is the ACTIVE one; see
     # `docs/guides/releasing.md` § "Which runner builds the release" for the trade-offs and the
