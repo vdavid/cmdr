@@ -1,4 +1,11 @@
 //! Search tool schemas.
+//!
+//! ⚠️ **A schema is PREFIX**: every property description rides every turn of every
+//! conversation, whether or not the turn searches. `search_schema` is the biggest
+//! declaration either view carries, so each property here gets ONE line and the
+//! knowledge that would fill a paragraph (when to turn the system tier off, what a
+//! date means, why there is no `offset`) is stated once in the tool's description
+//! in `../table.rs`. ❌ Don't say it in both places.
 
 use serde_json::{Value, json};
 
@@ -46,24 +53,24 @@ pub fn search_schema() -> Value {
             },
             "excludeSystemDirs": {
                 "type": "boolean",
-                "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc). Default: true. Turn it OFF for disk-space questions: those folders are usually where the space went. The result says how many matches this hid."
+                "description": "Skip system, cache, and build folders (node_modules, .git, Caches). Default: true."
             },
             "sortBy": {
                 "type": "string",
                 "enum": ["relevance", "size", "modified"],
-                "description": "Result order. Default 'relevance' (best name match, then recency). 'size' returns the biggest matches that exist anywhere in scope, files and folders on one scale (a folder by its recursive total) — use it with excludeSystemDirs: false to find where disk space went. 'modified' returns the newest."
+                "description": "relevance (default), size (biggest first, a folder by its recursive total), or modified (newest first)."
             },
             "countOnly": {
                 "type": "boolean",
-                "description": "Set true when you only need the total, not the results. Returns just the match count (for example, \"1,234 files match\") and skips the file list. Faster than a full search. Default: false"
+                "description": "Answer with the counts and coverage alone, no entries. Default: false."
             },
             "limit": {
                 "type": "integer",
-                "description": "Max results to return. Default: 30"
+                "description": "Max entries. Default 30, max 200; a page may come back shorter to fit one result."
             },
             "maxWaitSeconds": {
                 "type": "integer",
-                "description": "How long to wait for the answer, 1-120. Cmdr walks whatever the index hasn't covered yet, so a first search of a folder takes as long as reading it does. When the wait runs out you get what was found so far plus a note; the walk keeps going, so running the same search again picks up the rest. Default: 20"
+                "description": "Seconds to wait for the walk, 1-120. Default: 20."
             }
         },
         "required": [],
@@ -88,7 +95,7 @@ pub fn ai_search_schema() -> Value {
             },
             "limit": {
                 "type": "integer",
-                "description": "Max results to return. Default: 30"
+                "description": "Max results to return. Default 30, max 200."
             },
             "maxWaitSeconds": {
                 "type": "integer",

@@ -66,14 +66,30 @@ fn test_no_exec_tools_exist() {
     }
 }
 
+/// A description is PREFIX: every declaration rides every turn of every conversation,
+/// whether or not the turn calls that tool. The cap is a coarse backstop against a
+/// description that grew into documentation; the precise budget guard is
+/// `agent/chat/context/cost_tests.rs`, which measures the whole prefix against
+/// `FIXED_PROMPT_OVERHEAD_TOKENS`.
+///
+/// Most entries sit far below the cap, and the handful that approach it were trimmed to
+/// stay under. The two that legitimately run longer are the ROUTING descriptions —
+/// `search` and `inspect_file` — which each have to draw a line against a neighbouring
+/// tool (`search` vs `list_dir`, `inspect_file` vs `image_facts`) and state what the tool
+/// cannot answer. Getting that wrong costs a whole wrong tool call, which is worth more
+/// than the bytes.
+const MAX_TOOL_DESCRIPTION_CHARS: usize = 512;
+
 #[test]
 fn test_tools_have_bounded_descriptions() {
-    // Prevent DoS from overly long descriptions
     let tools = get_all_tools();
     for tool in tools {
         assert!(
-            tool.description.len() <= 256,
-            "Tool {} has description too long ({} chars)",
+            tool.description.len() <= MAX_TOOL_DESCRIPTION_CHARS,
+            "Tool {} has description too long ({} chars, cap {MAX_TOOL_DESCRIPTION_CHARS}). \
+             A declaration is prefix, paid every turn: say it in the description only when the \
+             model would otherwise call the wrong tool, and put the rest in the result or the \
+             system prompt.",
             tool.name,
             tool.description.len()
         );

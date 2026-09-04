@@ -264,7 +264,7 @@ mcp_tools! {
     // ai-client-only — the agent is already an LLM holding the user's prose, so a second model
     // call to translate it would bill twice and hide the translation from the caller.
     "search" => {
-        desc: "Search one drive by filename pattern, size, date, or type; returns paths (no UI). Reads the index where it covers the scope and walks the folders it doesn't, so an unindexed drive still answers, only slower. Set countOnly:true for the total alone.",
+        desc: "Find files across ONE whole drive by name pattern, size, date, or type; returns paths, no UI. list_dir ranks one folder's children instead. Reads the index, walks the rest. Names and metadata only: inspect_file reads contents, and a date is when a file last CHANGED, never saved or opened. Disk space: sortBy size with excludeSystemDirs false. No paging, so narrow instead. Cover the drive the question is about and say which one you covered.",
         schema: schemas::search_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient, Consumer::Agent],
@@ -497,7 +497,7 @@ mcp_tools! {
         run: app_params crate::agent::tools::propose::rename::execute_propose_rename_plan
     },
     "list_dir" => {
-        desc: "List a folder's children from the drive index (never the disk), plus its recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes.",
+        desc: "List a folder's children from the drive index (never the disk), plus its recursive size total. Sort by name, size, or modified; page with limit/offset. sortBy size ranks files and folders together by space used, to find where space goes inside ONE folder; search ranks a whole drive.",
         schema: crate::agent::tools::read::listing::list_dir_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient, Consumer::Agent],
