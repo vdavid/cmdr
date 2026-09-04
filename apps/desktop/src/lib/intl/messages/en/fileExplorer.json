@@ -585,8 +585,7 @@
   "fileExplorer.network.browser.status.loginNeeded": "Login needed",
   "@fileExplorer.network.browser.status.loginNeeded": {
     "description": "Status cell when the host requires login and no credentials are stored.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.timeout": "Timeout",
   "@fileExplorer.network.browser.status.timeout": {
@@ -655,8 +654,7 @@
   "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
     "description": "Hover tooltip on a host row that needs login and has no stored credentials.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
   "@fileExplorer.network.browser.tooltip.authFailed": {
