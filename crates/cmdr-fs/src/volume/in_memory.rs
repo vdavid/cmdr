@@ -210,6 +210,29 @@ impl InMemoryVolume {
         self.stat_failing.read_ignore_poison().contains(normalized)
     }
 
+    /// The one stat body behind `get_metadata` and `is_directory`: answers `f`
+    /// over the entry's metadata, `NotFound` for a missing path, and the typed
+    /// `IoError` for a path under [`Self::set_stat_failing`].
+    fn stat_with<T>(&self, path: &Path, f: impl FnOnce(&FileEntry) -> T) -> Result<T, VolumeError> {
+        let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+            message: "Lock poisoned".into(),
+            raw_os_error: None,
+        })?;
+
+        let normalized = self.normalize(path);
+        if self.stat_fails_for(&normalized) {
+            return Err(VolumeError::IoError {
+                message: format!("Stat unavailable for {}", normalized.display()),
+                raw_os_error: None,
+            });
+        }
+
+        entries
+            .get(&normalized)
+            .map(|e| f(&e.metadata))
+            .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+    }
+
     /// Test helper: overwrites an existing entry's `modified_at` (unix seconds), so
     /// a test can age a file into the past (or clear its mtime). Panics if the path
     /// isn't present.
@@ -494,25 +517,7 @@ impl Volume for InMemoryVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            let normalized = self.normalize(path);
-            if self.stat_fails_for(&normalized) {
-                return Err(VolumeError::IoError {
-                    message: format!("Stat unavailable for {}", normalized.display()),
-                    raw_os_error: None,
-                });
-            }
-
-            entries
-                .get(&normalized)
-                .map(|e| e.metadata.clone())
-                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
-        })
+        Box::pin(async move { self.stat_with(path, FileEntry::clone) })
     }
 
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
@@ -531,25 +536,7 @@ impl Volume for InMemoryVolume {
         &'a self,
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        Box::pin(async move {
-            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
-                message: "Lock poisoned".into(),
-                raw_os_error: None,
-            })?;
-
-            let normalized = self.normalize(path);
-            if self.stat_fails_for(&normalized) {
-                return Err(VolumeError::IoError {
-                    message: format!("Stat unavailable for {}", normalized.display()),
-                    raw_os_error: None,
-                });
-            }
-
-            entries
-                .get(&normalized)
-                .map(|e| e.metadata.is_directory)
-                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
-        })
+        Box::pin(async move { self.stat_with(path, |metadata| metadata.is_directory) })
     }
 
     fn create_file<'a>(

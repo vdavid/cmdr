@@ -237,6 +237,59 @@ async fn a_conflict_carries_both_sides_so_a_dialog_can_word_it() {
     assert!(conflicts[1].source_is_directory && conflicts[1].dest_is_directory);
 }
 
+/// Every field on both sides lands where a conflict dialog reads it: a
+/// destination with no size reported reads as zero rather than as unknown, the
+/// two mtimes stay on their own sides, and a directory landing on a file keeps
+/// the two flags apart (that pair is what tells a silent merge from a real
+/// clash).
+#[test]
+fn the_pairing_maps_both_sides_field_by_field() {
+    let mut sized = FileEntry::new("report.txt".into(), "/dest/report.txt".into(), false, false);
+    sized.modified_at = Some(1_600_000_000);
+    let mut folder_slot = FileEntry::new("Photos".into(), "/dest/Photos".into(), false, false);
+    folder_slot.size = Some(12);
+    let dest = [sized, folder_slot];
+
+    let source = [
+        SourceItemInfo {
+            name: "report.txt".into(),
+            size: 7,
+            modified: Some(1_700_000_000),
+            is_directory: false,
+        },
+        SourceItemInfo {
+            name: "gone.txt".into(),
+            size: 3,
+            modified: None,
+            is_directory: false,
+        },
+        SourceItemInfo {
+            name: "Photos".into(),
+            size: 0,
+            modified: None,
+            is_directory: true,
+        },
+    ];
+
+    let conflicts = conflicts_against(&source, &dest);
+
+    let names: Vec<&str> = conflicts.iter().map(|c| c.source_path.as_str()).collect();
+    assert_eq!(names, ["report.txt", "Photos"], "unmatched names are silent, order follows the sources");
+
+    let file = &conflicts[0];
+    assert_eq!(file.dest_path, "/dest/report.txt");
+    assert_eq!((file.source_size, file.dest_size), (7, 0), "an unreported destination size is zero");
+    assert_eq!(
+        (file.source_modified, file.dest_modified),
+        (Some(1_700_000_000), Some(1_600_000_000)),
+        "each side keeps its own mtime"
+    );
+
+    let folder = &conflicts[1];
+    assert!(folder.source_is_directory && !folder.dest_is_directory);
+    assert_eq!(folder.dest_size, 12);
+}
+
 #[test]
 fn folding_an_empty_batch_is_all_zeroes_rather_than_a_panic() {
     let batch = fold_batch(Vec::new());
