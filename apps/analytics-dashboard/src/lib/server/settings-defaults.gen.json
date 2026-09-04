@@ -1279,6 +1279,7 @@
     "behavior.fileSystemWatching.globalGoToLatestShortcut.enabled": true,
     "behavior.fileSystemWatching.lowDiskSpaceNotifications": "in-app",
     "behavior.fileSystemWatching.lowDiskSpaceThresholdPercent": 5,
+    "behavior.openTerminalHereToastSeen": false,
     "developer.mcpEnabled": false,
     "developer.mcpPort": 0,
     "developer.verboseLogging": false,

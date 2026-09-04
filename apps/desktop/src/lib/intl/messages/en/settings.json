@@ -1833,6 +1833,43 @@
     "description": "Heading of the File operations card (copy, move, rename, delete settings) in Settings > Behavior > Navigation & file ops.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.navigationAndFileOps.card.terminal": "Terminal",
+  "@settings.navigationAndFileOps.card.terminal": {
+    "description": "Heading of the Terminal card in Settings > Behavior > Navigation & file ops. It holds the setting for which terminal app the \"Open terminal here\" action launches. Generic here: a terminal (command-line) app in general, NOT Apple's app called Terminal.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereApp.label": "Open terminal here uses",
+  "@settings.behavior.openTerminalHereApp.label": {
+    "description": "Label of the dropdown that picks which terminal app the \"Open terminal here\" action launches, in Settings > Behavior > Navigation & file ops. \"Open terminal here\" is Cmdr's own command name (it opens a terminal at the folder you're looking at), so translate it the same way as the command of that name. The sentence continues in the dropdown beside it, which names an app: \"Open terminal here uses [Ghostty]\".",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereApp.description": "Cmdr lists the terminal apps it finds on this Mac. To use one it doesn''t know, pick \"Choose an app…\".",
+  "@settings.behavior.openTerminalHereApp.description": {
+    "description": "Helper text under the \"Open terminal here uses\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is built from what's installed right now, and there's a way out for an app Cmdr doesn't carry a recipe for. \"Choose an app…\" is the last row of that same dropdown, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereApp.chooseApp": "Choose an app…",
+  "@settings.behavior.openTerminalHereApp.chooseApp": {
+    "description": "Last row of the \"Open terminal here uses\" dropdown in Settings > Behavior > Navigation & file ops. Picking it opens the macOS file picker so the user can point at any app on their Mac. The trailing … (U+2026) means \"this opens a dialog\"; keep it. macOS Finder's own \"Open with > Other…\" row is the closest counterpart.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereApp.chooseAppTitle": "Choose a terminal app",
+  "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
+    "description": "Title of the macOS file-picker window that opens after picking \"Choose an app…\" in the \"Open terminal here uses\" dropdown. The picker shows /Applications and only lets an app be selected. Imperative, addressed to the user."
+  },
+  "settings.behavior.openTerminalHereApp.checking": "Checking your apps…",
+  "@settings.behavior.openTerminalHereApp.checking": {
+    "description": "Placeholder shown in the \"Open terminal here uses\" dropdown for the moment before Cmdr has finished asking macOS which terminal apps are installed. The dropdown is disabled while it reads this. \"your apps\" = the apps on this Mac. Usually gone within a few milliseconds.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
+  },
+  "settings.behavior.openTerminalHereToastSeen.label": "Open-terminal-here hint shown",
+  "@settings.behavior.openTerminalHereToastSeen.label": {
+    "description": "Internal, never shown in the UI: tracks whether the one-time \"Open terminal here\" hint notification has appeared."
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Whether the one-time hint about picking a terminal app has been shown.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "description": "Internal, never shown in the UI. Pairs with the open-terminal-here hint label."
+  },
   "settings.section.archives": "Archives",
   "@settings.section.archives": {
     "description": "Settings subsection title under Behavior: Archives. Covers what pressing Enter does on archive files and macOS app bundles. Sidebar and page heading.",

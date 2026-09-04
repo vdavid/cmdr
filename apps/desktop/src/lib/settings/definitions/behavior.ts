@@ -87,6 +87,59 @@ export const behaviorSettings: SettingDefinitionSource[] = [
   },
 
   // ------------------------------------------------------------------------
+  // Terminal, rendered as its own card inside Navigation & file ops.
+  //
+  // FE-owned: the frontend reads the choice and passes it to `listTerminalApps`
+  // / `openTerminalHere`, so there's no applier case and no backend push. The
+  // stored value is one string holding either kind of choice, told apart
+  // structurally by Rust's `parse_choice`: a bundle id for a known terminal, an
+  // absolute `.app` path for a "Choose an app…" pick. Which apps exist and what
+  // each is called comes from `list_terminal_apps`, never from a table here.
+  // ------------------------------------------------------------------------
+  {
+    id: 'behavior.openTerminalHereApp',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.terminal',
+    labelKey: 'settings.behavior.openTerminalHereApp.label',
+    descriptionKey: 'settings.behavior.openTerminalHereApp.description',
+    keywords: [
+      'terminal',
+      'shell',
+      'console',
+      'command line',
+      'iTerm',
+      'Warp',
+      'Ghostty',
+      'kitty',
+      'Alacritty',
+      'WezTerm',
+      'Hyper',
+    ],
+    type: 'string',
+    // Terminal.app, always present on macOS, so a user with no other terminal
+    // never has to touch this row. Mirrors `TERMINAL_APP_BUNDLE_ID` in
+    // `src-tauri/src/file_system/terminal.rs`.
+    default: 'com.apple.Terminal',
+    // Rendered by `TerminalAppSelect.svelte`, not `SettingSelect`: the options
+    // are whatever is installed right now, so they can't be registry constants.
+    component: 'select',
+  },
+  {
+    // Internal (FE-owned): whether the one-time "which app opened, and how to
+    // change it" toast has fired. No UI row; hidden from search and the section
+    // tree, the way `behavior.doubleClickOnPaneNotificationSeen` is.
+    id: 'behavior.openTerminalHereToastSeen',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.openTerminalHereToastSeen.label',
+    descriptionKey: 'settings.behavior.openTerminalHereToastSeen.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+
+  // ------------------------------------------------------------------------
   // Operation log (retention), rendered as a card inside Navigation & file ops.
   //
   // Both settings are read by the Rust retention loop each prune tick

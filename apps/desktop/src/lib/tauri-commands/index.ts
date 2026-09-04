@@ -103,6 +103,7 @@ export {
   quickLookClose,
   getInfo,
   openInEditor,
+  listTerminalApps,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
 } from './file-actions'

@@ -11,8 +11,9 @@ Parents: `../CLAUDE.md` (registry, store, applier, search), `../components/CLAUD
   `AI › Ask Cmdr`, `McpServerSection` = `AI › MCP server`. Indexing is a card-menu parent too: `DriveIndexingSection` =
   `Indexing › Drive indexing`, `ImageIndexingSection` = `Indexing › Image indexing` (on-device OCR; composes the
   `MediaIndex*` components). `DeleteAiModelDialog.svelte` is `AiLocalSection`'s delete confirmation, split out so it's
-  independently mountable. Pure helpers: `ai-secret-error.ts`, `license-section-utils.ts`, `ram-gauge-utils.ts`,
-  `keyboard-shortcuts-grouping.ts`, `keyboard-shortcuts-banner.ts`. Full file/responsibility table in DETAILS.md.
+  independently mountable. `TerminalAppSelect.svelte` is the "Open terminal here uses" control. Pure helpers:
+  `ai-secret-error.ts`, `license-section-utils.ts`, `ram-gauge-utils.ts`, `keyboard-shortcuts-grouping.ts`,
+  `keyboard-shortcuts-banner.ts`, `terminal-app-options.ts`. Full file/responsibility table in DETAILS.md.
 
 ## Must-knows
 

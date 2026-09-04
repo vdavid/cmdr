@@ -2,7 +2,7 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { commands } from '$lib/ipc/bindings'
+import { commands, type TerminalAppList, type TimedOut } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 /**
@@ -208,4 +208,19 @@ export async function getInfo(path: string): Promise<void> {
 export async function openInEditor(path: string): Promise<void> {
   const res = await commands.openInEditor(path)
   if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
+ * The terminal apps installed on this Mac, plus which one `appChoice` names.
+ *
+ * `appChoice` is the stored `behavior.openTerminalHereApp` value: the frontend
+ * owns the settings store, so it hands the choice down rather than having Rust
+ * read it back. `chosenId` comes back `null` when that app has been uninstalled.
+ *
+ * Cheap enough to ask on every render (one LaunchServices lookup per known app),
+ * so nothing caches it and there's no refresh button.
+ * @param appChoice - The stored choice: a bundle id, or an absolute `.app` path.
+ */
+export async function listTerminalApps(appChoice: string): Promise<TimedOut<TerminalAppList>> {
+  return await commands.listTerminalApps(appChoice)
 }

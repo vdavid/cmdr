@@ -22,14 +22,15 @@ sections compose).
   is one control, not two: the `listing.briefColumnWidthMode` radio group carries the `briefColumnWidthMaxPx` number
   field on its "Limit to" option's own line (`SettingRadioGroup`'s `itemTrailing`), greyed out while the other option is
   picked, so the row reads as the sentence the option label was written for ("Limit to [400 px]")
-- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: three labeled `SectionCard`s —
-  Navigation (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change
-  confirmation row `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), and Operation log (the
-  retention limits `operationLog.maxAge` / `operationLog.maxSize`, plus the `settings.operationLog.intro` blurb). The
-  conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`, `progressUpdateInterval` →
-  `section: ['Advanced']`), never mirrored here. The hidden `behavior.doubleClickOnPaneNotificationSeen` flag
-  (one-time-hint tracker) is registered but renders no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the
-  card-group pattern).
+- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: four labeled `SectionCard`s — Navigation
+  (the `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change confirmation row
+  `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), Terminal (the `behavior.openTerminalHereApp`
+  row, see below), and Operation log (the retention limits `operationLog.maxAge` / `operationLog.maxSize`, plus the
+  `settings.operationLog.intro` blurb). The conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`,
+  `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
+  `behavior.doubleClickOnPaneNotificationSeen` and `behavior.openTerminalHereToastSeen` flags (one-time-hint trackers)
+  are registered but render no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
+- **`TerminalAppSelect.svelte`** + **`terminal-app-options.ts`**: the "Open terminal here uses" control. See below.
 - **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). A
   CUSTOM section (not registry-driven rows): all formats live in ONE pinned-shape JSON setting
   (`behavior.archiveEnterBehavior`, `{ zip, bundle }`), so the format list extends without a registry entry per format.
@@ -473,6 +474,42 @@ the section top; the Low disk space card carries `LOW_DISK_SPACE_ANCHOR_ID` the 
 `openSettingsWindow(surface, section, anchor)` accepts an optional `anchor` arg that the settings page
 (`routes/settings/+page.svelte`) reads from the URL on cold-open and from the `navigate-to-section` event on
 already-open windows, then `scrollIntoView`s the matching element.
+
+### "Open terminal here uses": a row whose options are read off the machine
+
+macOS has no system-wide default terminal, so Cmdr keeps its own list. The Rust side owns it
+(`src-tauri/src/file_system/terminal.rs`: which apps it knows, how each one takes a folder, and which are installed
+right now); this row only renders the answer.
+
+**Why it isn't `SettingSelect`.** Those options are registry constants. These are whatever is installed at this moment,
+so `TerminalAppSelect.svelte` builds them from `list_terminal_apps` instead: on mount, and again after every write. The
+query is one LaunchServices lookup per known app plus a bundle-icon read, cheap enough that caching would only buy a
+stale list the day someone installs Ghostty. Hence ❌ no `/Applications` scan and ❌ no refresh button, both settled in
+the Rust module.
+
+**The stored value carries both kinds of choice.** `behavior.openTerminalHereApp` is one string: a bundle id for a known
+terminal, an absolute `.app` path for a "Choose an app…" pick. Rust's `parse_choice` tells them apart structurally (a
+choice is a path exactly when it's absolute), which is why the frontend never has to tag or wrap the value. The
+`CHOOSE_APP_VALUE` sentinel is deliberately neither shape, so it couldn't be mistaken for a real choice even if a bug
+wrote it.
+
+**The picker is the plugin's, not a new IPC.** "Choose an app…" opens `@tauri-apps/plugin-dialog`'s `open()` filtered to
+`app`, defaulting to `/Applications`, the same shape `MediaIndexChosenFolders` uses for its folder picker. Under the
+hood that's the same `NSOpenPanel` with the same `setAllowedFileTypes(["app"])` as the native "Open with > Other…" path,
+so `.app` bundles select as files. The settings window already grants `dialog:allow-open`. Cancelling returns `null` and
+the setting is left alone.
+
+**An uninstalled app shows as Terminal, without a write.** `list_terminal_apps` reports `chosenId: null` when the stored
+app is gone, and `selectedTerminalAppId` displays Terminal.app for it, matching what the action does when it falls back.
+It only DISPLAYS: rewriting the setting belongs to the moment the action actually opens Terminal instead, so browsing
+Settings never silently changes a choice.
+
+**While the list is empty the control is disabled and reads "Checking…".** That covers both the first few milliseconds
+and the (very unlikely) case of the 2 s command deadline expiring, which answers with an empty list. Showing a short
+list would claim this Mac has fewer terminals than it does; staying disabled claims nothing.
+
+**Deep-linking here** uses the standard row anchor:
+`openSettingsWindow(surface, ['Behavior', 'Navigation & file ops'], settingAnchorId('behavior.openTerminalHereApp'))`.
 
 ### Global go-to-latest hotkey: on/off in the Downloads card, combo edited in Keyboard shortcuts
 

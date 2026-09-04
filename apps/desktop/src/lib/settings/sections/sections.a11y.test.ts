@@ -39,6 +39,18 @@ const bindingCommands = vi.hoisted(() => ({
   downloadsWatcherStatus: vi.fn(),
   recheckDownloadsWatcherGate: vi.fn(),
   setGlobalGoToLatestShortcut: vi.fn(),
+  listTerminalApps: vi.fn(() =>
+    Promise.resolve({
+      data: {
+        apps: [
+          { id: 'com.apple.Terminal', displayName: 'Terminal', icon: null, isRunning: false },
+          { id: 'com.mitchellh.ghostty', displayName: 'Ghostty', icon: null, isRunning: false },
+        ],
+        chosenId: 'com.apple.Terminal',
+      },
+      timedOut: false,
+    }),
+  ),
 }))
 vi.mock('$lib/ipc/bindings', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -88,6 +100,7 @@ import NetworkSection from './NetworkSection.svelte'
 import NotificationsSection from './NotificationsSection.svelte'
 import SearchSection from './SearchSection.svelte'
 import ShortcutPill from './ShortcutPill.svelte'
+import TerminalAppSelect from './TerminalAppSelect.svelte'
 
 /**
  * Installs this block's `getSetting` for its own tests only. Call inside a
@@ -462,12 +475,30 @@ describe('NavigationAndFileOpsSection a11y', () => {
   useSettings((key: string) => {
     if (key === 'fileOperations.allowFileExtensionChanges') return 'ask'
     if (key === 'behavior.doubleClickPaneNavigatesToParent') return true
+    if (key === 'behavior.openTerminalHereApp') return 'com.apple.Terminal'
     return undefined
   })
 
   it('default has no a11y violations', async () => {
     const target = container()
     mount(NavigationAndFileOpsSection, { target, props: { searchQuery: '' } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y tests for `TerminalAppSelect.svelte`, the "Open terminal here
+ * uses" control. Audited on its own as well as inside its section, because it
+ * carries its own accessible name and spends its first moments disabled.
+ */
+describe('TerminalAppSelect a11y', () => {
+  useSettings((key: string) => (key === 'behavior.openTerminalHereApp' ? 'com.apple.Terminal' : undefined))
+
+  it('has no a11y violations once the app list has landed', async () => {
+    const target = container()
+    mount(TerminalAppSelect, { target, props: { ariaLabel: 'Open terminal here uses' } })
+    await tick()
     await tick()
     await expectNoA11yViolations(target)
   })

@@ -282,6 +282,11 @@ export interface SettingsValues {
   'behavior.doubleClickPaneNavigatesToParent': boolean
   'behavior.doubleClickOnPaneNotificationSeen': boolean
 
+  // Open terminal here: a known terminal's bundle id, or an absolute `.app` path
+  // for a "Choose an app…" pick. Rust's `parse_choice` tells the two apart.
+  'behavior.openTerminalHereApp': string
+  'behavior.openTerminalHereToastSeen': boolean
+
   // Archives (Enter behavior per format: pinned-shape JSON, `{ zip: 'ask', … }`)
   'behavior.archiveEnterBehavior': string
   // Deflate level (1..=9, default 6) for user-driven zip writes; read at dispatch and passed in the operation config
