@@ -25,13 +25,21 @@ Prepare a release based on docs/guides/releasing.md.
    - **Secondary: David and agents tracing changes.** Served by the commit hashes and the Non-app section; Non-app is
      the only place internals (tooling, refactors, infra, website) belong.
 
+   ### Scope: no inflated fixes
+
+   **A changelog is the diff between the last release and this one, not a diary of the work.** So a bug only earns a
+   Fixed line if a USER COULD HAVE HIT IT: the defect has to have existed in the previous release's tree. A bug
+   introduced and fixed inside this same release window doesn't qualify. `git cat-file -e v<prev>:<path>` helps when in
+   doubt.
+
    ### Style: plain-sentence, dense, impact-focused
    - **Write a 1–2 sentence plain-prose lead** directly under the `## [Unreleased]` heading, before `### Added`: what
      this release means for users, naming the one to three highlights. No links, no bullets. It opens the release notes
      and the What's new popup; see the recent releases for examples.
-   - **File each entry where a user would look for it.** A fix is Fixed even if it shipped alongside a feature; perf and
-     behavior tweaks are Changed; pure internals go to Non-app. Only Added / Changed / Fixed / Security / Non-app; never
-     invent sections like "Improved".
+   - **File each entry where a user would look for it.** A fix to previously shipped behavior is Fixed even when this
+     release also adds a feature in that area (but see § Scope: no inflated fixes); perf and behavior tweaks are
+     Changed; pure internals go to Non-app. Only Added / Changed / Fixed / Security / Non-app; never invent sections
+     like "Improved".
    - **Each entry is one sentence.** No `**Bold title:** Body.`; the headline IS the entry. Most entries land under 20
      words; many under 10. Big aggregated entries for tentpole features (think Linux alpha, Git browser launch) can run
      several lines if they bundle many real commits.
@@ -117,6 +125,9 @@ Prepare a release based on docs/guides/releasing.md.
    - **The changelog now ships inside the app** (the in-app "What's new" popup renders these exact sections), so this
      pass is also a UI-copy review: hold every entry to the `docs/style-guide.md` writing bar, not just changelog
      conventions.
+   - **Think about every Fixed and Security entry against § Scope: no inflated fixes.** For each one, name the release
+     the bug shipped in. If that's this release, fold the hash into the feature's Added entry and delete the line. This
+     is the easiest pass to skip and the one that inflates a release most.
    - Cut any entry over ~20 words unless it's a genuine tentpole.
    - Merge or delete any second sentence.
    - Delete any trailing ", so [benefit]" clause.

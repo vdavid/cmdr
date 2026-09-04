@@ -7,21 +7,169 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+Headline changes:
+
+- Added "Rollback" feature: undo a copy/move/rename/trash action from the operation log, even days after the op.
+- The AI agent can now look inside many types of files, not just images.
+- A huge run of transfer data-safety fixes!
+
+Also added British and Australian English, traditional Chinese, and macOS Catalina support.
+
 ### Added
 
 - Connect to WebDAV servers (Nextcloud, ownCloud, Synology, Fastmail, and any generic NAS) as a volume, with the same
-  reconnect and sign-in story as SFTP. No sidebar or sign-in UI yet.
+  reconnect and sign-in story as SFTP, and a space readout for the accounts that carry no quota; no sidebar or sign-in
+  UI yet (60def811, ad535c04, 31520cc7, 205e3cda, 5a00b290, 470ca932, 73c223e5)
+- Roll back a finished copy, move, rename, or delete from the operation log, with honest progress, pause, and stop, and
+  a question worded for what the reversal will actually do (3395ed6c, 296b08ba, 80008489, c93b2da5, cead2d0c, 969ac589)
+- A row you can't roll back now says why on sight, instead of a bare "Can't roll back" badge (63dfb82a, fb3b3766)
+- Undo an accidental F8 from the trash toast, and jump to the trash the items actually landed in (37da9004, 21dfe100)
+- Ask Cmdr can look inside a file: text the way the viewer reads it, a photo's EXIF, a PDF's text page by page, and an
+  archive's contents, searchable across up to 200 files in one go (4de992b0, 95c11d43, 4b272079, 0058d357, 6d644e49,
+  5ceed12c, eebafea4, 0776d5fc, 141b600d)
+- Read Cmdr in Traditional Chinese, all 3,138 strings, with the menu bar and shortcuts named the way a Taiwanese Mac
+  names them (ff72d0ce, a90bc5c9, 5d83ac39, 1ea3f607, d50048dc, b3c356b8, 90ac6632, 859ef8da, 7bf3d40d, 0069cb73,
+  88bf2392, b78b50c3, 0d1ec2ac, 7ab46632, 52878b4a, 60dfff52, 31282f2a, 187d60ad, dc59e3c5, 4f4d4049, 65e7b3b2,
+  689cbbc4, af3c7db0, 9b826411, 1276938c, 8242671b, 151ca91d, 869f1a1b, 77a790b4, 519778ed, 7831efa2, 7540931f)
+- Read Cmdr in British and Australian English: the Bin, licence, colour, favourite, and 60 more strings your own Mac
+  already spells that way (99b0fa5e, 6ceba667, a8a8b92e, 839147ac, cac86711)
+- Invert the selection with ⇧8 or the numpad `*`, from the Select menu or the command palette (b418be7b, 78c4d64f)
 - Run Cmdr on macOS 10.15 Catalina and 11 Big Sur. Those two are best effort: everything works, but a few colors and
   small layout details can look off, and fixes for them come last. A one-time notice on those Macs says so, in your own
-  language. macOS 12 and up stays the supported range. (9b209272, ed324a56, e7dd3d7a)
+  language. macOS 12 and up stays the supported range. (9b209272, ed324a56)
 - Tell a Mac whose Safari is too old to draw Cmdr's interface what to do about it, in its own language, instead of
-  opening a blank window (7f2ac2df, 5707df62)
+  opening a blank window (7f2ac2df, 5707df62, df75f9de)
+- Say what a search is waiting for when another scan holds the folder, with an elapsed clock and a give-up when that
+  scan stalls (3a5e13f7, 32a4619d)
+- Add a note to a report you already sent, and give it a reply address (dcae0db2, fae5e235, df03f5e3)
+
+### Changed
+
+- Moving thousands of files on one drive finishes in under a second instead of nine, now that the durability pass
+  flushes the directories the renames touched rather than every file (f793bed8)
+- An upload to a network share now stands aside the instant you browse that share, and resumes the instant you stop
+  (c4a21820, b43b50fa, ee6e4ecf, 70425777, a7eaf7d5)
+- Copy over SMB charges read credits per file rather than per read window, and never asks for more slots than that
+  window can carry (46f51716, 1df7c4ef)
+- Your first drive index now walks the folders you actually work in, instead of the same static list on every machine
+  (b057366b)
+- A search over a NAS that fell asleep gives up on the first dead answer, instead of re-asking once per folder
+  (a6497c16)
+- Cmdr holds 246 MB less memory in a session that never runs a semantic search (3adf2b56)
+- The app is 280 kB smaller, having stopped shipping translator tooling to every user (1cc78e44)
+- The restart toast names both versions and says that doing nothing still gets you the update (f3f8bc6c)
+- "Copy path" moves to ⌘⌥C, the chord Finder uses for "Copy as Pathname" (04f9afda)
+- Cap what Ask Cmdr's own wakes may cost: 200,000 tokens a local day, a fifteen-minute floor between them, and four
+  attempts a day on a dead key instead of 261 (ff21f998, 3b8eca22, 4cc0a02b)
+- Ask Cmdr stops paying tokens to dismiss cache folders, and temp dirs and `$HOME` stop scoring like project roots
+  (14e1fd30, 055f5ced)
+- Every hover hint now reaches keyboard users, appears after 400 ms, and paints in Cmdr's own colors (f27bcdcf)
+- A storm of one-shot rescan requests costs one full check a day instead of a subtree walk each (fe3914fc)
 
 ### Fixed
 
 - Fix Cmdr losing most of its colors on macOS 12 Monterey: the shipped bundle is now built for the oldest macOS it
   promises, so nothing lands there that Monterey's Safari can't read (2a4ea468)
 - Fix a narrow tab on macOS 12 keeping a close button it had no room for, which crowded out the file name (0cf38a40)
+- Fix cancelling a transfer deleting files something else changed, and a move-back destroying what had taken their place
+  (4f12441b, febe44d1)
+- Fix undoing a move carrying off files the move never touched, and a folder move's undo reporting success while moving
+  nothing (1573b3a8, cc331cbe)
+- Fix rolling back an SMB or MTP folder copy leaving the files inside it behind, and a cancelled transfer leaving an
+  orphan tree (c19efcd8)
+- Fix Pause not actually stopping a local move, a folder merge, a trash batch, an archive extract, or a copy building
+  its destination skeleton (1e4dc8a6, be0af804, be87c2e4, 3caede87, 63647eac, 14a9c3aa)
+- Fix Pause and Cancel doing nothing while an operation is still counting files, on local drives, network shares, and
+  phones alike (548ccd04, 7a1c0523, 290464f9, e98f10c7)
+- Fix a cancelled transfer claiming a clean rollback while gigabytes of its own scratch sat on the drive, and clear away
+  what a crash left behind (360c7179, 3abf7edb, d7d29de7, b8c79935, 927399f2)
+- Fix cancelling a move between drives leaving a staging folder in the destination (8d4d5e10)
+- Fix Rollback offering an undo the engine can't make on a cross-volume move, and describing a copy's reversal on a move
+  (abaaa3cd)
+- Fix stopping a move between drives saying nothing at all, when the originals it had already cleared were gone for good
+  (540cd479, 775d8064)
+- Fix the progress dialog reading "2 GB / 2 GB (80%)" mid-copy, and a move between drives reading 100% with every
+  original still to clear (7954bacb, 613e31b6)
+- Fix the operation log misreading itself: a finished move says what it moved, a reversal's row adds up, and same-second
+  entries stop shuffling (890c57d4)
+- Fix a cancel toast showing a green "removed everything" when files stayed behind (a9eb6dd7, e999a53b, 9988950e,
+  26f1e7cc)
+- Fix a burst of external writes leaving a pane permanently missing files that are on disk (544845a9)
+- Fix shares with accented names falling back to the slow macOS mount instead of connecting directly (08e9adbb,
+  b789700d)
+- Fix an SMB folder indexing as empty because one file id had its high bit set (167a1b70)
+- Fix pasting into a folder the transfer is about to create being refused on SMB and MTP (daa4ae63)
+- Fix a copy from a huge folder blaming the destination for a check it never ran, and a merge into an existing folder
+  looking wedged (88a6649a, e50c5992)
+- Fix a header-encrypted archive bouncing you out of the pane instead of asking for its password (61ffc60f)
+- Fix transparent image pixels reading as solid white in the viewer, and a text drag or triple-click not selecting
+  (2af74e53, 79068b90, 698175aa, 206011e7)
+- Fix holding Shift over the F8 dialog not escalating to a permanent delete (f7fdccdb)
+- Fix Cmdr starting up behind whatever you were doing instead of coming to the front (b734f77f)
+- Fix a toast disappearing while your cursor was still on it (705fbc8c)
+- Fix an abandoned listing leaking a cache entry and an armed file watch for six hours (05da59ec)
+- Fix a reconnecting SMB session stalling for minutes on a cancel it should never have sent (6d223907)
+- Fix an Ask Cmdr thread wedging for good on a malformed tool call from the provider (e0d46769)
+- Fix Ask Cmdr's folder and rename suggestions failing on every call with an Anthropic key (a579be03)
+- Fix Ask Cmdr reporting searches it never ran, and burning a whole turn re-sending one broken tool call (ff63eda3,
+  a81fd646)
+- Fix an agent quitting Cmdr over MCP ending a running transfer with no warning (2babd38c)
+- Fix nine languages naming one action two different ways, so the menu bar, command palette, and dialogs agree
+  (30b0fbd2, 438868c2, 5e1108cd, 82625f75, 7d363d1b, 4ef3d9a8, 86cd0150, cbee111c, 8f467927, cbef38ae, 91adaa47,
+  93adf499, 9025cd36, 8f099472, 594f3195)
+- Fix Simplified Chinese contradicting itself, so a Dismiss button no longer reads as "ignore this" and the licence
+  screens address you like the rest of the app (68818091, 31d9f99c, deba0e9d)
+- Fix voice-control users being unable to press the pause, case-sensitivity, queue, and remove buttons in five languages
+  (a600b153, 934492f9, b4302d80, 9dc78895)
+- Fix every window failing to announce the language it's speaking, a WCAG 3.1.1 failure across all 13 catalogs
+  (cc8ef901, 8534a96a)
+- Fix the Select and Deselect dialog showing English, and the files-per-second rate shipping English to twelve locales
+  (95fac93e, 14eb7c04)
+- Fix a rate of one file per second reading "1.0 file/s", and one screen showing two decimal conventions at once
+  (5d900c63, 9ce4d4a1)
+- Fix a Hungarian reader seeing "a iCloud", and Dutch describing one failure two ways (6fea9912, a8d86da4)
+
+### Security
+
+- Fix the MCP bearer token being written to the log file, where it could be read back without one (08f631a4, f5909eba)
+- Withhold a contained panic's message from the log, so bytes of a file you opened can't ride into an error report
+  (6626c1e9)
+
+### Non-app
+
+- Add `crates/cmdr-adb`, an Android-over-ADB backend that browses a phone's real filesystem, plus a registry so any
+  device backend can put itself in the volume list; not reachable by a user yet, with no connect flow and no device
+  picker (733a25b6, 49153fba, b4ad39cc, 68eca5c6)
+- Ledger 15 verified data-safety defects in the transfer engines from an adversarial hunt, ranked, each with the
+  mechanism and the guard that was ruled out (e8406f4a)
+- Let a regional variant ship as a 60-key overlay instead of a 3,138-key clone, which is what makes `en-GB` and `en-AU`
+  affordable (edcc82ac)
+- Fail the build on a WCAG 2.5.3 accessible-name regression, and on a locale that gives one thing two names (c17e0c3c,
+  44bdbe3a, 614bd364)
+- Fail the build on a Vite bump raising the browser floor above the macOS version Cmdr promises, and let a
+  newer-than-floor selector ship behind a proven runtime gate (2286d86a, f4b7dcac)
+- Stop a tag push pointing the whole install base at an older build, and prove the updater still works after a
+  `tauri-action` bump before shipping (c87d202a, 5813d7ca)
+- Give every AI provider we hold a key for a real-API lane, so a model decommission surfaces wherever it happens
+  (ec1a817a, 4157df16, d36aa5d8, c6866439)
+- Alarm on a broken api-server cron job and a dead Resend key within a day, instead of failing into silence (d80bc3ce,
+  34e098ba)
+- Close a forged-header bypass of comment voting and rate limits on the blog's comment system (510fe70a, bdec4167)
+- Stop the test suite writing into the developer's real credential store, and stop it starting again (45c42077)
+- Move the newsletter database to Postgres 18, with a cutover rehearsed end to end (d40ac68f, 227810b9)
+- Kill a stuck CI job in minutes instead of burning six hours of runner, and a wedged E2E app in seconds instead of two
+  hours (4f33cd52, 874eb61a)
+- Collapse the frontend and Rust duplication the sweep found: shared toast bodies, name checks, entry-row mappers, tar
+  walks, and rename engines, with the split suites named after what they pin (038deea7, 03ff3ded, e2816e9b, b75a52cb,
+  c1eb73de, 47de9f57, 731ce716, ba2e7cca, 9b48c70b, 5cc2cafc)
+- Split the concurrent copy driver into three files named after a source's three stages, and cover the four data-safety
+  rules nothing watched (8f77be3f, a5c82947, f71f3a01, 75b6083b, 5a72a685)
+- Move CI onto the Node 24 runtimes and the current lint and test majors, so five versions of upgrade debt clear
+  (73b4cfa7, a1469497, 2024d3c8, 05f95e13)
+- Keep Rust and TypeScript code intelligence working for agents and editors across toolchain bumps (65f19fc6, 29ed8e24)
+- Enforce canonical Tailwind classes and typed lint rules on the website and the analytics dashboard (2f212c2f,
+  9562ae36, 611326f9, 4a3f8efd)
+- Say which macOS versions Cmdr is actually for, on the download page and in the directory listings (e7dd3d7a, 4f79c23b)
 
 ## [0.41.0] - 2026-08-26
 
@@ -212,7 +360,7 @@ Besides bug fixes, here are the three most important changes:
 - Background, pause, cancel, and hold ⌘Q against a transfer that is still counting its files (5b7ca55f)
 - Escalate an F8 trash to a permanent delete by holding Shift (fff2e576)
 - Add "Show hidden files" to Settings > Appearance (4b0ff78c)
-- Open a fresh install on home and Downloads, once ever (6980d0e7)
+- Open a fresh install on home and Downloads, once ever (6980d0e7, 919840ee)
 
 ### Changed
 
@@ -267,7 +415,6 @@ Besides bug fixes, here are the three most important changes:
 - Fix double-clicking a number in the viewer selecting the word before it (a4595023)
 - Fix a stray green line under the title bar when a dialog opens at startup (ba1c9508)
 - Fix rebinding a shortcut stripping that menu item's icon (13eb0e0b)
-- Fix the first-run layout not surviving the session it was applied in (919840ee)
 - Fix a search over ground another walk holds sitting silent instead of saying so (5d187522, 6d04b410, 92be35ee)
 - Fix Escape not closing a search dialog whose run never answers (a29bc77c)
 - Fix the onboarding wizard quoting a drive-indexing cost you don't actually pay (b7f4c581)

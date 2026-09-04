@@ -35,13 +35,13 @@
       "id": "operation-log",
       "name": "Operation log",
       "status": "alpha",
-      "note": "A durable history of every copy, move, delete, and rename, with rollback. The dialog that shows it is still bare-bones."
+      "note": "A durable history of every copy, move, delete, and rename, with a Roll back button on every reversible row and a plain reason on the rows that can't be reversed."
     },
     {
       "id": "ask-cmdr",
       "name": "Ask Cmdr",
       "status": "alpha",
-      "note": "Chat with an AI agent about your files. It sees your files and your file op history, knows your important folders, and can proactively suggest move/rename/delete/unzip actions, which you can review and approve/reject. Fully optional (you can use Cmdr as just a regular file manager!). Early stage with rough edges, but safe because all actions need approval from you. The agent can do nothing on its own. Can use an on-device model for complete privacy."
+      "note": "Chat with an AI agent about your files. It can look inside them (text, PDFs, photo EXIF, archive contents), sees your file op history, knows your important folders, and can proactively suggest move/rename/delete/unzip actions, which you can review and approve/reject. Fully optional (you can use Cmdr as just a regular file manager!). Early stage with rough edges, but safe because all actions need approval from you. The agent can do nothing on its own. Can use an on-device model for complete privacy."
     },
     {
       "id": "network-drives",
