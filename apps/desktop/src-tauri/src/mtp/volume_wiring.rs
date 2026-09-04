@@ -14,12 +14,12 @@ use log::debug;
 use crate::device_volumes::{DeviceVolumeEntry, DeviceVolumeProvider, ProviderFuture, register_device_provider};
 use crate::file_system::volume::MtpVolume;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::mtp::connection::{MtpVolumeRegistrar, set_volume_registrar};
+use crate::mtp::connection::MtpVolumeRegistrar;
 
-/// Teaches the MTP session layer how a storage becomes a volume.
+/// How this app turns an attached storage into a browsable volume.
 ///
-/// Call once at startup, before anything can connect a device. Without it a
-/// device connects and its storages never appear as volumes.
+/// Handed to `MtpConnectionManager::new` at startup. Without it a device
+/// connects and its storages never appear as volumes.
 ///
 /// ❗ Both callbacks run synchronously inside the session layer, and must stay
 /// that way. `connect()` attaches every storage before it starts the device's
@@ -28,11 +28,11 @@ use crate::mtp::connection::{MtpVolumeRegistrar, set_volume_registrar};
 /// arriving ahead of the volumes has nothing to land on and the update is lost.
 /// ❌ Never spawn from here, never make these async. See
 /// `connection/volume_registrar.rs`.
-pub(crate) fn install_volume_registrar() {
-    set_volume_registrar(MtpVolumeRegistrar {
-        attach: |device_id, storage_id, storage_name| {
+pub(crate) fn volume_registrar() -> MtpVolumeRegistrar {
+    MtpVolumeRegistrar {
+        attach: |manager, device_id, storage_id, storage_name| {
             let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
-            let volume = Arc::new(MtpVolume::new(device_id, storage_id, storage_name));
+            let volume = Arc::new(MtpVolume::new(Arc::clone(manager), device_id, storage_id, storage_name));
             get_volume_manager().register(&volume_id, volume);
             debug!("Registered MTP volume: {volume_id} ({storage_name})");
         },
@@ -41,7 +41,7 @@ pub(crate) fn install_volume_registrar() {
             get_volume_manager().unregister(&volume_id);
             debug!("Unregistered MTP volume: {volume_id}");
         },
-    });
+    }
 }
 
 // ============================================================================
@@ -130,11 +130,7 @@ impl DeviceVolumeProvider for MtpDeviceProvider {
             let device_id = cmdr_fs::volume::mtp_ids::device_id_of_volume(volume_id)
                 .ok_or_else(|| format!("MTP volume id {volume_id} is missing a device prefix"))?;
             crate::mtp::connection_manager()
-                .disconnect(
-                    device_id,
-                    &crate::mtp::events::device_events(),
-                    crate::mtp::MtpDisconnectReason::User,
-                )
+                .disconnect(device_id, crate::mtp::MtpDisconnectReason::User)
                 .await
                 .map_err(|e| e.to_string())
         })

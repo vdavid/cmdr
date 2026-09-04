@@ -8,9 +8,9 @@
 
 use super::*;
 use crate::mtp::connection::DeviceWatch;
-use crate::mtp::connection::connection_manager;
-use crate::mtp::connection::events::no_device_events;
+use crate::mtp::connection_manager;
 use std::path::Path;
+use std::sync::Arc;
 
 /// Deterministic bytes: byte `i` is `(i * 31 + 7) % 251`, so any window is
 /// checkable against its offset without holding the whole file.
@@ -43,7 +43,7 @@ async fn connect_device_with_blob(bytes: &[u8]) -> Device {
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("a storage").id;
@@ -61,11 +61,7 @@ async fn connect_device_with_blob(bytes: &[u8]) -> Device {
 
 async fn teardown(device: Device) {
     connection_manager()
-        .disconnect(
-            &device.id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(&device.id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .ok();
     crate::mtp::virtual_device::unregister_virtual_mtp_device(device.location_id);
@@ -80,7 +76,12 @@ async fn read_range_resolves_storage_info_once_per_device() {
     let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
     let bytes = payload(64 * 1024);
     let device = connect_device_with_blob(&bytes).await;
-    let volume = MtpVolume::new(&device.id, device.storage_id, "Internal");
+    let volume = MtpVolume::new(
+        Arc::clone(connection_manager()),
+        &device.id,
+        device.storage_id,
+        "Internal",
+    );
 
     for i in 0..5u64 {
         let offset = i * 4096;
@@ -111,7 +112,12 @@ async fn storage_info_invalidation_forces_a_fresh_storage_lookup() {
     let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
     let bytes = payload(16 * 1024);
     let device = connect_device_with_blob(&bytes).await;
-    let volume = MtpVolume::new(&device.id, device.storage_id, "Internal");
+    let volume = MtpVolume::new(
+        Arc::clone(connection_manager()),
+        &device.id,
+        device.storage_id,
+        "Internal",
+    );
 
     volume
         .read_range(Path::new("/blob.bin"), 0, 1024)
@@ -144,7 +150,12 @@ async fn read_range_clamps_at_end_of_file() {
     let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
     let bytes = payload(5000);
     let device = connect_device_with_blob(&bytes).await;
-    let volume = MtpVolume::new(&device.id, device.storage_id, "Internal");
+    let volume = MtpVolume::new(
+        Arc::clone(connection_manager()),
+        &device.id,
+        device.storage_id,
+        "Internal",
+    );
 
     let tail = volume
         .read_range(Path::new("/blob.bin"), 4000, 4096)

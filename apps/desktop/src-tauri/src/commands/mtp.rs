@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use crate::file_system::FileEntry;
 use crate::mtp::connection::MtpDeleteScope;
 use crate::mtp::{self, ConnectedDeviceInfo, MtpConnectionError, MtpDeviceInfo, MtpObjectInfo, MtpStorageInfo};
-use tauri::AppHandle;
 
 /// Result of scanning an MTP path for copy operation.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -60,13 +59,9 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
 /// Information about the connected device including available storages.
 #[tauri::command]
 #[specta::specta]
-pub async fn connect_mtp_device(app: AppHandle, device_id: String) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
+pub async fn connect_mtp_device(device_id: String) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
     mtp::connection_manager()
-        .connect(
-            &device_id,
-            &mtp::events::device_events_for(&app),
-            mtp::connection::DeviceWatch::Live,
-        )
+        .connect(&device_id, mtp::connection::DeviceWatch::Live)
         .await
 }
 
@@ -80,13 +75,9 @@ pub async fn connect_mtp_device(app: AppHandle, device_id: String) -> Result<Con
 /// * `device_id` - The device ID to disconnect from
 #[tauri::command]
 #[specta::specta]
-pub async fn disconnect_mtp_device(app: AppHandle, device_id: String) -> Result<(), MtpConnectionError> {
+pub async fn disconnect_mtp_device(device_id: String) -> Result<(), MtpConnectionError> {
     mtp::connection_manager()
-        .disconnect(
-            &device_id,
-            &mtp::events::device_events_for(&app),
-            mtp::MtpDisconnectReason::User,
-        )
+        .disconnect(&device_id, mtp::MtpDisconnectReason::User)
         .await
 }
 

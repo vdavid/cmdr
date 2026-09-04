@@ -120,7 +120,7 @@ impl VolumeProvider for AppVolumeProvider {
     fn resolve_mtp_object(&self, device_id: &str, storage_id: u32, handle: u32) -> ResolveMtpFut<'_> {
         let device_id = device_id.to_string();
         Box::pin(async move {
-            crate::mtp::connection::connection_manager()
+            crate::mtp::connection_manager()
                 .resolve_object_for_index(&device_id, storage_id, mtp_rs::ObjectHandle(u64::from(handle)))
                 .await
                 .map(|obj| ResolvedMtpObject {

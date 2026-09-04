@@ -17,13 +17,14 @@ use super::mtp::test_window;
 #[cfg(feature = "virtual-mtp")]
 use crate::mtp::connection::DeviceWatch;
 #[cfg(feature = "virtual-mtp")]
-use crate::mtp::connection::events::no_device_events;
 #[cfg(feature = "virtual-mtp")]
-use crate::mtp::connection::{MtpConnectionError, connection_manager};
+use crate::mtp::connection::MtpConnectionError;
+use crate::mtp::connection_manager;
+use std::sync::Arc;
 
 #[test]
 fn test_new_creates_volume() {
-    let vol = MtpVolume::new("mtp-20-5", 65537, "Internal storage");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Internal storage");
     assert_eq!(vol.name(), "Internal storage");
     assert_eq!(vol.device_id, "mtp-20-5");
     assert_eq!(vol.storage_id, 65537);
@@ -31,13 +32,13 @@ fn test_new_creates_volume() {
 
 #[test]
 fn test_root_path() {
-    let vol = MtpVolume::new("mtp-20-5", 65537, "Internal storage");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Internal storage");
     assert_eq!(vol.root().to_string_lossy(), "mtp://mtp-20-5/65537");
 }
 
 #[test]
 fn test_to_mtp_path_empty() {
-    let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Test");
     assert_eq!(vol.to_mtp_path(Path::new("")), "");
     assert_eq!(vol.to_mtp_path(Path::new("/")), "");
     assert_eq!(vol.to_mtp_path(Path::new(".")), "");
@@ -45,28 +46,28 @@ fn test_to_mtp_path_empty() {
 
 #[test]
 fn test_to_mtp_path_relative() {
-    let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Test");
     assert_eq!(vol.to_mtp_path(Path::new("DCIM")), "DCIM");
     assert_eq!(vol.to_mtp_path(Path::new("DCIM/Camera")), "DCIM/Camera");
 }
 
 #[test]
 fn test_to_mtp_path_absolute() {
-    let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Test");
     assert_eq!(vol.to_mtp_path(Path::new("/DCIM")), "DCIM");
     assert_eq!(vol.to_mtp_path(Path::new("/DCIM/Camera")), "DCIM/Camera");
 }
 
 #[test]
 fn test_to_mtp_path_mtp_url_root() {
-    let vol = MtpVolume::new("mtp-0-1", 65537, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-0-1", 65537, "Test");
     // MTP URL for storage root
     assert_eq!(vol.to_mtp_path(Path::new("mtp://mtp-0-1/65537")), "");
 }
 
 #[test]
 fn test_to_mtp_path_mtp_url_with_path() {
-    let vol = MtpVolume::new("mtp-0-1", 65537, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-0-1", 65537, "Test");
     // MTP URL with nested path
     assert_eq!(vol.to_mtp_path(Path::new("mtp://mtp-0-1/65537/DCIM")), "DCIM");
     assert_eq!(
@@ -81,14 +82,14 @@ fn test_can_watch_listings_returns_false() {
     // own event loop (in MtpConnectionManager) that handles file watching
     // independently. The can_watch_listings check in operations.rs is only
     // for the local notify-based watcher, which doesn't work for MTP paths.
-    let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Test");
     assert!(!vol.can_watch_listings());
 }
 
 #[test]
 fn test_supports_streaming_returns_true() {
     // MTP volumes support streaming for direct MTP-to-MTP transfers.
-    let vol = MtpVolume::new("mtp-20-5", 65537, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Test");
     assert!(vol.supports_streaming());
 }
 
@@ -200,7 +201,12 @@ async fn volume_read_stream_to_chunk_stream_surfaces_cancellation() {
 fn test_listing_watch_coverage_is_none_when_device_not_connected() {
     // Without `virtual-mtp`, we can still assert the negative case: a freshly
     // created `MtpVolume` whose device_id was never connected reports no coverage.
-    let vol = MtpVolume::new("mtp-never-connected-9999", 65537, "Test");
+    let vol = MtpVolume::new(
+        Arc::clone(connection_manager()),
+        "mtp-never-connected-9999",
+        65537,
+        "Test",
+    );
     assert_eq!(vol.listing_watch_coverage(Path::new("/DCIM")), WatchCoverage::None);
 }
 
@@ -222,7 +228,7 @@ async fn test_listing_watch_coverage_flips_with_connection() {
         .expect("the virtual device must appear in discovery");
 
     // Before connect: no coverage.
-    let vol = MtpVolume::new(&device_id, 65537, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), &device_id, 65537, "Test");
     assert_eq!(
         vol.listing_watch_coverage(Path::new("/")),
         WatchCoverage::None,
@@ -231,13 +237,13 @@ async fn test_listing_watch_coverage_flips_with_connection() {
 
     // Connect, then assert coverage.
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     // Use whatever storage_id the virtual device reported (we don't care
     // which storage; the gate is volume-level).
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
-    let vol = MtpVolume::new(&device_id, storage_id, "Test");
+    let vol = MtpVolume::new(Arc::clone(connection_manager()), &device_id, storage_id, "Test");
     assert_eq!(
         vol.listing_watch_coverage(Path::new("/")),
         WatchCoverage::EveryWriter,
@@ -246,11 +252,7 @@ async fn test_listing_watch_coverage_flips_with_connection() {
 
     // Disconnect, then assert it drops again.
     connection_manager()
-        .disconnect(
-            &device_id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     assert_eq!(
@@ -287,7 +289,7 @@ async fn connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_the
         .expect("the virtual device must appear in discovery");
 
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     assert!(
@@ -308,11 +310,7 @@ async fn connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_the
     }
 
     connection_manager()
-        .disconnect(
-            &device_id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     for volume_id in &volume_ids {
@@ -365,7 +363,7 @@ async fn upload_failure_deletes_partial_object_on_device() {
         .expect("the virtual device must appear in discovery");
 
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -403,11 +401,7 @@ async fn upload_failure_deletes_partial_object_on_device() {
     );
 
     connection_manager()
-        .disconnect(
-            &device_id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -456,7 +450,7 @@ async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
         .expect("the virtual device must appear in discovery");
 
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -494,11 +488,7 @@ async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
     );
 
     connection_manager()
-        .disconnect(
-            &device_id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -544,7 +534,7 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
         .expect("the virtual device must appear in discovery");
 
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -615,11 +605,7 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
     );
 
     connection_manager()
-        .disconnect(
-            &device_id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -658,7 +644,7 @@ async fn bounded_window_read_assembles_byte_exact() {
     test_window::set(1000);
 
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
@@ -669,7 +655,12 @@ async fn bounded_window_read_assembles_byte_exact() {
         .await
         .expect("list root should succeed");
 
-    let vol = MtpVolume::new(&device_id, storage_id, "Internal Storage");
+    let vol = MtpVolume::new(
+        Arc::clone(connection_manager()),
+        &device_id,
+        storage_id,
+        "Internal Storage",
+    );
     let mut stream = vol
         .open_read_stream(Path::new("/bigfile.bin"))
         .await
@@ -717,11 +708,7 @@ async fn bounded_window_read_assembles_byte_exact() {
 
     test_window::set(0);
     connection_manager()
-        .disconnect(
-            &device_id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
 }

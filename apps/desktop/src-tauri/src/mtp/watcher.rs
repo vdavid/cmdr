@@ -28,14 +28,6 @@ static WATCHER_STARTED: OnceLock<()> = OnceLock::new();
 /// but `check_for_device_changes()` returns early and no auto-connects happen.
 static MTP_ENABLED: AtomicBool = AtomicBool::new(true);
 
-/// The app handle the watcher emits from, once `start_mtp_watcher` has stored
-/// it. `None` before startup wiring and in unit tests. Shared so other MTP
-/// background work (the session-reset reopen) can emit the same lifecycle events
-/// an auto-connect does.
-pub(super) fn app_handle() -> Option<AppHandle> {
-    APP_HANDLE.get().cloned()
-}
-
 /// Whether MTP support is currently on. The session-reset reopen checks this
 /// between attempts so a recovery in flight doesn't resurrect a device the user
 /// just switched MTP off for.
@@ -152,13 +144,9 @@ fn initial_known_devices(enabled: bool, discovered: &HashSet<String>) -> HashSet
 
 /// Spawns an async task to connect a newly detected MTP device.
 fn auto_connect_device(device_id: String) {
-    let events = super::events::device_events();
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
-        match cm
-            .connect(&device_id, &events, super::connection::DeviceWatch::Live)
-            .await
-        {
+        match cm.connect(&device_id, super::connection::DeviceWatch::Live).await {
             Ok(info) => {
                 info!(
                     "Auto-connected MTP device: {} ({} storages)",
@@ -177,10 +165,9 @@ fn auto_connect_device(device_id: String) {
 
 /// Spawns an async task to disconnect a removed MTP device.
 fn auto_disconnect_device(device_id: String, reason: MtpDisconnectReason) {
-    let events = super::events::device_events();
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
-        if let Err(e) = cm.disconnect(&device_id, &events, reason).await {
+        if let Err(e) = cm.disconnect(&device_id, reason).await {
             // NotConnected is fine: device may not have been connected yet
             debug!("Disconnect for removed device {} returned: {:?}", device_id, e);
         }

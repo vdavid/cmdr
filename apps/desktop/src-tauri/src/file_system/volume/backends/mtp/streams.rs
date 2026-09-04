@@ -4,9 +4,10 @@
 
 use super::mapping::map_mtp_error;
 use super::{VolumeError, VolumeReadStream};
-use crate::mtp::connection::{MtpReadSession, connection_manager};
+use crate::mtp::connection::{MtpConnectionManager, MtpReadSession};
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Arc;
 
 /// Adapts a `VolumeReadStream` into a `futures::Stream` that mtp-rs can
 /// consume lazily, calling `on_progress` after each chunk and surfacing
@@ -70,6 +71,7 @@ pub(super) fn mtp_read_window() -> u32 {
 /// inside the cached [`MtpReadSession`]; this struct just relays windows and
 /// reports progress.
 pub(super) struct MtpReadStream {
+    pub(super) manager: Arc<MtpConnectionManager>,
     pub(super) session: MtpReadSession,
     pub(super) device_id: String,
 }
@@ -77,10 +79,7 @@ pub(super) struct MtpReadStream {
 impl VolumeReadStream for MtpReadStream {
     fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
         Box::pin(async move {
-            match connection_manager()
-                .read_next_window(&mut self.session, &self.device_id)
-                .await
-            {
+            match self.manager.read_next_window(&mut self.session, &self.device_id).await {
                 Ok(Some(bytes)) => Some(Ok(bytes)),
                 Ok(None) => None,
                 Err(e) => Some(Err(map_mtp_error(e))),

@@ -8,10 +8,10 @@ use std::time::Instant;
 
 use super::cache::{CachedListing, LISTING_CACHE_TTL_SECS};
 use super::errors::MtpConnectionError;
-use super::events::{MtpDeviceEvent, MtpDeviceEvents};
+use super::events::MtpDeviceEvent;
 use super::{
     DeviceEntry, MtpConnectionManager, MtpDisconnectReason, acquire_device_lock, convert_mtp_datetime, get_mtp_icon_id,
-    map_mtp_error, normalize_mtp_path,
+    normalize_mtp_path,
 };
 use cmdr_fs::entry::FileEntry;
 use cmdr_index::{WatchGap, WatchScope};
@@ -228,12 +228,12 @@ impl MtpConnectionManager {
             let storage = device
                 .storage(StorageId(u64::from(storage_id)))
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?;
+                .map_err(|e| self.map_device_error(e, device_id))?;
 
             storage
                 .list_objects_stream_with_cancel(parent_opt, cancel)
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?
+                .map_err(|e| self.map_device_error(e, device_id))?
             // `device` / `storage` drop here, releasing the lock before the
             // metadata batches below.
         };
@@ -290,7 +290,7 @@ impl MtpConnectionManager {
                         // session failure mid-listing quietly produced a SHORT
                         // folder that looked complete. mtp-rs 0.30 separates the
                         // two cases, so this can propagate again.
-                        return Err(map_mtp_error(e, device_id));
+                        return Err(self.map_device_error(e, device_id));
                     }
                     None => {
                         done = true;
@@ -426,7 +426,7 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
         debug!(
             "MTP list_directory [req#{}]: got storage object in {:?}",
             request_id,
@@ -450,7 +450,7 @@ impl MtpConnectionManager {
         let object_infos = match storage.list_objects_with_cancel(parent_opt, cancel).await {
             Ok(infos) => infos,
             Err(e) => {
-                let mapped_err = map_mtp_error(e, device_id);
+                let mapped_err = self.map_device_error(e, device_id);
                 error!(
                     "MTP list_directory [req#{}]: list_objects failed after {:?}: {:?}",
                     request_id,
@@ -558,7 +558,7 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         let parent_opt = if parent_handle == ObjectHandle::ROOT {
             None
@@ -571,7 +571,7 @@ impl MtpConnectionManager {
         let mut listing = storage
             .list_objects_stream_with_cancel(parent_opt, cancel)
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         let total = listing.total();
         debug!(
@@ -609,7 +609,7 @@ impl MtpConnectionManager {
                     // error, so a transport or session failure mid-listing quietly
                     // produced a SHORT folder that looked complete. mtp-rs 0.30
                     // separates the two cases, so this can propagate again.
-                    return Err(map_mtp_error(e, device_id));
+                    return Err(self.map_device_error(e, device_id));
                 }
             };
 
@@ -860,7 +860,7 @@ impl MtpConnectionManager {
     /// reopenable, so it goes through `handle_device_session_reset` instead (see
     /// `session_reset.rs`). Emitting `Removed` for it would drop a live device
     /// out of the sidebar.
-    pub(super) async fn handle_device_disconnected(&self, device_id: &str, events: &Arc<dyn MtpDeviceEvents>) {
+    pub(super) async fn handle_device_disconnected(&self, device_id: &str) {
         #[cfg(all(test, feature = "virtual-mtp"))]
         disconnect_test_hooks::bump_count();
 
@@ -892,7 +892,7 @@ impl MtpConnectionManager {
         if removed {
             info!("MTP device disconnected and removed from registry: {}", device_id);
 
-            events.device_event(MtpDeviceEvent::Disconnected {
+            self.events.device_event(MtpDeviceEvent::Disconnected {
                 device_id: device_id.to_string(),
                 reason: MtpDisconnectReason::Removed,
             });

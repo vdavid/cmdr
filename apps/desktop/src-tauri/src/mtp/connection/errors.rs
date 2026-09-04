@@ -168,6 +168,11 @@ pub(super) fn is_stale_handle_rejection(e: &mtp_rs::Error) -> bool {
 ///
 /// `mtp_rs::Error` is backend-neutral and `#[non_exhaustive]`, so this matches
 /// the neutral variants and keeps a catch-all for future ones.
+///
+/// Pure classification, so a unit test can assert a mapping without a device or
+/// a manager. A device op goes through
+/// [`MtpConnectionManager::map_device_error`](super::MtpConnectionManager::map_device_error)
+/// instead, which also starts recovery when the session died.
 pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {
     use mtp_rs::Error as E;
     let device_id = device_id.to_string();
@@ -200,18 +205,13 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
         // A software device reset, NOT a disconnect: the device is still present
         // (`Error::is_disconnected()` is deliberately false for it) and only the
         // PTP session died. Its own log line so a reset is diagnosable in a log
-        // instead of hiding inside the generic `Other` bucket.
-        //
-        // This is also where recovery starts. Every device op funnels through
-        // this mapper, so it's the one choke point that sees a reset no matter
-        // which operation tripped it; `schedule_recovery` is fire-and-forget and
-        // deduplicates per device, so the failing op still returns right away.
+        // instead of hiding inside the generic `Other` bucket. Recovery starts
+        // in `map_device_error`, the manager-side wrapper every device op uses.
         E::DeviceReset => {
             log::warn!(
                 target: "mtp_connection",
                 "Device {device_id} was reset in software to recover a wedged transfer cancel: the PTP session is gone, the device is still attached"
             );
-            super::session_reset::schedule_recovery(&device_id);
             MtpConnectionError::SessionReset { device_id }
         }
         E::NotFound => MtpConnectionError::ObjectNotFound {

@@ -12,8 +12,8 @@
 //! These tests assert the invariant at the point each mutation writes it.
 
 use super::DeviceWatch;
-use super::events::no_device_events;
-use super::{MtpDeleteScope, connection_manager};
+use super::MtpDeleteScope;
+use crate::mtp::connection_manager;
 use crate::mtp::virtual_device::{
     VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
@@ -38,7 +38,7 @@ async fn connect_device() -> Device {
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("a storage").id;
@@ -55,7 +55,7 @@ async fn connect_device() -> Device {
 
 async fn teardown(device: Device) {
     connection_manager()
-        .disconnect(&device.id, &no_device_events(), super::MtpDisconnectReason::User)
+        .disconnect(&device.id, super::MtpDisconnectReason::User)
         .await
         .ok();
     unregister_virtual_mtp_device(device.fixture.location_id);

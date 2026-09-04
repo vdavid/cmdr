@@ -263,9 +263,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
-        let devices = crate::mtp::connection::connection_manager()
-            .get_all_connected_devices()
-            .await;
+        let devices = crate::mtp::connection_manager().get_all_connected_devices().await;
         for device_info in &devices {
             let has_multiple = device_info.storages.len() > 1;
             let device_name = device_info

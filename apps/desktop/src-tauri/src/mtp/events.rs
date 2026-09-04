@@ -12,8 +12,6 @@
 //! silently renames the event the frontend listens for. `ipc.rs` registers all
 //! seven in `collect_events!`.
 
-use std::sync::Arc;
-
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
@@ -124,22 +122,4 @@ impl MtpDeviceEvents for TauriMtpDeviceEvents {
             log::debug!(target: "mtp", "couldn't emit an MTP device event: {e}");
         }
     }
-}
-
-/// Where MTP background work reports, given whatever the app has wired so far.
-///
-/// The hotplug watcher stores the app handle at startup; before that (and in
-/// every test binary) there is no window to emit into, so this answers with the
-/// detached sink rather than an `Option` every caller has to unwrap.
-pub(crate) fn device_events() -> Arc<dyn MtpDeviceEvents> {
-    match super::watcher::app_handle() {
-        Some(app) => Arc::new(TauriMtpDeviceEvents::new(app)),
-        None => super::connection::events::no_device_events(),
-    }
-}
-
-/// Where an IPC command reports: it already holds the handle the call came in
-/// on, so it never has to wait for the watcher's.
-pub(crate) fn device_events_for(app: &AppHandle) -> Arc<dyn MtpDeviceEvents> {
-    Arc::new(TauriMtpDeviceEvents::new(app.clone()))
 }

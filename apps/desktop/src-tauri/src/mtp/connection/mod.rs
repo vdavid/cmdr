@@ -35,15 +35,15 @@ use events::{MtpDeviceEvent, MtpDeviceEvents};
 pub(crate) use file_ops::MtpReadSession;
 pub(crate) use mutation_ops::MtpDeleteScope;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
-pub(crate) use volume_registrar::{MtpVolumeRegistrar, set_volume_registrar};
-use volume_registrar::{attach_storage_volume, detach_storage_volume};
+pub(crate) use volume_registrar::MtpVolumeRegistrar;
 
+use cmdr_fs::volume::host::VolumeHost;
 use log::{debug, error, info, warn};
 use mtp_rs::{MtpDevice, MtpDeviceBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, LazyLock, RwLock};
+use std::sync::{Arc, RwLock, Weak};
 use std::time::Duration;
 use tokio::sync::{Mutex, broadcast};
 
@@ -188,9 +188,11 @@ struct DeviceEntry {
     storage_lookups: Arc<std::sync::atomic::AtomicUsize>,
 }
 
-/// Global connection manager for MTP devices.
+/// One process's MTP device sessions, and everything they need from the app.
 ///
-/// Fields are private but accessible from child modules (event_loop, directory_ops, etc.).
+/// A VALUE, not a static: the app builds one at startup and parks it, a test
+/// builds one with fakes. Fields are private but accessible from child modules
+/// (event_loop, directory_ops, etc.).
 pub struct MtpConnectionManager {
     /// Map of device_id -> connected device entry.
     devices: Mutex<HashMap<String, DeviceEntry>>,
@@ -198,6 +200,25 @@ pub struct MtpConnectionManager {
     event_loop_shutdown: RwLock<HashMap<String, broadcast::Sender<()>>>,
     /// Debouncer for directory change events.
     event_debouncer: EventDebouncer,
+    /// What the panes show, which runtime to spawn on, what the index needs to
+    /// hear: everything this layer can't answer for itself.
+    host: VolumeHost,
+    /// Where a device's lifecycle is reported.
+    events: Arc<dyn MtpDeviceEvents>,
+    /// How an attached storage becomes a browsable volume.
+    registrar: MtpVolumeRegistrar,
+    /// Devices whose session-reset recovery is already in flight, so N
+    /// operations failing against the same dead session schedule ONE recovery.
+    recovering: std::sync::Mutex<std::collections::HashSet<String>>,
+    /// This manager, as background work sees it.
+    ///
+    /// A `&self` method that has to hand the manager over (to the registrar, to
+    /// a spawned task, to an `MtpVolume`) upgrades this. `Weak` rather than a
+    /// stored `Arc` because a self-referential `Arc` would keep every retired
+    /// manager alive forever; a failed upgrade means the manager is already gone
+    /// and the work has nothing left to do, which is a log line and never a
+    /// panic.
+    self_ref: Weak<Self>,
 }
 
 /// Acquires the device lock with a timeout.
@@ -219,13 +240,54 @@ async fn acquire_device_lock<'a>(
 }
 
 impl MtpConnectionManager {
-    /// Creates a new connection manager.
-    fn new() -> Self {
-        Self {
+    /// Builds a manager over the host it reports to, the sink it reports device
+    /// lifecycle into, and the registrar that turns an attached storage into a
+    /// volume.
+    ///
+    /// Comes out in an `Arc` because the manager hands itself to background
+    /// tasks and to every `MtpVolume` it causes to exist. Nothing here touches
+    /// USB: a manager with no device connected costs three empty maps.
+    pub fn new(host: VolumeHost, events: Arc<dyn MtpDeviceEvents>, registrar: MtpVolumeRegistrar) -> Arc<Self> {
+        Arc::new_cyclic(|self_ref| Self {
             devices: Mutex::new(HashMap::new()),
             event_loop_shutdown: RwLock::new(HashMap::new()),
             event_debouncer: EventDebouncer::new(Duration::from_millis(EVENT_DEBOUNCE_MS)),
+            host,
+            events,
+            registrar,
+            recovering: std::sync::Mutex::new(std::collections::HashSet::new()),
+            self_ref: self_ref.clone(),
+        })
+    }
+
+    /// The seams this layer reaches the app through.
+    pub(crate) fn host(&self) -> &VolumeHost {
+        &self.host
+    }
+
+    /// This manager as an owned handle, or `None` once it has been dropped.
+    ///
+    /// The caller decides what a gone manager means; every current one logs and
+    /// returns, because there is no session left for the work to act on.
+    fn self_handle(&self) -> Option<Arc<Self>> {
+        self.self_ref.upgrade()
+    }
+
+    /// Classifies a device error, and starts session recovery when the PTP
+    /// session died under it.
+    ///
+    /// ❗ Every device operation maps its errors through here, ❌ never through
+    /// the bare `map_mtp_error`: this is the one choke point that sees a reset
+    /// whichever operation tripped it, and a reset nobody schedules a reopen for
+    /// leaves the device in the sidebar answering nothing until a replug.
+    /// Scheduling is fire-and-forget and deduplicates per device, so the failing
+    /// op still returns right away with its own retryable error.
+    pub(super) fn map_device_error(&self, e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {
+        let mapped = map_mtp_error(e, device_id);
+        if matches!(mapped, MtpConnectionError::SessionReset { .. }) {
+            self.schedule_recovery(device_id);
         }
+        mapped
     }
 
     /// Connects to an MTP device by ID.
@@ -238,9 +300,9 @@ impl MtpConnectionManager {
     pub async fn connect(
         &self,
         device_id: &str,
-        events: &Arc<dyn MtpDeviceEvents>,
         watch: DeviceWatch,
     ) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
+        let events = &self.events;
         // Check if already connected - if so, return existing connection info (idempotent)
         {
             let devices = self.devices.lock().await;
@@ -309,7 +371,7 @@ impl MtpConnectionManager {
                 }
 
                 // Map other errors
-                return Err(map_mtp_error(e, device_id));
+                return Err(self.map_device_error(e, device_id));
             }
         };
 
@@ -409,12 +471,12 @@ impl MtpConnectionManager {
         // volume registry, so an event that beat the volumes into existence
         // would have nothing to land on. See `volume_registrar.rs`.
         for storage in &connected_info.storages {
-            attach_storage_volume(device_id, storage.id, &storage.name);
+            self.attach_storage_volume(device_id, storage.id, &storage.name);
         }
 
         // Start the event loop for file watching.
         if watch == DeviceWatch::Live {
-            self.start_event_loop(device_id.to_string(), device_arc, Arc::clone(events));
+            self.start_event_loop(device_id.to_string(), device_arc);
         }
 
         // Report the device as up.
@@ -445,12 +507,7 @@ impl MtpConnectionManager {
     /// Closes the MTP session gracefully. `reason` is forwarded to the
     /// frontend via the `mtp-device-disconnected` event so logs can tell a
     /// user-initiated disconnect apart from a hotplug removal.
-    pub async fn disconnect(
-        &self,
-        device_id: &str,
-        events: &Arc<dyn MtpDeviceEvents>,
-        reason: MtpDisconnectReason,
-    ) -> Result<(), MtpConnectionError> {
+    pub async fn disconnect(&self, device_id: &str, reason: MtpDisconnectReason) -> Result<(), MtpConnectionError> {
         info!("Disconnecting from MTP device: {} (reason: {:?})", device_id, reason);
 
         // Stop the event loop first
@@ -470,7 +527,7 @@ impl MtpConnectionManager {
 
         // Detach this device's volumes
         for storage in &entry.storages {
-            detach_storage_volume(device_id, storage.id);
+            self.detach_storage_volume(device_id, storage.id);
         }
 
         // The device will be closed when it's dropped.
@@ -481,7 +538,7 @@ impl MtpConnectionManager {
         drop(entry);
 
         // Report the device as gone.
-        events.device_event(MtpDeviceEvent::Disconnected {
+        self.events.device_event(MtpDeviceEvent::Disconnected {
             device_id: device_id.to_string(),
             reason,
         });
@@ -573,7 +630,7 @@ impl MtpConnectionManager {
 
     /// Handles a StoreAdded event: queries the new storage, registers its volume,
     /// and broadcasts the change so the frontend picks it up.
-    pub async fn handle_storage_added(&self, device_id: &str, storage_id: u32, events: &Arc<dyn MtpDeviceEvents>) {
+    pub async fn handle_storage_added(&self, device_id: &str, storage_id: u32) {
         let device_arc = {
             let devices = self.devices.lock().await;
             match devices.get(device_id) {
@@ -648,7 +705,7 @@ impl MtpConnectionManager {
         drop(device);
 
         // Attach the volume
-        attach_storage_volume(device_id, storage_id, &storage_info.name);
+        self.attach_storage_volume(device_id, storage_id, &storage_info.name);
 
         // Update the DeviceEntry's storage list
         {
@@ -660,7 +717,7 @@ impl MtpConnectionManager {
 
         // Report the new storage. An empty `device_name` is what marks this as an
         // addition to a device that is already up rather than a fresh connect.
-        events.device_event(MtpDeviceEvent::Connected {
+        self.events.device_event(MtpDeviceEvent::Connected {
             device_id: device_id.to_string(),
             device_name: String::new(),
             storages: vec![storage_info],
@@ -751,7 +808,7 @@ impl MtpConnectionManager {
     }
 
     /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
-    pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32, events: &Arc<dyn MtpDeviceEvents>) {
+    pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32) {
         // Remove from DeviceEntry
         {
             let mut devices = self.devices.lock().await;
@@ -764,11 +821,11 @@ impl MtpConnectionManager {
         }
 
         // Detach the volume
-        detach_storage_volume(device_id, storage_id);
+        self.detach_storage_volume(device_id, storage_id);
         info!("MTP storage {storage_id} removed from {device_id}");
 
         // Report it so the frontend drops the storage from the sidebar.
-        events.device_event(MtpDeviceEvent::StorageRemoved {
+        self.events.device_event(MtpDeviceEvent::StorageRemoved {
             device_id: device_id.to_string(),
             storage_id,
         });
@@ -834,14 +891,6 @@ impl MtpConnectionManager {
 // - file_ops.rs: open_read_session + read_next_window (bounded-window reads), upload_from_stream
 // - mutation_ops.rs: delete_object, create_folder, rename_object, move_object
 // - bulk_ops.rs: scan_for_copy, upload_recursive
-
-/// Global connection manager instance.
-static CONNECTION_MANAGER: LazyLock<MtpConnectionManager> = LazyLock::new(MtpConnectionManager::new);
-
-/// Gets the global connection manager.
-pub fn connection_manager() -> &'static MtpConnectionManager {
-    &CONNECTION_MANAGER
-}
 
 /// Resolve a device id (`mtp-{serial}` or `mtp-{location_id}`) to the live
 /// USB `location_id` to open it with.

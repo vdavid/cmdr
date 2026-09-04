@@ -15,11 +15,11 @@ use super::*;
 use std::path::Path;
 
 use crate::mtp::connection::DeviceWatch;
-use crate::mtp::connection::connection_manager;
-use crate::mtp::connection::events::no_device_events;
+use crate::mtp::connection_manager;
 use crate::mtp::virtual_device::{
     VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
+use std::sync::Arc;
 
 /// Connects the virtual device and builds an `MtpVolume` over its writable
 /// storage, with the root listing primed (`resolve_path_to_handle` is
@@ -31,11 +31,11 @@ async fn connect_primed_volume(fixture: &VirtualDeviceFixture) -> (String, MtpVo
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
     let storage_id = info.storages.first().expect("virtual device should have storages").id;
-    let volume = MtpVolume::new(&device_id, storage_id, "Test");
+    let volume = MtpVolume::new(Arc::clone(connection_manager()), &device_id, storage_id, "Test");
     volume
         .list_directory(Path::new("/"), None)
         .await
@@ -49,11 +49,7 @@ async fn connect_primed_volume(fixture: &VirtualDeviceFixture) -> (String, MtpVo
 /// first write with a bare protocol error.
 async fn teardown(device_id: &str, fixture: &VirtualDeviceFixture) {
     connection_manager()
-        .disconnect(
-            device_id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);

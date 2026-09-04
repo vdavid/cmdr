@@ -6,7 +6,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use super::errors::MtpConnectionError;
-use super::{MtpConnectionManager, MtpObjectInfo, acquire_device_lock, map_mtp_error, normalize_mtp_path};
+use super::{MtpConnectionManager, MtpObjectInfo, acquire_device_lock, normalize_mtp_path};
 
 /// How far a delete may reach.
 ///
@@ -114,13 +114,13 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         // Get object info to check if it's a directory
         let object_info = storage
             .get_object_info(object_handle)
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         let is_dir = object_info.is_folder();
 
@@ -135,7 +135,7 @@ impl MtpConnectionManager {
             let children = storage
                 .list_objects_with_cancel(Some(object_handle), cancel)
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?;
+                .map_err(|e| self.map_device_error(e, device_id))?;
 
             drop(storage);
             drop(device);
@@ -196,12 +196,12 @@ impl MtpConnectionManager {
             let storage = device
                 .storage(StorageId(u64::from(storage_id)))
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?;
+                .map_err(|e| self.map_device_error(e, device_id))?;
 
             storage
                 .delete_with_cancel(object_handle, cancel)
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?;
+                .map_err(|e| self.map_device_error(e, device_id))?;
         } else {
             // For files, just delete directly. The cancel check inside
             // delete_with_cancel bails before the PTP `DeleteObject` request
@@ -209,7 +209,7 @@ impl MtpConnectionManager {
             storage
                 .delete_with_cancel(object_handle, cancel)
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?;
+                .map_err(|e| self.map_device_error(e, device_id))?;
         }
 
         // Remove from path cache
@@ -273,7 +273,7 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         // Create the folder
         let parent_opt = if parent_handle == ObjectHandle::ROOT {
@@ -285,7 +285,7 @@ impl MtpConnectionManager {
         let new_handle = storage
             .create_folder(parent_opt, folder_name)
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         // Release device lock
         drop(storage);
@@ -362,13 +362,13 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         // Get object info to determine if it's a directory
         let object_info = storage
             .get_object_info(object_handle)
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         let is_dir = object_info.is_folder();
         let old_size = object_info.size;
@@ -377,7 +377,7 @@ impl MtpConnectionManager {
         storage
             .rename(object_handle, new_name)
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         // Release device and storage lock
         drop(storage);
@@ -457,13 +457,13 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         // Get object info
         let object_info = storage
             .get_object_info(object_handle)
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         let is_dir = object_info.is_folder();
         let object_size = object_info.size;

@@ -8,8 +8,9 @@ MTP for Android devices and PTP cameras over USB. macOS and Linux only; on Linux
 
 - `discovery.rs` (`list_mtp_devices()`), `watcher.rs` (hotplug over `mtp_rs::mtp::watch_devices()`, auto-connect, the
   `MTP_ENABLED` gate), `types.rs` (camelCase JSON), `macos_workaround.rs` (ptpcamerad suppression).
-- `connection/`: the per-device session layer (`MtpConnectionManager` singleton, event loop, list / read / write /
-  mutate / bulk ops). See its `CLAUDE.md` for locks, caches, and gotchas.
+- `connection/`: the per-device session layer (`MtpConnectionManager`, event loop, list / read / write / mutate / bulk
+  ops). See its `CLAUDE.md` for locks, caches, and gotchas.
+- `mod.rs`: where the app parks the one manager it built (`install_connection_manager`, then `connection_manager()`).
 - `events.rs`: the seven `tauri_specta` payload structs and the adapter mapping the session layer's typed
   `MtpDeviceEvent`s onto five of them. The struct name kebab-cases to the wire event name.
 - `volume_wiring.rs` registers a storage as an `MtpVolume` (twin of `network/smb_upgrade.rs`); `virtual_device.rs` is
@@ -30,9 +31,12 @@ MTP for Android devices and PTP cameras over USB. macOS and Linux only; on Linux
   across a replug to ANY port, so the index re-matches), else the `location_id`. Volume id =
   `{device_id}:{storage_id}`, both halves OPAQUE: ❌ never `split(':').nth(1)`, ALWAYS `split_volume_id` /
   `device_id_of_volume` / `storage_id_of_volume` (rsplit on the LAST `:`; TS mirrors it with `lastIndexOf(':')`).
-- **❌ The session layer never registers volumes.** `connect()` attaches storages through the `OnceLock` registrar in
-  `connection/volume_registrar.rs`, installed at startup by `volume_wiring.rs`. Keep it synchronous: the attach must
-  finish before the event loop starts. New backends copy this.
+- **The manager is a VALUE.** `MtpConnectionManager::new(host, events, registrar)`; `MtpVolume` holds the `Arc` that
+  attached it. ❌ Never add a static: the `OnceLock` in `mod.rs` is only where the APP parks its one manager, and a test
+  builds its own with fakes.
+- **❌ The session layer never registers volumes.** `connect()` attaches storages through its `MtpVolumeRegistrar`
+  (`volume_wiring::volume_registrar`), synchronously: the attach must finish before the event loop starts. New backends
+  copy this.
 - **Cancel propagation bails at the next per-USB-roundtrip boundary** (`MtpCancelBridge` bridges a
   `CancellationToken`). It's the ONLY safe early stop: ❌ never a `tokio::time::timeout` or a task abort, which drop
   the future mid-transaction and wedge the phone (`pnpm check mtp-dropping-timeout`), and ❌ never PTP

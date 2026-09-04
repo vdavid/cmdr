@@ -15,7 +15,6 @@ use cmdr_fs::volume::{ScanBoundary, ScanStop};
 
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
-use crate::mtp::connection::connection_manager;
 use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -34,7 +33,7 @@ impl MtpVolume {
                 self.device_id, self.storage_id, mtp_path
             );
 
-            connection_manager()
+            self.manager
                 .scan_for_copy(&self.device_id, self.storage_id, &mtp_path)
                 .await
                 .map_err(map_mtp_error)
@@ -51,7 +50,7 @@ impl MtpVolume {
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
-            connection_manager()
+            self.manager
                 .scan_for_copy_with_stop(&self.device_id, self.storage_id, &mtp_path, stop)
                 .await
                 .map_err(map_mtp_error)

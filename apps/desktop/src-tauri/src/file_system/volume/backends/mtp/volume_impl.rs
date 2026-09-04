@@ -10,11 +10,12 @@ use super::{
     Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
 use crate::file_system::listing::FileEntry;
-use crate::mtp::connection::{MtpConnectionError, MtpDeleteScope, connection_manager};
+use crate::mtp::connection::{MtpConnectionError, MtpDeleteScope};
 use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
 impl Volume for MtpVolume {
@@ -71,7 +72,7 @@ impl Volume for MtpVolume {
 
             let start = std::time::Instant::now();
             let result = if let Some(on_progress) = on_progress {
-                connection_manager()
+                self.manager
                     .list_directory_with_progress_and_cancel(
                         &self.device_id,
                         self.storage_id,
@@ -81,7 +82,7 @@ impl Volume for MtpVolume {
                     )
                     .await
             } else {
-                connection_manager()
+                self.manager
                     .list_directory_with_cancel(&self.device_id, self.storage_id, &mtp_path, cancel_ref)
                     .await
             };
@@ -115,7 +116,7 @@ impl Volume for MtpVolume {
             // The per-unit, foreground-yielding scan listing: never holds the USB
             // pipe across the whole folder, so a background scan can't starve
             // foreground nav/copy/delete. See `mtp/connection/directory_ops.rs`.
-            connection_manager()
+            self.manager
                 .list_directory_for_scan(
                     &self.device_id,
                     self.storage_id,
@@ -206,7 +207,7 @@ impl Volume for MtpVolume {
         // silent source, not a source we're deaf to. `ThisMachineOnly` would be
         // the wrong shape for that: it names a channel that misses OTHER
         // writers, and MTP has none.
-        if connection_manager().is_connected(&self.device_id) {
+        if self.manager.is_connected(&self.device_id) {
             WatchCoverage::EveryWriter
         } else {
             WatchCoverage::None
@@ -309,7 +310,7 @@ impl Volume for MtpVolume {
             let parent_mtp_path = self.to_mtp_path(parent);
             let folder_name = name.to_string();
 
-            connection_manager()
+            self.manager
                 .create_folder(&self.device_id, self.storage_id, &parent_mtp_path, &folder_name)
                 .await
                 .map(|_| ())
@@ -338,7 +339,7 @@ impl Volume for MtpVolume {
 
             // `SingleNode`, because `Volume::delete` means one node on every
             // backend. A caller that wants a tree walks it itself.
-            connection_manager()
+            self.manager
                 .delete_object_with_cancel(
                     &self.device_id,
                     self.storage_id,
@@ -408,7 +409,7 @@ impl Volume for MtpVolume {
             if same_parent {
                 // Same directory: just rename
                 let new_name = to_name.to_string();
-                connection_manager()
+                self.manager
                     .rename_object(&self.device_id, self.storage_id, &from_mtp, &new_name)
                     .await
                     .map(|_| ())
@@ -429,7 +430,7 @@ impl Volume for MtpVolume {
             } else {
                 // Different directory: use MTP MoveObject
                 let to_parent_str = to_parent.to_string_lossy().to_string();
-                connection_manager()
+                self.manager
                     .move_object(&self.device_id, self.storage_id, &from_mtp, &to_parent_str)
                     .await
                     .map(|_| ())
@@ -448,7 +449,7 @@ impl Volume for MtpVolume {
                         from_name
                     );
                     let new_name = to_name.to_string();
-                    connection_manager()
+                    self.manager
                         .rename_object(&self.device_id, self.storage_id, &moved_path, &new_name)
                         .await
                         .map(|_| ())
@@ -517,14 +518,11 @@ impl Volume for MtpVolume {
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            let info = connection_manager()
-                .get_device_info(&self.device_id)
-                .await
-                .ok_or_else(|| {
-                    map_mtp_error(MtpConnectionError::NotConnected {
-                        device_id: self.device_id.clone(),
-                    })
-                })?;
+            let info = self.manager.get_device_info(&self.device_id).await.ok_or_else(|| {
+                map_mtp_error(MtpConnectionError::NotConnected {
+                    device_id: self.device_id.clone(),
+                })
+            })?;
 
             // Find this storage in the device info
             let storage = info.storages.iter().find(|s| s.id == self.storage_id).ok_or_else(|| {
@@ -572,12 +570,14 @@ impl Volume for MtpVolume {
             // The window size (`mtp_read_window()`, shrinkable in tests) and the
             // start `offset` (non-zero resumes a reopened read; see
             // `CheckpointStream`) are baked into the `WindowedDownload` here.
-            let session = connection_manager()
+            let session = self
+                .manager
                 .open_read_session(&self.device_id, self.storage_id, &mtp_path, offset, mtp_read_window())
                 .await
                 .map_err(map_mtp_error)?;
 
             Ok(Box::new(MtpReadStream {
+                manager: Arc::clone(&self.manager),
                 session,
                 device_id: self.device_id.clone(),
             }) as Box<dyn VolumeReadStream>)
@@ -606,7 +606,8 @@ impl Volume for MtpVolume {
             let mut out = Vec::with_capacity(len.min(window as usize));
             while out.len() < len {
                 let remaining = u32::try_from(len - out.len()).unwrap_or(u32::MAX);
-                let chunk = connection_manager()
+                let chunk = self
+                    .manager
                     .read_range_direct(
                         &self.device_id,
                         self.storage_id,
@@ -648,11 +649,11 @@ impl Volume for MtpVolume {
     }
 
     fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move { connection_manager().foreground_pending(&self.device_id).await })
+        Box::pin(async move { self.manager.foreground_pending(&self.device_id).await })
     }
 
     fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        Box::pin(async move { connection_manager().background_yield_point(&self.device_id).await })
+        Box::pin(async move { self.manager.background_yield_point(&self.device_id).await })
     }
 
     fn write_from_stream<'a>(
@@ -676,7 +677,8 @@ impl Volume for MtpVolume {
             let chunk_stream = volume_read_stream_to_chunk_stream(stream, size, on_progress);
             let chunk_stream = Box::pin(chunk_stream);
 
-            let bytes_written = connection_manager()
+            let bytes_written = self
+                .manager
                 .upload_from_stream(
                     &self.device_id,
                     self.storage_id,

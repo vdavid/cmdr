@@ -25,8 +25,8 @@ use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::WriteOperationState;
 use crate::file_system::write_operations::types::{ConflictResolution, VolumeCopyConfig};
 use crate::mtp::connection::DeviceWatch;
-use crate::mtp::connection::events::no_device_events;
-use crate::mtp::connection::{MtpDisconnectReason, connection_manager};
+use crate::mtp::connection::MtpDisconnectReason;
+use crate::mtp::connection_manager;
 use crate::mtp::virtual_device::{
     rescan_virtual_device, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
@@ -65,11 +65,16 @@ async fn connect_virtual_device() -> (String, Arc<dyn Volume>, PathBuf, VirtualD
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect");
     let storage_id = info.storages.first().expect("at least one virtual storage").id;
-    let volume: Arc<dyn Volume> = Arc::new(MtpVolume::new(&device_id, storage_id, "Test"));
+    let volume: Arc<dyn Volume> = Arc::new(MtpVolume::new(
+        Arc::clone(connection_manager()),
+        &device_id,
+        storage_id,
+        "Test",
+    ));
     (device_id, volume, backing, guard)
 }
 
@@ -168,7 +173,7 @@ async fn same_volume_merge_move_keeps_a_skipped_child_on_mtp() {
     );
 
     connection_manager()
-        .disconnect(&device_id, &no_device_events(), MtpDisconnectReason::User)
+        .disconnect(&device_id, MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect");
 }

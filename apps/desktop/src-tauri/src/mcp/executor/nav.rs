@@ -88,9 +88,7 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
 
                 // Check MTP volumes if not a local or virtual volume
                 let is_mtp = if !is_virtual && !is_local {
-                    let devices = crate::mtp::connection::connection_manager()
-                        .get_all_connected_devices()
-                        .await;
+                    let devices = crate::mtp::connection_manager().get_all_connected_devices().await;
                     devices.iter().any(|d| {
                         let has_multiple = d.storages.len() > 1;
                         let device_name = d

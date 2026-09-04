@@ -6,7 +6,7 @@ use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use super::errors::{MtpConnectionError, is_stale_handle_rejection, map_mtp_error};
+use super::errors::{MtpConnectionError, is_stale_handle_rejection};
 use super::{MtpConnectionManager, acquire_device_lock, normalize_mtp_path};
 
 /// Cached state for a bounded-window MTP read.
@@ -85,12 +85,12 @@ impl MtpConnectionManager {
             let storage = device
                 .storage(StorageId(u64::from(storage_id)))
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?;
+                .map_err(|e| self.map_device_error(e, device_id))?;
 
             storage
                 .download_windowed(object_handle, ByteRange::From(offset), window_size)
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?
+                .map_err(|e| self.map_device_error(e, device_id))?
         };
 
         debug!("MTP open_read_session: opened {} bytes for {}", windowed.size(), path);
@@ -134,7 +134,7 @@ impl MtpConnectionManager {
         let outcome = session.windowed.next_window().await;
         match outcome {
             Some(Ok(bytes)) => Ok(Some(bytes)),
-            Some(Err(e)) => Err(map_mtp_error(e, device_id)),
+            Some(Err(e)) => Err(self.map_device_error(e, device_id)),
             None => Ok(None),
         }
     }
@@ -197,7 +197,7 @@ impl MtpConnectionManager {
                     device
                         .storage(StorageId(u64::from(storage_id)))
                         .await
-                        .map_err(|e| map_mtp_error(e, device_id))?,
+                        .map_err(|e| self.map_device_error(e, device_id))?,
                 );
                 if let Ok(mut cache) = storage_cache.write() {
                     cache.insert(storage_id, Arc::clone(&storage));
@@ -209,7 +209,7 @@ impl MtpConnectionManager {
         storage
             .read_range(object_handle, offset, len)
             .await
-            .map_err(|e| map_mtp_error(e, device_id))
+            .map_err(|e| self.map_device_error(e, device_id))
     }
 
     /// Uploads pre-collected chunks to the MTP device.
@@ -270,7 +270,7 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         // Create object info for the upload
         let object_info = NewObjectInfo::file(filename, size);
@@ -351,7 +351,7 @@ impl MtpConnectionManager {
                     "Upload failed for {dest_folder}/{filename} on {device_id}: {:?}",
                     upload_err.source
                 );
-                return Err(map_mtp_error(upload_err.source, device_id));
+                return Err(self.map_device_error(upload_err.source, device_id));
             }
         };
 

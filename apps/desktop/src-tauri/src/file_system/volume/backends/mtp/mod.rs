@@ -27,16 +27,21 @@ use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
     VolumeError, VolumeReadStream, WatchCoverage,
 };
+use crate::mtp::connection::MtpConnectionManager;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 /// A volume backed by an MTP device storage.
 ///
-/// This implementation wraps the MTP connection manager to provide file system
-/// abstraction. All methods are natively async: MTP operations go through the
-/// connection manager which uses async USB bulk transfers.
+/// Every operation goes through the connection manager that attached this
+/// storage, which is why the volume holds one rather than looking one up: the
+/// manager owns the PTP session, the caches, and the per-device priority gate.
+/// All methods are natively async, over async USB bulk transfers.
 pub struct MtpVolume {
     /// Display name (typically the storage description like "Internal storage")
     name: String,
+    /// The session layer this storage is served by.
+    manager: Arc<MtpConnectionManager>,
     /// MTP device ID (for example, "mtp-20-5")
     pub(super) device_id: String,
     /// Storage ID within the device
@@ -51,13 +56,15 @@ impl MtpVolume {
     /// Creates a new MTP volume for a specific device storage.
     ///
     /// # Arguments
+    /// * `manager` - The session layer that holds this device's PTP session
     /// * `device_id` - The MTP device ID (format: "mtp-{bus}-{address}")
     /// * `storage_id` - The storage ID within the device
     /// * `name` - Display name for the storage (for example, "Internal shared storage")
-    pub fn new(device_id: &str, storage_id: u32, name: &str) -> Self {
+    pub fn new(manager: Arc<MtpConnectionManager>, device_id: &str, storage_id: u32, name: &str) -> Self {
         let volume_id = format!("{}:{}", device_id, storage_id);
         Self {
             name: name.to_string(),
+            manager,
             device_id: device_id.to_string(),
             storage_id,
             root: PathBuf::from(format!("mtp://{}/{}", device_id, storage_id)),

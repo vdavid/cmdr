@@ -484,7 +484,7 @@ pub fn run() {
             // before the virtual device and the hotplug watcher below, which
             // are the two things that can connect one.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            mtp::volume_wiring::install_volume_registrar();
+            mtp::install_connection_manager(app.handle());
             // File MTP as a device provider, so the volume list, eject, and path
             // resolution see its storages. `device_volumes` is the seam.
             #[cfg(any(target_os = "macos", target_os = "linux"))]

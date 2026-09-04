@@ -32,7 +32,7 @@ use std::path::PathBuf;
 use mtp_rs::{ObjectHandle, StorageId};
 
 use super::errors::MtpConnectionError;
-use super::{MtpConnectionManager, acquire_device_lock, map_mtp_error};
+use super::{MtpConnectionManager, acquire_device_lock};
 
 /// Upper bound on how many parent hops the walk will follow before giving up.
 /// Real MTP trees are shallow (a handful of levels); this only exists to bound a
@@ -261,11 +261,11 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
         let info = storage
             .get_object_info(handle)
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         let is_directory = info.is_folder();
         Ok(ResolvedMtpObject {
@@ -302,7 +302,7 @@ impl MtpConnectionManager {
         let storage = device
             .storage(StorageId(u64::from(storage_id)))
             .await
-            .map_err(|e| map_mtp_error(e, device_id))?;
+            .map_err(|e| self.map_device_error(e, device_id))?;
 
         let mut current = handle;
         for _ in 0..MAX_WALK_DEPTH {
@@ -312,7 +312,7 @@ impl MtpConnectionManager {
             let info = storage
                 .get_object_info(current)
                 .await
-                .map_err(|e| map_mtp_error(e, device_id))?;
+                .map_err(|e| self.map_device_error(e, device_id))?;
             let parent = info.parent;
             memo.insert(current, (parent, info.filename));
             if is_root_handle(parent) {

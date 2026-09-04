@@ -32,9 +32,9 @@
 use super::MtpVolume;
 use super::Volume;
 use crate::mtp::connection::DeviceWatch;
-use crate::mtp::connection::connection_manager;
-use crate::mtp::connection::events::no_device_events;
+use crate::mtp::connection_manager;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 /// rc-zip's `EntryFsm` buffer size: the read size the extraction loop issues.
@@ -96,7 +96,7 @@ async fn mtp_read_range_hardware_bench() {
         .unwrap_or_else(|| panic!("no MTP device with serial {serial} is attached"));
 
     let info = connection_manager()
-        .connect(&device_id, &no_device_events(), DeviceWatch::Off)
+        .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("connect to the benchmark device");
     let storage = info.storages.first().expect("a storage").clone();
@@ -106,7 +106,7 @@ async fn mtp_read_range_hardware_bench() {
         .expect("no file >= 50 MB found two levels deep; put one on the device first");
     println!("target: {rel_path} ({:.1} MB)", size as f64 / 1e6);
 
-    let volume = MtpVolume::new(&device_id, storage.id, &storage.name);
+    let volume = MtpVolume::new(Arc::clone(connection_manager()), &device_id, storage.id, &storage.name);
     let path = Path::new(&rel_path);
 
     // Disjoint, forward-walking offsets: no iteration reads a block a previous
@@ -141,11 +141,7 @@ async fn mtp_read_range_hardware_bench() {
     );
 
     connection_manager()
-        .disconnect(
-            &device_id,
-            &no_device_events(),
-            crate::mtp::connection::MtpDisconnectReason::User,
-        )
+        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await
         .ok();
     #[cfg(target_os = "macos")]
