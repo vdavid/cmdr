@@ -3,7 +3,7 @@
 //! pre-known-conflict bulk skip, and destination auto-create.
 //!
 //! These drive the sink-based inner function directly with a
-//! `CollectorEventSink` + `InMemoryVolume`, mirroring `volume/copy_tests.rs`.
+//! `CollectorEventSink` + `InMemoryVolume`, mirroring `volume/copy_tests/`.
 //! Tests target the data-safety invariants the bulk-skip / per-iter skip
 //! work introduced: pre-known-conflict bulk skip lands before any destructive
 //! call, and skipped conflicts bump `files_done` so the bar doesn't stall.

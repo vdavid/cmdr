@@ -10,7 +10,7 @@
 //! destination path is a sweepable partial, because a directory source's dest
 //! root can be a merged directory holding the user's own files.
 //!
-//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests.rs`
+//! Shared fixtures `make_state` / `make_volumes` live in `volume/copy_tests/mod.rs`
 //! (`super::tests`).
 
 use super::tests::{make_state, make_volumes};

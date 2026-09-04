@@ -1,5 +1,5 @@
 //! Network-gated SMB→local benchmark for `volume::copy`, split out of
-//! `volume/copy_tests.rs`. The single test here is `#[ignore]`d and needs a
+//! `volume/copy_tests/`. The single test here is `#[ignore]`d and needs a
 //! reachable QNAP NAS plus the `SMB2_TEST_NAS_PASSWORD` env var, so it never
 //! runs in CI or a normal `cargo nextest run` — only on demand with
 //! `--ignored`. See the test's own doc comment for the run command.

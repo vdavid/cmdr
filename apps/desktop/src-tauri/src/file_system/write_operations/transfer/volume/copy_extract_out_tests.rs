@@ -1,9 +1,9 @@
 //! Extract-out tests for `copy_volumes_with_progress`, split out of
-//! `volume/copy_tests.rs`. A cross-volume copy that pulls a file and a
+//! `volume/copy_tests/`. A cross-volume copy that pulls a file and a
 //! directory subtree OUT of a zip archive through the transfer engine, plus the
 //! Zip-Slip guard that writes a symlink entry as a regular file.
 //!
-//! Shared fixture `make_state` lives in `volume/copy_tests.rs` (`super::tests`).
+//! Shared fixture `make_state` lives in `volume/copy_tests/mod.rs` (`super::tests`).
 
 use super::tests::make_state;
 use super::*;

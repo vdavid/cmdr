@@ -4,7 +4,7 @@
 //! These tests use the `OperationEventSink` test plumbing (no Tauri
 //! `AppHandle`) and a counter-wrapping `InMemoryVolume` so we can assert call
 //! counts directly. The patterns mirror `scan_preview_oracle_tests.rs` (oracle
-//! wiring, listing cache seeding) and `volume/copy_tests.rs` (state + sink +
+//! wiring, listing cache seeding) and `volume/copy_tests/` (state + sink +
 //! preview-result seeding).
 
 use std::future::Future;

@@ -40,9 +40,12 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   mismatches and fresh levels that are NOT dir-vs-dir merges), and `merge_dispatch_mutex_tests.rs` (the
   conflict-dispatch mutex across concurrent and nested merges). A new merge test adds itself to the matching contract
   rather than growing one file.
-- **The copy suite is split by contract, all declared from `copy.rs`, and `copy_tests.rs` is the general file rather
-  than the default one.** It holds the scan/preview happy path, the multi-file execution matrix, the conflict policies,
-  the destination auto-create, and the batch-scan progress callback. Each of the others owns a named contract:
+- **The copy suite is split by contract, all declared from `copy.rs`, and `copy_tests/` is the general suite rather
+  than the default one.** It is a directory of five children named after what each holds: `scan.rs` (config defaults,
+  the skipped-count suffix, the scan/preview happy path over both volume types, and the batch-scan progress callback),
+  `progress.rs` (the multi-file execution matrix and what a running copy reports), `conflicts.rs` (the Skip and
+  Overwrite policies plus the two cross-type overwrites), `cancellation.rs`, and `destination.rs` (the destination
+  auto-create, and a destination fault naming itself rather than the source). Each of the others owns a named contract:
   `copy_space_tests.rs` (the destination free-space pre-flight as a matrix: can't tell / a real ceiling / no ceiling,
   each asserted through BOTH the preview and the copy, since the two ask independently),
   `copy_precheck_tests.rs` (is this top-level name taken), `copy_prescan_reuse_tests.rs` (what the scan's findings let
@@ -51,10 +54,10 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   `copy_cancel_tests.rs`, `copy_retry_tests.rs`, `copy_source_hint_tests.rs` (the ABSENT hint specifically, the other
   half of the pair),
   `copy_staged_write_tests.rs`, `copy_extract_out_tests.rs`, `copy_window_tests.rs`, and the two
-  `copy_concurrent*_tests.rs`. The fixtures `make_state` / `make_volumes` live in `copy_tests.rs` and every sibling
-  reaches them as `super::tests`. ❗ Tests for a symbol ANOTHER module owns belong to that module's suite, not here:
-  `map_volume_error`'s are `transfer_error_tests.rs`, `remove_tree`'s are `cleanup_tests.rs`. Both sets sat in
-  `copy_tests.rs` once, which is how `remove_tree` came to look untested from `cleanup_tests.rs`.
+  `copy_concurrent*_tests.rs`. The fixtures `make_state` / `make_volumes` live in `copy_tests/mod.rs` and every
+  sibling reaches them as `super::tests`. ❗ Tests for a symbol ANOTHER module owns belong to that module's suite, not
+  here: `map_volume_error`'s are `transfer_error_tests.rs`, `remove_tree`'s are `cleanup_tests.rs`. Both sets sat in
+  the copy suite once, which is how `remove_tree` came to look untested from `cleanup_tests.rs`.
 - **The same-volume rename-merge suite is six files split by subject**, all declared from `mod.rs` and sharing the
   fixtures in `rename_merge_test_support.rs` (which also holds the reason the whole family runs on `LocalPosixVolume`
   over a tempdir: `InMemoryVolume` models neither real subtree-rename nor empty-only-delete semantics).
@@ -79,8 +82,8 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   than growing one file. `SampleInFlightTableSink` is the only way to see the probe's in-flight table: it renders the
   table from `emit_progress`, which the destination calls from inside `write_from_stream` and therefore inside the
   `CURRENT_TASK_PROBE` scope. Outside that window the row is already gone.
-- **A `*_tests.rs` file is a `#[path]` CHILD of the module it pins**, not a sibling of it: `copy_tests.rs` is
-  `volume::copy::tests`, `strategy_pause_tests.rs` is `volume::strategy::pause_tests`. So inside one, `super::` is that
+- **A `*_tests.rs` file is a `#[path]` CHILD of the module it pins**, not a sibling of it: `copy_tests/mod.rs` is
+  `volume::copy::tests` (and its children one level deeper, so `super::super::` there is `copy`), `strategy_pause_tests.rs` is `volume::strategy::pause_tests`. So inside one, `super::` is that
   parent module and `super::super::` is `volume` — one level shallower than the same text at file scope in
   `copy.rs`. Check which scope you are in before touching a `super::` chain here; a wrongly-deepened one can still
   compile against a same-named module at the other level.

@@ -1160,11 +1160,12 @@ pub(crate) async fn copy_volumes_with_progress(
     }))
 }
 
-// The copy suite is one file per contract, and `tests` (`copy_tests.rs`) is the
+// The copy suite is one file per contract, and `tests` (`copy_tests/`) is the
 // general one rather than the default: a new test goes to the sibling whose
-// contract it pins, and only here when it pins none of them. Every sibling
-// shares `make_state` / `make_volumes` from `tests` (`super::tests`). Tests for
-// a symbol another module owns go to THAT module's suite. What each file holds:
+// contract it pins, and only here when it pins none of them, in the
+// `copy_tests/` child named after its subject. Every sibling shares
+// `make_state` / `make_volumes` from `tests` (`super::tests`). Tests for a
+// symbol another module owns go to THAT module's suite. What each file holds:
 // `volume/DETAILS.md` § Files. The bench suites are `#[ignore]`d and
 // network-gated.
 #[cfg(test)]
@@ -1222,7 +1223,7 @@ mod space_tests;
 #[path = "copy_staged_write_tests.rs"]
 mod staged_write_tests;
 #[cfg(test)]
-#[path = "copy_tests.rs"]
+#[path = "copy_tests/mod.rs"]
 mod tests;
 #[cfg(test)]
 #[path = "copy_wedge_test_support.rs"]

@@ -8,7 +8,7 @@
 //! `InMemoryVolume` pairs + `CollectorEventSink`, so the whole stack (preflight,
 //! the serial/concurrent split, `copy_directory_streaming`, the resolver) runs
 //! exactly as in production. Shared fixtures `make_state` / `make_volumes` live in
-//! `volume/copy_tests.rs` (`super::tests`). Per-file conflict resolution inside a
+//! `volume/copy_tests/` (`super::tests`). Per-file conflict resolution inside a
 //! merge is `volume/merge_tests.rs`.
 
 use super::super::super::conflict_responder_test_support::{ConflictResponderSink, file_conflict_count};
