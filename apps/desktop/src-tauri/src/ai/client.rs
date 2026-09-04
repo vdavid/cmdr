@@ -734,8 +734,16 @@ mod tests {
         // Anthropic keeps its native protocol; anything else would test the wrong wire format.
         assert_eq!(remote_model_iden(sp::ANTHROPIC.model), sp::ANTHROPIC.model);
         // OpenAI proper is left alone so genai can auto-route Responses vs chat-completions.
-        for model in [sp::OPENAI.model, sp::OPENAI_RESPONSES_MODEL, sp::OPENAI_CHAT_REASONING_MODEL] {
-            assert_eq!(remote_model_iden(model), model, "{model} should keep its inferred adapter");
+        for model in [
+            sp::OPENAI.model,
+            sp::OPENAI_RESPONSES_MODEL,
+            sp::OPENAI_CHAT_REASONING_MODEL,
+        ] {
+            assert_eq!(
+                remote_model_iden(model),
+                model,
+                "{model} should keep its inferred adapter"
+            );
         }
         // The OpenAI-compatible hosts must be forced onto `openai::`, slashed ids and all.
         for provider in [&sp::GROQ, &sp::FIREWORKS] {
@@ -824,12 +832,18 @@ mod tests {
             map_genai_error(stream_error(404, r#"{"error":{"message":"no such model"}}"#)),
             AiError::NotFound(_)
         ));
-        assert!(matches!(map_genai_error(stream_error(401, "nope")), AiError::AuthFailed(_)));
+        assert!(matches!(
+            map_genai_error(stream_error(401, "nope")),
+            AiError::AuthFailed(_)
+        ));
         assert!(matches!(
             map_genai_error(stream_error(429, "slow down")),
             AiError::RateLimited(_)
         ));
-        assert!(matches!(map_genai_error(stream_error(500, "boom")), AiError::ServerError(_)));
+        assert!(matches!(
+            map_genai_error(stream_error(500, "boom")),
+            AiError::ServerError(_)
+        ));
 
         // The provider's own sentence rides along for display, same as the non-streaming path.
         let AiError::NotFound(detail) = map_genai_error(stream_error(404, r#"{"error":{"message":"gone"}}"#)) else {
