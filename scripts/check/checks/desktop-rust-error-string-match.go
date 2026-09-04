@@ -202,10 +202,14 @@ func hasAllowErrorStringMatchComment(line string) bool {
 // isRustTestFile recognizes the conventional Rust test-file layouts, by PATH rather than by
 // base name: a module that outgrows one file becomes a `tests/` directory (as
 // `agent/store/proposals/tests/` and `agent/tools/propose/rename/tests/` are), and every file
-// in one is as much a dedicated test file as the `tests.rs` it was split out of.
+// in one is as much a dedicated test file as the `tests.rs` it was split out of. A `tests/`
+// dir that grows its own submodule dirs (`mcp/tests/tool_registry_tests/`) is still all test
+// code, so ANY `tests` segment on the path counts, not just the immediate parent.
 func isRustTestFile(path string) bool {
-	if filepath.Base(filepath.Dir(path)) == "tests" {
-		return true
+	for _, segment := range strings.Split(filepath.ToSlash(filepath.Dir(path)), "/") {
+		if segment == "tests" {
+			return true
+		}
 	}
 	name := filepath.Base(path)
 	if name == "tests.rs" {
