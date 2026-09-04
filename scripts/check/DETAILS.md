@@ -218,11 +218,11 @@ every other lane. It can't deadlock: a check takes at most one resource and hold
 finish.
 
 The one resource today is `ResourceCargoBuildDir`, held by every lane that COMPILES against the shared `target/`
-(`clippy`, `rust-tests`, `integration-tests`, `bindings-fresh`, `cargo-udeps`, the `<provider>-smoke` lanes). Cargo takes an exclusive
-lock on its build directory for a whole command, so those lanes were always serial; undeclared, the loser sat on
-`Blocking waiting for file lock on build directory` while still holding 6-8 weight, so a quiet run looked hung and the
-reserved cores went unused. Declaring it costs no wall clock and hands that weight back. Metadata-only commands
-(`cargo metadata`, `about`, `deny`, `machete`) take the package-cache lock instead and stay undeclared;
+(`clippy`, `rust-tests`, `integration-tests`, `bindings-fresh`, `cargo-udeps`, the `<provider>-smoke` lanes). Cargo
+takes an exclusive lock on its build directory for a whole command, so those lanes were always serial; undeclared, the
+loser sat on `Blocking waiting for file lock on build directory` while still holding 6-8 weight, so a quiet run looked
+hung and the reserved cores went unused. Declaring it costs no wall clock and hands that weight back. Metadata-only
+commands (`cargo metadata`, `about`, `deny`, `machete`) take the package-cache lock instead and stay undeclared;
 `rust-tests-linux` builds in its container's own `CARGO_TARGET_DIR`, and `rustdoc` owns a private one. Measurements:
 `docs/notes/check-cpu-contention.md` § "Cargo's build-directory lock".
 
@@ -236,9 +236,10 @@ decisions below). Named check invocations bypass the filter so `pnpm check --fas
 Mutually exclusive with `--include-slow` / `--only-slow` — combining them errors out, since the lanes are intentionally
 separate.
 
-**CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently `cargo-udeps`, `jscpd-rust`,
-and the four real-API `<provider>-smoke` lanes). They're silently dropped from local runs (no SKIPPED line) and are not pulled in by `--include-slow` or
-`--only-slow`. Escape hatch: an explicit `pnpm check cargo-udeps` always runs, so you can verify locally before pushing.
+**CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently `cargo-udeps`, `jscpd-rust`, and
+the four real-API `<provider>-smoke` lanes). They're silently dropped from local runs (no SKIPPED line) and are not
+pulled in by `--include-slow` or `--only-slow`. Escape hatch: an explicit `pnpm check cargo-udeps` always runs, so you
+can verify locally before pushing.
 
 **Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build the binary, create per-shard
 fixtures, start N Tauri instances, run N Playwright processes in parallel, cleanup). The build is fingerprinted and

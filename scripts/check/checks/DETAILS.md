@@ -840,10 +840,10 @@ resolves dependency features for one package instead of the workspace and rebuil
 s. Full runs: `docs/notes/cargo-lane-feature-thrash.md`.
 
 So **`HostCargoLaneArgs` (`cargo-workspace.go`) is the one answer**, and every host lane that compiles builds its
-command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, the four `desktop-rust-<provider>-smoke` lanes, and (spelled
-out by hand, see below) `pnpm bindings:regen`. It returns the workspace selection plus `SharedTargetFeatureArgs()` =
-`--features cmdr/virtual-mtp`. A lane that needs a genuinely different feature set needs its own `CARGO_TARGET_DIR`, not
-its own flags.
+command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, the four `desktop-rust-<provider>-smoke`
+lanes, and (spelled out by hand, see below) `pnpm bindings:regen`. It returns the workspace selection plus
+`SharedTargetFeatureArgs()` = `--features cmdr/virtual-mtp`. A lane that needs a genuinely different feature set needs
+its own `CARGO_TARGET_DIR`, not its own flags.
 
 Who stays out, and why it's not an oversight:
 
@@ -1253,8 +1253,8 @@ It asserts three things:
   (walks source trees; coverage comes from the declared kinds), or `rustMetaChecks` (reasons about the workspace rather
   than compiling or scanning it). Adding a Rust check without classifying it fails, which is the shape of "someone added
   a scanner and hardcoded a path inside it". Each cargo lane records HOW it reaches the workspace, so a targeted
-  invocation can't pass for a sweep — `desktop-rust-groq-smoke` runs one `--lib` test module against a live endpoint
-  and says so.
+  invocation can't pass for a sweep — `desktop-rust-groq-smoke` runs one `--lib` test module against a live endpoint and
+  says so.
 - **No stale or empty classification**: an entry naming a check that no longer exists fails, the same way `ci-coverage`
   refuses to let an excuse outlive its check. So does a jurisdiction that declares neither member kinds nor
   `AppTreeOnly` — that one makes `ScannerRoots` hand back no roots, and a scanner with no roots scans nothing and
