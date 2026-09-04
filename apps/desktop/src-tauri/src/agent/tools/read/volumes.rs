@@ -2,6 +2,10 @@
 //! for SMB, its connectivity — so the agent can voice "the NAS is disconnected,
 //! so this answer is from a stale index" honestly (spec §2.4).
 //!
+//! It is also where a `search` of anything but the boot volume starts: `search`
+//! takes ONE volume per call, addressed by a path in `scope`, so `mount_path` is
+//! the field that makes "search my NAS" expressible at all.
+//!
 //! Reuses the shipped `snapshot_volumes` core (the same data `cmdr://state`'s
 //! `volumes:` section and the context envelope read), so the tokens can't drift
 //! from the rest of the app. The pure [`to_volume_snapshots`] mapper is what the
@@ -38,6 +42,12 @@ pub struct VolumeSnapshot {
     /// SMB connection state: `direct` / `os_mount` / `disconnected`. Absent off SMB.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub smb_connection_state: Option<String>,
+    /// Where the volume is mounted, and the path `search`'s `scope` names to cover
+    /// this drive rather than the boot one. Absent for a volume with no filesystem
+    /// path (MTP storages, the `Network` root), which is also where a search can't
+    /// reach, so an absent field reads as "you can't search here".
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mount_path: Option<String>,
     /// The volume's capacity in bytes, as last polled. Absent when nothing is
     /// watching this volume, never guessed.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -70,6 +80,7 @@ pub(crate) fn to_volume_snapshots(summaries: &[VolumeSummary]) -> Vec<VolumeSnap
             ejectable: v.ejectable,
             index_status: v.index_status.map(|s| s.to_string()),
             smb_connection_state: v.smb_connection_state.map(|s| s.to_string()),
+            mount_path: v.mount_path.clone(),
             total_bytes: v.space.and_then(|s| s.total_bytes()),
             total_human: v.space.and_then(|s| s.total_bytes()).map(format_size),
             available_bytes: v.space.and_then(|s| s.available_bytes()),
@@ -110,6 +121,7 @@ mod tests {
             ejectable: None,
             index_status,
             smb_connection_state: smb,
+            mount_path: Some(format!("/Volumes/{name}")),
             space: None,
         }
     }
@@ -156,6 +168,27 @@ mod tests {
         assert_eq!(out[0].total_bytes, None);
         assert_eq!(out[0].total_human, None);
         assert_eq!(out[0].available_human, None);
+    }
+
+    #[test]
+    fn a_drive_carries_the_path_a_search_scope_needs() {
+        // Without this the model can name a drive but can't search it: `search` takes a
+        // path in `scope`, and every other field here is a name, an id, or a token.
+        let mut nas = summary("naspi", VolumeKind::Smb, Some("stale"), Some("direct"));
+        nas.mount_path = Some("/Volumes/naspi".to_string());
+        let json = serde_json::to_value(&to_volume_snapshots(&[nas])[0]).unwrap();
+        assert_eq!(json["mountPath"], "/Volumes/naspi");
+    }
+
+    #[test]
+    fn a_volume_with_no_filesystem_path_omits_it_rather_than_offering_an_unsearchable_one() {
+        // An MTP storage and the synthetic `Network` root have no path a search can
+        // walk. An absent `mountPath` says "you can't scope a search here"; a made-up
+        // one would send the model off to search nothing.
+        let mut phone = summary("Pixel 8", VolumeKind::Mtp, Some("off"), None);
+        phone.mount_path = None;
+        let json = serde_json::to_value(&to_volume_snapshots(&[phone])[0]).unwrap();
+        assert!(json.get("mountPath").is_none());
     }
 
     #[test]

@@ -77,6 +77,15 @@ pub(crate) struct VolumeSummary {
     pub index_status: Option<&'static str>,
     /// SMB connection state (`direct` / `os_mount` / `disconnected`); `None` off SMB.
     pub smb_connection_state: Option<&'static str>,
+    /// Where the volume is mounted, the path a search scope names to cover this
+    /// drive. `None` for a volume with no filesystem path (MTP storages, the
+    /// synthetic `Network` root), which is also exactly where a search can't reach.
+    ///
+    /// ❌ Not rendered into the `cmdr://state` YAML: that view redacts home paths,
+    /// and a favorite folder's mount path would come out redacted, so an AI client
+    /// would copy a scope that matches nothing. The agent's `list_volumes` reads it
+    /// unredacted instead.
+    pub mount_path: Option<String>,
     /// What the volume reports about its room, from the space poller's cache.
     /// `None` when nothing is watching this volume — see [`space_summary`] for
     /// why that isn't a `statfs` here.
@@ -216,6 +225,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 ejectable: Some(loc.is_ejectable),
                 index_status: Some(index_status_token(&status)),
                 smb_connection_state,
+                mount_path: Some(loc.path.clone()),
                 space: space_summary(&loc.id),
             });
         }
@@ -230,6 +240,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             ejectable: None,
             index_status: None,
             smb_connection_state: None,
+            mount_path: None,
             space: None,
         });
     }
@@ -245,6 +256,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             ejectable: None,
             index_status: Some(status_token(status.enabled, status.freshness)),
             smb_connection_state: None,
+            mount_path: Some("/".to_string()),
             space: space_summary(cmdr_index::ROOT_VOLUME_ID),
         });
     }
@@ -281,6 +293,8 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                     ejectable: Some(true),
                     index_status: Some(index_status_token(&status)),
                     smb_connection_state: None,
+                    // An MTP storage has no filesystem path to scope a search with.
+                    mount_path: None,
                     space: space_summary(&volume_id),
                 });
             }
@@ -304,6 +318,7 @@ mod tests {
             ejectable: Some(false),
             index_status: Some("fresh"),
             smb_connection_state: None,
+            mount_path: Some("/".to_string()),
             space: None,
         }
     }
@@ -321,6 +336,18 @@ mod tests {
             "volumes:\n  - name: Macintosh HD\n    id: root\n    kind: local\n    \
              filesystem: apfs\n    readOnly: false\n    ejectable: false\n    indexStatus: fresh\n"
         );
+    }
+
+    #[test]
+    fn the_mount_path_stays_out_of_the_yaml() {
+        // This view redacts home paths, so a favorite folder's mount path would render
+        // redacted and an AI client copying it into a search scope would match nothing.
+        // The agent reads the unredacted path from `list_volumes` instead.
+        let mut v = local("Downloads", "favorite-downloads");
+        v.mount_path = Some("/Users/someone/Downloads".to_string());
+        let yaml = build_volumes_yaml(&[v]);
+        assert!(!yaml.contains("mountPath"));
+        assert!(!yaml.contains("/Users/someone/Downloads"));
     }
 
     #[test]
@@ -361,6 +388,7 @@ mod tests {
             ejectable: Some(true),
             index_status: Some("stale"),
             smb_connection_state: Some("direct"),
+            mount_path: Some("/Volumes/naspi".to_string()),
             space: None,
         };
         let yaml = build_volumes_yaml(&[smb]);
@@ -381,6 +409,7 @@ mod tests {
             ejectable: Some(true),
             index_status: Some("off"),
             smb_connection_state: None,
+            mount_path: None,
             space: None,
         };
         let yaml = build_volumes_yaml(&[mtp]);
@@ -402,6 +431,7 @@ mod tests {
             ejectable: None,
             index_status: None,
             smb_connection_state: None,
+            mount_path: None,
             space: None,
         };
         let yaml = build_volumes_yaml(&[network]);
@@ -422,6 +452,7 @@ mod tests {
             ejectable: None,
             index_status: None,
             smb_connection_state: None,
+            mount_path: None,
             space: None,
         };
         let yaml = build_volumes_yaml(&[local("Macintosh HD", "root"), network]);
