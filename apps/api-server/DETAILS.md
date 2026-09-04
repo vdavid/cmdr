@@ -318,7 +318,14 @@ job's failure from the rest and raises the alarm for it (§ Cron alarms):
      doesn't mail the whole backlog.
 3. **Daily aggregation** (00:00 UTC only): aggregates yesterday's `update_checks` into `daily_active_users` via
    `INSERT OR IGNORE ... GROUP BY`, then prunes raw update checks older than 7 days. Idempotent via existence check.
-4. **DB size check** (00:00 UTC only): queries the D1 pragma for total database size, alerting by email over 100 MB.
+4. **DB size check** (00:00 UTC only): alerts by email over 100 MB, with the per-table row counts that say where the
+   size went. The size is `meta.size_after`, which D1 stamps on the result of every statement, so a throwaway `SELECT 1`
+   reads it and the under-threshold path costs one query; the row counts only run past the threshold.
+   - ❌ **Never read the size from `pragma_page_count` / `pragma_page_size`.** They're SQLite's obvious answer and D1
+     rejects the table-valued form with `SQLITE_AUTH` (verified against the live DB via `wrangler d1 execute --remote`,
+     2026-09-04). This job shipped that way on 2026-03-24 and threw every day until the cron alarms surfaced it on
+     2026-09-03, while its tests passed throughout: a mocked D1 answers whatever it's told, so no test here can see a
+     dialect rejection. `scheduled.test.ts` asserts no statement names a pragma, which is the closest anchor available.
 5. **Retention sweep** (00:00 UTC only): `handleRetentionSweep` enforces the per-table retention promises below.
 6. **Synthetic heartbeat sweep** (00:00 UTC only): `handleSyntheticHeartbeatSweep` deletes the beats of installs that
    were never a person. See § Synthetic heartbeats below.

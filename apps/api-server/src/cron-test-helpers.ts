@@ -5,9 +5,19 @@
  */
 import { vi } from 'vitest'
 
+interface MockD1Options {
+  /**
+   * What every result's `meta.size_after` reports, in bytes. D1 stamps the database's size onto the
+   * meta of every statement, and `handleDbSizeCheck` reads it from there, so a test that drives the
+   * size check has to be able to set it.
+   */
+  sizeAfter?: number
+}
+
 /** Create a mock D1Database with configurable query responses. */
-export function createMockD1(responses: Map<string, unknown> = new Map()) {
+export function createMockD1(responses: Map<string, unknown> = new Map(), options: MockD1Options = {}) {
   const calls: Array<{ sql: string; bindings: unknown[] }> = []
+  const meta = { changes: 0, size_after: options.sizeAfter ?? 0 }
 
   const db = {
     prepare: vi.fn((sql: string) => ({
@@ -26,7 +36,7 @@ export function createMockD1(responses: Map<string, unknown> = new Map()) {
             }
             return Promise.resolve(null)
           }),
-          run: vi.fn(() => Promise.resolve({ success: true, meta: { changes: 0 } })),
+          run: vi.fn(() => Promise.resolve({ success: true, meta })),
         }
       }),
       all: vi.fn(() => {
@@ -45,7 +55,7 @@ export function createMockD1(responses: Map<string, unknown> = new Map()) {
       }),
       run: vi.fn(() => {
         calls.push({ sql, bindings: [] })
-        return Promise.resolve({ success: true, meta: { changes: 0 } })
+        return Promise.resolve({ success: true, meta })
       }),
     })),
   } as unknown as D1Database

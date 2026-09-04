@@ -169,13 +169,11 @@ describe('handleRetentionSweep', () => {
 })
 
 describe('handleDbSizeCheck', () => {
+  const MB = 1024 * 1024
+
   it('sends alert when DB size exceeds threshold', async () => {
-    const sizeBytes = 150 * 1024 * 1024 // 150 MB
-    const responses = new Map<string, unknown>([
-      ['pragma_page_count', { total_size: sizeBytes }],
-      ['COUNT(*)', { cnt: 42 }],
-    ])
-    const { db } = createMockD1(responses)
+    const responses = new Map<string, unknown>([['COUNT(*)', { cnt: 42 }]])
+    const { db } = createMockD1(responses, { sizeAfter: 150 * MB })
     const env = createBaseEnv({ TELEMETRY_DB: db })
 
     await handleDbSizeCheck(env as never)
@@ -183,12 +181,12 @@ describe('handleDbSizeCheck', () => {
     expect(mockSend).toHaveBeenCalledOnce()
     const emailCall = lastEmailCall()
     expect(emailCall.subject).toBe('Cmdr: telemetry DB is 150 MB')
+    expect(emailCall.html).toContain('crash_reports')
+    expect(emailCall.html).toContain('42')
   })
 
   it('does not send alert when DB size is under threshold', async () => {
-    const sizeBytes = 50 * 1024 * 1024 // 50 MB
-    const responses = new Map<string, unknown>([['pragma_page_count', { total_size: sizeBytes }]])
-    const { db } = createMockD1(responses)
+    const { db } = createMockD1(new Map(), { sizeAfter: 50 * MB })
     const env = createBaseEnv({ TELEMETRY_DB: db })
 
     await handleDbSizeCheck(env as never)
@@ -196,17 +194,32 @@ describe('handleDbSizeCheck', () => {
     expect(mockSend).not.toHaveBeenCalled()
   })
 
-  it('does not send alert when pragma query returns null', async () => {
-    const { db } = createMockD1()
+  // D1 rejects SQLite's `pragma_page_count` / `pragma_page_size` table-valued functions with
+  // `SQLITE_AUTH`, which threw the job every day for months while every mocked test passed. The
+  // size has to come from `meta.size_after`, so no statement here may name a pragma.
+  it('never queries a pragma for the size', async () => {
+    const { db, calls } = createMockD1(new Map(), { sizeAfter: 150 * MB })
     const env = createBaseEnv({ TELEMETRY_DB: db })
 
     await handleDbSizeCheck(env as never)
 
-    expect(mockSend).not.toHaveBeenCalled()
+    expect(calls.length).toBeGreaterThan(0)
+    for (const call of calls) expect(call.sql.toLowerCase()).not.toContain('pragma')
+  })
+
+  // The job runs daily against a DB that's normally nowhere near the threshold, so the quiet path
+  // stays at one statement rather than one per counted table.
+  it('does not count rows when under threshold', async () => {
+    const { db, calls } = createMockD1(new Map(), { sizeAfter: 50 * MB })
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleDbSizeCheck(env as never)
+
+    expect(calls).toHaveLength(1)
   })
 
   it('skips when CRASH_NOTIFICATION_EMAIL is not set', async () => {
-    const { db } = createMockD1()
+    const { db } = createMockD1(new Map(), { sizeAfter: 150 * MB })
     const env = createBaseEnv({ CRASH_NOTIFICATION_EMAIL: undefined, TELEMETRY_DB: db })
 
     await handleDbSizeCheck(env as never)
