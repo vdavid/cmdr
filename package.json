@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "oxfmt": "^0.63.0",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.0"
   },
   "packageManager": "pnpm@11.25.0",
   "engines": {
