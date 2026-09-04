@@ -25,6 +25,8 @@ mod client_local_llama_test;
 #[cfg(test)]
 mod client_real_anthropic_test;
 #[cfg(test)]
+mod client_real_fireworks_test;
+#[cfg(test)]
 mod client_real_groq_test;
 #[cfg(test)]
 mod client_real_openai_test;
@@ -41,6 +43,10 @@ pub mod llm_log;
 pub mod manager;
 mod process;
 pub mod server;
+/// Endpoints + model ids for every `client_real_*_test`. One line to edit when a provider
+/// decommissions a model.
+#[cfg(test)]
+mod smoke_providers;
 pub mod state;
 mod stream_registry;
 pub mod suggestions;

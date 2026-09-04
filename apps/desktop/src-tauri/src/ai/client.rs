@@ -275,7 +275,7 @@ fn clamp_u32(count: i32) -> u32 {
 /// Maps a BYOK model name to the `genai` model identifier whose namespace picks the right adapter.
 ///
 /// `genai` infers the adapter from the model name and falls back to **Ollama** for anything it
-/// doesn't recognize — so a bare `llama-3.1-8b-instant` (Groq), `deepseek-chat`, or
+/// doesn't recognize — so a bare `openai/gpt-oss-20b` (Groq), `deepseek-chat`, or
 /// `google/gemma-…:free` (OpenRouter) would POST to Ollama's `/api/chat` against an OpenAI endpoint
 /// and 404. Every cloud provider we support except Anthropic and Gemini speaks the OpenAI
 /// chat-completions wire format, so we force the `openai::` namespace for all of them. Anthropic
@@ -307,6 +307,11 @@ pub enum AiError {
     AuthFailed(String),
     /// The provider is rate-limiting requests or the account is out of quota (HTTP 429).
     RateLimited(String),
+    /// The provider has no such model, or the base URL points at a path it doesn't serve
+    /// (HTTP 404). The commonest BYOK misconfiguration, and what a decommissioned model id
+    /// looks like from our side — the `<provider>-smoke` lanes branch on this variant to
+    /// tell a stale pin apart from an outage.
+    NotFound(String),
     /// The call succeeded but the model produced no visible text. Common on reasoning models
     /// when `max_tokens` is fully consumed by reasoning before any answer is emitted.
     EmptyResponse,
@@ -323,6 +328,7 @@ impl Display for AiError {
             Self::Timeout => write!(f, "AI request timed out"),
             Self::AuthFailed(msg) => write!(f, "AI provider rejected the API key: {msg}"),
             Self::RateLimited(msg) => write!(f, "AI provider is rate-limiting or out of quota: {msg}"),
+            Self::NotFound(msg) => write!(f, "AI provider has no such model or endpoint: {msg}"),
             Self::EmptyResponse => write!(f, "AI returned no text"),
             Self::ServerError(msg) => write!(f, "AI server error: {msg}"),
             Self::ParseError(msg) => write!(f, "AI response parse error: {msg}"),
@@ -559,10 +565,12 @@ fn make_resolver(endpoint: String, auth: AuthData, force_adapter: ForceAdapter) 
 /// Classifies a provider HTTP error status into the right [`AiError`] so the frontend can
 /// show a specific toast (key rejected vs. out of quota vs. generic server error). Branches
 /// on the numeric status, never the message body. 429 covers both rate-limiting and
-/// OpenAI's `insufficient_quota`; 401/403 is a rejected key.
+/// OpenAI's `insufficient_quota`; 401/403 is a rejected key; 404 is a model id the provider
+/// doesn't serve (a typo, or one it decommissioned) or a base URL with the wrong path.
 fn ai_error_for_status(status: u16, detail: String) -> AiError {
     match status {
         401 | 403 => AiError::AuthFailed(detail),
+        404 => AiError::NotFound(detail),
         429 => AiError::RateLimited(detail),
         _ => AiError::ServerError(detail),
     }
@@ -674,6 +682,10 @@ mod tests {
             AiError::ParseError(String::from("oops")).to_string(),
             "AI response parse error: oops"
         );
+        assert_eq!(
+            AiError::NotFound(String::from("HTTP 404: no such model")).to_string(),
+            "AI provider has no such model or endpoint: HTTP 404: no such model"
+        );
     }
 
     #[test]
@@ -690,10 +702,6 @@ mod tests {
             assert_eq!(remote_model_iden(m), m, "{m} should keep its inferred adapter");
         }
         // OpenAI-compatible BYOK models genai would mis-route to Ollama: forced to OpenAI.
-        assert_eq!(
-            remote_model_iden("llama-3.1-8b-instant"),
-            "openai::llama-3.1-8b-instant"
-        );
         assert_eq!(remote_model_iden("deepseek-chat"), "openai::deepseek-chat");
         assert_eq!(
             remote_model_iden("google/gemma-4-31b-it:free"),
@@ -702,6 +710,53 @@ mod tests {
         assert_eq!(
             remote_model_iden("mistral-small-latest"),
             "openai::mistral-small-latest"
+        );
+    }
+
+    /// The models the real-API smoke lanes call must land on the adapter their test expects,
+    /// or a lane goes green against the wrong protocol. Reads the ids from
+    /// `ai::smoke_providers` so a decommission stays a one-line fix over there.
+    #[test]
+    fn smoke_provider_models_route_to_their_intended_adapters() {
+        use crate::ai::smoke_providers as sp;
+
+        // Anthropic keeps its native protocol; anything else would test the wrong wire format.
+        assert_eq!(remote_model_iden(sp::ANTHROPIC.model), sp::ANTHROPIC.model);
+        // OpenAI proper is left alone so genai can auto-route Responses vs chat-completions.
+        for model in [sp::OPENAI.model, sp::OPENAI_RESPONSES_MODEL, sp::OPENAI_CHAT_REASONING_MODEL] {
+            assert_eq!(remote_model_iden(model), model, "{model} should keep its inferred adapter");
+        }
+        // The OpenAI-compatible hosts must be forced onto `openai::`, slashed ids and all.
+        for provider in [&sp::GROQ, &sp::FIREWORKS] {
+            assert_eq!(
+                remote_model_iden(provider.model),
+                format!("openai::{}", provider.model),
+                "{} would fall back to the Ollama adapter",
+                provider.name
+            );
+        }
+    }
+
+    /// Only `gpt-5*` reaches the Responses API in `genai 0.6.5`, and only `o1`/`o3`/`o4`/
+    /// `chatgpt-` reach the chat-completions reasoning branch. The two OpenAI smoke models
+    /// exist to cover one branch each, so a careless swap that collapses them onto the same
+    /// adapter should fail here rather than quietly halve the coverage.
+    #[test]
+    fn the_two_openai_smoke_models_cover_different_branches() {
+        use crate::ai::smoke_providers as sp;
+
+        assert!(
+            sp::OPENAI_RESPONSES_MODEL.starts_with("gpt-5"),
+            "the Responses-API smoke model needs the `gpt-5` prefix genai routes on"
+        );
+        assert!(
+            is_openai_chat_reasoning_model(sp::OPENAI_CHAT_REASONING_MODEL),
+            "the chat-completions reasoning smoke model must match the heuristic it guards"
+        );
+        assert!(
+            !is_openai_chat_reasoning_model(sp::OPENAI.model),
+            "the plain chat-completions smoke model must NOT be reasoning-class, or it stops \
+             proving that temperature survives for ordinary models"
         );
     }
 
@@ -728,7 +783,9 @@ mod tests {
         // 429 is both rate-limiting and OpenAI's `insufficient_quota`.
         assert!(matches!(ai_error_for_status(429, "x".into()), AiError::RateLimited(_)));
         assert!(matches!(ai_error_for_status(500, "x".into()), AiError::ServerError(_)));
-        assert!(matches!(ai_error_for_status(404, "x".into()), AiError::ServerError(_)));
+        // 404: a model id the provider doesn't serve (decommissioned, or a typo), or a base
+        // URL with the wrong path. The `<provider>-smoke` lanes branch on this variant.
+        assert!(matches!(ai_error_for_status(404, "x".into()), AiError::NotFound(_)));
     }
 
     #[test]

@@ -1,32 +1,36 @@
-//! Real-API smoke tests against Anthropic. **Not run in CI**: gated behind `#[ignore]`,
-//! requires a valid `ANTHROPIC_API_KEY` env var.
+//! Real-API smoke tests against Anthropic.
 //!
 //! Why a separate file from `client_real_openai_test.rs`: Anthropic's native streaming
-//! protocol differs from OpenAI's SSE shape (event names like `content_block_delta`
-//! vs `data:` JSON envelopes). Without exercising it, we'd be testing only the OpenAI
-//! lineage despite supporting Anthropic via `genai`.
+//! protocol differs from OpenAI's SSE shape (event names like `content_block_delta` vs
+//! `data:` JSON envelopes). Without exercising it, we'd be testing only the OpenAI lineage
+//! despite supporting Anthropic via `genai`.
 //!
-//! Run with:
+//! `#[ignore]`-gated: needs a valid `ANTHROPIC_API_KEY`. The `anthropic-smoke` check resolves
+//! the key (env var, else the sops `secret` helper) and skips cleanly without one.
+//!
+//! Endpoint and model id live in `smoke_providers.rs`, not here — including why the pin stays
+//! on Haiku 4.5 rather than a newer Claude.
+//!
+//! Costs ~$0.001 per full run.
+//!
+//! Run manually:
 //! ```sh
 //! ANTHROPIC_API_KEY=$(secret ANTHROPIC_API_KEY) \
 //!   cargo nextest run --lib --run-ignored only ai::client_real_anthropic_test
 //! ```
-//!
-//! Costs ~$0.001 per full run.
 
 use futures_util::StreamExt;
 use genai::chat::ChatOptions;
 
 use super::client::{AiBackend, chat_completion, chat_completion_stream};
+use super::smoke_providers::{ANTHROPIC, api_key, expect_ok};
 
-const BASE_URL: &str = "https://api.anthropic.com/v1/";
-
-fn api_key_or_skip() -> Option<String> {
-    let key = std::env::var("ANTHROPIC_API_KEY").ok()?;
-    if key.trim().is_empty() {
-        return None;
-    }
-    Some(key)
+fn backend() -> AiBackend {
+    AiBackend::remote(
+        api_key(&ANTHROPIC),
+        ANTHROPIC.base_url.to_string(),
+        ANTHROPIC.model.to_string(),
+    )
 }
 
 fn opts() -> ChatOptions {
@@ -38,47 +42,43 @@ fn opts() -> ChatOptions {
 
 #[tokio::test]
 #[ignore = "real API call; set ANTHROPIC_API_KEY to run"]
-async fn smoke_claude_haiku_chat() {
-    let Some(api_key) = api_key_or_skip() else {
-        panic!("ANTHROPIC_API_KEY not set");
-    };
-    let backend = AiBackend::remote(api_key, String::from(BASE_URL), String::from("claude-3-5-haiku-latest"));
-
-    let res = chat_completion(
-        &backend,
-        "You answer in exactly one short sentence.",
-        "Say the word 'pong'.",
-        &opts(),
-    )
-    .await
-    .expect("real Anthropic call should succeed");
+async fn smoke_anthropic_chat() {
+    let res = expect_ok(
+        &ANTHROPIC,
+        ANTHROPIC.model,
+        chat_completion(
+            &backend(),
+            "You answer in exactly one short sentence.",
+            "Say the word 'pong'.",
+            &opts(),
+        )
+        .await,
+    );
 
     assert!(!res.trim().is_empty(), "response should be non-empty");
-    log::info!(target: "ai_smoke", "claude-3-5-haiku → {res}");
+    log::info!(target: "ai_smoke", "{} → {res}", ANTHROPIC.model);
 }
 
 #[tokio::test]
 #[ignore = "real API call; set ANTHROPIC_API_KEY to run"]
-async fn smoke_claude_haiku_stream() {
-    let Some(api_key) = api_key_or_skip() else {
-        panic!("ANTHROPIC_API_KEY not set");
-    };
-    let backend = AiBackend::remote(api_key, String::from(BASE_URL), String::from("claude-3-5-haiku-latest"));
-
-    let mut stream = chat_completion_stream(
-        &backend,
-        "You answer in exactly one short sentence.",
-        "Say the word 'pong'.",
-        &opts(),
-    )
-    .await
-    .expect("stream open");
+async fn smoke_anthropic_stream() {
+    let backend = backend();
+    let mut stream = expect_ok(
+        &ANTHROPIC,
+        ANTHROPIC.model,
+        chat_completion_stream(
+            &backend,
+            "You answer in exactly one short sentence.",
+            "Say the word 'pong'.",
+            &opts(),
+        )
+        .await,
+    );
 
     let mut text = String::new();
     let mut chunks: u64 = 0;
     while let Some(item) = stream.next().await {
-        let chunk = item.expect("chunk ok");
-        text.push_str(&chunk);
+        text.push_str(&expect_ok(&ANTHROPIC, ANTHROPIC.model, item));
         chunks += 1;
     }
 
@@ -86,7 +86,8 @@ async fn smoke_claude_haiku_stream() {
     assert!(chunks > 0, "expected at least one chunk");
     log::info!(
         target: "ai_smoke",
-        "claude-3-5-haiku stream → {}, total: {text}",
+        "{} stream → {}, total: {text}",
+        ANTHROPIC.model,
         crate::pluralize::pluralize(chunks, "chunk")
     );
 }

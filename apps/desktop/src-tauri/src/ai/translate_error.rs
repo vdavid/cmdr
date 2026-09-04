@@ -77,6 +77,11 @@ impl From<AiError> for AiTranslateError {
             AiError::Timeout => K::Timeout,
             AiError::AuthFailed(_) => K::AuthFailed,
             AiError::RateLimited(_) => K::RateLimited,
+            // No dedicated kind: a 404 reads to a user as "the provider misbehaved", and the
+            // detail line already carries its sentence. Give it its own `AiTranslateErrorKind`
+            // (and toast copy, in 13 catalogs) only if we decide a wrong model id deserves a
+            // headline of its own.
+            AiError::NotFound(_) => K::ServerError,
             AiError::EmptyResponse => K::EmptyResponse,
             AiError::ServerError(_) => K::ServerError,
             AiError::ParseError(_) => K::ParseError,
@@ -97,6 +102,7 @@ mod tests {
             (AiError::Timeout, K::Timeout),
             (AiError::AuthFailed("x".into()), K::AuthFailed),
             (AiError::RateLimited("x".into()), K::RateLimited),
+            (AiError::NotFound("x".into()), K::ServerError),
             (AiError::EmptyResponse, K::EmptyResponse),
             (AiError::ServerError("x".into()), K::ServerError),
             (AiError::ParseError("x".into()), K::ParseError),
