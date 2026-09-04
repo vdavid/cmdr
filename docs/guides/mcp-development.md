@@ -115,6 +115,12 @@ Each entry bundles every facet: name, description, JSON schema, the bearer-token
 `access` class, and the handler (as a shape tag plus a path). You can't add an entry without all of them, and you can't
 add a handler the dispatch doesn't know about, so schema/dispatch/auth/exposure can't fall out of sync.
 
+- **`desc`** is PREFIX for the agent view: every declaration rides every turn of every conversation, whether or not the
+  turn calls that tool, so a sentence here is paid thousands of times. Say what the tool answers and, when a
+  neighbouring tool would be the wrong pick, where the line falls (`search` vs `list_dir`); leave everything else to the
+  schema, the result, or the system prompt. `test_tools_have_bounded_descriptions` caps a description at 512 chars, and
+  most sit far under; `agent/chat/context/cost_tests.rs` is what actually holds the prefix to
+  `FIXED_PROMPT_OVERHEAD_TOKENS`.
 - **`consumers`** is the exposure set (`&[Consumer::AiClient]`, `&[Consumer::Agent]`, or both). A tool driving the UI is
   `[AiClient]`; a read-only tool for the in-process agent is `[Agent]` (or shared as `[AiClient, Agent]` when a read
   surface fits both). The agent's view is dispatched only by the agent runtime; the HTTP server dispatches only the
