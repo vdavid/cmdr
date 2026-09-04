@@ -81,10 +81,11 @@ pub(super) const FIREWORKS: SmokeProvider = SmokeProvider {
 /// retirement "not sooner than 2026-10-15" — the nearest horizon of any Active model, so
 /// expect to refresh this one first. It replaced `claude-3-5-haiku-*`, retired 2026-02-19.)
 ///
-/// **Gotcha**: don't reach for a newer Claude here without dropping `temperature`/`top_p`.
-/// Anthropic returns HTTP 400 for those on Opus 4.7 and later (same deprecations page,
-/// "API parameter deprecations"), and `adjust_for_model` only strips them for OpenAI
-/// adapters. Haiku 4.5 predates the change and still accepts them.
+/// **Gotcha**: Anthropic returns HTTP 400 for a request carrying both `temperature` and
+/// `top_p`, and that is not limited to the newest models. Verified live on 2026-09-04:
+/// `claude-haiku-4-5-20251001` and `claude-sonnet-4-5-20250929` both 400 with the pair and
+/// both 200 with temperature alone. `adjust_for_model` drops `top_p` for the Anthropic
+/// adapter, so any model here is safe; don't reintroduce `top_p` on this path.
 pub(super) const ANTHROPIC: SmokeProvider = SmokeProvider {
     name: "Anthropic",
     env_var: "ANTHROPIC_API_KEY",

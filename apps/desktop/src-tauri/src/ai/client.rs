@@ -106,8 +106,8 @@ impl AiBackend {
 
     /// Runs a full tool-capable streaming chat request and returns the raw `genai`
     /// stream, so the caller maps the events into its own delta type. Applies the
-    /// same per-model option fixups as [`chat_completion_stream`] (reasoning-class
-    /// models get `temperature`/`top_p` stripped).
+    /// same per-adapter option fixups as [`chat_completion_stream`] (see
+    /// [`adjust_for_model`]).
     ///
     /// The prompt-only helpers above can't express a multipart tool loop (tool
     /// calls, tool responses, reasoning parts), so the agent's `AgentLlm` genai impl
@@ -338,9 +338,10 @@ impl Display for AiError {
 
 /// Sends a chat completion request to an AI backend.
 ///
-/// `options` are the caller-supplied generation knobs. We auto-strip `temperature`/
-/// `top_p` and substitute [`ReasoningEffort::Low`] when the resolved adapter+model
-/// is reasoning-class (see [`is_openai_chat_reasoning_model`]).
+/// `options` are the caller-supplied generation knobs, fixed up per adapter by
+/// [`adjust_for_model`]: reasoning-class models lose `temperature`/`top_p` and gain
+/// [`ReasoningEffort::Low`] (see [`is_openai_chat_reasoning_model`]); Anthropic keeps
+/// `temperature` but loses `top_p`, which it rejects alongside it.
 pub async fn chat_completion(
     backend: &AiBackend,
     system_prompt: &str,
@@ -444,8 +445,7 @@ pub async fn chat_completion_with_empty_retry(
 
 /// Streams a chat completion. Returns a boxed stream of content chunks.
 ///
-/// Same per-model option fixups as [`chat_completion`] (reasoning models get
-/// `temperature`/`top_p` stripped and `ReasoningEffort::Low` substituted). Reasoning,
+/// Same per-adapter option fixups as [`chat_completion`] (see [`adjust_for_model`]). Reasoning,
 /// thought-signature, and tool-call chunks are filtered out; callers only see the
 /// visible text content. Stream ends when `genai` emits `End` or errors; an empty
 /// stream (zero chunks) is valid and matches the same graceful-degradation contract
@@ -506,6 +506,17 @@ pub async fn chat_completion_stream(
 fn adjust_for_model(options: &ChatOptions, target: &ServiceTarget) -> ChatOptions {
     let model_name = &*target.model.model_name;
     let adapter = target.model.adapter_kind;
+
+    // Anthropic refuses a request carrying both sampling knobs: HTTP 400, "`temperature` and
+    // `top_p` cannot both be specified for this model". Keep `temperature`, which callers
+    // actually tune, and drop `top_p`, which every call site leaves at a near-default 0.95.
+    // Verified live on 2026-09-04 against `claude-haiku-4-5-20251001` and
+    // `claude-sonnet-4-5-20250929`: both 400 with the pair, both 200 with temperature alone.
+    if matches!(adapter, AdapterKind::Anthropic) {
+        let mut opts = options.clone();
+        opts.top_p = None;
+        return opts;
+    }
 
     let needs_reasoning_swap = matches!(adapter, AdapterKind::OpenAIResp)
         || (matches!(adapter, AdapterKind::OpenAI) && is_openai_chat_reasoning_model(model_name));

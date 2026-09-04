@@ -40,6 +40,19 @@ fn chat_completions_response_body(text: &str) -> Value {
     })
 }
 
+fn anthropic_messages_response_body(text: &str) -> Value {
+    // genai's anthropic adapter reads `content[]` items of `type: "text"`.
+    json!({
+        "id": "msg-test",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-haiku-4-5-20251001",
+        "content": [{ "type": "text", "text": text }],
+        "stop_reason": "end_turn",
+        "usage": { "input_tokens": 1, "output_tokens": 1 }
+    })
+}
+
 fn responses_api_response_body(text: &str, model: &str) -> Value {
     // genai's openai_resp adapter requires top-level `model` and reads
     // `output[].content[].text` for items with `type: "output_text"`.
@@ -186,6 +199,45 @@ async fn o3_chat_reasoning_model_omits_temperature() {
         "o3-* must NOT send temperature (rejected by OpenAI)"
     );
     assert!(body.get("top_p").is_none(), "o3-* must NOT send top_p");
+}
+
+#[tokio::test]
+async fn anthropic_sends_temperature_but_never_top_p() {
+    // Anthropic rejects a request carrying both with HTTP 400 `temperature` and `top_p`
+    // cannot both be specified for this model. Verified live against
+    // `claude-haiku-4-5-20251001` and `claude-sonnet-4-5-20250929` on 2026-09-04: both 400
+    // with the pair, both 200 with temperature alone. `suggestions.rs` sets both on every
+    // call, so without the fixup every folder and rename suggestion 400s for any user on an
+    // Anthropic key.
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(anthropic_messages_response_body("ok")))
+        .mount(&server)
+        .await;
+
+    let backend = AiBackend::remote(
+        String::from("test-key"),
+        format!("{}/v1", server.uri()),
+        String::from("claude-haiku-4-5-20251001"),
+    );
+
+    chat_completion(&backend, SYSTEM_PROMPT, USER_PROMPT, &opts())
+        .await
+        .expect("ok response");
+
+    let req = take_only_request(&server).await;
+    let body: Value = serde_json::from_slice(&req.body).expect("json body");
+    let temperature = body["temperature"].as_f64().expect("temperature set");
+    assert!(
+        (temperature - 0.6).abs() < 1e-9,
+        "Anthropic keeps temperature ~0.6, got {temperature}"
+    );
+    assert!(
+        body.get("top_p").is_none(),
+        "Anthropic must NOT send top_p alongside temperature (HTTP 400)"
+    );
 }
 
 #[tokio::test]
