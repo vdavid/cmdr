@@ -64,6 +64,12 @@ suffix check is free (string op, no syscall), so it stays inline. The custom-ico
 it's deferred to the bounded visible set. Net: a 100k-entry directory pays zero extra syscalls for custom-icon
 detection during listing; the cost is bounded to the ~50 visible rows.
 
+**An icon that was never fetched from the OS** still reaches the frontend in the same base64 WebP form:
+`rgba_to_data_url(rgba, w, h)` encodes a raw buffer at `ICON_SIZE`. Its one caller is the "open terminal here" app list
+(`../file_system/terminal.rs`), which reads each app's `.icns` straight out of its bundle rather than asking NSWorkspace,
+so it needs no TCC permission and can't descend into a FileProvider XPC chain. Nothing here caches it: that list is a
+handful of apps, rendered when the settings row opens.
+
 **Volumes** carry their own per-path icon through a separate, already-wired path: `volumes/mod.rs` calls
 `icons::get_icon_for_path` at volume-enumeration time and stores the data URL directly on the volume struct (FDA-gated,
 returns `None` while pending). Independent of the `iconId` registry used for file-list rows, so no Tier-C wiring is

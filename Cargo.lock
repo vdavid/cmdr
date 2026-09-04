@@ -1419,6 +1419,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "objc2-quick-look-ui",
  "pdf-extract",
+ "percent-encoding",
  "plist",
  "proptest",
  "rand 0.10.2",

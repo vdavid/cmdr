@@ -161,7 +161,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   a no-op off macOS / outside E2E, and the E2E branch of `show_main_window` orders back instead of showing.
 - **`file_actions.rs`**: direct file actions from the palette / menus — `show_in_finder`, `get_info`, `open_in_editor`,
   `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
-  `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`).
+  `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`). Plus the "open terminal here" pair,
+  `list_terminal_apps(app_choice)` and `open_terminal_here(path, volume_id, app_choice)`, both pass-throughs to
+  `../file_system/terminal.rs`, which owns the table, the recipes, and the volume gate. The chosen app arrives as an
+  argument because the frontend owns the settings store. `open_path`, `open_in_editor`, and `open_terminal_here` all
+  swap to a recording variant under `playwright-e2e`, funneling into `crate::open_mock` so a suite run leaves no orphan
+  windows.
 - **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` cache per-label
   child-window geometry via `State<ChildWindowRectStore>`. In-memory and session-only, never on disk; used by Settings
   and Debug. Viewers don't use it (they cascade, see `lib/window-positioning.ts`). Only the main window persists across

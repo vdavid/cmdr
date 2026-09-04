@@ -90,6 +90,49 @@ story.
 - `pick_app_via_open_panel` shows an `NSOpenPanel` filtered to `.app` bundles for the "Open with → Other…" entry.
 - Worker threads use 8 MB stacks (FileProvider XPC depth), per the gotcha in `CLAUDE.md`.
 
+## Open terminal here (`terminal.rs`)
+
+macOS has no system-wide "default terminal" setting. Finder's own "New Terminal at Folder" service is hardcoded to
+Terminal.app, and iTerm2 works around that by installing its own service. So Cmdr carries a table, the way VS Code,
+Marta, and Raycast do.
+
+- **`KNOWN_TERMINALS`** holds bundle id, display name, and a `LaunchRecipe` for Terminal, Alacritty, Ghostty, Hyper,
+  iTerm2, kitty, Warp, and WezTerm. Every bundle id carries its verification source and date in the doc comment above
+  the table; a new entry owes the same. Adding one is a single struct literal, nothing else.
+- **Three recipes, because three shapes of app exist.** `FolderAsDocument` (`open -b <id> <dir>`) covers everything
+  that registers as a folder handler. `WorkingDirectoryFlag` (`open -n -b <id> --args --working-directory <dir>`) is
+  Alacritty, which won't take a folder as a document; the `-n` is load-bearing, since without it a running instance is
+  merely activated and the args are dropped. `WarpUri` is Warp's documented scheme. A custom "Choose an app…" pick is
+  launched with `open -a <app path> <dir>`.
+- **No window-vs-tab control, deliberately.** No portable mechanism exists: Terminal follows the system "Prefer tabs
+  when opening documents" setting, Ghostty opens a tab when handed a folder, iTerm2 would need AppleScript (an
+  Automation permission prompt), kitty and WezTerm need their own remote control, and Alacritty has no tabs. Each app
+  is launched the way it natively takes a folder, and the app's own preferences decide (verified 2026-09-03 against
+  [Warp's URI scheme docs](https://docs.warp.dev/terminal/more-features/uri-scheme/) and
+  [Ghostty's folder-open discussion](https://github.com/ghostty-org/ghostty/discussions/5910)).
+- **`launch_argv` is pure** (choice + folder → argv), which is what makes every recipe unit-testable without launching
+  anything. Nothing goes through a shell, so awkward folder names travel as ordinary arguments; Warp's URI is the one
+  place that needs encoding, and its `WARP_PATH_SET` keeps `/` literal (legal in a query, and the shape Warp's docs
+  show) while encoding `&`, `?`, `#`, `%`, `+`, space, quotes, and every non-ASCII byte. Verified 2026-09-04 against
+  installed Terminal, Ghostty, and Warp by opening a folder named `Ünnepi "terv" & co` and reading back the spawned
+  shell's cwd.
+- **Installed-ness is one `URLForApplicationWithBundleIdentifier:` call per app**, asked whenever the settings row
+  renders and again at launch time. ❌ Never a `/Applications` scan, and no "Refresh" button, because there's nothing
+  to refresh.
+- **Icons come from the bundle's own `.icns`** (`open_with::load_app_icon` plus `icons::rgba_to_data_url`), not from
+  the OS icon provider: a plain file read needs no TCC permission and can't descend into a FileProvider XPC chain deep
+  enough to overflow a blocking-pool thread's stack.
+- **The path-less refusal keys on the volume**, not the path string: `paths_are_os_visible()` is the same reading Quick
+  Look and the drag commands take, so an OS-mounted share says yes and MTP, ADB, and a share whose mount went away say
+  no. An unknown volume id is an unmount race rather than a verdict, so it assumes yes.
+- **Both commands answer with a variant, never a sentence.** `OpenTerminalOutcome` separates `opened` from
+  `app_missing_opened_terminal_instead` (the chosen app was uninstalled, so Terminal opened instead) and
+  `not_a_local_path`; `OpenTerminalError` is the "couldn't answer at all" half.
+- **The chosen app is passed in, never read here.** The frontend owns the settings store; Rust's own loader is the
+  startup-time read only (`settings/CLAUDE.md`). Both commands take the stored value as an argument.
+- The `playwright-e2e` build records the folder into `crate::open_mock` instead of launching, alongside `open_path` and
+  `open_in_editor`, so a suite run doesn't pile up terminal windows nothing can close.
+
 ## Finder tags MCP consumer (`tags.rs`)
 
 The MCP `tag` tool wraps `tags::toggle_color` / `set_tags` (and `system_color_name` for canonical names), resolving

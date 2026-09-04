@@ -7,6 +7,23 @@
 use std::process::Command;
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tokio::time::Duration;
+
+#[cfg(target_os = "macos")]
+use super::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+#[cfg(target_os = "macos")]
+use crate::file_system::terminal::{OpenTerminalError, OpenTerminalOutcome, TerminalAppList};
+
+/// Listing terminals is a handful of LaunchServices lookups and bundle-icon
+/// reads. Generous enough for a custom pick sitting on a slow mount, short enough
+/// that the settings row doesn't hang on one.
+#[cfg(target_os = "macos")]
+const TERMINAL_APPS_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// Launching is one `spawn` of `open`; the wait is for the installed-app lookup
+/// in front of it.
+#[cfg(target_os = "macos")]
+const OPEN_TERMINAL_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Show a file in Finder (reveal in parent folder)
 #[tauri::command]
@@ -78,7 +95,7 @@ pub fn get_info(_path: String) -> Result<(), String> {
 /// new-file flow. Like `open_path`, the `playwright-e2e` build swaps in a launch-free
 /// variant: `open -t` spawns a TextEdit window per call, and the E2E suite (which
 /// creates files and opens them in the editor) has no way to close them, so they pile
-/// up across runs. The E2E variant records into the same `open_mock` store as
+/// up across runs. The E2E variant records into the same `crate::open_mock` store as
 /// `open_path`, so specs assert intent via `e2e_opened_paths`.
 #[tauri::command]
 #[specta::specta]
@@ -108,12 +125,12 @@ pub fn open_in_editor(_path: String) -> Result<(), String> {
 }
 
 /// E2E variant: record the editor-open request instead of launching TextEdit,
-/// funneling into the same `open_mock` store as `open_path` so no orphan windows leak.
+/// funneling into the same `crate::open_mock` store as `open_path` so no orphan windows leak.
 #[tauri::command]
 #[specta::specta]
 #[cfg(feature = "playwright-e2e")]
 pub fn open_in_editor(path: String) -> Result<(), String> {
-    open_mock::record(path);
+    crate::open_mock::record(path);
     Ok(())
 }
 
@@ -149,43 +166,13 @@ pub fn open_path(_path: String) -> Result<(), String> {
 
 /// E2E variant: record the open request instead of launching an external app,
 /// so the suite never floods the desktop with orphan TextEdit/Preview windows.
-/// Specs can assert intent via `open_mock::snapshot` / `open_mock::clear`.
+/// Specs can assert intent via `crate::open_mock`.
 #[tauri::command]
 #[specta::specta]
 #[cfg(feature = "playwright-e2e")]
 pub fn open_path(path: String) -> Result<(), String> {
-    open_mock::record(path);
+    crate::open_mock::record(path);
     Ok(())
-}
-
-/// In-process record of external-open requests (`open_path` and `open_in_editor`)
-/// for the `playwright-e2e` build. Mirrors the clipboard mock (`crate::clipboard`):
-/// compiled only under the feature so prod/dev binaries never link it, and it never
-/// touches the OS.
-#[cfg(feature = "playwright-e2e")]
-mod open_mock {
-    use std::path::PathBuf;
-    use std::sync::{LazyLock, Mutex};
-
-    use crate::ignore_poison::IgnorePoison;
-
-    static OPENED: LazyLock<Mutex<Vec<PathBuf>>> = LazyLock::new(|| Mutex::new(Vec::new()));
-
-    /// Records an open request without launching anything.
-    pub fn record(path: String) {
-        log::info!(target: "file_actions", "[mock] external open recorded (not launched): {path}");
-        OPENED.lock_ignore_poison().push(PathBuf::from(path));
-    }
-
-    /// Returns the paths opened so far, oldest first.
-    pub fn snapshot() -> Vec<PathBuf> {
-        OPENED.lock_ignore_poison().clone()
-    }
-
-    /// Clears the recorded open requests (per-test reset).
-    pub fn clear() {
-        OPENED.lock_ignore_poison().clear();
-    }
 }
 
 /// E2E: the paths `open_path` recorded (oldest first), so a spec can assert that
@@ -194,7 +181,7 @@ mod open_mock {
 #[specta::specta]
 #[cfg(feature = "playwright-e2e")]
 pub fn e2e_opened_paths() -> Vec<String> {
-    open_mock::snapshot()
+    crate::open_mock::snapshot()
         .into_iter()
         .map(|p| p.to_string_lossy().into_owned())
         .collect()
@@ -205,7 +192,54 @@ pub fn e2e_opened_paths() -> Vec<String> {
 #[specta::specta]
 #[cfg(feature = "playwright-e2e")]
 pub fn e2e_clear_opened_paths() {
-    open_mock::clear();
+    crate::open_mock::clear();
+}
+
+/// The terminal apps installed on this machine, plus which one `app_choice` names.
+///
+/// `app_choice` is the stored `behavior.openTerminalHereApp` value, passed in
+/// rather than read here: the frontend owns the settings store, and Rust's own
+/// loader is the startup-time read only (`settings/CLAUDE.md`).
+///
+/// The settings row calls this on every render. Each app costs one LaunchServices
+/// lookup plus a bundle-icon read, so there's nothing to cache; the timeout only
+/// bounds an icon read on a stalled mount.
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "macos")]
+pub async fn list_terminal_apps(app_choice: String) -> TimedOut<TerminalAppList> {
+    blocking_with_timeout_flag(TERMINAL_APPS_TIMEOUT, TerminalAppList::default(), move || {
+        crate::file_system::terminal::list_terminal_apps(&app_choice)
+    })
+    .await
+}
+
+/// Opens `path` in the terminal app `app_choice` names.
+///
+/// `path` is the folder the pane resolved (the cursor's folder, or the pane's own),
+/// and `volume_id` is the volume it came from: the refusal for MTP, ADB, and other
+/// path-less locations keys on the volume's capabilities, never on the path string.
+///
+/// Answers with an outcome rather than a bare success, so the frontend can word the
+/// uninstalled-app fallback and the path-less refusal without parsing anything.
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "macos")]
+pub async fn open_terminal_here(
+    path: String,
+    volume_id: String,
+    app_choice: String,
+) -> Result<OpenTerminalOutcome, OpenTerminalError> {
+    blocking_typed_result_with_timeout(
+        OPEN_TERMINAL_TIMEOUT,
+        || OpenTerminalError::TimedOut,
+        |detail| {
+            crate::log_error!(target: "file_actions", "open_terminal_here panicked: {detail}");
+            OpenTerminalError::TimedOut
+        },
+        move || crate::file_system::terminal::open_terminal_here(&volume_id, std::path::Path::new(&path), &app_choice),
+    )
+    .await
 }
 
 /// Copy text to clipboard
@@ -227,7 +261,7 @@ pub async fn cloud_make_available_offline(path: String) -> Result<(), String> {
     let work = tokio::task::spawn_blocking(move || {
         crate::file_system::cloud_actions::request_download(std::path::Path::new(&path))
     });
-    match tokio::time::timeout(tokio::time::Duration::from_secs(30), work).await {
+    match tokio::time::timeout(Duration::from_secs(30), work).await {
         Ok(joined) => joined.map_err(|e| e.to_string())?,
         Err(_elapsed) => Err("Timed out reaching iCloud — give it another try".to_string()),
     }
@@ -242,7 +276,7 @@ pub async fn cloud_remove_download(path: String) -> Result<(), String> {
     // Eviction is fire-and-forget server-side, so releasing the IPC on timeout is fine.
     let work =
         tokio::task::spawn_blocking(move || crate::file_system::cloud_actions::evict_item(std::path::Path::new(&path)));
-    match tokio::time::timeout(tokio::time::Duration::from_secs(30), work).await {
+    match tokio::time::timeout(Duration::from_secs(30), work).await {
         Ok(joined) => joined.map_err(|e| e.to_string())?,
         Err(_elapsed) => Err("Timed out reaching iCloud — give it another try".to_string()),
     }

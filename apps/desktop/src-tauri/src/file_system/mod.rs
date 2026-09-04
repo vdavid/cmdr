@@ -23,6 +23,8 @@ pub(crate) mod staging;
 #[cfg(target_os = "macos")]
 pub mod sync_status;
 pub mod tags;
+#[cfg(target_os = "macos")]
+pub mod terminal;
 pub mod validation;
 pub mod volume;
 pub(crate) mod watcher;

@@ -155,6 +155,16 @@ fn image_to_data_url(img: &DynamicImage) -> Option<String> {
     Some(format!("data:image/webp;base64,{}", base64))
 }
 
+/// Encodes a raw RGBA buffer as a WebP data URL at the standard icon size, the
+/// same form `get_icons` hands the frontend.
+///
+/// For icons that were read straight out of a bundle rather than fetched from the
+/// OS icon provider (the "open terminal here" app list).
+pub(crate) fn rgba_to_data_url(rgba: &[u8], width: u32, height: u32) -> Option<String> {
+    let img = image::RgbaImage::from_raw(width, height, rgba.to_vec())?;
+    image_to_data_url(&DynamicImage::ImageRgba8(img))
+}
+
 /// Fetches icon for a specific file path via the OS icon provider (macOS).
 #[cfg(target_os = "macos")]
 fn fetch_icon_for_path(path: &Path) -> Option<String> {

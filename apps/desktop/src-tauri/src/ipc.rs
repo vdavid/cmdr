@@ -697,6 +697,15 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // "Open terminal here". macOS only, table and all: the known-terminals table is
+            // bundle ids, and Linux would need its own (`file_system/terminal.rs`).
+            cfg(target_os = "macos") {
+                typed: [
+                    crate::commands::file_actions::list_terminal_apps,
+                    crate::commands::file_actions::open_terminal_here,
+                ]
+                dispatch_only: []
+            }
             // Reduce transparency.
             cfg(target_os = "macos") {
                 typed: [

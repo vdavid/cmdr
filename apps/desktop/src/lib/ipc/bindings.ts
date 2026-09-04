@@ -1377,7 +1377,7 @@ export const commands = {
    *  new-file flow. Like `open_path`, the `playwright-e2e` build swaps in a launch-free
    *  variant: `open -t` spawns a TextEdit window per call, and the E2E suite (which
    *  creates files and opens them in the editor) has no way to close them, so they pile
-   *  up across runs. The E2E variant records into the same `open_mock` store as
+   *  up across runs. The E2E variant records into the same `crate::open_mock` store as
    *  `open_path`, so specs assert intent via `e2e_opened_paths`.
    */
   openInEditor: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_in_editor', { path })),
@@ -3974,6 +3974,33 @@ export const commands = {
    *  Returns the brand fallback if the main-thread hop or channel fails.
    */
   getAccentColor: () => __TAURI_INVOKE<string>('get_accent_color'),
+  /**
+   *  The terminal apps installed on this machine, plus which one `app_choice` names.
+   *
+   *  `app_choice` is the stored `behavior.openTerminalHereApp` value, passed in
+   *  rather than read here: the frontend owns the settings store, and Rust's own
+   *  loader is the startup-time read only (`settings/CLAUDE.md`).
+   *
+   *  The settings row calls this on every render. Each app costs one LaunchServices
+   *  lookup plus a bundle-icon read, so there's nothing to cache; the timeout only
+   *  bounds an icon read on a stalled mount.
+   */
+  listTerminalApps: (appChoice: string) =>
+    __TAURI_INVOKE<TimedOut<TerminalAppList>>('list_terminal_apps', { appChoice }),
+  /**
+   *  Opens `path` in the terminal app `app_choice` names.
+   *
+   *  `path` is the folder the pane resolved (the cursor's folder, or the pane's own),
+   *  and `volume_id` is the volume it came from: the refusal for MTP, ADB, and other
+   *  path-less locations keys on the volume's capabilities, never on the path string.
+   *
+   *  Answers with an outcome rather than a bare success, so the frontend can word the
+   *  uninstalled-app fallback and the path-less refusal without parsing anything.
+   */
+  openTerminalHere: (path: string, volumeId: string, appChoice: string) =>
+    typedError<OpenTerminalOutcome, OpenTerminalError>(
+      __TAURI_INVOKE('open_terminal_here', { path, volumeId, appChoice }),
+    ),
   /**
    *  Tauri command: returns whether macOS "reduce transparency" is enabled.
    *
@@ -8957,6 +8984,37 @@ export type OpenSettings = {
 }
 
 /**
+ *  Why `open_terminal_here` couldn't answer at all. Distinct from
+ *  [`OpenTerminalOutcome`], which reports things that DID happen.
+ */
+export type OpenTerminalError =
+  /**
+   *  `open` couldn't be spawned. Carries the OS errno where there is one, so
+   *  nothing has to read the message.
+   */
+  | { type: 'launchRefused'; errno: number | null }
+  // The launch didn't finish inside the command's deadline.
+  | { type: 'timedOut' }
+
+/**
+ *  What `open_terminal_here` did, so the frontend acts on a variant rather than
+ *  reading a sentence.
+ */
+export type OpenTerminalOutcome =
+  // The chosen terminal was launched at the folder.
+  | 'opened'
+  /**
+   *  The chosen app isn't installed anymore, so Terminal opened instead. The
+   *  frontend says so and resets the setting.
+   */
+  | 'app_missing_opened_terminal_instead'
+  /**
+   *  The pane isn't on a path a shell can `cd` into (MTP, ADB, a share whose
+   *  mount went away), so nothing was launched.
+   */
+  | 'not_a_local_path'
+
+/**
  *  An operation's header plus a page of its items, with dir prefixes resolved to
  *  full paths. Returned by [`get_operation`].
  */
@@ -11645,6 +11703,37 @@ export type TagRef = {
    *  `5` yellow, `6` red, `7` orange.
    */
   color: number
+}
+
+// One installed terminal, as the settings dropdown needs it.
+export type TerminalApp = {
+  /**
+   *  Exactly what goes into the setting: a bundle id for a known terminal, an
+   *  absolute `.app` path for a custom pick.
+   */
+  id: string
+  displayName: string
+  /**
+   *  The app's icon as a base64 WebP data URL, read from its bundle. Absent
+   *  when the bundle carries no readable icon.
+   */
+  icon: string | null
+  /**
+   *  Whether the app is running right now. The first-use picker prefers a
+   *  running terminal when exactly one is.
+   */
+  isRunning: boolean
+}
+
+// The terminal apps installed on this machine, plus which one is chosen.
+export type TerminalAppList = {
+  // Installed apps in table order, plus the custom pick last when there is one.
+  apps: TerminalApp[]
+  /**
+   *  The id of the currently chosen app, present in `apps`. Absent when the
+   *  chosen app has been uninstalled, which is the frontend's cue to reset.
+   */
+  chosenId: string | null
 }
 
 /**
