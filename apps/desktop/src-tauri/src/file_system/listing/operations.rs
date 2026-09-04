@@ -429,9 +429,9 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
 
 /// The distinct volume ids under `prefix` that have at least one cached listing.
 ///
-/// The cheap half of [`get_listings_by_volume_prefix`]: a device backend asking
-/// "which of my storages is a pane showing?" wants the ids, not a clone of every
-/// entry in every open directory.
+/// What a device backend asks when its event names an object the protocol alone
+/// can't place: "which of my storages is a pane showing?" Ids only, so nothing
+/// clones an open directory's entries to answer it.
 pub(crate) fn volume_ids_with_listings(prefix: &str) -> Vec<String> {
     // Recover rather than answer empty: an empty answer reads as "no pane is
     // showing anything", which sends a device backend down the blanket-refresh
@@ -446,32 +446,6 @@ pub(crate) fn volume_ids_with_listings(prefix: &str) -> Vec<String> {
     ids.sort_unstable();
     ids.dedup();
     ids
-}
-
-/// Gets all listings for volumes matching a specific prefix.
-///
-/// Used by MTP file watching to find all listings belonging to a device.
-/// MTP volume IDs have the format "mtp-{device_id}:{storage_id}".
-///
-/// Returns: Vec<(listing_id, volume_id, path, entries)>
-pub(crate) fn get_listings_by_volume_prefix(prefix: &str) -> Vec<(String, String, PathBuf, Vec<FileEntry>)> {
-    let cache = match LISTING_CACHE.read() {
-        Ok(c) => c,
-        Err(_) => return Vec::new(),
-    };
-
-    cache
-        .iter()
-        .filter(|(_, listing)| listing.volume_id.starts_with(prefix))
-        .map(|(listing_id, listing)| {
-            (
-                listing_id.clone(),
-                listing.volume_id.clone(),
-                listing.path.clone(),
-                listing.entries().to_vec(),
-            )
-        })
-        .collect()
 }
 
 // ============================================================================

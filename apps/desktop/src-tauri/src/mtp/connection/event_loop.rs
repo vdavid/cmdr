@@ -1,7 +1,8 @@
 //! MTP device event loop for file watching.
 //!
-//! Polls for MTP device events and emits directory-diff events to the frontend
-//! using the unified diff system shared with local file watching.
+//! Polls a connected device for object and storage events, and reports each one
+//! to the two consumers that care: the open panes, through the `ListingHost`
+//! seam, and the file index, through `IndexNotifier`.
 
 use log::{debug, info, warn};
 use mtp_rs::MtpDevice;
@@ -13,10 +14,8 @@ use mtp_rs::ObjectHandle;
 
 use super::cache::{EVENT_DEBOUNCE_MS, EventDebouncer};
 use super::{MtpConnectionManager, normalize_mtp_path};
-use crate::file_system::listing::compute_diff;
-use crate::file_system::listing::{get_listings_by_volume_prefix, update_listing_entries};
 use crate::ignore_poison::RwLockIgnorePoison;
-use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::DirectoryChange;
 use std::path::{Path, PathBuf};
 
 impl MtpConnectionManager {
@@ -41,7 +40,7 @@ impl MtpConnectionManager {
         // plugged in: the next upgrade fails and the loop leaves.
         let manager = self.self_ref.clone();
 
-        tokio::spawn(async move {
+        self.host().runtime().spawn(async move {
             let mut shutdown_rx = shutdown_tx.subscribe();
 
             // Clone the MtpDevice for event polling. MtpDevice is cheaply cloneable (Arc
@@ -141,17 +140,17 @@ impl MtpConnectionManager {
             DeviceEvent::ObjectAdded { handle } => {
                 debug!("MTP object added: {:?} on {}", handle, device_id);
                 self.emit_change_for_handle(device_id, handle);
-                Self::feed_index_added_or_changed(device_id, handle);
+                self.feed_index_added_or_changed(device_id, handle);
             }
             DeviceEvent::ObjectRemoved { handle } => {
                 debug!("MTP object removed: {:?} on {}", handle, device_id);
-                self.emit_directory_changed(device_id);
-                Self::feed_index_removed(device_id, handle);
+                self.refresh_whole_device(device_id);
+                self.feed_index_removed(device_id, handle);
             }
             DeviceEvent::ObjectInfoChanged { handle } => {
                 debug!("MTP object changed: {:?} on {}", handle, device_id);
                 self.emit_change_for_handle(device_id, handle);
-                Self::feed_index_added_or_changed(device_id, handle);
+                self.feed_index_added_or_changed(device_id, handle);
             }
             DeviceEvent::StorageInfoChanged { storage_id } => {
                 debug!("MTP storage info changed: {:?} on {}", storage_id, device_id);
@@ -161,7 +160,7 @@ impl MtpConnectionManager {
                 let device_id = device_id.to_string();
                 let storage_id = storage_id.0 as u32;
                 let manager = Arc::clone(self);
-                tokio::spawn(async move {
+                self.host().runtime().spawn(async move {
                     manager.invalidate_storage_cache(&device_id, Some(storage_id)).await;
                 });
             }
@@ -169,7 +168,7 @@ impl MtpConnectionManager {
                 info!("MTP storage added: {:?} on {}", storage_id, device_id);
                 let device_id = device_id.to_string();
                 let manager = Arc::clone(self);
-                tokio::spawn(async move {
+                self.host().runtime().spawn(async move {
                     manager.handle_storage_added(&device_id, storage_id.0 as u32).await;
                 });
             }
@@ -177,7 +176,7 @@ impl MtpConnectionManager {
                 info!("MTP storage removed: {:?} on {}", storage_id, device_id);
                 let device_id = device_id.to_string();
                 let manager = Arc::clone(self);
-                tokio::spawn(async move {
+                self.host().runtime().spawn(async move {
                     manager.handle_storage_removed(&device_id, storage_id.0 as u32).await;
                 });
             }
@@ -200,38 +199,39 @@ impl MtpConnectionManager {
     /// walk it buffers the raw handle rather than paying a device round trip the
     /// walk is about to make anyway), so this hands over the bare PTP handle and
     /// nothing else.
-    fn feed_index_added_or_changed(device_id: &str, handle: ObjectHandle) {
-        crate::index_host::index().on_device_object_changed(device_id, handle.0 as u32);
+    fn feed_index_added_or_changed(&self, device_id: &str, handle: ObjectHandle) {
+        self.host().indexing().device_object_changed(device_id, handle.0 as u32);
     }
 
     /// Feed an `ObjectRemoved` into whichever of this device's storages had it.
     /// Costs no device round trip: the object is gone, so each indexed storage
     /// matches on the handle it stored.
-    fn feed_index_removed(device_id: &str, handle: ObjectHandle) {
-        crate::index_host::index().on_device_object_removed(device_id, handle.0 as u32);
+    fn feed_index_removed(&self, device_id: &str, handle: ObjectHandle) {
+        self.host().indexing().device_object_removed(device_id, handle.0 as u32);
     }
 
     /// Handles a pathful PTP change event (`ObjectAdded` / `ObjectInfoChanged`)
     /// by resolving the opaque handle to a path and refreshing ONLY the affected
-    /// directory's listing, instead of the blanket all-open-listings refresh.
+    /// directory, instead of the blanket whole-device refresh.
     ///
     /// PTP handles are device-wide but storages are separate namespaces, so we
-    /// don't know up front which storage the handle lives in. We attempt
-    /// resolution against each storage that currently has an open listing (the
-    /// only storages where a targeted refresh could matter): the first storage
-    /// whose resolved parent directory matches an open listing gets a targeted
-    /// re-read. On any resolution failure (handle invalid, parent uncached and
-    /// the walk fails, timeout) we fall back to the blanket refresh, so an update
-    /// is never lost — just less precise.
+    /// don't know up front which storage the handle lives in, and resolving one
+    /// costs a device round trip per storage. The host names the storages a pane
+    /// is showing, which are the only ones where a targeted refresh could change
+    /// anything on screen, so the search runs over those. On any resolution
+    /// failure (handle invalid, parent uncached and the walk fails, timeout) we
+    /// fall back to the whole-device refresh, so an update is never lost — just
+    /// less precise.
     fn emit_change_for_handle(self: &Arc<Self>, device_id: &str, handle: ObjectHandle) {
         let device_id = device_id.to_string();
         let manager = Arc::clone(self);
-        tokio::spawn(async move {
-            // Distinct storage IDs with at least one open listing on this device.
-            let listings = get_listings_by_volume_prefix(&device_id);
-            let mut storage_ids: Vec<u32> = listings
+        self.host().runtime().spawn(async move {
+            let mut storage_ids: Vec<u32> = manager
+                .host()
+                .listings()
+                .volumes_with_open_listings(&device_id)
                 .iter()
-                .filter_map(|(_, volume_id, _, _)| cmdr_fs::volume::mtp_ids::storage_id_of_volume(volume_id))
+                .filter_map(|volume_id| cmdr_fs::volume::mtp_ids::storage_id_of_volume(volume_id))
                 .collect();
             storage_ids.sort_unstable();
             storage_ids.dedup();
@@ -245,12 +245,13 @@ impl MtpConnectionManager {
                         let affected_dir = object_path
                             .parent()
                             .map_or_else(|| PathBuf::from("/"), Path::to_path_buf);
-                        if manager.emit_directory_changed_targeted(&device_id, storage_id, &affected_dir) {
-                            // Targeted refresh fired for an open listing; done.
+                        if manager.refresh_directory(&device_id, storage_id, &affected_dir) {
+                            // A pane shows that directory and its re-read is under
+                            // way; done.
                             return;
                         }
-                        // Resolved, but no open listing shows that dir: nothing to
-                        // refresh on THIS storage. Keep trying other storages.
+                        // Resolved, but no pane shows that dir: nothing to refresh
+                        // on THIS storage. Keep trying other storages.
                     }
                     Err(e) => {
                         debug!(
@@ -261,37 +262,37 @@ impl MtpConnectionManager {
                 }
             }
 
-            // No storage produced a targeted refresh: fall back to blanket so the
-            // update is never dropped (e.g. the change is in a non-open subdir, or
-            // resolution failed on every storage).
-            manager.emit_directory_changed(&device_id);
+            // No storage produced a targeted refresh: fall back to the whole
+            // device so the update is never dropped (the change is in a subdir
+            // nobody is showing, or resolution failed on every storage).
+            manager.refresh_whole_device(&device_id);
         });
     }
 
-    /// Re-reads and diffs ONLY the listing(s) showing `affected_dir` on
-    /// `(device_id, storage_id)`. Returns `true` if at least one such listing
-    /// exists (a targeted refresh fired), `false` if no open pane shows that dir.
+    /// Re-reads ONE directory on `(device_id, storage_id)` and hands its contents
+    /// to the host, which sorts them each pane's way, diffs, and patches.
+    /// `false` when no pane is showing that directory, so the caller can keep
+    /// looking on another storage.
     ///
-    /// Goes through the same debouncer as the blanket path so a burst of resolved
-    /// events still collapses to one re-read per window.
-    fn emit_directory_changed_targeted(
-        self: &Arc<Self>,
-        device_id: &str,
-        storage_id: u32,
-        affected_dir: &Path,
-    ) -> bool {
-        // Match the affected dir against this device's open listings by their
-        // normalized inner MTP path. Listings carry a `mtp://…` or `/`-rooted
-        // path; `listing_inner_mtp_path` reduces both to the comparable form.
-        let listings: Vec<(String, String, PathBuf, Vec<FileEntry>)> = get_listings_by_volume_prefix(device_id)
-            .into_iter()
-            .filter(|(_, volume_id, path, _)| {
-                cmdr_fs::volume::mtp_ids::storage_id_of_volume(volume_id) == Some(storage_id)
-                    && listing_inner_mtp_path(volume_id, path).as_deref() == Some(affected_dir)
-            })
-            .collect();
+    /// The fresh-listing oracle is the "is a pane showing this?" probe: it
+    /// answers only for a listing a live watch is keeping fresh, which is what a
+    /// connected MTP device with a running event loop is. A miss also covers the
+    /// device-lock-contended case (`MtpVolume::listing_watch_coverage` reads
+    /// `try_lock`), and the caller's fallback is the whole-device refresh, so the
+    /// update survives either way.
+    ///
+    /// Goes through the same debouncer as the whole-device path so a burst of
+    /// resolved events still collapses to one re-read per window.
+    fn refresh_directory(self: &Arc<Self>, device_id: &str, storage_id: u32, affected_dir: &Path) -> bool {
+        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
+        let listing_path = listing_path_for(device_id, storage_id, affected_dir);
 
-        if listings.is_empty() {
+        if self
+            .host()
+            .listings()
+            .authoritative_listing(&volume_id, &listing_path)
+            .is_none()
+        {
             return false;
         }
 
@@ -319,37 +320,74 @@ impl MtpConnectionManager {
             let device_id = device_id.to_string();
             let affected_dir = affected_dir.to_path_buf();
             let manager = Arc::clone(self);
-            tokio::spawn(async move {
+            self.host().runtime().spawn(async move {
                 tokio::time::sleep(Duration::from_millis(EVENT_DEBOUNCE_MS + 50)).await;
                 // Release BEFORE re-emitting, so an event arriving during the
                 // re-emit can still claim the following window.
                 manager.event_debouncer.release_trailing(&key);
-                manager.emit_directory_changed_targeted(&device_id, storage_id, &affected_dir);
+                manager.refresh_directory(&device_id, storage_id, &affected_dir);
             });
             return true;
         }
 
         debug!(
-            "MTP targeted refresh: re-reading {} listing(s) for {}:{} dir={}",
-            listings.len(),
+            "MTP targeted refresh: re-reading {}:{} dir={}",
             device_id,
             storage_id,
             affected_dir.display()
         );
 
         let device_id = device_id.to_string();
+        let affected_dir = affected_dir.to_path_buf();
         let manager = Arc::clone(self);
-        tokio::spawn(async move {
-            manager.compute_and_emit_diffs(&device_id, listings).await;
+        self.host().runtime().spawn(async move {
+            manager.publish_directory(&device_id, storage_id, &affected_dir).await;
         });
         true
     }
 
-    /// Emits directory-diff events for all affected listings (with debouncing).
+    /// Re-reads `dir` from the device and reports its contents as ONE
+    /// [`DirectoryChange::Replaced`].
     ///
-    /// Uses the unified diff system shared with local file watching, providing
-    /// smooth incremental UI updates without full directory reloads.
-    fn emit_directory_changed(self: &Arc<Self>, device_id: &str) {
+    /// ❌ Never one seam call per entry: however many entries came back, this is
+    /// one call, and the host does the sorting and the diffing (a device answers
+    /// in object-handle order, so a diff computed against that order carries
+    /// indices pointing at the wrong rows in a pane sorted any other way).
+    async fn publish_directory(&self, device_id: &str, storage_id: u32, dir: &Path) {
+        let inner = dir.to_string_lossy().trim_start_matches('/').to_string();
+
+        // ❗ Before the re-read, or the 5-second listing cache answers with
+        // exactly the entries the event says are out of date. It keys on the
+        // normalized inner path (`/Documents`), not the pane's URL.
+        self.invalidate_listing_cache(device_id, storage_id, &normalize_mtp_path(&inner))
+            .await;
+
+        let entries = match self.list_directory(device_id, storage_id, &inner).await {
+            Ok(entries) => entries,
+            Err(e) => {
+                debug!("MTP refresh: couldn't re-read directory {}: {:?}, skipping", inner, e);
+                return;
+            }
+        };
+
+        self.host().listings().directory_changed(
+            &cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id),
+            &listing_path_for(device_id, storage_id, dir),
+            DirectoryChange::Replaced(entries),
+        );
+    }
+
+    /// The device says something changed and can't say where, so every pane on
+    /// it re-reads.
+    ///
+    /// ONE [`DirectoryChange::FullRefresh`] per open volume, reported at the
+    /// DEVICE path rather than at a directory: no listing sits above the storage
+    /// root, and a `FullRefresh` whose path matches no listing is what asks the
+    /// host to fan the re-read out to every listing on that volume
+    /// (`file_system/listing/DETAILS.md` § "Change notification API"). Aiming it
+    /// at a storage root instead would refresh a pane showing that root and miss
+    /// its sibling pane two directories down.
+    fn refresh_whole_device(self: &Arc<Self>, device_id: &str) {
         // When suppressed, schedule a trailing emit after the debounce window
         // so the last event in a burst is never permanently dropped.
         if !self.event_debouncer.should_emit(device_id) {
@@ -370,184 +408,201 @@ impl MtpConnectionManager {
             );
             let device_id_owned = device_id.to_string();
             let manager = Arc::clone(self);
-            tokio::spawn(async move {
+            self.host().runtime().spawn(async move {
                 tokio::time::sleep(Duration::from_millis(EVENT_DEBOUNCE_MS + 50)).await;
                 // Release BEFORE re-emitting, so an event arriving during the
                 // re-emit can still claim the following window.
                 manager.event_debouncer.release_trailing(&device_id_owned);
                 // Re-emit; this goes through the debouncer again (which will pass
                 // since the window has expired) to avoid duplicate processing.
-                manager.emit_directory_changed(&device_id_owned);
+                manager.refresh_whole_device(&device_id_owned);
             });
             return;
         }
 
-        // Find all listings for this device (volume IDs like "mtp-123:65537")
-        let listings = get_listings_by_volume_prefix(device_id);
-        if listings.is_empty() {
+        let open_volumes = self.host().listings().volumes_with_open_listings(device_id);
+        if open_volumes.is_empty() {
             debug!(
-                "MTP event loop: no active listings for device={}, skipping diff",
+                "MTP event loop: no active listings for device={}, skipping refresh",
                 device_id
             );
             return;
         }
 
         debug!(
-            "MTP event loop: found {} listings for device={}, computing diffs",
-            listings.len(),
+            "MTP event loop: refreshing {} open volume(s) for device={}",
+            open_volumes.len(),
             device_id
         );
 
-        // Clone what we need for the spawned task
         let device_id_owned = device_id.to_string();
         let manager = Arc::clone(self);
+        self.host().runtime().spawn(async move {
+            // The host re-reads through `Volume::list_directory`, which the
+            // 5-second listing cache would otherwise answer with the pre-change
+            // entries. We don't know which directories are open, so the device's
+            // whole cache goes.
+            manager.clear_listing_caches_for_device(&device_id_owned).await;
 
-        // Spawn task to re-read directories and compute diffs
-        tokio::spawn(async move {
-            manager.compute_and_emit_diffs(&device_id_owned, listings).await;
-        });
-    }
-
-    /// Re-reads MTP directories and emits directory-diff events.
-    ///
-    /// For each listing belonging to this device:
-    /// 1. Extract the storage_id and path from the volume_id and listing path
-    /// 2. Re-read the directory from the MTP device
-    /// 3. Compute the diff between old and new entries
-    /// 4. Update LISTING_CACHE with new entries
-    /// 5. Emit directory-diff event
-    async fn compute_and_emit_diffs(&self, device_id: &str, listings: Vec<(String, String, PathBuf, Vec<FileEntry>)>) {
-        for (listing_id, volume_id, path, old_entries) in listings {
-            // Extract storage_id from volume_id (format: "{device_id}:{storage}").
-            // rsplit-based parse via identity tolerates a `:` in a serial device id.
-            let Some(storage_id) = cmdr_fs::volume::mtp_ids::storage_id_of_volume(&volume_id) else {
-                warn!(
-                    "MTP diff: could not parse storage_id from volume_id={}, skipping",
-                    volume_id
-                );
-                continue;
-            };
-
-            // The inner MTP path that `list_directory` keys on (for example,
-            // "DCIM/Camera"), peeled out of the listing's `mtp://…`-scheme or
-            // "/"-rooted cache path.
-            let mtp_path = listing_inner_mtp_path(&volume_id, &path)
-                .map(|p| p.to_string_lossy().trim_start_matches('/').to_string())
-                .unwrap_or_default();
-
-            // Invalidate the MTP listing cache before re-reading so we get fresh data.
-            // Must use the normalized MTP path (for example, "/Documents"), not the raw LISTING_CACHE
-            // path (for example, "mtp://mtp-device/65537/Documents"), because that's what list_directory
-            // uses as the cache key.
-            self.invalidate_listing_cache(device_id, storage_id, &normalize_mtp_path(&mtp_path))
-                .await;
-
-            // Re-read the directory from the MTP device
-            let new_entries = match self.list_directory(device_id, storage_id, &mtp_path).await {
-                Ok(entries) => entries,
-                Err(e) => {
-                    debug!("MTP diff: failed to re-read directory {}: {:?}, skipping", mtp_path, e);
-                    continue;
-                }
-            };
-
-            // Compute diff
-            let changes = compute_diff(&old_entries, &new_entries);
-            if changes.is_empty() {
-                debug!(
-                    "MTP diff: no changes detected for listing_id={}, path={}",
-                    listing_id, mtp_path
-                );
-                continue;
+            let device_path = PathBuf::from(format!("mtp://{device_id_owned}"));
+            for volume_id in open_volumes {
+                manager
+                    .host()
+                    .listings()
+                    .directory_changed(&volume_id, &device_path, DirectoryChange::FullRefresh);
             }
-
-            // Update LISTING_CACHE with new entries
-            update_listing_entries(&listing_id, new_entries);
-
-            // Route through the coalescer so bursts of MTP events (large delete,
-            // many file copies) don't fire one IPC event per change.
-            crate::file_system::listing::diff_emitter::enqueue_diff(&listing_id, changes);
-            debug!("MTP diff: enqueued diff for listing_id={}", listing_id);
-        }
+        });
     }
 }
 
-/// Reduces a `LISTING_CACHE` directory path to the inner MTP path, normalized
-/// with a leading `/` (for example `/DCIM/Camera`, or `/` for the storage root).
+/// The path a pane showing `dir` on `(device_id, storage_id)` is cached under:
+/// the canonical absolute MTP URL, `mtp://{device}/{storage}[/inner]`.
 ///
-/// A listing's stored path is either `mtp://<device>/<storage>/<inner…>` or a
-/// plain `/`-rooted inner path. Returns `None` only if a `mtp://` path is
-/// malformed (missing the device/storage segments). The leading-`/` form matches
-/// what [`MtpConnectionManager::resolve_handle_to_path`](super::MtpConnectionManager::resolve_handle_to_path)
-/// produces, so the two are directly comparable for targeted-refresh matching.
-fn listing_inner_mtp_path(volume_id: &str, path: &Path) -> Option<PathBuf> {
-    let raw = path.to_string_lossy();
-    let inner = if let Some(without_scheme) = raw.strip_prefix("mtp://") {
-        // "mtp://mtp-0-1/65537/DCIM/Camera" -> "DCIM/Camera"; the root listing
-        // "mtp://mtp-0-1/65537" has only two segments -> "".
-        let mut parts = without_scheme.splitn(3, '/');
-        let _device = parts.next()?;
-        let _storage = parts.next()?;
-        parts.next().unwrap_or("")
-    } else {
-        raw.trim_start_matches('/')
-    };
-
-    debug_assert!(
-        volume_id.starts_with("mtp-"),
-        "listing_inner_mtp_path expects an MTP volume_id, got {volume_id}"
-    );
-
-    Some(normalize_mtp_path(inner))
+/// Pane navigation feeds that URL into the listing pipeline, and
+/// `MtpVolume::to_url_path` normalizes every mutation's parent to the same form,
+/// so it is the ONE representation `ListingHost` lookups match on. `dir` is the
+/// resolver's output (`/DCIM/Camera`, or `/` for the storage root).
+fn listing_path_for(device_id: &str, storage_id: u32, dir: &Path) -> PathBuf {
+    let root = PathBuf::from(format!("mtp://{device_id}/{storage_id}"));
+    let inner = dir.to_string_lossy().trim_start_matches('/').to_string();
+    if inner.is_empty() { root } else { root.join(inner) }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::wait_until_async;
+    use cmdr_fs::volume::host::listings::RecordingListings;
 
     #[test]
-    fn inner_path_from_mtp_scheme() {
-        let p = listing_inner_mtp_path("mtp-0-1:65537", Path::new("mtp://mtp-0-1/65537/DCIM/Camera"));
-        assert_eq!(p, Some(PathBuf::from("/DCIM/Camera")));
+    fn a_storage_root_listing_path_has_no_inner_segment() {
+        assert_eq!(
+            listing_path_for("mtp-0-1", 65_537, Path::new("/")),
+            PathBuf::from("mtp://mtp-0-1/65537")
+        );
     }
 
     #[test]
-    fn inner_path_from_mtp_scheme_root() {
-        // The storage root listing has no inner segment -> "/".
-        let p = listing_inner_mtp_path("mtp-0-1:65537", Path::new("mtp://mtp-0-1/65537"));
-        assert_eq!(p, Some(PathBuf::from("/")));
+    fn an_inner_directory_hangs_off_the_storage_root() {
+        assert_eq!(
+            listing_path_for("mtp-0-1", 65_537, Path::new("/DCIM/Camera")),
+            PathBuf::from("mtp://mtp-0-1/65537/DCIM/Camera")
+        );
     }
 
+    /// The two halves of a targeted refresh have to line up, or the seam lookup
+    /// misses and the pane stays stale: the resolver answers with an inner path,
+    /// and the host matches on the URL a pane navigated to.
     #[test]
-    fn inner_path_from_plain_rooted() {
-        let p = listing_inner_mtp_path("mtp-0-1:65537", Path::new("/Documents"));
-        assert_eq!(p, Some(PathBuf::from("/Documents")));
-    }
-
-    #[test]
-    fn inner_path_matches_resolver_form() {
-        // The targeted-refresh filter compares this against the resolver's
-        // output. A resolved object `/DCIM/IMG.jpg` has affected dir `/DCIM`,
-        // which must equal the inner path of an open `/DCIM` listing in both
-        // path representations.
+    fn a_resolved_object_targets_the_url_its_pane_is_cached_under() {
         let resolved = PathBuf::from("/DCIM/IMG.jpg");
-        let affected_dir = resolved.parent().unwrap().to_path_buf();
+        let affected_dir = resolved.parent().map_or_else(|| PathBuf::from("/"), Path::to_path_buf);
         assert_eq!(affected_dir, PathBuf::from("/DCIM"));
-
-        let scheme_listing = listing_inner_mtp_path("mtp-0-1:65537", Path::new("mtp://mtp-0-1/65537/DCIM")).unwrap();
-        let plain_listing = listing_inner_mtp_path("mtp-0-1:65537", Path::new("/DCIM")).unwrap();
-        assert_eq!(scheme_listing, affected_dir);
-        assert_eq!(plain_listing, affected_dir);
+        assert_eq!(
+            listing_path_for("mtp-0-1", 65_537, &affected_dir),
+            PathBuf::from("mtp://mtp-0-1/65537/DCIM"),
+        );
     }
 
+    /// A root-level object's parent is the storage root, which is the pane URL
+    /// with nothing appended — ❌ never a trailing slash, which wouldn't compare
+    /// equal to what navigation cached.
     #[test]
-    fn root_level_object_targets_storage_root() {
-        // A root-level object `/Download` has parent dir "/", which must match
-        // the storage-root listing's inner path.
+    fn a_root_level_object_targets_the_storage_root_pane() {
         let resolved = PathBuf::from("/Download");
         let affected_dir = resolved.parent().map_or_else(|| PathBuf::from("/"), Path::to_path_buf);
         assert_eq!(affected_dir, PathBuf::from("/"));
-        let root_listing = listing_inner_mtp_path("mtp-0-1:65537", Path::new("mtp://mtp-0-1/65537")).unwrap();
-        assert_eq!(root_listing, affected_dir);
+        assert_eq!(
+            listing_path_for("mtp-0-1", 65_537, &affected_dir),
+            PathBuf::from("mtp://mtp-0-1/65537"),
+        );
+    }
+
+    /// A manager whose only real seam is `listings`, so a refresh can be observed
+    /// without a device, a runtime of its own, or a volume registry.
+    fn manager_reporting_to(listings: Arc<RecordingListings>) -> Arc<MtpConnectionManager> {
+        MtpConnectionManager::new(
+            cmdr_fs::volume::host::VolumeHost::builder().listings(listings).build(),
+            crate::mtp::connection::events::no_device_events(),
+            crate::mtp::connection::MtpVolumeRegistrar::detached(),
+        )
+    }
+
+    /// A device event that names no directory refreshes every VOLUME a pane is
+    /// showing, one call each, at the device path — the shape that makes the host
+    /// fan out to every listing on the volume instead of to one directory.
+    #[tokio::test]
+    async fn a_whole_device_refresh_reports_once_per_open_volume() {
+        let listings = Arc::new(
+            RecordingListings::new()
+                .with_open_listing("mtp-fanout:65537")
+                .with_open_listing("mtp-fanout:131073"),
+        );
+        let manager = manager_reporting_to(Arc::clone(&listings));
+
+        manager.refresh_whole_device("mtp-fanout");
+        wait_until_async(Duration::from_secs(2), "the whole-device refresh to report", || {
+            listings.change_count() == 2
+        })
+        .await;
+
+        let reported = listings.changes();
+        let mut volumes: Vec<&str> = reported.iter().map(|(volume_id, ..)| volume_id.as_str()).collect();
+        volumes.sort_unstable();
+        assert_eq!(
+            volumes,
+            ["mtp-fanout:131073", "mtp-fanout:65537"],
+            "each open volume hears once, whatever it has open"
+        );
+        for (volume_id, path, change) in &reported {
+            assert_eq!(
+                path,
+                &PathBuf::from("mtp://mtp-fanout"),
+                "{volume_id} must be refreshed at the DEVICE path, or the host refreshes one directory instead of the volume"
+            );
+            assert!(
+                matches!(change, DirectoryChange::FullRefresh),
+                "the backend has no entries in hand here, so the host does the re-read"
+            );
+        }
+    }
+
+    /// A pane nobody has open costs nothing: no seam call, and no device round
+    /// trip to produce one.
+    #[tokio::test]
+    async fn a_device_with_nothing_on_screen_reports_nothing() {
+        let listings = Arc::new(RecordingListings::new());
+        let manager = manager_reporting_to(Arc::clone(&listings));
+
+        manager.refresh_whole_device("mtp-quiet");
+        // allowed-test-sleep: negative assertion. The refresh spawns, so "it reported nothing" needs
+        // a window for the report that must not arrive; there is no event to wait on
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        assert_eq!(listings.change_count(), 0);
+    }
+
+    /// A directory no pane is showing is not re-read: the oracle miss is the
+    /// answer, and ❌ never a device listing issued on the off chance.
+    #[tokio::test]
+    async fn a_directory_no_pane_shows_is_never_re_read() {
+        let listings = Arc::new(RecordingListings::new().with_open_listing("mtp-unshown:65537"));
+        let manager = manager_reporting_to(Arc::clone(&listings));
+
+        assert!(
+            !manager.refresh_directory("mtp-unshown", 65_537, Path::new("/DCIM")),
+            "an unshown directory must send the caller on to the next storage"
+        );
+        assert_eq!(listings.change_count(), 0);
+    }
+
+    /// A serial-based device id can carry a `:`, and the URL keeps it verbatim:
+    /// the id is opaque, and only `mtp_ids` may take it apart.
+    #[test]
+    fn a_device_id_containing_a_colon_survives_verbatim() {
+        assert_eq!(
+            listing_path_for("mtp-R5CT:123", 65_537, Path::new("/Music")),
+            PathBuf::from("mtp://mtp-R5CT:123/65537/Music"),
+        );
     }
 }

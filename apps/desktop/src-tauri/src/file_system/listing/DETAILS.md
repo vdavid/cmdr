@@ -376,7 +376,7 @@ All `directory-diff` emit paths funnel through `diff_emitter::enqueue_diff(listi
 window. Producers: `caching::notify_added` / `notify_removed` / `notify_modified`; `caching::notify_full_refresh`
 (SMB `STATUS_NOTIFY_ENUM_DIR` re-reads); `watcher::handle_directory_change_incremental`;
 `watcher::handle_directory_change` (full re-read fallback); `commands::file_system::write_ops::emit_synthetic_entry_diff`
-(`create_file` / `create_directory`); `mtp::connection::event_loop::compute_and_emit_diffs`.
+(`create_file` / `create_directory`); `caching::publish_replacement`, which every `Replaced` and `FullRefresh` ends in.
 
 **Why**: a 5k-file bulk delete used to fire one `directory-diff` per file. The frontend handler in `FilePane.svelte`
 runs ~5 IPC calls per event (`getTotalCount`, `refetchColumnWidths`, `fetchEntryUnderCursor`, `fetchListingStats`, plus

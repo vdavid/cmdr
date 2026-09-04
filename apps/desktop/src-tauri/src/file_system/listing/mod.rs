@@ -42,9 +42,9 @@ pub(crate) use caching::{
     increment_sequence, insert_entry_sorted, remove_entries_by_paths, start_orphan_listing_reaper, update_entry_sorted,
 };
 // Notification API for volume mutations
-pub(crate) use operations::{get_listing_entries, update_listing_entries};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub(crate) use operations::{get_listings_by_volume_prefix, volume_ids_with_listings};
+pub(crate) use operations::volume_ids_with_listings;
+pub(crate) use operations::{get_listing_entries, update_listing_entries};
 
 // The app's half of `cmdr-archive`'s live-content watch: what a refresh does to
 // the listing cache, which is this module's side of the seam.

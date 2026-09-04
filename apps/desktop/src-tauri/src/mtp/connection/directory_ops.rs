@@ -762,6 +762,29 @@ impl MtpConnectionManager {
         }
     }
 
+    /// Drops every cached directory listing for ONE device, so the next read of
+    /// any of them goes to the wire.
+    ///
+    /// What the whole-device refresh does before it asks the host to re-read: an
+    /// event that names no directory leaves nothing to invalidate precisely, and
+    /// the 5-second TTL would answer each re-read with the entries the event
+    /// says are out of date.
+    pub(super) async fn clear_listing_caches_for_device(&self, device_id: &str) {
+        use crate::ignore_poison::RwLockIgnorePoison;
+
+        let devices = self.devices.lock().await;
+        if let Some(entry) = devices.get(device_id) {
+            // Recover rather than skip: a poisoned cache left uncleared serves
+            // the stale listing the refresh exists to replace.
+            let mut cache_map = entry.listing_cache.write_ignore_poison();
+            let count: usize = cache_map.values().map(|sc| sc.listings.len()).sum();
+            cache_map.clear();
+            if count > 0 {
+                debug!("Cleared {count} listing cache entries for device {device_id}");
+            }
+        }
+    }
+
     /// Invalidates the listing cache for a specific directory.
     /// Call this after any operation that modifies the directory contents.
     pub(super) async fn invalidate_listing_cache(&self, device_id: &str, storage_id: u32, dir_path: &Path) {

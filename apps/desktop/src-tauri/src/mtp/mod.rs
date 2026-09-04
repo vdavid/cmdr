@@ -76,16 +76,19 @@ pub fn connection_manager() -> &'static std::sync::Arc<connection::MtpConnection
     CONNECTION_MANAGER.get_or_init(|| build_connection_manager(connection::events::no_device_events()))
 }
 
-/// A manager of this app's shape, reporting device lifecycle into `events`.
+/// A manager over this app's real host, reporting into `events` and registering
+/// through `registrar`.
 ///
-/// For a test that asserts on the sequence a user would have seen. It's a
-/// SECOND manager, so hold `virtual_device_test_lock` across its whole
+/// For a test that asserts on what the session layer TOLD its surroundings: the
+/// lifecycle sequence a user would have seen, or how a storage got attached.
+/// It's a SECOND manager, so hold `virtual_device_test_lock` across its whole
 /// connect-use-disconnect span the way every virtual-device test already does.
-#[cfg(test)]
-pub(crate) fn connection_manager_reporting_to(
+#[cfg(all(test, feature = "virtual-mtp"))]
+pub(crate) fn connection_manager_for_test(
     events: std::sync::Arc<dyn connection::events::MtpDeviceEvents>,
+    registrar: connection::MtpVolumeRegistrar,
 ) -> std::sync::Arc<connection::MtpConnectionManager> {
-    build_connection_manager(events)
+    connection::MtpConnectionManager::new(crate::volume_host::host(), events, registrar)
 }
 
 /// The Terminal command that users can run to work around ptpcamerad on macOS.

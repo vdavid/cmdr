@@ -58,7 +58,7 @@ impl Volume for MtpVolume {
 
             let mtp_path = self.to_mtp_path(path);
 
-            let bridge = MtpCancelBridge::open(cancel);
+            let bridge = MtpCancelBridge::open(self.manager.host(), cancel);
             let cancel_ref = bridge.as_ref().map(MtpCancelBridge::token);
 
             debug!(
@@ -111,7 +111,7 @@ impl Volume for MtpVolume {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
-            let bridge = MtpCancelBridge::open(cancel);
+            let bridge = MtpCancelBridge::open(self.manager.host(), cancel);
 
             // The per-unit, foreground-yielding scan listing: never holds the USB
             // pipe across the whole folder, so a background scan can't starve
@@ -221,8 +221,9 @@ impl Volume for MtpVolume {
         mutation: MutationEvent,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         Box::pin(async move {
-            use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+            use cmdr_fs::volume::DirectoryChange;
 
+            let listings = self.manager.host().listings();
             // Normalize once so every branch (incl. get_metadata's parent
             // lookup) sees the canonical absolute MTP URL. Callers happily
             // hand us either form depending on which layer they came from.
@@ -241,7 +242,7 @@ impl Volume for MtpVolume {
                             } else {
                                 DirectoryChange::Modified(entry)
                             };
-                            notify_directory_changed(&self.volume_id, parent_ref, change);
+                            listings.directory_changed(&self.volume_id, parent_ref, change);
                         }
                         Err(e) => {
                             debug!(
@@ -253,13 +254,13 @@ impl Volume for MtpVolume {
                     }
                 }
                 MutationEvent::Deleted(name) => {
-                    notify_directory_changed(&self.volume_id, parent_ref, DirectoryChange::Removed(name));
+                    listings.directory_changed(&self.volume_id, parent_ref, DirectoryChange::Removed(name));
                 }
                 MutationEvent::Renamed { from, to } => {
                     let new_path = parent_ref.join(&to);
                     match self.get_metadata(&new_path).await {
                         Ok(entry) => {
-                            notify_directory_changed(
+                            listings.directory_changed(
                                 &self.volume_id,
                                 parent_ref,
                                 DirectoryChange::Renamed {
@@ -334,7 +335,7 @@ impl Volume for MtpVolume {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
 
-            let bridge = MtpCancelBridge::open(cancel);
+            let bridge = MtpCancelBridge::open(self.manager.host(), cancel);
             let cancel_ref = bridge.as_ref().map(MtpCancelBridge::token);
 
             // `SingleNode`, because `Volume::delete` means one node on every

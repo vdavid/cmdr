@@ -88,9 +88,9 @@ most entangled one, with archive, MTP, and local POSIX checked for anything SMB 
   unique parent directory by SMB's and MTP's batch scans.
 - `refresh_archive_listings` ⇐ `listing::caching::refresh_archive_listings`. Two callers, both watching the drive that
   HOLDS an archive rather than the archive itself: the local archive content watch and the SMB share watcher.
-- `volumes_with_open_listings` ⇐ `listing::get_listings_by_volume_prefix`, reduced to the ids. For a DEVICE backend, one
-  level above the volumes it serves: an MTP phone's event names a bare PTP handle, and resolving it costs a round trip
-  per storage, so the backend asks which storages a pane is showing and searches only those.
+- `volumes_with_open_listings` ⇐ `listing::volume_ids_with_listings`. For a DEVICE backend, one level above the volumes
+  it serves: an MTP phone's event names a bare PTP handle, and resolving it costs a round trip per storage, so the
+  backend asks which storages a pane is showing and searches only those.
 
 **`DirectoryChange::Replaced` is the variant a device backend reports.** It carries the directory's new contents, so the
 host sorts them the way each pane sorts, diffs, and patches. `FullRefresh` asks the host to do the read instead; report

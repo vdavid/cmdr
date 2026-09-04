@@ -213,7 +213,7 @@ mod tests {
 mod device_lifecycle_test {
     use super::{MtpDeviceEvent, RecordingMtpDeviceEvents};
     use crate::mtp::connection::{DeviceWatch, MtpDisconnectReason};
-    use crate::mtp::connection_manager_reporting_to;
+    use crate::mtp::connection_manager_for_test;
     use crate::mtp::virtual_device::{
         setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
@@ -234,7 +234,7 @@ mod device_lifecycle_test {
             .expect("the virtual device must appear in discovery");
 
         let recorder = Arc::new(RecordingMtpDeviceEvents::new());
-        let manager = connection_manager_reporting_to(recorder.clone());
+        let manager = connection_manager_for_test(recorder.clone(), crate::mtp::volume_wiring::volume_registrar());
 
         let info = manager
             .connect(&device_id, DeviceWatch::Off)

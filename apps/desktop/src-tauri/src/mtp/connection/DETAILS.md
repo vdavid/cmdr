@@ -140,14 +140,14 @@ sink it is handed, and `crate::mtp::events` turns them into the `tauri_specta` e
 the code that talks to the device names no `tauri` type, carries no `specta` derive, and writes no English beyond a
 log line.
 
-**Who passes what.** An IPC command already holds the handle its call came in on (`device_events_for`). Background
-work asks `crate::mtp::events::device_events()`, which answers with the hotplug watcher's stored handle or, before
-startup wiring and in every test binary, the detached sink. A test that wants to assert on the sequence passes
-`RecordingMtpDeviceEvents`.
+**Who passes what.** Nobody, per call: the sink is a constructor argument, so every report a manager makes goes to
+the one place its builder chose. The app builds `TauriMtpDeviceEvents` at startup, where it has the handle; a test
+binary that never ran `setup()` gets the detached sink; a test that wants to assert on the sequence builds its own
+manager around `RecordingMtpDeviceEvents` (`crate::mtp::connection_manager_for_test`).
 
 **Where events go and whether to poll are two questions.** The `Option<AppHandle>` this replaced answered both at
-once, so a caller with no window silently also got no device watch. `connect` now takes the sink AND a `DeviceWatch`:
-the app asks for `Live`, and a caller driving the session itself asks for `Off`. That matters against the virtual
+once, so a caller with no window silently also got no device watch. The sink is the manager's, and `connect` takes a
+separate `DeviceWatch`: the app asks for `Live`, and a caller driving the session itself asks for `Off`. That matters against the virtual
 device, which queues a `StorageInfoChanged` for every file that appears in a backing directory: a watched fixture
 invalidates its own cached storage handle, and a cell counting `GetStorageInfo` round trips goes red at random.
 
@@ -317,8 +317,8 @@ counter in `directory_ops.rs` — nothing else observable distinguishes the two 
 
 PTP change events carry only an opaque `ObjectHandle` (a `u32`), never a path: every event on the interrupt endpoint is
 `code + 3×u32`, a property of the wire format, not a Cmdr or mtp-rs gap. `event_loop.rs` turns `ObjectAdded` /
-`ObjectInfoChanged` into a **targeted** refresh of just the affected directory, instead of the old blanket re-list of
-every open pane on the device. `ObjectRemoved` stays blanket (see below).
+`ObjectInfoChanged` into a **targeted** refresh of just the affected directory; `ObjectRemoved` refreshes the whole
+device (see below).
 
 ### The resolver
 
@@ -378,32 +378,43 @@ populated together at the same sites (`finalize_listing`, fed by both `convert_o
 drift. The resolver also caches the resolved leaf `(handle → path)` so a follow-up event under the same folder
 short-circuits on it.
 
-### Targeted refresh and the blanket fallback (`event_loop.rs`)
+### Targeted refresh and the whole-device fallback (`event_loop.rs`)
+
+Both halves report through `ListingHost`, and the backend never diffs: it says WHAT changed and the host sorts each
+pane's way, diffs, and patches. ❌ Never one seam call per entry — one per changed directory, however many entries came
+back (`crates/cmdr-fs/src/volume/host/DETAILS.md` § "The dispatch rule").
 
 `emit_change_for_handle` resolves the handle, derives the **affected directory** (the object's parent — the folder whose
-listing shows it), and re-reads only the listing(s) showing that exact directory on that storage, through the same
-debouncer and diff coalescer as the blanket path. PTP handles are device-wide but storages are separate namespaces, so
-it attempts resolution against each storage that has an open listing and targets the first whose resolved parent matches
-an open listing.
+listing shows it), re-reads it once, and reports the contents as one `DirectoryChange::Replaced`. PTP handles are
+device-wide but storages are separate namespaces and resolving one costs a device round trip per storage, so
+`ListingHost::volumes_with_open_listings(device_id)` narrows the search to the storages a pane is actually showing.
 
-**Blanket fallback — never lose an update.** On any resolution failure (handle invalid, parent uncached and the walk
-fails, timeout) or when no open listing shows the affected dir on any storage, it falls back to
-`emit_directory_changed` (re-read + diff every open listing on the device). This keeps the live pane correct even when
-the resolver can't help — the cost is precision, not correctness.
+**"Is a pane showing this directory?" is the fresh-listing oracle.** `authoritative_listing` answers only for a listing
+a live watch is keeping fresh, which is what a connected MTP device with a running event loop is, so a `Some` means a
+pane is on that exact directory and a miss means there is nothing on screen to patch. The miss also covers the
+device-lock-contended case (`MtpVolume::listing_watch_coverage` reads `try_lock` and answers `None` when contended), and
+the caller's fallback below keeps the update either way. The path compared is the canonical pane URL
+(`mtp://{device}/{storage}[/inner]`, built by `listing_path_for` and matching `MtpVolume::to_url_path`), because that is
+what navigation feeds into the listing pipeline and therefore the ONE representation a seam lookup matches on.
 
-**`ObjectRemoved` is always blanket** for the live pane: the object is already gone, so `GetObjectInfo(handle)` fails and
-the resolver can't recover a path. The index path resolves removals via the handle stored per index entry instead
-(`inode` column; see below).
+**Whole-device fallback — never lose an update.** On any resolution failure (handle invalid, parent uncached and the
+walk fails, timeout) or when no pane shows the affected dir on any storage, `refresh_whole_device` reports one
+`DirectoryChange::FullRefresh` per open volume, at the **device** path (`mtp://{device}`) rather than at a directory. No
+listing sits above a storage root, and a `FullRefresh` whose path matches no listing is what asks the host to fan the
+re-read out to every listing on that volume (`file_system/listing/DETAILS.md` § "Change notification API"). ❌ Aiming it
+at a storage root instead would refresh a pane showing that root and silently miss its sibling two directories down.
+The device's own 5-second `ListingCache` is cleared first (`clear_listing_caches_for_device`), or the host's re-read
+through `Volume::list_directory` is answered with exactly the entries the event says are out of date.
 
-`listing_inner_mtp_path` reduces a listing's stored path (`mtp://<device>/<storage>/<inner…>` or a `/`-rooted inner
-path) to the leading-`/` inner form the resolver produces, so the affected-dir match compares apples to apples in both
-representations. Pinned by the `event_loop` tests.
+**`ObjectRemoved` always takes the whole-device path** for the live pane: the object is already gone, so
+`GetObjectInfo(handle)` fails and the resolver can't recover a path. The index resolves removals via the handle stored
+per index entry instead (`inode` column; see below).
 
 ### Trailing emits must be claimed
 
 **Decision**: a suppressed event schedules its trailing re-emit only if it wins `EventDebouncer::claim_trailing`, and
 the woken task releases the claim before re-emitting. **Why**: without the claim, each suppressed event spawned its own
-sleeping task that re-entered `emit_directory_changed`, where all but one were suppressed again and each spawned
+sleeping task that re-entered `refresh_whole_device`, where all but one were suppressed again and each spawned
 another. The population then retires ONE event per debounce window instead of collapsing, so a burst of N device
 changes keeps a core busy for N × 500 ms while foreground listings go unserved. Reproduced with a 48k-object burst on
 the virtual device: 100% CPU, MTP pane listings unserved, no recovery. A 1,000-file copy onto a phone projects to ~9
@@ -417,12 +428,14 @@ an event arriving during the re-emit still claims the following window.
 ### Feeding the per-volume index (the second consumer)
 
 Each handle event also feeds the persisted index, so dir sizes stay correct while the device is Fresh even with no pane
-open — alongside the live-pane refresh above, not instead of it. `feed_index_added_or_changed` runs as a spawned task
-(it does USB I/O): for each indexed storage on the device (`indexing::registered_mtp_volume_ids_for_device`), it calls
+open — alongside the live-pane refresh above, not instead of it. Both go out through `IndexNotifier`
+(`device_object_changed` / `device_object_removed`), which carries the bare PTP handle keyed by DEVICE, because one
+session spans every storage and resolving the handle first would be a round trip per event on a walk that may be about
+to read the object anyway. The app's `index_host::VolumeIndexNotifier` forwards to the index handle, where the work
+happens: for each indexed storage on the device (`indexing::registered_mtp_volume_ids_for_device`), it calls
 `resolve_object_for_index` (the handle→path walk plus one `GetObjectInfo` for size / is-dir / modified) and forwards an
 `indexing::MtpUpsert` carrying the handle; the first storage where the handle resolves wins (the object lives in exactly
-one). `feed_index_removed` is synchronous (DB + writer enqueue only, no USB): it forwards the bare handle to each indexed
-storage, and the one that indexed the object resolves it by the STORED handle. The translation, ordering, and
+one). A removal costs no round trip at all: the object is gone, so each indexed storage matches on the handle it stored. The translation, ordering, and
 buffer-during-scan logic live in `indexing/transports/mtp/watch.rs` (see `indexing/DETAILS.md` § "MTP indexing"); the event loop
 only resolves + forwards. The handle is stored in the index `inode` column at scan time too (`directory_ops.rs`).
 

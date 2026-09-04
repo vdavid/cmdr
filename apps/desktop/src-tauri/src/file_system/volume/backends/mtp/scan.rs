@@ -14,7 +14,6 @@ use cmdr_fs::volume::scan_walk::conflicts_against;
 use cmdr_fs::volume::{ScanBoundary, ScanStop};
 
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::try_get_authoritative_listing;
 use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -64,7 +63,7 @@ impl MtpVolume {
     ///    path is the load-bearing optimization: selecting 135 photos in `/DCIM/Camera` should
     ///    produce ONE `list_directory` call, not 135 `get_metadata` calls each of which lists the
     ///    parent).
-    /// 2. For each unique parent, ask `try_get_authoritative_listing(volume_id, parent)` first. On hit,
+    /// 2. For each unique parent, ask `ListingHost::authoritative_listing(volume_id, parent)` first. On hit,
     ///    every child entry's size + `is_directory` comes from the cached `FileEntry`, no MTP I/O.
     ///    On miss, fall through to the existing single `list_directory(parent)` per group.
     ///
@@ -163,7 +162,11 @@ impl MtpVolume {
                 // freshness contract for MTP is volume-level: when this
                 // returns `Some`, the device is connected and would forward
                 // any change events it sends.
-                let cached = try_get_authoritative_listing(&self.volume_id, &group.original_parent);
+                let cached = self
+                    .manager
+                    .host()
+                    .listings()
+                    .authoritative_listing(&self.volume_id, &group.original_parent);
 
                 // List the parent directory once on cold cache (goes through
                 // the listing cache). The MTP listing is what dominates

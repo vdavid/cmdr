@@ -20,7 +20,6 @@
     "apps/desktop/src-tauri/src/file_viewer/line_index.rs": 19,
     "apps/desktop/src-tauri/src/logging/dispatch.rs": 18,
     "apps/desktop/src-tauri/src/menu/linux.rs ↔ apps/desktop/src-tauri/src/menu/macos.rs": 49,
-    "apps/desktop/src-tauri/src/mtp/connection/directory_ops.rs": 27,
     "apps/desktop/src-tauri/src/native_drag/fulfillment.rs": 36,
     "apps/desktop/src-tauri/src/network/smb_smbclient.rs ↔ apps/desktop/src-tauri/src/network/smb_smbutil.rs": 21,
     "apps/desktop/src-tauri/src/secrets/encrypted_file.rs ↔ apps/desktop/src-tauri/src/secrets/plain_file.rs": 39,

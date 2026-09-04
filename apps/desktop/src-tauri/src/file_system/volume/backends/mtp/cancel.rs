@@ -1,6 +1,7 @@
 //! Bridging Cmdr's cancellation into the poll-based token mtp-rs expects, for
 //! the duration of one call.
 
+use cmdr_fs::volume::host::VolumeHost;
 use tokio_util::sync::CancellationToken;
 
 /// Bridges Cmdr's `CancellationToken` to mtp-rs's poll-based `CancelToken` for
@@ -21,7 +22,7 @@ pub(super) struct MtpCancelBridge {
 }
 
 impl MtpCancelBridge {
-    pub(super) fn open(cancel: Option<&CancellationToken>) -> Option<Self> {
+    pub(super) fn open(host: &VolumeHost, cancel: Option<&CancellationToken>) -> Option<Self> {
         let cancel = cancel?;
         let token = mtp_rs::CancelToken::new();
         // A CHILD token, so dropping the bridge retires the mirror task without
@@ -29,7 +30,7 @@ impl MtpCancelBridge {
         let scoped = cancel.child_token();
         let watch = scoped.clone();
         let mirror = token.clone();
-        tokio::spawn(async move {
+        host.runtime().spawn(async move {
             watch.cancelled().await;
             mirror.cancel();
         });
