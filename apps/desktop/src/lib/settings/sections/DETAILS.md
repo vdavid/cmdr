@@ -99,8 +99,7 @@ sections compose).
     installed. The `.status-card`, install/`.actions` buttons, and the delete dialog stay OUTSIDE any card on purpose
     (already visually distinct full-bleed blocks). **The window starts at 32,768**: below that an Ask Cmdr turn can't
     fit its own prefix plus a paged tool result, so smaller sizes are absent from the picker and a stored one resolves
-    to the 32,768 default
-    (`agent/chat/DETAILS.md` § A local window too small to use).
+    to the 32,768 default (`agent/chat/DETAILS.md` § A local window too small to use).
 - **`DeleteAiModelDialog.svelte`**: the "Delete the local AI model?" confirmation `AiLocalSection` opens
   (`dialogId: 'delete-ai-model'`, `role="alertdialog"`). Props are `modelSizeFormatted` / `isDeleting` / `onConfirm` /
   `onCancel`; the section owns the flags and the `uninstallAi()` call, so the dialog performs nothing itself. While

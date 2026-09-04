@@ -1251,7 +1251,7 @@
     "advanced.virtualizationBufferColumns": 2,
     "advanced.virtualizationBufferRows": 20,
     "ai.cloudProvider": "openai",
-    "ai.localContextSize": "16384",
+    "ai.localContextSize": "32768",
     "ai.provider": "off",
     "analytics.enabled": true,
     "appearance.appColor": "system",
