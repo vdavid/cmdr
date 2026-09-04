@@ -218,7 +218,7 @@ every other lane. It can't deadlock: a check takes at most one resource and hold
 finish.
 
 The one resource today is `ResourceCargoBuildDir`, held by every lane that COMPILES against the shared `target/`
-(`clippy`, `rust-tests`, `integration-tests`, `bindings-fresh`, `cargo-udeps`, `groq-smoke`). Cargo takes an exclusive
+(`clippy`, `rust-tests`, `integration-tests`, `bindings-fresh`, `cargo-udeps`, the `<provider>-smoke` lanes). Cargo takes an exclusive
 lock on its build directory for a whole command, so those lanes were always serial; undeclared, the loser sat on
 `Blocking waiting for file lock on build directory` while still holding 6-8 weight, so a quiet run looked hung and the
 reserved cores went unused. Declaring it costs no wall clock and hands that weight back. Metadata-only commands
@@ -236,8 +236,8 @@ decisions below). Named check invocations bypass the filter so `pnpm check --fas
 Mutually exclusive with `--include-slow` / `--only-slow` — combining them errors out, since the lanes are intentionally
 separate.
 
-**CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently `cargo-udeps`, `jscpd-rust`, and
-`groq-smoke`). They're silently dropped from local runs (no SKIPPED line) and are not pulled in by `--include-slow` or
+**CI-only checks:** `CIOnly: true` marks checks that run only in `--ci` mode (currently `cargo-udeps`, `jscpd-rust`,
+and the four real-API `<provider>-smoke` lanes). They're silently dropped from local runs (no SKIPPED line) and are not pulled in by `--include-slow` or
 `--only-slow`. Escape hatch: an explicit `pnpm check cargo-udeps` always runs, so you can verify locally before pushing.
 
 **Self-contained E2E checks:** `desktop-e2e-playwright` manages the full lifecycle (build the binary, create per-shard

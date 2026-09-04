@@ -64,7 +64,7 @@ CheckDefinition{
   cold one.
 - **`CIOnly: true`** runs the check only under `--ci` (or when named explicitly). Two uses: the slow-but-authoritative
   variant of a check whose fast local variant lives elsewhere (`cargo-udeps` paired with `cargo-machete`), and a check
-  whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, `groq-smoke`).
+  whose cost per catch doesn't justify a place in the local loop (`jscpd-rust`, the four `<provider>-smoke` lanes).
 - **`DependsOn`** is a flat slice of IDs. Formatters before linters, linters before tests, type checkers before tests.
   Blocked checks (dep failed) get `StatusBlocked` automatically.
 - **`CpuWeight`** is the average number of CPU cores the check keeps busy while running (cold/working profile, rounded).
@@ -840,7 +840,7 @@ resolves dependency features for one package instead of the workspace and rebuil
 s. Full runs: `docs/notes/cargo-lane-feature-thrash.md`.
 
 So **`HostCargoLaneArgs` (`cargo-workspace.go`) is the one answer**, and every host lane that compiles builds its
-command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, `desktop-rust-groq-smoke`, and (spelled
+command line from it: `desktop-rust-tests`, `desktop-rust-integration-tests`, the four `desktop-rust-<provider>-smoke` lanes, and (spelled
 out by hand, see below) `pnpm bindings:regen`. It returns the workspace selection plus `SharedTargetFeatureArgs()` =
 `--features cmdr/virtual-mtp`. A lane that needs a genuinely different feature set needs its own `CARGO_TARGET_DIR`, not
 its own flags.
@@ -1253,8 +1253,8 @@ It asserts three things:
   (walks source trees; coverage comes from the declared kinds), or `rustMetaChecks` (reasons about the workspace rather
   than compiling or scanning it). Adding a Rust check without classifying it fails, which is the shape of "someone added
   a scanner and hardcoded a path inside it". Each cargo lane records HOW it reaches the workspace, so a targeted
-  invocation can't pass for a sweep — `desktop-rust-groq-smoke` runs one `--lib` test against a live endpoint and says
-  so.
+  invocation can't pass for a sweep — `desktop-rust-groq-smoke` runs one `--lib` test module against a live endpoint
+  and says so.
 - **No stale or empty classification**: an entry naming a check that no longer exists fails, the same way `ci-coverage`
   refuses to let an excuse outlive its check. So does a jurisdiction that declares neither member kinds nor
   `AppTreeOnly` — that one makes `ScannerRoots` hand back no roots, and a scanner with no roots scans nothing and
@@ -1742,14 +1742,27 @@ lists serde but only a transitive dep actually uses it). machete's blind spot is
 or build.rs codegen; opt those out via `[package.metadata.cargo-machete] ignored = ["foo"]` in the relevant Cargo.toml.
 Local dev gets instant feedback from machete; CI runs udeps for the long-tail check.
 
-**Decision**: `jscpd-rust` and `groq-smoke` are CI-only. **Why**: Cost per catch. Measured over 24 days of
-`~/cmdr-check-log.csv`, jscpd burned 20 122 CPU-seconds across 837 local runs for one real finding, by a wide margin the
-worst ratio in the suite; copy-paste detection is a periodic sweep, and a duplicate that lands on Monday is just as
-findable on Friday. groq-smoke burned 9 211 CPU-seconds across 106 runs (70 s median) for four, and what it validates is
-a third-party provider's live contract rather than our code, so it can only ever go red on Groq's schedule. Both keep
-their existing CI steps, so neither stops being enforced. groq-smoke keeps `IsSlow` alongside `CIOnly`: that's what
-holds it out of CI's default lane, leaving its one dedicated step in the nightly slow-checks workflow as the only place
-it runs.
+**Decision**: `jscpd-rust` and the `<provider>-smoke` lanes are CI-only. **Why**: Cost per catch. Measured over 24 days
+of `~/cmdr-check-log.csv`, jscpd burned 20 122 CPU-seconds across 837 local runs for one real finding, by a wide margin
+the worst ratio in the suite; copy-paste detection is a periodic sweep, and a duplicate that lands on Monday is just as
+findable on Friday. groq-smoke burned 9 211 CPU-seconds across 106 runs (70 s median) for four, and what a smoke
+validates is a third-party provider's live contract rather than our code, so it can only ever go red on that provider's
+schedule. All keep their CI steps, so none stops being enforced. The smokes keep `IsSlow` alongside `CIOnly`: that's
+what holds them out of CI's default lane, leaving their dedicated steps in the nightly slow-checks workflow as the only
+place they run.
+
+**Decision**: one smoke lane per provider whose key we hold, not one for the cheapest. **Why**: a single-provider lane
+only ever notices that provider's schedule. Groq retired `llama-3.1-8b-instant` on 2026-08-16 and `groq-smoke` caught
+it; the Anthropic test had meanwhile been pinned to a model retired six months earlier and nothing said a word, because
+no lane ran it. Four lanes now (`groq`, `fireworks`, `anthropic`, `openai`), sharing `runProviderSmoke` in
+`desktop-rust-provider-smoke.go` so a fifth is a descriptor rather than a file. Which providers can have one is a
+question about keys, not about code: OpenRouter has no lane (no credit on the key, its free pool 429s upstream, and its
+`openai::` path is already covered by Groq and Fireworks), and Gemini — the one uncovered ADAPTER — has no key at all.
+
+**Gotcha**: a lane self-skips without its key, and a skip is a green step. `GROQ_API_KEY` was never added to the repo
+secrets, so the nightly Groq step reported SKIPPED for months while reading as coverage; the decommission was caught by
+a local `pnpm check groq-smoke`, not by CI. Adding a lane is half the job, adding its secret is the other half. Both
+`desktop-rust-provider-smoke.go` and `slow-checks.yml` say so where someone adding one will read it.
 
 **Decision**: E2E failure output uses section-aware filtering, not a pattern denylist. **Why**: The checker's contract
 with agents is that output is concise enough to read in full: no `head`/`tail`/`grep` needed. Raw Playwright + Tauri +

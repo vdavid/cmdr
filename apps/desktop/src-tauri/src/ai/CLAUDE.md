@@ -1,61 +1,54 @@
 # AI subsystem
 
-AI features powered by local LLM (llama-server) or remote LLM providers. Used for folder name suggestions and
-natural-language search. Three provider modes: Off, Cloud AI (BYOK, any OpenAI-compatible endpoint), and Local LLM
-(on-device llama-server, Apple Silicon only). `ai.provider` is the single source of truth for whether AI is on.
+AI for folder-name suggestions and natural-language search, over a local LLM or a remote provider. Three modes: Off,
+Cloud AI (BYOK, any OpenAI-compatible endpoint), and Local LLM (on-device llama-server, Apple Silicon only).
+`ai.provider` is the single source of truth for whether AI is on.
 
 Frontend counterpart: `apps/desktop/src/lib/ai/CLAUDE.md`.
 
 ## Module map
 
-Local-AI lifecycle, split by concern around one shared singleton (depth in DETAILS.md):
+The local-AI lifecycle is split by concern around ONE shared singleton: `state.rs` owns the
+`Mutex<Option<ManagerState>>` and `ai-state.json`, and `manager.rs` (facade), `install.rs`, `server.rs`,
+`connection_check.rs`, and `stream_registry.rs` borrow through its `MANAGER` lock — don't add a second copy of that
+state. `download.rs` / `extract.rs` / `process.rs` are its stateless leaves.
 
-- `state.rs`: owns the `Mutex<Option<ManagerState>>` singleton + `ai-state.json` persistence + derived install/model
-  facts. Others borrow `&mut ManagerState` through its `MANAGER` lock; don't add a second copy of this state.
-- `manager.rs`: thin facade — cross-cutting commands (`init`/`shutdown`, status, `configure_ai`) + `resolve_backend()`.
-- `install.rs`: model download + verify + first-launch install, cancel, uninstall.
-- `server.rs`: llama-server process orchestration over the stateless syscalls in `process.rs`.
-- `connection_check.rs`: cloud-endpoint probe + the `validate_ai_base_url` key-safety gate.
-- `stream_registry.rs`: the `STREAM_CANCEL_TOKENS` registry, kept off `ManagerState` on purpose.
-- `client.rs`: `genai`-backed chat client (`AiBackend`); model name picks the provider adapter.
-- `download.rs` / `extract.rs` / `process.rs`: stateless leaves (HTTP download, extraction, llama-server syscalls).
-- `suggestions.rs`: folder-name prompt + streaming sanitizer. `api_keys.rs`: per-provider key storage.
-  `translate_error.rs`: typed error for the two translate commands.
-- `llm_log/`: on-disk log of every LLM request/response, tapped in `client.rs`. See `llm_log/CLAUDE.md`.
+Cloud-side: `client.rs` is the `genai` chat client (`AiBackend`), tapped for logging into `llm_log/CLAUDE.md`;
+`api_keys.rs`, `suggestions.rs`, `translate_error.rs`, and the test-only `smoke_providers.rs` sit beside it. Per-file
+detail: DETAILS.md.
 
 ## Must-knows
 
-- **Only local AI requires Apple Silicon.** Cloud AI (BYOK) works on Intel too. Gate only local-specific paths
-  (`start_ai_server`, `start_ai_download`, the `Offer` branch of `compute_ai_status`) on `is_local_ai_supported()`, never
-  the whole subsystem. Gating `Offer` wrong shows Intel users a download toast for a model they can't run.
+- **Only local AI requires Apple Silicon.** Cloud AI (BYOK) works on Intel too, so gate only local-specific paths
+  (`start_ai_server`, `start_ai_download`, `compute_ai_status`'s `Offer` branch) on `is_local_ai_supported()`. Gating
+  `Offer` wrong offers Intel users a model they can't run.
 - **Unrecognized model names fall onto OpenAI chat-completions, never Ollama.** `remote_model_iden` forces everything
   that isn't `claude-*` / `gemini-*` onto `openai::`; `genai`'s own default is its Ollama adapter, which 404s against an
   OpenAI endpoint.
 - **A stored API key never crosses IPC to a webview.** `configure_ai` / `check_ai_connection` take a PROVIDER ID and
-  read it in the backend; `get_ai_api_key_status` returns is-set + a fingerprint. ❌ Never add a key-returning command
-  or key param back. `docs/security.md` § "AI API keys".
-- **Don't relax the `http://` base-URL gate.** `validate_ai_base_url` rejects plaintext `http://` to a non-loopback host
-  when an API key is set, blocking key exfil to a malicious "free proxy". Loopback keeps `http://` (Ollama/LM Studio);
-  empty key is allowed. The rejection is the gate, not a warning.
+  read it backend-side; `get_ai_api_key_status` returns is-set + a fingerprint. ❌ Never add a key-returning command or
+  key param back. `docs/security.md` § "AI API keys".
+- **Don't relax the `http://` base-URL gate.** `validate_ai_base_url` rejects plaintext `http://` to a non-loopback
+  host when a key is set, blocking exfil to a malicious "free proxy". Loopback keeps `http://` (Ollama/LM Studio), and
+  an empty key is allowed. The rejection IS the gate, not a warning.
+- **A model id lives in `smoke_providers.rs` only.** Groq's 2026-08 retirement cost three edits because the id sat in a
+  doc comment and a unit assertion too. Refresh pins there; the header has the recipe (ask the live model list).
+- **Classify a provider failure by HTTP status, never its sentence.** `map_genai_error` must reach
+  `ai_error_for_status` from BOTH `genai` shapes: `Web{Adapter,Model}Call`, AND the `WebStream` wrapping a boxed
+  `HttpError`. Missing the stream one degrades every streaming failure to `ServerError` — the agent's own path.
 - **`genai` needs `base_url` ending in `/`.** Without it, `Url::join("chat/completions")` strips the last segment and you
   hit a 404. `build_client` appends `/` if missing.
 - **Process spawn + `child_pid` assignment must be synchronous inside the MANAGER lock** (`spawn_and_track_server`):
-  spawning in an async task orphans llama-servers on rapid provider switching. `wait_for_server_health` (async) follows
-  and kills the process on timeout or early death; don't remove that cleanup.
-- **Two install flags both required**: `AiState.installed` AND `AiState.model_download_complete`. The second is set only
+  an async spawn orphans llama-servers on rapid provider switching. Keep `wait_for_server_health`'s cleanup, which
+  stops the process on timeout or early death.
+- **Two install flags both required**: `AiState.installed` AND `AiState.model_download_complete`, the second set only
   after file-size verification, so a truncated 2 GB download never launches llama-server.
-- **`configure_ai` must NOT block** (only the health check runs async via `tauri::async_runtime::spawn`); blocking
-  freezes the frontend on startup. Use `tauri::async_runtime::spawn` (not `tokio::spawn`) in `configure_ai` /
-  `start_ai_server`: they may run before the tokio runtime is ready.
+- **`configure_ai` must NOT block**; blocking freezes the frontend on startup. Its health check, and
+  `start_ai_server`, use `tauri::async_runtime::spawn` (not `tokio::spawn`): both may run before tokio is ready.
 - **Cancellation needs the explicit `cancel_folder_suggestions` command** + `CancellationToken`, never `Channel::send`
-  failure: `send` succeeds silently after the JS handler is GC'd, so the backend keeps streaming (billing cloud, pegging
-  local compute) after dialog close.
+  failure: `send` succeeds silently after the JS handler is GC'd, so the backend streams on (billing cloud, pegging
+  local compute) past dialog close.
 - **`get_folder_suggestions` returns `Ok(Vec::new())` on AI errors**, not `Err` (folder suggestions are nice-to-have).
-
-## Adding a new model
-
-Add the GGUF to `AVAILABLE_MODELS` in `mod.rs` (with `kv_bytes_per_token` + `base_overhead_bytes`), and set
-`DEFAULT_MODEL_ID` if it should be the default.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.
