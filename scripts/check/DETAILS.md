@@ -39,7 +39,9 @@ Positional args select what to run: check IDs/nicknames, app names (`desktop`, `
 tech groups (`rust`, `svelte`, `go`), in any mix, space- or comma-separated, with flags anywhere in between
 (`parseInterspersed` re-parses around positionals since Go's stdlib `flag` stops at the first one). Named checks run
 even if slow or CI-only; app/group selectors keep the default lanes. `ValidateCheckNames` rejects any check ID or
-nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main.go`).
+nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main.go`). A selector that matches nothing
+prints `unknown check or group`, names the accepted spellings closest to it, and exits 1, leaving a row behind for the
+naming review (§ "The unrecognized-name log").
 
 - **`--app NAME`**: Run checks for specific apps (repeatable or comma-separated)
 - **`--rust`, `--rust-only`**: Run only Rust checks (desktop)
@@ -52,7 +54,7 @@ nickname that would shadow a group/app keyword (`reservedSelectorNames` in `main
 - **`--fast`**: Run only the curated fast pre-commit check set
 - **`--fresh`**: Bypass the input-fingerprint cache: run everything selected, then refresh it
 - **`--fail-fast`**: Stop on first failure
-- **`--no-log`**: Disable CSV stats logging
+- **`--no-log`**: Disable the CSV logs (all three of them)
 - **`--graph`**: Render the check dependency graph (weights + lanes + median wall-time) and exit
 - **`--graph-format`**: Graph output: `tree` (default, colored terminal), `mermaid`, `dot`
 - **`--docs-graph`**: Render the doc-discoverability tree (rooted at the repo-root `CLAUDE.md`) with per-doc usage, and
@@ -154,6 +156,9 @@ pnpm check [flags]
   stats CSV (tree / mermaid / dot)
 - **`stats.go`**: CSV stats logging: one row per check to `~/cmdr-check-log.csv` (`logCheckStats`), plus one row per
   individual test to `~/cmdr-test-log.csv` (`logTestStats`, § "The per-test log")
+- **`unknown_selector_log.go`**: the third CSV, one row per selector the runner didn't recognize
+  (`~/cmdr-unknown-check-log.csv`), plus the nearest-name guess it shares with the error message (§ "The
+  unrecognized-name log")
 - **`checks/test-log.go`**: the per-test vocabulary (`TestRecord`, `TestOutcome`, `TestRecorder`) every test lane
   records through
 - **`plan.go`**: Input-fingerprint cache planning: splits selected checks into cache hits and misses BEFORE pnpm/SMB;
@@ -377,6 +382,46 @@ A failure RATE needs the run count as its denominator, which lives in the other 
 `docs/notes/e2e-flake-remeasured-2026-08-14.md`: it's the worked version of exactly that query, and it names the three
 traps (a run-level rate is dominated by the suite's width rather than by any test, the macOS lane's zero-retry config
 makes its rate incomparable to Linux's, and a few days of runs can't distinguish 41% from 59%).
+
+## The unrecognized-name log
+
+`~/cmdr-unknown-check-log.csv` records every invocation the runner rejected with `unknown check or group`, one row per
+unrecognized name. The rows are evidence for a NAMING review: a name someone reached for and didn't get is the cheapest
+available signal that a check is called something other than what people call it. Collect for about a month, look for
+patterns, then rename or regroup whatever keeps getting missed. The run itself behaves as it always has, printing the
+error and exiting 1.
+
+**Schema** (`timestamp,unknown,args,did_you_mean`):
+
+- `timestamp`: `YYYY-MM-DD HH:MM:SS`, the same shape as the other two logs, and identical across the rows of one
+  invocation.
+- `unknown`: the rejected token verbatim, case preserved; only the surrounding whitespace the comma splitter strips is
+  gone.
+- `args`: the whole argument list as typed, space-joined. What someone got RIGHT is half the signal: `clipy --fast` says
+  the flags landed and only the name missed.
+- `did_you_mean`: the runner's guess, space-separated, up to three names, closest first. Empty when nothing was close,
+  which is itself a finding (a name from a wholly different vocabulary).
+
+**How the guess works** (`suggestSelectors` in `unknown_selector_log.go`): Levenshtein distance against every accepted
+positional name (each check's ID and nickname, plus the app and tech-group keywords in `reservedSelectorNames`), inside
+a budget of `len/2` edits clamped to 1..3, so three edits from a four-character token doesn't count as a typo. A typed
+name that's a FRAGMENT of an accepted one ranks as a near-miss whatever its distance, which is the shape most misses
+take (`rust-test` for `rust-tests`, `e2e` for `desktop-e2e-playwright`). Ties break toward the shorter name. The same
+guess goes into the user-facing error as a `Did you mean …?` line.
+
+**Third file, never merged into the other two**, for the reason § "The per-test log" gives: a field-count change
+destroys a long CSV history in place, and "one rejected name" is its own data model anyway.
+
+**Disabled by `--no-log` and `--ci`**, like both other logs. `parseFlags` returns no `cliFlags` on its error path, so
+the flag rides along on the `unknownSelectorError` itself; `main` (not `parseFlags`) does the write, keeping the parser
+free of side effects and keeping `go test` out of the real log. A write failure is silent, always.
+
+Which names people reach for and don't get:
+
+```sh
+sqlite3 -column -header :memory: '.import --csv ~/cmdr-unknown-check-log.csv u' \
+  "select unknown, did_you_mean, count(*) as misses from u group by 1,2 order by 3 desc"
+```
 
 ## Input fingerprint cache
 
