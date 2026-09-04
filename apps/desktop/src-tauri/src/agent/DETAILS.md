@@ -88,7 +88,7 @@ fresh one (`tools/propose/DETAILS.md`).
 **What a `Propose` tool may do.** Stage a proposal and open a review surface. That is its entire power: no filesystem
 write, no silent config mutation, no self-approval. Because no structural check can prove a handler doesn't mutate,
 `Propose` tools are an explicit hand-authored allowlist (`EXPECTED_PROPOSE_TOOL_NAMES` in
-`mcp/tests/tool_registry_tests.rs`) rather than something inferred — adding one is a deliberate act a human signs off,
+`mcp/tests/tool_registry_tests/access.rs`) rather than something inferred — adding one is a deliberate act a human signs off,
 having read the handler. It holds two names: `propose_rename_plan` and `propose_suggestions`.
 
 **Consent is unaffected.** Proposals flow agent → user, never to the provider. `Propose` adds no egress, so the
