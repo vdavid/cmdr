@@ -274,11 +274,19 @@ fn the_pairing_maps_both_sides_field_by_field() {
     let conflicts = conflicts_against(&source, &dest);
 
     let names: Vec<&str> = conflicts.iter().map(|c| c.source_path.as_str()).collect();
-    assert_eq!(names, ["report.txt", "Photos"], "unmatched names are silent, order follows the sources");
+    assert_eq!(
+        names,
+        ["report.txt", "Photos"],
+        "unmatched names are silent, order follows the sources"
+    );
 
     let file = &conflicts[0];
     assert_eq!(file.dest_path, "/dest/report.txt");
-    assert_eq!((file.source_size, file.dest_size), (7, 0), "an unreported destination size is zero");
+    assert_eq!(
+        (file.source_size, file.dest_size),
+        (7, 0),
+        "an unreported destination size is zero"
+    );
     assert_eq!(
         (file.source_modified, file.dest_modified),
         (Some(1_700_000_000), Some(1_600_000_000)),

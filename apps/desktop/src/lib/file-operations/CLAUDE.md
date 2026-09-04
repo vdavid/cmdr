@@ -11,8 +11,7 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
 - Umbrella-level files (what each is: DETAILS § File map): `TransferProgressReadout.svelte`, `scan-throughput.ts`,
   `foreground-operation.svelte.ts`, `foreground-request.ts`, `operation-conflict.svelte.ts`, `settled-operations.ts`,
   `op-kind.ts`, `mutation-error.ts` + `mutation-error-messages.ts` (the mutation-refusal path), plus
-  `NewEntryNameField.svelte` + `new-entry-name-check.svelte.ts` and `cursor-entry.ts` (shared by `mkdir/` +
-  `mkfile/`).
+  `NewEntryNameField.svelte` + `new-entry-name-check.svelte.ts` and `cursor-entry.ts` (shared by `mkdir/` + `mkfile/`).
 
 ## Must-knows
 
