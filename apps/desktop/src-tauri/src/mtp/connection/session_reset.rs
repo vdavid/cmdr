@@ -149,7 +149,6 @@ impl MtpConnectionManager {
                         attempt + 1,
                         info.storages.len()
                     );
-                    crate::volume_broadcast::emit_volumes_changed();
                     return;
                 }
                 // The device really is gone (unplugged while recovering), so this

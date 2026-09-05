@@ -495,9 +495,6 @@ impl MtpConnectionManager {
         // to keep true.
         self.host.analytics().record("mtp_connected", &[]);
 
-        // Broadcast updated volume list (includes new MTP volumes)
-        crate::volume_broadcast::emit_volumes_changed();
-
         info!(
             "MTP device connected: {} ({} storages)",
             device_id,
@@ -547,9 +544,6 @@ impl MtpConnectionManager {
             device_id: device_id.to_string(),
             reason,
         });
-
-        // Broadcast updated volume list (MTP volume removed)
-        crate::volume_broadcast::emit_volumes_changed();
 
         info!("MTP device disconnected: {}", device_id);
         Ok(())
@@ -727,9 +721,6 @@ impl MtpConnectionManager {
             device_name: String::new(),
             storages: vec![storage_info],
         });
-
-        // Broadcast volume list change
-        crate::volume_broadcast::emit_volumes_changed();
     }
 
     /// Drops the cached `mtp_rs::Storage` handle(s) for a device so the next
@@ -834,9 +825,6 @@ impl MtpConnectionManager {
             device_id: device_id.to_string(),
             storage_id,
         });
-
-        // Broadcast volume list change
-        crate::volume_broadcast::emit_volumes_changed();
     }
 
     /// Queries live storage space from the device and updates the cache.

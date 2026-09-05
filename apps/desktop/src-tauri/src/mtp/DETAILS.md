@@ -149,31 +149,37 @@ USB plug-in
     → MtpConnectionManager::connect()
     → open_device() via MtpDeviceBuilder
     → probe_write_capability() per storage
-    → attach_storage_volume() per storage (the registrar hook; see below)
+    → attach_storage_volume() per storage (the registrar hook; see below, and it broadcasts volumes-changed)
     → start_event_loop() per device (strictly AFTER every attach)
     → emit mtp-device-connected (JSON includes `deviceName` from `connected_info.device.product`, "" if unknown)
-    → broadcast::emit_volumes_changed()
 
 USB unplug
   → mtp_rs HotplugEvent::Left (watcher.rs)
   → auto_disconnect_device() (watcher.rs)
     → MtpConnectionManager::disconnect()
+    → detach_storage_volume() per storage (broadcasts volumes-changed)
     → emit mtp-device-disconnected
-    → broadcast::emit_volumes_changed()
 
 Event loop (event_loop.rs)
   → device.next_event()
   → ObjectAdded/Removed/Changed → compute_diff() → emit directory-diff
-  → StoreAdded → handle_storage_added() → attach_storage_volume() → emit volumes-changed
-  → StoreRemoved → handle_storage_removed() → detach_storage_volume() → emit volumes-changed
+  → StoreAdded → handle_storage_added() → attach_storage_volume()
+  → StoreRemoved → handle_storage_removed() → detach_storage_volume()
   → Error::Disconnected → handle_device_disconnected() → detach_storage_volume() per storage
-    → emit mtp-device-disconnected → emit volumes-changed
+    → emit mtp-device-disconnected
 ```
 
 The last arrow is the OTHER way a device leaves, and it does the same cleanup as `disconnect()`. Which of the two
 noticed the unplug is a race (the event loop's poll, or the hotplug diff) and must not change what the app is left
 holding: a volume that survived would answer for hardware that isn't there and never publish the `Retirement` that
 tells in-flight background work it stopped being live.
+
+**The `volumes-changed` broadcast belongs to the registrar hook, and nowhere else.** Every arrow above that changes the
+volume list runs through `attach_storage_volume` or `detach_storage_volume`, so `volume_wiring::volume_registrar` asks
+for the broadcast right where the change happens and the two can't drift. The session layer knows nothing about the
+app's volume list, and asking it to remember a broadcast at each of six paths is how one of them ends up forgotten,
+leaving the picker showing a phone that has gone. The 150 ms coalescing window in `volume_broadcast` is why a device
+arriving with four storages still costs one broadcast.
 
 `MtpDisconnectReason` distinguishes explicit toggle-off from hotplug-loss in logs and UI. Re-enabling MTP triggers
 auto-connect, which re-suppresses ptpcamerad if devices are found.
@@ -202,9 +208,10 @@ test run with the workaround it genuinely needs.
 ## Backends never register themselves
 
 **Decision.** A backend's session layer reports that a storage attached or detached; it does not decide that a `Volume`
-now exists. `connection/volume_registrar.rs` holds a `OnceLock<MtpVolumeRegistrar>` (two `fn` pointers, `attach` and
-`detach`); `volume_wiring.rs` supplies them, and `lib.rs` installs it at startup right after `volume_broadcast::init`,
-before anything can connect a device. `volume_wiring.rs` is deliberately the twin of `network/smb_upgrade.rs`, which
+now exists. `connection/volume_registrar.rs` defines `MtpVolumeRegistrar` (two `fn` pointers, `attach` and `detach`);
+`volume_wiring.rs` supplies them, and `mtp::install_connection_manager` hands them to the manager it builds at startup,
+before anything can connect a device. A caller driving sessions with no volume registry takes
+`MtpVolumeRegistrar::detached()`. `volume_wiring.rs` is deliberately the twin of `network/smb_upgrade.rs`, which
 builds and registers the `SmbVolume` while the SMB session layer never does: a wiring module beside the feature, aware
 of both the backend and the registry, with neither aware of it.
 

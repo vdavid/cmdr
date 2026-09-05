@@ -28,6 +28,14 @@ use crate::mtp::connection::MtpVolumeRegistrar;
 /// arriving ahead of the volumes has nothing to land on and the update is lost.
 /// ❌ Never spawn from here, never make these async. See
 /// `connection/volume_registrar.rs`.
+///
+/// The `volumes-changed` broadcast rides along here, and this is the only place
+/// MTP asks for one. Attaching and detaching a storage is exactly what changes
+/// the volume list, so the two can't drift apart; the session layer, which knows
+/// nothing about the app's volume list, would have to remember to ask at every
+/// path that touches a storage, and one that forgot would leave the picker
+/// showing a phone that has gone. `emit_volumes_changed` coalesces on a 150 ms
+/// window, so a device arriving with four storages still costs one broadcast.
 pub(crate) fn volume_registrar() -> MtpVolumeRegistrar {
     MtpVolumeRegistrar {
         attach: |manager, device_id, storage_id, storage_name| {
@@ -35,11 +43,13 @@ pub(crate) fn volume_registrar() -> MtpVolumeRegistrar {
             let volume = Arc::new(MtpVolume::new(Arc::clone(manager), device_id, storage_id, storage_name));
             get_volume_manager().register(&volume_id, volume);
             debug!("Registered MTP volume: {volume_id} ({storage_name})");
+            crate::volume_broadcast::emit_volumes_changed();
         },
         detach: |device_id, storage_id| {
             let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
             get_volume_manager().unregister(&volume_id);
             debug!("Unregistered MTP volume: {volume_id}");
+            crate::volume_broadcast::emit_volumes_changed();
         },
     }
 }
