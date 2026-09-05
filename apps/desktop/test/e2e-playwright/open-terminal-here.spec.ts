@@ -60,6 +60,11 @@ test.afterEach(() => {
 })
 
 test.describe('Open terminal here', () => {
+  // macOS only: `open_terminal_here` and `list_terminal_apps` are
+  // `#[cfg(target_os = "macos")]` and aren't registered at all on Linux
+  // (`src-tauri/src/ipc.rs`), so every dispatch here would sit until it timed out.
+  test.skip(process.platform !== 'darwin', 'Open terminal here is implemented on macOS only.')
+
   test.beforeEach(async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)

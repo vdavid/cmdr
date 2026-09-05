@@ -8,6 +8,11 @@ come from `isMacOS()` in `commands/sources/file-list.ts`, and the menu item from
 recipes are a macOS vocabulary, and Linux has no default terminal either, so a Linux build would bring its own table
 rather than reuse this one.
 
+One surface is NOT gated: the Settings row (`behavior.openTerminalHereApp`, the Terminal card in
+`sections/NavigationAndFileOpsSection.svelte`) renders on every platform, and off macOS its `list_terminal_apps` call
+finds no command to answer it, so the control sits disabled at "Checking…" forever. Harmless (`TerminalAppSelect.svelte`
+catches and logs a warning), but it advertises a feature Linux doesn't have.
+
 ## What "here" means
 
 `resolveTerminalFolder` takes the pane's own path, its volume KIND, and the cursor row, and answers one folder or
@@ -88,4 +93,6 @@ that Rust noticed the mount was gone and the gate hadn't.
 - `test/e2e-playwright/open-terminal-here.spec.ts` pins the folder resolution end to end. The `playwright-e2e` build
   records the folder into `crate::open_mock` instead of launching, so a suite run leaves no terminal windows behind. It
   spends the hint flag in `beforeEach`: whether the hint would fire depends on which terminals happen to be installed on
-  the machine running the suite.
+  the machine running the suite. The whole `describe` carries a `test.skip(process.platform !== 'darwin', …)`, at the
+  describe level so the `beforeEach` never runs either: the two commands aren't registered off macOS, and without the
+  skip every dispatch on the Linux Docker lane sat until it timed out.

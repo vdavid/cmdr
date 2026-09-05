@@ -16,8 +16,11 @@
 //!
 //! macOS only, table and all: bundle ids are a macOS vocabulary, and Linux has no
 //! default terminal either (`x-terminal-emulator` on Debian, the emerging
-//! `xdg-terminal-exec`). A Linux build gets its own module registered under the
-//! same command names, the way `permissions` and `permissions_linux` pair up.
+//! `xdg-terminal-exec`). There is no Linux counterpart yet, and no stub: the module,
+//! the `commands/file_actions.rs` wrappers, the `ipc.rs` registration, and the menu
+//! item are all `#[cfg(target_os = "macos")]`, so on a Linux build the two commands
+//! don't exist for the frontend to call. A Linux port would add its own module under
+//! the same command names, the way `permissions` and `permissions_linux` pair up.
 //!
 //! Rationale, and why there's no window-vs-tab control: `DETAILS.md` § "Open
 //! terminal here".
