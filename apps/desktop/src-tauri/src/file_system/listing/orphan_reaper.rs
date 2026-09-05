@@ -10,6 +10,8 @@
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+
 use crate::file_system::listing::cached_listing::{LISTING_CACHE, epoch_millis_now};
 
 /// Idle window after which an untouched listing is treated as orphaned and reaped.
@@ -84,10 +86,11 @@ pub(crate) fn reap_orphaned_listings_at_for(now_ms: u64, window_ms: u64, only: &
 
 fn reap_orphaned_listings_scoped(now_ms: u64, window_ms: u64, only: Option<&[&str]>) -> Vec<String> {
     let ids = {
-        let cache = match LISTING_CACHE.read() {
-            Ok(c) => c,
-            Err(_) => return Vec::new(),
-        };
+        // Recover from a poisoned lock rather than returning empty: this is the
+        // BACKSTOP, so a single panic elsewhere silently retiring it for the rest
+        // of the session is the one outcome it must not have. Reading last-access
+        // stamps out of a map a panicking writer left behind is safe.
+        let cache = LISTING_CACHE.read_ignore_poison();
         orphan_ids(
             now_ms,
             window_ms,
