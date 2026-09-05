@@ -443,6 +443,25 @@ through `inspect_file`. ⚠️ Keep it accurate as the tiers grow: it promised "
 `Access::Memory`, and "can't read file contents" until `inspect_file`; a model told a false limit either refuses the
 question or invents the answer.
 
+### What a gate refusal answers with
+
+The schema gate (`mcp/tool_registry/params.rs`) runs inside `dispatch`, ahead of the branch, so it covers every agent
+call. Two things ride its refusal, both because of one live turn where a rename plan died here and the model then told
+the user the plan was waiting in the suggestions panel:
+
+- **A `Access::Propose` tool's refusal carries `readyForReview: false`** (`view.rs::schema_refusal`). The family answers
+  that field on every other path, so a bare `{ problem }` was its one result with no answer to "did anything get
+  staged?", and the model filled the gap in its own favour. Decided on the registry's typed `Access`, never on the tool
+  name or the refusal's wording. `chat/runtime/repeats.rs` keeps the original content whole, so the repeat inherits it.
+- **A `warn` on `agent::tools`**, carrying the typed `data` (which properties were wrong) beside the sentence. Before
+  it, a plan that never reached the proposal store was invisible: the log held the provider round trips and the repeat
+  breaker's warn, and characterizing the report meant reading `main.db`'s conversation rows.
+
+The refusal SENTENCE matters as much as the shape, and its rules live with the gate, not here
+(`mcp/tool_registry/params.rs`): a per-row property sent at the top level is a `Misplaced` violation naming the row that
+takes it, because "propose_rename_plan has no volumeId parameter. It takes renames." is a true sentence a model cannot
+act on — it reads as "your rows were fine".
+
 `dispatch` routes two tools specially rather than through the generic `execute_tool` call: `propose_rename_plan`,
 which needs the evidence scope, and `propose_suggestions`, which needs the conversation id so a sweep records the
 thread it came out of (`suggestions/DETAILS.md` § The conversation link). Both are gated first, like every other call.
