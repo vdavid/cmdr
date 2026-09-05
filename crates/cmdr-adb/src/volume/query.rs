@@ -150,10 +150,6 @@ impl AdbVolume {
         self.get_metadata_impl(path).await.is_ok()
     }
 
-    /// One `stat` round trip, reduced to the directory bit.
-    pub(super) async fn is_directory_impl(&self, path: &Path) -> Result<bool, VolumeError> {
-        Ok(self.get_metadata_impl(path).await?.is_directory)
-    }
 
     /// What a symlink at `device` points at, or `None` when the target is
     /// missing or the device declined to say.

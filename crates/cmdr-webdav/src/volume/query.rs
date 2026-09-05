@@ -112,10 +112,6 @@ impl WebdavVolume {
         self.get_metadata_impl(path).await.is_ok()
     }
 
-    /// One PROPFIND, reduced to the collection bit.
-    pub(super) async fn is_directory_impl(&self, path: &Path) -> Result<bool, VolumeError> {
-        Ok(self.get_metadata_impl(path).await?.is_directory)
-    }
 
     /// Space on the root, as far as the server is willing to say.
     ///

@@ -167,17 +167,6 @@ impl Volume for MtpVolume {
         })
     }
 
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move { self.get_metadata(path).await.is_ok() })
-    }
-
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.get_metadata(path).await.map(|e| e.is_directory) })
-    }
-
     fn can_watch_listings(&self) -> bool {
         // Return false because MTP has its OWN file watching mechanism that is
         // independent of the listing pipeline. The MtpConnectionManager starts an

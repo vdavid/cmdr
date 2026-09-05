@@ -28,7 +28,7 @@
     "apps/desktop/src-tauri/src/volumes/mod.rs ↔ apps/desktop/src-tauri/src/volumes_linux/mod.rs": 15,
     "apps/desktop/src-tauri/src/volumes/smb.rs ↔ apps/desktop/src-tauri/src/volumes_linux/smb.rs": 20,
     "crates/cmdr-adb/src/volume/volume_impl.rs ↔ crates/cmdr-webdav/src/volume/volume_impl.rs": {
-      "lines": 117,
+      "lines": 114,
       "reason": "`Volume` trait-method signatures again, in five blocks: the three `list_directory*` beside `max_concurrent_ops`, the `get_metadata` / `exists` / `is_directory` stat group, `open_read_stream_at_offset`, the `create_file` / `create_directory` / `create_directory_all` group, and `notify_mutation` beside the three `scan_for_*`. Every body is one line delegating to an inherent `*_impl` or straight to `cmdr_fs::volume`. Same trade as the `cmdr-sftp` ↔ `cmdr-webdav` entry: folding these takes a macro that emits trait methods, which costs more lines than it removes and hides every one from `codegraph_search` and go-to-definition. ❗ This pair GREW (82 → 117) when `cmdr-adb` dropped its own tree walk and listing patcher for `scan_walk` and `patching`: the last block matches only because both backends now delegate to the same shared code, so the number rising is what sharing the logic looks like from here. Revisit when a body stops being a one-line delegation, or when enough backends land that the macro pays for itself."
     },
     "crates/cmdr-index/src/importance/writer.rs ↔ crates/cmdr-index/src/media_index/writer/maintenance.rs": 11,
@@ -38,7 +38,7 @@
     "crates/cmdr-index/src/indexing/transports/mtp/index.rs ↔ crates/cmdr-index/src/indexing/transports/smb/index.rs": 11,
     "crates/cmdr-index/src/media_index/network/enrich.rs": 14,
     "crates/cmdr-sftp/src/volume/volume_impl.rs ↔ crates/cmdr-webdav/src/volume/volume_impl.rs": {
-      "lines": 62,
+      "lines": 59,
       "reason": "`Volume` trait-method signatures, not logic: the listing and file-creation blocks, where every body is one line delegating to an inherent `*_impl`. The trait makes each backend spell the full signature out, so folding these takes a macro that emits trait methods: roughly 120 lines of macro to remove about 38 lines per backend, so the code gets no smaller, and every generated method goes invisible to `codegraph_search` and to go-to-definition. The behavior behind the signatures is already shared, in `cmdr_fs::volume` (`scan_walk`, `mkdir_all`, `patching`, `secret_store`) and `network::connect_wiring`. Revisit when a body stops being a one-line delegation, or when enough backends land that the macro pays for itself."
     },
     "crates/cmdr-smb/src/volume/volume_impl.rs ↔ crates/cmdr-webdav/src/volume/volume_impl.rs": {

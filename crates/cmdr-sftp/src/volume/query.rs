@@ -104,10 +104,6 @@ impl SftpVolume {
         self.get_metadata_impl(path).await.is_ok()
     }
 
-    /// One `stat` round trip, reduced to the directory bit.
-    pub(super) async fn is_directory_impl(&self, path: &Path) -> Result<bool, VolumeError> {
-        Ok(self.get_metadata_impl(path).await?.is_directory)
-    }
 }
 
 /// One directory entry as a `FileEntry`, or `None` for the two the protocol

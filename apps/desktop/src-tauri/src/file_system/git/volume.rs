@@ -145,17 +145,6 @@ impl Volume for GitPortalVolume {
         })
     }
 
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
-        Box::pin(async move { self.get_metadata(path).await.is_ok() })
-    }
-
-    fn is_directory<'a>(
-        &'a self,
-        path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
-        Box::pin(async move { self.get_metadata(path).await.map(|entry| entry.is_directory) })
-    }
-
     // ---- Read-only: a snapshot is changed with `git`, not with a file manager
 
     /// ❌ Never flip this to track "the user can write to this repo". They can,

@@ -263,14 +263,28 @@ pub trait Volume: Send + Sync {
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>>;
 
     /// Checks if a path exists (relative to volume root).
-    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>>;
+    ///
+    /// Defaults to "[`get_metadata`](Self::get_metadata) answered", which is the
+    /// right answer for any backend whose only existence primitive is a stat.
+    /// Override when the backend can answer more cheaply (a bare protocol
+    /// `stat`, an in-memory index) or when its truth differs:
+    /// `LocalPosixVolume` uses `symlink_metadata`, because a BROKEN symlink is
+    /// still a thing on disk the user can see and delete.
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move { self.get_metadata(path).await.is_ok() })
+    }
 
     /// Checks if a path is a directory.
     /// Returns Ok(true) if directory, Ok(false) if file, Err if path doesn't exist.
+    ///
+    /// Defaults to the directory bit off [`get_metadata`](Self::get_metadata).
+    /// Same reasons to override as [`exists`](Self::exists).
     fn is_directory<'a>(
         &'a self,
         path: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>>;
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { self.get_metadata(path).await.map(|entry| entry.is_directory) })
+    }
 
     // ========================================
     // E2E test support (feature-gated)
