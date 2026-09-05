@@ -305,9 +305,12 @@ fn coverage_notes(answer: &LiveAnswer, system_dirs_excluded: bool) -> Vec<String
             WalkEnding::NothingToWalk | WalkEnding::Completed => {}
         }
         if answer.dirs_found > 0 && coverage.walk == WalkEnding::Completed {
+            // Spoken like every other count Cmdr states, and pluralized: a search
+            // scoped at one unindexed folder is the common case, and "1 folders"
+            // is copy a model relays nearly verbatim into the rail.
             notes.push(format!(
-                "Cmdr walked {} folders it hadn't indexed yet, so the next search over them is instant.",
-                grouped(answer.dirs_found)
+                "Cmdr walked {} it hadn't indexed yet, so the next search there is instant.",
+                crate::pluralize::pluralize_grouped(answer.dirs_found, "folder")
             ));
         }
     }

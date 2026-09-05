@@ -404,6 +404,20 @@ fn a_completed_walk_reports_the_ground_it_added_to_the_index() {
     assert!(joined(&result.notes).contains("21,482"), "{:?}", result.notes);
 }
 
+#[test]
+fn a_walk_that_added_one_folder_says_folder_not_folders() {
+    // The note is copy a model relays nearly verbatim in the rail, and a search
+    // scoped at one unindexed folder is the common case that hits `1`.
+    let coverage = SearchRunCoverage {
+        walk: WalkEnding::Completed,
+        kind: CoverageKind::Live,
+        ..covered("naspi")
+    };
+    let result = shape_answer(answer(settled(coverage), 1), true);
+    assert!(joined(&result.notes).contains("1 folder it"), "{:?}", result.notes);
+    assert!(!joined(&result.notes).contains("1 folders"), "{:?}", result.notes);
+}
+
 // ── The serialized shape ─────────────────────────────────────────────────────
 
 #[test]
