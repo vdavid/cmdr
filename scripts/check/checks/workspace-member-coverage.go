@@ -138,6 +138,7 @@ var rustMetaChecks = map[string]string{
 	"index-crate-isolation":         "it reads the `cargo metadata` graph and counts `cmdr-index`'s public surface; both are about two named crates, not a sweep",
 	"desktop-shipped-locales-fresh": "it regenerates ONE file in the app crate from the message-catalog dirs and diffs it; the inputs are catalog directories, not workspace sources",
 	"desktop-native-strings-fresh":  "same shape as shipped-locales-fresh: it regenerates ONE file in the app crate from the message catalogs and diffs it, so its inputs are catalog files, not workspace sources",
+	"desktop-macos-framework-floor": "it reads a BUILT binary's Mach-O load commands, which is the linked whole rather than any member's sources; every member that contributes a framework link is in it by construction",
 }
 
 // rustCheckClassification is the partition of the Rust checks: each is a cargo

@@ -180,6 +180,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunSqliteOpenDirect,
 	},
 	{
+		ID:          "desktop-macos-framework-floor",
+		Nickname:    "macos-framework-floor",
+		DisplayName: "macos-framework-floor",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      macOSFrameworkFloorInputs,
+		Run:         RunMacOSFrameworkFloor,
+	},
+	{
 		ID:          "desktop-rust-macos-availability",
 		Nickname:    "macos-availability",
 		DisplayName: "macos-availability",

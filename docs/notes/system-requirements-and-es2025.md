@@ -7,8 +7,11 @@ Reference for minimum-OS pinning and for adopting newer JS features.
 Three numbers, and nothing but this note ties them together:
 
 - **`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.conf.json`** is what the `.app` claims: macOS
-  10.15 Catalina. It's also the floor `desktop-rust-macos-availability` enforces every Objective-C selector against, so
-  anything newer needs a `crate::platform::macos_at_least` gate plus the `allowed-newer-selector` marker.
+  10.15 Catalina. Two checks hold the native side to it. `desktop-rust-macos-availability` enforces every Objective-C
+  selector against it, so anything newer needs a `crate::platform::macos_at_least` gate plus the
+  `allowed-newer-selector` marker. `desktop-macos-framework-floor` enforces every framework the built binary LOADS
+  against it, which is the harder half: a framework link is a hard `LC_LOAD_DYLIB` that dyld resolves before `main`, so
+  a too-new one is not a call that might not happen, it's an app that won't open and can't be gated out of it.
 - **`build.target` in `apps/desktop/vite.config.js`** is what the frontend bundle is transpiled to: `safari15`.
   `build.cssTarget` follows it, so JS and CSS share one floor. `desktop-vite-build-target` fails the build if the pin
   goes missing or stops naming a Safari version, but it deliberately enforces no relationship between the numbers:
@@ -77,7 +80,12 @@ translators wrote; the mechanism is in `apps/desktop/src/lib/utils/DETAILS.md` Â
 - **Apple Silicon binary (arm64)**: macOS 11.0 Big Sur (2020-11), M1 ships with this
 - **Intel binary (x86_64)**: macOS 10.15 Catalina (2019-10)
 - **Universal binary (what we ship)**: Per-arch: 10.15 Intel, 11.0 Apple Silicon
-- **Apple frameworks we touch (`IOKit`, `core-foundation`, `FSEvents`, etc)**: Ancient, not a binding constraint
+- **Apple frameworks the binary loads**: all 28 of them predate Catalina, the newest by two years (`ColorSync`,
+  `CoreML`, and `Vision`, all 10.13). That is a fact about today's build rather than a property of the stack, which is
+  the correction v0.42.0 bought: a dependency can put a framework in the binary for code nothing calls, and
+  `UniformTypeIdentifiers` (macOS 11) rode in behind an `objc2-quick-look-ui` feature default and made the app
+  unlaunchable on Catalina. `desktop-macos-framework-floor` reads the load commands now, so this line stays true by
+  enforcement rather than by assumption (verified by `otool -L` on the `aarch64-apple-darwin` build, 2026-09-05).
 - **Modern CSS**: nothing above the `build.target` floor ships. Container queries (Safari 16) are gone from the tree and
   banned by stylelint (`at-rule-disallowed-list` / `property-disallowed-list` in `apps/desktop/.stylelintrc.mjs`); the
   stand-in is `useInlineSize` in `apps/desktop/src/lib/utils/inline-size-action.ts`. `:has()` (Safari 15.4) sits ON the

@@ -1325,6 +1325,20 @@ How it decides:
   `URLForApplicationToOpenURL`, and `imageWithSystemSymbolName_accessibilityDescription` (macOS 11) in
   `menu/macos_appkit.rs` leaves menu items iconless.
 
+## macOS framework floor
+
+`desktop-macos-framework-floor` fails when the built desktop binary loads a system framework that arrived AFTER the `bundle.macOS.minimumSystemVersion` the bundle promises. Sibling to the selector check above, for the other half of the same failure: that one is a call the running OS might not answer, this one is a file dyld looks for before `main` and refuses to start the process without.
+
+The hole it fills: v0.42.0 promised Catalina and could not open on it at all, with `Library not loaded: …/UniformTypeIdentifiers.framework`. That framework arrived in macOS 11, and nothing in Cmdr called it: `objc2-quick-look-ui` was declared without `default-features = false`, its default set turns on the `objc2-uniform-type-identifiers` feature, and that crate's `#[link]` is unconditional. A reference no code follows is enough, because a framework link is not a call.
+
+How it decides:
+
+- **It reads the Mach-O, not the dependency graph**, which is the whole design decision. A `#[link]` name is not the load command it produces (`objc2-quick-look-ui` asks for `QuickLookUI` and the linker resolves it through the `Quartz` umbrella, so the binary names `Quartz`), a `build.rs` can emit a link flag no manifest mentions, and the crate that broke Catalina appears in no manifest in this repo. Only the load commands know the answer.
+- **Only `LC_LOAD_DYLIB` counts.** Go's `debug/macho` turns exactly that command into a `*macho.Dylib` and leaves `LC_LOAD_WEAK_DYLIB` as raw bytes, which is the distinction the check wants anyway: dyld tolerates a missing weak framework and binds its symbols to null.
+- **Only `/System/Library/Frameworks/` is judged.** Everything else a Mach-O loads is `/usr/lib` (shared-cache basics, older than any floor we could set) or `@rpath` / `@executable_path` (shipping inside the bundle, present by construction). A subframework is judged as itself, not as its umbrella, since the two ship on their own schedules.
+- **The versions are hand-recorded**, in `macos-framework-versions.json`. Nothing in the SDK carries a framework's own introduction version: its headers annotate only what is newer than the framework itself, so `UniformTypeIdentifiers` reads as 12.0 from its own headers and `PDFKit` as 13.0, when they arrived in 11.0 and 10.4. What IS enforced is that nothing goes unrecorded: a loaded framework the file doesn't name fails the check, so a new dependency can't extend the binary's reach silently. Several entries are the release a framework left an umbrella and became loadable on its own (`CoreGraphics`, `CoreText`, and `ImageIO` left `ApplicationServices` in 10.8), which is the date that matters here.
+- **Where it runs.** It needs a built Mach-O, so it skips where there is none, which is every CI runner (all ubuntu). Locally it reads `target/release/Cmdr` if there is one, else `target/debug/Cmdr`, so any Mac that has run the app is covered. The gate that can't be skipped is `release.yml`, which points `CMDR_MACOS_BINARY` at the signed bundled binary right after `tauri-action` builds it; that's the only run that sees what users actually get, which is also why `ci-coverage` counts it as wired without a `ci.yml` step.
+
 ## Apps and check counts
 
 Checks by app and tech:
@@ -1334,7 +1348,8 @@ Checks by app and tech:
   the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
   cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (warn-only; the clone list, on a per-file-pair ratchet),
   log-error-macro, macos-availability (no call to a selector newer than the bundle's `minimumSystemVersion`; § "macOS
-  availability"), sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
+  availability"), macos-framework-floor (no framework in the BUILT binary's load commands newer than that same floor,
+  which is the half no runtime gate can save; § "macOS framework floor"), sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide
   shared page cache is always installed before SQLite initializes), error-string-match, write-ops-isolation (the write
   engine may not name the `agent` module: an approved operation is an ordinary operation, and an engine that can see the
   agent grows a second execution path; per-source outcomes reach a caller through the injected `OperationEventSink`

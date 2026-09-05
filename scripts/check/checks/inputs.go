@@ -188,6 +188,18 @@ var macOSAvailabilityInputs = inputs(
 	runnerDataInputs("macos-availability-selectors.json"),
 )
 
+// macOSFrameworkFloorInputs is what decides which frameworks the binary ends up
+// loading: the manifests and the lockfile (a feature default is what put the wrong
+// one there), plus the floor being enforced and the version list it's judged
+// against. The binary itself is NOT an input; it lives in `target/`, and a lane
+// that fingerprinted it would miss on every rebuild while answering the same.
+var macOSFrameworkFloorInputs = inputs(
+	rustWorkspaceConfigInputs,
+	[]string{"apps/desktop/src-tauri/Cargo.toml", "crates/*/Cargo.toml"},
+	[]string{"apps/desktop/src-tauri/tauri.conf.json"},
+	runnerDataInputs("macos-framework-versions.json"),
+)
+
 // rustCompileInputs is what a lane that runs cargo over the whole workspace
 // reads: every member's tree plus the workspace configs.
 //
