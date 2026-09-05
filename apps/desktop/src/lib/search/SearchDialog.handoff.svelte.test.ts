@@ -86,7 +86,11 @@ vi.mock('$lib/indexing', () => ({
   getEntriesScanned: vi.fn(() => 0),
   ROOT_VOLUME_ID: 'root',
 }))
-vi.mock('$lib/icon-cache', () => ({ iconCacheVersion: writable(0), getCachedIcon: vi.fn(() => undefined) }))
+vi.mock('$lib/icon-cache', () => ({
+  iconCacheVersion: writable(0),
+  getCachedIcon: vi.fn(() => undefined),
+  getCachedCustomFolderIcon: () => undefined,
+}))
 
 function entry(name: string): SearchResultEntry {
   return {

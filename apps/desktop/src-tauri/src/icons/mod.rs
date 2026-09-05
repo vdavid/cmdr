@@ -202,8 +202,9 @@ pub fn get_icon_for_path(path: &str) -> Option<String> {
 /// For extension-based icons, we create an actual temp file since the OS may need it to exist.
 fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
     if icon_id == "dir" || icon_id == "symlink-dir" {
-        // Use home directory as sample directory (symlinks to dirs get folder icon)
-        return dirs::home_dir();
+        // A Cmdr-owned empty folder, ❌ never `~` — see `folder_sample_path`.
+        // (Symlinks to dirs sample the same plain folder; the FE draws the link badge.)
+        return folder_sample_path();
     }
     if icon_id == "symlink-file" || icon_id == "symlink" || icon_id == "file" {
         // Generic file icon - use /etc/hosts which exists on all macOS systems
@@ -213,6 +214,24 @@ fn get_sample_path_for_icon_id(icon_id: &str) -> Option<PathBuf> {
         return icon_sample_path(ext);
     }
     None
+}
+
+/// The empty stand-in DIRECTORY standing in for every plain folder (`dir` /
+/// `symlink-dir`, ~99% of rows).
+///
+/// ❌ Never sample the home directory here. macOS bakes a house badge into `~`'s
+/// icon bitmap, so sampling it stamps that house onto every folder in every
+/// listing; worse, a user-assigned custom icon on `~` leaks onto all of them the
+/// same way. A folder Cmdr just created carries neither badge nor custom icon, so
+/// it yields the true generic folder — still correctly accent- and
+/// appearance-tinted, because macOS tints from system state, not from the path.
+///
+/// Shares `cmdr-icon-samples` with the per-extension file samples, for the same
+/// reasons (namespaced, removable as a unit, reused across runs).
+fn folder_sample_path() -> Option<PathBuf> {
+    let path = std::env::temp_dir().join("cmdr-icon-samples").join("sample-folder");
+    std::fs::create_dir_all(&path).ok()?;
+    Some(path)
 }
 
 /// The empty stand-in file whose EXTENSION Launch Services reads to pick a
@@ -584,6 +603,28 @@ mod tests {
             0,
             "the sample stays empty so nothing content-sniffs it"
         );
+    }
+
+    /// Pins the generic folder sample OFF the home directory. macOS bakes a house
+    /// badge into `~`'s icon, so sampling it stamped that house onto every folder
+    /// row in every listing, and leaked a custom icon assigned to `~` the same way.
+    #[test]
+    fn the_generic_folder_sample_is_a_cmdr_owned_directory_not_the_home_dir() {
+        for icon_id in ["dir", "symlink-dir"] {
+            let sample = get_sample_path_for_icon_id(icon_id).expect("a sample path for the generic folder id");
+
+            assert_ne!(
+                Some(sample.as_path()),
+                dirs::home_dir().as_deref(),
+                "{icon_id} must not sample ~: its badge and any custom icon would leak onto every folder"
+            );
+            assert_eq!(
+                sample.parent().and_then(|p| p.file_name()),
+                Some(std::ffi::OsStr::new("cmdr-icon-samples")),
+                "the folder sample shares the samples directory with the extension samples"
+            );
+            assert!(sample.is_dir(), "the OS needs a real directory to hand back a folder icon");
+        }
     }
 
     #[test]

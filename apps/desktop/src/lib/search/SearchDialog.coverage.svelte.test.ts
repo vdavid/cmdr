@@ -148,6 +148,7 @@ vi.mock('$lib/indexing', () => ({
 vi.mock('$lib/icon-cache', () => ({
   iconCacheVersion: writable(0),
   getCachedIcon: vi.fn(() => undefined),
+  getCachedCustomFolderIcon: () => undefined,
 }))
 
 const live: { component: ReturnType<typeof mount>; target: HTMLDivElement }[] = []

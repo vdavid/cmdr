@@ -63,6 +63,7 @@ vi.mock('$lib/icon-cache', async () => {
   const { writable } = await import('svelte/store')
   return {
     getCachedIcon: vi.fn().mockReturnValue('/icons/dir.png'),
+    getCachedCustomFolderIcon: () => undefined,
     iconCacheVersion: writable(0),
     prefetchIcons: vi.fn().mockResolvedValue(undefined),
   }
