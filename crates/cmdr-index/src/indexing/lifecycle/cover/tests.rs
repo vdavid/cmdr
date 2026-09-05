@@ -328,6 +328,69 @@ fn a_repaired_frontier_node_reports_the_rows_it_wrote() {
     assert_eq!(outcome.dirs_found, 1, "F/sibling among them");
 }
 
+/// A repair whose consumer walks away mid-stream still covers the ground.
+///
+/// The repair hands its rows over a BOUNDED channel ([`BATCH_QUEUE_DEPTH`]), so a
+/// walk with more batches than slots parks on a full queue — and the search that
+/// asked may be gone by then (a closed dialog, a superseded query). The send
+/// failing is what frees it, and what it does next is keep going: walking is
+/// coverage work (Decision 11), so the rows land and the frontier stops offering
+/// this node whether or not anyone was still listening.
+///
+/// The sibling of `dropping_the_consumer_leaves_the_walk_running`, which pins the
+/// same promise on the PARALLEL walker.
+#[test]
+fn a_repair_whose_consumer_left_still_covers_the_ground() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("F/G")).expect("dirs");
+    std::fs::write(root.join("F/G/kept.txt"), "kept").expect("file");
+    // More directories than the channel holds batches: the repair sends one batch
+    // per directory it created rows in, so the walk is parked on a full queue by
+    // the time the consumer goes.
+    let wide = BATCH_QUEUE_DEPTH + 4;
+    for i in 0..wide {
+        std::fs::create_dir_all(root.join("F").join(format!("d{i}"))).expect("dirs");
+        std::fs::write(root.join("F").join(format!("d{i}/leaf.txt")), "x").expect("file");
+    }
+    f.seed_chain(&root.join("F"));
+
+    // Cover G first, which materializes F above it without listing it.
+    drain(start(
+        f.context(),
+        vec![f.path("F/G")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+        WalkFor::TheIndex,
+    ));
+    f.writer.flush_blocking().expect("flush");
+    assert_eq!(f.listed_epoch(&f.path("F")), 0, "precondition: F is a frontier node");
+
+    let walk = start(
+        f.context(),
+        vec![f.path("F")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+        WalkFor::TheIndex,
+    );
+    // One batch, so the repair is provably under way and filling the queue behind
+    // it; then walk away. `finish` drops the channel and waits the walk out.
+    walk.next_batch().expect("the repair emits");
+    let outcome = walk.finish();
+    f.writer.flush_blocking().expect("flush");
+
+    assert!(!outcome.cancelled, "nobody cancelled it");
+    assert_eq!(
+        outcome.entries_found,
+        (wide * 2) as u64,
+        "it wrote every directory and its file anyway"
+    );
+    assert!(
+        f.listed_epoch(&f.path("F")) > 0,
+        "and the coverage is durable: the next search doesn't walk F again"
+    );
+}
+
 // ── Ground the index has no row for ──────────────────────────────────
 
 /// A frontier path with no `entries` row is walkable, and the chain the walk
