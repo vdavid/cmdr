@@ -50,6 +50,10 @@ pub struct InMemoryVolume {
     /// path) set it `true` via [`with_local_fs_access`](Self::with_local_fs_access);
     /// remote-backed archive tests leave it `false`.
     local_fs_access: bool,
+    /// What [`Volume::routes_over_a_parent`] reports. Default `false` (a mount of
+    /// its own). Set it `true` via [`routing_over_a_parent`](Self::routing_over_a_parent)
+    /// to stand in for a routed backend without naming a concrete one.
+    routes_over_a_parent: bool,
     /// Log of `read_range(offset, len)` calls, in order. Lets tests assert how
     /// many positioned reads a remote-archive flow issues (e.g. the
     /// central-directory tail-read strategy: one tail read, a second only if the
@@ -119,6 +123,7 @@ impl InMemoryVolume {
             space_info: None,
             lane_key: None,
             local_fs_access: false,
+            routes_over_a_parent: false,
             read_range_log: std::sync::Mutex::new(Vec::new()),
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
@@ -284,6 +289,18 @@ impl InMemoryVolume {
     /// remote-backed one.
     pub fn with_local_fs_access(mut self) -> Self {
         self.local_fs_access = true;
+        self
+    }
+
+    /// Makes this volume report `routes_over_a_parent() = true`, standing in for
+    /// a read-only volume a route minted over some other volume's storage.
+    ///
+    /// The point of the stub is that it names NO concrete backend: a host's
+    /// "a routed volume is not a mount" rule has to hold for the next routed
+    /// backend too, and a cell written against `ArchiveVolume` or
+    /// `GitPortalVolume` can't say that.
+    pub fn routing_over_a_parent(mut self) -> Self {
+        self.routes_over_a_parent = true;
         self
     }
 
@@ -927,6 +944,10 @@ impl Volume for InMemoryVolume {
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         Box::pin(async move { self.space_info.ok_or(VolumeError::NotSupported) })
+    }
+
+    fn routes_over_a_parent(&self) -> bool {
+        self.routes_over_a_parent
     }
 
     fn supports_local_fs_access(&self) -> bool {

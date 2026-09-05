@@ -153,6 +153,25 @@ pub trait Volume: Send + Sync {
     /// nothing left to answer for anyway.
     fn note_root_mount_gone(&self) {}
 
+    /// Whether this volume was minted by a ROUTE rather than mounted: its root
+    /// is a path INSIDE another volume's storage, and it maps a namespace onto
+    /// it (an archive's root is the `.zip` file, a git portal's is
+    /// `<worktree>/.git`).
+    ///
+    /// ❗ A routed volume is not a mount, and a host that treats it as one hands
+    /// every path inside it to the wrong place. The host's mount lookup picks
+    /// the registered volume whose root is the LONGEST ancestor of a path, so a
+    /// routed volume would win that race for every path under it, and reads that
+    /// belong to the disk holding the `.zip` or the repo (a drive index, an
+    /// agent's file inspection) would be routed to a mount that has no index.
+    ///
+    /// Default `false`, so an ordinary backend says nothing. ❗ A new routed
+    /// backend MUST override it to `true`: nothing else can tell, and the
+    /// symptom is silent.
+    fn routes_over_a_parent(&self) -> bool {
+        false
+    }
+
     /// Returns this volume as `&dyn Any` for downcasting to a concrete
     /// backend type. Used by debug/IPC paths (for example, the SMB
     /// diagnostics dashboard) that need backend-specific state. Most

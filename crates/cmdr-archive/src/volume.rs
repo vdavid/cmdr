@@ -593,6 +593,12 @@ impl Volume for ArchiveVolume {
 
     /// `None`: an archive isn't a local FS path. Inner entries aren't reachable
     /// via `std::fs`, so there's no `copyfile(2)` fast path to advertise.
+    /// `true`: this volume's root is the `.zip` FILE, which lives inside the
+    /// volume that holds it. See [`Volume::routes_over_a_parent`].
+    fn routes_over_a_parent(&self) -> bool {
+        true
+    }
+
     fn local_path(&self) -> Option<PathBuf> {
         None
     }

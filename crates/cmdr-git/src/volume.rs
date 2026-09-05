@@ -221,6 +221,12 @@ impl Volume for GitPortalVolume {
 
     // ---- Capability flags: answered explicitly, never inherited ------------
 
+    /// `true`: this volume's root is `<worktree>/.git`, a path inside the volume
+    /// that holds the repository. See [`Volume::routes_over_a_parent`].
+    fn routes_over_a_parent(&self) -> bool {
+        true
+    }
+
     /// `None`: a virtual path has no counterpart on disk, so there's no
     /// `copyfile(2)` fast path to advertise.
     fn local_path(&self) -> Option<PathBuf> {

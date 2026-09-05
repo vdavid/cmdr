@@ -346,7 +346,13 @@ surfaces at the end of a move: check every `[\`Type::method\`]` link for an app-
    `Volume::retirement`, and reach your own state through a `SelfHandle` rather than an id you look up. Without it the
    registry has nowhere to write "you left", and your background work keeps running against a volume the app has
    forgotten. § "The two registry reach-backs" has the full rationale.
-10. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
+10. If a ROUTE mints your volume rather than a mount — your root is a path inside another volume's storage, the way an
+    archive's is the `.zip` file and the git portal's is `<worktree>/.git` — override `Volume::routes_over_a_parent` to
+    `true`. Nothing else can tell, and the symptom is silent: a host's mount lookup picks the registered volume whose
+    root is the longest ancestor of a path, so yours would win that race for everything under it and send index reads to
+    a mount that has no index. `InMemoryVolume::routing_over_a_parent()` is the stub for pinning that rule without
+    naming a concrete backend.
+11. Write your tests against the fakes here. Assert on `change_count` as well as contents: that's what keeps a seam call
     from drifting into a per-entry loop. Three backends carry a `host_seam_test.rs` to copy from —
     `crates/cmdr-smb/src/volume/host_seam_test.rs` and `crates/cmdr-sftp/src/volume/host_seam_test.rs` both seed a real
     directory, walk it every way the backend can (listing, copy scan, conflict scan), and assert the counter stays put,
