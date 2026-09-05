@@ -762,3 +762,9 @@ mod tests {
         assert!(!is_retired(), "the share is still registered, just at another mount");
     }
 }
+
+/// The mount-root lookup's own cells, in their own file so this one stays
+/// readable; `mod tests` above holds the registration-lifecycle ones.
+#[cfg(test)]
+#[path = "mount_id_tests.rs"]
+mod mount_id_tests;

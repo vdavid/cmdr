@@ -326,7 +326,7 @@ triggers live in `docs/specs/later/archive-follow-ups.md`):
 
 - **Open-with-external-app for a file INSIDE an archive (deferred).** Enter on a file inside a `.zip` still opens the
   VIEWER (bounded temp-extract), not the OS default app. Extract-then-launch isn't a clean reuse of
-  `apps/desktop/src-tauri/src/file_viewer/archive_extract.rs`: that extractor is viewer-`pub(super)`-scoped and its temp
+  `apps/desktop/src-tauri/src/file_viewer/routed_extract.rs`: that extractor is viewer-`pub(super)`-scoped and its temp
   is reaped on VIEWER SESSION close, whereas a detached launched app holds the file for an unknown lifetime and has no
   close event to hook — it needs its own extract-and-persist-until-startup-reaper lifecycle. Deferred deliberately; the
   viewer interim stands.

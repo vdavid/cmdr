@@ -240,7 +240,7 @@ test.describe('Git portal', () => {
     expect(landed).toContain('OK')
 
     // Byte-for-byte, both the top-level file and the folder's contents.
-    await expect.poll(async () => fs.existsSync(path.join(outDir, 'scripts', 'run.sh')), { timeout: 20000 }).toBe(true)
+    await expect.poll(() => fs.existsSync(path.join(outDir, 'scripts', 'run.sh')), { timeout: 20000 }).toBe(true)
     expect(fs.readFileSync(path.join(outDir, 'README.md'))).toEqual(fs.readFileSync(path.join(repoPath(), 'README.md')))
     expect(fs.readFileSync(path.join(outDir, 'scripts', 'run.sh'))).toEqual(
       fs.readFileSync(path.join(repoPath(), 'scripts', 'run.sh')),

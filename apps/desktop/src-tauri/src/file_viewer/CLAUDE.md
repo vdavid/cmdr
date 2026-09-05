@@ -14,9 +14,8 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - Backend selection: `< 1MB` → `FullLoad`; else `ByteSeek` (instant open) + a background `LineIndex` upgrade.
 - Media (Image/PDF): `content_kind.rs`, `media.rs` (`cmdr-media://` token map), `media_protocol.rs` (scheme handler),
   `media_backend.rs`, `media_session.rs`. See `DETAILS.md` § "Media rendering".
-- `routed_extract.rs`: preview of a ROUTED file (streams an archive entry or a `.git` snapshot blob to a bounded temp);
-  the agent's `inspect_file` is its second caller and removes its own temp. See `DETAILS.md` § "Preview of a routed
-  file".
+- `routed_extract.rs`: preview of a ROUTED file (an archive entry or a `.git` snapshot blob → a bounded temp); the
+  agent's `inspect_file` is its second caller. `DETAILS.md` § "Preview of a routed file".
 - `headless.rs`: `open_text_backend` (the backend pick with no session around it) and `open_scan_backend` (no index,
   for a `search`); the agent's `inspect_file` reads through both. `content_kind::looks_binary`, the byte-level
   text-vs-binary call. `DETAILS.md` § "Headless reads".
@@ -25,25 +24,21 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 ## Must-knows
 
 - **`viewer_set_encoding`, `viewer_set_tail_mode`, and `viewer_reload` are `async` + `spawn_blocking` + 2 s timeout**
-  (via `blocking_viewer_op`), not synchronous: a sync call would freeze the viewer window's IPC thread behind concurrent
-  scroll/search. Don't revert to plain `fn` (the watcher manager thread is already off the IPC thread, so its direct
-  `reload` / `apply_tail_extend` calls stay sync).
+  (`blocking_viewer_op`): a sync call would freeze the viewer window's IPC thread behind concurrent scroll/search. ❌
+  Don't revert to plain `fn`. The watcher manager thread is already off the IPC thread, so its own calls stay sync.
 - **The FSEvents subscribe runs on the manager thread, NOT inline in `open_session`.** It's blocking and
-  `fseventsd`-bound (seconds under load), so inlining risks the 2 s `viewer_open` timeout. The open→subscribe append
-  window is closed by `catch_up_after_subscribe`. Tests injecting synthetic watcher events must call
-  `wait_for_watcher_subscribed()` first. See `DETAILS.md` § "Gotchas (tail mode)".
-- **Drain-and-swap-under-lock protocol** for both the ByteSeek→LineIndex upgrade and the encoding rebuild: a `Grew`
-  event arriving mid-rebuild would be silently dropped, so it queues into `session.pending_grew` under one lock the
-  watcher writers also hold. The tail-extend race re-checks the backend `Arc` with `Arc::ptr_eq` after the extend,
-  discarding a stale one.
+  `fseventsd`-bound (seconds under load), so inlining risks the 2 s `viewer_open` timeout;
+  `catch_up_after_subscribe` closes the append window. A test injecting synthetic watcher events calls
+  `wait_for_watcher_subscribed()` first. `DETAILS.md` § "Gotchas (tail mode)".
+- **Drain-and-swap-under-lock protocol** for the ByteSeek→LineIndex upgrade and the encoding rebuild: a `Grew` event
+  arriving mid-rebuild would be dropped, so it queues into `session.pending_grew` under one lock the watcher writers
+  also hold. The tail-extend race re-checks the backend `Arc` with `Arc::ptr_eq`, discarding a stale one.
 - **`ViewerSession.backend` is `Arc<ArcSwap<Box<dyn FileViewerBackend>>>`** (not `Arc<dyn>` or `RwLock`): background
   rebuilds replace the backend without blocking the `get_lines` read path. Each backend is immutable.
-- **`SESSIONS` is freed on BOTH close paths.** The titlebar-X path never fires `viewer_close`; it's covered by a
-  `WindowEvent::Destroyed` branch in `app_lifecycle::on_window_event` for `viewer-*` labels (via `WINDOW_TO_SESSION`) — else
-  titlebar-closed viewers leak sessions. The `cmdr-media://` token is dropped at this same choke point
-  (`media::drop_token`); don't drop it elsewhere, or a closed viewer leaks a live token mapping a path. The scheme handler
-  serves `Content-Type` from stored magic bytes (never the extension), runs its OWN `spawn_blocking` + timeout, and 404s
-  an unknown token. See `DETAILS.md` § "Media rendering".
+- **`SESSIONS` is freed on BOTH close paths.** The titlebar-X never fires `viewer_close`; a `WindowEvent::Destroyed`
+  branch in `app_lifecycle::on_window_event` covers `viewer-*` labels, else those viewers leak sessions. The
+  `cmdr-media://` token drops at that same choke point (`media::drop_token`), ❌ nowhere else, or a closed viewer leaves
+  a live token mapping a path. `DETAILS.md` § "Media rendering".
 - **`search_cancel` must not null `session.search`**: the cancel flag is where the search thread writes `Cancelled`;
   nulling first lands the write in a dropped state and `search_poll` returns `Idle`.
 - **`SearchMatch.column` / `.length` are UTF-16 code units** (match JS `String.substring()`), avoiding highlight
@@ -54,11 +49,11 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   arithmetic depends on this; stripping `\r` later needs the same change there.
 - **Cancellation is per-read / per-search, never session-wide**: `read_range` and `search` check the cancel flag inside
   the per-line loop (not just between chunks), so concurrent reads don't race a shared flag.
-- **Never open a ROUTED path via `std::fs` here** (`/…/foo.zip/inner`, `/…/.git/branches/main/src/lib.rs`): neither has
-  an inode. The viewer core is `std::fs`-only, so `open_session` sends such a path through `routed_extract` (bounded
-  temp, deleted on close via `ViewerSession.extract_cleanup`); the cap refuses BEFORE materializing (zip-bomb guard).
-  Ask `volume::manager::path_routes_over_its_parent`, ❌ never an archive-only check. See `DETAILS.md` § "Preview of a
-  routed file".
+- **Never open a ROUTED path via `std::fs` here** (`/…/foo.zip/inner`, `/…/.git/branches/main/lib.rs`): neither has an
+  inode. `open_session` sends one through `routed_extract` instead (bounded temp, dropped on close via
+  `ViewerSession.extract_cleanup`; the cap refuses BEFORE materializing). Ask
+  `volume::manager::path_routes_over_its_parent`, ❌ never an archive-only check. `DETAILS.md` § "Preview of a routed
+  file".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
