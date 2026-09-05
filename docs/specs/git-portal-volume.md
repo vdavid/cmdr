@@ -141,16 +141,25 @@ If it should ship sooner, narrowing the guards from `is_virtual` to `classify(..
 
 ### M2: route + overlay (in place)
 
-1. `GitPortalVolume` in `file_system/git/volume.rs` implementing `Volume` over today's hook bodies; the read-only subset
-   of `volume::conformance` runs against it (TDD: the conformance cell first, red).
-2. `RoutedKind` in `ResolvedVolume`; lexical git routing in `resolve` and `resolve_local_only`, LRU registration
-   mirroring archives. Routing tests: category paths route, `.git/config` doesn't, toggle off doesn't.
-3. `ListingOverlay` registry + the git contributor; the shadowing rule under test; a test that the delete walker and a
-   copy scan of a repo see NO virtual entries (the regression anchor for the M0 bug).
-4. Remove the ten `local_posix.rs` sites, the `is_virtual` watch skip, and the `notify_mutation` early return. Rewire
-   the toggle and the watcher's refresh target (routing design, last bullet).
-5. Gate: bindings zero-diff, `pnpm check`, the portal E2E spec (`test/e2e-playwright/git-portal.spec.ts`), and
-   `bench.rs` numbers within the budgets in `git/DETAILS.md` § "Performance".
+Done. Steps 1 and 2 landed the routed volume and `RoutedKind`; steps 3-5 landed the seam, the removal, and the gate.
+The shape as built, and the three things it decided that the plan left open:
+
+- **The overlay's predicate is "the listed directory is called `.git`, on a volume answering
+  `local_path().is_some()`, with the portal on"**, and the ROUTE asks the volume half of the same question. The plan
+  worried about keying on `is_dir`; the answer is that the overlay contributes to a listing that already succeeded, so
+  a linked worktree's gitlink FILE excludes itself (`ENOTDIR`) with no stat of our own. That worktree keeps every
+  category below `.git/`, and loses only the landing listing, whose rewritten real rows were never openable anyway.
+- **`.git/` itself is watched now**, since the `is_virtual` watch skip is gone and it's an ordinary local directory.
+  Two consequences the plan didn't name: a watcher-driven `FullRefresh` has to re-run the overlays (it does, in
+  `caching::notify_full_refresh_locked`), and a watched `.git/` listing would otherwise read as authoritative to the
+  fresh-listing oracle. `CachedListing` records the contributed-row count and the oracle declines any listing carrying
+  some, which is the general form of "a pane view is not a picture of a directory".
+- **The watcher's refresh target was a non-question in the end.** Listings stay keyed on the FE-provided parent drive
+  id, and the refresh now matches by PATH across every volume rather than only `DEFAULT_VOLUME_ID` (a repo on an
+  external disk used to go stale).
+
+Full rationale is in the code's own docs now: `file_system/git/DETAILS.md` § "Two seams, no hooks",
+`file_system/volume/DETAILS.md` § "Architecture", `file_system/listing/DETAILS.md` § "The overlay step".
 
 ### M3: the move
 
