@@ -19,7 +19,7 @@
 use std::collections::BTreeSet;
 use std::time::Instant;
 
-use crate::file_system::listing::caching::LISTING_CACHE;
+use crate::file_system::listing::cached_listing::LISTING_CACHE;
 use crate::file_system::listing::metadata::FileEntry;
 
 /// Per-column widths plus the code points that had to be estimated.

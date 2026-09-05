@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
-use super::caching::{CachedListing, LISTING_CACHE, epoch_millis_now};
+use super::cached_listing::{CachedListing, LISTING_CACHE, epoch_millis_now};
 use super::metadata::FileEntry;
 use super::operations::list_directory_end;
 use super::sorting::{DirectorySortMode, SortColumn, SortOrder};

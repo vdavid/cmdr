@@ -6,8 +6,8 @@ non-blocking I/O and progress events.
 
 ## Module map
 - **reading.rs** disk I/O, **streaming.rs** async streaming with progress + cancellation (`ListingEventSink`),
-  **operations.rs** the sync frontend-facing API, **caching.rs** `LISTING_CACHE` / `CachedListing` / patch helpers /
-  `notify_directory_changed`, **mutation.rs** `notify_mutation` for a local-FS backend.
+  **operations.rs** the sync API, **cached_listing.rs** `CachedListing` + `LISTING_CACHE`, **caching.rs** patch
+  helpers / `notify_directory_changed`, **orphan_reaper.rs** the 6 h backstop, **mutation.rs** `notify_mutation`.
 - **diff.rs** the `DiffChange` vocabulary plus `compute_diff`, **diff_emitter.rs** coalescing (50 ms trailing window),
   **visible_rows.rs** / **path_index.rs** row numbers and paths materialized once so accessors index instead of walk,
   **listing_host.rs** `AppListings` for out-of-crate backends, **sorting.rs**, **brief_columns.rs**, **fuzzy_jump.rs**.
@@ -32,7 +32,7 @@ non-blocking I/O and progress events.
 - **All `directory-diff` emits go through `diff_emitter::enqueue_diff`, never `app.emit`**: a direct emit bypasses the
   50 ms coalescing and re-introduces per-file flicker. Only the emit is deferred; cache writes stay synchronous.
 - **The orphan reaper keys on `last_accessed_ms`, not `created_at`**: every read accessor and cache patch must bump it,
-  or the 6 h reaper evicts a live pane. ❌ Never from `refresh_listing_index_sizes` (background work).
+  or it evicts a live pane. ❌ Never from `refresh_listing_index_sizes` (background work).
 - **`read_directory_with_progress` holds a `priority::foreground` lease for its whole body**, so an SMB upload and the
   index scan stand aside for a slow folder. RAII: ❌ never bind it to `_`. `DETAILS.md` § "The foreground lease".
 - ❌ **The `select!` cancel arm must never `listing_task.abort()`**: returning detaches a safely-unwinding task,

@@ -1,6 +1,7 @@
 //! Directory listing module - reading, operations, caching, metadata, sorting, streaming.
 
 pub(crate) mod brief_columns;
+pub(crate) mod cached_listing;
 pub(crate) mod caching;
 pub(crate) mod diff;
 pub(crate) mod diff_emitter;
@@ -8,6 +9,7 @@ pub(crate) mod fuzzy_jump;
 pub(crate) mod listing_host;
 pub(crate) mod mutation;
 pub(crate) mod operations;
+pub(crate) mod orphan_reaper;
 pub(crate) mod path_index;
 pub(crate) mod reading;
 pub(crate) mod sorting;
@@ -39,8 +41,9 @@ pub use operations::{get_files_at_indices, get_paths_at_indices};
 // Internal re-exports for file_system module internals (pub(crate) for crate-internal use)
 pub(crate) use caching::{
     ModifyResult, find_listings_for_path, get_cached_listing, get_listing_volume_id_and_path, has_entry,
-    increment_sequence, insert_entry_sorted, remove_entries_by_paths, start_orphan_listing_reaper, update_entry_sorted,
+    increment_sequence, insert_entry_sorted, remove_entries_by_paths, update_entry_sorted,
 };
+pub(crate) use orphan_reaper::start_orphan_listing_reaper;
 // Notification API for volume mutations
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use operations::volume_ids_with_listings;

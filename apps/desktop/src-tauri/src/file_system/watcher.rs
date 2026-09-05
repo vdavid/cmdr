@@ -484,7 +484,7 @@ pub async fn handle_directory_change(listing_id: &str) {
 
     // Look up this listing's volume id so we can re-read through the Volume trait.
     let volume_id = {
-        use crate::file_system::listing::caching::LISTING_CACHE;
+        use crate::file_system::listing::cached_listing::LISTING_CACHE;
         let cache = match LISTING_CACHE.read() {
             Ok(c) => c,
             Err(_) => return,
@@ -569,7 +569,7 @@ pub async fn handle_directory_change(listing_id: &str) {
     // Also enrich with index data so diff entries have recursive_size etc.
     let mut new_entries = new_entries;
     {
-        use crate::file_system::listing::caching::LISTING_CACHE;
+        use crate::file_system::listing::cached_listing::LISTING_CACHE;
         use crate::file_system::listing::sorting::sort_entries;
 
         if let Ok(cache) = LISTING_CACHE.read()

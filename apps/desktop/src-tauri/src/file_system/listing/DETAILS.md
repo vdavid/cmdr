@@ -77,9 +77,12 @@ SMB and MTP wire `on_progress` through their own listing loops directly, having 
 
 ## Caching
 
+The record and the map are `cached_listing.rs`, everything that patches one or notifies about it is `caching.rs`, and
+the six-hour backstop that reclaims a leaked one is `orphan_reaper.rs`.
+
 - **`LISTING_CACHE`**: global `RwLock<HashMap<String, CachedListing>>`, keyed by `listing_id` (UUID per navigation).
 - **`CachedListing`**: `{ volume_id, path, entries, visible_rows, path_index, sort_by, sort_order,
-  directory_sort_mode, sequence, created_at, last_accessed_ms }`. `entries` is private: `entries()` reads,
+  directory_sort_mode, sequence, created_at, last_accessed_ms, overlay_rows }`. `entries` is private: `entries()` reads,
   `entries_mut()` / `set_entries()` change it and drop BOTH maps on the way, `rows(include_hidden)` is what every read
   accessor asks, and `index_of_path` / `indices_of_paths` are what every by-path caller asks. See § "Row numbers" and
   § "Entries by path".

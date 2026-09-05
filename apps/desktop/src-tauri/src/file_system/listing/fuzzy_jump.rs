@@ -33,7 +33,7 @@ use nucleo_matcher::{
     pattern::{CaseMatching, Normalization, Pattern},
 };
 
-use crate::file_system::listing::caching::LISTING_CACHE;
+use crate::file_system::listing::cached_listing::LISTING_CACHE;
 use crate::file_system::listing::metadata::FileEntry;
 
 /// Returns the row number of the highest-scoring fuzzy match for `query` among the
