@@ -14,13 +14,14 @@ every holder arbitrates through. The registry and phase machine are `../CLAUDE.m
 - **A walk stops through a CHILD of the caller's token and flushes before reporting**, cancel included. The child lets
   one walk be stopped without stopping the volume; ⚠️ a stopped walk flushes whatever `FlushOnFinish` its caller chose,
   because its ground changes hands the moment it lets go and the next holder reads the DATABASE to decide what is
-  virgin. **`CoverOutcome::abandoned_ground` is independent of every other field**: ❌ any caller
-  reporting completeness must consult it.
+  virgin. **`CoverOutcome::abandoned_ground` is independent of every other field**: ❌ any caller reporting completeness
+  must consult it.
 - **A typed disconnect ends the WHOLE frontier, not one root** (`RootOutcome::VolumeGone`): the roots behind it share
-  one session, so re-asking buys a dead round trip each. ⚠️ Skipped is not condemned — nothing walks them,
-  so nothing marks them and they stay frontier. ❌ Never widen the trigger past `is_terminal_disconnect`.
+  one session, so re-asking buys a dead round trip each. ⚠️ Skipped is not condemned — nothing walks them, so nothing
+  marks them and they stay frontier. ❌ Never widen the trigger past `is_terminal_disconnect`.
 - **A walk RELEASES its branch whatever the registry phase** (`finish_branch_coverage` reaches the set directly), ❌
-  never behind `with_running_manager`: a walk ending in a `Detached`/`ShuttingDown` window would hold that ground forever.
+  never behind `with_running_manager`: a walk ending in a `Detached`/`ShuttingDown` window would hold that ground
+  forever.
 - **Bootstrap creates the rows a walk needs to START, each at `listed_epoch = 0`; ❌ nothing here claims coverage** —
   the walk earns it, or an ancestor marks a whole tree covered off one walked folder.
 - **A missing `entries` row is NOT only a cold-drive case**: a folder created since its parent was listed has none on a
