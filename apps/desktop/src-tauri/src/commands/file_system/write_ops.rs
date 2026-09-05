@@ -28,29 +28,28 @@ use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
 use super::expand_tilde;
-use crate::file_system::volume::manager::RoutedKind;
+use crate::file_system::volume::manager::path_routes_over_its_parent;
 
 /// Picks the source volume for a scan preview.
 ///
-/// Routes an archive-inner source to its `ArchiveVolume` so the preview scan reads
-/// entries from INSIDE the zip. Without this, a `.zip`-crossing source (whose
-/// display volume id is the local parent drive, `"root"`) would take the local
-/// `std::fs` scan path and find 0 files (inner paths aren't real FS paths), cache
-/// a 0-file preview, and the copy would reuse it — the extract-out "cancelled
-/// after 0 files" stall. `resolve` does no I/O unless a path component carries a
-/// `.zip` extension, so ordinary local/remote scans are unaffected.
+/// Routes a source a ROUTE serves — inside a `.zip`, or inside a repo's virtual
+/// `.git` trees — to that read-only volume, so the preview scan reads the entries
+/// the copy will actually read. Without it, such a source (whose display volume id
+/// is the local parent drive, `"root"`) takes the local `std::fs` scan path,
+/// finds 0 files because those paths have no inode, caches a 0-file preview, and
+/// the copy reuses it: the extract-out "cancelled after 0 files" stall, and the
+/// copy-out-of-a-snapshot dialog stuck forever on "Verifying before copy".
+/// `path_routes_over_its_parent` is pure string work, so ordinary local/remote
+/// scans pay nothing.
 ///
 /// `None` means "scan the local filesystem directly" (the `std::fs` fast path);
 /// `Some` means scan through the `Volume` trait.
 async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathBuf>) -> Option<Arc<dyn Volume>> {
-    // Route to the ArchiveVolume only for a source INSIDE the archive. The `.zip`
-    // file itself is scanned as a plain file (one entry), not its contents. Only a
-    // non-empty inner component can be archive-inner; the pure string pre-filter
-    // gates the parent-aware resolve, which confirms a REMOTE zip too.
-    let is_inner_candidate = first_source
-        .and_then(|first| cmdr_archive::archive_boundary_candidate(first))
-        .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
-    let archive_source = if is_inner_candidate {
+    // The `.zip` file itself is scanned as a plain file (one entry), never its
+    // contents, which is why the gate asks about a path INSIDE a route rather
+    // than about a `.zip` component.
+    let is_routed_candidate = first_source.is_some_and(|first| path_routes_over_its_parent(first));
+    let routed_source = if is_routed_candidate {
         // Bounded, because confirming a REMOTE archive boundary is real network
         // I/O and this runs BEFORE the preview exists — so the scan watchdog,
         // which bounds everything after, cannot cover it, and a wedged share
@@ -66,17 +65,15 @@ async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathB
             async move { Ok::<_, DeadlineError>(get_volume_manager().resolve(&owned_id, &owned_source).await) },
         )
         .await;
-        // The ARCHIVE kind gates whether we actually got the ArchiveVolume (a
-        // mislabeled `.zip` falls through to the parent, which the branches below
-        // handle).
-        resolved
-            .ok()
-            .and_then(|r| (r.routed == Some(RoutedKind::Archive)).then_some(r.volume).flatten())
+        // The route gates whether we actually got the routed volume: a mislabeled
+        // `.zip`, a `.git` that isn't a repository, or a switched-off portal all
+        // fall through to the parent, which the branches below handle.
+        resolved.ok().and_then(|r| r.is_routed().then_some(r.volume).flatten())
     } else {
         None
     };
-    if archive_source.is_some() {
-        archive_source
+    if routed_source.is_some() {
+        routed_source
     } else if volume_id == "root" {
         None
     } else {
@@ -84,17 +81,26 @@ async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathB
     }
 }
 
-/// Rejects a local write op that touches a path INSIDE an archive. Archives are
-/// read-only until zip mutation lands, and the real extract-out path goes through
-/// `copy_between_volumes` (which routes to the `ArchiveVolume`), never this local
-/// `std::fs` fast-path. A backend safety net behind the frontend's read-only
-/// capability gating; this seam turns into archive-edit routing when mutation
-/// lands.
-fn reject_if_archive_inner<'a>(paths: impl IntoIterator<Item = &'a PathBuf>) -> Result<(), WriteOperationError> {
+/// Rejects a local write op that touches a path a ROUTE serves: inside an
+/// archive, or inside a repo's virtual `.git` trees. Neither has a file on disk
+/// for `std::fs` to act on, so the local fast path would grind to a `NotFound`
+/// that reads like a broken app; this answers with the typed read-only refusal
+/// the frontend already renders.
+///
+/// Both questions confirm rather than guess: the archive half stats the `.zip`
+/// and sniffs its magic, and the git half is `false` whenever the portal is
+/// switched off, so a real folder called `foo.zip` or a real `.git/branches/`
+/// keeps taking ordinary local writes.
+///
+/// A backend safety net behind the frontend's read-only capability gating. The
+/// transfers that legitimately cross a route (extract-out, copy out of a
+/// snapshot, writing into a zip) run through `copy_between_volumes`, which routes
+/// to the read-only volume, ❌ never this fast path.
+fn reject_if_routed_over_a_parent<'a>(paths: impl IntoIterator<Item = &'a PathBuf>) -> Result<(), WriteOperationError> {
     for path in paths {
         // Only a path INSIDE an archive is read-only. The `.zip` file itself is a
         // regular file — copying/moving/deleting/trashing it must work.
-        if cmdr_archive::path_is_inside_archive(path) {
+        if cmdr_archive::path_is_inside_archive(path) || crate::file_system::git::wiring::portal_serves(path) {
             return Err(WriteOperationError::ReadOnlyDevice {
                 path: path.to_string_lossy().into_owned(),
                 device_name: None,
@@ -161,9 +167,10 @@ fn expand_parent(volume_id: Option<&str>, parent_path: &str) -> String {
 // ============================================================================
 
 /// Turns a same-`root` copy or move request into backend arguments: tilde-expanded
-/// paths and the default config. A transfer INTO or OUT of an archive doesn't belong
-/// on the local fast-path (extract-out routes through `copy_between_volumes`; writing
-/// into a zip is read-only until mutation lands), so it is refused here.
+/// paths and the default config. A transfer that touches a routed namespace on
+/// either end doesn't belong on the local fast path (a copy out of a zip or a
+/// snapshot routes through `copy_between_volumes`; writing INTO either is
+/// read-only), so it is refused here.
 fn local_transfer_request(
     sources: &[String],
     destination: &str,
@@ -171,7 +178,7 @@ fn local_transfer_request(
 ) -> Result<(Vec<PathBuf>, PathBuf, WriteOperationConfig), WriteOperationError> {
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let destination = PathBuf::from(expand_tilde(destination));
-    reject_if_archive_inner(sources.iter().chain(std::iter::once(&destination)))?;
+    reject_if_routed_over_a_parent(sources.iter().chain(std::iter::once(&destination)))?;
     Ok((sources, destination, config.unwrap_or_default()))
 }
 
@@ -283,7 +290,7 @@ pub async fn trash_files(
     let config = config.unwrap_or_default();
 
     // Trashing an entry inside an archive is a mutation (read-only for now).
-    reject_if_archive_inner(sources.iter())?;
+    reject_if_routed_over_a_parent(sources.iter())?;
 
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_trash_files_start(
@@ -501,7 +508,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reject_if_archive_inner_flags_a_path_inside_a_zip() {
+    fn reject_if_routed_over_a_parent_flags_a_path_inside_a_zip() {
         let dir = tempfile::tempdir().expect("tempdir");
         let zip = dir.path().join("bundle.zip");
         // A zip start-of-file signature is enough for the boundary magic check.
@@ -509,7 +516,8 @@ mod tests {
 
         // A path INSIDE the archive is refused with a typed read-only error...
         let inner = zip.join("inner.txt");
-        let err = reject_if_archive_inner(std::iter::once(&inner)).expect_err("archive-inner path must be refused");
+        let err =
+            reject_if_routed_over_a_parent(std::iter::once(&inner)).expect_err("archive-inner path must be refused");
         assert!(
             matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
             "expected ReadOnlyDevice, got {err:?}"
@@ -517,14 +525,48 @@ mod tests {
 
         // ...while a plain local sibling passes (proves the guard, not a blanket reject).
         let plain = dir.path().join("plain.txt");
-        assert!(reject_if_archive_inner(std::iter::once(&plain)).is_ok());
+        assert!(reject_if_routed_over_a_parent(std::iter::once(&plain)).is_ok());
 
         // ...AND the `.zip` FILE ITSELF passes: copying/moving/deleting/trashing a
         // zip file is a normal file op, not a write INSIDE the archive.
         assert!(
-            reject_if_archive_inner(std::iter::once(&zip)).is_ok(),
+            reject_if_routed_over_a_parent(std::iter::once(&zip)).is_ok(),
             "the .zip file itself must not be refused"
         );
+    }
+
+    /// The git half of the same guard, and the toggle that switches it off: with
+    /// the portal on, `.git/branches/…` has no file for `std::fs` to move; with it
+    /// off, the same path is whatever is on disk and stays an ordinary local write.
+    #[test]
+    fn reject_if_routed_over_a_parent_flags_a_snapshot_path_only_while_the_portal_is_on() {
+        use crate::file_system::git;
+        use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
+
+        let dir = temp_dir("write_ops_guard", "snapshot");
+        let mut fixture = Fixture::init(dir.clone());
+        fixture.commit_file("README.md", b"hello\n", "initial");
+        let snapshot = dir.join(".git/branches/main/README.md");
+
+        git::wiring::set_virtual_portal_enabled(true);
+        let err =
+            reject_if_routed_over_a_parent(std::iter::once(&snapshot)).expect_err("a snapshot path must be refused");
+        assert!(
+            matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
+            "expected ReadOnlyDevice, got {err:?}"
+        );
+
+        // The real files under `.git/` are the parent volume's, always writable.
+        assert!(reject_if_routed_over_a_parent(std::iter::once(&dir.join(".git/config"))).is_ok());
+
+        git::wiring::set_virtual_portal_enabled(false);
+        assert!(
+            reject_if_routed_over_a_parent(std::iter::once(&snapshot)).is_ok(),
+            "with the portal off there is no route to protect"
+        );
+        git::wiring::set_virtual_portal_enabled(true);
+
+        cleanup(&dir);
     }
 
     #[tokio::test]

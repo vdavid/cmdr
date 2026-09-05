@@ -50,6 +50,26 @@ pub struct ResolvedVolume {
     pub routed: Option<RoutedKind>,
 }
 
+/// Whether `path` could be served by a ROUTE rather than by the volume that
+/// physically holds it. Pure string work over path segments: no `stat`, no
+/// network, and deliberately permissive, because
+/// [`VolumeManager::resolve`] is the authoritative answer.
+///
+/// True for exactly the paths with no file of their own on the parent volume: a
+/// non-empty archive-inner path, and anything inside a repo's virtual `.git`
+/// trees while the portal is switched on. ❗ The `.zip` FILE itself is NOT one of
+/// them — it's an ordinary file, and a copy, a move, and the viewer all have to
+/// treat it as bytes on disk.
+///
+/// Call sites use it as the cheap gate in front of an `await`ed `resolve`, so an
+/// ordinary local or remote path pays nothing; whoever then acts on the answer
+/// reads [`ResolvedVolume::routed`], never this.
+pub fn path_routes_over_its_parent(path: &Path) -> bool {
+    let inside_an_archive =
+        cmdr_archive::archive_boundary_candidate(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
+    inside_an_archive || crate::file_system::git::wiring::portal_serves(path)
+}
+
 impl ResolvedVolume {
     /// An unrouted resolve: the requested volume (if any), path unchanged.
     pub(super) fn passthrough(volume: Option<Arc<dyn Volume>>, path: &Path) -> Self {

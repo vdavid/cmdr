@@ -116,6 +116,20 @@ pub fn is_virtual_portal_enabled() -> bool {
     VIRTUAL_PORTAL_ENABLED.load(Ordering::Relaxed)
 }
 
+/// Whether the portal, as switched on right now, serves `path`: it reaches into
+/// one of a repo's six virtual `.git` trees AND the toggle is on.
+///
+/// Pure string work over path segments plus one atomic read, so it's free on a
+/// hot path. With the portal off it answers `false` for every path, which is the
+/// point: `.git/branches/` is then whatever is on disk, and a write to it is an
+/// ordinary local write.
+///
+/// The seams that route by it read [`ResolvedVolume::routed`](crate::file_system::volume::manager::ResolvedVolume)
+/// instead; this is for the guards that have only a path.
+pub fn portal_serves(path: &Path) -> bool {
+    is_virtual_portal_enabled() && cmdr_git::portal_route(path).is_some()
+}
+
 /// Whether `volume`'s paths are ones `gix` can open: a local disk or an
 /// OS-mounted share, never a protocol-only backend (direct SMB, MTP, ADB) or
 /// another routed volume.

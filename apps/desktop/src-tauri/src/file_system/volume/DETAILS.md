@@ -122,6 +122,13 @@ verbatim and both are capped by an LRU; `ResolvedVolume.routed` says which one f
   being routed at all: neither kind's paths are real FS paths and neither takes a mutation. Match a variant only where
   the answer is about that ONE backend — the archive-edit changeset driver, the archive preview, the viewer's extract
   path, and the fresh-listing oracle's unconfirmed-remote-archive guard.
+- **`path_routes_over_its_parent(path)` is the cheap gate in front of an `await`ed `resolve`** (same module). Pure
+  string work plus one atomic read, true for exactly the paths with no file of their own on the parent volume: a
+  non-empty archive-inner path, and anything the portal serves right now. It is deliberately narrow at both edges. The
+  `.zip` FILE itself is an ordinary file that a copy, a move, and the viewer must treat as bytes on disk, and a `.git`
+  path stops counting the moment the portal toggle goes off. Whoever acts on the answer still reads `resolved.routed`;
+  this only decides whether to ask. Its askers are the transfer source resolver, the scan-preview source, the viewer's
+  materialization, and the viewer's open budget.
 - **A routed volume is not a mount.** `mount_id_for_path` skips both by TYPE (an `ArchiveVolume`'s root is the `.zip`
   and a `GitPortalVolume`'s is `<worktree>/.git`, so either would win the longest-root race), by type rather than by
   LRU membership because registration happens a moment before the LRU insert.

@@ -25,7 +25,7 @@ pub use roots::{RootRemoval, StaleRootOutcome, is_stale_mount_errno};
     unused_imports,
     reason = "ResolvedVolume is `resolve`'s return type: named by rustdoc and by any site that binds it, even where today's callers only read its fields"
 )]
-pub use routing::{ResolvedVolume, RoutedKind};
+pub use routing::{ResolvedVolume, RoutedKind, path_routes_over_its_parent};
 
 #[cfg(test)]
 pub(crate) mod test_support;

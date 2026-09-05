@@ -16,11 +16,14 @@
  * 5. Flipping the portal off with a `.git/` pane open: the six rows go, the
  *    real entries stay, and flipping back brings them straight back.
  *
- * Cross-volume copy with executable-bit preservation lives in the Rust
- * integration test `cmdr_git::volume_tests::a_copy_out_of_a_snapshot_carries_the_bytes_and_the_executable_bit`,
- * which drives the real `open_read_stream` and `write_from_stream` round-trip. Driving the full copy UI from Playwright
- * would need dialog automation we don't have, and the Rust test exercises the
- * load-bearing code path (the portal volume's read stream + the local write stream).
+ * 6. Copying a file and a folder OUT of a branch snapshot into a real folder,
+ *    which is the app-level proof that the transfer reads through the portal
+ *    rather than looking for an inode that isn't there.
+ *
+ * Executable-bit preservation on that copy lives in the Rust integration test
+ * `cmdr_git::volume_tests::a_copy_out_of_a_snapshot_carries_the_bytes_and_the_executable_bit`,
+ * and the routing plus engine leg in
+ * `file_system::write_operations::transfer::volume::copy::snapshot_out_tests`.
  *
  * Editing, renaming, and removing a REAL file under `.git/` is
  * `file_system::git::walker_exposure_tests::real_files_under_dot_git_stay_fully_mutable`,
@@ -205,6 +208,50 @@ test.describe('Git portal', () => {
     await setPortalEnabled(tauriPage, true)
     expect(await paneHasFile(tauriPage, 0, 'branches')).toBe(true)
     expect(await paneHasFile(tauriPage, 0, 'HEAD')).toBe(true)
+  })
+
+  test('copies a file and a folder out of a branch snapshot into a real folder', async ({ tauriPage }) => {
+    // The bug this pins: a snapshot source used to stay on the parent drive, so
+    // the copy took the local-to-local fast path against paths with no inode.
+    // The dialog then sat on "Verifying before copy" forever and ended in
+    // "Couldn't finish copying".
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+
+    const outDir = path.join(getFixtureRoot(), 'git-portal-copy-out')
+    fs.rmSync(outDir, { recursive: true, force: true })
+    fs.mkdirSync(outDir, { recursive: true })
+
+    await mcpNavToPath('right', outDir)
+    await mcpNavToPath('left', path.join(repoPath(), '.git/branches/main'))
+    expect(await paneHasFile(tauriPage, 0, 'README.md')).toBe(true)
+
+    // `select` focuses the pane, so the copy runs from the snapshot into the
+    // right pane's real folder.
+    await mcpCall('select', { pane: 'left', names: ['README.md', 'scripts'] })
+    expect(await mcpCall('copy', { autoConfirm: true })).toContain('OK')
+
+    const landed = await mcpCall('await', {
+      pane: 'right',
+      condition: 'has_item',
+      value: 'README.md',
+      timeoutSeconds: 20,
+    })
+    expect(landed).toContain('OK')
+
+    // Byte-for-byte, both the top-level file and the folder's contents.
+    await expect
+      .poll(async () => fs.existsSync(path.join(outDir, 'scripts', 'run.sh')), { timeout: 20000 })
+      .toBe(true)
+    expect(fs.readFileSync(path.join(outDir, 'README.md'))).toEqual(
+      fs.readFileSync(path.join(repoPath(), 'README.md')),
+    )
+    expect(fs.readFileSync(path.join(outDir, 'scripts', 'run.sh'))).toEqual(
+      fs.readFileSync(path.join(repoPath(), 'scripts', 'run.sh')),
+    )
+
+    fs.rmSync(outDir, { recursive: true, force: true })
+    await dismissAllToasts(tauriPage)
   })
 
   test('navigates commits/ and shows the single HEAD commit by short SHA', async ({ tauriPage }) => {

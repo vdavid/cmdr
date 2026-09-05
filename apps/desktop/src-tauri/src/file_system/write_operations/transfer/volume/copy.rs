@@ -1214,6 +1214,9 @@ mod retry_tests;
 #[path = "copy_rollback_tests.rs"]
 mod rollback_tests;
 #[cfg(test)]
+#[path = "copy_snapshot_out_tests.rs"]
+mod snapshot_out_tests;
+#[cfg(test)]
 #[path = "copy_source_hint_tests.rs"]
 mod source_hint_tests;
 #[cfg(test)]

@@ -6,6 +6,7 @@
 //! instead of copying the file.
 
 use super::{resolve_dest_path, resolve_source_volume};
+use crate::file_system::volume::manager::RoutedKind;
 use cmdr_fs::volume::{InMemoryVolume, Volume};
 use std::path::Path;
 use std::sync::Arc;
@@ -73,15 +74,55 @@ async fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
     // The `.zip` FILE itself is copied as a plain file: routed to the PARENT
     // volume, `is_inside = false` (NOT the ArchiveVolume, which would scan its
     // contents instead of copying the file).
-    let (vol, is_inside) = resolve_source_volume("root", Some(&zip)).await.expect("source volume");
-    assert!(!is_inside, "the .zip file itself is not archive-inner");
+    let (vol, route) = resolve_source_volume("root", Some(&zip)).await.expect("source volume");
+    assert_eq!(route, None, "the .zip file itself is not archive-inner");
     assert_eq!(vol.name(), "Root", "routed to the parent volume, not the archive");
 
-    // A path INSIDE the archive routes to the ArchiveVolume, is_inside = true.
-    // This is what makes an EXTRACT reachable as an ordinary copy.
-    let (inner_vol, inner_is_inside) = resolve_source_volume("root", Some(&zip.join("entry.txt")))
+    // A path INSIDE the archive routes to the ArchiveVolume. This is what makes
+    // an EXTRACT reachable as an ordinary copy.
+    let (inner_vol, inner_route) = resolve_source_volume("root", Some(&zip.join("entry.txt")))
         .await
         .expect("inner volume");
-    assert!(inner_is_inside, "an inner path is archive-inner");
+    assert_eq!(inner_route, Some(RoutedKind::Archive), "an inner path is archive-inner");
     assert_eq!(inner_vol.root(), zip, "the archive volume's root is the .zip");
+}
+
+/// A snapshot path is the portal's, so the copy engine reads it with
+/// `open_read_stream` and walks it with `scan_for_copy`. Left on the parent
+/// volume it would take the local-to-local fast path against a path with no
+/// inode: the transfer dialog then sits on "Verifying before copy" forever and
+/// ends in "Couldn't finish copying".
+#[tokio::test]
+async fn resolve_source_routes_a_snapshot_path_to_the_git_portal() {
+    use crate::file_system::git;
+    use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
+    use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
+
+    let dir = temp_dir("write_routing", "copy_out");
+    let mut fixture = Fixture::init(dir.clone());
+    fixture.commit_file("README.md", b"hello\n", "initial");
+    get_volume_manager().register("root", Arc::new(LocalPosixVolume::new("Root", dir.to_str().unwrap())));
+    git::wiring::set_virtual_portal_enabled(true);
+
+    let (volume, route) = resolve_source_volume("root", Some(&dir.join(".git/branches/main/README.md")))
+        .await
+        .expect("source volume");
+    assert_eq!(route, Some(RoutedKind::GitPortal));
+    assert_eq!(volume.name(), ".git", "the portal serves it, not the parent drive");
+    assert_eq!(
+        volume.local_path(),
+        None,
+        "no local path, so the copy takes the cross-volume engine"
+    );
+
+    // `.git/` itself and the real files under it are the parent's, so editing
+    // and deleting them keeps working.
+    let (parent, real_route) = resolve_source_volume("root", Some(&dir.join(".git/config")))
+        .await
+        .expect("source volume");
+    assert_eq!(real_route, None);
+    assert_eq!(parent.name(), "Root");
+
+    cleanup(&dir);
 }

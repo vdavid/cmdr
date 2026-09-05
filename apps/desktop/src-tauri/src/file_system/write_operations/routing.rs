@@ -28,8 +28,7 @@ use super::source_binding::ExpectedSources;
 use super::transfer::volume::{copy_between_volumes, move_between_volumes};
 use super::types::{VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
 use crate::file_system::volume::Volume;
-use crate::file_system::volume::manager::RoutedKind;
-use crate::file_system::volume::manager::get_volume_manager;
+use crate::file_system::volume::manager::{RoutedKind, get_volume_manager, path_routes_over_its_parent};
 use crate::operation_log::types::Initiator;
 
 /// Turns the destination a caller sent into the path the destination volume
@@ -89,37 +88,71 @@ pub(crate) fn transfer_would_land_on_its_source(
     }
 }
 
-/// Resolves a batch's source volume, routing a source INSIDE an archive to its
-/// `ArchiveVolume` (extract-out is a supported source). One `source_volume_id` per
-/// batch means no straddle risk — every path shares the same archive or none — so
-/// the first path decides. The `bool` is "source is inside an archive": the `.zip`
-/// file itself is a plain file (copied/moved as a file, via its parent volume), so
-/// only a genuinely-inner source flips it true.
+/// Resolves a batch's source volume, routing a source that a ROUTE serves —
+/// inside a `.zip`, or inside a repo's virtual `.git` trees — to that read-only
+/// volume, and saying which route it was.
+///
+/// Reading through the routed volume is what makes an extract-out and a copy out
+/// of a snapshot ordinary cross-volume copies: both read with `open_read_stream`
+/// and walk with `scan_for_copy`, neither has a path `std::fs` could open. A
+/// source left on its parent volume would take the local-to-local fast path
+/// against a path with no inode and stall the transfer on its scan.
+///
+/// One `source_volume_id` per batch means no straddle risk — every path shares
+/// the same archive, the same repo, or none — so the first path decides.
+///
+/// [`RoutedKind`] rather than a bool, because the two routes part ways on a
+/// MOVE: an archive can delete the source entries afterwards, a snapshot can't.
 pub(crate) async fn resolve_source_volume(
     volume_id: &str,
     first_path: Option<&PathBuf>,
-) -> Option<(Arc<dyn Volume>, bool)> {
+) -> Option<(Arc<dyn Volume>, Option<RoutedKind>)> {
     let manager = get_volume_manager();
     let Some(path) = first_path else {
-        return manager.get(volume_id).map(|v| (v, false));
+        return manager.get(volume_id).map(|v| (v, None));
     };
-    // Only a non-empty inner component can be archive-inner; the `.zip` file itself
-    // (empty inner) is a plain file copied via its parent volume. This is a pure
-    // string pre-filter, so a plain local/remote path skips the resolve below.
-    let is_inner_candidate =
-        cmdr_archive::archive_boundary_candidate(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
-    if !is_inner_candidate {
-        return manager.get(volume_id).map(|v| (v, false));
+    // Pure string gate, so an ordinary local/remote path skips the resolve below.
+    if !path_routes_over_its_parent(path) {
+        return manager.get(volume_id).map(|v| (v, None));
     }
-    // Parent-aware resolve (local `std::fs` OR remote via the parent's own I/O):
-    // a confirmed archive routes to the `ArchiveVolume` (extract-out) with
-    // `is_inside = true`; a mislabeled `.zip` degrades to the parent, `false`.
+    // Parent-aware resolve (local `std::fs` OR remote via the parent's own I/O)
+    // for the archive half, lexical for the git half. A mislabeled `.zip`, a
+    // `.git` that isn't a repository, or a switched-off portal all degrade to the
+    // parent volume with no route.
     let resolved = manager.resolve(volume_id, path).await;
-    let is_inside = resolved.routed == Some(RoutedKind::Archive);
-    resolved
-        .volume
-        .or_else(|| manager.get(volume_id))
-        .map(|v| (v, is_inside))
+    match resolved.volume {
+        Some(volume) => Some((volume, resolved.routed)),
+        // The volume vanished between the route and the read (an unmount race).
+        None => manager.get(volume_id).map(|v| (v, None)),
+    }
+}
+
+/// Refuses a MOVE whose sources sit on a read-only routed volume that has no
+/// delete to give: a copy out would run, and then the source half of the move
+/// could never happen. Refusing before anything starts is the honest outcome,
+/// and the copy the user actually can do is one keystroke away.
+///
+/// Named for the source volume, so the sentence the frontend renders reads
+/// "`.git` is read-only. You can copy files from it, but not to it."
+fn source_cannot_give_up_its_files(source_volume: &Arc<dyn Volume>) -> WriteOperationError {
+    WriteOperationError::ReadOnlyDevice {
+        path: source_volume.root().display().to_string(),
+        device_name: Some(source_volume.name().to_string()),
+    }
+}
+
+/// Refuses a transfer INTO a read-only routed volume (a repo's virtual `.git`
+/// trees). A drop onto a snapshot has nowhere to land: every mutation method on
+/// the volume answers `NotSupported`, so without this the transfer would start,
+/// build its plan, and fail on the first write with a half-drawn dialog.
+///
+/// A `.zip` destination is NOT this case: it routes to the archive-edit driver,
+/// which really does write.
+fn destination_takes_no_writes(dest_volume: &Arc<dyn Volume>) -> WriteOperationError {
+    WriteOperationError::ReadOnlyDevice {
+        path: dest_volume.root().display().to_string(),
+        device_name: Some(dest_volume.name().to_string()),
+    }
 }
 
 /// Refuses a transfer whose source binding the route it landed on cannot honour.
@@ -173,8 +206,11 @@ pub(crate) async fn start_volume_copy(
     initiator: Initiator,
     expected_sources: Option<ExpectedSources>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Route an archive-inner source batch to its ArchiveVolume (extract-out).
-    let (source_volume, _source_is_archive) = resolve_source_volume(&source_volume_id, source_paths.first())
+    // Route a source a route serves to its read-only volume: an archive-inner
+    // batch to its `ArchiveVolume` (extract-out), a snapshot path to the repo's
+    // `GitPortalVolume` (copy out of `.git/branches/<name>/…`). Both then read
+    // through the cross-volume engine.
+    let (source_volume, _source_route) = resolve_source_volume(&source_volume_id, source_paths.first())
         .await
         .ok_or_else(|| source_volume_missing(&source_volume_id))?;
 
@@ -186,6 +222,10 @@ pub(crate) async fn start_volume_copy(
     let dest_volume = dest_resolved
         .volume
         .ok_or_else(|| dest_volume_missing(&dest_volume_id))?;
+
+    if dest_resolved.routed == Some(RoutedKind::GitPortal) {
+        return Err(destination_takes_no_writes(&dest_volume));
+    }
 
     if dest_resolved.routed == Some(RoutedKind::Archive) {
         if expected_sources.is_some() {
@@ -241,9 +281,18 @@ pub(crate) async fn start_volume_move(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // An archive SOURCE routes to the compound move-out op (extract via the copy
     // engine, then a batch `{ delete }` archive rewrite once the extract lands).
-    let (source_volume, source_is_archive) = resolve_source_volume(&source_volume_id, source_paths.first())
+    // A git-portal source has no delete to pair with the copy, so it's refused
+    // below rather than routed anywhere.
+    let (source_volume, source_route) = resolve_source_volume(&source_volume_id, source_paths.first())
         .await
         .ok_or_else(|| source_volume_missing(&source_volume_id))?;
+
+    // A snapshot can be copied out of, never moved out of: `.git/branches/…` has
+    // no file to remove once the copy lands. Refused before the destination is
+    // even resolved, so nothing is written and nothing is half-done.
+    if source_route == Some(RoutedKind::GitPortal) {
+        return Err(source_cannot_give_up_its_files(&source_volume));
+    }
 
     let dest_resolved = get_volume_manager()
         .resolve(&dest_volume_id, Path::new(&dest_path))
@@ -252,10 +301,14 @@ pub(crate) async fn start_volume_move(
         .volume
         .ok_or_else(|| dest_volume_missing(&dest_volume_id))?;
 
+    if dest_resolved.routed == Some(RoutedKind::GitPortal) {
+        return Err(destination_takes_no_writes(&dest_volume));
+    }
+
     // Move OUT of a zip. Takes precedence over the dest-archive branch: a
     // zip→zip move extracts out first (the dest-archive case degrades to a copy
     // failure inside the extract, never data loss).
-    if source_is_archive {
+    if source_route == Some(RoutedKind::Archive) {
         if expected_sources.is_some() {
             return Err(route_cannot_hold_a_binding("move out of a zip"));
         }
@@ -329,8 +382,9 @@ pub(crate) async fn start_volume_compress(
     config: VolumeCopyConfig,
     initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Route an archive-inner source batch to its ArchiveVolume (compress-from-zip).
-    let (source_volume, _source_is_archive) = resolve_source_volume(&source_volume_id, source_paths.first())
+    // Route a routed source batch to its read-only volume, so compressing reads
+    // through it: from inside a `.zip`, or from a repo's snapshots.
+    let (source_volume, _source_route) = resolve_source_volume(&source_volume_id, source_paths.first())
         .await
         .ok_or_else(|| source_volume_missing(&source_volume_id))?;
 
