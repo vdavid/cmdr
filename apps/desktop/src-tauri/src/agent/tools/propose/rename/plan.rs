@@ -101,6 +101,33 @@ pub(super) fn refusal_content(refusal: &ProposalRefusal) -> Value {
     }
 }
 
+/// One refusal as a log line: which typed variant, and enough of the offending rows to work
+/// from. Reads the variant, never the wording, and names paths (the log already carries them
+/// freely) without the proposed NAMES, which is where a model's reading of file contents would
+/// sit.
+pub(super) fn refusal_reason(refusal: &ProposalRefusal) -> String {
+    match refusal {
+        ProposalRefusal::Problem(error) => error.message.clone(),
+        ProposalRefusal::Evidence(rejections) => {
+            let named: Vec<String> = rejections
+                .iter()
+                .take(MAX_NAMED_ROWS)
+                .map(|r| format!("{} ({:?})", r.source_path, r.problem))
+                .collect();
+            let rest = match rejections.len().saturating_sub(named.len()) {
+                0 => String::new(),
+                more => format!(" and {more} more"),
+            };
+            // allowed-pluralize-noun: a count of rejected rows, always at least one here
+            format!(
+                "{} rows carried evidence that didn't check out: {}{rest}",
+                rejections.len(),
+                named.join(", ")
+            )
+        }
+    }
+}
+
 pub async fn dispatch<R: Runtime>(
     app: &AppHandle<R>,
     scope: EvidenceScope,
@@ -117,14 +144,22 @@ pub async fn dispatch<R: Runtime>(
             },
             proposal: Some(snapshot),
         },
-        Err(refusal) => RenameDispatchOutcome {
-            result: AgentToolResult {
-                call_id: call_id.to_string(),
-                content: refusal_content(&refusal),
-                elided: false,
-            },
-            proposal: None,
-        },
+        Err(refusal) => {
+            // A refused plan stages nothing, and until this line it said so nowhere the user
+            // or a maintainer could see: the panel read "nothing is waiting for you", the log
+            // held only the provider round trips, and characterizing one real report meant
+            // reading the conversation rows out of `main.db`. One line, at the one place a
+            // plan dies.
+            log::warn!(target: "agent::propose", "a rename plan was refused, so nothing was staged: {}", refusal_reason(&refusal));
+            RenameDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call_id.to_string(),
+                    content: refusal_content(&refusal),
+                    elided: false,
+                },
+                proposal: None,
+            }
+        }
     }
 }
 

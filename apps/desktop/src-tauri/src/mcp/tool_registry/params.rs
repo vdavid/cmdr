@@ -21,6 +21,13 @@
 //!   structs can't do is name the ROW, which is why [`check_object`] is public: the rename
 //!   boundary points it at one row at a time.
 //!
+//! The one look past that level ([`row_property_home`]) EXPLAINS a violation rather than
+//! finding one: an undeclared key is refused either way, and the lookup only decides whether
+//! the caller hears "invent something else" or "move what you sent to a row". It exists
+//! because a hoisted per-row field is a call a model cannot correct blind — a rename plan sent
+//! one `volumeId` beside `renames`, was told only that the top level has no such parameter,
+//! and re-sent the identical call.
+//!
 //! So a schema that never declared `additionalProperties` (most of the ai-client family) stays
 //! open exactly as it always was, and closing one is what opts a tool in.
 
@@ -157,18 +164,15 @@ pub fn check_object(schema: &Value, value: &Value) -> ParamProblems {
 
     let mut violations = Vec::new();
     if schema.get("additionalProperties") == Some(&Value::Bool(false)) {
-        violations.extend(
-            given
-                .keys()
-                .filter(|key| !properties.contains_key(*key))
-                .map(|key| match row_property_home(properties, key) {
-                    Some(rows) => ParamViolation::Misplaced {
-                        property: key.clone(),
-                        rows,
-                    },
-                    None => ParamViolation::Unknown(key.clone()),
-                }),
-        );
+        violations.extend(given.keys().filter(|key| !properties.contains_key(*key)).map(
+            |key| match row_property_home(properties, key) {
+                Some(rows) => ParamViolation::Misplaced {
+                    property: key.clone(),
+                    rows,
+                },
+                None => ParamViolation::Unknown(key.clone()),
+            },
+        ));
     }
     violations.extend(
         schema

@@ -17,7 +17,7 @@
 //! folder (`agent::memory`'s jail); the promise the app makes is "the agent writes only into
 //! its memory folder", which is still structural.
 
-use serde_json::json;
+use serde_json::{Value, json};
 use tauri::{AppHandle, Runtime};
 
 use crate::agent::llm::types::{AgentToolCall, AgentToolResult, ToolId};
@@ -58,6 +58,24 @@ pub fn refuse_unavailable(call_id: &str, tool: &ToolId) -> Option<AgentToolResul
     })
 }
 
+/// The tool-result body for a call the schema gate refused.
+///
+/// A [`Access::Propose`] tool answers `readyForReview` on every other path — `true` when it
+/// staged a plan, `false` when it refused one — so a gate refusal has to answer it too.
+/// Without the verdict this is the one propose result that says nothing about whether anything
+/// was staged, and a model read exactly that as success: it told the user a rename plan was
+/// waiting in the suggestions panel while the store held nothing. The decision is on the
+/// registry's typed [`Access`], never on the tool's name or the refusal's wording.
+fn schema_refusal(tool: &ToolId, problem: &crate::mcp::ToolError) -> Value {
+    let mut content = json!({ "problem": problem.message });
+    if tool_access(tool.as_wire_name()) == Some(Access::Propose)
+        && let Some(map) = content.as_object_mut()
+    {
+        map.insert("readyForReview".to_string(), json!(false));
+    }
+    content
+}
+
 /// Dispatch one tool call through the agent's gated view. The parse gate is
 /// consulted FIRST; only a known read-or-propose tool reaches `execute_tool` with the
 /// [`Consumer::Agent`] identity (which itself refuses any name outside the agent
@@ -81,10 +99,22 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, call
     // read tool. Checking one small object twice costs nothing next to a provider round
     // trip, and neither dispatch path has to know what the other does.
     if let Err(problem) = validate_params(call.tool.as_wire_name(), &call.arguments) {
+        // The one trace a refused call leaves. Without it, a plan that never reached the
+        // proposal store is invisible: the log showed the provider round trips and the repeat
+        // breaker firing, and nothing at all about WHY the first call died, which is what made
+        // one real report a transcript dive. The typed `data` rides along, since that — never
+        // the sentence — is what says which properties were wrong.
+        log::warn!(
+            target: "agent::tools",
+            "{} was refused before dispatch by the schema gate: {} ({})",
+            call.tool.as_wire_name(),
+            problem.message,
+            problem.data.as_ref().unwrap_or(&Value::Null)
+        );
         return DispatchOutcome {
             result: AgentToolResult {
                 call_id: call.call_id.clone(),
-                content: json!({ "problem": problem.message }),
+                content: schema_refusal(&call.tool, &problem),
                 elided: false,
             },
             proposal: None,
@@ -157,6 +187,36 @@ mod tests {
             !access_is_dispatchable(None),
             "a name the registry doesn't classify must never dispatch"
         );
+    }
+
+    #[test]
+    fn a_propose_tool_refused_by_the_schema_gate_says_nothing_is_waiting_for_review() {
+        // The turn this pins: `propose_rename_plan` was refused by the gate, the result said
+        // only `problem`, and the model told the user the plan was waiting in the suggestions
+        // panel. It was not. Every other propose answer carries `readyForReview` — true when it
+        // staged, false when it refused — so a gate refusal that omits the verdict is the one
+        // propose result with no answer to "did anything get staged?".
+        let problem = crate::mcp::ToolError::invalid_params("propose_rename_plan has no volumeId parameter.");
+        for tool in [ToolId::ProposeRenamePlan, ToolId::ProposeSuggestions] {
+            let content = schema_refusal(&tool, &problem);
+            assert_eq!(
+                content["readyForReview"],
+                false,
+                "{} refused nothing into review, and has to say so",
+                tool.as_wire_name()
+            );
+            assert!(content["problem"].is_string(), "the model still reads what to fix");
+        }
+    }
+
+    #[test]
+    fn a_read_tool_refusal_claims_no_review_verdict_it_has_no_business_making() {
+        // `readyForReview` is the propose family's contract. Stamping it onto a read refusal
+        // would invent a verdict about a review that was never in play.
+        let problem = crate::mcp::ToolError::invalid_params("list_dir needs path.");
+        let content = schema_refusal(&ToolId::ListDir, &problem);
+        assert!(content["readyForReview"].is_null());
+        assert!(content["problem"].is_string());
     }
 
     #[test]
