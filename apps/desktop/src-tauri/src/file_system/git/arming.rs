@@ -116,7 +116,14 @@ fn arm_detached(listing_id: String, worktree_root: PathBuf) {
                 return;
             }
         };
-        ARMED.lock_ignore_poison().insert(listing_id.clone(), root);
+        // A listing id is a fresh UUID per open, so a hold under this one is not
+        // something that happens. Releasing it rather than dropping it on the
+        // floor is what makes that a fact about the caller instead of an
+        // assumption this module leaks a watcher on.
+        let displaced = ARMED.lock_ignore_poison().insert(listing_id.clone(), root);
+        if let Some(previous) = displaced {
+            wiring::portal().unsubscribe_state(&previous);
+        }
 
         if crate::file_system::listing::caching::get_listing_path(&listing_id).is_none() {
             log::debug!(target: "git", "listing {listing_id} ended while arming its repo watcher, releasing it");
