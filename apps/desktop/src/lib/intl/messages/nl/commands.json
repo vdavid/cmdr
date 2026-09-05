@@ -466,9 +466,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Open je terminal-app direct in deze map",
+  "commands.fileOpenTerminalHere.description": "Open je terminal-app in de map die je bekijkt",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "Kopieer pad naar klembord",
   "@commands.fileCopyPath.label": {

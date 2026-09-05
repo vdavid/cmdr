@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Abra seu app de terminal já nesta pasta",
+  "commands.fileOpenTerminalHere.description": "Abra seu app de terminal na pasta que você está vendo",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "Copiar caminho para a área de transferência",
   "@commands.fileCopyPath.label": {

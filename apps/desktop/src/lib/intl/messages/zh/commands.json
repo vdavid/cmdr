@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "直接在这个文件夹里打开你的终端 App",
+  "commands.fileOpenTerminalHere.description": "在你正在查看的文件夹里打开你的终端 App",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "拷贝路径到剪贴板",
   "@commands.fileCopyPath.label": {

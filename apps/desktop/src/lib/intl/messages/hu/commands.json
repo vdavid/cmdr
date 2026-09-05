@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "A terminálapp megnyitása egyből ebben a mappában",
+  "commands.fileOpenTerminalHere.description": "A terminálapp megnyitása abban a mappában, amit épp nézel",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "Útvonal másolása a vágólapra",
   "@commands.fileCopyPath.label": {

@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Öppna din terminalapp direkt i den här mappen",
+  "commands.fileOpenTerminalHere.description": "Öppna din terminalapp i mappen du tittar på",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "Kopiera sökväg till urklipp",
   "@commands.fileCopyPath.label": {

@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Deine Terminal-App direkt in diesem Ordner öffnen",
+  "commands.fileOpenTerminalHere.description": "Deine Terminal-App in dem Ordner öffnen, den du gerade ansiehst",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "Pfad in die Zwischenablage kopieren",
   "@commands.fileCopyPath.label": {

@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Mở ứng dụng terminal của bạn ngay tại thư mục này",
+  "commands.fileOpenTerminalHere.description": "Mở ứng dụng terminal của bạn trong thư mục bạn đang xem",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "Sao chép đường dẫn vào bảng nhớ tạm",
   "@commands.fileCopyPath.label": {

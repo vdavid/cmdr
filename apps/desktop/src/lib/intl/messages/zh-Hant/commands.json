@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "直接在這個資料夾裡開啟你的終端機 App",
+  "commands.fileOpenTerminalHere.description": "在你正在檢視的資料夾裡開啟你的終端機 App",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "將路徑複製到剪貼板",
   "@commands.fileCopyPath.label": {

@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Ouvrir votre app de terminal directement dans ce dossier",
+  "commands.fileOpenTerminalHere.description": "Ouvrir votre app de terminal dans le dossier que vous consultez",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "Copier le chemin dans le presse-papiers",
   "@commands.fileCopyPath.label": {

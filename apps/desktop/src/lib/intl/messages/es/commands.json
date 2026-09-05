@@ -464,9 +464,9 @@
   "@commands.fileOpenTerminalHere.label": {
     "sourceHash": "b7eda27"
   },
-  "commands.fileOpenTerminalHere.description": "Abre tu app de terminal directamente en esta carpeta",
+  "commands.fileOpenTerminalHere.description": "Abre tu app de terminal en la carpeta que estás viendo",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "3c624a4"
+    "sourceHash": "fa93e44"
   },
   "commands.fileCopyPath.label": "Copiar la ruta al portapapeles",
   "@commands.fileCopyPath.label": {

@@ -168,7 +168,7 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'log.operationLog': 'See a history of your file operations, and roll them back',
   'suggestedOps.show': 'Review the file operations Ask Cmdr suggested, and decide what runs',
   'askCmdr.toggle': 'Chat with an AI about your files, drives, and history',
-  'file.openTerminalHere': 'Open your terminal app already sitting in this folder',
+  'file.openTerminalHere': "Open your terminal app in the folder you're looking at",
   'nav.goToPath': 'Jump the focused pane to a typed, pasted, or recent path.',
   'file.goToTrash': "Open the trash of the drive you're browsing",
   'favorites.add': "Add the focused pane's current folder to the switcher's Favorites.",
