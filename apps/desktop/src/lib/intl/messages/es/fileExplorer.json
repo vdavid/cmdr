@@ -838,9 +838,21 @@
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
   },
+  "fileExplorer.readOnly.gitPortalTitle": "Portal de git de solo lectura",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "sourceHash": "d4bd9c1"
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "Las ramas, etiquetas y commits son instantáneas de tu historial de git, así que puedes explorarlos y copiar desde ahí, pero no modificarlos.",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "sourceHash": "87bc79d"
+  },
   "fileExplorer.archive.useTransferToCopyOut": "Para copiar archivos fuera de un archivo comprimido, usa F5 para copiar o F6 para mover.",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "sourceHash": "3edbc36"
+  },
+  "fileExplorer.git.useTransferToCopyOut": "Para copiar archivos fuera de una instantánea de git, usa F5 para copiar o F6 para mover.",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "sourceHash": "a0d65fe"
   },
   "fileExplorer.rename.hiddenAfterRename": "Tu archivo desapareció de la vista porque no se muestran los archivos ocultos.",
   "@fileExplorer.rename.hiddenAfterRename": {

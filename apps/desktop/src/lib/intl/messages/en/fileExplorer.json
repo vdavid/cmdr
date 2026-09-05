@@ -1245,9 +1245,21 @@
       "name": "the display name of the read-only device"
     }
   },
+  "fileExplorer.readOnly.gitPortalTitle": "Read-only git portal",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "description": "Alert dialog title shown when the user tries a write action (rename, create, delete, paste) inside the virtual `.git` portal, where Cmdr shows a repository''s branches, tags, and commits as browsable folders. \"git\" is the version-control tool name; keep it. \"portal\" is Cmdr''s name for that virtual-folder view, matching the Settings > File systems > Git toggle."
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "Branches, tags, and commits are snapshots of your git history, so you can browse and copy from them, but not change them.",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "description": "Alert body when the user tries to modify something inside the virtual `.git` portal. Explains that the folders there are a read-only view of git history rather than folders on disk, and that reading out of them works. \"branches\", \"tags\", \"commits\", and \"git\" are git terms; use standard git terminology."
+  },
   "fileExplorer.archive.useTransferToCopyOut": "To copy files out of an archive, use F5 to copy or F6 to move.",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside an archive. The system clipboard can''t carry archive-inner paths, so it points them at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is."
+  },
+  "fileExplorer.git.useTransferToCopyOut": "To copy files out of a git snapshot, use F5 to copy or F6 to move.",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside the virtual `.git` portal, where Cmdr shows a repository''s branches, tags, and commits as browsable folders. Those entries are reconstructed from git history and have no path the system clipboard can carry, so it points the user at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is. \"git\" is the version-control tool name; keep it."
   },
   "fileExplorer.rename.hiddenAfterRename": "Your file disappeared from view because hidden files aren''t shown.",
   "@fileExplorer.rename.hiddenAfterRename": {

@@ -39,6 +39,20 @@ mutations.
   belongs next to the name. Putting it last would make the row scan name → metadata → meta-meta-tag.
 - **The column is omitted from the grid when `gitRepoRoot` is null, even if enabled.** Outside a worktree it would show
   blank cells, costing ~28 px from the name column for no information gain. The setting means "show when meaningful."
+- **A portal pane's capability row is derived LEXICALLY on this side, not published by the backend.** The routed
+  `GitPortalVolume` id never enters FE state (the tab keeps the parent drive's id, as for archives), so there's no
+  `VolumeInfo` to read `backendCanWrite` off. `capabilitiesForPane` therefore reruns the backend's own routing
+  predicate: `isVirtualGitPath` plus the live `showVirtualGitPortal` toggle. Keeping the toggle in the predicate is what
+  makes the two agree in both directions — with the portal off nothing is routed, so a real `.git/branches/` directory
+  on disk must stay writable.
+- **The toggle reaches the predicate through `reactive-settings.svelte`, ❌ never `getSetting`.** The pane's `caps` is a
+  `$derived`, and `getSetting` reads a plain Map, so a direct read would leave a portal pane stuck on its old row until
+  the next navigation. `getShowVirtualGitPortal()` is a `$state` slot fed by the same `onSettingChange` subscription
+  every other live setting uses.
+- **The portal borrows the archive kind's shape rather than inventing a third pattern.** Read-only where the archive row
+  is writable, identical everywhere else (real listing, `..` row, MCP sync, no own tint, no breadcrumb special case).
+  The per-cell rationale and the guard sites live with the archive ones in `../pane/DETAILS.md` § "The virtual `.git`
+  portal pane", so the two routed kinds stay legible side by side.
 
 ## Gotcha detail
 

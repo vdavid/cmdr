@@ -837,9 +837,21 @@
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
   },
+  "fileExplorer.readOnly.gitPortalTitle": "Csak olvasható git portál",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "sourceHash": "d4bd9c1"
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "Az ágak, címkék és commitok a git-előzményeid pillanatképei, így böngészheted és kimásolhatod őket, de módosítani nem tudod.",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "sourceHash": "87bc79d"
+  },
   "fileExplorer.archive.useTransferToCopyOut": "Ha fájlokat szeretnél kimásolni egy archívumból, használd az F5-öt másoláshoz vagy az F6-ot áthelyezéshez.",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "sourceHash": "3edbc36"
+  },
+  "fileExplorer.git.useTransferToCopyOut": "Ha fájlokat szeretnél kimásolni egy git-pillanatképből, használd az F5-öt másoláshoz vagy az F6-ot áthelyezéshez.",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "sourceHash": "a0d65fe"
   },
   "fileExplorer.rename.hiddenAfterRename": "A fájl eltűnt a nézetből, mert a rejtett fájlok nem jelennek meg.",
   "@fileExplorer.rename.hiddenAfterRename": {

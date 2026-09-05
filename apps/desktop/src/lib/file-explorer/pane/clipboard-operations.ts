@@ -12,6 +12,7 @@ import { resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import { tString } from '$lib/intl/messages.svelte'
+import type { MessageKey } from '$lib/intl/keys.gen'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
 import { checkTransferDestinationGuard } from './transfer-entry'
@@ -120,13 +121,17 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
   }
 
   /**
-   * True when the focused pane is inside an archive (kind-from-path). The system
-   * clipboard can't carry archive-inner paths (they aren't OS-resolvable files),
-   * so ⌘C/⌘X are refused and the user is pointed at F5/F6 extract-out — the same
-   * shape as the MTP refusal, but a different reason and hint.
+   * The copy-out hint for a ROUTED pane (kind-from-path), or `null` when the pane
+   * isn't one. The system clipboard can't carry a routed path — neither an
+   * archive-inner entry nor a virtual `.git` snapshot entry is an OS-resolvable
+   * file — so ⌘C/⌘X are refused and the user is pointed at F5/F6 copy-out. Same
+   * shape as the MTP refusal, but a different reason and hint per kind.
    */
-  function isArchivePane(volumeId: string, path: string): boolean {
-    return capabilitiesForPane(volumeId, path).kind === 'archive'
+  function routedCopyOutHint(volumeId: string, path: string): MessageKey | null {
+    const kind = capabilitiesForPane(volumeId, path).kind
+    if (kind === 'archive') return 'fileExplorer.archive.useTransferToCopyOut'
+    if (kind === 'git-portal') return 'fileExplorer.git.useTransferToCopyOut'
+    return null
   }
 
   /**
@@ -173,8 +178,9 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     const state = getClipboardPaneState()
     if (!state) return
 
-    if (isArchivePane(state.volumeId, state.path)) {
-      addToast(tString('fileExplorer.archive.useTransferToCopyOut'), { level: 'info' })
+    const copyOutHint = routedCopyOutHint(state.volumeId, state.path)
+    if (copyOutHint) {
+      addToast(tString(copyOutHint), { level: 'info' })
       return
     }
 
@@ -215,8 +221,9 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     const state = getClipboardPaneState()
     if (!state) return
 
-    if (isArchivePane(state.volumeId, state.path)) {
-      addToast(tString('fileExplorer.archive.useTransferToCopyOut'), { level: 'info' })
+    const copyOutHint = routedCopyOutHint(state.volumeId, state.path)
+    if (copyOutHint) {
+      addToast(tString(copyOutHint), { level: 'info' })
       return
     }
 

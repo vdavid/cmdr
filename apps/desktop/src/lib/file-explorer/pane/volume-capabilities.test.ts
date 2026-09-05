@@ -25,6 +25,15 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
   getVolumes: () => volumes.list,
 }))
 
+// `capabilitiesForPane` reads the live `fileExplorer.git.showVirtualGitPortal`
+// switch: with the portal off the backend routes nothing, so a `.git/branches/`
+// path is whatever sits on disk and keeps its volume's own row. Default ON,
+// matching the setting's registry default.
+const gitPortal = vi.hoisted(() => ({ on: true }))
+vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+  getShowVirtualGitPortal: () => gitPortal.on,
+}))
+
 import {
   type VolumeKind,
   type VolumeCapabilities,
@@ -102,6 +111,17 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasBackendListing: true,
       // Zip is writable through the managed archive-edit flow.
       canWrite: true,
+      canBeSource: true,
+      hasParentRow: true,
+      syncsToMcp: true,
+    },
+    'git-portal': {
+      kind: 'git-portal',
+      hasBackendListing: true,
+      // A snapshot of git history: `GitPortalVolume` keeps the trait's
+      // `NotSupported` on every mutation, so nothing here is writable.
+      canWrite: false,
+      // ...but the rows are real content, so copying OUT works.
       canBeSource: true,
       hasParentRow: true,
       syncsToMcp: true,
@@ -358,6 +378,69 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
       // ...but copying files OUT still works, and it lists like a folder.
       expect(caps.canBeSource, path).toBe(true)
       expect(caps.hasBackendListing, path).toBe(true)
+    }
+  })
+
+  it('returns the read-only git-portal row for a path inside a virtual `.git` category', () => {
+    volumes.list = [
+      vol({
+        id: 'root',
+        fsType: 'apfs',
+        category: 'main_volume',
+        capabilities: { backendCanWrite: true, canExport: true },
+      }),
+    ]
+    // The volumeId is the writable parent drive; the path crosses `.git/branches/`,
+    // so the portal row gates the pane. Without this the UI would offer paste,
+    // delete, rename, and new file/folder that the backend refuses.
+    const caps = capabilitiesForPane('root', '/Users/me/repo/.git/branches/main/src')
+    expect(caps.kind).toBe('git-portal')
+    expect(caps.canWrite).toBe(false)
+    // Copying out of a snapshot is the headline read feature, and it lists like a folder.
+    expect(caps.canBeSource).toBe(true)
+    expect(caps.hasBackendListing).toBe(true)
+    expect(caps.hasParentRow).toBe(true)
+    expect(caps.syncsToMcp).toBe(true)
+  })
+
+  it('covers all six virtual categories, and the category directory itself', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    const root = '/Users/me/repo/.git'
+    for (const category of ['branches', 'tags', 'commits', 'stash', 'worktrees', 'submodules']) {
+      expect(capabilitiesForPane('root', `${root}/${category}`).kind, category).toBe('git-portal')
+      expect(capabilitiesForPane('root', `${root}/${category}/thing`).kind, category).toBe('git-portal')
+    }
+  })
+
+  it('a REAL file under `.git` keeps the parent volume\'s full row', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    // `.git/` stays writable: `config`, `HEAD`, and the real `refs/` tree are
+    // editable, renamable, and deletable, which the backend defends too. Only
+    // the six virtual trees are read-only.
+    for (const path of [
+      '/Users/me/repo/.git',
+      '/Users/me/repo/.git/config',
+      '/Users/me/repo/.git/HEAD',
+      '/Users/me/repo/.git/refs/heads/main',
+      '/Users/me/repo/.git/objects/pack',
+    ]) {
+      const caps = capabilitiesForPane('root', path)
+      expect(caps.kind, path).toBe('local')
+      expect(caps.canWrite, path).toBe(true)
+    }
+  })
+
+  it('falls back to the volume row when the portal toggle is OFF', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    gitPortal.on = false
+    try {
+      // With the portal off `resolve` routes nothing, so `.git/branches/` is a
+      // plain (usually absent) directory on the parent drive.
+      const caps = capabilitiesForPane('root', '/Users/me/repo/.git/branches/main')
+      expect(caps.kind).toBe('local')
+      expect(caps.canWrite).toBe(true)
+    } finally {
+      gitPortal.on = true
     }
   })
 

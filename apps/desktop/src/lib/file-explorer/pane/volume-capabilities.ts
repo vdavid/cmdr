@@ -8,9 +8,9 @@
  * (`capabilities`, straight from Rust's `Volume::capabilities()`). This module
  * doesn't re-derive those; it reads them. What stays here is the per-KIND
  * structure Rust has no volume for: the two virtual kinds (`network`,
- * `search-results`) have no `VolumeInfo` at all, `archive` is kind-from-PATH on
- * top of the parent drive's volume, and every real volume needs a default for
- * the window before its backend registers.
+ * `search-results`) have no `VolumeInfo` at all, the two ROUTED kinds (`archive`,
+ * `git-portal`) are kind-from-PATH on top of the parent drive's volume, and every
+ * real volume needs a default for the window before its backend registers.
  *
  * ❌ Don't publish the backend's own identity (which Rust struct serves a
  * volume) and classify off that: an OS-mounted SMB share that hasn't been
@@ -28,7 +28,9 @@
  * - The store-reading `capabilitiesFor(volumeId)` resolves the `VolumeInfo` from
  *   the volume store, so callers that hold only a `volumeId` (F-bar, dispatch)
  *   don't replicate the find-in-store dance, and so the backend's published
- *   capabilities get folded in.
+ *   capabilities get folded in. `capabilitiesForPane(volumeId, path)` sits on
+ *   top and adds the two routed kinds, which is where the git-portal toggle and
+ *   the archive-suffix table are read.
  *
  * ## Per-KIND vs per-VOLUME
  *
@@ -58,19 +60,23 @@
 import type { LocationCategory, VolumeBackendCapabilities, VolumeInfo } from '$lib/file-explorer/types'
 import { volumeKindFor } from './volume-tint.svelte'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
+import { isVirtualGitPath } from '../git/path-detection'
+import { getShowVirtualGitPortal } from '$lib/settings/reactive-settings.svelte'
 
 /**
  * The closed set of volume kinds. The discriminant — every capability lookup
- * goes kind → record. No `'other'` member: the two virtual kinds plus the three
- * real kinds plus `archive`, nothing else. A real-but-unclassified volume
- * defaults to `'local'` (see `volumeKindOf`), so the kind → table lookup is total.
+ * goes kind → record. No `'other'` member: the two virtual kinds plus the four
+ * real kinds plus the two routed ones, nothing else. A real-but-unclassified
+ * volume defaults to `'local'` (see `volumeKindOf`), so the kind → table lookup
+ * is total.
  *
- * `archive` is KIND-FROM-PATH, not kind-from-id: a pane whose PATH crosses a
- * supported archive (`pathInsideArchive`) is an `archive` kind regardless of its
- * `volumeId`, which stays the parent drive (the tab keeps ONE id). This union is
- * DELIBERATELY WIDER than the tint union in `volume-tint.svelte.ts`: an archive
- * pane shows the PARENT drive's tint (it lives on that drive), so `archive` is a
- * capability kind only, never a tint kind.
+ * `archive` and `git-portal` are KIND-FROM-PATH, not kind-from-id: a pane whose
+ * PATH crosses a supported archive (`pathInsideArchive`) or one of the six
+ * virtual `.git` categories (`isVirtualGitPath`) takes that kind regardless of
+ * its `volumeId`, which stays the parent drive (the tab keeps ONE id). This union
+ * is DELIBERATELY WIDER than the tint union in `volume-tint.svelte.ts`: both
+ * routed panes show the PARENT drive's tint (they live on that drive), so the
+ * two are capability kinds only, never tint kinds.
  */
 export type VolumeKind =
   | 'local' // real filesystem volume (root, attached, cloud_drive, main_volume)
@@ -80,6 +86,7 @@ export type VolumeKind =
   | 'network' // the synthetic SMB browser virtual volume (host/share list, smb:// namespace)
   | 'search-results' // the snapshot virtual volume (search-results:// namespace, flat result set)
   | 'archive' // a pane inside a supported archive (kind-from-path; zip is writable, see the row)
+  | 'git-portal' // a pane inside one of the virtual `.git` category trees (kind-from-path, read-only)
 
 /**
  * What a pane on a given volume can do. A real typed interface (NOT a
@@ -196,6 +203,24 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // plus the full `…/foo.zip/inner` path, so agents navigate by path.
     hasBackendListing: true,
     canWrite: true,
+    canBeSource: true,
+    hasParentRow: true,
+    syncsToMcp: true,
+  }),
+  'git-portal': Object.freeze({
+    kind: 'git-portal',
+    // A pane inside one of the six virtual `.git` category trees (`branches/`,
+    // `tags/`, `commits/`, `stash/`, `worktrees/`, `submodules/`). The archive
+    // row's shape, with mutation off: `GitPortalVolume` lists snapshot entries
+    // like a folder (`hasBackendListing`), `..` walks back out by plain path
+    // arithmetic (`hasParentRow`), and the rows are real content the transfer
+    // reads through the portal, so copying OUT works (`canBeSource`).
+    // `canWrite: false` because a snapshot is git history, not a directory:
+    // every mutation method on the volume keeps the trait's `NotSupported`.
+    // `syncsToMcp: true` — the listing is real; MCP reports the parent drive id
+    // plus the full `…/.git/branches/main/…` path, so agents navigate by path.
+    hasBackendListing: true,
+    canWrite: false,
     canBeSource: true,
     hasParentRow: true,
     syncsToMcp: true,
@@ -373,19 +398,28 @@ export function folderContainingArchive(path: string): string {
  * archive pane — whose `volumeId` is the WRITABLE parent drive — is gated by the
  * ARCHIVE row (zip mutation), not the parent drive's row.
  *
- * ❌ The archive branch deliberately does NOT fold in the parent volume's
- * published capabilities: those answer for the drive, and the pane is inside a
- * file on it. Zip is writable (the managed archive-edit flow); tar and 7z are
- * browse + extract only, so a path inside a non-zip archive gets
- * `READ_ONLY_ARCHIVE`. Which format is decided by the FIRST archive boundary
- * segment (leftmost wins, matching the backend), so a nested `foo.tar/bar.zip/…`
- * is read-only (the outer tar governs).
+ * ❌ Neither routed branch folds in the parent volume's published capabilities:
+ * those answer for the drive, and the pane is inside something ON it. Zip is
+ * writable (the managed archive-edit flow); tar and 7z are browse + extract only,
+ * so a path inside a non-zip archive gets `READ_ONLY_ARCHIVE`. Which format is
+ * decided by the FIRST archive boundary segment (leftmost wins, matching the
+ * backend), so a nested `foo.tar/bar.zip/…` is read-only (the outer tar governs).
+ *
+ * The second routed kind is the virtual `.git` portal. `isVirtualGitPath` is the
+ * same LEXICAL test the backend routes on (`.git/<category>/…` for the six
+ * categories), gated on the live portal toggle, because with the portal off
+ * `resolve` routes nothing and `.git/branches/` is whatever sits on disk. Real
+ * files under `.git/` (`config`, `HEAD`, `refs/heads/main`) are not portal paths
+ * and keep the parent volume's full row: they stay editable, renamable, and
+ * deletable, which is a constraint the backend defends too.
  */
 export function capabilitiesForPane(volumeId: string, path: string | undefined): VolumeCapabilities {
-  const boundarySegment = path === undefined ? undefined : path.split('/').find(hasSupportedArchiveExtension)
+  if (path === undefined) return capabilitiesFor(volumeId)
+  const boundarySegment = path.split('/').find(hasSupportedArchiveExtension)
   if (boundarySegment !== undefined) {
     return isWritableArchiveName(boundarySegment) ? CAPABILITY_TABLE.archive : READ_ONLY_ARCHIVE
   }
+  if (getShowVirtualGitPortal() && isVirtualGitPath(path)) return CAPABILITY_TABLE['git-portal']
   return capabilitiesFor(volumeId)
 }
 

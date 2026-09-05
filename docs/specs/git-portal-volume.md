@@ -20,12 +20,12 @@ The work left is the manual QA David runs against a real app:
 5. Toggle the portal off and on with a `.git/` pane open, and with a pane standing inside `.git/branches/`.
 6. Open a linked worktree's `.git`: the categories below it answer, and the landing listing does not (§ M3).
 
-**Known gap, David's call.** The frontend has no capability row for a portal pane: `capabilitiesForPane` resolves an
-archive pane from its path and gives every other pane its volume's row, so a `.git/branches/` pane reports the parent
-drive's fully-writable capabilities. The backend refuses each write with the typed read-only error, so nothing breaks,
-but the UI still OFFERS paste, delete, and rename there, and copy-to-clipboard from a snapshot pane is allowed where an
-archive pane is turned away with a toast. Closing it is a frontend capability kind (tint, breadcrumb, the clipboard
-refusal), which is its own change.
+**The frontend carries a `git-portal` capability kind.** `capabilitiesForPane` resolves it from the path the way the
+backend routes, `isVirtualGitPath` gated on the live portal toggle, and hands a portal pane a read-only row: no paste,
+F7, ⇧F4, F2, or delete (each refused up front with its own alert), ⌘C/⌘X pointed at F5/F6, and copy-out through the
+transfer still allowed. It borrows the archive kind's shape, so a portal pane keeps the parent drive's tint and needs no
+breadcrumb special case. Real files under `.git/` keep the drive's full row. Rationale and the guard sites:
+`apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § "The virtual `.git` portal pane".
 
 **Problem.** The virtual `.git` portal (browsable `branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
 `submodules/`) is implemented as ten `if` sites inside `LocalPosixVolume`: three route hooks on list, metadata, and

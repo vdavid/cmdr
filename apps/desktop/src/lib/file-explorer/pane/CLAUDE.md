@@ -16,12 +16,12 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **Explorer-store fields are module-private with one mutator each** (`cmdr/no-explorer-state-writes`); `cursorIndex`,
   selection, and listing UI state stay LOCAL to `FilePane` (perf P3).
 - **Guard logic branches on `VolumeCapabilities`, ❌ never volume-id strings.** Rust answers what a volume CAN DO
-  (`VolumeInfo.capabilities` → `canWrite` / `canBeSource`); `volume-capabilities.ts` classifies what it IS and defaults
-  where Rust has no volume. ❌ Never source KIND from the backend: an un-upgraded SMB share is served by a local one.
-  `capabilitiesFor` / `volumeKindOf` stay TOTAL (unknown ids fall to `local`); the tint classifier `volumeKindFor` is
-  separate and ❌ never gets that default.
-- **Archive panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone** — a
-  pane inside an archive keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z READ-ONLY.
+  (`VolumeInfo.capabilities` → `canWrite` / `canBeSource`); `volume-capabilities.ts` classifies what it IS. ❌ Never
+  source KIND from the backend: an un-upgraded SMB share is served by a local one. `capabilitiesFor` / `volumeKindOf`
+  stay TOTAL (unknown ids fall to `local`); the tint classifier `volumeKindFor` never gets that default.
+- **The two ROUTED panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone**
+  — an archive or `.git`-portal pane keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z and portal snapshots
+  READ-ONLY. Real files under `.git/` keep the drive's row.
 - **The snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false`, AND
   opening a real entry must LEAVE the snapshot volume. Skip either and selection goes off-by-one, or `search-results`
   sticks on a real path.
@@ -46,7 +46,7 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **`DualPaneExplorer.svelte` and `FilePane.svelte` are `file-length`-flagged**: don't add to them, and ❌ don't carve
   child components either. Cross-cutting state → a `*.svelte.ts` factory, pure logic → a `*.ts` helper.
 
-The file table, the key-dispatch focus guard's dialog exemption, the walk-up fallback's volume re-resolve, `getTabMgr`'s
-live `$state` holder, the select-only cursor jump, the MTP clipboard gate, self-drag identity, the volume tint's
-`hasColorMix` fallback, `ErrorPane`'s ways out, and why the remaining volume-id compares are not guards: `DETAILS.md`.
-Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+`DETAILS.md` holds the file table, the key-dispatch focus guard's dialog exemption, the walk-up fallback's volume
+re-resolve, `getTabMgr`'s live `$state` holder, the select-only cursor jump, the MTP clipboard gate, self-drag identity,
+the volume tint's `hasColorMix` fallback, `ErrorPane`'s ways out, and why the remaining volume-id compares are not
+guards. Read it before any non-trivial work here.

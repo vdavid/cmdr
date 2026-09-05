@@ -838,9 +838,21 @@
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
   },
+  "fileExplorer.readOnly.gitPortalTitle": "Portail git en lecture seule",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "sourceHash": "d4bd9c1"
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "Les branches, tags et commits sont des instantanés de votre historique git : vous pouvez les parcourir et en copier des fichiers, mais pas les modifier.",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "sourceHash": "87bc79d"
+  },
   "fileExplorer.archive.useTransferToCopyOut": "Pour copier des fichiers hors d''une archive, utilisez F5 pour copier ou F6 pour déplacer.",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "sourceHash": "3edbc36"
+  },
+  "fileExplorer.git.useTransferToCopyOut": "Pour copier des fichiers hors d''un instantané git, utilisez F5 pour copier ou F6 pour déplacer.",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "sourceHash": "a0d65fe"
   },
   "fileExplorer.rename.hiddenAfterRename": "Votre fichier a disparu de la vue, car les fichiers masqués ne sont pas affichés.",
   "@fileExplorer.rename.hiddenAfterRename": {

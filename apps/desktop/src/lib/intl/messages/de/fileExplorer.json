@@ -840,9 +840,21 @@
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
   },
+  "fileExplorer.readOnly.gitPortalTitle": "Schreibgeschütztes Git-Portal",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "sourceHash": "d4bd9c1"
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "Branches, Tags und Commits sind Momentaufnahmen deiner Git-Historie, du kannst sie also durchsehen und daraus kopieren, aber nicht ändern.",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "sourceHash": "87bc79d"
+  },
   "fileExplorer.archive.useTransferToCopyOut": "Um Dateien aus einem Archiv zu kopieren, verwende F5 zum Kopieren oder F6 zum Bewegen.",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "sourceHash": "3edbc36"
+  },
+  "fileExplorer.git.useTransferToCopyOut": "Um Dateien aus einer Git-Momentaufnahme zu kopieren, verwende F5 zum Kopieren oder F6 zum Bewegen.",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "sourceHash": "a0d65fe"
   },
   "fileExplorer.rename.hiddenAfterRename": "Deine Datei ist aus der Ansicht verschwunden, weil ausgeblendete Dateien nicht angezeigt werden.",
   "@fileExplorer.rename.hiddenAfterRename": {

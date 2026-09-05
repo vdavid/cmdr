@@ -16,6 +16,7 @@ error CLASSIFICATION; `apps/desktop/src-tauri/src/file_system/git/CLAUDE.md` for
   `lookupRepoInfo(path)` is the cheap one-shot.
 - `status-column.ts`: pure helpers `glyphFor`, `labelFor`, `fetchStatusMap` (no reactivity).
 - `path-detection.ts`: `isVirtualGitPath(path)`, a shared regex matching the backend's virtual `.git` portal segments.
+  Pure, so the portal toggle is read by its callers, never here.
 
 ## Must-knows
 
@@ -23,6 +24,11 @@ error CLASSIFICATION; `apps/desktop/src-tauri/src/file_system/git/CLAUDE.md` for
   keep the refcount; two panes on the same repo share one watcher and one subscription. Live updates flow through the
   `git-state-changed` Tauri event into reactive `$state`; the chip never polls. Don't replace this with per-pane stores
   (doubles watchers and IPC round-trips).
+- **A pane inside the portal takes its own capability row, so the UI stops offering writes the backend refuses.**
+  `capabilitiesForPane` returns the read-only `git-portal` kind for an `isVirtualGitPath` path while the toggle is on:
+  no paste, F7, ⇧F4, F2, or delete (each gets the `fileExplorer.readOnly.gitPortal*` alert), ⌘C/⌘X point at F5/F6, and
+  copy-out still works. Real files under `.git/` keep the drive's full row. Details: `../pane/DETAILS.md` § "The virtual
+  `.git` portal pane".
 - **`FilePane`'s "directory still exists" poll evicts users back to `.git/` on virtual portal paths unless skipped.**
   `pathExists()` returns false for portal-only paths like `.git/branches/main/...`, and two false readings trigger
   `navigateToFallback`. The poll body early-returns via `isVirtualGitPath(currentPath)`. Keep that guard, and extend

@@ -51,10 +51,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * when the pane accepts writes. A zip archive is WRITABLE (the pane's `volumeId`
    * is the parent drive and `capabilitiesForPane` gives the writable `archive`
    * row), so an archive pane falls through here and runs the real managed
-   * archive-edit flow. What still refuses is a read-only `VolumeInfo` (a
-   * write-protected USB stick, a read-only disk image) — including a zip that
-   * lives on such a volume, which can't be rewritten in place. Surfacing this up
-   * front beats letting the user type a name and then hit a backend rejection.
+   * archive-edit flow. A tar / 7z pane and a virtual `.git` portal pane each get
+   * their own worded refusal. What still refuses beyond those is a read-only
+   * `VolumeInfo` (a write-protected USB stick, a read-only disk image) —
+   * including a zip that lives on such a volume, which can't be rewritten in
+   * place. Surfacing this up front beats letting the user type a name and then
+   * hit a backend rejection.
    */
   function readOnlyRefusal(
     action: 'rename' | 'mkdir' | 'mkfile' | 'delete',
@@ -64,18 +66,26 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
     const volumeInfo = getDestinationVolumeInfo(volId, access.getVolumes())
 
-    // A read-only archive (tar / 7z) is browse + extract only: refuse the write
-    // up front rather than letting the user type a name and hit the backend's
-    // `ReadOnlyDevice`. Kind-from-path: the pane's `volumeId` is the writable
-    // parent drive, so the PATH decides. A writable zip has `canWrite` on and
-    // falls through to the managed archive-edit flow.
-    // The archive-path branch of `capabilitiesForPane` ignores fsType/category
-    // (the boundary segment decides), so passing only the id + path is enough.
+    // The two ROUTED kinds refuse up front rather than letting the user type a
+    // name and hit the backend's typed rejection. Kind-from-path: the pane's
+    // `volumeId` is the writable parent drive, so the PATH decides, and the
+    // routed branches of `capabilitiesForPane` ignore fsType/category, so passing
+    // only the id + path is enough.
+    // - A read-only archive (tar / 7z) is browse + extract only. A writable zip
+    //   has `canWrite` on and falls through to the managed archive-edit flow.
+    // - A git-portal pane is a snapshot of history with no directory behind it,
+    //   so it's read-only whatever the drive under it says.
     const paneCaps = capabilitiesForPane(volId, access.getPanePath(pane))
     if (paneCaps.kind === 'archive' && !paneCaps.canWrite) {
       return {
         title: tString('fileExplorer.readOnly.archiveTitle'),
         message: tString('fileExplorer.readOnly.archiveMessage'),
+      }
+    }
+    if (paneCaps.kind === 'git-portal') {
+      return {
+        title: tString('fileExplorer.readOnly.gitPortalTitle'),
+        message: tString('fileExplorer.readOnly.gitPortalMessage'),
       }
     }
 

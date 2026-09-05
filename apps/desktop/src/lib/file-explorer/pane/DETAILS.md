@@ -217,19 +217,22 @@ volume-id string. The record has two halves, and which half answers is the whole
 - **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite` + `canExport` per volume; they
   ride on `VolumeInfo.capabilities` and land on the record as `canWrite` / `canBeSource` via `withBackendCapabilities`.
   Canonical: `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
-- **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `mtp` /
-  `network` / `search-results` / `archive`), which keys a frozen, by-reference table of per-kind defaults carrying the
-  per-namespace UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`, `syncsToMcp`) plus the
-  fallback write/source answers. It's NOT a `Record<string, boolean>` bag — `kind` is the discriminant.
+- **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `mtp` / `adb` /
+  `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults carrying the per-namespace
+  UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`, `syncsToMcp`) plus the fallback
+  write/source answers. It's NOT a `Record<string, boolean>` bag — `kind` is the discriminant. The two ROUTED kinds
+  (`archive`, `git-portal`) are in the same table but come from the PATH, resolved one layer up in
+  `capabilitiesForPane`.
 
 - **❌ Never source KIND from the backend.** An OS-mounted SMB share that hasn't been upgraded to a direct smb2 session
   is served by `LocalPosixVolume`, so a backend-published kind would say `local` for a share that's plainly SMB to the
   user, flipping its tint, its view, and the search-indexing wording. Kind is about the storage; capability is about the
   backend.
 - **The table is a FALLBACK, not a duplicate.** It stands where Rust has no volume to ask: the two virtual kinds (no
-  `VolumeInfo` at all), `archive` (kind-from-path over the parent drive's volume — and `ArchiveVolume` itself declares
-  `backend_can_write: false`, because zip editing is the app's managed archive-edit rewrite), a favorite id, and the
-  window before a discovered volume's backend registers. Where the backend HAS answered, its answer wins.
+  `VolumeInfo` at all), the two routed kinds (kind-from-path over the parent drive's volume, whose routed volume never
+  enters FE state so it has no `VolumeInfo` either — and `ArchiveVolume` itself declares `backend_can_write: false`,
+  because zip editing is the app's managed archive-edit rewrite), a favorite id, and the window before a discovered
+  volume's backend registers. Where the backend HAS answered, its answer wins.
 - **Per-KIND vs per-VOLUME.** The other per-volume runtime flags (`mountIsReadOnly`, `supportsTrash`,
   `smbConnectionState`) stay on `VolumeInfo` and layer on top. `mountIsReadOnly` is a claim about the MOUNT and
   `capabilities.backendCanWrite` a claim about the BACKEND, so they're separate on purpose; both combinations occur (a
@@ -243,6 +246,10 @@ volume-id string. The record has two halves, and which half answers is the whole
 - **`capabilitiesFor(volumeId)`** is the store-reading entry point: it resolves the `VolumeInfo` once, classifies from
   it, and folds in whatever the backend published. It returns the frozen row by reference when backend and default
   already agree (every ordinary volume), so the hot path stays allocation-free.
+- **`capabilitiesForPane(volumeId, path)`** is the layer every write guard uses: it resolves the two ROUTED kinds from
+  the path first (archive by suffix, git portal by `isVirtualGitPath` gated on the live `showVirtualGitPortal` toggle),
+  and otherwise defers to `capabilitiesFor`. ❌ Neither routed branch folds in the parent drive's published
+  capabilities: those answer for the drive, and the pane is inside something ON it.
 - **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch — no codebase sweep.
 - **To add a real backend:** override `is_writable` in Rust and there's nothing to do on this side.
 
@@ -254,15 +261,19 @@ string. The guards:
 - **Dispatch** (`command-dispatch.ts::blockedByCapabilities`) + **F-bar** (`FunctionKeyBar.svelte`): paste, mkdir,
   mkfile, and rename all off `!canWrite`. One flag, because it's one question — Rust answers it with one
   `backendCanWrite`, and splitting it here would be the hand-maintained duplicate all over again.
-- **Clipboard** (`clipboard-operations.ts`): the snapshot-clip path gate off `kind === 'search-results'`; the MTP
-  copy/cut/paste refusals (the "Use F5/F6" toasts) off `caps.kind === 'mtp'` via `isMtpClipboardRefusal`. ❌ Don't
+- **Clipboard** (`clipboard-operations.ts`): the snapshot-clip path gate off `kind === 'search-results'`; the routed
+  copy-out refusals off `routedCopyOutHint`, which maps `kind === 'archive'` / `'git-portal'` to their own "use F5/F6"
+  toast (a routed path isn't OS-resolvable, so the system clipboard can't carry it); the MTP copy/cut/paste refusals
+  (the "Use F5/F6" toasts) off `caps.kind === 'mtp'` via `isMtpClipboardRefusal`. ❌ Don't
   generalize that MTP gate into a "no system clipboard" capability: `network` + `search-results` lack one too, and an
   MTP-worded toast on a reachable network paste would be a new, mis-worded toast. On the live clipboard-time pane id set
   it's byte-equivalent to the old `startsWith('mtp-')` gate, pinned by the equivalence test in
   `clipboard-operations.test.ts`.
-- **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`. The
-  destination guards (search-results dest-paste block off `!canWrite` scoped to the `search-results` kind so the toast
-  wording stays correct; the `mountIsReadOnly` alert per-`VolumeInfo`) live in `transfer-entry.ts`'s
+- **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`.
+  `readOnlyRefusal` turns rename / mkdir / mkfile / delete away up front on a read-only routed pane, worded per kind
+  (`fileExplorer.readOnly.archive*` for tar/7z, `fileExplorer.readOnly.gitPortal*` for a snapshot). The destination
+  guards (search-results dest-paste block off `!canWrite` scoped to the `search-results` kind so the toast wording stays
+  correct; the same two routed alerts; the `mountIsReadOnly` alert per-`VolumeInfo`) live in `transfer-entry.ts`'s
   `checkTransferDestinationGuard` so F5/F6, drag-and-drop, AND paste run the identical chain — see
   `file-operations/transfer/CLAUDE.md` § "One transfer entry seam". The `search-results://` URL parses stay (namespace
   mechanics).
@@ -1061,6 +1072,39 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   falls into the existing unreachable-path handling.
 
 Full backend routing, the LRU lifecycle, and the viewer temp-extract: `crates/cmdr-archive/DETAILS.md`.
+
+## The virtual `.git` portal pane (kind-from-path)
+
+The portal is the second routed kind, and it borrows the archive design wholesale: the tab keeps ONE `volumeId` (the
+parent drive), the `GitPortalVolume`'s own id never enters FE state, history, persistence, or MCP sync, and portal-ness
+is derived from the PATH while all I/O routing happens in `VolumeManager::resolve`.
+
+- **`isVirtualGitPath(path)`** (`../git/path-detection.ts`) is the seam, and it's the SAME lexical test the backend
+  routes on: a `.git/<category>/` segment for one of the six categories (`branches`, `tags`, `commits`, `stash`,
+  `worktrees`, `submodules`). Keep the two in sync with `Cat` in `crates/cmdr-git/src/path.rs`.
+- **The toggle is part of the predicate.** `capabilitiesForPane` reads `getShowVirtualGitPortal()`
+  (`$lib/settings/reactive-settings.svelte`, mirroring `fileExplorer.git.showVirtualGitPortal`) before asking the path,
+  because with the portal off `resolve` routes nothing and `.git/branches/` is whatever sits on disk. It's a reactive
+  `$state` slot rather than a `getSetting` read: the pane's `caps` is a `$derived`, and a plain Map read would never
+  recompute when the user flips the toggle with a portal pane open.
+- **The row is read-only, not inert.** `canWrite: false` (every mutation method on `GitPortalVolume` keeps the trait's
+  `NotSupported`), `canBeSource: true` (copying OUT is the headline feature and reads through the portal),
+  `hasBackendListing` / `hasParentRow` / `syncsToMcp` all true. So F5/F6 out, the viewer, and MCP navigation work, while
+  paste-in, F7, ⇧F4, F2, and delete are refused up front with the `fileExplorer.readOnly.gitPortal*` alert instead of
+  reaching the backend's typed rejection.
+- **Real files under `.git/` keep the parent volume's full row.** `.git/config`, `.git/HEAD`, and `.git/refs/heads/main`
+  are not portal paths, so they stay editable, renamable, and deletable. That's a constraint the backend defends too;
+  ❌ don't widen the predicate to "any `.git` segment".
+- **No own tint, no breadcrumb special case.** A portal pane lives on the parent drive and shows that drive's tint, the
+  same way an archive pane does, so `git-portal` is a capability kind only. The path bar renders
+  `…/repo/.git/branches/main/src` for free (`breadcrumbDisplayPath` strips the parent `volumePath` prefix), and
+  `../navigation/path-segments.ts::splitPathSegments` already colors the `.git` segment and everything after it with
+  `--color-git-portal-text`.
+- **`effectiveVolumeRoot` needs no branch.** The portal volume's root is the repo's `.git`, which is always a strict
+  ancestor of a portal path, so `..` shows and `navigateToParent` walks back out by plain path arithmetic.
+
+Backend routing, the overlay that decorates the `.git/` root listing, and the repo cache: `crates/cmdr-git/DETAILS.md`
+and `apps/desktop/src-tauri/src/file_system/git/DETAILS.md`.
 
 ## Enter-behavior policy (archives and bundles)
 

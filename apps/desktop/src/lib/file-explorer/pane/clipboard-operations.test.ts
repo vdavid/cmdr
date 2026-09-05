@@ -224,6 +224,29 @@ describe('copyToClipboard', () => {
     })
     expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
   })
+
+  it('refuses copy inside the virtual `.git` portal and points at F5/F6', async () => {
+    // A snapshot entry is reconstructed from git history, so it has no path the
+    // OS clipboard can carry. Same shape as the archive refusal, its own wording.
+    const access = buildAccess({ volumeId: 'root', path: '/x/repo/.git/branches/main' })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('To copy files out of a git snapshot, use F5 to copy or F6 to move.', {
+      level: 'info',
+    })
+    expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('copies normally from a REAL folder under `.git`', async () => {
+    // `.git/refs/heads` is an ordinary local directory, so ⌘C is not refused.
+    copyFilesToClipboardSpy.mockResolvedValue(1)
+    const access = buildAccess({ volumeId: 'root', path: '/x/repo/.git/refs/heads' })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(copyFilesToClipboardSpy).toHaveBeenCalled()
+  })
 })
 
 describe('cutToClipboard', () => {
@@ -264,6 +287,17 @@ describe('cutToClipboard', () => {
     await createClipboardOperations(access, buildDialogs()).cutToClipboard()
 
     expect(addToastSpy).toHaveBeenCalledWith('To copy files out of an archive, use F5 to copy or F6 to move.', {
+      level: 'info',
+    })
+    expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses cut inside the virtual `.git` portal and points at F5/F6', async () => {
+    const access = buildAccess({ volumeId: 'root', path: '/x/repo/.git/commits/abc1234' })
+
+    await createClipboardOperations(access, buildDialogs()).cutToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('To copy files out of a git snapshot, use F5 to copy or F6 to move.', {
       level: 'info',
     })
     expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()

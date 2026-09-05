@@ -25,6 +25,13 @@
  * and the routing plus engine leg in
  * `file_system::write_operations::transfer::volume::copy::snapshot_out_tests`.
  *
+ * 7. A pane standing inside a branch snapshot refuses the write actions up front:
+ *    F7 and F2 surface the read-only-portal alert rather than opening the mkdir
+ *    dialog or an inline rename. That's the app-level proof that the frontend's
+ *    `git-portal` capability row reaches the guards, instead of the pane
+ *    inheriting the parent drive's fully-writable row and offering writes the
+ *    backend then refuses.
+ *
  * Editing, renaming, and removing a REAL file under `.git/` is
  * `file_system::git::walker_exposure_tests::real_files_under_dot_git_stay_fully_mutable`,
  * which drives every write method on the local volume directly.
@@ -35,7 +42,15 @@ import path from 'path'
 import { execSync } from 'child_process'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
-import { dismissAllToasts, ensureAppReady, getFixtureRoot, fileExistsInPane, pollUntil } from './helpers.js'
+import {
+  dismissAllToasts,
+  dismissOverlay,
+  ensureAppReady,
+  getFixtureRoot,
+  fileExistsInPane,
+  pollUntil,
+  MKDIR_DIALOG,
+} from './helpers.js'
 import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
 
 /** Matches the `PageLike` alias used inside `helpers.ts`. */
@@ -250,6 +265,36 @@ test.describe('Git portal', () => {
 
     fs.rmSync(outDir, { recursive: true, force: true })
     await dismissAllToasts(tauriPage)
+  })
+
+  test('a pane inside a branch snapshot offers no new folder and no rename', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    await mcpNavToPath('left', path.join(repoPath(), '.git/branches/main'))
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
+
+    // `select` focuses the pane, so the keystrokes below land on the snapshot.
+    await mcpCall('select', { pane: 'left', names: ['readme.txt'] })
+
+    // F7 surfaces the read-only-portal alert up front, NOT the mkdir dialog.
+    await tauriPage.keyboard.press('F7')
+    await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
+    expect(await tauriPage.isVisible(MKDIR_DIALOG)).toBe(false)
+    const alertText = await tauriPage.evaluate<string>(`(function() {
+            var msg = document.querySelector('[data-dialog-id="alert"] .message, [data-dialog-id="alert"] #alert-dialog-message');
+            return msg ? msg.textContent : '';
+        })()`)
+    expect(alertText.toLowerCase()).toContain('snapshots of your git history')
+    await dismissOverlay(tauriPage)
+
+    // F2 is refused the same way: no inline rename opens on a snapshot row.
+    await tauriPage.keyboard.press('F2')
+    await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
+    expect(await tauriPage.isVisible('.rename-input')).toBe(false)
+    await dismissOverlay(tauriPage)
+
+    // The snapshot is untouched either way.
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
   })
 
   test('navigates commits/ and shows the single HEAD commit by short SHA', async ({ tauriPage }) => {
