@@ -7,12 +7,7 @@
  * in the pure `first-use-pick.ts`; what's left is the IPC and the wording.
  */
 
-import {
-  asOpenTerminalError,
-  listTerminalApps,
-  openTerminalHere,
-  terminalAppDisplayName,
-} from '$lib/tauri-commands'
+import { asOpenTerminalError, listTerminalApps, openTerminalHere, terminalAppDisplayName } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { TERMINAL_APP_BUNDLE_ID } from '$lib/settings/sections/terminal-app-options'

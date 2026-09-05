@@ -6,7 +6,11 @@
  * the four surfaces (File menu, context menu, palette, shortcut).
  */
 
-import { folderContainingArchive, pathInsideArchive, type VolumeKind } from '$lib/file-explorer/pane/volume-capabilities'
+import {
+  folderContainingArchive,
+  pathInsideArchive,
+  type VolumeKind,
+} from '$lib/file-explorer/pane/volume-capabilities'
 
 /** What the resolver needs to know about the pane it's acting on. */
 export interface TerminalTargetPane {

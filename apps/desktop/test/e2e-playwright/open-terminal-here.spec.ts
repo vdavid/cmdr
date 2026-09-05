@@ -74,9 +74,7 @@ test.describe('Open terminal here', () => {
 
     await dispatchMenuCommand(tauriPage, 'file.openTerminalHere')
 
-    await expect
-      .poll(async () => openedFolder(tauriPage), { timeout: 5000 })
-      .toBe(`${getFixtureRoot()}/left/sub-dir`)
+    await expect.poll(async () => openedFolder(tauriPage), { timeout: 5000 }).toBe(`${getFixtureRoot()}/left/sub-dir`)
   })
 
   test("opens the pane's own folder when the cursor sits on a file", async ({ tauriPage }) => {

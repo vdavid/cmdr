@@ -45,9 +45,7 @@ describe('resolveTerminalFolder', () => {
   it('opens the pane folder on the `..` row, not the parent', () => {
     // Standing on `..` means "I'm looking at this folder", the same reading
     // `getPathToCopyUnderCursor` takes.
-    const folder = resolveTerminalFolder(
-      pane({ cursorEntry: { name: '..', path: '/Users/dave', isDirectory: true } }),
-    )
+    const folder = resolveTerminalFolder(pane({ cursorEntry: { name: '..', path: '/Users/dave', isDirectory: true } }))
     expect(folder).toBe('/Users/dave/code')
   })
 

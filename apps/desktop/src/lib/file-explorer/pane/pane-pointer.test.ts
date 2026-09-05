@@ -136,52 +136,40 @@ describe('createPanePointer', () => {
       state.selected = [1, 2]
       ipc.getPathsAtIndices.mockResolvedValue(['/dir/a.txt', '/dir/b.txt'])
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
-        '/dir/a.txt',
-        'a.txt',
-        false,
-        ['/dir/a.txt', '/dir/b.txt'],
-        { listingId: 'listing-1', canOpenTerminalHere: true },
-      )
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt', '/dir/b.txt'], {
+        listingId: 'listing-1',
+        canOpenTerminalHere: true,
+      })
     })
 
     it('acts on the one entry when the right-clicked row is outside the selection', async () => {
       state.selected = [7]
       ipc.getPathsAtIndices.mockResolvedValue(['/dir/other.txt'])
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
-        '/dir/a.txt',
-        'a.txt',
-        false,
-        ['/dir/a.txt'],
-        { listingId: 'listing-1', canOpenTerminalHere: true },
-      )
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
+        listingId: 'listing-1',
+        canOpenTerminalHere: true,
+      })
     })
 
     it('falls back to the single entry when the selection lookup throws', async () => {
       state.selected = [1]
       ipc.getPathsAtIndices.mockRejectedValue(new Error('gone'))
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
-        '/dir/a.txt',
-        'a.txt',
-        false,
-        ['/dir/a.txt'],
-        { listingId: 'listing-1', canOpenTerminalHere: true },
-      )
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
+        listingId: 'listing-1',
+        canOpenTerminalHere: true,
+      })
     })
 
     it('greys out "Open terminal here" on a pane whose volume has no OS-visible paths', async () => {
       // The item acts on the pane's folder, so a phone offers nothing to open.
       state.volumeId = 'mtp-1'
       await createPanePointer(deps).handleContextMenu(entryOf())
-      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
-        '/dir/a.txt',
-        'a.txt',
-        false,
-        ['/dir/a.txt'],
-        { listingId: 'listing-1', canOpenTerminalHere: false },
-      )
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith('/dir/a.txt', 'a.txt', false, ['/dir/a.txt'], {
+        listingId: 'listing-1',
+        canOpenTerminalHere: false,
+      })
     })
 
     it('gives the `..` row its own one-item menu', async () => {

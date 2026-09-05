@@ -19,10 +19,10 @@ commands, and notable non-obvious placements.
   volume-selector-row / parent-row), clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` /
   `cloudRemoveDownload`, iCloud Drive only), and the "Open terminal here" trio. That trio: `listTerminalApps` (which
   terminal apps are installed, for the settings row and the first-use picker), `openTerminalHere` (answers with an
-  OUTCOME, and throws `OpenTerminalFailure` only when the launch couldn't be attempted), and
-  `terminalAppDisplayName` (a table lookup, for naming an app that has just been uninstalled). All three take the
-  stored choice as an argument, since the frontend owns the settings store. `showFileContextMenu`'s trailing
-  `PaneContextMenuFacts` object carries what the SURFACE contributes, as opposed to the right-clicked file.
+  OUTCOME, and throws `OpenTerminalFailure` only when the launch couldn't be attempted), and `terminalAppDisplayName` (a
+  table lookup, for naming an app that has just been uninstalled). All three take the stored choice as an argument,
+  since the frontend owns the settings store. `showFileContextMenu`'s trailing `PaneContextMenuFacts` object carries
+  what the SURFACE contributes, as opposed to the right-clicked file.
 - **`favorites.ts`**: user-editable switcher favorites: `addFavorite`, `removeFavorite`, `renameFavorite`,
   `reorderFavorites`, plus `stripFavoritePrefix` (recover the bare id from a `fav-…` switcher id). Listing rides
   `listVolumes` / `volumes-changed`; there's no `listFavorites`.
