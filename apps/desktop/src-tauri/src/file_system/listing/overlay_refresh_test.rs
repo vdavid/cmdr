@@ -108,3 +108,52 @@ async fn refresh(volume_id: &str, path: &std::path::Path, listing_id: &str) {
     )
     .await;
 }
+
+/// A watcher DIFF patch is not a re-read: it hands the cache entries that a
+/// previous read already decorated, so it must leave the contributed-row count
+/// exactly where it was. Zeroing it would tell the fresh-listing oracle that a
+/// pane's `.git/` view is a picture of the directory, and hand six rows with no
+/// inode behind them to a delete walker.
+#[tokio::test]
+async fn a_diff_patch_leaves_the_contributed_row_count_alone() {
+    let dir = repo("diff_patch");
+    let dot_git = dir.join(".git");
+    crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+    crate::file_system::git::overlay::register();
+
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Repo", &dir));
+    let mut entries = volume.list_directory(&dot_git, None).await.expect("listing .git");
+    let added = crate::listing_overlays::decorate(&volume, &dot_git, &mut entries).await;
+    assert_eq!(added, 6);
+
+    let listing = TestListing::new()
+        .volume(&unique_test_id("overlay-diff-vol"))
+        .path(dot_git.clone())
+        .entries(entries.clone())
+        .overlay_rows(added)
+        .insert("overlay-diff");
+
+    // What `file_system/watcher.rs` does when FSEvents reports one new file:
+    // the decorated set plus a row, written straight back.
+    entries.push(crate::file_system::listing::FileEntry::new(
+        "COMMIT_EDITMSG".to_string(),
+        dot_git.join("COMMIT_EDITMSG").display().to_string(),
+        false,
+        false,
+    ));
+    crate::file_system::listing::update_listing_entries(
+        listing.id(),
+        entries,
+        crate::file_system::listing::OverlayRows::Unchanged,
+    );
+
+    assert!(
+        listing.with_listing(|l| l.has_overlay_rows()),
+        "a diff patch must not turn a pane's decorated listing into a walker's picture of the directory"
+    );
+    let names = listing.entry_names();
+    assert!(names.iter().any(|n| n == "COMMIT_EDITMSG"), "{names:?}");
+    assert!(names.iter().any(|n| n == "branches"), "{names:?}");
+
+    cleanup(&dir);
+}

@@ -11,6 +11,7 @@ use cmdr_fs::volume::WatchCoverage;
 
 use crate::file_system::listing::cached_listing::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::{FileEntry, TagRef};
+use crate::file_system::listing::operations::OverlayRows;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
 use crate::file_system::volume::manager::RoutedKind;
 pub use cmdr_fs::volume::DirectoryChange;
@@ -667,13 +668,15 @@ pub(super) fn publish_replacement(listing_id: &str, entries: Vec<FileEntry>, ove
         return;
     }
 
-    crate::file_system::listing::operations::update_listing_entries(listing_id, sorted);
-    // `write_ignore_poison`: skipping this on poison would leave a `.git/` listing
-    // recorded as undecorated while it holds six contributed rows, and the
-    // fresh-listing oracle would then hand them to a delete walker.
-    if let Some(listing) = LISTING_CACHE.write_ignore_poison().get_mut(listing_id) {
-        listing.set_overlay_rows(overlay_rows);
-    }
+    // Entries and count under ONE lock acquisition: a walker asking the
+    // fresh-listing oracle between the two writes would see six contributed
+    // rows described by a count that still said zero, and a delete walker would
+    // be handed a path with no inode behind it.
+    crate::file_system::listing::operations::update_listing_entries(
+        listing_id,
+        sorted,
+        OverlayRows::Recounted(overlay_rows),
+    );
     enqueue_diff(listing_id, changes);
 }
 

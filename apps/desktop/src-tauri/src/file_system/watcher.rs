@@ -25,7 +25,7 @@ use tauri_specta::Event as _;
 use crate::file_system::listing::{
     DiffChange, FileEntry, ModifyResult, compute_diff, get_listing_entries, get_listing_volume_id_and_path,
     get_single_entry, has_entry, insert_entry_sorted, list_directory_core, remove_entries_by_paths,
-    update_entry_sorted, update_listing_entries,
+    OverlayRows, update_entry_sorted, update_listing_entries,
 };
 use crate::index_host::index;
 use cmdr_fs::firmlinks;
@@ -592,8 +592,10 @@ pub async fn handle_directory_change(listing_id: &str) {
         return; // No actual changes
     }
 
-    // Update the unified LISTING_CACHE with new entries
-    update_listing_entries(listing_id, new_entries);
+    // Update the unified LISTING_CACHE with new entries. The overlays did NOT
+    // re-run here: this is a diff against the entries a previous read already
+    // decorated, so the stored contributed-row count still describes them.
+    update_listing_entries(listing_id, new_entries, OverlayRows::Unchanged);
 
     crate::file_system::listing::diff_emitter::enqueue_diff(listing_id, changes);
 }

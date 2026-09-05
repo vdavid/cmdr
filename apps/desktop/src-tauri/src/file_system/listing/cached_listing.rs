@@ -126,9 +126,12 @@ impl CachedListing {
     }
 
     /// Replaces the overlay-row count, for a re-read that ran the overlays
-    /// again. ❗ Must be kept in step with [`Self::set_entries`]: a listing that
-    /// gained contributed rows while this said zero would be handed to a walker
-    /// as if it were a picture of the directory.
+    /// again. Written in the same lock acquisition as
+    /// [`set_entries`](Self::set_entries), which
+    /// [`OverlayRows`](crate::file_system::listing::OverlayRows) makes every
+    /// caller decide about: a listing that gained contributed rows while this
+    /// still said zero would be handed to a walker as if it were a picture of
+    /// the directory.
     pub(crate) fn set_overlay_rows(&mut self, count: usize) {
         self.overlay_rows = count;
     }

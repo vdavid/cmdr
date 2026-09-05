@@ -47,7 +47,7 @@ pub(crate) use orphan_reaper::start_orphan_listing_reaper;
 // Notification API for volume mutations
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use operations::volume_ids_with_listings;
-pub(crate) use operations::{get_listing_entries, update_listing_entries};
+pub(crate) use operations::{OverlayRows, get_listing_entries, update_listing_entries};
 
 // The app's half of `cmdr-archive`'s live-content watch: what a refresh does to
 // the listing cache, which is this module's side of the seam.

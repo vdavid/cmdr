@@ -414,9 +414,24 @@ pub(crate) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<File
     Some((listing.path.clone(), listing.entries().to_vec()))
 }
 
+/// What a cache update knows about the [`ListingOverlay`](crate::listing_overlays::ListingOverlay)
+/// rows inside the entries it is about to write.
+///
+/// The two travel together because they must be written under ONE lock
+/// acquisition: a walker asking the fresh-listing oracle in between would see
+/// decorated entries described by the previous count, and six rows with no inode
+/// behind them would go to a delete walker.
+pub(crate) enum OverlayRows {
+    /// The overlays ran again for this write, and this is what they contributed.
+    Recounted(usize),
+    /// The overlays did not run: this write patches entries a previous read
+    /// already decorated, so the stored count still describes them.
+    Unchanged,
+}
+
 /// Updates the entries in the listing cache (after watcher detects changes).
 /// Re-sorts using the stored sort parameters so the cache stays consistent.
-pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) {
+pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>, overlay_rows: OverlayRows) {
     if let Ok(mut cache) = LISTING_CACHE.write()
         && let Some(listing) = cache.get_mut(listing_id)
     {
@@ -430,6 +445,9 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>) 
             listing.directory_sort_mode,
         );
         listing.set_entries(entries);
+        if let OverlayRows::Recounted(count) = overlay_rows {
+            listing.set_overlay_rows(count);
+        }
     }
 }
 
