@@ -1382,6 +1382,7 @@ pub mod scan_stop;
 pub mod scan_walk;
 pub mod secret_store;
 mod types;
+mod usb_speed;
 
 // Docs live in the file's own `//!` header. ❌ Never add an outer `///` here on
 // top of it: rustdoc resolves the concatenated fragments in THIS module's scope,
@@ -1411,6 +1412,7 @@ pub use scan_boundary::{ScanBoundary, stopped as scan_stopped};
 pub use scan_stop::{ScanStop, ScanStopSignal};
 pub use scan_walk::{ScanSource, Walking, conflicts_against, fold_batch, scan_conflicts, scan_one, scan_trees};
 pub use types::*;
+pub use usb_speed::UsbSpeed;
 
 #[cfg(test)]
 mod capabilities_test;

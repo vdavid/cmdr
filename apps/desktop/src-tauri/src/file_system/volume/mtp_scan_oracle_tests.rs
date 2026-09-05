@@ -6,7 +6,7 @@
 //! 1. **Oracle hit**: when the parent listing is watcher-backed (the device is connected and
 //!    `LISTING_CACHE` holds the entries), the MTP batch scan reads child sizes from the cache and
 //!    doesn't hit the device. We pin this with a test-only call counter on
-//!    `MtpVolume::list_directory` (`super::backends::mtp::test_hooks`): zero calls after the scan.
+//!    `MtpVolume::list_directory` (`super::backends::mtp::testing`): zero calls after the scan.
 //! 2. **Cold cache, parent-grouped**: when there's no cached listing, the existing parent-grouping
 //!    optimization still runs. 4 children sharing parent `A` + 2 children sharing parent `B`
 //!    collapse to exactly 2 `list_directory` calls, not 6. This is the load-bearing perf for the
@@ -29,7 +29,7 @@ use crate::mtp::connection::MtpDisconnectReason;
 use crate::mtp::connection_manager;
 use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
-use super::backends::mtp::test_hooks;
+use super::backends::mtp::testing;
 
 // `setup_virtual_mtp_device` gives every call its own temp backing root, so these
 // tests don't contend on the filesystem. They still take
@@ -141,14 +141,14 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
         PathBuf::from("/DCIM/c.jpg"),
     ];
 
-    test_hooks::reset_list_directory_call_count();
+    testing::reset_list_directory_call_count();
     let result = vol
         .scan_for_copy_batch_with_boundary(&paths, &ScanBoundary::silent())
         .await
         .expect("oracle-served batch scan");
 
     assert_eq!(
-        test_hooks::list_directory_call_count(),
+        testing::list_directory_call_count(),
         0,
         "expected zero MtpVolume::list_directory calls on oracle hit"
     );
@@ -205,11 +205,11 @@ async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
 
     // Clear the mtp-rs listing cache so the override's `list_directory`
     // calls actually hit USB (rather than the cache) — the override invokes
-    // `MtpVolume::list_directory` which counts via `test_hooks`, but the
+    // `MtpVolume::list_directory` which counts via `testing`, but the
     // assertion is structural ("called exactly twice"), not "did real I/O".
     // The path-handle cache stays primed; only the listing cache is dropped.
     connection_manager().clear_all_listing_caches().await;
-    test_hooks::reset_list_directory_call_count();
+    testing::reset_list_directory_call_count();
 
     // 4 children under /Documents (duplicates are intentional: even a
     // 100-photo-pick should produce one parent listing, not 100), 2 under
@@ -229,7 +229,7 @@ async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
         .expect("cold batch scan");
 
     assert_eq!(
-        test_hooks::list_directory_call_count(),
+        testing::list_directory_call_count(),
         2,
         "expected exactly 2 MtpVolume::list_directory calls (one per unique parent)"
     );

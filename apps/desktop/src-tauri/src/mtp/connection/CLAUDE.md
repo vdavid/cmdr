@@ -31,8 +31,8 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
   handles and a desynced reverse map resolves a new object to a dead path. `ListingCache`'s 5 s TTL survives mutations;
   invalidate for read-after-write.
 - **A copy scan takes `scan_for_copy_with_stop`** (`bulk_ops.rs`), consulting the `ScanStop` per entry and BEFORE each
-  child listing: one listing is the round trip (~17 s for 1k entries), as fine as this layer gets. Plain
-  `scan_for_copy` passes `ScanStop::none()`.
+  child listing: one listing is the round trip (~17 s for 1k entries). Plain `scan_for_copy` passes
+  `ScanStop::none()`.
 - **A suppressed event must win `EventDebouncer::claim_trailing` before re-emitting**: one per burst, never one per
   event, else a bulk copy livelocks the pane.
 - **A failed PTP upload must delete the partial object** (mtp-rs doesn't); a stale cached parent handle self-heals into
@@ -46,9 +46,10 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
 - **❌ Nothing here names a `tauri` type.** A device's lifecycle goes out as a typed `MtpDeviceEvent` through the
   manager's `MtpDeviceEvents` sink; `crate::mtp::events` holds the payloads and the one match that maps them. A manager
   with no window gets `no_device_events()`, so ❌ there is no `Option` to unwrap. Whether the device is POLLED is the
-  separate `DeviceWatch` argument: a virtual fixture queues a `StorageInfoChanged` per file landing in its backing dir,
-  so a watching test drops the cached storage handle under its own writes.
+  separate `DeviceWatch` argument, whose own doc says when a caller wants it off.
 - **`MtpDisconnectReason::User` is only the settings toggle or an explicit disconnect**; hotplug loss and I/O drops are
   `Removed`, else unstable USB reads as repeated unplugs.
+- **Test-gated behavior takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off in a consumer's
+  test build.
 
 Locks, caches, recovery, and the event-to-index wiring: `DETAILS.md`. Read it before any non-trivial work here.

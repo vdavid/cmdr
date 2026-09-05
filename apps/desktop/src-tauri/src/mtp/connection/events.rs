@@ -101,16 +101,23 @@ pub fn no_device_events() -> Arc<dyn MtpDeviceEvents> {
     Arc::clone(&DETACHED)
 }
 
-// `cfg(test)` alone while this module is app-resident: nothing outside the app
-// crate can name the recorder, so a `testing` feature would only make it dead
-// code in every non-test build. It widens to `any(test, feature = "testing")`
-// with the move to `cmdr-mtp`, where `cfg(test)` is off in a consumer's test
-// build and the arm would silently vanish.
-#[cfg(test)]
+// ❌ Not `cfg(test)` alone: that's set only for a crate's OWN test target, so a
+// consumer's test build would see the recorder vanish and have no way to assert
+// on the lifecycle sequence a user would have seen.
+#[cfg(any(test, feature = "testing"))]
+#[allow(
+    unused_imports,
+    reason = "re-exported for test modules across a still-crate-private path"
+)]
 pub use recording::RecordingMtpDeviceEvents;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 mod recording {
+    // While this module still lives inside the app crate, `crate::mtp` is
+    // private, so `pub` here isn't reachable from outside and `deny(unused)`
+    // calls the recorder dead in a build that has the feature but no test target.
+    #![allow(dead_code, reason = "read from test modules across a still-crate-private path")]
+
     use std::sync::Mutex;
 
     use super::{MtpDeviceEvent, MtpDeviceEvents};

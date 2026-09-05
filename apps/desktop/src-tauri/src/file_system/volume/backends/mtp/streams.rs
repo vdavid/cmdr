@@ -44,14 +44,14 @@ pub(in crate::file_system::volume::backends) fn volume_read_stream_to_chunk_stre
 }
 
 /// Bytes-per-window for a [`MtpReadStream`]. Production uses
-/// [`crate::mtp::connection::MTP_READ_WINDOW`]; tests shrink it via
-/// `test_window` so a small fixture spans multiple windows.
+/// [`crate::mtp::connection::MTP_READ_WINDOW`]; a test shrinks it through
+/// `testing::set_read_window` so a small fixture spans several windows.
 pub(super) fn mtp_read_window() -> u32 {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing"))]
     {
-        let o = test_window::get();
-        if o != 0 {
-            return o;
+        let override_window = super::testing::read_window_override();
+        if override_window != 0 {
+            return override_window;
         }
     }
     crate::mtp::connection::MTP_READ_WINDOW
@@ -99,28 +99,4 @@ impl VolumeReadStream for MtpReadStream {
     // nothing between reads, so there's no in-flight transaction to abort. A
     // window read in flight when the stream is dropped self-heals via mtp-rs's
     // `TransactionScope` (see the connection layer's `read_next_window`).
-}
-
-/// Test-only override for the read window size (see [`mtp_read_window`]). A
-/// global is harmless here: every read test wants a small window, and the
-/// production default is never asserted, so a value set by one test never
-/// breaks another. Unit tests construct [`MtpReadStream`] with an explicit
-/// `window` instead and don't touch this.
-// `set` is widened to `backends` so the sibling `mtp_test` module (a child of
-// `backends`) can reach it; `get` stays module-local because only the in-file
-// `mtp_read_window` reads it.
-#[cfg(test)]
-pub(in crate::file_system::volume::backends) mod test_window {
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    static OVERRIDE: AtomicU32 = AtomicU32::new(0);
-
-    pub(super) fn get() -> u32 {
-        OVERRIDE.load(Ordering::Relaxed)
-    }
-
-    #[cfg(feature = "virtual-mtp")]
-    pub(in crate::file_system::volume::backends) fn set(window: u32) {
-        OVERRIDE.store(window, Ordering::Relaxed);
-    }
 }

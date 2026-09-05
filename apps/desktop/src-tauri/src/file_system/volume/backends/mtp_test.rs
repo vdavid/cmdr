@@ -4,7 +4,7 @@
 //! mirroring `local_posix_test.rs` / `in_memory_test.rs`), so `super::*` reaches
 //! the backend re-exports and `super::mtp::…` reaches the MTP backend's
 //! `pub(super)` internals (`to_mtp_path`, the `device_id` / `storage_id` fields,
-//! `volume_read_stream_to_chunk_stream`, and the `test_window` override).
+//! `volume_read_stream_to_chunk_stream`, and the read-window override).
 
 use super::mtp::volume_read_stream_to_chunk_stream;
 use super::*;
@@ -13,7 +13,7 @@ use std::path::Path;
 use std::pin::Pin;
 
 #[cfg(feature = "virtual-mtp")]
-use super::mtp::test_window;
+use super::mtp::testing;
 #[cfg(feature = "virtual-mtp")]
 use crate::mtp::connection::DeviceWatch;
 #[cfg(feature = "virtual-mtp")]
@@ -726,7 +726,7 @@ async fn bounded_window_read_assembles_byte_exact() {
     rescan_virtual_device();
 
     // 1000-byte windows over 3500 bytes ⇒ 4 windows (1000, 1000, 1000, 500).
-    test_window::set(1000);
+    testing::set_read_window(1000);
 
     let info = connection_manager()
         .connect(&device_id, DeviceWatch::Off)
@@ -773,7 +773,7 @@ async fn bounded_window_read_assembles_byte_exact() {
     );
 
     // Cancel-keeps-partials, on the same fixture (one test owns the
-    // `test_window` global, so there's no cross-test race on it). Open a
+    // read-window override, so there's no cross-test race on it). Open a
     // fresh stream, read ONE window, then `cancel_and_release`: it holds
     // nothing between windows, so it returns without a device drain, and the
     // bytes already delivered (the kept partial) survive in `bytes_read`.
@@ -791,7 +791,7 @@ async fn bounded_window_read_assembles_byte_exact() {
     assert_eq!(partial.bytes_read(), 1000, "the kept partial offset survives a cancel");
     drop(partial); // no panic, nothing held
 
-    test_window::set(0);
+    testing::set_read_window(0);
     connection_manager()
         .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
         .await

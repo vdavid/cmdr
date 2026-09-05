@@ -7,7 +7,7 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
 
 - **Only the backends that live IN the app are here**: `local_posix.rs` and `mtp/`, with their own tests.
   `InMemoryVolume` rides with the trait in `cmdr-fs`. Both split by concern the way the remote backends do: MTP's
-  `volume_impl` is the whole `impl Volume`, with `streams`, `mapping`, `cancel`, and `scan` beside it, and
+  `volume_impl` is the whole `impl Volume`, with `streams`, `mapping`, `cancel`, `scan`, and `testing` beside it, and
   `local_posix.rs` keeps the struct and the query/mutation methods with `local_posix/{scan,streams}.rs` beside it. A
   trait impl can't span files, so a moved method stays a one-line delegation to a `pub(super)` inherent body (SMB
   carries the pattern further; see `crates/cmdr-smb/CLAUDE.md`).
@@ -33,6 +33,9 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
   every cross-volume copy landing on local disk flows through it, and `flush()` alone loses data on eject.
 - **MTP has no single-file stat**, so `get_metadata` lists the whole parent: avoid it in hot paths. Ranged reads and
   read sessions are canonical in `mtp/connection/CLAUDE.md`.
+- **`mtp::testing` is the ONLY way a test outside this backend reads it**: two numbers out
+  (`list_directory_call_count`, `reset_list_directory_call_count`) and one in (`set_read_window`), gated on
+  `any(test, feature = "testing")`, ❌ never `cfg(test)` alone. Don't grow it into a way to reach backend state.
 
 Per-backend decisions, supersede-vs-unmount, and the SMB auto-upgrade lifecycle: `DETAILS.md`. Read it before any
 non-trivial work here: editing, planning, reorganizing, or advising.

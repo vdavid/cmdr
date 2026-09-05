@@ -12,16 +12,15 @@ mod cancel;
 mod mapping;
 mod scan;
 mod streams;
+/// The two instruments a test outside this backend reads it with.
+#[cfg(any(test, feature = "testing"))]
+pub mod testing;
 mod volume_impl;
 
-// Both re-exports exist for the sibling `mtp_test` module, which reaches them at
-// `mtp::…` rather than through the private `streams` submodule. Each carries the
-// gate its consumer there does, or `-D unused` fails the narrower build.
+// Re-exported for the sibling `mtp_test` module, which reaches it at `mtp::…`
+// rather than through the private `streams` submodule.
 #[cfg(test)]
 pub(super) use streams::volume_read_stream_to_chunk_stream;
-
-#[cfg(all(test, feature = "virtual-mtp"))]
-pub(super) use streams::test_window;
 
 use super::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
@@ -139,36 +138,5 @@ impl MtpVolume {
         } else {
             self.root.join(inner)
         }
-    }
-}
-
-/// Test-only call counter for `MtpVolume::list_directory`. The
-/// `scan_for_copy_batch_with_boundary` integration tests assert "exactly 2
-/// `list_directory` calls for 2 unique parents" without having to wrap the
-/// volume (the override calls `self.list_directory` via static dispatch on
-/// `MtpVolume`, so a wrapper Volume can't intercept it).
-#[cfg(test)]
-// Visible at `crate::file_system::volume::mtp_scan_oracle_tests`: those oracle
-// tests live one level up (in `volume`), so they need this wider scope rather
-// than a `pub(super)` that would only reach `backends`.
-pub(in crate::file_system::volume) mod test_hooks {
-    // The two readers below are called from the oracle tests one level up, which a
-    // partial test build may not compile; `deny(unused)` flags them either way.
-    #![allow(dead_code, reason = "read by the `mtp_scan_oracle_tests` module one level up")]
-
-    use std::sync::atomic::{AtomicUsize, Ordering};
-
-    static LIST_DIRECTORY_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
-
-    pub(super) fn bump_list_directory_call_count() {
-        LIST_DIRECTORY_CALL_COUNT.fetch_add(1, Ordering::Relaxed);
-    }
-
-    pub fn reset_list_directory_call_count() {
-        LIST_DIRECTORY_CALL_COUNT.store(0, Ordering::Relaxed);
-    }
-
-    pub fn list_directory_call_count() -> usize {
-        LIST_DIRECTORY_CALL_COUNT.load(Ordering::Relaxed)
     }
 }

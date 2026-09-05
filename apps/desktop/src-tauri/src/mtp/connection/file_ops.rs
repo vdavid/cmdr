@@ -178,7 +178,7 @@ impl MtpConnectionManager {
             let cached = cache.read().ok().and_then(|m| m.get(&storage_id).cloned());
             (Arc::clone(&entry.device), handle, cache, cached)
         };
-        #[cfg(test)]
+        #[cfg(any(test, feature = "testing"))]
         let storage_lookups = {
             let devices = self.devices.lock().await;
             devices.get(device_id).map(|entry| Arc::clone(&entry.storage_lookups))
@@ -189,7 +189,7 @@ impl MtpConnectionManager {
         let storage = match cached {
             Some(storage) => storage,
             None => {
-                #[cfg(test)]
+                #[cfg(any(test, feature = "testing"))]
                 if let Some(lookups) = &storage_lookups {
                     lookups.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 }

@@ -294,11 +294,18 @@ cached and re-registered the same `Arc` would hand the registry a volume that is
 
 `pub(in crate::file_system::volume)` has no cross-crate spelling, so an item wearing it faces one of two answers when
 its backend moves: it becomes `#[cfg(any(test, feature = "testing"))] pub`, a real widening of the public surface, or
-the test that uses it moves into the crate with it. MTP's `mtp/mod.rs::test_hooks` still wears it.
+the test that uses it moves into the crate with it.
 
 **Moving the test is the default, and widening is the exception that has to be argued.** SMB granted exactly one:
 `detach_session_for_test`, because the app's scan-oracle cell that calls it asserts on the app's fresh-listing oracle
 and belongs on that side. Everything else went the other way, `SmbVolumeInner` included, which is now private.
+
+MTP's two, `test_hooks` and `test_window`, are one grant with the same argument. They're a `volume::testing` module of
+three functions (`list_directory_call_count`, `reset_list_directory_call_count`, `set_read_window`), and the cell that
+needs them across the boundary is the app's fresh-listing oracle again: it asserts the ORACLE issued no listing, which
+is an app claim, and no wrapper `Volume` can see the call because the scan reaches `MtpVolume::list_directory` by static
+dispatch. The module hands out two numbers and takes one; ❌ it must not grow into a way to read the backend's state,
+which is the same shape `cmdr_smb::volume::testing` holds to.
 
 The `cfg` half is not optional: `cfg(test)` is set only for a crate's own test target, so leaving it would make the item
 vanish from a consumer's test build. This project has been bitten by that three times.

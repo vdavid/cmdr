@@ -53,8 +53,8 @@ impl Volume for MtpVolume {
         cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            #[cfg(test)]
-            super::test_hooks::bump_list_directory_call_count();
+            #[cfg(any(test, feature = "testing"))]
+            super::testing::bump_list_directory_call_count();
 
             let mtp_path = self.to_mtp_path(path);
 

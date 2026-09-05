@@ -89,15 +89,31 @@ pub fn activate_from_env_if_requested() -> Option<u64> {
     Some(setup_virtual_mtp_device_at(&root))
 }
 
+// The five items below are the fixture a test drives this device with. Their
+// gate is `any(test, feature = "testing")`, ❌ never `cfg(test)` alone, which is
+// set only for a crate's own test target and would make them vanish from a
+// consumer's test build. While this module still lives inside the app crate,
+// `crate::mtp` is private, so `pub(crate)` isn't reachable from outside and
+// `deny(unused)` calls them dead in a build that has the feature but no test
+// target; hence the `dead_code` allow each one carries.
+
 /// A registered virtual MTP device plus the temp dir backing it. Holding it
 /// keeps the backing dir alive; dropping it deletes the dir.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
+#[allow(
+    dead_code,
+    reason = "the fixture is read from test modules across a still-crate-private path"
+)]
 pub(crate) struct VirtualDeviceFixture {
     pub(crate) location_id: u64,
     root: tempfile::TempDir,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
+#[allow(
+    dead_code,
+    reason = "the fixture is read from test modules across a still-crate-private path"
+)]
 impl VirtualDeviceFixture {
     /// The storage backing dir, for tests that seed files directly on disk.
     pub(crate) fn root(&self) -> &Path {
@@ -131,7 +147,11 @@ impl VirtualDeviceFixture {
 /// The manager a test reaches through `crate::mtp::connection_manager()` carries
 /// the app's real registrar, so a `connect()` here leaves browsable volumes
 /// behind the way it does at startup.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
+#[allow(
+    dead_code,
+    reason = "the fixture is read from test modules across a still-crate-private path"
+)]
 pub(crate) fn setup_virtual_mtp_device() -> VirtualDeviceFixture {
     let root = tempfile::tempdir().expect("failed to create a virtual-device fixture root");
     let location_id = register_virtual_mtp_device_at(root.path(), false);
@@ -300,7 +320,11 @@ pub fn resume_virtual_watcher() {
 /// running at once would silently share one connection pointed at whichever
 /// backing dir registered first. Hold this guard across the whole
 /// register → connect → use → disconnect → unregister span.
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
+#[allow(
+    dead_code,
+    reason = "the fixture is read from test modules across a still-crate-private path"
+)]
 pub(crate) fn virtual_device_test_lock() -> &'static tokio::sync::Mutex<()> {
     static LOCK: std::sync::OnceLock<tokio::sync::Mutex<()>> = std::sync::OnceLock::new();
     LOCK.get_or_init(|| tokio::sync::Mutex::new(()))
@@ -311,7 +335,11 @@ pub(crate) fn virtual_device_test_lock() -> &'static tokio::sync::Mutex<()> {
 /// Required, not hygiene: a leftover registration keeps answering to the shared
 /// device id, so the next test's `connect()` would open the previous test's
 /// backing dir. Pairs with [`setup_virtual_mtp_device_at`].
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
+#[allow(
+    dead_code,
+    reason = "the fixture is read from test modules across a still-crate-private path"
+)]
 pub(crate) fn unregister_virtual_mtp_device(location_id: u64) {
     mtp_rs::unregister_virtual_device(location_id);
 }

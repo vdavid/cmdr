@@ -41,6 +41,7 @@ smb-e2e = ["cmdr-smb/testing"]
 # Docker fixtures the app's SFTP suites connect through), the same reason
 # `cmdr-smb/testing` is.
 testing = [
+  "dep:tempfile",
   "cmdr-archive/testing",
   "cmdr-fs/testing",
   "cmdr-index/testing",
@@ -235,6 +236,13 @@ specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
 # scoring. Pinned at 0.3.1 (published 2024-02-20, well over a month old). MPL-2.0;
 # already in the `deny.toml` allowlist. See `file_system/listing/fuzzy_jump.rs` for usage.
 nucleo-matcher = "0.3.1"
+# Scratch directories for tests and test fixtures. Optional and turned on only by
+# the `testing` feature (which the self dev-dependency below switches on for every
+# dev target), so the shipped binary never links it. It has to be a NORMAL
+# dependency rather than a dev one because the virtual-MTP fixture lives in the
+# LIB behind `any(test, feature = "testing")`, and a lib target can't see
+# dev-dependencies. Same shape as `blake3` in `cmdr-smb`.
+tempfile = { version = "3", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -369,8 +377,6 @@ env_logger = "0.11.10"
 # that `ed25519_dalek::SigningKey::generate` takes; `ed25519-dalek` ships no RNG of its own, and
 # `rand_core` 0.10 (the version it depends on) has no `OsRng`.
 getrandom = { version = "0.4", features = ["sys_rng"] }
-# Every app-side use is inside a `#[cfg(test)] mod tests`.
-tempfile = "3"
 # Property-based testing. Used for algorithmic functions where the input space
 # is too large for example tests to cover meaningfully (parser, glob→regex,
 # topological sort, Unicode collation). Pinned at 1.11.0 (published 2026-03-24,

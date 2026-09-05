@@ -188,7 +188,10 @@ struct DeviceEntry {
     /// Test-only tally of `GetStorageInfo` round trips the read paths issued for
     /// this device. Pins the "one storage lookup per device, not per read"
     /// contract that `read_range_direct` exists to hold.
-    #[cfg(test)]
+    ///
+    /// ❌ `cfg(test)` alone would be wrong: it's set only for a crate's OWN test
+    /// target, so counting would silently stop in a consumer's test build.
+    #[cfg(any(test, feature = "testing"))]
     storage_lookups: Arc<std::sync::atomic::AtomicUsize>,
 }
 
@@ -415,7 +418,7 @@ impl MtpConnectionManager {
             .ok()
             .and_then(|devs| devs.into_iter().find(|d| d.location_id == location_id))
             .and_then(|d| d.speed)
-            .map(crate::mtp::types::UsbSpeed::from);
+            .map(crate::mtp::types::usb_speed_from_device);
 
         let device_info = MtpDeviceInfo {
             id: device_id.to_string(),
@@ -487,7 +490,7 @@ impl MtpConnectionManager {
                     listing_cache: RwLock::new(HashMap::new()),
                     priority_gate: DevicePriorityGate::default(),
                     storage_cache: Arc::new(RwLock::new(HashMap::new())),
-                    #[cfg(test)]
+                    #[cfg(any(test, feature = "testing"))]
                     storage_lookups: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
                 },
             );

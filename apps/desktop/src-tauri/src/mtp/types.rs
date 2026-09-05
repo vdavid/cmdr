@@ -6,6 +6,23 @@ use serde::{Deserialize, Serialize};
 
 pub use crate::usb_speed::UsbSpeed;
 
+/// The negotiated link speed a device reported, in the vocabulary the volume
+/// list speaks.
+///
+/// A `From` impl is impossible: `mtp_rs::UsbSpeed` and [`UsbSpeed`] are both
+/// foreign to this crate, and `cmdr-fs` must not depend on a transport to write
+/// the impl on its side. So the mapping is a plain function, and this is the
+/// only place the two enums meet.
+pub fn usb_speed_from_device(speed: mtp_rs::UsbSpeed) -> UsbSpeed {
+    match speed {
+        mtp_rs::UsbSpeed::Low => UsbSpeed::Low,
+        mtp_rs::UsbSpeed::Full => UsbSpeed::Full,
+        mtp_rs::UsbSpeed::High => UsbSpeed::High,
+        mtp_rs::UsbSpeed::Super => UsbSpeed::Super,
+        mtp_rs::UsbSpeed::SuperPlus => UsbSpeed::SuperPlus,
+    }
+}
+
 /// Information about a connected MTP device.
 ///
 /// This represents a device detected via USB, before opening an MTP session.
