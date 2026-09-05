@@ -875,9 +875,12 @@ impl MtpConnectionManager {
 
     /// Handles a device disconnection (called when we detect the device was unplugged).
     ///
-    /// This cleans up the devices registry and emits a disconnection event.
-    /// Called from the event loop when MTP reports a disconnect, ensuring that
-    /// subsequent reconnection attempts don't fail with "already connected".
+    /// Drops the device entry, detaches its volumes, and reports the disconnect,
+    /// the same cleanup [`disconnect`](Self::disconnect) does for a user-driven
+    /// one. Called from the event loop when MTP reports a disconnect, and from
+    /// the reopen loop when the phone turns out to be gone for good; dropping the
+    /// entry is what keeps a later `connect()` from failing as "already
+    /// connected".
     ///
     /// ❌ NOT the path for a `SessionReset`: that device is still attached and
     /// reopenable, so it goes through `handle_device_session_reset` instead (see
@@ -894,14 +897,14 @@ impl MtpConnectionManager {
 
         let removed = {
             let mut devices = self.devices.lock().await;
-            let was_present = devices.remove(device_id).is_some();
+            let removed = devices.remove(device_id);
             debug!(
                 "handle_device_disconnected: device {} was {} in registry, {} devices remaining",
                 device_id,
-                if was_present { "found" } else { "NOT found" },
+                if removed.is_some() { "found" } else { "NOT found" },
                 devices.len()
             );
-            was_present
+            removed
         };
 
         // Stop the event loop for this device
@@ -914,8 +917,17 @@ impl MtpConnectionManager {
             .indexing()
             .device_watch_gap(device_id, WatchGap::ConnectionReset);
 
-        if removed {
+        if let Some(entry) = removed {
             info!("MTP device disconnected and removed from registry: {}", device_id);
+
+            // Detach this device's volumes, exactly as `disconnect` does. The
+            // device is gone either way; which of the two paths noticed is an
+            // implementation detail, and a volume left registered would answer
+            // for hardware that isn't there and never publish the `Retirement`
+            // that tells in-flight background work it stopped being live.
+            for storage in &entry.storages {
+                self.detach_storage_volume(device_id, storage.id);
+            }
 
             self.events.device_event(MtpDeviceEvent::Disconnected {
                 device_id: device_id.to_string(),

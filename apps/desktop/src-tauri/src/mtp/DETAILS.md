@@ -166,7 +166,14 @@ Event loop (event_loop.rs)
   → ObjectAdded/Removed/Changed → compute_diff() → emit directory-diff
   → StoreAdded → handle_storage_added() → attach_storage_volume() → emit volumes-changed
   → StoreRemoved → handle_storage_removed() → detach_storage_volume() → emit volumes-changed
+  → Error::Disconnected → handle_device_disconnected() → detach_storage_volume() per storage
+    → emit mtp-device-disconnected → emit volumes-changed
 ```
+
+The last arrow is the OTHER way a device leaves, and it does the same cleanup as `disconnect()`. Which of the two
+noticed the unplug is a race (the event loop's poll, or the hotplug diff) and must not change what the app is left
+holding: a volume that survived would answer for hardware that isn't there and never publish the `Retirement` that
+tells in-flight background work it stopped being live.
 
 `MtpDisconnectReason` distinguishes explicit toggle-off from hotplug-loss in logs and UI. Re-enabling MTP triggers
 auto-connect, which re-suppresses ptpcamerad if devices are found.
