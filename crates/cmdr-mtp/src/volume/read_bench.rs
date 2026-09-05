@@ -45,8 +45,8 @@ use std::time::{Duration, Instant};
 
 use cmdr_fs::volume::Volume;
 
+use crate::connection::testing::test_connection_manager as connection_manager;
 use crate::connection::{DeviceWatch, MtpDisconnectReason};
-use crate::testing::test_connection_manager as connection_manager;
 use crate::volume::MtpVolume;
 
 /// rc-zip's `EntryFsm` buffer size: the read size the extraction loop issues.

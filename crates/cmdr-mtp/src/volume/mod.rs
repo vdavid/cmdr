@@ -29,8 +29,9 @@ mod host_seam_test;
 /// `MtpVolume`'s identity and the path conversions every operation starts with.
 #[cfg(test)]
 mod path_test;
-/// The `read_range` hardware benchmark. Ignored by default; needs a real phone.
-#[cfg(all(test, feature = "virtual-device"))]
+/// The `read_range` hardware benchmark. Ignored by default; needs a real phone,
+/// so it takes no virtual-device gate.
+#[cfg(test)]
 mod read_bench;
 /// The direct and windowed read paths, against a virtual device.
 #[cfg(all(test, feature = "virtual-device"))]
