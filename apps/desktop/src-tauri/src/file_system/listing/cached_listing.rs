@@ -91,6 +91,21 @@ pub(crate) struct CachedListing {
     overlay_rows: usize,
 }
 
+/// What a cache update knows about the [`ListingOverlay`](crate::listing_overlays::ListingOverlay)
+/// rows inside the entries it is about to write.
+///
+/// The two travel together because they must be written under ONE lock
+/// acquisition: a walker asking the fresh-listing oracle in between would see
+/// decorated entries described by the previous count, and six rows with no inode
+/// behind them would go to a delete walker.
+pub(crate) enum OverlayRows {
+    /// The overlays ran again for this write, and this is what they contributed.
+    Recounted(usize),
+    /// The overlays did not run: this write patches entries a previous read
+    /// already decorated, so the stored count still describes them.
+    Unchanged,
+}
+
 impl CachedListing {
     /// A listing freshly filled from a volume read: sequence 0, created and
     /// accessed now.

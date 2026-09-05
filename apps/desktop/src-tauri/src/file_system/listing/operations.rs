@@ -11,7 +11,7 @@ use uuid::Uuid;
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 
 use crate::benchmark;
-use crate::file_system::listing::cached_listing::{CachedListing, LISTING_CACHE};
+use crate::file_system::listing::cached_listing::{CachedListing, LISTING_CACHE, OverlayRows};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::listing::visible_rows::VisibleRows;
@@ -412,21 +412,6 @@ pub(crate) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<File
     let cache = LISTING_CACHE.read().ok()?;
     let listing = cache.get(listing_id)?;
     Some((listing.path.clone(), listing.entries().to_vec()))
-}
-
-/// What a cache update knows about the [`ListingOverlay`](crate::listing_overlays::ListingOverlay)
-/// rows inside the entries it is about to write.
-///
-/// The two travel together because they must be written under ONE lock
-/// acquisition: a walker asking the fresh-listing oracle in between would see
-/// decorated entries described by the previous count, and six rows with no inode
-/// behind them would go to a delete walker.
-pub(crate) enum OverlayRows {
-    /// The overlays ran again for this write, and this is what they contributed.
-    Recounted(usize),
-    /// The overlays did not run: this write patches entries a previous read
-    /// already decorated, so the stored count still describes them.
-    Unchanged,
 }
 
 /// Updates the entries in the listing cache (after watcher detects changes).

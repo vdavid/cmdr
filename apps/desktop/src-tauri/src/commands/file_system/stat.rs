@@ -59,16 +59,19 @@ pub async fn stat_paths_kinds(paths: Vec<String>) -> TimedOut<Vec<Option<bool>>>
     })
     .await;
 
-    // A path INSIDE an archive can't be `symlink_metadata`'d (it's not a real FS
-    // path), so it comes back `None`. Route those through the archive volume to
-    // recover the kind. Gate on "inside an archive" (not just "crosses"): the
-    // `.zip` file ITSELF is a real file that `symlink_metadata` already classified
-    // as a non-directory, so it never reaches here — and if it did, we must NOT
-    // report the archive ROOT's directory-ness for the file. `path_is_inside_archive`
-    // does no I/O unless a component carries a `.zip` extension.
+    // A path a ROUTE serves can't be `symlink_metadata`'d (it's not a real FS
+    // path): inside a `.zip`, or inside a repo's virtual `.git` trees. Both come
+    // back `None`, and both recover their kind from the volume that does serve
+    // them. Gate on "a route serves it" (not just "crosses one"): the `.zip` file
+    // ITSELF is a real file that `symlink_metadata` already classified as a
+    // non-directory, so it never reaches here — and if it did, we must NOT report
+    // the archive ROOT's directory-ness for the file. The predicate does no I/O
+    // beyond the archive half's extension check.
     if !result.timed_out {
         for (kind, path) in result.data.iter_mut().zip(paths.iter()) {
-            if kind.is_some() || !cmdr_archive::path_is_inside_archive(Path::new(path)) {
+            if kind.is_some()
+                || !crate::file_system::volume::manager::path_routes_over_its_parent(Path::new(path))
+            {
                 continue;
             }
             let resolved = crate::file_system::volume::manager::get_volume_manager()
@@ -166,5 +169,46 @@ mod tests {
         assert_eq!(result.data, vec![Some(false)], "the .zip file must report as a file");
 
         let _ = fs::remove_dir_all(&tmp);
+    }
+
+    /// A snapshot path has no inode either, so `symlink_metadata` answers `None`
+    /// and the kind has to come from the volume that serves it. Without this the
+    /// portal's rows report an unknown kind, which is what an archive-only
+    /// recovery branch left them with.
+    #[tokio::test]
+    async fn a_path_in_a_repos_history_recovers_its_kind_from_the_portal() {
+        use crate::file_system::volume::LocalPosixVolume;
+        use crate::file_system::volume::manager::get_volume_manager;
+        use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
+        use std::sync::Arc;
+
+        let dir = temp_dir("stat_kinds", "snapshot");
+        let mut fixture = Fixture::init(dir.clone());
+        fixture.commit_file("README.md", b"hello\n", "initial");
+        fixture.commit_file("scripts/run.sh", b"#!/bin/sh\n", "a script in a folder");
+
+        // `stat` resolves against the default volume, so the repo has to be on it.
+        get_volume_manager().register_if_absent(
+            crate::file_system::volume::DEFAULT_VOLUME_ID,
+            Arc::new(LocalPosixVolume::new("Root", "/")),
+        );
+        crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+
+        let canonical = std::fs::canonicalize(&dir).expect("canonical repo root");
+        let snapshot = canonical.join(".git/branches/main");
+        let result = stat_paths_kinds(vec![
+            snapshot.join("README.md").to_string_lossy().into_owned(),
+            snapshot.join("scripts").to_string_lossy().into_owned(),
+        ])
+        .await;
+
+        assert!(!result.timed_out);
+        assert_eq!(
+            result.data,
+            vec![Some(false), Some(true)],
+            "a blob is a file and a tree is a directory, both out of the snapshot"
+        );
+
+        cleanup(&dir);
     }
 }
