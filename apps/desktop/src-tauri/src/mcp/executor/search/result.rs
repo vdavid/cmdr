@@ -267,16 +267,16 @@ fn coverage_notes(answer: &LiveAnswer, system_dirs_excluded: bool) -> Vec<String
             } else {
                 ("matches", "are")
             };
+            // Spoken like every other count Cmdr states: a node_modules-heavy drive
+            // hides six figures of matches, and `132504` is a number a reader
+            // misreads by an order of magnitude.
+            let hidden = grouped(u64::from(coverage.hidden_by_excludes));
             notes.push(if system_dirs_excluded {
                 format!(
-                    "Note: {} more {} {} inside excluded folders and NOT in the count above: the system, cache, and build tier (node_modules, .git, Caches, …) that's hidden by default, plus any ! excludes in the scope. Pass excludeSystemDirs: false to include the default tier — do that when you're asking where disk space is going, because those folders are usually the answer.",
-                    coverage.hidden_by_excludes, matches, are
+                    "Note: {hidden} more {matches} {are} inside excluded folders and NOT in the count above: the system, cache, and build tier (node_modules, .git, Caches, …) that's hidden by default, plus any ! excludes in the scope. Pass excludeSystemDirs: false to include the default tier. Do that when you're asking where disk space is going, because those folders are usually the answer."
                 )
             } else {
-                format!(
-                    "Note: {} more {} {} inside the ! excludes in the scope, and NOT in the count above.",
-                    coverage.hidden_by_excludes, matches, are
-                )
+                format!("Note: {hidden} more {matches} {are} inside the ! excludes in the scope, and NOT in the count above.")
             });
         }
         if coverage.abandoned_ground {

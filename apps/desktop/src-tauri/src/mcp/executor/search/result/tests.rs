@@ -298,6 +298,20 @@ fn hidden_by_excludes_survives_into_the_result() {
 }
 
 #[test]
+fn a_six_figure_hidden_count_is_spoken_with_its_separators() {
+    // Every count Cmdr states carries them, and a node_modules-heavy drive reaches six
+    // figures easily. Bare, `132504` is a number a reader misplaces by an order of
+    // magnitude, in the one note whose whole job is to correct a wrong total.
+    let coverage = SearchRunCoverage {
+        hidden_by_excludes: 132_504,
+        ..covered("root")
+    };
+    let notes = joined(&shape_answer(answer(settled(coverage), 0), true).notes);
+    assert!(notes.contains("132,504"), "{notes}");
+    assert!(!notes.contains("132504"), "{notes}");
+}
+
+#[test]
 fn with_the_default_tier_already_off_the_note_stops_advising_it() {
     // Everything hidden then came from the caller's own `!` excludes, and
     // telling them to pass a flag they already passed is noise.
