@@ -1021,9 +1021,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "比 `{vs}` 領先 {ahead, plural, other {{aheadText} 次提交}}，落後 {behind, plural, other {{behindText} 次提交}}",
+  "fileExplorer.git.tooltip.aheadBehind": "比「{vs}」領先 {ahead, plural, other {{aheadText} 次提交}}，落後 {behind, plural, other {{behindText} 次提交}}",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "86a1aa3"
+    "sourceHash": "2eba558"
   },
   "fileExplorer.git.tooltip.taggedCommit": "被標記的提交 {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -1033,13 +1033,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "建立於分支 `{branch}`",
+  "fileExplorer.git.tooltip.stashedOnBranch": "建立於分支「{branch}」",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "cfdbd45"
+    "sourceHash": "770565f"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "已檢出分支 `{branch}`",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "已檢出分支「{branch}」",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "730335d"
+    "sourceHash": "5036eb7"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "分離狀態，位於 {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {

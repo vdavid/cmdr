@@ -68,7 +68,10 @@ futures-util = "0.3"
 bytes = "1"
 # The scratch dir behind `VirtualDeviceFixture`. Optional and turned on only by
 # `testing`, so a shipped build never links it. Same shape as `blake3` in
-# `cmdr-smb`.
+# `cmdr-smb`, with one difference: `blake3`'s users need only `testing`, while
+# this one's user also needs `virtual-device`. A `testing`-without-`virtual-device`
+# build therefore links `tempfile` and names it nowhere, which `lib.rs` answers
+# with a crate-root `use tempfile as _;` behind the same feature.
 tempfile = { version = "3", optional = true }
 
 [dev-dependencies]

@@ -146,7 +146,7 @@ describe('pickSizeDisplay', () => {
       makeEntry({ gitMeta: { kind: 'aheadBehind', ahead: 3, behind: 1, vs: 'origin/main' } }),
     )
     expect(pick.override).toBe('+3 / -1')
-    expect(pick.tooltip).toBe('3 commits ahead, 1 commit behind `origin/main`')
+    expect(pick.tooltip).toBe('3 commits ahead, 1 commit behind "origin/main"')
   })
 
   it('says "1 commit", not "1 commits"', () => {
@@ -154,7 +154,7 @@ describe('pickSizeDisplay', () => {
     // one commit apart read as "1 commits ahead". Wording it from the catalog
     // is what fixes it, in every locale at once.
     const pick = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'aheadBehind', ahead: 1, behind: 0, vs: 'main' } }))
-    expect(pick.tooltip).toBe('1 commit ahead, 0 commits behind `main`')
+    expect(pick.tooltip).toBe('1 commit ahead, 0 commits behind "main"')
   })
 
   it('words each count kind on its own noun', () => {
@@ -215,11 +215,11 @@ describe('pickSizeDisplay', () => {
   it('names the branch a stash entry and a worktree belong to', () => {
     const stashed = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'stashedOnBranch', branch: 'main' } }))
     expect(stashed.override).toBe('on main')
-    expect(stashed.tooltip).toBe('Created on branch `main`')
+    expect(stashed.tooltip).toBe('Created on branch "main"')
 
     const worktree = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'worktreeOnBranch', branch: 'feature-x' } }))
     expect(worktree.override).toBe('on feature-x')
-    expect(worktree.tooltip).toBe('Branch `feature-x` is checked out')
+    expect(worktree.tooltip).toBe('Branch "feature-x" is checked out')
   })
 
   it('prefers the git wording even when size is also set (the sort key)', () => {

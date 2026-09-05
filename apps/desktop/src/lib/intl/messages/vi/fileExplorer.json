@@ -1024,9 +1024,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "Vượt trước {ahead, plural, other {{aheadText} commit}}, tụt sau {behind, plural, other {{behindText} commit}} so với `{vs}`",
+  "fileExplorer.git.tooltip.aheadBehind": "Vượt trước {ahead, plural, other {{aheadText} commit}}, tụt sau {behind, plural, other {{behindText} commit}} so với \"{vs}\"",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "86a1aa3"
+    "sourceHash": "2eba558"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Commit được gắn thẻ {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -1036,13 +1036,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Được tạo trên nhánh `{branch}`",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Được tạo trên nhánh \"{branch}\"",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "cfdbd45"
+    "sourceHash": "770565f"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "Nhánh `{branch}` đang được mở",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Nhánh \"{branch}\" đang được mở",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "730335d"
+    "sourceHash": "5036eb7"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Tách rời tại {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {

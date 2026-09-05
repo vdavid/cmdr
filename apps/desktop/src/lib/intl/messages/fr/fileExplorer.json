@@ -1027,9 +1027,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} d''avance, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} de retard sur `{vs}`",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} d''avance, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} de retard sur « {vs} »",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "86a1aa3"
+    "sourceHash": "2eba558"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Commit taggé {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -1039,13 +1039,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Créé sur la branche `{branch}`",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Créé sur la branche « {branch} »",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "cfdbd45"
+    "sourceHash": "770565f"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "La branche `{branch}` est active",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "La branche « {branch} » est active",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "730335d"
+    "sourceHash": "5036eb7"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Détaché sur {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {

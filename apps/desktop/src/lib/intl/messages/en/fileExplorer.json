@@ -1528,9 +1528,9 @@
       "count": "the same number of files a commit changed (drives the singular/plural form)"
     }
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} ahead, {behind, plural, one {{behindText} commit} other {{behindText} commits}} behind `{vs}`",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} ahead, {behind, plural, one {{behindText} commit} other {{behindText} commits}} behind \"{vs}\"",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a branch row''s `+n / -n` cell in words. \"Ahead\" means this branch has commits the other one doesn''t; \"behind\" means the other one has commits this branch doesn''t. The backticks around the branch name are punctuation that sets the name apart, so keep them.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a branch row''s `+n / -n` cell in words. \"Ahead\" means this branch has commits the other one doesn''t; \"behind\" means the other one has commits this branch doesn''t. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
       "aheadText": "how many commits this branch is ahead by, already formatted for display",
       "ahead": "the same number (drives the singular/plural form)",
@@ -1553,16 +1553,16 @@
       "id": "the commit''s full identifier, a 40-character hexadecimal string"
     }
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Created on branch `{branch}`",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Created on branch \"{branch}\"",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a stash entry''s row: which branch the user was on when they set those changes aside. The backticks around the branch name are punctuation that sets the name apart, so keep them.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a stash entry''s row: which branch the user was on when they set those changes aside. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
       "branch": "the branch name, for example \"main\" (a name, never translated)"
     }
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch `{branch}` is checked out",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch \"{branch}\" is checked out",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree''s row: which branch that worktree currently has open. \"Checked out\" is the git term for the branch a folder is showing. The backticks around the branch name are punctuation that sets the name apart, so keep them.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree''s row: which branch that worktree currently has open. \"Checked out\" is the git term for the branch a folder is showing. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
       "branch": "the branch name, for example \"main\" (a name, never translated)"
     }

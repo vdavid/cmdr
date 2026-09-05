@@ -1024,9 +1024,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} incheckning} other {{aheadText} incheckningar}} före, {behind, plural, one {{behindText} incheckning} other {{behindText} incheckningar}} efter `{vs}`",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} incheckning} other {{aheadText} incheckningar}} före, {behind, plural, one {{behindText} incheckning} other {{behindText} incheckningar}} efter ”{vs}”",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "86a1aa3"
+    "sourceHash": "2eba558"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Taggad incheckning {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -1036,13 +1036,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Skapad på grenen `{branch}`",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Skapad på grenen ”{branch}”",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "cfdbd45"
+    "sourceHash": "770565f"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "Grenen `{branch}` är utcheckad",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Grenen ”{branch}” är utcheckad",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "730335d"
+    "sourceHash": "5036eb7"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Frikopplad vid {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {

@@ -1029,9 +1029,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} à frente, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} atrás de `{vs}`",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} à frente, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} atrás de \"{vs}\"",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "86a1aa3"
+    "sourceHash": "2eba558"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Commit marcado {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -1041,13 +1041,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Criado no branch `{branch}`",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Criado no branch \"{branch}\"",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "cfdbd45"
+    "sourceHash": "770565f"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "O branch `{branch}` está ativo",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "O branch \"{branch}\" está ativo",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "730335d"
+    "sourceHash": "5036eb7"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Desanexado em {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {

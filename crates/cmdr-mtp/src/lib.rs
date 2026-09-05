@@ -54,6 +54,14 @@
 #[cfg(test)]
 use cmdr_mtp as _;
 
+//noinspection RsUnusedImport
+// `testing` is what pulls `tempfile` in, but its only user (`VirtualDeviceFixture`)
+// also needs `virtual-device`, so `testing` alone links a crate nothing names and
+// `unused_crate_dependencies` reports it. Cargo can't express "this feature needs
+// that dep only alongside another one", so the reference is stated here instead.
+#[cfg(feature = "testing")]
+use tempfile as _;
+
 mod connection;
 mod discovery;
 /// What a test drives a virtual device with, on either side of the boundary.

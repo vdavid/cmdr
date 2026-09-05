@@ -1027,9 +1027,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} Commit} other {{aheadText} Commits}} voraus, {behind, plural, one {{behindText} Commit} other {{behindText} Commits}} zurück gegenüber `{vs}`",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} Commit} other {{aheadText} Commits}} voraus, {behind, plural, one {{behindText} Commit} other {{behindText} Commits}} zurück gegenüber „{vs}“",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "86a1aa3"
+    "sourceHash": "2eba558"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Getaggter Commit {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -1039,13 +1039,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Erstellt auf Branch `{branch}`",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Erstellt auf Branch „{branch}“",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "cfdbd45"
+    "sourceHash": "770565f"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch `{branch}` ist ausgecheckt",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch „{branch}“ ist ausgecheckt",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "730335d"
+    "sourceHash": "5036eb7"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Losgelöst bei {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {

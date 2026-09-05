@@ -1031,9 +1031,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} voor, {behind, plural, one {{behindText} commit} other {{behindText} commits}} achter op `{vs}`",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} voor, {behind, plural, one {{behindText} commit} other {{behindText} commits}} achter op ‘{vs}’",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "86a1aa3"
+    "sourceHash": "2eba558"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Getagde commit {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -1043,13 +1043,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Gemaakt op branch `{branch}`",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Gemaakt op branch ‘{branch}’",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "cfdbd45"
+    "sourceHash": "770565f"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch `{branch}` is uitgecheckt",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch ‘{branch}’ is uitgecheckt",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "730335d"
+    "sourceHash": "5036eb7"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Losgekoppeld op {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
