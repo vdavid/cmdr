@@ -123,22 +123,31 @@ add` writes to the main repo's `HEAD` too).
 
 ## Performance
 
-Bench result on a 50k-file synth repo (Apple M-series, release build):
+Bench result on the 50k-file synth repo, release build (`cargo test --release --lib file_system::git::bench --
+--ignored`), measured on an M1 Max, gix 0.87, 2026-09-05, median of three runs:
 
 | Metric | Budget | Measured |
 |---|---|---|
-| `discover_repo + repo_info` p50 | 50 ms | ~61 ms |
-| `discover_repo + repo_info` p95 | 50 ms | ~64 ms |
-| `list_status` p50 | 100 ms | ~73 ms |
-| `list_status` p95 | 100 ms | ~75 ms |
+| `discover_repo + repo_info` p50 | 50 ms target | ~87 ms |
+| `discover_repo + repo_info` p95 | 100 ms hard cap | ~108 ms |
+| `list_status` cold p50 | 100 ms | ~67 ms |
+| `list_status` cold p95 | 100 ms | ~86 ms |
+| `list_status` warm p50 | – | ~96 µs |
 
-`list_status` lands well inside budget. `discover + repo_info` runs ~14 ms
-over the aspirational 50 ms target – `is_dirty` does a full worktree walk,
-and even shelling out to `git status --untracked-files=no` (the lightest
-is-dirty check the CLI offers) takes ~75 ms on the same fixture, so the
-target is a hair tighter than what any tool can deliver here. The hard cap
-in the bench is 100 ms; we land well under. Subsequent calls hit the
-process-wide repo handle cache and run in microseconds.
+`list_status` lands inside budget cold, and a warm call is a cache hit in microseconds. Subsequent `discover_repo`
+calls hit the portal's repo-handle cache and run in microseconds too.
+
+**`discover + repo_info` is over its hard cap on this hardware**, so
+`bench_50k_files_discover_and_repo_info_under_budget` fails when run. All of it is `repo_info`'s `is_dirty()`, a full
+worktree walk; `discover_repo` itself is a cache hit after the first call. It's a real number to act on rather than a
+measurement artifact: `git status --untracked-files=no --porcelain` walks the SAME fixture in 50 ms on this machine
+(five runs, 2026-09-05), where the earlier table recorded 75 ms for it, so this machine is the faster one and `is_dirty`
+still costs ~26 ms more than the number that table carried. The likeliest cause is the gix 0.81 → 0.87 bump the earlier
+numbers predate. ❗ Nothing in the chip pipeline was made slower by the routing work: `repo_info` and `is_dirty` are
+untouched by it. Worth a look before the next release, since this is the call the breadcrumb chip waits on.
+
+The bench is `#[ignore]`d, so no check lane runs it; take a reading with the command above after any change to the chip
+pipeline.
 
 ## The portal is a routed volume
 
