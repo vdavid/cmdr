@@ -25,8 +25,8 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
 - **`$state` lives in `+page.svelte`; logic leaves through a context of setters and GETTERS.** Dialogs flip via
   write-only `ctx.dialogs.showXxx(...)`, new listeners go in `listener-setup.ts`, startup decisions in
   `startup-gates.ts`. ❌ Never capture a `$state` value; `isOnboardingVisible()` reads live.
-- **The old-macOS notice is `topmost` AND rendered after `<OnboardingWizard>`**, which is the only reason it lands over
-  the wizard's `--z-modal` overlay. ❌ Don't move it earlier in the markup or drop the prop. DETAILS § Startup gates.
+- **The old-macOS notice is `topmost` AND rendered after `<OnboardingWizard>`**: that order is the only reason it clears
+  the wizard's overlay. ❌ Don't move it or drop the prop. DETAILS § Startup gates.
 - **Text-region intercept (⌘C / ⌘A)**: `handleTextRegionShortcut` short-circuits `edit.copy` / `selection.selectAll`
   inside `.error-pane` or `[data-text-region]`, so copying error text doesn't copy files.
 - **Gate on capabilities, ❌ never a `volumeId` compare**: `blockedByCapabilities` bails pre-dispatch for
@@ -36,9 +36,8 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   (`mcp-nav-landing.ts`).
 - **E2E and debug listeners stay off the bus by design** (`e2e-trigger-file-drop`, the DEV `debug-*-error` ones call
   `explorerRef.*` directly). Don't "finish the migration". DETAILS § Off-bus hooks.
-- **`foreground-operation` is the one inbound channel from another WINDOW**: the queue's Show button asks this window to
-  adopt an operation, and `ExplorerAPI.foregroundOperation` hands the verdict straight back. ❌ Never route it through
-  the bus, which is fire-and-forget and would drop it. DETAILS § Cross-window.
+- **`foreground-operation` is the one inbound channel from another WINDOW** (the queue's Show button). ❌ Never route it
+  through the bus: a bus dispatch is fire-and-forget and would drop the verdict. DETAILS § Cross-window.
 
 ## Gotchas
 
@@ -46,14 +45,11 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   `initQuitPrompt()` must stay SYNCHRONOUS at the top of `onMount`. `$lib/quit/CLAUDE.md`.
 - **Don't remove the `{#if settingsReady}` wrapper** in `+layout.svelte`, and don't read settings ahead of the flag: a
   pre-init `getSetting()` returns registry defaults that can get hot-applied to the backend as if chosen.
-- **Native-menu accelerators fire before the webview keydown**, and the fallout is a catalog of narrow rules: a focused
-  text input owns `edit.cut` / `edit.copy` / `edit.paste` / `selection.selectAll` (❌ don't widen it, gate
-  `execute-command` on modal state, or hardcode ⌘V), `edit.paste` keeps the `readClipboardText` IPC, and
-  `view.showHidden` stays local-first. Read DETAILS § Native-menu and input-focus interactions before touching any of
-  them.
-- **Right-click is Cmdr's except in text fields.** The CAPTURE-phase document `contextmenu` listener keys on an editable
-  TARGET (not `activeElement`; the field may be unfocused): stop propagation there for WebKit's editing menu, else
-  `preventDefault()` so rows/tabs keep their own. DETAILS § Right-click ownership.
+- **Native-menu accelerators fire before the webview keydown**, so a focused text input owns `edit.cut` / `edit.copy` /
+  `edit.paste` / `selection.selectAll`. ❌ Don't widen that set, gate `execute-command` on modal state, or hardcode ⌘V.
+  Read DETAILS § Native-menu and input-focus interactions first.
+- **Right-click is Cmdr's except in text fields**, and the predicate is the event TARGET, ❌ never focus. DETAILS §
+  Right-click ownership.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
