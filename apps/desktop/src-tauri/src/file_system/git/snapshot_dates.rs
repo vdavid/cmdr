@@ -307,7 +307,11 @@ fn collect_top_level_names(
     commit_id: ObjectId,
     dir_path: &str,
 ) -> Result<Vec<String>, FriendlyGitError> {
-    let tree = super::tree::resolve_tree_at(repo, commit_id, dir_path)?;
+    // A directory that isn't in this snapshot contributes no names, which is
+    // what an empty list already means to every caller.
+    let Some(tree) = super::tree::resolve_tree_at(repo, commit_id, dir_path)? else {
+        return Ok(Vec::new());
+    };
     let mut out = Vec::new();
     for entry in tree.iter() {
         let entry =

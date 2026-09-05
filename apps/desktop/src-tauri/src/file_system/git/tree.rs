@@ -3,6 +3,10 @@
 //! `list_tree` enumerates a commit's tree at a path; `get_tree_entry`
 //! returns a single `FileEntry`. Both surface the executable bit through
 //! `FileEntry.permissions` so cross-volume copy preserves it.
+//!
+//! Every lookup here answers [`Lookup`]: `Ok(None)` is "that path isn't in
+//! this snapshot", which the portal turns into `VolumeError::NotFound`, while
+//! `Err` is reserved for a repo that couldn't answer at all.
 
 use std::path::Path;
 
@@ -10,6 +14,7 @@ use gix::object::tree::EntryKind;
 
 use crate::file_system::listing::FileEntry;
 
+use super::Lookup;
 use super::column_meta::recursive_tree_size;
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
@@ -29,9 +34,11 @@ pub fn list_tree(
     commit_id: gix::ObjectId,
     sub_path: &str,
     display_parent: &Path,
-) -> Result<Vec<FileEntry>, FriendlyGitError> {
+) -> Lookup<Vec<FileEntry>> {
     let repo = handle.to_thread_local();
-    let tree = resolve_tree_at(&repo, commit_id, sub_path)?;
+    let Some(tree) = resolve_tree_at(&repo, commit_id, sub_path)? else {
+        return Ok(None);
+    };
 
     // Per-file Modified dates: each entry's date reflects the most recent
     // commit that touched it (or any file underneath, for subdirs). Falls
@@ -87,7 +94,7 @@ pub fn list_tree(
         _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
 
-    Ok(out)
+    Ok(Some(out))
 }
 
 /// Returns the `FileEntry` for a single tree entry at `sub_path` inside `commit_id`.
@@ -96,7 +103,7 @@ pub fn get_tree_entry(
     commit_id: gix::ObjectId,
     sub_path: &str,
     display_path: &Path,
-) -> Result<FileEntry, FriendlyGitError> {
+) -> Lookup<FileEntry> {
     let repo = handle.to_thread_local();
     if sub_path.is_empty() {
         let mut fe = FileEntry::new(
@@ -110,7 +117,7 @@ pub fn get_tree_entry(
         );
         fe.permissions = 0o755;
         fe.icon_id = "dir".to_string();
-        return Ok(fe);
+        return Ok(Some(fe));
     }
 
     let commit = repo
@@ -121,10 +128,12 @@ pub fn get_tree_entry(
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
     // Use peel_to_entry_by_path so any intermediate trees walk via the same gix path.
-    let entry = tree
+    let Some(entry) = tree
         .peel_to_entry_by_path(Path::new(sub_path))
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?
-        .ok_or_else(|| FriendlyGitError::new(FriendlyGitErrorKind::CorruptRepo, display_path.display().to_string()))?;
+    else {
+        return Ok(None);
+    };
 
     let kind = entry.mode().kind();
     let name = display_path
@@ -159,7 +168,7 @@ pub fn get_tree_entry(
         fe.size = Some(bytes);
         fe.recursive_size = Some(bytes);
     }
-    Ok(fe)
+    Ok(Some(fe))
 }
 
 /// Splits `sub_path` into `(parent_dir, leaf_name)` using forward slashes.
@@ -184,7 +193,7 @@ pub(crate) fn resolve_tree_at<'r>(
     repo: &'r gix::Repository,
     commit_id: gix::ObjectId,
     sub_path: &str,
-) -> Result<gix::Tree<'r>, FriendlyGitError> {
+) -> Lookup<gix::Tree<'r>> {
     let commit = repo
         .find_commit(commit_id)
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
@@ -192,23 +201,23 @@ pub(crate) fn resolve_tree_at<'r>(
         .tree()
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
     if sub_path.is_empty() {
-        return Ok(tree);
+        return Ok(Some(tree));
     }
-    let entry = tree
+    let Some(entry) = tree
         .peel_to_entry_by_path(Path::new(sub_path))
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?
-        .ok_or_else(|| FriendlyGitError::new(FriendlyGitErrorKind::CorruptRepo, sub_path.to_string()))?;
-    let kind = entry.mode().kind();
-    if !matches!(kind, EntryKind::Tree) {
-        return Err(FriendlyGitError::new(
-            FriendlyGitErrorKind::CorruptRepo,
-            sub_path.to_string(),
-        ));
+    else {
+        return Ok(None);
+    };
+    // A blob where a directory was asked for is the same miss as a name that
+    // isn't there: `<snapshot>/README.md/x` has no listing either way.
+    if !matches!(entry.mode().kind(), EntryKind::Tree) {
+        return Ok(None);
     }
     let obj = entry
         .object()
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
-    Ok(obj.into_tree())
+    Ok(Some(obj.into_tree()))
 }
 
 /// Returns the blob's bytes (or a friendly error for too-large blobs).
@@ -230,11 +239,7 @@ pub fn read_blob(handle: &RepoHandle, blob_id: gix::ObjectId) -> Result<Vec<u8>,
 }
 
 /// Resolves a blob `ObjectId` for a path inside a commit's tree.
-pub fn lookup_blob_id(
-    handle: &RepoHandle,
-    commit_id: gix::ObjectId,
-    sub_path: &str,
-) -> Result<gix::ObjectId, FriendlyGitError> {
+pub fn lookup_blob_id(handle: &RepoHandle, commit_id: gix::ObjectId, sub_path: &str) -> Lookup<gix::ObjectId> {
     let repo = handle.to_thread_local();
     let commit = repo
         .find_commit(commit_id)
@@ -242,20 +247,21 @@ pub fn lookup_blob_id(
     let mut tree = commit
         .tree()
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
-    let entry = tree
+    let Some(entry) = tree
         .peel_to_entry_by_path(Path::new(sub_path))
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?
-        .ok_or_else(|| FriendlyGitError::new(FriendlyGitErrorKind::CorruptRepo, sub_path.to_string()))?;
+    else {
+        return Ok(None);
+    };
+    // A directory has no bytes to open, which reads the same way as a name
+    // that isn't in the snapshot at all.
     if !matches!(
         entry.mode().kind(),
         EntryKind::Blob | EntryKind::BlobExecutable | EntryKind::Link
     ) {
-        return Err(FriendlyGitError::new(
-            FriendlyGitErrorKind::CorruptRepo,
-            sub_path.to_string(),
-        ));
+        return Ok(None);
     }
-    Ok(entry.object_id())
+    Ok(Some(entry.object_id()))
 }
 
 fn apply_kind(

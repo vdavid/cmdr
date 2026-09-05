@@ -16,7 +16,7 @@ use super::read_blob::GitBlobReadStream;
 use super::repo::discover_repo;
 use super::test_fixtures::{EntryKind, Fixture, cleanup, git_cli_capture, temp_dir};
 use super::{tree, virtual_listing};
-use crate::file_system::volume::VolumeReadStream;
+use crate::file_system::volume::{VolumeError, VolumeReadStream};
 
 fn git_show_bytes(dir: &Path, spec: &str) -> Vec<u8> {
     git_cli_capture(dir, &["show", spec])
@@ -240,9 +240,13 @@ fn list_root_real_entries_sort_dirs_first_alpha() {
 fn list_tree_at_main_includes_dirs_and_files() {
     let dir = build_fixture_repo();
     let (handle, root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
     let display = root.join(".git").join("branches").join("main");
-    let entries = tree::list_tree(&handle, commit, "", &display).unwrap();
+    let entries = tree::list_tree(&handle, commit, "", &display)
+        .unwrap()
+        .expect("the snapshot root is there");
     let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
     assert!(names.contains(&"scripts"));
     assert!(names.contains(&"README.md"));
@@ -257,9 +261,13 @@ fn list_tree_at_main_includes_dirs_and_files() {
 fn list_tree_preserves_executable_bit() {
     let dir = build_fixture_repo();
     let (handle, root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
     let display = root.join(".git").join("branches").join("main").join("scripts");
-    let entries = tree::list_tree(&handle, commit, "scripts", &display).unwrap();
+    let entries = tree::list_tree(&handle, commit, "scripts", &display)
+        .unwrap()
+        .expect("scripts/ is there");
     let run = entries.iter().find(|e| e.name == "run.sh").expect("run.sh");
     assert_eq!(run.permissions, 0o755, "executable file should keep 0o755 mode");
     cleanup(&dir);
@@ -269,8 +277,12 @@ fn list_tree_preserves_executable_bit() {
 fn read_blob_matches_git_show_bytes() {
     let dir = build_fixture_repo();
     let (handle, root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
-    let blob_id = tree::lookup_blob_id(&handle, commit, "scripts/run.sh").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
+    let blob_id = tree::lookup_blob_id(&handle, commit, "scripts/run.sh")
+        .unwrap()
+        .expect("the blob is there");
     let bytes = tree::read_blob(&handle, blob_id).unwrap();
     let expected = git_show_bytes(&root, "main:scripts/run.sh");
     assert_eq!(bytes, expected);
@@ -281,8 +293,12 @@ fn read_blob_matches_git_show_bytes() {
 async fn blob_stream_drains_to_full_blob() {
     let dir = build_fixture_repo();
     let (handle, _root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
-    let blob_id = tree::lookup_blob_id(&handle, commit, "README.md").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
+    let blob_id = tree::lookup_blob_id(&handle, commit, "README.md")
+        .unwrap()
+        .expect("the blob is there");
     let bytes = tree::read_blob(&handle, blob_id).unwrap();
 
     let mut stream = GitBlobReadStream::new(bytes.clone());
@@ -420,5 +436,45 @@ fn watcher_invalidates_branches_listing_on_new_branch() {
 
     // Assert the listing is still in the cache (we full-refresh, not evict).
     assert!(listing.is_cached());
+    cleanup(&dir);
+}
+
+/// A path that simply isn't in the snapshot reads as "not there", ❌ never as
+/// "this repo is damaged". `gix`'s tree walk answers `Ok(None)` for a name it
+/// couldn't find, which is an ordinary miss (a typo in the path bar, a file
+/// that only exists on another branch) and has to stay distinct from the
+/// `Err` that means the object database couldn't answer at all.
+#[test]
+fn a_path_missing_from_a_snapshot_reads_as_not_found() {
+    let dir = build_fixture_repo();
+    let (_, root) = discover_repo(&dir).unwrap();
+
+    for missing in [
+        root.join(".git/branches/main/no-such-file.txt"),
+        root.join(".git/branches/main/no-such-dir/inner.txt"),
+        root.join(".git/branches/no-such-branch"),
+        root.join(".git/tags/no-such-tag/README.md"),
+    ] {
+        let routed = super::try_route_metadata(&missing).expect("the portal owns this path");
+        assert!(
+            matches!(routed, Err(VolumeError::NotFound(ref carried)) if carried.contains("no-such")),
+            "{}: {routed:?}",
+            missing.display()
+        );
+    }
+
+    // Listing one is the same answer.
+    let listed =
+        super::try_route_listing(&root.join(".git/branches/main/no-such-dir")).expect("the portal owns this path");
+    assert!(matches!(listed, Err(VolumeError::NotFound(_))), "{listed:?}");
+
+    // And so is opening one for read.
+    let opened = super::try_open_blob_stream(&root.join(".git/branches/main/no-such-file.txt"))
+        .expect("the portal owns this path");
+    assert!(
+        matches!(opened, Err(VolumeError::NotFound(_))),
+        "opening a missing blob"
+    );
+
     cleanup(&dir);
 }

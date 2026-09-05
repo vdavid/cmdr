@@ -276,8 +276,12 @@ fn snapshot_files_borrow_commit_date() {
     let (virt, _, _) = classify(&p).expect("classify branch tip");
     assert!(matches!(virt, VirtualGitPath::Ref(Cat::Branches, _)));
 
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
-    let entries = super::tree::list_tree(&handle, commit, "", &p).unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
+    let entries = super::tree::list_tree(&handle, commit, "", &p)
+        .unwrap()
+        .expect("the snapshot root is there");
     for fe in &entries {
         assert!(fe.modified_at.is_some(), "every snapshot row carries the commit date");
     }
@@ -310,8 +314,12 @@ fn snapshot_dirs_carry_recursive_bytes() {
 
     let (handle, root) = discover_repo(&dir).unwrap();
     let p = root.join(".git").join("branches").join("main");
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
-    let entries = super::tree::list_tree(&handle, commit, "", &p).unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
+    let entries = super::tree::list_tree(&handle, commit, "", &p)
+        .unwrap()
+        .expect("the snapshot root is there");
     let scripts = entries.iter().find(|e| e.name == "scripts").unwrap();
     assert!(
         scripts.size.unwrap_or(0) > 0,

@@ -89,6 +89,14 @@ pub use path::is_virtual;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{VolumeError, VolumeReadStream};
 
+/// The answer of a portal lookup that can legitimately find nothing.
+///
+/// `Ok(None)` means "that path isn't in this snapshot" (a typo in the path bar,
+/// a file that only lives on another branch); the caller turns it into
+/// `VolumeError::NotFound`. `Err` is reserved for a repo that couldn't answer
+/// at all, which reaches the user as the git-specific repair copy.
+pub type Lookup<T> = Result<Option<T>, FriendlyGitError>;
+
 /// Whether the virtual `.git` portal is enabled. Set from the
 /// `fileExplorer.git.showVirtualGitPortal` setting at startup and on every
 /// toggle. When `false`, the volume hooks short-circuit to real-FS so
@@ -120,21 +128,21 @@ pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeErr
     let (virt, handle, root) = path::classify(path)?;
     use path::VirtualGitPath::*;
     let result = match &virt {
-        Root => Ok(virtual_listing::list_root(&handle, &root)),
-        Category(path::Cat::Branches) => virtual_listing::list_branches(&handle, &root),
-        Category(path::Cat::Tags) => virtual_listing::list_tags(&handle, &root),
-        Category(path::Cat::Commits) => log::list_commits(&handle, &root),
-        Category(path::Cat::Stash) => stash::list_stashes(&root),
-        Category(path::Cat::Worktrees) => worktrees::list_worktrees(&handle, &root),
-        Category(path::Cat::Submodules) => submodules::list_submodules(&handle, &root),
+        Root => Ok(Some(virtual_listing::list_root(&handle, &root))),
+        Category(path::Cat::Branches) => virtual_listing::list_branches(&handle, &root).map(Some),
+        Category(path::Cat::Tags) => virtual_listing::list_tags(&handle, &root).map(Some),
+        Category(path::Cat::Commits) => log::list_commits(&handle, &root).map(Some),
+        Category(path::Cat::Stash) => stash::list_stashes(&root).map(Some),
+        Category(path::Cat::Worktrees) => worktrees::list_worktrees(&handle, &root).map(Some),
+        Category(path::Cat::Submodules) => submodules::list_submodules(&handle, &root).map(Some),
         Ref(cat, name) if cat.browses_commit_tree() => list_ref_tree(&handle, &root, *cat, name, ""),
         RefTree(cat, name, sub) if cat.browses_commit_tree() => list_ref_tree(&handle, &root, *cat, name, sub),
         // Worktrees and submodules are leaf entries with `redirectToPath`;
         // listing them as if they were directories returns empty (the
         // frontend redirects on Enter so this rarely fires in practice).
-        Ref(_, _) | RefTree(_, _, _) => Ok(Vec::new()),
+        Ref(_, _) | RefTree(_, _, _) => Ok(Some(Vec::new())),
     };
-    Some(result.map_err(friendly_to_volume_error))
+    Some(found_or_not_found(result, path))
 }
 
 /// Volume hook for `get_metadata`.
@@ -144,7 +152,7 @@ pub fn try_route_metadata(path: &Path) -> Option<Result<FileEntry, VolumeError>>
     }
     let (virt, handle, root) = path::classify(path)?;
     let result = virtual_listing::get_metadata_for(&root, &virt, &handle);
-    Some(result.map_err(friendly_to_volume_error))
+    Some(found_or_not_found(result, path))
 }
 
 /// Volume hook for `open_read_stream`. Returns `None` for paths that aren't
@@ -157,21 +165,36 @@ pub fn try_open_blob_stream(path: &Path) -> Option<Result<Box<dyn VolumeReadStre
     let (virt, handle, _root) = path::classify(path)?;
     use path::VirtualGitPath::*;
     let result = match &virt {
-        RefTree(cat, name, sub) if cat.browses_commit_tree() => {
-            let commit_id = match resolve_commit_for_cat(&handle, *cat, name) {
-                Ok(id) => id,
-                Err(e) => return Some(Err(friendly_to_volume_error(e))),
-            };
-            let blob_id = match tree::lookup_blob_id(&handle, commit_id, sub) {
-                Ok(id) => id,
-                Err(e) => return Some(Err(friendly_to_volume_error(e))),
-            };
-            tree::read_blob(&handle, blob_id)
-                .map(|bytes| Box::new(read_blob::GitBlobReadStream::new(bytes)) as Box<dyn VolumeReadStream>)
-        }
+        RefTree(cat, name, sub) if cat.browses_commit_tree() => open_blob(&handle, *cat, name, sub),
         _ => return Some(Err(VolumeError::NotSupported)),
     };
-    Some(result.map_err(friendly_to_volume_error))
+    Some(found_or_not_found(result, path))
+}
+
+/// Opens the blob at `sub` inside `cat`/`name`, or `Ok(None)` when that path
+/// holds no blob (missing, or a directory).
+fn open_blob(handle: &repo::RepoHandle, cat: path::Cat, name: &str, sub: &str) -> Lookup<Box<dyn VolumeReadStream>> {
+    let Some(commit_id) = resolve_commit_for_cat(handle, cat, name)? else {
+        return Ok(None);
+    };
+    let Some(blob_id) = tree::lookup_blob_id(handle, commit_id, sub)? else {
+        return Ok(None);
+    };
+    let bytes = tree::read_blob(handle, blob_id)?;
+    Ok(Some(
+        Box::new(read_blob::GitBlobReadStream::new(bytes)) as Box<dyn VolumeReadStream>
+    ))
+}
+
+/// Folds a [`Lookup`] into what a `Volume` method returns: a miss becomes
+/// `NotFound` carrying the path the caller asked for, so the transfer layer
+/// renders the user's own file name rather than a git diagnostic.
+pub(crate) fn found_or_not_found<T>(found: Lookup<T>, path: &Path) -> Result<T, VolumeError> {
+    match found {
+        Ok(Some(value)) => Ok(value),
+        Ok(None) => Err(VolumeError::NotFound(path.display().to_string())),
+        Err(e) => Err(friendly_to_volume_error(e)),
+    }
 }
 
 fn list_ref_tree(
@@ -180,8 +203,10 @@ fn list_ref_tree(
     cat: path::Cat,
     name: &str,
     sub: &str,
-) -> Result<Vec<FileEntry>, FriendlyGitError> {
-    let commit_id = resolve_commit_for_cat(handle, cat, name)?;
+) -> Lookup<Vec<FileEntry>> {
+    let Some(commit_id) = resolve_commit_for_cat(handle, cat, name)? else {
+        return Ok(None);
+    };
     let display_parent = root
         .join(".git")
         .join(cat.as_segment())
@@ -193,24 +218,19 @@ fn list_ref_tree(
 /// Resolves a `Cat::* / name` pair to the commit ID whose tree we should
 /// browse. Branches/tags peel through refs, commits resolve the SHA prefix,
 /// stash resolves through `stash@{n}`.
-pub(crate) fn resolve_commit_for_cat(
-    handle: &repo::RepoHandle,
-    cat: path::Cat,
-    name: &str,
-) -> Result<gix::ObjectId, FriendlyGitError> {
+pub(crate) fn resolve_commit_for_cat(handle: &repo::RepoHandle, cat: path::Cat, name: &str) -> Lookup<gix::ObjectId> {
     match cat {
         path::Cat::Branches | path::Cat::Tags => virtual_listing::resolve_ref_commit(handle, cat, name),
-        path::Cat::Commits => log::resolve_commit_id(handle, name),
+        path::Cat::Commits => log::resolve_commit_id(handle, name).map(Some),
         path::Cat::Stash => {
-            let n: usize = name
-                .parse()
-                .map_err(|_| FriendlyGitError::new(FriendlyGitErrorKind::CorruptRepo, name.to_string()))?;
-            stash::resolve_stash_commit(handle, n)
+            // `stash/<n>` is an index, so anything else names no entry.
+            let Ok(n) = name.parse::<usize>() else {
+                return Ok(None);
+            };
+            stash::resolve_stash_commit(handle, n).map(Some)
         }
-        path::Cat::Worktrees | path::Cat::Submodules => Err(FriendlyGitError::new(
-            FriendlyGitErrorKind::CorruptRepo,
-            name.to_string(),
-        )),
+        // Neither category browses a commit tree, so no name under one resolves.
+        path::Cat::Worktrees | path::Cat::Submodules => Ok(None),
     }
 }
 

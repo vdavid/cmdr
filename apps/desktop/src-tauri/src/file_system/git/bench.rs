@@ -250,7 +250,9 @@ fn bench_per_file_dates_5k_commits_under_budget() {
     use super::virtual_listing;
     let dir = build_deep_history_fixture(5_000, 100, "5k");
     let (handle, _) = discover_repo(&dir).expect("discover");
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").expect("resolve main");
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .expect("resolve main")
+        .expect("main exists");
 
     // Cold: clear cache before each run.
     let mut cold = Vec::with_capacity(RUNS);
@@ -296,7 +298,9 @@ fn bench_per_file_dates_50k_commits_under_budget() {
     use super::virtual_listing;
     let dir = build_deep_history_fixture(50_000, 100, "50k");
     let (handle, _) = discover_repo(&dir).expect("discover");
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").expect("resolve main");
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .expect("resolve main")
+        .expect("main exists");
 
     let mut cold = Vec::with_capacity(RUNS);
     for _ in 0..RUNS {

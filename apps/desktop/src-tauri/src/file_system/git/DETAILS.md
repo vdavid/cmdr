@@ -151,6 +151,14 @@ Three hook points:
 
 All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) detect virtual paths via `git::is_virtual(path)` and return `VolumeError::NotSupported` immediately. `notify_mutation` early-returns for virtual paths since git mutations happen out-of-band; cache invalidation flows through the `.git`-watcher pipeline (`watcher.rs`).
 
+## A miss is not a damaged repo
+
+Every portal lookup that can legitimately find nothing answers `Lookup<T>` (`Result<Option<T>, FriendlyGitError>`, in `mod.rs`): `Ok(None)` means "that path isn't in this snapshot", `Err` means the repo couldn't answer at all. `found_or_not_found` folds the first into `VolumeError::NotFound` carrying the path the caller asked for, which is what the transfer layer renders as the user's own file name, and the second into `VolumeError::FriendlyGit` with the git-specific repair copy.
+
+Four things resolve to `Ok(None)`: a name `gix`'s tree walk doesn't find (`tree::resolve_tree_at`, `get_tree_entry`, `lookup_blob_id`), a blob asked for as a directory or a directory asked for as a blob, a branch or tag whose ref isn't in the repo (typed `gix::reference::find::existing::Error::NotFound`, ❌ never a string match), and any name under `worktrees/` or `submodules/` deeper than the leaf, since neither browses a commit tree.
+
+`log::resolve_commit_id` and `stash::resolve_stash_commit` still answer `Err` for a revspec they can't parse: an unresolvable SHA is not the same shape of miss, and the friendly kinds (`ShallowBoundary`, `MissingObject`) carry repair copy a bare `NotFound` would drop.
+
 ## Honest blob streaming
 
 gix 0.81 returns whole-blob `Vec<u8>` for `Object::data` – there's no chunked loose-object reader exposed at the public surface yet. So `GitBlobReadStream` owns the full `Vec<u8>` and yields 256 KB chunks for the consumer API shape. **Memory cost equals blob size; chunked yield is for the consumer API, not memory streaming.** We refuse blobs over `tree::MAX_BLOB_BYTES` (256 MB) up-front via `FriendlyGitErrorKind::BlobTooLarge` rather than OOM. Revisit when gix exposes a chunked loose-object reader.

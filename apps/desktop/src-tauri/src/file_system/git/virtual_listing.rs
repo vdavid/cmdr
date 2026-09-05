@@ -23,6 +23,7 @@ use gix::refs::PartialName;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::reading::get_single_entry;
 
+use super::Lookup;
 use super::column_meta::{
     ahead_behind_for_branch, commit_meta, files_changed_count, head_commit_secs, newest_branch_tip_secs,
     newest_tag_secs, tag_or_commit_secs,
@@ -159,7 +160,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
     let repo = handle.to_thread_local();
     match cat {
         Cat::Branches => {
-            if let Ok(id) = resolve_ref_commit(handle, Cat::Branches, name) {
+            if let Ok(Some(id)) = resolve_ref_commit(handle, Cat::Branches, name) {
                 if let Ok(meta) = commit_meta(&repo, id) {
                     fe.modified_at = u64::try_from(meta.committer_secs).ok();
                     fe.created_at = fe.modified_at;
@@ -176,7 +177,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
             }
         }
         Cat::Tags => {
-            if let Ok(id) = resolve_ref_commit(handle, Cat::Tags, name) {
+            if let Ok(Some(id)) = resolve_ref_commit(handle, Cat::Tags, name) {
                 if let Some(secs) = tag_or_commit_secs(&repo, id) {
                     fe.modified_at = u64::try_from(secs).ok();
                     fe.created_at = fe.modified_at;
@@ -467,7 +468,7 @@ pub fn get_metadata_for(
     repo_root: &Path,
     virt: &super::path::VirtualGitPath,
     handle: &RepoHandle,
-) -> Result<FileEntry, FriendlyGitError> {
+) -> Lookup<FileEntry> {
     use super::path::VirtualGitPath::*;
     match virt {
         Root => {
@@ -482,7 +483,7 @@ pub fn get_metadata_for(
             {
                 fe.modified_at = Some(d.as_secs());
             }
-            Ok(fe)
+            Ok(Some(fe))
         }
         Category(cat) => {
             let segment = cat.as_segment();
@@ -497,9 +498,15 @@ pub fn get_metadata_for(
             }
             .to_string();
             populate_root_category(&mut fe, *cat, handle, repo_root);
-            Ok(fe)
+            Ok(Some(fe))
         }
         Ref(cat, name) => {
+            // A branch or tag that isn't in the repo is a miss, not a row: the
+            // ref lookup is the cheap authoritative answer, and without this
+            // gate `.git/branches/<typo>` stats as an existing directory.
+            if matches!(cat, Cat::Branches | Cat::Tags) && resolve_ref_commit(handle, *cat, name)?.is_none() {
+                return Ok(None);
+            }
             let path = repo_root
                 .join(".git")
                 .join(cat.as_segment())
@@ -550,10 +557,12 @@ pub fn get_metadata_for(
                 }
                 _ => {}
             }
-            Ok(fe)
+            Ok(Some(fe))
         }
         RefTree(cat, name, sub) => {
-            let commit_id = super::resolve_commit_for_cat(handle, *cat, name)?;
+            let Some(commit_id) = super::resolve_commit_for_cat(handle, *cat, name)? else {
+                return Ok(None);
+            };
             let display_path = repo_root
                 .join(".git")
                 .join(cat.as_segment())
@@ -567,23 +576,33 @@ pub fn get_metadata_for(
 /// Resolves a ref name to its tip commit for `branches/` and `tags/`.
 ///
 /// Annotated tags peel through to the commit they wrap.
-pub fn resolve_ref_commit(handle: &RepoHandle, cat: Cat, name: &str) -> Result<gix::ObjectId, FriendlyGitError> {
+pub fn resolve_ref_commit(handle: &RepoHandle, cat: Cat, name: &str) -> Lookup<gix::ObjectId> {
     let repo = handle.to_thread_local();
     let full = match cat {
         Cat::Branches => format!("refs/heads/{}", name),
         Cat::Tags => format!("refs/tags/{}", name),
-        Cat::Commits | Cat::Stash | Cat::Worktrees | Cat::Submodules => {
-            return Err(FriendlyGitError::new(
+        // No other category names a ref, so there is nothing here to find.
+        Cat::Commits | Cat::Stash | Cat::Worktrees | Cat::Submodules => return Ok(None),
+    };
+    // A name git itself would reject (a stray `..`, a trailing `.lock`) names
+    // no ref, so it's a miss rather than a damaged repo.
+    let Ok(partial) = PartialName::try_from(full.as_str()) else {
+        return Ok(None);
+    };
+    let mut reference = match repo.find_reference(&partial) {
+        Ok(reference) => reference,
+        // Typed, per gix: the ref simply isn't in this repo (a typo in the path
+        // bar, a branch that only exists on a remote). Anything else is the odb
+        // failing to answer, which stays an error.
+        Err(gix::reference::find::existing::Error::NotFound { .. }) => return Ok(None),
+        Err(e) => {
+            return Err(FriendlyGitError::with_source(
                 FriendlyGitErrorKind::CorruptRepo,
-                name.to_string(),
+                e.to_string(),
+                e,
             ));
         }
     };
-    let partial = PartialName::try_from(full.as_str())
-        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
-    let mut reference = repo
-        .find_reference(&partial)
-        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
     let id = reference
         .peel_to_id()
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?
@@ -614,9 +633,9 @@ pub fn resolve_ref_commit(handle: &RepoHandle, cat: Cat, name: &str) -> Result<g
                         .detach();
                     continue;
                 }
-                return Ok(cur_id);
+                return Ok(Some(cur_id));
             }
         }
     }
-    Ok(id)
+    Ok(Some(id))
 }

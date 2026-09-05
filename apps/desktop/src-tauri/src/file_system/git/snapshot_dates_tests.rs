@@ -28,7 +28,9 @@ fn three_files_get_three_distinct_dates() {
     f.commit_file_at("c.txt", b"3\n", "touch c.txt", 3_000_000);
 
     let (handle, _root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
     let dates = snapshot_dates::decode_per_file_dates(&handle, commit, "").unwrap();
 
     assert_eq!(dates.get("a.txt"), Some(&1_000_000));
@@ -49,7 +51,9 @@ fn directory_borrows_newest_inner_change() {
     f.commit_file_at("README.md", b"r\n", "README.md", 2_500_000);
 
     let (handle, _root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
     let dates = snapshot_dates::decode_per_file_dates(&handle, commit, "").unwrap();
 
     // `src/` should pick up 5_000_000 (the newer of its two files).
@@ -67,9 +71,13 @@ fn snapshot_listing_shows_distinct_dates_across_files() {
     f.commit_file_at("newer.txt", b"new\n", "newer.txt", 2_000_000);
 
     let (handle, root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
     let display = root.join(".git").join("branches").join("main");
-    let entries = tree::list_tree(&handle, commit, "", &display).unwrap();
+    let entries = tree::list_tree(&handle, commit, "", &display)
+        .unwrap()
+        .expect("the snapshot root is there");
     let by_name: std::collections::HashMap<_, _> = entries.iter().map(|e| (e.name.as_str(), e.modified_at)).collect();
 
     assert_eq!(by_name.get("older.txt"), Some(&Some(1_000_000)));
@@ -100,7 +108,9 @@ fn cap_falls_back_to_snapshot_date() {
     }
 
     let (handle, _root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
     let dates = snapshot_dates::decode_per_file_dates(&handle, commit, "").unwrap();
 
     assert_eq!(dates.get("keep.txt"), Some(&100), "keep.txt found within cap");
@@ -117,7 +127,9 @@ fn cache_hits_return_identical_results() {
     f.commit_file_at("b.txt", b"2\n", "b.txt", 2_000_000);
 
     let (handle, _root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
     let first = snapshot_dates::decode_per_file_dates(&handle, commit, "").unwrap();
     let second = snapshot_dates::decode_per_file_dates(&handle, commit, "").unwrap();
     assert_eq!(first, second, "cache hit returns identical map");
@@ -136,7 +148,9 @@ fn initial_commit_short_circuits() {
     f.commit_files(&[("a.txt", b"1\n"), ("b.txt", b"2\n")], "initial", 7_777_777);
 
     let (handle, _root) = discover_repo(&dir).unwrap();
-    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main").unwrap();
+    let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
+        .unwrap()
+        .expect("main exists");
     let dates = snapshot_dates::decode_per_file_dates(&handle, commit, "").unwrap();
     assert_eq!(dates.get("a.txt"), Some(&7_777_777));
     assert_eq!(dates.get("b.txt"), Some(&7_777_777));
