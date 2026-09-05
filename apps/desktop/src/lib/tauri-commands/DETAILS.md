@@ -100,7 +100,9 @@ commands, and notable non-obvious placements.
   main window opens Settings on behalf of a window without window-creation perms), `onViewerWordWrapToggled`,
   `onPersistRestrictedSetting`, and `requestForegroundOperation` / `onForegroundOperationRequested` (the queue window
   asking the main window to show one operation in its progress dialog; the payload is the id alone, because the registry
-  snapshot both windows receive is the truth about everything else).
+  snapshot both windows receive is the truth about everything else), and `onMouseNav` (macOS reads the mouse's back /
+  forward navigation in AppKit, because a Logi Options+ mouse posts a swipe rather than a button;
+  `routes/(main)/DETAILS.md` § Mouse back / forward buttons).
 - **`git.ts`**: git-browser commands (`getGitRepoInfo`, `subscribeGitState` / `unsubscribeGitState`,
   `getGitStatusForPaths`) plus `onGitStateChanged` over the per-repo `git-state-changed` event.
 - **`go-to-path.ts`**: ⌘G path resolution (`resolveGoToPath`) and the persisted recent-paths list (`getRecentPaths`,

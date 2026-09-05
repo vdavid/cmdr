@@ -142,6 +142,8 @@ mod location;
 mod macos_icons;
 mod mcp;
 mod menu;
+#[cfg(target_os = "macos")]
+mod mouse_nav;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
 #[cfg(target_os = "macos")]
@@ -651,6 +653,13 @@ pub fn run() {
             reduce_transparency::observe_reduce_transparency_changes(app.handle().clone());
             #[cfg(not(target_os = "macos"))]
             stubs::reduce_transparency::observe_reduce_transparency_changes(app.handle().clone());
+
+            // Watch the mouse's back / forward navigation. macOS only: the mouse's own
+            // driver decides what the press becomes, and a Logi Options+ mouse posts a
+            // swipe gesture with no button behind it, so AppKit is the only layer that
+            // sees both shapes. On Linux the frontend reads the buttons off the DOM.
+            #[cfg(target_os = "macos")]
+            mouse_nav::install(app.handle().clone());
 
             // Observe macOS Accessibility > Display > Text Size changes
             #[cfg(target_os = "macos")]

@@ -58,6 +58,7 @@ import {
   makeListenTauri,
   setupMenuListeners,
   setupDialogListeners,
+  setupMouseNavListener,
   setupWindowFocusListener,
 } from './listener-setup'
 import { startMenuOperationGate } from './menu-operation-gate.svelte'
@@ -88,6 +89,8 @@ export interface WindowServicesContext {
   }
   /** Re-runs the "What's new" startup trigger; component-owned because it reads startup-modal `$state`. */
   maybeRunWhatsNew: (force: boolean) => Promise<void>
+  /** Whether a modal dialog or overlay is up; the mouse side buttons stay inert while one is. */
+  isModalDialogOpen: () => boolean
 }
 
 /**
@@ -145,9 +148,12 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
     unlistenFns,
     dialogs: ctx.dialogs,
     maybeRunWhatsNew: ctx.maybeRunWhatsNew,
+    isModalDialogOpen: ctx.isModalDialogOpen,
   }
   await setupMenuListeners(listenerCtx)
   await setupDialogListeners(listenerCtx)
+  // macOS: the mouse's back / forward side buttons, which only AppKit sees.
+  await setupMouseNavListener(listenerCtx)
   await setupMcpListeners({
     getExplorer: ctx.getExplorer,
     // The MCP adapter dispatches through the same typed command bus as the keyboard / palette /
