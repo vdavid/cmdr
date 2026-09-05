@@ -348,6 +348,14 @@ fn build_draft<R: Runtime>(
         if cmdr_archive::archive_boundary_candidate(Path::new(&rename.source_path)).is_some() {
             return Err(invalid_params("Rename plans can't include files inside an archive."));
         }
+        // A repo's snapshots are read-only for the same reason: `.git/branches/…` has
+        // no file to rename. Asked separately from the archive line above, which is
+        // deliberately wider (it also refuses the `.zip` file itself).
+        if crate::file_system::git::wiring::portal_serves(Path::new(&rename.source_path)) {
+            return Err(invalid_params(
+                "Rename plans can't include files inside a repository's history.",
+            ));
+        }
         // One group is one `start_bulk_rename` call, and that executor refuses a row whose
         // source and destination parents differ — so the group binds ONE parent folder, and a
         // plan that spans folders is refused here rather than half-applied later.

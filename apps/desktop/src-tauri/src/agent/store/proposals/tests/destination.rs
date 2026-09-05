@@ -49,3 +49,25 @@ fn a_path_inside_an_archive_cannot_be_a_destination() {
 fn the_constraint_matches_where_the_routing_splits() {
     assert!(WritableDestination::new(at("/Users/someone/backup.zip/a/b/c")).is_none());
 }
+
+/// A repo's virtual `.git` trees take no writes either, and for the same reason:
+/// there is nothing on disk to write to. Refusing here costs the agent a retry;
+/// refusing after approval costs the user a decision they made for nothing.
+#[test]
+fn a_path_inside_a_repos_history_cannot_be_a_destination() {
+    crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+    for inside in [
+        "/Users/someone/code/cmdr/.git/branches",
+        "/Users/someone/code/cmdr/.git/branches/main/src",
+        "/Users/someone/code/cmdr/.git/stash/0",
+    ] {
+        assert!(
+            WritableDestination::new(at(inside)).is_none(),
+            "{inside} is the portal's, so no group may write there"
+        );
+    }
+
+    // The real entries under `.git/` are ordinary local files and stay writable.
+    assert!(WritableDestination::new(at("/Users/someone/code/cmdr/.git")).is_some());
+    assert!(WritableDestination::new(at("/Users/someone/code/cmdr/.git/hooks")).is_some());
+}

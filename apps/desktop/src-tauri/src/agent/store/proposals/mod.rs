@@ -69,16 +69,18 @@ use crate::location::Location;
 pub struct WritableDestination(Location);
 
 impl WritableDestination {
-    /// The destination, or `None` when it is inside an archive.
+    /// The destination, or `None` when a ROUTE serves it: inside an archive, or
+    /// inside a repo's virtual `.git` trees. Neither takes a write, so a proposal
+    /// aimed there is one the user would approve and the backend would then refuse.
     ///
-    /// Extension-only, no I/O: `archive_boundary_candidate` splits on the first path
-    /// component carrying an archive extension, and a non-empty remainder means the path
-    /// continues INSIDE it. An empty remainder is the archive file itself, which is a
-    /// perfectly good compress target and an ordinary file to copy.
+    /// No I/O, and deliberately permissive at the one edge that matters: the
+    /// archive FILE itself is a perfectly good compress target and an ordinary file
+    /// to copy, so only a path continuing INSIDE one is refused.
+    /// `path_routes_over_its_parent` draws that line already.
     pub fn new(location: Location) -> Option<Self> {
-        let inside_archive = cmdr_archive::boundary::archive_boundary_candidate(std::path::Path::new(&location.path))
-            .is_some_and(|(_archive, inner)| !inner.as_os_str().is_empty());
-        (!inside_archive).then_some(Self(location))
+        let routed =
+            crate::file_system::volume::manager::path_routes_over_its_parent(std::path::Path::new(&location.path));
+        (!routed).then_some(Self(location))
     }
 
     /// The location it wraps.
