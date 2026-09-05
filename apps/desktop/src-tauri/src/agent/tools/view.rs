@@ -58,22 +58,34 @@ pub fn refuse_unavailable(call_id: &str, tool: &ToolId) -> Option<AgentToolResul
     })
 }
 
-/// The tool-result body for a call the schema gate refused.
+/// Make a [`Access::Propose`] tool's problem result say that nothing was staged.
 ///
-/// A [`Access::Propose`] tool answers `readyForReview` on every other path — `true` when it
-/// staged a plan, `false` when it refused one — so a gate refusal has to answer it too.
-/// Without the verdict this is the one propose result that says nothing about whether anything
-/// was staged, and a model read exactly that as success: it told the user a rename plan was
-/// waiting in the suggestions panel while the store held nothing. The decision is on the
-/// registry's typed [`Access`], never on the tool's name or the refusal's wording.
-fn schema_refusal(tool: &ToolId, problem: &crate::mcp::ToolError) -> Value {
-    let mut content = json!({ "problem": problem.message });
-    if tool_access(tool.as_wire_name()) == Some(Access::Propose)
-        && let Some(map) = content.as_object_mut()
-    {
-        map.insert("readyForReview".to_string(), json!(false));
+/// **The invariant: a propose result always answers `readyForReview`** — `true` when it staged,
+/// `false` when it didn't. A model told a user their rename plan was waiting in the suggestions
+/// panel after the schema gate refused it, having read a result that said only `problem`. That
+/// is the one propose answer with nothing to say about whether anything got staged, and the
+/// model filled the gap in its own favour.
+///
+/// It stamps HERE, at dispatch's single exit, rather than at each place a refusal is built.
+/// Four construction sites already have to agree — the gate, `execute_tool`'s flattened
+/// `ToolError`, `propose_in_thread`'s, and the boundary's own typed refusals — and the fifth
+/// nobody has written yet is the one that would go missing. One choke point can't be bypassed
+/// by adding a path.
+///
+/// Both decisions are typed: the registry's [`Access`] says which tools owe a verdict, and
+/// [`AgentToolResult::reports_a_problem`] reads our own result keys to tell a problem from an
+/// answer. Neither reads the tool's name or the refusal's wording.
+///
+/// It fails closed but never overwrites: a result that already answered keeps its own verdict,
+/// so a plan that DID stage can't be reported as staging nothing. That would be the same
+/// dishonesty pointed the other way, and the user's panel would contradict it.
+fn ensure_review_verdict(tool: &ToolId, result: &mut AgentToolResult) {
+    if tool_access(tool.as_wire_name()) != Some(Access::Propose) || !result.reports_a_problem() {
+        return;
     }
-    content
+    if let Some(map) = result.content.as_object_mut() {
+        map.entry("readyForReview").or_insert(json!(false));
+    }
 }
 
 /// Dispatch one tool call through the agent's gated view. The parse gate is
@@ -87,6 +99,14 @@ pub struct DispatchOutcome {
 }
 
 pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, call: &AgentToolCall) -> DispatchOutcome {
+    let mut outcome = route_call(app, scope, call).await;
+    // The single exit every path funnels through, so no branch above can answer a propose call
+    // without saying whether anything was staged.
+    ensure_review_verdict(&call.tool, &mut outcome.result);
+    outcome
+}
+
+async fn route_call<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, call: &AgentToolCall) -> DispatchOutcome {
     if let Some(refusal) = refuse_unavailable(&call.call_id, &call.tool) {
         return DispatchOutcome {
             result: refusal,
@@ -114,7 +134,7 @@ pub async fn dispatch<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, call
         return DispatchOutcome {
             result: AgentToolResult {
                 call_id: call.call_id.clone(),
-                content: schema_refusal(&call.tool, &problem),
+                content: json!({ "problem": problem.message }),
                 elided: false,
             },
             proposal: None,
@@ -189,34 +209,75 @@ mod tests {
         );
     }
 
-    #[test]
-    fn a_propose_tool_refused_by_the_schema_gate_says_nothing_is_waiting_for_review() {
-        // The turn this pins: `propose_rename_plan` was refused by the gate, the result said
-        // only `problem`, and the model told the user the plan was waiting in the suggestions
-        // panel. It was not. Every other propose answer carries `readyForReview` — true when it
-        // staged, false when it refused — so a gate refusal that omits the verdict is the one
-        // propose result with no answer to "did anything get staged?".
-        let problem = crate::mcp::ToolError::invalid_params("propose_rename_plan has no volumeId parameter.");
-        for tool in [ToolId::ProposeRenamePlan, ToolId::ProposeSuggestions] {
-            let content = schema_refusal(&tool, &problem);
-            assert_eq!(
-                content["readyForReview"],
-                false,
-                "{} refused nothing into review, and has to say so",
-                tool.as_wire_name()
-            );
-            assert!(content["problem"].is_string(), "the model still reads what to fix");
+    /// A tool result as it stands just before `dispatch` returns it.
+    fn result(content: Value) -> AgentToolResult {
+        AgentToolResult {
+            call_id: "call-1".to_string(),
+            content,
+            elided: false,
         }
     }
 
     #[test]
-    fn a_read_tool_refusal_claims_no_review_verdict_it_has_no_business_making() {
+    fn every_shape_of_propose_problem_leaves_dispatch_saying_nothing_is_waiting_for_review() {
+        // The invariant, at the one place it can be held for every propose path at once. A
+        // model told a user their rename plan was waiting in the suggestions panel after the
+        // schema gate refused it; the result it read said only `problem`, which is the one
+        // propose answer with nothing to say about whether anything got staged.
+        //
+        // Each shape below is a real path that reached the model without a verdict: the gate's
+        // refusal, `execute_tool`'s and `propose_in_thread`'s flattened `ToolError` (a closed
+        // store, a serialization failure), and a refusal already annotated as a repeat.
+        let shapes = [
+            json!({ "problem": "propose_rename_plan has no volumeId parameter. It takes renames." }),
+            json!({ "problem": "Cmdr's suggestion store isn't open yet." }),
+            json!({ "problem": "…", "repeatedCall": true, "guidance": "…" }),
+            json!({ "available": false, "requested": "propose_rename_plan", "reason": "…" }),
+        ];
+        for tool in [ToolId::ProposeRenamePlan, ToolId::ProposeSuggestions] {
+            for shape in &shapes {
+                let mut answer = result(shape.clone());
+                ensure_review_verdict(&tool, &mut answer);
+                assert_eq!(
+                    answer.content["readyForReview"],
+                    false,
+                    "{} left {shape} without the verdict, so a model can read it as success",
+                    tool.as_wire_name()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_staged_plan_keeps_its_own_verdict() {
+        // The stamp fails closed, so it must never reach a result that DID stage something:
+        // telling the user nothing is waiting while a proposal sits in their panel is the same
+        // dishonesty pointed the other way.
+        let mut staged = result(json!({ "readyForReview": true, "count": 9 }));
+        ensure_review_verdict(&ToolId::ProposeRenamePlan, &mut staged);
+        assert_eq!(staged.content["readyForReview"], true);
+        assert_eq!(staged.content["count"], 9);
+
+        // And a refusal that already answered keeps its own wording rather than being restamped.
+        let mut refused = result(json!({ "readyForReview": false, "evidenceRejected": [], "problem": "…" }));
+        ensure_review_verdict(&ToolId::ProposeRenamePlan, &mut refused);
+        assert_eq!(refused.content["readyForReview"], false);
+        assert!(refused.content.get("evidenceRejected").is_some());
+    }
+
+    #[test]
+    fn a_read_tool_problem_claims_no_review_verdict_it_has_no_business_making() {
         // `readyForReview` is the propose family's contract. Stamping it onto a read refusal
         // would invent a verdict about a review that was never in play.
-        let problem = crate::mcp::ToolError::invalid_params("list_dir needs path.");
-        let content = schema_refusal(&ToolId::ListDir, &problem);
-        assert!(content["readyForReview"].is_null());
-        assert!(content["problem"].is_string());
+        for tool in [ToolId::ListDir, ToolId::ImageFacts, ToolId::MemoryWrite] {
+            let mut answer = result(json!({ "problem": "list_dir needs path." }));
+            ensure_review_verdict(&tool, &mut answer);
+            assert!(
+                answer.content["readyForReview"].is_null(),
+                "{} is not a propose tool and must claim no review verdict",
+                tool.as_wire_name()
+            );
+        }
     }
 
     #[test]

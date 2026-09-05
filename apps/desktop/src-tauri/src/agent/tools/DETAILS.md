@@ -443,24 +443,34 @@ through `inspect_file`. ⚠️ Keep it accurate as the tiers grow: it promised "
 `Access::Memory`, and "can't read file contents" until `inspect_file`; a model told a false limit either refuses the
 question or invents the answer.
 
-### What a gate refusal answers with
+### A propose result always answers `readyForReview`
 
-The schema gate (`mcp/tool_registry/params.rs`) runs inside `dispatch`, ahead of the branch, so it covers every agent
-call. Two things ride its refusal, both because of one live turn where a rename plan died here and the model then told
-the user the plan was waiting in the suggestions panel:
+`true` when it staged, `false` when it didn't. `view.rs::ensure_review_verdict` holds it at `dispatch`'s single exit:
+`dispatch` is a two-line wrapper over `route_call`, so every branch funnels through one stamp.
 
-- **A `Access::Propose` tool's refusal carries `readyForReview: false`** (`view.rs::schema_refusal`). The family answers
-  that field on every other path, so a bare `{ problem }` was its one result with no answer to "did anything get
-  staged?", and the model filled the gap in its own favour. Decided on the registry's typed `Access`, never on the tool
-  name or the refusal's wording. `chat/runtime/repeats.rs` keeps the original content whole, so the repeat inherits it.
-- **A `warn` on `agent::tools`**, carrying the typed `data` (which properties were wrong) beside the sentence. Before
-  it, a plan that never reached the proposal store was invisible: the log held the provider round trips and the repeat
-  breaker's warn, and characterizing the report meant reading `main.db`'s conversation rows.
+**It is a choke point rather than a stamp at each refusal site** because four sites already have to agree — the schema
+gate, `execute_tool`'s flattened `ToolError`, `propose_in_thread`'s, and the rename boundary's own typed refusals — and
+the fifth nobody has written yet is the one that would go missing. Two of those four had no verdict when this was
+found: a model read a bare `{ problem }` from the gate and told the user its rename plan was waiting in the suggestions
+panel while the store held nothing.
 
-The refusal SENTENCE matters as much as the shape, and its rules live with the gate, not here
-(`mcp/tool_registry/params.rs`): a per-row property sent at the top level is a `Misplaced` violation naming the row that
-takes it, because "propose_rename_plan has no volumeId parameter. It takes renames." is a true sentence a model cannot
-act on — it reads as "your rows were fine".
+Both decisions are typed, never the tool's name or the refusal's wording: the registry's `Access` says which tools owe
+a verdict, and `AgentToolResult::reports_a_problem` (on the type, shared with `chat/runtime`'s `dispatch_ok`) tells a
+problem from an answer. It fails closed but never overwrites — a result that already answered keeps its own verdict, so
+a plan that DID stage can't be reported as staging nothing, which would be the same dishonesty pointed the other way.
+
+`chat/runtime/repeats.rs` keeps a failed result's content whole, so a repeat inherits the verdict too.
+
+### What a gate refusal says
+
+The schema gate (`mcp/tool_registry/params.rs`) runs inside `route_call`, ahead of the branch, so it covers every agent
+call. It warns on `agent::tools`, carrying the typed `data` (which properties were wrong) beside the sentence. Before
+that line, a plan that never reached the proposal store was invisible: the log held the provider round trips and the
+repeat breaker's warn, and characterizing the report meant reading `main.db`'s conversation rows.
+
+The refusal SENTENCE matters as much as the shape, and its rules live with the gate, not here: a per-row property sent
+at the top level is a `Misplaced` violation naming the row that takes it, because "propose_rename_plan has no volumeId
+parameter. It takes renames." is a true sentence a model cannot act on — it reads as "your rows were fine".
 
 `dispatch` routes two tools specially rather than through the generic `execute_tool` call: `propose_rename_plan`,
 which needs the evidence scope, and `propose_suggestions`, which needs the conversation id so a sweep records the

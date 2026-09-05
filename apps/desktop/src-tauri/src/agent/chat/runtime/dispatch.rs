@@ -5,7 +5,6 @@
 //! scripted double, so [`run_turn`](super::run_turn) needs no Tauri app.
 
 use futures_util::future::{BoxFuture, FutureExt};
-use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use super::LOG_TARGET;
@@ -79,11 +78,11 @@ impl<R: Runtime> ToolDispatcher for AppHandleDispatcher<R> {
     }
 }
 
-/// True when a dispatch result is a real answer rather than a refusal or a handler
-/// problem. Reads OUR OWN typed result keys (`available` / `problem`), never external
-/// wording.
+/// True when a dispatch result is a real answer rather than a refusal or a handler problem.
+///
+/// The judgement itself is [`AgentToolResult::reports_a_problem`], on the type, since the tools
+/// view asks the same question and importing this module from there would point `agent::tools`
+/// back at `agent::chat`.
 pub fn dispatch_ok(result: &AgentToolResult) -> bool {
-    let refused = result.content.get("available") == Some(&Value::Bool(false));
-    let problem = result.content.get("problem").is_some();
-    !(refused || problem)
+    !result.reports_a_problem()
 }
