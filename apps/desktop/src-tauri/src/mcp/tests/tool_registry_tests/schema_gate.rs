@@ -39,6 +39,57 @@ fn a_call_carrying_a_property_the_schema_never_declared_is_refused() {
 }
 
 #[test]
+fn a_per_row_property_sent_at_the_top_level_is_told_which_row_takes_it() {
+    // Straight from a live transcript: the model put ONE `volumeId` beside `renames` rather
+    // than one on every row, which is the natural read of a plan that binds a single volume.
+    // Naming only the top-level offender and then listing `renames` as everything the tool
+    // takes reads as "your rows were fine", so the model re-sent the byte-identical call,
+    // `chat/runtime/repeats.rs` stopped the second one, and it then told the user the plan was
+    // submitted. Nothing had been staged. A refusal that names where the property goes is what
+    // ends that loop, so the gate looks one level down to say it.
+    let error = validate_params(
+        "propose_rename_plan",
+        &json!({
+            "volumeId": "root",
+            "renames": [{
+                "sourcePath": "/Users/me/notes/2030-01-01 22-47-24.md",
+                "destinationName": "a.md",
+                "evidence": { "source": "userInstruction", "detail": "Sequential rename: a.md" },
+            }],
+        }),
+    )
+    .expect_err("a per-row property sent at the top level is refused");
+
+    assert!(
+        error.message.contains("each renames row takes volumeId"),
+        "the refusal must say which row takes the property: {}",
+        error.message
+    );
+    let data = error.data.expect("the refusal carries typed detail");
+    assert_eq!(
+        data["misplacedProperties"],
+        json!([{ "property": "volumeId", "rows": "renames" }]),
+        "the same fact rides the typed detail, so a caller acts on the shape"
+    );
+    assert_eq!(
+        data["unknownProperties"],
+        json!([]),
+        "a property the schema declares one level down is misplaced, never undeclared"
+    );
+}
+
+#[test]
+fn a_property_no_row_declares_either_stays_undeclared() {
+    // The one-level look-down explains a hoisted field; it must not turn a genuinely invented
+    // property into a confident "put it on a row".
+    let error = validate_params("propose_rename_plan", &json!({ "renames": [], "dryRun": true }))
+        .expect_err("an invented property is refused");
+    let data = error.data.expect("typed detail");
+    assert_eq!(data["unknownProperties"], json!(["dryRun"]));
+    assert_eq!(data["misplacedProperties"], json!([]));
+}
+
+#[test]
 fn a_call_missing_a_required_property_is_refused_by_name() {
     // `path` is `list_dir`'s only required property. A handler's own check says so for the
     // tools that happen to make one; the gate makes it uniform and names the field.

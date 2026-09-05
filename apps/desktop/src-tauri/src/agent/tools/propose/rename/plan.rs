@@ -263,6 +263,12 @@ fn describe_rows(violation: &ParamViolation, at: &[usize], total: usize) -> Stri
             let noun = if plural { "parameters" } else { "parameter" };
             format!("{subject} has no {field} {noun}")
         }
+        // A row schema declares no arrays of its own, so nothing here can be hoisted out of
+        // one. Rendered rather than collapsed into `Unknown` so a row schema that grows an
+        // array later still reads honestly.
+        ParamViolation::Misplaced { property, rows } => {
+            format!("{subject} has no {property} parameter; each {rows} row takes {property}")
+        }
     }
 }
 
