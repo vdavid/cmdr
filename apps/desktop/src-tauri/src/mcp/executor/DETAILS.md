@@ -31,8 +31,10 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   SAME live run the dialog starts, walking whatever the index doesn't cover, folded into one reply because a tool call
   can't carry a stream (`search/DETAILS.md` § "Decision 10"). ❌ No walk-versus-don't parameter. `maxWaitSeconds` is a
   transport budget only: when it runs out the reply carries what had arrived plus a typed note, and the walk keeps
-  going. `limit` clamps to the house `MAX_LIMIT` of 200. The result shape and every rule about it live in
-  `search/result.rs` (§ The search result, below).
+  going. `limit` clamps to the house `MAX_LIMIT` of 200. `search` is shared `[AiClient, Agent]`; ❌ `ai_search` stays
+  ai-client-only, because Ask Cmdr is already an LLM holding the user's prose and nesting a second model call to write
+  a query it can write itself buys two providers and a translation it can't see (`../../agent/tools/DETAILS.md` § The
+  tool catalog). The result shape and every rule about it live in `search/result.rs` (§ The search result, below).
 - **`queue.rs`**: the `queue` tool (pause / resume / cancel one id, pause_all / resume_all). Thin adapter over the
   manager: no FE action, so no ack.
 - **`conflicts.rs`**: `resolve_conflict` — answers ONE Stop-mode clash a running operation is parked on. Same adapter

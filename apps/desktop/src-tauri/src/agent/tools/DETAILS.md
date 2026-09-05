@@ -38,9 +38,40 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   (`indexing::list_dir_children`, a path-based helper beside `get_dir_stats`) plus its own recursive size stats
   (`get_dir_stats`) and a `Coverage` block. `Ok(None)` children ⇒ typed "not in index" / "no index", distinguished by
   whether the volume is indexed. Ordered by `sortBy` (`name` / `size` / `modified`) and paged by `limit` / `offset`;
-  `type` narrows to files or folders. **`sortBy: "size"` is the disk-usage answer** — see § One tool, both questions.
+  `type` narrows to files or folders. **`sortBy: "size"` is the disk-usage answer for ONE folder's children**;
+  `search` with the same sort ranks a whole drive — see § One tool, both questions.
   Every number also arrives spoken (`sizeHuman`, `modifiedHuman`, `recursiveSizeHuman`, `totalHuman` /
   `availableHuman`) and a paged answer carries a `remainder` — see § Numbers arrive already spoken.
+- **`search`** (`mcp/executor/search.rs`, shared `[AiClient, Agent]`) — find files across ONE whole drive by name
+  pattern (glob or regex), size range, modified range, or type, over the same live path a person's search takes
+  (`search::run_live_collected`: the index where it covers the scope, a walk for the rest, so an unindexed drive still
+  answers). `sortBy` is relevance / size / modified, `limit` defaults to 30 and clamps to 200, and `countOnly` answers
+  with the counts and coverage alone. The typed result shape and every rule about its counts: `mcp/executor/DETAILS.md`
+  § The search result.
+  - **Names and metadata only, ❌ never contents.** The chain for a contents question is `search` (or `search_photos`)
+    to narrow, then `inspect_file` with `find` over the hits. A `modified` is when a file last CHANGED, never when it
+    was saved or opened, which the model has to voice rather than round off.
+  - **One drive per call, and the model loops.** `resolve_target` refuses a scope spanning volumes
+    (`ScopeError::SpansMultipleVolumes`), because a fan-out is the only way a search can silently omit a drive. The
+    default is the boot volume; another drive is named by the `mountPath` `list_volumes` hands over. The description
+    obliges the model to say WHICH drive it covered before offering the others.
+  - **What the coverage block obliges the model to say**, field by field: `stillWalking` and `abandonedGround` make the
+    list a lower bound (❗ never "no matches"), `permissionDenied` names refused folders and offers Full Disk Access
+    only where it would help, `declined` explains rather than offers (snapshot trees are nothing to fix),
+    `stillCovering` says those results arrive later rather than being lost, `unresolvedScopes` is ❌ never "that folder
+    doesn't exist" (Cmdr can't tell a typo from unwalked ground), and `hiddenByExcludes` says the count is filtered —
+    the default system/cache/build tier is right for "find my invoice" and exactly wrong for "where is my disk space
+    going", where the hidden folders ARE the answer. The system prompt's § Coverage carries the rule; the authored
+    sentences ride in `notes` beside the flags.
+  - **❌ No `offset`, by decision.** Ranking is top-k, and an offset over a re-ranked run would skip and double-count
+    rows. The model narrows instead (a tighter pattern, a smaller scope, a date range), and the description says so.
+  - **❌ `ai_search` is deliberately NOT in the agent view.** It spends an LLM call turning prose into a structured
+    query, and Ask Cmdr is already an LLM holding the user's prose: exposing it would nest a second model call, bill
+    two providers, and hide a translation the agent can't see or correct, for a schema that rides every turn. The agent
+    writes the structured query itself.
+  - **❌ No drive-wide content index**, until something measures the gap the `search` → `inspect_file` chain leaves. It
+    would be a second index with its own enrichment pass, storage budget, and incremental reconcile, on the scale of
+    `media_index`.
 - **`important_folders`** (`read/importance.rs`) — top-N or above-threshold across scored volumes, reusing
   `mcp::resources::importance::{snapshot_top, snapshot_threshold, snapshot_overview}` (which read every scored volume,
   including offline ones). The overview carries each volume's current generation for staleness.
@@ -79,6 +110,11 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   SMB, `smbConnectionState` (`direct`/`os_mount`/`disconnected`), straight from `snapshot_volumes` so tokens can't drift.
   Space rides along as `totalBytes` / `availableBytes` plus `totalHuman` / `availableHuman`, each pair present exactly
   when the poller has a reading (the same pair `cmdr://state`'s `volumes:` renders; see `mcp/DETAILS.md`).
+  `mountPath` is what makes a `search` of anything but the boot volume expressible: `search` covers ONE volume per call
+  and addresses it by a path in `scope`, and every other field here is a name, an id, or a token. It's absent for a
+  volume with no filesystem path (MTP storages, the `Network` root), which is also exactly where a search can't reach.
+  ⚠️ It rides `VolumeSummary` but ❌ NOT the `cmdr://state` YAML: that view redacts home paths, so a favorite folder's
+  mount path would render redacted and an AI client copying it into a scope would match nothing.
 - **`operations_list` / `operations_get`** — the shipped executors (`mcp/executor/operation_log.rs`), shared into the
   agent view unchanged (their schemas + coverage flags already fit an agent reader).
 - **`search_photos`** (`mcp/executor/photos.rs`, shared `[AiClient, Agent]`) — photo search by description (CLIP),
@@ -124,8 +160,8 @@ delete lives on the wake path, after the turn (`agent/wake/`), and a rail turn c
 auto-dispatched ones the user never previews, and `redact::redact_line_salted` is path-shaped, so it does nothing to a
 sentence about which of the user's folders were boring. Log that a wake was quiet, never what it said.
 
-**What it costs everyone else.** The schema is prefix, so all 17 declarations are paid on every rail turn: this one is
-97 tokens of the 5,257 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
+**What it costs everyone else.** The schema is prefix, so all 19 declarations are paid on every rail turn: this one is
+97 tokens of the 6,263 fixed overhead (`agent/chat/DETAILS.md` § What the budgets buy). That's the price of the wake
 being able to stay silent, and it's why the description is two sentences.
 
 ## The two tools that write (`memory_write`, `memory_edit`)
@@ -271,6 +307,11 @@ walks the serialized result and requires every leaf to be a string, a number, or
 second by-size tool would have overlapped it on every axis but the sort, and an agent facing two near-identical listing
 tools guesses.
 
+**Where `search` draws the line.** `list_dir` ranks the children of a folder the caller names; `search` with
+`sortBy: "size"` ranks a whole drive, which is what surfaces a 900 GB VM image eight levels down that no
+folder-by-folder walk would reach. Both tool descriptions state that split, and ❌ nothing else does: the `path`
+property deliberately carries no disk-space advice, because two places saying it is two places to drift.
+
 Three properties make the size ordering an honest disk-usage answer:
 
 - **Files and folders rank together.** A folder's `size` is its RECURSIVE total from `dir_stats`, not its inode size, so
@@ -349,9 +390,15 @@ Every result that carries a LIST is cut to `agent::chat::budget::MAX_TOOL_RESULT
 `mcp::executor::fit_to_result_budget`, and reports `total` / `returned` / `truncated` so the model can say what it saw
 and ask for the rest. It applies to `list_dir` (children, under the caller's own `limit`), `list_pane_files` (entries, on
 top of its 200-row cap), `image_facts` (per-path rows, on top of the 2,000-char per-file text cap),
-`search_photos` (hits), `inspect_file` (per-path rows, on top of the 16,000-char per-row window cap, with the rows it
-drops named in `unanswered`), the `operations_*` pages, and the suggested-ops reads (group summaries from
-`list_suggestions`, the op page from `get_suggestion_group`).
+`search_photos` (hits), `search` (entries, on top of its own 200-row cap), `inspect_file` (per-path rows, on top of the
+16,000-char per-row window cap, with the rows it drops named in `unanswered`), the `operations_*` pages, and the
+suggested-ops reads (group summaries from `list_suggestions`, the op page from `get_suggestion_group`).
+
+⚠️ **`search` reports `matchCount`, which is NOT the `total` the rest of this list reports.** Everywhere else `total` is
+what the page was cut from, so `returned == total` means "you saw everything". A search's engine stops emitting rows at
+the row cap while the count keeps rising, so `matchCount` can exceed `returned` by orders of magnitude with nothing
+wrong; `coverage.capped` says which, and `matchCountHuman` wears a `≥` so the caveat can't be shed when the number is
+restated.
 
 **Why a size cut on top of the row caps:** a row cap can't bound a payload. `image_facts` at 200 paths × 2,000
 characters is ~100k estimated tokens, and a `list_dir` on a 20k-entry folder had no cap at all. A result that doesn't
