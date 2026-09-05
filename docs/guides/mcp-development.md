@@ -117,7 +117,7 @@ add a handler the dispatch doesn't know about, so schema/dispatch/auth/exposure 
 
 - **`desc`** is PREFIX for the agent view: every declaration rides every turn of every conversation, whether or not the
   turn calls that tool, so a sentence here is paid thousands of times. Say what the tool answers and, when a
-  neighbouring tool would be the wrong pick, where the line falls (`search` vs `list_dir`); leave everything else to the
+  neighboring tool would be the wrong pick, where the line falls (`search` vs `list_dir`); leave everything else to the
   schema, the result, or the system prompt. `test_tools_have_bounded_descriptions` caps a description at 512 chars, and
   most sit far under; `agent/chat/context/cost_tests.rs` is what actually holds the prefix to
   `FIXED_PROMPT_OVERHEAD_TOKENS`.

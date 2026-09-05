@@ -218,7 +218,7 @@ engine's own match total, adjusted by that post-filter.
 
 Two TYPED sibling fields on `SearchResult` (callers branch on emptiness, never string-match), for the two ways a scoped
 search returns nothing for a STRUCTURAL reason rather than a genuine "no matches". Both the dialog
-(`apps/desktop/src/lib/search/CoverageNote.svelte`) and MCP (`mcp/executor/search.rs::coverage_note`) render them, with distinct copy per
+(`apps/desktop/src/lib/search/CoverageNote.svelte`) and MCP (`mcp/executor/search/result.rs`) render them, with distinct copy per
 field:
 
 - **`uncovered_scopes`** — a `from_scope` target whose volume has no persisted index (`VolumeLoad::NotIndexed`). An
@@ -273,9 +273,9 @@ exclusion rule kept out of `total_count`: the system/build/cache tier (`SYSTEM_D
 
 **Why a filtered count needs to say so.** The defaults are right for "find my invoice" and exactly wrong for "where is
 my disk space going", where `node_modules`, `Caches`, and `.git` ARE the answer. A caller that can't see the number
-reads "27 files match" as the whole truth and states a wrong conclusion confidently; with it, MCP renders "27, plus 400
-more inside system, cache, and build folders" and names the flag that reveals them
-(`mcp/executor/search.rs::coverage_note`).
+reads "27 files match" as the whole truth and states a wrong conclusion confidently; with it, MCP reports the number in
+`coverage.hiddenByExcludes` and names the flag that reveals them in a note beside it
+(`mcp/executor/search/result.rs`).
 
 Counted across BOTH halves of a live run, or it would under-report the very case the walk exists for: the arena scan
 counts in `engine::search_ranked` (via `ScopeVerdict::Excluded`) and rides back on `engine::Ranked`; the walk counts in
