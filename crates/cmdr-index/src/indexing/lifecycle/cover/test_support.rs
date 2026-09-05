@@ -23,6 +23,7 @@ use cmdr_fs::volume::{InMemoryVolume, ListingProgress, Volume, VolumeError};
 
 use super::*;
 use crate::indexing::read::coverage::CoverageMap;
+use crate::indexing::store::IndexStore;
 
 /// Drain a walk, collecting every entry it emitted.
 pub(super) fn drain(walk: CoverWalk) -> (Vec<CoveredEntry>, CoverOutcome) {

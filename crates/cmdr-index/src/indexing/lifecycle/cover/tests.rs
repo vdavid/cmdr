@@ -9,9 +9,10 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 
+use super::ground::{Ground, repair_non_virgin};
 use super::test_support::drain;
 use super::*;
-use crate::indexing::store::ROOT_ID;
+use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::indexing::writer::WriteMessage;
 
 // ── Fixture ──────────────────────────────────────────────────────────

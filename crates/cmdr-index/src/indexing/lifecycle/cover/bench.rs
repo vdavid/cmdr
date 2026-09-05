@@ -7,7 +7,8 @@ use std::sync::atomic::Ordering;
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
 use super::*;
-use crate::indexing::store::ROOT_ID;
+use crate::indexing::scanner::cover_subtree;
+use crate::indexing::store::{IndexStore, ROOT_ID};
 
 /// Which primitive should cover a frontier: the parallel walker or the serial
 /// reconcile? Measured on a REAL tree rather than trusted from the in-tree
