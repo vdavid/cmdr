@@ -504,10 +504,11 @@ pub async fn handle_directory_change(listing_id: &str) {
     // same ArchiveVolume the listing used, re-registering it if the LRU evicted
     // it. (Archives get no FSEvents watcher today, so this fires for them only
     // once live archive watching lands.)
-    let volume = crate::file_system::volume::manager::get_volume_manager()
+    let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(&volume_id, &path)
-        .await
-        .volume;
+        .await;
+    let is_routed = resolved.is_routed();
+    let volume = resolved.volume;
 
     // Get app handle for emitting events
     let app_handle = { WATCHER_MANAGER.read_ignore_poison().app_handle.clone() };
@@ -578,8 +579,14 @@ pub async fn handle_directory_change(listing_id: &str) {
         })
     };
 
-    // Enrich with index data so diff entries have recursive_size etc.
-    index().enrich(&volume_id, &mut new_entries);
+    // Enrich with index data so diff entries have recursive_size etc. Skipped for
+    // a routed volume, which has no drive index (an archive's inner paths and a
+    // git snapshot's paths aren't real FS paths) — the same gate the three reads
+    // that CREATE a listing use. Without it a ⌘R could put a Size on a row the
+    // first read left alone, from an index row that happens to share its path.
+    if !is_routed {
+        index().enrich(&volume_id, &mut new_entries);
+    }
 
     // Re-run the overlays, in the same place in the pipeline the first read ran
     // them (after the enrich, before the sort). `list_directory` above answers
