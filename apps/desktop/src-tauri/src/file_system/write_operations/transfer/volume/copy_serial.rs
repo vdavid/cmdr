@@ -17,9 +17,7 @@
 //! or an owned value into its environment instead.
 
 use std::collections::{HashMap, HashSet};
-use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
@@ -29,10 +27,10 @@ use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::journal;
 use super::super::super::ledger::WrittenFile;
 use super::super::super::state::WriteOperationState;
-use super::super::super::types::{VolumeCopyConfig, WriteOperationError, WriteOperationPhase, WriteOperationType};
+use super::super::super::types::{VolumeCopyConfig, WriteOperationPhase, WriteOperationType};
 use super::super::transfer_driver::{
-    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
-    TransferOutcome, drive_transfer_serial_async,
+    ConflictDecision, ConflictDecisionInput, DriverConfig, FetchFut, PostLoopIntent, ResolveFut, SerialLeafProgress,
+    TransferContext, TransferFut, TransferOutcome, drive_transfer_serial_async,
 };
 use super::super::transfer_probe::{DriverPhase, OperationProbe, TaskRole, TaskRow};
 use super::conflict::resolve_volume_conflict;
@@ -42,15 +40,6 @@ use super::strategy::copy_single_path;
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
-
-/// Per-call future shape for the driver's `dest_meta_fetcher` closure.
-type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
-
-/// Per-call future shape for the driver's `conflict_resolver` closure.
-type ResolveFut<'a> = Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
-
-/// Per-call future shape for the driver's `transfer_one` closure.
-type TransferFut<'a> = Pin<Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>>;
 
 /// Everything the serial driver needs from its caller. The `Arc` fields are
 /// clones of `copy_volumes_with_progress`'s own ledgers, so the caller keeps

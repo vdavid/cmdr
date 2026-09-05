@@ -28,6 +28,14 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   `copy_single_path`). `merge.rs` walks a tree (`copy_directory_streaming`, `resolve_merge_child`): a directory child
   recurses there, a file child goes to `strategy.rs`. `sequential_extract.rs` reuses the same walk in plan mode, which
   is why the merge/conflict/rollback code is not reimplemented for one-pass archives.
+- **The move is three files, and the dependency runs ONE way.** `r#move` is the DISPATCHER and nothing else: it picks
+  same-volume (`move_same`), both-local (`move_files_start`, one level up), or cross-volume (`move_cross`), then owns
+  the managed-op lifecycle around whichever it picked. Both engines are leaves under it. ❗ Nothing in an engine may
+  import the dispatcher back — that is exactly what the three `FetchFut` / `ResolveFut` / `TransferFut` aliases used to
+  do from `r#move`, and three lines of type alias were the whole of a three-module cycle. They live with the driver
+  whose contract they are now (`../transfer_driver/mod.rs`), which also single-sources the shape `copy_serial.rs` had
+  been restating privately. Shared vocabulary between the dispatcher and its engines belongs in `transfer_driver` or in
+  `preflight.rs`, ❌ never in the dispatcher.
 - **`move_file.rs` is the per-FILE cross-volume move**, under the operation-level driver in `move_cross.rs`: one
   `stream_pipe_file` plus the source-side removal, no scan, no conflict resolution, no journaling. It exists because
   the operation-log rollback restores one already-decided leaf at a time and needs the staging, retry, stall detection,

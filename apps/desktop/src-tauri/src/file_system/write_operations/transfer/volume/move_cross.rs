@@ -28,12 +28,11 @@ use super::super::super::types::{
     WriteOperationPhase, WriteOperationType,
 };
 use super::super::transfer_driver::{
-    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
-    TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
+    ConflictDecision, ConflictDecisionInput, DriverConfig, FetchFut, PostLoopIntent, ResolveFut, SerialLeafProgress,
+    TransferContext, TransferFut, TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
 use super::cleanup::{TreeRemoval, remove_tree};
 use super::conflict::resolve_volume_conflict;
-use super::r#move::{FetchFut, ResolveFut, TransferFut};
 use super::preflight::SourceFileFacts;
 use super::preflight::{SourceHint, scan_volume_sources};
 use super::strategy::{copy_single_path, resolve_source_is_directory};

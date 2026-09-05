@@ -22,6 +22,9 @@ callbacks. The transfers themselves: `../CLAUDE.md`.
 - **Every skip credits the bars AND calls `state.note_skipped`**, ❌ never one without the other. The bars must reach
   their totals; the rate must not see bytes nothing moved, or one big skipped file spikes the reported speed.
   `../DETAILS.md` § "Skipped work moves the bars, and stays out of the rate".
+- **The three closure future shapes (`FetchFut` / `ResolveFut` / `TransferFut`) live HERE**, with the driver whose
+  `where` clause they ARE; ❌ never copied into an operation's module. Three operations write those closures, and
+  parking the aliases in one of them welded three `volume/` modules into a cycle.
 - **Sync and async are deliberate siblings, ❌ not one generic driver.** Boxing futures for the sync caller would cost
   an allocation per source and lose the closure's `&mut` captures.
 - **Conflict resolution is closure-owned for sync, driver-owned for async.** ❌ Don't unify without moving the sync

@@ -39,8 +39,9 @@
 //! # Module layout
 //!
 //! - this file: the shared vocabulary (`TransferContext`, `TransferOutcome`, `TransferLoopOutcome`,
-//!   `PostLoopIntent`, `DriverConfig`, `ConflictDecisionInput`, `ConflictDecision`) plus the
-//!   `build_pre_skip_set` / `emit_progress_and_status` helpers.
+//!   `PostLoopIntent`, `DriverConfig`, `ConflictDecisionInput`, `ConflictDecision`), the three
+//!   closure future shapes (`FetchFut`, `ResolveFut`, `TransferFut`) the async driver's `where`
+//!   clause is written in, plus the `build_pre_skip_set` / `emit_progress_and_status` helpers.
 //! - [`progress`]: the per-file progress callback builders (`SerialLeafProgress`,
 //!   `make_concurrent_per_file_progress`).
 //! - [`sync_driver`]: [`drive_transfer_serial_sync`] for local-FS copy/move.
@@ -112,7 +113,9 @@
 )]
 
 use std::collections::HashSet;
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use std::sync::Arc;
 
 use super::super::event_sinks::OperationEventSink;
@@ -134,6 +137,32 @@ pub(in crate::file_system::write_operations::transfer) use sync_driver::drive_tr
 // ============================================================================
 // Core types
 // ============================================================================
+
+/// Per-call future shape for [`drive_transfer_serial_async`]'s `dest_meta_fetcher`
+/// closure.
+///
+/// The three aliases below name the shapes the async driver's own `where` clause
+/// spells out, so an operation writing one of these closures can say what it
+/// returns instead of restating a `Pin<Box<dyn Future<Output = …> + Send + 'a>>`.
+///
+/// ❗ They live HERE, with the driver whose contract they are, and ❌ not in any
+/// one operation's module. Three operations write these closures — the
+/// cross-volume copy, the cross-volume move, and the same-volume rename — and
+/// parking the aliases in whichever module happened to need them first is what
+/// welded `volume::r#move`, `volume::move_cross`, and `volume::move_same` into
+/// one module cycle: the dispatcher imported the two engines, and both engines
+/// imported the dispatcher back for these three lines.
+pub(super) type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
+
+/// Per-call future shape for [`drive_transfer_serial_async`]'s `conflict_resolver`
+/// closure. See [`FetchFut`] for why these live with the driver.
+pub(super) type ResolveFut<'a> =
+    Pin<Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>>;
+
+/// Per-call future shape for [`drive_transfer_serial_async`]'s `transfer_one`
+/// closure. See [`FetchFut`] for why these live with the driver.
+pub(super) type TransferFut<'a> =
+    Pin<Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>>;
 
 /// Per-iteration context passed to the `transfer_one` closure.
 ///

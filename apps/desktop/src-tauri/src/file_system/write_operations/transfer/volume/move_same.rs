@@ -23,11 +23,10 @@ use super::super::super::types::{
     WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteSourceItemDoneEvent,
 };
 use super::super::transfer_driver::{
-    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
-    build_pre_skip_set, drive_transfer_serial_async,
+    ConflictDecision, ConflictDecisionInput, DriverConfig, FetchFut, PostLoopIntent, ResolveFut, TransferContext,
+    TransferFut, TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
 use super::conflict::{is_the_same_volume_path, resolve_volume_conflict};
-use super::r#move::{FetchFut, ResolveFut, TransferFut};
 use super::preflight::{SourceHint, top_level_move_hints};
 use super::rename_merge::{RenameMergeCtx, rename_merge_directory};
 use super::transfer_error::{PathRole, map_volume_error};

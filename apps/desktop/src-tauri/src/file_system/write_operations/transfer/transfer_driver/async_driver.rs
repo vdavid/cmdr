@@ -1,9 +1,7 @@
 //! Async serial driver for volume copy/move operations.
 
 use std::collections::HashSet;
-use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -12,8 +10,8 @@ use crate::file_system::write_operations::state::{OperationIntent, WriteOperatio
 use crate::file_system::write_operations::types::WriteOperationError;
 
 use super::{
-    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferLoopOutcome,
-    TransferOutcome, emit_progress_and_status,
+    ConflictDecision, ConflictDecisionInput, DriverConfig, FetchFut, PostLoopIntent, ResolveFut, TransferContext,
+    TransferFut, TransferLoopOutcome, TransferOutcome, emit_progress_and_status,
 };
 
 /// Async serial driver for volume operations.
@@ -81,17 +79,9 @@ pub(in crate::file_system::write_operations::transfer) async fn drive_transfer_s
     mut transfer_one: TransferOne,
 ) -> TransferLoopOutcome
 where
-    DestMetaFetcher: for<'a> FnMut(&'a Path) -> Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>,
-    ConflictResolver: for<'a> FnMut(
-        ConflictDecisionInput<'a>,
-    ) -> Pin<
-        Box<dyn Future<Output = Result<ConflictDecision, WriteOperationError>> + Send + 'a>,
-    >,
-    TransferOne: for<'a> FnMut(
-        TransferContext<'a>,
-    ) -> Pin<
-        Box<dyn Future<Output = Result<TransferOutcome, WriteOperationError>> + Send + 'a>,
-    >,
+    DestMetaFetcher: for<'a> FnMut(&'a Path) -> FetchFut<'a>,
+    ConflictResolver: for<'a> FnMut(ConflictDecisionInput<'a>) -> ResolveFut<'a>,
+    TransferOne: for<'a> FnMut(TransferContext<'a>) -> TransferFut<'a>,
 {
     let mut files_done = 0usize;
     let mut bytes_done = 0u64;
