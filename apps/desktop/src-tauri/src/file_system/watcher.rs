@@ -23,9 +23,9 @@ use tauri::AppHandle;
 use tauri_specta::Event as _;
 
 use crate::file_system::listing::{
-    DiffChange, FileEntry, ModifyResult, compute_diff, get_listing_entries, get_listing_volume_id_and_path,
-    get_single_entry, has_entry, insert_entry_sorted, list_directory_core, remove_entries_by_paths,
-    OverlayRows, update_entry_sorted, update_listing_entries,
+    DiffChange, FileEntry, ModifyResult, OverlayRows, compute_diff, get_listing_entries,
+    get_listing_volume_id_and_path, get_single_entry, has_entry, insert_entry_sorted, list_directory_core,
+    remove_entries_by_paths, update_entry_sorted, update_listing_entries,
 };
 use crate::index_host::index;
 use cmdr_fs::firmlinks;
