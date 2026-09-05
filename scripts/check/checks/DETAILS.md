@@ -1589,19 +1589,35 @@ positive rate). Most of cmdr's Go modules are dep-free tooling scripts but still
 own CVEs; the check found 7 real reachable stdlib vulns the first time it ran (fixed by bumping mise's Go pin). Mirrors
 the cargo-audit role on the Rust side.
 
-**Decision**: `cfg-gate` check to catch ungated macOS-only crate imports. **Why**: Rust code using macOS-only crates
-(from `[target.'cfg(target_os = "macos")'.dependencies]`) compiles fine on macOS but fails on Linux if the `use` isn't
-wrapped in `#[cfg(target_os = "macos")]`. CI catches this after push, but the check catches it locally and instantly. It
-parses `Cargo.toml` for macOS-only crate names, detects module-level gating (for example,
-`#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe), and scans remaining
-files for ungated references.
+**Decision**: `cfg-gate` check to catch ungated macOS-only imports. **Why**: Rust code naming something absent from the
+Linux build compiles fine on macOS and fails on Linux if the `use` isn't wrapped in `#[cfg(target_os = "macos")]`. CI
+catches this after push, but the check catches it locally and instantly. It detects module-level gating (for example,
+`#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe, and so does a file
+`foo.rs` pulls in through `#[path = "foo_tests.rs"] mod foo_tests;`) and scans the remaining files for ungated
+references.
 
-Three things that detection has to get right, each learned from a miss:
+Two name sets, with different reach because the two are named differently in code:
 
-- **Any `crate::` reference counts, not just `use` lines.** A `use`-only scan reads `unsafe { libc::geteuid() }` as
-  nothing at all, which is how a `#[cfg(unix)]` test in `cmdr-fs` reached macOS-only `libc` and broke the Linux lane
-  with a green local run. Trailing `//` comments are stripped first so a SAFETY note explaining a gated call isn't
-  itself reported.
+- **macOS-only dependency crates**, from `[target.'cfg(target_os = "macos")'.dependencies]` in the member's own
+  manifest. ANY `crate::` reference counts here, not just `use` lines (see below).
+- **The crate's own macOS-only modules**, from `#[cfg(target_os = "macos")] mod x;`, matched as a `crate::x` path.
+  IMPORTS ONLY. A module of ours is named all over ordinary code (the `ipc.rs` command-registry macro, closure bodies,
+  multi-line signatures and `let`s), and deciding whether such a line sits under a gate needs a real parse: pointed at
+  every reference, the line-based walk misreported 22 correct sites against one true finding. An import sits at the top
+  of its scope, where the walk is reliable, and it is the shape that breaks the build. A module gated
+  `#[cfg(any(target_os = "macos", target_os = "linux"))]` is excluded: it exists in the Linux lane, so naming it needs
+  no gate.
+
+Four things that detection has to get right, each learned from a miss:
+
+- **A `use` inserted directly under an existing `#[cfg]` steals that attribute.** The line below it, gated until then,
+  goes bare, and rustfmt's alphabetical ordering is what puts the new import there. This is the module set's whole
+  reason to exist: it is how `drag.rs` reached macOS-only `native_drag` unconditionally and broke the Linux lane with a
+  green local run.
+- **Any `crate::` reference counts for a dependency crate, not just `use` lines.** A `use`-only scan reads
+  `unsafe { libc::geteuid() }` as nothing at all, which is how a `#[cfg(unix)]` test in `cmdr-fs` reached macOS-only
+  `libc` and broke the Linux lane with a green local run. Trailing `//` comments are stripped first so a SAFETY note
+  explaining a gated call isn't itself reported.
 - **A crate declared unconditionally too isn't macOS-only.** `tar` is macOS-only for production extraction and an
   all-target `[dev-dependencies]` so the tarball-building test compiles everywhere; counting it would report five
   perfectly fine test lines.

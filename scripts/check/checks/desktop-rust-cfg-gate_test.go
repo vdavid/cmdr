@@ -982,15 +982,15 @@ fn main() {}
 	macOSModules := map[string]bool{"core_foundation": true}
 	gatedFiles := map[string]bool{}
 
-	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, gatedFiles)
+	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, nil, gatedFiles)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(violations) != 1 {
 		t.Fatalf("expected 1 violation, got %d", len(violations))
 	}
-	if violations[0].crateName != "core_foundation" {
-		t.Errorf("expected crate name core_foundation, got %s", violations[0].crateName)
+	if violations[0].name != "core_foundation" {
+		t.Errorf("expected crate name core_foundation, got %s", violations[0].name)
 	}
 	if violations[0].line != 1 {
 		t.Errorf("expected line 1, got %d", violations[0].line)
@@ -1015,7 +1015,7 @@ fn main() {}
 	macOSModules := map[string]bool{"core_foundation": true}
 	gatedFiles := map[string]bool{}
 
-	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, gatedFiles)
+	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, nil, gatedFiles)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1040,7 +1040,7 @@ func TestScanForUngatedUses_SkipsGatedFiles(t *testing.T) {
 	macOSModules := map[string]bool{"core_foundation": true}
 	gatedFiles := map[string]bool{filePath: true}
 
-	violations, _, err := scanForUngatedUses(dir, dir, macOSModules, gatedFiles)
+	violations, _, err := scanForUngatedUses(dir, dir, macOSModules, nil, gatedFiles)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1062,7 +1062,7 @@ use tokio::runtime;
 	macOSModules := map[string]bool{"core_foundation": true}
 	gatedFiles := map[string]bool{}
 
-	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, gatedFiles)
+	violations, gatedCount, err := scanForUngatedUses(dir, dir, macOSModules, nil, gatedFiles)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
