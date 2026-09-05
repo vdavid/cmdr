@@ -2,8 +2,17 @@
 
 import { invoke } from '@tauri-apps/api/core'
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { commands, type TerminalAppList, type TimedOut } from '$lib/ipc/bindings'
+import {
+  commands,
+  type OpenTerminalError,
+  type OpenTerminalOutcome,
+  type TerminalAppList,
+  type TimedOut,
+} from '$lib/ipc/bindings'
+import { TypedFailure } from '$lib/ipc/typed-failure'
 import { throwIpcError } from './ipc-types'
+
+export type { OpenTerminalError, OpenTerminalOutcome, TerminalApp, TerminalAppList } from '$lib/ipc/bindings'
 
 /**
  * Opens a file with the system's default application.
@@ -28,6 +37,34 @@ export async function openExternalUrl(url: string): Promise<void> {
 }
 
 /**
+ * What the PANE contributes to a file context menu, as opposed to the file that was
+ * right-clicked. One object rather than three trailing booleans and a string: they
+ * all come from one pane read, and positional flags of the same type are exactly
+ * what silently binds to the wrong slot. Every field defaults to the most
+ * restrictive answer, so a surface that can't answer says nothing.
+ */
+export interface PaneContextMenuFacts {
+  /**
+   * Hides Rename and New folder. `true` for a right-click inside a virtual pane
+   * that isn't a real directory (the search-results snapshot pane; see
+   * `apps/desktop/src/lib/search/capabilities.ts`).
+   */
+  restrictDestinationActions?: boolean
+  /**
+   * The pane's listing id, so a Finder-tag color click can refresh that listing's
+   * cache after writing. Omit for a virtual pane with no normal listing; the tag
+   * still writes to disk.
+   */
+  listingId?: string
+  /**
+   * Whether "Open terminal here" is clickable. It acts on the PANE's folder, not
+   * the right-clicked file, so a pane on a phone — or a surface with no folder of
+   * its own, like the Search dialog — leaves it out and the item shows greyed.
+   */
+  canOpenTerminalHere?: boolean
+}
+
+/**
  * Shows a native context menu for a file.
  * @param path - Absolute path to the right-clicked file (the "primary" file).
  * @param filename - Name of the right-clicked file.
@@ -35,21 +72,14 @@ export async function openExternalUrl(url: string): Promise<void> {
  * @param paths - All paths the menu's actions should affect. For a right-click on a non-selected
  *                file, pass `[path]`. For a right-click on a file that's part of a multi-selection,
  *                pass the full selection so "Open with" launches all files at once.
- * @param restrictDestinationActions - Optional. When `true`, hides Rename and New folder
- *                from the menu. Pass `true` for right-clicks inside a virtual pane that
- *                isn't a real directory (currently: the search-results snapshot pane;
- *                see `apps/desktop/src/lib/search/capabilities.ts`).
- * @param listingId - Optional. The pane's listing id, so a Finder-tag color click can
- *                refresh that listing's cache after writing. Omit (default `''`) for
- *                virtual panes with no normal listing; the tag still writes to disk.
+ * @param pane - What the surface the click landed in contributes. See {@link PaneContextMenuFacts}.
  */
 export async function showFileContextMenu(
   path: string,
   filename: string,
   isDirectory: boolean,
   paths: string[],
-  restrictDestinationActions = false,
-  listingId = '',
+  pane: PaneContextMenuFacts = {},
 ): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see the `ipc.rs` manifest)
   await invoke('show_file_context_menu', {
@@ -57,8 +87,11 @@ export async function showFileContextMenu(
     filename,
     isDirectory,
     paths,
-    restrictDestinationActions,
-    listingId,
+    pane: {
+      restrictDestinationActions: pane.restrictDestinationActions ?? false,
+      listingId: pane.listingId ?? '',
+      canOpenTerminalHere: pane.canOpenTerminalHere ?? false,
+    },
   })
 }
 
@@ -223,4 +256,49 @@ export async function openInEditor(path: string): Promise<void> {
  */
 export async function listTerminalApps(appChoice: string): Promise<TimedOut<TerminalAppList>> {
   return await commands.listTerminalApps(appChoice)
+}
+
+/** A launch that never started, still carrying the backend's typed reason. */
+export class OpenTerminalFailure extends TypedFailure<OpenTerminalError> {
+  constructor(failure: OpenTerminalError) {
+    super(failure, `open terminal here refused: ${failure.type}`)
+    this.name = 'OpenTerminalFailure'
+  }
+}
+
+/** The typed refusal behind a caught value, or `null` when it isn't one. */
+export function asOpenTerminalError(error: unknown): OpenTerminalError | null {
+  return error instanceof OpenTerminalFailure ? error.failure : null
+}
+
+/**
+ * Opens `path` in the terminal app `appChoice` names.
+ *
+ * Resolves to an OUTCOME, not a bare success: the chosen app may have been
+ * uninstalled (Terminal opened instead), and the volume may hand out no path a
+ * shell can reach (nothing opened). Throws {@link OpenTerminalFailure} only when
+ * the launch itself couldn't be attempted.
+ *
+ * @param path - The folder the pane resolved (the cursor's folder, or its own).
+ * @param volumeId - The volume that path came from; the path-less refusal keys on it.
+ * @param appChoice - The stored choice: a bundle id, or an absolute `.app` path.
+ */
+export async function openTerminalHere(
+  path: string,
+  volumeId: string,
+  appChoice: string,
+): Promise<OpenTerminalOutcome> {
+  const res = await commands.openTerminalHere(path, volumeId, appChoice)
+  if (res.status === 'error') throw new OpenTerminalFailure(res.error)
+  return res.data
+}
+
+/**
+ * What to call the app `appChoice` names, or `null` when Cmdr carries no name for
+ * it. A table lookup, which is all that's left once the app is uninstalled: the
+ * "that app is gone" toast needs the name at exactly the moment there's no bundle
+ * to read one from.
+ */
+export async function terminalAppDisplayName(appChoice: string): Promise<string | null> {
+  return await commands.terminalAppDisplayName(appChoice)
 }

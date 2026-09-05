@@ -80,6 +80,13 @@ export interface ExplorerAPI {
    */
   getPathToCopyUnderCursor: () => string | null
   /**
+   * The focused pane's cursor row as "Open terminal here" reads it: name, path, and
+   * whether it's a folder. `..` comes back as a real row (the command treats it as
+   * "the pane's own folder"), which is why this isn't `getFileAndPathUnderCursor`.
+   * Null when no row is under the cursor. Rules: `$lib/open-terminal/terminal-target.ts`.
+   */
+  getCursorRowForTerminal: () => { name: string; path: string; isDirectory: boolean } | null
+  /**
    * Toggles a Finder system color tag (index 1..=7, grey…orange) on the focused
    * pane's selection, or on the cursor entry when nothing is selected. Resolves the
    * paths + the pane's listing id and calls the `toggle_tags` IPC, which writes and

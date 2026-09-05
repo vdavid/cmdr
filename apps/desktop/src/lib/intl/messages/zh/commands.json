@@ -460,6 +460,14 @@
   "@commands.fileShowInFinder.other.label": {
     "sourceHash": "3ca4dad"
   },
+  "commands.fileOpenTerminalHere.label": "在此处打开终端",
+  "@commands.fileOpenTerminalHere.label": {
+    "sourceHash": "b7eda27"
+  },
+  "commands.fileOpenTerminalHere.description": "直接在这个文件夹里打开你的终端 App",
+  "@commands.fileOpenTerminalHere.description": {
+    "sourceHash": "3c624a4"
+  },
   "commands.fileCopyPath.label": "拷贝路径到剪贴板",
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
@@ -699,6 +707,38 @@
   "commands.handler.cloudRemoveDownloadFailed": "没能移除下载。{detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.openTerminalHere.hint": "已在你的终端 App 中打开这个文件夹。想让 Cmdr 下次打开别的 App？在“设置”的“导航与文件操作”里选一个。",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "b29b744"
+  },
+  "commands.handler.openTerminalHere.dismiss": "关闭",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "commands.handler.openTerminalHere.openSettings": "打开设置",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.handler.openTerminalHere.appMissing": "{app} 已经卸载了，所以这次在“终端”里打开。",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "70726d6"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "你的终端 App 已经卸载了，所以这次在“终端”里打开。",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "29e9be5"
+  },
+  "commands.handler.openTerminalHere.noPath": "这个文件夹没有终端能打开的路径。",
+  "@commands.handler.openTerminalHere.noPath": {
+    "sourceHash": "d6520b7"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr 没能启动你的终端 App。先自己打开一次，然后再试试。",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "ffd6b3a"
+  },
+  "commands.handler.openTerminalHere.timedOut": "你的终端 App 启动得有点慢，可能还会打开。",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "sourceHash": "ed36313"
   },
   "commands.handler.zoomResetHintShortcut": "你可以按 {shortcut} 把缩放级别重置为 100%。",
   "@commands.handler.zoomResetHintShortcut": {

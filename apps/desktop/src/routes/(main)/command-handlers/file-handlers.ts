@@ -25,7 +25,9 @@ import {
 import { addToast } from '$lib/ui/toast'
 import CopiedPathToastContent from '$lib/file-explorer/CopiedPathToastContent.svelte'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
-import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
+import { capabilitiesFor, pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
+import { resolveTerminalFolder } from '$lib/open-terminal/terminal-target'
+import { openTerminalHereForFolder } from '$lib/open-terminal/open-terminal-here'
 import { tString } from '$lib/intl/messages.svelte'
 import { trackEvent } from '$lib/tauri-commands'
 import type { CommandArgs } from '$lib/commands'
@@ -164,6 +166,21 @@ export const fileHandlers = {
   },
 
   'file.showInFinder': (hctx) => withEntryUnderCursor(hctx, (entry) => showInFinder(entry.path)),
+
+  'file.openTerminalHere': ({ explorerRef }) => {
+    // Not `withEntryUnderCursor`: this acts on a FOLDER, and every cursor state
+    // resolves to one (a folder row gives itself; a file, `..`, or an empty pane
+    // gives the pane's own). `resolveTerminalFolder` owns those rules.
+    const volumeId = getFocusedPaneVolumeId()
+    const folder = resolveTerminalFolder({
+      panePath: getFocusedPanePath(),
+      // The VOLUME's kind, never `capabilitiesForPane`: an archive pane's
+      // kind-from-path would hide the drive the archive actually lives on.
+      volumeKind: capabilitiesFor(volumeId).kind,
+      cursorEntry: explorerRef?.getCursorRowForTerminal() ?? null,
+    })
+    void openTerminalHereForFolder({ folder, volumeId })
+  },
 
   'file.copyPath': async ({ explorerRef }) => {
     // Not `withEntryUnderCursor`: on the `..` row this copies the pane's OWN

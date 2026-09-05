@@ -460,6 +460,14 @@
   "@commands.fileShowInFinder.other.label": {
     "sourceHash": "3ca4dad"
   },
+  "commands.fileOpenTerminalHere.label": "Ouvrir un terminal ici",
+  "@commands.fileOpenTerminalHere.label": {
+    "sourceHash": "b7eda27"
+  },
+  "commands.fileOpenTerminalHere.description": "Ouvrir votre app de terminal directement dans ce dossier",
+  "@commands.fileOpenTerminalHere.description": {
+    "sourceHash": "3c624a4"
+  },
   "commands.fileCopyPath.label": "Copier le chemin dans le presse-papiers",
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
@@ -699,6 +707,38 @@
   "commands.handler.cloudRemoveDownloadFailed": "Impossible de retirer le téléchargement. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.openTerminalHere.hint": "Dossier ouvert dans votre app de terminal. Vous voulez que Cmdr ouvre une autre app la prochaine fois ? Choisissez-la dans les réglages, sous « Navigation et opérations ».",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "b29b744"
+  },
+  "commands.handler.openTerminalHere.dismiss": "Ignorer",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "commands.handler.openTerminalHere.openSettings": "Ouvrir les réglages",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.handler.openTerminalHere.appMissing": "{app} n''est plus installée, donc l''ouverture s''est faite dans Terminal.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "70726d6"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Votre app de terminal n''est plus installée, donc l''ouverture s''est faite dans Terminal.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "29e9be5"
+  },
+  "commands.handler.openTerminalHere.noPath": "Ce dossier n''a pas de chemin qu''un terminal puisse ouvrir.",
+  "@commands.handler.openTerminalHere.noPath": {
+    "sourceHash": "d6520b7"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr n''a pas pu lancer votre app de terminal. Ouvrez-la une fois vous-même, puis réessayez.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "ffd6b3a"
+  },
+  "commands.handler.openTerminalHere.timedOut": "Votre app de terminal met du temps à démarrer. Elle va peut-être encore s''ouvrir.",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "sourceHash": "ed36313"
   },
   "commands.handler.zoomResetHintShortcut": "Vous pouvez réinitialiser le zoom à 100 % avec {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {

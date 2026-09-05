@@ -273,6 +273,7 @@ export const menuCommands = [
   'file.deletePermanently',
   'file.rename',
   'file.showInFinder',
+  'file.openTerminalHere',
   'file.getInfo',
   'file.quickLook',
   'file.copyPath',

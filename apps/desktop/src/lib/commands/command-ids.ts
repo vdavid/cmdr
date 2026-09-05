@@ -172,6 +172,7 @@ export const COMMAND_IDS = [
   // the MCP `dialog confirm` tool.
   'dialog.confirm',
   'file.showInFinder',
+  'file.openTerminalHere',
   'file.copyPath',
   'file.copyCurrentDirectoryPath',
   'file.copyFilename',

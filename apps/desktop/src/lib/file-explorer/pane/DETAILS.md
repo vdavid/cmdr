@@ -461,6 +461,11 @@ cursor at all, so the handler no-ops instead of copying a path nobody pointed at
 from the `search-results://` hazard above: the `..` row only exists where `hasParent` holds, which a snapshot pane never
 does.
 
+**"Open terminal here" reads the cursor through a third getter**, `getCursorRowForTerminal()`, which returns the row's
+name, path, and `isDirectory`. It needs `..` as a real answer (like copy-path) AND the folder flag (unlike either
+existing getter), because it chooses between the folder under the cursor and the pane's own. The rules themselves are
+pure and live in `$lib/open-terminal/terminal-target.ts`; this is only the read.
+
 **Self-drag identity (drop builds from app state, not the pasteboard).** `drag-drop-controller.svelte.ts::handleDrop`
 consumes the self-drag identity recorded at drag start (`drag/drag-drop.ts::recordSelfDragIdentity`) instead of
 resolving the pasteboard-derived paths, but only when `getIsDraggingFromSelf()` is true AND the recorded

@@ -141,8 +141,7 @@ describe('createPanePointer', () => {
         'a.txt',
         false,
         ['/dir/a.txt', '/dir/b.txt'],
-        false,
-        'listing-1',
+        { listingId: 'listing-1', canOpenTerminalHere: true },
       )
     })
 
@@ -155,8 +154,7 @@ describe('createPanePointer', () => {
         'a.txt',
         false,
         ['/dir/a.txt'],
-        false,
-        'listing-1',
+        { listingId: 'listing-1', canOpenTerminalHere: true },
       )
     })
 
@@ -169,8 +167,20 @@ describe('createPanePointer', () => {
         'a.txt',
         false,
         ['/dir/a.txt'],
+        { listingId: 'listing-1', canOpenTerminalHere: true },
+      )
+    })
+
+    it('greys out "Open terminal here" on a pane whose volume has no OS-visible paths', async () => {
+      // The item acts on the pane's folder, so a phone offers nothing to open.
+      state.volumeId = 'mtp-1'
+      await createPanePointer(deps).handleContextMenu(entryOf())
+      expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
+        '/dir/a.txt',
+        'a.txt',
         false,
-        'listing-1',
+        ['/dir/a.txt'],
+        { listingId: 'listing-1', canOpenTerminalHere: false },
       )
     })
 

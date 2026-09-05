@@ -114,6 +114,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'dialog.confirm': 'Confirm open dialog',
   // Platform-conditional names resolve to the non-macOS label under jsdom.
   'file.showInFinder': 'Show in file manager',
+  'file.openTerminalHere': 'Open terminal here',
   'file.copyPath': 'Copy path to clipboard',
   'file.copyCurrentDirectoryPath': 'Copy current directory path',
   'file.copyFilename': 'Copy filename',
@@ -167,6 +168,7 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'log.operationLog': 'See a history of your file operations, and roll them back',
   'suggestedOps.show': 'Review the file operations Ask Cmdr suggested, and decide what runs',
   'askCmdr.toggle': 'Chat with an AI about your files, drives, and history',
+  'file.openTerminalHere': 'Open your terminal app already sitting in this folder',
   'nav.goToPath': 'Jump the focused pane to a typed, pasted, or recent path.',
   'file.goToTrash': "Open the trash of the drive you're browsing",
   'favorites.add': "Add the focused pane's current folder to the switcher's Favorites.",

@@ -242,6 +242,18 @@ pub async fn open_terminal_here(
     .await
 }
 
+/// What to call the app `app_choice` names, for the toast that says it's gone.
+///
+/// `null` when Cmdr carries no name for it, so the caller words the nameless
+/// variant instead of showing a bundle id. Sync and I/O-free: it's a table lookup,
+/// which is the only thing left once the app itself has been uninstalled.
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "macos")]
+pub fn terminal_app_display_name(app_choice: String) -> Option<String> {
+    crate::file_system::terminal::choice_display_name(&app_choice)
+}
+
 /// Copy text to clipboard
 #[tauri::command]
 #[specta::specta]

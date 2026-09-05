@@ -87,7 +87,9 @@ and `set_macos_menu_icons` run exactly as the focus-swap path does.
 What does NOT survive is everything the frontend had pushed onto the old items: custom accelerators, the pin/unpin
 label, the "Reopen closed tab" enabled flag, and the file-scoped enable/disable state. The `menu-bar-rebuilt` event
 carries that news to `DualPaneExplorer.svelte`, which re-pushes all four. Re-pushing everything beats tracking what
-moved: the event is rare, and a missed re-push is invisible until a user reaches for a shortcut.
+moved: the event is rare, and a missed re-push is invisible until a user reaches for a shortcut. "Open terminal here"
+needs no re-push of its own: its verdict is stored in `MenuState` and re-applied by the `activate_window_menu('main')`
+that handler already makes.
 
 ### Linux mnemonics are allocated, not authored
 
@@ -500,3 +502,14 @@ distinction is the load-bearing reason.
   `MenuState.reopen_closed_tab` holds the `MenuItem` reference. The frontend pushes enable state
   after every close, reopen, and focus change so the menu always reflects the focused pane's
   closed-tab stack.
+- **Open terminal here item** (`OPEN_TERMINAL_HERE_ID` → `file.openTerminalHere`, macOS only): sits in the File menu
+  right after Show in Finder (⌥⌘T), and in the file context menu next to it. It's the one item whose enabled state
+  follows the FOCUSED PANE rather than the window: a pane on MTP or ADB has no path a shell can `cd` into. The verdict
+  arrives through `set_open_terminal_here_enabled` and is STORED in `MenuState.open_terminal_here_enabled`, not just
+  applied: `set_menu_context` enables every explorer item, so the id is skipped in that loop (like
+  `REOPEN_CLOSED_TAB_ID`) and `apply_open_terminal_here_state` re-applies the stored verdict LAST, next to
+  `apply_operation_item_state`. That is also what restores it after a menu-bar rebuild, since the frontend's
+  `menu-bar-rebuilt` handler calls `activate_window_menu('main')`. The context-menu copy needs no channel: it's built
+  per right-click, so `show_file_context_menu` carries the answer in `PaneContextMenuFacts.can_open_terminal_here`.
+  ⚠️ Greying is CHROME — a disabled item's accelerator still fires, and the palette has no disabled state at all, so
+  the real refusal is the frontend handler (`apps/desktop/src/lib/open-terminal/CLAUDE.md`).

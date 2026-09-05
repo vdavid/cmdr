@@ -460,6 +460,14 @@
   "@commands.fileShowInFinder.other.label": {
     "sourceHash": "3ca4dad"
   },
+  "commands.fileOpenTerminalHere.label": "Terminál megnyitása itt",
+  "@commands.fileOpenTerminalHere.label": {
+    "sourceHash": "b7eda27"
+  },
+  "commands.fileOpenTerminalHere.description": "A terminálapp megnyitása egyből ebben a mappában",
+  "@commands.fileOpenTerminalHere.description": {
+    "sourceHash": "3c624a4"
+  },
   "commands.fileCopyPath.label": "Útvonal másolása a vágólapra",
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
@@ -699,6 +707,38 @@
   "commands.handler.cloudRemoveDownloadFailed": "Nem sikerült eltávolítani a letöltést. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.openTerminalHere.hint": "Ez a mappa megnyílt a terminálappodban. Szeretnéd, hogy a Cmdr legközelebb másik appot nyisson? Válaszd ki a Beállításokban, a „Navigáció és fájlműveletek” alatt.",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "b29b744"
+  },
+  "commands.handler.openTerminalHere.dismiss": "Elvetés",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "commands.handler.openTerminalHere.openSettings": "Beállítások megnyitása",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.handler.openTerminalHere.appMissing": "A(z) {app} már nincs telepítve, ezért ez a Terminalban nyílt meg.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "70726d6"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "A terminálappod már nincs telepítve, ezért ez a Terminalban nyílt meg.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "29e9be5"
+  },
+  "commands.handler.openTerminalHere.noPath": "Ennek a mappának nincs olyan elérési útja, amit egy terminál meg tudna nyitni.",
+  "@commands.handler.openTerminalHere.noPath": {
+    "sourceHash": "d6520b7"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "A Cmdr nem tudta elindítani a terminálappodat. Nyisd meg egyszer magad, aztán próbáld újra.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "ffd6b3a"
+  },
+  "commands.handler.openTerminalHere.timedOut": "A terminálappod lassabban indul. Lehet, hogy még megnyílik.",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "sourceHash": "ed36313"
   },
   "commands.handler.zoomResetHintShortcut": "A nagyítási szintet 100%-ra állíthatod vissza így: {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {

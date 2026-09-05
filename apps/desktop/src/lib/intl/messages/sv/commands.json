@@ -460,6 +460,14 @@
   "@commands.fileShowInFinder.other.label": {
     "sourceHash": "3ca4dad"
   },
+  "commands.fileOpenTerminalHere.label": "Öppna terminal här",
+  "@commands.fileOpenTerminalHere.label": {
+    "sourceHash": "b7eda27"
+  },
+  "commands.fileOpenTerminalHere.description": "Öppna din terminalapp direkt i den här mappen",
+  "@commands.fileOpenTerminalHere.description": {
+    "sourceHash": "3c624a4"
+  },
   "commands.fileCopyPath.label": "Kopiera sökväg till urklipp",
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
@@ -699,6 +707,38 @@
   "commands.handler.cloudRemoveDownloadFailed": "Det gick inte att ta bort hämtningen. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.openTerminalHere.hint": "Mappen öppnades i din terminalapp. Vill du att Cmdr öppnar en annan app nästa gång? Välj den i Inställningar, under ”Navigering och filåtgärder”.",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "b29b744"
+  },
+  "commands.handler.openTerminalHere.dismiss": "Avfärda",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "commands.handler.openTerminalHere.openSettings": "Öppna inställningar",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.handler.openTerminalHere.appMissing": "{app} är inte installerad längre, så det här öppnades i Terminal.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "70726d6"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Din terminalapp är inte installerad längre, så det här öppnades i Terminal.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "29e9be5"
+  },
+  "commands.handler.openTerminalHere.noPath": "Den här mappen har ingen sökväg som en terminal kan öppna.",
+  "@commands.handler.openTerminalHere.noPath": {
+    "sourceHash": "d6520b7"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr kunde inte starta din terminalapp. Öppna den själv en gång och försök igen.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "ffd6b3a"
+  },
+  "commands.handler.openTerminalHere.timedOut": "Din terminalapp tar en stund att starta. Den kan fortfarande dyka upp.",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "sourceHash": "ed36313"
   },
   "commands.handler.zoomResetHintShortcut": "Du kan återställa zoomnivån till 100 % med {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {

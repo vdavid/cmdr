@@ -16,9 +16,13 @@ commands, and notable non-obvious placements.
   wrap menu, encoding pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`),
   `viewerReload`.
 - **`file-actions.ts`**: open file/URL, Finder reveal, Quick Look, Get Info, context menu (file / breadcrumb /
-  volume-selector-row / parent-row), clipboard, open in editor, `listTerminalApps` (which terminal apps are installed,
-  for the "Open terminal here uses" settings row; the caller passes the stored choice down, since the frontend owns the
-  settings store), cloud actions (`cloudMakeAvailableOffline` / `cloudRemoveDownload`, iCloud Drive only).
+  volume-selector-row / parent-row), clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` /
+  `cloudRemoveDownload`, iCloud Drive only), and the "Open terminal here" trio. That trio: `listTerminalApps` (which
+  terminal apps are installed, for the settings row and the first-use picker), `openTerminalHere` (answers with an
+  OUTCOME, and throws `OpenTerminalFailure` only when the launch couldn't be attempted), and
+  `terminalAppDisplayName` (a table lookup, for naming an app that has just been uninstalled). All three take the
+  stored choice as an argument, since the frontend owns the settings store. `showFileContextMenu`'s trailing
+  `PaneContextMenuFacts` object carries what the SURFACE contributes, as opposed to the right-clicked file.
 - **`favorites.ts`**: user-editable switcher favorites: `addFavorite`, `removeFavorite`, `renameFavorite`,
   `reorderFavorites`, plus `stripFavoritePrefix` (recover the bare id from a `fav-…` switcher id). Listing rides
   `listVolumes` / `volumes-changed`; there's no `listFavorites`.

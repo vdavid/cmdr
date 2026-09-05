@@ -169,6 +169,11 @@
     "description": "VERB phrase (imperative). The Linux counterpart of menu.file.showInFinder: opens the desktop's own file manager with the selected file highlighted. \"file manager\" is generic here (the app varies by desktop), so translate it as a common noun rather than naming a specific program."
   },
 
+  "menu.file.openTerminalHere": "Open terminal here",
+  "@menu.file.openTerminalHere": {
+    "description": "VERB phrase (imperative). File menu and file context menu, next to \"Show in Finder\". Launches the user's terminal app already sitting in the folder the pane shows (or the folder under the cursor). \"here\" means that folder. This is Cmdr's own command name: the settings row that picks the app (settings.behavior.openTerminalHereApp.label) and the command palette entry (commands.fileOpenTerminalHere.label) have to say the same words. \"terminal\" is the generic kind of app, not Apple's Terminal.app, so translate it as a common noun where your language has one."
+  },
+
   "menu.file.getInfo": "Get info",
   "@menu.file.getInfo": {
     "description": "VERB phrase (imperative). Opens the macOS Get Info panel for the selected file: size, kind, dates, permissions (⌘I). This is Finder's File > Get Info; use the exact wording your macOS Finder uses in this language. No dialog input follows, hence no ellipsis."

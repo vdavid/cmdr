@@ -162,9 +162,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`file_actions.rs`**: direct file actions from the palette / menus — `show_in_finder`, `get_info`, `open_in_editor`,
   `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
   `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`). Plus the "open terminal here" pair,
-  `list_terminal_apps(app_choice)` and `open_terminal_here(path, volume_id, app_choice)`, both pass-throughs to
-  `../file_system/terminal.rs`, which owns the table, the recipes, and the volume gate. The chosen app arrives as an
-  argument because the frontend owns the settings store. `open_path`, `open_in_editor`, and `open_terminal_here` all
+  `list_terminal_apps(app_choice)`, `open_terminal_here(path, volume_id, app_choice)`, and the sync
+  `terminal_app_display_name(app_choice)`, all pass-throughs to `../file_system/terminal.rs`, which owns the table, the
+  recipes, and the volume gate. The chosen app arrives as an argument because the frontend owns the settings store.
+  The display-name lookup is I/O-free on purpose: the toast that needs it fires exactly when the app it names has been
+  uninstalled, so the table is all that's left to read a name from. `open_path`, `open_in_editor`, and `open_terminal_here` all
   swap to a recording variant under `playwright-e2e`, funneling into `crate::open_mock` so a suite run leaves no orphan
   windows.
 - **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` cache per-label

@@ -4002,6 +4002,15 @@ export const commands = {
       __TAURI_INVOKE('open_terminal_here', { path, volumeId, appChoice }),
     ),
   /**
+   *  What to call the app `app_choice` names, for the toast that says it's gone.
+   *
+   *  `null` when Cmdr carries no name for it, so the caller words the nameless
+   *  variant instead of showing a bundle id. Sync and I/O-free: it's a table lookup,
+   *  which is the only thing left once the app itself has been uninstalled.
+   */
+  terminalAppDisplayName: (appChoice: string) =>
+    __TAURI_INVOKE<string | null>('terminal_app_display_name', { appChoice }),
+  /**
    *  Tauri command: returns whether macOS "reduce transparency" is enabled.
    *
    *  `NSWorkspace` accessibility queries are main-thread-only, so we hop to the

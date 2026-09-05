@@ -135,6 +135,10 @@
   "@menu.file.showInFileManager": {
     "sourceHash": "3ca4dad"
   },
+  "menu.file.openTerminalHere": "在此处打开终端",
+  "@menu.file.openTerminalHere": {
+    "sourceHash": "b7eda27"
+  },
   "menu.file.getInfo": "显示简介",
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"

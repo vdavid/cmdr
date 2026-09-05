@@ -78,6 +78,8 @@ All under `apps/desktop/src/lib/`.
 - `downloads/`: Go-to-latest action, settings-gated download notifications, global shortcut bridge
 - `low-disk-space/`: Low-disk-space warning frontend: event bridge, mode/threshold helpers, Settings deep-link
 - `notifications/`: Shared macOS notification permission flow, used by `downloads/` and `low-disk-space/`
+- `open-terminal/`: "Open terminal here" frontend: which folder "here" means, where the command is offered, the
+  first-use app picker and its two toasts. See `apps/desktop/src/lib/open-terminal/CLAUDE.md`
 - `go-to-path/`: "Go to path" (⌘G) dialog + handler: thin presenter over backend `resolve_go_to_path`, recents mirror
 - `query-ui/`: Shared filter-and-act-on primitives for Search and Selection: `QueryBar`, `ModeChips`, `QueryResults`,
   recent-items, `createQueryFilterState()`

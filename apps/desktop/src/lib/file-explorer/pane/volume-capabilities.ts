@@ -347,6 +347,25 @@ export function archiveNameFromPath(path: string): string {
 }
 
 /**
+ * The real folder on disk that CONTAINS the archive a path is at or inside: the
+ * directory holding the FIRST archive-extension segment, so
+ * `/a/b/photos.zip/inner/x.jpg` and `/a/b/photos.zip` both return `/a/b`. The
+ * leftmost-wins rule matches `pathInsideArchive` and the backend's boundary
+ * resolution, so a nested `foo.tar/bar.zip/…` resolves against the outer tar.
+ *
+ * Returns `'/'` when the archive sits at the filesystem root, and the path
+ * unchanged when no segment is an archive (a caller should only reach here for an
+ * in-archive path, but the fallback keeps it total). Pure, no I/O.
+ */
+export function folderContainingArchive(path: string): string {
+  const segments = path.split('/')
+  const boundary = segments.findIndex((segment) => hasSupportedArchiveExtension(segment))
+  if (boundary === -1) return path
+  const parent = segments.slice(0, boundary).join('/')
+  return parent === '' ? '/' : parent
+}
+
+/**
  * Capabilities for a PANE, resolving the kind from BOTH the volume id and the
  * path (kind-from-path). A path inside a supported archive is the `archive` kind
  * regardless of the parent-drive `volumeId`; otherwise this defers to

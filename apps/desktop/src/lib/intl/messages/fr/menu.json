@@ -136,6 +136,10 @@
   "@menu.file.showInFileManager": {
     "sourceHash": "3ca4dad"
   },
+  "menu.file.openTerminalHere": "Ouvrir un terminal ici",
+  "@menu.file.openTerminalHere": {
+    "sourceHash": "b7eda27"
+  },
   "menu.file.getInfo": "Lire les informations",
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"

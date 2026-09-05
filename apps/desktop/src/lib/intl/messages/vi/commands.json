@@ -460,6 +460,14 @@
   "@commands.fileShowInFinder.other.label": {
     "sourceHash": "3ca4dad"
   },
+  "commands.fileOpenTerminalHere.label": "Mở terminal tại đây",
+  "@commands.fileOpenTerminalHere.label": {
+    "sourceHash": "b7eda27"
+  },
+  "commands.fileOpenTerminalHere.description": "Mở ứng dụng terminal của bạn ngay tại thư mục này",
+  "@commands.fileOpenTerminalHere.description": {
+    "sourceHash": "3c624a4"
+  },
   "commands.fileCopyPath.label": "Sao chép đường dẫn vào bảng nhớ tạm",
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
@@ -699,6 +707,38 @@
   "commands.handler.cloudRemoveDownloadFailed": "Chưa xóa được bản tải về. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.openTerminalHere.hint": "Đã mở thư mục này trong ứng dụng terminal của bạn. Bạn muốn Cmdr mở ứng dụng khác vào lần sau? Hãy chọn trong Cài đặt, mục “Điều hướng & thao tác tệp”.",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "b29b744"
+  },
+  "commands.handler.openTerminalHere.dismiss": "Bỏ qua",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "commands.handler.openTerminalHere.openSettings": "Mở cài đặt",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.handler.openTerminalHere.appMissing": "{app} không còn được cài đặt, nên mục này đã mở trong Terminal.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "70726d6"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Ứng dụng terminal của bạn không còn được cài đặt, nên mục này đã mở trong Terminal.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "29e9be5"
+  },
+  "commands.handler.openTerminalHere.noPath": "Thư mục này không có đường dẫn nào mà terminal mở được.",
+  "@commands.handler.openTerminalHere.noPath": {
+    "sourceHash": "d6520b7"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr chưa khởi động được ứng dụng terminal của bạn. Hãy tự mở nó một lần rồi thử lại.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "ffd6b3a"
+  },
+  "commands.handler.openTerminalHere.timedOut": "Ứng dụng terminal của bạn khởi động hơi lâu. Có thể nó vẫn sẽ mở.",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "sourceHash": "ed36313"
   },
   "commands.handler.zoomResetHintShortcut": "Bạn có thể đặt lại mức phóng về 100% bằng {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {

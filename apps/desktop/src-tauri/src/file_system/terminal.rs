@@ -172,6 +172,20 @@ pub fn parse_choice(setting: &str) -> Option<TerminalChoice> {
     known_terminal(setting).map(TerminalChoice::Known)
 }
 
+/// The name to call a stored choice when the app it names has just gone missing.
+///
+/// I/O-free on purpose: the bundle is gone, so there's nothing left to read a name
+/// out of. A known bundle id answers from the table; a custom `.app` path answers
+/// with its file stem, which is the name the user picked it by. `None` means Cmdr
+/// has no name to offer (a bundle id that left the table), and the caller words the
+/// nameless variant rather than putting a bundle id in front of anyone.
+pub fn choice_display_name(setting: &str) -> Option<String> {
+    match parse_choice(setting)? {
+        TerminalChoice::Known(terminal) => Some(terminal.display_name.to_string()),
+        TerminalChoice::CustomApp(path) => path.file_stem().map(|stem| stem.to_string_lossy().into_owned()),
+    }
+}
+
 /// The bytes left literal inside Warp's `path=` query value: the RFC 3986
 /// unreserved set plus `/`, which is legal in a query and is the shape Warp's own
 /// docs show. Everything else, `&`, `?`, `#`, `%`, `+`, space, quotes, and every
@@ -632,5 +646,26 @@ mod tests {
         let (choice, outcome) = resolve_choice("com.example.NotATerminal", |_| true);
         assert_eq!(choice.id(), TERMINAL_APP_BUNDLE_ID);
         assert_eq!(outcome, OpenTerminalOutcome::AppMissingOpenedTerminalInstead);
+    }
+
+    #[test]
+    fn a_known_bundle_id_still_has_a_name_after_its_app_is_gone() {
+        // The whole point: the toast that says an app went missing needs the name,
+        // and by then there's no bundle left to read one out of.
+        assert_eq!(choice_display_name("dev.warp.Warp-Stable"), Some("Warp".to_string()));
+    }
+
+    #[test]
+    fn a_custom_pick_is_named_by_its_bundle_stem() {
+        assert_eq!(
+            choice_display_name("/Applications/Terminus.app"),
+            Some("Terminus".to_string())
+        );
+    }
+
+    #[test]
+    fn a_bundle_id_that_left_the_table_has_no_name_to_offer() {
+        // ❌ Never the raw bundle id: it would reach a user as if it were a name.
+        assert_eq!(choice_display_name("com.example.NotATerminal"), None);
     }
 }

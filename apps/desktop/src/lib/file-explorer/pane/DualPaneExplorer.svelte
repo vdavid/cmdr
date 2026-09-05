@@ -957,6 +957,10 @@
         return paneCommands.getPathToCopyUnderCursor()
     }
 
+    export function getCursorRowForTerminal(): { name: string; path: string; isDirectory: boolean } | null {
+        return paneCommands.getCursorRowForTerminal()
+    }
+
     export function toggleTagOnFocusedSelection(color: number): Promise<void> {
         return paneCommands.toggleTagOnFocusedSelection(color)
     }

@@ -66,6 +66,11 @@ pub const FILE_NEW_FOLDER_ID: &str = "file_new_folder";
 pub const FILE_DELETE_ID: &str = "file_delete";
 pub const FILE_DELETE_PERMANENTLY_ID: &str = "file_delete_permanently";
 pub const SHOW_IN_FINDER_ID: &str = "show_in_finder";
+/// "Open terminal here". macOS only (the launch module is), and the one item whose
+/// enabled state follows the FOCUSED PANE rather than the window: a pane on MTP or
+/// ADB has no path a shell can `cd` into. `set_open_terminal_here_enabled` owns it,
+/// and `set_menu_context` skips it in the enable-everything loop for that reason.
+pub const OPEN_TERMINAL_HERE_ID: &str = "open_terminal_here";
 pub const COPY_PATH_ID: &str = "copy_path";
 pub const COPY_CURRENT_DIR_PATH_ID: &str = "copy_current_dir_path";
 pub const COPY_FILENAME_ID: &str = "copy_filename";
@@ -313,6 +318,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         FILE_DELETE_ID => Some(("file.delete", CommandScope::FileScoped)),
         FILE_DELETE_PERMANENTLY_ID => Some(("file.deletePermanently", CommandScope::FileScoped)),
         SHOW_IN_FINDER_ID => Some(("file.showInFinder", CommandScope::FileScoped)),
+        OPEN_TERMINAL_HERE_ID => Some(("file.openTerminalHere", CommandScope::FileScoped)),
         COPY_PATH_ID => Some(("file.copyPath", CommandScope::FileScoped)),
         COPY_CURRENT_DIR_PATH_ID => Some(("file.copyCurrentDirectoryPath", CommandScope::FileScoped)),
         COPY_FILENAME_ID => Some(("file.copyFilename", CommandScope::FileScoped)),
@@ -404,6 +410,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "file.delete" => Some(FILE_DELETE_ID),
         "file.deletePermanently" => Some(FILE_DELETE_PERMANENTLY_ID),
         "file.showInFinder" => Some(SHOW_IN_FINDER_ID),
+        "file.openTerminalHere" => Some(OPEN_TERMINAL_HERE_ID),
         "file.copyPath" => Some(COPY_PATH_ID),
         "file.copyFilename" => Some(COPY_FILENAME_ID),
         "file.getInfo" => Some(GET_INFO_ID),
@@ -501,6 +508,12 @@ mod tests {
             menu_id_to_command(SHOW_IN_FINDER_ID),
             Some(("file.showInFinder", CommandScope::FileScoped))
         );
+        // File-scoped, not App-scoped: `set_menu_context` only manages file-scoped
+        // items, and this one has to grey out with the rest when Settings takes focus.
+        assert_eq!(
+            menu_id_to_command(OPEN_TERMINAL_HERE_ID),
+            Some(("file.openTerminalHere", CommandScope::FileScoped))
+        );
         assert_eq!(
             menu_id_to_command(COPY_PATH_ID),
             Some(("file.copyPath", CommandScope::FileScoped))
@@ -572,6 +585,7 @@ mod tests {
             "file.delete",
             "file.deletePermanently",
             "file.showInFinder",
+            "file.openTerminalHere",
             "file.copyPath",
             "file.copyFilename",
             "file.getInfo",

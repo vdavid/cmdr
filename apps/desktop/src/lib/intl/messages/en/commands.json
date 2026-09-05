@@ -553,6 +553,16 @@
   "@commands.fileShowInFinder.other.label": {
     "description": "Command name (non-macOS) that reveals the selected file in the system file manager. Appears in the command palette. Paired with commands.fileShowInFinder.mac.label, used on macOS."
   },
+  "commands.fileOpenTerminalHere.label": "Open terminal here",
+  "@commands.fileOpenTerminalHere.label": {
+    "description": "Command name in the command palette and the keyboard-shortcuts list. Launches the user's terminal app already sitting in the folder the pane shows, or the folder under the cursor. \"here\" means that folder. Same words as the File menu item (menu.file.openTerminalHere) and the settings row that picks the app (settings.behavior.openTerminalHereApp.label), so keep all three identical. \"terminal\" is the generic kind of app, not Apple's Terminal.app.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.fileOpenTerminalHere.description": "Open your terminal app already sitting in this folder",
+  "@commands.fileOpenTerminalHere.description": {
+    "description": "Help text under the \"Open terminal here\" row in the command palette. Says what the user gets: a terminal window whose working directory is already the folder in front of them, so there's nothing to type. \"your terminal app\" is whichever app they picked in Settings.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
   "commands.fileCopyPath.label": "Copy path to clipboard",
   "@commands.fileCopyPath.label": {
     "description": "Command name that copies the selected file's full path to the clipboard. \"Path\" is the file's filesystem location. Appears in the command palette.",
@@ -841,6 +851,41 @@
     "placeholders": {
       "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
     }
+  },
+  "commands.handler.openTerminalHere.hint": "Opened this folder in your terminal app. Want Cmdr to open a different app next time? Pick one in Settings, under Navigation & file ops.",
+  "@commands.handler.openTerminalHere.hint": {
+    "description": "The one-time toast that appears the first time \"Open terminal here\" runs on a Mac with more than one terminal app installed. First sentence: what just happened (\"this folder\" is the folder the pane was showing). The rest points at the settings row that picks the terminal app; the button beside the toast opens exactly that row. \"Navigation & file ops\" is a settings section title, so use the same wording as settings.section.navigationAndFileOps."
+  },
+  "commands.handler.openTerminalHere.dismiss": "Dismiss",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "description": "VERB (imperative). Button on the one-time \"Open terminal here\" toast that closes it and changes nothing. The user is happy with the app Cmdr picked."
+  },
+  "commands.handler.openTerminalHere.openSettings": "Open settings",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "description": "VERB phrase (imperative). Button on both \"Open terminal here\" toasts. Opens the Settings window scrolled to the row that picks the terminal app. Same wording as the commands.appSettings.label command."
+  },
+  "commands.handler.openTerminalHere.appMissing": "{app} isn''t installed anymore, so this opened in Terminal.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "description": "Toast shown when the terminal app the user chose has been uninstalled: Cmdr opened Terminal instead and reset the setting to it. \"Terminal\" is Apple's own app, which ships with macOS; keep the name as your macOS spells it. Not phrased as something going wrong, because nothing did.",
+    "placeholders": {
+      "app": "the display name of the app that is gone, like \"Warp\" or \"Ghostty\""
+    }
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Your terminal app isn''t installed anymore, so this opened in Terminal.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "description": "The same toast for the rare case where Cmdr has no name for the app that is gone (the setting names something this version doesn't know). Says the same thing without naming it. \"Terminal\" is Apple's own app; keep the name as your macOS spells it."
+  },
+  "commands.handler.openTerminalHere.noPath": "This folder doesn''t have a path a terminal can open.",
+  "@commands.handler.openTerminalHere.noPath": {
+    "description": "Toast shown when \"Open terminal here\" is asked for on a phone, a camera, or a search-results list, where the rows aren't files on this Mac's own filesystem and so no shell can move into them. The menu item is greyed out in those places; this covers the keyboard shortcut and the command palette, which still reach the command."
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr couldn''t start your terminal app. Try opening it yourself once, then come back.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "description": "Toast shown when macOS refused to launch the chosen terminal app. Opening the app by hand once usually clears whatever blocked it (a quarantine prompt, a permission), which is what the second sentence suggests. Conversational; avoid the words \"error\" and \"failed\"."
+  },
+  "commands.handler.openTerminalHere.timedOut": "Your terminal app is taking a while to start. It may still open.",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "description": "Toast shown when the launch outlived the few seconds Cmdr waits for it. Honest about not knowing: the app may well appear a moment later. Conversational; avoid the words \"error\" and \"failed\"."
   },
   "commands.handler.zoomResetHintShortcut": "You can reset the zoom level to 100% by {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {

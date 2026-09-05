@@ -462,6 +462,14 @@
   "@commands.fileShowInFinder.other.label": {
     "sourceHash": "3ca4dad"
   },
+  "commands.fileOpenTerminalHere.label": "Terminal hier openen",
+  "@commands.fileOpenTerminalHere.label": {
+    "sourceHash": "b7eda27"
+  },
+  "commands.fileOpenTerminalHere.description": "Open je terminal-app direct in deze map",
+  "@commands.fileOpenTerminalHere.description": {
+    "sourceHash": "3c624a4"
+  },
   "commands.fileCopyPath.label": "Kopieer pad naar klembord",
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
@@ -702,6 +710,38 @@
   "commands.handler.cloudRemoveDownloadFailed": "De download kon niet worden verwijderd. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
+  },
+  "commands.handler.openTerminalHere.hint": "Deze map is geopend in je terminal-app. Wil je dat Cmdr de volgende keer een andere app opent? Kies er een in Instellingen, onder ‘Navigatie en bewerkingen’.",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "b29b744"
+  },
+  "commands.handler.openTerminalHere.dismiss": "Sluit",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "commands.handler.openTerminalHere.openSettings": "Open instellingen",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.handler.openTerminalHere.appMissing": "{app} is niet meer geïnstalleerd, dus dit is geopend in Terminal.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "70726d6"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Je terminal-app is niet meer geïnstalleerd, dus dit is geopend in Terminal.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "29e9be5"
+  },
+  "commands.handler.openTerminalHere.noPath": "Deze map heeft geen pad dat een terminal kan openen.",
+  "@commands.handler.openTerminalHere.noPath": {
+    "sourceHash": "d6520b7"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr kon je terminal-app niet starten. Open hem zelf een keer en probeer het dan opnieuw.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "ffd6b3a"
+  },
+  "commands.handler.openTerminalHere.timedOut": "Je terminal-app doet er lang over om te starten. Misschien gaat hij zo alsnog open.",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "sourceHash": "ed36313"
   },
   "commands.handler.zoomResetHintShortcut": "Je kunt het zoomniveau terugzetten naar 100% met {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {

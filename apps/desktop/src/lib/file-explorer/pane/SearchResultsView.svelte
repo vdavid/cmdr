@@ -220,8 +220,11 @@
             // instead so it reads `Copy test.md` and the underlying
             // command-dispatch (which uses `entryUnderCursor.name`, also a
             // basename) copies the same string.
-            const restrict = !caps.canWrite
-            void showFileContextMenu(entry.path, basename(entry.path), entry.isDirectory, [entry.path], restrict)
+            // `canOpenTerminalHere` stays off: a snapshot pane is a result set, not
+            // a folder, so there's nothing for "here" to mean.
+            void showFileContextMenu(entry.path, basename(entry.path), entry.isDirectory, [entry.path], {
+                restrictDestinationActions: !caps.canWrite,
+            })
         }}
     />
 {:else}

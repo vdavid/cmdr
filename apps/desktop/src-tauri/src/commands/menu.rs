@@ -7,8 +7,8 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     CLOSE_TAB_ID, CommandScope, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
-    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState, RENAME_ID,
-    REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode, build_breadcrumb_context_menu, build_context_menu,
+    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState, OPEN_TERMINAL_HERE_ID,
+    RENAME_ID, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode, build_breadcrumb_context_menu, build_context_menu,
     build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
     build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
     sync_view_mode_check_states,
@@ -27,12 +27,25 @@ pub fn update_menu_context<R: Runtime>(app: AppHandle<R>, path: String, filename
     context.filename = filename;
 }
 
+/// What the PANE contributes to a file context menu, as opposed to the file that
+/// was right-clicked. Grouped because they answer one question each about the
+/// surface the click landed in, and because the frontend fills them all from the
+/// same pane read.
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaneContextMenuFacts {
+    /// Omits Rename and New folder. `true` from the search-results virtual pane,
+    /// whose rows aren't a real directory; see `apps/desktop/src/lib/search/capabilities.ts`.
+    pub restrict_destination_actions: bool,
+    /// The pane's listing id, so a Finder-tag click can refresh that listing's
+    /// cache after writing. Empty for a virtual pane with no normal listing.
+    pub listing_id: String,
+    /// Whether "Open terminal here" is clickable. It opens the PANE's folder, not
+    /// the right-clicked file, so only a pane on OS-visible paths offers it.
+    pub can_open_terminal_here: bool,
+}
+
 /// Shows the file context menu.
-///
-/// `restrict_destination_actions` is a frontend opt-in: when true, the Rust
-/// menu builder omits Rename and New folder. The flag is `false` by default
-/// for existing local-pane callers; the search-results virtual pane passes
-/// `true`. See `apps/desktop/src/lib/search/capabilities.ts` for the flag set.
 #[tauri::command]
 #[specta::specta]
 pub fn show_file_context_menu<R: Runtime>(
@@ -41,8 +54,7 @@ pub fn show_file_context_menu<R: Runtime>(
     filename: String,
     is_directory: bool,
     paths: Vec<String>,
-    restrict_destination_actions: bool,
-    listing_id: String,
+    pane: PaneContextMenuFacts,
 ) -> Result<(), String> {
     let app = window.app_handle();
 
@@ -68,7 +80,7 @@ pub fn show_file_context_menu<R: Runtime>(
         context.path = path.clone();
         context.filename = filename.clone();
         context.paths = context_paths;
-        context.tags_listing_id = listing_id;
+        context.tags_listing_id = pane.listing_id;
         #[cfg(target_os = "macos")]
         {
             // Filled in from build_context_menu's return value below.
@@ -92,7 +104,8 @@ pub fn show_file_context_menu<R: Runtime>(
         &filename,
         is_directory,
         &info,
-        restrict_destination_actions,
+        pane.restrict_destination_actions,
+        pane.can_open_terminal_here,
         image_index,
     )
     .map_err(|e| e.to_string())?;
@@ -587,6 +600,12 @@ fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<()
         if id == REOPEN_CLOSED_TAB_ID {
             continue;
         }
+        // Same reason, different question: "Open terminal here" follows the FOCUSED
+        // PANE's volume, which this loop knows nothing about. `apply_open_terminal_here_state`
+        // below re-applies the stored verdict once the loop is done.
+        if id == OPEN_TERMINAL_HERE_ID {
+            continue;
+        }
         let is_app = matches!(menu_id_to_command(id), Some((_, CommandScope::App)));
         if !is_app {
             let _ = entry.item.set_enabled(enabled);
@@ -628,7 +647,37 @@ fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<()
     // without this a trip through Settings and back would offer Copy again while a
     // dialog is still up.
     apply_operation_item_state(&menu_state);
+    // Same shape, and the reason the item is skipped above: a rebuilt menu bar comes
+    // up with a fresh, enabled item, and the frontend re-runs `activate_window_menu`
+    // after one — so this is also what restores the verdict after a language change.
+    apply_open_terminal_here_state(&menu_state);
 
+    Ok(())
+}
+
+/// Sets "Open terminal here" from BOTH inputs: the explorer has to own the menu,
+/// and the focused pane has to sit somewhere a shell can `cd` into.
+fn apply_open_terminal_here_state<R: Runtime>(menu_state: &MenuState<R>) {
+    let enabled = menu_state.explorer_menu_active.load(Ordering::Relaxed)
+        && menu_state.open_terminal_here_enabled.load(Ordering::Relaxed);
+    if let Some(entry) = menu_state.items.lock_ignore_poison().get(OPEN_TERMINAL_HERE_ID) {
+        let _ = entry.item.set_enabled(enabled);
+    }
+}
+
+/// Greys out (or restores) the File menu's "Open terminal here", following the
+/// focused pane's volume.
+///
+/// Called by the main window whenever the focused pane, its tab, or that tab's
+/// volume changes. ⚠️ CHROME only: a disabled item's accelerator still fires, so
+/// the real refusals stay in the frontend handler (which words the hint) and in
+/// `open_terminal_here` itself (which answers `not_a_local_path`).
+#[tauri::command]
+#[specta::specta]
+pub fn set_open_terminal_here_enabled<R: Runtime>(app: AppHandle<R>, enabled: bool) -> Result<(), String> {
+    let menu_state = app.state::<MenuState<R>>();
+    menu_state.open_terminal_here_enabled.store(enabled, Ordering::Relaxed);
+    apply_open_terminal_here_state(&menu_state);
     Ok(())
 }
 

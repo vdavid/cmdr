@@ -290,6 +290,19 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: ['⌘⌥O'],
   },
   {
+    // macOS only: the known-terminals table and its launch recipes are a macOS
+    // vocabulary, and there's no Linux module behind the command yet.
+    // ⌘⌥T, Command-then-Option, because that's the order `formatKeyCombo` emits;
+    // macOS still renders it ⌥⌘T in the native menu.
+    id: 'file.openTerminalHere',
+    nameKey: 'commands.fileOpenTerminalHere.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: isMacOS() ? ['⌘⌥T'] : [],
+    descriptionKey: 'commands.fileOpenTerminalHere.description',
+    keywords: ['terminal', 'shell', 'console', 'cd', 'iterm', 'ghostty', 'warp'],
+  },
+  {
     id: 'file.copyPath',
     nameKey: 'commands.fileCopyPath.label',
     scope: 'Main window/File list',

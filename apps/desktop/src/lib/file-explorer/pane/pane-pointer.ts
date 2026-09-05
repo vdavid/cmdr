@@ -14,6 +14,8 @@ import { getPathsAtIndices, showFileContextMenu, showParentRowContextMenu } from
 import type { FileEntry, SelectPayload } from '../types'
 import { getSetting, setSetting } from '$lib/settings'
 import { addToast } from '$lib/ui/toast'
+import { capabilitiesFor } from './volume-capabilities'
+import { canOpenTerminalIn } from '$lib/open-terminal/terminal-target'
 import { isFileListBackgroundClick } from './pane-background-dblclick'
 import DoubleClickPaneHintToastContent from './DoubleClickPaneHintToastContent.svelte'
 
@@ -99,7 +101,12 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
         // Selection lookup failed: fall back to single-file action.
       }
     }
-    await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths, false, listingId)
+    await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths, {
+      listingId,
+      // The terminal item acts on the PANE's folder, so it asks the pane's volume,
+      // not the right-clicked row.
+      canOpenTerminalHere: canOpenTerminalIn(capabilitiesFor(deps.getVolumeId()).kind),
+    })
   }
 
   function handlePaneClick(event: MouseEvent): void {

@@ -50,6 +50,7 @@ const m = vi.hoisted(() => ({
   quickLookClose: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   getInfo: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   openInEditor: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
+  openTerminalHere: vi.fn<(...a: unknown[]) => Promise<string>>(() => Promise.resolve('opened')),
   syncMenuShowHidden: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   readClipboardText: vi.fn<() => Promise<string>>(() => Promise.resolve('')),
   cloudMakeAvailableOffline: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
@@ -177,6 +178,13 @@ vi.mock('$lib/tauri-commands', () => ({
   cloudMakeAvailableOffline: (...a: unknown[]) => m.cloudMakeAvailableOffline(...a),
   cloudRemoveDownload: (...a: unknown[]) => m.cloudRemoveDownload(...a),
   trackEvent: () => Promise.resolve(),
+  // `file.openTerminalHere`'s chain. Its own behavior is pinned in
+  // `$lib/open-terminal/open-terminal-here.test.ts`; here it only has to exist, so
+  // the dispatch arm resolves instead of throwing on an undefined barrel member.
+  listTerminalApps: () => Promise.resolve({ data: { apps: [], chosenId: null }, timedOut: false }),
+  openTerminalHere: (...a: unknown[]) => m.openTerminalHere(...a),
+  terminalAppDisplayName: () => Promise.resolve(null),
+  asOpenTerminalError: () => null,
 }))
 
 // QuickLook dispatch guard + the `$state` singleton (reconfigurable per branch).
@@ -217,8 +225,8 @@ describe('characterization — id partition self-check', () => {
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
-  it('dispatchable set is exactly 111 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(111)
+  it('dispatchable set is exactly 112 ids', () => {
+    expect(DISPATCHABLE_IDS).toHaveLength(112)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {

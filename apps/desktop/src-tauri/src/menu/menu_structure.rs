@@ -23,6 +23,8 @@ use crate::file_system::sync_status::SyncStatus;
 use crate::intl::{menu_t, menu_t_with};
 
 #[cfg(target_os = "macos")]
+use super::OPEN_TERMINAL_HERE_ID;
+#[cfg(target_os = "macos")]
 use super::menu_items::APP_MENU_TITLE;
 use super::menu_items::{
     COPY_FILENAME_MAX_CHARS, copy_path_accelerator, pin_tab_label, show_in_file_manager_accelerator,
@@ -99,6 +101,11 @@ pub fn build_menu<R: Runtime>(
 /// it suppresses Rename and New folder, which only make sense on a real directory.
 /// Source-side actions (Open, Copy, Move, Delete, Show in Finder, Copy filename,
 /// Copy path) stay because the underlying paths are real.
+///
+/// `can_open_terminal_here` is the focused pane's answer, not this file's: the item
+/// acts on the pane's folder, so a pane on MTP or ADB shows it greyed out. The
+/// snapshot pane and the Search dialog pass `false` too, having no folder of their
+/// own to open.
 pub fn build_context_menu<R: Runtime>(
     app: &AppHandle<R>,
     filename: &str,
@@ -109,6 +116,14 @@ pub fn build_context_menu<R: Runtime>(
     )]
     info: &FileContextInfo,
     restrict_destination_actions: bool,
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(
+            unused_variables,
+            reason = "the item it gates is macOS-only, like the launch module behind it"
+        )
+    )]
+    can_open_terminal_here: bool,
     // Media-index image-search facts about the right-clicked folder; `image_index_menu_items`
     // turns them into the folder-only chosen/exclusion items (empty when the master toggle
     // is off).
@@ -220,6 +235,19 @@ pub fn build_context_menu<R: Runtime>(
         Some(copy_path_accelerator()),
     )?;
     menu.append(&show_in_finder_item)?;
+    // "Open terminal here" rides beside Show in Finder, same gesture aimed at a
+    // different app. macOS only, like the launch module behind it.
+    #[cfg(target_os = "macos")]
+    {
+        let open_terminal_here_item = MenuItem::with_id(
+            app,
+            OPEN_TERMINAL_HERE_ID,
+            menu_t("menu.file.openTerminalHere"),
+            can_open_terminal_here,
+            Some("Alt+Cmd+T"),
+        )?;
+        menu.append(&open_terminal_here_item)?;
+    }
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
 
