@@ -1,4 +1,4 @@
-//! Tauri commands for the git browser (M1).
+//! Tauri commands for the git browser.
 //!
 //! Thin pass-throughs over `file_system::git`. Every command is async and
 //! wrapped with `blocking_with_timeout` so a hung NFS / SMB / FUSE mount can
@@ -11,9 +11,9 @@ use crate::commands::util::{TimedOut, blocking_typed_result_with_timeout, blocki
 use crate::file_system::git::wiring::portal;
 use crate::file_system::git::{EntryStatus, FriendlyGitError, RepoInfo, list_status, repo_info};
 
-/// Budget per the M1 plan: discover + repo info ≤ 50 ms p95 on a 50k-file
-/// repo. We give the IPC layer 2 s to also cover slow NFS / SMB filesystems
-/// where even a `stat` can stall.
+/// The chip's budget is discover + repo info ≤ 100 ms p95 on a 50k-file repo
+/// (`crates/cmdr-git/DETAILS.md` § Performance). We give the IPC layer 2 s on
+/// top, to cover slow NFS / SMB filesystems where even a `stat` can stall.
 const GIT_REPO_INFO_TIMEOUT: Duration = Duration::from_secs(2);
 /// Status walks can take longer on huge worktrees. 5 s lets the chip stay
 /// responsive without giving up before gix returns.

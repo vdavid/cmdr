@@ -73,7 +73,7 @@ fn list_tags_yields_v1() {
 
 #[test]
 fn list_commits_yields_entries_with_short_sha_and_subject() {
-    let (dir, _f) = build_simple_repo("m3", 3);
+    let (dir, _f) = build_simple_repo("category", 3);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = git_log::list_commits(&handle, &root).unwrap();
     assert_eq!(entries.len(), 3, "fixture has exactly 3 commits");
@@ -92,7 +92,7 @@ fn list_commits_yields_entries_with_short_sha_and_subject() {
 
 #[test]
 fn commit_tree_browsing_via_short_sha() {
-    let (dir, _f) = build_simple_repo("m3", 2);
+    let (dir, _f) = build_simple_repo("category", 2);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = git_log::list_commits(&handle, &root).unwrap();
     let top = &entries[0];
@@ -115,10 +115,8 @@ fn commit_tree_browsing_via_short_sha() {
 
 #[test]
 fn commits_caps_listing_at_max() {
-    // We test the cap in isolation rather than building 5001 commits :
-    // that'd add ~30 s to the test suite. The cap path is exercised by
-    // setting MAX_COMMITS-equivalent fixtures via the loop count check.
-    // For now, just assert the constant value matches the plan.
+    // Building 5001 commits to reach the cap would add ~30 s to the suite, so
+    // this pins the two constants the walk stops on instead.
     assert_eq!(git_log::MAX_COMMITS, 5000);
     assert_eq!(git_log::BATCH_SIZE, 200);
 }
@@ -126,7 +124,7 @@ fn commits_caps_listing_at_max() {
 #[test]
 fn commits_listing_cancellation_polls_atomic_flag() {
     use std::sync::atomic::Ordering;
-    let (dir, _f) = build_simple_repo("m3", 5);
+    let (dir, _f) = build_simple_repo("category", 5);
     let (handle, root) = discover_repo(&dir).unwrap();
 
     // Pre-set the cancel flag so the walk bails after 0 commits.
@@ -147,7 +145,7 @@ fn commit_path_resolves_unreachable_sha() {
     // isn't reachable from HEAD. We simulate that by making a commit on
     // a side branch, deleting the branch (the commit object stays in the
     // ODB), and asserting we can still browse it via its SHA.
-    let dir = temp_dir("m3", "unreachable");
+    let dir = temp_dir("category", "unreachable");
     let mut f = Fixture::init(dir.clone());
     f.commit_file("README.md", b"step 0\n", "commit 0");
 
@@ -197,7 +195,7 @@ fn commit_path_resolves_unreachable_sha() {
 
 #[test]
 fn list_stashes_returns_three_entries() {
-    let (dir, _f) = build_simple_repo("m3", 1);
+    let (dir, _f) = build_simple_repo("category", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
 
     // Three round-trips of "modify, stash". `git stash` refuses an
@@ -236,7 +234,7 @@ fn list_stashes_returns_three_entries() {
 
 #[test]
 fn list_worktrees_redirects_to_working_dir() {
-    let (dir, _f) = build_simple_repo("m3", 1);
+    let (dir, _f) = build_simple_repo("category", 1);
     // `git worktree add` has no gix-side public API in 0.81; CLI is the
     // only path. We add a sibling worktree at `<dir>-wt1`.
     let wt_path = dir
@@ -269,9 +267,9 @@ fn list_worktrees_redirects_to_working_dir() {
 #[test]
 fn list_submodules_redirects_to_working_dir() {
     // Outer repo with one commit.
-    let (outer, _of) = build_simple_repo("m3", 1);
+    let (outer, _of) = build_simple_repo("category", 1);
     // Inner repo to add as submodule.
-    let (inner, _if) = build_simple_repo("m3", 1);
+    let (inner, _if) = build_simple_repo("category", 1);
     // `git submodule add` has no gix-side public API in 0.81; CLI is
     // the only path. Use a `file://` URL or path with `file://`.
     let inner_url = format!("file://{}", inner.display());

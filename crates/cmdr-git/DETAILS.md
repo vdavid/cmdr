@@ -58,8 +58,8 @@ which:
 caller: nothing would ever notice. So a helper here earns its place from a caller that exists today, ❌ never from a
 plausible one — `to_path`, `looks_like_sha_prefix`, and `dir_path_from_subpath` were each written for a future IPC
 consumer, reached only their own unit tests, and were deleted rather than carried. The one test-only helper that
-survived (`snapshot_dates::clear_cache`, which `bench.rs` needs to measure a cold walk) is `cfg(test)` and
-`pub(crate)`, so no configuration compiles it without its caller.
+survived (`snapshot_dates::clear_cache`, which `bench.rs` needs to measure a cold walk) is `cfg(test)` and `pub(crate)`,
+so no configuration compiles it without its caller.
 
 Two gated items sit outside those numbers: `RecordingGitStateSink` and the whole `test_fixtures` module, both behind
 `testing`. The app's routing, overlay, and toggle suites build their repositories with those fixtures, so there is one
@@ -70,16 +70,17 @@ a number.
 
 **A cell goes where its ASSERTION lives, never where its fixture does.** What a repository answers is here: the
 categories, the column metadata, the snapshot dates, the classifier, the `Volume` contract, and the status cache. What
-the APP does with those answers stays app-side beside the code it exercises: the route, the listing overlay, the
-toggle, the `git-state-changed` payload, and the walker-exposure regressions.
+the APP does with those answers stays app-side beside the code it exercises: the route, the listing overlay, the toggle,
+the `git-state-changed` payload, and the walker-exposure regressions.
 
 Which means, file by file: a cell that needs no repository is an inline `mod tests` in the module it asserts on
 (`path.rs`, `log.rs`, `stash.rs`, `read_blob.rs`, `state_sink.rs`, `status.rs`'s two), and one that needs a real
 repository is a sibling `<subject>_tests.rs` — `repo_tests` (discovery and `RepoInfo`), `status_tests` (the worktree
 walk), `category_tests` (all six categories, plus the row set the landing page is built from), `tree_tests` (a
 snapshot's tree and its blobs), `column_meta_tests`, `snapshot_dates_tests`, and `volume_tests` (everything asserting
-`GitPortalVolume`, conformance included). The one exception is `path.rs`'s `classify_names_every_shape_against_a_real_repo`:
-greedy ref matching reads the repo's known refs, so it needs a fixture yet belongs beside the parser it asserts on.
+`GitPortalVolume`, conformance included). The one exception is `path.rs`'s
+`classify_names_every_shape_against_a_real_repo`: greedy ref matching reads the repo's known refs, so it needs a fixture
+yet belongs beside the parser it asserts on.
 
 The instrument for the app half is the `testing` feature: `test_fixtures` builds the repository, and
 `RecordingGitStateSink` makes a watcher report observable without a window. **That recorder is what a subscription cell
@@ -122,7 +123,7 @@ the main-HEAD watch (`git worktree add` writes to the main repo's `HEAD` too).
 ## Performance
 
 Bench result on the 50k-file synth repo, release build
-(`cargo test --release --lib file_system::git::bench -- --ignored`), measured on an M1 Max, gix 0.87, 2026-09-05, median
+(`cargo test --release -p cmdr-git -- --ignored`), measured on an M1 Max, gix 0.87, 2026-09-05, median
 of three runs:
 
 | Metric                     | Budget          | Measured |
@@ -152,9 +153,9 @@ pipeline.
 
 `GitPortalVolume` (`volume.rs`) is a read-only `Volume` over one repo's virtual trees, the same shape `ArchiveVolume`
 has. The host's `VolumeManager::resolve` routes any path with a `.git/<category>/` segment to it
-(`apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Resolving a path: the two routes") and hands it the input path verbatim; the volume maps that path to
-`(repo, category, ref, tree path)` with `path::classify_in` and answers from the same `virtual_listing` / `log` /
-`tree` code `GitPortal::category_rows` calls for the host's `.git/` listing.
+(`apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Resolving a path: the two routes") and hands it the input
+path verbatim; the volume maps that path to `(repo, category, ref, tree path)` with `path::classify_in` and answers from
+the same `virtual_listing` / `log` / `tree` code `GitPortal::category_rows` calls for the host's `.git/` listing.
 
 - **Its namespace is the six categories and what's under them, nothing else.** Listing its root (`<worktree>/.git`)
   answers the six category rows ALONE, via `virtual_listing::list_categories`. Real `.git/*` entries are the parent

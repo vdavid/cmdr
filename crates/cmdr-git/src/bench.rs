@@ -1,9 +1,10 @@
-//! M1 perf bench: discover + repo_info p95 ≤ 50 ms on 50k-file repo,
-//! list_status p95 ≤ 100 ms. See plan § "Performance budget".
+//! What the chip pipeline costs on a big repository, against the budgets it
+//! owes: discover + `repo_info` p95 ≤ 100 ms and `list_status` p95 ≤ 100 ms on
+//! a 50k-file repo. Today's readings and the one that's over: `DETAILS.md`
+//! § Performance.
 //!
-//! Run with `cargo test --release -p cmdr -- --ignored bench_50k_files
-//! --nocapture`. The fixture is built once into `target/test-fixtures/git/`
-//! (skipped on subsequent runs).
+//! Run with `cargo test --release -p cmdr-git -- --ignored --nocapture`. The
+//! fixture is built once into `target/test-fixtures/git/` and reused.
 
 #![cfg(test)]
 #![allow(

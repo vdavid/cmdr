@@ -20,7 +20,7 @@ use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
 
 #[test]
 fn root_listing_populates_size_with_item_counts() {
-    let (dir, _f) = build_repo_with_branches("m4", &[("feature-a", 1), ("feature-b", 2)]);
+    let (dir, _f) = build_repo_with_branches("column_meta", &[("feature-a", 1), ("feature-b", 2)]);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_categories(&handle, &root);
 
@@ -56,7 +56,7 @@ fn root_listing_populates_size_with_item_counts() {
 
 #[test]
 fn root_listing_reports_a_single_branch_as_a_count_of_one() {
-    let (dir, _f) = build_simple_repo("m4", 1);
+    let (dir, _f) = build_simple_repo("column_meta", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_categories(&handle, &root);
     let branches = entries.iter().find(|e| e.name == "branches").unwrap();
@@ -76,7 +76,7 @@ fn root_listing_reports_a_single_branch_as_a_count_of_one() {
 
 #[test]
 fn branches_listing_populates_ahead_behind() {
-    let (dir, _f) = build_repo_with_branches("m4", &[("feat", 3)]);
+    let (dir, _f) = build_repo_with_branches("column_meta", &[("feat", 3)]);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_branches(&handle, &root).unwrap();
 
@@ -98,7 +98,7 @@ fn branches_listing_populates_ahead_behind() {
 
 #[test]
 fn branches_listing_sorts_by_ahead_count_within_category() {
-    let (dir, _f) = build_repo_with_branches("m4", &[("a", 5), ("b", 1), ("c", 2)]);
+    let (dir, _f) = build_repo_with_branches("column_meta", &[("a", 5), ("b", 1), ("c", 2)]);
     let (handle, root) = discover_repo(&dir).unwrap();
     let mut entries = virtual_listing::list_branches(&handle, &root).unwrap();
     // Drop main (size==0 against itself = blank). Sort by `size` descending
@@ -114,7 +114,7 @@ fn branches_listing_sorts_by_ahead_count_within_category() {
 #[test]
 fn branches_default_branch_alone_has_blank_size() {
     // Single branch (main), no upstream, no fallback different from itself.
-    let (dir, _f) = build_simple_repo("m4", 1);
+    let (dir, _f) = build_simple_repo("column_meta", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_branches(&handle, &root).unwrap();
     let main = entries.iter().find(|e| e.name == "main").unwrap();
@@ -126,7 +126,7 @@ fn branches_default_branch_alone_has_blank_size() {
 
 #[test]
 fn tags_listing_names_the_tagged_commit() {
-    let (dir, f) = build_simple_repo("m4", 1);
+    let (dir, f) = build_simple_repo("column_meta", 1);
     // Create a lightweight tag pointing at HEAD via gix.
     let head_id = f
         .repo
@@ -160,7 +160,7 @@ fn tags_listing_names_the_tagged_commit() {
 
 #[test]
 fn commits_listing_populates_files_changed() {
-    let (dir, _f) = build_simple_repo("m4", 2);
+    let (dir, _f) = build_simple_repo("column_meta", 2);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = git_log::list_commits(&handle, &root).unwrap();
     let top = &entries[0];
@@ -181,7 +181,7 @@ fn commits_listing_populates_files_changed() {
 
 #[test]
 fn stash_listing_extracts_branch_from_subject() {
-    let (dir, _f) = build_simple_repo("m4", 1);
+    let (dir, _f) = build_simple_repo("column_meta", 1);
     std::fs::write(dir.join("scratch.txt"), "x\n").unwrap();
     // Stash creation has no gix-side API in 0.81; CLI is the only path.
     git_cli(&dir, &["stash", "push", "-u", "-m", "scratch work"]);
@@ -203,7 +203,7 @@ fn stash_listing_extracts_branch_from_subject() {
 
 #[test]
 fn worktree_listing_shows_branch() {
-    let (dir, _f) = build_simple_repo("m4", 1);
+    let (dir, _f) = build_simple_repo("column_meta", 1);
     let wt = dir
         .parent()
         .unwrap()
@@ -230,8 +230,8 @@ fn worktree_listing_shows_branch() {
 
 #[test]
 fn submodule_listing_names_the_pinned_commit() {
-    let (outer, _of) = build_simple_repo("m4", 1);
-    let (inner, _if) = build_simple_repo("m4", 1);
+    let (outer, _of) = build_simple_repo("column_meta", 1);
+    let (inner, _if) = build_simple_repo("column_meta", 1);
     let inner_url = format!("file://{}", inner.display());
     // `git submodule add` has no gix-side public API in 0.81; CLI is
     // the only path.
@@ -265,7 +265,7 @@ fn submodule_listing_names_the_pinned_commit() {
 
 #[test]
 fn snapshot_files_borrow_commit_date() {
-    let (dir, _f) = build_simple_repo("m4", 1);
+    let (dir, _f) = build_simple_repo("column_meta", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
     let p = root.join(".git").join("branches").join("main");
     let (virt, _, _) = classify(&p).expect("classify branch tip");
@@ -289,7 +289,7 @@ fn snapshot_files_borrow_commit_date() {
 
 #[test]
 fn snapshot_dirs_carry_recursive_bytes() {
-    let dir = temp_dir("m4", "snapshot-dirs");
+    let dir = temp_dir("column_meta", "snapshot-dirs");
     let mut f = Fixture::init(dir.clone());
     // Create the directory on disk; commit_file will write the files
     // inside it and `commit_files` carries the tree forward.
