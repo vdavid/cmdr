@@ -325,7 +325,7 @@ string then.
 A locale translated over several passes drifts: each pass settles the terms it personally needed, so the same English
 word ends up with two names and the app contradicts itself. Traditional Chinese shipped a menu item reading
 `命令選擇區…` that opened a palette titled `指令面板`. Run this audit when a locale is finished, and again whenever
-several passes have landed since the last one. **Doing it by reading the catalog does not work**: it's 3,153 keys.
+several passes have landed since the last one. **Doing it by reading the catalog does not work**: it's 3,263 keys.
 Script it.
 
 **Half of it is automated.** `pnpm check i18n-terms` (`desktop-i18n-term-consistency`) catches every case where two keys

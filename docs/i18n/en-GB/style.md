@@ -18,7 +18,7 @@ Keep the two in step by hand when you edit either. `docs/i18n/en-AU/style.md` re
 
 ## What forks
 
-150 keys of 3,153 (4.8%). Four groups:
+151 keys of 3,263 (4.6%). Four groups:
 
 - **Bin (37 keys)**, the loudest one: the Trash is a destination people navigate to, and their Mac calls it the Bin.
 - **Spelling (65 keys)**: `-our`, `-ise`, `-ll-`, plus `grey`, `ageing`, `towards`, and `got` for `gotten`.
@@ -173,7 +173,7 @@ lists `en_NZ` as a formatting region. So en-NZ exists to macOS as a _region_ and
 - **A value identical to base `en` is a coverage finding**, and the fix is always to delete the key. `@key.sourceHash`
   and `reviewed` apply; `sameAsSourceJustification` does not.
 - `gen-locale-skeleton.ts` refuses overlay tags and `sync-locale-keys.ts` skips them, both on purpose: they'd mirror all
-  3,153 English keys. These catalogs are written by hand, which is what keeps them small.
+  3,263 English keys. These catalogs are written by hand, which is what keeps them small.
 - ICU rules are inherited from the source: double every apostrophe (`''`) in ICU families, keep them single in the raw
   `errors.*` and native `menu.*` families, and match every `{placeholder}` and `<tag>` name to base `en` exactly.
   `settings.appearance.tintTriggerAria` is the trap: its only "color" is the `{colorName}` placeholder NAME, so it must

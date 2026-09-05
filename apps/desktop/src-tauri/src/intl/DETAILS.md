@@ -53,7 +53,7 @@ fallback.
 **A regional catalog can also exist and win.** `en-GB` and `en-AU` ship as OVERLAYS: each carries only the keys it
 forks ("Bin" for "Trash", `-ise` for `-ize`), wins over plain `en` on specificity, and resolves every other key up to
 `en` through exactly the regional fallback above. So the fallback isn't the regional reader's consolation prize; it's
-what lets a 150-key overlay stand in for a 3,153-key catalog. `docs/i18n/language-selection-decisions.md` is the roster
+what lets a 151-key overlay stand in for a 3,263-key catalog. `docs/i18n/language-selection-decisions.md` is the roster
 of which variants ship a catalog and which still fall back to their base, and `docs/guides/i18n.md` § Overlay catalogs
 is how an overlay is built and checked.
 
