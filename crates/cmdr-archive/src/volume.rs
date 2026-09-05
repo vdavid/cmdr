@@ -479,6 +479,13 @@ impl Volume for ArchiveVolume {
         true
     }
 
+    /// Zip external attributes, the tar header, 7z's unix extension — whichever
+    /// the archive recorded. An entry that recorded none still answers `0`; this
+    /// says only that the backend can carry one.
+    fn reports_posix_mode(&self) -> bool {
+        true
+    }
+
     fn supports_streaming(&self) -> bool {
         true
     }

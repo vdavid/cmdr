@@ -135,9 +135,8 @@ async fn metadata_maps_size_name_and_transparent_path() {
 
 /// The executable bit is DATA the copy engine needs: a `run.sh` inside a release
 /// zip has to come out of an extract executable, and this volume is the only
-/// layer that can read the mode the archive recorded. It reports the bit;
-/// applying it to what lands is the transfer engine's job
-/// (`write_operations/transfer/volume/landed_mode.rs`).
+/// layer that can read the mode the archive recorded. Applying it to what lands
+/// is the transfer engine's job (`transfer/volume/landed_mode.rs`).
 #[tokio::test]
 async fn a_unix_mode_in_the_external_attributes_reaches_the_entry() {
     let archive = TestArchive::from_entries(&[
@@ -155,8 +154,7 @@ async fn a_unix_mode_in_the_external_attributes_reaches_the_entry() {
 /// A node nobody recorded a mode for reports `0`, the `FileEntry::permissions`
 /// sentinel for "no permission concept" — the synthesized directory here, and
 /// equally a 7z with no unix extension. ❌ Never a fabricated `0o755`: a
-/// non-zero mode is a FACT about the source, and the copy engine puts it on what
-/// it writes.
+/// non-zero mode is a FACT the copy engine puts on what it writes.
 #[tokio::test]
 async fn an_entry_with_no_recorded_mode_reports_the_no_concept_sentinel() {
     // `docs/` is synthesized from the entry path; no archive record backs it.
@@ -625,6 +623,9 @@ fn capability_flags_are_read_only_and_virtual() {
     assert_eq!(volume.root(), archive.path);
     assert!(volume.supports_export());
     assert!(volume.supports_streaming());
+    // The copy engine skips its top-level mode probe on a `false` here, so an
+    // extracted script would land non-executable.
+    assert!(volume.reports_posix_mode());
     assert_eq!(volume.max_concurrent_ops(), 1);
     assert_eq!(volume.local_path(), None);
     assert!(!volume.supports_local_fs_access());

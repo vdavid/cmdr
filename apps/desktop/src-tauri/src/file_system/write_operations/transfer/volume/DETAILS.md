@@ -625,13 +625,20 @@ is the only order available and harmless (the file is complete). ❌ It never fa
 destination that ignores `chmod` (FAT, exFAT, some network mounts), a source that vanished — each is one debug line and
 the bytes stand.
 
-**Who supplies the mode, and the one round trip it can cost.** `SourceFileFacts` (in `strategy.rs`) carries what the
-caller already learned about a source FILE: its size and its mode, both honest `Option`s where absent means nobody
-looked. The merge walker lists each level anyway, so every deep file's mode is free (`SourceFileFacts::from_entry`). A
-TOP-LEVEL file has only the preflight hint, and `CopyScanResult` counts bytes rather than stat'ing modes — so
-`apply_source_mode` asks the source itself, once per top-level file, only when the destination is local, and only after
-that file's bytes have already crossed. ❌ Don't "fix" that by adding a mode to `CopyScanResult`: it would put a field
-through 40-odd construction sites across every backend to save a stat the copy has already paid a whole file for.
+**Who supplies the mode, and the one round trip it can cost.** `SourceFileFacts` (beside `SourceHint` in
+`preflight.rs`) carries what the caller already learned about a source FILE: its size and its mode, both honest
+`Option`s where absent means nobody looked. The merge walker lists each level anyway, so every deep file's mode is free
+(`SourceFileFacts::from_entry`). A TOP-LEVEL file has only the preflight hint, and `CopyScanResult` counts bytes rather
+than stat'ing modes — so `apply_source_mode` asks the source itself, once per top-level file, only when the destination
+is local, and only after that file's bytes have already crossed.
+
+❗ **That probe is gated on `Volume::reports_posix_mode()`**, which is why it costs nothing on a backend that has no
+modes to give. Without the gate, pulling 10,000 selected files off an SMB share would spend 10,000 stats to be told
+`0` each time — the same shape as the 15k-MTP-listing stall the source hints exist to prevent. `true` on
+`LocalPosixVolume`, the git portal, the archive backend, and ADB; `false` (the default) everywhere else. ❗ A backend
+answering `true` without real bits is worse than one answering nothing: the engine treats a non-zero mode as a fact and
+puts it on the user's file. ❌ Don't instead add a mode to `CopyScanResult`: that would put a field through 40-odd
+construction sites across every backend to save a stat the copy has already paid a whole file for.
 
 **Three write paths, three hooks, and they must stay in step.** `stream_pipe_file` (every streamed cross-volume file,
 copy and cross-volume move alike, since `move_cross.rs` routes through `copy_single_path`), `sequential_extract.rs`'s

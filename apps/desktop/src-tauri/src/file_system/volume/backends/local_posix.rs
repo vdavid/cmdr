@@ -426,6 +426,11 @@ impl Volume for LocalPosixVolume {
         true
     }
 
+    /// `st_mode`, straight off the stat the listing already does.
+    fn reports_posix_mode(&self) -> bool {
+        true
+    }
+
     fn scan_for_copy<'a>(
         &'a self,
         path: &'a Path,

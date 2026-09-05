@@ -179,6 +179,12 @@ impl Volume for GitPortalVolume {
         true
     }
 
+    /// A tree entry's kind IS its mode: `BlobExecutable` is `0o755`, `Blob` is
+    /// `0o644`. That is what lets a script copied out of a snapshot still run.
+    fn reports_posix_mode(&self) -> bool {
+        true
+    }
+
     fn supports_streaming(&self) -> bool {
         true
     }

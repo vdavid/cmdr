@@ -719,6 +719,32 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// Whether a [`FileEntry::permissions`](crate::entry::FileEntry::permissions)
+    /// from this backend is a REAL POSIX mode somebody recorded, rather than the
+    /// `0` that means "this backend has no permission concept".
+    ///
+    /// A claim about the BACKEND, so it is answered without touching a path.
+    /// `true` for `LocalPosixVolume` (`st_mode`), the git portal (the tree
+    /// entry's kind), the archive backend (zip external attributes, the tar
+    /// header, 7z's unix extension), and ADB (the device's own `stat`). `false`
+    /// for SMB, SFTP, WebDAV, and MTP, none of which carry one.
+    ///
+    /// **What it buys is a round trip, not a branch.** The cross-volume copy
+    /// engine puts the source's mode on what it writes to a local destination
+    /// (`write_operations/transfer/volume/landed_mode.rs`), and for a TOP-LEVEL
+    /// file it has no listing in hand, so it would have to ask
+    /// `get_metadata`. On a share that has no mode to give, that is one wasted
+    /// stat per selected file — the same shape as the 15k-MTP-listing stall the
+    /// source hints exist to prevent. This answers it for free instead.
+    ///
+    /// Default `false`: a backend that has modes says so, and one that doesn't
+    /// can't be asked for them. ❗ Answering `true` without real bits is worse
+    /// than answering nothing: the engine treats a non-zero mode as a fact and
+    /// puts it on the user's file.
+    fn reports_posix_mode(&self) -> bool {
+        false
+    }
+
     /// Whether this volume accepts mutations at all: creating files and
     /// directories, renaming, and deleting.
     ///

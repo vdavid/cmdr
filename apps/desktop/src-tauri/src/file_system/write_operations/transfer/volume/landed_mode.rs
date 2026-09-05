@@ -72,8 +72,10 @@ pub(super) fn landed_mode(source_mode: u32, created_mode: u32) -> Option<u32> {
 /// lists its children, so every deep file's mode is free). `None` means it had
 /// no listing, which is the top-level dispatch's position; this then asks the
 /// source for one, and that stat is the only round trip this module ever adds.
-/// It is spent once per top-level FILE, only when the destination is local, and
-/// only after that file's bytes have already crossed.
+/// It is spent once per top-level FILE, only when the destination is local, only
+/// when the SOURCE says it has modes at all (`Volume::reports_posix_mode`), and
+/// only after that file's bytes have already crossed. So a 10,000-file pull off
+/// an SMB share, which has no modes, spends nothing.
 pub(super) async fn apply_source_mode(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
@@ -90,7 +92,13 @@ pub(super) async fn apply_source_mode(
 
     let mode = match source_mode {
         Some(mode) => mode,
-        None => match source_volume.get_metadata(source_path).await {
+        // No listing in hand — the top-level dispatch's position. Ask the source,
+        // but ONLY when it has something to answer with: over SMB or MTP that
+        // stat is a round trip per selected file, spent to be told `0`.
+        // `reports_posix_mode` costs nothing and settles it. (A backend that has
+        // modes still answers `0` for an entry that recorded none; this only says
+        // asking is worth a trip.)
+        None if source_volume.reports_posix_mode() => match source_volume.get_metadata(source_path).await {
             Ok(entry) => entry.permissions,
             Err(e) => {
                 log::debug!(
@@ -102,6 +110,7 @@ pub(super) async fn apply_source_mode(
                 return;
             }
         },
+        None => return,
     };
     if mode & 0o777 == 0 {
         return;

@@ -116,6 +116,11 @@ impl Volume for AdbVolume {
         true
     }
 
+    /// The device's own `stat`, masked to `0o7777` in `mapping.rs`.
+    fn reports_posix_mode(&self) -> bool {
+        true
+    }
+
     #[allow(
         clippy::type_complexity,
         reason = "async trait method returns a pinned boxed future by design"
