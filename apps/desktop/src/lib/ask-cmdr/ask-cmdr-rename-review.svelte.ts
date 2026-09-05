@@ -58,21 +58,19 @@ export function openStagedRenameReview(): void {
   const staged = stagedProposals
   stagedProposals = []
   if (staged.length === 0) return
-  const proposals = staged.map(
-    (proposal): BulkRenameReviewProposal => ({
-      proposalId: proposal.proposalId,
-      rows: proposal.rows.map((row) => ({
-        ...row,
-        allowed: true,
-        blockedReason: null,
-        warnings: [],
-        nameRejected: false,
-      })),
-      preflighting: false,
-      expired: false,
-      requestVersion: 0,
-    }),
-  )
+  const proposals = staged.map((proposal): BulkRenameReviewProposal => ({
+    proposalId: proposal.proposalId,
+    rows: proposal.rows.map((row) => ({
+      ...row,
+      allowed: true,
+      blockedReason: null,
+      warnings: [],
+      nameRejected: false,
+    })),
+    preflighting: false,
+    expired: false,
+    requestVersion: 0,
+  }))
   const review = askCmdrState.renameReview
   // A review already on screen GROWS rather than being replaced: replacing it cancelled a plan
   // the user was reading, and asked them the same question again.
