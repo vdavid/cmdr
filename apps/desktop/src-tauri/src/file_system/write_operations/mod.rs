@@ -757,6 +757,11 @@ mod stop_or_park_tests;
 // `sftp_integration_` lane the check runner selects on.
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod sftp_transfer_integration_test;
+// Archive browsing and remote editing over a virtual MTP device: the archive
+// routing is this app's, so the cell sits with the pipeline it asserts on rather
+// than with the backend. The MTP twin of `smb_archive_integration_test`.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
+mod mtp_archive_test;
 // The app-side SMB suites: every cell whose other half is this pipeline rather
 // than the protocol. The backend's own white-box suites live with it, in
 // `cmdr-smb`. All Docker-gated and named for the `smb_integration_` lane, except

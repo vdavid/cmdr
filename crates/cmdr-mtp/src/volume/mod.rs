@@ -17,12 +17,30 @@ mod streams;
 pub mod testing;
 mod volume_impl;
 
+/// The shared `cmdr_fs::volume::conformance` promises, answered by a device.
+#[cfg(all(test, feature = "virtual-device"))]
+mod conformance_test;
+/// `Volume::delete` stopping at one node, which MTP implements rather than inherits.
+#[cfg(all(test, feature = "virtual-device"))]
+mod delete_test;
+/// What this backend tells the host's seams, and how often.
+#[cfg(all(test, feature = "virtual-device"))]
+mod host_seam_test;
 /// `MtpVolume`'s identity and the path conversions every operation starts with.
 #[cfg(test)]
 mod path_test;
-/// The bounded-window read path, against a virtual device.
+/// The `read_range` hardware benchmark. Ignored by default; needs a real phone.
+#[cfg(all(test, feature = "virtual-device"))]
+mod read_bench;
+/// The direct and windowed read paths, against a virtual device.
 #[cfg(all(test, feature = "virtual-device"))]
 mod read_range_test;
+/// The `VolumeReadStream` → chunk-stream adapter, with no device behind it.
+#[cfg(test)]
+mod streams_test;
+/// What this volume declares about itself, and the watch-coverage gate.
+#[cfg(all(test, feature = "virtual-device"))]
+mod volume_impl_test;
 
 /// The `VolumeReadStream` → chunk-stream adapter the upload path feeds `mtp-rs`.
 ///

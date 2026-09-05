@@ -20,8 +20,7 @@ mod event_loop;
 pub mod events;
 mod file_ops;
 mod handle_resolver;
-/// Asserts on what this layer told the host it was handed, so it drives a real
-/// device.
+/// What this layer tells the analytics and registrar seams, against a real device.
 #[cfg(all(test, feature = "virtual-device"))]
 mod host_seam_test;
 /// The session-free cells: the manager's own bookkeeping and the free functions
@@ -34,6 +33,9 @@ mod mutation_ops;
 mod path_cache_sync_test;
 mod scheduler;
 mod session_reset;
+/// What an upload leaves on the device when its source stops early.
+#[cfg(all(test, feature = "virtual-device"))]
+mod upload_test;
 /// The manager and the recording registrar this crate's own device cells drive.
 #[cfg(test)]
 pub(crate) mod testing;

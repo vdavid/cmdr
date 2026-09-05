@@ -33,26 +33,7 @@ pub(crate) use super::{
 #[cfg(test)]
 mod local_posix_test;
 // The shared `volume::conformance` assertions LocalPosix runs, split out the way
-// every other backend keeps its own (SMB's and SFTP's `volume::conformance_test`,
-// MTP's `mtp_conformance_test`).
+// every other backend keeps its own (SMB's, SFTP's, and MTP's
+// `volume::conformance_test`).
 #[cfg(test)]
 mod local_posix_conformance_test;
-// `mtp_test` is gated on the same platforms as the `mtp` module it tests (the
-// other two backends are cross-platform, so their test mods aren't gated).
-// `mtp_archive_test` also needs the `virtual-mtp` feature (every test in it runs
-// against a virtual MTP device), so it carries that gate on top.
-#[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
-mod mtp_archive_test;
-// `mtp_conformance_test` holds the shared `volume::conformance` assertions this
-// backend runs; `mtp_delete_test` is separate because the non-recursion contract
-// is the one MTP has to implement rather than inherit, with enough
-// backend-specific scaffolding to earn its own file. Both drive a virtual
-// device, so both carry that gate.
-#[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
-mod mtp_conformance_test;
-#[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
-mod mtp_delete_test;
-#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
-mod mtp_read_bench;
-#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
-mod mtp_test;

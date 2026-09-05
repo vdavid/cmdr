@@ -56,6 +56,13 @@ use cmdr_mtp as _;
 
 mod connection;
 mod discovery;
+/// What a test drives a virtual device with, on either side of the boundary.
+///
+/// Behind `testing` (and `virtual-device`, since there's nothing to connect to
+/// without it), so a shipped build carries none of it. ❌ Never enable either in
+/// production.
+#[cfg(all(feature = "virtual-device", any(test, feature = "testing")))]
+pub mod testing;
 mod types;
 pub mod volume;
 

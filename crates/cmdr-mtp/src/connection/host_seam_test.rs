@@ -1,20 +1,23 @@
-//! What the session layer tells the host it was handed, against a real device.
+//! What the SESSION layer tells the host it was handed, against a real device.
 //!
 //! Every seam here is a `dyn` call that goes nowhere on a detached host, so a
 //! reach that regressed back to a `crate::` path would still compile, still pass
 //! every other suite, and only show up as a counter that stopped arriving or an
 //! index that stayed Fresh through a dead session. These cells are the instrument
 //! that notices.
+//!
+//! The listing seam is the other half, and it's the volume's rather than this
+//! layer's: `volume::host_seam_test`.
 
 use std::sync::Arc;
 
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::analytics::RecordingAnalytics;
 
-use super::events::no_device_events;
-use super::testing::{is_attached, recording_registrar};
-use super::{DeviceWatch, MtpConnectionManager, MtpDisconnectReason, MtpVolumeRegistrar};
-use crate::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
+use crate::connection::events::no_device_events;
+use crate::connection::{DeviceWatch, MtpConnectionManager, MtpDisconnectReason, MtpVolumeRegistrar};
+use crate::testing::{device_lock, is_attached, recording_registrar};
+use crate::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device};
 
 /// A device connecting is a thing a user did, so it earns one counter. It has to
 /// travel the `AnalyticsSink` seam rather than the app's PostHog client: the
@@ -28,7 +31,7 @@ use crate::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_dev
 /// stop somebody from formatting into a string.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn connecting_a_device_records_one_counter_carrying_nothing_identifying() {
-    let _guard = virtual_device_test_lock().lock().await;
+    let _guard = device_lock().await;
     let fixture = setup_virtual_mtp_device();
     let device_id = crate::list_mtp_devices()
         .into_iter()
@@ -69,7 +72,7 @@ async fn connecting_a_device_records_one_counter_carrying_nothing_identifying() 
 /// in-flight background work it stopped being live.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_device_lost_under_the_event_loop_detaches_its_volumes() {
-    let _guard = virtual_device_test_lock().lock().await;
+    let _guard = device_lock().await;
     let fixture = setup_virtual_mtp_device();
     let device_id = crate::list_mtp_devices()
         .into_iter()

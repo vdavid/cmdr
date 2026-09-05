@@ -6,18 +6,18 @@
 //! → upload → swap) commits through the device's delete-then-rename swap (MTP
 //! allows same-name siblings, so it must NOT attempt an atomic rename-overwrite).
 //!
-//! The whole module requires the `virtual-mtp` feature, so it's a sibling test
-//! module of `mtp_test`, gated on the feature in `backends/mod.rs`.
+//! It sits with the pipeline rather than with the backend because the ROUTING is
+//! the app's: `cmdr-mtp` knows nothing about zips. The whole module requires the
+//! `virtual-mtp` feature, gated on it in `write_operations/mod.rs`.
 
-use super::Volume;
-use crate::mtp::DeviceWatch;
-use crate::mtp::connection_manager;
-use cmdr_mtp::MtpVolume;
-use cmdr_mtp::virtual_device::VirtualDeviceFixture;
 use std::path::Path;
 
+use cmdr_fs::volume::Volume;
+use cmdr_mtp::MtpVolume;
+
+use crate::mtp::test_support::{ConnectedDevice, connect_fixture, device_lock, teardown, volume_for};
+
 /// Builds a small zip: one STORED root entry, one DEFLATED entry in a subdir.
-#[cfg(feature = "virtual-mtp")]
 fn archive_test_zip() -> Vec<u8> {
     use std::io::Write as _;
     let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
@@ -36,50 +36,19 @@ fn archive_test_zip() -> Vec<u8> {
         .into_inner()
 }
 
-/// Connects a virtual MTP device seeded with `zip_bytes` at `internal/bundle.zip`
-/// and returns `(device_id, storage_id)` of the writable internal storage, with
-/// the root path cache primed.
-#[cfg(feature = "virtual-mtp")]
-async fn connect_virtual_device_with_zip(zip_bytes: &[u8]) -> (String, u32, VirtualDeviceFixture) {
-    use cmdr_mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device};
-
-    let fixture = setup_virtual_mtp_device();
+/// Connects a virtual MTP device seeded with `zip_bytes` at `internal/bundle.zip`,
+/// with the root path cache primed.
+async fn connect_virtual_device_with_zip(zip_bytes: &[u8]) -> ConnectedDevice {
+    let fixture = cmdr_mtp::virtual_device::setup_virtual_mtp_device();
     // Seed the zip into the writable internal storage's backing dir, then rescan
     // so the device's object tree picks it up (the watcher is off in tests).
     std::fs::write(fixture.root().join("internal/bundle.zip"), zip_bytes).expect("seed zip on device");
-    rescan_virtual_device();
-
-    let device_id = crate::mtp::list_mtp_devices()
-        .into_iter()
-        .find(|d| d.location_id == fixture.location_id)
-        .map(|d| d.id)
-        .expect("the virtual device must appear in discovery");
-    let info = connection_manager()
-        .connect(&device_id, DeviceWatch::Off)
-        .await
-        .expect("virtual-mtp connect should succeed");
-    let storage_id = info.storages.first().expect("a storage").id;
-    connection_manager()
-        .list_directory(&device_id, storage_id, "/")
-        .await
-        .expect("list root should succeed");
-    (device_id, storage_id, fixture)
-}
-
-/// Disconnects and unregisters, so the next test doesn't inherit this device's
-/// registration under the shared virtual-device id.
-#[cfg(feature = "virtual-mtp")]
-async fn teardown(device_id: &str, fixture: VirtualDeviceFixture) {
-    connection_manager()
-        .disconnect(device_id, crate::mtp::MtpDisconnectReason::User)
-        .await
-        .ok();
-    cmdr_mtp::virtual_device::unregister_virtual_mtp_device(fixture.location_id);
+    cmdr_mtp::virtual_device::rescan_virtual_device();
+    connect_fixture(fixture).await
 }
 
 /// Streams a virtual-MTP zip back off the device and parses it into a
 /// `name -> contents` map (re-verifies edits THROUGH the device, not a local copy).
-#[cfg(feature = "virtual-mtp")]
 async fn read_device_zip(vol: &MtpVolume, path: &Path) -> std::collections::HashMap<String, Vec<u8>> {
     use std::io::Read as _;
     let mut stream = vol.open_read_stream(path).await.expect("open device archive");
@@ -101,7 +70,6 @@ async fn read_device_zip(vol: &MtpVolume, path: &Path) -> std::collections::Hash
 
 /// A zip on a virtual MTP device BROWSES and EXTRACTS through `read_range`
 /// (GetPartialObject64) — the MTP counterpart to the SMB read-path test.
-#[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
     use cmdr_archive::{ArchiveFormat, ArchiveVolume};
@@ -120,15 +88,9 @@ async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
         out
     }
 
-    let _guard = cmdr_mtp::virtual_device::virtual_device_test_lock().lock().await;
-    let (device_id, storage_id, fixture) = connect_virtual_device_with_zip(&archive_test_zip()).await;
-
-    let vol = Arc::new(MtpVolume::new(
-        Arc::clone(connection_manager()),
-        &device_id,
-        storage_id,
-        "Internal",
-    ));
+    let _guard = device_lock().await;
+    let device = connect_virtual_device_with_zip(&archive_test_zip()).await;
+    let vol = Arc::new(volume_for(&device, None).await);
     assert!(!vol.supports_local_fs_access(), "MTP is not local-FS-backed");
 
     let archive = ArchiveVolume::new(
@@ -154,12 +116,11 @@ async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
     assert_eq!(drain(&archive, "a.txt").await, b"hello from mtp");
     assert_eq!(drain(&archive, "dir/b.txt").await, b"deflated over usb");
 
-    teardown(&device_id, fixture).await;
+    teardown(device).await;
 }
 
 /// A remote EDIT (delete an inner entry) commits on a virtual MTP device through
 /// the delete-then-rename swap, re-verified by re-reading the zip off the device.
-#[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device() {
     use crate::file_system::write_operations::{RemoteEditError, WriteOperationState, pull_apply_upload_swap};
@@ -170,15 +131,9 @@ async fn virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device() {
     struct NoHooks;
     impl MutationHooks for NoHooks {}
 
-    let _guard = cmdr_mtp::virtual_device::virtual_device_test_lock().lock().await;
-    let (device_id, storage_id, fixture) = connect_virtual_device_with_zip(&archive_test_zip()).await;
-
-    let vol = Arc::new(MtpVolume::new(
-        Arc::clone(connection_manager()),
-        &device_id,
-        storage_id,
-        "Internal",
-    ));
+    let _guard = device_lock().await;
+    let device = connect_virtual_device_with_zip(&archive_test_zip()).await;
+    let vol = Arc::new(volume_for(&device, None).await);
     // MTP allows same-name siblings, so the swap MUST take delete-then-rename.
     assert!(
         !vol.create_directory_errors_on_existing_dir(),
@@ -212,10 +167,7 @@ async fn virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device() {
     );
 
     // Exactly one bundle.zip remains (no sibling duplicate from the swap), no temp.
-    let entries = connection_manager()
-        .list_directory(&device_id, storage_id, "/")
-        .await
-        .expect("list root");
+    let entries = vol.list_directory(Path::new("/"), None).await.expect("list root");
     assert_eq!(
         entries.iter().filter(|e| e.name == "bundle.zip").count(),
         1,
@@ -226,5 +178,5 @@ async fn virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device() {
         "no leftover upload temp on the device"
     );
 
-    teardown(&device_id, fixture).await;
+    teardown(device).await;
 }

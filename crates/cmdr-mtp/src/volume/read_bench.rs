@@ -6,14 +6,24 @@
 //!
 //! ```text
 //! CMDR_MTP_BENCH_SERIAL=46061FDAS000A4 \
-//!   cargo test -p cmdr --lib mtp_read_range_hardware_bench -- --ignored --nocapture
+//!   cargo test -p cmdr-mtp --lib mtp_read_range_hardware_bench -- --ignored --nocapture
 //! ```
 //!
 //! Under nextest, `--run-ignored all` is required or it reports "0 tests run":
 //!
 //! ```text
-//! CMDR_MTP_BENCH_SERIAL=46061FDAS000A4 cargo nextest run --locked \
+//! CMDR_MTP_BENCH_SERIAL=46061FDAS000A4 cargo nextest run --locked -p cmdr-mtp \
 //!   --run-ignored all -E 'test(mtp_read_range_hardware_bench)' --no-capture
+//! ```
+//!
+//! **On macOS, hold `ptpcamerad` off in another terminal first**, or the connect
+//! loses the device to it. It's the same one-liner the app offers a user whose
+//! automatic suppression didn't take (`PTPCAMERAD_WORKAROUND_COMMAND`), and it
+//! stays the operator's step rather than this file's: suppressing a system daemon
+//! is a host policy, which is why `macos_workaround` is app-side.
+//!
+//! ```text
+//! while true; do pkill -9 ptpcamerad 2>/dev/null; sleep 1; done
 //! ```
 //!
 //! It fails FAST when the device isn't there (the serial lookup panics before any
@@ -29,13 +39,15 @@
     reason = "a benchmark's whole product is the numbers it prints, and `cargo test --nocapture` is where they have to land: the fern logger isn't wired up in a unit-test binary, so `log::info!` would swallow them. Scoped to this hardware-only, `#[ignore]`d module."
 )]
 
-use super::MtpVolume;
-use super::Volume;
-use crate::mtp::DeviceWatch;
-use crate::mtp::connection_manager;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+
+use cmdr_fs::volume::Volume;
+
+use crate::connection::{DeviceWatch, MtpDisconnectReason};
+use crate::testing::test_connection_manager as connection_manager;
+use crate::volume::MtpVolume;
 
 /// rc-zip's `EntryFsm` buffer size: the read size the extraction loop issues.
 const READ_LEN: usize = 256 * 1024;
@@ -86,10 +98,7 @@ async fn mtp_read_range_hardware_bench() {
         panic!("set CMDR_MTP_BENCH_SERIAL to the USB serial of the device to benchmark");
     };
 
-    #[cfg(target_os = "macos")]
-    let _ = crate::mtp::macos_workaround::suppress_ptpcamerad();
-
-    let device_id = crate::mtp::list_mtp_devices()
+    let device_id = crate::list_mtp_devices()
         .into_iter()
         .find(|d| d.serial_number.as_deref() == Some(serial.as_str()))
         .map(|d| d.id)
@@ -141,9 +150,7 @@ async fn mtp_read_range_hardware_bench() {
     );
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
+        .disconnect(&device_id, MtpDisconnectReason::User)
         .await
         .ok();
-    #[cfg(target_os = "macos")]
-    let _ = crate::mtp::macos_workaround::restore_ptpcamerad();
 }

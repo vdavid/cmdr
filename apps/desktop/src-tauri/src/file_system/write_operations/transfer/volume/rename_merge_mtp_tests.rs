@@ -20,62 +20,41 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::move_same::move_within_same_volume_with_progress;
-use crate::file_system::volume::{MtpVolume, Volume};
+use crate::file_system::volume::Volume;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::WriteOperationState;
 use crate::file_system::write_operations::types::{ConflictResolution, VolumeCopyConfig};
-use crate::mtp::DeviceWatch;
-use crate::mtp::MtpDisconnectReason;
-use crate::mtp::connection_manager;
-use cmdr_mtp::virtual_device::{
-    rescan_virtual_device, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
-};
+use crate::mtp::test_support::{self, ConnectedDevice, device_lock};
+use cmdr_mtp::virtual_device::setup_virtual_mtp_device;
 
-/// Keeps a test's virtual device alive and exclusive: the process-wide lock (all
-/// virtual devices share one serial, hence one Cmdr device id) plus the fixture
-/// owning its temp backing dir. Dropping it unregisters the device, so a
-/// finished test's registration can't answer for the next one — including when
-/// an assertion unwinds past the explicit teardown.
-struct VirtualDeviceGuard {
-    _lock: tokio::sync::MutexGuard<'static, ()>,
-    fixture: cmdr_mtp::virtual_device::VirtualDeviceFixture,
-}
-
-impl Drop for VirtualDeviceGuard {
-    fn drop(&mut self) {
-        unregister_virtual_mtp_device(self.fixture.location_id);
+/// Seeds a virtual MTP device's backing dir, connects the app to it, and builds
+/// a volume over its writable storage.
+///
+/// ❗ Seeding happens BEFORE the connect on purpose: the connect primes the root
+/// listing, and a file written after that is invisible to the cached listing
+/// until something invalidates it. The lock comes back so a cell holds it for its
+/// whole span; it's process-wide because all virtual devices share one serial,
+/// hence one Cmdr device id.
+async fn connect_seeded_device(
+    files: &[(&str, &[u8])],
+) -> (
+    ConnectedDevice,
+    Arc<dyn Volume>,
+    PathBuf,
+    tokio::sync::MutexGuard<'static, ()>,
+) {
+    let lock = device_lock().await;
+    let fixture = setup_virtual_mtp_device();
+    let backing = fixture.root().join("internal");
+    for (relative, content) in files {
+        write_backing_file(&backing, relative, content);
     }
-}
-
-/// Connects the virtual MTP device and builds an `MtpVolume` over its first
-/// (writable) storage. Returns the device id, the volume, the backing dir of
-/// that storage, and the guard that keeps both alive.
-async fn connect_virtual_device() -> (String, Arc<dyn Volume>, PathBuf, VirtualDeviceGuard) {
-    let guard = VirtualDeviceGuard {
-        _lock: virtual_device_test_lock().lock().await,
-        fixture: setup_virtual_mtp_device(),
-    };
-    let location_id = guard.fixture.location_id;
-    let backing = guard.fixture.root().join("internal");
-    // The virtual device reports a serial, so its Cmdr id is serial-based; take
-    // it from discovery rather than rebuilding it from the location id.
-    let device_id = crate::mtp::list_mtp_devices()
-        .into_iter()
-        .find(|d| d.location_id == location_id)
-        .map(|d| d.id)
-        .expect("the virtual device must appear in discovery");
-    let info = connection_manager()
-        .connect(&device_id, DeviceWatch::Off)
-        .await
-        .expect("virtual-mtp connect");
-    let storage_id = info.storages.first().expect("at least one virtual storage").id;
-    let volume: Arc<dyn Volume> = Arc::new(MtpVolume::new(
-        Arc::clone(connection_manager()),
-        &device_id,
-        storage_id,
-        "Test",
-    ));
-    (device_id, volume, backing, guard)
+    // No rescan: the device isn't open yet, so the connect enumerates the backing
+    // dir as it now stands. `rescan_virtual_device` is for seeding a device that's
+    // ALREADY connected.
+    let device = test_support::connect_fixture(fixture).await;
+    let volume: Arc<dyn Volume> = Arc::new(test_support::volume_for(&device, None).await);
+    (device, volume, backing, lock)
 }
 
 /// `resolve_path_to_handle` is cache-only, so a path is unreachable until an
@@ -88,6 +67,7 @@ async fn prime_path_handles(volume: &Arc<dyn Volume>, dirs: &[&str]) {
             .unwrap_or_else(|e| panic!("priming listing for {dir}: {e:?}"));
     }
 }
+
 
 fn write_backing_file(backing: &Path, rel: &str, content: &[u8]) {
     let abs = backing.join(rel);
@@ -105,15 +85,15 @@ fn write_backing_file(backing: &Path, rel: &str, content: &[u8]) {
 /// probe error, no race, and no failure reported to the user.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn same_volume_merge_move_keeps_a_skipped_child_on_mtp() {
-    let (device_id, volume, backing, _guard) = connect_virtual_device().await;
-
-    // Source `/src/album`: one clashing child (Skip keeps it here) and one
-    // fresh child that moves across.
-    write_backing_file(&backing, "src/album/clash.txt", b"SRC-clash");
-    write_backing_file(&backing, "src/album/fresh.txt", b"SRC-fresh");
-    // Dest `/dst/album`: the same-named child the source clashes with.
-    write_backing_file(&backing, "dst/album/clash.txt", b"DEST-clash");
-    rescan_virtual_device().expect("the virtual device must rescan its backing dir");
+    // Source `/src/album`: one clashing child (Skip keeps it here) and one fresh
+    // child that moves across. Dest `/dst/album`: the same-named child the source
+    // clashes with.
+    let (device, volume, backing, _lock) = connect_seeded_device(&[
+        ("src/album/clash.txt", b"SRC-clash"),
+        ("src/album/fresh.txt", b"SRC-fresh"),
+        ("dst/album/clash.txt", b"DEST-clash"),
+    ])
+    .await;
 
     prime_path_handles(&volume, &["/", "/src", "/src/album", "/dst", "/dst/album"]).await;
 
@@ -172,8 +152,5 @@ async fn same_volume_merge_move_keeps_a_skipped_child_on_mtp() {
         source_album.iter().map(|e| &e.name).collect::<Vec<_>>()
     );
 
-    connection_manager()
-        .disconnect(&device_id, MtpDisconnectReason::User)
-        .await
-        .expect("virtual-mtp disconnect");
+    test_support::teardown(device).await;
 }

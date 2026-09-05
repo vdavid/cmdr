@@ -1,59 +1,25 @@
 //! The shared `Volume` conformance promises, asserted against a virtual MTP
 //! device.
 //!
-//! These live apart from `mtp_test.rs` because they assert something different
-//! in kind: not how this backend behaves, but that it keeps the contracts
-//! `cmdr_fs::volume::conformance` holds EVERY backend to. `mtp_delete_test.rs`
-//! is the third sibling — the non-recursion contract needs enough MTP-specific
-//! scaffolding (`MtpDeleteScope`) to earn its own file. The SMB twin is
-//! `cmdr-smb`'s `volume::conformance_test`.
-//!
-//! Every test here drives a virtual MTP device, so the whole file carries that
-//! feature gate (declared in `backends/mod.rs`).
+//! These live apart from `volume_impl_test.rs` because they assert something
+//! different in kind: not how this backend behaves, but that it keeps the
+//! contracts `cmdr_fs::volume::conformance` holds EVERY backend to.
+//! `delete_test.rs` is the third sibling — the non-recursion contract needs
+//! enough MTP-specific scaffolding (`MtpDeleteScope`) to earn its own file. The
+//! SMB twin is `cmdr-smb`'s `volume::conformance_test`.
 
-use super::Volume;
-use cmdr_mtp::MtpVolume;
 use std::path::Path;
 
-use crate::mtp::DeviceWatch;
-use crate::mtp::connection_manager;
-use cmdr_mtp::virtual_device::{
-    VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
-};
-use std::sync::Arc;
 
-/// Connects the virtual device and builds an `MtpVolume` over its writable
-/// storage, with the root listing primed (`resolve_path_to_handle` is
-/// cache-only).
-async fn connect_primed_volume(fixture: &VirtualDeviceFixture) -> (String, MtpVolume) {
-    let device_id = crate::mtp::list_mtp_devices()
-        .into_iter()
-        .find(|d| d.location_id == fixture.location_id)
-        .map(|d| d.id)
-        .expect("the virtual device must appear in discovery");
-    let info = connection_manager()
-        .connect(&device_id, DeviceWatch::Off)
-        .await
-        .expect("virtual-mtp connect should succeed");
-    let storage_id = info.storages.first().expect("virtual device should have storages").id;
-    let volume = MtpVolume::new(Arc::clone(connection_manager()), &device_id, storage_id, "Test");
-    volume
-        .list_directory(Path::new("/"), None)
-        .await
-        .expect("priming the root listing");
-    (device_id, volume)
-}
+use crate::testing::{ConnectedDevice, connect_virtual_device, device_lock, test_connection_manager, volume_for};
+use crate::volume::MtpVolume;
 
-/// Disconnects AND unregisters. Both halves are load-bearing: a device left
-/// registered survives into the next test in this binary, which then connects to
-/// a stale storage handle over a `TempDir` that's already gone and fails on its
-/// first write with a bare protocol error.
-async fn teardown(device_id: &str, fixture: &VirtualDeviceFixture) {
-    connection_manager()
-        .disconnect(device_id, crate::mtp::MtpDisconnectReason::User)
-        .await
-        .expect("virtual-mtp disconnect should succeed");
-    unregister_virtual_mtp_device(fixture.location_id);
+/// A connected device and a volume over its writable storage, with `primed`
+/// listed as well as the root.
+async fn connect_primed_volume(primed: Option<&str>) -> (ConnectedDevice, MtpVolume) {
+    let device = connect_virtual_device(test_connection_manager()).await;
+    let volume = volume_for(test_connection_manager(), &device, primed).await;
+    (device, volume)
 }
 
 /// The shared `Volume::rename` no-clobber assertion, over a real `MtpVolume`.
@@ -67,15 +33,8 @@ async fn teardown(device_id: &str, fixture: &VirtualDeviceFixture) {
 /// probe can't be anything tighter: `mtp/volume_impl.rs`, on the guard itself.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn rename_honors_the_shared_no_clobber_contract() {
-    let _guard = virtual_device_test_lock().lock().await;
-    let fixture = setup_virtual_mtp_device();
-    let (device_id, volume) = connect_primed_volume(&fixture).await;
-    // `resolve_path_to_handle` is cache-only, and `connect_primed_volume` stops
-    // at the root, so a nested path has to be reached through its parent.
-    volume
-        .list_directory(Path::new("/Documents"), None)
-        .await
-        .expect("priming the Documents listing");
+    let _guard = device_lock().await;
+    let (device, volume) = connect_primed_volume(Some("/Documents")).await;
 
     cmdr_fs::volume::conformance::assert_rename_refuses_an_existing_destination(
         &volume,
@@ -84,7 +43,7 @@ async fn rename_honors_the_shared_no_clobber_contract() {
     )
     .await;
 
-    teardown(&device_id, &fixture).await;
+    device.teardown(test_connection_manager()).await;
 }
 
 /// The shared `Volume::create_directory_all` honesty assertion, over a real
@@ -99,9 +58,8 @@ async fn rename_honors_the_shared_no_clobber_contract() {
 /// folder full of the user's files.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn create_directory_all_honors_the_shared_honesty_contract() {
-    let _guard = virtual_device_test_lock().lock().await;
-    let fixture = setup_virtual_mtp_device();
-    let (device_id, volume) = connect_primed_volume(&fixture).await;
+    let _guard = device_lock().await;
+    let (device, volume) = connect_primed_volume(None).await;
 
     cmdr_fs::volume::conformance::assert_create_directory_all_reports_an_existing_dir_honestly(
         &volume,
@@ -109,21 +67,20 @@ async fn create_directory_all_honors_the_shared_honesty_contract() {
     )
     .await;
 
-    teardown(&device_id, &fixture).await;
+    device.teardown(test_connection_manager()).await;
 }
 
 /// The shared writability-declaration assertion: `is_writable()` and what the
 /// device actually accepts say the same thing.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn is_writable_honors_the_shared_declaration_contract() {
-    let _guard = virtual_device_test_lock().lock().await;
-    let fixture = setup_virtual_mtp_device();
-    let (device_id, volume) = connect_primed_volume(&fixture).await;
+    let _guard = device_lock().await;
+    let (device, volume) = connect_primed_volume(None).await;
 
     cmdr_fs::volume::conformance::assert_writability_matches_the_mutations_offered(&volume, Path::new("/scratch"))
         .await;
 
-    teardown(&device_id, &fixture).await;
+    device.teardown(test_connection_manager()).await;
 }
 
 /// The shared export-handshake assertion, over a real `MtpVolume`: bytes come
@@ -136,29 +93,29 @@ async fn is_writable_honors_the_shared_declaration_contract() {
 /// `create_file` conformance cell either.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn export_honors_the_shared_handshake_contract() {
-    let _guard = virtual_device_test_lock().lock().await;
-    let fixture = setup_virtual_mtp_device();
+    let _guard = device_lock().await;
     let content = b"the bytes a copy would move";
+    let fixture = crate::virtual_device::setup_virtual_mtp_device();
     std::fs::write(fixture.root().join("internal/exported.txt"), content).expect("seed the file on the device");
-    cmdr_mtp::virtual_device::rescan_virtual_device();
-    let (device_id, volume) = connect_primed_volume(&fixture).await;
+    crate::virtual_device::rescan_virtual_device();
+    let device = crate::testing::connect_fixture(test_connection_manager(), fixture).await;
+    let volume = volume_for(test_connection_manager(), &device, None).await;
 
     cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(&volume, Path::new("/exported.txt"), content)
         .await;
 
-    teardown(&device_id, &fixture).await;
+    device.teardown(test_connection_manager()).await;
 }
 
 /// The shared `NotFound`-payload assertion, over a real `MtpVolume`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn not_found_honors_the_shared_path_payload_contract() {
-    let _guard = virtual_device_test_lock().lock().await;
-    let fixture = setup_virtual_mtp_device();
-    let (device_id, volume) = connect_primed_volume(&fixture).await;
+    let _guard = device_lock().await;
+    let (device, volume) = connect_primed_volume(None).await;
 
     cmdr_fs::volume::conformance::assert_not_found_carries_the_path(&volume, Path::new("/no-such-file.txt")).await;
 
-    teardown(&device_id, &fixture).await;
+    device.teardown(test_connection_manager()).await;
 }
 
 /// The shared conflict-scan assertion, over a real `MtpVolume`: a destination
@@ -166,9 +123,8 @@ async fn not_found_honors_the_shared_path_payload_contract() {
 /// cache-aware listing hands back for a path it can't resolve.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn conflict_scan_honors_the_shared_missing_destination_contract() {
-    let _guard = virtual_device_test_lock().lock().await;
-    let fixture = setup_virtual_mtp_device();
-    let (device_id, volume) = connect_primed_volume(&fixture).await;
+    let _guard = device_lock().await;
+    let (device, volume) = connect_primed_volume(None).await;
 
     cmdr_fs::volume::conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
         &volume,
@@ -176,5 +132,5 @@ async fn conflict_scan_honors_the_shared_missing_destination_contract() {
     )
     .await;
 
-    teardown(&device_id, &fixture).await;
+    device.teardown(test_connection_manager()).await;
 }

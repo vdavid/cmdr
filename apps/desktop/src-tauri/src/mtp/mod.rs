@@ -19,7 +19,15 @@
 pub mod events;
 #[cfg(target_os = "macos")]
 pub mod macos_workaround;
+/// What the app-side MTP suites reach a virtual device through: the crate's
+/// fixtures, over the manager THIS app parked.
+#[cfg(all(test, feature = "virtual-mtp"))]
+pub(crate) mod test_support;
 pub mod volume_wiring;
+/// The registrar this module hands the session layer, asserted through the app's
+/// own volume registry.
+#[cfg(all(test, feature = "virtual-mtp"))]
+mod volume_wiring_test;
 pub mod watcher;
 
 #[cfg(feature = "virtual-mtp")]

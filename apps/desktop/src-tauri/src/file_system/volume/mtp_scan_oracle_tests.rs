@@ -24,10 +24,8 @@ use crate::file_system::listing::caching_test_support::{TestListing, TestListing
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{MtpVolume, ScanBoundary, Volume, WatchCoverage};
-use crate::mtp::DeviceWatch;
-use crate::mtp::MtpDisconnectReason;
 use crate::mtp::connection_manager;
-use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+use crate::mtp::test_support::{self, ConnectedDevice, device_lock};
 
 use cmdr_mtp::volume::testing;
 
@@ -67,43 +65,34 @@ fn insert_listing(tag: &str, volume_id: &str, path: &str, entries: Vec<FileEntry
 /// Keeps a test's virtual device alive and exclusive: the process-wide lock (all
 /// virtual devices share one serial, hence one Cmdr device id) plus the fixture
 /// owning its temp backing dir. Held for the test body, released on drop.
-struct VirtualDeviceGuard {
+/// The device this file's cells drive, plus the ids they address it by.
+///
+/// The lock guard rides along so a cell keeps it for its whole span: all virtual
+/// devices register under one serial, hence one Cmdr device id, which matters
+/// whenever several run in the SAME process (plain `cargo test`; nextest forks
+/// per test).
+struct Fixture {
     _lock: tokio::sync::MutexGuard<'static, ()>,
-    fixture: cmdr_mtp::virtual_device::VirtualDeviceFixture,
+    device: ConnectedDevice,
+    volume: Arc<MtpVolume>,
+    /// `"{device_id}:{storage_id}"`, what `MtpVolume::new` computes internally.
+    /// See `mtp/CLAUDE.md` § Volume IDs.
+    volume_id: String,
 }
 
-/// Connects the virtual MTP device, builds an `MtpVolume` for its first
-/// storage, and returns `(device_id, volume, volume_id)`. The volume_id format
-/// matches what `MtpVolume::new` computes internally
-/// (`"{device_id}:{storage_id}"`); see `mtp/CLAUDE.md` § Volume IDs.
-async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String, VirtualDeviceGuard) {
-    let guard = VirtualDeviceGuard {
-        _lock: virtual_device_test_lock().lock().await,
-        fixture: setup_virtual_mtp_device(),
-    };
-    let location_id = guard.fixture.location_id;
-    // Derive the canonical device id from discovery, not `mtp-{location_id}`: the
-    // virtual device reports a serial, so its id is serial-based
-    // (`device_id_for`), and the connect path resolves by matching the live
-    // enumeration's `.id`.
-    let device_id = crate::mtp::list_mtp_devices()
-        .into_iter()
-        .find(|d| d.location_id == location_id)
-        .map(|d| d.id)
-        .expect("the virtual device must appear in discovery");
-    let info = connection_manager()
-        .connect(&device_id, DeviceWatch::Off)
-        .await
-        .expect("virtual-mtp connect");
-    let storage_id = info.storages.first().expect("at least one virtual storage").id;
-    let vol = Arc::new(MtpVolume::new(
-        Arc::clone(connection_manager()),
-        &device_id,
-        storage_id,
-        "Test",
-    ));
-    let volume_id = format!("{}:{}", device_id, storage_id);
-    (device_id, vol, volume_id, guard)
+/// Connects the app to a virtual MTP device and builds a volume over its first
+/// storage, registered nowhere yet.
+async fn connect_virtual_device() -> Fixture {
+    let lock = device_lock().await;
+    let device = test_support::connect_virtual_device().await;
+    let volume_id = format!("{}:{}", device.id, device.storage_id);
+    let volume = Arc::new(test_support::volume_for(&device, None).await);
+    Fixture {
+        _lock: lock,
+        device,
+        volume,
+        volume_id,
+    }
 }
 
 /// Test 1: on oracle hit, the MTP override skips its `list_directory` call
@@ -111,7 +100,8 @@ async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String, VirtualDev
 /// aggregate; no MTP I/O happens for those entries.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
-    let (device_id, vol, vid, _guard) = connect_virtual_device().await;
+    let fixture = connect_virtual_device().await;
+    let (vol, vid) = (Arc::clone(&fixture.volume), fixture.volume_id.clone());
     // Register the volume so the oracle's `VolumeManager::get(vid)` finds it
     // and the `listing_watch_coverage` gate reports coverage (device connected).
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
@@ -158,10 +148,7 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
     assert_eq!(result.per_path.len(), 3);
 
     get_volume_manager().unregister(&vid);
-    connection_manager()
-        .disconnect(&device_id, MtpDisconnectReason::User)
-        .await
-        .expect("virtual-mtp disconnect");
+    test_support::teardown(fixture.device).await;
 }
 
 /// Test 2: no cached listing → the cold-cache parent-grouping optimization
@@ -169,7 +156,8 @@ async fn mtp_scan_uses_oracle_on_hit_skips_list_directory() {
 /// `list_directory` calls.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
-    let (device_id, vol, vid, _guard) = connect_virtual_device().await;
+    let fixture = connect_virtual_device().await;
+    let (vol, vid) = (Arc::clone(&fixture.volume), fixture.volume_id.clone());
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
 
     // MTP needs the parent's path-handle cached before it can list any path
@@ -242,10 +230,7 @@ async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
     );
 
     get_volume_manager().unregister(&vid);
-    connection_manager()
-        .disconnect(&device_id, MtpDisconnectReason::User)
-        .await
-        .expect("virtual-mtp disconnect");
+    test_support::teardown(fixture.device).await;
 }
 
 /// The shared stop assertion, against the virtual MTP device.
@@ -260,7 +245,8 @@ async fn mtp_scan_cold_cache_still_uses_parent_grouping() {
 /// `virtual_device_test_lock`.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn mtp_batch_scan_stops_when_it_is_told_to() {
-    let (device_id, vol, vid, _guard) = connect_virtual_device().await;
+    let fixture = connect_virtual_device().await;
+    let (vol, vid) = (Arc::clone(&fixture.volume), fixture.volume_id.clone());
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
     // MTP resolves a path through a cache that browsing populates, so walk root
     // first or `/DCIM` isn't addressable yet.
@@ -269,10 +255,7 @@ async fn mtp_batch_scan_stops_when_it_is_told_to() {
     cmdr_fs::volume::conformance::assert_batch_scan_stops_when_told(vol.as_ref(), Path::new("/DCIM")).await;
 
     get_volume_manager().unregister(&vid);
-    connection_manager()
-        .disconnect(&device_id, MtpDisconnectReason::User)
-        .await
-        .expect("virtual-mtp disconnect");
+    test_support::teardown(fixture.device).await;
 }
 
 /// The boundary is asked INSIDE the subtree recursion, not once per source path:
@@ -280,15 +263,13 @@ async fn mtp_batch_scan_stops_when_it_is_told_to() {
 /// a backend asking only per path would come up short here.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn mtp_batch_scan_asks_its_boundary_inside_the_walk() {
-    let (device_id, vol, vid, _guard) = connect_virtual_device().await;
+    let fixture = connect_virtual_device().await;
+    let (vol, vid) = (Arc::clone(&fixture.volume), fixture.volume_id.clone());
     get_volume_manager().register(&vid, vol.clone() as Arc<dyn Volume>);
     vol.list_directory(Path::new("/"), None).await.expect("listing /");
 
     cmdr_fs::volume::conformance::assert_batch_scan_asks_inside_the_walk(vol.as_ref(), Path::new("/DCIM"), 3).await;
 
     get_volume_manager().unregister(&vid);
-    connection_manager()
-        .disconnect(&device_id, MtpDisconnectReason::User)
-        .await
-        .expect("virtual-mtp disconnect");
+    test_support::teardown(fixture.device).await;
 }
