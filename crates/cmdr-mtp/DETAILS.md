@@ -70,6 +70,57 @@ all — the counter reads `pub mod` only at the root). So the app's MTP suites c
 and nothing measures the fixture surface's own growth — keep it a fixture surface by reading § "Which side a test lives
 on", not by watching a number.
 
+## What `MtpVolume` does differently
+
+A phone answers a different set of questions than a filesystem, so five places in the `Volume` impl deviate from what
+every other backend does, and each deviation is load-bearing.
+
+**A copy scan groups by parent.** `scan_for_copy_batch_with_boundary` is overridden because MTP has no single-file stat:
+`get_metadata(path)` lists the parent and searches by name. A naive scan calling it per path would re-list
+`/DCIM/Camera` (15k entries, ~17 s over USB) for every selected photo. The override groups the input paths by parent,
+calls `list_directory(parent, on_progress)` once per unique parent, and indexes the entries by name for O(1) lookups.
+**The fresh-listing oracle layers on top**: before listing a parent it asks `ListingHost::authoritative_listing`, and a
+hit replaces the listing call entirely, so no USB I/O is paid for that parent. A miss falls through to the
+one-listing-per-parent path, so a cold cache is no slower. The decision is per parent, and one batch can mix
+watcher-fresh and cold ones.
+
+**❗ `get_metadata` is expensive, always.** It lists the entire parent directory and searches by name, because MTP has
+no stat. `notify_mutation` pays it after each self-mutation (create, delete, rename), which is fine because those are
+infrequent. ❌ Never call it in a hot path.
+
+**A dropped read stream is safe, and needs no `Drop` impl.** `MtpReadStream` reads in bounded
+`GetPartialObject64(offset, MTP_READ_WINDOW)` windows (§ "Bounded-window reads" in `src/connection/DETAILS.md` owns the
+windowing and offset accounting). Between windows nothing is in flight — no held `FileDownload`, no pinned PTP session —
+so a cancel, pause, or drop has nothing to abort or drain, and `cancel_and_release` is the trait's default no-op. A
+stream dropped WHILE a window read is in flight is still safe: mtp-rs's `TransactionScope` flags the pipe and the next
+op drains it under the operation lock, one ~300 ms self-heal. ❌ Don't re-add a `Drop` cancel here; with no held
+`FileDownload`, mtp-rs's unconsumed-drop panic can't apply.
+
+**A conflict scan settles a missing destination through `get_metadata`, not a `NotFound` arm.** Every other backend
+reads `VolumeError::NotFound` from the destination listing as "nothing clashes" and answers an empty list. MTP can't:
+`resolve_path_to_handle` is cache-only, so a path nobody has browsed to fails as a generic `IoError` ("path not in
+cache"), which is honest, because it means UNKNOWN rather than absent. Reading every listing failure as absence would
+let a disconnected device pass for an empty folder and clear the copy to run. `get_metadata` settles it by listing the
+PARENT, so only a confirmed-absent destination reads as empty and every other failure stays the caller's to see. It
+costs one extra parent listing, on the error path only.
+
+### The no-clobber rename is check-then-act
+
+`MtpVolume::rename` earns the `force == false` refusal by asking `exists(to)` and then moving. Every other backend
+claims the name with a primitive the other end refuses (`renamex_np(RENAME_EXCL)`, an SFTP `create_new` placeholder or
+plain `SSH_FXP_RENAME`, WebDAV's `Overwrite: F`, SMB's `ReplaceIfExists == false`), so MTP is the only one whose refusal
+has a window in it. The conformance cell is `volume::conformance_test::rename_honors_the_shared_no_clobber_contract`.
+
+**Decision: leave the window open and say so, rather than build machinery around it. Why:** MTP offers nothing tighter
+to build on (verified on `mtp-rs` 0.32.0, source read, 2026-09-02). A same-directory rename is
+`SetObjectPropValue(0x9804)` on `ObjectFileName(0xDC07)`, and a cross-directory move is `MoveObject(0x1019)` with params
+`[handle, storage_id, parent]`; neither takes an overwrite or exclusive flag, and PTP's response-code enum has no
+collision code to read one out of (`StoreFull`, `AccessDenied`, `InvalidParameter`, and no `ObjectAlreadyExists`). The
+protocol also permits two siblings with the same name, so a device asked to collide doesn't refuse: it complies, and the
+user ends up with a duplicate. ❌ Don't reach for a lock or a retry loop here. Cmdr isn't the only writer — the phone's
+own apps and MTP's other clients mutate the same storage — so a lock this side would buy nothing and read like a
+guarantee.
+
 ## Two features, two different axes
 
 - **`testing`** means "this is a test build". It publishes `volume::testing` (the `list_directory` call counter and the
@@ -145,16 +196,44 @@ is invisible until something invalidates the cache; `rescan_virtual_device` is f
 the recording registrar, both process-wide the way the app's parked manager is. Every cell reaching them holds
 `virtual_device_test_lock` for its whole span, and under `cargo nextest` each cell is its own process anyway.
 
+### Three properties a cell must not break
+
+`setup_virtual_mtp_device()` hands back a `VirtualDeviceFixture` owning a **fresh temp backing root**, registered with
+the **watcher off**. Breaking one of these shows up as suite flake rather than as a failure that names itself:
+
+- **Per-test root.** `setup_virtual_mtp_device_at` WIPES its root, so any two cells sharing one delete each other's
+  fixtures mid-run. ❌ Never point a cell at `MTP_FIXTURE_ROOT`; that's the E2E and dev startup root.
+- **Watcher off.** Each device's backing-dir watch is a real FSEvents / inotify watch. Several concurrent test processes
+  each holding one starve delivery and push these cells past nextest's 8 s cap. A cell syncs the object tree explicitly
+  with `rescan_virtual_device()` instead, so nothing needs the watcher. Only the E2E path arms it.
+- **Lock + unregister.** Every virtual device registers under the same serial (`cmdr-e2e-virtual`), so they share ONE
+  Cmdr device id: `resolve_device_location_id` matches the FIRST registration with that id, and `connect()` is
+  idempotent per device id. Under `cargo nextest` (process per cell) that's harmless; under plain `cargo test` two cells
+  would silently share one connection pointed at the wrong backing dir. `virtual_device_test_lock()` covers it, and
+  `unregister_virtual_mtp_device(location_id)` on teardown stops a finished cell's registration from answering for the
+  next one. Hold the guard across register → connect → use → disconnect → unregister;
+  `src/connection/path_cache_sync_test.rs` is the reference shape.
+
+There is deliberately NO nextest `virtual-mtp` test-group: with no shared resource left, serializing would only hide the
+next real race.
+
+### Building the fixture's device config
+
+**Build `VirtualDeviceConfig` with `..Default::default()`** and state only the fields this fixture actually cares about,
+so a new field upstream doesn't break the build (`supports_partial_object_64` did exactly that once). ❌ Don't re-expand
+the literal to name every field. The defaults model a modern Android device (`supports_rename` and
+`supports_partial_object_64` both true), which matches the Pixel 9 this fixture stands in for; set
+`supports_partial_object_64: false` explicitly to exercise mtp-rs's 32-bit `GetPartialObject` fallback, the PTP-camera
+path.
+
 ## Running the suites
 
 ```
 cargo nextest run --workspace --features cmdr/virtual-mtp -E 'package(cmdr-mtp) + test(mtp)'
 ```
 
-The feature is spelled `cmdr/virtual-mtp` rather than bare, so it resolves the same way the shared `desktop-rust-tests`
-lane resolves it and no rebuild is triggered by the flip. Plain `cargo test` fails the virtual-device cells: every fake
-phone registers under one serial, so two cells in one process share a connection, and `virtual_device_test_lock` is what
-covers that. ❌ Never drop the lock from a virtual-device cell.
+Why the feature is package-qualified, why `cargo test` is not a substitute, and which door each side reaches a device
+through: `docs/tooling/virtual-mtp.md` § "Running the Rust suites against it".
 
 ## Dependencies
 

@@ -868,7 +868,7 @@ protected nothing while looking like coverage. It's test-only (never enters a pr
 (`cmdr/virtual-mtp`): a bare `--features virtual-mtp` changes meaning once more than one package is selected.
 
 Prerequisites these tests rely on (per-test temp backing root, watcher off, `virtual_device_test_lock()`):
-`apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Rust tests that drive the device".
+`crates/cmdr-mtp/DETAILS.md` § "Three properties a cell must not break".
 
 ### The bindings regen is the one invocation outside Go
 
@@ -1267,8 +1267,10 @@ nothing" and passes). Anything narrower than every first-party member carries a 
 - **`desktop-rust-log-error-macro`** is `AppTreeOnly`. `log_error!` is a crate-root `macro_rules!` no separate crate can
   invoke, so pointing it at `crates/` would make every diagnostic `log::error!` there a hard failure with no legal
   alternative. Crates raise errors as typed values the app re-raises.
-- **`desktop-rust-mtp-dropping-timeout`** and **`desktop-rust-mtp-no-transport-reset`** are `AppTreeOnly`: both are
-  scoped to `src/mtp/`, one app-side USB subsystem.
+- **`desktop-rust-mtp-dropping-timeout`** and **`desktop-rust-mtp-no-transport-reset`** declare `KindApp` and then
+  narrow further, to the TWO trees the MTP subsystem spans: all of `crates/cmdr-mtp/src/` plus the app's `src/mtp/`.
+  Both rules are about a PTP transaction on the wire, and both trees issue mtp-rs calls. The decision entries for the
+  two checks, further down, carry the full rationale.
 - **`desktop-rust-sqlite-open-direct`** is `app` only. The page-cache slab is process-wide, so a standalone CLI opening
   the first connection in its own process has nothing to protect.
 - **`desktop-rust-write-ops-agent-isolation`** is `AppTreeOnly`. It fences `file_system/write_operations/`, which only
@@ -1379,10 +1381,10 @@ doubles as production code.
 
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
   scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
-  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere
-  in its `cargo metadata` tree, plus a per-bucket public-surface ceiling on all of them except `cmdr-fs`, which is
-  permanently uncapped: it's shared vocabulary whose job is to be named from everywhere. See
-  `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
+  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-mtp` — reaches `tauri`,
+  `tauri-specta`, or `cmdr` anywhere in its `cargo metadata` tree, plus a per-bucket public-surface ceiling on all of
+  them except `cmdr-fs`, which is permanently uncapped: it's shared vocabulary whose job is to be named from everywhere.
+  See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in
   `index-crate-isolation.go` for the backend ones, and why raising any of them needs David's say-so),
   nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a per-test cap
   or `test-group` can't be silently detached by a module move; it lists the workspace's tests with

@@ -42,10 +42,9 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
 - **The event loop reports through the host seams.** ❌ Never diff here (the host sorts each pane first), ❌ never one
   call per entry, ❌ never `tokio::spawn` (use `host().runtime()`), and clear the `ListingCache` before a `FullRefresh`
   or the host's re-read gets stale entries. Which change goes where: `DETAILS.md`.
-- **❌ Nothing here names a `tauri` type.** A device's lifecycle goes out as a typed `MtpDeviceEvent` through the
-  manager's `MtpDeviceEvents` sink; `crate::mtp::events` holds the payloads and the one match that maps them. A manager
-  with no window gets `no_device_events()`, so ❌ there is no `Option` to unwrap. Whether the device is POLLED is the
-  separate `DeviceWatch` argument, whose own doc says when a caller wants it off.
+- **❌ Nothing here names a `tauri` type.** Lifecycle leaves as a typed `MtpDeviceEvent` through the manager's
+  `MtpDeviceEvents` sink; the app's `mtp/events.rs` maps it. A manager with no window gets `no_device_events()`, so ❌
+  no `Option` to unwrap. Whether the device is POLLED is the separate `DeviceWatch` argument.
 - **`MtpDisconnectReason::User` is only the settings toggle or an explicit disconnect**; hotplug loss and I/O drops are
   `Removed`, else unstable USB reads as repeated unplugs.
 - **Test-gated behavior takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off in a consumer's

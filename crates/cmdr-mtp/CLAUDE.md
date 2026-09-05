@@ -37,5 +37,5 @@ missing udev rule (`resources/99-cmdr-mtp.rules`) reads as `PermissionDenied`. T
 - **`missing_docs` is denied.** Every `pub` item says what a caller must know; a doc restating the signature is worse
   than none, and specta copies these into `bindings.ts`.
 
-The boundary's rationale, the capped surface item by item, and which side a test lives on: `DETAILS.md`. Read it before
-any non-trivial work here.
+The boundary's rationale, the capped surface item by item, the five places `MtpVolume` deviates from every other
+backend, and which side a test lives on: `DETAILS.md`. Read it before any non-trivial work here.

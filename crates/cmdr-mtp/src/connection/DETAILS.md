@@ -127,14 +127,15 @@ listing/nav/metadata op, never a second transfer, so there's no transfer-vs-tran
 inversion — both yield to the same signal. Mechanics + the debounce/min-progress-floor tuning live in
 `write_operations/transfer/DETAILS.md` § "Foreground auto-yield".
 
-**Gate-before-resolve (`event_loop.rs` + `indexing/transports/mtp/watch.rs`).** `feed_index_added_or_changed` now asks
-`indexing::buffer_mtp_handle_if_scanning(volume_id, storage_id, handle)` FIRST, per indexed storage, with NO device
-touch. If that volume is scanning it buffers the RAW handle (`BufferedChange::UpsertHandle`) and the caller skips the
-resolve; only a non-scanning storage resolves live. Removals already buffered the bare handle; now adds/changes do too.
-`replay_buffered_mtp_changes` applies the sync changes immediately, then spawns one task to resolve the buffered raw
-handles (post-scan, device idle) and upsert them — a failed resolve is dropped (the scan already captured the object;
-any later change re-fires). The buffered-handle storage can be the wrong one (we don't know which storage owns a handle
-without resolving), but the wrong storage's replay resolve fails cleanly, matching the existing per-storage skip.
+**Gate-before-resolve (`event_loop.rs` + `crates/cmdr-index/src/indexing/transports/mtp/watch.rs`).**
+`feed_index_added_or_changed` now asks `indexing::buffer_mtp_handle_if_scanning(volume_id, storage_id, handle)` FIRST,
+per indexed storage, with NO device touch. If that volume is scanning it buffers the RAW handle
+(`BufferedChange::UpsertHandle`) and the caller skips the resolve; only a non-scanning storage resolves live. Removals
+already buffered the bare handle; now adds/changes do too. `replay_buffered_mtp_changes` applies the sync changes
+immediately, then spawns one task to resolve the buffered raw handles (post-scan, device idle) and upsert them — a
+failed resolve is dropped (the scan already captured the object; any later change re-fires). The buffered-handle storage
+can be the wrong one (we don't know which storage owns a handle without resolving), but the wrong storage's replay
+resolve fails cleanly, matching the existing per-storage skip.
 
 **Deadlock-freedom and progress.** The gate state is touched without holding the device lock, and the device lock is the
 only OS lock and always released at a unit boundary — no lock-ordering cycle. Foreground never waits on
@@ -151,13 +152,15 @@ so a cancel stops within one round trip; heal-to-rescan, freshness, and buffer/r
 
 Five things happen to a device that the user has to see: it came up, it went away, a storage left it, another process
 holds it, or the OS refused it. The session layer reports each as an `MtpDeviceEvent` through an `MtpDeviceEvents` sink
-it is handed, and `crate::mtp::events` turns them into the `tauri_specta` events the frontend subscribes to. So the code
-that talks to the device names no `tauri` type, carries no `specta` derive, and writes no English beyond a log line.
+it is handed, and the app's `apps/desktop/src-tauri/src/mtp/events.rs` turns them into the `tauri_specta` events the
+frontend subscribes to. So the code that talks to the device names no `tauri` type, carries no `specta` derive, and
+writes no English beyond a log line.
 
 **Who passes what.** Nobody, per call: the sink is a constructor argument, so every report a manager makes goes to the
 one place its builder chose. The app builds `TauriMtpDeviceEvents` at startup, where it has the handle; a test binary
 that never ran `setup()` gets the detached sink; a test that wants to assert on the sequence builds its own manager
-around `RecordingMtpDeviceEvents` (`crate::mtp::connection_manager_for_test`).
+around `RecordingMtpDeviceEvents` with `MtpConnectionManager::new`, rather than taking the shared one
+`connection::testing` hands out.
 
 **Where events go and whether to poll are two questions.** The `Option<AppHandle>` this replaced answered both at once,
 so a caller with no window silently also got no device watch. The sink is the manager's, and `connect` takes a separate
@@ -452,9 +455,9 @@ happens: for each indexed storage on the device (`indexing::registered_mtp_volum
 `resolve_object_for_index` (the handle→path walk plus one `GetObjectInfo` for size / is-dir / modified) and forwards an
 `indexing::MtpUpsert` carrying the handle; the first storage where the handle resolves wins (the object lives in exactly
 one). A removal costs no round trip at all: the object is gone, so each indexed storage matches on the handle it stored.
-The translation, ordering, and buffer-during-scan logic live in `indexing/transports/mtp/watch.rs` (see
-`indexing/DETAILS.md` § "MTP indexing"); the event loop only resolves + forwards. The handle is stored in the index
-`inode` column at scan time too (`directory_ops.rs`).
+The translation, ordering, and buffer-during-scan logic live in `crates/cmdr-index/src/indexing/transports/mtp/watch.rs`
+(see `crates/cmdr-index/src/indexing/transports/DETAILS.md` § "MTP (`mtp/`)"); the event loop only resolves + forwards.
+The handle is stored in the index `inode` column at scan time too (`directory_ops.rs`).
 
 ## Where a cell lives, and why no glob prelude
 
@@ -476,7 +479,8 @@ Same answer SMB gave (`crates/cmdr-fs/src/volume/host/DETAILS.md` § "Test modul
 ## No dropping timeouts
 
 **The rule:** nothing in this module wraps an mtp-rs call in `tokio::time::timeout`, and nothing aborts a task holding
-one. `pnpm check mtp-dropping-timeout` enforces it across `src/mtp/`.
+one. `pnpm check mtp-dropping-timeout` enforces it across this crate AND the app's `src/mtp/`, so the rule didn't weaken
+when the code split across the boundary.
 
 **Why.** A PTP transaction is command → data → response over one bulk pipe. Dropping the future mid-data-phase leaves
 the device expecting bytes nobody will send, or holding bytes nobody will read; the next transaction desyncs. mtp-rs's
@@ -507,11 +511,10 @@ safely behind it. `commands::util::timeout_detached_typed` is the shared helper 
 the deadline, so a command ships one union rather than a typed error plus a stringly-typed timeout);
 `indexing::network_scanner`'s `list_one_directory` and the streaming listing's cancel arm use the same shape.
 
-**Where the drops used to be** (all fixed, listed so nobody reintroduces one): every `tokio::time::timeout` in
-`file_ops.rs` / `directory_ops.rs` / `mutation_ops.rs` / `handle_resolver.rs`, the 3 s connect-time
-`probe_write_capability`, the 300 s upload cap, `listing_task.abort()` in `file_system/listing/streaming.rs`, the 120 s
-`LIST_TIMEOUT` in `indexing/network_scanner/mod.rs`, and the 2 s / 5 s / 30 s IPC caps in `commands/rename.rs` and
-`commands/file_system/volume_copy.rs`.
+**Where a deadline looks tempting**, so nobody adds one back: every device op in `file_ops.rs`, `directory_ops.rs`,
+`mutation_ops.rs`, and `handle_resolver.rs`, the connect-time `probe_write_capability`, and an upload cap. App-side the
+same shape is the streaming listing's task, the index's network scanner, and the rename and volume-copy IPC commands.
+The check covers both trees, so none of them needs watching by hand.
 
 **The two deliberate exceptions**, both annotated `// allowed-dropping-timeout:`: the device-lock wait
 (`acquire_device_lock` — a `tokio::Mutex`, nothing on the wire) and the event loop's 5 s `next_event()` poll (the

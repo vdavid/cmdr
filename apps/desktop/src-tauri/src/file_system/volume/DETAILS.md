@@ -23,7 +23,7 @@ in-memory test fixture. Callers never touch the filesystem directly; they call `
 - **`manager.rs`** (+ `manager/roots.rs`): `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default
   volume. Also holds the process-wide instance and its `get_volume_manager()` accessor. `roots.rs` holds the mount-root
   set each entry owns and the promotion rules over it
-- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume`, `MtpVolume`) and their tests, and nothing else. Every crate backend is imported by crate name at its call sites. See `backends/CLAUDE.md`.
+- **`backends/`**: the app-resident `Volume` impls (`LocalPosixVolume` only) and their tests, and nothing else. Every crate backend is imported by crate name at its call sites. See `backends/CLAUDE.md`.
 - **`friendly_error/`**: User-facing error messages + provider detection. See `friendly_error/CLAUDE.md`.
 
 ## Architecture
@@ -66,9 +66,9 @@ consumers: transfer engine, panes, delete, indexer BFS, viewer, MCP
 VolumeManager (registry; resolve routes .zip paths to ArchiveVolume)
         │
 backends ── file-ops face: impl Volume ──────────────────────────────┐
-  crate:  Archive  Smb  Sftp  WebDav  Adb                            │ cmdr-fs: Volume trait,
-  app:    LocalPosix (permanent)  Mtp (pre-seam)  InMemory (tests)   │ types, walkers, host seams
-        │  lifecycle face: VolumeHost seams (crates) / direct reaches (MTP)
+  crate:  Archive  Smb  Sftp  WebDav  Adb  Mtp                       │ cmdr-fs: Volume trait,
+  app:    LocalPosix (permanent)  InMemory (tests)                   │ types, walkers, host seams
+        │  lifecycle face: VolumeHost seams
 app-side halves: wiring + registration, discovery, keychain, mounts, ptpcamerad, DeviceVolumeProvider, tauri events
 ```
 

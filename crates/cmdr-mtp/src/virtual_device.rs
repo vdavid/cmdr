@@ -5,7 +5,9 @@
 //! exercise the full MTP UI flow without real hardware.
 //!
 //! Gated behind `--features virtual-mtp`. Never compiled into production builds.
-//! See `mtp/CLAUDE.md` § "Virtual MTP device" and `docs/tooling/virtual-mtp.md`.
+//! What a Rust cell must not break when it drives one is `DETAILS.md` § "Three
+//! properties a cell must not break"; the dev workflow is
+//! `docs/tooling/virtual-mtp.md`.
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 use log::info;
@@ -82,8 +84,8 @@ fn is_default_sentinel(value: &str) -> bool {
 ///
 /// `e2e_mode` comes from the CALLER rather than being read here: whether this
 /// process is an automated run is the app's question, with one source of truth
-/// (`crate::test_mode`) that several unrelated subsystems key off, and a copy of
-/// that env-var name down here would be a second one that can drift.
+/// in the app's own `test_mode` that several unrelated subsystems key off, and a
+/// copy of that env-var name down here would be a second one that can drift.
 pub fn activate_from_env_if_requested(e2e_mode: bool) -> Option<u64> {
     let skip_override = std::env::var("CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP")
         .map(|v| !v.is_empty())
@@ -285,7 +287,8 @@ pub fn rescan_virtual_device() -> Option<(usize, usize)> {
 /// files externally, then sync the object tree with [`rescan_virtual_device`]
 /// (which reads the backing dir directly). In E2E the watcher deliberately
 /// stays paused for the whole test body so late FSEvents can't race the test;
-/// see `mtp/DETAILS.md` § "Virtual device watcher in E2E".
+/// see `apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Virtual device watcher in
+/// E2E".
 pub fn pause_virtual_watcher() -> bool {
     let guard = mtp_rs::pause_watcher(VIRTUAL_DEVICE_SERIAL);
     let paused = guard.is_some();

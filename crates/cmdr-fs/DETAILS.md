@@ -330,7 +330,7 @@ everywhere, which is the point.
   replace, and each backend earns the refusal differently (`renamex_np(RENAME_EXCL)`, an SMB `stat` plus the server's
   `ReplaceIfExists == false`, an MTP `exists` probe, a map lookup). No shared mechanism to trust, only a shared promise.
   MTP's is the one that can't be atomic, and that's a property of the protocol rather than of the code:
-  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "MTP's no-clobber rename is check-then-act".
+  `crates/cmdr-mtp/DETAILS.md` § "The no-clobber rename is check-then-act".
 - `assert_create_file_refuses_to_clobber` — the New File command renders the refusal as "that name is taken", so a
   clobbering backend silently empties a file and reports success.
 - `assert_create_directory_all_reports_an_existing_dir_honestly` — `Created` promises the leaf was empty, and the

@@ -24,7 +24,7 @@ use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
 ///
 /// Since reads from a session-scarce backend (MTP) are bounded windows that hold
 /// nothing between chunks (the device's PTP session is free between windows — see
-/// `file_system/volume/backends/mtp.rs`), a pause or a foreground yield is simply
+/// `crates/cmdr-mtp/src/volume/streams.rs`), a pause or a foreground yield is simply
 /// **don't start the next window**: park before delegating the next
 /// `next_chunk().await`, then resume reading from the current offset. There's no
 /// session to release and nothing to reopen. Before each `next_chunk().await`, the

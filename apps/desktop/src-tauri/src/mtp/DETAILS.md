@@ -25,34 +25,9 @@ suite delete a running suite's tree mid-spec). The specs read the same path from
 tree mirrors `test/e2e-shared/mtp-fixtures.ts`. The gating logic (`decide_startup_root`) is pure and unit-tested in
 `virtual_device.rs::tests`.
 
-**Build `VirtualDeviceConfig` with `..Default::default()`** and state only the fields this fixture actually cares
-about. mtp-rs 0.26 added `Default` precisely so a new field doesn't break us: every prior field addition was a compile
-error here (0.24's `supports_partial_object_64` broke CI). Don't re-expand the literal to name every field. The
-defaults model a modern Android device (`supports_rename` and `supports_partial_object_64` both true), which matches
-the Pixel 9 this fixture stands in for; set `supports_partial_object_64: false` explicitly if you ever want to exercise
-mtp-rs's 32-bit `GetPartialObject` fallback (the PTP-camera path).
-
-### Rust tests that drive the device
-
-`setup_virtual_mtp_device()` is the one entry point: it hands back a `VirtualDeviceFixture` owning a **fresh temp
-backing root** and registers with the **watcher off**. Three properties matter, and the tests run in `pnpm check`
-(`desktop-rust-tests` passes `--features virtual-mtp`), so breaking one shows up as suite flake:
-
-- **Per-test root.** `setup_virtual_mtp_device_at` WIPES its root, so any two tests sharing one delete each other's
-  fixtures mid-run. ❌ Never point a test at `MTP_FIXTURE_ROOT`; that's the E2E/dev startup root.
-- **Watcher off.** Each device's backing-dir watch is a real FSEvents/inotify watch. Several concurrent test processes
-  each holding one starve delivery and push these tests past nextest's 8 s cap. Tests sync the object tree explicitly
-  with `rescan_virtual_device()` instead, so nothing needs the watcher. Only the E2E path arms it.
-- **Lock + unregister.** Every virtual device registers under the same serial (`cmdr-e2e-virtual`), so they share ONE
-  Cmdr device id: `resolve_device_location_id` matches the FIRST registration with that id, and `connect()` is
-  idempotent per device id. Under `cargo nextest` (process per test) that's harmless, but under plain `cargo test` two
-  tests would silently share one connection pointed at the wrong backing dir. `virtual_device_test_lock()` covers it;
-  `unregister_virtual_mtp_device(location_id)` on teardown stops a finished test's registration from answering for the
-  next one. Hold the guard across register → connect → use → disconnect → unregister;
-  `crates/cmdr-mtp/src/connection/path_cache_sync_test.rs` is the reference shape.
-
-There is deliberately NO nextest `virtual-mtp` test-group any more: with no shared resource left, serializing would
-only hide the next real race.
+The fixture itself is the crate's: what a Rust cell must not break when it drives one (per-test root, watcher off, the
+registration lock) and how its device config is built are `crates/cmdr-mtp/DETAILS.md` § "Three properties a cell must
+not break" and § "Building the fixture's device config".
 
 ### Virtual device watcher in E2E
 

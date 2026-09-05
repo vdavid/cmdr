@@ -74,11 +74,46 @@ Two pieces, both already in the repo for E2E:
   launched with none of those vars behaves like a plain build, so the dev opt-in never changes what E2E sees.
 
 This is the same device the Playwright MTP specs drive (see `apps/desktop/test/e2e-playwright/CLAUDE.md` and
-`apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Virtual MTP device"). The fixture tree matches
+`apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Virtual MTP device (dev + E2E activation)"). The fixture tree matches
 `apps/desktop/test/e2e-shared/mtp-fixtures.ts`.
+
+## Running the Rust suites against it
+
+MTP cells live on both sides of the crate boundary, and one command runs them all:
+
+```bash
+cargo nextest run --workspace --features cmdr/virtual-mtp -E 'package(cmdr-mtp) + test(mtp)'
+```
+
+`pnpm check rust-tests` covers the same cells: it runs the whole workspace suite with the same feature flag, so the
+filter above is the way to run only the MTP ones while you're iterating.
+
+Three things about that command are load-bearing:
+
+- **The feature is package-qualified** (`cmdr/virtual-mtp`, never a bare `virtual-mtp`). A bare one changes meaning as
+  soon as more than one package is selected, and the qualified spelling resolves the same way the shared lane resolves
+  it, so flipping between the two triggers no rebuild.
+- **The app's `virtual-mtp` forwards to the crate's `virtual-device`.** That's the only route: `cmdr-mtp` names its own
+  feature `virtual-device` (which in turn forwards to `mtp-rs/virtual-device`), and the app re-exports it under the name
+  the wrapper and the Playwright checker already know. Without it, `cargo nextest` silently filters every virtual-device
+  cell out and they protect nothing while looking like coverage.
+- **`cargo test` is not a substitute.** Every fake phone registers under one serial, so two cells in one process share a
+  connection. `virtual_device_test_lock()` covers that, and nextest's process-per-cell model makes it moot; `cargo test`
+  does not.
+
+Both sides reach a device through the same doors, parametrized by which manager they hand it:
+
+- A cell inside `cmdr-mtp` calls `cmdr_mtp::testing` (gated on `testing` plus `virtual-device`) with the crate's own
+  shared manager over a detached host.
+- An app-side cell calls `apps/desktop/src-tauri/src/mtp/test_support.rs`, which shadows each of those entry points with
+  a no-argument version over the manager the APP parked, so the listing cache, the index, and the volume registry see
+  what the device reports.
+
+What a cell must not break, and which side a cell belongs on: `crates/cmdr-mtp/DETAILS.md` § "Three properties a cell
+must not break" and § "Which side a test lives on".
 
 ## Limitations
 
 - macOS auto-suppresses `ptpcamerad` for real devices; the virtual device skips USB entirely, so that path doesn't run.
 - The device is registered once at startup. To reset its contents, restart the session (each launch wipes and reseeds
-  the backing dir). </content> </invoke>
+  the backing dir).
