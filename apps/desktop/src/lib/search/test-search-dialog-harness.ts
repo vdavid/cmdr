@@ -237,7 +237,11 @@ export function indexingMock(): Record<string, unknown> {
 }
 
 export function iconCacheMock(): Record<string, unknown> {
-  return { iconCacheVersion: writable(0), getCachedIcon: vi.fn(() => undefined) }
+  return {
+    iconCacheVersion: writable(0),
+    getCachedIcon: vi.fn(() => undefined),
+    getCachedCustomFolderIcon: vi.fn(() => undefined),
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

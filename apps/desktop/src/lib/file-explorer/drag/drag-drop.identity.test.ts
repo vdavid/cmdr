@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 vi.mock('@tauri-apps/api/path', () => ({ tempDir: vi.fn(), join: vi.fn() }))
-vi.mock('$lib/icon-cache', () => ({ getCachedIcon: vi.fn() }))
+vi.mock('$lib/icon-cache', () => ({ getCachedIcon: vi.fn(), getCachedCustomFolderIcon: () => undefined }))
 vi.mock('$lib/tauri-commands', () => ({
   startSelectionDrag: vi.fn(),
   startDragPaths: vi.fn(),

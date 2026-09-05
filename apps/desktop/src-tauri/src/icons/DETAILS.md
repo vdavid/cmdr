@@ -16,6 +16,24 @@ for the real-folder ids (`special:*` / `pkg:*` / `path:*`), keyed by folder mtim
 `clear_directory_icon_cache` drops the keys macOS appearance-tints (`dir`, `symlink-dir`, `path:*`, `pkg:*`,
 `special:*`) plus the whole disk cache, on a theme/accent change.
 
+**Gotcha: changing how a BOUNDED icon is produced needs a `CACHE_SCHEMA` bump** (`$lib/icon-cache`). Those keys persist
+to localStorage and are refetched only on a miss, so an install that already ran the old build keeps serving the old
+pixels forever — the fix ships, nothing moves on screen, and it reads as the fix not working. It bit the `dir`-sampling
+fix below: the backend was correct, every machine still drew the house. The stamp lives in the persisted envelope
+(`{ version, icons }`); a mismatch or a pre-stamp bare map discards the lot and refetches. ❌ Never leave it alone
+because "the key didn't change" — the key not changing is exactly the hazard.
+
+## Tier A: the generic folder sample (`folder_sample_path`)
+
+`dir` / `symlink-dir` cover ~99% of rows, and their icon comes from asking the OS about one stand-in directory.
+
+**Decision: the stand-in is an empty `<temp>/cmdr-icon-samples/sample-folder`, ❌ never the home directory.** Sampling
+`~` looked free (it always exists, no directory to create) but macOS bakes the home folder's house badge into the
+bitmap, so every plain folder in every listing rendered with a house on it; a custom icon assigned to `~` leaked onto
+all of them by the same route. A folder Cmdr just created carries neither, so it yields the true generic glyph, still
+correctly accent- and appearance-tinted because macOS tints from system state rather than from the path. Pinned by
+`the_generic_folder_sample_is_a_cmdr_owned_directory_not_the_home_dir`.
+
 ## Tier A: extension samples (`icon_sample_path`)
 
 An `ext:{x}` icon comes from asking the OS about a real file, so Cmdr keeps one empty stand-in per extension. Only the
@@ -84,6 +102,13 @@ LRU-capped together under one `PATH_KEY_CAP` budget, and are never persisted to 
 **FE wiring** (`file-explorer/views/file-list-utils.ts` + `icon-cache.ts`): the visible-range fetch collects the
 on-screen directory rows' paths and calls `prefetchCustomFolderIcons` → `get_custom_folder_icon_ids`, then fetches the
 returned `path:` ids through the normal `prefetchIcons` path (packages already arrive as `pkg:` ids from the listing).
+
+**Gotcha: a custom-icon folder's entry still carries `iconId: "dir"`**, because the detection is deferred and nothing
+rewrites the id afterwards. So the RENDERER has to ask by path — `FileIcon.svelte` tries
+`getCachedCustomFolderIcon(entry.path)` before `getCachedIcon(entry.iconId)`. Looking up `iconId` alone drew the generic
+folder over an icon the prefetch had already fetched and cached: the whole chain worked and the result was invisible,
+with no error anywhere. The gold-recolor filter has to check the same thing, since `isFolderIcon` is true for these rows
+too and would repaint the user's artwork. Packages don't share the hazard — `pkg:` ids come straight off the listing.
 `FilePane` evicts a directory's `path:*` / `pkg:*` keys via `evictPerPathIconsForDir` when its listing ends (navigation
 away / unmount), keeping the working set tight and re-detecting a re-icon next time the folder is shown.
 

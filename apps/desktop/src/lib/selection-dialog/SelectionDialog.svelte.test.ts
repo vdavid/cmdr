@@ -74,6 +74,7 @@ vi.mock('$lib/settings', () => ({
 vi.mock('$lib/icon-cache', () => ({
   iconCacheVersion: writable(0),
   getCachedIcon: vi.fn(() => undefined),
+  getCachedCustomFolderIcon: () => undefined,
 }))
 
 function setAiProviderForTest(value: 'off' | 'local' | 'cloud'): void {

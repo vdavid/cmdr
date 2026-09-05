@@ -26,7 +26,7 @@ const STORAGE_KEY = 'cmdr-icon-cache'
 function storedKeys(): string[] {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return []
-  return Object.keys(JSON.parse(raw) as Record<string, string>)
+  return Object.keys((JSON.parse(raw) as { icons: Record<string, string> }).icons)
 }
 
 describe('icon-cache path: key bounding', () => {
@@ -232,5 +232,47 @@ describe('icon-cache special: keys (Tier B)', () => {
     }
 
     expect(getCachedIcon('special:downloads')).toBe('dl-url')
+  })
+})
+
+/**
+ * Bounded keys persist and are only refetched on a miss, so a build that changes
+ * how one is PRODUCED (`dir` no longer sampling `~`, whose house badge every
+ * folder wore) ships the fix and moves no pixels on any machine that already ran
+ * the old build. The schema stamp is what forces those entries to be re-fetched.
+ */
+describe('icon-cache persisted-schema invalidation', () => {
+  beforeEach(() => {
+    _resetIconCacheForTests()
+    localStorage.clear()
+    vi.resetModules()
+  })
+
+  it('discards a pre-schema flat map, so a stale bounded icon cannot outlive the build that made it', async () => {
+    // Exactly what every build before the stamp wrote: a bare id -> url map.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ dir: 'stale-house-badged-url', 'ext:txt': 'txt-url' }))
+
+    const fresh = await import('./icon-cache')
+
+    expect(fresh.getCachedIcon('dir')).toBeUndefined()
+    expect(fresh.getCachedIcon('ext:txt')).toBeUndefined()
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
+  it('discards a map stamped with an older schema', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, icons: { dir: 'stale-url' } }))
+
+    const fresh = await import('./icon-cache')
+
+    expect(fresh.getCachedIcon('dir')).toBeUndefined()
+  })
+
+  it('still round-trips what the current build wrote', async () => {
+    _applyIconsToCacheForTests({ dir: 'dir-url', 'ext:txt': 'txt-url' })
+
+    const fresh = await import('./icon-cache')
+
+    expect(fresh.getCachedIcon('dir')).toBe('dir-url')
+    expect(fresh.getCachedIcon('ext:txt')).toBe('txt-url')
   })
 })

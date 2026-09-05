@@ -27,7 +27,7 @@ vi.mock('$lib/settings', () => ({
 
 vi.mock('$lib/icon-cache', async () => {
   const { writable } = await import('svelte/store')
-  return { getCachedIcon: () => undefined, iconCacheVersion: writable(0) }
+  return { getCachedIcon: () => undefined, getCachedCustomFolderIcon: () => undefined, iconCacheVersion: writable(0) }
 })
 
 interface Harness {
