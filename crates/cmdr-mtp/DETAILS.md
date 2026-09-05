@@ -89,7 +89,7 @@ no stat. `notify_mutation` pays it after each self-mutation (create, delete, ren
 infrequent. ❌ Never call it in a hot path.
 
 **A dropped read stream is safe, and needs no `Drop` impl.** `MtpReadStream` reads in bounded
-`GetPartialObject64(offset, MTP_READ_WINDOW)` windows (§ "Bounded-window reads" in `src/connection/DETAILS.md` owns the
+`GetPartialObject64(offset, MTP_READ_WINDOW)` windows (`src/connection/DETAILS.md` § "Bounded-window reads" owns the
 windowing and offset accounting). Between windows nothing is in flight — no held `FileDownload`, no pinned PTP session —
 so a cancel, pause, or drop has nothing to abort or drain, and `cancel_and_release` is the trait's default no-op. A
 stream dropped WHILE a window read is in flight is still safe: mtp-rs's `TransactionScope` flags the pipe and the next
