@@ -14,7 +14,7 @@ use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::Volume;
 use crate::listing_overlays::ListingOverlay;
 
-use super::{portal, virtual_listing};
+use super::wiring;
 
 /// Contributes the six virtual category rows to a repo's `.git/` listing.
 pub struct GitPortalOverlay;
@@ -43,8 +43,8 @@ impl ListingOverlay for GitPortalOverlay {
     /// (`<linked>/.git/branches` and deeper resolve through the gitlink), so
     /// only the `.git/` landing listing is missing there.
     fn applies_to(&self, volume: &dyn Volume, path: &Path) -> bool {
-        super::is_virtual_portal_enabled()
-            && volume_holds_real_repos(volume)
+        wiring::is_virtual_portal_enabled()
+            && wiring::volume_holds_real_repos(volume)
             && path.file_name().is_some_and(|name| name == ".git")
     }
 
@@ -52,31 +52,6 @@ impl ListingOverlay for GitPortalOverlay {
         let Some(worktree_root) = path.parent() else {
             return Vec::new();
         };
-        let Ok((handle, canonical_root)) = portal::portal().repos().discover(worktree_root) else {
-            return Vec::new();
-        };
-        // `gix` discovery walks UP, so a directory merely NAMED `.git` inside
-        // some repo's working tree would otherwise be handed that repo's
-        // branches. The rows belong to `path` only when the repo found is the
-        // one whose gitdir this is.
-        let listed_root = std::fs::canonicalize(worktree_root).unwrap_or_else(|_| worktree_root.to_path_buf());
-        if listed_root != canonical_root {
-            return Vec::new();
-        }
-        // The CANONICAL root, so each row's path matches what the route and the
-        // watcher's refresh prefixes are built from; a temp dir reached through
-        // a symlink (`/var` → `/private/var` on macOS) would otherwise cache the
-        // child listing under a spelling the watcher can't find.
-        virtual_listing::list_categories(&handle, &canonical_root)
+        wiring::portal().category_rows(worktree_root)
     }
-}
-
-/// Whether `volume`'s paths are ones `gix` can open: a local disk or an
-/// OS-mounted share, never a protocol-only backend (direct SMB, MTP, ADB) or
-/// another routed volume.
-///
-/// The route (`volume/manager/git_routing.rs`) asks the same question, so the
-/// portal appears in exactly one set of places.
-pub fn volume_holds_real_repos(volume: &dyn Volume) -> bool {
-    volume.local_path().is_some()
 }

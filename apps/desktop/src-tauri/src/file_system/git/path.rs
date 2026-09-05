@@ -117,14 +117,15 @@ pub fn portal_route(path: &Path) -> Option<PathBuf> {
     Some(worktree_root)
 }
 
-/// [`classify_in`] against the app's parked portal cache.
+/// [`classify_in`] against a cache of its own.
 ///
 /// Test-only: production classification runs inside a
-/// [`GitPortalVolume`](super::volume::GitPortalVolume), which holds its own
-/// portal and therefore its own cache.
+/// [`GitPortalVolume`](super::volume::GitPortalVolume), which holds the portal
+/// whose cache it uses. A fresh cache per call costs one repository open, which
+/// is what keeps this convenience from being a global in disguise.
 #[cfg(test)]
 pub(crate) fn classify(path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
-    classify_in(super::portal::portal().repos(), path)
+    classify_in(&RepoCache::new(), path)
 }
 
 /// Discovers the worktree root containing `path` in `repos`, then classifies

@@ -41,7 +41,7 @@ fn repo(name: &str) -> PathBuf {
 async fn a_full_refresh_of_dot_git_tracks_what_the_overlay_contributes() {
     let dir = repo("full_refresh");
     let dot_git = dir.join(".git");
-    crate::file_system::git::set_virtual_portal_enabled(true);
+    crate::file_system::git::wiring::set_virtual_portal_enabled(true);
     crate::file_system::git::overlay::register();
 
     let volume_id = unique_test_id("overlay-refresh-vol");
@@ -77,9 +77,9 @@ async fn a_full_refresh_of_dot_git_tracks_what_the_overlay_contributes() {
 
     // Portal off: the same refresh leaves the directory and nothing else, and
     // clears the flag so a delete walker may reuse the listing again.
-    crate::file_system::git::set_virtual_portal_enabled(false);
+    crate::file_system::git::wiring::set_virtual_portal_enabled(false);
     refresh(&volume_id, &dot_git, listing.id()).await;
-    crate::file_system::git::set_virtual_portal_enabled(true);
+    crate::file_system::git::wiring::set_virtual_portal_enabled(true);
 
     let names = listing.entry_names();
     for category in CATEGORIES {

@@ -13,11 +13,17 @@ use std::time::Duration;
 
 use crate::test_support::wait_until;
 
-use super::repo::{RepoInfo, discover_repo};
-use super::state_sink::{GitStateSink, RecordingGitStateSink};
-use super::test_fixtures::{Fixture, cleanup, temp_dir};
-use super::watcher::GitWatcherRegistry;
+use super::portal::GitPortal;
+use super::repo::RepoInfo;
+use super::state_sink::{GitStateSink, RecordingGitStateSink, no_git_state_sink};
+use super::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
 use super::wiring::GitStateChangedPayload;
+
+/// A portal over the real host, reporting into `sink`. What the app parks, minus
+/// the window.
+fn portal_reporting_into(sink: Arc<dyn GitStateSink>) -> GitPortal {
+    GitPortal::new(crate::volume_host::host(), sink)
+}
 
 /// The one thing about the wire event that can't be checked by the compiler:
 /// the field names the frontend reads. `repoRoot` and `info` are what
@@ -59,9 +65,9 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
     let (_, root) = discover_repo(&dir).expect("the fixture is a repo");
 
     let sink = Arc::new(RecordingGitStateSink::new());
-    let registry = GitWatcherRegistry::new();
-    let first = registry
-        .subscribe(Arc::clone(&sink) as Arc<dyn GitStateSink>, &root)
+    let portal = portal_reporting_into(Arc::clone(&sink) as Arc<dyn GitStateSink>);
+    let first = portal
+        .subscribe_state(&root)
         .expect("subscribing answers with the current state");
     assert_eq!(first.branch.as_deref(), Some("main"));
     assert_eq!(sink.count(), 0, "subscribing itself reports nothing");
@@ -80,7 +86,7 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
     assert_eq!(reported_root, &root);
     assert_eq!(info.branch.as_deref(), Some("main"));
 
-    registry.unsubscribe(&root);
+    portal.unsubscribe_state(&root);
     cleanup(&dir);
 }
 
@@ -121,14 +127,14 @@ fn a_sink_that_reports_nowhere_is_a_valid_subscriber() {
     fixture.commit_file("README.md", b"hello\n", "initial");
     let (_, root) = discover_repo(&dir).expect("the fixture is a repo");
 
-    let registry = GitWatcherRegistry::new();
-    let info = registry
-        .subscribe(super::state_sink::no_git_state_sink(), &root)
+    let portal = portal_reporting_into(no_git_state_sink());
+    let info = portal
+        .subscribe_state(&root)
         .expect("subscribing works with nowhere to report");
     assert_eq!(info.repo_root, root.display().to_string());
-    assert_eq!(registry.active_repo_count(), 1);
+    assert_eq!(portal.watched_repo_count(), 1);
 
-    registry.unsubscribe(&root);
-    assert_eq!(registry.active_repo_count(), 0);
+    portal.unsubscribe_state(&root);
+    assert_eq!(portal.watched_repo_count(), 0);
     cleanup(&dir);
 }

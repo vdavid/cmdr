@@ -30,7 +30,10 @@ fn portal_over_a_repo(name: &str) -> (PathBuf, GitPortalVolume) {
     fixture.create_branch("feature/foo");
 
     let parent: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Parent", &dir));
-    let portal = Arc::new(GitPortal::new(crate::volume_host::host()));
+    let portal = Arc::new(GitPortal::new(
+        crate::volume_host::host(),
+        super::state_sink::no_git_state_sink(),
+    ));
     let volume = portal.volume_for(dir.clone(), parent);
     (dir, volume)
 }
@@ -163,7 +166,10 @@ async fn a_dot_git_that_is_not_a_repository_answers_not_found() {
     std::fs::write(dir.join(".git").join("HEAD"), b"not a repo\n").expect("seed junk");
 
     let parent: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Parent", &dir));
-    let portal = Arc::new(GitPortal::new(crate::volume_host::host()));
+    let portal = Arc::new(GitPortal::new(
+        crate::volume_host::host(),
+        super::state_sink::no_git_state_sink(),
+    ));
     let volume = portal.volume_for(dir.clone(), parent);
 
     let branches = virtual_path(&dir, "branches");

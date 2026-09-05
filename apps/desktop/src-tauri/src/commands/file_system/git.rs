@@ -8,10 +8,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::commands::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
-use crate::file_system::git::wiring::git_state_sink;
-use crate::file_system::git::{
-    EntryStatus, FriendlyGitError, RepoInfo, discover_repo, get_watcher_registry, list_status, repo_info,
-};
+use crate::file_system::git::wiring::portal;
+use crate::file_system::git::{EntryStatus, FriendlyGitError, RepoInfo, list_status, repo_info};
 
 /// Budget per the M1 plan: discover + repo info ≤ 50 ms p95 on a 50k-file
 /// repo. We give the IPC layer 2 s to also cover slow NFS / SMB filesystems
@@ -35,7 +33,7 @@ const GIT_SUBSCRIBE_TIMEOUT: Duration = Duration::from_secs(2);
 pub async fn get_git_repo_info(path: String) -> TimedOut<Option<RepoInfo>> {
     blocking_with_timeout_flag(GIT_REPO_INFO_TIMEOUT, None, move || {
         let path_buf = PathBuf::from(&path);
-        let (handle, root) = discover_repo(&path_buf).ok()?;
+        let (handle, root) = portal().discover(&path_buf).ok()?;
         repo_info(&handle, &root).ok()
     })
     .await
@@ -52,15 +50,14 @@ pub async fn get_git_repo_info(path: String) -> TimedOut<Option<RepoInfo>> {
 #[tauri::command]
 #[specta::specta]
 pub async fn subscribe_git_state(repo_root: String) -> Result<RepoInfo, GitSubscribeError> {
-    let sink = git_state_sink();
     blocking_typed_result_with_timeout(
         GIT_SUBSCRIBE_TIMEOUT,
         || GitSubscribeError::TimedOut,
         |detail| GitSubscribeError::Unexpected { detail },
         move || {
             let path = PathBuf::from(&repo_root);
-            get_watcher_registry()
-                .subscribe(sink, &path)
+            portal()
+                .subscribe_state(&path)
                 .map_err(|error| GitSubscribeError::Git { error })
         },
     )
@@ -98,7 +95,7 @@ pub enum GitSubscribeError {
 pub async fn unsubscribe_git_state(repo_root: String) {
     let _ = tokio::task::spawn_blocking(move || {
         let path = PathBuf::from(&repo_root);
-        get_watcher_registry().unsubscribe(&path);
+        portal().unsubscribe_state(&path);
     })
     .await;
 }
@@ -113,7 +110,7 @@ pub async fn get_git_status_for_paths(repo_root: String, dir: String) -> TimedOu
     blocking_with_timeout_flag(GIT_STATUS_TIMEOUT, Vec::new(), move || {
         let root = PathBuf::from(&repo_root);
         let scope = PathBuf::from(&dir);
-        let (handle, _root) = match discover_repo(&root) {
+        let (handle, _root) = match portal().discover(&root) {
             Ok(v) => v,
             Err(_) => return Vec::new(),
         };

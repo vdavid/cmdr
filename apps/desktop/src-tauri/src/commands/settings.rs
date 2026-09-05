@@ -278,7 +278,7 @@ pub fn persist_restricted_window_setting(
 #[tauri::command]
 #[specta::specta]
 pub async fn set_show_virtual_git_portal(enabled: bool) {
-    crate::file_system::git::set_virtual_portal_enabled(enabled);
+    crate::file_system::git::wiring::set_virtual_portal_enabled(enabled);
     crate::file_system::git::wiring::refresh_all_virtual_listings_after_toggle();
 }
 

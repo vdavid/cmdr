@@ -5,9 +5,8 @@
 //! working tree. `repo_info(repo)` collects the chip-relevant state.
 //!
 //! Handles live in a [`RepoCache`], which is a VALUE the [`GitPortal`] owns
-//! (`portal.rs`), ❌ not a static of its own. `discover_repo` here is the
-//! convenience for callers that have no portal in hand; it reaches the app's
-//! parked portal for the same cache, so there is exactly one per process.
+//! (`portal.rs`), ❌ never a static of its own. Every caller opens a repository
+//! through a portal's cache, so one process shares one set of open handles.
 //!
 //! [`GitPortal`]: super::portal::GitPortal
 
@@ -51,21 +50,6 @@ pub struct RepoInfo {
 /// turn it into a `gix::Repository` via `.to_thread_local()`. This matches
 /// gix's recommended pattern for repos shared across tasks.
 pub type RepoHandle = Arc<gix::ThreadSafeRepository>;
-
-/// Discovers a repo from any path inside a worktree.
-///
-/// Walks up looking for `.git` (dir or gitlink file). Returns the `RepoHandle`
-/// and the canonical worktree root. Bare repos are rejected – without a
-/// working tree there's nothing for the file manager to anchor on.
-///
-/// The convenience entry point for callers with no [`GitPortal`] in hand
-/// (`repo_info`, `list_status`, the IPC commands): it borrows the app's parked
-/// portal so every caller shares one [`RepoCache`].
-///
-/// [`GitPortal`]: super::portal::GitPortal
-pub fn discover_repo(path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
-    super::portal::portal().repos().discover(path)
-}
 
 /// Computes branch / detached / dirty / ahead-behind for a discovered repo.
 pub fn repo_info(handle: &RepoHandle, repo_root: &Path) -> Result<RepoInfo, FriendlyGitError> {
@@ -131,15 +115,6 @@ pub fn repo_info(handle: &RepoHandle, repo_root: &Path) -> Result<RepoInfo, Frie
         behind,
         is_dirty,
     })
-}
-
-/// Drops a cached `RepoHandle`.
-///
-/// Called by `unsubscribe_git_state` once subscribers drop to zero. We keep
-/// it simple: no idle timer, no LRU. If two subscribers race to unsubscribe,
-/// the last one out evicts.
-pub fn evict_handle(repo_root: &Path) {
-    super::portal::portal().repos().evict(repo_root);
 }
 
 fn map_discover_err(err: gix::discover::Error) -> FriendlyGitError {

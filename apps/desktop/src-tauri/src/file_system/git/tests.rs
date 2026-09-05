@@ -10,9 +10,9 @@
 use std::path::{Path, PathBuf};
 
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::{discover_repo, repo_info};
+use super::repo::repo_info;
 use super::status::{EntryStatusCode, list_status};
-use super::test_fixtures::{Fixture, cleanup, git_cli, temp_dir};
+use super::test_fixtures::{Fixture, cleanup, discover_repo, git_cli, temp_dir};
 
 fn temp(name: &str) -> PathBuf {
     temp_dir("tests", name)
@@ -251,21 +251,21 @@ fn the_toggle_silences_both_portal_seams() {
     let overlay = super::overlay::GitPortalOverlay;
     let volume = LocalPosixVolume::new("Test", &dir);
 
-    super::set_virtual_portal_enabled(true);
-    assert!(super::is_virtual_portal_enabled());
+    super::wiring::set_virtual_portal_enabled(true);
+    assert!(super::wiring::is_virtual_portal_enabled());
     assert!(overlay.applies_to(&volume, &dot_git), "the overlay claims .git/");
     assert!(
         super::path::portal_route(&dot_git.join("branches")).is_some(),
         "the route claims .git/branches"
     );
 
-    super::set_virtual_portal_enabled(false);
-    assert!(!super::is_virtual_portal_enabled());
+    super::wiring::set_virtual_portal_enabled(false);
+    assert!(!super::wiring::is_virtual_portal_enabled());
     assert!(
         !overlay.applies_to(&volume, &dot_git),
         "with the portal off, .git/ is whatever is on disk"
     );
 
-    super::set_virtual_portal_enabled(true);
+    super::wiring::set_virtual_portal_enabled(true);
     cleanup(&dir);
 }

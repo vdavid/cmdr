@@ -15,8 +15,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Instant;
 
-use super::repo::{discover_repo, repo_info};
+use super::repo::repo_info;
 use super::status::list_status;
+use super::test_fixtures::discover_repo;
 use crate::test_support::TestDir;
 
 const FILE_COUNT: usize = 50_000;

@@ -397,7 +397,7 @@ mod cache_tests {
     //! repo so we exercise the gix status walk path. Total runtime ~200 ms each.
     use std::process::{Command, Stdio};
 
-    use super::super::repo::discover_repo;
+    use super::super::test_fixtures::discover_repo;
     use super::*;
     use crate::test_support::TestDir;
 

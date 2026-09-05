@@ -37,7 +37,7 @@ impl VolumeManager {
     /// directory on the parent volume (usually missing), which is exactly what
     /// the user asked to see.
     pub(super) fn resolve_git_portal(&self, volume_id: &str, path: &Path) -> Option<ResolvedVolume> {
-        if !git::is_virtual_portal_enabled() {
+        if !git::wiring::is_virtual_portal_enabled() {
             return None;
         }
         let repo_root = git::path::portal_route(path)?;
@@ -49,7 +49,7 @@ impl VolumeManager {
         // any of it. Routing there would turn that ordinary directory into
         // `NotFound`. Same question the overlay asks, so the portal appears in
         // exactly one set of places.
-        if !git::overlay::volume_holds_real_repos(parent.as_ref()) {
+        if !git::wiring::volume_holds_real_repos(parent.as_ref()) {
             return None;
         }
         Some(self.register_git_portal(parent, repo_root, path))
@@ -63,7 +63,7 @@ impl VolumeManager {
         // than fighting over the ID.
         let repo_root = std::fs::canonicalize(&repo_root).unwrap_or(repo_root);
         let portal_id = git_portal_volume_id(&repo_root);
-        let volume = Arc::new(git::portal::portal().volume_for(repo_root, Arc::clone(&parent)));
+        let volume = Arc::new(git::wiring::portal().volume_for(repo_root, Arc::clone(&parent)));
         self.register_if_absent(&portal_id, volume);
         self.touch_git_portal_lru(&portal_id);
 
@@ -129,7 +129,7 @@ mod tests {
 
         let manager = VolumeManager::new();
         manager.register("root", Arc::new(LocalPosixVolume::new("Root", &dir)));
-        git::set_virtual_portal_enabled(true);
+        git::wiring::set_virtual_portal_enabled(true);
         (dir, manager)
     }
 
@@ -190,7 +190,7 @@ mod tests {
         let (dir, manager) = manager_over_a_repo("toggle");
         let path = dir.join(".git/branches");
 
-        git::set_virtual_portal_enabled(false);
+        git::wiring::set_virtual_portal_enabled(false);
         let resolved = manager.resolve("root", &path).await;
         assert_eq!(resolved.routed, None);
         let parent = resolved.volume.expect("parent volume");
@@ -200,7 +200,7 @@ mod tests {
             "the pane's recovery runs on a NotFound, ❌ never on a silent empty listing"
         );
 
-        git::set_virtual_portal_enabled(true);
+        git::wiring::set_virtual_portal_enabled(true);
         assert_eq!(manager.resolve("root", &path).await.routed, Some(RoutedKind::GitPortal));
 
         cleanup(&dir);
@@ -220,7 +220,7 @@ mod tests {
             "share",
             Arc::new(WatchCoverageVolume::new("Share", WatchCoverage::EveryWriter)),
         );
-        git::set_virtual_portal_enabled(true);
+        git::wiring::set_virtual_portal_enabled(true);
 
         let resolved = manager
             .resolve("share", Path::new("/mnt/share/repo/.git/branches"))
@@ -292,7 +292,7 @@ mod tests {
     async fn the_lru_caps_how_many_portals_stay_registered() {
         let mut repos = Vec::new();
         let manager = VolumeManager::new();
-        git::set_virtual_portal_enabled(true);
+        git::wiring::set_virtual_portal_enabled(true);
 
         for index in 0..=GIT_PORTAL_LRU_CAP {
             let dir = temp_dir("git_routing", &format!("lru{index}"));
@@ -332,7 +332,7 @@ mod tests {
 
         let manager = VolumeManager::new();
         manager.register("ext", Arc::new(LocalPosixVolume::new("Ext", &dir)));
-        git::set_virtual_portal_enabled(true);
+        git::wiring::set_virtual_portal_enabled(true);
 
         let virtual_path = dir.join(".git/branches/main");
         assert_eq!(

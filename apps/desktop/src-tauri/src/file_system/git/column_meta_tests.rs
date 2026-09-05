@@ -10,8 +10,9 @@
 use std::os::unix::fs::PermissionsExt;
 
 use super::path::{Cat, VirtualGitPath, classify};
-use super::repo::discover_repo;
-use super::test_fixtures::{Fixture, build_repo_with_branches, build_simple_repo, cleanup, git_cli, temp_dir};
+use super::test_fixtures::{
+    Fixture, build_repo_with_branches, build_simple_repo, cleanup, discover_repo, git_cli, temp_dir,
+};
 use super::{log as git_log, stash, submodules, virtual_listing, worktrees};
 use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
 

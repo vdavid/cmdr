@@ -12,13 +12,13 @@
 use crate::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use notify::RecursiveMode;
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
-use super::repo::{RepoInfo, discover_repo, repo_info};
+use super::repo::{RepoCache, RepoInfo, repo_info};
 use super::state_sink::GitStateSink;
 
 /// One per repo. Owns the notify-rs debouncer and the subscriber count.
@@ -49,14 +49,19 @@ impl GitWatcherRegistry {
     /// Adds a subscriber for `repo_root`. Spawns the watcher on first call,
     /// bumps the refcount on subsequent ones. Returns the current `RepoInfo`
     /// snapshot synchronously so the chip never sees an empty interim state.
+    ///
+    /// `repos` is shared rather than borrowed because the debounce callback
+    /// outlives this call: every recompute opens the repository through the same
+    /// cache the caller's own lookups use.
     pub fn subscribe(
         &self,
+        repos: Arc<RepoCache>,
         sink: Arc<dyn GitStateSink>,
         repo_root: &Path,
     ) -> Result<RepoInfo, super::FriendlyGitError> {
         let canonical = repo_root.canonicalize().unwrap_or_else(|_| repo_root.to_path_buf());
 
-        let (handle, root) = discover_repo(&canonical)?;
+        let (handle, root) = repos.discover(&canonical)?;
         let info = repo_info(&handle, &root)?;
 
         let mut inner = self.inner.lock().expect("git watcher mutex poisoned");
@@ -71,7 +76,7 @@ impl GitWatcherRegistry {
             if result.is_err() {
                 return;
             }
-            recompute_and_report(sink.as_ref(), &watcher_root);
+            recompute_and_report(&repos, sink.as_ref(), &watcher_root);
         })
         .map_err(|e| {
             super::FriendlyGitError::with_source(super::FriendlyGitErrorKind::CorruptRepo, e.to_string(), e)
@@ -107,18 +112,18 @@ impl GitWatcherRegistry {
         Ok(info)
     }
 
-    /// Drops a subscriber. Tears the watcher down on the last unsubscribe.
-    pub fn unsubscribe(&self, repo_root: &Path) {
+    /// Drops a subscriber. Tears the watcher down on the last unsubscribe, and
+    /// releases what that repo was holding open: nobody is looking at it, so a
+    /// full-repo-sized status snapshot and an open `gix` handle would be pure
+    /// leak.
+    pub fn unsubscribe(&self, repos: &RepoCache, repo_root: &Path) {
         let canonical = repo_root.canonicalize().unwrap_or_else(|_| repo_root.to_path_buf());
         let mut inner = self.inner.lock().expect("git watcher mutex poisoned");
         if let Some(sub) = inner.get_mut(&canonical) {
             sub.refcount = sub.refcount.saturating_sub(1);
             if sub.refcount == 0 {
                 inner.remove(&canonical);
-                super::repo::evict_handle(&canonical);
-                // Last subscriber's gone: drop the status snapshot too so
-                // we don't leak full-repo-sized caches for repos no pane is
-                // looking at any more.
+                repos.evict(&canonical);
                 super::status::invalidate_status_cache(&canonical);
             }
         }
@@ -126,7 +131,6 @@ impl GitWatcherRegistry {
 
     /// For tests: count active repos.
     #[cfg(test)]
-    #[allow(dead_code, reason = "Used by integration tests")]
     pub fn active_repo_count(&self) -> usize {
         self.inner.lock_ignore_poison().len()
     }
@@ -138,13 +142,6 @@ impl Default for GitWatcherRegistry {
     }
 }
 
-/// Process-global watcher registry. Mirrors the global volume / listing
-/// patterns elsewhere in the codebase.
-pub fn get_watcher_registry() -> &'static GitWatcherRegistry {
-    static REG: OnceLock<GitWatcherRegistry> = OnceLock::new();
-    REG.get_or_init(GitWatcherRegistry::new)
-}
-
 /// Recomputes the repo's snapshot and hands it to the sink.
 ///
 /// The status cache is dropped BEFORE the report goes out: a subscriber reacts
@@ -154,8 +151,8 @@ pub fn get_watcher_registry() -> &'static GitWatcherRegistry {
 /// Any `.git/*` mutation we watch for is a superset of "the index might have
 /// moved", so the drop is unconditional. Cheap (a `HashMap` remove), so it isn't
 /// worth filtering by event type.
-fn recompute_and_report(sink: &dyn GitStateSink, repo_root: &Path) {
-    let Ok((handle, root)) = discover_repo(repo_root) else {
+fn recompute_and_report(repos: &RepoCache, sink: &dyn GitStateSink, repo_root: &Path) {
+    let Ok((handle, root)) = repos.discover(repo_root) else {
         return;
     };
     let Ok(info) = repo_info(&handle, &root) else {

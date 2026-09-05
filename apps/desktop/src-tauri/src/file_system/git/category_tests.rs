@@ -10,8 +10,7 @@
 use std::path::PathBuf;
 
 use super::path::{Cat, VirtualGitPath, classify};
-use super::repo::discover_repo;
-use super::test_fixtures::{Fixture, build_simple_repo, cleanup, git_cli, git_cli_capture, temp_dir};
+use super::test_fixtures::{Fixture, build_simple_repo, cleanup, discover_repo, git_cli, git_cli_capture, temp_dir};
 use super::{log as git_log, stash, submodules, worktrees};
 
 // ── commits ───────────────────────────────────────────────────────────

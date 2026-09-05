@@ -30,7 +30,6 @@
 //! treating any remainder as a tree sub-path. See `path.rs`.
 
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 pub mod column_meta;
 // `FriendlyGitError` moved to `cmdr-fs`: `VolumeError::FriendlyGit` carries it,
@@ -80,11 +79,9 @@ mod wiring_tests;
 #[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use friendly::{FriendlyGitError, FriendlyGitErrorKind};
 #[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
-pub use repo::{RepoInfo, discover_repo, repo_info};
+pub use repo::{RepoInfo, repo_info};
 #[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use status::{EntryStatus, EntryStatusCode, list_status};
-#[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
-pub use watcher::{GitWatcherRegistry, get_watcher_registry};
 
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{VolumeError, VolumeReadStream};
@@ -96,27 +93,6 @@ use crate::file_system::volume::{VolumeError, VolumeReadStream};
 /// `VolumeError::NotFound`. `Err` is reserved for a repo that couldn't answer
 /// at all, which reaches the user as the git-specific repair copy.
 pub type Lookup<T> = Result<Option<T>, FriendlyGitError>;
-
-/// Whether the virtual `.git` portal is enabled. Set from the
-/// `fileExplorer.git.showVirtualGitPortal` setting at startup and on every
-/// toggle.
-///
-/// THE one app-side switch: [`resolve_git_portal`](crate::file_system::volume::manager::VolumeManager)
-/// consults it before routing and `overlay::GitPortalOverlay` before
-/// contributing, so `false` means a `.git` tree is whatever is on disk.
-static VIRTUAL_PORTAL_ENABLED: AtomicBool = AtomicBool::new(true);
-
-/// Sets the virtual portal preference. Called from app setup after
-/// loading settings, and live from the `set_show_virtual_git_portal`
-/// command on each toggle.
-pub fn set_virtual_portal_enabled(enabled: bool) {
-    VIRTUAL_PORTAL_ENABLED.store(enabled, Ordering::Relaxed);
-}
-
-/// Returns whether the virtual `.git` portal is enabled.
-pub fn is_virtual_portal_enabled() -> bool {
-    VIRTUAL_PORTAL_ENABLED.load(Ordering::Relaxed)
-}
 
 /// Opens the blob at `sub` inside `cat`/`name`, or `Ok(None)` when that path
 /// holds no blob (missing, or a directory).

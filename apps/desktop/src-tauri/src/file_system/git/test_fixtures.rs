@@ -52,6 +52,9 @@ use gix::actor::SignatureRef;
 use gix::bstr::BStr;
 pub(super) use gix::object::tree::EntryKind;
 
+use super::friendly::FriendlyGitError;
+use super::repo::{RepoCache, RepoHandle};
+
 pub(super) const TEST_AUTHOR_NAME: &str = "Cmdr Test";
 pub(super) const TEST_AUTHOR_EMAIL: &str = "test@cmdr.local";
 
@@ -384,10 +387,19 @@ pub(super) fn build_repo_with_branches(prefix: &str, branches: &[(&str, usize)])
     (dir, fixture)
 }
 
+/// Opens the repository at `path` through a cache of its own.
+///
+/// The fixtures' stand-in for a portal: a suite that only wants a `RepoHandle`
+/// shouldn't have to build one, and a fresh cache per call keeps this from
+/// becoming a global in disguise. Code that browses through the portal opens
+/// repositories through ITS cache instead.
+pub(crate) fn discover_repo(path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
+    RepoCache::new().discover(path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::file_system::git::repo::discover_repo;
 
     #[test]
     fn simple_repo_has_expected_commit_count_and_branch() {

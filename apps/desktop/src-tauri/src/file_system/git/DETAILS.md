@@ -94,7 +94,7 @@ Losing rows nobody could open costs less than a `stat` on the route, which runs 
 Wired from `commands/file_system/git.rs`:
 
 - `get_git_repo_info(path) -> TimedOut<Option<RepoInfo>>` – one-shot lookup, 2 s timeout
-- `subscribe_git_state(repo_root) -> Result<RepoInfo, GitSubscribeError>` – registers a subscriber, returns current `RepoInfo` synchronously, then emits `git-state-changed` events. 2 s timeout (the synchronous handshake calls `discover_repo` + `repo_info` so a hung repo would otherwise freeze IPC). `GitSubscribeError` (in `commands/file_system/git.rs`) is `Git { error: FriendlyGitError }` / `TimedOut` / `Unexpected { detail }`, so git's own typed kind reaches the frontend intact and `src/lib/error-messages/git-error-messages.ts` words it per locale
+- `subscribe_git_state(repo_root) -> Result<RepoInfo, GitSubscribeError>` – registers a subscriber, returns current `RepoInfo` synchronously, then emits `git-state-changed` events. 2 s timeout (the synchronous handshake discovers the repo and computes `repo_info` so a hung repo would otherwise freeze IPC). `GitSubscribeError` (in `commands/file_system/git.rs`) is `Git { error: FriendlyGitError }` / `TimedOut` / `Unexpected { detail }`, so git's own typed kind reaches the frontend intact and `src/lib/error-messages/git-error-messages.ts` words it per locale
 - `unsubscribe_git_state(repo_root) -> ()` – drops one subscriber; tears down the watcher when refcount hits zero
 - `get_git_status_for_paths(repo_root, dir) -> TimedOut<Vec<EntryStatus>>` – gix status walk, 5 s timeout
 - `set_show_virtual_git_portal(enabled)` (in `commands::settings`) – flips the live portal toggle. Pushed by `settings-applier.ts` whenever `fileExplorer.git.showVirtualGitPortal` changes
@@ -128,18 +128,18 @@ Bench result on the 50k-file synth repo, release build (`cargo test --release --
 
 | Metric | Budget | Measured |
 |---|---|---|
-| `discover_repo + repo_info` p50 | 50 ms target | ~87 ms |
-| `discover_repo + repo_info` p95 | 100 ms hard cap | ~108 ms |
+| `discover + repo_info` p50 | 50 ms target | ~87 ms |
+| `discover + repo_info` p95 | 100 ms hard cap | ~108 ms |
 | `list_status` cold p50 | 100 ms | ~67 ms |
 | `list_status` cold p95 | 100 ms | ~86 ms |
 | `list_status` warm p50 | – | ~96 µs |
 
-`list_status` lands inside budget cold, and a warm call is a cache hit in microseconds. Subsequent `discover_repo`
+`list_status` lands inside budget cold, and a warm call is a cache hit in microseconds. Subsequent repo discovery
 calls hit the portal's repo-handle cache and run in microseconds too.
 
 **`discover + repo_info` is over its hard cap on this hardware**, so
 `bench_50k_files_discover_and_repo_info_under_budget` fails when run. All of it is `repo_info`'s `is_dirty()`, a full
-worktree walk; `discover_repo` itself is a cache hit after the first call. It's a real number to act on rather than a
+worktree walk; discovery itself is a cache hit after the first call. It's a real number to act on rather than a
 measurement artifact: `git status --untracked-files=no --porcelain` walks the SAME fixture in 50 ms on this machine
 (five runs, 2026-09-05), where the earlier table recorded 75 ms for it, so this machine is the faster one and `is_dirty`
 still costs ~26 ms more than the number that table carried. The likeliest cause is the gix 0.81 → 0.87 bump the earlier
@@ -175,12 +175,20 @@ has. `VolumeManager::resolve` routes any path with a `.git/<category>/` segment 
 - **Every `gix` call runs on `VolumeHost::runtime().spawn_blocking`**, ❌ never on the caller's async worker: a listing
   of a big repo is a blocking walk.
 
-### `GitPortal`: the value that owns the cache
+### `GitPortal`: the value that owns the mutable state
 
-`GitPortal` (`portal.rs`) holds the `RepoCache` and the `VolumeHost`, and mints one `GitPortalVolume` per repo. The
-cache is a VALUE the portal owns, ❌ not a static of its own; `portal()` is only where the app parks its instance, so
-the call sites that predate the portal (`repo::discover_repo` from an IPC command, the watcher) share one cache instead
-of opening every repo twice. A volume always holds its own `Arc<GitPortal>`.
+`GitPortal` (`portal.rs`) holds the `RepoCache`, the per-repo watcher registry, the `GitStateSink` that registry reports
+through, and the `VolumeHost`, and it mints one `GitPortalVolume` per repo. Every one of those is a VALUE the portal
+owns, ❌ never a static of its own. `wiring::portal()` is only where the APP parks its instance, so an IPC command, the
+listing overlay, and a watcher subscription all share one set of open repositories rather than opening each repo three
+times; a volume always holds the `Arc<GitPortal>` that minted it, and a test builds its own with a detached sink.
+
+**Decision: what may stay a static here, and what may not.** Two memos do: `snapshot_dates`'s per-directory date cache
+is keyed by `(ObjectId, dir path)`, and `status`'s snapshot is keyed by `(canonical root, .git/index mtime)`. Both are
+content- or mtime-addressed, so a second portal sharing one can only get an answer that was correct for that key, and
+`list_status` stays callable with a repo handle alone — no portal, no host. The `RepoCache` is the opposite: it owns a
+RESOURCE with a lifecycle (an open `gix` repository, evicted when the last subscriber leaves), so a static one would
+mean a test's evictions reaching the app's handles and back.
 
 ## Two seams, no hooks
 
@@ -196,8 +204,9 @@ carry (three route hooks, five mutation guards, the `notify_mutation` early retu
    watcher-driven `FullRefresh`) after the volume's entries arrive and before the cache insert. Pane-only by
    construction: `src/listing_overlays.rs`.
 
-Both consult ONE app-side switch, `git::is_virtual_portal_enabled()`, so the toggle is "no route" plus "no
-contribution".
+Both consult ONE app-side switch, `git::wiring::is_virtual_portal_enabled()`, so the toggle is "no route" plus "no
+contribution". Both also ask `wiring::volume_holds_real_repos`, which is `local_path().is_some()`: `gix` can't open a
+path only a protocol can reach, so a `.git/branches` on a direct-SMB share stays an ordinary folder.
 
 **The overlay's predicate**: the listed directory's last segment is `.git`, the volume answers `local_path().is_some()`
 (so `gix` can open its paths), and the portal is on. ❗ Cheap and zero-I/O, because it runs on every listing in the app;
@@ -395,7 +404,7 @@ the contract. The dispatch lives in `mod.rs::resolve_commit_for_cat`.
 **Decision**: Use `gix::Repository::status()` for `list_status` (not a `git status --porcelain=v2 -z` shell-out)
 **Why**: In gix 0.81, `Repository::status().into_iter()` runs both a `TreeIndex` leg (HEAD vs index, for staged changes) and an `IndexWorktree` leg (index vs worktree, for unstaged changes) in parallel. The `TreeIndex` leg surfaces staged additions correctly even in single-commit repos. The gix approach is fully typed (no string parsing of stderr), which keeps us inside the no-error-string-match rule. Error mapping is entirely through typed enum variants. Don't reintroduce a shell-out: parsing `stderr.contains(...)` for error classification was the previous failure mode and it's banned.
 
-**Decision**: `discover_repo` rejects bare repos via `BareRepo`
+**Decision**: repo discovery rejects bare repos via `BareRepo`
 **Why**: The whole UX (chip, status column, future portal) is anchored on
 a working tree. Showing a chip for a bare repo is meaningless. The
 `FriendlyGitErrorKind::BareRepo` variant tells the user clearly what's up

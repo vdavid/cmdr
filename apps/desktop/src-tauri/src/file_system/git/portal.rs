@@ -1,42 +1,51 @@
 //! The git portal: the value that owns everything the virtual `.git` trees are
 //! served from, and mints a [`GitPortalVolume`] per repo.
 //!
-//! One portal per process, parked by the app (see [`portal`]) the way
-//! `volume_host` parks the host. It holds the [`RepoCache`] every open repo
-//! handle lives in, plus the [`VolumeHost`] its volumes spawn blocking `gix`
-//! work onto, so there is one thread pool and one cache rather than a static
-//! per subsystem.
+//! One portal per process, parked by the app (`wiring.rs`) the way `volume_host`
+//! parks the host. It holds the [`RepoCache`] every open repo handle lives in,
+//! the per-repo watcher registry, the [`GitStateSink`] that registry reports
+//! through, and the [`VolumeHost`] its volumes spawn blocking `gix` work onto.
 //!
-//! ❌ Nothing here reaches a global for the cache. `portal()` is where the app
-//! parks its instance so an IPC command can pick it up; a volume always holds
-//! its own `Arc<GitPortal>`.
+//! ❌ Nothing here reaches a global. A volume always holds its own
+//! `Arc<GitPortal>`, and a test builds its own portal with a detached sink.
 
-use std::path::PathBuf;
-use std::sync::{Arc, OnceLock};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use cmdr_fs::volume::host::VolumeHost;
 
-use super::repo::RepoCache;
+use super::repo::{RepoCache, RepoInfo};
+use super::state_sink::GitStateSink;
+use super::virtual_listing;
 use super::volume::GitPortalVolume;
+use super::watcher::GitWatcherRegistry;
+use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::Volume;
 
 /// Everything the virtual `.git` portal needs to answer, in one value.
 pub struct GitPortal {
-    repos: RepoCache,
+    /// Shared with the watcher's debounce callbacks, which outlive any one call,
+    /// hence the `Arc` around a cache the portal otherwise owns outright.
+    repos: Arc<RepoCache>,
+    watchers: GitWatcherRegistry,
+    sink: Arc<dyn GitStateSink>,
     host: VolumeHost,
 }
 
 impl GitPortal {
     /// Builds a portal that asks `host` for what it can't answer itself (today:
-    /// the runtime its volumes run blocking `gix` work on).
-    pub fn new(host: VolumeHost) -> Self {
+    /// the runtime its volumes run blocking `gix` work on) and reports every
+    /// repo change to `sink`.
+    pub fn new(host: VolumeHost, sink: Arc<dyn GitStateSink>) -> Self {
         Self {
-            repos: RepoCache::new(),
+            repos: Arc::new(RepoCache::new()),
+            watchers: GitWatcherRegistry::new(),
+            sink,
             host,
         }
     }
 
-    /// The open-repo handles this portal's volumes and IPC commands share.
+    /// The open-repo handles this portal's volumes and callers share.
     pub fn repos(&self) -> &RepoCache {
         &self.repos
     }
@@ -44,6 +53,12 @@ impl GitPortal {
     /// The app around this portal.
     pub fn host(&self) -> &VolumeHost {
         &self.host
+    }
+
+    /// Opens (or reuses) the repository containing `path`, answering its handle
+    /// and canonical worktree root.
+    pub fn discover(&self, path: &Path) -> Result<(super::repo::RepoHandle, PathBuf), super::FriendlyGitError> {
+        self.repos.discover(path)
     }
 
     /// Mints the read-only volume serving `<repo_root>/.git`'s virtual trees.
@@ -56,15 +71,47 @@ impl GitPortal {
     pub fn volume_for(self: &Arc<Self>, repo_root: PathBuf, parent: Arc<dyn Volume>) -> GitPortalVolume {
         GitPortalVolume::new(Arc::clone(self), repo_root, parent)
     }
-}
 
-/// The portal the app parked, built on first use.
-///
-/// ❌ Not how a volume finds its portal: a `GitPortalVolume` holds an
-/// `Arc<GitPortal>` handed to it at construction. This is for the call sites
-/// that predate the portal (repo discovery from an IPC command, the watcher),
-/// so they share the one cache instead of opening repos twice.
-pub fn portal() -> &'static Arc<GitPortal> {
-    static PORTAL: OnceLock<Arc<GitPortal>> = OnceLock::new();
-    PORTAL.get_or_init(|| Arc::new(GitPortal::new(crate::volume_host::host())))
+    /// The six category rows for the repo whose worktree root is `worktree_root`,
+    /// or nothing when that directory isn't a repository's own root.
+    ///
+    /// ❗ The rows belong to `worktree_root` only when the repository `gix` finds
+    /// is the one whose gitdir this is. Discovery walks UP, so a directory merely
+    /// NAMED `.git` inside some repo's working tree would otherwise be handed
+    /// that repo's branches.
+    ///
+    /// The rows carry the CANONICAL root, so each one's path matches what the
+    /// route and the watcher's refresh prefixes are built from; a temp dir
+    /// reached through a symlink (`/var` → `/private/var` on macOS) would
+    /// otherwise cache the child listing under a spelling the watcher can't find.
+    pub fn category_rows(&self, worktree_root: &Path) -> Vec<FileEntry> {
+        let Ok((handle, canonical_root)) = self.discover(worktree_root) else {
+            return Vec::new();
+        };
+        let listed_root = std::fs::canonicalize(worktree_root).unwrap_or_else(|_| worktree_root.to_path_buf());
+        if listed_root != canonical_root {
+            return Vec::new();
+        }
+        virtual_listing::list_categories(&handle, &canonical_root)
+    }
+
+    /// Adds a subscriber for the repository at `repo_root`, starting its `.git/*`
+    /// watcher on the first one. Answers the current [`RepoInfo`] synchronously,
+    /// so a subscriber never sees an empty interim state.
+    pub fn subscribe_state(&self, repo_root: &Path) -> Result<RepoInfo, super::FriendlyGitError> {
+        self.watchers
+            .subscribe(Arc::clone(&self.repos), Arc::clone(&self.sink), repo_root)
+    }
+
+    /// Drops one subscriber. The last one out stops the watcher and releases
+    /// what that repository was holding open.
+    pub fn unsubscribe_state(&self, repo_root: &Path) {
+        self.watchers.unsubscribe(&self.repos, repo_root);
+    }
+
+    /// For tests: how many repositories currently have a watcher.
+    #[cfg(test)]
+    pub fn watched_repo_count(&self) -> usize {
+        self.watchers.active_repo_count()
+    }
 }

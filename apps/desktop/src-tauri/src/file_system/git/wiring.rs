@@ -1,16 +1,19 @@
-//! The app's half of the git portal: the `git-state-changed` event, the sink
-//! that produces it, and the listing refreshes a repo's change drives.
+//! The app's half of the git portal: the parked [`GitPortal`], the switch that
+//! turns it on, the `git-state-changed` event, and the listing refreshes a
+//! repo's change drives.
 //!
-//! The watcher (`watcher.rs`) knows that a repository's state moved and what it
-//! says now. Everything a USER then sees is here: the `tauri_specta` payload the
-//! breadcrumb chip subscribes to, and the re-read of every open pane standing in
-//! a virtual `.git` tree.
+//! Everything here is a decision the APP makes about git, so none of it belongs
+//! beside the code that talks to a repository. The watcher knows that a
+//! repository's state moved and what it says now; what a USER then sees is the
+//! `tauri_specta` payload the breadcrumb chip subscribes to, and the re-read of
+//! every open pane standing in a virtual `.git` tree.
 //!
 //! ❗ A struct name kebab-cases to its wire event name, so renaming
 //! [`GitStateChangedPayload`] silently renames the event the frontend listens
 //! for. `ipc.rs` registers it in `collect_events!`.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 
 use serde::{Deserialize, Serialize};
@@ -18,8 +21,10 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 use super::path::Cat;
+use super::portal::GitPortal;
 use super::repo::RepoInfo;
 use super::state_sink::{GitStateSink, no_git_state_sink};
+use crate::file_system::volume::Volume;
 
 /// Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
 /// `RepoInfo` snapshot. The `…Payload` suffix wouldn't kebab-case to the existing
@@ -56,29 +61,72 @@ impl GitStateSink for TauriGitStateSink {
     }
 }
 
-/// The sink [`install_git_state_sink`] parked.
-static STATE_SINK: OnceLock<Arc<dyn GitStateSink>> = OnceLock::new();
+// ── The parked portal ───────────────────────────────────────────────────
 
-/// Parks the sink every `.git/*` watcher reports into, aimed at `app`.
+/// The portal [`install_git_portal`] built.
+static PORTAL: OnceLock<Arc<GitPortal>> = OnceLock::new();
+
+/// Builds a portal over this app: the real volume host, reporting repo changes
+/// into `app`.
+fn build_portal(sink: Arc<dyn GitStateSink>) -> Arc<GitPortal> {
+    Arc::new(GitPortal::new(crate::volume_host::host(), sink))
+}
+
+/// Parks the app's git portal, reporting repo changes into `app`.
 ///
-/// Call once at startup, before a pane can subscribe. A second call keeps the
-/// first sink and is ignored, so a test fixture and the app wiring can both call
-/// it without fighting.
-pub fn install_git_state_sink(app: &AppHandle) {
-    if STATE_SINK
-        .set(Arc::new(TauriGitStateSink::new(app.clone())) as Arc<dyn GitStateSink>)
-        .is_err()
-    {
-        log::debug!(target: "git", "the git state sink was already installed; keeping the first one");
+/// Call once at startup, before a pane can browse a `.git`: the route, the
+/// listing overlay, and every IPC command reach the portal through [`portal`].
+/// A second call keeps the first portal and is ignored, so a test fixture and
+/// the app wiring can both call it without fighting.
+pub fn install_git_portal(app: &AppHandle) {
+    let sink: Arc<dyn GitStateSink> = Arc::new(TauriGitStateSink::new(app.clone()));
+    if PORTAL.set(build_portal(sink)).is_err() {
+        log::debug!(target: "git", "the git portal was already installed; keeping the first one");
     }
 }
 
-/// The sink the app's watcher subscriptions report into.
+/// The app's git portal.
 ///
-/// Falls back to the detached sink so a test binary that never runs `setup()`
-/// still subscribes, watches, and recomputes — it just has no window to tell.
-pub fn git_state_sink() -> Arc<dyn GitStateSink> {
-    Arc::clone(STATE_SINK.get_or_init(no_git_state_sink))
+/// ❗ This is where the APP parks the one it built, ❌ not how a volume finds a
+/// portal: a `GitPortalVolume` carries the portal that minted it, and a test
+/// builds its own. Falls back to a detached-sink portal (real host, nowhere to
+/// report) so a test binary that never runs `setup()` still browses a repo.
+pub fn portal() -> &'static Arc<GitPortal> {
+    PORTAL.get_or_init(|| build_portal(no_git_state_sink()))
+}
+
+// ── The switch both seams consult ───────────────────────────────────────
+
+/// Whether the virtual `.git` portal is enabled. Set from the
+/// `fileExplorer.git.showVirtualGitPortal` setting at startup and on every
+/// toggle.
+///
+/// THE one app-side switch: the route (`volume/manager/git_routing.rs`) consults
+/// it before routing and [`GitPortalOverlay`](super::overlay::GitPortalOverlay)
+/// before contributing, so `false` means a `.git` tree is whatever is on disk.
+static VIRTUAL_PORTAL_ENABLED: AtomicBool = AtomicBool::new(true);
+
+/// Sets the virtual portal preference. Called from app setup after loading
+/// settings, and live from the `set_show_virtual_git_portal` command on each
+/// toggle.
+pub fn set_virtual_portal_enabled(enabled: bool) {
+    VIRTUAL_PORTAL_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+/// Returns whether the virtual `.git` portal is enabled.
+pub fn is_virtual_portal_enabled() -> bool {
+    VIRTUAL_PORTAL_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Whether `volume`'s paths are ones `gix` can open: a local disk or an
+/// OS-mounted share, never a protocol-only backend (direct SMB, MTP, ADB) or
+/// another routed volume.
+///
+/// An app question rather than a git one, which is why it lives here: it reads a
+/// `Volume` capability, and both askers are the app's two seams. The route and
+/// the overlay share it so the portal appears in exactly one set of places.
+pub fn volume_holds_real_repos(volume: &dyn Volume) -> bool {
+    volume.local_path().is_some()
 }
 
 /// Re-reads any open virtual `.git/{branches,tags,commits,stash,worktrees,submodules}/…`

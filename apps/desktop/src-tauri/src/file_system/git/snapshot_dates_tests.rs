@@ -8,9 +8,8 @@
 #![cfg(test)]
 
 use super::path::Cat;
-use super::repo::discover_repo;
 use super::snapshot_dates::{self, MAX_COMMITS_PER_WALK};
-use super::test_fixtures::{Fixture, cleanup, temp_dir};
+use super::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
 use super::{tree, virtual_listing};
 
 fn temp(name: &str) -> std::path::PathBuf {

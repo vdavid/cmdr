@@ -13,8 +13,7 @@ use std::path::{Path, PathBuf};
 
 use super::path::{Cat, VirtualGitPath, classify, to_path};
 use super::read_blob::GitBlobReadStream;
-use super::repo::discover_repo;
-use super::test_fixtures::{EntryKind, Fixture, cleanup, git_cli_capture, temp_dir};
+use super::test_fixtures::{EntryKind, Fixture, cleanup, discover_repo, git_cli_capture, temp_dir};
 use super::{tree, virtual_listing};
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError, VolumeReadStream};
 
@@ -22,8 +21,11 @@ use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError, VolumeRe
 /// resolve hands any `.git/<category>/` path.
 fn portal_over(repo: &Path) -> super::volume::GitPortalVolume {
     let parent: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Parent", repo));
-    std::sync::Arc::new(super::portal::GitPortal::new(crate::volume_host::host()))
-        .volume_for(repo.to_path_buf(), parent)
+    std::sync::Arc::new(super::portal::GitPortal::new(
+        crate::volume_host::host(),
+        super::state_sink::no_git_state_sink(),
+    ))
+    .volume_for(repo.to_path_buf(), parent)
 }
 
 fn git_show_bytes(dir: &Path, spec: &str) -> Vec<u8> {

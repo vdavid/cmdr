@@ -9,7 +9,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::overlay::{GitPortalOverlay, volume_holds_real_repos};
+use super::overlay::GitPortalOverlay;
 use super::test_fixtures::{Fixture, cleanup, temp_dir};
 use crate::file_system::listing::caching_test_support::{TestListing, WatchCoverageVolume};
 use crate::file_system::volume::{LocalPosixVolume, Volume, WatchCoverage};
@@ -29,7 +29,7 @@ fn repo(name: &str) -> PathBuf {
 #[tokio::test]
 async fn a_dot_git_that_is_not_this_repos_gitdir_gets_no_rows() {
     let dir = repo("stray_dot_git");
-    super::set_virtual_portal_enabled(true);
+    super::wiring::set_virtual_portal_enabled(true);
     super::overlay::register();
 
     let stray = dir.join("fixtures").join("sample").join(".git");
@@ -54,12 +54,12 @@ async fn a_dot_git_that_is_not_this_repos_gitdir_gets_no_rows() {
 /// the two seams appear in exactly one set of places.
 #[test]
 fn a_volume_with_no_local_path_never_gets_the_portal() {
-    super::set_virtual_portal_enabled(true);
+    super::wiring::set_virtual_portal_enabled(true);
     let local = LocalPosixVolume::new("Local", Path::new("/"));
     let remote = WatchCoverageVolume::new("Remote", WatchCoverage::EveryWriter);
 
-    assert!(volume_holds_real_repos(&local));
-    assert!(!volume_holds_real_repos(&remote));
+    assert!(super::wiring::volume_holds_real_repos(&local));
+    assert!(!super::wiring::volume_holds_real_repos(&remote));
 
     let overlay = GitPortalOverlay;
     let dot_git = Path::new("/anywhere/repo/.git");
@@ -71,7 +71,7 @@ fn a_volume_with_no_local_path_never_gets_the_portal() {
 /// never a sibling.
 #[test]
 fn only_the_dot_git_directory_itself_is_claimed() {
-    super::set_virtual_portal_enabled(true);
+    super::wiring::set_virtual_portal_enabled(true);
     let volume = LocalPosixVolume::new("Local", Path::new("/"));
     let overlay = GitPortalOverlay;
 
@@ -99,7 +99,7 @@ fn the_toggle_refresh_reaches_a_dot_git_pane_with_no_repo_subscription() {
 
     // No `subscribe_git_state` anywhere: just two open listings.
     assert_eq!(
-        super::watcher::get_watcher_registry().active_repo_count(),
+        super::wiring::portal().watched_repo_count(),
         0,
         "this cell's premise is that nothing is subscribed"
     );
