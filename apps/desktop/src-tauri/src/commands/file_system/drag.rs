@@ -4,6 +4,7 @@
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 #[cfg(target_os = "macos")]
 use crate::file_system::volume::manager::path_routes_over_its_parent;
+#[cfg(target_os = "macos")]
 use crate::native_drag::{self, DragSessionLocality};
 #[cfg(target_os = "macos")]
 use std::path::PathBuf;
@@ -53,6 +54,7 @@ fn locality_for_volume(volume_id: Option<&str>) -> DragSessionLocality {
 /// ❗ One locality for the whole session, decided here: a mixed session is
 /// impossible by construction (one pane, one volume), and the pasteboard plan is
 /// keyed on a single value.
+#[cfg(target_os = "macos")]
 fn session_locality(paths: &[PathBuf], source_volume_id: Option<&str>) -> DragSessionLocality {
     if paths.iter().any(|p| path_routes_over_its_parent(p)) {
         return DragSessionLocality::Virtual;
