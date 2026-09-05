@@ -6,8 +6,8 @@ sites the new toggle needs.
 
 Read before executing: `apps/desktop/src/routes/viewer/CLAUDE.md` and its `DETAILS.md` (§ "Selection model", § "Pointer
 → caret", § "Click cycle"), `docs/design-principles.md` (principle 2 "rock solid", 3 "delightful UX", 6 "elegance"),
-`docs/style-guide.md` before writing the two new user-facing strings, and `apps/desktop/src/lib/settings/DETAILS.md`
-§ "Restricted-window mode" before touching the setting.
+`docs/style-guide.md` before writing the two new user-facing strings, and `apps/desktop/src/lib/settings/DETAILS.md` §
+"Restricted-window mode" before touching the setting.
 
 ## The problem
 
@@ -23,14 +23,14 @@ A user reported three things, all confirmed by reading the code:
    tries the two search chords and then bails at `if (!e.altKey && !e.shiftKey)`.
 
 Plus the extensions David approved: Shift+Up/Down extends (today it scrolls, so this **changes** working behavior),
-Shift+Home/End extends to line edges, ⌘+Shift+Up/Down extends to file edges, shift-click respects the active
-granularity the way native does, unmodified Left/Right scroll horizontally, and an optional text cursor everything above
-has to work with.
+Shift+Home/End extends to line edges, ⌘+Shift+Up/Down extends to file edges, shift-click respects the active granularity
+the way native does, unmodified Left/Right scroll horizontally, and an optional text cursor everything above has to work
+with.
 
 ## The shape of the fix
 
 One idea carries items 1 and 3: **selection granularity**. The model already tracks `{ anchor, focus }`; what's missing
-is that both endpoints can be *ranges* snapped to word or line boundaries. Give the pointer drag a granularity and the
+is that both endpoints can be _ranges_ snapped to word or line boundaries. Give the pointer drag a granularity and the
 "twitch collapses the word" problem disappears by construction rather than being defended against: a pointer that hasn't
 left the original word yields the same union, so there is nothing to collapse. The old early-return existed only because
 `pointermove` had one granularity.
@@ -54,7 +54,7 @@ why it can be a setting rather than an architecture.
 
 - **`viewer-word.ts`** gains `findWordStartBefore(lineText, offset)` and `findWordEndAfter(lineText, offset)` beside the
   existing `findWordBoundsAt`, sharing the private `isWordSegment`. **Intent**: the JavaScriptCore `isWordLike` bug
-  (documented in that file and in `DETAILS.md` § "Selection model") would bite word *motion* exactly as it bit
+  (documented in that file and in `DETAILS.md` § "Selection model") would bite word _motion_ exactly as it bit
   double-click. One workaround, one place. ❌ Never call `Intl.Segmenter` word granularity from anywhere else.
 - **`selection.svelte.ts`** gains `setRange({ anchor, focus })` on `createViewerSelection`. One object param, per the
   `cmdr/no-confusable-callback-params` rule: two `LineOffset`s are exactly the confusable pair that rule exists for.
@@ -64,8 +64,8 @@ why it can be a setting rather than an architecture.
   **Feed it the viewer's real geometry, not a `line × lineHeight` estimate**: `lineTop` comes from
   `scroll.getLineTop(n)`, which already applies `scrollScale` (files over `MAX_SCROLL_HEIGHT` are compressed), and the
   height comes from the height map × `scrollScale` when it's ready, `effectiveLineHeight` otherwise. Note in the wrapper
-  that `recenterOffset` next door speaks *viewport-relative rendered-rect* coordinates while this one speaks
-  *content-relative scaled* ones, so the two are not interchangeable; a wrapped line is one tall row and an estimate
+  that `recenterOffset` next door speaks _viewport-relative rendered-rect_ coordinates while this one speaks
+  _content-relative scaled_ ones, so the two are not interchangeable; a wrapped line is one tall row and an estimate
   mislands it.
 - **`viewer-pointer.ts`** gains two exports over the `charBoxes` machinery it already owns:
   `caretRectFor(content, lineOffset)` (for painting the text cursor) and `measureColumnWidth(content)` (for the
@@ -74,7 +74,7 @@ why it can be a setting rather than an architecture.
 
 ## Vocabulary decision: "caret" vs "text cursor"
 
-The route already uses **caret** to mean *a resolved text position* (`viewer-caret-geometry.ts`, `caretFromPoint`,
+The route already uses **caret** to mean _a resolved text position_ (`viewer-caret-geometry.ts`, `caretFromPoint`,
 `LineOffset`). The new rendered thing is a different concept, so it gets a different word: **text cursor**, in the UI
 copy (`Show text cursor`), the setting id (`viewer.showTextCursor`), the CSS class (`.text-cursor`), and the module
 (`viewer-text-cursor.svelte.ts`).
@@ -114,18 +114,19 @@ render anything. Record the boundary in `DETAILS.md` § "Selection model" as par
      `ensureLineVisible(totalLines - 1)` scrolls to the end, the fetch lands, and a **second** ⌘+Shift+Down completes
      the selection exactly. Two presses, always correct.
    - **`totalLines === null`** (ByteSeek-no-index) → `setFocus({ line: EOF_LINE, offset: 0 })`, reusing M0's constant,
-     which maps to `RangeEnd::Eof` at the IPC boundary. ❌ Don't invent a second end-of-file representation, and
-     ❌ don't call `selectToEof()` here: that sets BOTH endpoints (anchor back to `{0, 0}`) and would silently destroy
-     the user's anchor. `docEdge` moves the focus only, like every other motion.
+     which maps to `RangeEnd::Eof` at the IPC boundary. ❌ Don't invent a second end-of-file representation, and ❌
+     don't call `selectToEof()` here: that sets BOTH endpoints (anchor back to `{0, 0}`) and would silently destroy the
+     user's anchor. `docEdge` moves the focus only, like every other motion.
 
    ❌ **Don't reach for the sentinel just because the last line isn't cached.** It looks like the tidier answer, and it
-   makes the sentinel a *live, movable* focus, which decision 7 explains is a wedge.
+   makes the sentinel a _live, movable_ focus, which decision 7 explains is a wedge.
 
    **Consequence to state rather than discover**: ⌘+Shift+Down from mid-file then copy shows the "unknown size" confirm
    dialog on a large file instead of copying silently. `isWholeFileSelection` bails on `start.line !== 0` before its
    `end.line >= totalLines - 1` branch, so `estimateSelectionBytes` walks lines and returns `null` at the first one with
    an unknown byte length, which `runCopy` maps to a confirm. It terminates safely and it's defensible; it's only a bug
    report waiting to happen if we don't write it down.
+
 7. **The keyboard resolves a sentinel focus to a real line BEFORE calling `moveFocus`; the pure module never sees one.**
    This guard is **not optional and not tied to the `docEdge` design**: ⌘A in ByteSeek-no-index mode already parks the
    focus on the EOF sentinel line today, so the moment keyboard extension ships, one Shift+Up from there asks to step
@@ -134,13 +135,14 @@ render anything. Record the boundary in `DETAILS.md` § "Selection model" as par
 
    It belongs in the keyboard layer, not in `moveFocus`. The pure module holds `getLineText` and `getTotalLines` but no
    idea what's on screen, so a refusal there could only hand back the sentinel as its `targetLine` and the caller would
-   scroll to *that* — the same slam. So: before calling `moveFocus`, replace a sentinel `from` with the last line the
-   scroll composable is currently rendering (the last entry of `scroll.visibleLines`; there is no `visibleTo` getter) at that
-   line's cached length; if nothing is rendered, the press is a no-op. This works because reaching the sentinel always
-   scrolled the view to the bottom, so the last rendered line is the practical end of the file.
+   scroll to _that_ — the same slam. So: before calling `moveFocus`, replace a sentinel `from` with the last line the
+   scroll composable is currently rendering (the last entry of `scroll.visibleLines`; there is no `visibleTo` getter) at
+   that line's cached length; if nothing is rendered, the press is a no-op. This works because reaching the sentinel
+   always scrolled the view to the bottom, so the last rendered line is the practical end of the file.
 
    State it as a precondition with a test of its own: **`moveFocus` never receives a sentinel `from`.** Keeping the pure
    module total is what makes its exhaustive-switch test worth anything.
+
 8. **The text cursor defaults to OFF.** Cmdr's viewer is keyboard-first and David explicitly doesn't want one by
    default; the setting exists for people who expect an editor.
 9. **The text cursor never blinks under `prefers-reduced-motion`,** and its blink phase restarts on every focus change.
@@ -169,7 +171,7 @@ against `MAX_SAFE_INTEGER` literally. Consequences today:
 Nothing caught it because every test hand-writes `focus: { line: Number.MAX_SAFE_INTEGER, offset: 0 }` instead of
 driving `handleSelectAllShortcut`, and three doc comments plus `DETAILS.md` all assert the wrong value.
 
-**How bad is it?** Not a data bug: `read_range` validates only the *start* against `total_lines` and streams until the
+**How bad is it?** Not a data bug: `read_range` validates only the _start_ against `total_lines` and streams until the
 chunks run out, so `Line { line: 9007199254740990 }` reads the same bytes `Eof` would. `RangeEnd::Eof` itself is fully
 implemented and has five backend tests; it's only the frontend that has never emitted it. The user-visible cost is the
 copy-size path: `isWholeFileSelection` returning `false` means ⌘A on a huge ByteSeek file falls through to the per-line
@@ -211,9 +213,9 @@ the range ends yield `{ kind: 'eof' }`). That fails today, for the right reason.
 This is deliberate: the existing unit tests assert against the `setFocus` mock, and a plain drag genuinely only moves
 one endpoint, so switching it to `setRange` would churn tests to express the same thing less directly.
 
-**Behavior**: a press counted 2 or 3 now arms the drag with granularity `word` / `line` and remembers the pressed
-word's (or line's) `[start, end)` as the **anchor range**. Every `pointermove` computes the caret's range at that
-granularity and sets the selection to the union, direction preserved: dragging left of the anchor word gives
+**Behavior**: a press counted 2 or 3 now arms the drag with granularity `word` / `line` and remembers the pressed word's
+(or line's) `[start, end)` as the **anchor range**. Every `pointermove` computes the caret's range at that granularity
+and sets the selection to the union, direction preserved: dragging left of the anchor word gives
 `anchor = anchorRange.end`, `focus = focusRange.start`, so a reversed drag reads correctly and `normaliseSelection`
 still orders it. Autoscroll's `reAimAfterAutoscroll` routes through the same extend call, so a word drag past the
 viewport edge keeps its granularity.
@@ -260,17 +262,17 @@ the first word segment's far edge. macOS semantics: Option+Shift+Right lands on 
 Option+Shift+Left on the **start** of the previous one. `moveFocus` handles the five motions, grapheme-aware for `char`
 (so an emoji, a ZWJ sequence, or a combining mark is one step). Note the two are different guarantees: the geometry path
 in `viewer-pointer.ts` keeps offsets on **codepoint** boundaries, which motion by **grapheme** strictly refines, so the
-existing invariant still holds and this is the stronger promise, and crosses line boundaries: right at end-of-line → `{ line + 1, offset: 0 }`,
-left at offset 0 → `{ line - 1, offset: lineLength }`, both bounded by the file.
+existing invariant still holds and this is the stronger promise, and crosses line boundaries: right at end-of-line →
+`{ line + 1, offset: 0 }`, left at offset 0 → `{ line - 1, offset: lineLength }`, both bounded by the file.
 
 **Tests** (TDD, real red first: this is the risky logic):
 
 - `viewer-word.test.ts`: forward and backward from inside a word, from whitespace, from punctuation, at line start, at
   line end, on an empty line, and **through the JSC-shaped segmenter stub already in that file** (a word ending in a
   digit must not be skipped, the exact bug documented there).
-- `viewer-caret-motion.test.ts` (new): every motion × both directions; a grapheme cluster (👨‍👩‍👧 and `e` + U+0301)
-  crossed in one step; line crossing at both ends; file-edge clamping; the `{ focus: null, targetLine }` shape on an uncached line; desired-column
-  preservation across a short line; the `EOF_LINE` `docEdge` case with `getTotalLines() === null`.
+- `viewer-caret-motion.test.ts` (new): every motion × both directions; a grapheme cluster (👨‍👩‍👧 and `e` + U+0301) crossed
+  in one step; line crossing at both ends; file-edge clamping; the `{ focus: null, targetLine }` shape on an uncached
+  line; desired-column preservation across a short line; the `EOF_LINE` `docEdge` case with `getTotalLines() === null`.
 
 **Checks**: `pnpm check --fast`.
 
@@ -281,19 +283,19 @@ left at offset 0 → `{ line - 1, offset: lineLength }`, both bounded by the fil
 
 **The complete key map this milestone lands.** Twelve extend chords plus two scroll keys; nothing else changes:
 
-| Keys | Motion | Notes |
-| --- | --- | --- |
-| Shift+Left / Right | `char`, ∓1 | Grapheme step, crosses line boundaries |
-| Shift+Up / Down | `line`, ∓1 | **Replaces today's scroll.** Logical line, keeps `desiredColumn` |
-| Option+Shift+Left / Right | `word`, ∓1 | macOS: right lands on the END of the next word, left on the START of the previous |
-| Ctrl+Shift+Left / Right | `word`, ∓1 | Same motion, for Linux and Windows; macOS usually eats it at the system level |
-| Shift+Home / End | `lineEdge`, ∓1 | Extends to the **line** edge |
-| ⌘+Shift+Up / Down | `docEdge`, ∓1 | Extends to the **file** edge; down is the two-press case in decision 6 |
-| Left / Right (no modifier) | none | Horizontal scroll by one column, no-op under word wrap |
-| Home / End (no modifier) | none | Unchanged: scroll to file start / end |
+| Keys                       | Motion         | Notes                                                                             |
+| -------------------------- | -------------- | --------------------------------------------------------------------------------- |
+| Shift+Left / Right         | `char`, ∓1     | Grapheme step, crosses line boundaries                                            |
+| Shift+Up / Down            | `line`, ∓1     | **Replaces today's scroll.** Logical line, keeps `desiredColumn`                  |
+| Option+Shift+Left / Right  | `word`, ∓1     | macOS: right lands on the END of the next word, left on the START of the previous |
+| Ctrl+Shift+Left / Right    | `word`, ∓1     | Same motion, for Linux and Windows; macOS usually eats it at the system level     |
+| Shift+Home / End           | `lineEdge`, ∓1 | Extends to the **line** edge                                                      |
+| ⌘+Shift+Up / Down          | `docEdge`, ∓1  | Extends to the **file** edge; down is the two-press case in decision 6            |
+| Left / Right (no modifier) | none           | Horizontal scroll by one column, no-op under word wrap                            |
+| Home / End (no modifier)   | none           | Unchanged: scroll to file start / end                                             |
 
 **Why Shift+Home means the line edge while bare Home means the file edge**: unmodified Home/End are scroll-view
-navigation, which is what macOS does in a document view and what the viewer already does. Shift+Home/End are *selection*
+navigation, which is what macOS does in a document view and what the viewer already does. Shift+Home/End are _selection_
 gestures, and in every editor a selection gesture works on the line. The modifier changes the target on purpose; ⌘ then
 promotes it back to the whole file. Don't "harmonize" these into one target.
 
@@ -302,11 +304,12 @@ promotes it back to the whole file. Don't "harmonize" these into one target.
 - ❌ **Never write `e.shiftKey && e.key === 'ArrowLeft'`.** `cmdr/no-raw-key-match` is an **error** in this repo
   (`apps/desktop/eslint.config.js`), and it fires on exactly that shape: a required modifier read sharing a boolean
   expression with a literal key comparison while leaving at least one of the four modifiers unconstrained. The naive
-  form is what an agent writes first, and it fails the lint gate, so M3 wouldn't land green. Use the **guard-then-branch**
-  shape the rule deliberately doesn't catch and that the existing Shift+Enter branch already uses: test `e.key` first
-  (a `switch` over the arrow / Home / End set), then read the modifier flags in a **separate statement** inside that
-  branch. Pinning all four flags explicitly is the other sanctioned shape. The rule's own header names this window's
-  case: "in a window with no command registry (the viewer), match locally but split on 'carries ⌘/⌃/⌥' up front".
+  form is what an agent writes first, and it fails the lint gate, so M3 wouldn't land green. Use the
+  **guard-then-branch** shape the rule deliberately doesn't catch and that the existing Shift+Enter branch already uses:
+  test `e.key` first (a `switch` over the arrow / Home / End set), then read the modifier flags in a **separate
+  statement** inside that branch. Pinning all four flags explicitly is the other sanctioned shape. The rule's own header
+  names this window's case: "in a window with no command registry (the viewer), match locally but split on 'carries
+  ⌘/⌃/⌥' up front".
 - Plain Shift+Arrow arrives on the **unmodified** path in `handleKeyDown`. The extend branch goes **after the
   `if (searchInputFocused) return` early return and immediately before `handleBareKey`**. Before that guard it would
   steal the search input's own Shift+Arrow; after `handleBareKey` Shift+Up would keep scrolling. It must be
@@ -314,8 +317,8 @@ promotes it back to the whole file. Don't "harmonize" these into one target.
   updating in the same edit.
 - Option/Ctrl+Shift+Arrow arrives on the **modified** path in `handleModifiedKey`, which runs **regardless of focus**.
   The extend branch sits after the search-chord check (so ⌘⌥R / ⌘⌥C still win) and before the
-  `if (!e.altKey && !e.shiftKey)` bail, and **must be gated on `!searchInputFocused`** — without that gate it steals
-  ⌥⇧← / ⌥⇧→ from a focused search input, and the M3 test below fails.
+  `if (!e.altKey && !e.shiftKey)` bail, and **must be gated on `!searchInputFocused`** — without that gate it steals ⌥⇧←
+  / ⌥⇧→ from a focused search input, and the M3 test below fails.
 - ⌘+Shift+Up/Down is the `docEdge` motion; on macOS Ctrl+Shift+Arrow is usually eaten by Mission Control before it
   reaches us, which is fine and costs nothing to support for Linux and Windows.
 - Every extend press calls `preventDefault()` and then `scroll.ensureLineVisible(...)` — using `focus.line` on success
@@ -323,13 +326,12 @@ promotes it back to the whole file. Don't "harmonize" these into one target.
   paths; that's what makes the uncached-line case self-healing instead of permanently stuck.
 - Unmodified Left/Right join `handleNavigationKey` as `scrollByColumns(-1 / +1)`, one column measured once by
   `measureColumnWidth(content)` (cached, invalidated on the debounced text-scale change the scroll composable already
-  subscribes to, and when nothing is rendered there is nothing to scroll, so skip the step entirely rather than inventing a
-  ratio). In word-wrap mode there's no
-  horizontal overflow, so it's a natural no-op.
+  subscribes to, and when nothing is rendered there is nothing to scroll, so skip the step entirely rather than
+  inventing a ratio). In word-wrap mode there's no horizontal overflow, so it's a natural no-op.
 - **`KeyboardDeps` grows the wiring this milestone actually turns on**, and the plan names it so nobody invents it:
   `selection` gains `get selection()` (so `moveFocus` has a `from`) and `setFocus`; `NavigationActions` gains
-  `ensureLineVisible(line)` and `scrollByColumns(n)`. Today `KeyboardDeps.selection` is `{ selectAll }` alone, which
-  is why the extend branch has nothing to read or write without this.
+  `ensureLineVisible(line)` and `scrollByColumns(n)`. Today `KeyboardDeps.selection` is `{ selectAll }` alone, which is
+  why the extend branch has nothing to read or write without this.
 - The keyboard composable owns `desiredColumn`, reset by any horizontal motion and by `setAnchor` / `setFocus` from a
   pointer gesture (wire the reset through the page's pointer deps, not a second listener).
 - **Horizontal ensure-visible too.** On a long unwrapped line, repeated Shift+Right walks the focus past the right edge
@@ -340,9 +342,9 @@ promotes it back to the whole file. Don't "harmonize" these into one target.
 
 **Tests**:
 
-- `viewer-keyboard.test.ts` (unit, RED first for the routing): each of the twelve chords in the table above reaches the right motion; Shift+Enter
-  still calls `findPrev`; ⌘⌥R still toggles regex; a chord with the search input focused doesn't steal the input's own
-  Shift+Arrow (the input owns its text selection).
+- `viewer-keyboard.test.ts` (unit, RED first for the routing): each of the twelve chords in the table above reaches the
+  right motion; Shift+Enter still calls `findPrev`; ⌘⌥R still toggles regex; a chord with the search input focused
+  doesn't steal the input's own Shift+Arrow (the input owns its text selection).
 - `viewer-search-scroll.test.ts` (unit): `ensureVisibleOffset` returns `null` when visible, top-aligns when above,
   bottom-aligns when below, and respects the margin.
 - `viewer.spec.ts` (E2E, after): click into line 0, press Shift+Right five times, assert the painted selection is the
@@ -350,7 +352,7 @@ promotes it back to the whole file. Don't "harmonize" these into one target.
   word. **Three constraints from `test/e2e-playwright/CLAUDE.md` and the existing specs**: the copy modifier comes from
   `CTRL_OR_META`, ❌ never a hardcoded ⌘ (these specs also run on Linux Docker); dispatch the key sequence through
   `viewer.evaluate(...)` rather than OS-level `keyboard.press`, because `viewer.spec.ts` already records that pressing
-  into a *scoped viewer window* flakes under Xvfb (the keystroke lands on the main window and the viewer webview never
+  into a _scoped viewer window_ flakes under Xvfb (the keystroke lands on the main window and the viewer webview never
   sees it); and the existing `pressAt` helper is the model for that.
 
 **Checks**: `pnpm check`. Note the E2E lane is `desktop-e2e-playwright` (slow, macOS-only, `NotInCI`) and **has no
@@ -388,7 +390,7 @@ regenerated file. Sites 7 and 8 are the two an agent skips and then debugs for t
 **Rendering**: a `ViewerTextCursor.svelte` component holding one absolutely-positioned `<div class="text-cursor">`,
 mounted in **`.scroll-spacer`** (already `position: relative`).
 
-❌ **Don't apply `translateY(linesOffset)` to it.** The cursor is positioned from a *measured* rect, not from logical
+❌ **Don't apply `translateY(linesOffset)` to it.** The cursor is positioned from a _measured_ rect, not from logical
 coordinates: `caretRectFor` bottoms out in `Range.getClientRects()`, so it returns a **viewport** rect read live off the
 rendered row, which already includes `.lines-container`'s own `translateY` and the current scroll position. Subtracting
 the spacer's `getBoundingClientRect()` is the whole conversion. Adding the transform on top double-counts `linesOffset`,
@@ -396,29 +398,29 @@ which on a large file is 10⁵-10⁷ px off screen. Concretely: `top = rect.top 
 `left = rect.left - spacerRect.left`, both read in the same `$effect` after `tick()`.
 
 ❌ **Not inside `.lines-container`**, however tempting it is to let the existing transform carry it:
-`runWrappedLineHeightEffect` computes `avgWrappedLineHeight` as `linesContainerRef.getBoundingClientRect().height /
-linesContainerRef.children.length`, so one extra child shrinks the average and corrupts `scrollLineHeight`,
-`visibleFrom` / `visibleTo`, and `spacerHeight` in word-wrap mode until the height map is ready. A cursor that quietly
-breaks virtual scrolling is the worst possible bug to ship here.
+`runWrappedLineHeightEffect` computes `avgWrappedLineHeight` as
+`linesContainerRef.getBoundingClientRect().height / linesContainerRef.children.length`, so one extra child shrinks the
+average and corrupts `scrollLineHeight`, `visibleFrom` / `visibleTo`, and `spacerHeight` in word-wrap mode until the
+height map is ready. A cursor that quietly breaks virtual scrolling is the worst possible bug to ship here.
 
-Its box comes from `caretRectFor(content, focus)` converted to spacer-relative coordinates. Recomputed in an
-`$effect` after `tick()`, keyed on the selection, the scroll position, the rendered line set, and the wrap flag. Hidden
-when: media mode, the setting is off, the selection is `null`, the focus line isn't rendered, or the measurement fails.
-Blink is a CSS `step-end` animation, dropped entirely under `@media (prefers-reduced-motion: reduce)`, and re-keyed on
-focus change with `{#key}` so a keypress always leaves the cursor solid.
+Its box comes from `caretRectFor(content, focus)` converted to spacer-relative coordinates. Recomputed in an `$effect`
+after `tick()`, keyed on the selection, the scroll position, the rendered line set, and the wrap flag. Hidden when:
+media mode, the setting is off, the selection is `null`, the focus line isn't rendered, or the measurement fails. Blink
+is a CSS `step-end` animation, dropped entirely under `@media (prefers-reduced-motion: reduce)`, and re-keyed on focus
+change with `{#key}` so a keypress always leaves the cursor solid.
 
 **`caretRectFor` picks an EDGE of a measured box; it is not a fallback ladder.** This distinction is the whole
 correctness of the thing. `measureChar` clamps its probe to `length - 1`, so at `offset === length` it returns a
-perfectly good box — the **last character's**. Treat that as "measurement failed" and you don't get a hidden cursor
-that signals the bug, you get a cursor painted one glyph too far left at every single line end, which is exactly where
+perfectly good box — the **last character's**. Treat that as "measurement failed" and you don't get a hidden cursor that
+signals the bug, you get a cursor painted one glyph too far left at every single line end, which is exactly where
 Shift+End and every rightward walk park it. So:
 
 - Probe `min(offset, length - 1)`, then return `box.left` when `offset <= box.start` and `box.right` when
   `offset >= box.end`. That one rule covers line start, line end, and everything between.
 - The only true fallbacks: `length === 0` (empty line → the row's `.line-text` rect `left`) and a null `rangeRect`.
 - Take the cursor's height from the **measured char box**, ❌ never from the row. Under word wrap `.line` has
-  `height: auto`, so a wrapped logical line's row is several visual rows tall and a row-height cursor would paint a
-  tall bar down the whole paragraph. The char box is one visual row by construction.
+  `height: auto`, so a wrapped logical line's row is several visual rows tall and a row-height cursor would paint a tall
+  bar down the whole paragraph. The char box is one visual row by construction.
 
 **Wrap-point behavior, written down so nobody "fixes" it later**: for an interior offset landing exactly on a wrap
 boundary, `measureChar` returns the first glyph of the next visual row, so the cursor paints at the start of row N+1
@@ -439,8 +441,8 @@ primary control.
 
 - `restricted-settings.test.ts`: the new id round-trips through the persist path and is refused when spoofed under a
   different id.
-- A unit test for the spacer-relative rect math and for `caretRectFor`'s edge rule plus its two true fallbacks (the pure part, which lives in
-  `viewer-text-cursor.svelte.ts` beside the component).
+- A unit test for the spacer-relative rect math and for `caretRectFor`'s edge rule plus its two true fallbacks (the pure
+  part, which lives in `viewer-text-cursor.svelte.ts` beside the component).
 - `viewer.spec.ts` (E2E): with the setting on, a click paints a `.text-cursor` at the click point and Shift+Right moves
   it; with it off, no `.text-cursor` exists. A persistence spec mirroring `viewer-wordwrap-persistence.spec.ts`.
 - `viewer.a11y.test.ts`: the cursor is `aria-hidden` (it's a visual echo of the selection the live region already
