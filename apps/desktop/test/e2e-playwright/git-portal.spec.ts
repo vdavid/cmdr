@@ -108,7 +108,7 @@ async function paneLacksFile(tauriPage: PageLike, paneIndex: number, name: strin
 /** Flips the live portal setting the way `settings-applier.ts` does. */
 async function setPortalEnabled(tauriPage: PageLike, enabled: boolean): Promise<void> {
   await tauriPage.evaluate(`(function() {
-    return window.__TAURI_INTERNALS__.invoke('set_show_virtual_git_portal', { enabled: ${enabled} });
+    return window.__TAURI_INTERNALS__.invoke('set_show_virtual_git_portal', { enabled: ${JSON.stringify(enabled)} });
   })()`)
 }
 

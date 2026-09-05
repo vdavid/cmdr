@@ -34,7 +34,8 @@ impl ListingOverlay for GitPortalOverlay {
     /// `gix` can open, and the portal is switched on.
     ///
     /// ❗ Pure string and flag work, no `stat`: this runs on every listing in
-    /// the app. "Is there a repository here?" is [`extra_entries`]'s question.
+    /// the app. "Is there a repository here?" is
+    /// [`extra_entries`](ListingOverlay::extra_entries)'s question.
     ///
     /// A LINKED worktree's `.git` is a gitlink FILE, so listing it fails
     /// `ENOTDIR` and this never runs — the portal lives where `.git` is a

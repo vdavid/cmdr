@@ -41,7 +41,7 @@ pub struct VolumeManager {
     default_volume_id: RwLock<Option<String>>,
     /// Registration recency of the on-demand `ArchiveVolume`s (front = oldest).
     /// A value store: recovering on poison is safe (a lost reorder at worst
-    /// evicts slightly early). See [`touch_routed_lru`].
+    /// evicts slightly early). See [`routing::touch_routed_lru`].
     archive_lru: Mutex<VecDeque<String>>,
     /// The same, for the on-demand `GitPortalVolume`s. Separate from the
     /// archive LRU on purpose: browsing a folder full of zips must not evict
