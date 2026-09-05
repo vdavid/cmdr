@@ -141,16 +141,16 @@ If it should ship sooner, narrowing the guards from `is_virtual` to `classify(..
 
 ### M2: route + overlay (in place)
 
-Done. Steps 1 and 2 landed the routed volume and `RoutedKind`; steps 3-5 landed the seam, the removal, and the gate.
-The shape as built, and the three things it decided that the plan left open:
+Done. Steps 1 and 2 landed the routed volume and `RoutedKind`; steps 3-5 landed the seam, the removal, and the gate. The
+shape as built, and the three things it decided that the plan left open:
 
-- **The overlay's predicate is "the listed directory is called `.git`, on a volume answering
-  `local_path().is_some()`, with the portal on"**, and the ROUTE asks the volume half of the same question. The plan
-  worried about keying on `is_dir`; the answer is that the overlay contributes to a listing that already succeeded, so
-  a linked worktree's gitlink FILE excludes itself (`ENOTDIR`) with no stat of our own. That worktree keeps every
-  category below `.git/`, and loses only the landing listing, whose rewritten real rows were never openable anyway.
-- **`.git/` itself is watched now**, since the `is_virtual` watch skip is gone and it's an ordinary local directory.
-  Two consequences the plan didn't name: a watcher-driven `FullRefresh` has to re-run the overlays (it does, in
+- **The overlay's predicate is "the listed directory is called `.git`, on a volume answering `local_path().is_some()`,
+  with the portal on"**, and the ROUTE asks the volume half of the same question. The plan worried about keying on
+  `is_dir`; the answer is that the overlay contributes to a listing that already succeeded, so a linked worktree's
+  gitlink FILE excludes itself (`ENOTDIR`) with no stat of our own. That worktree keeps every category below `.git/`,
+  and loses only the landing listing, whose rewritten real rows were never openable anyway.
+- **`.git/` itself is watched now**, since the `is_virtual` watch skip is gone and it's an ordinary local directory. Two
+  consequences the plan didn't name: a watcher-driven `FullRefresh` has to re-run the overlays (it does, in
   `caching::notify_full_refresh_locked`), and a watched `.git/` listing would otherwise read as authoritative to the
   fresh-listing oracle. `CachedListing` records the contributed-row count and the oracle declines any listing carrying
   some, which is the general form of "a pane view is not a picture of a directory".

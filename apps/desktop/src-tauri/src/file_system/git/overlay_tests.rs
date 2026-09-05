@@ -111,13 +111,19 @@ fn the_toggle_refresh_reaches_a_dot_git_pane_with_no_repo_subscription() {
         .volume("root")
         .path(dot_git.join("branches"))
         .insert("git-toggle-inside");
-    let elsewhere = TestListing::new().volume("root").path(dir.join("src")).insert("git-toggle-elsewhere");
+    let elsewhere = TestListing::new()
+        .volume("root")
+        .path(dir.join("src"))
+        .insert("git-toggle-elsewhere");
 
     let targeted = super::watcher::listings_inside_a_dot_git();
     let paths: Vec<&PathBuf> = targeted.iter().map(|(_, path)| path).collect();
 
     assert!(paths.contains(&&dot_git), "the `.git/` pane itself: {paths:?}");
-    assert!(paths.contains(&&dot_git.join("branches")), "and one inside it: {paths:?}");
+    assert!(
+        paths.contains(&&dot_git.join("branches")),
+        "and one inside it: {paths:?}"
+    );
     assert!(
         !paths.iter().any(|p| p.ends_with("src")),
         "a listing outside any `.git` is left alone: {paths:?}"
