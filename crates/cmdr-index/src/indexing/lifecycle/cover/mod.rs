@@ -554,6 +554,8 @@ mod network_give_up_tests;
 #[cfg(test)]
 mod network_tests;
 #[cfg(test)]
+mod repair_tests;
+#[cfg(test)]
 mod test_support;
 #[cfg(test)]
 mod tests;

@@ -1,15 +1,16 @@
 //! Helpers the cover test files share.
 //!
-//! Two kinds of thing live here. `drain` is what every one of them does to a
-//! walk. The rest is the `Volume`-trait scaffolding `network_tests.rs` and
-//! `network_give_up_tests.rs` run on: a share driven through the public handle, and
-//! the hand-rolled backends that record, stall, double, refuse, or stop answering.
-//! They're here rather than beside the tests because they're ~600 lines of
-//! `Pin<Box<dyn Future>>` ceremony that says nothing about what any single test is
-//! checking.
+//! Three kinds of thing live here. `drain` is what every one of them does to a
+//! walk. `fixture.rs` is the temp-tree `Fixture` the LOCAL-disk files share
+//! (`tests.rs` and `repair_tests.rs`). The rest is the `Volume`-trait scaffolding
+//! `network_tests.rs` and `network_give_up_tests.rs` run on: a share driven through
+//! the public handle, and the hand-rolled backends that record, stall, double,
+//! refuse, or stop answering. They're here rather than beside the tests because
+//! they're ~600 lines of `Pin<Box<dyn Future>>` ceremony that says nothing about
+//! what any single test is checking.
 //!
-//! The single-file fixtures stay with their tests: the temp-tree `Fixture` in
-//! `tests.rs`, the `ColdDrive` in `cold_drive_tests.rs`.
+//! A single-file fixture stays with its tests: the `ColdDrive` in
+//! `cold_drive_tests.rs`.
 
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -710,3 +711,7 @@ impl Share {
         (share, backend.expect("the backend is built while registering"))
     }
 }
+
+mod fixture;
+
+pub(in crate::indexing::lifecycle::cover) use fixture::Fixture;

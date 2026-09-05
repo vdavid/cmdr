@@ -2,124 +2,17 @@
 //! what it refuses to touch.
 //!
 //! Everything here runs against an index that already exists, over a temp tree the
-//! LOCAL walker reads off the disk. The cold-drive half (no index at all, driven
-//! through the public handle) is `cold_drive_tests.rs`; the `Volume`-trait half is
-//! `network_tests.rs`.
+//! LOCAL walker reads off the disk (`test_support::Fixture`). The one case the
+//! parallel walker refuses is `repair_tests.rs`; the cold-drive half (no index at
+//! all, driven through the public handle) is `cold_drive_tests.rs`; the
+//! `Volume`-trait half is `network_tests.rs`.
 
-use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
+use std::path::Path;
 
-use super::ground::{Ground, repair_non_virgin};
-use super::test_support::drain;
+use super::ground::Ground;
+use super::test_support::{Fixture, drain};
 use super::*;
-use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::indexing::writer::WriteMessage;
-
-// ── Fixture ──────────────────────────────────────────────────────────
-
-/// A temp tree plus an index over it, with the ancestor chain down to the tree
-/// root already seeded so a frontier path resolves.
-struct Fixture {
-    tree: tempfile::TempDir,
-    _db_dir: tempfile::TempDir,
-    db_path: PathBuf,
-    writer: IndexWriter,
-    /// A volume id of its own, because the in-flight frontier claims
-    /// (`live.rs`) are keyed by one and these tests run in parallel over paths
-    /// that would otherwise look like each other's ground.
-    volume_id: String,
-}
-
-impl Fixture {
-    fn new() -> Self {
-        // In the CWD rather than `/tmp`: `/tmp` is excluded on Linux and is a
-        // symlink on macOS, and both would fight the path space.
-        let tree = tempfile::Builder::new()
-            .prefix("cmdr-cover-test-")
-            .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
-            .expect("temp tree");
-        let db_dir = tempfile::tempdir().expect("temp db dir");
-        let db_path = db_dir.path().join("cover-test-index.db");
-        IndexStore::open(&db_path).expect("open store");
-        let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).expect("spawn writer");
-
-        let fixture = Self {
-            tree,
-            _db_dir: db_dir,
-            db_path,
-            writer,
-            volume_id: format!("cover-fixture-{}", next_fixture_id()),
-        };
-        fixture.seed_chain(fixture.tree.path());
-        fixture
-    }
-
-    /// Insert the ancestor chain down to `path`, and sync the writer's id counter.
-    fn seed_chain(&self, path: &Path) -> i64 {
-        let conn = IndexStore::open_write_connection(&self.db_path).expect("write connection");
-        let path_str = path.to_string_lossy();
-        let mut parent_id = ROOT_ID;
-        for component in path_str.split('/').filter(|c| !c.is_empty()) {
-            parent_id = match IndexStore::resolve_component(&conn, parent_id, component) {
-                Ok(Some(id)) => id,
-                _ => IndexStore::insert_entry_v2(&conn, parent_id, component, true, false, None, None, None, None)
-                    .expect("insert chain component"),
-            };
-        }
-        let next_id = IndexStore::get_next_id(&conn).expect("next id");
-        self.writer.next_id().fetch_max(next_id, Ordering::Relaxed);
-        parent_id
-    }
-
-    fn context(&self) -> CoverContext {
-        CoverContext {
-            volume_id: self.volume_id.clone(),
-            writer: self.writer.clone(),
-            space: IndexPathSpace::root(),
-            kind: IndexVolumeKind::Local,
-            flush: FlushOnFinish::default(),
-        }
-    }
-
-    fn path(&self, relative: &str) -> String {
-        self.tree.path().join(relative).to_string_lossy().to_string()
-    }
-
-    fn id_of(&self, path: &str) -> i64 {
-        let conn = IndexStore::open_read_connection(&self.db_path).expect("read connection");
-        crate::indexing::store::resolve_path(&conn, path)
-            .expect("resolve")
-            .unwrap_or_else(|| panic!("{path} should have a row"))
-    }
-
-    fn child_ids(&self, path: &str) -> Vec<i64> {
-        let conn = IndexStore::open_read_connection(&self.db_path).expect("read connection");
-        let Some(id) = crate::indexing::store::resolve_path(&conn, path).expect("resolve") else {
-            return Vec::new();
-        };
-        let mut ids: Vec<i64> = IndexStore::list_children_on(id, &conn)
-            .expect("list children")
-            .iter()
-            .map(|row| row.id)
-            .collect();
-        ids.sort_unstable();
-        ids
-    }
-
-    fn listed_epoch(&self, path: &str) -> u64 {
-        let conn = IndexStore::open_read_connection(&self.db_path).expect("read connection");
-        IndexStore::get_listed_epoch_by_id(&conn, self.id_of(path))
-            .expect("listed epoch")
-            .expect("row")
-    }
-}
-
-/// A fresh volume id per fixture, so parallel tests never look like each other's
-/// in-flight walk.
-fn next_fixture_id() -> u64 {
-    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    NEXT.fetch_add(1, Ordering::Relaxed)
-}
+use crate::indexing::store::IndexStore;
 
 // ── What a walk delivers ─────────────────────────────────────────────
 
@@ -203,192 +96,6 @@ fn dropping_the_consumer_leaves_the_walk_running() {
     assert!(!outcome.cancelled, "nobody cancelled it");
     assert_eq!(outcome.entries_found, 50, "it walked the whole thing anyway");
     assert!(f.listed_epoch(&f.path("wide")) > 0, "and the coverage is durable");
-}
-
-// ── The repair path ──────────────────────────────────────────────────
-
-/// A frontier node the index already holds rows under is repaired by the serial
-/// reconcile, which compares by name: the pre-existing rows keep their ids, the
-/// new siblings arrive, and nothing is deleted.
-///
-/// The other half of
-/// `scanner::convergence_tests::covering_a_frontier_node_never_removes_a_row_it_did_not_write`,
-/// which pins that the parallel walker refuses this case rather than corrupting it.
-#[test]
-fn a_non_virgin_frontier_node_is_repaired_without_losing_rows() {
-    let f = Fixture::new();
-    let root = f.tree.path();
-    std::fs::create_dir_all(root.join("F/G")).expect("dirs");
-    std::fs::write(root.join("F/G/kept.txt"), "kept").expect("file");
-    std::fs::write(root.join("F/new.txt"), "new").expect("file");
-
-    // What FSEvents verification leaves behind: G's row under an unlisted F.
-    let f_id = f.seed_chain(&root.join("F"));
-    f.writer
-        .send(WriteMessage::UpsertEntryV2 {
-            parent_id: f_id,
-            name: "G".to_string(),
-            is_directory: true,
-            is_symlink: false,
-            logical_size: None,
-            physical_size: None,
-            modified_at: None,
-            inode: None,
-            nlink: None,
-        })
-        .expect("upsert G");
-    f.writer.flush_blocking().expect("flush");
-    // … and then G itself gets walked, so it holds rows F has no claim on.
-    let g_walk = start(
-        f.context(),
-        vec![f.path("F/G")],
-        CoverageDimension::Listing,
-        CancellationToken::new(),
-        WalkFor::TheIndex,
-    );
-    drain(g_walk);
-    f.writer.flush_blocking().expect("flush");
-
-    let g_rows = f.child_ids(&f.path("F/G"));
-    assert_eq!(g_rows.len(), 1, "precondition: G holds kept.txt");
-    assert_eq!(f.listed_epoch(&f.path("F")), 0, "precondition: F is a frontier node");
-
-    let walk = start(
-        f.context(),
-        vec![f.path("F")],
-        CoverageDimension::Listing,
-        CancellationToken::new(),
-        WalkFor::TheIndex,
-    );
-    let (_, outcome) = drain(walk);
-    f.writer.flush_blocking().expect("flush");
-
-    assert_eq!(outcome.roots_covered, 1, "the repair path covered it");
-    assert_eq!(
-        f.child_ids(&f.path("F/G")),
-        g_rows,
-        "the rows the walk did not write keep their ids"
-    );
-    assert!(f.listed_epoch(&f.path("F")) > 0, "and F is covered now");
-    assert!(
-        f.child_ids(&f.path("F")).len() >= 2,
-        "with the sibling the repair discovered, alongside G"
-    );
-}
-
-/// The repair path REPORTS what it wrote, to the consumer and in the totals.
-///
-/// A live search's answer is the index's covered half plus what the walk hands
-/// back, and the covered half by definition holds nothing under a frontier root.
-/// So a repair that writes rows silently makes the search that paid for it answer
-/// as if that ground were empty — and, because the run still ends `Completed`,
-/// call the short answer exhaustive. The shape is ordinary: search one folder,
-/// then search its parent.
-#[test]
-fn a_repaired_frontier_node_reports_the_rows_it_wrote() {
-    let f = Fixture::new();
-    let root = f.tree.path();
-    std::fs::create_dir_all(root.join("F/G")).expect("dirs");
-    std::fs::create_dir_all(root.join("F/sibling")).expect("dirs");
-    std::fs::write(root.join("F/G/kept.txt"), "kept").expect("file");
-    std::fs::write(root.join("F/new.txt"), "new").expect("file");
-    std::fs::write(root.join("F/sibling/deep.txt"), "deep").expect("file");
-    f.seed_chain(&root.join("F"));
-
-    // The first search covers G, materializing F above it without listing it.
-    drain(start(
-        f.context(),
-        vec![f.path("F/G")],
-        CoverageDimension::Listing,
-        CancellationToken::new(),
-        WalkFor::TheIndex,
-    ));
-    f.writer.flush_blocking().expect("flush");
-    assert_eq!(f.listed_epoch(&f.path("F")), 0, "precondition: F is a frontier node");
-
-    // The second search asks for F, which the parallel walker refuses.
-    let (entries, outcome) = drain(start(
-        f.context(),
-        vec![f.path("F")],
-        CoverageDimension::Listing,
-        CancellationToken::new(),
-        WalkFor::TheIndex,
-    ));
-    f.writer.flush_blocking().expect("flush");
-
-    let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
-    emitted.sort();
-    assert_eq!(
-        emitted,
-        [f.path("F/new.txt"), f.path("F/sibling"), f.path("F/sibling/deep.txt")],
-        "every row the repair wrote reached the consumer: nothing else will ever report them \
-         to the search that asked for this walk"
-    );
-    assert_eq!(outcome.entries_found, 3, "and the totals count the same rows");
-    assert_eq!(outcome.dirs_found, 1, "F/sibling among them");
-}
-
-/// A repair whose consumer walks away mid-stream still covers the ground.
-///
-/// The repair hands its rows over a BOUNDED channel ([`BATCH_QUEUE_DEPTH`]), so a
-/// walk with more batches than slots parks on a full queue — and the search that
-/// asked may be gone by then (a closed dialog, a superseded query). The send
-/// failing is what frees it, and what it does next is keep going: walking is
-/// coverage work (Decision 11), so the rows land and the frontier stops offering
-/// this node whether or not anyone was still listening.
-///
-/// The sibling of `dropping_the_consumer_leaves_the_walk_running`, which pins the
-/// same promise on the PARALLEL walker.
-#[test]
-fn a_repair_whose_consumer_left_still_covers_the_ground() {
-    let f = Fixture::new();
-    let root = f.tree.path();
-    std::fs::create_dir_all(root.join("F/G")).expect("dirs");
-    std::fs::write(root.join("F/G/kept.txt"), "kept").expect("file");
-    // More directories than the channel holds batches: the repair sends one batch
-    // per directory it created rows in, so the walk is parked on a full queue by
-    // the time the consumer goes.
-    let wide = BATCH_QUEUE_DEPTH + 4;
-    for i in 0..wide {
-        std::fs::create_dir_all(root.join("F").join(format!("d{i}"))).expect("dirs");
-        std::fs::write(root.join("F").join(format!("d{i}/leaf.txt")), "x").expect("file");
-    }
-    f.seed_chain(&root.join("F"));
-
-    // Cover G first, which materializes F above it without listing it.
-    drain(start(
-        f.context(),
-        vec![f.path("F/G")],
-        CoverageDimension::Listing,
-        CancellationToken::new(),
-        WalkFor::TheIndex,
-    ));
-    f.writer.flush_blocking().expect("flush");
-    assert_eq!(f.listed_epoch(&f.path("F")), 0, "precondition: F is a frontier node");
-
-    let walk = start(
-        f.context(),
-        vec![f.path("F")],
-        CoverageDimension::Listing,
-        CancellationToken::new(),
-        WalkFor::TheIndex,
-    );
-    // One batch, so the repair is provably under way and filling the queue behind
-    // it; then walk away. `finish` drops the channel and waits the walk out.
-    walk.next_batch().expect("the repair emits");
-    let outcome = walk.finish();
-    f.writer.flush_blocking().expect("flush");
-
-    assert!(!outcome.cancelled, "nobody cancelled it");
-    assert_eq!(
-        outcome.entries_found,
-        (wide * 2) as u64,
-        "it wrote every directory and its file anyway"
-    );
-    assert!(
-        f.listed_epoch(&f.path("F")) > 0,
-        "and the coverage is durable: the next search doesn't walk F again"
-    );
 }
 
 // ── Ground the index has no row for ──────────────────────────────────
@@ -747,10 +454,9 @@ fn a_background_walk_hands_its_ground_to_the_walk_somebody_is_waiting_on() {
 /// when it goes, and this is what stands in for one.
 #[test]
 fn flushing_a_stopped_walk_cannot_be_tidied_away() {
-    let source = std::fs::read_to_string(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/lifecycle/cover/mod.rs"),
-    )
-    .expect("the cover driver's source");
+    let source =
+        std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src/indexing/lifecycle/cover/mod.rs"))
+            .expect("the cover driver's source");
     let Some(flush) = source
         .split("let owed =")
         .nth(1)
@@ -764,30 +470,6 @@ fn flushing_a_stopped_walk_cannot_be_tidied_away() {
         "a stopped walk must flush before it releases its ground, and this condition no longer asks whether it \
          was stopped:\n{flush}"
     );
-}
-
-/// The repair path reports a cancellation as one, rather than as a covered node.
-///
-/// `reconcile_subtree` breaks out of its walk on cancel and returns `Ok`, so
-/// without `ReconcileSummary.cancelled` this arm would count a stopped repair as
-/// a finished one and the frontier would look smaller than it is.
-#[test]
-fn a_cancelled_repair_is_reported_as_cancelled_not_covered() {
-    let f = Fixture::new();
-    let root = f.tree.path();
-    std::fs::create_dir_all(root.join("F/G")).expect("dirs");
-    f.seed_chain(&root.join("F/G"));
-
-    let cancel = CancellationToken::new();
-    cancel.cancel();
-    let (sender, _batches) = sync_channel(1);
-    let (summary, verdict) = repair_non_virgin(&f.context(), &root.join("F"), &sender, &cancel);
-    assert_eq!(
-        verdict,
-        RootOutcome::Cancelled,
-        "a repair whose token had already fired covered nothing"
-    );
-    assert_eq!(summary.map(|s| s.total_entries), Some(0), "and wrote nothing to report");
 }
 
 /// Cancelling before the walk starts leaves the frontier where it was, and says
