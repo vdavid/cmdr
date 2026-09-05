@@ -1,8 +1,14 @@
 /**
- * Word-boundary helper for the viewer's double-click selection.
+ * Word boundaries for the viewer: the word under a double-click, and the next word
+ * boundary in either direction for Option+Shift+Arrow.
  *
  * Word boundaries follow Unicode word-segmentation rules via `Intl.Segmenter`, available
  * in Safari 14.1+ (we target macOS Big Sur and up, so it's safe without a polyfill).
+ *
+ * ❌ This module is the only caller of `Intl.Segmenter`'s **word** granularity. Every
+ * word question routes through here so the JavaScriptCore `isWordLike` workaround in
+ * `isWordSegment` stays single-sourced; a second segmenter elsewhere would reintroduce
+ * the bug for its own callers.
  *
  * Triple-click (whole-line selection) doesn't need its own helper: the caller wraps the
  * line's UTF-16 length into a `{ start: { line, offset: 0 }, end: { line, offset: len } }`
@@ -27,6 +33,23 @@ function isWordSegment(seg: Intl.SegmentData): boolean {
   return seg.isWordLike === true || WORD_CHAR.test(seg.segment)
 }
 
+/** Brings an offset from anywhere onto `[0, lineText.length]`. */
+function clampToLine(lineText: string, offset: number): number {
+  return Math.max(0, Math.min(offset, lineText.length))
+}
+
+/**
+ * Yields the `[start, end)` bounds of each word segment in `lineText`, left to right.
+ * Lazy so the directional walkers stop at the first hit instead of segmenting a whole
+ * 100k-character log line on every arrow press.
+ */
+function* wordRanges(lineText: string): Generator<{ start: number; end: number }> {
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' })
+  for (const seg of segmenter.segment(lineText)) {
+    if (isWordSegment(seg)) yield { start: seg.index, end: seg.index + seg.segment.length }
+  }
+}
+
 /**
  * Returns the `[start, end)` UTF-16 bounds of the word containing `offset` in
  * `lineText`. If `offset` doesn't fall on a word segment (it's at a separator like
@@ -39,7 +62,7 @@ function isWordSegment(seg: Intl.SegmentData): boolean {
  */
 export function findWordBoundsAt(lineText: string, offset: number): { start: number; end: number } {
   if (lineText.length === 0) return { start: 0, end: 0 }
-  const clamped = Math.max(0, Math.min(offset, lineText.length))
+  const clamped = clampToLine(lineText, offset)
   const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' })
 
   let lastWord: { start: number; end: number } | null = null
@@ -70,4 +93,36 @@ export function findWordBoundsAt(lineText: string, offset: number): { start: num
   // Caret past the end: return the last word, or zero-length.
   if (lastWord !== null) return lastWord
   return { start: clamped, end: clamped }
+}
+
+/**
+ * Returns the end of the first word that ends strictly after `offset` in `lineText`, or
+ * `null` when no word does (the offset sits in the line's trailing non-word tail, or the
+ * line holds no word at all).
+ *
+ * macOS semantics for Option+Right: from inside a word it lands on that word's end, and
+ * from a boundary or a separator it skips ahead to the next word's end. Punctuation and
+ * whitespace are never a stop of their own; the caller decides what to do with a `null`
+ * (`viewer-caret-motion.ts` falls back to the line end, then to the next line).
+ */
+export function findWordEndAfter(lineText: string, offset: number): number | null {
+  const clamped = clampToLine(lineText, offset)
+  for (const range of wordRanges(lineText)) {
+    if (range.end > clamped) return range.end
+  }
+  return null
+}
+
+/**
+ * Returns the start of the last word that starts strictly before `offset` in `lineText`,
+ * or `null` when no word does. The mirror of `findWordEndAfter`, for Option+Left.
+ */
+export function findWordStartBefore(lineText: string, offset: number): number | null {
+  const clamped = clampToLine(lineText, offset)
+  let found: number | null = null
+  for (const range of wordRanges(lineText)) {
+    if (range.start >= clamped) break
+    found = range.start
+  }
+  return found
 }

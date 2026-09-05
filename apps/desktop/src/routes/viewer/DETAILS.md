@@ -22,8 +22,9 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 - Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-caret-geometry.ts`**
   (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter: row hit-test + character
   rects), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller), **`viewer-word.ts`**
-  (word-boundary via `Intl.Segmenter`), **`viewer-selection-granularity.ts`** (pure caret → word/line range snapping and
-  the two-range union).
+  (word-boundary via `Intl.Segmenter`: the word under a caret, and the next boundary in either direction),
+  **`viewer-selection-granularity.ts`** (pure caret → word/line range snapping and the two-range union),
+  **`viewer-caret-motion.ts`** (pure `moveFocus`: the five keyboard motions).
 - **`viewer-search-scroll.ts`**: pure per-axis scroll-to-match centring (`recenterOffset`, rect-based).
 - Copy: **`viewer-copy.ts`** (pure silent/confirm/refuse policy + thresholds), **`viewer-copy.svelte.ts`**
   (`createViewerCopy` + `createViewerCopyOrchestrator`). Autoscroll: **`viewer-autoscroll.ts`** (curve) +
@@ -142,13 +143,15 @@ logical coordinates, independent of which lines happen to be rendered.
 - **Visual collision**: when a search hit and the selection overlap on the same span, search wins on the background
   (`var(--color-highlight)`) and selection wins on the foreground (`var(--color-selection-fg)`, gold). Matches the
   "selected = gold" language from the file list (design-system.md § File list).
-- **Double-click words** come from `findWordBoundsAt` in `viewer-word.ts`: `Intl.Segmenter` gives the boundaries, and
-  `isWordSegment()` decides which segments are words. Gotcha/Why: ❌ never go back to `Intl.Segmenter`'s own
-  `isWordLike`. JavaScriptCore returns `false` for every segment ICU classifies as numeric, which is any word ENDING in
-  a digit (`123`, `3.14`, `v2`, `sha256`, `abc123`), so a double-click on `"1292507278647433"` selected the JSON key
-  before it. The boundaries themselves are correct on every engine; only the flag lies. Node's ICU gets the flag right,
-  so a plain unit test can't see this: `viewer-word.test.ts` stubs a JSC-shaped segmenter to hold the line. (Verified on
-  macOS 26.5.2 WKWebView vs. Node 24 and Playwright WebKit 26.5, offscreen WKWebView probe, 2026-08-13.)
+- **Words come from `viewer-word.ts`**, the ONE caller of `Intl.Segmenter`'s word granularity: `findWordBoundsAt` for
+  the word under a double-click, `findWordEndAfter` / `findWordStartBefore` for the next boundary in either direction
+  (Option+Shift+Arrow). `Intl.Segmenter` gives the boundaries and `isWordSegment()` decides which segments are words, so
+  all three share one workaround. Gotcha/Why: ❌ never go back to `Intl.Segmenter`'s own `isWordLike`. JavaScriptCore
+  returns `false` for every segment ICU classifies as numeric, which is any word ENDING in a digit (`123`, `3.14`, `v2`,
+  `sha256`, `abc123`), so a double-click on `"1292507278647433"` selected the JSON key before it. The boundaries
+  themselves are correct on every engine; only the flag lies. Node's ICU gets the flag right, so a plain unit test can't
+  see this: `viewer-word.test.ts` stubs a JSC-shaped segmenter to hold the line. (Verified on macOS 26.5.2 WKWebView vs.
+  Node 24 and Playwright WebKit 26.5, offscreen WKWebView probe, 2026-08-13.)
 
 ### Pointer → caret
 
@@ -241,6 +244,63 @@ doesn't advance the click cycle.
 Edge case: during a fast autoscroll into unfetched lines, `getLineText` returns `undefined`, so the range collapses on
 that line. The character path has the same hole and the row renders empty anyway, so the selection matches what the user
 sees.
+
+### Keyboard motion model
+
+Extending a selection from the keyboard is "keep the anchor, move the focus", so `viewer-caret-motion.ts` answers only
+the focus half. `moveFocus({ from, motion, getLineText, getTotalLines, desiredColumn })` takes one of five motions —
+`char`, `word`, `line`, `lineEdge`, `docEdge`, each with a `direction` of `-1` or `+1` — and returns
+`{ focus, targetLine, desiredColumn }`. The union makes the key map an exhaustive switch a test can enumerate, and the
+module is pure: it holds the line cache and the line count, and knows nothing about what's on screen.
+
+Three result shapes, and the caller has to handle all three:
+
+- **`focus` set**: the motion landed; `targetLine` matches it.
+- **`focus: null` with a real `targetLine`**: the line the motion wants isn't in the cache. The caller consumes the key,
+  leaves the selection alone, and **still** scrolls to `targetLine`. Decision/Why: that scroll is what puts the line in
+  the render window and triggers the fetch, so the next press succeeds. A bare `null` would make the press a permanent
+  no-op, because nothing would ever fetch the line it wanted. ❌ Never guess an offset for an unfetched line: it crosses
+  the IPC boundary into `viewer_read_range`. Only reachable by out-running the 100 ms fetch debounce with key repeat.
+- **`focus` equal to `from`**: the motion hit the edge of the file. Vertical motions clamp rather than jumping to the
+  file edge; `docEdge` is the gesture that goes there on purpose.
+
+Rules the model encodes:
+
+- **Vertical motion moves one LOGICAL line, not one visual row.** Native moves by visual row under word wrap, but every
+  other navigation here (`scrollByLines`, the height map, the search jump) counts logical lines, so a visual row would
+  be the viewer's only second coordinate system. Upgrading later means teaching the model about the height map; don't
+  build it now.
+- **Vertical motion keeps a desired column** so walking down through a short line and back returns to the original
+  column. It's a logical UTF-16 offset, matching the rule above; horizontal motions return `desiredColumn: null`, and
+  the caller also clears it on a pointer gesture.
+- **`char` steps one grapheme**, so an emoji, a ZWJ sequence like 👨‍👩‍👧, or a base letter plus a combining mark is one
+  press. Offsets stay UTF-16 code units throughout; grapheme stepping only decides how many of them a press covers.
+  `viewer-pointer.ts` keeps caret geometry on codepoint boundaries, and grapheme boundaries strictly refine those, so
+  that invariant still holds.
+- **`word` follows macOS**: right lands on the END of the next word, left on the START of the previous one, via
+  `findWordEndAfter` / `findWordStartBefore`. When only punctuation and whitespace are left, the stop is the line edge;
+  once there, the motion crosses to the neighbouring line. An empty or wordless line is a stop of its own, so a blank
+  line between paragraphs isn't skipped.
+- **`docEdge` down has three branches**: the last line is cached → its exact end, one press; it isn't (the common case
+  on a large file, since the cache only holds fetched windows) → `{ focus: null, targetLine: totalLines - 1 }`, so the
+  caller's scroll fetches it and a second press lands it; there's no line count at all (ByteSeek before the index) → the
+  `EOF_LINE` sentinel, which `toRangeEnds` maps to `RangeEnd::Eof`. That branch's `targetLine` is the sentinel too, and
+  it names no scrollable row: read it as "scroll to the end of the file" (`scroll.scrollToEnd()`), never as an argument
+  to line arithmetic. ❌ Don't reach for the sentinel merely because the last line isn't cached: that makes it a live,
+  movable focus, which is the wedge the precondition below exists to block. And ❌ don't call `selectToEof()` here — it
+  sets BOTH endpoints and would silently destroy the user's anchor.
+- **Consequence worth knowing rather than rediscovering**: ⌘+Shift+Down from mid-file, then copy, shows the "unknown
+  size" confirm on a large file. `isWholeFileSelection` bails on a start past `(0, 0)`, so `estimateSelectionBytes`
+  walks lines and returns `null` at the first one with an unknown byte length. It terminates safely and it's defensible.
+
+Gotcha/Why: **`moveFocus` never receives the `EOF_LINE` sentinel as its `from`, and throws on one.** ⌘A in
+ByteSeek-no-index mode parks the focus on the sentinel, and it names a line that can never be cached, so one Shift+Up
+from there would ask to step onto it forever. The refusal can't live inside the module: it knows nothing about what's on
+screen, so the only `targetLine` it could hand back is the sentinel itself, and the caller would slam the view to the
+bottom on every press with no way to shrink the selection. The caller resolves a sentinel focus to the last line it is
+currently rendering (at that line's cached length) before calling in, and treats the press as a no-op when nothing is
+rendered. That works because reaching the sentinel always scrolled the view to the bottom, so the last rendered line is
+the practical end of the file. Keeping the module total is what makes its exhaustive-switch test worth anything.
 
 ## Title-bar overlay toolbar
 
