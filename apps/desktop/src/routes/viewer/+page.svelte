@@ -334,6 +334,7 @@
         hasSelection: () => selection.selection !== null,
         setAnchor: selection.setAnchor,
         setFocus: selection.setFocus,
+        setRange: selection.setRange,
         takeFocus: () => scroll.containerRef?.focus({ preventScroll: true }),
     })
 

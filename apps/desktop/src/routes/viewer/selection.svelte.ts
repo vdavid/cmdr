@@ -374,9 +374,10 @@ export function estimateSelectionBytes(
 
 /**
  * Reactive selection state for the viewer. Owns the `Selection | null` and exposes
- * setters that match the gesture vocabulary (`setAnchor`, `setFocus`, `selectAll`,
- * `selectToEof`, `clear`). The pure helpers above operate on the value `selection`
- * returns; they don't need the composable, which makes them trivially testable.
+ * setters that match the gesture vocabulary (`setAnchor`, `setFocus`, `setRange`,
+ * `selectAll`, `selectToEof`, `clear`). The pure helpers above operate on the value
+ * `selection` returns; they don't need the composable, which makes them trivially
+ * testable.
  */
 export function createViewerSelection() {
   let selection = $state<Selection | null>(null)
@@ -391,6 +392,19 @@ export function createViewerSelection() {
       return
     }
     selection = { anchor: selection.anchor, focus: point }
+  }
+
+  /**
+   * Sets both endpoints at once. Word- and line-granularity gestures re-derive the whole
+   * selection from the pressed range on every move, so they land here rather than on
+   * `setAnchor` + `setFocus`; a character drag genuinely moves one endpoint and keeps
+   * using `setFocus`.
+   *
+   * One object param on purpose: two bare `LineOffset`s are exactly the confusable
+   * positional pair `cmdr/no-confusable-callback-params` exists for.
+   */
+  function setRange({ anchor, focus }: Selection): void {
+    selection = { anchor, focus }
   }
 
   function selectAll({ totalLines, lastLineLength }: SelectAllArgs): void {
@@ -411,6 +425,7 @@ export function createViewerSelection() {
     },
     setAnchor,
     setFocus,
+    setRange,
     selectAll,
     selectToEof,
     clear,

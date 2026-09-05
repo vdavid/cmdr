@@ -9,9 +9,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest'
 
 import { createViewerPointerDrag } from './viewer-pointer-drag.svelte'
-import type { LineOffset } from './selection.svelte'
+import type { LineOffset, Selection } from './selection.svelte'
 
 type SetOffset = (offset: LineOffset) => void
+type SetRange = (range: Selection) => void
 
 /** The fake layout the harness stubs: a content box exactly filled by two rendered rows. */
 const ROW_H = 18
@@ -25,6 +26,7 @@ interface Harness {
   searchInput: HTMLInputElement
   setAnchor: Mock<SetOffset>
   setFocus: Mock<SetOffset>
+  setRange: Mock<SetRange>
 }
 
 function rect(left: number, top: number, right: number, bottom: number): DOMRect {
@@ -73,25 +75,46 @@ function mountHarness(): Harness {
   document.body.append(container)
   searchInput.focus()
 
-  return { container, content, searchInput, setAnchor: vi.fn<SetOffset>(), setFocus: vi.fn<SetOffset>() }
+  return {
+    container,
+    content,
+    searchInput,
+    setAnchor: vi.fn<SetOffset>(),
+    setFocus: vi.fn<SetOffset>(),
+    setRange: vi.fn<SetRange>(),
+  }
 }
 
 /** Wires the controller against the harness DOM. */
-function createDrag(harness: Harness, lineText: string | undefined, content = harness.content) {
+function createDrag(
+  harness: Harness,
+  lineText: string | undefined,
+  content = harness.content,
+  hasSelection: () => boolean = () => false,
+) {
   return createViewerPointerDrag({
     getContentRef: () => content,
     getLineText: () => lineText,
-    hasSelection: () => false,
+    hasSelection,
     setAnchor: harness.setAnchor,
     setFocus: harness.setFocus,
+    setRange: harness.setRange,
     takeFocus: () => {
       harness.container.focus({ preventScroll: true })
     },
   })
 }
 
-function pointerEvent(type: string, { x = 10, y = 10, button = 0 } = {}): PointerEvent {
-  return new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button, pointerId: 1 })
+function pointerEvent(type: string, { x = 10, y = 10, button = 0, shiftKey = false } = {}): PointerEvent {
+  return new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: x,
+    clientY: y,
+    button,
+    shiftKey,
+    pointerId: 1,
+  })
 }
 
 /** A left-button pointerdown over the rendered line. */
@@ -202,8 +225,10 @@ describe('viewer multi-click selection', () => {
 
     clickTimes(drag, 2)
 
-    expect(harness.setAnchor).toHaveBeenLastCalledWith({ line: 0, offset: 6 })
-    expect(harness.setFocus).toHaveBeenLastCalledWith({ line: 0, offset: 11 })
+    expect(harness.setRange).toHaveBeenLastCalledWith({
+      anchor: { line: 0, offset: 6 },
+      focus: { line: 0, offset: 11 },
+    })
   })
 
   it('selects the whole logical line on the third press', () => {
@@ -211,8 +236,10 @@ describe('viewer multi-click selection', () => {
 
     clickTimes(drag, 3)
 
-    expect(harness.setAnchor).toHaveBeenLastCalledWith({ line: 0, offset: 0 })
-    expect(harness.setFocus).toHaveBeenLastCalledWith({ line: 0, offset: 11 })
+    expect(harness.setRange).toHaveBeenLastCalledWith({
+      anchor: { line: 0, offset: 0 },
+      focus: { line: 0, offset: 11 },
+    })
   })
 
   it('restarts the cycle on the fourth press instead of leaving the line selected', () => {
@@ -240,18 +267,6 @@ describe('viewer multi-click selection', () => {
     expect(harness.setFocus).not.toHaveBeenCalled()
   })
 
-  it('keeps the word selected when the pointer twitches after a double-click', () => {
-    const drag = createDrag(harness, 'hello world')
-
-    clickTimes(drag, 2)
-    harness.setFocus.mockClear()
-    drag.handlePointerMove(pointerEvent('pointermove', { x: WORD_X + 2, y: WORD_Y }))
-
-    // A multi-click press doesn't arm the drag: a stray move can't collapse the word
-    // selection back to a caret.
-    expect(harness.setFocus).not.toHaveBeenCalled()
-  })
-
   it('selects the whole logical line even when the line wraps across visual rows', () => {
     // The harness renders one row per line, so the wrap case is expressed by the line
     // text being longer than the row: the selection still runs to the logical end.
@@ -259,7 +274,116 @@ describe('viewer multi-click selection', () => {
 
     clickTimes(drag, 3)
 
-    expect(harness.setAnchor).toHaveBeenLastCalledWith({ line: 0, offset: 0 })
-    expect(harness.setFocus).toHaveBeenLastCalledWith({ line: 0, offset: 35 })
+    expect(harness.setRange).toHaveBeenLastCalledWith({
+      anchor: { line: 0, offset: 0 },
+      focus: { line: 0, offset: 35 },
+    })
+  })
+})
+
+describe('viewer drag granularity', () => {
+  /** x that lands on `offset` of a row, a couple of pixels into the character's box. */
+  function xAt(offset: number): number {
+    return TEXT_LEFT + offset * CHAR_W + 2
+  }
+
+  const ROW_0_Y = ROW_H / 2
+  const ROW_1_Y = ROW_H + ROW_H / 2
+
+  /** Runs the click cycle up to `count` presses and leaves the last one held down, mid-drag. */
+  function pressAndHold(drag: ReturnType<typeof createDrag>, count: number, x: number, y: number): void {
+    for (let i = 0; i < count - 1; i++) {
+      drag.handlePointerDown(pointerEvent('pointerdown', { x, y }))
+      drag.handlePointerUp(pointerEvent('pointerup', { x, y }))
+    }
+    drag.handlePointerDown(pointerEvent('pointerdown', { x, y }))
+  }
+
+  it('extends a double-press drag by whole words', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    // Press twice on `hello`, then drag right into `world` without releasing.
+    pressAndHold(drag, 2, xAt(2), ROW_0_Y)
+    drag.handlePointerMove(pointerEvent('pointermove', { x: xAt(7), y: ROW_0_Y }))
+
+    expect(harness.setRange).toHaveBeenLastCalledWith({
+      anchor: { line: 0, offset: 0 },
+      focus: { line: 0, offset: 11 },
+    })
+  })
+
+  it('reverses a word drag that runs left of the pressed word', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    pressAndHold(drag, 2, xAt(6), ROW_0_Y)
+    drag.handlePointerMove(pointerEvent('pointermove', { x: xAt(2), y: ROW_0_Y }))
+
+    // Direction preserved: the anchor jumps to the far edge of the pressed word, so the
+    // union still covers both words whole and reads backwards.
+    expect(harness.setRange).toHaveBeenLastCalledWith({
+      anchor: { line: 0, offset: 11 },
+      focus: { line: 0, offset: 0 },
+    })
+  })
+
+  it('keeps the word selected when the pointer twitches after a double-press', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    pressAndHold(drag, 2, xAt(6), ROW_0_Y)
+    harness.setRange.mockClear()
+    drag.handlePointerMove(pointerEvent('pointermove', { x: xAt(6) + 2, y: ROW_0_Y }))
+
+    // The drag IS armed now, and word granularity is what keeps the twitch harmless: the
+    // move yields the same union the press did, so there is nothing left to collapse.
+    expect(harness.setRange).toHaveBeenLastCalledWith({
+      anchor: { line: 0, offset: 6 },
+      focus: { line: 0, offset: 11 },
+    })
+    expect(harness.setFocus).not.toHaveBeenCalled()
+  })
+
+  it('extends a triple-press drag by whole lines', () => {
+    const drag = createDrag(harness, 'hello world')
+
+    pressAndHold(drag, 3, xAt(6), ROW_0_Y)
+    drag.handlePointerMove(pointerEvent('pointermove', { x: xAt(2), y: ROW_1_Y }))
+
+    expect(harness.setRange).toHaveBeenLastCalledWith({
+      anchor: { line: 0, offset: 0 },
+      focus: { line: 1, offset: 11 },
+    })
+  })
+
+  it('extends a shift-click after a double-press by whole words', () => {
+    const drag = createDrag(harness, 'hello world', harness.content, () => true)
+
+    // Double-press on `hello`, release, then shift-click inside `world`.
+    pressAndHold(drag, 2, xAt(2), ROW_0_Y)
+    drag.handlePointerUp(pointerEvent('pointerup', { x: xAt(2), y: ROW_0_Y }))
+    harness.setRange.mockClear()
+    drag.handlePointerDown(pointerEvent('pointerdown', { x: xAt(7), y: ROW_0_Y, shiftKey: true }))
+
+    // `endDrag` fired on the double-press's own release, so this only works because the
+    // gesture's granularity and anchor range outlive the drag.
+    expect(harness.setRange).toHaveBeenLastCalledWith({
+      anchor: { line: 0, offset: 0 },
+      focus: { line: 0, offset: 11 },
+    })
+  })
+
+  it('drops back to character granularity after a plain press', () => {
+    const drag = createDrag(harness, 'hello world', harness.content, () => true)
+
+    pressAndHold(drag, 2, xAt(2), ROW_0_Y)
+    drag.handlePointerUp(pointerEvent('pointerup', { x: xAt(2), y: ROW_0_Y }))
+    // A plain click elsewhere ends the word gesture...
+    drag.handlePointerDown(pointerEvent('pointerdown', { x: xAt(9), y: ROW_1_Y }))
+    harness.setRange.mockClear()
+    harness.setFocus.mockClear()
+    // ...so the drag that follows moves one endpoint, character by character.
+    drag.handlePointerMove(pointerEvent('pointermove', { x: xAt(4), y: ROW_1_Y }))
+
+    expect(harness.setFocus).toHaveBeenLastCalledWith({ line: 1, offset: 4 })
+    expect(harness.setRange).not.toHaveBeenCalled()
   })
 })

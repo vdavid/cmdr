@@ -592,7 +592,7 @@ test.describe('File viewer multi-click selection', () => {
   })
 
   /**
-   * The middle of the word `beta` (offsets 6-10 of line 0), in client coordinates.
+   * The middle of `[startOffset, endOffset)` on line 0, in client coordinates.
    *
    * Walks the line's text nodes to reach those offsets rather than indexing into the
    * first child: `.line-text` renders one segment per `{#each}` entry, so its children
@@ -600,7 +600,9 @@ test.describe('File viewer multi-click selection', () => {
    * own anchors. Read once, before anything is selected; the geometry doesn't move, so
    * one reading serves every press.
    */
-  async function betaPoint(): Promise<{ x: number; y: number }> {
+  async function midpointOfLineZero(startOffset: number, endOffset: number): Promise<{ x: number; y: number }> {
+    const start = String(startOffset)
+    const end = String(endOffset)
     return await viewer.evaluate<{ x: number; y: number }>(`
             (function() {
                 const lineText = document.querySelector('[data-line="0"] .line-text')
@@ -612,9 +614,9 @@ test.describe('File viewer multi-click selection', () => {
                 let node = walker.nextNode()
                 while (node) {
                     const len = (node.nodeValue || '').length
-                    if (!started && 6 <= pos + len) { range.setStart(node, 6 - pos); started = true }
-                    if (started && 10 <= pos + len) {
-                        range.setEnd(node, 10 - pos)
+                    if (!started && ${start} <= pos + len) { range.setStart(node, ${start} - pos); started = true }
+                    if (started && ${end} <= pos + len) {
+                        range.setEnd(node, ${end} - pos)
                         const rect = range.getBoundingClientRect()
                         return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
                     }
@@ -624,6 +626,16 @@ test.describe('File viewer multi-click selection', () => {
                 throw new Error('line 0 is shorter than the word it should hold: ' + pos + ' units')
             })()
         `)
+  }
+
+  /** The middle of the word `beta` (offsets 6-10 of line 0). */
+  async function betaPoint(): Promise<{ x: number; y: number }> {
+    return await midpointOfLineZero(6, 10)
+  }
+
+  /** The middle of the word `gamma` (offsets 11-16 of line 0). */
+  async function gammaPoint(): Promise<{ x: number; y: number }> {
+    return await midpointOfLineZero(11, 16)
   }
 
   /**
@@ -648,6 +660,36 @@ test.describe('File viewer multi-click selection', () => {
                     fire('pointerdown')
                     fire('pointerup')
                 }
+            })()
+        `)
+  }
+
+  /**
+   * Double-presses at `from`, drags to `to`, and releases there.
+   *
+   * All five events go out in one `evaluate` so the two presses stay well inside the
+   * multi-click interval, and so the whole gesture is dispatched into the viewer webview
+   * rather than through OS-level pointer events (which land on the main window under
+   * Xvfb, as the specs above record).
+   */
+  async function doublePressAndDragTo(from: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
+    await viewer.evaluate(`
+            (function() {
+                const target = document.querySelector('.file-content')
+                if (!target) throw new Error('file-content not found')
+                function fire(type, x, y) {
+                    target.dispatchEvent(new PointerEvent(type, {
+                        bubbles: true, cancelable: true,
+                        clientX: x, clientY: y,
+                        button: 0, pointerId: 4, pointerType: 'mouse',
+                    }))
+                }
+                const fromX = ${String(from.x)}, fromY = ${String(from.y)}
+                fire('pointerdown', fromX, fromY)
+                fire('pointerup', fromX, fromY)
+                fire('pointerdown', fromX, fromY)
+                fire('pointermove', ${String(to.x)}, ${String(to.y)})
+                fire('pointerup', ${String(to.x)}, ${String(to.y)})
             })()
         `)
   }
@@ -677,5 +719,16 @@ test.describe('File viewer multi-click selection', () => {
     // `viewer-multi-click.test.ts`, where the clock is an argument.
     await pressAt(point, 1)
     await expect.poll(selectedTextOnLineZero, { timeout: 3000 }).toBe('')
+  })
+
+  test('a drag after a double press keeps selecting whole words', async () => {
+    const from = await betaPoint()
+    const to = await gammaPoint()
+
+    await doublePressAndDragTo(from, to)
+
+    // Both words in full: the drag runs at the double-press's granularity instead of
+    // staying stuck on the first word.
+    await expect.poll(selectedTextOnLineZero, { timeout: 3000 }).toBe('beta gamma')
   })
 })

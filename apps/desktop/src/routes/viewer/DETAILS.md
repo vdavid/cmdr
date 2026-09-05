@@ -22,7 +22,8 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 - Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-caret-geometry.ts`**
   (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter: row hit-test + character
   rects), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller), **`viewer-word.ts`**
-  (word-boundary via `Intl.Segmenter`).
+  (word-boundary via `Intl.Segmenter`), **`viewer-selection-granularity.ts`** (pure caret → word/line range snapping and
+  the two-range union).
 - **`viewer-search-scroll.ts`**: pure per-axis scroll-to-match centring (`recenterOffset`, rect-based).
 - Copy: **`viewer-copy.ts`** (pure silent/confirm/refuse policy + thresholds), **`viewer-copy.svelte.ts`**
   (`createViewerCopy` + `createViewerCopyOrchestrator`). Autoscroll: **`viewer-autoscroll.ts`** (curve) +
@@ -211,8 +212,35 @@ inside the handler. In other words the obvious suspect is innocent, and an isola
 failure. (Verified on macOS 26.6.2 WKWebView, offscreen WKWebView probe driving synthesized `NSEvent`s at clickCount
 1-4, 2026-09-02.)
 
-A press that counts 2 or 3 deliberately does NOT arm the drag: the gesture is already complete, and a hand twitch before
-the release would otherwise call `setFocus` and collapse the fresh word or line back to a caret.
+### Selection granularity
+
+A gesture carries a granularity — `character`, `word`, or `line` — and both endpoints of the selection are edges of
+ranges snapped to it (`viewer-selection-granularity.ts`). A press counted 2 or 3 arms the drag at `word` / `line` and
+remembers the pressed range; every `pointermove` re-derives the whole selection as the union of that anchor range and
+the range under the pointer, direction preserved (dragging left of the anchor word anchors at the range's far edge, so a
+reversed drag reads correctly and `normaliseSelection` still orders it). Autoscroll's `reAimAfterAutoscroll` routes
+through the same call, so a word drag past the viewport edge keeps its granularity.
+
+Decision/Why: re-deriving from the anchor range is what makes a twitch after a double-press harmless. A pointer that
+hasn't left the pressed word yields the same union, so there is nothing to collapse. ❌ Don't defend the twitch by
+leaving a press counted 2 or 3 unarmed instead: the drag has to stay armed, or double-click-and-sweep selects one word
+forever, which is what users reported.
+
+Character granularity keeps calling `setFocus`, since a plain drag genuinely moves one endpoint; `word` and `line` call
+`setRange`, which sets both at once.
+
+Gotcha/Why: the controller holds **two** pieces of granularity state with different lifetimes, and folding them into one
+silently breaks shift-click. `dragGranularity` describes the drag in progress and `endDrag` resets it;
+`gestureGranularity` plus the remembered anchor range describe the gesture and only a plain (count 1, non-shift) press
+resets them. `endDrag` fires on the double-press's own `pointerup`, so a shift-click reading the drag's granularity
+would always see `character`.
+
+Shift-click therefore extends at the gesture's granularity from the remembered anchor range, matching native, and still
+doesn't advance the click cycle.
+
+Edge case: during a fast autoscroll into unfetched lines, `getLineText` returns `undefined`, so the range collapses on
+that line. The character path has the same hole and the row renders empty anyway, so the selection matches what the user
+sees.
 
 ## Title-bar overlay toolbar
 
