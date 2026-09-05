@@ -41,6 +41,7 @@ use cmdr_fs::ignore_poison::IgnorePoison;
 // name the root volume id; production sites thread the real id through `new_for`.
 #[cfg(test)]
 use crate::ROOT_VOLUME_ID;
+use crate::indexing::scanner::LiveWalk;
 use cmdr_fs::pluralize::pluralize;
 
 mod escalation;
@@ -949,27 +950,28 @@ impl Drop for BulkReconcileGuard {
 /// [`diff_dir_against_db`] but stamps + runs ONE `ComputeAllAggregates` (the
 /// single-aggregate constraint the perf bench measured), never per-dir propagation.
 ///
-/// `emit` is where a live consumer receives the rows this pass CREATES, the same
-/// contract [`scanner::cover_subtree`] serves; pass `None` to fill the index and
+/// `live` is who is watching this pass happen; pass `None` to fill the index and
 /// nothing else. It matters because this is also the cover walk's repair path
 /// (`lifecycle/cover`): the search that asked for that walk answers with the
 /// index's covered half plus what the walk hands back, and the covered half was
 /// read from an arena that PREDATES this pass. So the rows a repair creates reach
-/// the search through `emit` or through nothing, and a silent repair leaves that
-/// search short while its walk still ends `Completed` — a wrong answer calling
-/// itself exhaustive. ⚠️ Only the created rows: a row the index already held is
-/// the covered half's to report, and sending it too would double it.
-pub(crate) fn reconcile_subtree(
+/// the search through [`LiveWalk::emit`] or through nothing, and a silent repair
+/// leaves that search short while its walk still ends `Completed` — a wrong answer
+/// calling itself exhaustive. ⚠️ Only the created rows: a row the index already
+/// held is the covered half's to report, and sending it too would double it.
+pub(in crate::indexing) fn reconcile_subtree(
     root: &Path,
     space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
     cancel: &CancellationToken,
-    // Dropped the moment the consumer goes away (a closed search dialog), which
-    // stops the emitting without stopping the walk: the rows are in the index for
-    // the next query either way.
-    mut emit: Option<&scanner::EntrySender>,
+    live: Option<LiveWalk<'_>>,
 ) -> Result<ReconcileSummary, String> {
+    // Split so the two halves can end at different times: a consumer that goes
+    // away stops being FED, and the pulse keeps moving for whoever else is reading
+    // it (a second run judging whether this walk is still working).
+    let heartbeat = live.as_ref().map(|live| live.heartbeat);
+    let mut emit = live.map(|live| live.emit);
     let start = Instant::now();
     // Arm the writer-wait probe, discarding whatever ran on this thread before.
     let _ = writer_wait();
@@ -1142,6 +1144,11 @@ pub(crate) fn reconcile_subtree(
             break;
         }
 
+        // Before the read, not after: a walk parked on a directory that hangs has
+        // to show as working, which is the whole reason the pulse counts STARTS.
+        if let Some(heartbeat) = heartbeat {
+            heartbeat.entering(&dir_path);
+        }
         let fs_children = match read_fs_children(&dir_path, space) {
             Some(c) => c,
             None => {

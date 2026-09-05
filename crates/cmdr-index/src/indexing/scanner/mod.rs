@@ -289,6 +289,27 @@ pub struct CoveredEntry {
 /// of letting an unbounded queue grow to the size of the subtree.
 pub(in crate::indexing) type EntrySender = std::sync::mpsc::SyncSender<Vec<CoveredEntry>>;
 
+/// Who is watching a walk happen, as it happens.
+///
+/// ❌ Both halves or neither, which is why they travel as one value rather than
+/// two `Option`s a caller can half-fill. A walk with rows but no pulse fills a
+/// search's list under "0 folders scanned", and a SECOND run waiting on that
+/// ground reads the unmoving zero as a stall and gives up on a walk that is
+/// working (`search/execute/live_run.rs`'s `OTHER_WALK_STALL`).
+///
+/// It lives beside the two primitives it pairs rather than beside either walk
+/// that takes one: the parallel walker and the serial reconcile both report
+/// through it, and homing it in one of them would make the other depend on its
+/// insides.
+pub(in crate::indexing) struct LiveWalk<'a> {
+    /// Where the rows a walk CREATES go, one crossing per batch.
+    pub emit: &'a EntrySender,
+    /// One [`WalkHeartbeat::entering`] per directory read — the only thing a
+    /// consumer can measure progress by, because a batch fills at
+    /// [`BATCH_SIZE`](ScanConfig::batch_size) entries or not at all.
+    pub heartbeat: &'a WalkHeartbeat,
+}
+
 /// Configuration for a scan operation.
 pub struct ScanConfig {
     /// Root path to scan from.

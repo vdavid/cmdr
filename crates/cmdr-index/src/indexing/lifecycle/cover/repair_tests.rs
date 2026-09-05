@@ -196,6 +196,51 @@ fn a_repair_whose_consumer_left_still_covers_the_ground() {
     );
 }
 
+/// A repair moves the walk's PULSE, not only its batches.
+///
+/// `foldersFound` and the dialog's "N folders scanned" are read off
+/// `WalkHeartbeat::dirs_scanned`, never off the entries — so a repair that fills a
+/// list while the pulse sits at zero reports a walk that covered nothing. Worse, a
+/// second run waiting on this ground judges the walk by that same number
+/// (`search/execute/live_run.rs`'s `OTHER_WALK_STALL`) and gives up on one that is
+/// working.
+#[test]
+fn a_repair_reports_the_directories_it_read() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("F/G")).expect("dirs");
+    std::fs::create_dir_all(root.join("F/sibling")).expect("dirs");
+    std::fs::write(root.join("F/sibling/deep.txt"), "deep").expect("file");
+    f.seed_chain(&root.join("F"));
+
+    // Cover G first, so F is a frontier node the parallel walker will refuse.
+    drain(start(
+        f.context(),
+        vec![f.path("F/G")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+        WalkFor::TheIndex,
+    ));
+    f.writer.flush_blocking().expect("flush");
+
+    let walk = start(
+        f.context(),
+        vec![f.path("F")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+        WalkFor::TheIndex,
+    );
+    let pulse = walk.dirs_scanned_counter();
+    drain(walk);
+
+    // F, F/G, and F/sibling: every directory the repair read.
+    assert_eq!(
+        pulse.load(std::sync::atomic::Ordering::Relaxed),
+        3,
+        "the repair pulses per directory read, exactly as the parallel walker does"
+    );
+}
+
 /// The repair path reports a cancellation as one, rather than as a covered node.
 ///
 /// `reconcile_subtree` breaks out of its walk on cancel and returns `Ok`, so
@@ -211,7 +256,8 @@ fn a_cancelled_repair_is_reported_as_cancelled_not_covered() {
     let cancel = CancellationToken::new();
     cancel.cancel();
     let (sender, _batches) = sync_channel(1);
-    let (summary, verdict) = repair_non_virgin(&f.context(), &root.join("F"), &sender, &cancel);
+    let heartbeat = WalkHeartbeat::new();
+    let (summary, verdict) = repair_non_virgin(&f.context(), &root.join("F"), &sender, &cancel, &heartbeat);
     assert_eq!(
         verdict,
         RootOutcome::Cancelled,

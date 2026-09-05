@@ -36,7 +36,7 @@ use crate::indexing::host::runtime;
 use crate::indexing::metadata::{MetadataSnapshot, extract_metadata};
 use crate::indexing::network_scanner::scan_pace::ScanPacer;
 use crate::indexing::network_scanner::{VolumeScanError, cover_volume_subtree, stat_one_directory};
-use crate::indexing::scanner::{CoveredEntry, ScanError, ScanSummary, WalkHeartbeat, cover_subtree};
+use crate::indexing::scanner::{CoveredEntry, LiveWalk, ScanError, ScanSummary, WalkHeartbeat, cover_subtree};
 use crate::indexing::store::IndexStore;
 
 /// How a volume's ground gets read.
@@ -134,7 +134,7 @@ impl Ground {
                 ) {
                     Ok(summary) => (Some(summary), RootOutcome::Covered),
                     Err(ScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
-                    Err(ScanError::NotVirgin) => repair_non_virgin(context, root, sender, cancel),
+                    Err(ScanError::NotVirgin) => repair_non_virgin(context, root, sender, cancel, heartbeat),
                     Err(e) => {
                         // One unwalkable root doesn't stop the others: it simply stays
                         // frontier, and the next search asks for it again.
@@ -192,15 +192,17 @@ impl Ground {
 /// whose fresh ids would collide; the serial reconcile compares by name and writes
 /// only differences.
 ///
-/// ❌ It reports like every other primitive here, and that is not decoration: a
-/// search answers with the index's covered half plus the walk's rows, and the
-/// covered half can only hold rows the index ALREADY had. The rows a repair
-/// creates are nobody else's to report. `DETAILS.md` § "The repair path REPORTS".
+/// ❌ It reports like every other primitive here — rows, totals, AND pulse — and
+/// that is not decoration: a search answers with the index's covered half plus the
+/// walk's rows, and the covered half can only hold rows the index ALREADY had. The
+/// rows a repair creates are nobody else's to report, and `foldersFound` is read
+/// off the pulse rather than off them. `DETAILS.md` § "The repair path REPORTS".
 pub(super) fn repair_non_virgin(
     context: &CoverContext,
     root: &Path,
     sender: &SyncSender<Vec<CoveredEntry>>,
     cancel: &CancellationToken,
+    heartbeat: &WalkHeartbeat,
 ) -> (Option<ScanSummary>, RootOutcome) {
     let started = std::time::Instant::now();
     let db_path = context.writer.db_path();
@@ -217,7 +219,10 @@ pub(super) fn repair_non_virgin(
         &conn,
         &context.writer,
         cancel,
-        Some(sender),
+        Some(LiveWalk {
+            emit: sender,
+            heartbeat,
+        }),
     ) {
         Ok(summary) => {
             log::debug!(

@@ -169,9 +169,13 @@ unicode name, a fifo, and an excluded basename.
 place the add/remove/modify/type-change diff lives. It hands back the children it CREATED (`DirDiff::added_children`,
 borrowed from the listing, empty on an unchanged dir so the no-op-cheap property survives) alongside the counts.
 ⚠️ That set is NOT `new_child_dir_names`: a child that was a file and is now a directory is an UPDATE whose subtree
-still has to be walked, so it is in the second list and not the first. `reconcile_subtree`'s optional `emit` hands the
-created rows to a live consumer, which is what the cover walk's repair path needs — see
-`../lifecycle/cover/DETAILS.md` § "The repair path REPORTS". THREE walk sources feed it source-agnostic `LiveChild`s: the local
+still has to be walked, so it is in the second list and not the first. `reconcile_subtree`'s optional
+`scanner::LiveWalk` is who is watching the pass happen: `emit` takes the created rows in `EMIT_CHUNK` batches, and
+`heartbeat` takes one `entering` per directory read. ❌ Both or neither, which is why they travel as one parameter — a
+pass with rows but no pulse fills a search's list under "0 folders scanned", and a run waiting on that ground reads the
+unmoving zero as a stall. It lives in `../scanner/` because both walks that report through it are downstream of the two
+primitives it pairs. That is what the cover walk's repair path needs; see `../lifecycle/cover/DETAILS.md` § "The repair
+path REPORTS". THREE walk sources feed the diff source-agnostic `LiveChild`s: the local
 live small-scope reconcile (`reconcile_subtree`), the local full-tree rescan (`local_reconcile::run_local_reconcile`, a
 BFS), and the network full rescan (`volume_scanner::reconcile_volume_via_trait`, `Volume::list_directory` BFS). It keeps
 `next_id` from the shared `Arc<AtomicI64>` (never `MAX(id)`). The shared FINISH (stamp listed dirs → ONE

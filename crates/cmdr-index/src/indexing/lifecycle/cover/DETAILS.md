@@ -35,16 +35,28 @@ path ever deletes: covering is add-only work.
 **The repair path REPORTS like every other primitive, and that is load-bearing.** A live search answers with the
 index's covered half plus what the walk hands back. The covered half is an unpruned arena scan — it DOES serve rows
 under a frontier root, which is how the pre-existing ones still show up — but that arena was read before the walk
-started, so a row the walk creates reaches the search through the walk or through nothing. So the repair takes the same
-`EntrySender` the parallel walker does (`reconcile_subtree`'s `emit`) and returns a `ScanSummary` built from
-`ReconcileSummary::added` / `added_dirs`. Created rows only: an updated row was already in the arena, and sending it
-would double it in the results.
+started, so a row the walk creates reaches the search through the walk or through nothing. So the repair hands
+`reconcile_subtree` the same two things the parallel walker gets (`LiveWalk`: the `EntrySender`, and the
+`WalkHeartbeat` it pulses once per directory read) and returns a `ScanSummary` built from `ReconcileSummary::added` /
+`added_dirs`. Created rows only: an updated row was already in the arena, and sending it would double it in the results.
+
+The pulse is a separate obligation from the rows, and skipping it costs two different things. `foldersFound` and the
+dialog's "N folders scanned" are read off `WalkHeartbeat::dirs_scanned`, never off the entries, so a pulseless repair
+fills a list while claiming it walked nothing. And a SECOND run waiting on this ground judges the walk by that same
+number (`search/execute/live_run.rs`'s `OTHER_WALK_STALL`, 30 s), so it reads the unmoving zero as a stall and answers
+with a lower bound rather than waiting for a walk that is working.
 
 Handing back `(None, Covered)` instead is a silent wrong answer, not a missing nicety: search a folder, then search its
 parent, and the parent's frontier root is exactly this case — the second search returned only the first one's rows,
 reported `foldersFound: 0`, and stamped `coverage.complete: true` over it. Regression-locked by
-`a_repaired_frontier_node_reports_the_rows_it_wrote`, and by
+`a_repaired_frontier_node_reports_the_rows_it_wrote`, `a_repair_reports_the_directories_it_read`, and
 `a_repair_whose_consumer_left_still_covers_the_ground` for the bounded channel that reporting now parks on.
+
+⚠️ What the repair still does NOT report is `WalkHeartbeat::abandoned`. Its `unreadable_dirs` are dominated by ordinary
+races (a directory deleted between the listing and the read, ~750 an hour on a build machine), so feeding them in would
+put "this list is a lower bound" on nearly every repaired search. The cost of leaving it: a directory the repair
+genuinely couldn't read is never marked listed, so it stays frontier and the NEXT search offers it, but THIS search
+says `Completed` without naming it.
 
 ⚠️ One row shape still reaches nobody: a child that was a FILE and is now a DIRECTORY counts as an update, so it goes
 out through neither half — the arena holds the stale file row and the walk doesn't emit the new dir row. Narrow enough
