@@ -96,6 +96,14 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   keeps beating from a background thread, and one install out of 765 has auto error reporting on. Read it before
   treating a quiet `#error-reports` channel as evidence that a defect did not bite.
 
+- `mx-side-buttons-swipe-2026-09-04.md` — why `mouse_nav.rs` watches a SWIPE gesture in a module about mouse buttons.
+  **With Logi Options+ installed, an MX mouse's thumb buttons emit no mouse button at all**: Options+ binds them to
+  `OSX_GESTURE_BACK` / `_FORWARD` with `hidUsage: 0` and posts `NSEventType::Swipe` (`deltaX` `+1` back, `-1` forward)
+  in a two-event pair whose first half carries no direction. Carries the AppKit probe output, the Options+ config trail
+  that names the mechanism, and the proof a swipe can't collide with the thumb wheel's horizontal scroll. Read it
+  before attributing any missing pointer input to WKWebView — that was the wrong answer we shipped first, and the note
+  records why the two failure modes look identical from inside the webview.
+
 **Load-bearing as regression anchors:**
 
 - `coverage-frontier-query-2026-08-05.md` — the search frontier query measured against its 50 ms warm budget on a real

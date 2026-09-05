@@ -511,6 +511,7 @@ export {
   onRevealPath,
   requestForegroundOperation,
   onForegroundOperationRequested,
+  onMouseNav,
 } from './dialog-events'
 
 // Licensing

@@ -81,7 +81,7 @@ use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounte
 // Window-management events: emit_to-targeted window lifecycle.
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
-    FocusFileViewer, FocusSettings, ForegroundOperation, McpSettingsClose, OpenFileViewer, OpenSettings,
+    FocusFileViewer, FocusSettings, ForegroundOperation, McpSettingsClose, MouseNav, OpenFileViewer, OpenSettings,
     PersistRestrictedSetting, RevealPath, TabContextAction, ViewerWordWrapToggled,
 };
 // AI + system/misc events.
@@ -1065,6 +1065,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             McpSettingsClose,
             ViewerWordWrapToggled,
             TabContextAction,
+            MouseNav,
             PersistRestrictedSetting,
             // FE-emitted, like `execute-command`: the queue window asks the main
             // window to foreground one operation, and the settings window asks it to show

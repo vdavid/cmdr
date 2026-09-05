@@ -112,6 +112,28 @@ pub struct TabContextAction {
     pub action: String,
 }
 
+/// Which way a mouse gesture walks the pane history. A typed direction rather
+/// than a raw button number or swipe delta: the frontend dispatches a command
+/// from it, and reading either shape is `mouse_nav.rs`'s job alone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum MouseNavDirection {
+    Back,
+    Forward,
+}
+
+/// `mouse-nav`: a back / forward navigation gesture finished over the main
+/// window — a mouse's X1/X2 side button, or the swipe a Logi Options+ mouse
+/// substitutes for it. macOS only, emitted by the AppKit event monitor in
+/// `mouse_nav.rs`; on Linux the frontend reads the buttons straight off the DOM.
+/// Emitted to the main window, which dispatches `nav.back` / `nav.forward` on
+/// the same bus as `⌘[` / `⌘]`.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MouseNav {
+    pub direction: MouseNavDirection,
+}
+
 /// `foreground-operation`: the operation queue asks the main window to show one
 /// operation in its progress dialog (the row's Foreground button). Carries only
 /// the id: the registry snapshot both windows already receive is the single

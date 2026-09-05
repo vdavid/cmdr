@@ -601,6 +601,7 @@
             },
         },
         maybeRunWhatsNew: (force: boolean) => maybeRunWhatsNew(startupGatesCtx, force),
+        isModalDialogOpen,
     }
 </script>
 
