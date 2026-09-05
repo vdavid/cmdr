@@ -57,9 +57,9 @@ caller: nothing would ever notice. So a helper here earns its place from a calle
 plausible one — `to_path`, `looks_like_sha_prefix`, and `dir_path_from_subpath` were each written for a future IPC
 consumer, reached only their own unit tests, and were deleted rather than carried. The one test-only helper that
 survived (`snapshot_dates::clear_cache`, which `bench.rs` needs to measure a cold walk) is `cfg(test)` and `pub(crate)`,
-so no configuration compiles it without its caller. The count went 12 → 11 the same way:
-`virtual_category_prefixes` lost its only caller when the post-change refresh started matching a listing by its
-canonical worktree root instead of by string prefix, so it left with the caller rather than waiting for another.
+so no configuration compiles it without its caller. The count went 12 → 11 the same way: `virtual_category_prefixes`
+lost its only caller when the post-change refresh started matching a listing by its canonical worktree root instead of
+by string prefix, so it left with the caller rather than waiting for another.
 
 **A `testing`-gated method on `GitPortal` spends nothing here**, which is why the scripted watcher arrived without a
 conversation: `with_scripted_watcher` and `fire_watcher` are methods on a type in a private module (unmeasured, like
@@ -89,13 +89,13 @@ bookkeeping: one watch per repo, the refcount, and what a change reports), and `
 `classify_names_every_shape_against_a_real_repo`: greedy ref matching reads the repo's known refs, so it needs a fixture
 yet belongs beside the parser it asserts on.
 
-The instrument for the app half is the `testing` feature: `test_fixtures` builds the repository,
-`RecordingGitStateSink` makes a watcher report observable without a window, and `GitPortal::with_scripted_watcher` plus
-`fire_watcher` make one observable without FSEvents. **That recorder is what a subscription cell asserts through.** The
-DEBOUNCE cell lives app-side and takes the real backend: it drives the parked portal's `subscribe_state`, writes five
-commits inside the 200 ms window, and expects exactly one `repo_changed`. The debounce is this crate's contract, but the
-path that proves it starts where the portal is parked, so the cell belongs at that end — and it is the only one anywhere
-that arms a real watcher (§ "The watcher splits into bookkeeping and a backend").
+The instrument for the app half is the `testing` feature: `test_fixtures` builds the repository, `RecordingGitStateSink`
+makes a watcher report observable without a window, and `GitPortal::with_scripted_watcher` plus `fire_watcher` make one
+observable without FSEvents. **That recorder is what a subscription cell asserts through.** The DEBOUNCE cell lives
+app-side and takes the real backend: it drives the parked portal's `subscribe_state`, writes five commits inside the 200
+ms window, and expects exactly one `repo_changed`. The debounce is this crate's contract, but the path that proves it
+starts where the portal is parked, so the cell belongs at that end — and it is the only one anywhere that arms a real
+watcher (§ "The watcher splits into bookkeeping and a backend").
 
 ## Linked worktrees
 
