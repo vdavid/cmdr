@@ -49,21 +49,26 @@ which:
 - **Reporting lifecycle**: `MtpDeviceEvent` and the `MtpDeviceEvents` trait the app implements.
 - **Finding a device at all**: `list_mtp_devices`, `watch_devices`, and `HotplugEvent`.
 
+Those 17, plus the `MtpVolume` re-export the registrar hands the app and the two `pub mod` declarations (a module name
+is itself a promise), are the 20.
+
 Two public modules is the whole tree a host can name a path into: `volume` (for `MtpVolume` and, gated, `testing`) and
 `virtual_device`. **❗ `connection` is PRIVATE**, even though the session layer is most of this crate: every name the
 app uses is a root re-export, so nothing reaches the caches, the priority gate, the event loop, or the reset recovery by
 module path. `MtpReadSession`, `map_mtp_error`, `MTP_READ_WINDOW`, and the whole `errors` module stay `pub(crate)` for
 the same reason.
 
-`virtual_device` costs 10 of the 13 subsystem items, which reads oddly for a fixture. It isn't only one: the E2E harness
-and a `CMDR_VIRTUAL_MTP=1` dev session both drive it from the app, and it sits behind the `virtual-device` feature
-rather than `testing`, so the counter (which skips `testing` / `cfg(test)` gates outright) sees it. That is deliberate:
-a fake phone the E2E build ships is worth measuring, unlike a fixture only a test target compiles.
+`virtual_device` costs 11 of the 13 subsystem items, which reads oddly for a fixture, and `volume` costs the other two
+(`MtpVolume` and its constructor). It isn't only a fixture: the E2E harness and a `CMDR_VIRTUAL_MTP=1` dev session both
+drive it from the app, and it sits behind the `virtual-device` feature rather than `testing`, so the counter (which
+skips `testing` / `cfg(test)` gates outright) sees it. That is deliberate: a fake phone the E2E build ships is worth
+measuring, unlike a fixture only a test target compiles.
 
-Gated items sit outside all three numbers: `volume::testing`, `volume_read_stream_to_chunk_stream`, and the four fixture
-items in `virtual_device`. So the app's MTP suites can never become a reason to widen the cap, and nothing measures the
-fixture surface's own growth — keep it a fixture surface by reading § "Which side a test lives on", not by watching a
-number.
+Seven gated items sit outside all three numbers: `RecordingMtpDeviceEvents`, the root `testing` module,
+`volume_read_stream_to_chunk_stream`, and the four fixture items in `virtual_device` (`volume::testing` isn't counted at
+all — the counter reads `pub mod` only at the root). So the app's MTP suites can never become a reason to widen the cap,
+and nothing measures the fixture surface's own growth — keep it a fixture surface by reading § "Which side a test lives
+on", not by watching a number.
 
 ## Two features, two different axes
 

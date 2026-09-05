@@ -211,12 +211,26 @@ var surfaceGuardedCrates = []struct {
 		},
 	},
 	{
-		// MEASURE-ME
+		// Measured 2026-09-05, at the extraction, and set to exactly what the crate
+		// exposes — no headroom, so the first addition has to be argued for.
+		//
+		// The session layer is most of this crate and NONE of it is a public module:
+		// `connection` is private, so all 12 of its names arrive as root re-exports,
+		// which is why the root bucket is large and the subsystem one tiny. Two public
+		// modules is the whole tree a host can name a path into: `volume` (for
+		// `MtpVolume`) and `virtual_device`.
+		//
+		// 11 of the 13 subsystem items are `virtual_device`'s, which reads oddly for a
+		// fixture and is deliberate: the fake phone sits behind `virtual-device` rather
+		// than `testing`, so the E2E build ships it and the counter measures it.
+		//
+		// Item-by-item, and which of the four audiences each one serves:
+		// `crates/cmdr-mtp/DETAILS.md` § "The public surface is capped".
 		Name: "cmdr-mtp",
 		Ceilings: surfaceCeilings{
-			RootPromises:   9999,
-			PublicModules:  9999,
-			SubsystemItems: 9999,
+			RootPromises:   20,
+			PublicModules:  2,
+			SubsystemItems: 13,
 		},
 	},
 	{
