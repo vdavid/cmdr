@@ -58,8 +58,8 @@ export interface PaneContextMenuFacts {
   listingId?: string
   /**
    * Whether "Open terminal here" is clickable. It acts on the PANE's folder, not
-   * the right-clicked file, so a pane on a phone — or a surface with no folder of
-   * its own, like the Search dialog — leaves it out and the item shows greyed.
+   * the right-clicked file, so a pane on a phone (or a surface with no folder of
+   * its own, like the Search dialog) leaves it out and the item shows greyed.
    */
   canOpenTerminalHere?: boolean
 }

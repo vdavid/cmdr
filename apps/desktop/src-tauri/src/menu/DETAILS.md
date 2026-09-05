@@ -511,5 +511,5 @@ distinction is the load-bearing reason.
   `apply_operation_item_state`. That is also what restores it after a menu-bar rebuild, since the frontend's
   `menu-bar-rebuilt` handler calls `activate_window_menu('main')`. The context-menu copy needs no channel: it's built
   per right-click, so `show_file_context_menu` carries the answer in `PaneContextMenuFacts.can_open_terminal_here`.
-  ⚠️ Greying is CHROME — a disabled item's accelerator still fires, and the palette has no disabled state at all, so
+  ⚠️ Greying is CHROME: a disabled item's accelerator still fires, and the palette has no disabled state at all, so
   the real refusal is the frontend handler (`apps/desktop/src/lib/open-terminal/CLAUDE.md`).

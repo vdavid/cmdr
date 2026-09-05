@@ -26,7 +26,7 @@ Two edges worth naming:
   is the reading `getPathToCopyUnderCursor` already takes. The parent would be a surprise.
 - **An archive FILE under the cursor falls to rule 4.** A shell can't `cd` into a zip. The check is
   `pathInsideArchive(cursor.path)`, an extension-only test, so a real directory literally named `foo.zip` also lands on
-  the pane's folder — consistent with how the pane treats Enter on that path, and the only wrong answer available is a
+  the pane's folder, consistent with how the pane treats Enter on that path, and the only wrong answer available is a
   folder one level up.
 
 ## Why enablement is a push, not a read
@@ -44,7 +44,7 @@ restores it after a menu-bar rebuild: a language change throws every item away, 
 handler calls `activate_window_menu('main')`, which runs `set_menu_context`.
 
 The pane context menu needs no channel: it's built per right-click, so `show_file_context_menu` carries the answer in
-`PaneContextMenuFacts.canOpenTerminalHere`. The search-results snapshot pane and the Search dialog pass `false` — a
+`PaneContextMenuFacts.canOpenTerminalHere`. The search-results snapshot pane and the Search dialog pass `false`, a
 result set is not a folder, so "here" has nothing to mean there. Enabling it for a search result would be defensible
 (each row has a real containing folder), but that's a different command shape than the pane-scoped one the spec took.
 

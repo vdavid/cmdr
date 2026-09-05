@@ -649,7 +649,7 @@ fn set_menu_context<R: Runtime>(app: AppHandle<R>, context: String) -> Result<()
     apply_operation_item_state(&menu_state);
     // Same shape, and the reason the item is skipped above: a rebuilt menu bar comes
     // up with a fresh, enabled item, and the frontend re-runs `activate_window_menu`
-    // after one — so this is also what restores the verdict after a language change.
+    // after one, so this is also what restores the verdict after a language change.
     apply_open_terminal_here_state(&menu_state);
 
     Ok(())

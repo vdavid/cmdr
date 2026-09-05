@@ -42,7 +42,7 @@ that lives beside the code, and git holds the history.
       spec"** once the watch item finds a home: whether the model offers to turn image indexing on when the content half
       is the half that was asked for. That wipe is a one-way door, so it waits for David.
 
-- [ ] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
+- [x] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
       user asked for "Open terminal here"; macOS has no default-terminal setting, so Cmdr keeps its own known-terminals
       table (bundle id + launch recipe, queried live via `NSWorkspace`, no scan, no Refresh button), defaults to
       Terminal, asks once on first use when another terminal is installed, and exposes one dropdown row in Navigation &

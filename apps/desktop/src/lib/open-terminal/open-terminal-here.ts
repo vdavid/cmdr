@@ -36,7 +36,7 @@ export interface OpenTerminalRequest {
  * ❗ An id, ❌ never `toastGroup` + `maxInGroup: 1`. A group already full of
  * PERSISTENT toasts drops the INCOMING one instead of evicting anything
  * (`ui/toast/toast-store.svelte.ts` `makeRoomForNewToast`), and both toasts here
- * are persistent — so "your terminal app is gone" went unsaid whenever the
+ * are persistent, so "your terminal app is gone" would go unsaid whenever the
  * first-use hint was still on screen, while the setting reset behind it.
  * `status-corner/CLAUDE.md` carries the same warning for its own group.
  */
