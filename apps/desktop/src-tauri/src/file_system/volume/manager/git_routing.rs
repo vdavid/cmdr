@@ -79,7 +79,7 @@ impl VolumeManager {
     fn touch_git_portal_lru(&self, id: &str) {
         let evicted = {
             let mut lru = self.git_portal_lru.lock_ignore_poison();
-            super::touch_routed_lru(&mut lru, id, GIT_PORTAL_LRU_CAP)
+            super::routing::touch_routed_lru(&mut lru, id, GIT_PORTAL_LRU_CAP)
         };
         for old in evicted {
             self.unregister(&old);

@@ -52,24 +52,6 @@ pub struct VolumeManager {
     arrival_listeners: RwLock<Vec<VolumeArrivalListener>>,
 }
 
-/// Records `id` as the most recently resolved entry in a routed-volume LRU and
-/// hands back the IDs that fell off the end, for the caller to unregister
-/// OUTSIDE the LRU lock (so the LRU and volumes locks are never held at once).
-///
-/// Shared by the archive and git-portal routes: both mint volumes on demand and
-/// both must stay bounded, and a second copy of this would drift.
-fn touch_routed_lru(lru: &mut VecDeque<String>, id: &str, cap: usize) -> Vec<String> {
-    lru.retain(|existing| existing != id);
-    lru.push_back(id.to_string());
-    let mut evicted = Vec::new();
-    while lru.len() > cap {
-        if let Some(old) = lru.pop_front() {
-            evicted.push(old);
-        }
-    }
-    evicted
-}
-
 /// Notified with the ID of a volume the registry has just taken on.
 ///
 /// Deliberately only the ID: a listener that needs the handle asks the registry

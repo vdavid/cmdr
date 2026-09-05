@@ -401,16 +401,7 @@ impl Volume for ArchiveVolume {
             // `on_progress` at least once; the archive listing is atomic so
             // there's nothing incremental to report).
             if let Some(callback) = on_progress {
-                let mut progress = ListingProgress::default();
-                for entry in &entries {
-                    if entry.is_directory {
-                        progress.dirs += 1;
-                    } else {
-                        progress.files += 1;
-                        progress.bytes += entry.size.unwrap_or(0);
-                    }
-                }
-                callback(progress);
+                callback(ListingProgress::of(&entries));
             }
             Ok(entries)
         })

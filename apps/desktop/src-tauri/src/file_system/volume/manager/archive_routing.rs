@@ -214,7 +214,7 @@ impl VolumeManager {
     fn touch_archive_lru(&self, id: &str) {
         let evicted = {
             let mut lru = self.archive_lru.lock_ignore_poison();
-            super::touch_routed_lru(&mut lru, id, ARCHIVE_LRU_CAP)
+            super::routing::touch_routed_lru(&mut lru, id, ARCHIVE_LRU_CAP)
         };
         for old in evicted {
             self.unregister(&old);

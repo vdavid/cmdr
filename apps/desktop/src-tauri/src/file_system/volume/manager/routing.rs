@@ -11,6 +11,7 @@
 
 use super::super::Volume;
 use super::VolumeManager;
+use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -113,4 +114,22 @@ impl VolumeManager {
         }
         self.resolve_local_archive(volume_id, path)
     }
+}
+
+/// Records `id` as the most recently resolved entry in a routed-volume LRU and
+/// hands back the IDs that fell off the end, for the caller to unregister
+/// OUTSIDE the LRU lock (so the LRU and volumes locks are never held at once).
+///
+/// Shared by the archive and git-portal routes: both mint volumes on demand and
+/// both must stay bounded, and a second copy of this would drift.
+pub(super) fn touch_routed_lru(lru: &mut VecDeque<String>, id: &str, cap: usize) -> Vec<String> {
+    lru.retain(|existing| existing != id);
+    lru.push_back(id.to_string());
+    let mut evicted = Vec::new();
+    while lru.len() > cap {
+        if let Some(old) = lru.pop_front() {
+            evicted.push(old);
+        }
+    }
+    evicted
 }

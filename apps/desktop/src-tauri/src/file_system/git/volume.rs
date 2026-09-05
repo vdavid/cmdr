@@ -125,16 +125,7 @@ impl Volume for GitPortalVolume {
             // One cumulative tick, as the trait asks: a snapshot listing is
             // atomic, so there's nothing incremental to report.
             if let Some(callback) = on_progress {
-                let mut progress = ListingProgress::default();
-                for entry in &entries {
-                    if entry.is_directory {
-                        progress.dirs += 1;
-                    } else {
-                        progress.files += 1;
-                        progress.bytes += entry.size.unwrap_or(0);
-                    }
-                }
-                callback(progress);
+                callback(ListingProgress::of(&entries));
             }
             Ok(entries)
         })
@@ -271,9 +262,11 @@ impl Volume for GitPortalVolume {
     }
 }
 
-/// What a classified path lists. A free function so the blocking closure needs
-/// only the triple, never the volume.
-fn listing_for(virt: &VirtualGitPath, handle: &RepoHandle, root: &Path) -> Lookup<Vec<FileEntry>> {
+/// What a classified path lists, for the portal volume AND for the `.git/` root
+/// hook in `mod.rs`, which delegates every arm but `Root` here so the two can't
+/// answer differently. A free function so the blocking closure needs only the
+/// classified triple, never the volume.
+pub(super) fn listing_for(virt: &VirtualGitPath, handle: &RepoHandle, root: &Path) -> Lookup<Vec<FileEntry>> {
     match virt {
         VirtualGitPath::Root => Ok(Some(virtual_listing::list_categories(handle, root))),
         VirtualGitPath::Category(Cat::Branches) => virtual_listing::list_branches(handle, root).map(Some),

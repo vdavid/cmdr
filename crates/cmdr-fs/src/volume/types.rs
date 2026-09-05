@@ -230,6 +230,26 @@ impl ListingProgress {
     pub fn entries(&self) -> usize {
         self.files + self.dirs
     }
+
+    /// The whole of `entries` folded into one tick, for a backend whose listing
+    /// arrives in a single piece and so has nothing incremental to report.
+    ///
+    /// The trait asks every backend to call `on_progress` at least once, and an
+    /// atomic listing (an archive's central directory, a git snapshot's tree)
+    /// has exactly one honest thing to say. Shared so the two agree on what a
+    /// directory contributes: a count, and no bytes.
+    pub fn of(entries: &[FileEntry]) -> Self {
+        let mut progress = Self::default();
+        for entry in entries {
+            if entry.is_directory {
+                progress.dirs += 1;
+            } else {
+                progress.files += 1;
+                progress.bytes += entry.size.unwrap_or(0);
+            }
+        }
+        progress
+    }
 }
 
 /// Describes what mutation occurred, so `notify_mutation` can update the listing cache.

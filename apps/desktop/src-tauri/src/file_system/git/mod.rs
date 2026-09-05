@@ -130,21 +130,13 @@ pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeErr
         return None;
     }
     let (virt, handle, root) = path::classify(path)?;
-    use path::VirtualGitPath::*;
     let result = match &virt {
-        Root => Ok(Some(virtual_listing::list_root(&handle, &root))),
-        Category(path::Cat::Branches) => virtual_listing::list_branches(&handle, &root).map(Some),
-        Category(path::Cat::Tags) => virtual_listing::list_tags(&handle, &root).map(Some),
-        Category(path::Cat::Commits) => log::list_commits(&handle, &root).map(Some),
-        Category(path::Cat::Stash) => stash::list_stashes(&root).map(Some),
-        Category(path::Cat::Worktrees) => worktrees::list_worktrees(&handle, &root).map(Some),
-        Category(path::Cat::Submodules) => submodules::list_submodules(&handle, &root).map(Some),
-        Ref(cat, name) if cat.browses_commit_tree() => list_ref_tree(&handle, &root, *cat, name, ""),
-        RefTree(cat, name, sub) if cat.browses_commit_tree() => list_ref_tree(&handle, &root, *cat, name, sub),
-        // Worktrees and submodules are leaf entries with `redirectToPath`;
-        // listing them as if they were directories returns empty (the
-        // frontend redirects on Enter so this rarely fires in practice).
-        Ref(_, _) | RefTree(_, _, _) => Ok(Some(Vec::new())),
+        // The one listing the ROUTE and this hook answer differently: the portal
+        // volume's namespace is the six categories, while `.git/` itself is a
+        // mixed listing of real entries plus those six. Everything below it is
+        // the volume's own body, so the two can't drift.
+        path::VirtualGitPath::Root => Ok(Some(virtual_listing::list_root(&handle, &root))),
+        deeper => volume::listing_for(deeper, &handle, &root),
     };
     Some(found_or_not_found(result, path))
 }
