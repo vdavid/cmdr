@@ -116,6 +116,14 @@ pub enum MessageBlock {
     /// The conversation's effective model changed between turns; `model` is the new name.
     /// Rendered as a small centered timeline line, escaped plain text (never `{@html}`).
     ModelChanged { model: String },
+    /// How much of the conversation each message carries changed between turns, so the
+    /// replies after this line saw a different amount of the chat. Rendered as a small
+    /// centered timeline line beside the model one.
+    ///
+    /// ⚠️ **A number, never a sentence.** The row outlives every locale pass, so the rail
+    /// formats the count in the user's own language and nothing English is frozen in
+    /// `main.db`.
+    ChatMemoryChanged { chat_memory_tokens: usize },
     /// What a wake noticed, which is the first message of every thread the agent opened for
     /// itself.
     ///
@@ -293,6 +301,10 @@ pub(super) fn to_message_view(message: StoredMessage) -> MessageView {
         store::StoredContent::Event(store::ConversationEvent::ModelChanged { model }) => {
             (MessageRoleView::Event, vec![MessageBlock::ModelChanged { model }])
         }
+        store::StoredContent::Event(store::ConversationEvent::ChatMemoryChanged { chat_memory_tokens }) => (
+            MessageRoleView::Event,
+            vec![MessageBlock::ChatMemoryChanged { chat_memory_tokens }],
+        ),
         // One decision, in the same block the follow-up turn's opener uses: the rail draws one
         // line per decision either way, and a second shape would be a second renderer for the
         // same sentence.

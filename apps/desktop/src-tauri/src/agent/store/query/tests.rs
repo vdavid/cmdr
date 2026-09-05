@@ -87,6 +87,17 @@ fn last_model_starts_absent_and_round_trips() {
 }
 
 #[test]
+fn last_chat_memory_starts_absent_and_round_trips() {
+    let conn = migrated_conn();
+    let id = create_conversation(&conn, "t", 100, None).expect("create");
+    assert_eq!(conversation_last_chat_memory(&conn, id).expect("get"), None);
+    set_conversation_last_chat_memory(&conn, id, 60_000).expect("set");
+    assert_eq!(conversation_last_chat_memory(&conn, id).expect("get"), Some(60_000));
+    set_conversation_last_chat_memory(&conn, id, 16_000).expect("set");
+    assert_eq!(conversation_last_chat_memory(&conn, id).expect("get"), Some(16_000));
+}
+
+#[test]
 fn event_rows_never_match_search() {
     // Event rows carry no `text_for_search`, so a model name can't surface as a
     // conversation search hit.

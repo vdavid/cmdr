@@ -163,6 +163,7 @@ export type MessageKey =
   | 'askCmdr.error.timeout'
   | 'askCmdr.error.unavailable'
   | 'askCmdr.error.unfinishedReply'
+  | 'askCmdr.event.chatMemoryChanged'
   | 'askCmdr.event.contextTrimmed'
   | 'askCmdr.event.modelChanged'
   | 'askCmdr.forget.cancel'

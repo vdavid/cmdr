@@ -252,6 +252,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.chatMemoryChanged": "Chat-Speicher fasst jetzt {tokens, number} Tokens",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
+  },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# frühere Abfrage} other {# frühere Abfragen}} entfernt, damit alles in den Kontext des Modells passt.",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"

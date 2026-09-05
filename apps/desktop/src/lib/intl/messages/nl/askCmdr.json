@@ -253,6 +253,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.chatMemoryChanged": "Het chatgeheugen bevat nu {tokens, number} tokens",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
+  },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# eerdere opzoeking} other {# eerdere opzoekingen}} weggelaten om binnen de context van het model te blijven.",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"

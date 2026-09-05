@@ -252,6 +252,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.chatMemoryChanged": "聊天記憶現在可容納 {tokens, number} 個 token",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
+  },
   "askCmdr.event.contextTrimmed": "已移除{count, plural, other {早前的 # 次查詢}}，好讓這次對話裝得進模型的上下文。",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"

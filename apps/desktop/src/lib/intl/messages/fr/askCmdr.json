@@ -252,6 +252,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.chatMemoryChanged": "La mémoire du chat contient maintenant {tokens, number} tokens",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
+  },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# consultation antérieure supprimée} many {# consultations antérieures supprimées} other {# consultations antérieures supprimées}} pour tenir dans le contexte du modèle.",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"

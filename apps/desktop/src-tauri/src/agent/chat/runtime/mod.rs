@@ -226,34 +226,75 @@ impl ChatRuntime {
         store::discard_conversation_keeping_cost(&conn, conversation_id)
     }
 
-    /// Record that a settings change switched an open thread's effective model, honoring
-    /// the single-flight lock so the event lands only AFTER any in-flight turn finishes
-    /// (that turn keeps its already-resolved model; the event marks the boundary). Returns
-    /// the persisted event row's `(message_id, seq, created_at)`, or `None` when there is
-    /// nothing to record: the conversation has no completed turn yet, or the effective
-    /// model is unchanged (for example the interactive override masks the changed shared
-    /// model).
-    pub async fn record_model_change(
+    /// Record that a settings change moved an open thread's interactive slot, honoring the
+    /// single-flight lock so the rows land only AFTER any in-flight turn finishes (that turn
+    /// keeps what it already resolved; the rows mark the boundary).
+    ///
+    /// Two facets, compared and recorded independently, in the order the rail shows them:
+    /// the effective model, then the chat memory size that model buys. `chat_memory_tokens`
+    /// is `None` when no honest budget could be resolved (a local window under the floor),
+    /// which leaves that facet's stamp untouched rather than clearing it.
+    ///
+    /// Answers the rows it wrote, newest last — empty when nothing changed for this thread:
+    /// the conversation has no completed turn yet, or both facets are the same (for example
+    /// the interactive override masks the changed shared model).
+    pub async fn record_slot_change(
         &self,
         conversation_id: i64,
         model: &str,
-    ) -> Result<Option<(i64, i64, i64)>, AgentStoreError> {
+        chat_memory_tokens: Option<usize>,
+    ) -> Result<Vec<RecordedSlotEvent>, AgentStoreError> {
         let _guard = self.locks.acquire_quiet(conversation_id).await;
         let conn = store::open_write_connection(&self.db_path)?;
-        match store::conversation_last_model(&conn, conversation_id)? {
-            None => Ok(None),
-            Some(last) if last == model => Ok(None),
-            Some(_) => {
-                let now = now_secs();
-                let event = store::ConversationEvent::ModelChanged {
-                    model: model.to_string(),
-                };
-                let (message_id, seq) = store::append_event(&conn, conversation_id, &event, now)?;
-                store::set_conversation_last_model(&conn, conversation_id, model)?;
-                Ok(Some((message_id, seq, now)))
-            }
+        let mut recorded = Vec::new();
+
+        if store::conversation_last_model(&conn, conversation_id)?.is_some_and(|last| last != model) {
+            let event = store::ConversationEvent::ModelChanged {
+                model: model.to_string(),
+            };
+            recorded.push(append_slot_event(&conn, conversation_id, event)?);
+            store::set_conversation_last_model(&conn, conversation_id, model)?;
         }
+
+        if let Some(tokens) = chat_memory_tokens
+            && store::conversation_last_chat_memory(&conn, conversation_id)?.is_some_and(|last| last != tokens)
+        {
+            let event = store::ConversationEvent::ChatMemoryChanged {
+                chat_memory_tokens: tokens,
+            };
+            recorded.push(append_slot_event(&conn, conversation_id, event)?);
+            store::set_conversation_last_chat_memory(&conn, conversation_id, tokens)?;
+        }
+
+        Ok(recorded)
     }
+}
+
+/// One timeline row [`ChatRuntime::record_slot_change`] wrote: its identity, its clock, and
+/// what it says. The IPC layer projects it into the rail's `MessageView`; keeping the typed
+/// event here rather than a rendered block is what keeps the runtime free of display copy.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RecordedSlotEvent {
+    pub message_id: i64,
+    pub seq: i64,
+    pub created_at: i64,
+    pub event: store::ConversationEvent,
+}
+
+/// Append one slot event and hand back everything the caller needs to show it.
+fn append_slot_event(
+    conn: &rusqlite::Connection,
+    conversation_id: i64,
+    event: store::ConversationEvent,
+) -> Result<RecordedSlotEvent, AgentStoreError> {
+    let created_at = now_secs();
+    let (message_id, seq) = store::append_event(conn, conversation_id, &event, created_at)?;
+    Ok(RecordedSlotEvent {
+        message_id,
+        seq,
+        created_at,
+        event,
+    })
 }
 
 /// Register the [`ChatRuntime`] in managed state (called from `agent::start`, after the
@@ -294,9 +335,9 @@ mod test_support;
 #[cfg(test)]
 mod context_budget_tests;
 #[cfg(test)]
-mod model_change_tests;
-#[cfg(test)]
 mod repeat_tests;
+#[cfg(test)]
+mod slot_change_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

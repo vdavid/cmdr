@@ -370,6 +370,18 @@ impl ToolDispatcher for CancellingDispatcher {
 
 /// Run one single-answer turn for `id` with the given model, returning the drained events.
 pub(super) async fn run_answer_turn(conn: &Connection, id: i64, model: &str, user_text: &str) -> Vec<AgentChatEvent> {
+    run_answer_turn_sized(conn, id, model, TEST_PROMPT_BUDGET, user_text).await
+}
+
+/// The same, with the turn's chat-memory size (its resolved prompt budget) spelled out, for
+/// the tests that are about the budget moving between turns.
+pub(super) async fn run_answer_turn_sized(
+    conn: &Connection,
+    id: i64,
+    model: &str,
+    chat_memory_tokens: usize,
+    user_text: &str,
+) -> Vec<AgentChatEvent> {
     let llm = ProgrammableLlm::new(vec![Program::Answer {
         chunks: vec!["ok".to_string()],
         usage: AgentUsage::default(),
@@ -377,19 +389,25 @@ pub(super) async fn run_answer_turn(conn: &Connection, id: i64, model: &str, use
     let (tx, mut rx) = unbounded_channel();
     let mut params = params(id, Some(user_text));
     params.model = model.to_string();
+    params.prompt_budget = chat_memory_tokens;
     let result = run_turn(&llm, &OkDispatcher, conn, &[], &params, &tx, &CancellationToken::new()).await;
     assert!(matches!(result, TurnResult::Answered { .. }), "turn answers");
     drain(&mut rx)
 }
 
-/// A `ChatRuntime` over a temp-dir `main.db` with one conversation stamped to
-/// `model-one`, as if one turn had completed.
+/// The chat-memory size `runtime_with_stamped_conversation` leaves stamped, so the live-path
+/// tests have a value to change away from.
+pub(super) const STAMPED_CHAT_MEMORY: usize = 60_000;
+
+/// A `ChatRuntime` over a temp-dir `main.db` with one conversation stamped to `model-one`
+/// and [`STAMPED_CHAT_MEMORY`], as if one turn had completed.
 pub(super) fn runtime_with_stamped_conversation() -> (tempfile::TempDir, ChatRuntime, i64) {
     let dir = tempfile::tempdir().expect("temp dir");
     let db = store::main_db_path(dir.path());
     let conn = store::open_write_connection(&db).expect("open");
     let id = store::create_conversation(&conn, "t", 100, None).expect("create");
     store::set_conversation_last_model(&conn, id, "model-one").expect("stamp");
+    store::set_conversation_last_chat_memory(&conn, id, STAMPED_CHAT_MEMORY).expect("stamp");
     drop(conn);
     let runtime = ChatRuntime::new(db);
     (dir, runtime, id)

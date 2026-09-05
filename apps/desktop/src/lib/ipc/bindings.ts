@@ -2736,26 +2736,15 @@ export const commands = {
       __TAURI_INVOKE('suggested_ops_approve', { groupId, deselectedOpIds }),
     ),
   /**
-   *  A settings change may have switched the model for an open thread: record it as a
-   *  conversation event once any in-flight turn finishes (the turn keeps its already-resolved
-   *  model; the event marks the boundary). Returns the persisted event's display view, or
-   *  `None` when nothing changed for this thread — AI is off, no turn has run yet, or the
-   *  effective model is the same (for example the interactive override masks the changed
-   *  shared model).
+   *  A settings change may have moved an open thread's slot — the model it sends to, the chat
+   *  memory each message carries, or both: record what actually moved as conversation events
+   *  once any in-flight turn finishes (that turn keeps what it already resolved; the rows mark
+   *  the boundary). Returns their display views in timeline order, and an empty list when
+   *  nothing changed for this thread — AI is off, no turn has run yet, or both facets are the
+   *  same (for example the interactive override masks the changed shared model).
    */
-  askCmdrRecordModelChange: (conversationId: number) =>
-    typedError<
-      {
-        id: number
-        seq: number
-        role: MessageRoleView
-        blocks: MessageBlock[]
-        promptTokens: number | null
-        completionTokens: number | null
-        createdAt: number
-      } | null,
-      string
-    >(__TAURI_INVOKE('ask_cmdr_record_model_change', { conversationId })),
+  askCmdrRecordSlotChange: (conversationId: number) =>
+    typedError<MessageView[], string>(__TAURI_INVOKE('ask_cmdr_record_slot_change', { conversationId })),
   /**
    *  One conversation's header plus a page of its display messages (oldest first). `None`
    *  when the thread is absent or the store never opened.
@@ -4840,6 +4829,13 @@ export type AskCmdrStreamEvent =
    *  user bubble (the change happened between the turns).
    */
   | { type: 'modelChanged'; messageId: number; seq: number; model: string }
+  /**
+   *  The conversation's chat memory size changed since its previous turn, so each message
+   *  now carries a different amount of the chat; the persisted event row's identity rides
+   *  along. `chat_memory_tokens` is a NUMBER — the rail owns every word around it. The
+   *  line goes BEFORE this turn's user bubble (the change happened between the turns).
+   */
+  | { type: 'chatMemoryChanged'; messageId: number; seq: number; chatMemoryTokens: number }
   /**
    *  The prompt budget pushed earlier tool results out of this turn's context, so the
    *  reply was written with less than the full thread in view. One per turn; the rail
@@ -8424,6 +8420,16 @@ export type MessageBlock =
    *  Rendered as a small centered timeline line, escaped plain text (never `{@html}`).
    */
   | { type: 'modelChanged'; model: string }
+  /**
+   *  How much of the conversation each message carries changed between turns, so the
+   *  replies after this line saw a different amount of the chat. Rendered as a small
+   *  centered timeline line beside the model one.
+   *
+   *  ⚠️ **A number, never a sentence.** The row outlives every locale pass, so the rail
+   *  formats the count in the user's own language and nothing English is frozen in
+   *  `main.db`.
+   */
+  | { type: 'chatMemoryChanged'; chatMemoryTokens: number }
   /**
    *  What a wake noticed, which is the first message of every thread the agent opened for
    *  itself.

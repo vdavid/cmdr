@@ -94,7 +94,7 @@ async fn drive(
     }
 
     let started = Instant::now();
-    let mut model_recorded = false;
+    let mut slot_recorded = false;
     let mut trim_announced = false;
     // What already came back with a problem this turn, so an identical retry doesn't cost
     // another provider round trip for the same answer (`repeats.rs`).
@@ -195,13 +195,14 @@ async fn drive(
             return TurnResult::Failed(AgentErrorKind::UnfinishedReply);
         }
 
-        // A completed `respond`: record a model transition (first `End` only, BEFORE the
-        // user row so the event line sits between the turns), persist the user row (first
+        // A completed `respond`: record what the slot changed (first `End` only, BEFORE the
+        // user row so the event lines sit between the turns), persist the user row (first
         // `End` only), then the assistant row (content written only now), then meter this
         // call's cost.
-        if !model_recorded {
-            model_recorded = true;
+        if !slot_recorded {
+            slot_recorded = true;
             record_model_transition(conn, params, sink);
+            record_chat_memory_transition(conn, params, sink);
         }
         if user_needs_persist && let Some(user) = params.user {
             match store::append_message(
@@ -504,9 +505,50 @@ fn record_model_transition(conn: &rusqlite::Connection, params: &TurnParams<'_>,
     }
 }
 
+/// The same comparison for the CHAT MEMORY SIZE: this turn's resolved prompt budget against
+/// the one the conversation last used. A change means every reply from here on sees a
+/// different amount of the chat, which a user who shrank the setting would otherwise only
+/// notice as vaguer answers.
+///
+/// Its own comparison and its own event beside [`record_model_transition`], deliberately: a
+/// model switch usually moves the budget too, and "switched to X" doesn't say by how much.
+/// Both facets stamp only on the first `End`, so a failed attempt records neither and the
+/// next successful turn re-runs both comparisons.
+fn record_chat_memory_transition(conn: &rusqlite::Connection, params: &TurnParams<'_>, sink: &ChatEventSink) {
+    let last = match store::conversation_last_chat_memory(conn, params.conversation_id) {
+        Ok(last) => last,
+        Err(e) => {
+            log::warn!(target: LOG_TARGET, "reading the conversation's last chat memory size failed: {e}");
+            return;
+        }
+    };
+    if last == Some(params.prompt_budget) {
+        return;
+    }
+    if last.is_some() {
+        let event = store::ConversationEvent::ChatMemoryChanged {
+            chat_memory_tokens: params.prompt_budget,
+        };
+        match store::append_event(conn, params.conversation_id, &event, params.now_secs) {
+            Ok((message_id, seq)) => emit(
+                sink,
+                AgentChatEvent::ChatMemoryChanged {
+                    message_id,
+                    seq,
+                    chat_memory_tokens: params.prompt_budget,
+                },
+            ),
+            Err(e) => log::warn!(target: LOG_TARGET, "recording the chat-memory-change event failed: {e}"),
+        }
+    }
+    if let Err(e) = store::set_conversation_last_chat_memory(conn, params.conversation_id, params.prompt_budget) {
+        log::warn!(target: LOG_TARGET, "stamping the conversation's chat memory size failed: {e}");
+    }
+}
+
 /// Load a conversation's persisted messages as the working transcript. Event rows are
-/// UI-facing timeline entries (a model change), NOT transcript content — they never
-/// reach a provider, so they're filtered out here.
+/// UI-facing timeline entries (a model or chat-memory change), NOT transcript content —
+/// they never reach a provider, so they're filtered out here.
 fn load_transcript(conn: &rusqlite::Connection, conversation_id: i64) -> Result<Vec<AgentMessage>, AgentStoreError> {
     const ALL: u32 = 10_000;
     let stored = store::list_messages(conn, conversation_id, ALL, 0)?;

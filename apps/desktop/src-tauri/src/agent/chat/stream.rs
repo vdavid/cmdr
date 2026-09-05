@@ -97,6 +97,15 @@ pub enum AskCmdrStreamEvent {
     /// event row's identity rides along. The rail inserts the line BEFORE this turn's
     /// user bubble (the change happened between the turns).
     ModelChanged { message_id: i64, seq: i64, model: String },
+    /// The conversation's chat memory size changed since its previous turn, so each message
+    /// now carries a different amount of the chat; the persisted event row's identity rides
+    /// along. `chat_memory_tokens` is a NUMBER — the rail owns every word around it. The
+    /// line goes BEFORE this turn's user bubble (the change happened between the turns).
+    ChatMemoryChanged {
+        message_id: i64,
+        seq: i64,
+        chat_memory_tokens: usize,
+    },
     /// The prompt budget pushed earlier tool results out of this turn's context, so the
     /// reply was written with less than the full thread in view. One per turn; the rail
     /// shows it as a timeline line.
@@ -263,6 +272,15 @@ pub fn to_wire_event(event: AgentChatEvent) -> AskCmdrStreamEvent {
         AgentChatEvent::ModelChanged { message_id, seq, model } => {
             AskCmdrStreamEvent::ModelChanged { message_id, seq, model }
         }
+        AgentChatEvent::ChatMemoryChanged {
+            message_id,
+            seq,
+            chat_memory_tokens,
+        } => AskCmdrStreamEvent::ChatMemoryChanged {
+            message_id,
+            seq,
+            chat_memory_tokens,
+        },
         AgentChatEvent::ContextTrimmed {
             elided_results,
             approx_tokens,

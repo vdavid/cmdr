@@ -178,7 +178,10 @@ function applyStreamEvent(event: AskCmdrStreamEvent): void {
       applyFailed(event.kind, event.detail)
       return
     case 'modelChanged':
-      applyModelChanged(event.model)
+      insertBeforeCurrentTurn({ kind: 'modelChange', model: event.model })
+      return
+    case 'chatMemoryChanged':
+      insertBeforeCurrentTurn({ kind: 'chatMemoryChange', chatMemoryTokens: event.chatMemoryTokens })
       return
     case 'discarded':
       applyDiscarded()
@@ -345,10 +348,10 @@ function clearProgressWatchdog(): void {
   stopTimer = null
 }
 
-/** The model changed between the previous turn and this one, so the line belongs BEFORE
- * this turn's user bubble (which is already rendered optimistically). */
-function applyModelChanged(model: string): void {
-  const item: RailMessage = { kind: 'modelChange', model }
+/** A timeline line about something that changed between the previous turn and this one (the
+ * model, the chat memory size), so it belongs BEFORE this turn's user bubble — which is
+ * already rendered optimistically. */
+function insertBeforeCurrentTurn(item: RailMessage): void {
   const lastUserIndex = askCmdrState.messages.findLastIndex((m) => m.kind === 'user')
   if (lastUserIndex >= 0) askCmdrState.messages.splice(lastUserIndex, 0, item)
   else askCmdrState.messages.push(item)

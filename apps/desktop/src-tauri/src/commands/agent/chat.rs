@@ -42,7 +42,7 @@ use super::{
 use crate::agent::AgentDb;
 use crate::agent::chat::budget;
 use crate::agent::chat::cancel;
-use crate::agent::chat::runtime::{AgentChatEvent, ChatRuntime};
+use crate::agent::chat::runtime::{AgentChatEvent, ChatRuntime, RecordedSlotEvent};
 use crate::agent::chat::session::{
     AgentSlot, capture_envelope, local_offset, provider_and_model, resolve_agent_llm, resolve_prompt_budget,
 };
@@ -52,9 +52,9 @@ use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::ProviderTag;
 use crate::agent::store;
 
-// ── The model a thread would use right now ─────────────────────────────────────
+// ── What a thread's slot would be right now ────────────────────────────────────
 
-/// The model an Ask Cmdr turn would use right now, for the model-change event: the
+/// The model an Ask Cmdr turn would use right now, for the slot-change events: the
 /// interactive override when set, else the shared `ai/` model — the same resolution a
 /// send performs. `None` when AI is off (nothing will run, so nothing to record).
 fn effective_model_for_event(app: &AppHandle) -> Option<String> {
@@ -90,36 +90,62 @@ pub fn ask_cmdr_model_window(app: AppHandle) -> ModelWindowView {
     }
 }
 
-/// A settings change may have switched the model for an open thread: record it as a
-/// conversation event once any in-flight turn finishes (the turn keeps its already-resolved
-/// model; the event marks the boundary). Returns the persisted event's display view, or
-/// `None` when nothing changed for this thread — AI is off, no turn has run yet, or the
-/// effective model is the same (for example the interactive override masks the changed
-/// shared model).
+/// A settings change may have moved an open thread's slot — the model it sends to, the chat
+/// memory each message carries, or both: record what actually moved as conversation events
+/// once any in-flight turn finishes (that turn keeps what it already resolved; the rows mark
+/// the boundary). Returns their display views in timeline order, and an empty list when
+/// nothing changed for this thread — AI is off, no turn has run yet, or both facets are the
+/// same (for example the interactive override masks the changed shared model).
 #[tauri::command]
 #[specta::specta]
-pub async fn ask_cmdr_record_model_change(app: AppHandle, conversation_id: i64) -> Result<Option<MessageView>, String> {
+pub async fn ask_cmdr_record_slot_change(app: AppHandle, conversation_id: i64) -> Result<Vec<MessageView>, String> {
     let Some(model) = effective_model_for_event(&app) else {
-        return Ok(None);
+        return Ok(Vec::new());
     };
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
-        return Ok(None);
+        return Ok(Vec::new());
     };
-    match runtime.record_model_change(conversation_id, &model).await {
-        Ok(Some((id, seq, created_at))) => Ok(Some(MessageView {
-            id,
-            seq,
-            role: MessageRoleView::Event,
-            blocks: vec![MessageBlock::ModelChanged { model }],
-            prompt_tokens: None,
-            completion_tokens: None,
-            created_at,
-        })),
-        Ok(None) => Ok(None),
+    // The same resolution a send performs. A refusal (a local window under the floor) means
+    // there is no honest size to name, so that facet stays quiet rather than guessing.
+    let (provider, _) = provider_and_model(crate::settings::load_ask_cmdr_interactive_model(&app).as_deref());
+    let chat_memory_tokens = resolve_prompt_budget(&app, provider, &model).ok();
+
+    match runtime
+        .record_slot_change(conversation_id, &model, chat_memory_tokens)
+        .await
+    {
+        Ok(recorded) => Ok(recorded.into_iter().map(slot_event_view).collect()),
         Err(e) => {
-            log::warn!(target: LOG_TARGET, "recording a model change failed: {e}");
+            log::warn!(target: LOG_TARGET, "recording a slot change failed: {e}");
             Err(e.to_string())
         }
+    }
+}
+
+/// Project one recorded slot event onto the rail's message view. The same blocks the history
+/// fold produces, so the rail draws one line per change whichever path delivered it.
+fn slot_event_view(recorded: RecordedSlotEvent) -> MessageView {
+    let blocks = match recorded.event {
+        store::ConversationEvent::ModelChanged { model } => vec![MessageBlock::ModelChanged { model }],
+        store::ConversationEvent::ChatMemoryChanged { chat_memory_tokens } => {
+            vec![MessageBlock::ChatMemoryChanged { chat_memory_tokens }]
+        }
+        // Only this command's own two events reach here; a decision is written by the
+        // proposal path, which has its own view.
+        store::ConversationEvent::ProposalDecided { decision } => {
+            vec![MessageBlock::ProposalDecisions {
+                decisions: vec![decision],
+            }]
+        }
+    };
+    MessageView {
+        id: recorded.message_id,
+        seq: recorded.seq,
+        role: MessageRoleView::Event,
+        blocks,
+        prompt_tokens: None,
+        completion_tokens: None,
+        created_at: recorded.created_at,
     }
 }
 

@@ -252,6 +252,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.chatMemoryChanged": "Chattens minne rymmer nu {tokens, number} token",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
+  },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# tidigare sökning} other {# tidigare sökningar}} togs bort för att passa modellens kontext.",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"

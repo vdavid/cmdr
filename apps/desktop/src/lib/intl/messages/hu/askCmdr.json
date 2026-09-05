@@ -252,6 +252,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.chatMemoryChanged": "A csevegés memóriája mostantól {tokens, number} tokent tart meg",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
+  },
   "askCmdr.event.contextTrimmed": "{count, plural, one {# korábbi keresés} other {# korábbi keresés}} kimaradt, hogy elférjen a modell kontextusában.",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"

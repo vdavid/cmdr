@@ -252,6 +252,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.chatMemoryChanged": "Bộ nhớ trò chuyện giờ chứa {tokens, number} token",
+  "@askCmdr.event.chatMemoryChanged": {
+    "sourceHash": "7dea8f2"
+  },
   "askCmdr.event.contextTrimmed": "Đã bỏ {count, plural, other {# lần tra cứu trước}} để vừa với ngữ cảnh của mô hình.",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"

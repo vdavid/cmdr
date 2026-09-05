@@ -25,7 +25,7 @@ import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
 import {
   getAskCmdrConversation,
   listAskCmdrConversations,
-  recordAskCmdrModelChange,
+  recordAskCmdrSlotChange,
   type AttachmentRef,
 } from '$lib/tauri-commands'
 
@@ -229,39 +229,45 @@ export function removeAttachment(path: string): void {
   askCmdrState.attachments = askCmdrState.attachments.filter((a) => a.path !== path)
 }
 
-/** How long to wait after a model-affecting settings change before asking the backend to
+/** How long to wait after a slot-affecting settings change before asking the backend to
  * record it: outlasts the settings store's 500 ms debounced disk flush (the backend
  * re-reads `settings.json`) and collapses the model text field's keystrokes. */
-const MODEL_CHANGE_DEBOUNCE_MS = 1000
+const SLOT_CHANGE_DEBOUNCE_MS = 1000
 
-let modelChangeTimer: ReturnType<typeof setTimeout> | null = null
+let slotChangeTimer: ReturnType<typeof setTimeout> | null = null
 
-/** A model-affecting setting changed (wired from `settings-applier.ts`). After the
- * debounce, asks the backend to record the change for the active thread — the backend
- * queues on the thread's single-flight lock, so with a turn in flight the line lands
- * right after the reply. The backend answers `null` when nothing actually changed for
- * this thread (no turn yet, or the effective model is the same). */
-export function noteModelSettingChanged(): void {
-  if (modelChangeTimer) clearTimeout(modelChangeTimer)
-  modelChangeTimer = setTimeout(() => {
-    modelChangeTimer = null
-    void recordModelChangeForActiveThread()
-  }, MODEL_CHANGE_DEBOUNCE_MS)
+/** A setting that moves the Ask Cmdr slot changed — the model it sends to or the chat memory
+ * each message carries (wired from `settings-applier.ts`). After the debounce, asks the
+ * backend to record what actually moved for the active thread — the backend queues on the
+ * thread's single-flight lock, so with a turn in flight the lines land right after the
+ * reply. The backend answers an empty list when nothing changed for this thread (no turn
+ * yet, or the effective values are the same). */
+export function noteSlotSettingChanged(): void {
+  if (slotChangeTimer) clearTimeout(slotChangeTimer)
+  slotChangeTimer = setTimeout(() => {
+    slotChangeTimer = null
+    void recordSlotChangeForActiveThread()
+  }, SLOT_CHANGE_DEBOUNCE_MS)
 }
 
-async function recordModelChangeForActiveThread(): Promise<void> {
+async function recordSlotChangeForActiveThread(): Promise<void> {
   const conversationId = askCmdrState.conversationId
   if (conversationId == null) return
   try {
-    const event = await recordAskCmdrModelChange(conversationId)
-    if (!event) return
+    const events = await recordAskCmdrSlotChange(conversationId)
+    if (events.length === 0) return
     // The backend may have waited out an in-flight turn; if the user switched threads
-    // meanwhile, the row is persisted (it shows on revisit) but doesn't belong here.
+    // meanwhile, the rows are persisted (they show on revisit) but don't belong here.
     if (askCmdrState.conversationId !== conversationId) return
-    for (const block of event.blocks) {
-      if (block.type === 'modelChanged') askCmdrState.messages.push({ kind: 'modelChange', model: block.model })
+    for (const event of events) {
+      for (const block of event.blocks) {
+        if (block.type === 'modelChanged') askCmdrState.messages.push({ kind: 'modelChange', model: block.model })
+        if (block.type === 'chatMemoryChanged') {
+          askCmdrState.messages.push({ kind: 'chatMemoryChange', chatMemoryTokens: block.chatMemoryTokens })
+        }
+      }
     }
   } catch (e) {
-    log.warn('recording a model change failed: {error}', { error: String(e) })
+    log.warn('recording a slot change failed: {error}', { error: String(e) })
   }
 }

@@ -350,7 +350,7 @@ export {
   preflightBulkRename,
   cancelBulkRenameProposal,
   reviseBulkRenameRow,
-  recordAskCmdrModelChange,
+  recordAskCmdrSlotChange,
   getAskCmdrConversation,
   listAskCmdrConversations,
   searchAskCmdrConversations,

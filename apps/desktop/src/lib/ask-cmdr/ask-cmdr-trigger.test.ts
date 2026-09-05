@@ -25,7 +25,7 @@ vi.mock('$lib/tauri-commands', () => ({
   cancelAskCmdr: (id: number) => cancelMock(id),
   listAskCmdrConversations: (...a: unknown[]) => listMock(...a),
   getAskCmdrConversation: (...a: unknown[]) => getMock(...a),
-  recordAskCmdrModelChange: (id: number) => recordMock(id),
+  recordAskCmdrSlotChange: (id: number) => recordMock(id),
   preflightBulkRename: (...args: unknown[]) => preflightRenameMock(...args),
   cancelBulkRenameProposal: vi.fn(() => Promise.resolve()),
   applyBulkRename: (...args: unknown[]) => applyRenameMock(...args),
@@ -64,7 +64,7 @@ import {
   MESSAGE_PAGE,
   closeRail,
   newChat,
-  noteModelSettingChanged,
+  noteSlotSettingChanged,
   openRail,
   RAIL_MAX_WIDTH,
   RAIL_MIN_WIDTH,
@@ -248,6 +248,16 @@ describe('sendMessage + streaming', () => {
     expect(askCmdrState.messages[0]).toEqual({ kind: 'modelChange', model: 'model-two' })
   })
 
+  it('a chatMemoryChanged stream event inserts a timeline line before the current user bubble', () => {
+    // The change happened between the turns, so the line belongs above the message that
+    // will be answered with the new amount of chat in view.
+    sendMessage('hi')
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'chatMemoryChanged', messageId: 9, seq: 0, chatMemoryTokens: 16_000 })
+    expect(askCmdrState.messages.map((m) => m.kind)).toEqual(['chatMemoryChange', 'user', 'assistant'])
+    expect(askCmdrState.messages[0]).toEqual({ kind: 'chatMemoryChange', chatMemoryTokens: 16_000 })
+  })
+
   it('a contextTrimmed event tells the user the reply saw less than the whole chat', () => {
     // The backend drops older tool results when the prompt budget is tight. That must be
     // visible: an unannounced drop is what let a reply written without the evidence read
@@ -260,26 +270,43 @@ describe('sendMessage + streaming', () => {
   })
 })
 
-describe('model settings changes', () => {
-  it('records an event for the active thread and appends the line (debounced)', async () => {
+describe('slot settings changes', () => {
+  /** One `event`-role row as the backend hands it back. */
+  function eventRow(id: number, blocks: unknown[]): unknown {
+    return { id, seq: 4, role: 'event', blocks, promptTokens: null, completionTokens: null, createdAt: 0 }
+  }
+
+  it('records an event per changed facet for the active thread and appends the lines (debounced)', async () => {
     vi.useFakeTimers()
     try {
       askCmdrState.conversationId = 7
-      recordMock.mockResolvedValue({
-        id: 9,
-        seq: 4,
-        role: 'event',
-        blocks: [{ type: 'modelChanged', model: 'model-two' }],
-        promptTokens: null,
-        completionTokens: null,
-        createdAt: 0,
-      })
-      noteModelSettingChanged()
-      noteModelSettingChanged() // rapid keystrokes collapse to one backend call
+      // A model with a smaller window moves both facets, so the thread gets both lines.
+      recordMock.mockResolvedValue([
+        eventRow(9, [{ type: 'modelChanged', model: 'model-two' }]),
+        eventRow(10, [{ type: 'chatMemoryChanged', chatMemoryTokens: 16_000 }]),
+      ])
+      noteSlotSettingChanged()
+      noteSlotSettingChanged() // rapid keystrokes collapse to one backend call
       await vi.advanceTimersByTimeAsync(1500)
       expect(recordMock).toHaveBeenCalledTimes(1)
       expect(recordMock).toHaveBeenCalledWith(7)
-      expect(askCmdrState.messages.at(-1)).toEqual({ kind: 'modelChange', model: 'model-two' })
+      expect(askCmdrState.messages).toEqual([
+        { kind: 'modelChange', model: 'model-two' },
+        { kind: 'chatMemoryChange', chatMemoryTokens: 16_000 },
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('appends only the chat-memory line when that is all that moved', async () => {
+    vi.useFakeTimers()
+    try {
+      askCmdrState.conversationId = 7
+      recordMock.mockResolvedValue([eventRow(9, [{ type: 'chatMemoryChanged', chatMemoryTokens: 200_000 }])])
+      noteSlotSettingChanged()
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(askCmdrState.messages).toEqual([{ kind: 'chatMemoryChange', chatMemoryTokens: 200_000 }])
     } finally {
       vi.useRealTimers()
     }
@@ -288,13 +315,13 @@ describe('model settings changes', () => {
   it('does nothing without an active thread, or when the backend reports no change', async () => {
     vi.useFakeTimers()
     try {
-      noteModelSettingChanged()
+      noteSlotSettingChanged()
       await vi.advanceTimersByTimeAsync(1500)
       expect(recordMock).not.toHaveBeenCalled()
 
       askCmdrState.conversationId = 7
-      recordMock.mockResolvedValue(null) // same effective model (e.g. masked by the override)
-      noteModelSettingChanged()
+      recordMock.mockResolvedValue([]) // same effective slot (e.g. masked by the override)
+      noteSlotSettingChanged()
       await vi.advanceTimersByTimeAsync(1500)
       expect(recordMock).toHaveBeenCalledTimes(1)
       expect(askCmdrState.messages).toEqual([])
@@ -314,18 +341,10 @@ describe('model settings changes', () => {
             resolveRecord = resolve
           }),
       )
-      noteModelSettingChanged()
+      noteSlotSettingChanged()
       await vi.advanceTimersByTimeAsync(1500)
       askCmdrState.conversationId = 8 // switched threads while the backend waited
-      resolveRecord({
-        id: 9,
-        seq: 4,
-        role: 'event',
-        blocks: [{ type: 'modelChanged', model: 'model-two' }],
-        promptTokens: null,
-        completionTokens: null,
-        createdAt: 0,
-      })
+      resolveRecord([eventRow(9, [{ type: 'modelChanged', model: 'model-two' }])])
       await vi.advanceTimersByTimeAsync(0)
       expect(askCmdrState.messages).toEqual([])
     } finally {
