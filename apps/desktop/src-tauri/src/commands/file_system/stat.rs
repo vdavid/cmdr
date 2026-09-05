@@ -69,9 +69,7 @@ pub async fn stat_paths_kinds(paths: Vec<String>) -> TimedOut<Vec<Option<bool>>>
     // beyond the archive half's extension check.
     if !result.timed_out {
         for (kind, path) in result.data.iter_mut().zip(paths.iter()) {
-            if kind.is_some()
-                || !crate::file_system::volume::manager::path_routes_over_its_parent(Path::new(path))
-            {
+            if kind.is_some() || !crate::file_system::volume::manager::path_routes_over_its_parent(Path::new(path)) {
                 continue;
             }
             let resolved = crate::file_system::volume::manager::get_volume_manager()
@@ -194,7 +192,7 @@ mod tests {
         );
         crate::file_system::git::wiring::set_virtual_portal_enabled(true);
 
-        let canonical = std::fs::canonicalize(&dir).expect("canonical repo root");
+        let canonical = fs::canonicalize(&dir).expect("canonical repo root");
         let snapshot = canonical.join(".git/branches/main");
         let result = stat_paths_kinds(vec![
             snapshot.join("README.md").to_string_lossy().into_owned(),

@@ -143,7 +143,7 @@ impl CachedListing {
     /// Replaces the overlay-row count, for a re-read that ran the overlays
     /// again. Written in the same lock acquisition as
     /// [`set_entries`](Self::set_entries), which
-    /// [`OverlayRows`](crate::file_system::listing::OverlayRows) makes every
+    /// [`OverlayRows`] makes every
     /// caller decide about: a listing that gained contributed rows while this
     /// still said zero would be handed to a walker as if it were a picture of
     /// the directory.

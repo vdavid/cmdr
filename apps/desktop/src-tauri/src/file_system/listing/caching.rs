@@ -9,9 +9,9 @@ use std::time::Instant;
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::WatchCoverage;
 
+use crate::file_system::listing::cached_listing::OverlayRows;
 use crate::file_system::listing::cached_listing::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::metadata::{FileEntry, TagRef};
-use crate::file_system::listing::cached_listing::OverlayRows;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
 use crate::file_system::volume::manager::RoutedKind;
 pub use cmdr_fs::volume::DirectoryChange;
