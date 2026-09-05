@@ -54,6 +54,13 @@ which:
   for a session with no window, and `virtual_category_prefixes`, which names the paths under a `.git` a change can have
   moved.
 
+**A `pub` inside a private module isn't measured either**, which is exactly why one may not sit there waiting for a
+caller: nothing would ever notice. So a helper here earns its place from a caller that exists today, ❌ never from a
+plausible one — `to_path`, `looks_like_sha_prefix`, and `dir_path_from_subpath` were each written for a future IPC
+consumer, reached only their own unit tests, and were deleted rather than carried. The one test-only helper that
+survived (`snapshot_dates::clear_cache`, which `bench.rs` needs to measure a cold walk) is `cfg(test)` and
+`pub(crate)`, so no configuration compiles it without its caller.
+
 Two gated items sit outside those numbers: `RecordingGitStateSink` and the whole `test_fixtures` module, both behind
 `testing`. The app's routing, overlay, and toggle suites build their repositories with those fixtures, so there is one
 set rather than two that drift; ❌ keep it a fixture surface by reading § "Which side a test lives on", not by watching
@@ -211,8 +218,8 @@ exposes a chunked loose-object reader.
 
 Branches like `feature/foo` show as a single entry called `feature/foo`, not nested `feature/` then `foo`. The
 classifier (`path::classify`) greedy-matches ref names against the repo's known refs (longest-first) before treating any
-remainder as a tree sub-path. The inverse (`to_path`) splits ref names on `/` so OS-native separators are used in the
-on-disk representation. This is the only place where the URL → path round-trip needs the repo open.
+remainder as a tree sub-path. This is the only place where classification needs the repo open, and the only reason
+`classify_names_every_shape_against_a_real_repo` carries a fixture.
 
 ## Modified + Size columns for virtual entries
 

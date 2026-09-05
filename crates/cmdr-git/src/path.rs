@@ -156,37 +156,6 @@ pub fn classify_in(repos: &RepoCache, path: &Path) -> Option<(VirtualGitPath, Re
     Some((parsed, handle, canonical_root))
 }
 
-/// Turns a `VirtualGitPath` back into the absolute path used in URLs.
-///
-/// `repo_root` must be the canonical worktree root (as returned by
-/// `discover_repo`). The resulting path is `<root>/.git/<...>`.
-#[allow(
-    dead_code,
-    reason = "Inverse of classify; used by tests + future IPC consumers (link copying, drag-drop)"
-)]
-pub fn to_path(virt: &VirtualGitPath, repo_root: &Path) -> PathBuf {
-    let mut out = repo_root.join(".git");
-    match virt {
-        VirtualGitPath::Root => {}
-        VirtualGitPath::Category(cat) => {
-            out.push(cat.as_segment());
-        }
-        VirtualGitPath::Ref(cat, name) => {
-            out.push(cat.as_segment());
-            out.push(name);
-        }
-        VirtualGitPath::RefTree(cat, name, sub) => {
-            out.push(cat.as_segment());
-            out.push(name);
-            // Push each segment so OS-native separators are used.
-            for piece in sub.split('/').filter(|p| !p.is_empty()) {
-                out.push(piece);
-            }
-        }
-    }
-    out
-}
-
 /// Splits a path at its first `.git` segment, returning `(worktree_root, rest_after_dot_git)`.
 ///
 /// `rest_after_dot_git` is empty for `<root>/.git` itself. The returned
@@ -406,37 +375,6 @@ mod tests {
         assert!(match_ref_name(&segs, &known).is_none());
     }
 
-    #[test]
-    fn to_path_round_trips_root() {
-        let root = Path::new("/repo");
-        assert_eq!(to_path(&VirtualGitPath::Root, root), Path::new("/repo/.git"));
-    }
-
-    #[test]
-    fn to_path_round_trips_category() {
-        let root = Path::new("/repo");
-        assert_eq!(
-            to_path(&VirtualGitPath::Category(Cat::Branches), root),
-            Path::new("/repo/.git/branches")
-        );
-    }
-
-    #[test]
-    fn to_path_round_trips_ref_with_slashes() {
-        let root = Path::new("/repo");
-        assert_eq!(
-            to_path(&VirtualGitPath::Ref(Cat::Branches, "feature/foo".into()), root),
-            Path::new("/repo/.git/branches/feature/foo")
-        );
-    }
-
-    #[test]
-    fn to_path_round_trips_ref_tree() {
-        let root = Path::new("/repo");
-        let v = VirtualGitPath::RefTree(Cat::Branches, "main".into(), "src/lib.rs".into());
-        assert_eq!(to_path(&v, root), Path::new("/repo/.git/branches/main/src/lib.rs"));
-    }
-
     /// The one cell that needs a real repository: greedy ref matching reads the
     /// repo's known refs, so `branches/feature/foo` can only be told from
     /// `branches/feature` + a subpath by asking one.
@@ -446,9 +384,8 @@ mod tests {
         let dot_git = dir.join(".git");
 
         // Root.
-        let (virt, _, root) = classify(&dot_git).expect("classify root");
+        let (virt, _, _) = classify(&dot_git).expect("classify root");
         assert_eq!(virt, VirtualGitPath::Root);
-        assert_eq!(to_path(&virt, &root), dot_git.canonicalize().unwrap());
 
         // Category.
         let (virt, _, _) = classify(&dot_git.join("branches")).expect("classify branches");

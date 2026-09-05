@@ -46,7 +46,6 @@
 //! discussed in the spec isn't needed.
 
 use std::collections::HashMap;
-use std::path::Path;
 use std::sync::Mutex;
 
 use gix::ObjectId;
@@ -104,10 +103,6 @@ impl DateCache {
         }
         self.entries.push((key, value));
     }
-
-    fn clear(&mut self) {
-        self.entries.clear();
-    }
 }
 
 fn cache() -> &'static Mutex<DateCache> {
@@ -115,15 +110,16 @@ fn cache() -> &'static Mutex<DateCache> {
     &CACHE
 }
 
-/// Drops every cached `(commit_id, dir_path)` result. Test-only today;
-/// the runtime cache is content-addressable and never needs invalidation.
-#[allow(
-    dead_code,
-    reason = "Test-only escape hatch; the cache never needs runtime invalidation"
-)]
-pub fn clear_cache() {
+/// Drops every cached `(commit_id, dir_path)` result.
+///
+/// `cfg(test)` rather than the crate's usual `any(test, feature = "testing")`,
+/// because the only caller is `bench.rs` measuring a cold walk against a warm
+/// one. The runtime cache is content-addressable, so nothing in production ever
+/// needs to invalidate it.
+#[cfg(test)]
+pub(crate) fn clear_cache() {
     if let Ok(mut c) = cache().lock() {
-        c.clear();
+        c.entries.clear();
     }
 }
 
@@ -340,18 +336,6 @@ fn committer_secs(repo: &gix::Repository, id: ObjectId) -> Option<u64> {
     u64::try_from(time.seconds).ok()
 }
 
-/// Backstop helper: `Path` form of the keying convention. Not used by the
-/// hot path (`dir_path` is already a `&str`) but exposed for callers that
-/// hold a `Path` and want to query the cache without rebuilding the slash
-/// shape themselves.
-#[allow(
-    dead_code,
-    reason = "Public helper; the hot path uses &str, but this exists for future callers passing a Path"
-)]
-pub fn dir_path_from_subpath(sub: &Path) -> String {
-    sub.to_string_lossy().replace('\\', "/").trim_matches('/').to_string()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -378,13 +362,6 @@ mod tests {
         // Key 5 should still be present.
         let oid = mock_oid(5);
         assert!(c.get(&(oid, "dir/5".to_string())).is_some());
-    }
-
-    #[test]
-    fn dir_path_normalizer_strips_slashes_and_backslashes() {
-        assert_eq!(dir_path_from_subpath(Path::new("/src/lib/")), "src/lib");
-        assert_eq!(dir_path_from_subpath(Path::new("")), "");
-        assert_eq!(dir_path_from_subpath(Path::new("a/b")), "a/b");
     }
 
     fn mock_oid(byte: u8) -> ObjectId {

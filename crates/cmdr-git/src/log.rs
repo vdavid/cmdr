@@ -130,27 +130,6 @@ pub fn resolve_commit_id(handle: &RepoHandle, prefix: &str) -> Result<ObjectId, 
     Ok(id)
 }
 
-/// True when `s` looks like a commit-id prefix (≥ 7 lowercase hex chars).
-///
-/// We don't validate against the object database here. Exposed as a
-/// public helper so future code (URL pasting, drag-drop validation) can
-/// shape-check candidates before doing a real DB lookup. Resolution
-/// happens via `resolve_commit_id`.
-// TODO: Wire from URL paste / drag-drop input validation. The dead-code gate
-// stays because the classifier already does the implicit shape check through
-// `resolve_commit_id`; this helper is for callers that want to reject
-// obviously-wrong input before paying for the DB lookup.
-#[allow(
-    dead_code,
-    reason = "Public helper for URL paste / drag-drop validation; the classifier doesn't call it because the SHA-shape check happens implicitly through resolve_commit_id"
-)]
-pub fn looks_like_sha_prefix(s: &str) -> bool {
-    s.len() >= SHORT_SHA_LEN
-        && s.len() <= 40
-        && s.chars()
-            .all(|c| c.is_ascii_hexdigit() && (c.is_ascii_digit() || c.is_ascii_lowercase()))
-}
-
 /// Lists HEAD-reachable commits as virtual directory entries.
 ///
 /// Up to `MAX_COMMITS` entries; on cap the walk stops silently.
@@ -253,24 +232,4 @@ fn decode_commit_meta(repo: &gix::Repository, id: ObjectId) -> Result<(String, i
 
 fn short_sha(id: &ObjectId) -> String {
     id.to_string().chars().take(SHORT_SHA_LEN).collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn looks_like_sha_prefix_recognizes_short_and_full() {
-        assert!(looks_like_sha_prefix("abc1234"));
-        assert!(looks_like_sha_prefix("abcdef0123456789abcdef0123456789abcdef01"));
-        // 6 chars: too short for an unambiguous prefix in our handling.
-        assert!(!looks_like_sha_prefix("abc123"));
-        // 41 chars: longer than a SHA-1.
-        assert!(!looks_like_sha_prefix("abcdef0123456789abcdef0123456789abcdef012"));
-        // Mixed case rejected so the classifier doesn't shadow ref names
-        // that happen to be hex-ish but uppercased.
-        assert!(!looks_like_sha_prefix("ABC1234"));
-        // Non-hex.
-        assert!(!looks_like_sha_prefix("xyz1234"));
-    }
 }
