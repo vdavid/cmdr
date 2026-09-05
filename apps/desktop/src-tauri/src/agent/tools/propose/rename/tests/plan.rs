@@ -2,8 +2,8 @@
 //! guardrail that refuses a WHOLE plan rather than staging part of one.
 
 use super::super::plan::{
-    ProposalRefusal, RenameInput, check_row_evidence, missing_local_child, refusal_content, rows_problem, scoped_files,
-    validate_destination_name,
+    ProposalRefusal, RenameInput, check_row_evidence, missing_local_child, refusal_content, refusal_reason,
+    rows_problem, scoped_files, validate_destination_name,
 };
 use super::{THREAD, draft_row};
 use crate::agent::tools::propose::evidence::{EvidenceProblem, EvidenceSource, ImageFactsLedger};
@@ -264,4 +264,30 @@ fn a_plan_cannot_claim_the_user_typed_a_name() {
 
     assert_eq!(rejections.len(), 1);
     assert_eq!(rejections[0].problem, EvidenceProblem::SourceReservedForUser);
+}
+
+/// The log line a refused plan leaves names the offending PATHS and the typed verdict, and
+/// never the name the model proposed. A proposed name is where a model's reading of a file's
+/// CONTENTS ends up, and the log is written unconditionally and rides an error report; paths
+/// are already in the log in the ordinary course, contents-derived names are not.
+#[test]
+fn a_refusal_log_line_names_the_path_and_the_typed_verdict_but_never_the_proposed_name() {
+    let rejections = vec![crate::agent::tools::propose::evidence::EvidenceRejection {
+        source_path: "/shots/two.png".to_string(),
+        proposed_name: "hello-world-output.png".to_string(),
+        evidence_source: EvidenceSource::ImageText,
+        problem: EvidenceProblem::FactsNotDelivered,
+    }];
+
+    let reason = refusal_reason(&ProposalRefusal::Evidence(rejections));
+
+    assert!(reason.contains("/shots/two.png"), "the path locates the row: {reason}");
+    assert!(
+        reason.contains("FactsNotDelivered"),
+        "the typed verdict says what went wrong: {reason}"
+    );
+    assert!(
+        !reason.contains("hello-world-output"),
+        "the proposed name must not reach the log: {reason}"
+    );
 }

@@ -118,10 +118,10 @@ pub(super) fn refusal_reason(refusal: &ProposalRefusal) -> String {
                 0 => String::new(),
                 more => format!(" and {more} more"),
             };
-            // allowed-pluralize-noun: a count of rejected rows, always at least one here
+            let count = rejections.len();
+            let noun = if count == 1 { "row" } else { "rows" };
             format!(
-                "{} rows carried evidence that didn't check out: {}{rest}",
-                rejections.len(),
+                "{count} {noun} carried evidence that didn't check out: {}{rest}",
                 named.join(", ")
             )
         }
