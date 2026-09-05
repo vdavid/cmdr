@@ -93,6 +93,8 @@ interface KeyboardDeps {
   selection: {
     /** Selects the whole file given its total line count and the last line's length. */
     selectAll: (args: SelectAllArgs) => void
+    /** Selects the whole file when its line count isn't known yet (ByteSeek, no index). */
+    selectToEof: () => void
   }
   scroll: NavigationActions
   search: {
@@ -150,10 +152,10 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
       deps.selection.selectAll({ totalLines, lastLineLength: lastLineText.length })
       return
     }
-    // ByteSeek-no-index ⌘A: we don't know `totalLines`. Use a sentinel that the
-    // RangeEnd mapper translates to `RangeEnd::Eof` at the IPC boundary.
+    // ByteSeek-no-index ⌘A: we don't know `totalLines`, so select to `EOF_LINE`, which
+    // `toRangeEnds` translates to `RangeEnd::Eof` at the IPC boundary.
     if (deps.getTotalBytes() > 0) {
-      deps.selection.selectAll({ totalLines: Number.MAX_SAFE_INTEGER, lastLineLength: 0 })
+      deps.selection.selectToEof()
     }
   }
 

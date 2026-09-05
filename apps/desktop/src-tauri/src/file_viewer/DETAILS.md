@@ -236,7 +236,8 @@ that the scan opener finds a line exactly with no index).
   can reach
 - `viewer_read_range(session_id, read_id, anchor, focus)` → `Result<String, ViewerError>`: reads a logical
   `(line, offset)` range as one UTF-8 string. Endpoints are `RangeEnd::Line { line, offset }` (UTF-16 code unit offset)
-  or `RangeEnd::Eof` (used by ⌘A in ByteSeek-no-index mode). `read_id` is FE-allocated so cancel can land without an
+  or `RangeEnd::Eof`, which ⌘A emits in ByteSeek-no-index mode (`makeSelectToEof` / `toRangeEnds` in the frontend's
+  `routes/viewer/selection.svelte.ts`). `read_id` is FE-allocated so cancel can land without an
   extra round-trip. The function holds the SESSIONS lock only long enough to clone the backend `Arc` and register the
   cancel flag; the read itself iterates outside the lock so other commands stay responsive.
 - `viewer_cancel_read(session_id, read_id)` → flips the per-read cancel flag. No-op if the read already finished.

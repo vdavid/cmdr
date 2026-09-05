@@ -6,10 +6,54 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { createViewerSelection, isWholeFileSelection, toRangeEnds } from './selection.svelte'
 import { createViewerKeyboard, handleSearchToggleKey, handleTailToggleKey, handleToggleKey } from './viewer-keyboard'
+
+type KeyboardDeps = Parameters<typeof createViewerKeyboard>[0]
 
 function makeKey(props: Partial<KeyboardEventInit & { key: string }>): KeyboardEvent {
   return new KeyboardEvent('keydown', { key: 'a', ...props })
+}
+
+/**
+ * A fully wired `createViewerKeyboard` dep set whose every action is a spy, so a test
+ * only has to name the handful of deps it cares about. Defaults describe a 10-line
+ * file with the search bar closed and nothing in flight.
+ */
+function makeKeyboardDeps(overrides: Partial<KeyboardDeps> = {}): KeyboardDeps {
+  const noop = vi.fn()
+  return {
+    getTotalLines: () => 10,
+    getTotalBytes: () => 100,
+    getLineText: () => 'line',
+    selection: { selectAll: noop, selectToEof: noop },
+    scroll: { scrollByLines: noop, scrollByPages: noop, scrollToStart: noop, scrollToEnd: noop },
+    search: {
+      searchVisible: false,
+      searchStatus: 'idle',
+      searchInputRef: null,
+      openSearch: noop,
+      closeSearch: noop,
+      stopSearch: noop,
+      findNext: noop,
+      findPrev: noop,
+      toggleUseRegex: noop,
+      toggleCaseSensitive: noop,
+    },
+    copy: { busy: false, cancelInFlight: () => Promise.resolve() },
+    isCopyConfirmOpen: () => false,
+    isCopyRefuseOpen: () => false,
+    isContextMenuOpen: () => false,
+    cancelCopyConfirm: noop,
+    dismissCopyRefuse: noop,
+    closeContextMenu: noop,
+    logEscape: noop,
+    runCopy: noop,
+    toggleTailMode: noop,
+    toggleWordWrap: noop,
+    closeWindow: noop,
+    ...overrides,
+  }
 }
 
 describe('handleTailToggleKey', () => {
@@ -102,37 +146,10 @@ describe('createViewerKeyboard: ⌘C with the search bar open', () => {
     input.focus()
 
     const runCopy = vi.fn()
-    const noop = vi.fn()
+    const base = makeKeyboardDeps({ runCopy })
     const keyboard = createViewerKeyboard({
-      getTotalLines: () => 10,
-      getTotalBytes: () => 100,
-      getLineText: () => 'line',
-      selection: { selectAll: noop },
-      scroll: { scrollByLines: noop, scrollByPages: noop, scrollToStart: noop, scrollToEnd: noop },
-      search: {
-        searchVisible: true,
-        searchStatus: 'idle',
-        searchInputRef: input,
-        openSearch: noop,
-        closeSearch: noop,
-        stopSearch: noop,
-        findNext: noop,
-        findPrev: noop,
-        toggleUseRegex: noop,
-        toggleCaseSensitive: noop,
-      },
-      copy: { busy: false, cancelInFlight: () => Promise.resolve() },
-      isCopyConfirmOpen: () => false,
-      isCopyRefuseOpen: () => false,
-      isContextMenuOpen: () => false,
-      cancelCopyConfirm: noop,
-      dismissCopyRefuse: noop,
-      closeContextMenu: noop,
-      logEscape: noop,
-      runCopy,
-      toggleTailMode: noop,
-      toggleWordWrap: noop,
-      closeWindow: noop,
+      ...base,
+      search: { ...base.search, searchVisible: true, searchInputRef: input },
     })
     return { keyboard, input, runCopy }
   }
@@ -163,5 +180,30 @@ describe('createViewerKeyboard: ⌘C with the search bar open', () => {
 
     expect(runCopy).not.toHaveBeenCalled()
     expect(e.defaultPrevented).toBe(false)
+  })
+})
+
+describe('createViewerKeyboard: ⌘A in ByteSeek-no-index mode', () => {
+  it('mints an end-of-file selection that both the copy-size shortcut and the IPC mapper recognise', () => {
+    const selection = createViewerSelection()
+    const keyboard = createViewerKeyboard(
+      makeKeyboardDeps({
+        // No index yet, so there is no line count to select up to; the file is non-empty.
+        getTotalLines: () => null,
+        getTotalBytes: () => 1,
+        selection: { selectAll: selection.selectAll, selectToEof: selection.selectToEof },
+      }),
+    )
+
+    keyboard.handleSelectAllShortcut()
+
+    // The copy flow must recognise this as the whole file and use the known file size;
+    // otherwise it walks lines the user never scrolled through and lands on "size unknown".
+    expect(isWholeFileSelection(selection.selection, null)).toBe(true)
+    // And the read must go out as `RangeEnd::Eof`, never a line number no file has.
+    expect(toRangeEnds(selection.selection)).toEqual({
+      anchor: { kind: 'line', line: 0, offset: 0 },
+      focus: { kind: 'eof' },
+    })
   })
 })

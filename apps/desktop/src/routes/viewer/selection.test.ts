@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   compareLineOffset,
   describeSelectionForAt,
+  EOF_LINE,
   estimateSelectionBytes,
   extendSelection,
   getLineSegmentBounds,
@@ -11,8 +12,10 @@ import {
   isWholeFileSelection,
   lineOffsetEquals,
   makeSelectAll,
+  makeSelectToEof,
   MAX_ANNOUNCE_LINES,
   normaliseSelection,
+  toRangeEnds,
   type Selection,
 } from './selection.svelte'
 
@@ -234,16 +237,56 @@ describe('makeSelectAll', () => {
   })
 })
 
+describe('makeSelectToEof', () => {
+  it('runs from the file start to EOF_LINE', () => {
+    expect(makeSelectToEof()).toEqual({
+      anchor: { line: 0, offset: 0 },
+      focus: { line: EOF_LINE, offset: 0 },
+    })
+  })
+
+  it('sorts after every real line, so normalisation needs no special case', () => {
+    const sel = makeSelectToEof()
+    expect(normaliseSelection(sel)).toEqual({ start: sel.anchor, end: sel.focus })
+  })
+})
+
+describe('toRangeEnds', () => {
+  it('returns null for no selection', () => {
+    expect(toRangeEnds(null)).toBeNull()
+  })
+
+  it('emits both ends as concrete lines for an ordinary selection', () => {
+    const sel: Selection = { anchor: { line: 2, offset: 3 }, focus: { line: 7, offset: 1 } }
+    expect(toRangeEnds(sel)).toEqual({
+      anchor: { kind: 'line', line: 2, offset: 3 },
+      focus: { kind: 'line', line: 7, offset: 1 },
+    })
+  })
+
+  it('puts a reversed drag back in document order', () => {
+    const sel: Selection = { anchor: { line: 7, offset: 1 }, focus: { line: 2, offset: 3 } }
+    expect(toRangeEnds(sel)).toEqual({
+      anchor: { kind: 'line', line: 2, offset: 3 },
+      focus: { kind: 'line', line: 7, offset: 1 },
+    })
+  })
+
+  it('maps the end-of-file selection to RangeEnd::Eof', () => {
+    expect(toRangeEnds(makeSelectToEof())).toEqual({
+      anchor: { kind: 'line', line: 0, offset: 0 },
+      focus: { kind: 'eof' },
+    })
+  })
+})
+
 describe('isWholeFileSelection', () => {
   it('matches the output of makeSelectAll', () => {
     expect(isWholeFileSelection(makeSelectAll(100, 50), 100)).toBe(true)
   })
 
-  it('matches the ByteSeek-no-index sentinel (focus.line = MAX_SAFE_INTEGER)', () => {
-    const sel: Selection = {
-      anchor: { line: 0, offset: 0 },
-      focus: { line: Number.MAX_SAFE_INTEGER, offset: 0 },
-    }
+  it('matches the output of makeSelectToEof', () => {
+    const sel = makeSelectToEof()
     expect(isWholeFileSelection(sel, null)).toBe(true)
     expect(isWholeFileSelection(sel, 50)).toBe(true)
   })
@@ -277,7 +320,7 @@ describe('isWholeFileSelection', () => {
     expect(isWholeFileSelection(null, 100)).toBe(false)
   })
 
-  it('without totalLines and without sentinel, never matches', () => {
+  it('without totalLines and without an end-of-file focus, never matches', () => {
     const sel: Selection = { anchor: { line: 0, offset: 0 }, focus: { line: 99, offset: 5 } }
     expect(isWholeFileSelection(sel, null)).toBe(false)
   })
@@ -404,13 +447,10 @@ describe('describeSelectionForAt', () => {
     expect(describeSelectionForAt(sel, getLen)).toBe('Selected lines 1 to 4, 16 characters')
   })
 
-  it('ByteSeek-no-index ⌘A sentinel: line span > MAX_ANNOUNCE_LINES falls back to generic message', () => {
-    // The ⌘A path sets focus.line = Number.MAX_SAFE_INTEGER when totalLines is null.
-    // The pure function must not iterate 9e15 times.
-    const sel: Selection = {
-      anchor: { line: 0, offset: 0 },
-      focus: { line: Number.MAX_SAFE_INTEGER, offset: 0 },
-    }
+  it('end-of-file selection: line span > MAX_ANNOUNCE_LINES falls back to generic message', () => {
+    // ⌘A with no line count yet reaches EOF_LINE, so the pure function must not
+    // iterate 9e15 times.
+    const sel = makeSelectToEof()
     let calls = 0
     const counting = () => {
       calls++

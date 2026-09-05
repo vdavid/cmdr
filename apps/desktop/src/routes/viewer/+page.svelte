@@ -39,7 +39,7 @@
         estimateSelectionBytes,
         getLineSegmentBounds,
         isWholeFileSelection,
-        normaliseSelection,
+        toRangeEnds,
     } from './selection.svelte'
     import { createViewerCopy, createViewerCopyOrchestrator } from './viewer-copy.svelte'
     import { createViewerPointerDrag } from './viewer-pointer-drag.svelte'
@@ -53,7 +53,7 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
-    import { viewerSetEncoding, viewerSetTailMode, viewerGetEncodingOptions, type RangeEnd } from '$lib/tauri-commands'
+    import { viewerSetEncoding, viewerSetTailMode, viewerGetEncodingOptions } from '$lib/tauri-commands'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning, viewerWarningLabel } from '$lib/file-viewer/binary-warning'
     import { isMediaKind } from './media-view'
@@ -286,26 +286,6 @@
     )
 
     /**
-     * Converts a `Selection` to the `(anchor, focus)` `RangeEnd`s the IPC layer accepts.
-     * For ⌘A in ByteSeek-no-index mode we emit `Eof` so the backend can resolve the
-     * end of the file without a fake line number; everywhere else we emit `Line { ... }`.
-     */
-    function getRangeEndsForCurrentSelection(): { anchor: RangeEnd; focus: RangeEnd } | null {
-        const sel = selection.selection
-        if (sel === null) return null
-        const { start, end } = normaliseSelection(sel)
-        const startEnd: RangeEnd = { kind: 'line', line: start.line, offset: start.offset }
-        // In ByteSeek-no-index mode, the FE used `Infinity` (or a fake totalLines) for ⌘A.
-        // Translate "selection extends past every line we know about" into RangeEnd::Eof.
-        const knownTotal = totalLines
-        const usesEof = knownTotal === null && end.line === Number.MAX_SAFE_INTEGER
-        const endEnd: RangeEnd = usesEof
-            ? { kind: 'eof' }
-            : { kind: 'line', line: end.line, offset: end.offset }
-        return { anchor: startEnd, focus: endEnd }
-    }
-
-    /**
      * Estimates the UTF-8 byte length of the current selection using cached line lengths.
      * Returns `null` if any required line isn't in the cache (the copy flow will route to
      * the "unknown size" branch and confirm before reading).
@@ -340,7 +320,7 @@
     const copy = createViewerCopy({
         getSessionId: () => sessionId,
         getSelectionBytes: estimateCurrentSelectionBytes,
-        getRangeEnds: getRangeEndsForCurrentSelection,
+        getRangeEnds: () => toRangeEnds(selection.selection),
     })
 
     const copyFlow = createViewerCopyOrchestrator({
@@ -467,7 +447,7 @@
         getTotalLines: () => totalLines,
         getTotalBytes: () => totalBytes,
         getLineText: (line) => scroll.lineCache.get(line),
-        selection: { selectAll: selection.selectAll },
+        selection: { selectAll: selection.selectAll, selectToEof: selection.selectToEof },
         scroll,
         search: {
             get searchVisible() {

@@ -128,6 +128,12 @@ logical coordinates, independent of which lines happen to be rendered.
 - **Offset units**: UTF-16 code units (matches `String.length` and the search column units the search engine already
   emits, so the whole frontend speaks one unit). The backend converts to UTF-8 bytes at the IPC boundary, clamping
   offsets that land between the high and low surrogate of an astral codepoint.
+- **Selecting to the end of a file with no line count**: in ByteSeek mode before the line index lands, ⌘A can't name a
+  last line, so `makeSelectToEof()` mints `focus.line = EOF_LINE` (`Number.MAX_SAFE_INTEGER`). `toRangeEnds` turns that
+  into `RangeEnd::Eof` so the backend resolves the real end itself, and `isWholeFileSelection` reads it to hand the copy
+  flow the known file size instead of walking lines that were never fetched. Gotcha/Why: `EOF_LINE` is minted directly
+  and never derived. A `totalLines - 1` derivation lands one line short of it, every consumer's literal comparison
+  silently stops matching, and that is how the `Eof` variant went unemitted while looking wired up.
 - **Render**: the page calls `getLineSegmentBounds(selection, lineNumber, lineLength)` and passes the bounds to
   `search.getHighlightedSegments(...)`. The shared `segmentLine()` function (in `line-segments.ts`) merges search-match
   spans with selection bounds and emits non-overlapping `LineSegment`s tagged `highlight` / `active` / `selected`. The
@@ -346,8 +352,8 @@ names neither. `archive` next to it IS archive-only (an encrypted, corrupt, or u
   listener-order change. See `tryConsumeEscapeForCopy` in `viewer-keyboard.ts` (`createViewerKeyboard`) and `handleKey`
   in `ViewerContextMenu.svelte`.
 - **AT announcement caps line iteration.** `describeSelectionForAt` in `selection.svelte.ts` walks per-line lengths to
-  build the screen-reader announcement. ⌘A in ByteSeek-no-index mode sets `focus.line = Number.MAX_SAFE_INTEGER` (the
-  sentinel that maps to `RangeEnd::Eof` at the IPC boundary), so an uncapped loop would iterate 9e15 times. The
+  build the screen-reader announcement. ⌘A in ByteSeek-no-index mode sets `focus.line = EOF_LINE` (the sentinel that
+  maps to `RangeEnd::Eof` at the IPC boundary), so an uncapped loop would iterate 9e15 times. The
   `MAX_ANNOUNCE_LINES = 10_000` cap short-circuits to "Selected from line N to the end of the file" without touching the
   line-length lookup at all.
 - **Drag autoscroll honours `prefers-reduced-motion`.** Under reduced motion, `createViewerAutoscroll().start()` does a
