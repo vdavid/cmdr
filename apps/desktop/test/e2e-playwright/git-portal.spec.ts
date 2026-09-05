@@ -317,12 +317,15 @@ test.describe('Git portal', () => {
     await ensureAppReady(tauriPage)
     await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/branches'))
     expect(await paneHasFile(tauriPage, 0, 'main')).toBe(true)
-    expect(await paneHasFile(tauriPage, 0, 'picked-up-live', 1000)).toBe(false)
+    expect(await paneHasFile(tauriPage, 0, 'picked-up-live', 500)).toBe(false)
 
     gitInRepo('branch picked-up-live')
 
     // 200 ms debounce, then the report drives a `FullRefresh` of this listing.
-    expect(await paneHasFile(tauriPage, 0, 'picked-up-live', 15000)).toBe(true)
+    // ❗ Well inside the 15 s per-test timeout: a wait AT that timeout can only
+    // ever end the run with "test timeout exceeded", never with this assertion's
+    // own message.
+    expect(await paneHasFile(tauriPage, 0, 'picked-up-live', 8000)).toBe(true)
   })
 
   test('navigates commits/ and shows the single HEAD commit by short SHA', async ({ tauriPage }) => {

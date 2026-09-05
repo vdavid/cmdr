@@ -31,12 +31,11 @@ app's two seams, and nothing in this crate ever asks it.
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to **12 root promises, 0 public modules, and 0 public items inside them**, set
-on 2026-09-05 to exactly what it exposed the day the extraction finished — no headroom, so the first addition has to be
-argued for.
+`index-crate-isolation` holds this crate to **11 root promises, 0 public modules, and 0 public items inside them**, set
+on 2026-09-05 to exactly what it exposes — no headroom, so the first addition has to be argued for.
 
 **Every module is private**, which is the tightest shape a backend crate here has taken: a host can name no path into
-this crate, so all 12 names arrive as root re-exports and both other buckets are zero. That also means `GitPortal`'s own
+this crate, so all 11 names arrive as root re-exports and both other buckets are zero. That also means `GitPortal`'s own
 methods are reachable but unmeasured, so what holds them is the list below rather than a number.
 
 **A backend's API is the `Volume` trait it implements**, which is `cmdr-fs`'s promise rather than this crate's, so
@@ -50,16 +49,17 @@ which:
   which is what `GitPortal::discover` answers with.
 - **The status column** (the same commands file): `EntryStatus` and `EntryStatusCode`, both crossing IPC, and
   `list_status`.
-- **Reporting a change** (`file_system/git/wiring.rs`): the `GitStateSink` trait the app implements, `no_git_state_sink`
-  for a session with no window, and `virtual_category_prefixes`, which names the paths under a `.git` a change can have
-  moved.
+- **Reporting a change** (`file_system/git/wiring.rs`): the `GitStateSink` trait the app implements, and
+  `no_git_state_sink` for a session with no window.
 
 **A `pub` inside a private module isn't measured either**, which is exactly why one may not sit there waiting for a
 caller: nothing would ever notice. So a helper here earns its place from a caller that exists today, ❌ never from a
 plausible one — `to_path`, `looks_like_sha_prefix`, and `dir_path_from_subpath` were each written for a future IPC
 consumer, reached only their own unit tests, and were deleted rather than carried. The one test-only helper that
 survived (`snapshot_dates::clear_cache`, which `bench.rs` needs to measure a cold walk) is `cfg(test)` and `pub(crate)`,
-so no configuration compiles it without its caller.
+so no configuration compiles it without its caller. The count went 12 → 11 the same way:
+`virtual_category_prefixes` lost its only caller when the post-change refresh started matching a listing by its
+canonical worktree root instead of by string prefix, so it left with the caller rather than waiting for another.
 
 **A `testing`-gated method on `GitPortal` spends nothing here**, which is why the scripted watcher arrived without a
 conversation: `with_scripted_watcher` and `fire_watcher` are methods on a type in a private module (unmeasured, like

@@ -78,13 +78,14 @@ pub(crate) fn repo_a_listing_watches(volume: &dyn Volume, path: &Path) -> Option
     if !wiring::is_virtual_portal_enabled() {
         return None;
     }
-    if let Some(worktree_root) = cmdr_git::portal_route(path) {
-        return Some(worktree_root);
-    }
-    if path.file_name()? != ".git" || !wiring::volume_holds_real_repos(volume) {
+    let worktree_root = wiring::repo_a_listing_shows(path)?;
+    // A path inside one of the six trees only got here through the route, which
+    // already asked whether the parent volume holds real repos. The `.git/`
+    // landing listing is the local volume's, so that one still gets asked.
+    if cmdr_git::portal_route(path).is_none() && !wiring::volume_holds_real_repos(volume) {
         return None;
     }
-    Some(path.parent()?.to_path_buf())
+    Some(worktree_root)
 }
 
 /// Takes the subscriber on the blocking pool, then hands it back if the listing

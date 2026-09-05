@@ -155,6 +155,48 @@ fn a_report_selects_every_open_virtual_listing_for_the_repo() {
     cleanup(&dir);
 }
 
+/// A listing keeps whatever spelling the user navigated with, and a watcher
+/// report carries the CANONICAL root, so the two are matched by resolving the
+/// listing's worktree root rather than by comparing paths as strings.
+///
+/// The bug this pins: on macOS a repo under `/tmp` (a symlink to `/private/tmp`)
+/// matched no listing at all, and a `git branch` never reached the open
+/// `branches/` pane (caught by `git-portal.spec.ts`, 2026-09-05). A symlink to
+/// the fixture reproduces it wherever the suite runs.
+#[test]
+fn a_listing_reached_through_a_symlink_is_still_the_repos() {
+    use crate::file_system::listing::caching_test_support::TestListing;
+    use crate::file_system::volume::DEFAULT_VOLUME_ID;
+
+    let dir = temp_dir("wiring", "symlinked_spelling");
+    let mut fixture = Fixture::init(dir.clone());
+    fixture.commit_file("README.md", b"hello\n", "initial");
+    let (_, root) = discover_repo(&dir).expect("the fixture is a repo");
+
+    let elsewhere = temp_dir("wiring", "symlinked_spelling_link");
+    let link = elsewhere.join("repo");
+    std::os::unix::fs::symlink(&root, &link).expect("symlink the repo");
+    assert_ne!(
+        link, root,
+        "the two spellings have to differ for this to assert anything"
+    );
+
+    let through_link = link.join(".git").join("branches");
+    let _listing = TestListing::new()
+        .volume(DEFAULT_VOLUME_ID)
+        .path(through_link.clone())
+        .insert("wiring-symlinked-branches");
+
+    let selected = super::wiring::listings_a_repo_change_re_reads(&root);
+    assert!(
+        selected.iter().any(|(_, listed)| *listed == through_link),
+        "the pane's own spelling is what gets re-read: {selected:?}"
+    );
+
+    cleanup(&elsewhere);
+    cleanup(&dir);
+}
+
 /// A repo nobody is watching still answers: the detached sink is what a test
 /// binary and a headless bench report into.
 #[test]

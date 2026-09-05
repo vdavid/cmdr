@@ -106,7 +106,7 @@ mod volume_tests;
 #[cfg(test)]
 mod watcher_tests;
 
-pub use path::{portal_route, virtual_category_prefixes};
+pub use path::portal_route;
 pub use portal::GitPortal;
 pub use repo::{RepoHandle, RepoInfo, repo_info};
 pub use state_sink::{GitStateSink, no_git_state_sink};

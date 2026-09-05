@@ -115,16 +115,6 @@ pub fn portal_route(path: &Path) -> Option<PathBuf> {
     Some(worktree_root)
 }
 
-/// Every path under `<dot_git>/` the portal serves: the six category roots.
-///
-/// A listing path that starts with one of these is a virtual portal listing, so
-/// a host re-reading after a ref change knows which of its open listings the
-/// change can have moved. ❗ It answers what to RE-READ, ❌ never what a mutation
-/// may touch.
-pub fn virtual_category_prefixes(dot_git: &Path) -> Vec<PathBuf> {
-    Cat::ALL.iter().map(|cat| dot_git.join(cat.as_segment())).collect()
-}
-
 /// [`classify_in`] against a cache of its own.
 ///
 /// Test-only: production classification runs inside a

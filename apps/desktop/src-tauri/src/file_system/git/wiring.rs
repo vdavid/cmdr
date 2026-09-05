@@ -21,7 +21,6 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 use cmdr_fs::volume::Volume;
-pub(crate) use cmdr_git::virtual_category_prefixes;
 use cmdr_git::{GitPortal, GitStateSink, RepoInfo, no_git_state_sink};
 
 /// Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
@@ -176,9 +175,9 @@ pub(crate) fn refresh_virtual_listings(repo_root: &Path) {
 /// `refs/heads/feature` never touches it and those counts would sit at whatever
 /// they were when the pane opened.
 ///
-/// ❗ `.git/` is matched EXACTLY, ❌ never as a prefix: prefix-matching it would
-/// pull in every real subdirectory (`objects/`, `hooks/`, `logs/`) and re-read,
-/// on every commit, panes a ref change can't have moved.
+/// ❗ Only `.git/` itself and the six trees, ❌ never everything under `.git/`:
+/// re-reading `objects/`, `hooks/`, and `logs/` panes on every commit is work no
+/// ref change can have made necessary.
 ///
 /// ❗ Every volume, not only the boot one. A repo lives just as happily on an
 /// external disk or an OS-mounted share, and those get their own volume ids;
@@ -189,11 +188,37 @@ pub(crate) fn refresh_virtual_listings(repo_root: &Path) {
 /// Split out from the refresh so the choice can be asserted on without an
 /// `AppHandle` (`notify_directory_changed` is a no-op before one is registered).
 pub(crate) fn listings_a_repo_change_re_reads(repo_root: &Path) -> Vec<(String, PathBuf)> {
-    let dot_git = repo_root.join(".git");
-    let trees = virtual_category_prefixes(&dot_git);
     listings_matching(|listing_path| {
-        *listing_path == dot_git || trees.iter().any(|tree| listing_path.starts_with(tree))
+        repo_a_listing_shows(listing_path).is_some_and(|worktree_root| canonical(&worktree_root) == repo_root)
     })
+}
+
+/// The worktree root of a listing standing in a repo's virtual `.git`: a path
+/// inside one of the six trees, or the `.git/` landing listing itself. Nothing
+/// for every other path, `.git/objects/` and `.git/hooks/` included.
+///
+/// ❗ Lexical, ❌ no `stat`: a caller on a hot path can ask this and only then pay
+/// for the filesystem.
+pub(crate) fn repo_a_listing_shows(listing_path: &Path) -> Option<PathBuf> {
+    if let Some(worktree_root) = cmdr_git::portal_route(listing_path) {
+        return Some(worktree_root);
+    }
+    if listing_path.file_name()? != ".git" {
+        return None;
+    }
+    listing_path.parent().map(Path::to_path_buf)
+}
+
+/// `path` with every symlink resolved, or `path` itself when it can't be.
+///
+/// ❗ A repo change is matched to a listing by CANONICAL worktree root, ❌ never
+/// by comparing the paths as strings. A listing keeps whatever spelling the user
+/// navigated with, while a watcher report carries the canonical root, so on macOS
+/// a repo under `/tmp` (a symlink to `/private/tmp`) matched no listing at all and
+/// the pane never re-read (caught by `git-portal.spec.ts`, 2026-09-05). One
+/// `realpath` per candidate, and only for listings that name a `.git`.
+fn canonical(path: &Path) -> PathBuf {
+    std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
 }
 
 /// Every open listing whose path `wanted` accepts, as `(volume_id, path)`.

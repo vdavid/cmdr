@@ -215,21 +215,26 @@ var surfaceGuardedCrates = []struct {
 		// exposes — no headroom, so the first addition has to be argued for.
 		//
 		// EVERY module is private, so a host can name no path into this crate at all
-		// and all 12 promises arrive as root re-exports. That's why both other buckets
+		// and all 11 promises arrive as root re-exports. That's why both other buckets
 		// are zero, and it's the tightest shape any backend crate here has taken:
 		// `GitPortal`'s own methods are reachable but unmeasured, so the item-by-item
 		// argument in the crate's `DETAILS.md` is what holds them, not this number.
 		//
-		// The 12 serve four callers, and a new one should name which:
+		// The 11 serve four callers, and a new one should name which:
 		// browsing (`GitPortal`, `GitPortalVolume`, `portal_route`), the chip
 		// (`RepoInfo`, `repo_info`, `RepoHandle`), the status column (`EntryStatus`,
 		// `EntryStatusCode`, `list_status`), and reporting a change
-		// (`GitStateSink`, `no_git_state_sink`, `virtual_category_prefixes`).
+		// (`GitStateSink`, `no_git_state_sink`).
+		//
+		// LOWERED 12 -> 11 on 2026-09-05, no conversation needed because a tightening
+		// isn't a loosening: `virtual_category_prefixes` lost its only caller when the
+		// post-change listing refresh started matching by CANONICAL worktree root
+		// instead of by string prefix, and this crate keeps no promise nothing reaches.
 		//
 		// Item-by-item: `crates/cmdr-git/DETAILS.md` § "The public surface is capped".
 		Name: "cmdr-git",
 		Ceilings: surfaceCeilings{
-			RootPromises:   12,
+			RootPromises:   11,
 			PublicModules:  0,
 			SubsystemItems: 0,
 		},
