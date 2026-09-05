@@ -5,11 +5,14 @@
 //! whatever the host does with a [`GitStateSink`] report. Debounce is 200 ms per
 //! repo, matching the existing listing watcher in `file_system/listing/`.
 //!
+//! Two halves, split so a test can assert one without paying for the other:
+//! [`GitWatcherRegistry`] does the bookkeeping (one watch per repository,
+//! refcounted, torn down with the last subscriber), and a [`GitWatcherBackend`]
+//! is what actually talks to the operating system.
+//!
 //! ❌ Nothing here names a window. The watcher recomputes a typed snapshot and
 //! reports it; wording it and refreshing panes is the host's, through the sink.
 
-#[cfg(any(test, feature = "testing"))]
-use cmdr_fs::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -22,36 +25,184 @@ use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 use crate::repo::{RepoCache, RepoInfo, repo_info};
 use crate::state_sink::GitStateSink;
 
-/// One per repo. Owns the notify-rs debouncer and the subscriber count.
-struct Subscription {
-    refcount: u32,
-    /// Keep the debouncer alive so the watcher thread doesn't stop.
-    /// Stored as `dyn Drop` because `notify_debouncer_full::Debouncer` is
-    /// generic over the watcher impl and we don't want to leak that here.
-    _debouncer: Box<dyn DropAny + Send>,
+/// How long a burst of `.git/*` writes is allowed to settle before one report
+/// goes out. A `git checkout` rewrites `HEAD`, `index`, and a pile of refs, and
+/// the chip wants the state after all of it rather than a report per file.
+const DEBOUNCE: Duration = Duration::from_millis(200);
+
+/// What a backend calls once a repository's `.git/*` writes have settled.
+type RepoChanged = Arc<dyn Fn() + Send + Sync>;
+
+/// What a subscription arms so a repository's `.git/*` writes come back as one
+/// debounced report.
+///
+/// A trait because arming a real FSEvents stream over ~10 paths is by far the
+/// most expensive thing a subscribe does, and every cell that asserts only the
+/// registry's bookkeeping has no use for it. Production always gets
+/// [`NotifyWatcherBackend`]; a test asks [`GitPortal::with_scripted_watcher`]
+/// for one it drives by hand.
+///
+/// [`GitPortal::with_scripted_watcher`]: crate::GitPortal::with_scripted_watcher
+pub(crate) trait GitWatcherBackend: Send + Sync {
+    /// Starts watching the gitdir of the repository at `repo_root`, calling
+    /// `on_change` once per debounced burst on a thread of the backend's own.
+    ///
+    /// The returned value keeps the watch alive and stops it when dropped, which
+    /// is the whole contract: the registry stores it and never looks inside.
+    fn watch(&self, repo_root: &Path, on_change: RepoChanged) -> Result<Box<dyn Send>, FriendlyGitError>;
+
+    /// Pretends the gitdir at `repo_root` moved, answering whether a watch was
+    /// armed for it. Only the scripted backend has such a door; the real one
+    /// takes its events from the operating system and answers `false`.
+    #[cfg(any(test, feature = "testing"))]
+    fn fire(&self, _repo_root: &Path) -> bool {
+        false
+    }
 }
 
-/// Type-erased drop helper.
-trait DropAny {}
-impl<T> DropAny for T {}
+/// The real backend: one `notify` debouncer per repository, watching the
+/// `.git/*` paths a state change can touch.
+pub(crate) struct NotifyWatcherBackend;
+
+impl GitWatcherBackend for NotifyWatcherBackend {
+    fn watch(&self, repo_root: &Path, on_change: RepoChanged) -> Result<Box<dyn Send>, FriendlyGitError> {
+        let mut debouncer = new_debouncer(DEBOUNCE, None, move |result: DebounceEventResult| {
+            if result.is_err() {
+                return;
+            }
+            on_change();
+        })
+        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
+
+        for path in watch_paths(repo_root) {
+            // Some paths (`refs/`) are dirs, others (`HEAD`, `index`) are files.
+            // notify happily handles both. Missing paths are common (no MERGE_HEAD
+            // until a merge starts) – we register watches lazily by watching the
+            // `.git` dir non-recursively as a fallback so create-then-modify still fires.
+            if path.exists() {
+                let mode = if path.is_dir() {
+                    RecursiveMode::Recursive
+                } else {
+                    RecursiveMode::NonRecursive
+                };
+                let _ = debouncer.watch(&path, mode);
+            }
+        }
+        // Always watch `.git` itself for create events on optional files.
+        let dot_git = git_dir_path(repo_root);
+        if dot_git.exists() {
+            let _ = debouncer.watch(&dot_git, RecursiveMode::NonRecursive);
+        }
+        Ok(Box::new(debouncer))
+    }
+}
+
+// ❌ Not `cfg(test)` alone: that's set only while this crate compiles its OWN
+// test target, so a consumer's test build would see the scripted backend vanish
+// and every bookkeeping cell would go back to paying for FSEvents.
+#[cfg(any(test, feature = "testing"))]
+pub(crate) use scripted::ScriptedWatcherBackend;
+
+#[cfg(any(test, feature = "testing"))]
+mod scripted {
+    use super::{GitWatcherBackend, RepoChanged};
+    use cmdr_fs::ignore_poison::IgnorePoison;
+    use cmdr_fs::volume::friendly_error::git::FriendlyGitError;
+    use std::collections::HashMap;
+    use std::path::{Path, PathBuf};
+    use std::sync::{Arc, Mutex};
+
+    /// The armed repositories and what each one calls when it fires. Shared with
+    /// every live watch guard, which is how a drop unarms exactly its own repo.
+    type Armed = Arc<Mutex<HashMap<PathBuf, RepoChanged>>>;
+
+    /// A backend that arms nothing with the operating system: it remembers which
+    /// repositories have a watch and lets a test fire one by hand.
+    #[derive(Default)]
+    pub(crate) struct ScriptedWatcherBackend {
+        armed: Armed,
+    }
+
+    impl ScriptedWatcherBackend {
+        /// A backend with nothing armed yet.
+        pub(crate) fn new() -> Self {
+            Self::default()
+        }
+    }
+
+    /// The live watch. Unarms its repository when the registry drops it, so the
+    /// scripted backend tears down on exactly the same signal the real one does.
+    struct ScriptedWatch {
+        armed: Armed,
+        repo_root: PathBuf,
+    }
+
+    impl Drop for ScriptedWatch {
+        fn drop(&mut self) {
+            self.armed.lock_ignore_poison().remove(&self.repo_root);
+        }
+    }
+
+    impl GitWatcherBackend for ScriptedWatcherBackend {
+        fn watch(&self, repo_root: &Path, on_change: RepoChanged) -> Result<Box<dyn Send>, FriendlyGitError> {
+            self.armed
+                .lock_ignore_poison()
+                .insert(repo_root.to_path_buf(), on_change);
+            Ok(Box::new(ScriptedWatch {
+                armed: Arc::clone(&self.armed),
+                repo_root: repo_root.to_path_buf(),
+            }))
+        }
+
+        fn fire(&self, repo_root: &Path) -> bool {
+            // Cloned out from under the lock: the callback reads the repository
+            // and reports to the sink, which is not work to hold a mutex for.
+            let armed = self.armed.lock_ignore_poison().get(repo_root).cloned();
+            match armed {
+                Some(on_change) => {
+                    on_change();
+                    true
+                }
+                None => false,
+            }
+        }
+    }
+}
+
+/// One per repo. Owns the live watch and the subscriber count.
+struct Subscription {
+    refcount: u32,
+    /// Keep the backend's watch alive so it doesn't stop. Opaque on purpose:
+    /// what a backend hands back is its own business, and the registry only
+    /// needs to hold it and drop it.
+    _watch: Box<dyn Send>,
+}
 
 /// App-wide registry of per-repo subscriptions.
 pub struct GitWatcherRegistry {
+    backend: Arc<dyn GitWatcherBackend>,
     inner: Mutex<HashMap<PathBuf, Subscription>>,
 }
 
 impl GitWatcherRegistry {
+    /// A registry watching the real filesystem.
     pub fn new() -> Self {
+        Self::with_backend(Arc::new(NotifyWatcherBackend))
+    }
+
+    /// A registry over `backend`, which is what a test swaps.
+    pub(crate) fn with_backend(backend: Arc<dyn GitWatcherBackend>) -> Self {
         Self {
+            backend,
             inner: Mutex::new(HashMap::new()),
         }
     }
 
-    /// Adds a subscriber for `repo_root`. Spawns the watcher on first call,
-    /// bumps the refcount on subsequent ones. Returns the current `RepoInfo`
-    /// snapshot synchronously so the chip never sees an empty interim state.
+    /// Adds a subscriber for `repo_root`. Arms the watch on first call, bumps
+    /// the refcount on subsequent ones. Returns the current `RepoInfo` snapshot
+    /// synchronously so the chip never sees an empty interim state.
     ///
-    /// `repos` is shared rather than borrowed because the debounce callback
+    /// `repos` is shared rather than borrowed because the change callback
     /// outlives this call: every recompute opens the repository through the same
     /// cache the caller's own lookups use.
     pub fn subscribe(
@@ -71,47 +222,22 @@ impl GitWatcherRegistry {
             return Ok(info);
         }
 
-        // First subscriber: start the debouncer.
+        // First subscriber: arm the watch.
         let watcher_root = root.clone();
-        let mut debouncer = new_debouncer(Duration::from_millis(200), None, move |result: DebounceEventResult| {
-            if result.is_err() {
-                return;
-            }
-            recompute_and_report(&repos, sink.as_ref(), &watcher_root);
-        })
-        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
-
-        for path in watch_paths(&root) {
-            // Some paths (`refs/`) are dirs, others (`HEAD`, `index`) are files.
-            // notify happily handles both. Missing paths are common (no MERGE_HEAD
-            // until a merge starts) – we register watches lazily by watching the
-            // `.git` dir non-recursively as a fallback so create-then-modify still fires.
-            if path.exists() {
-                let mode = if path.is_dir() {
-                    RecursiveMode::Recursive
-                } else {
-                    RecursiveMode::NonRecursive
-                };
-                let _ = debouncer.watch(&path, mode);
-            }
-        }
-        // Always watch `.git` itself for create events on optional files.
-        let dot_git = git_dir_path(&root);
-        if dot_git.exists() {
-            let _ = debouncer.watch(&dot_git, RecursiveMode::NonRecursive);
-        }
+        let on_change: RepoChanged = Arc::new(move || recompute_and_report(&repos, sink.as_ref(), &watcher_root));
+        let watch = self.backend.watch(&root, on_change)?;
 
         inner.insert(
             root.clone(),
             Subscription {
                 refcount: 1,
-                _debouncer: Box::new(debouncer) as Box<dyn DropAny + Send>,
+                _watch: watch,
             },
         );
         Ok(info)
     }
 
-    /// Drops a subscriber. Tears the watcher down on the last unsubscribe, and
+    /// Drops a subscriber. Tears the watch down on the last unsubscribe, and
     /// releases what that repo was holding open: nobody is looking at it, so a
     /// full-repo-sized status snapshot and an open `gix` handle would be pure
     /// leak.
@@ -131,7 +257,15 @@ impl GitWatcherRegistry {
     /// For tests: count active repos.
     #[cfg(any(test, feature = "testing"))]
     pub fn active_repo_count(&self) -> usize {
+        use cmdr_fs::ignore_poison::IgnorePoison;
         self.inner.lock_ignore_poison().len()
+    }
+
+    /// For tests: pretends `repo_root`'s gitdir moved, answering whether a watch
+    /// was armed for it. Only a scripted backend can answer `true`.
+    #[cfg(any(test, feature = "testing"))]
+    pub fn fire(&self, repo_root: &Path) -> bool {
+        self.backend.fire(repo_root)
     }
 }
 
@@ -182,7 +316,6 @@ fn git_dir_path(repo_root: &Path) -> PathBuf {
 }
 
 /// The set of paths inside `.git` whose changes should trigger a re-emit.
-/// See plan § Architecture > Watcher.
 fn watch_paths(repo_root: &Path) -> Vec<PathBuf> {
     let git_dir = git_dir_path(repo_root);
     let mut paths: Vec<PathBuf> = [

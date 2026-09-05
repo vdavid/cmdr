@@ -17,9 +17,19 @@ use super::wiring::GitStateChangedPayload;
 use cmdr_git::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
 use cmdr_git::{GitPortal, GitStateSink, RecordingGitStateSink, RepoInfo, no_git_state_sink};
 
-/// A portal over the real host, reporting into `sink`. What the app parks, minus
-/// the window.
+/// A portal over the real host, reporting into `sink`, whose watcher is
+/// scripted rather than real: [`GitPortal::fire_watcher`] stands in for the
+/// operating system. What every cell here but one wants, because arming a real
+/// FSEvents stream over a repository's ~10 `.git/*` paths is most of what a
+/// subscribe costs and none of them assert on it.
 fn portal_reporting_into(sink: Arc<dyn GitStateSink>) -> GitPortal {
+    GitPortal::with_scripted_watcher(crate::volume_host::host(), sink)
+}
+
+/// A portal over the real host with a REAL `.git/*` watcher. ❗ The one cell
+/// below that takes this pays for FSEvents; everything else takes
+/// [`portal_reporting_into`].
+fn portal_with_a_real_watcher(sink: Arc<dyn GitStateSink>) -> GitPortal {
     GitPortal::new(crate::volume_host::host(), sink)
 }
 
@@ -55,6 +65,11 @@ fn the_payload_serializes_to_the_shape_the_frontend_subscribes_to() {
 /// the state as it is after the burst. That debounce is what keeps a `git
 /// checkout` (which rewrites `HEAD`, `index`, and a pile of refs) from driving
 /// one event per file.
+///
+/// ❗ **The one cell in the app that arms a REAL `.git/*` watcher.** The debounce
+/// it proves is `notify`'s own, so a scripted backend can't stand in: it would
+/// assert the fake's arithmetic. Every other subscription cell here and in
+/// `cmdr_git::watcher_tests` takes the scripted one and runs in milliseconds.
 #[test]
 fn a_debounced_burst_reports_one_change_with_the_new_state() {
     let dir = temp_dir("wiring", "one_report_per_burst");
@@ -63,7 +78,7 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
     let (_, root) = discover_repo(&dir).expect("the fixture is a repo");
 
     let sink = Arc::new(RecordingGitStateSink::new());
-    let portal = portal_reporting_into(Arc::clone(&sink) as Arc<dyn GitStateSink>);
+    let portal = portal_with_a_real_watcher(Arc::clone(&sink) as Arc<dyn GitStateSink>);
     let first = portal
         .subscribe_state(&root)
         .expect("subscribing answers with the current state");

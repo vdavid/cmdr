@@ -61,6 +61,12 @@ consumer, reached only their own unit tests, and were deleted rather than carrie
 survived (`snapshot_dates::clear_cache`, which `bench.rs` needs to measure a cold walk) is `cfg(test)` and `pub(crate)`,
 so no configuration compiles it without its caller.
 
+**A `testing`-gated method on `GitPortal` spends nothing here**, which is why the scripted watcher arrived without a
+conversation: `with_scripted_watcher` and `fire_watcher` are methods on a type in a private module (unmeasured, like
+every other `GitPortal` method), and the `GitWatcherBackend` trait plus both backends are `pub(crate)`. The count after
+the split is still 12 / 0 / 0. ❗ That is not a loophole to route a real API through: an item a HOST calls in production
+is a root promise whatever it's attached to.
+
 Two gated items sit outside those numbers: `RecordingGitStateSink` and the whole `test_fixtures` module, both behind
 `testing`. The app's routing, overlay, and toggle suites build their repositories with those fixtures, so there is one
 set rather than two that drift; ❌ keep it a fixture surface by reading § "Which side a test lives on", not by watching
@@ -77,16 +83,19 @@ Which means, file by file: a cell that needs no repository is an inline `mod tes
 (`path.rs`, `log.rs`, `stash.rs`, `read_blob.rs`, `state_sink.rs`, `status.rs`'s two), and one that needs a real
 repository is a sibling `<subject>_tests.rs` — `repo_tests` (discovery and `RepoInfo`), `status_tests` (the worktree
 walk), `category_tests` (all six categories, plus the row set the landing page is built from), `tree_tests` (a
-snapshot's tree and its blobs), `column_meta_tests`, `snapshot_dates_tests`, and `volume_tests` (everything asserting
+snapshot's tree and its blobs), `column_meta_tests`, `snapshot_dates_tests`, `watcher_tests` (the registry's
+bookkeeping: one watch per repo, the refcount, and what a change reports), and `volume_tests` (everything asserting
 `GitPortalVolume`, conformance included). The one exception is `path.rs`'s
 `classify_names_every_shape_against_a_real_repo`: greedy ref matching reads the repo's known refs, so it needs a fixture
 yet belongs beside the parser it asserts on.
 
-The instrument for the app half is the `testing` feature: `test_fixtures` builds the repository, and
-`RecordingGitStateSink` makes a watcher report observable without a window. **That recorder is what a subscription cell
-asserts through**, and the one that does lives app-side: it drives the parked portal's `subscribe_state`, writes five
+The instrument for the app half is the `testing` feature: `test_fixtures` builds the repository,
+`RecordingGitStateSink` makes a watcher report observable without a window, and `GitPortal::with_scripted_watcher` plus
+`fire_watcher` make one observable without FSEvents. **That recorder is what a subscription cell asserts through.** The
+DEBOUNCE cell lives app-side and takes the real backend: it drives the parked portal's `subscribe_state`, writes five
 commits inside the 200 ms window, and expects exactly one `repo_changed`. The debounce is this crate's contract, but the
-path that proves it starts where the portal is parked, so the cell belongs at that end.
+path that proves it starts where the portal is parked, so the cell belongs at that end — and it is the only one anywhere
+that arms a real watcher (§ "The watcher splits into bookkeeping and a backend").
 
 ## Linked worktrees
 
@@ -101,6 +110,30 @@ discovery follows the gitlink, so `<linked>/.git/branches` and deeper answer exa
 **Why that's the right trade.** The landing listing used to rewrite the real gitdir's entries under `<linked>/.git/…`,
 where they were visible but not openable (`<linked>/.git/HEAD` is a path THROUGH a file, so reading it is `ENOTDIR`).
 Losing rows nobody could open costs less than a `stat` on the route, which runs on every path-bearing call.
+
+## The watcher splits into bookkeeping and a backend
+
+`watcher.rs` is two halves, and the split is what keeps a subscription cell affordable.
+
+- **`GitWatcherRegistry` does the bookkeeping**: one watch per canonical repository root however many subscribers it
+  has, refcounted, and the last unsubscribe tears the watch down, evicts the repo handle, and drops the status cache.
+- **`GitWatcherBackend` is what talks to the operating system.** `NotifyWatcherBackend` builds the 200 ms debouncer and
+  registers the path set below. `ScriptedWatcherBackend` (behind `testing`) arms nothing: it remembers which
+  repositories have a watch and runs the change callback when a test calls `GitPortal::fire_watcher`.
+
+**Why a seam rather than a real watcher everywhere.** Arming a real FSEvents stream over a repository's ~10 `.git/*`
+paths is nearly the whole cost of `subscribe_state`, and no cell that asserts bookkeeping cares about it. On an idle
+M-series machine the two app-side subscription cells ran 0.35 s and 0.58 s; on the scripted backend the bookkeeping half
+runs in 0.05 s, and under a saturated `cargo nextest run --workspace` the difference is what decided whether they met
+the suite's 8 s cap at all (measured 2026-09-05).
+
+**Exactly one cell in the repo takes the real backend**:
+`file_system::git::wiring_tests::a_debounced_burst_reports_one_change_with_the_new_state`. The debounce it proves is
+`notify`'s own, so a fake standing in for it would assert the fake's arithmetic. ❌ Don't add a second.
+
+**Neither door costs public surface.** `GitPortal::with_scripted_watcher` and `GitPortal::fire_watcher` are methods on a
+type in a private module, so `index-crate-isolation` doesn't measure them, and both are `testing`-gated so a shipped
+build carries neither. The trait and both backends are `pub(crate)`: nothing outside this crate names them.
 
 ## Watcher path set
 

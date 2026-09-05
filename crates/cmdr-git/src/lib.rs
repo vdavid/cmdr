@@ -103,6 +103,8 @@ mod status_tests;
 mod tree_tests;
 #[cfg(test)]
 mod volume_tests;
+#[cfg(test)]
+mod watcher_tests;
 
 pub use path::{portal_route, virtual_category_prefixes};
 pub use portal::GitPortal;

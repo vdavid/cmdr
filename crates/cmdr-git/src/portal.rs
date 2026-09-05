@@ -37,9 +37,32 @@ impl GitPortal {
     /// the runtime its volumes run blocking `gix` work on) and reports every
     /// repo change to `sink`.
     pub fn new(host: VolumeHost, sink: Arc<dyn GitStateSink>) -> Self {
+        Self::over(host, sink, GitWatcherRegistry::new())
+    }
+
+    /// A portal whose watcher arms nothing with the operating system:
+    /// [`fire_watcher`](Self::fire_watcher) stands in for it.
+    ///
+    /// The instrument for every cell that asserts the registry's BOOKKEEPING —
+    /// which repositories are watched, what a change reports, what a listing
+    /// arms — none of which needs a real FSEvents stream. Arming one over a
+    /// repository's ~10 `.git/*` paths is most of what a subscribe costs, and it
+    /// is the one thing that made those cells miss the suite's 8 s cap under
+    /// load.
+    #[cfg(any(test, feature = "testing"))]
+    pub fn with_scripted_watcher(host: VolumeHost, sink: Arc<dyn GitStateSink>) -> Self {
+        use crate::watcher::ScriptedWatcherBackend;
+        Self::over(
+            host,
+            sink,
+            GitWatcherRegistry::with_backend(Arc::new(ScriptedWatcherBackend::new())),
+        )
+    }
+
+    fn over(host: VolumeHost, sink: Arc<dyn GitStateSink>, watchers: GitWatcherRegistry) -> Self {
         Self {
             repos: Arc::new(RepoCache::new()),
-            watchers: GitWatcherRegistry::new(),
+            watchers,
             sink,
             host,
         }
@@ -107,5 +130,21 @@ impl GitPortal {
     #[cfg(any(test, feature = "testing"))]
     pub fn watched_repo_count(&self) -> usize {
         self.watchers.active_repo_count()
+    }
+
+    /// Pretends the repository at `repo_root` just had its `.git/*` state
+    /// written, answering whether a watch was armed for it.
+    ///
+    /// Only a portal built by [`with_scripted_watcher`](Self::with_scripted_watcher)
+    /// can answer `true`; the real backend takes its events from the operating
+    /// system and has no door in. A test that owns a repository and wants to see
+    /// what a change reaches reaches for this instead of writing refs and
+    /// waiting out a debounce.
+    #[cfg(any(test, feature = "testing"))]
+    pub fn fire_watcher(&self, repo_root: &Path) -> bool {
+        let Ok((_, root)) = self.discover(repo_root) else {
+            return false;
+        };
+        self.watchers.fire(&root)
     }
 }

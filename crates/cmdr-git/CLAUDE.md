@@ -10,8 +10,9 @@ chip, and the read-only `Volume` that turns `.git/branches/`, `tags/`, `commits/
 - `portal.rs` (`GitPortal`, which owns the repo cache, the watcher registry, and the sink, and is what every portal
   volume is built over), `volume.rs` (`GitPortalVolume`), `path.rs` (the `VirtualGitPath` parser, the lexical
   `portal_route`).
-- `repo.rs` (discovery, `RepoInfo`, `RepoCache`), `status.rs` (the cached status walk), `watcher.rs` (the per-repo
-  `notify` debouncer), `state_sink.rs` (where it reports).
+- `repo.rs` (discovery, `RepoInfo`, `RepoCache`), `status.rs` (the cached status walk), `watcher.rs` (the refcounted
+  per-repo registry, plus the backend that arms it: `notify` in production, scripted under `testing`), `state_sink.rs`
+  (where it reports).
 - `virtual_listing.rs`, `log.rs`, `stash.rs`, `worktrees.rs`, `submodules.rs`, `tree.rs`, `snapshot_dates.rs`: one
   category each, plus the tree walks. `column_meta.rs` and `read_blob.rs`: the Size/Modified numbers and the blob
   stream. `test_fixtures.rs`: repos to assert against, behind `testing`.
@@ -36,6 +37,9 @@ chip, and the read-only `Volume` that turns `.git/branches/`, `tags/`, `commits/
 - **Anything a CONSUMER's test needs takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off when
   the app compiles this crate as a dependency. `cfg(test)` alone is for doors only this crate's own cells open
   (`snapshot_dates::clear_cache`, `log::cancel_flag`).
+- **A subscription cell builds `GitPortal::with_scripted_watcher`, ❌ never `new`.** Arming a real FSEvents stream over
+  a repo's ~10 `.git/*` paths is most of what a subscribe costs; `fire_watcher` stands in for the OS. Exactly one cell
+  in the repo pays for the real backend, and it's app-side (`wiring_tests`, for the debounce).
 - **`missing_docs` is denied.** Every `pub` item says what a caller must know, and specta copies these into
   `bindings.ts`.
 
