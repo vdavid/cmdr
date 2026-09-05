@@ -137,7 +137,7 @@ impl MtpConnectionManager {
         for attempt in 0..MAX_REOPEN_ATTEMPTS {
             tokio::time::sleep(reopen_delay(attempt)).await;
 
-            if !crate::mtp::watcher::is_mtp_enabled() {
+            if !self.is_enabled() {
                 info!("MTP {device_id}: reopen abandoned, MTP support was turned off");
                 return;
             }

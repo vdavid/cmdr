@@ -214,6 +214,17 @@ pub struct MtpConnectionManager {
     /// Devices whose session-reset recovery is already in flight, so N
     /// operations failing against the same dead session schedule ONE recovery.
     recovering: std::sync::Mutex<std::collections::HashSet<String>>,
+    /// Whether MTP support is on, as the user's setting last left it.
+    ///
+    /// The one bit of product policy this layer holds, and it holds it because
+    /// the reopen loop has to read it between attempts: a recovery in flight
+    /// must not resurrect a device the user just switched MTP off for. The app
+    /// PUSHES the setting in (at startup and on every toggle) and reads it back
+    /// for its own auto-connect gate; ❌ this layer never asks the app, which is
+    /// what lets it run with no app around it. Starts ON, because a manager that
+    /// began by refusing would drop a recovery in the window before that first
+    /// push.
+    enabled: std::sync::atomic::AtomicBool,
     /// This manager, as background work sees it.
     ///
     /// A `&self` method that has to hand the manager over (to the registrar, to
@@ -260,6 +271,7 @@ impl MtpConnectionManager {
             events,
             registrar,
             recovering: std::sync::Mutex::new(std::collections::HashSet::new()),
+            enabled: std::sync::atomic::AtomicBool::new(true),
             self_ref: self_ref.clone(),
         })
     }
@@ -267,6 +279,21 @@ impl MtpConnectionManager {
     /// The seams this layer reaches the app through.
     pub(crate) fn host(&self) -> &VolumeHost {
         &self.host
+    }
+
+    /// Whether MTP support is currently on. See [`enabled`](Self::enabled).
+    pub fn is_enabled(&self) -> bool {
+        self.enabled.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    /// Turns MTP support on or off, and reports what it WAS.
+    ///
+    /// The return value is what lets a caller tell a real change from a
+    /// redundant push: the app's disable path disconnects every device and
+    /// clears its known-device set, and running that for a no-op push would tear
+    /// down live sessions.
+    pub fn set_enabled(&self, enabled: bool) -> bool {
+        self.enabled.swap(enabled, std::sync::atomic::Ordering::SeqCst)
     }
 
     /// This manager as an owned handle, or `None` once it has been dropped.
@@ -1063,6 +1090,38 @@ fn get_mtp_icon_id(is_dir: bool, filename: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn detached_manager() -> Arc<MtpConnectionManager> {
+        MtpConnectionManager::new(
+            VolumeHost::detached(),
+            events::no_device_events(),
+            MtpVolumeRegistrar::detached(),
+        )
+    }
+
+    /// A manager nobody has told anything has to be ON. The app pushes the
+    /// persisted setting in at startup, and a manager that started out refusing
+    /// would drop a session-reset recovery in the window before that push, which
+    /// reads to the user as a phone that never came back from a screen lock.
+    #[test]
+    fn a_manager_nobody_configured_has_mtp_on() {
+        assert!(detached_manager().is_enabled());
+    }
+
+    /// Setting it reports what it was, so the settings toggle can tell a real
+    /// change from a redundant push: the disable path disconnects every device
+    /// and clears the known set, and running that for a no-op push would tear
+    /// down live sessions.
+    #[test]
+    fn turning_mtp_off_and_on_again_reports_what_it_was() {
+        let manager = detached_manager();
+
+        assert!(manager.set_enabled(false), "it was on");
+        assert!(!manager.is_enabled());
+        assert!(!manager.set_enabled(false), "still off, and that's not a change");
+        assert!(!manager.set_enabled(true), "it was off");
+        assert!(manager.is_enabled());
+    }
 
     #[test]
     fn resolve_device_location_id_is_none_when_no_device_matches() {

@@ -7,7 +7,7 @@ MTP for Android devices and PTP cameras over USB. macOS and Linux only; on Linux
 ## File map
 
 - `discovery.rs` (`list_mtp_devices()`), `watcher.rs` (hotplug over `mtp_rs::mtp::watch_devices()`, auto-connect, the
-  `MTP_ENABLED` gate), `types.rs` (camelCase JSON), `macos_workaround.rs` (ptpcamerad suppression).
+  enabled gate), `types.rs` (camelCase JSON), `macos_workaround.rs` (ptpcamerad suppression).
 - `connection/`: the per-device session layer (`MtpConnectionManager`, event loop, list / read / write / mutate / bulk
   ops). See its `CLAUDE.md` for locks, caches, and gotchas.
 - `mod.rs`: where the app parks the one manager it built (`install_connection_manager`, then `connection_manager()`).
@@ -21,8 +21,8 @@ MTP for Android devices and PTP cameras over USB. macOS and Linux only; on Linux
 - **Hotplug events are a TRIGGER, never the source of truth.** ❌ Don't auto-connect off an `mtp_rs` `HotplugEvent`
   payload: that watch is USB-only, so E2E's virtual device would never connect. Every event funnels into
   `check_for_device_changes()`, which re-enumerates and diffs `KNOWN_DEVICES`.
-- **`MTP_ENABLED` (`AtomicBool` in `watcher.rs`, default `true`) gates auto-connect, never the watcher loop itself.**
-  Setting key `fileOperations.mtpEnabled`.
+- **The MTP-on bit lives on the MANAGER** (`set_enabled` / `is_enabled`, default on). The app pushes the setting in;
+  `watcher.rs` reads it back to gate auto-connect, never the watcher loop. Key `fileOperations.mtpEnabled`.
 - **`delete` has two scopes; only `delete_mtp_object` may recurse.** `MtpVolume::delete` passes
   `MtpDeleteScope::SingleNode`, so a folder with children is refused (`DirectoryNotEmpty`) and nothing is deleted. ❌
   Never widen a caller to `Tree`: the same-volume move's "a Skipped child keeps its only copy" guarantee IS that
@@ -42,9 +42,9 @@ MTP for Android devices and PTP cameras over USB. macOS and Linux only; on Linux
   the future mid-transaction and wedge the phone (`pnpm check mtp-dropping-timeout`), and ❌ never PTP
   `CancelTransaction` for list/delete.
 - **macOS ptpcamerad suppression** runs before connecting and is restored when the last device leaves, on exit, or on
-  MTP being disabled; `ensure_ptpcamerad_enabled()` at startup covers a crash, and a failed one falls back to the
-  `ExclusiveAccess` dialog. `needs_ptpcamerad_suppression` keeps it off an all-VIRTUAL device set: doing it for a
-  fixture is how an E2E run took `ptpcamerad` down on the developer's machine.
+  MTP being disabled; a failed one falls back to the `ExclusiveAccess` dialog. ❌
+  `needs_ptpcamerad_suppression` keeps it off an all-VIRTUAL device set: an E2E run once took `ptpcamerad` down on the
+  developer's machine.
 - **The session layer holds no `AppHandle`.** It reports typed `MtpDeviceEvent`s into an `MtpDeviceEvents` sink and
   `events.rs` maps them; ❌ don't reach for an app handle inside `connection/`. The `ptpcamerad` pair stays the
   watcher's to emit.

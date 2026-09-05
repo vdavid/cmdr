@@ -250,7 +250,9 @@ So `handle_device_session_reset` (the sibling of `handle_device_disconnected`, t
    ❌ Don't collapse it to a single retry — on hardware attempts 1 and 2 failed (`Timeout`, then `SessionAlreadyOpen`)
    and the third succeeded, so "try once and give up" declares a device dead that is two seconds from working. ❌ Don't
    tighten the spacing either; that's what re-wedges the device. Between attempts it re-checks
-   `watcher::is_mtp_enabled()` so a recovery in flight can't resurrect a device the user just switched MTP off for.
+   the manager's own `is_enabled()` so a recovery in flight can't resurrect a device the user just switched MTP off for.
+   That bit lives on the manager, not in `watcher.rs`, precisely so this loop can read it without an app around it; the
+   app pushes the setting in at startup and on every toggle.
    A `DeviceNotFound` (unplugged mid-recovery) means this IS a disconnect now: it runs the real teardown and stops.
    Exhausting the budget does the same.
 

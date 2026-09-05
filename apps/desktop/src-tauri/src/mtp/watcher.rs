@@ -9,7 +9,6 @@ use crate::ignore_poison::IgnorePoison;
 use log::{debug, error, info, warn};
 use mtp_rs::mtp::HotplugEvent;
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
 
@@ -24,21 +23,21 @@ static KNOWN_DEVICES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 /// Flag to indicate watcher has been started
 static WATCHER_STARTED: OnceLock<()> = OnceLock::new();
 
-/// Whether MTP support is enabled. When false, the watcher loop still runs
+/// Whether MTP support is enabled, and the ONE copy of that bit.
+///
+/// It lives on the connection manager rather than up here because the
+/// session-reset reopen loop reads it between attempts, so a recovery in flight
+/// can't resurrect a device the user just switched MTP off for, and that layer
+/// has to run with no app around it. When it's false the watcher loop still runs
 /// but `check_for_device_changes()` returns early and no auto-connects happen.
-static MTP_ENABLED: AtomicBool = AtomicBool::new(true);
-
-/// Whether MTP support is currently on. The session-reset reopen checks this
-/// between attempts so a recovery in flight doesn't resurrect a device the user
-/// just switched MTP off for.
-pub(super) fn is_mtp_enabled() -> bool {
-    MTP_ENABLED.load(Ordering::SeqCst)
+fn is_mtp_enabled() -> bool {
+    super::connection_manager().is_enabled()
 }
 
 /// Sets the MTP enabled flag without side effects. Used at startup before the
 /// watcher starts, so the initial auto-connect respects the persisted setting.
 pub fn set_mtp_enabled_flag(enabled: bool) {
-    MTP_ENABLED.store(enabled, Ordering::SeqCst);
+    super::connection_manager().set_enabled(enabled);
     debug!("MTP enabled flag set to {}", enabled);
 }
 
@@ -48,7 +47,7 @@ pub fn set_mtp_enabled_flag(enabled: bool) {
 /// and restores ptpcamerad (macOS). When enabling: re-checks for plugged-in
 /// devices so they get auto-connected.
 pub async fn set_mtp_enabled(enabled: bool) {
-    let was_enabled = MTP_ENABLED.swap(enabled, Ordering::SeqCst);
+    let was_enabled = super::connection_manager().set_enabled(enabled);
     if was_enabled == enabled {
         debug!("MTP enabled unchanged ({})", enabled);
         return;
@@ -88,7 +87,7 @@ fn get_current_mtp_devices() -> HashSet<String> {
 /// Auto-connects newly detected devices and disconnects removed ones.
 /// Returns early if MTP is disabled.
 fn check_for_device_changes() {
-    if !MTP_ENABLED.load(Ordering::SeqCst) {
+    if !is_mtp_enabled() {
         return;
     }
 
@@ -193,7 +192,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
     // watcher task spawns, so the stream's initial `Arrived` burst diffs to
     // nothing instead of connecting the same devices twice. It also covers
     // virtual devices, which mtp-rs's USB-only watch never reports.
-    let enabled = MTP_ENABLED.load(Ordering::SeqCst);
+    let enabled = is_mtp_enabled();
     let initial_devices = get_current_mtp_devices();
     let known = KNOWN_DEVICES.get_or_init(|| Mutex::new(HashSet::new()));
     let mut known_guard = known.lock_ignore_poison();
@@ -433,22 +432,21 @@ mod tests {
         assert!(!needs_ptpcamerad_suppression(std::iter::empty::<&str>()));
     }
 
+    /// The app pushes the persisted setting into the manager, and the watcher's
+    /// own auto-connect gate reads it back from there. One bit, one owner: two
+    /// copies would let the watcher keep auto-connecting devices the reopen loop
+    /// had already been told to leave alone.
     #[test]
-    fn test_mtp_enabled_flag_defaults_to_true() {
-        assert!(MTP_ENABLED.load(Ordering::SeqCst));
-    }
-
-    #[test]
-    fn test_set_mtp_enabled_flag() {
-        let original = MTP_ENABLED.load(Ordering::SeqCst);
+    fn the_watcher_reads_the_setting_it_pushed_into_the_manager() {
+        let original = is_mtp_enabled();
 
         set_mtp_enabled_flag(false);
-        assert!(!MTP_ENABLED.load(Ordering::SeqCst));
+        assert!(!is_mtp_enabled());
+        assert!(!super::super::connection_manager().is_enabled());
 
         set_mtp_enabled_flag(true);
-        assert!(MTP_ENABLED.load(Ordering::SeqCst));
+        assert!(is_mtp_enabled());
 
-        // Restore original state
-        MTP_ENABLED.store(original, Ordering::SeqCst);
+        set_mtp_enabled_flag(original);
     }
 }
