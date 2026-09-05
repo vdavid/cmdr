@@ -93,11 +93,13 @@ mod category_tests;
 #[cfg(test)]
 mod column_meta_tests;
 #[cfg(test)]
-mod portal_tests;
+mod repo_tests;
 #[cfg(test)]
 mod snapshot_dates_tests;
 #[cfg(test)]
-mod tests;
+mod status_tests;
+#[cfg(test)]
+mod tree_tests;
 #[cfg(test)]
 mod volume_tests;
 

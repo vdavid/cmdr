@@ -66,6 +66,14 @@ categories, the column metadata, the snapshot dates, the classifier, the `Volume
 the APP does with those answers stays app-side beside the code it exercises: the route, the listing overlay, the
 toggle, the `git-state-changed` payload, and the walker-exposure regressions.
 
+Which means, file by file: a cell that needs no repository is an inline `mod tests` in the module it asserts on
+(`path.rs`, `log.rs`, `stash.rs`, `read_blob.rs`, `state_sink.rs`, `status.rs`'s two), and one that needs a real
+repository is a sibling `<subject>_tests.rs` — `repo_tests` (discovery and `RepoInfo`), `status_tests` (the worktree
+walk), `category_tests` (all six categories, plus the row set the landing page is built from), `tree_tests` (a
+snapshot's tree and its blobs), `column_meta_tests`, `snapshot_dates_tests`, and `volume_tests` (everything asserting
+`GitPortalVolume`, conformance included). The one exception is `path.rs`'s `classify_names_every_shape_against_a_real_repo`:
+greedy ref matching reads the repo's known refs, so it needs a fixture yet belongs beside the parser it asserts on.
+
 The instrument for the app half is the `testing` feature: `test_fixtures` builds the repository, and
 `RecordingGitStateSink` makes a watcher report observable without a window. **That recorder is what a subscription cell
 asserts through**, and the one that does lives app-side: it drives the parked portal's `subscribe_state`, writes five

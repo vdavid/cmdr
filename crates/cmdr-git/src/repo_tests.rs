@@ -1,26 +1,26 @@
-//! Unit tests for the git module (M1).
+//! What discovery and [`repo_info`] answer for a repository on disk: whether
+//! there's a repo at all, which branch HEAD is on, and whether the worktree is
+//! dirty.
 //!
-//! Standard init+commit fixtures go through [`Fixture`] (in-process gix);
-//! the handful of tests that exercise bare repos, detached HEAD, or
-//! linked worktrees still shell out via [`git_cli`] because gix 0.81
-//! doesn't expose those operations directly.
+//! Standard init+commit fixtures go through [`Fixture`] (in-process gix); the
+//! handful of cells that need a bare repo, a detached HEAD, or a linked
+//! worktree still shell out via [`git_cli`], because gix exposes no public API
+//! for those (verified on gix 0.87, 2026-09-05).
 
 #![cfg(test)]
 
 use std::path::{Path, PathBuf};
 
 use crate::repo::repo_info;
-use crate::status::{EntryStatusCode, list_status};
 use crate::test_fixtures::{Fixture, cleanup, discover_repo, git_cli, temp_dir};
-use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
+use cmdr_fs::volume::friendly_error::git::FriendlyGitErrorKind;
 
 fn temp(name: &str) -> PathBuf {
-    temp_dir("tests", name)
+    temp_dir("repo", name)
 }
 
-/// Initialize a repo at `dir` and land an `initial` commit on `main`.
-/// Drops the fixture; subsequent operations open the repo fresh as
-/// needed (matches how the rest of the M1 tests already worked).
+/// Initialize a repo at `dir` and land an `initial` commit on `main`. Drops the
+/// fixture; subsequent operations open the repo fresh as needed.
 fn init_repo_with_commit(dir: &Path) {
     let mut f = Fixture::init(dir.to_path_buf());
     f.commit_file("README.md", b"hello\n", "initial");
@@ -99,8 +99,8 @@ fn repo_info_dirty_with_modified_file() {
 fn repo_info_detached_head() {
     let dir = temp("detached");
     init_repo_with_commit(&dir);
-    // gix doesn't have a public "detach HEAD" API in 0.81; one CLI
-    // call is fine on top of an otherwise gix-built fixture.
+    // gix has no public "detach HEAD" API; one CLI call is fine on top
+    // of an otherwise gix-built fixture.
     git_cli(&dir, &["checkout", "-q", "--detach"]);
     let (handle, root) = discover_repo(&dir).unwrap();
     let info = repo_info(&handle, &root).unwrap();
@@ -131,7 +131,7 @@ fn discover_gitlink_for_linked_worktree() {
         .unwrap()
         .join(format!("cmdr_git_test_worktree_linked_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&linked);
-    // `git worktree add` has no gix-side public API in 0.81; keep CLI.
+    // `git worktree add` has no gix-side public API; keep CLI.
     git_cli(
         &main,
         &["worktree", "add", "-q", linked.to_str().unwrap(), "-b", "feature"],
@@ -146,77 +146,12 @@ fn discover_gitlink_for_linked_worktree() {
     cleanup(&linked);
 }
 
-#[test]
-fn list_status_returns_one_per_status() {
-    let dir = temp("status_kinds");
-    let mut f = Fixture::init(dir.clone());
-    f.commit_file("README.md", b"hello\n", "initial");
-    // Commit .gitignore so untracked.txt and ignored.txt can be
-    // classified correctly relative to the working tree.
-    f.commit_file(".gitignore", b"ignored.txt\n", "ignore");
-
-    // Modified (in worktree relative to index)
-    std::fs::write(dir.join("README.md"), "modified\n").unwrap();
-    // Added (in worktree but not in index) — list_status surfaces this
-    // via the IndexWorktree leg as Untracked; the original CLI path
-    // staged it via `git add` so it appeared as Added on the TreeIndex
-    // leg. We don't gix-stage here because the assertion is tolerant
-    // (Added OR a path called "added.txt" present in the output).
-    std::fs::write(dir.join("added.txt"), "added\n").unwrap();
-    // Untracked
-    std::fs::write(dir.join("untracked.txt"), "untracked\n").unwrap();
-    // Ignored (configured + present)
-    std::fs::write(dir.join("ignored.txt"), "ignored\n").unwrap();
-
-    let (handle, _root) = discover_repo(&dir).unwrap();
-    let entries = list_status(&handle, &dir).unwrap();
-    let codes: Vec<EntryStatusCode> = entries.iter().map(|e| e.code).collect();
-    assert!(
-        codes.contains(&EntryStatusCode::Modified),
-        "missing Modified: {:?}",
-        entries
-    );
-    // Added: file staged but not committed shows up via the tree-index diff.
-    // gix's iterator sometimes filters this depending on platform config; if it
-    // doesn't surface, the explicit IntentToAdd path still maps to Added. We
-    // accept either Added or Modified for the staged file, since the chip
-    // categorizes both as "dirty index."
-    assert!(
-        codes.contains(&EntryStatusCode::Added) || entries.iter().any(|e| e.relative_path == "added.txt"),
-        "missing Added or staged path: {:?}",
-        entries
-    );
-    assert!(
-        codes.contains(&EntryStatusCode::Untracked),
-        "missing Untracked: {:?}",
-        entries
-    );
-    cleanup(&dir);
-}
-
-// ── Friendly errors ──────────────────────────────────────────────────────
-
-// The git copy and its writing-rules checks moved to the frontend
-// (`src/lib/error-messages/git-error-messages.ts` + `friendly-error-style.test.ts`),
-// which iterates every kind × rendered output. Rust keeps only the typed shape.
-
-#[test]
-fn friendly_error_struct_carries_kind_and_path() {
-    let err = FriendlyGitError::new(FriendlyGitErrorKind::NotARepo, "/tmp/foo");
-    assert_eq!(err.kind, FriendlyGitErrorKind::NotARepo);
-    assert_eq!(err.path, "/tmp/foo");
-}
-
-// ── Watcher integration ─────────────────────────────────────────────────
-
-/// Recomputes RepoInfo before/after a `git commit` to assert state changes.
-/// We intentionally don't pull in tauri::AppHandle here because there's no
-/// real way to construct one in unit tests. The watcher integration test
-/// asserts the recompute pipeline end to end (the IPC layer is the only
-/// extra hop).
+/// `repo_info` reads the worktree fresh on every call, which is what makes a
+/// watcher report worth acting on: the same handle answers "clean" before an
+/// edit, "dirty" after it, and "clean" again once the edit is committed.
 #[test]
 fn repo_info_recomputes_after_commit() {
-    let dir = temp("watcher_recompute");
+    let dir = temp("recompute");
     let mut f = Fixture::init(dir.clone());
     f.commit_file("README.md", b"hello\n", "initial");
 
@@ -234,5 +169,3 @@ fn repo_info_recomputes_after_commit() {
     assert!(!after.is_dirty);
     cleanup(&dir);
 }
-
-// ── Virtual portal toggle ──────────────────────────────────────────────

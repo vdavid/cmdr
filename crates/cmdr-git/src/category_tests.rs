@@ -1,17 +1,73 @@
-//! Integration tests for the extra virtual-portal categories: commits, stash,
-//! worktrees, submodules.
+//! What each of the six virtual categories lists: branches, tags, commits,
+//! stash, worktrees, submodules, and the row set the `.git/` landing page is
+//! built from.
 //!
-//! Standard init+commit fixtures go through [`Fixture`]. The handful
-//! of operations gix 0.81 doesn't expose publicly (stash creation,
-//! worktree add, submodule add) keep a thin [`git_cli`] shell-out.
+//! Standard init+commit fixtures go through [`Fixture`]. The handful of
+//! operations gix exposes no public API for (stash creation, worktree add,
+//! submodule add) keep a thin [`git_cli`] shell-out (verified on gix 0.87,
+//! 2026-09-05).
 
 #![cfg(test)]
 
 use std::path::PathBuf;
 
 use crate::path::{Cat, VirtualGitPath, classify};
-use crate::test_fixtures::{Fixture, build_simple_repo, cleanup, discover_repo, git_cli, git_cli_capture, temp_dir};
-use crate::{log as git_log, stash, submodules, worktrees};
+use crate::test_fixtures::{
+    Fixture, build_repo_with_a_tag_and_a_slashed_branch, build_simple_repo, cleanup, discover_repo, git_cli,
+    git_cli_capture, temp_dir,
+};
+use crate::{log as git_log, stash, submodules, virtual_listing, worktrees};
+
+// ── the six rows the landing page is built from ───────────────────────
+
+/// The six category rows the listing overlay contributes to a repo's `.git/`,
+/// in their fixed display order. The real `.git/*` entries beside them are the
+/// LOCAL volume's, so they aren't this function's business at all.
+#[test]
+fn list_categories_yields_the_six_rows_in_display_order() {
+    let dir = build_repo_with_a_tag_and_a_slashed_branch("category");
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let names: Vec<String> = virtual_listing::list_categories(&handle, &root)
+        .into_iter()
+        .map(|e| e.name)
+        .collect();
+
+    assert_eq!(
+        names,
+        ["branches", "tags", "commits", "stash", "worktrees", "submodules"]
+    );
+    cleanup(&dir);
+}
+
+// ── branches ──────────────────────────────────────────────────────────
+
+/// A branch called `feature/foo` is ONE row called `feature/foo`, never a
+/// `feature/` folder with a `foo` inside it.
+#[test]
+fn list_branches_includes_slashed_name() {
+    let dir = build_repo_with_a_tag_and_a_slashed_branch("category");
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = virtual_listing::list_branches(&handle, &root).unwrap();
+    let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
+    assert!(names.contains(&"main"));
+    assert!(names.contains(&"feature/foo"));
+    for entry in &entries {
+        assert!(entry.is_directory);
+        assert_eq!(entry.icon_id, "git:branch");
+    }
+    cleanup(&dir);
+}
+
+// ── tags ──────────────────────────────────────────────────────────────
+
+#[test]
+fn list_tags_yields_v1() {
+    let dir = build_repo_with_a_tag_and_a_slashed_branch("category");
+    let (handle, root) = discover_repo(&dir).unwrap();
+    let entries = virtual_listing::list_tags(&handle, &root).unwrap();
+    assert!(entries.iter().any(|e| e.name == "v1.0"));
+    cleanup(&dir);
+}
 
 // ── commits ───────────────────────────────────────────────────────────
 

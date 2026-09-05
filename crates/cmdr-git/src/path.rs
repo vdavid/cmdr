@@ -436,4 +436,55 @@ mod tests {
         let v = VirtualGitPath::RefTree(Cat::Branches, "main".into(), "src/lib.rs".into());
         assert_eq!(to_path(&v, root), Path::new("/repo/.git/branches/main/src/lib.rs"));
     }
+
+    /// The one cell that needs a real repository: greedy ref matching reads the
+    /// repo's known refs, so `branches/feature/foo` can only be told from
+    /// `branches/feature` + a subpath by asking one.
+    #[test]
+    fn classify_names_every_shape_against_a_real_repo() {
+        let dir = crate::test_fixtures::build_repo_with_a_tag_and_a_slashed_branch("classify");
+        let dot_git = dir.join(".git");
+
+        // Root.
+        let (virt, _, root) = classify(&dot_git).expect("classify root");
+        assert_eq!(virt, VirtualGitPath::Root);
+        assert_eq!(to_path(&virt, &root), dot_git.canonicalize().unwrap());
+
+        // Category.
+        let (virt, _, _) = classify(&dot_git.join("branches")).expect("classify branches");
+        assert_eq!(virt, VirtualGitPath::Category(Cat::Branches));
+
+        // Ref with a slash in its name.
+        let p = dot_git.join("branches").join("feature").join("foo");
+        let (virt, _, _) = classify(&p).expect("classify feature/foo");
+        assert_eq!(virt, VirtualGitPath::Ref(Cat::Branches, "feature/foo".into()));
+
+        // A path inside a branch snapshot.
+        let p = dot_git.join("branches").join("main").join("scripts").join("run.sh");
+        let (virt, _, _) = classify(&p).expect("classify reftree");
+        assert_eq!(
+            virt,
+            VirtualGitPath::RefTree(Cat::Branches, "main".into(), "scripts/run.sh".into())
+        );
+
+        // And inside a tag snapshot.
+        let p = dot_git.join("tags").join("v1.0").join("README.md");
+        let (virt, _, _) = classify(&p).expect("classify tag tree");
+        assert_eq!(
+            virt,
+            VirtualGitPath::RefTree(Cat::Tags, "v1.0".into(), "README.md".into())
+        );
+
+        // Real `.git/*` entries don't classify as virtual, so the parent
+        // volume's real-FS path takes over for them.
+        for real in ["HEAD", "config"] {
+            assert!(classify(&dot_git.join(real)).is_none(), "{real} is real, not virtual");
+        }
+        assert!(
+            classify(&dot_git.join("refs").join("heads").join("main")).is_none(),
+            "refs/ is real, not virtual"
+        );
+
+        crate::test_fixtures::cleanup(&dir);
+    }
 }

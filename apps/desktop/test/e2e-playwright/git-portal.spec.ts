@@ -17,7 +17,7 @@
  *    real entries stay, and flipping back brings them straight back.
  *
  * Cross-volume copy with executable-bit preservation lives in the Rust
- * integration test `file_system::git::portal_tests::cross_volume_copy_preserves_executable_bit`,
+ * integration test `cmdr_git::volume_tests::a_copy_out_of_a_snapshot_carries_the_bytes_and_the_executable_bit`,
  * which drives the real `open_read_stream` and `write_from_stream` round-trip. Driving the full copy UI from Playwright
  * would need dialog automation we don't have, and the Rust test exercises the
  * load-bearing code path (the portal volume's read stream + the local write stream).

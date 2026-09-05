@@ -37,6 +37,7 @@
     reason = "Helpers are intentionally shared across multiple *_tests.rs files; not every file uses every helper."
 )]
 
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -384,6 +385,58 @@ pub fn build_repo_with_branches(prefix: &str, branches: &[(&str, usize)]) -> (Pa
         fixture.checkout("main");
     }
     (dir, fixture)
+}
+
+/// One commit on `main` holding `README.md` and an executable
+/// `scripts/run.sh`, plus a branch called `feature/foo` and a lightweight
+/// `v1.0` tag.
+///
+/// The shape the classifier and the tree walk both need: a ref name with a
+/// slash in it (so greedy ref matching has something to get wrong), a tag to
+/// peel, a subdirectory, and a file whose mode a snapshot listing has to carry
+/// through.
+pub fn build_repo_with_a_tag_and_a_slashed_branch(prefix: &str) -> PathBuf {
+    let dir = temp_dir(prefix, "tag_and_slashed_branch");
+    let mut fixture = Fixture::init(dir.clone());
+
+    // Set the executable bit before the commit so the tree records mode 0o755,
+    // which is also what a user would see in a checked-out working tree.
+    std::fs::create_dir_all(dir.join("scripts")).expect("make scripts/");
+    std::fs::write(dir.join("scripts").join("run.sh"), "#!/bin/sh\necho hi\n").expect("write run.sh");
+    std::fs::set_permissions(
+        dir.join("scripts").join("run.sh"),
+        std::fs::Permissions::from_mode(0o755),
+    )
+    .expect("chmod run.sh");
+
+    fixture.commit_files_with_modes(
+        &[
+            ("README.md", b"hello\n", EntryKind::Blob),
+            ("scripts/run.sh", b"#!/bin/sh\necho hi\n", EntryKind::BlobExecutable),
+        ],
+        "initial",
+        1_700_000_000,
+    );
+    fixture.create_branch("feature/foo");
+
+    let head_id = fixture
+        .repo
+        .find_reference("refs/heads/main")
+        .expect("main exists")
+        .peel_to_id()
+        .expect("peel main")
+        .detach();
+    fixture
+        .repo
+        .reference(
+            "refs/tags/v1.0",
+            head_id,
+            gix::refs::transaction::PreviousValue::MustNotExist,
+            "test_fixtures: lightweight tag",
+        )
+        .expect("create tag ref");
+
+    dir
 }
 
 /// Opens the repository at `path` through a cache of its own.

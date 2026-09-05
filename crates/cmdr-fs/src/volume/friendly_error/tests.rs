@@ -514,6 +514,15 @@ fn non_permission_errors_have_no_action_kind() {
 
 // ── Git pass-through (Layer 0) ───────────────────────────────────────
 
+/// The constructor keeps both halves a caller reads back: which kind of trouble
+/// it is, and the path it happened on.
+#[test]
+fn friendly_git_error_carries_kind_and_path() {
+    let err = FriendlyGitError::new(FriendlyGitErrorKind::NotARepo, "/tmp/foo");
+    assert_eq!(err.kind, FriendlyGitErrorKind::NotARepo);
+    assert_eq!(err.path, "/tmp/foo");
+}
+
 /// `FriendlyGit` rides as the `Git` reason carrying the typed kind, with the
 /// category derived from the kind and retry on only for transient kinds.
 #[test]
