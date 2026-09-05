@@ -880,6 +880,12 @@ fn node_to_entry(archive_path: &Path, volume_name: &str, node: &ArchiveNode) -> 
         // `ArchiveNode::modified` is Unix seconds, matching `FileEntry`; a
         // negative (pre-1970) timestamp is dropped rather than wrapped.
         modified_at: node.modified.and_then(|secs| u64::try_from(secs).ok()),
+        // The mode the archive recorded, or `FileEntry`'s "no permission
+        // concept" sentinel when it recorded none. The copy engine reads this to
+        // decide what an extracted file lands as, so ❌ never a plausible
+        // default: a fabricated `0o644` would widen a landed file under a strict
+        // umask on the word of an archive that said nothing.
+        permissions: node.mode.unwrap_or(0),
         // The archive listing is complete in one pass — no deferred metadata.
         extended_metadata_loaded: true,
         ..FileEntry::new(

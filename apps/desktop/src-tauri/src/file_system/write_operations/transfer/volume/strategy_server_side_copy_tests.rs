@@ -145,7 +145,7 @@ async fn pipe(
     stream_pipe_file(
         source_volume,
         Path::new(from),
-        None,
+        SourceFileFacts::default(),
         dest_volume,
         Path::new(to),
         state,
@@ -272,7 +272,7 @@ async fn a_cancelled_server_side_copy_leaves_no_destination_behind() {
     let outcome = stream_pipe_file(
         &as_volume,
         Path::new("big.bin"),
-        None,
+        SourceFileFacts::default(),
         &as_volume,
         Path::new("big copy.bin"),
         &state,

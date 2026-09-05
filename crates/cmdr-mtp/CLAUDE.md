@@ -30,6 +30,9 @@ missing udev rule (`resources/99-cmdr-mtp.rules`) reads as `PermissionDenied`. T
 - **A test cell goes where its ASSERTION lives, never where its connection does.** The `Volume` contract, the byte path,
   and the session layer are here; the app's registry, oracle, and pipelines stay app-side and reach the same fixtures
   through `mtp/test_support.rs`. The file-by-file map is in `DETAILS.md`.
+- **Every entry reports `permissions: NO_PERMISSION_CONCEPT` (`0`).** PTP has no mode, and the cross-volume copy engine
+  reads a non-zero one as a FACT about the source and puts it on what it writes, so ❌ never re-add a plausible-looking
+  `0o755`/`0o644` here.
 - **❌ No English a user reads.** Every sentence is rendered host-side from the typed values here, which is also why
   `MtpDeviceEvents` reports an enum rather than a message.
 - **Test-gated behavior takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off when the app

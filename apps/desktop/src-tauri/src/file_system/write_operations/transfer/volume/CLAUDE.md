@@ -24,32 +24,31 @@ concurrent driver), the cross-, same-volume, and single-file moves, and the merg
 
 - **A cross-volume file write stages on `.cmdr-tmp-<uuid>`**, taking its final name only after its last byte. Ask
   `strategy.rs::resolve_staging`; ❌ single-shot-ness earns an exemption, NEVER smallness.
+- **The SOURCE's mode goes on the temp BEFORE that rename** (`landed_mode.rs`), local destinations only, folded
+  through what the destination just created so it can't widen. `0` means no mode: ❌ never guess one, ❌ never fail a
+  copy over one. A new write path owes the call.
 - **A same-`Arc` copy tries `strategy.rs::try_server_side_copy` → `Volume::copy_within` first**, staged like any
   write, ❌ never single-shot. Anything short of success streams instead, ❌ except a cancel.
 - **A staged temp the destination won't release is REPORTED**: the sweep RETURNS it, riding
-  `CancelRollback::staged_leftovers`, ❌ never `skips` and ❌ never only a log. `../DETAILS.md` § "Naming what a cancel
-  left behind".
+  `CancelRollback::staged_leftovers`, ❌ never `skips` and ❌ never only a log.
 - **Only `cleanup.rs::remove_tree` recurses, and its `TreeRemoval` argument names who authorized it.** Cleanup and
-  rollback call `delete_written_file` / `prune_created_dir_if_empty`, which list before deleting, so a wrong belief never reaches
-  a recursive delete. A fourth sweep adds a variant.
+  rollback go through `delete_written_file` / `prune_created_dir_if_empty`, which list before deleting.
 - **An unknown "is this a directory?" is ❌ never guessed.** A missing `source_hints` entry means UNKNOWN, ❌ never
   "file": ask `strategy.rs::resolve_source_is_directory`, and the RESOLVED answer drives the cleanup/ledger branch.
   ❌ No `.is_directory(…).await.unwrap_or(false)`, ❌ no `Default` on `SourceHint`, ❌ no probing where a hint EXISTS.
-  `DETAILS.md` § "A missing source hint means unknown".
 - **Cross-FS move deletes sources AFTER `flush_created_destinations`, preserving Skipped ones.** Same-volume move is a
   rename-merge with top-level hints only, ❌ never a subtree walk.
 
 ## Concurrency and failures
 
 - **A LOCAL `max_concurrent_ops` must ❌ NOT bound a REMOTE peer** (`copy.rs::transfer_concurrency`, ❌ never a
-  `min()`; a remote cap always binds, keeping MTP serial). The concurrent driver watches cancel/rollback ON ITS AWAIT,
-  and EVERY driver sets its `DriverPhase`; one that forgets dumps a useless `starting()`.
+  `min()`). The concurrent driver watches cancel/rollback ON ITS AWAIT, and EVERY driver sets its `DriverPhase`.
 - **ONE `FileWindow` per operation** (`strategy.rs`, on `MergeCtx`), taken by every merge leaf and top-level FILE task;
   width 1 keeps MTP serial. ❌ Never per level or per source (`W` per walker is `W²` on one connection). A walker ❌
   never holds a permit while it recurses (deadlock at width 1) and ❌ never returns before draining its leaves.
 - **A failure carries the path it happened ON** (`transfer_error.rs::PathedVolumeError`): ❌ never re-label with the
   top-level source, ❌ never `.at()` above the frame that knows the item. § "Naming the item that failed".
 - **Two test traps**: a `*_tests.rs` here is a `#[path]` CHILD (`super::` is one level shallower), and a
-  `FaultyVolume` cell must **assert `fault_fired(op)`** or it pins UNFAULTED behavior. `DETAILS.md` § Files.
+  `FaultyVolume` cell must **assert `fault_fired(op)`**. `DETAILS.md` § Files.
 
 Semantics, flows, decisions, and the rollback ledger: `DETAILS.md`, read before non-trivial work here.

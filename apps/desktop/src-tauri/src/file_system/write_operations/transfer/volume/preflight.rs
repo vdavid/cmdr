@@ -65,6 +65,49 @@ pub(super) struct SourceHint {
     pub size: u64,
 }
 
+/// What the caller already knows about ONE source FILE, from the listing or scan
+/// it did anyway.
+///
+/// The per-item sibling of [`SourceHint`], which describes a top-level source
+/// the preflight scanned; this is what travels with any one file the engine is
+/// about to write, deep children included. Bundled rather than passed as two
+/// more arguments because both fields answer the same question — "what did
+/// whoever picked this file already learn about it?" — and both are honest
+/// `Option`s: absent means nobody looked, ❌ never a plausible default, the same
+/// rule `SourceHint`'s missing `Default` enforces one struct up.
+// DEFAULT-OK: every field is "nobody looked", which is exactly what a caller
+// with no listing in hand has to say. Neither field can be misread as a claim.
+#[derive(Clone, Copy, Debug, Default)]
+pub(super) struct SourceFileFacts {
+    /// The file's size, when the caller stat'd it. Feeds
+    /// `open_read_stream_with_hint`, which lets SMB take its one-round-trip
+    /// compound read for a file that fits in one READ.
+    pub size: Option<u64>,
+    /// The POSIX mode the source volume reported for it
+    /// (`FileEntry::permissions`, where `0` means the backend has no permission
+    /// concept). `None` means the caller had no listing, not that there is no
+    /// mode: `landed_mode::apply_source_mode` then asks the source itself, but
+    /// only when the destination is local and only after the bytes have landed.
+    pub mode: Option<u32>,
+}
+
+impl SourceFileFacts {
+    /// What a walker that already listed the source directory knows: both
+    /// fields, for free, off the entry in hand.
+    pub(super) fn from_entry(entry: &crate::file_system::listing::FileEntry) -> Self {
+        Self {
+            size: entry.size,
+            mode: Some(entry.permissions),
+        }
+    }
+
+    /// What a top-level dispatch knows off its [`SourceHint`]: the size for a
+    /// FILE source, and no mode (the scan counts bytes, it doesn't stat modes).
+    pub(super) fn from_size_hint(size: Option<u64>) -> Self {
+        Self { size, mode: None }
+    }
+}
+
 /// Result of a preflight scan over a set of source paths.
 ///
 /// `source_hints` is keyed by the caller's input path verbatim. A path missing

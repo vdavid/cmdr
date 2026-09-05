@@ -25,6 +25,9 @@ use crate::test_support::TestDir;
 /// A tar entry to build into a fixture.
 enum Item<'a> {
     File(&'a str, &'a [u8]),
+    /// A file whose tar header records mode `0o755`, the way a release tarball
+    /// records a script.
+    ExecFile(&'a str, &'a [u8]),
     Dir(&'a str),
     Symlink(&'a str, &'a str),
 }
@@ -50,6 +53,13 @@ fn write_targz_items(items: &[Item]) -> (TestDir, PathBuf) {
                 header.set_entry_type(::tar::EntryType::Regular);
                 header.set_cksum();
                 builder.append_data(&mut header, name, *data).expect("append file");
+            }
+            Item::ExecFile(name, data) => {
+                header.set_size(data.len() as u64);
+                header.set_mode(0o755);
+                header.set_entry_type(::tar::EntryType::Regular);
+                header.set_cksum();
+                builder.append_data(&mut header, name, *data).expect("append exec file");
             }
             Item::Dir(name) => {
                 header.set_size(0);
@@ -127,6 +137,62 @@ async fn read_dest(dest: &Arc<dyn Volume>, path: &str) -> Result<Vec<u8>, Volume
     Ok(out)
 }
 
+/// The one-pass extractor writes its files itself rather than going through
+/// `stream_pipe_file`, so it needs its own proof that the mode lands. The plan
+/// pass is the only one that lists the archive; the data pass has to carry what
+/// it recorded, or a script in a `.tar.gz` arrives disarmed while the same
+/// script in a `.zip` doesn't.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_sequential_extract_carries_the_executable_bit() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = TarGzFixture::from_items(&[
+        Item::ExecFile("bin/run.sh", b"#!/bin/sh\n"),
+        Item::File("bin/notes.txt", b"nnn"),
+    ]);
+    let source = fixture.volume();
+    let dest_dir = TestDir::new("seq-extract-dest");
+    let dest: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+        "Dest",
+        dest_dir.to_str().expect("dest path"),
+    ));
+
+    copy_single_path(
+        &source,
+        &fixture.inner("bin"),
+        Some(true),
+        SourceFileFacts::default(),
+        &dest,
+        Path::new("out"),
+        &make_state(),
+        &CreatedPaths::default(),
+        &|_, _| ControlFlow::Continue(()),
+        &|_| {},
+        None,
+        WriteStaging::Stage,
+    )
+    .await
+    .expect("sequential extract");
+
+    let mode_of = |rel: &str| {
+        std::fs::metadata(dest_dir.join(rel))
+            .unwrap_or_else(|e| panic!("stat {rel}: {e}"))
+            .permissions()
+            .mode()
+            & 0o777
+    };
+    assert_eq!(
+        mode_of("out/run.sh") & 0o111,
+        0o111,
+        "the tar header said 0o755, so the extracted script has to run"
+    );
+    assert_eq!(
+        mode_of("out/notes.txt") & 0o111,
+        0,
+        "and a plain member stays non-executable"
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn sequential_extract_materializes_a_nested_subtree() {
     // A later, chunk-spanning member proves the single decode reaches deep files.
@@ -146,7 +212,7 @@ async fn sequential_extract_materializes_a_nested_subtree() {
         &source,
         &fixture.inner("docs"),
         Some(true), // source is a directory
-        None,
+        SourceFileFacts::default(),
         &dest,
         Path::new("/out"),
         &state,
@@ -217,7 +283,7 @@ async fn sequential_extract_lands_empty_dirs_and_symlinks() {
         &source,
         &fixture.inner("docs"),
         Some(true),
-        None,
+        SourceFileFacts::default(),
         &dest,
         Path::new("/out"),
         &state,
@@ -271,7 +337,7 @@ async fn sequential_extract_cancels_between_members() {
         &source,
         &fixture.inner("docs"),
         Some(true),
-        None,
+        SourceFileFacts::default(),
         &dest,
         Path::new("/out"),
         &state,
@@ -338,7 +404,7 @@ async fn sequential_extract_pauses_between_members_and_resumes() {
             &source,
             &source_root,
             Some(true),
-            None,
+            SourceFileFacts::default(),
             &dest_for_extract,
             Path::new("/out"),
             &state_for_extract,

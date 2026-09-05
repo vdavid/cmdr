@@ -36,6 +36,7 @@ use super::super::super::state::WriteOperationState;
 use super::super::super::types::WriteOperationError;
 use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskPhase, TaskProbeHandle, TaskRole, set_task_phase};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
+use super::preflight::SourceFileFacts;
 use super::strategy::{
     CreatedPaths, FileWindow, MergeCtx, MergeProbe, note_pending_for_local_dest, staging_for, stream_pipe_file,
 };
@@ -215,12 +216,12 @@ impl<'a> LeafPool<'a> {
 /// window as a unit of work.
 #[allow(
     clippy::too_many_arguments,
-    reason = "One leaf's whole context: both volumes, both paths, the size hint, the safe-replace original, shared state, the ledger, and two progress callbacks."
+    reason = "One leaf's whole context: both volumes, both paths, what the listing knows about the source, the safe-replace original, shared state, the ledger, and two progress callbacks."
 )]
 async fn copy_leaf<'a>(
     source_volume: &'a Arc<dyn Volume>,
     child_source: PathBuf,
-    source_size_hint: Option<u64>,
+    source_facts: SourceFileFacts,
     dest_volume: &'a Arc<dyn Volume>,
     write_dest: PathBuf,
     replace_after_write: Option<PathBuf>,
@@ -235,7 +236,7 @@ async fn copy_leaf<'a>(
     let bytes = stream_pipe_file(
         source_volume,
         &child_source,
-        source_size_hint,
+        source_facts,
         dest_volume,
         &write_dest,
         state,
@@ -580,6 +581,10 @@ async fn merge_level<'a>(
                 super::sequential_extract::PlannedWrite {
                     dest_path: write_dest,
                     replace_after_write,
+                    // The plan pass is the only one that lists the source, so
+                    // the mode has to be recorded here or the data pass has
+                    // nothing to land the file with.
+                    source_mode: entry.permissions,
                 },
             );
             continue;
@@ -597,7 +602,10 @@ async fn merge_level<'a>(
             copy_leaf(
                 source_volume,
                 child_source,
-                entry.size,
+                // The walker listed this level, so the child's size AND mode are
+                // already in hand: a deep file costs the copy engine no extra
+                // round trip to land with the bits its source reported.
+                SourceFileFacts::from_entry(entry),
                 dest_volume,
                 write_dest,
                 replace_after_write,

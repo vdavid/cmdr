@@ -27,7 +27,7 @@ use super::super::super::state::WriteOperationState;
 use super::super::super::types::{VolumeCopyConfig, WriteOperationType};
 use super::super::transfer_driver::make_concurrent_per_file_progress;
 use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskProbeHandle};
-use super::preflight::SourceHint;
+use super::preflight::{SourceFileFacts, SourceHint};
 use super::strategy::{CreatedPaths, FileWindow, MergeCtx, MergeProbe, copy_single_path, staging_for};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
@@ -118,7 +118,10 @@ pub(super) struct CopyTask {
     pub(super) apply_to_all: Arc<std::sync::Mutex<ApplyToAll>>,
     pub(super) source_path: PathBuf,
     pub(super) source_is_dir: bool,
-    pub(super) source_size_hint: Option<u64>,
+    /// What the preflight scan already learned about a FILE source. A top-level
+    /// dispatch carries no mode here (the scan counts bytes), so a file landing
+    /// on a local destination resolves one after its bytes cross.
+    pub(super) source_facts: SourceFileFacts,
     /// Where this task streams: the temp sibling when `replace_after_write` is
     /// `Some`, else the destination itself.
     pub(super) dest_path: PathBuf,
@@ -156,7 +159,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
         apply_to_all,
         source_path,
         source_is_dir,
-        source_size_hint,
+        source_facts,
         dest_path,
         replace_after_write,
         file_name,
@@ -243,7 +246,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
         &source_volume,
         &source_path,
         Some(source_is_dir),
-        source_size_hint,
+        source_facts,
         &dest_volume,
         &dest_path,
         &state,

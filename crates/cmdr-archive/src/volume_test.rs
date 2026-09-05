@@ -11,7 +11,7 @@ use std::sync::atomic::AtomicBool;
 use super::*;
 use crate::test_fixtures::{
     FixtureFile, build_encrypted_7z, build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry,
-    overstate_record_count, set_first_entry_encrypted, stored,
+    overstate_record_count, set_first_entry_encrypted, stored, with_unix_mode,
 };
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::testing::TestDir;
@@ -133,6 +133,45 @@ async fn metadata_maps_size_name_and_transparent_path() {
     assert_eq!(meta.path, archive.path.join("dir/file.txt").to_string_lossy());
 }
 
+/// The executable bit is DATA the copy engine needs: a `run.sh` inside a release
+/// zip has to come out of an extract executable, and this volume is the only
+/// layer that can read the mode the archive recorded. It reports the bit;
+/// applying it to what lands is the transfer engine's job
+/// (`write_operations/transfer/volume/landed_mode.rs`).
+#[tokio::test]
+async fn a_unix_mode_in_the_external_attributes_reaches_the_entry() {
+    let archive = TestArchive::from_entries(&[
+        with_unix_mode("scripts/run.sh", "#!/bin/sh\n", 0o755),
+        with_unix_mode("notes.txt", "plain", 0o644),
+    ]);
+    let volume = archive.volume();
+
+    let script = volume.get_metadata(Path::new("scripts/run.sh")).await.unwrap();
+    assert_eq!(script.permissions, 0o755, "the archive recorded an executable entry");
+    let notes = volume.get_metadata(Path::new("notes.txt")).await.unwrap();
+    assert_eq!(notes.permissions, 0o644);
+}
+
+/// A node nobody recorded a mode for reports `0`, the `FileEntry::permissions`
+/// sentinel for "no permission concept" — the synthesized directory here, and
+/// equally a 7z with no unix extension. ❌ Never a fabricated `0o755`: a
+/// non-zero mode is a FACT about the source, and the copy engine puts it on what
+/// it writes.
+#[tokio::test]
+async fn an_entry_with_no_recorded_mode_reports_the_no_concept_sentinel() {
+    // `docs/` is synthesized from the entry path; no archive record backs it.
+    let archive = TestArchive::from_entries(&[with_unix_mode("docs/notes.txt", "plain", 0o600)]);
+    let volume = archive.volume();
+
+    let synthetic = volume.get_metadata(Path::new("docs")).await.unwrap();
+    assert_eq!(
+        synthetic.permissions, 0,
+        "nothing recorded a mode for a synthesized dir"
+    );
+    let notes = volume.get_metadata(Path::new("docs/notes.txt")).await.unwrap();
+    assert_eq!(notes.permissions, 0o600, "and a recorded one travels verbatim");
+}
+
 #[tokio::test]
 async fn metadata_on_root_reports_the_archive_itself() {
     let archive = TestArchive::from_entries(&[stored("a.txt", "x")]);
@@ -174,6 +213,7 @@ fn a_pre_1970_mtime_maps_to_none() {
         compressed_size: Some(0),
         modified: Some(-1),
         encrypted: false,
+        mode: None,
     };
     let entry = node_to_entry(Path::new("/archive.zip"), "archive.zip", &node);
     assert_eq!(entry.modified_at, None, "a negative Unix mtime is dropped, not wrapped");

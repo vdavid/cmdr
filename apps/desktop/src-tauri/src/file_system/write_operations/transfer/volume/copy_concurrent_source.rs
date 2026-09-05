@@ -23,6 +23,7 @@ use super::super::dest_name_index::DestLookup;
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::copy_concurrent::ConcurrentCopy;
 use super::copy_concurrent_task::CopyTask;
+use super::preflight::SourceFileFacts;
 use super::strategy::{MergeProbe, resolve_source_is_directory};
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
 use crate::file_system::listing::FileEntry;
@@ -179,7 +180,7 @@ impl ConcurrentCopy<'_> {
             apply_to_all: Arc::clone(&self.apply_to_all_cell),
             source_path: source_path.to_path_buf(),
             source_is_dir,
-            source_size_hint,
+            source_facts: SourceFileFacts::from_size_hint(source_size_hint),
             dest_path: dest_item_path,
             replace_after_write,
             file_name,

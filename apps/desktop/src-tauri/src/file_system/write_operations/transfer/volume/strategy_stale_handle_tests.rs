@@ -35,7 +35,7 @@ async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
         &source,
         Path::new("a.txt"),
         Some(false),
-        None,
+        SourceFileFacts::default(),
         &dest,
         Path::new("a.txt"),
         &state,

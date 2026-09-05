@@ -13,6 +13,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use super::super::super::state::WriteOperationState;
+use super::preflight::SourceFileFacts;
 use super::strategy::{WriteStaging, stream_pipe_file};
 use crate::file_system::volume::{Volume, VolumeError};
 
@@ -47,8 +48,11 @@ pub(in crate::file_system::write_operations) async fn move_file_across_volumes(
         source_volume,
         source_path,
         // No size hint: the stream reports the REAL length, so a source whose
-        // listed metadata size lies still moves its true bytes.
-        None,
+        // listed metadata size lies still moves its true bytes. No mode either,
+        // so a local destination spends one stat on it after the bytes land —
+        // the file this restores is the user's, and it has to come back wearing
+        // what it wore.
+        SourceFileFacts::default(),
         dest_volume,
         dest_path,
         state,

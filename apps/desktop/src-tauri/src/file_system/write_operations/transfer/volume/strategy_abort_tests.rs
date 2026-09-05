@@ -65,7 +65,7 @@ async fn copy_one(
         source,
         Path::new(source_path),
         Some(false),
-        None,
+        SourceFileFacts::default(),
         dest,
         Path::new("/a.txt"),
         state,

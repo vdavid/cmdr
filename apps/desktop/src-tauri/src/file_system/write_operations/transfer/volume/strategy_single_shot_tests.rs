@@ -146,7 +146,7 @@ async fn copy_one(
         &source,
         Path::new("/notes.txt"),
         Some(false),
-        None,
+        SourceFileFacts::default(),
         &dest,
         dest_path,
         &state,

@@ -62,6 +62,15 @@ pub struct ArchiveNode {
     pub modified: Option<i64>,
     /// Whether extracting this entry is blocked because it's encrypted.
     pub encrypted: bool,
+    /// The POSIX permission bits (`0o777` and below) the archive recorded, when
+    /// it recorded any. `None` for a synthetic directory and for a format or a
+    /// writer that stores no unix mode, which is the honest answer: a
+    /// Windows-made zip knows about a read-only flag and nothing else.
+    ///
+    /// The volume layer maps this onto `FileEntry::permissions`, and the copy
+    /// engine puts it on what an extract writes, so a `None` guessed at as
+    /// `0o644` would be a claim about the source that nobody made.
+    pub mode: Option<u32>,
 }
 
 impl ArchiveNode {
@@ -75,6 +84,7 @@ impl ArchiveNode {
             compressed_size: None,
             modified: None,
             encrypted: false,
+            mode: None,
         }
     }
 }
@@ -92,6 +102,7 @@ struct NodeSeed {
     compressed_size: Option<u64>,
     modified: Option<i64>,
     encrypted: bool,
+    mode: Option<u32>,
 }
 
 /// A format-neutral parsed entry: the fields every format's parser produces for
@@ -109,6 +120,11 @@ pub(super) struct RawEntry {
     pub compressed_size: u64,
     pub modified: Option<i64>,
     pub encrypted: bool,
+    /// The POSIX permission bits the archive recorded, `None` when it recorded
+    /// none. Each format's parser reads its own carrier (zip external
+    /// attributes, the tar header, the 7z unix extension) and every one of them
+    /// answers `None` rather than a plausible default.
+    pub mode: Option<u32>,
 }
 
 /// The per-format read handles, keyed by sanitized inner path. Each variant
@@ -390,6 +406,7 @@ pub(super) fn build_index<H>(entries: Vec<(RawEntry, H)>) -> Result<BuiltIndex<H
                     compressed_size: if raw.is_dir { None } else { Some(raw.compressed_size) },
                     modified: raw.modified,
                     encrypted: raw.encrypted,
+                    mode: raw.mode,
                 });
                 if !raw.is_dir {
                     // Later duplicate wins (some archives carry repeat names).
@@ -461,6 +478,7 @@ fn build_tree(seeds: Vec<NodeSeed>, max_nodes: usize) -> Result<BuiltTree, Archi
                     compressed_size: seed.compressed_size,
                     modified: seed.modified,
                     encrypted: seed.encrypted,
+                    mode: seed.mode,
                 };
                 link_child(&seed.path, &mut child_paths, &mut linked);
                 nodes.insert(seed.path.clone(), node);
@@ -532,6 +550,8 @@ fn upsert_dir(
                 compressed_size: None,
                 modified,
                 encrypted: false,
+                // A synthesized directory node: nothing recorded a mode for it.
+                mode: None,
             };
             link_child(dir_path, child_paths, linked);
             nodes.insert(dir_path.to_string(), node);
@@ -593,6 +613,7 @@ mod tests {
             compressed_size: Some(size),
             modified: Some(1_700_000_000),
             encrypted: false,
+            mode: None,
         }
     }
 
@@ -605,6 +626,7 @@ mod tests {
             compressed_size: None,
             modified: Some(1_700_000_500),
             encrypted: false,
+            mode: None,
         }
     }
 

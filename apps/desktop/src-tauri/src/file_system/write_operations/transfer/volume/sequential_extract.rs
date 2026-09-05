@@ -28,6 +28,11 @@ use crate::ignore_poison::IgnorePoison;
 pub(super) struct PlannedWrite {
     pub(super) dest_path: PathBuf,
     pub(super) replace_after_write: Option<PathBuf>,
+    /// The mode the source entry reported, carried from the planning pass
+    /// because it is the only one that lists the archive (`0` when the format
+    /// recorded none). The data pass puts it on what it writes, so an executable
+    /// inside a `.tar.gz` lands the same way one inside a `.zip` does.
+    pub(super) source_mode: u32,
 }
 
 /// The plan the one-pass extractor builds in its first pass and consumes in its
@@ -152,6 +157,17 @@ pub(super) async fn extract_sequential_subtree(
                 return Err(e).at(&file.source_path);
             }
         };
+        // Before the rename, exactly as `stream_pipe_file` does it: the mode the
+        // planning pass read off the archive listing goes on the staged bytes,
+        // so what appears under the real name has never worn the wrong one.
+        super::landed_mode::apply_source_mode(
+            source_volume,
+            &file.source_path,
+            Some(planned.source_mode),
+            dest_volume,
+            staged.target(),
+        )
+        .await;
         staged.commit(dest_volume).await.at(&file.source_path)?;
 
         // Safe-replace finalize for a file→file Overwrite (same as the per-entry

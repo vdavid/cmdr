@@ -29,7 +29,7 @@ use super::super::transfer_probe::{
     OperationProbe, TaskPhase, TaskRow, arm_current_task_stall_abort, note_task_retry, set_task_bytes, set_task_phase,
 };
 use super::merge::copy_directory_streaming;
-use super::preflight::SourceHint;
+use super::preflight::{SourceFileFacts, SourceHint};
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
 use crate::ignore_poison::IgnorePoison;
@@ -367,7 +367,7 @@ pub(super) async fn copy_single_path(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     source_is_directory: Option<bool>,
-    source_size_hint: Option<u64>,
+    source_facts: SourceFileFacts,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
@@ -442,7 +442,7 @@ pub(super) async fn copy_single_path(
         let bytes = stream_pipe_file(
             source_volume,
             source_path,
-            source_size_hint,
+            source_facts,
             dest_volume,
             dest_path,
             state,
@@ -533,9 +533,11 @@ pub(in crate::file_system::write_operations) async fn pull_path_to_local(
         source_path,
         // The caller probed the source itself, so this is a known answer.
         Some(source_is_directory),
-        // No size hint: the stream reports the REAL length, so a source whose
-        // listed metadata size lies still pulls its true bytes.
-        None,
+        // Nothing known about the file: the stream reports the REAL length, so a
+        // source whose listed metadata size lies still pulls its true bytes, and
+        // the scratch dir this lands in is repackaged rather than handed to
+        // anyone, so its modes carry nothing.
+        SourceFileFacts::default(),
         dest_volume,
         dest_path,
         state,
@@ -574,7 +576,7 @@ pub(in crate::file_system::write_operations) async fn pull_path_to_local(
 pub(super) async fn stream_pipe_file(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
-    source_size_hint: Option<u64>,
+    source_facts: SourceFileFacts,
     dest_volume: &Arc<dyn Volume>,
     dest_path: &Path,
     state: &Arc<WriteOperationState>,
@@ -635,7 +637,7 @@ pub(super) async fn stream_pipe_file(
         let stream = tokio::select! {
             biased;
             () = state.backend_abort.cancelled() => return Err(hard_abort_error(source_path)),
-            opened = source_volume.open_read_stream_with_hint(source_path, source_size_hint) => opened?,
+            opened = source_volume.open_read_stream_with_hint(source_path, source_facts.size) => opened?,
         };
         let size = stream.total_size();
         // ONE probe, two consumers: the staging decision below and the
@@ -790,6 +792,20 @@ pub(super) async fn stream_pipe_file(
                 return Err(e);
             }
         };
+
+        // Past the last byte, and BEFORE the rename: put the source's mode on
+        // what was written, so the file never wears one mode under its real name
+        // and then flips to another. A no-op unless the destination is a local
+        // filesystem and the source had a mode to report (`landed_mode.rs`);
+        // never fails the copy, whatever the destination thinks of `chmod`.
+        super::landed_mode::apply_source_mode(
+            source_volume,
+            source_path,
+            source_facts.mode,
+            dest_volume,
+            staged.target(),
+        )
+        .await;
 
         // Past the last byte: give the file its final name.
         match staged.commit(dest_volume).await {

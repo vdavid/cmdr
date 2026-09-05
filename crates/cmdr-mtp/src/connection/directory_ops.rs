@@ -25,6 +25,17 @@ static CONCURRENT_LIST_CALLS: std::sync::atomic::AtomicU32 = std::sync::atomic::
 /// How often to call the progress callback (every N handles processed).
 const PROGRESS_INTERVAL: usize = 20;
 
+/// What every MTP entry answers for `FileEntry::permissions`: the field's
+/// documented "this backend has no permission concept" sentinel.
+///
+/// ❗ PTP/MTP has no mode. An earlier `0o755`/`0o644` here looked harmless as a
+/// display value, but the cross-volume copy engine reads a non-zero mode as a
+/// FACT about the source and puts it on what it writes
+/// (`transfer/volume/landed_mode.rs`), so a plausible-looking guess would widen
+/// a landed file under a strict umask on nobody's authority. Say nothing
+/// instead.
+const NO_PERMISSION_CONCEPT: u32 = 0;
+
 /// How many `GetObjectInfo` round trips the background scan does per device-lock
 /// hold (one scan "unit"). Between units the scan releases the lock and yields to
 /// any pending foreground op, so the worst-case foreground wait is one unit. A
@@ -262,7 +273,7 @@ impl MtpConnectionManager {
                             size: if is_dir { None } else { Some(info.size) },
                             modified_at: info.modified.map(convert_mtp_datetime),
                             created_at: info.created.map(convert_mtp_datetime),
-                            permissions: if is_dir { 0o755 } else { 0o644 },
+                            permissions: NO_PERMISSION_CONCEPT,
                             icon_id: get_mtp_icon_id(is_dir, &info.filename),
                             extended_metadata_loaded: true,
                             inode: Some(info.handle.0),
@@ -622,7 +633,7 @@ impl MtpConnectionManager {
                 size: if is_dir { None } else { Some(info.size) },
                 modified_at: info.modified.map(convert_mtp_datetime),
                 created_at: info.created.map(convert_mtp_datetime),
-                permissions: if is_dir { 0o755 } else { 0o644 },
+                permissions: NO_PERMISSION_CONCEPT,
                 icon_id: get_mtp_icon_id(is_dir, &info.filename),
                 extended_metadata_loaded: true,
                 // Carry the PTP object handle in `inode` so the index can store it
@@ -970,7 +981,7 @@ fn convert_object_infos(
             size: if is_dir { None } else { Some(info.size) },
             modified_at: info.modified.map(convert_mtp_datetime),
             created_at: info.created.map(convert_mtp_datetime),
-            permissions: if is_dir { 0o755 } else { 0o644 },
+            permissions: NO_PERMISSION_CONCEPT,
             icon_id: get_mtp_icon_id(is_dir, &info.filename),
             extended_metadata_loaded: true,
             // Carry the PTP object handle in `inode` (see the streaming build site

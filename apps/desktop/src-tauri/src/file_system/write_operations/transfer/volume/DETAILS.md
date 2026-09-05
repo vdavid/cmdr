@@ -578,6 +578,65 @@ too big, or a backend that makes no promise, still stages; a caller temp is neve
 `cmdr-smb`'s `wire_shape_integration_test.rs::smb_integration_a_single_shot_write_leaves_as_one_compound_frame`, which counts wire
 frames to prove the promised write really is one compound frame.
 
+## What mode a landed file wears
+
+**The rule: the volume REPORTS a mode, this engine APPLIES it, and only on a LOCAL destination.** `landed_mode.rs` is
+the whole of it. Every backend that knows a file's permissions answers them on `FileEntry::permissions` — the git
+portal off the tree entry's `EntryKind`, the archive backend off the zip external attributes / the tar header / the 7z
+unix extension, `LocalPosixVolume` off `st_mode`, ADB off the device's `stat`. Nothing carried that across: the bytes
+go through `Volume::write_from_stream`, which creates a plain new file, so a `run.sh` copied out of a branch snapshot
+or extracted from a release zip landed `0o644` and the user had to `chmod` it themselves.
+
+**`0` is the "no permission concept" answer, and it is the whole gate.** `FileEntry::permissions` documents it, and
+every backend keeps to it: SMB, SFTP, WebDAV, and MTP all report `0`. ❗ MTP used to report a fabricated
+`0o755`/`0o644`; PTP has no mode, and once a non-zero reading became a fact the copy engine acts on, a
+plausible-looking guess would have widened a landed file under a strict umask on nobody's authority. It is
+`NO_PERMISSION_CONCEPT` in `cmdr-mtp`'s `directory_ops.rs` now, named so the next person doesn't re-add one.
+
+**The fold, and why it can't widen anything.** `landed_mode(source_mode, created_mode)` intersects the source's low
+nine bits with the mode the destination filesystem just gave the fresh temp, allowing an execute bit wherever the
+matching read bit survived (`created | ((created & 0o444) >> 2)`). `created_mode` already has the user's umask baked
+in, so the intersection re-applies that umask without ever reading it — no `umask(2)` get-then-set race, no cached
+process-wide value. It is what `git checkout` and every unzip do:
+
+- `0o755` source, `022` umask ⇒ `0o755`. Same source, `077` umask ⇒ `0o700`, ❌ never a world-readable `0o755`.
+- `0o600` source ⇒ `0o600`: the fold narrows as readily as it widens, which is what makes it a copy of the mode rather
+  than an executable-bit patch.
+- A Windows-made zip reports `0o666` (rc-zip turns a DOS creator's attributes into that stand-in, a read-only flag
+  wearing a mode's clothes). Folded, it lands the `0o644` a plain new file would have had anyway.
+- Equal to what was created ⇒ `None`, so the common case spends no `chmod` at all.
+
+**setuid, setgid, and sticky never travel.** A routed volume's mode is metadata out of a repo object or an archive
+header, which is untrusted input and not authority enough for one of those bits. The local-FS-to-local-FS copy DOES
+keep them (macOS `copyfile` with `COPYFILE_STAT`, `chunked_copy.rs`'s `set_permissions` on the fallback), and that
+asymmetry is deliberate: there both sides are the filesystem.
+
+**It happens on the STAGED temp, before the rename.** Same reason the staging exists — the visible file never appears
+with one mode and flips to another. A `SingleShot` write has no temp and takes its `chmod` right after the bytes, which
+is the only order available and harmless (the file is complete). ❌ It never fails a copy: an unreadable stat, a
+destination that ignores `chmod` (FAT, exFAT, some network mounts), a source that vanished — each is one debug line and
+the bytes stand.
+
+**Who supplies the mode, and the one round trip it can cost.** `SourceFileFacts` (in `strategy.rs`) carries what the
+caller already learned about a source FILE: its size and its mode, both honest `Option`s where absent means nobody
+looked. The merge walker lists each level anyway, so every deep file's mode is free (`SourceFileFacts::from_entry`). A
+TOP-LEVEL file has only the preflight hint, and `CopyScanResult` counts bytes rather than stat'ing modes — so
+`apply_source_mode` asks the source itself, once per top-level file, only when the destination is local, and only after
+that file's bytes have already crossed. ❌ Don't "fix" that by adding a mode to `CopyScanResult`: it would put a field
+through 40-odd construction sites across every backend to save a stat the copy has already paid a whole file for.
+
+**Three write paths, three hooks, and they must stay in step.** `stream_pipe_file` (every streamed cross-volume file,
+copy and cross-volume move alike, since `move_cross.rs` routes through `copy_single_path`), `sequential_extract.rs`'s
+data pass (which writes its own files — the mode rides `PlannedWrite::source_mode`, recorded by the plan pass, the only
+one that lists the archive), and `try_server_side_copy`, which needs no hook: it is a same-`Arc` `Volume::copy_within`,
+where the backend copying a file inside itself owns what it copies. A fourth write path owes the same call.
+
+Pinned by `landed_mode_tests.rs` (the fold, per umask and per source shape), `copy_snapshot_out_tests.rs` and
+`copy_extract_out_tests.rs` (end to end out of the two routed volumes, into a real local destination, both alone and
+inside a folder — the two shapes take different routes through the engine), `move_tests.rs`
+(`a_cross_volume_move_carries_the_executable_bit`), and `strategy_sequential_tests.rs`
+(`a_sequential_extract_carries_the_executable_bit`).
+
 ## Pause in the volume walks
 
 Three loops in this directory are a WALK rather than a byte pump, and each parks at its own per-entry boundary by asking `state.stop_or_park_async()` exactly where it already observed cancel (`../../DETAILS.md` § "Pause / resume" owns the primitive and the ordering):

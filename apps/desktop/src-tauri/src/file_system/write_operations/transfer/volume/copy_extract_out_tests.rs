@@ -103,6 +103,90 @@ async fn extract_out_copies_a_file_and_a_directory_subtree_out_of_a_zip() {
     assert_eq!(complete[0].bytes_processed, 5 + 3 + 3, "all inner-file bytes copied");
 }
 
+/// A script extracted out of a release zip has to still RUN. The archive records
+/// the mode and the volume reports it; the copy engine is the layer that has to
+/// put it on what lands.
+///
+/// Both shapes, because they take different routes through the engine: the entry
+/// selected ALONE goes through the top-level dispatch (which has no listing in
+/// hand and asks the source), the one inside a folder through the merge walker
+/// (which has the entry already). The dest is a REAL local volume, because a
+/// mode is only a fact on a filesystem that has them.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_executable_bit_survives_an_extract_out_of_a_zip() {
+    use cmdr_archive::test_fixtures::{build_zip, stored, with_unix_mode};
+    use cmdr_archive::{ArchiveFormat, ArchiveVolume};
+    use cmdr_fs::volume::host::VolumeHost;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let zip_path = tmp.path().join("release.zip");
+    std::fs::write(
+        &zip_path,
+        build_zip(&[
+            with_unix_mode("run.sh", "#!/bin/sh\n", 0o755),
+            with_unix_mode("scripts/run.sh", "#!/bin/sh\n", 0o755),
+            stored("scripts/notes.txt", "nnn"),
+        ]),
+    )
+    .expect("write the fixture zip");
+
+    let dest_dir = tempfile::tempdir().expect("dest tempdir");
+    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent").with_local_fs_access());
+    let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(
+        parent,
+        zip_path.clone(),
+        ArchiveFormat::Zip,
+        VolumeHost::detached(),
+    ));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new(
+        "Dest",
+        dest_dir.path().to_str().expect("dest path"),
+    ));
+
+    let sources = vec![zip_path.join("run.sh"), zip_path.join("scripts")];
+    let result = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "extract-out-exec-bit-op",
+        &make_state(),
+        Arc::clone(&source),
+        &sources,
+        Arc::clone(&dest),
+        Path::new("/"),
+        &VolumeCopyConfig {
+            progress_interval_ms: 0,
+            ..VolumeCopyConfig::default()
+        },
+    )
+    .await;
+    assert!(result.is_ok(), "extract-out should succeed: {result:?}");
+
+    assert_eq!(
+        mode_of(&dest_dir.path().join("run.sh")) & 0o111,
+        0o111,
+        "an entry selected on its own has to land executable"
+    );
+    assert_eq!(
+        mode_of(&dest_dir.path().join("scripts/run.sh")) & 0o111,
+        0o111,
+        "and so does one the merge walker found inside a folder"
+    );
+    assert_eq!(
+        mode_of(&dest_dir.path().join("scripts/notes.txt")) & 0o111,
+        0,
+        "a plain entry stays non-executable: the mode is carried, ❌ never widened"
+    );
+}
+
+/// The permission bits `path` wears right now.
+fn mode_of(path: &Path) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::metadata(path)
+        .unwrap_or_else(|e| panic!("stat {}: {e}", path.display()))
+        .permissions()
+        .mode()
+        & 0o777
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn extracting_a_symlink_entry_writes_a_regular_file_never_a_symlink() {
     use cmdr_archive::{ArchiveFormat, ArchiveVolume};

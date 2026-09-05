@@ -18,6 +18,9 @@ mod copy_concurrent;
 mod copy_concurrent_source;
 mod copy_concurrent_task;
 mod copy_serial;
+/// What mode a file lands with on a LOCAL destination. The volumes report a
+/// mode; this is the layer that applies it.
+mod landed_mode;
 mod merge;
 /// `move` is a Rust keyword, so the module is `r#move`. Nothing outside this
 /// facade names it: the move entry points are re-exported below.

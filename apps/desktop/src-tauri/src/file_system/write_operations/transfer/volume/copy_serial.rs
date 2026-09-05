@@ -36,6 +36,7 @@ use super::super::transfer_driver::{
 };
 use super::super::transfer_probe::{DriverPhase, OperationProbe, TaskRole, TaskRow};
 use super::conflict::resolve_volume_conflict;
+use super::preflight::SourceFileFacts;
 use super::preflight::SourceHint;
 use super::strategy::copy_single_path;
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
@@ -386,7 +387,8 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             ));
                         }
                     };
-                    let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                    let source_facts =
+                        SourceFileFacts::from_size_hint(hint.and_then(|h| (!h.is_directory).then_some(h.size)));
 
                     // Per-file intra-progress: a fresh per-source
                     // throttle mutex (the serial-path closure outlives
@@ -492,7 +494,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         &source_volume,
                         &source_path,
                         Some(source_is_dir),
-                        source_size_hint,
+                        source_facts,
                         &dest_volume,
                         &dest_item_path,
                         &state,

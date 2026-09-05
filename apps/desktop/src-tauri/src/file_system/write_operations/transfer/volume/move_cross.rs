@@ -34,6 +34,7 @@ use super::super::transfer_driver::{
 use super::cleanup::{TreeRemoval, remove_tree};
 use super::conflict::resolve_volume_conflict;
 use super::r#move::{FetchFut, ResolveFut, TransferFut};
+use super::preflight::SourceFileFacts;
 use super::preflight::{SourceHint, scan_volume_sources};
 use super::strategy::{copy_single_path, resolve_source_is_directory};
 use super::transfer_error::{AtPath, PathRole, WriteFailure, map_volume_error};
@@ -384,7 +385,8 @@ pub(crate) async fn move_volumes_with_progress(
                             Ok(is_dir) => is_dir,
                             Err(e) => return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e)),
                         };
-                    let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
+                    let source_facts =
+                        SourceFileFacts::from_size_hint(hint.and_then(|h| (!h.is_directory).then_some(h.size)));
 
                     let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
                     let leaf_progress = SerialLeafProgress::new(
@@ -481,7 +483,7 @@ pub(crate) async fn move_volumes_with_progress(
                         &source_volume,
                         &source_path,
                         Some(source_is_dir),
-                        source_size_hint,
+                        source_facts,
                         &dest_volume,
                         &dest_item_path,
                         &state,

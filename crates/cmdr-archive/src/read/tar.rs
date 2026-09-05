@@ -136,6 +136,11 @@ pub(super) fn parse(
                 modified,
                 // Tar has no per-entry encryption.
                 encrypted: false,
+                // Every tar header carries a mode field; a header too damaged to
+                // parse one answers `None` rather than a plausible default. Only
+                // the low nine bits travel — setuid/setgid/sticky out of an
+                // untrusted archive are never worth carrying.
+                mode: header.mode().ok().map(|m| m & 0o777).filter(|m| *m != 0),
             },
             TarMember {
                 data_offset: entry.raw_file_position(),

@@ -72,8 +72,26 @@ last-writer-wins instead — the later entry replaces the earlier node. A droppe
 map, so it can never be read via `open_read` even though its handle was parsed. Pinned by
 `file_shadowing_a_directory_path_*` (both orders, unit and integration).
 
-`ArchiveNode` is archive-native (name, inner path, is_dir/is_symlink, sizes, mtime, encrypted). The volume layer maps it
-onto `FileEntry`. Inner paths are `/`-separated, no leading/trailing slash; the archive root is `""`. Lookups
+**The recorded unix mode (`ArchiveNode::mode`), and why it is an `Option`.** A `run.sh` inside a release archive is
+executable, and this module is the only layer that can read what the archive recorded — the copy engine puts it on what
+an extract writes (`write_operations/transfer/volume/DETAILS.md` § "What mode a landed file wears"). Each format reads
+its own carrier and answers `None` where there is nothing to read, ❌ never a plausible `0o644`:
+
+- **zip**: rc-zip has already decided whether the external attributes hold a unix mode, reading them as one only for a
+  Unix or macOS creator. A Windows/DOS creator's attributes become a `0o666`/`0o777` stand-in that is the DOS read-only
+  flag wearing a mode's clothes; it is indistinguishable from a real mode here, which is fine, because the copy engine's
+  fold lands it exactly where a plain new file would have gone anyway.
+- **tar**: the header's mode field, which every tar carries.
+- **7z**: the high 16 bits of the Windows attribute word, and only when `FILE_ATTRIBUTE_UNIX_EXTENSION` (`0x8000`) is
+  set — p7zip's convention. A 7z written on Windows records no mode and answers `None` (verified against the p7zip
+  source, 2026-09-05).
+
+Only the low nine bits travel. setuid, setgid, and sticky are dropped at the parser: an archive is untrusted input, and
+no archive is authority enough to hand a landed file one of those. A synthesized directory node has no mode either —
+nothing recorded one for it.
+
+`ArchiveNode` is archive-native (name, inner path, is_dir/is_symlink, sizes, mtime, encrypted, mode). The volume layer
+maps it onto `FileEntry`. Inner paths are `/`-separated, no leading/trailing slash; the archive root is `""`. Lookups
 (`get`/`list`/`is_directory`/`open_read`) trim surrounding slashes so `/dir/` and `dir` resolve the same node.
 
 ## Resource caps (memory-amplification defense)

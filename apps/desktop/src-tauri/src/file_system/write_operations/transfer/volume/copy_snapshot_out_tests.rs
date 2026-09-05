@@ -18,7 +18,8 @@ use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::resolve_source_volume;
 use cmdr_git::test_fixtures::{EntryKind, Fixture, cleanup, temp_dir};
 
-/// A repo whose `main` snapshot holds a top-level file and a two-file folder,
+/// A repo whose `main` snapshot holds a top-level file, a two-file folder, and
+/// an executable script (both alone at the top level and inside a folder),
 /// registered as the plain local volume a pane would be browsing.
 fn repo_registered_as_the_local_drive(name: &str) -> PathBuf {
     let dir = temp_dir("copy_snapshot_out", name);
@@ -28,6 +29,9 @@ fn repo_registered_as_the_local_drive(name: &str) -> PathBuf {
             ("readme.txt", b"hello", EntryKind::Blob),
             ("docs/a.txt", b"aaa", EntryKind::Blob),
             ("docs/b.txt", b"bbb", EntryKind::Blob),
+            ("run.sh", b"#!/bin/sh\n", EntryKind::BlobExecutable),
+            ("scripts/run.sh", b"#!/bin/sh\n", EntryKind::BlobExecutable),
+            ("scripts/notes.txt", b"nnn", EntryKind::Blob),
         ],
         "initial",
         1_700_000_000,
@@ -36,6 +40,16 @@ fn repo_registered_as_the_local_drive(name: &str) -> PathBuf {
     get_volume_manager().register("root", Arc::new(LocalPosixVolume::new("Root", dir.to_str().unwrap())));
     git::wiring::set_virtual_portal_enabled(true);
     dir
+}
+
+/// The permission bits `path` wears right now.
+fn mode_of(path: &Path) -> u32 {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::metadata(path)
+        .unwrap_or_else(|e| panic!("stat {}: {e}", path.display()))
+        .permissions()
+        .mode()
+        & 0o777
 }
 
 async fn read_dest_file(dest: &Arc<dyn Volume>, path: &str) -> Vec<u8> {
@@ -104,6 +118,66 @@ async fn a_copy_out_of_a_snapshot_carries_a_file_and_a_folder_byte_for_byte() {
     drop(complete);
 
     cleanup(&dir);
+}
+
+/// A script pulled out of a snapshot has to still RUN. The tree records the
+/// executable bit and the portal reports it; the copy engine is the layer that
+/// has to put it on what lands, or every `run.sh` a user copies out of a branch
+/// arrives at `0o644` and they have to `chmod` it themselves.
+///
+/// Both shapes, because they take different routes through the engine: the file
+/// selected ALONE goes through the top-level dispatch (which has no listing in
+/// hand and asks the source), the one inside a folder through the merge walker
+/// (which has the entry already).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_executable_bit_survives_a_copy_out_of_a_snapshot() {
+    let dir = repo_registered_as_the_local_drive("executable_bit");
+    let dest_dir = temp_dir("copy_snapshot_out", "executable_bit_dest");
+    std::fs::create_dir_all(&dest_dir).expect("dest dir");
+
+    let sources = vec![
+        dir.join(".git/branches/main/run.sh"),
+        dir.join(".git/branches/main/scripts"),
+    ];
+    let (source, _route) = resolve_source_volume("root", sources.first())
+        .await
+        .expect("the source volume");
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dest_dir.to_str().unwrap()));
+
+    let result = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "snapshot-exec-bit-op",
+        &make_state(),
+        Arc::clone(&source),
+        &sources,
+        Arc::clone(&dest),
+        Path::new("/"),
+        &VolumeCopyConfig {
+            progress_interval_ms: 0,
+            ..VolumeCopyConfig::default()
+        },
+    )
+    .await;
+    assert!(result.is_ok(), "a copy out of a snapshot should succeed: {result:?}");
+
+    assert_eq!(
+        mode_of(&dest_dir.join("run.sh")) & 0o111,
+        0o111,
+        "a script selected on its own has to land executable"
+    );
+    assert_eq!(
+        mode_of(&dest_dir.join("scripts/run.sh")) & 0o111,
+        0o111,
+        "and so does one the merge walker found inside a folder"
+    );
+    assert_eq!(
+        mode_of(&dest_dir.join("scripts/notes.txt")) & 0o111,
+        0,
+        "a plain blob stays non-executable: the mode is carried, ❌ never widened"
+    );
+
+    cleanup(&dir);
+    cleanup(&dest_dir);
 }
 
 /// A snapshot can be copied out of, never moved out of: there is no file to
