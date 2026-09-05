@@ -9,8 +9,8 @@ use super::{
     BatchScanResult, CopyScanResult, LaneKey, MtpVolume, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo,
     Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
-use crate::file_system::listing::FileEntry;
 use crate::mtp::connection::{MtpConnectionError, MtpDeleteScope};
+use cmdr_fs::entry::FileEntry;
 use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -41,7 +41,7 @@ impl Volume for MtpVolume {
     fn list_directory<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(cmdr_fs::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         self.list_directory_with_cancel(path, on_progress, None)
     }
@@ -49,7 +49,7 @@ impl Volume for MtpVolume {
     fn list_directory_with_cancel<'a>(
         &'a self,
         path: &'a Path,
-        on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
+        on_progress: Option<&'a (dyn Fn(cmdr_fs::volume::ListingProgress) + Sync)>,
         cancel: Option<&'a CancellationToken>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {

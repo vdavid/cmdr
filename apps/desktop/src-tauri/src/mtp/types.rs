@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
-pub use crate::usb_speed::UsbSpeed;
+pub use cmdr_fs::volume::UsbSpeed;
 
 /// The negotiated link speed a device reported, in the vocabulary the volume
 /// list speaks.

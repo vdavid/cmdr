@@ -13,7 +13,7 @@ use super::mapping::map_mtp_error;
 use cmdr_fs::volume::scan_walk::conflicts_against;
 use cmdr_fs::volume::{ScanBoundary, ScanStop};
 
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
 use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};

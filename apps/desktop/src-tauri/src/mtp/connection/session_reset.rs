@@ -11,7 +11,7 @@ use std::time::Duration;
 use log::{info, warn};
 
 use super::{DeviceWatch, MtpConnectionError, MtpConnectionManager};
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::host::indexing::WatchGap;
 
 /// How many times we try to reopen the device after a session reset.

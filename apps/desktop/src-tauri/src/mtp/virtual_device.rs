@@ -7,7 +7,7 @@
 //! Gated behind `--features virtual-mtp`. Never compiled into production builds.
 //! See `mtp/CLAUDE.md` § "Virtual MTP device" and `docs/tooling/virtual-mtp.md`.
 
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 use log::info;
 use mtp_rs::{VirtualDeviceConfig, VirtualStorageConfig, WatcherGuard};
 use std::fs;
@@ -79,11 +79,15 @@ fn is_default_sentinel(value: &str) -> bool {
 /// the initial snapshot). Returns the registered device's `location_id`, or
 /// `None` when no device was requested. See [`decide_startup_root`] for the
 /// gating logic and `docs/tooling/virtual-mtp.md` for the dev workflow.
-pub fn activate_from_env_if_requested() -> Option<u64> {
+///
+/// `e2e_mode` comes from the CALLER rather than being read here: whether this
+/// process is an automated run is the app's question, with one source of truth
+/// (`crate::test_mode`) that several unrelated subsystems key off, and a copy of
+/// that env-var name down here would be a second one that can drift.
+pub fn activate_from_env_if_requested(e2e_mode: bool) -> Option<u64> {
     let skip_override = std::env::var("CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP")
         .map(|v| !v.is_empty())
         .unwrap_or(false);
-    let e2e_mode = crate::test_mode::is_e2e_mode();
     let virtual_mtp_var = std::env::var(VIRTUAL_MTP_ENV).ok();
     let root = decide_startup_root(skip_override, e2e_mode, virtual_mtp_var.as_deref())?;
     Some(setup_virtual_mtp_device_at(&root))

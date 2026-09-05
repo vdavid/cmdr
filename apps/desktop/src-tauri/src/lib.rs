@@ -529,7 +529,7 @@ pub fn run() {
             // out via CMDR_E2E_SKIP_VIRTUAL_MTP_SETUP to avoid racing the shared backing dir.
             // See `mtp/virtual_device.rs::decide_startup_root` and `docs/tooling/virtual-mtp.md`.
             #[cfg(feature = "virtual-mtp")]
-            mtp::virtual_device::activate_from_env_if_requested();
+            mtp::virtual_device::activate_from_env_if_requested(test_mode::is_e2e_mode());
 
             // Ensure ptpcamerad is re-enabled in case a previous session crashed
             // while it was suppressed. No-op if it was already enabled.

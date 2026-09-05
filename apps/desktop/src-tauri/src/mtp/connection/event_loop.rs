@@ -14,7 +14,7 @@ use mtp_rs::ObjectHandle;
 
 use super::cache::{EVENT_DEBOUNCE_MS, EventDebouncer};
 use super::{MtpConnectionManager, normalize_mtp_path};
-use crate::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::DirectoryChange;
 use std::path::{Path, PathBuf};
 

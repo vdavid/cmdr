@@ -770,7 +770,7 @@ impl MtpConnectionManager {
     /// the 5-second TTL would answer each re-read with the entries the event
     /// says are out of date.
     pub(super) async fn clear_listing_caches_for_device(&self, device_id: &str) {
-        use crate::ignore_poison::RwLockIgnorePoison;
+        use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 
         let devices = self.devices.lock().await;
         if let Some(entry) = devices.get(device_id) {

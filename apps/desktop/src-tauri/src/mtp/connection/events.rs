@@ -121,7 +121,7 @@ mod recording {
     use std::sync::Mutex;
 
     use super::{MtpDeviceEvent, MtpDeviceEvents};
-    use crate::ignore_poison::IgnorePoison;
+    use cmdr_fs::ignore_poison::IgnorePoison;
 
     /// An [`MtpDeviceEvents`] that remembers what it was told, so a test can
     /// assert on the sequence a user would have seen: connect, storage arrives,

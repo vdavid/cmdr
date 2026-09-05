@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use std::time::{Duration, Instant};
 
-use crate::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 
 /// Cache mapping virtual paths to MTP object handles, and back.
 ///
