@@ -160,7 +160,7 @@ pub async fn list_mtp_directory(
 }
 
 // ============================================================================
-// Phase 4: File Operations
+// File operations
 // ============================================================================
 
 /// Deletes an object (file or folder) from an MTP device.
@@ -259,7 +259,7 @@ pub async fn move_mtp_object(
 }
 
 // ============================================================================
-// Phase 5: Copy/Export Operations
+// Copy and export operations
 // ============================================================================
 
 /// Scans an MTP path for copy statistics.

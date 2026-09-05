@@ -1,4 +1,4 @@
-//! Remote-backed archive tests over a virtual MTP device (M5).
+//! Remote-backed archive tests over a virtual MTP device.
 //!
 //! The MTP counterpart to the live-SMB archive tests (`smb_archive_integration_test`):
 //! a zip living on a virtual MTP device browses and extracts through
