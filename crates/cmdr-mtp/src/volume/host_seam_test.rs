@@ -14,8 +14,13 @@
 //! sources, and makes a stray call inside a listing loop the kind of thing that
 //! silently doubles the cost of every big folder a user opens on their phone.
 //!
-//! What the SESSION layer tells the analytics and registrar seams is the other
-//! half: `connection::host_seam_test`.
+//! Two neighbours cover the seam calls this file's walk doesn't reach: the
+//! session layer's analytics and registrar reports are `connection::host_seam_test`,
+//! and the EVENT-LOOP half (a change on the device arriving as one `Replaced`
+//! rather than a call per entry) is
+//! `connection::event_loop::device_tests::a_file_appearing_on_the_device_hands_the_pane_its_new_contents`.
+//! The device-lifecycle sequence a user would have seen is
+//! `connection::events::device_lifecycle_test`.
 
 use std::future::Future;
 use std::ops::ControlFlow;
