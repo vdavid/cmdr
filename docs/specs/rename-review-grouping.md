@@ -6,9 +6,11 @@ per reply and each reply is staged and reviewed on its own. The user is asked to
 exactly the operation where careful review matters most.
 
 **The fix is presentational**: accumulate a job's proposals into one review, apply them as the operations they already
-are, and leave every safety property exactly where it is. ❌ This is not the per-rule approval question
-(`open-decisions.md` item 6, answered no): every row still gets individually reviewed, preflighted, and fingerprint-
-rechecked at write time.
+are, and leave every safety property exactly where it is. ❌ This is not per-rule approval, which David declined on
+2026-09-05: approval stays per item, and the volume problem it was meant to solve is answered by the group-level
+Approve and Reject buttons the suggested-ops dialog already ships (`SuggestedOpsDialog.svelte`, `approveGroup` /
+`rejectGroup`), so 500 files never mean 500 clicks. Every row still gets individually reviewed, preflighted, and
+fingerprint-rechecked at write time.
 
 **Read first**: `apps/desktop/src-tauri/src/agent/tools/propose/CLAUDE.md` (the authority boundary, and why proposal
 construction never touches a live mount), `.../propose/rename/store.rs`'s module header (what is durable and what is

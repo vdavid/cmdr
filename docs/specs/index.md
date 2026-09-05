@@ -112,10 +112,11 @@ that lives beside the code, and git holds the history.
       guardrail per row. ❌ Not the per-rule approval question in `open-decisions.md`, which was answered no. Depends on
       two properties shipped code already has (a proposal never expires, and the dialog renders every row without
       paging), so what remains is frontend and store-shape work with one design choice: open the review on turn end.
-- [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** Seven calls waiting on David:
-      unreviewed user-facing copy in four places, two product calls (one of which has blocked its dependent milestones
-      since July), and one maintenance call. Most take a minute. A question with no answer looks exactly like a task
-      nobody picked up, which is how a 600-line spec stays alive for a year.
+- [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** One call left, in PISS form:
+      whether a file that exhausts its retries ends the whole operation or the batch carries on and reports what it
+      missed. Six others were answered on 2026-09-05 (four drafts of user-facing copy ratified as shipped, per-rule
+      approval declined, the `invariant-density` ratchet dropped with the check itself). A question with no answer looks
+      exactly like a task nobody picked up, which is how a 600-line spec stays alive for a year.
 
 ## Later
 

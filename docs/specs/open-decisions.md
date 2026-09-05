@@ -7,44 +7,18 @@ Decisions that gate exactly one effort live in that effort's spec instead. A cal
 making sits with the work it came from: `later/idle-cost-follow-ups.md` holds the CLIP idle-unload and compute-unit
 calls, and the question of whether the rescan walk may read `SYSTEM_DIR_EXCLUDES`.
 
-## Human-facing copy shipped as agent drafts
+## 1. Should one unrecoverable file end the whole operation?
 
-Principle 4 says anything meeting human eyes is made or closely reviewed by a human. These went out as drafts. All are
-translated into nine locales, so a change means re-translating those keys, and none is urgent.
-
-1. **Five operation-queue strings.** ⚠️ Three evolved past their drafts during the build, so review the shipped text:
-   `queue.chip.tooltip` (renders as `Copying · 214 items · to Backup · 42% · 1m 20s left`), `queue.failureToast.title`
-   (`Couldn't finish copying`, selecting on operation type), `queue.chip.failed`
-   (`{countText} operations couldn't finish. Open the operation queue to see why.`), plus
-   `fileOperations.transferProgress.queuedToastCount` and the three dismiss labels. Also worth a look, added after the
-   drafts: `queue.chip.ariaLabel` and `queue.chip.scanningAriaLabel`.
-2. **Four rename-chaining toasts**, in `en/fileExplorer.json`: `chainKeptOriginalName`,
-   `chainKeptOriginalNameAndOthers`, `unconfirmed`
-   (`Couldn't confirm the rename of "{name}". The volume may be slow, so the rename may still have gone through.`), and
-   `unconfirmedAndOthers`.
-3. **Three Duplicate strings**: `commands.fileDuplicate.label`, its palette description
-   (`Make a copy of the selected files in the same folder`), and `menu.file.duplicate`. Note the nine locale labels were
-   chosen as each language's own Finder word rather than a dictionary translation, for example Hungarian "Megkettőzés";
-   the choice of convention is worth knowing even under the translations-reviewed-later caveat.
-4. **`Hide Others` and `Show All`** kept muda's Title Case while every neighbour is sentence case. Matching AppKit's own
-   convention is defensible, but it is not written down anywhere, so today it reads as an oversight. Fix or document.
-
-## Product calls that gate real work
-
-5. **Should a file that exhausts its retries stop the operation, or should the batch carry on?** Today one unrecoverable
-   file ends a 700-file copy. Carrying on needs a terminal event shape that can say "finished, N files missing", a
-   frontend that shows which ones, and journal semantics for a partially-successful operation. Several days, and it is a
-   product call first. Recorded at `transfer/DETAILS.md` § "Not done here".
-
-6. **Per-rule approval for a long job's tail.** For a 500-file rename, should approval move from per-item to per-rule,
-   where the user carefully reviews a trial batch of five to 10 and the remainder runs as one background operation with
-   progress, cancel, and undo? Options: **(a)** yes, accepting that this is a write-engine change and that the plan-call
-   compaction idea then evaporates; **(b)** no, keep per-item approval and build compaction instead; **(c)** defer both.
-   This has blocked its two dependent milestones since July.
-
-## One maintenance call
-
-7. **A deliberate `invariant-density` ratchet pass.** The check warns repo-wide on four subsystems and has been drifting
-   up unnoticed because it is warn-only. `crates/cmdr-index` sits at 371 rules and 2.96 per kloc against the frontend's
-   0.87, and it is also the codebase's top bug source. `AGENTS.md` says the fix is to make each invariant
-   unrepresentable in a type rather than to raise the number. Worth scheduling rather than letting it drift.
+- **Problem**: a file that exhausts its retries ends the operation it belongs to. Copy 700 files, have file 200 fail
+  past recovery, and the remaining 500 never move. The alternative is that the batch carries on and reports what it
+  could not do.
+- **Impact**: the user re-runs the whole operation to rescue the tail, on top of an already slow transfer, and a
+  flaky remote (a sleeping NAS, a dropped SMB session) turns one bad file into an abandoned job. No report has named
+  this yet, so the frequency is unmeasured.
+- **Solution**: a terminal event shape that can say "finished, 500 files copied, 200 missing", a frontend that lists
+  which ones and why, and journal semantics for a partially-successful operation (what rollback means when half the
+  batch landed). The mechanism is recorded at `transfer/DETAILS.md` § "Not done here".
+- **Size**: several days, and it is a product call before it is an engineering one.
+- **Clear win or a tradeoff?** A tradeoff. Carrying on rescues the batch, and it also means a user can walk away from a
+  finished-looking operation that quietly skipped 200 files, so the honesty of the terminal report is what decides
+  whether it is an improvement.
