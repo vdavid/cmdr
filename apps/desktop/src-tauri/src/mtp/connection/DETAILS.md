@@ -238,8 +238,9 @@ So `handle_device_session_reset` (the sibling of `handle_device_disconnected`, t
 1. **Drop the `DeviceEntry`** and stop the event loop. The path, listing, and storage caches live ON the entry, so
    dropping it clears them — required, not hygiene: handles don't survive the reset, and a stale reverse
    `PathHandleCache` entry resolves a NEW object to a dead path (devices reuse handles).
-2. **Flip every indexed storage Stale** (`indexing::on_mtp_watch_continuity_lost`). Same call the disconnect path
-   makes, for the same reason: events fired while the session was dead are lost, and the handles the scan stored in
+2. **Flip every indexed storage Stale** (`IndexNotifier::device_watch_gap`, the device twin of the per-volume
+   `watch_gap`: one PTP session carries every storage, so they go stale together and the backend never needs the
+   device's volume list). Same call the disconnect path makes, for the same reason: events fired while the session was dead are lost, and the handles the scan stored in
    `inode` may no longer identify the same objects, so an `ObjectRemoved` could resolve to the wrong row. The device
    being present doesn't buy freshness back — the model's rule is "Stale ⇒ Fresh only via rescan". The cost is real
    (a 2-second blip costs a phone rescan), and it's the right side to err on.

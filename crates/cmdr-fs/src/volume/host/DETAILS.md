@@ -183,9 +183,12 @@ today. It shouldn't: depending on the index would put a quarter of the codebase 
 the sake of two method calls, which is the exact inner-loop win the crate boundary is being built to get. So `WatchGap`
 here is the seam's own, and the app's adapter maps it.
 
-**`WatchScope` isn't here.** Its `Device` variant exists for MTP, where one PTP session carries several volumes and a
-reset invalidates all of them at once. That's the transport layer's shape, and MTP is app-resident. A volume backend
-reports per volume id; the adapter wraps it.
+**`WatchScope` isn't here**, but both of its shapes are. A volume backend reports per volume id through `watch_gap`; a
+DEVICE backend, whose one session carries several volumes, reports per device id through `device_watch_gap`, and the
+adapter wraps each in the scope the index spells. MTP is the case: one PTP session per phone, so a reset invalidates
+every storage on it at once, and looping `watch_gap` over the device's volumes would need a list the backend doesn't
+have and can't read from a session that just died. `device_watch_gap` defaults to a no-op, so only a device backend ever
+names it.
 
 `device_object_changed` / `device_object_removed` ⇐ `index_host::index().on_device_object_changed / _removed`, the MTP
 event loop's two index reaches. Keyed by DEVICE rather than by volume, because one PTP session carries every storage on

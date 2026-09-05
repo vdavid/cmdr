@@ -62,6 +62,23 @@ pub trait IndexNotifier: Send + Sync {
     /// This asks the index to resume, not to forget the gap it was told about.
     fn resume_after_reconnect(&self, volume_id: &str);
 
+    /// Live watching on every storage of `device_id` broke at once, and here's
+    /// how.
+    ///
+    /// The device twin of [`watch_gap`](Self::watch_gap), for a backend whose
+    /// one session carries several volumes: an MTP phone opens a single PTP
+    /// session per device, so a reset invalidates each storage on it together.
+    /// ❌ Don't loop [`watch_gap`](Self::watch_gap) over the device's volumes
+    /// instead — which volumes a device carries is the host's list, and a dead
+    /// session is exactly when the backend can no longer enumerate it.
+    ///
+    /// Same cheap, idempotent, report-blindly contract as
+    /// [`watch_gap`](Self::watch_gap), and the same no-op default as the two
+    /// object methods below.
+    fn device_watch_gap(&self, device_id: &str, gap: WatchGap) {
+        let _ = (device_id, gap);
+    }
+
     /// One object on `device_id` appeared or changed, named by the bare protocol
     /// handle the device reported.
     ///
@@ -115,6 +132,7 @@ mod recording {
     #[derive(Default)]
     pub struct RecordingIndexNotifier {
         gaps: Mutex<Vec<(String, WatchGap)>>,
+        device_gaps: Mutex<Vec<(String, WatchGap)>>,
         resumes: Mutex<Vec<String>>,
         objects_changed: Mutex<Vec<(String, u32)>>,
         objects_removed: Mutex<Vec<(String, u32)>>,
@@ -129,6 +147,14 @@ mod recording {
         /// Every gap reported so far, in order.
         pub fn gaps(&self) -> Vec<(String, WatchGap)> {
             self.gaps.lock_ignore_poison().clone()
+        }
+
+        /// Every device-wide gap reported so far, in order. Kept apart from
+        /// [`gaps`](Self::gaps) on purpose: a backend that reported per volume
+        /// where it meant per device would leave the device's other storages
+        /// claiming to be fresh.
+        pub fn device_gaps(&self) -> Vec<(String, WatchGap)> {
+            self.device_gaps.lock_ignore_poison().clone()
         }
 
         /// Every volume a resume was requested for, in order.
@@ -150,6 +176,10 @@ mod recording {
     impl IndexNotifier for RecordingIndexNotifier {
         fn watch_gap(&self, volume_id: &str, gap: WatchGap) {
             self.gaps.lock_ignore_poison().push((volume_id.to_string(), gap));
+        }
+
+        fn device_watch_gap(&self, device_id: &str, gap: WatchGap) {
+            self.device_gaps.lock_ignore_poison().push((device_id.to_string(), gap));
         }
 
         fn resume_after_reconnect(&self, volume_id: &str) {

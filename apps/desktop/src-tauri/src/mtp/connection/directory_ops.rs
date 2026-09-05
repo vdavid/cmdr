@@ -14,7 +14,7 @@ use super::{
     normalize_mtp_path,
 };
 use cmdr_fs::entry::FileEntry;
-use cmdr_index::{WatchGap, WatchScope};
+use cmdr_fs::volume::host::indexing::WatchGap;
 
 /// Global counter for generating unique request IDs for debugging.
 static REQUEST_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -910,7 +910,9 @@ impl MtpConnectionManager {
         // Freshness (D4): any disconnect breaks watch continuity, so flip every
         // indexed storage on this device to Stale. Continuity can't be re-claimed
         // by a reconnect (events were lost while unplugged) — only a rescan does.
-        crate::index_host::index().on_watch_gap(WatchScope::Device(device_id), WatchGap::ConnectionReset);
+        self.host
+            .indexing()
+            .device_watch_gap(device_id, WatchGap::ConnectionReset);
 
         if removed {
             info!("MTP device disconnected and removed from registry: {}", device_id);

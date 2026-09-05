@@ -12,7 +12,7 @@ use log::{info, warn};
 
 use super::{DeviceWatch, MtpConnectionError, MtpConnectionManager};
 use crate::ignore_poison::IgnorePoison;
-use cmdr_index::{WatchGap, WatchScope};
+use cmdr_fs::volume::host::indexing::WatchGap;
 
 /// How many times we try to reopen the device after a session reset.
 ///
@@ -116,7 +116,9 @@ impl MtpConnectionManager {
         // while the session was dead are lost, and the handles the index stored
         // per entry may no longer identify the same objects. A Fresh badge would
         // lie, so every indexed storage on the device goes Stale.
-        crate::index_host::index().on_watch_gap(WatchScope::Device(device_id), WatchGap::ConnectionReset);
+        self.host
+            .indexing()
+            .device_watch_gap(device_id, WatchGap::ConnectionReset);
 
         warn!(
             "MTP {device_id}: PTP session reset, dropped the dead session and will reopen it (the device is still attached)"

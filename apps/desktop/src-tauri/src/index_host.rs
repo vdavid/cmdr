@@ -152,20 +152,26 @@ pub fn index() -> &'static Index {
 /// seam's own vocabulary and this maps it.
 pub struct VolumeIndexNotifier;
 
+/// The seam's reason, as the index spells it. The two enums are deliberately
+/// separate: a backend crate names the seam's, and this is the only place the
+/// two meet.
+fn index_gap(gap: cmdr_fs::volume::host::indexing::WatchGap) -> cmdr_index::WatchGap {
+    use cmdr_fs::volume::host::indexing::WatchGap as SeamGap;
+
+    match gap {
+        SeamGap::WatcherStopped => cmdr_index::WatchGap::WatcherStopped,
+        SeamGap::EventsOverflowed => cmdr_index::WatchGap::EventsOverflowed,
+        SeamGap::ConnectionReset => cmdr_index::WatchGap::ConnectionReset,
+    }
+}
+
 impl cmdr_fs::volume::host::indexing::IndexNotifier for VolumeIndexNotifier {
     fn watch_gap(&self, volume_id: &str, gap: cmdr_fs::volume::host::indexing::WatchGap) {
-        use cmdr_fs::volume::host::indexing::WatchGap as SeamGap;
-        use cmdr_index::{WatchGap, WatchScope};
+        index().on_watch_gap(cmdr_index::WatchScope::Volume(volume_id), index_gap(gap));
+    }
 
-        // A volume backend reports for its own volume; `WatchScope::Device` is the
-        // transport layer's shape (one MTP session carrying several volumes) and
-        // stays app-side with the transport that has one.
-        let reason = match gap {
-            SeamGap::WatcherStopped => WatchGap::WatcherStopped,
-            SeamGap::EventsOverflowed => WatchGap::EventsOverflowed,
-            SeamGap::ConnectionReset => WatchGap::ConnectionReset,
-        };
-        index().on_watch_gap(WatchScope::Volume(volume_id), reason);
+    fn device_watch_gap(&self, device_id: &str, gap: cmdr_fs::volume::host::indexing::WatchGap) {
+        index().on_watch_gap(cmdr_index::WatchScope::Device(device_id), index_gap(gap));
     }
 
     fn resume_after_reconnect(&self, volume_id: &str) {
@@ -200,6 +206,18 @@ mod tests {
         VolumeIndexNotifier.watch_gap(volume_id, WatchGap::EventsOverflowed);
         VolumeIndexNotifier.watch_gap(volume_id, WatchGap::ConnectionReset);
         VolumeIndexNotifier.resume_after_reconnect(volume_id);
+    }
+
+    /// A dead device session takes every storage on the device stale at once,
+    /// and the backend reports it without knowing which of them anyone indexed.
+    /// A device with no index at all still has to be free to report, or the
+    /// backend starts deciding.
+    #[test]
+    fn reporting_a_device_gap_for_an_unindexed_device_costs_nothing() {
+        let device_id = "mtp-index-notifier-never-indexed";
+
+        VolumeIndexNotifier.device_watch_gap(device_id, WatchGap::ConnectionReset);
+        VolumeIndexNotifier.device_watch_gap(device_id, WatchGap::WatcherStopped);
     }
 
     /// A device backend reports every object event blindly, by bare handle, for a

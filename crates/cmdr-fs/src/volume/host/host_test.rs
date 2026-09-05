@@ -52,6 +52,7 @@ fn a_detached_host_answers_every_seam() {
     host.indexing().resume_after_reconnect("vol");
     host.indexing().device_object_changed("device", 42);
     host.indexing().device_object_removed("device", 42);
+    host.indexing().device_watch_gap("device", WatchGap::ConnectionReset);
     assert!(
         activity::volume_idle_for(host.activity(), "vol", Duration::from_millis(500)),
         "with no user around, bulk work must never stand aside"
@@ -252,4 +253,25 @@ fn device_object_changes_reach_the_index_seam_by_handle() {
 
     assert_eq!(indexing.device_objects_changed(), vec![("mtp-0-1".to_string(), 17)]);
     assert_eq!(indexing.device_objects_removed(), vec![("mtp-0-1".to_string(), 18)]);
+}
+
+/// One session carries every storage on a device, so a session that dies takes
+/// all of them stale at once. A device backend can't report that per volume:
+/// which volumes the device carries is the app's list, and the ones that matter
+/// most are exactly the ones a dead session can no longer enumerate.
+#[test]
+fn a_dead_device_session_reports_one_gap_for_the_whole_device() {
+    let indexing = Arc::new(RecordingIndexNotifier::new());
+    let host = VolumeHost::builder().indexing(indexing.clone()).build();
+
+    host.indexing().device_watch_gap("mtp-0-1", WatchGap::ConnectionReset);
+
+    assert_eq!(
+        indexing.device_gaps(),
+        vec![("mtp-0-1".to_string(), WatchGap::ConnectionReset)]
+    );
+    assert!(
+        indexing.gaps().is_empty(),
+        "a device gap is not a per-volume gap; the host fans it out over the device's storages"
+    );
 }
