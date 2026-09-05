@@ -658,6 +658,22 @@
     }
 
     /**
+     * Re-reads the entry under the cursor and returns it, so a caller acting on the
+     * cursor row can be sure it isn't acting on the previous one.
+     *
+     * `getCursorEntry()` above is fed by an `$effect` that fires ONE `get_file_at`
+     * round trip per cursor move, so for a moment after a move it still holds the
+     * row the cursor just left. A read that only DISPLAYS the entry can live with
+     * that; a command that acts on it can't (arrow-down then ⌥⌘T is an ordinary
+     * keyboard sequence, and the gap widens on a slow mount).
+     */
+    // noinspection JSUnusedGlobalSymbols -- used by DualPaneExplorer.getCursorRowForTerminal
+    export async function refreshCursorEntry(): Promise<FileEntry | null> {
+        await selectionInfo.fetchEntry()
+        return selectionInfo.entry
+    }
+
+    /**
      * The network browser's cursor target (host or share), or `null` when
      * this pane is not in the network view or nothing valid is under the cursor.
      */

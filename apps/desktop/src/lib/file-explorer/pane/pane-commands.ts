@@ -105,10 +105,14 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
    * the folder under the cursor and the pane's own, and `..` is a real answer
    * there rather than "no entry". The rules themselves live in the pure
    * `$lib/open-terminal/terminal-target.ts`; this is only the read.
+   *
+   * ❗ `refreshCursorEntry()`, ❌ never the plain `getCursorEntry()`: that one is
+   * one `get_file_at` round trip behind the cursor, so arrow-down then ⌥⌘T would
+   * open the folder the cursor just LEFT.
    */
-  function getCursorRowForTerminal(): { name: string; path: string; isDirectory: boolean } | null {
+  async function getCursorRowForTerminal(): Promise<{ name: string; path: string; isDirectory: boolean } | null> {
     const paneRef = access.getPaneRef(access.getFocusedPane())
-    const entry = paneRef?.getCursorEntry()
+    const entry = await paneRef?.refreshCursorEntry()
     if (!entry) return null
     return { name: entry.name, path: entry.path, isDirectory: entry.isDirectory }
   }

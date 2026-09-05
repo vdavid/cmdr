@@ -957,7 +957,7 @@
         return paneCommands.getPathToCopyUnderCursor()
     }
 
-    export function getCursorRowForTerminal(): { name: string; path: string; isDirectory: boolean } | null {
+    export function getCursorRowForTerminal(): Promise<{ name: string; path: string; isDirectory: boolean } | null> {
         return paneCommands.getCursorRowForTerminal()
     }
 

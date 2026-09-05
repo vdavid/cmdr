@@ -167,7 +167,7 @@ export const fileHandlers = {
 
   'file.showInFinder': (hctx) => withEntryUnderCursor(hctx, (entry) => showInFinder(entry.path)),
 
-  'file.openTerminalHere': ({ explorerRef }) => {
+  'file.openTerminalHere': async ({ explorerRef }) => {
     // Not `withEntryUnderCursor`: this acts on a FOLDER, and every cursor state
     // resolves to one (a folder row gives itself; a file, `..`, or an empty pane
     // gives the pane's own). `resolveTerminalFolder` owns those rules.
@@ -177,9 +177,9 @@ export const fileHandlers = {
       // The VOLUME's kind, never `capabilitiesForPane`: an archive pane's
       // kind-from-path would hide the drive the archive actually lives on.
       volumeKind: capabilitiesFor(volumeId).kind,
-      cursorEntry: explorerRef?.getCursorRowForTerminal() ?? null,
+      cursorEntry: (await explorerRef?.getCursorRowForTerminal()) ?? null,
     })
-    void openTerminalHereForFolder({ folder, volumeId })
+    await openTerminalHereForFolder({ folder, volumeId })
   },
 
   'file.copyPath': async ({ explorerRef }) => {
