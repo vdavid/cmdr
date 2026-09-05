@@ -28,6 +28,7 @@ use super::source_binding::ExpectedSources;
 use super::transfer::volume::{copy_between_volumes, move_between_volumes};
 use super::types::{VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
 use crate::file_system::volume::Volume;
+use crate::file_system::volume::manager::RoutedKind;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
@@ -114,7 +115,7 @@ pub(crate) async fn resolve_source_volume(
     // a confirmed archive routes to the `ArchiveVolume` (extract-out) with
     // `is_inside = true`; a mislabeled `.zip` degrades to the parent, `false`.
     let resolved = manager.resolve(volume_id, path).await;
-    let is_inside = resolved.is_archive;
+    let is_inside = resolved.routed == Some(RoutedKind::Archive);
     resolved
         .volume
         .or_else(|| manager.get(volume_id))
@@ -186,7 +187,7 @@ pub(crate) async fn start_volume_copy(
         .volume
         .ok_or_else(|| dest_volume_missing(&dest_volume_id))?;
 
-    if dest_resolved.is_archive {
+    if dest_resolved.routed == Some(RoutedKind::Archive) {
         if expected_sources.is_some() {
             return Err(route_cannot_hold_a_binding("copy into a zip"));
         }
@@ -274,7 +275,7 @@ pub(crate) async fn start_volume_move(
 
     // A move INTO a zip routes to the managed edit driver as one `{ add }`
     // changeset; the local sources are deleted after the commit (move invariant).
-    if dest_resolved.is_archive {
+    if dest_resolved.routed == Some(RoutedKind::Archive) {
         if expected_sources.is_some() {
             return Err(route_cannot_hold_a_binding("move into a zip"));
         }
@@ -334,8 +335,7 @@ pub(crate) async fn start_volume_compress(
         .ok_or_else(|| source_volume_missing(&source_volume_id))?;
 
     // The new `.zip` doesn't exist yet, so `resolve` returns the PARENT drive volume
-    // (`is_archive = false` for a non-existent path) — the drive the seed is written
-    // to. `compress_start` bypasses the archive-boundary resolve on its own.
+    // (nothing routes for a non-existent path) — the drive the seed is written to. `compress_start` bypasses the archive-boundary resolve on its own.
     let dest_volume = get_volume_manager()
         .resolve(&dest_volume_id, Path::new(&dest_zip_path))
         .await

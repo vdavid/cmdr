@@ -46,8 +46,9 @@ the crate boundary is what makes that a compile error rather than a habit.
      plus a `VolumeHost` handed in at construction; the app's adapters turn each answer into a frontend event or a
      cache write.
    - Crate backends (no `tauri`, verified alone by `cargo check -p <crate>`): `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-     `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanently:
-     the git portal is implemented as its hooks). `InMemoryVolume` (in `cmdr-fs`) is the test and stress fixture.
+     `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanently)
+     and `GitPortalVolume` (`apps/desktop/src-tauri/src/file_system/git/volume.rs`, until it moves to `cmdr-git`). `InMemoryVolume` (in `cmdr-fs`)
+     is the test and stress fixture.
 3. **The app-side half of each backend.** What a backend can't answer from its protocol alone, and what must know the
    concrete type: discovery UI, the keychain, the OS mount, the ptpcamerad workaround, and REGISTRATION. A backend never
    registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
@@ -63,7 +64,8 @@ the crate boundary is what makes that a compile error rather than a habit.
 ```
 consumers: transfer engine, panes, delete, indexer BFS, viewer, MCP
         │  Arc<dyn Volume>
-VolumeManager (registry; resolve routes .zip paths to ArchiveVolume)
+VolumeManager (registry; resolve routes .zip paths to ArchiveVolume,
+               and .git/<category>/ paths to GitPortalVolume)
         │
 backends ── file-ops face: impl Volume ──────────────────────────────┐
   crate:  Archive  Smb  Sftp  WebDav  Adb  Mtp                       │ cmdr-fs: Volume trait,
@@ -87,21 +89,40 @@ Every non-forced `LocalPosixVolume::rename` is atomic-no-overwrite. macOS uses `
 `renameat2(RENAME_NOREPLACE)`, covering the boot volume, attached local volumes, and cloud folders registered under
 their own volume IDs. A separate metadata check followed by plain `rename` is not an acceptable substitute.
 
-## Resolving a path: archive routing
+## Resolving a path: the two routes
 
-`VolumeManager::resolve(volume_id, path)` (`manager/archive_routing.rs`) answers "which volume serves this path": the
-registered volume for `volume_id`, or a read-only `ArchiveVolume` when the path crosses a `.zip` boundary. It's async
-because confirming that boundary on a remote parent (direct SMB / MTP) costs a `get_metadata` plus a four-byte
-`read_range` over the network; a local parent confirms with a zero-network `std::fs` stat and magic sniff.
+`VolumeManager::resolve(volume_id, path)` (`manager/routing.rs`) answers "which volume serves this path": the
+registered volume for `volume_id`, or a read-only volume minted by one of two ROUTES. Both hand the caller's path back
+verbatim and both are capped by an LRU; `ResolvedVolume.routed` says which one fired.
 
-- **`ResolvedVolume.path` is the caller's input path, verbatim.** An archive resolve only swaps the volume; the
-  `ArchiveVolume` maps the whole `/…/foo.zip/inner` path into its own namespace via `inner_path()`. Adoption sites read
+- **`RoutedKind::GitPortal`** (`manager/git_routing.rs`), when the path reaches into a repo's virtual `.git` trees:
+  a `.git/<category>/` segment for one of the six categories, or exactly one of those category directories. Purely
+  lexical, no I/O, and checked FIRST, so a `.zip` inside a snapshot belongs to the portal rather than to an archive
+  route looking for a file that isn't on disk. `.git/` itself, `.git/config`, and every real entry under `.git` stay on
+  the parent volume, which is what keeps them editable and keeps a repo-folder delete walking them.
+- **`RoutedKind::Archive`** (`manager/archive_routing.rs`), when the path crosses a `.zip` boundary. This is the half
+  that makes `resolve` async: confirming a boundary on a remote parent (direct SMB / MTP) costs a `get_metadata` plus a
+  four-byte `read_range` over the network, where a local parent confirms with a zero-network `std::fs` stat and magic
+  sniff.
+
+- **`ResolvedVolume.path` is the caller's input path, verbatim.** A routed resolve only swaps the volume; the
+  `ArchiveVolume` maps the whole `/…/foo.zip/inner` path into its own namespace via `inner_path()`, and the
+  `GitPortalVolume` maps `/…/.git/branches/main/src` through `git::path::classify_in`. Adoption sites read
   `resolved.path`, so the "path unchanged" contract lives in one place.
-- **`resolve_local_only` is the sync sibling that confirms LOCAL boundaries only**, and its one caller is the write-op
-  fresh-listing oracle (`listing::caching::try_get_authoritative_listing`), which runs on sync recursive scan walkers.
-  That oracle guards remote archives separately, so local-only routing is sufficient there.
-- **An archive LRU caps registrations at 16.** Browsing many zips must not leak volumes, parents, and index caches;
-  eviction is harmless, since the next navigation re-resolves lazily.
+- **Most readers ask `is_routed()`, not the kind.** Skipping drive-index enrich/verify and refusing writes follow from
+  being routed at all: neither kind's paths are real FS paths and neither takes a mutation. Match a variant only where
+  the answer is about that ONE backend — the archive-edit changeset driver, the archive preview, the viewer's extract
+  path, and the fresh-listing oracle's unconfirmed-remote-archive guard.
+- **A routed volume is not a mount.** `mount_id_for_path` skips both by TYPE (an `ArchiveVolume`'s root is the `.zip`
+  and a `GitPortalVolume`'s is `<worktree>/.git`, so either would win the longest-root race), by type rather than by
+  LRU membership because registration happens a moment before the LRU insert.
+- **`resolve_local_only` is the sync sibling that confirms LOCAL archive boundaries only** (git routing is lexical, so
+  it's identical there), and its one caller is the write-op fresh-listing oracle
+  (`listing::caching::try_get_authoritative_listing`), which runs on sync recursive scan walkers. That oracle guards
+  remote archives separately, so local-only routing is sufficient there.
+- **Separate LRUs, 16 archives and 8 git portals**, sharing `touch_routed_lru`. Separate on purpose: browsing a folder
+  full of zips must not evict the portal of the repo the other pane is sitting in. Eviction is harmless either way,
+  since the next navigation re-resolves lazily.
 
 ## Trait capability model
 
@@ -358,6 +379,12 @@ destination goes through, plus `path_exists`.
 `LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.
 
 ## Git delegation hooks
+
+The virtual trees themselves are a ROUTE now (§ "Resolving a path: the two routes"): `resolve` sends any path under
+`.git/<category>/` to a `GitPortalVolume`, which never reaches the hooks below. What's left for them is the portal ROOT
+(`.git/` itself, a mixed listing of real entries plus the six categories) and the mutation guards. Both go away in the
+same milestone that adds the listing overlay; until then a virtual path is served by whichever comes first, and the two
+agree because they share `virtual_listing`.
 
 `LocalPosixVolume` delegates three read-side methods to the git module after `resolve()`:
 

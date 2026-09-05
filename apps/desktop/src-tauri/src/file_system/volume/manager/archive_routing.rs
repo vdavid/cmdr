@@ -1,14 +1,17 @@
-//! Archive routing for the [`VolumeManager`].
+//! Archive routing for the [`VolumeManager`]: the half of
+//! [`resolve`](VolumeManager::resolve) that sends a path crossing a `.zip`
+//! boundary to a read-only, on-demand [`ArchiveVolume`], plus the LRU that caps
+//! how many stay registered.
 //!
-//! The plain registry (hold volumes by ID) lives in the parent `manager` module.
-//! This module is the other half: routing a path that crosses a `.zip` boundary
-//! to a read-only, on-demand [`ArchiveVolume`], plus the LRU that caps how many
-//! stay registered. It's a second inherent `impl VolumeManager` block (a type's
-//! impl can span files within a crate), so every method stays at
+//! The plain registry (hold volumes by ID) lives in the parent `manager`
+//! module, the git-portal route in `git_routing.rs`, and the dispatcher over
+//! both in `routing.rs`. This is one more inherent `impl VolumeManager` block
+//! (a type's impl can span files within a crate), so every method stays at
 //! `VolumeManager::…` regardless of which file it's in.
 
 use super::super::{Volume, WatchCoverage};
 use super::VolumeManager;
+use super::routing::{ResolvedVolume, RoutedKind};
 use crate::ignore_poison::IgnorePoison;
 use cmdr_archive::{
     ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, archive_boundary_candidate, bytes_match_archive_magic,
@@ -44,39 +47,10 @@ fn watch_coverage_for_backing_file(backing_path: &Path) -> WatchCoverage {
     }
 }
 
-/// Outcome of [`VolumeManager::resolve`]: the volume that should serve `path`.
-///
-/// `path` is ALWAYS the caller's input path unchanged. An archive resolve only
-/// swaps in the `ArchiveVolume` — which maps the full `/…/foo.zip/inner` path to
-/// its own inner namespace via `inner_path()` — and a passthrough returns the
-/// requested volume untouched. Adoption sites read `resolved.path` so the "full
-/// path, unchanged" contract lives in exactly one place.
-pub struct ResolvedVolume {
-    /// The volume to call, or `None` when `volume_id` isn't registered (an
-    /// unmount race). Sites keep their existing `.ok_or_else(...)?` handling.
-    pub volume: Option<Arc<dyn Volume>>,
-    /// The path to pass to `volume`'s methods — the input path, verbatim.
-    pub path: PathBuf,
-    /// `true` when `path` crossed into an archive and `volume` is its
-    /// `ArchiveVolume`. Sites use it to skip drive-index enrich/verify and the
-    /// read-only write guards.
-    pub is_archive: bool,
-}
-
-impl ResolvedVolume {
-    /// A non-archive resolve: the requested volume (if any), path unchanged.
-    fn passthrough(volume: Option<Arc<dyn Volume>>, path: &Path) -> Self {
-        Self {
-            volume,
-            path: path.to_path_buf(),
-            is_archive: false,
-        }
-    }
-}
-
 impl VolumeManager {
-    /// Path-aware volume lookup: routes a path that crosses a `.zip` boundary to
-    /// the read-only [`ArchiveVolume`] for that archive, registering it on demand.
+    /// The archive half of [`resolve`](Self::resolve): routes a path that
+    /// crosses a `.zip` boundary to the read-only [`ArchiveVolume`] for that
+    /// archive, registering it on demand.
     ///
     /// No archive-extension component → a plain [`get`](Self::get) with the path
     /// unchanged, and zero I/O (the pure candidate check gates everything below).
@@ -93,11 +67,7 @@ impl VolumeManager {
     /// four-byte `read_range` (the zip magic). That's why this is `async`. See
     /// [`confirm_remote_archive_boundary`].
     ///
-    /// Adopt this at every site that did `get(volume_id)` then `volume.method(path)`
-    /// so a `.zip` path transparently routes to the archive. The sync-only
-    /// [`resolve_local_only`](Self::resolve_local_only) exists for the one caller
-    /// that can't `.await` (the write-op fresh-listing oracle).
-    pub async fn resolve(&self, volume_id: &str, path: &Path) -> ResolvedVolume {
+    pub(super) async fn resolve_archive(&self, volume_id: &str, path: &Path) -> ResolvedVolume {
         // Pure string pre-filter: no archive-extension component ⇒ zero I/O on
         // the hot listing path (neither disk nor network is touched here).
         let Some((zip_path, _inner)) = archive_boundary_candidate(path) else {
@@ -124,18 +94,10 @@ impl VolumeManager {
         self.register_archive(volume_id, parent, zip_path, path)
     }
 
-    /// Sync sibling of [`resolve`](Self::resolve) that confirms **only local**
-    /// archive boundaries. A remote (direct SMB / MTP) `.zip` path returns a
-    /// passthrough (its parent volume, path unchanged), because a remote confirm
-    /// needs async I/O this method can't do.
-    ///
-    /// The ONE caller is the write-op fresh-listing oracle
-    /// (`listing::caching::try_get_authoritative_listing`), which runs on sync recursive
-    /// scan walkers. That oracle guards remote archives separately (a non-local
-    /// parent's volume-level `listing_watch_coverage` would falsely claim freshness),
-    /// so the local-only routing here is sufficient there. Every other caller uses
-    /// the async [`resolve`](Self::resolve) and gets full remote routing.
-    pub fn resolve_local_only(&self, volume_id: &str, path: &Path) -> ResolvedVolume {
+    /// The archive half of [`resolve_local_only`](Self::resolve_local_only):
+    /// confirms LOCAL boundaries only, because a remote confirm needs async I/O
+    /// its caller can't do.
+    pub(super) fn resolve_local_archive(&self, volume_id: &str, path: &Path) -> ResolvedVolume {
         let Some((zip_path, _inner)) = confirm_archive_boundary(path) else {
             return ResolvedVolume::passthrough(self.get(volume_id), path);
         };
@@ -236,7 +198,7 @@ impl VolumeManager {
             Some(volume) => ResolvedVolume {
                 volume: Some(volume),
                 path: path.to_path_buf(),
-                is_archive: true,
+                routed: Some(RoutedKind::Archive),
             },
             // Registered-then-evicted before we could read it back (only reachable
             // under a pathologically small cap). Fall back to the parent volume.
@@ -250,17 +212,9 @@ impl VolumeManager {
     /// `resolve` re-registers. Unregisters OUTSIDE the LRU lock so the LRU and
     /// volumes locks are never held at once.
     fn touch_archive_lru(&self, id: &str) {
-        let evicted: Vec<String> = {
+        let evicted = {
             let mut lru = self.archive_lru.lock_ignore_poison();
-            lru.retain(|existing| existing != id);
-            lru.push_back(id.to_string());
-            let mut evicted = Vec::new();
-            while lru.len() > ARCHIVE_LRU_CAP {
-                if let Some(old) = lru.pop_front() {
-                    evicted.push(old);
-                }
-            }
-            evicted
+            super::touch_routed_lru(&mut lru, id, ARCHIVE_LRU_CAP)
         };
         for old in evicted {
             self.unregister(&old);
@@ -350,7 +304,7 @@ mod tests {
         manager.register("root", Arc::new(InMemoryVolume::new("Root")));
 
         let resolved = manager.resolve("root", Path::new("/some/plain/dir")).await;
-        assert!(!resolved.is_archive);
+        assert!(!resolved.is_routed());
         assert_eq!(resolved.path, PathBuf::from("/some/plain/dir"));
         assert_eq!(resolved.volume.expect("volume").name(), "Root");
     }
@@ -367,7 +321,7 @@ mod tests {
 
         let inner = zip.join("docs/readme.txt");
         let resolved = manager.resolve("root", &inner).await;
-        assert!(resolved.is_archive);
+        assert!(resolved.is_routed());
         // The path is handed back unchanged (the ArchiveVolume maps it itself).
         assert_eq!(resolved.path, inner);
         // The resolved volume is the archive: its root is the `.zip` path.
@@ -384,7 +338,7 @@ mod tests {
 
         let inner = zip.join("docs/readme.txt");
         let resolved = manager.resolve("root", &inner).await;
-        assert!(resolved.is_archive, "a remote zip must route to an ArchiveVolume");
+        assert!(resolved.is_routed(), "a remote zip must route to an ArchiveVolume");
         assert_eq!(resolved.path, inner);
         assert_eq!(resolved.volume.expect("archive volume").root(), zip);
     }
@@ -399,7 +353,7 @@ mod tests {
         manager.register("root", Arc::new(parent));
 
         let resolved = manager.resolve("root", &zip_dir.join("sub")).await;
-        assert!(!resolved.is_archive, "a remote dir named foo.zip is not an archive");
+        assert!(!resolved.is_routed(), "a remote dir named foo.zip is not an archive");
     }
 
     #[tokio::test]
@@ -415,7 +369,7 @@ mod tests {
         manager.register("root", Arc::new(parent));
 
         let resolved = manager.resolve("root", &mislabeled.join("inner")).await;
-        assert!(!resolved.is_archive, "a mislabeled remote file is not an archive");
+        assert!(!resolved.is_routed(), "a mislabeled remote file is not an archive");
     }
 
     #[tokio::test]
@@ -436,7 +390,7 @@ mod tests {
 
         let resolved = manager.resolve("root", &zip.join("inner")).await;
         assert!(
-            resolved.is_archive,
+            resolved.is_routed(),
             "route on an unavailable positioned-read primitive so the archive layer refuses typed"
         );
     }
@@ -471,7 +425,7 @@ mod tests {
             Arc::new(InMemoryVolume::new("Ext").with_root(dir.path()).with_local_fs_access()),
         );
         let inner = zip.join("docs/readme.txt");
-        assert!(manager.resolve("ext", &inner).await.is_archive);
+        assert!(manager.resolve("ext", &inner).await.is_routed());
 
         let inner = inner.to_string_lossy();
         assert_eq!(manager.mount_id_for_path(&inner).as_deref(), Some("ext"));
@@ -505,7 +459,7 @@ mod tests {
         assert!(manager.get(&oldest_id).is_none());
         // ...but re-resolving it re-registers lazily (eviction is harmless).
         let re = manager.resolve("root", &zips[0].join("inner")).await;
-        assert!(re.is_archive);
+        assert!(re.is_routed());
         assert!(manager.get(&oldest_id).is_some());
     }
 
@@ -533,7 +487,7 @@ mod tests {
 
         // Resolving the `.zip` path lists the archive root through the ArchiveVolume.
         let resolved = manager.resolve("root", &zip_path).await;
-        assert!(resolved.is_archive);
+        assert!(resolved.is_routed());
         let volume = resolved.volume.expect("archive volume");
         let entries = volume
             .list_directory(&resolved.path, None)
@@ -553,7 +507,7 @@ mod tests {
         let manager = VolumeManager::new();
         // No parent registered under "root".
         let resolved = manager.resolve("root", &zip.join("inner")).await;
-        assert!(!resolved.is_archive);
+        assert!(!resolved.is_routed());
         assert!(resolved.volume.is_none());
     }
 

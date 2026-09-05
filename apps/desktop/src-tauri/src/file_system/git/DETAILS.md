@@ -69,8 +69,12 @@ that isn't there. Four walkers matter, and only one of them can reach a virtual 
   `None` and the oracle declines. That one fact is what keeps the boot-volume delete and the scan preview honest; a
   future watch armed under `.git` would hand six phantom rows straight to a delete walker.
 - **The drive index CAN'T.** Local volumes are walked by `cmdr-index`'s guarded walker with raw syscalls, and that crate
-  can't name the app's git module. SMB and MTP go through the trait scanner, but the portal hooks live only in
-  `LocalPosixVolume`, so a `.git` on a share never routes.
+  can't name the app's git module. SMB and MTP go through the trait scanner, and the route would answer for a `.git` on
+  a share, but `mount_id_for_path` skips a routed volume by type so nothing indexes through one.
+
+Routing hasn't changed that table yet: a walker meets the virtual rows through the portal-root HOOK, which still lists
+the six categories under `.git/`. What changes it is the listing overlay, which moves those rows out of every listing
+except a pane's.
 
 ## Linked worktrees
 
@@ -135,6 +139,39 @@ is-dirty check the CLI offers) takes ~75 ms on the same fixture, so the
 target is a hair tighter than what any tool can deliver here. The hard cap
 in the bench is 100 ms; we land well under. Subsequent calls hit the
 process-wide repo handle cache and run in microseconds.
+
+## The portal is a routed volume
+
+`GitPortalVolume` (`volume.rs`) is a read-only `Volume` over one repo's virtual trees, the same shape `ArchiveVolume`
+has. `VolumeManager::resolve` routes any path with a `.git/<category>/` segment to it (`volume/DETAILS.md` §
+"Resolving a path: the two routes") and hands it the input path verbatim; the volume maps that path to
+`(repo, category, ref, tree path)` with `path::classify_in` and answers from the same `virtual_listing` / `log` /
+`tree` code the hooks call.
+
+- **Its namespace is the six categories and what's under them, nothing else.** Listing its root
+  (`<worktree>/.git`) answers the six category rows ALONE, via `virtual_listing::list_categories`. Real `.git/*`
+  entries are the parent volume's, which is what keeps `.git/config` editable and lets a repo-folder delete walk
+  `.git/` as an ordinary directory. `virtual_listing::list_root` (real entries plus the six) is what the portal-root
+  HOOK still serves until the listing overlay replaces it.
+- **A `.git` that isn't a repository is `NotFound`, decided here.** Routing is lexical and does no I/O, so "is there
+  actually a repo at this path?" is answered on first use, through the portal's `RepoCache`. ❌ Don't add a `stat` to
+  the route to pre-empt it.
+- **What the trait answers**: `is_writable` false and every mutation on the trait default (`create_directory_all` is
+  overridden, since its default would claim success for a directory that exists); `supports_export` and
+  `supports_streaming` true, with `open_read_stream` handing back a `GitBlobReadStream`; `can_watch_listings` false and
+  `listing_watch_coverage` `None`, because the paths aren't on disk; `supports_local_fs_access` false and `local_path`
+  `None` for the same reason; `lane_key` and `get_space_info` delegate to the PARENT volume, since the objects live on
+  its disk. `scan_for_copy` and the batch scan come from `cmdr_fs::volume::scan_walk` through a two-method
+  `ScanSource`, which is what lets a whole branch tree be copied out to another volume.
+- **Every `gix` call runs on `VolumeHost::runtime().spawn_blocking`**, ❌ never on the caller's async worker: a listing
+  of a big repo is a blocking walk.
+
+### `GitPortal`: the value that owns the cache
+
+`GitPortal` (`portal.rs`) holds the `RepoCache` and the `VolumeHost`, and mints one `GitPortalVolume` per repo. The
+cache is a VALUE the portal owns, ❌ not a static of its own; `portal()` is only where the app parks its instance, so
+the call sites that predate the portal (`repo::discover_repo` from an IPC command, the watcher) share one cache instead
+of opening every repo twice. A volume always holds its own `Arc<GitPortal>`.
 
 ## Volume hook contract
 

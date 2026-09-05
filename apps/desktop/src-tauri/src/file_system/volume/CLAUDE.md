@@ -6,14 +6,17 @@ through a `Volume`, **paths relative to the volume root**.
 ## Module map
 
 - `mod.rs` re-exports all of `cmdr_fs::volume`; the trait itself is `crates/cmdr-fs/src/volume/mod.rs`.
-- `manager.rs` (+ `manager/`: archive routing, the mount-root set): the registry behind `get_volume_manager()`.
+- `manager.rs` (+ `manager/`: `routing.rs` and the two routes it dispatches to, the mount-root set): the registry
+  behind `get_volume_manager()`.
 - `backends/` (`backends/CLAUDE.md`), `eject.rs` (macOS+Linux teardown by kind), `friendly_error/` (in `crates/cmdr-fs`).
 
 ## Must-knows
 
-- **A site passing a path calls `VolumeManager::resolve(volume_id, path).await`, ❌ never `get(volume_id)`.** `resolve`
-  routes a `.zip`-crossing path to a read-only `ArchiveVolume`, path UNCHANGED. `resolve_local_only` is for the ONE
-  caller that can't `.await`.
+- **A site passing a path calls `VolumeManager::resolve(volume_id, path).await`, ❌ never `get(volume_id)`.** It routes
+  a `.zip`-crossing path to a read-only `ArchiveVolume` and a `.git/<category>/` path to a `GitPortalVolume`, path
+  UNCHANGED, and answers `is_routed()`, which is what a reader wants unless it's about one backend. Match a
+  `RoutedKind` only there. `resolve_local_only` is for the ONE caller that can't `.await`. `DETAILS.md` § "Resolving a
+  path: the two routes".
 - **Watcher-pre-registered volumes go in via `register_if_absent`**, else the FSEvents watcher overwrites an
   `SmbVolume` with a `LocalPosixVolume`. Plain `register` is for explicit replacement at the SAME root.
   `DETAILS.md` § "Key decisions".
@@ -31,6 +34,7 @@ through a `Volume`, **paths relative to the volume root**.
   the app at launch (`volumes/DETAILS.md` § "Hung mounts").
 - **Cross-volume copy flows only through `open_read_stream` / `write_from_stream`, chunk by chunk.** ❌ Never drain a
   `VolumeReadStream` or collect a remote file into a `Vec<u8>`.
+
 - **Every mutation must call `notify_mutation`, `write_from_stream` included.** Its default is a no-op and SMB/MTP
   watcher events are lossy, so skipping it leaves a stale pane.
 - **Capability flags default to the conservative answer** (`Err(NotSupported)` / `false`), so a backend opts in.

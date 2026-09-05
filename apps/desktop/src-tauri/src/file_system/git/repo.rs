@@ -3,6 +3,13 @@
 //! `discover_repo(path)` walks up from `path` looking for `.git` (dir or
 //! gitlink file). It rejects bare repos because the whole UX is anchored on a
 //! working tree. `repo_info(repo)` collects the chip-relevant state.
+//!
+//! Handles live in a [`RepoCache`], which is a VALUE the [`GitPortal`] owns
+//! (`portal.rs`), ❌ not a static of its own. `discover_repo` here is the
+//! convenience for callers that have no portal in hand; it reaches the app's
+//! parked portal for the same cache, so there is exactly one per process.
+//!
+//! [`GitPortal`]: super::portal::GitPortal
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
@@ -51,30 +58,13 @@ pub type RepoHandle = Arc<gix::ThreadSafeRepository>;
 /// and the canonical worktree root. Bare repos are rejected – without a
 /// working tree there's nothing for the file manager to anchor on.
 ///
-/// This is the single entry point for repo lookup; `repo_info` and
-/// `list_status` both go through the cache to avoid re-opening the same repo.
+/// The convenience entry point for callers with no [`GitPortal`] in hand
+/// (`repo_info`, `list_status`, the IPC commands): it borrows the app's parked
+/// portal so every caller shares one [`RepoCache`].
+///
+/// [`GitPortal`]: super::portal::GitPortal
 pub fn discover_repo(path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
-    let cache = repo_cache();
-    if let Some((handle, root)) = cache.lookup_for_path(path) {
-        return Ok((handle, root));
-    }
-
-    let repo = gix::ThreadSafeRepository::discover(path).map_err(map_discover_err)?;
-    // `ThreadSafeRepository` only exposes `work_dir()` (no `workdir`).
-    // Suppress the deprecation warning here – gix kept work_dir on the
-    // ThreadSafe wrapper while only the Repository alias got a replacement.
-    #[allow(
-        deprecated,
-        reason = "gix::ThreadSafeRepository only exposes work_dir(); see status.rs for Repository::workdir()"
-    )]
-    let root = repo
-        .work_dir()
-        .ok_or_else(|| FriendlyGitError::new(FriendlyGitErrorKind::BareRepo, path.display().to_string()))?
-        .to_path_buf();
-    let canonical_root = root.canonicalize().unwrap_or(root.clone());
-    let handle: RepoHandle = Arc::new(repo);
-    cache.insert(canonical_root.clone(), handle.clone());
-    Ok((handle, canonical_root))
+    super::portal::portal().repos().discover(path)
 }
 
 /// Computes branch / detached / dirty / ahead-behind for a discovered repo.
@@ -149,7 +139,7 @@ pub fn repo_info(handle: &RepoHandle, repo_root: &Path) -> Result<RepoInfo, Frie
 /// it simple: no idle timer, no LRU. If two subscribers race to unsubscribe,
 /// the last one out evicts.
 pub fn evict_handle(repo_root: &Path) {
-    repo_cache().evict(repo_root);
+    super::portal::portal().repos().evict(repo_root);
 }
 
 fn map_discover_err(err: gix::discover::Error) -> FriendlyGitError {
@@ -220,15 +210,46 @@ pub(crate) fn count_commits_between(repo: &gix::Repository, tip: gix::ObjectId, 
 
 // ── Handle cache ────────────────────────────────────────────────────────
 
-struct RepoCache {
+/// Open `gix` repositories, keyed by canonical worktree root.
+///
+/// A VALUE, ❌ never a static: the [`GitPortal`](super::portal::GitPortal) owns
+/// the one the process shares, so a test (and, later, the crate) can hold its
+/// own without reaching a global.
+pub struct RepoCache {
     inner: RwLock<std::collections::HashMap<PathBuf, RepoHandle>>,
 }
 
 impl RepoCache {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             inner: RwLock::new(std::collections::HashMap::new()),
         }
+    }
+
+    /// Opens (or reuses) the repo containing `path`, returning its handle and
+    /// canonical worktree root. Bare repos are refused: without a working tree
+    /// there's nothing for the file manager to anchor on.
+    pub fn discover(&self, path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
+        if let Some((handle, root)) = self.lookup_for_path(path) {
+            return Ok((handle, root));
+        }
+
+        let repo = gix::ThreadSafeRepository::discover(path).map_err(map_discover_err)?;
+        // `ThreadSafeRepository` only exposes `work_dir()` (no `workdir`).
+        // Suppress the deprecation warning here – gix kept work_dir on the
+        // ThreadSafe wrapper while only the Repository alias got a replacement.
+        #[allow(
+            deprecated,
+            reason = "gix::ThreadSafeRepository only exposes work_dir(); see status.rs for Repository::workdir()"
+        )]
+        let root = repo
+            .work_dir()
+            .ok_or_else(|| FriendlyGitError::new(FriendlyGitErrorKind::BareRepo, path.display().to_string()))?
+            .to_path_buf();
+        let canonical_root = root.canonicalize().unwrap_or(root.clone());
+        let handle: RepoHandle = Arc::new(repo);
+        self.insert(canonical_root.clone(), handle.clone());
+        Ok((handle, canonical_root))
     }
 
     fn lookup_for_path(&self, path: &Path) -> Option<(RepoHandle, PathBuf)> {
@@ -258,15 +279,11 @@ impl RepoCache {
         }
     }
 
-    fn evict(&self, root: &Path) {
+    /// Drops a cached handle. Called when the last `git-state` subscriber for a
+    /// repo goes away; no idle timer, no LRU.
+    pub fn evict(&self, root: &Path) {
         if let Ok(mut inner) = self.inner.write() {
             inner.remove(root);
         }
     }
-}
-
-fn repo_cache() -> &'static RepoCache {
-    use std::sync::OnceLock;
-    static CACHE: OnceLock<RepoCache> = OnceLock::new();
-    CACHE.get_or_init(RepoCache::new)
 }

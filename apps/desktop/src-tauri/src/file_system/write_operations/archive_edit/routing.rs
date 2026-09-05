@@ -11,6 +11,7 @@ use std::sync::Arc;
 use super::super::OperationEventSink;
 use super::super::manager;
 use super::super::types::WriteOperationError;
+use crate::file_system::volume::manager::RoutedKind;
 use crate::file_system::volume::manager::get_volume_manager;
 use cmdr_archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 
@@ -90,7 +91,7 @@ pub(crate) async fn archive_inner_exists(parent_volume_id: &str, archive_path: &
         };
         let resolved = get_volume_manager().resolve(parent_volume_id, &full_path).await;
         return match resolved.volume {
-            Some(volume) if resolved.is_archive => volume.exists(&full_path).await,
+            Some(volume) if resolved.routed == Some(RoutedKind::Archive) => volume.exists(&full_path).await,
             _ => false,
         };
     }

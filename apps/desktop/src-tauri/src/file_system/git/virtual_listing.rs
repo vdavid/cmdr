@@ -53,35 +53,50 @@ use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
 /// for the rules. Empty categories still show up – opening them lists
 /// nothing, which is more honest than hiding the concept altogether.
 pub fn list_root(handle: &RepoHandle, repo_root: &Path) -> Vec<FileEntry> {
-    let dot_git = repo_root.join(".git");
-
     let virtual_names: std::collections::HashSet<&'static str> = Cat::ALL.iter().map(|c| c.as_segment()).collect();
 
-    let mut real_entries = read_real_dot_git(repo_root);
-    real_entries.retain(|fe| !virtual_names.contains(fe.name.as_str()));
-    real_entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+    let mut out = read_real_dot_git(repo_root);
+    out.retain(|fe| !virtual_names.contains(fe.name.as_str()));
+    out.sort_by(|a, b| match (a.is_directory, b.is_directory) {
         (true, false) => std::cmp::Ordering::Less,
         (false, true) => std::cmp::Ordering::Greater,
         _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
 
-    let mut out = real_entries;
-    for cat in Cat::ALL {
-        let icon = match cat {
-            Cat::Branches => "git:branch",
-            Cat::Tags => "git:tag",
-            Cat::Commits => "git:commit",
-            Cat::Stash | Cat::Worktrees | Cat::Submodules => "git:fork",
-        };
-        let segment = cat.as_segment();
-        let path = dot_git.join(segment).to_string_lossy().into_owned();
-        let mut fe = FileEntry::new(segment.to_string(), path, true, false);
-        fe.permissions = 0o755;
-        fe.icon_id = icon.to_string();
-        populate_root_category(&mut fe, cat, handle, repo_root);
-        out.push(fe);
-    }
+    out.extend(list_categories(handle, repo_root));
     out
+}
+
+/// The six virtual category rows on their own, in display order, with their
+/// Modified and Size cells filled in.
+///
+/// This is what a [`GitPortalVolume`](super::volume::GitPortalVolume) lists at
+/// its own root: the volume serves the virtual namespace and nothing else, so
+/// the real `.git/*` entries are the parent volume's to list.
+pub fn list_categories(handle: &RepoHandle, repo_root: &Path) -> Vec<FileEntry> {
+    let dot_git = repo_root.join(".git");
+    Cat::ALL
+        .into_iter()
+        .map(|cat| {
+            let segment = cat.as_segment();
+            let path = dot_git.join(segment).to_string_lossy().into_owned();
+            let mut fe = FileEntry::new(segment.to_string(), path, true, false);
+            fe.permissions = 0o755;
+            fe.icon_id = icon_for_category(cat).to_string();
+            populate_root_category(&mut fe, cat, handle, repo_root);
+            fe
+        })
+        .collect()
+}
+
+/// The icon every row for `cat` carries, wherever it's built.
+fn icon_for_category(cat: Cat) -> &'static str {
+    match cat {
+        Cat::Branches => "git:branch",
+        Cat::Tags => "git:tag",
+        Cat::Commits => "git:commit",
+        Cat::Stash | Cat::Worktrees | Cat::Submodules => "git:fork",
+    }
 }
 
 /// Reads the real on-disk gitdir for the portal root listing. Bypasses
@@ -490,13 +505,7 @@ pub fn get_metadata_for(
             let path = repo_root.join(".git").join(segment).to_string_lossy().into_owned();
             let mut fe = FileEntry::new(segment.into(), path, true, false);
             fe.permissions = 0o755;
-            fe.icon_id = match cat {
-                Cat::Branches => "git:branch",
-                Cat::Tags => "git:tag",
-                Cat::Commits => "git:commit",
-                Cat::Stash | Cat::Worktrees | Cat::Submodules => "git:fork",
-            }
-            .to_string();
+            fe.icon_id = icon_for_category(*cat).to_string();
             populate_root_category(&mut fe, *cat, handle, repo_root);
             Ok(Some(fe))
         }
@@ -515,13 +524,7 @@ pub fn get_metadata_for(
                 .into_owned();
             let mut fe = FileEntry::new(name.clone(), path, true, false);
             fe.permissions = 0o755;
-            fe.icon_id = match cat {
-                Cat::Branches => "git:branch",
-                Cat::Tags => "git:tag",
-                Cat::Commits => "git:commit",
-                Cat::Stash | Cat::Worktrees | Cat::Submodules => "git:fork",
-            }
-            .to_string();
+            fe.icon_id = icon_for_category(*cat).to_string();
             populate_ref_columns(&mut fe, *cat, name, handle, repo_root);
             // For worktrees and submodules, surface the redirect even on a
             // direct stat so drag-drop, clipboard, and copy preview see it.

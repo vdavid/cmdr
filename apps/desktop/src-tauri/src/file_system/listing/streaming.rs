@@ -447,7 +447,7 @@ pub(crate) async fn read_directory_with_progress(
     let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(volume_id, path)
         .await;
-    let is_archive = resolved.is_archive;
+    let is_routed = resolved.is_routed();
     let volume = resolved
         .volume
         .ok_or_else(|| VolumeError::NotFound(format!("Volume not found: {}", volume_id)))?;
@@ -536,10 +536,11 @@ pub(crate) async fn read_directory_with_progress(
     }
 
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
-    // so that sort-by-size works correctly for directories. Archives have no drive
-    // index (their inner paths aren't real FS paths), so enrich/verify are skipped.
+    // so that sort-by-size works correctly for directories. A routed volume has no
+    // drive index (an archive's inner paths and a git snapshot's paths aren't real
+    // FS paths), so enrich/verify are skipped.
     let enrich_start = std::time::Instant::now();
-    if !is_archive {
+    if !is_routed {
         crate::index_host::index().enrich(volume_id, &mut entries);
         crate::index_host::index().verify_directory(volume_id, &path.to_string_lossy());
     }

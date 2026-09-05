@@ -22,7 +22,7 @@
 
 use std::path::{Component, Path, PathBuf};
 
-use super::repo::RepoHandle;
+use super::repo::{RepoCache, RepoHandle};
 
 /// Top-level categories under `.git/`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,7 +48,7 @@ impl Cat {
         }
     }
 
-    fn from_segment(s: &str) -> Option<Self> {
+    pub(crate) fn from_segment(s: &str) -> Option<Self> {
         match s {
             "branches" => Some(Cat::Branches),
             "tags" => Some(Cat::Tags),
@@ -111,6 +111,26 @@ pub fn is_virtual(path: &Path) -> bool {
     })
 }
 
+/// The lexical half of the portal route: the worktree root of `path`, when
+/// `path` reaches into one of the six virtual categories under its `.git`.
+///
+/// `<repo>/.git/branches`, `<repo>/.git/branches/main`, and anything deeper
+/// answer `Some(<repo>)`. `<repo>/.git` itself, `<repo>/.git/config`, and every
+/// path outside a `.git` answer `None`: those are the parent volume's, and the
+/// portal root reaches the pane through the listing overlay instead.
+///
+/// ❗ Pure string work, ❌ never a `stat`. This runs on every path-bearing call,
+/// and whether that `.git` is a directory, a linked worktree's gitlink file, or
+/// not a repository at all is the portal volume's question, answered once on
+/// first use. A repo nested inside another repo's working tree routes to the
+/// INNER one, because the first `.git` segment wins.
+pub fn portal_route(path: &Path) -> Option<PathBuf> {
+    let (worktree_root, after_dot_git) = split_at_dot_git(path)?;
+    let category = after_dot_git.first()?;
+    Cat::from_segment(category)?;
+    Some(worktree_root)
+}
+
 /// Discovers the worktree root containing `path`, then classifies the rest
 /// of the path against the repo's refs.
 ///
@@ -123,8 +143,15 @@ pub fn is_virtual(path: &Path) -> bool {
 /// Errors are surfaced via the friendly-error path on actual operations,
 /// not here – this function is a router.
 pub fn classify(path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
+    classify_in(super::portal::portal().repos(), path)
+}
+
+/// [`classify`] against a specific [`RepoCache`], which is how a
+/// [`GitPortalVolume`](super::volume::GitPortalVolume) classifies: it holds its
+/// portal's cache rather than reaching the app's parked one.
+pub fn classify_in(repos: &RepoCache, path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
     let (worktree_root, after_dot_git) = split_at_dot_git(path)?;
-    let (handle, canonical_root) = super::repo::discover_repo(&worktree_root).ok()?;
+    let (handle, canonical_root) = repos.discover(&worktree_root).ok()?;
 
     let parsed = parse_after_dot_git(&after_dot_git, &handle)?;
     Some((parsed, handle, canonical_root))
@@ -303,6 +330,24 @@ mod tests {
         assert!(is_virtual(Path::new("/tmp/repo/.git/HEAD")));
         assert!(!is_virtual(Path::new("/tmp/repo/src/main.rs")));
         assert!(!is_virtual(Path::new("/tmp/repo")));
+    }
+
+    #[test]
+    fn portal_route_answers_for_a_category_and_nothing_else() {
+        let repo = Some(PathBuf::from("/repo"));
+        assert_eq!(portal_route(Path::new("/repo/.git/branches")), repo);
+        assert_eq!(portal_route(Path::new("/repo/.git/branches/main/src/lib.rs")), repo);
+        assert_eq!(portal_route(Path::new("/repo/.git/submodules")), repo);
+        // The portal root and the real entries under it stay with the parent volume.
+        assert_eq!(portal_route(Path::new("/repo/.git")), None);
+        assert_eq!(portal_route(Path::new("/repo/.git/config")), None);
+        assert_eq!(portal_route(Path::new("/repo/.git/objects/ab/cdef")), None);
+        assert_eq!(portal_route(Path::new("/repo/src/main.rs")), None);
+        // A repo inside a repo's working tree routes to the inner one.
+        assert_eq!(
+            portal_route(Path::new("/outer/vendor/inner/.git/tags/v1")),
+            Some(PathBuf::from("/outer/vendor/inner"))
+        );
     }
 
     #[test]

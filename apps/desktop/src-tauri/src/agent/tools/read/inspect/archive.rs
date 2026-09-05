@@ -18,6 +18,7 @@ use serde::Serialize;
 
 use super::{Content, FileRow, ReadFailure, TextAsk, UnreadableReason, ok_row, spoken_modified, status_for};
 use crate::file_system::volume::VolumeError;
+use crate::file_system::volume::manager::RoutedKind;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_viewer::ViewerError;
 use crate::file_viewer::archive_extract::ExtractedEntry;
@@ -105,7 +106,7 @@ pub(super) fn route_archive_path(
         return Routed::Plain;
     };
     let resolved = tauri::async_runtime::block_on(get_volume_manager().resolve(volume_id, p));
-    if !resolved.is_archive {
+    if resolved.routed != Some(RoutedKind::Archive) {
         return Routed::Plain;
     }
     // `None` is an unmount race after the boundary confirmed; the plain pipeline's stat

@@ -493,9 +493,11 @@ async fn sweep_on_volume(volume_id: &str, temps: Vec<VolumeTemp>) -> SweepTally 
             continue;
         }
         // `resolve`, not `get`: the site is passing a path, and a read-only
-        // `ArchiveVolume` route is one this sweep must never delete through.
+        // routed volume (an archive, a git snapshot) is one this sweep must
+        // never delete through.
         let resolved = get_volume_manager().resolve(volume_id, &temp.path).await;
-        let Some(volume) = resolved.volume.filter(|_| !resolved.is_archive) else {
+        let is_routed = resolved.is_routed();
+        let Some(volume) = resolved.volume.filter(|_| !is_routed) else {
             tally.deferred += 1;
             defer(vec![temp]);
             continue;

@@ -32,6 +32,7 @@ use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::RwLockIgnorePoison;
 
 use super::ViewerError;
+use crate::file_system::volume::manager::RoutedKind;
 
 /// Max uncompressed bytes to extract for a single preview. Above this the open is
 /// refused (typed) before any extraction, which doubles as the zip-bomb guard.
@@ -142,7 +143,7 @@ pub(crate) fn extract_if_archive_inner_with(
     let resolved = tauri::async_runtime::block_on(
         crate::file_system::volume::manager::get_volume_manager().resolve(volume_id, requested),
     );
-    if !resolved.is_archive {
+    if resolved.routed != Some(RoutedKind::Archive) {
         return Ok(None);
     }
     let Some(volume) = resolved.volume else {

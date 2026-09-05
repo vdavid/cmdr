@@ -51,7 +51,7 @@ pub async fn list_directory_start_with_volume(
     let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(volume_id, path)
         .await;
-    let is_archive = resolved.is_archive;
+    let is_routed = resolved.is_routed();
     let volume = resolved.volume.ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
@@ -73,10 +73,10 @@ pub async fn list_directory_start_with_volume(
     let listing_id = Uuid::new_v4().to_string();
 
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
-    // so that sort-by-size works correctly for directories. Archives have no drive
-    // index (inner paths aren't real FS paths), so enrich/verify are skipped.
+    // so that sort-by-size works correctly for directories. A routed volume has no
+    // drive index (its paths aren't real FS paths), so enrich/verify are skipped.
     let mut all_entries = all_entries;
-    if !is_archive {
+    if !is_routed {
         index().enrich(volume_id, &mut all_entries);
         index().verify_directory(volume_id, &path.to_string_lossy());
     }

@@ -46,6 +46,7 @@ pub mod column_meta;
 pub use cmdr_fs::volume::friendly_error::git as friendly;
 pub mod log;
 pub mod path;
+pub mod portal;
 pub mod read_blob;
 pub mod repo;
 pub mod snapshot_dates;
@@ -54,6 +55,7 @@ pub mod status;
 pub mod submodules;
 pub mod tree;
 pub mod virtual_listing;
+pub mod volume;
 pub mod watcher;
 pub mod worktrees;
 
@@ -68,9 +70,11 @@ mod portal_tests;
 #[cfg(test)]
 mod snapshot_dates_tests;
 #[cfg(test)]
-mod test_fixtures;
+pub(crate) mod test_fixtures;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod volume_tests;
 #[cfg(test)]
 mod walker_exposure_tests;
 

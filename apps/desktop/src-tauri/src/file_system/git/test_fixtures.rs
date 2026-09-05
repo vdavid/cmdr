@@ -62,17 +62,16 @@ const DEFAULT_COMMIT_SECS: u64 = 1_700_000_000;
 /// Creates a fresh per-process temp directory under `std::env::temp_dir()`.
 /// The path includes the module prefix, the supplied name, the PID, and a
 /// nanosecond timestamp, so concurrent test invocations don't collide.
-pub(super) fn temp_dir(module_prefix: &str, name: &str) -> PathBuf {
-    // allowed-fixed-temp-dir: the PID, counter, and nanosecond stamp below already
-    // make this unique per process and per run, and `Fixture` deliberately KEEPS the
-    // directory on panic for post-mortem inspection, which `TestDir`'s drop would undo.
-    //
+pub(crate) fn temp_dir(module_prefix: &str, name: &str) -> PathBuf {
     // The counter is load-bearing, ❌ not decoration: the clock behind
     // `SystemTime::now` doesn't resolve to the nanosecond, so two tests calling this
     // with the same prefix and name from different threads can land on one path. The
     // `remove_dir_all` below then wipes a repo another test is mid-way through
     // building, which surfaces as an unrelated `commit_as: MustNotExist` panic.
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    // allowed-fixed-temp-dir: the PID, counter, and nanosecond stamp below already
+    // make this unique per process and per run, and `Fixture` deliberately KEEPS the
+    // directory on panic for post-mortem inspection, which `TestDir`'s drop would undo
     let dir = std::env::temp_dir().join(format!(
         "cmdr_git_{}_{}_{}_{}_{}",
         module_prefix,
@@ -92,7 +91,7 @@ pub(super) fn temp_dir(module_prefix: &str, name: &str) -> PathBuf {
 /// Best-effort cleanup. Tests call this at the end of the body so a
 /// successful run leaves no debris; a panicking run still leaves the
 /// directory for post-mortem inspection.
-pub(super) fn cleanup(dir: &Path) {
+pub(crate) fn cleanup(dir: &Path) {
     let _ = std::fs::remove_dir_all(dir);
 }
 
@@ -136,7 +135,7 @@ pub(super) fn git_cli_capture(dir: &Path, args: &[&str]) -> Vec<u8> {
 /// `commit_*` call should write to (mirrors how `git checkout` flips
 /// the active branch). Defaults to `main` (gix's default for new
 /// repos).
-pub(super) struct Fixture {
+pub(crate) struct Fixture {
     pub(super) dir: PathBuf,
     pub(super) repo: gix::Repository,
     /// Active branch name (without `refs/heads/` prefix). Each commit
@@ -163,7 +162,7 @@ impl Fixture {
     /// creation, so a write after `gix::init` is invisible to the original
     /// handle. macOS dev machines tend to have global config set so the
     /// fallback worked there; Docker images don't, which surfaced the bug.
-    pub(super) fn init(dir: PathBuf) -> Self {
+    pub(crate) fn init(dir: PathBuf) -> Self {
         let _initial = gix::init(&dir).expect("gix::init");
         Self::seed_committer_config(&dir);
         let repo = gix::open(&dir).expect("gix::open (post-config)");
@@ -196,7 +195,7 @@ impl Fixture {
     /// Write `content` to `<dir>/<file>` and commit it on the current
     /// branch. Returns the new commit's ObjectId. Uses
     /// [`DEFAULT_COMMIT_SECS`] for both author and committer time.
-    pub(super) fn commit_file(&mut self, file: &str, content: &[u8], message: &str) -> ObjectId {
+    pub(crate) fn commit_file(&mut self, file: &str, content: &[u8], message: &str) -> ObjectId {
         self.commit_files(&[(file, content)], message, DEFAULT_COMMIT_SECS)
     }
 
@@ -297,7 +296,7 @@ impl Fixture {
     /// Creates a new branch at the current branch's tip without
     /// switching to it. Equivalent to `git branch <name>` followed by
     /// staying on the current branch.
-    pub(super) fn create_branch(&self, name: &str) {
+    pub(crate) fn create_branch(&self, name: &str) {
         let tip = self
             .current_branch_tip()
             .expect("create_branch requires at least one commit on parent");

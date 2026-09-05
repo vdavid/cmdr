@@ -11,12 +11,21 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
 
 mod archive_routing;
+mod git_routing;
+
+/// Which volume serves a path: `resolve` and what it answers.
+mod routing;
 
 /// The mount-root set an ID owns, and the promotion rules over it.
 mod roots;
 
 use roots::Registration;
 pub use roots::{RootRemoval, StaleRootOutcome, is_stale_mount_errno};
+#[allow(
+    unused_imports,
+    reason = "ResolvedVolume is `resolve`'s return type: named by rustdoc and by any site that binds it, even where today's callers only read its fields"
+)]
+pub use routing::{ResolvedVolume, RoutedKind};
 
 #[cfg(test)]
 pub(crate) mod test_support;
@@ -32,11 +41,33 @@ pub struct VolumeManager {
     default_volume_id: RwLock<Option<String>>,
     /// Registration recency of the on-demand `ArchiveVolume`s (front = oldest).
     /// A value store: recovering on poison is safe (a lost reorder at worst
-    /// evicts slightly early). See [`Self::touch_archive_lru`].
+    /// evicts slightly early). See [`touch_routed_lru`].
     archive_lru: Mutex<VecDeque<String>>,
+    /// The same, for the on-demand `GitPortalVolume`s. Separate from the
+    /// archive LRU on purpose: browsing a folder full of zips must not evict
+    /// the portal of the repo the other pane is sitting in.
+    git_portal_lru: Mutex<VecDeque<String>>,
     /// Who wants to hear that a volume has become available. See
     /// [`Self::on_volume_arrival`].
     arrival_listeners: RwLock<Vec<VolumeArrivalListener>>,
+}
+
+/// Records `id` as the most recently resolved entry in a routed-volume LRU and
+/// hands back the IDs that fell off the end, for the caller to unregister
+/// OUTSIDE the LRU lock (so the LRU and volumes locks are never held at once).
+///
+/// Shared by the archive and git-portal routes: both mint volumes on demand and
+/// both must stay bounded, and a second copy of this would drift.
+fn touch_routed_lru(lru: &mut VecDeque<String>, id: &str, cap: usize) -> Vec<String> {
+    lru.retain(|existing| existing != id);
+    lru.push_back(id.to_string());
+    let mut evicted = Vec::new();
+    while lru.len() > cap {
+        if let Some(old) = lru.pop_front() {
+            evicted.push(old);
+        }
+    }
+    evicted
 }
 
 /// Notified with the ID of a volume the registry has just taken on.
@@ -103,6 +134,7 @@ impl VolumeManager {
             volumes: RwLock::new(HashMap::new()),
             default_volume_id: RwLock::new(None),
             archive_lru: Mutex::new(VecDeque::new()),
+            git_portal_lru: Mutex::new(VecDeque::new()),
             arrival_listeners: RwLock::new(Vec::new()),
         }
     }

@@ -13,6 +13,7 @@ use crate::file_system::listing::metadata::{FileEntry, TagRef};
 use crate::file_system::listing::path_index::PathIndexCache;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
 use crate::file_system::listing::visible_rows::{VisibleRows, VisibleRowsCache};
+use crate::file_system::volume::manager::RoutedKind;
 pub use cmdr_fs::volume::DirectoryChange;
 
 /// Result of updating an entry in-place or moving it to a new sorted position.
@@ -967,7 +968,7 @@ async fn notify_full_refresh_locked(
     let resolved = crate::file_system::volume::manager::get_volume_manager()
         .resolve(&volume_id, &parent_path)
         .await;
-    let is_archive = resolved.is_archive;
+    let is_routed = resolved.is_routed();
     let vol = match resolved.volume {
         Some(v) => v,
         None => {
@@ -988,8 +989,8 @@ async fn notify_full_refresh_locked(
         }
     };
 
-    // Archives have no drive index, so enrich is a no-op — skip it.
-    if !is_archive {
+    // A routed volume has no drive index, so enrich is a no-op — skip it.
+    if !is_routed {
         crate::index_host::index().enrich(&volume_id, &mut new_entries);
     }
 
@@ -1144,9 +1145,11 @@ pub fn try_get_authoritative_listing(volume_id: &str, path: &Path) -> Option<Vec
     // archive whose content watch is local-only and never established. Decline, so
     // the write-op pre-flight rescans through the ArchiveVolume rather than reusing
     // a possibly-stale cached inner listing. A local dir merely NAMED `foo.zip`
-    // isn't affected (its parent is local), nor is a genuine local archive (routed,
-    // `is_archive` true).
-    if !resolved.is_archive
+    // isn't affected (its parent is local), nor is a genuine local archive (routed
+    // to `RoutedKind::Archive`). Matching the ARCHIVE kind rather than "routed at
+    // all" is deliberate: the doubt this guards is specifically an unconfirmed
+    // archive boundary.
+    if resolved.routed != Some(RoutedKind::Archive)
         && !volume.supports_local_fs_access()
         && cmdr_archive::archive_boundary_candidate(path).is_some()
     {

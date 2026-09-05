@@ -12,9 +12,8 @@
  * 3. Navigate into a branch and see the working-tree files at HEAD.
  *
  * Cross-volume copy with executable-bit preservation lives in the Rust
- * integration test `file_system::git::m2_tests::cross_volume_copy_preserves_executable_bit`,
- * which drives the real `LocalPosixVolume::open_read_stream` and
- * `write_from_stream` round-trip. Driving the full copy UI from Playwright
+ * integration test `file_system::git::portal_tests::cross_volume_copy_preserves_executable_bit`,
+ * which drives the real `open_read_stream` and `write_from_stream` round-trip. Driving the full copy UI from Playwright
  * would need dialog automation we don't have, and the Rust test exercises the
  * load-bearing code path (the volume hook + write stream).
  *

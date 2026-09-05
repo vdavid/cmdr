@@ -9,6 +9,7 @@
 //! `../DETAILS.md` § "A volume ID owns a set of mount roots".
 
 use super::{Volume, VolumeManager};
+use crate::file_system::git::volume::GitPortalVolume;
 use crate::ignore_poison::RwLockIgnorePoison;
 use cmdr_archive::ArchiveVolume;
 use std::path::{Path, PathBuf};
@@ -264,10 +265,11 @@ impl VolumeManager {
     /// wise `starts_with` avoids a `/Volumes/XY`-matches-`/Volumes/X` false hit, and
     /// the longest-root wins so a nested mount (`/Volumes/X/Y`) beats its parent.
     ///
-    /// An on-demand `ArchiveVolume` (its root is the `.zip` file, so it would win
-    /// the longest-root race for every path inside the archive) is not a mount and
-    /// is skipped: a path inside an archive belongs to the volume that holds the
-    /// archive, which is what its callers route by.
+    /// A ROUTED volume is not a mount and is skipped: an `ArchiveVolume`'s root
+    /// is the `.zip` file and a `GitPortalVolume`'s is `<worktree>/.git`, so
+    /// either would win the longest-root race for every path inside it. A path
+    /// inside an archive, or inside a repo's snapshots, belongs to the volume
+    /// that physically holds it, which is what the callers here route by.
     ///
     /// In-memory (one `RwLock<HashMap>` read, no syscall), so it's safe on the
     /// enrichment / dir-stats hot path.
@@ -277,14 +279,23 @@ impl VolumeManager {
             .read_ignore_poison()
             .iter()
             .map(|(id, entry)| (id, &entry.volume))
-            // By type, not by LRU membership: an archive is registered a moment before
-            // it enters the LRU, and a concurrent caller must not see it in that gap.
-            .filter(|(_, v)| v.as_any().downcast_ref::<ArchiveVolume>().is_none())
+            // By type, not by LRU membership: a routed volume is registered a moment
+            // before it enters its LRU, and a concurrent caller must not see it in
+            // that gap.
+            .filter(|(_, v)| !is_routed_volume(v.as_ref()))
             .filter(|(_, v)| v.root() != Path::new("/"))
             .filter(|(_, v)| target.starts_with(v.root()))
             .max_by_key(|(_, v)| v.root().as_os_str().len())
             .map(|(id, _)| id.clone())
     }
+}
+
+/// Whether `volume` was minted by a route rather than mounted: it maps a
+/// namespace onto some other volume's storage, so its root is a path INSIDE a
+/// real mount rather than a mount of its own.
+fn is_routed_volume(volume: &dyn Volume) -> bool {
+    let any = volume.as_any();
+    any.downcast_ref::<ArchiveVolume>().is_some() || any.downcast_ref::<GitPortalVolume>().is_some()
 }
 
 /// What [`Registration::promote_to_best_root`] did.

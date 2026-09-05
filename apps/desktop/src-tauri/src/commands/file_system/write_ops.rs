@@ -28,6 +28,7 @@ use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
 use super::expand_tilde;
+use crate::file_system::volume::manager::RoutedKind;
 
 /// Picks the source volume for a scan preview.
 ///
@@ -65,9 +66,12 @@ async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathB
             async move { Ok::<_, DeadlineError>(get_volume_manager().resolve(&owned_id, &owned_source).await) },
         )
         .await;
-        // `is_archive` gates whether we actually got the ArchiveVolume (a mislabeled
-        // `.zip` falls through to the parent, which the branches below handle).
-        resolved.ok().and_then(|r| r.is_archive.then_some(r.volume).flatten())
+        // The ARCHIVE kind gates whether we actually got the ArchiveVolume (a
+        // mislabeled `.zip` falls through to the parent, which the branches below
+        // handle).
+        resolved
+            .ok()
+            .and_then(|r| (r.routed == Some(RoutedKind::Archive)).then_some(r.volume).flatten())
     } else {
         None
     };
