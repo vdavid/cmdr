@@ -2,8 +2,8 @@
 
 The external evidence behind `apps/desktop/src-tauri/src/file_system/terminal.rs`: where each bundle id came from, why
 each app gets the launch recipe it gets, and what each one does with the window-vs-tab question. The decisions
-themselves live in `apps/desktop/src-tauri/src/file_system/DETAILS.md` § "Open terminal here"; this note is the
-paper trail, so a future entry can be added to `KNOWN_TERMINALS` to the same standard.
+themselves live in `apps/desktop/src-tauri/src/file_system/DETAILS.md` § "Open terminal here"; this note is the paper
+trail, so a future entry can be added to `KNOWN_TERMINALS` to the same standard.
 
 ## Why a table at all
 
@@ -38,8 +38,8 @@ Three shapes cover the eight apps, plus one for an app the user points at by han
   not accept a folder as a document. The `-n` is load-bearing: without it `open` merely activates an already-running
   instance and drops the args, so the second invocation of the day would silently open at the wrong place.
 - **Warp's URI scheme** (`open warp://action/new_window?path=<percent-encoded dir>`), documented at
-  <https://docs.warp.dev/terminal/more-features/uri-scheme/>. Warp is the one app whose recipe ends in a URI rather
-  than a path, which is why the E2E mock records the FOLDER rather than the argv.
+  <https://docs.warp.dev/terminal/more-features/uri-scheme/>. Warp is the one app whose recipe ends in a URI rather than
+  a path, which is why the E2E mock records the FOLDER rather than the argv.
 - **A hand-picked app** ("Choose an app…") gets `open -a <app path> <dir>`, which works for any terminal that registers
   as a folder handler, and nearly all of them do.
 
@@ -50,11 +50,11 @@ every non-ASCII byte, so a folder name cannot rewrite the URI.
 
 ## Window against tab: why there's no control for it
 
-Surveyed 2026-09-03 against each vendor's documentation and discussions. There is no portable mechanism, and the
-per-app answers do not rhyme:
+Surveyed 2026-09-03 against each vendor's documentation and discussions. There is no portable mechanism, and the per-app
+answers do not rhyme:
 
-- **Terminal** follows the system-wide "Prefer tabs when opening documents" setting, so the choice is already the
-  user's and macOS already owns it.
+- **Terminal** follows the system-wide "Prefer tabs when opening documents" setting, so the choice is already the user's
+  and macOS already owns it.
 - **Ghostty** opens a tab in the running instance when handed a folder, and a window only via `--args`:
   <https://github.com/ghostty-org/ghostty/discussions/5910>.
 - **Warp** has both actions in its URI scheme (`new_window` and `new_tab`), so it is the one app that could honor a
