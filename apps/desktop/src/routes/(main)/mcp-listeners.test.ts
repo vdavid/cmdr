@@ -569,6 +569,22 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
     })
   })
 
+  it('skips the landing wait for a fire-and-forget caller, which has no reply channel', async () => {
+    // The E2E harness navigates by raw Tauri event with no `requestId`. Polling a
+    // switched pane for up to 20 s to answer nobody is pure waste.
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'usb-1', path: '/Volumes/Stick' } })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const handlers = await setup(explorer)
+
+    getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: '/Volumes/Stick' } })
+    await vi.advanceTimersByTimeAsync(NAV_QUIET_WAIT.budgetMs + 1_000)
+
+    // It navigated, and said nothing to nobody.
+    expect(explorer.navigate).toHaveBeenCalledTimes(1)
+    expect(pane.path).toBe('/Volumes/Stick')
+    expect(emit).not.toHaveBeenCalled()
+  })
+
   it('acks `did-not-settle` when no listing ever completes, rather than trusting the optimistic path', async () => {
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'smb-1', path: 'smb://nas/share' } })
     const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })

@@ -412,6 +412,11 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         return
       }
 
+      // Nobody to tell: a fire-and-forget caller (the E2E harness) sends no
+      // `requestId`, and the landing wait exists only to answer one. The declines
+      // above still log, which is what a caller with no reply channel can use.
+      if (requestId === undefined) return
+
       // The in-place arm's `settled` IS the listing, so the pane is already at rest.
       // The switch arm's resolves immediately, so wait for the pane to come to rest
       // before reading where it landed (`mcp-nav-landing.ts`).
