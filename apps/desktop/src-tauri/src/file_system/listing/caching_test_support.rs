@@ -99,6 +99,7 @@ pub(crate) struct TestListing {
     entries: Vec<FileEntry>,
     sequence: u64,
     last_accessed_ms: u64,
+    overlay_rows: usize,
 }
 
 impl TestListing {
@@ -112,6 +113,7 @@ impl TestListing {
             entries: Vec::new(),
             sequence: 0,
             last_accessed_ms: epoch_millis_now(),
+            overlay_rows: 0,
         }
     }
 
@@ -147,6 +149,13 @@ impl TestListing {
         self
     }
 
+    /// How many of the entries a listing overlay contributed. Nonzero makes this
+    /// a PANE listing, which the fresh-listing oracle declines.
+    pub(crate) fn overlay_rows(mut self, overlay_rows: usize) -> Self {
+        self.overlay_rows = overlay_rows;
+        self
+    }
+
     /// Inserts the listing under a unique id derived from `tag` and hands back the
     /// RAII guard. Bind it (`let listing = …`), never `let _ = …`: a `_` binding
     /// drops immediately and the entry is gone before the test runs.
@@ -159,7 +168,8 @@ impl TestListing {
             self.sort_by,
             self.sort_order,
             self.directory_sort_mode,
-        );
+        )
+        .with_overlay_rows(self.overlay_rows);
         listing.sequence.store(self.sequence, Ordering::Relaxed);
         listing.last_accessed_ms.store(self.last_accessed_ms, Ordering::Relaxed);
         LISTING_CACHE.write_ignore_poison().insert(listing_id.clone(), listing);

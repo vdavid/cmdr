@@ -43,6 +43,7 @@ fn a_replacement_becomes_the_listings_contents_and_is_published() {
             make_entry("kept.txt", false, Some(1)),
             make_entry("new.txt", false, Some(3)),
         ],
+        0,
     );
 
     assert_eq!(listing.entry_names(), ["kept.txt", "new.txt"]);
@@ -76,6 +77,7 @@ fn a_replacement_is_sorted_the_listings_way_before_it_is_diffed() {
             make_entry("b.txt", false, Some(4)),
             make_entry("c.txt", false, Some(1)),
         ],
+        0,
     );
 
     assert_eq!(listing.entry_names(), ["c.txt", "b.txt", "a.txt"]);
@@ -90,7 +92,7 @@ fn an_identical_replacement_publishes_nothing() {
         .entries(vec![make_entry("same.txt", false, Some(7))])
         .insert("replaced-noop");
 
-    publish_replacement(listing.id(), vec![make_entry("same.txt", false, Some(7))]);
+    publish_replacement(listing.id(), vec![make_entry("same.txt", false, Some(7))], 0);
 
     assert_eq!(listing.entry_names(), ["same.txt"]);
     assert_eq!(pending_count(listing.id()), 0, "no difference means nothing to publish");
@@ -103,5 +105,6 @@ fn a_replacement_for_a_listing_that_closed_is_silent() {
     publish_replacement(
         &unique_test_id("replaced-gone"),
         vec![make_entry("x.txt", false, Some(1))],
+        0,
     );
 }

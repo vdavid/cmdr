@@ -44,6 +44,14 @@ impl VolumeManager {
         // The requested volume physically holds the repo, so it's the portal's
         // parent (shared lane key and space info).
         let parent = self.get(volume_id)?;
+        // A protocol-only backend (direct SMB, MTP, ADB) can hold a directory
+        // called `.git` with a real `branches/` inside it, and `gix` can't open
+        // any of it. Routing there would turn that ordinary directory into
+        // `NotFound`. Same question the overlay asks, so the portal appears in
+        // exactly one set of places.
+        if !git::overlay::volume_holds_real_repos(parent.as_ref()) {
+            return None;
+        }
         Some(self.register_git_portal(parent, repo_root, path))
     }
 
@@ -172,21 +180,51 @@ mod tests {
     }
 
     /// With the portal switched off there is no route at all, so a `.git`
-    /// listing is whatever the parent volume says it is.
+    /// listing is whatever the parent volume says it is: for a category folder
+    /// no repo actually has on disk, that's `NotFound`, which is what a pane
+    /// standing on one when the user flips the setting recovers from.
     #[tokio::test]
-    async fn the_toggle_turns_the_route_off() {
+    async fn the_toggle_turns_the_route_off_and_an_open_virtual_pane_gets_not_found() {
+        use crate::file_system::volume::VolumeError;
+
         let (dir, manager) = manager_over_a_repo("toggle");
         let path = dir.join(".git/branches");
 
         git::set_virtual_portal_enabled(false);
         let resolved = manager.resolve("root", &path).await;
         assert_eq!(resolved.routed, None);
-        assert_eq!(resolved.volume.expect("parent volume").name(), "Root");
+        let parent = resolved.volume.expect("parent volume");
+        assert_eq!(parent.name(), "Root");
+        assert!(
+            matches!(parent.list_directory(&path, None).await, Err(VolumeError::NotFound(_))),
+            "the pane's recovery runs on a NotFound, ❌ never on a silent empty listing"
+        );
 
         git::set_virtual_portal_enabled(true);
         assert_eq!(manager.resolve("root", &path).await.routed, Some(RoutedKind::GitPortal));
 
         cleanup(&dir);
+    }
+
+    /// A protocol-only backend (direct SMB, MTP, ADB) never routes, whatever the
+    /// path looks like: `gix` can't open a path only a protocol can reach, and a
+    /// real folder called `branches` on a share stays an ordinary folder. Same
+    /// question the listing overlay asks.
+    #[tokio::test]
+    async fn a_volume_with_no_local_path_never_routes_to_the_portal() {
+        use crate::file_system::listing::caching_test_support::WatchCoverageVolume;
+        use crate::file_system::volume::WatchCoverage;
+
+        let manager = VolumeManager::new();
+        manager.register(
+            "share",
+            Arc::new(WatchCoverageVolume::new("Share", WatchCoverage::EveryWriter)),
+        );
+        git::set_virtual_portal_enabled(true);
+
+        let resolved = manager.resolve("share", Path::new("/mnt/share/repo/.git/branches")).await;
+        assert_eq!(resolved.routed, None);
+        assert_eq!(resolved.volume.expect("the share itself").name(), "Share");
     }
 
     /// A repo checked out inside another repo's working tree routes to the

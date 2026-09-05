@@ -137,6 +137,7 @@ pub mod licensing;
 pub(crate) mod linux_distro;
 #[cfg(target_os = "linux")]
 mod linux_icons;
+mod listing_overlays;
 mod location;
 #[cfg(target_os = "macos")]
 mod macos_icons;
@@ -701,6 +702,10 @@ pub fn run() {
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
             file_system::git::set_virtual_portal_enabled(saved_settings.show_virtual_git_portal.unwrap_or(true));
+            // The portal's `.git/` landing rows. Everything below `.git/` is a
+            // routed volume instead; this seam is what keeps the six rows out of
+            // every walker (`listing_overlays.rs`).
+            file_system::git::overlay::register();
             file_system::staging::set_show_safe_save_files(saved_settings.show_safe_save_files.unwrap_or(true));
             file_system::staging::set_show_staging_temps(saved_settings.show_staging_temp_files.unwrap_or(false));
             file_system::set_smb_concurrency(saved_settings.smb_concurrency.unwrap_or(10) as usize);

@@ -21,7 +21,7 @@ use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
 fn root_listing_populates_size_with_item_counts() {
     let (dir, _f) = build_repo_with_branches("m4", &[("feature-a", 1), ("feature-b", 2)]);
     let (handle, root) = discover_repo(&dir).unwrap();
-    let entries = virtual_listing::list_root(&handle, &root);
+    let entries = virtual_listing::list_categories(&handle, &root);
 
     let by_name: std::collections::HashMap<&str, &crate::file_system::listing::FileEntry> =
         entries.iter().map(|e| (e.name.as_str(), e)).collect();
@@ -50,12 +50,6 @@ fn root_listing_populates_size_with_item_counts() {
         commits.git_meta
     );
 
-    // Real `.git/*` entries land in the mixed listing too. HEAD is the
-    // canary: every fresh git init writes one.
-    let head = by_name.get("HEAD").expect("real .git/HEAD shows up in root");
-    assert!(!head.is_directory, "HEAD is a real file");
-    assert!(head.modified_at.is_some(), "real entries carry stat mtime");
-
     cleanup(&dir);
 }
 
@@ -63,7 +57,7 @@ fn root_listing_populates_size_with_item_counts() {
 fn root_listing_reports_a_single_branch_as_a_count_of_one() {
     let (dir, _f) = build_simple_repo("m4", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
-    let entries = virtual_listing::list_root(&handle, &root);
+    let entries = virtual_listing::list_categories(&handle, &root);
     let branches = entries.iter().find(|e| e.name == "branches").unwrap();
     // The count reaches the frontend as a number; `one` vs `other` is the
     // catalog's job, in each locale's own plural rules.

@@ -2,24 +2,17 @@
 //! friendly-error mapping, and the virtual `.git` portal: `branches/`, `tags/`,
 //! `commits/`, `stash/`, `worktrees/`, `submodules/` browsable as virtual
 //! trees, with cross-volume copy "for free" because git blobs flow through the
-//! existing `VolumeReadStream` abstraction. The portal root listing also
-//! surfaces real `.git/*` entries (HEAD, config, hooks/, objects/, refs/, …)
-//! alongside the virtual categories — the user sees everything in one place
-//! and navigates real entries through the standard real-FS path.
+//! existing `VolumeReadStream` abstraction.
 //!
-//! ## Volume hook contract
+//! ## Two seams, no hooks
 //!
-//! `LocalPosixVolume` calls `git::try_route_*` after `resolve()`. Order is
-//! load-bearing: `resolve` normalizes the absolute path, then we classify
-//! against any enclosing `.git/`. If a virtual path matches we return its
-//! result; otherwise (real `.git/*` entries, or paths outside any `.git/`)
-//! the classifier returns `None` and the volume falls through to real-FS
-//! code.
-//!
-//! All mutation methods short-circuit virtual paths via `path::is_virtual`
-//! and return `VolumeError::NotSupported`. Git mutations happen out-of-band
-//! (the user runs `git` in a terminal) and are surfaced through the
-//! `.git`-watcher pipeline (`watch/watcher.rs`).
+//! Everything under `.git/<category>/` is a ROUTE: `VolumeManager::resolve`
+//! sends it to the read-only `GitPortalVolume` (`volume.rs`), which refuses
+//! every mutation by trait default and can't be watched. The `.git/` landing
+//! listing is a listing OVERLAY (`overlay.rs`), which reaches a pane and
+//! nothing else. `LocalPosixVolume` names git nowhere, so a real file under
+//! `.git` is an ordinary local file: editable, renamable, deletable, and
+//! walkable when a repo folder is deleted.
 //!
 //! ## Honest blob streaming
 //!
@@ -45,6 +38,7 @@ pub mod column_meta;
 // together. Aliased so `git::friendly::…` keeps resolving.
 pub use cmdr_fs::volume::friendly_error::git as friendly;
 pub mod log;
+pub mod overlay;
 pub mod path;
 pub mod portal;
 pub mod read_blob;
@@ -66,6 +60,7 @@ mod category_tests;
 #[cfg(test)]
 mod column_meta_tests;
 #[cfg(test)]
+mod overlay_tests;
 mod portal_tests;
 #[cfg(test)]
 mod snapshot_dates_tests;
@@ -87,9 +82,6 @@ pub use status::{EntryStatus, EntryStatusCode, list_status};
 #[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use watcher::{GitWatcherRegistry, get_watcher_registry};
 
-#[allow(unused_imports, reason = "Used by LocalPosixVolume mutation hooks")]
-pub use path::is_virtual;
-
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{VolumeError, VolumeReadStream};
 
@@ -103,8 +95,11 @@ pub type Lookup<T> = Result<Option<T>, FriendlyGitError>;
 
 /// Whether the virtual `.git` portal is enabled. Set from the
 /// `fileExplorer.git.showVirtualGitPortal` setting at startup and on every
-/// toggle. When `false`, the volume hooks short-circuit to real-FS so
-/// users see the raw `.git` contents.
+/// toggle.
+///
+/// THE one app-side switch: [`resolve_git_portal`](crate::file_system::volume::manager::VolumeManager)
+/// consults it before routing and `overlay::GitPortalOverlay` before
+/// contributing, so `false` means a `.git` tree is whatever is on disk.
 static VIRTUAL_PORTAL_ENABLED: AtomicBool = AtomicBool::new(true);
 
 /// Sets the virtual portal preference. Called from app setup after
@@ -117,54 +112,6 @@ pub fn set_virtual_portal_enabled(enabled: bool) {
 /// Returns whether the virtual `.git` portal is enabled.
 pub fn is_virtual_portal_enabled() -> bool {
     VIRTUAL_PORTAL_ENABLED.load(Ordering::Relaxed)
-}
-
-/// Volume hook for `list_directory`.
-///
-/// Returns `Some(result)` when the path lives under a virtual `.git/...`
-/// portal; `None` when the caller should run real-FS code (real `.git/*`
-/// entries like `HEAD`, `config`, `objects/`, etc., and paths outside any
-/// `.git/`).
-pub fn try_route_listing(path: &Path) -> Option<Result<Vec<FileEntry>, VolumeError>> {
-    if !is_virtual_portal_enabled() {
-        return None;
-    }
-    let (virt, handle, root) = path::classify(path)?;
-    let result = match &virt {
-        // The one listing the ROUTE and this hook answer differently: the portal
-        // volume's namespace is the six categories, while `.git/` itself is a
-        // mixed listing of real entries plus those six. Everything below it is
-        // the volume's own body, so the two can't drift.
-        path::VirtualGitPath::Root => Ok(Some(virtual_listing::list_root(&handle, &root))),
-        deeper => volume::listing_for(deeper, &handle, &root),
-    };
-    Some(found_or_not_found(result, path))
-}
-
-/// Volume hook for `get_metadata`.
-pub fn try_route_metadata(path: &Path) -> Option<Result<FileEntry, VolumeError>> {
-    if !is_virtual_portal_enabled() {
-        return None;
-    }
-    let (virt, handle, root) = path::classify(path)?;
-    let result = virtual_listing::get_metadata_for(&root, &virt, &handle);
-    Some(found_or_not_found(result, path))
-}
-
-/// Volume hook for `open_read_stream`. Returns `None` for paths that aren't
-/// virtual blobs (real `.git/*` files fall through to the real-FS reader
-/// via the volume hook returning `None`).
-pub fn try_open_blob_stream(path: &Path) -> Option<Result<Box<dyn VolumeReadStream>, VolumeError>> {
-    if !is_virtual_portal_enabled() {
-        return None;
-    }
-    let (virt, handle, _root) = path::classify(path)?;
-    use path::VirtualGitPath::*;
-    let result = match &virt {
-        RefTree(cat, name, sub) if cat.browses_commit_tree() => open_blob(&handle, *cat, name, sub),
-        _ => return Some(Err(VolumeError::NotSupported)),
-    };
-    Some(found_or_not_found(result, path))
 }
 
 /// Opens the blob at `sub` inside `cat`/`name`, or `Ok(None)` when that path

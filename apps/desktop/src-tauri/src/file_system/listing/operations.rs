@@ -81,6 +81,11 @@ pub async fn list_directory_start_with_volume(
         index().verify_directory(volume_id, &path.to_string_lossy());
     }
 
+    // Fold in the rows a PANE sees that the volume doesn't hold (the git
+    // portal's six category rows on a repo's `.git/`), between enrich and the
+    // sort for the same reasons as the streaming path. `crate::listing_overlays`.
+    let overlay_rows = crate::listing_overlays::decorate(&volume, path, &mut all_entries).await;
+
     // Sort the entries
     sort_entries(&mut all_entries, sort_by, sort_order, dir_sort_mode);
 
@@ -94,7 +99,8 @@ pub async fn list_directory_start_with_volume(
         sort_by,
         sort_order,
         dir_sort_mode,
-    );
+    )
+    .with_overlay_rows(overlay_rows);
     let total_count = listing.rows(include_hidden).len();
     if let Ok(mut cache) = LISTING_CACHE.write() {
         cache.insert(listing_id.clone(), listing);

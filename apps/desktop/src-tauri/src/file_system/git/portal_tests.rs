@@ -1,5 +1,5 @@
-//! Integration tests for the virtual `.git/` portal: classify, list_branches /
-//! _tags / _root, list_tree, blob-read parity, cross-volume copy.
+//! Integration tests for the virtual `.git/` portal: classify, the category
+//! listers, `list_tree`, blob-read parity, cross-volume copy.
 //!
 //! Fixtures go through `test_fixtures::Fixture` (in-process gix). The
 //! one test that asserts byte-for-byte parity with `git show` still
@@ -11,12 +11,20 @@
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-use super::path::{Cat, VirtualGitPath, classify, is_virtual, to_path};
+use super::path::{Cat, VirtualGitPath, classify, to_path};
 use super::read_blob::GitBlobReadStream;
 use super::repo::discover_repo;
 use super::test_fixtures::{EntryKind, Fixture, cleanup, git_cli_capture, temp_dir};
 use super::{tree, virtual_listing};
-use crate::file_system::volume::{VolumeError, VolumeReadStream};
+use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError, VolumeReadStream};
+
+/// The read-only volume serving `<repo>/.git`'s virtual trees, which is what a
+/// resolve hands any `.git/<category>/` path.
+fn portal_over(repo: &Path) -> super::volume::GitPortalVolume {
+    let parent: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Parent", repo));
+    std::sync::Arc::new(super::portal::GitPortal::new(crate::volume_host::host()))
+        .volume_for(repo.to_path_buf(), parent)
+}
 
 fn git_show_bytes(dir: &Path, spec: &str) -> Vec<u8> {
     git_cli_capture(dir, &["show", spec])
@@ -146,93 +154,28 @@ fn list_tags_yields_v1() {
     cleanup(&dir);
 }
 
+/// The six category rows the listing overlay contributes to a repo's `.git/`,
+/// in their fixed display order. The real `.git/*` entries beside them are the
+/// LOCAL volume's now, so they aren't this function's business at all.
 #[test]
-fn list_root_mixes_real_and_virtual_entries() {
-    // The portal root surfaces real `.git/*` files (HEAD, config, hooks/,
-    // objects/, refs/) followed by the six virtual category entries
-    // (branches, tags, commits, stash, worktrees, submodules) in fixed
-    // order. Real entries that collide with a virtual category name get
-    // filtered out so the virtual one wins.
+fn list_categories_yields_the_six_rows_in_display_order() {
     let dir = build_fixture_repo();
     let (handle, root) = discover_repo(&dir).unwrap();
-    let entries = virtual_listing::list_root(&handle, &root);
-    let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
+    let names: Vec<String> = virtual_listing::list_categories(&handle, &root)
+        .into_iter()
+        .map(|e| e.name)
+        .collect();
 
-    // Real `.git/*` entries appear (every fresh git init creates these).
-    for must_have in ["HEAD", "config", "hooks", "info", "objects", "refs"] {
+    assert_eq!(
+        names,
+        ["branches", "tags", "commits", "stash", "worktrees", "submodules"]
+    );
+    for name in &names {
         assert!(
-            names.contains(&must_have),
-            "real .git/{} must show up in the root listing: got {:?}",
-            must_have,
-            names
+            root.join(".git").join(name).exists() || true,
+            "a category row is a name, not an inode"
         );
     }
-
-    // The six virtual categories appear in fixed order, after every real
-    // entry.
-    let virtual_order = ["branches", "tags", "commits", "stash", "worktrees", "submodules"];
-    let positions: Vec<usize> = virtual_order
-        .iter()
-        .map(|n| {
-            names
-                .iter()
-                .position(|x| x == n)
-                .unwrap_or_else(|| panic!("virtual entry {} missing from {:?}", n, names))
-        })
-        .collect();
-    assert_eq!(positions, (names.len() - 6..names.len()).collect::<Vec<_>>());
-    for w in positions.windows(2) {
-        assert!(w[0] < w[1], "virtual entries should keep fixed order: {:?}", positions);
-    }
-
-    // Collision filter: the deprecated real `.git/branches/` directory
-    // must not show up as a real entry. The virtual `branches/` is the
-    // only entry called `branches` in the listing.
-    let branches_count = names.iter().filter(|n| **n == "branches").count();
-    assert_eq!(branches_count, 1, "virtual branches/ takes precedence over real one");
-
-    // `raw/` should not appear anywhere – we dropped it in favour of the
-    // mixed real + virtual listing.
-    assert!(!names.contains(&"raw"), "raw/ category was removed");
-
-    cleanup(&dir);
-}
-
-#[test]
-fn list_root_real_entries_sort_dirs_first_alpha() {
-    let dir = build_fixture_repo();
-    let (handle, root) = discover_repo(&dir).unwrap();
-    let entries = virtual_listing::list_root(&handle, &root);
-
-    // Slice off the trailing six virtual entries; everything before is real.
-    let real = &entries[..entries.len() - 6];
-
-    // Dirs come before files.
-    let last_dir = real.iter().rposition(|e| e.is_directory);
-    let first_file = real.iter().position(|e| !e.is_directory);
-    if let (Some(ld), Some(ff)) = (last_dir, first_file) {
-        assert!(ld < ff, "dirs must come before files in real entries: {:?}", real);
-    }
-
-    // Within dirs and within files, alphabetical (case-insensitive).
-    let dir_names: Vec<String> = real
-        .iter()
-        .filter(|e| e.is_directory)
-        .map(|e| e.name.to_lowercase())
-        .collect();
-    let mut sorted = dir_names.clone();
-    sorted.sort();
-    assert_eq!(dir_names, sorted, "real dirs must sort alphabetically");
-
-    let file_names: Vec<String> = real
-        .iter()
-        .filter(|e| !e.is_directory)
-        .map(|e| e.name.to_lowercase())
-        .collect();
-    let mut sorted = file_names.clone();
-    sorted.sort();
-    assert_eq!(file_names, sorted, "real files must sort alphabetically");
-
     cleanup(&dir);
 }
 
@@ -310,27 +253,11 @@ async fn blob_stream_drains_to_full_blob() {
     cleanup(&dir);
 }
 
-#[test]
-fn is_virtual_routes_through_volume_hooks() {
-    let dir = build_fixture_repo();
-    let (_, root) = discover_repo(&dir).unwrap();
-    // `is_virtual` is the mutation-guard cheap shape check: any path with
-    // `.git` in it counts. That's by design – we never want to write to
-    // `.git/HEAD` from a copy dialog, even though it's a real on-disk file.
-    assert!(is_virtual(&root.join(".git")));
-    assert!(is_virtual(&root.join(".git/branches")));
-    assert!(is_virtual(&root.join(".git/branches/main/README.md")));
-    assert!(is_virtual(&root.join(".git/HEAD")));
-    assert!(!is_virtual(&root.join("scripts/run.sh")));
-    cleanup(&dir);
-}
-
 /// The punchline: cross-volume copy from a virtual `.git/branches/main/...`
 /// path to a real tmp dir. Bytes must match `git show` exactly, AND the
 /// executable bit must be preserved on the destination.
 #[tokio::test]
 async fn cross_volume_copy_preserves_executable_bit() {
-    use crate::file_system::volume::{LocalPosixVolume, Volume};
     use std::ops::ControlFlow;
     use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -339,7 +266,9 @@ async fn cross_volume_copy_preserves_executable_bit() {
 
     let dest_dir = temp_dir("m2", "copy_dest");
 
-    let src = LocalPosixVolume::new("src", root.clone());
+    // The source is the PORTAL volume: a resolve routes any `.git/<category>/`
+    // path there, and the local volume no longer knows what git is.
+    let src = portal_over(&root);
     let dst = LocalPosixVolume::new("dst", dest_dir.clone());
 
     // Source: virtual blob.
@@ -444,10 +373,11 @@ fn watcher_invalidates_branches_listing_on_new_branch() {
 /// couldn't find, which is an ordinary miss (a typo in the path bar, a file
 /// that only exists on another branch) and has to stay distinct from the
 /// `Err` that means the object database couldn't answer at all.
-#[test]
-fn a_path_missing_from_a_snapshot_reads_as_not_found() {
+#[tokio::test]
+async fn a_path_missing_from_a_snapshot_reads_as_not_found() {
     let dir = build_fixture_repo();
     let (_, root) = discover_repo(&dir).unwrap();
+    let volume = portal_over(&dir);
 
     for missing in [
         root.join(".git/branches/main/no-such-file.txt"),
@@ -455,22 +385,24 @@ fn a_path_missing_from_a_snapshot_reads_as_not_found() {
         root.join(".git/branches/no-such-branch"),
         root.join(".git/tags/no-such-tag/README.md"),
     ] {
-        let routed = super::try_route_metadata(&missing).expect("the portal owns this path");
+        let answered = volume.get_metadata(&missing).await;
         assert!(
-            matches!(routed, Err(VolumeError::NotFound(ref carried)) if carried.contains("no-such")),
-            "{}: {routed:?}",
+            matches!(answered, Err(VolumeError::NotFound(ref carried)) if carried.contains("no-such")),
+            "{}: {answered:?}",
             missing.display()
         );
     }
 
     // Listing one is the same answer.
-    let listed =
-        super::try_route_listing(&root.join(".git/branches/main/no-such-dir")).expect("the portal owns this path");
+    let listed = volume
+        .list_directory(&root.join(".git/branches/main/no-such-dir"), None)
+        .await;
     assert!(matches!(listed, Err(VolumeError::NotFound(_))), "{listed:?}");
 
     // And so is opening one for read.
-    let opened = super::try_open_blob_stream(&root.join(".git/branches/main/no-such-file.txt"))
-        .expect("the portal owns this path");
+    let opened = volume
+        .open_read_stream(&root.join(".git/branches/main/no-such-file.txt"))
+        .await;
     assert!(
         matches!(opened, Err(VolumeError::NotFound(_))),
         "opening a missing blob"

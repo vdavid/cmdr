@@ -9,7 +9,6 @@
 
 use super::super::{VolumeError, VolumeReadStream};
 use super::LocalPosixVolume;
-use crate::file_system::git;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
@@ -79,8 +78,7 @@ impl VolumeReadStream for LocalPosixReadStream {
 }
 
 impl LocalPosixVolume {
-    /// Opens `path` for chunked reading, after letting the git portal claim it
-    /// and refusing a directory.
+    /// Opens `path` for chunked reading, refusing a directory.
     #[allow(
         clippy::type_complexity,
         reason = "carries the trait method's own signature, which returns a pinned boxed future by design"
@@ -92,9 +90,6 @@ impl LocalPosixVolume {
         let abs_path = self.resolve(path);
         Box::pin(async move {
             spawn_blocking(move || {
-                if let Some(routed) = git::try_open_blob_stream(&abs_path) {
-                    return routed;
-                }
                 let metadata = std::fs::metadata(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
                 if metadata.is_dir() {
                     return Err(VolumeError::IoError {
@@ -158,9 +153,6 @@ impl LocalPosixVolume {
         on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
         let dest_abs = self.resolve(dest);
-        if git::is_virtual(&dest_abs) {
-            return Box::pin(async { Err(VolumeError::NotSupported) });
-        }
         Box::pin(async move {
             // Ensure parent directory exists
             if let Some(parent) = dest_abs.parent() {

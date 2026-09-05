@@ -111,6 +111,15 @@ pub(crate) struct CachedListing {
     /// `AtomicU64` (not `Mutex<Instant>`) so the read accessors, which already hold a
     /// shared `LISTING_CACHE.read()` lock, can stamp it lock-free.
     pub last_accessed_ms: AtomicU64,
+    /// How many of `entries` a [`ListingOverlay`](crate::listing_overlays::ListingOverlay)
+    /// contributed: rows the PANE shows that no volume holds.
+    ///
+    /// Nonzero makes this listing a pane view rather than a picture of a
+    /// directory, so [`try_get_authoritative_listing`] declines it and a delete
+    /// walker or a copy scan pays the re-read. Without that, a `.git/` listing a
+    /// watch keeps fresh would hand six virtual folders straight to a walker
+    /// that then tries to remove them.
+    overlay_rows: usize,
 }
 
 impl CachedListing {
@@ -136,7 +145,28 @@ impl CachedListing {
             sequence: AtomicU64::new(0),
             created_at: Instant::now(),
             last_accessed_ms: AtomicU64::new(epoch_millis_now()),
+            overlay_rows: 0,
         }
+    }
+
+    /// Records that `count` of the entries came from a listing overlay. See
+    /// [`Self::has_overlay_rows`].
+    pub(crate) fn with_overlay_rows(mut self, count: usize) -> Self {
+        self.overlay_rows = count;
+        self
+    }
+
+    /// Replaces the overlay-row count, for a re-read that ran the overlays
+    /// again. ❗ Must be kept in step with [`Self::set_entries`]: a listing that
+    /// gained contributed rows while this said zero would be handed to a walker
+    /// as if it were a picture of the directory.
+    pub(crate) fn set_overlay_rows(&mut self, count: usize) {
+        self.overlay_rows = count;
+    }
+
+    /// Whether a listing overlay contributed any of these rows.
+    pub(crate) fn has_overlay_rows(&self) -> bool {
+        self.overlay_rows > 0
     }
 
     /// Refreshes `last_accessed_ms` to now. Cheap, lock-free; safe to call under a shared
@@ -725,7 +755,9 @@ pub fn notify_directory_changed(volume_id: &str, parent_path: &Path, change: Dir
             let mut entries = entries;
             crate::index_host::index().enrich(volume_id, &mut entries);
             for (listing_id, ..) in &listings {
-                publish_replacement(listing_id, entries.clone());
+                // Zero overlay rows: this arm is a device backend handing over
+                // its own re-read (SMB, MTP), and no overlay contributes to one.
+                publish_replacement(listing_id, entries.clone(), 0);
             }
         }
         DirectoryChange::FullRefresh => {
@@ -922,7 +954,12 @@ pub(super) async fn notify_full_refresh(
 /// `entries` must already be enriched with index data, so the rows the frontend
 /// receives carry the recursive sizes the cache is about to hold. Callers enrich
 /// ONCE per directory rather than once per listing.
-pub(super) fn publish_replacement(listing_id: &str, entries: Vec<FileEntry>) {
+///
+/// `overlay_rows` is how many of `entries` a listing overlay contributed, which
+/// the listing has to keep recorded: a `.git/` listing that regained its six
+/// virtual rows in this refresh must not read as authoritative to a walker
+/// afterwards (`crate::listing_overlays`).
+pub(super) fn publish_replacement(listing_id: &str, entries: Vec<FileEntry>, overlay_rows: usize) {
     use crate::file_system::listing::diff::compute_diff;
     use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::listing::sorting::sort_entries;
@@ -953,6 +990,11 @@ pub(super) fn publish_replacement(listing_id: &str, entries: Vec<FileEntry>) {
     }
 
     crate::file_system::listing::operations::update_listing_entries(listing_id, sorted);
+    if let Ok(mut cache) = LISTING_CACHE.write()
+        && let Some(listing) = cache.get_mut(listing_id)
+    {
+        listing.set_overlay_rows(overlay_rows);
+    }
     enqueue_diff(listing_id, changes);
 }
 
@@ -994,8 +1036,14 @@ async fn notify_full_refresh_locked(
         crate::index_host::index().enrich(&volume_id, &mut new_entries);
     }
 
+    // Re-run the overlays, in the same place in the pipeline the first read ran
+    // them. Without this a watcher-driven refresh of a repo's `.git/` would
+    // replace the listing with the real entries alone and the six portal rows
+    // would vanish from an open pane.
+    let overlay_rows = crate::listing_overlays::decorate(&vol, &parent_path, &mut new_entries).await;
+
     for (listing_id, ..) in &listings {
-        publish_replacement(listing_id, new_entries.clone());
+        publish_replacement(listing_id, new_entries.clone(), overlay_rows);
     }
 }
 
@@ -1071,7 +1119,8 @@ pub(crate) fn increment_sequence(listing_id: &str) -> Option<u64> {
 }
 
 /// Returns cached entries for `(volume_id, path)` when the volume reports
-/// [`WatchCoverage::EveryWriter`] for this listing. Otherwise `None`.
+/// [`WatchCoverage::EveryWriter`] for this listing and no listing overlay
+/// decorated it. Otherwise `None`.
 ///
 /// **Freshness contract (read carefully)**: a `Some(_)` result means the volume has
 /// a change-notification channel that every writer's changes reach, and the cache
@@ -1126,6 +1175,13 @@ pub fn try_get_authoritative_listing(volume_id: &str, path: &Path) -> Option<Vec
             };
         }
         let (_, listing, ..) = best?;
+        // A listing carrying overlay rows is what a PANE sees, not what the
+        // directory holds: handing it to a delete walker or a copy scan would
+        // send one at a path with no inode behind it. See
+        // `crate::listing_overlays`.
+        if listing.has_overlay_rows() {
+            return None;
+        }
         listing.entries().to_vec()
     };
 

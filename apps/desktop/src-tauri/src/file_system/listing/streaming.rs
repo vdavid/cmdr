@@ -546,6 +546,12 @@ pub(crate) async fn read_directory_with_progress(
     }
     let enrich_ms = enrich_start.elapsed().as_millis();
 
+    // Fold in the rows a PANE sees that the volume doesn't hold: today the git
+    // portal's six category rows on a repo's `.git/` listing. AFTER enrich (a
+    // contributed row has no drive-index entry) and BEFORE the sort, so the rows
+    // land where the pane's sort puts them. `crate::listing_overlays`.
+    let overlay_rows = crate::listing_overlays::decorate(&volume, path, &mut entries).await;
+
     // Sort entries
     benchmark::log_event("sort START");
     let sort_start = std::time::Instant::now();
@@ -568,7 +574,8 @@ pub(crate) async fn read_directory_with_progress(
         sort_by,
         sort_order,
         dir_sort_mode,
-    );
+    )
+    .with_overlay_rows(overlay_rows);
     // The row count comes off the listing's own map, so the number the frontend
     // sizes its scroller with is produced by the same filter every later fetch
     // goes through — including the scratch-file half a plain dotfile count misses.
@@ -585,13 +592,12 @@ pub(crate) async fn read_directory_with_progress(
     }
     let cache_write_ms = cache_write_start.elapsed().as_millis();
 
-    // Get the volume from VolumeManager to check if it supports watching.
-    // Virtual git portal paths (`.git/branches/...` and friends) don't
-    // exist on disk, so `notify` would error with "No path was found".
-    // Cache invalidation for those listings flows through
-    // `git::watcher::invalidate_virtual_listings` instead.
+    // Arm a change watch when the volume can carry one. A routed volume answers
+    // `false` (a git snapshot's and an archive's paths aren't on disk, so
+    // `notify` has nothing to arm on), which is what keeps every virtual path
+    // out of here by type.
     let watcher_start_t = std::time::Instant::now();
-    if !crate::file_system::git::is_virtual(path) && volume.can_watch_listings() {
+    if volume.can_watch_listings() {
         start_watching_detached(listing_id, path);
     }
     let watcher_start_ms = watcher_start_t.elapsed().as_millis();

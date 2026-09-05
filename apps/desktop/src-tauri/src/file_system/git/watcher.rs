@@ -194,25 +194,35 @@ pub(crate) fn virtual_category_prefixes(dot_git: &Path) -> Vec<PathBuf> {
     Cat::ALL.iter().map(|c| dot_git.join(c.as_segment())).collect()
 }
 
-/// Iterates the listing cache and emits `FullRefresh` for any local-volume
-/// listing whose path matches any of `prefixes` (prefix-match, including the
-/// prefix itself). SMB / MTP volumes can't be inside a real `.git` of the
-/// host's filesystem, so only the default volume is touched.
+/// Iterates the listing cache and emits `FullRefresh` for any listing whose
+/// path matches any of `prefixes` (prefix-match, including the prefix itself).
+///
+/// ❗ Every volume, not only the boot one. A repo lives just as happily on an
+/// external disk or an OS-mounted share, and those get their own volume ids;
+/// filtering to the default volume left an open portal pane on one showing
+/// stale children after a `git checkout`. The prefixes are absolute host paths
+/// under a real `.git`, which a protocol-only volume's paths can never match.
 pub(crate) fn refresh_local_listings_under(prefixes: &[PathBuf]) {
-    use crate::file_system::listing::caching::{
-        DirectoryChange, find_listings_for_path_on_volume, get_listing_path, notify_directory_changed,
-        snapshot_listings,
-    };
-    use crate::file_system::volume::DEFAULT_VOLUME_ID;
+    use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+
+    for (volume_id, listing_path) in listings_under(prefixes) {
+        notify_directory_changed(&volume_id, &listing_path, DirectoryChange::FullRefresh);
+    }
+}
+
+/// The `(volume_id, path)` pairs [`refresh_local_listings_under`] would refresh:
+/// every cached listing whose path is one of `prefixes` or sits under one.
+///
+/// Split out from the refresh so the choice can be asserted on without an
+/// `AppHandle` (`notify_directory_changed` is a no-op before one is registered).
+pub(crate) fn listings_under(prefixes: &[PathBuf]) -> Vec<(String, PathBuf)> {
+    use crate::file_system::listing::caching::{find_listings_for_path_on_volume, get_listing_path, snapshot_listings};
 
     if prefixes.is_empty() {
-        return;
+        return Vec::new();
     }
-    let snapshot = snapshot_listings();
-    for entry in snapshot {
-        if entry.volume_id != DEFAULT_VOLUME_ID {
-            continue;
-        }
+    let mut out = Vec::new();
+    for entry in snapshot_listings() {
         let Some(listing_path) = get_listing_path(&entry.listing_id) else {
             continue;
         };
@@ -223,9 +233,10 @@ pub(crate) fn refresh_local_listings_under(prefixes: &[PathBuf]) {
             continue;
         }
         if !find_listings_for_path_on_volume(Some(&entry.volume_id), &listing_path).is_empty() {
-            notify_directory_changed(&entry.volume_id, &listing_path, DirectoryChange::FullRefresh);
+            out.push((entry.volume_id, listing_path));
         }
     }
+    out
 }
 
 /// Refreshes every cached `.git/{branches,tags,commits,stash,worktrees,submodules}/...`

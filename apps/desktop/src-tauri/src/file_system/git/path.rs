@@ -6,10 +6,9 @@
 //! a sub-path inside a ref's tree.
 //!
 //! Real `.git/*` entries (`HEAD`, `config`, `hooks/`, `objects/`, etc.)
-//! aren't classified here – they fall through to the real-FS code path
-//! via the volume hook returning `None`. The portal root listing
-//! (`virtual_listing::list_root`) merges the real entries with the
-//! virtual categories so the user sees both.
+//! aren't classified here: they're the parent volume's, and stay ordinary
+//! local files. The six category rows join a repo's `.git/` listing through
+//! the listing overlay (`overlay.rs`) instead.
 //!
 //! ## Why ref names render flat
 //!
@@ -61,7 +60,7 @@ impl Cat {
     }
 
     /// All six virtual categories, in the fixed display order used by
-    /// `virtual_listing::list_root` and the post-toggle invalidation set.
+    /// `virtual_listing::list_categories` and the post-toggle invalidation set.
     pub const ALL: [Cat; 6] = [
         Cat::Branches,
         Cat::Tags,
@@ -98,19 +97,6 @@ pub enum VirtualGitPath {
 
 impl VirtualGitPath {}
 
-/// Cheap shape check: does this path live under any worktree's `.git/` dir?
-///
-/// Walks `path`'s ancestors looking for a `.git` segment. We don't open a
-/// repo here – the volume hooks call this on every method invocation so it
-/// has to be fast. Repo discovery happens later, only for paths that
-/// actually need it.
-pub fn is_virtual(path: &Path) -> bool {
-    path.components().any(|c| match c {
-        Component::Normal(s) => s == ".git",
-        _ => false,
-    })
-}
-
 /// The lexical half of the portal route: the worktree root of `path`, when
 /// `path` reaches into one of the six virtual categories under its `.git`.
 ///
@@ -131,23 +117,25 @@ pub fn portal_route(path: &Path) -> Option<PathBuf> {
     Some(worktree_root)
 }
 
-/// Discovers the worktree root containing `path`, then classifies the rest
-/// of the path against the repo's refs.
+/// [`classify_in`] against the app's parked portal cache.
 ///
-/// Returns `None` when:
-/// - The path isn't inside any `.git/` (the caller should run real-FS code).
-/// - We can't open the repo (broken `.git`, permission denied, etc.).
-/// - The path points at a real `.git/*` entry that isn't a virtual category (`HEAD`, `config`,
-///   `hooks/`, `objects/`, etc.). The volume hook then falls through to the real-FS code path.
-///
-/// Errors are surfaced via the friendly-error path on actual operations,
-/// not here – this function is a router.
-pub fn classify(path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
+/// Test-only: production classification runs inside a
+/// [`GitPortalVolume`](super::volume::GitPortalVolume), which holds its own
+/// portal and therefore its own cache.
+#[cfg(test)]
+pub(crate) fn classify(path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
     classify_in(super::portal::portal().repos(), path)
 }
 
-/// [`classify`] against a specific [`RepoCache`], which is how a
-/// [`GitPortalVolume`](super::volume::GitPortalVolume) classifies: it holds its
+/// Discovers the worktree root containing `path` in `repos`, then classifies
+/// the rest of the path against that repo's refs.
+///
+/// `None` when the path isn't inside any `.git/`, when the repo can't be opened
+/// (a broken `.git`, permission denied), or when the path names a real `.git/*`
+/// entry rather than a virtual category. Errors are surfaced by the operation
+/// that follows, never here: this is a router.
+///
+/// A [`GitPortalVolume`](super::volume::GitPortalVolume) passes its own
 /// portal's cache rather than reaching the app's parked one.
 pub fn classify_in(repos: &RepoCache, path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
     let (worktree_root, after_dot_git) = split_at_dot_git(path)?;
@@ -322,15 +310,6 @@ pub(crate) fn strip_ref_prefix(full: &str, cat: Cat) -> String {
 mod tests {
     use super::*;
     use std::path::Path;
-
-    #[test]
-    fn is_virtual_detects_dot_git_anywhere() {
-        assert!(is_virtual(Path::new("/tmp/repo/.git")));
-        assert!(is_virtual(Path::new("/tmp/repo/.git/branches/main")));
-        assert!(is_virtual(Path::new("/tmp/repo/.git/HEAD")));
-        assert!(!is_virtual(Path::new("/tmp/repo/src/main.rs")));
-        assert!(!is_virtual(Path::new("/tmp/repo")));
-    }
 
     #[test]
     fn portal_route_answers_for_a_category_and_nothing_else() {

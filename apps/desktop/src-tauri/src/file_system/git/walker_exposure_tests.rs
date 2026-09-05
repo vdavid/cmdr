@@ -3,24 +3,25 @@
 //!
 //! A virtual entry is a name with no inode behind it. A pane can render one; a
 //! walker that tries to stat, copy, or remove one meets a path that isn't
-//! there. These cells pin which walkers can currently reach the six virtual
-//! category folders, so the routing work that follows can't quietly widen that
-//! set.
+//! there. These cells pin that NO walker reaches the six virtual category
+//! folders, which is what the route plus the listing overlay buy: the rows
+//! reach a pane through `crate::listing_overlays` and every other reader lists
+//! through `Volume`, which doesn't hold them.
 
 #![cfg(test)]
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::test_fixtures::{Fixture, cleanup, temp_dir};
 use crate::file_system::LocalPosixVolume;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::listing::caching_test_support::TestListing;
-use crate::file_system::volume::{Volume, VolumeError};
+use crate::file_system::volume::Volume;
 
 const CATEGORIES: [&str; 6] = ["branches", "tags", "commits", "stash", "worktrees", "submodules"];
 
 /// A one-commit repo with a branch, enough for every category to answer.
-fn repo(name: &str) -> std::path::PathBuf {
+fn repo(name: &str) -> PathBuf {
     let dir = temp_dir("walker_exposure", name);
     let mut fixture = Fixture::init(dir.clone());
     fixture.commit_file("README.md", b"hello\n", "initial");
@@ -28,10 +29,11 @@ fn repo(name: &str) -> std::path::PathBuf {
     dir
 }
 
-/// The pane's own read: `Volume::list_directory` on `.git` runs through the
-/// portal hook, so all six categories are in the listing.
+/// The volume's own answer for `.git` is what is on disk and nothing else. The
+/// six category rows join a PANE's listing one layer up, in the listing
+/// pipeline, which is what keeps every walker below from meeting them.
 #[tokio::test]
-async fn a_volume_listing_of_dot_git_carries_the_six_virtual_categories() {
+async fn a_volume_listing_of_dot_git_carries_no_virtual_category() {
     let dir = repo("volume_listing");
     super::set_virtual_portal_enabled(true);
     let volume = LocalPosixVolume::new("Test", &dir);
@@ -44,20 +46,70 @@ async fn a_volume_listing_of_dot_git_carries_the_six_virtual_categories() {
         .map(|e| e.name)
         .collect();
 
+    assert!(names.contains(&"HEAD".to_string()), "real entries are there: {names:?}");
     for category in CATEGORIES {
         assert!(
-            names.contains(&category.to_string()),
-            "{category} missing from {names:?}"
+            !names.contains(&category.to_string()),
+            "{category} must not reach a volume listing: {names:?}"
         );
     }
     cleanup(&dir);
 }
 
-/// The volume-aware delete walker (every non-boot volume: an external disk, a
-/// share, a phone) lists through that same hook, so it meets the six virtual
-/// folders as if they were directories to descend into and remove.
+/// And what a PANE listing of the same directory shows: the real entries the
+/// volume read, plus the six rows the overlay contributed.
 #[tokio::test]
-async fn the_volume_delete_walker_meets_the_virtual_folders() {
+async fn an_overlay_decorated_listing_of_dot_git_shows_the_six_rows() {
+    let dir = repo("overlay_listing");
+    super::set_virtual_portal_enabled(true);
+    super::overlay::register();
+    let volume: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Test", &dir));
+    let dot_git = dir.join(".git");
+
+    let mut entries = volume.list_directory(&dot_git, None).await.expect("listing .git");
+    let added = crate::listing_overlays::decorate(&volume, &dot_git, &mut entries).await;
+    assert_eq!(added, 6, "one row per category");
+
+    let names: Vec<String> = entries.into_iter().map(|e| e.name).collect();
+    assert!(names.contains(&"HEAD".to_string()), "real entries stay: {names:?}");
+    for category in CATEGORIES {
+        assert!(
+            names.contains(&category.to_string()),
+            "{category} missing from the pane's listing: {names:?}"
+        );
+    }
+    cleanup(&dir);
+}
+
+/// With the portal off the overlay contributes nothing, so `.git/` is exactly
+/// the directory on disk.
+#[tokio::test]
+async fn the_toggle_off_contributes_nothing_to_a_dot_git_listing() {
+    let dir = repo("overlay_toggle_off");
+    super::overlay::register();
+    let volume: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Test", &dir));
+    let dot_git = dir.join(".git");
+
+    super::set_virtual_portal_enabled(false);
+    let mut entries = volume.list_directory(&dot_git, None).await.expect("listing .git");
+    let added = crate::listing_overlays::decorate(&volume, &dot_git, &mut entries).await;
+    super::set_virtual_portal_enabled(true);
+
+    assert_eq!(added, 0);
+    let names: Vec<String> = entries.into_iter().map(|e| e.name).collect();
+    for category in CATEGORIES {
+        assert!(!names.contains(&category.to_string()), "{category} in {names:?}");
+    }
+    cleanup(&dir);
+}
+
+/// The volume-aware delete walker (every non-boot volume: an external disk, a
+/// share, a phone) lists through `Volume::list_directory`, which no longer
+/// carries a row with nothing behind it. A repo delete on an external disk used
+/// to meet all six and refuse each with `NotSupported`, stopping with the repo
+/// half-gone.
+#[tokio::test]
+async fn the_volume_delete_walker_never_meets_a_virtual_folder() {
     let dir = repo("volume_delete_walk");
     super::set_virtual_portal_enabled(true);
     let volume = LocalPosixVolume::new("Test", &dir);
@@ -69,46 +121,73 @@ async fn the_volume_delete_walker_meets_the_virtual_folders() {
         .filter(|e| CATEGORIES.contains(&e.name.as_str()))
         .map(|e| e.name.as_str())
         .collect();
-    assert_eq!(virtual_children.len(), 6, "walker sees {virtual_children:?}");
+    assert!(virtual_children.is_empty(), "walker sees {virtual_children:?}");
 
-    // And every one of them refuses the removal that follows.
-    for category in CATEGORIES {
-        let err = volume
-            .delete(&Path::new(".git").join(category))
-            .await
-            .expect_err("a virtual folder can't be removed");
-        assert!(matches!(err, VolumeError::NotSupported), "{category}: {err:?}");
+    // And the whole `.git/` really comes off, which is the operation the six
+    // phantom rows used to stop half-way through.
+    let mut stack = vec![PathBuf::from(".git")];
+    let mut directories = Vec::new();
+    while let Some(next) = stack.pop() {
+        for child in volume.list_directory(&next, None).await.expect("listing a real dir") {
+            let relative = next.join(&child.name);
+            if child.is_directory {
+                stack.push(relative);
+            } else {
+                volume.delete(&relative).await.expect("a real file under .git deletes");
+            }
+        }
+        directories.push(next);
     }
+    for directory in directories.into_iter().rev() {
+        volume.delete(&directory).await.expect("a real dir under .git deletes");
+    }
+    assert!(!dir.join(".git").exists(), ".git is gone");
     cleanup(&dir);
 }
 
-/// The same guard is a path-shape check, not a portal check, so it also refuses
-/// the REAL files under `.git`. A volume-routed delete of a repo folder can't
-/// remove `.git/config`, which is what makes the walker's exposure a data bug
-/// rather than a cosmetic one: the operation stops with the repo half-deleted.
+/// A REAL file under `.git` is an ordinary local file: readable, writable,
+/// renamable, deletable, with the portal on as much as off. Nothing in the
+/// local backend knows the word "git" any more, which is what makes that true
+/// by construction rather than by a guard nobody must widen.
 #[tokio::test]
-async fn the_mutation_guard_also_refuses_real_files_under_dot_git() {
-    let dir = repo("real_file_guard");
+async fn real_files_under_dot_git_stay_fully_mutable() {
+    let dir = repo("real_file_mutability");
+    super::set_virtual_portal_enabled(true);
     let volume = LocalPosixVolume::new("Test", &dir);
 
-    for real in ["config", "HEAD"] {
-        assert!(Path::new(&dir).join(".git").join(real).exists(), "{real} is on disk");
-        let err = volume
-            .delete(&Path::new(".git").join(real))
-            .await
-            .expect_err("today's guard refuses it");
-        assert!(matches!(err, VolumeError::NotSupported), "{real}: {err:?}");
-    }
-
-    // The guard doesn't consult the toggle, so turning the portal off changes
-    // nothing here.
-    super::set_virtual_portal_enabled(false);
-    let err = volume
-        .delete(Path::new(".git/config"))
+    // Reading `.git/config`'s real bytes and streaming them back out to a copy
+    // beside it: the two stream methods that used to be claimed by the portal.
+    let source = volume
+        .open_read_stream(Path::new(".git/config"))
         .await
-        .expect_err("still refused");
-    assert!(matches!(err, VolumeError::NotSupported), "{err:?}");
-    super::set_virtual_portal_enabled(true);
+        .expect("`.git/config` streams as an ordinary file");
+    let size = std::fs::metadata(dir.join(".git/config")).expect("config is on disk").len();
+    volume
+        .write_from_stream(Path::new(".git/config.bak"), size, source, &|_, _| {
+            std::ops::ControlFlow::Continue(())
+        })
+        .await
+        .expect("writing under `.git` lands");
+    assert_eq!(
+        std::fs::read(dir.join(".git/config.bak")).expect("the copy is on disk").len() as u64,
+        size
+    );
+
+    // Creating, renaming, and removing beside it.
+    volume
+        .create_file(Path::new(".git/scratch"), b"x")
+        .await
+        .expect("creating under .git");
+    volume
+        .rename(Path::new(".git/scratch"), Path::new(".git/scratch2"), false)
+        .await
+        .expect("renaming under .git");
+    volume
+        .delete(Path::new(".git/scratch2"))
+        .await
+        .expect("deleting under .git");
+    volume.delete(Path::new(".git/HEAD")).await.expect("removing HEAD");
+    assert!(!dir.join(".git/HEAD").exists());
 
     cleanup(&dir);
 }
@@ -145,45 +224,43 @@ async fn the_copy_scan_counts_only_what_is_on_disk() {
 }
 
 /// The LOCAL delete walker reads a directory from the listing cache instead of
-/// the disk when the cache's watch covers every writer. Nothing under `.git` is
-/// ever watched (`listing/streaming.rs` skips arming one for a path that may
-/// not exist), so the oracle declines and the walker falls back to `read_dir`.
-/// That is the single fact keeping virtual entries out of the local delete and
-/// the scan preview.
+/// the disk when the cache's watch covers every writer. `.git/` is a real
+/// directory that CAN be watched now, so what keeps the six phantom rows out of
+/// that walker is the overlay flag: a listing an overlay decorated is a pane
+/// view, and the oracle declines it whatever its watch says.
 #[tokio::test]
-async fn the_listing_oracle_declines_a_cached_dot_git_listing() {
+async fn the_listing_oracle_declines_an_overlay_decorated_dot_git_listing() {
     let dir = repo("oracle_declines");
     let dot_git = dir.join(".git");
+    super::set_virtual_portal_enabled(true);
+    super::overlay::register();
 
-    let cached = LocalPosixVolume::new("Test", &dir)
-        .list_directory(Path::new(".git"), None)
-        .await
-        .unwrap();
-    assert!(
-        cached.iter().any(|e| e.name == "branches"),
-        "the cache holds a virtual entry"
-    );
+    let volume: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Test", &dir));
+    let mut cached = volume.list_directory(&dot_git, None).await.unwrap();
+    let added = crate::listing_overlays::decorate(&volume, &dot_git, &mut cached).await;
+    assert_eq!(added, 6, "the pane's listing holds the six virtual rows");
 
     let _guard = TestListing::new()
         .volume(crate::file_system::volume::DEFAULT_VOLUME_ID)
         .path(dot_git.clone())
         .entries(cached)
+        .overlay_rows(added)
         .insert("git_portal_oracle");
 
     assert!(
         try_get_authoritative_listing(crate::file_system::volume::DEFAULT_VOLUME_ID, &dot_git).is_none(),
-        "an unwatched .git listing must never substitute for a read"
+        "a pane's decorated listing must never substitute for a walker's read"
     );
     cleanup(&dir);
 }
 
 /// In a linked worktree `git worktree add` writes `.git` as a FILE holding
-/// `gitdir: <common>/worktrees/<name>`, not a directory. `classify` splits on
-/// the path SEGMENT and never stats it, so the portal answers there exactly as
-/// it does in the main worktree: `.git` lists the six categories even though
-/// nothing on disk says "directory".
+/// `gitdir: <common>/worktrees/<name>`, not a directory. The overlay contributes
+/// to a DIRECTORY listing, so the `.git/` landing page isn't there; the
+/// categories under it still are, because the route is lexical and `gix`
+/// discovery follows the gitlink.
 #[tokio::test]
-async fn a_linked_worktree_serves_the_portal_from_a_dot_git_file() {
+async fn a_linked_worktree_serves_the_categories_but_has_no_dot_git_landing() {
     let dir = repo("linked_worktree");
     super::set_virtual_portal_enabled(true);
     let linked = dir
@@ -201,35 +278,36 @@ async fn a_linked_worktree_serves_the_portal_from_a_dot_git_file() {
         "the linked worktree's .git is a file"
     );
 
-    let classified = super::path::classify(&gitlink);
-    assert!(classified.is_some(), "classify answers for a .git that is a file");
-
-    let names: Vec<String> = LocalPosixVolume::new("Test", &linked)
-        .list_directory(Path::new(".git"), None)
-        .await
-        .expect("the portal lists a gitlink path")
-        .into_iter()
-        .map(|e| e.name)
-        .collect();
-    for category in CATEGORIES {
-        assert!(
-            names.contains(&category.to_string()),
-            "{category} missing from {names:?}"
-        );
-    }
-
-    // Real entries ride along too: `read_real_dot_git` follows the gitlink to
-    // `<common>/worktrees/<name>/` and rewrites each entry's path under
-    // `<linked>/.git/`. Those rewritten paths have no counterpart on disk, so a
-    // real entry listed here can be seen but not opened.
+    // No landing listing: `.git` is a file, so the volume can't list it and the
+    // overlay never runs. The rewritten real rows it used to show couldn't be
+    // opened anyway (`<linked>/.git/HEAD` is a path THROUGH a file), so the
+    // portal simply starts one level down here.
+    let volume: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Test", &linked));
     assert!(
-        names.contains(&"HEAD".to_string()),
-        "a real gitdir entry shows up: {names:?}"
+        volume.list_directory(&gitlink, None).await.is_err(),
+        "listing a gitlink file is an error, not a portal root"
     );
-    let head = linked.join(".git").join("HEAD");
+
+    // The categories under it are the portal's, reached through the route, which
+    // is pure string work and never stats the `.git`.
     assert!(
-        std::fs::read(&head).is_err(),
-        "the path the pane shows for HEAD doesn't resolve (the gitlink is a file)"
+        super::path::portal_route(&gitlink.join("branches")).is_some(),
+        "a linked worktree's categories still route"
+    );
+    let (virt, ..) = super::path::classify(&gitlink.join("branches")).expect("classify follows the gitlink");
+    assert_eq!(virt, super::path::VirtualGitPath::Category(super::path::Cat::Branches));
+
+    let portal = std::sync::Arc::new(super::portal::GitPortal::new(crate::volume_host::host()));
+    let parent: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Parent", &linked));
+    let branches = portal
+        .volume_for(linked.clone(), parent)
+        .list_directory(&gitlink.join("branches"), None)
+        .await
+        .expect("the portal lists branches in a linked worktree");
+    assert!(
+        branches.iter().any(|e| e.name == "linked-branch"),
+        "{:?}",
+        branches.iter().map(|e| &e.name).collect::<Vec<_>>()
     );
 
     cleanup(&linked);

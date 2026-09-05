@@ -13,7 +13,6 @@ mod streams;
 use super::{
     CopyScanResult, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream, WatchCoverage,
 };
-use crate::file_system::git;
 use crate::file_system::listing::{FileEntry, ListingTally, get_single_entry, list_directory_core_with_tally};
 use crate::file_system::volume::ListingProgress;
 #[cfg(feature = "playwright-e2e")]
@@ -193,9 +192,6 @@ impl Volume for LocalPosixVolume {
             let tally = Arc::new(ListingTally::default());
             let tally_for_listing = Arc::clone(&tally);
             let mut listing = spawn_blocking(move || {
-                if let Some(routed) = git::try_route_listing(&abs_path) {
-                    return routed;
-                }
                 list_directory_core_with_tally(&abs_path, &tally_for_listing)
                     .map_err(|e| VolumeError::from_io_at(&e, &abs_path))
             });
@@ -241,9 +237,6 @@ impl Volume for LocalPosixVolume {
         let abs_path = self.resolve(path);
         Box::pin(async move {
             spawn_blocking(move || {
-                if let Some(routed) = git::try_route_metadata(&abs_path) {
-                    return routed;
-                }
                 get_single_entry(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))
             })
             .await
@@ -284,15 +277,6 @@ impl Volume for LocalPosixVolume {
         parent_path: &'a Path,
         mutation: super::MutationEvent,
     ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
-        // Virtual git paths receive their cache invalidations through the
-        // `.git`-watcher pipeline (`file_system::git::watcher`), not via
-        // mutation hooks. Mutating ops on them already return
-        // `NotSupported` above, but a future caller might land here through
-        // a different path; early-return rather than try to stat a path
-        // that has no real-FS counterpart.
-        if git::is_virtual(parent_path) {
-            return Box::pin(async {});
-        }
         Box::pin(async move {
             crate::file_system::listing::mutation::patch_listing_after_local_mutation(volume_id, parent_path, mutation);
         })
@@ -336,9 +320,6 @@ impl Volume for LocalPosixVolume {
         content: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        if git::is_virtual(&abs_path) {
-            return Box::pin(async { Err(VolumeError::NotSupported) });
-        }
         let content = content.to_vec();
         Box::pin(async move {
             spawn_blocking(move || -> Result<(), VolumeError> {
@@ -367,9 +348,6 @@ impl Volume for LocalPosixVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        if git::is_virtual(&abs_path) {
-            return Box::pin(async { Err(VolumeError::NotSupported) });
-        }
         Box::pin(async move {
             spawn_blocking(move || {
                 std::fs::create_dir(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))?;
@@ -382,9 +360,6 @@ impl Volume for LocalPosixVolume {
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
-        if git::is_virtual(&abs_path) {
-            return Box::pin(async { Err(VolumeError::NotSupported) });
-        }
         Box::pin(async move {
             spawn_blocking(move || {
                 let metadata = std::fs::symlink_metadata(&abs_path).map_err(|e| {
@@ -430,9 +405,6 @@ impl Volume for LocalPosixVolume {
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let from_abs = self.resolve(from);
         let to_abs = self.resolve(to);
-        if git::is_virtual(&from_abs) || git::is_virtual(&to_abs) {
-            return Box::pin(async { Err(VolumeError::NotSupported) });
-        }
         Box::pin(async move {
             spawn_blocking(move || {
                 if !force && from_abs != to_abs {

@@ -71,6 +71,8 @@ mod hidden_files_test;
 #[cfg(test)]
 mod operations_test;
 #[cfg(test)]
+mod overlay_refresh_test;
+#[cfg(test)]
 mod path_index_test;
 #[cfg(test)]
 mod row_beside_test;

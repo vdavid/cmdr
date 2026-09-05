@@ -1,27 +1,25 @@
 //! Virtual `.git/` listings.
 //!
-//! - `list_root` – the portal root: real `.git/*` entries (HEAD, config, hooks/, objects/, refs/,
-//!   etc.) followed by the six virtual category entries (`branches/`, `tags/`, `commits/`,
-//!   `stash/`, `worktrees/`, `submodules/`).
-//! - `list_branches` / `list_tags` – refs as virtual dirs
+//! - `list_categories` – the six category rows (`branches/`, `tags/`, `commits/`, `stash/`,
+//!   `worktrees/`, `submodules/`), which are what the portal volume lists at its root and what
+//!   the listing overlay contributes to a repo's `.git/` listing.
+//! - `list_branches` / `list_tags` – refs as virtual dirs.
 //!
-//! Real `.git/*` entries that aren't the root listing fall through to the
-//! real-FS code path via the volume hook returning `None` for non-virtual
-//! paths.
+//! Real `.git/*` entries never reach here: they're the parent volume's, listed
+//! by an ordinary `read_dir`.
 //!
 //! These return `Vec<FileEntry>` because the existing `Volume::list_directory`
 //! contract is single-shot. The underlying gix iterators are fast enough
 //! (< 50 ms even on 10k branches) that streaming inside this layer doesn't
 //! add value yet – cancellation for the surrounding listing pipeline still
-//! works because the volume hook runs inside the listing's `spawn_blocking`
-//! task, which the listing module aborts on cancel.
+//! works because every call runs inside a `spawn_blocking` task the listing
+//! module abandons on cancel.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use gix::refs::PartialName;
 
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::reading::get_single_entry;
 
 use super::Lookup;
 use super::column_meta::{
@@ -32,40 +30,6 @@ use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::path::{Cat, strip_ref_prefix};
 use super::repo::RepoHandle;
 use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
-
-/// Lists the portal root: real `.git/*` entries first, virtual category
-/// entries after.
-///
-/// Real entries come from a direct `std::fs::read_dir` on the resolved
-/// gitdir (handles linked-worktree gitlinks). They sort dirs-first,
-/// alphabetical, matching the listing pipeline's default. Then the six
-/// virtual categories (`branches/`, `tags/`, `commits/`, `stash/`,
-/// `worktrees/`, `submodules/`) append in fixed order.
-///
-/// Real entries whose name collides with a virtual category get filtered
-/// out – the virtual entry wins. In practice this hides the deprecated
-/// real `.git/branches/` directory (git itself stopped using it long ago)
-/// and the `.git/worktrees/` directory in linked-worktree setups (its
-/// internals belong to git, not to the user). Power users who really
-/// want the raw bytes can open the gitdir from the terminal.
-///
-/// Modified + Size columns are populated per category. See `column_meta`
-/// for the rules. Empty categories still show up – opening them lists
-/// nothing, which is more honest than hiding the concept altogether.
-pub fn list_root(handle: &RepoHandle, repo_root: &Path) -> Vec<FileEntry> {
-    let virtual_names: std::collections::HashSet<&'static str> = Cat::ALL.iter().map(|c| c.as_segment()).collect();
-
-    let mut out = read_real_dot_git(repo_root);
-    out.retain(|fe| !virtual_names.contains(fe.name.as_str()));
-    out.sort_by(|a, b| match (a.is_directory, b.is_directory) {
-        (true, false) => std::cmp::Ordering::Less,
-        (false, true) => std::cmp::Ordering::Greater,
-        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-    });
-
-    out.extend(list_categories(handle, repo_root));
-    out
-}
 
 /// The six virtual category rows on their own, in display order, with their
 /// Modified and Size cells filled in.
@@ -97,32 +61,6 @@ fn icon_for_category(cat: Cat) -> &'static str {
         Cat::Commits => "git:commit",
         Cat::Stash | Cat::Worktrees | Cat::Submodules => "git:fork",
     }
-}
-
-/// Reads the real on-disk gitdir for the portal root listing. Bypasses
-/// the volume hook (`std::fs` directly) to avoid recursing back into
-/// `git::try_route_listing`. Returns an empty Vec on any I/O hiccup;
-/// the virtual entries below carry the conceptual structure regardless.
-fn read_real_dot_git(repo_root: &Path) -> Vec<FileEntry> {
-    let gitdir = real_gitdir_path(repo_root);
-    let Ok(read) = std::fs::read_dir(&gitdir) else {
-        return Vec::new();
-    };
-    let dot_git = repo_root.join(".git");
-    let mut out = Vec::new();
-    for entry in read.flatten() {
-        let abs = entry.path();
-        let Ok(mut fe) = get_single_entry(&abs) else {
-            continue;
-        };
-        // Display under `<repo>/.git/<name>` so URLs stay anchored at the
-        // worktree (and so navigation into a linked-worktree gitdir's
-        // `.git/HEAD` keeps the worktree-rooted form). For non-gitlink
-        // worktrees, this is identical to `abs`.
-        fe.path = dot_git.join(&fe.name).to_string_lossy().into_owned();
-        out.push(fe);
-    }
-    out
 }
 
 fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, repo_root: &Path) {
@@ -458,27 +396,7 @@ pub fn list_tags(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>
     Ok(out)
 }
 
-/// Resolves the actual on-disk gitdir for a worktree.
-///
-/// For a normal worktree the gitdir is `<root>/.git`. For a linked
-/// worktree (gitlink), `<root>/.git` is a file pointing into
-/// `<main>/.git/worktrees/<name>` – this helper follows that.
-pub fn real_gitdir_path(repo_root: &Path) -> PathBuf {
-    let dot_git = repo_root.join(".git");
-    if dot_git.is_file()
-        && let Ok(content) = std::fs::read_to_string(&dot_git)
-        && let Some(stripped) = content.trim().strip_prefix("gitdir:")
-    {
-        let p = stripped.trim();
-        if Path::new(p).is_absolute() {
-            return PathBuf::from(p);
-        }
-        return repo_root.join(p);
-    }
-    dot_git
-}
-
-/// Returns metadata for a single virtual entry. Used by `try_route_metadata`.
+/// Returns metadata for a single virtual entry.
 pub fn get_metadata_for(
     repo_root: &Path,
     virt: &super::path::VirtualGitPath,
