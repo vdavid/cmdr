@@ -46,3 +46,6 @@ Full details (tier narratives, the package vs custom-icon detection-timing decis
 - **Disk-cache staleness token is the folder's mtime.** Don't replace it with a watcher: Finder bumps the folder mtime
   when re-iconing, which is exactly the invalidation signal.
 - **Linux skips NSWorkspace** and resolves via XDG theme lookup, so `special:*` degrades to the generic folder icon.
+- **The macOS fetch is ours (`macos_workspace.rs`), not a crate**, because an icon crate can hard-link a framework
+  newer than the bundle's macOS floor for code we never call, which is a dyld launch failure rather than a missing
+  icon. Drawing rules (per-call bitmap, `Copy` compositing, the canonicalize) in `DETAILS.md`.

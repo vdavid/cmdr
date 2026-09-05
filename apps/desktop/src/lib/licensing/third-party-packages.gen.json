@@ -1136,12 +1136,6 @@
       "url": "https://github.com/kstrafe/file-rotate"
     },
     {
-      "name": "file_icon_provider",
-      "version": "1.0.2",
-      "license": "MIT",
-      "url": "https://github.com/IohannRabeson/file_icon_provider"
-    },
-    {
       "name": "filetime",
       "version": "0.2.29",
       "license": "MIT OR Apache-2.0",
@@ -2594,12 +2588,6 @@
       "url": "https://github.com/madsmtm/objc2"
     },
     {
-      "name": "objc2-pdf-kit",
-      "version": "0.3.2",
-      "license": "Zlib OR Apache-2.0 OR MIT",
-      "url": "https://github.com/madsmtm/objc2"
-    },
-    {
       "name": "objc2-quartz-core",
       "version": "0.3.2",
       "license": "Zlib OR Apache-2.0 OR MIT",
@@ -2607,12 +2595,6 @@
     },
     {
       "name": "objc2-quick-look-ui",
-      "version": "0.3.2",
-      "license": "Zlib OR Apache-2.0 OR MIT",
-      "url": "https://github.com/madsmtm/objc2"
-    },
-    {
-      "name": "objc2-uniform-type-identifiers",
       "version": "0.3.2",
       "license": "Zlib OR Apache-2.0 OR MIT",
       "url": "https://github.com/madsmtm/objc2"

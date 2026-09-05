@@ -6,7 +6,7 @@ the app, with its license, and reproduces the license texts in full.
 Generated from `Cargo.lock` and `pnpm-lock.yaml` by `pnpm check third-party-notices`. Don't edit it
 by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices.go` instead.
 
-- Rust crates: 747
+- Rust crates: 744
 - npm packages: 125
 - Distinct license texts: 331
 
@@ -201,7 +201,6 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **ff** 0.14.0, MIT OR Apache-2.0, <https://github.com/zkcrypto/ff>
 - **file-id** 0.2.3, MIT OR Apache-2.0, <https://github.com/notify-rs/notify.git>
 - **file-rotate** 0.8.0, MIT, <https://github.com/kstrafe/file-rotate>
-- **file_icon_provider** 1.0.2, MIT, <https://github.com/IohannRabeson/file_icon_provider>
 - **filetime** 0.2.29, MIT OR Apache-2.0, <https://github.com/alexcrichton/filetime>
 - **find-msvc-tools** 0.1.9, MIT OR Apache-2.0, <https://github.com/rust-lang/cc-rs>
 - **flate2** 1.1.9, MIT OR Apache-2.0, <https://github.com/rust-lang/flate2-rs>
@@ -444,10 +443,8 @@ by hand; edit the generator at `scripts/check/checks/desktop-third-party-notices
 - **objc2-io-kit** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
 - **objc2-metal** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
 - **objc2-osa-kit** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
-- **objc2-pdf-kit** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
 - **objc2-quartz-core** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
 - **objc2-quick-look-ui** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
-- **objc2-uniform-type-identifiers** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
 - **objc2-vision** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
 - **objc2-web-kit** 0.2.2, MIT, <https://github.com/madsmtm/objc2>
 - **objc2-web-kit** 0.3.2, Zlib OR Apache-2.0 OR MIT, <https://github.com/madsmtm/objc2>
@@ -3634,7 +3631,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT
 
-Covers: adobe-cmap-parser 0.4.1, awaitable-error 0.1.0, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, delegate 0.13.5, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, file_icon_provider 1.0.2, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, md5 0.8.1, minisign-verify 0.2.5, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-pdf-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-uniform-type-identifiers 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, openssh-sftp-protocol-error 0.1.1, pdf-extract 0.12.0, postscript 0.14.1, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, type1-encoding-parser 0.1.1, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
+Covers: adobe-cmap-parser 0.4.1, awaitable-error 0.1.0, block2 0.5.1, block2 0.6.2, brotli-decompressor 5.0.3, cargo_toml 0.22.3, chrono 0.4.45, delegate 0.13.5, dispatch2 0.3.1, dpi 0.1.2, eventsource-stream 0.2.3, instant-clip-tokenizer 0.1.0, mac-notification-sys 0.6.15, md5 0.8.1, minisign-verify 0.2.5, objc-sys 0.3.5, objc2 0.5.2, objc2 0.6.4, objc2-app-kit 0.2.2, objc2-app-kit 0.3.2, objc2-av-foundation 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-media 0.3.2, objc2-core-ml 0.3.2, objc2-core-text 0.3.2, objc2-core-video 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.2.2, objc2-foundation 0.3.2, objc2-image-io 0.3.2, objc2-io-kit 0.3.2, objc2-metal 0.3.2, objc2-osa-kit 0.3.2, objc2-quartz-core 0.3.2, objc2-quick-look-ui 0.3.2, objc2-vision 0.3.2, objc2-web-kit 0.2.2, objc2-web-kit 0.3.2, openssh-sftp-protocol-error 0.1.1, pdf-extract 0.12.0, postscript 0.14.1, profiling 1.0.18, profiling-procmacros 1.0.18, rc-zip 5.4.1, simd_helpers 0.1.0, siphasher 1.0.3, specta 2.0.0-rc.24, specta-macros 2.0.0-rc.24, specta-serde 0.0.11, specta-tags 0.0.0, specta-typescript 0.0.11, tauri 2.11.5, tauri-build 2.6.3, tauri-codegen 2.6.3, tauri-macros 2.6.3, tauri-plugin 2.6.3, tauri-plugin-clipboard-manager 2.3.2, tauri-plugin-dialog 2.7.2, tauri-plugin-fs 2.5.1, tauri-plugin-global-shortcut 2.3.2, tauri-plugin-notification 2.3.3, tauri-plugin-opener 2.5.4, tauri-plugin-process 2.3.1, tauri-plugin-store 2.4.4, tauri-plugin-updater 2.10.1, tauri-runtime 2.11.3, tauri-runtime-wry 2.11.4, tauri-specta 2.0.0-rc.24, tauri-specta-macros 2.0.0-rc.24, tauri-utils 2.9.3, type1-encoding-parser 0.1.1, unic-char-property 0.9.0, unic-char-range 0.9.0, unic-common 0.9.0, unic-ucd-ident 0.9.0, unic-ucd-version 0.9.0, zune-inflate 0.2.54
 
 ```text
 MIT License

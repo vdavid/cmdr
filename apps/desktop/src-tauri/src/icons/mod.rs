@@ -5,6 +5,8 @@
 //! Custom thread counts showed no improvement, so we use auto-detect.
 
 mod disk_cache;
+#[cfg(target_os = "macos")]
+mod macos_workspace;
 pub mod per_path;
 // The special-folder classifier moved to `cmdr-fs`, where `FileEntry::new` can
 // reach it. Aliased so `icons::special_folders::…` keeps resolving.
@@ -22,10 +24,11 @@ use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, RwLock};
 
-// file_icon_provider uses GTK on Linux which requires main-thread access and
-// fails silently from rayon/tokio threads. On Linux we use freedesktop-icons instead.
+// macOS asks NSWorkspace (`macos_workspace.rs`); Linux asks the XDG icon theme
+// (`linux_icons.rs`), because a GTK lookup wants the main thread and fails silently
+// from a rayon or tokio worker.
 #[cfg(target_os = "macos")]
-use file_icon_provider::get_file_icon;
+use macos_workspace::render_file_icon;
 
 /// Prefix marking per-path (per-folder) icon keys. Unlike `dir` / `ext:*` / `file`
 /// (an inherently bounded set), `path:` keys grow with the number of distinct
@@ -172,14 +175,8 @@ pub(crate) fn rgba_to_data_url(rgba: &[u8], width: u32, height: u32) -> Option<S
 /// Fetches icon for a specific file path via the OS icon provider (macOS).
 #[cfg(target_os = "macos")]
 fn fetch_icon_for_path(path: &Path) -> Option<String> {
-    // Get icon from OS (size is u16)
-    let icon = get_file_icon(path, ICON_SIZE as u16).ok()?;
-
-    // file_icon_provider returns Icon with width, height, and RGBA pixels
-    let img = image::RgbaImage::from_raw(icon.width, icon.height, icon.pixels)?;
-    let dynamic_img = DynamicImage::ImageRgba8(img);
-
-    image_to_data_url(&dynamic_img)
+    let img = render_file_icon(path, ICON_SIZE as u16)?;
+    image_to_data_url(&DynamicImage::ImageRgba8(img))
 }
 
 /// Fetches icon for a specific file path via XDG icon theme lookup.

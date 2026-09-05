@@ -6,6 +6,16 @@ detection-timing decision, and disk-cache mechanism live here.
 This is the Rust `src/icons/` module. (`src-tauri/icons/`, a sibling at the crate root, holds the app *bundle* icons,
 unrelated.)
 
+## Asking macOS for the pixels (`macos_workspace.rs`)
+
+`NSWorkspace.iconForFile:` answers an `NSImage`, a resolution-independent recipe rather than a buffer, so every fetch draws it: allocate an `NSBitmapImageRep` at the target size, wrap it in an `NSGraphicsContext`, draw, and read `bitmapData`. The bitmap is `RGBA8`, non-planar and tightly packed, which is exactly what `image::RgbaImage::from_raw` adopts with no copy of its own.
+
+- **Per-call bitmap and context, never a shared one.** The fetch runs on rayon workers and on the dedicated 8 MB-stack threads, so one drawing surface would be two threads compositing into the same buffer. The allocation is noise next to the Launch Services round trip.
+- **`NSCompositingOperation::Copy`, not `SourceOver`.** The bitmap arrives as uninitialized memory, so blending over it mixes garbage into every transparent pixel. `renders_a_real_icon_at_the_requested_size` pins this on the corner alpha.
+- **The path is canonicalized first**, which doubles as the existence check (`iconForFile:` hands back a plausible generic document icon for a path that isn't there, and that would cache under an id meaning something else) and resolves symlinks. The id scheme wants that: `symlink-file` / `symlink-dir` are separate ids fetched from their own samples.
+
+Decision/Why: this replaced the `file_icon_provider` crate, which did the same drawing but also reached `UTType` from a caching struct Cmdr never constructed. That reference alone hard-linked `UniformTypeIdentifiers.framework` into the binary, and since that framework arrived in macOS 11, dyld refused to launch Cmdr at all on the 10.15 floor `tauri.conf.json` promises. Sixty lines of `NSWorkspace` we own beats a dependency that can put a framework in the binary for code we don't run, and it drops `gio`, `gtk`, and `windows` from the macOS graph as a side effect. `desktop-macos-framework-floor` now fails the build on any framework newer than the floor; the version evidence is in `docs/notes/system-requirements-and-es2025.md`.
+
 ## Cache tiers and persistence
 
 `dir` / `ext:*` / `file` / `symlink*` / `special:*` are inherently bounded, so they're uncapped in the in-memory cache
