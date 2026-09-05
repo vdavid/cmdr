@@ -297,7 +297,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🦀 Rust",
 		DependsOn:   nil,
 		IsFast:      true,
-		Inputs:      rustAppTreeInputs,
+		Inputs:      rustScanInputs(KindApp),
 		Run:         RunMtpDroppingTimeout,
 	},
 	{
@@ -308,7 +308,7 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🦀 Rust",
 		DependsOn:   nil,
 		IsFast:      true,
-		Inputs:      rustAppTreeInputs,
+		Inputs:      rustScanInputs(KindApp),
 		Run:         RunMtpNoTransportReset,
 	},
 	{

@@ -1,28 +1,65 @@
 package checks
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// runMtpNoTransportResetOn writes the supplied files into a temp repo layout
-// rooted at `apps/desktop/src-tauri/src/mtp/` and runs the check.
-func runMtpNoTransportResetOn(t *testing.T, files map[string]string) (CheckResult, error) {
+// seedMtpFixtureWorkspace lays out a workspace with both MTP trees: the app's
+// `src/mtp/` and the whole `cmdr-mtp` crate. Returns the repo root.
+func seedMtpFixtureWorkspace(t *testing.T, appFiles, crateFiles map[string]string) string {
 	t.Helper()
 	root := t.TempDir()
-	mtpDir := filepath.Join(root, "apps", "desktop", "src-tauri", "src", "mtp")
-	for rel, body := range files {
-		full := filepath.Join(mtpDir, rel)
-		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-			t.Fatalf("mkdir: %v", err)
-		}
-		if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
-			t.Fatalf("write: %v", err)
-		}
-	}
+	mustWrite(t, filepath.Join(root, "Cargo.toml"),
+		"[workspace]\nmembers = [\"apps/desktop/src-tauri\", \"crates/cmdr-mtp\"]\nresolver = \"2\"\n")
+	mustWrite(t, filepath.Join(root, "apps", "desktop", "src-tauri", "Cargo.toml"),
+		"[package]\nname = \"cmdr\"\nversion = \"0.0.0\"\n")
+	mustWrite(t, filepath.Join(root, "crates", "cmdr-mtp", "Cargo.toml"),
+		"[package]\nname = \"cmdr-mtp\"\nversion = \"0.0.0\"\n")
+	writeFixtureFiles(t, filepath.Join(root, "apps", "desktop", "src-tauri", "src", "mtp"), appFiles)
+	writeFixtureFiles(t, filepath.Join(root, "crates", "cmdr-mtp", "src"), crateFiles)
+	return root
+}
+
+// runMtpNoTransportResetOn writes the supplied files into the app's `src/mtp/`
+// and runs the check.
+func runMtpNoTransportResetOn(t *testing.T, files map[string]string) (CheckResult, error) {
+	t.Helper()
+	root := seedMtpFixtureWorkspace(t, files, map[string]string{"lib.rs": "//! nothing to see\n"})
 	return RunMtpNoTransportReset(&CheckContext{RootDir: root})
+}
+
+// The reset guardrail followed the session layer into `crates/cmdr-mtp`. A check
+// that still walked the app tree alone would pass over the very file that
+// recovers from a session reset, which is where a reset is most tempting.
+func TestMtpNoTransportReset_ReachesTheCrate(t *testing.T) {
+	root := seedMtpFixtureWorkspace(t,
+		map[string]string{"watcher.rs": "fn f() { /* clean */ }\n"},
+		map[string]string{"connection/session_reset.rs": "async fn f() { MtpDevice::reset_by_serial(s).await; }\n"},
+	)
+	_, err := RunMtpNoTransportReset(&CheckContext{RootDir: root})
+	if err == nil {
+		t.Fatal("expected a violation inside crates/cmdr-mtp, got success")
+	}
+	if !strings.Contains(err.Error(), "crates/cmdr-mtp/src/connection/session_reset.rs") {
+		t.Errorf("expected the crate path in the message, got: %s", err.Error())
+	}
+}
+
+// Both trees are scanned in one pass, so a clean run's count covers both.
+func TestMtpNoTransportReset_ScansBothTrees(t *testing.T) {
+	root := seedMtpFixtureWorkspace(t,
+		map[string]string{"watcher.rs": "fn f() {}\n", "volume_wiring.rs": "fn g() {}\n"},
+		map[string]string{"lib.rs": "//! x\n", "connection/mod.rs": "fn h() {}\n"},
+	)
+	res, err := RunMtpNoTransportReset(&CheckContext{RootDir: root})
+	if err != nil {
+		t.Fatalf("expected success on two clean trees, got: %v", err)
+	}
+	if !strings.Contains(res.Message, "4 MTP Rust files scanned") {
+		t.Errorf("expected all four files counted, got: %s", res.Message)
+	}
 }
 
 func TestMtpNoTransportReset_FlagsResetByLocation(t *testing.T) {

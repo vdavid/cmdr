@@ -82,12 +82,12 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 		Why:   "it pairs each member's OWN manifest with that member's tree, so it governs every member that isn't already macOS-only at the crate level",
 	},
 	"desktop-rust-mtp-dropping-timeout": {
-		AppTreeOnly: true,
-		Why:         "scoped to `src/mtp/`, the app-side USB transport; the rule is about that one subsystem's wire protocol",
+		Kinds: []MemberKind{KindApp},
+		Why:   "narrowed further to the two MTP trees (all of `cmdr-mtp` and the app's `src/mtp/`), the one subsystem whose wire protocol this rule is about; a timeout over something that isn't a PTP transaction is just a timeout",
 	},
 	"desktop-rust-mtp-no-transport-reset": {
-		AppTreeOnly: true,
-		Why:         "scoped to `src/mtp/`, same subsystem as mtp-dropping-timeout",
+		Kinds: []MemberKind{KindApp},
+		Why:   "narrowed to the same two MTP trees as mtp-dropping-timeout",
 	},
 	"desktop-fixture-lane-coverage": {
 		AppTreeOnly: true,

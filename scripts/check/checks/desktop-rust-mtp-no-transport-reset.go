@@ -24,7 +24,7 @@ type transportResetSite struct {
 	text    string
 }
 
-// RunMtpNoTransportReset fails the build if anything under `src/mtp/` sends a
+// RunMtpNoTransportReset fails the build if anything in an MTP tree sends a
 // USB transport reset.
 //
 // On Android the reset is a kill switch, not a recovery step: MtpServer answers
@@ -33,16 +33,25 @@ type transportResetSite struct {
 // keeps appearing in a device list while answering nothing, until the user
 // physically unplugs it. Recovery from a `SessionReset` is drop-the-session plus
 // spaced reopens, which self-heals; adding a reset converts that into a replug.
-// See `apps/desktop/src-tauri/src/mtp/connection/DETAILS.md` § "No transport
-// reset in recovery" for the logcat evidence. Deliberately has no opt-out
-// directive: reintroducing a reset means deleting this check, which is the
-// informed act we want it to force.
+// See `crates/cmdr-mtp/src/connection/DETAILS.md` § "No transport reset in
+// recovery" for the logcat evidence. Deliberately has no opt-out directive:
+// reintroducing a reset means deleting this check, which is the informed act we
+// want it to force.
 func RunMtpNoTransportReset(ctx *CheckContext) (CheckResult, error) {
-	mtpDir := filepath.Join(ctx.RootDir, "apps", "desktop", "src-tauri", "src", "mtp")
-
-	violations, scanned, err := scanForTransportResets(ctx.RootDir, mtpDir)
+	trees, err := mtpScanRoots(ctx.RootDir, "desktop-rust-mtp-no-transport-reset")
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("failed to scan MTP Rust files: %w", err)
+		return CheckResult{}, err
+	}
+
+	var violations []transportResetSite
+	scanned := 0
+	for _, tree := range trees {
+		treeViolations, treeScanned, scanErr := scanForTransportResets(ctx.RootDir, tree)
+		if scanErr != nil {
+			return CheckResult{}, fmt.Errorf("failed to scan MTP Rust files: %w", scanErr)
+		}
+		violations = append(violations, treeViolations...)
+		scanned += treeScanned
 	}
 
 	if len(violations) > 0 {
@@ -57,11 +66,11 @@ func RunMtpNoTransportReset(ctx *CheckContext) (CheckResult, error) {
 			sb.WriteString(fmt.Sprintf("  %s:%d: %s\n", v.relPath, v.line, v.text))
 		}
 		return CheckResult{}, fmt.Errorf(
-			"found %d USB transport reset %s under `src/mtp/` "+
+			"found %d USB transport reset %s in the MTP trees "+
 				"(on Android the reset kills MTP for good: MtpServer drops its FunctionFS endpoints and never "+
 				"re-arms them, so the phone keeps enumerating while answering nothing until it's replugged — "+
 				"recovery is drop-the-session plus spaced reopens, which self-heals; see "+
-				"`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md` § \"No transport reset in recovery\"):\n%s",
+				"`crates/cmdr-mtp/src/connection/DETAILS.md` § \"No transport reset in recovery\"):\n%s",
 			len(violations), Pluralize(len(violations), "call", "calls"),
 			strings.TrimRight(sb.String(), "\n"),
 		)

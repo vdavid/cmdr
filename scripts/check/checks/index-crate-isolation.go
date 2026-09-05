@@ -35,7 +35,9 @@ import (
 // `file-length` allowlist entry. Shrinking is always fine and never fails.
 
 // guardedIndexCrates are the crates whose dependency trees must stay app-free.
-var guardedIndexCrates = []string{"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav"}
+var guardedIndexCrates = []string{
+	"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav", "cmdr-mtp",
+}
 
 // forbiddenForIndexCrates are the packages that must not appear in a guarded
 // crate's tree. `cmdr` is the app; `tauri` and `tauri-specta` are what would let
@@ -206,6 +208,15 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   6,
 			PublicModules:  1,
 			SubsystemItems: 8,
+		},
+	},
+	{
+		// MEASURE-ME
+		Name: "cmdr-mtp",
+		Ceilings: surfaceCeilings{
+			RootPromises:   9999,
+			PublicModules:  9999,
+			SubsystemItems: 9999,
 		},
 	},
 	{
