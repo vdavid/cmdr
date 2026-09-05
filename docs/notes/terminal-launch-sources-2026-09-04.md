@@ -14,19 +14,19 @@ Cmdr does the same rather than inventing a mechanism macOS doesn't have.
 
 ## Bundle ids
 
-Verified 2026-09-04, one source each. A new entry owes the same: a source and a date, not a recollection.
+Each id's source and date live in the doc comment above `KNOWN_TERMINALS`, which is where somebody adding an app is
+already standing, so they are not repeated here. All eight were verified 2026-09-04, three by `mdls` against the copy
+installed on the machine and five by reading the id out of the vendor's own build config. **A new entry owes the same: a
+source and a date, not a recollection.**
 
-- **Terminal** (`com.apple.Terminal`), **Ghostty** (`com.mitchellh.ghostty`), **Warp** (`dev.warp.Warp-Stable`):
-  `mdls -name kMDItemCFBundleIdentifier` against the copy installed on the machine.
-- **Alacritty** (`org.alacritty`): `extra/osx/Alacritty.app/Contents/Info.plist` (`alacritty/alacritty`, `master`).
-- **Hyper** (`co.zeit.hyper`): `appId` in `electron-builder.json` (`vercel/hyper`, `canary`).
-- **iTerm2** (`com.googlecode.iterm2`): `PRODUCT_BUNDLE_IDENTIFIER` in `iTerm2.xcodeproj/project.pbxproj`
-  (`gnachman/iTerm2`, `master`). ⚠️ The `com.iterm2.*` ids sitting beside it in that file belong to helper targets
-  (pidinfo, the proxy, the sandboxed worker), not to the app, and picking one of those is the mistake this line exists
-  to prevent.
-- **kitty** (`net.kovidgoyal.kitty`): `CFBundleIdentifier=f'net.kovidgoyal.{appname}'` in `setup.py`
-  (`kovidgoyal/kitty`, `master`).
-- **WezTerm** (`com.github.wez.wezterm`): `assets/macos/WezTerm.app/Contents/Info.plist` (`wezterm/wezterm`, `main`).
+Two things worth knowing before you go looking for one:
+
+- ⚠️ **iTerm2's repository carries several ids.** The app is `com.googlecode.iterm2`; the `com.iterm2.*` ids sitting
+  beside it in the same project file belong to helper targets (pidinfo, the proxy, the sandboxed worker). Picking one of
+  those gives a table entry that never matches an installed app, and nothing fails loudly.
+- **Warp's id names a release channel.** `dev.warp.Warp-Stable` is the stable build, which is the one that was measured.
+  Whether Warp's preview channel ships under a different id was not checked; if it does, it needs its own entry, and
+  until then a user on that channel reaches Warp through "Choose an app…", like any app the table doesn't carry.
 
 ## Launch recipes
 
@@ -61,7 +61,7 @@ answers do not rhyme:
   toggle cleanly.
 - **iTerm2** would need AppleScript for a tab, which raises an Automation permission prompt the action does not
   otherwise need.
-- **kitty** and **WezTerm** need their own CLI or remote-control channel, which means a configured, running instance.
+- **kitty** and **WezTerm** each need their own CLI or remote-control channel for it.
 - **Alacritty** has no tabs at all, so the question does not apply.
 
 So each app is launched the way it natively takes a folder, and the app's own preferences decide. A toggle shown only
