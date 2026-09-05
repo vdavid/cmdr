@@ -68,9 +68,13 @@ a running app is a weaker signal than a choice.
 
 ## The toasts
 
-Both are persistent and share the one-slot `open-terminal-here` toast group, so a second one retires the first rather
-than stacking. Both deep-link to the terminal-app row through `openSettingsToTerminalApp()` under the
-`'open-terminal-toast'` settings surface.
+Both are persistent, and everything this action says goes out under the one toast id `open-terminal-here`, dismissed
+first and re-added, so a second word retires the first rather than stacking. ❗ An id rather than a one-slot
+`toastGroup`: a group already full of PERSISTENT toasts drops the INCOMING toast instead of evicting anything
+(`ui/toast/toast-store.svelte.ts` `makeRoomForNewToast`, and `status-corner/CLAUDE.md` carries the same warning), so the
+app-is-gone toast said nothing at all while the first-use hint was still up. The dismiss matters too: `addToast`'s own
+same-id path swaps the content but keeps the first toast's `props`, `dismissal`, and width. Both toasts deep-link to the
+terminal-app row through `openSettingsToTerminalApp()` under the `'open-terminal-toast'` settings surface.
 
 `launchRefused` and `timedOut` become plain error toasts. `not_a_local_path` coming back from Rust reuses the same
 `noPath` wording as the frontend gate's refusal: from the user's side it's the same sentence, and the only difference is

@@ -18,6 +18,7 @@ const m = vi.hoisted(() => ({
   openTerminalHere: vi.fn(),
   terminalAppDisplayName: vi.fn(),
   addToast: vi.fn(),
+  dismissToast: vi.fn(),
   settings: new Map<string, unknown>(),
 }))
 
@@ -41,7 +42,7 @@ vi.mock('$lib/tauri-commands', () => ({
   asOpenTerminalError: (error: unknown) => (error instanceof FakeOpenTerminalFailure ? error.failure : null),
 }))
 
-vi.mock('$lib/ui/toast', () => ({ addToast: m.addToast }))
+vi.mock('$lib/ui/toast', () => ({ addToast: m.addToast, dismissToast: m.dismissToast }))
 
 vi.mock('$lib/settings', () => ({
   getSetting: (id: string) => m.settings.get(id),
@@ -59,7 +60,7 @@ vi.mock('$lib/intl/messages.svelte', () => ({ tString: (key: string) => key }))
 
 import { openTerminalHereForFolder } from './open-terminal-here'
 
-const { listTerminalApps, openTerminalHere, terminalAppDisplayName, addToast, settings } = m
+const { listTerminalApps, openTerminalHere, terminalAppDisplayName, addToast, dismissToast, settings } = m
 const APP_KEY = 'behavior.openTerminalHereApp'
 const SEEN_KEY = 'behavior.openTerminalHereToastSeen'
 const TERMINAL = 'com.apple.Terminal'
@@ -182,6 +183,36 @@ describe('openTerminalHereForFolder: the outcomes it reports', () => {
       'commands.handler.openTerminalHere.timedOut',
       expect.objectContaining({ level: 'error' }),
     )
+  })
+})
+
+describe('openTerminalHereForFolder: one toast at a time', () => {
+  const TOAST_ID = 'open-terminal-here'
+
+  it('dismisses what it said last before saying the next thing', async () => {
+    // Both toasts are PERSISTENT, and a one-slot toast GROUP full of persistent
+    // toasts drops the incoming one rather than evicting: the app-is-gone toast
+    // said nothing while the first-use hint was still on screen, and the setting
+    // reset behind it. Sharing one id and dismissing first is what fixes that.
+    settings.set(SEEN_KEY, true)
+    settings.set(APP_KEY, WARP)
+    openTerminalHere.mockResolvedValue('app_missing_opened_terminal_instead')
+
+    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+
+    expect(dismissToast).toHaveBeenCalledWith(TOAST_ID)
+    expect(dismissToast.mock.invocationCallOrder[0]).toBeLessThan(addToast.mock.invocationCallOrder[0])
+  })
+
+  it('puts every kind of message out under the one id', async () => {
+    settings.set(SEEN_KEY, true)
+    openTerminalHere.mockResolvedValue('not_a_local_path')
+
+    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: null, volumeId: 'mtp-1' })
+
+    expect(addToast).toHaveBeenCalledTimes(2)
+    for (const call of addToast.mock.calls) expect(call[1]).toMatchObject({ id: TOAST_ID })
   })
 })
 

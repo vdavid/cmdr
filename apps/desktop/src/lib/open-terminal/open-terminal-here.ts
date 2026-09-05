@@ -8,7 +8,7 @@
  */
 
 import { asOpenTerminalError, listTerminalApps, openTerminalHere, terminalAppDisplayName } from '$lib/tauri-commands'
-import { addToast } from '$lib/ui/toast'
+import { addToast, dismissToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { TERMINAL_APP_BUNDLE_ID } from '$lib/settings/sections/terminal-app-options'
 import { decideFirstUsePick } from './first-use-pick'
@@ -30,13 +30,32 @@ export interface OpenTerminalRequest {
 }
 
 /**
- * Both hint toasts share a one-slot group: they say the same kind of thing about
- * the same setting, so a second one replaces the first rather than stacking.
+ * One id for everything this action says, so a second word replaces the first
+ * rather than stacking: they are all about the same folder and the same setting.
+ *
+ * ❗ An id, ❌ never `toastGroup` + `maxInGroup: 1`. A group already full of
+ * PERSISTENT toasts drops the INCOMING one instead of evicting anything
+ * (`ui/toast/toast-store.svelte.ts` `makeRoomForNewToast`), and both toasts here
+ * are persistent — so "your terminal app is gone" went unsaid whenever the
+ * first-use hint was still on screen, while the setting reset behind it.
+ * `status-corner/CLAUDE.md` carries the same warning for its own group.
  */
-const TOAST_GROUP = 'open-terminal-here'
+const TOAST_ID = 'open-terminal-here'
 
 /** Wider than the 360 default, so the hint's two sentences don't run to five lines. */
 const TOAST_WIDTH_PX = 400
+
+/**
+ * Says one thing, retiring whatever this action said before.
+ *
+ * The dismiss is what makes the replacement total: `addToast`'s own same-id path
+ * swaps the content but keeps the first toast's `props`, `dismissal`, and width,
+ * which is the wrong body for a different message.
+ */
+function replaceToast(content: Parameters<typeof addToast>[0], options: Parameters<typeof addToast>[1]): void {
+  dismissToast(TOAST_ID)
+  addToast(content, { ...options, id: TOAST_ID })
+}
 
 /**
  * Opens the folder, dealing with everything that can happen on the way.
@@ -91,12 +110,10 @@ async function pickAppForThisRun(): Promise<string> {
   if (pick.persistChoice) setTerminalAppChoice(pick.appChoice)
   if (pick.markSeen) markTerminalHintSeen()
   if (pick.showHint) {
-    addToast(OpenTerminalHintToastContent, {
+    replaceToast(OpenTerminalHintToastContent, {
       level: 'info',
       dismissal: 'persistent',
       widthPx: TOAST_WIDTH_PX,
-      toastGroup: TOAST_GROUP,
-      maxInGroup: 1,
     })
   }
   return pick.appChoice
@@ -110,17 +127,15 @@ async function reportMissingApp(appChoice: string): Promise<void> {
   // Asked BEFORE the reset, while the setting still names the app that's gone.
   const appName = await terminalAppDisplayName(appChoice)
   setTerminalAppChoice(TERMINAL_APP_BUNDLE_ID)
-  addToast(TerminalAppMissingToastContent, {
+  replaceToast(TerminalAppMissingToastContent, {
     level: 'info',
     dismissal: 'persistent',
     props: { appName },
     widthPx: TOAST_WIDTH_PX,
-    toastGroup: TOAST_GROUP,
-    maxInGroup: 1,
   })
 }
 
-/** A plain one-line toast, grouped with the rest so a burst can't stack. */
+/** A plain one-line toast, retiring whatever this action said before. */
 function showMessage(key: Parameters<typeof tString>[0], level: 'info' | 'error'): void {
-  addToast(tString(key), { level, toastGroup: TOAST_GROUP, maxInGroup: 1 })
+  replaceToast(tString(key), { level })
 }
