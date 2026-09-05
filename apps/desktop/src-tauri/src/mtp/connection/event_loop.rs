@@ -522,7 +522,9 @@ mod tests {
     /// without a device, a runtime of its own, or a volume registry.
     fn manager_reporting_to(listings: Arc<RecordingListings>) -> Arc<MtpConnectionManager> {
         MtpConnectionManager::new(
-            cmdr_fs::volume::host::VolumeHost::builder().listings(listings).build(),
+            cmdr_fs::volume::host::VolumeHost::builder()
+                .listings(listings as Arc<dyn cmdr_fs::volume::host::listings::ListingHost>)
+                .build(),
             crate::mtp::connection::events::no_device_events(),
             crate::mtp::connection::MtpVolumeRegistrar::detached(),
         )
@@ -604,5 +606,130 @@ mod tests {
             listing_path_for("mtp-R5CT:123", 65_537, Path::new("/Music")),
             PathBuf::from("mtp://mtp-R5CT:123/65537/Music"),
         );
+    }
+}
+
+/// The whole pane-refresh chain against a live (virtual) device: an object
+/// appears, the loop hears it, and the pane showing its folder is handed the new
+/// contents.
+#[cfg(all(test, feature = "virtual-mtp"))]
+mod device_tests {
+    use std::time::Duration;
+
+    use super::*;
+    use crate::mtp::connection::events::no_device_events;
+    use crate::mtp::connection::{DeviceWatch, MtpDisconnectReason, MtpVolumeRegistrar};
+    use crate::mtp::virtual_device::{
+        VIRTUAL_DEVICE_SERIAL, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
+    };
+    use crate::test_support::wait_until_async;
+    use cmdr_fs::volume::host::VolumeHost;
+    use cmdr_fs::volume::host::listings::RecordingListings;
+
+    /// The virtual device's writable storage, which mtp-rs numbers rather than
+    /// the fixture, so it has to be asked for. A throwaway UNWATCHED session,
+    /// because the recorder that watches has to know the volume id before the
+    /// manager it belongs to exists.
+    async fn writable_storage_id(device_id: &str) -> u32 {
+        let probe = MtpConnectionManager::new(
+            VolumeHost::detached(),
+            no_device_events(),
+            MtpVolumeRegistrar::detached(),
+        );
+        let info = probe
+            .connect(device_id, DeviceWatch::Off)
+            .await
+            .expect("virtual-mtp connect should succeed");
+        let storage_id = info.storages.first().expect("a writable storage").id;
+        probe
+            .disconnect(device_id, MtpDisconnectReason::User)
+            .await
+            .expect("the probe session must close before the watched one opens");
+        storage_id
+    }
+
+    /// A device event that resolves must reach the pane showing that folder, as
+    /// ONE `Replaced` carrying what the device now holds. Everything between is
+    /// real: the interrupt-endpoint poll, the handle→path walk, the oracle probe,
+    /// the re-read.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_file_appearing_on_the_device_hands_the_pane_its_new_contents() {
+        let _guard = virtual_device_test_lock().lock().await;
+        let fixture = setup_virtual_mtp_device();
+        let device_id = crate::mtp::list_mtp_devices()
+            .into_iter()
+            .find(|d| d.location_id == fixture.location_id)
+            .map(|d| d.id)
+            .expect("the virtual device must appear in discovery");
+
+        let storage_id = writable_storage_id(&device_id).await;
+        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(&device_id, storage_id);
+        // The URL a pane navigating there is cached under, written out rather
+        // than built with `listing_path_for`: the point is that the loop reports
+        // at the representation the pane holds, and a test that derived both
+        // sides from one function would pass however that function drifted.
+        let documents = PathBuf::from(format!("mtp://{device_id}/{storage_id}/Documents"));
+
+        // A pane on `/Documents`, watched: that is what makes the loop refresh
+        // this directory instead of falling back to the whole device.
+        let listings =
+            Arc::new(RecordingListings::new().with_authoritative_listing(&volume_id, documents.clone(), Vec::new()));
+        let manager = MtpConnectionManager::new(
+            VolumeHost::builder()
+                .listings(Arc::clone(&listings) as Arc<dyn cmdr_fs::volume::host::listings::ListingHost>)
+                .build(),
+            no_device_events(),
+            MtpVolumeRegistrar::detached(),
+        );
+
+        manager
+            .connect(&device_id, DeviceWatch::Live)
+            .await
+            .expect("virtual-mtp connect should succeed");
+        // Prime the path cache the way navigating there does. Root first:
+        // `resolve_path_to_handle` is cache-only, so a folder whose parent was
+        // never listed has no handle to reach it by.
+        manager
+            .list_directory(&device_id, storage_id, "/")
+            .await
+            .expect("listing the storage root");
+        manager
+            .list_directory(&device_id, storage_id, "/Documents")
+            .await
+            .expect("listing the folder the pane is showing");
+
+        std::fs::write(fixture.root().join("internal/Documents/arrived.txt"), b"from the phone")
+            .expect("writing into the backing dir");
+        mtp_rs::rescan_virtual_device(VIRTUAL_DEVICE_SERIAL).expect("the device must be rescannable");
+
+        // Under nextest's 8 s per-test cap, so a broken chain fails with this
+        // message rather than being killed without one. The happy path is ~1.5 s.
+        wait_until_async(Duration::from_secs(5), "the pane to be handed the new contents", || {
+            listings.changes().iter().any(|(_, path, change)| {
+                path == &documents && matches!(change, DirectoryChange::Replaced(entries) if entries.iter().any(|e| e.name == "arrived.txt"))
+            })
+        })
+        .await;
+
+        let replacements: Vec<_> = listings
+            .changes()
+            .into_iter()
+            .filter(|(_, _, change)| matches!(change, DirectoryChange::Replaced(_)))
+            .collect();
+        assert_eq!(
+            replacements.len(),
+            1,
+            "one re-read for one changed directory, ❌ never one report per entry"
+        );
+        assert_eq!(
+            replacements[0].0, volume_id,
+            "the report must name the storage's volume, not the device"
+        );
+
+        manager
+            .disconnect(&device_id, MtpDisconnectReason::User)
+            .await
+            .expect("virtual-mtp disconnect should succeed");
+        unregister_virtual_mtp_device(fixture.location_id);
     }
 }
