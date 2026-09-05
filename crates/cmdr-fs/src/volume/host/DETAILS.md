@@ -455,10 +455,11 @@ because retrofitting is where all the cost sits:
   gave: a crate-local typed event trait for the derives, `any(test, feature = "testing")` for the `cfg(test)` gates, and
   one argued visibility widening for the test hooks. What each half owns: `crates/cmdr-mtp/DETAILS.md` § "Where the
   boundary runs, and why".
-- **`local_posix` stays app-resident permanently**, and that refusal was never the same shape as MTP's: the git portal
-  is implemented as `LocalPosixVolume` hooks, so extracting the backend means extracting git or inventing a seam with
-  one implementor forever. The reasons are in the same section, because that's where someone proposing "let's complete
-  the set" will be standing.
+- **`local_posix` stays app-resident permanently**, and that refusal was never the same shape as MTP's: it isn't a
+  protocol backend reaching sideways, it's the app's own local machinery. It's the only caller of the real-FS reader
+  that also serves the non-volume listing path, and the sole caller of `patch_listing_after_local_mutation`, which
+  `std::fs`-stats the changed entry and so can't exist on a protocol backend. The reasons are in the same section,
+  because that's where someone proposing "let's complete the set" will be standing.
 
 **Expect an extraction to surface latent defects**, and treat that as the point rather than a surprise. Archive's move
 found two: seven `.unwrap()`s that were legal only while the file was `cfg(test)` and became clippy `unwrap_used`

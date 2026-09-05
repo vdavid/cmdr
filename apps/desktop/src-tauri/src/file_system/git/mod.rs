@@ -71,6 +71,8 @@ mod snapshot_dates_tests;
 mod test_fixtures;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod walker_exposure_tests;
 
 #[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use friendly::{FriendlyGitError, FriendlyGitErrorKind};

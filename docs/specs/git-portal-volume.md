@@ -5,9 +5,16 @@
 read, plus seven `is_virtual` guards on every mutation method. Two more hand-enforced rules ride on top (the listing
 layer must skip watching virtual paths; the toggle must manually refresh open listings), the docs call the hook order
 "load-bearing", and the module holds English (`pluralize(n, "file")`, "Pinned at commit …") that 10 translations never
-see. The delete walker lists through the hooked `list_directory`, so a delete of a repo with the portal on may meet six
-virtual folders it can't remove (verify at M0). And the git module's first reason for `local_posix` being permanently
-app-resident is these hooks.
+see. The volume-aware delete walker (every non-boot volume: an external disk, a share, a phone) lists through the hooked
+`list_directory`, so a delete of a repo meets all six virtual folders and refuses each with `NotSupported`. The same
+guard refuses the REAL `.git/config` and `.git/HEAD` as well, because `is_virtual` matches any `.git` path segment
+rather than a virtual category, so that delete stops with the repo half-gone. The other three walkers are clean: the
+copy scan walks with `walkdir` against the resolved path and never asks the volume; the LOCAL delete walker falls back
+to `read_dir` because the listing oracle declines every `.git` listing (`listing/streaming.rs` arms no watch under
+`.git`, so coverage reads `None`); and the drive index walks with raw syscalls inside `cmdr-index`, which can't reach
+the git module at all. All of that is pinned by `apps/desktop/src-tauri/src/file_system/git/walker_exposure_tests.rs`
+(verified on macOS 26.6, `cargo test --lib`, 2026-09-05). And the git module's first reason for `local_posix` being
+permanently app-resident is these hooks.
 
 **Shape.** The same mechanism archives already use. A path crossing a `.zip` isn't a hook inside the local backend:
 `VolumeManager::resolve` routes it to a read-only `ArchiveVolume` in its own crate. The portal is the same shape. A
@@ -36,6 +43,16 @@ one can go first.
   non-virtual stays on the parent volume, so every mutation on real files keeps its current behavior with no guard
   anywhere. A real directory literally named `.git/branches/` is shadowed while the portal is on, which is today's
   behavior too (the classifier hides the deprecated `.git/branches/` and linked-worktree `.git/worktrees/`).
+- **A linked worktree's `.git` is a FILE, so the overlay can't key on "a directory named `.git`".** `classify` splits on
+  the path SEGMENT and never stats, so the portal answers in a linked worktree exactly as in the main one, and
+  `virtual_listing::list_root` follows the gitlink to `<common>/worktrees/<name>/` and lists its real entries under
+  rewritten `<linked>/.git/…` paths (verified 2026-09-05, `a_linked_worktree_serves_the_portal_from_a_dot_git_file`).
+  Two consequences for M2: the contributor's predicate is "the last segment is `.git`", ❌ never `is_dir`; and once the
+  hooks come out, `Volume::list_directory(<linked>/.git)` is a `read_dir` on a file (`ENOTDIR`), so the overlay's six
+  entries would land on an errored listing. Today's rewritten real entries are already un-openable (`<linked>/.git/HEAD`
+  doesn't resolve), so dropping them is a fix rather than a loss; what M2 owes is a listing that succeeds. Simplest
+  shape: route `.git` itself to the portal volume when it's a gitlink, or let the overlay stand in for a parent listing
+  that failed `ENOTDIR` on one.
 - **One `GitPortalVolume` per repo root**, registered on demand and LRU-capped the way `register_archive` does it in
   `file_system/volume/manager/archive_routing.rs`. It maps the full input path to `(repo, category, ref, tree path)`
   through the existing `path::classify`, so `ResolvedVolume.path` stays the input path verbatim, as for archives.
@@ -106,13 +123,15 @@ per milestone. M1 and M2 happen in place under today's paths; the move (M3) wait
 
 ### M0: verify and record
 
-- Verify the delete-walker exposure: with the portal on, delete a small repo directory through Cmdr (or the delete
-  walker's unit harness) and record what happens to the six virtual entries. Verify `scan_for_copy_batch` and the
-  indexer's BFS the same way. Write the finding into this spec's Problem paragraph as fact.
-- Verify linked-worktree behavior (`.git` is a FILE there) so the overlay's "directory named `.git`" rule matches what
-  `classify` does today.
-- Revise the two decision paragraphs (decision 5; the host `DETAILS.md` § "Which backends move" line on `local_posix`).
-- Green: the docs checks.
+Done. The findings are in the Problem paragraph and the linked-worktree routing bullet above, pinned by
+`apps/desktop/src-tauri/src/file_system/git/walker_exposure_tests.rs`, and the two decision paragraphs
+(`apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions",
+`crates/cmdr-fs/src/volume/host/DETAILS.md` § "Which backends move") now rest on the two reasons that outlive this plan.
+
+**Open question for David.** The volume-delete `NotSupported` on real `.git/*` files is a live data bug, not only a
+portal wart: on an external disk, deleting a repo folder leaves `.git/` behind. M2's routing fixes it structurally (the
+guard disappears with the hooks), so M0 left it standing rather than patching seven sites that are about to be deleted.
+If it should ship sooner, narrowing the guards from `is_virtual` to `classify(..).is_some()` is a small separate change.
 
 ### M1: English out (in place)
 

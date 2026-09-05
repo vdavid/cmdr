@@ -43,9 +43,46 @@ here:
 - **`column_meta.rs`'s count + noun formatting goes through `crate::pluralize`**, not inline string building.
 - **`log.rs::resolve_commit_id` resolves a SHA prefix even for an UNREACHABLE commit**, so browsing
   `commits/<sha>` works for something the rev-walk would never list.
+- **`walker_exposure_tests.rs` pins which non-pane walkers can reach a virtual entry**, because that set is what the
+  portal's blast radius IS. See § "What each walker sees" below.
 - **`bench.rs` never runs in a normal suite**: every bench in it is `#[ignore]`d because each builds its own synth
   fixture (a 50k-file repo, a 100-branch repo, a 5k-commit history), cached once under `target/test-fixtures/git/`. The
   run command lives in the module's own header, so it can't drift from the test names.
+
+## What each walker sees
+
+A virtual entry is a name with no inode. A pane renders one; anything that stats, copies, or removes one meets a path
+that isn't there. Four walkers matter, and only one of them can reach a virtual entry today (verified on macOS 26.6,
+`cargo test --lib file_system::git::walker_exposure_tests`, 2026-09-05):
+
+- **The volume-aware delete walker CAN.** It lists through `Volume::list_directory`, so on any non-boot volume (an
+  external disk, a share, a phone) a repo delete meets all six categories and refuses each with `NotSupported`.
+- **The same guard also refuses the REAL files.** `is_virtual` matches any `.git` path SEGMENT, not a virtual category,
+  so `delete`, `rename`, `create_file`, `create_directory`, and `write_from_stream` all refuse `.git/config` and
+  `.git/HEAD` too, with the portal off as much as on. A volume-routed delete of a repo folder therefore stops with
+  `.git/` still on disk. The routing work in `docs/specs/git-portal-volume.md` removes the guards along with the hooks.
+- **The copy scan CAN'T.** `local_posix/scan.rs` walks with `walkdir` against the resolved path and never asks the
+  volume for a listing.
+- **The LOCAL delete walker CAN'T.** It prefers a cached listing over `read_dir` only when the listing's watch covers
+  every writer, and `listing/streaming.rs` arms no watch anywhere under `.git`, so `listing_watch_coverage` answers
+  `None` and the oracle declines. That one fact is what keeps the boot-volume delete and the scan preview honest; a
+  future watch armed under `.git` would hand six phantom rows straight to a delete walker.
+- **The drive index CAN'T.** Local volumes are walked by `cmdr-index`'s guarded walker with raw syscalls, and that crate
+  can't name the app's git module. SMB and MTP go through the trait scanner, but the portal hooks live only in
+  `LocalPosixVolume`, so a `.git` on a share never routes.
+
+## Linked worktrees
+
+`git worktree add` writes `.git` as a FILE holding `gitdir: <common>/worktrees/<name>`. `path::classify` splits on the
+path segment and never stats, so the portal answers there exactly as in the main worktree. `read_real_dot_git` follows
+the gitlink and lists `<common>/worktrees/<name>/`'s real entries (`HEAD`, `index`, `refs/`, `commondir`, `gitdir`,
+`logs/`) under rewritten `<linked>/.git/…` paths.
+
+**Gotcha**: those rewritten paths don't resolve. `<linked>/.git/HEAD` is a path THROUGH a file, so reading it fails with
+`ENOTDIR`; the rows are visible but not openable.
+**Why**: the rewrite exists so the pane's breadcrumb stays inside the worktree the user is standing in. Fixing it means
+either mapping each row back to its real gitdir path or dropping the real rows in a linked worktree; both are decisions
+the routing plan makes, so don't paper over one here.
 
 ## Tauri commands
 
