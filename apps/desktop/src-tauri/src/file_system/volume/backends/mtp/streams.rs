@@ -43,9 +43,9 @@ pub(in crate::file_system::volume::backends) fn volume_read_stream_to_chunk_stre
     )
 }
 
-/// Bytes-per-window for a [`MtpReadStream`]. Production uses
-/// [`crate::mtp::connection::MTP_READ_WINDOW`]; a test shrinks it through
-/// `testing::set_read_window` so a small fixture spans several windows.
+/// Bytes-per-window for a [`MtpReadStream`]. Production uses the session layer's
+/// `MTP_READ_WINDOW`; a test shrinks it through `testing::set_read_window` so a
+/// small fixture spans several windows.
 pub(super) fn mtp_read_window() -> u32 {
     #[cfg(any(test, feature = "testing"))]
     {

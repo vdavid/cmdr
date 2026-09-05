@@ -75,7 +75,7 @@ pub struct MtpStorageInfo {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{MtpDeviceInfo, MtpStorageInfo, UsbSpeed};
 
     #[test]
     fn test_device_serialization() {

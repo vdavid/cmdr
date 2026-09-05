@@ -442,6 +442,23 @@ one). A removal costs no round trip at all: the object is gone, so each indexed 
 buffer-during-scan logic live in `indexing/transports/mtp/watch.rs` (see `indexing/DETAILS.md` § "MTP indexing"); the event loop
 only resolves + forwards. The handle is stored in the index `inode` column at scan time too (`directory_ops.rs`).
 
+## Where a cell lives, and why no glob prelude
+
+Four homes, by what the cell needs rather than what it asserts:
+
+- `manager_test.rs` — session-free. Path normalization, icon ids, the device-id → `location_id` lookup, the enabled
+  flag, and the wire shape of `MtpDisconnectReason`.
+- `host_seam_test.rs` — what this layer TOLD the host it was handed, against a real device. Every seam is a `dyn` call
+  that goes nowhere on a detached host, so a reach that regressed to a `crate::` path would still compile and still pass
+  every other suite; these cells are what notices.
+- `path_cache_sync_test.rs` and the per-file `device_tests` modules — behavior against a virtual device.
+- Beside the app subsystem they assert on, for anything that drives the app's pipeline rather than this layer.
+
+❌ **No `use super::*` prelude in any of them.** A glob makes what a cell reaches for undeterminable without building,
+which is exactly the number a crate split has to know in advance, and it hides a dead import in the code under test:
+deleting the `#![allow(unused_imports)]` a glob needs is what makes one a finding again. Every cell lists what it uses.
+Same answer SMB gave (`crates/cmdr-fs/src/volume/host/DETAILS.md` § "Test modules reached through `use super::*`").
+
 ## No dropping timeouts
 
 **The rule:** nothing in this module wraps an mtp-rs call in `tokio::time::timeout`, and nothing aborts a task holding

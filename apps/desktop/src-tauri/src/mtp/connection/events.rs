@@ -158,7 +158,8 @@ mod recording {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::MtpDisconnectReason;
+    use super::{MtpDeviceEvent, MtpDeviceEvents, RecordingMtpDeviceEvents, no_device_events};
 
     /// The detached sink is what a session with no window reports into, and it
     /// has to swallow rather than panic: every test binary and every bench runs

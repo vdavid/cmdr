@@ -59,7 +59,7 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::list_mtp_devices;
 
     #[test]
     fn test_list_mtp_devices_returns_vec() {

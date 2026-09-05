@@ -123,7 +123,7 @@ impl Drop for ForegroundGuard {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::DevicePriorityGate;
     use std::time::Duration;
 
     #[test]

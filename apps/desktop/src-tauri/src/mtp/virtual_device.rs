@@ -350,7 +350,9 @@ pub(crate) fn unregister_virtual_mtp_device(location_id: u64) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::path::PathBuf;
+
+    use super::{MTP_FIXTURE_ROOT, decide_startup_root, is_default_sentinel};
 
     #[test]
     fn skip_override_always_wins() {

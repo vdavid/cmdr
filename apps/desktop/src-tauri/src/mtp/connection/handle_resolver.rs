@@ -327,7 +327,12 @@ impl MtpConnectionManager {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+
+    use mtp_rs::ObjectHandle;
+
+    use super::{MAX_WALK_DEPTH, walk_handle_to_path};
 
     /// Build a `lookup` closure from a `handle -> (parent, filename)` graph, and
     /// a counter so tests can assert how many round trips the walk made.

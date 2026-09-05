@@ -6,7 +6,8 @@
 //! (`MtpDevice::storage()`), which the per-device storage cache must collapse to
 //! one per device, and must re-issue after an invalidation.
 
-use super::*;
+use super::Volume;
+use super::mtp::MtpVolume;
 use crate::mtp::connection::DeviceWatch;
 use crate::mtp::connection_manager;
 use std::path::Path;

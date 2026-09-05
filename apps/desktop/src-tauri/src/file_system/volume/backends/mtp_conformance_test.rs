@@ -11,7 +11,8 @@
 //! Every test here drives a virtual MTP device, so the whole file carries that
 //! feature gate (declared in `backends/mod.rs`).
 
-use super::*;
+use super::Volume;
+use super::mtp::MtpVolume;
 use std::path::Path;
 
 use crate::mtp::connection::DeviceWatch;

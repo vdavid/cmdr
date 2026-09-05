@@ -175,7 +175,9 @@ impl EventDebouncer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::time::Duration;
+
+    use super::EventDebouncer;
 
     #[test]
     fn test_event_debouncer_allows_first_event() {

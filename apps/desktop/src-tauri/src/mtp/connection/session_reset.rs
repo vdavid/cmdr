@@ -174,7 +174,10 @@ impl MtpConnectionManager {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::time::Duration;
+
+    use super::super::MtpConnectionManager;
+    use super::{MAX_DELAY, MAX_REOPEN_ATTEMPTS, reopen_delay};
 
     #[test]
     fn reopen_is_always_spaced_never_a_tight_loop() {
@@ -257,8 +260,10 @@ mod tests {
 /// what it throws away.
 #[cfg(all(test, feature = "virtual-mtp"))]
 mod device_tests {
+    use std::time::Duration;
+
     use super::super::DeviceWatch;
-    use super::*;
+    use super::super::MtpConnectionError;
     use crate::mtp::connection_manager;
     use crate::mtp::virtual_device::{
         VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,

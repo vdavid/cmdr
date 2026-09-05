@@ -29,8 +29,7 @@ static READ_WINDOW_OVERRIDE: AtomicU32 = AtomicU32::new(0);
 static LIST_DIRECTORY_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 /// Shrinks the bounded read window to `window` bytes, so a small fixture file
-/// spans several windows; 0 restores the production
-/// [`MTP_READ_WINDOW`](crate::mtp::connection::MTP_READ_WINDOW).
+/// spans several windows; 0 restores the production `MTP_READ_WINDOW`.
 ///
 /// Set it back to 0 when the test is done. A leftover override doesn't break a
 /// later test's assertions, but it does make its reads needlessly chatty.

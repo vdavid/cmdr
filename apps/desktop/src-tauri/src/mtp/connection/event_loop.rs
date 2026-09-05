@@ -470,9 +470,16 @@ fn listing_path_for(device_id: &str, storage_id: u32, dir: &Path) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_support::wait_until_async;
+    use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    use cmdr_fs::volume::DirectoryChange;
     use cmdr_fs::volume::host::listings::RecordingListings;
+
+    use super::super::MtpConnectionManager;
+    use super::listing_path_for;
+    use crate::test_support::wait_until_async;
 
     #[test]
     fn a_storage_root_listing_path_has_no_inner_segment() {
@@ -614,9 +621,14 @@ mod tests {
 /// contents.
 #[cfg(all(test, feature = "virtual-mtp"))]
 mod device_tests {
+    use std::path::PathBuf;
+    use std::sync::Arc;
     use std::time::Duration;
 
-    use super::*;
+    use cmdr_fs::volume::DirectoryChange;
+
+    use super::super::MtpConnectionManager;
+
     use crate::mtp::connection::events::no_device_events;
     use crate::mtp::connection::{DeviceWatch, MtpDisconnectReason, MtpVolumeRegistrar};
     use crate::mtp::virtual_device::{

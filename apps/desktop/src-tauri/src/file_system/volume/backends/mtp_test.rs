@@ -1,26 +1,26 @@
 //! Tests for `MtpVolume`.
 //!
 //! Sibling test module declared in `backends/mod.rs` (a child of `backends`,
-//! mirroring `local_posix_test.rs` / `in_memory_test.rs`), so `super::*` reaches
-//! the backend re-exports and `super::mtp::…` reaches the MTP backend's
-//! `pub(super)` internals (`to_mtp_path`, the `device_id` / `storage_id` fields,
-//! `volume_read_stream_to_chunk_stream`, and the read-window override).
+//! mirroring `local_posix_test.rs` / `in_memory_test.rs`), so `super::mtp::…`
+//! reaches the MTP backend's `pub(super)` internals (`to_mtp_path`, the
+//! `device_id` / `storage_id` fields, `volume_read_stream_to_chunk_stream`).
+//!
+//! ❌ No `use super::*` here: a glob hides what this file reaches into the
+//! backend, which is the number a crate split has to know in advance.
 
-use super::mtp::volume_read_stream_to_chunk_stream;
-use super::*;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
+use std::sync::Arc;
+
+use super::mtp::{MtpVolume, volume_read_stream_to_chunk_stream};
+use super::{Volume, VolumeError, VolumeReadStream, WatchCoverage};
+use crate::mtp::connection_manager;
 
 #[cfg(feature = "virtual-mtp")]
 use super::mtp::testing;
 #[cfg(feature = "virtual-mtp")]
-use crate::mtp::connection::DeviceWatch;
-#[cfg(feature = "virtual-mtp")]
-#[cfg(feature = "virtual-mtp")]
-use crate::mtp::connection::MtpConnectionError;
-use crate::mtp::connection_manager;
-use std::sync::Arc;
+use crate::mtp::connection::{DeviceWatch, MtpConnectionError};
 
 #[test]
 fn test_new_creates_volume() {

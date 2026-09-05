@@ -245,7 +245,7 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{MtpConnectionError, map_mtp_error};
 
     #[test]
     fn test_connection_error_display() {

@@ -32,6 +32,13 @@ use env_logger as _;
 #[cfg(test)]
 use cmdr_lib as _;
 //noinspection RsUnusedImport
+// Scratch dirs for tests and fixtures, an optional dependency the `testing`
+// feature turns on. Its only LIB use is the virtual-MTP fixture, which also
+// needs `virtual-mtp`, so a `testing`-without-`virtual-mtp` build has the crate
+// and no use for it.
+#[cfg(feature = "testing")]
+use tempfile as _;
+//noinspection RsUnusedImport
 use mimalloc as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)

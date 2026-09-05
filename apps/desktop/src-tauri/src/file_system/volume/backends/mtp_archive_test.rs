@@ -7,10 +7,10 @@
 //! allows same-name siblings, so it must NOT attempt an atomic rename-overwrite).
 //!
 //! The whole module requires the `virtual-mtp` feature, so it's a sibling test
-//! module of `mtp_test`, gated on the feature in `backends/mod.rs`; `super::*`
-//! reaches the backend re-exports (`MtpVolume`, `Volume`).
+//! module of `mtp_test`, gated on the feature in `backends/mod.rs`.
 
-use super::*;
+use super::Volume;
+use super::mtp::MtpVolume;
 use crate::mtp::connection::DeviceWatch;
 use crate::mtp::connection_manager;
 use crate::mtp::virtual_device::VirtualDeviceFixture;
