@@ -1,15 +1,31 @@
 # The git portal becomes a routed volume in `crates/cmdr-git`, and `LocalPosixVolume` stops knowing about git
 
-**Status (2026-09-05): M0 through M4 are done and on `worktree-git-portal-volume`.** Everything below describes the
-shape as built, and each milestone's own section records what it decided. The only work left is the manual QA David runs
-against a real app, which no automated cell covers:
+**Status (2026-09-05): M0 through M4 are done and on `worktree-git-portal-volume`, plus a follow-up pass over the four
+seams that still asked "is this an archive?" where they meant "is this routed?"** — the transfer's source resolution and
+scan preview, the local write fast path's guard, the viewer's materialization and open budget, the agent's
+`inspect_file`, and the MCP `nav_to_path` existence probe. Copying out of a snapshot, opening one in the viewer, and
+navigating into one all work as a result, and a move out of one or a drop onto one refuses with the typed read-only
+error rather than starting and dying. `Volume::routes_over_a_parent` replaced the name-based downcast that kept a routed
+volume out of the mount lookup. Everything below describes the shape as built, and each milestone's own section records
+what it decided.
+
+The work left is the manual QA David runs against a real app:
 
 1. Browse each of the six categories in a repo's `.git/`.
-2. Copy a file out of a branch tree to another volume, and check the executable bit survives.
+2. Copy a file out of a branch tree to another volume, and check the executable bit survives. (Automated for the bytes
+   and the folder shape, including through the app in `git-portal.spec.ts`; the executable bit has a crate-level cell.
+   What is left to a human is a real cross-device copy.)
 3. Edit `.git/config` in place, then rename and delete a real file under `.git/`.
 4. Delete a whole repo folder, on the boot disk and on an external one.
 5. Toggle the portal off and on with a `.git/` pane open, and with a pane standing inside `.git/branches/`.
 6. Open a linked worktree's `.git`: the categories below it answer, and the landing listing does not (§ M3).
+
+**Known gap, David's call.** The frontend has no capability row for a portal pane: `capabilitiesForPane` resolves an
+archive pane from its path and gives every other pane its volume's row, so a `.git/branches/` pane reports the parent
+drive's fully-writable capabilities. The backend refuses each write with the typed read-only error, so nothing breaks,
+but the UI still OFFERS paste, delete, and rename there, and copy-to-clipboard from a snapshot pane is allowed where an
+archive pane is turned away with a toast. Closing it is a frontend capability kind (tint, breadcrumb, the clipboard
+refusal), which is its own change.
 
 **Problem.** The virtual `.git` portal (browsable `branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
 `submodules/`) is implemented as ten `if` sites inside `LocalPosixVolume`: three route hooks on list, metadata, and

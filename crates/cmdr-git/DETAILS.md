@@ -168,9 +168,19 @@ the same `virtual_listing` / `log` / `tree` code `GitPortal::category_rows` call
   overridden, since its default would claim success for a directory that exists); `supports_export` and
   `supports_streaming` true, with `open_read_stream` handing back a `GitBlobReadStream`; `can_watch_listings` false and
   `listing_watch_coverage` `None`, because the paths aren't on disk; `supports_local_fs_access` false and `local_path`
-  `None` for the same reason; `lane_key` and `get_space_info` delegate to the PARENT volume, since the objects live on
-  its disk. `scan_for_copy` and the batch scan come from `cmdr_fs::volume::scan_walk` through a two-method `ScanSource`,
-  which is what lets a whole branch tree be copied out to another volume.
+  `None` for the same reason; `routes_over_a_parent` TRUE, which is what keeps the host from mistaking `<worktree>/.git`
+  for a mount and stealing every path under it; `lane_key` and `get_space_info` delegate to the PARENT volume, since the
+  objects live on its disk. `scan_for_copy` and the batch scan come from `cmdr_fs::volume::scan_walk` through a
+  two-method `ScanSource`, which is what lets a whole branch tree be copied out to another volume.
+- **The host reads a snapshot through the trait and nothing else.** A copy out of `.git/branches/<name>/` walks with
+  `scan_for_copy` and streams with `open_read_stream`; the viewer and the agent's `inspect_file` stream one blob to a
+  bounded temp and open that. All three ask the host's routing whether a path is served here, ❌ never this crate
+  directly, so an archive and a snapshot travel the same seam. The app-side halves are
+  `file_system/write_operations/DETAILS.md` § "Routing a transfer" and `file_viewer/DETAILS.md` § "Preview of a routed
+  file".
+- **A MOVE out of a snapshot is refused by the host, not here.** Every mutation stays at the trait default, so this
+  volume simply has no delete; the app refuses the move before it copies anything, rather than copying and then failing
+  the half it can never do.
 - **Every `gix` call runs on `VolumeHost::runtime().spawn_blocking`**, ❌ never on the caller's async worker: a listing
   of a big repo is a blocking walk.
 
