@@ -407,12 +407,11 @@ We pick the longest matching root – that's always the deepest enclosing
 worktree, which is the right answer for both submodules and linked
 worktrees.
 
-**Decision**: `RepoCache` is process-global, evicted only on the last
-unsubscribe (no idle TTL)
-**Why**: Re-opening a `gix::Repository` is cheap (~10 ms on warm caches)
-but not free; the cache pins one handle per active subscriber so back-to-
-back chip lookups skip the open. Eviction stays simple – adding an idle TTL would
-need a timer thread for nearly no gain.
+**Decision**: `RepoCache` holds a handle until the last unsubscribe, with no idle TTL
+**Why**: Re-opening a `gix::Repository` is cheap (~10 ms on warm caches) but not free; the cache pins one handle per
+active subscriber so back-to-back chip lookups skip the open. Eviction stays simple: an idle TTL would need a timer
+thread for nearly no gain. The cache itself is a VALUE the `GitPortal` owns, ❌ not a static of its own (§ "`GitPortal`:
+the value that owns the cache").
 
 **Decision**: Watcher uses `notify-debouncer-full` rather than a custom
 poll loop
