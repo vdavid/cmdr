@@ -412,7 +412,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
     }
   })
 
-  it('a REAL file under `.git` keeps the parent volume\'s full row', () => {
+  it("a REAL file under `.git` keeps the parent volume's full row", () => {
     volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
     // `.git/` stays writable: `config`, `HEAD`, and the real `refs/` tree are
     // editable, renamable, and deletable, which the backend defends too. Only

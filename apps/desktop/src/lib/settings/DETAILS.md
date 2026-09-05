@@ -282,6 +282,11 @@ exactly that; the root-layout init is what let it go back to `getFileSizeFormat(
   value: `getDriveIndexingEnabled()` (`indexing.enabled`, read by the per-drive index badge menu) and
   `getMediaIndexEnabled()` (`mediaIndex.enabled`). Both are hard gates in the backend, so a surface that ignores them
   offers actions that get refused.
+- `getShowVirtualGitPortal()` (`fileExplorer.git.showVirtualGitPortal`) is here for the same reason as those two, one
+  step further: the frontend has to AGREE with a backend switch, not just render it. `capabilitiesForPane` reruns the
+  backend's own portal-routing predicate to decide a pane's capability row, so the toggle has to reach a `$derived`
+  live. A `getSetting` read (a plain Map) would leave an open `.git/branches/` pane on its old row until the next
+  navigation.
 
 ### Sections (`sections/`)
 

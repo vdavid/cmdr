@@ -302,6 +302,11 @@ else by kind, and `+page.svelte`'s `openFailureCopy` maps `timedOut` / `extractT
 catalog keys and falls back to `viewer.error.readFailed` for anything that never reached the typed path. Nothing renders
 the backend's own words. The wider split: `docs/guides/error-handling.md`.
 
+`extractTooLarge`'s key is `viewer.error.tooLargeToPreview`, deliberately not named after archives: the preview cap is
+reached by a `.zip` entry AND by a blob in a repository's virtual `.git` snapshot, so the copy says "from here" and
+names neither. `archive` next to it IS archive-only (an encrypted, corrupt, or unsupported-codec archive entry), so
+`viewer.error.archiveUnreadable` keeps its name.
+
 ## Gotchas
 
 - `$state(false)` in `.svelte.ts` triggers `@typescript-eslint/no-unnecessary-condition` because the linter doesn't know

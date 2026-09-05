@@ -264,11 +264,10 @@ string. The guards:
 - **Clipboard** (`clipboard-operations.ts`): the snapshot-clip path gate off `kind === 'search-results'`; the routed
   copy-out refusals off `routedCopyOutHint`, which maps `kind === 'archive'` / `'git-portal'` to their own "use F5/F6"
   toast (a routed path isn't OS-resolvable, so the system clipboard can't carry it); the MTP copy/cut/paste refusals
-  (the "Use F5/F6" toasts) off `caps.kind === 'mtp'` via `isMtpClipboardRefusal`. ❌ Don't
-  generalize that MTP gate into a "no system clipboard" capability: `network` + `search-results` lack one too, and an
-  MTP-worded toast on a reachable network paste would be a new, mis-worded toast. On the live clipboard-time pane id set
-  it's byte-equivalent to the old `startsWith('mtp-')` gate, pinned by the equivalence test in
-  `clipboard-operations.test.ts`.
+  (the "Use F5/F6" toasts) off `caps.kind === 'mtp'` via `isMtpClipboardRefusal`. ❌ Don't generalize that MTP gate into
+  a "no system clipboard" capability: `network` + `search-results` lack one too, and an MTP-worded toast on a reachable
+  network paste would be a new, mis-worded toast. On the live clipboard-time pane id set it's byte-equivalent to the old
+  `startsWith('mtp-')` gate, pinned by the equivalence test in `clipboard-operations.test.ts`.
 - **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`.
   `readOnlyRefusal` turns rename / mkdir / mkfile / delete away up front on a read-only routed pane, worded per kind
   (`fileExplorer.readOnly.archive*` for tar/7z, `fileExplorer.readOnly.gitPortal*` for a snapshot). The destination
@@ -1093,8 +1092,8 @@ is derived from the PATH while all I/O routing happens in `VolumeManager::resolv
   paste-in, F7, ⇧F4, F2, and delete are refused up front with the `fileExplorer.readOnly.gitPortal*` alert instead of
   reaching the backend's typed rejection.
 - **Real files under `.git/` keep the parent volume's full row.** `.git/config`, `.git/HEAD`, and `.git/refs/heads/main`
-  are not portal paths, so they stay editable, renamable, and deletable. That's a constraint the backend defends too;
-  ❌ don't widen the predicate to "any `.git` segment".
+  are not portal paths, so they stay editable, renamable, and deletable. That's a constraint the backend defends too; ❌
+  don't widen the predicate to "any `.git` segment".
 - **No own tint, no breadcrumb special case.** A portal pane lives on the parent drive and shows that drive's tint, the
   same way an archive pane does, so `git-portal` is a capability kind only. The path bar renders
   `…/repo/.git/branches/main/src` for free (`breadcrumbDisplayPath` strips the parent `volumePath` prefix), and
