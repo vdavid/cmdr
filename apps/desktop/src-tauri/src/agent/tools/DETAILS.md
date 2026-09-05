@@ -7,8 +7,8 @@ two `Memory` tools. Must-knows: `CLAUDE.md`.
 
 There is ONE authored tool table (`mcp/tool_registry/mod.rs`, `mcp_tools!`). Each entry declares `consumers`
 (`AiClient` / `Agent`) and `access` (`Read` / `Propose` / `Memory` / `Write`). The agent's tools are
-`consumers: [Agent]` entries, never `access: Write`; `operations_list` / `operations_get` / `search_photos` /
-`image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
+`consumers: [Agent]` entries, never `access: Write`; `operations_list` / `operations_get` / `search` /
+`search_photos` / `image_facts` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
 `get_all_tools()` is the ai-client slice (agent-only entries filtered out, so the ai-client wire snapshot is unchanged).
 `execute_tool(app, Consumer::Agent, name, params)` dispatches only the agent view. See
 [`mcp/tool_registry` + `mcp/DETAILS.md`](../../mcp/DETAILS.md) § Consumer and access views for the mechanism.
@@ -22,8 +22,9 @@ makes intentional.
 
 ## The tool catalog
 
-Each handler is `async fn(&AppHandle<R>, &Value) -> ToolResult` (the `app_params` macro shape), reuses a shipped core,
-and returns a typed serde shape as the tool-result JSON the model reads. Every tool maps 1:1 to a `ToolId` variant.
+Each handler is `async fn(&AppHandle<R>, &Value) -> ToolResult` (the `app_params` macro shape; `search` is the only one here
+authored `params_only`, since it needs no `AppHandle`), reuses a shipped core, and returns a typed serde shape as the
+tool-result JSON the model reads. Every tool maps 1:1 to a `ToolId` variant.
 
 - **`app_state`** (`read/state.rs`) — both panes (path, cursor item, selection count, view/sort) plus the volume list.
   Built from `PaneStateStore` (`get_focused_pane` returns the SIDE; the path comes from that side's state) +
@@ -59,8 +60,8 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
     list a lower bound (❗ never "no matches"), `permissionDenied` names refused folders and offers Full Disk Access
     only where it would help, `declined` explains rather than offers (snapshot trees are nothing to fix),
     `stillCovering` says those results arrive later rather than being lost, `unresolvedScopes` is ❌ never "that folder
-    doesn't exist" (Cmdr can't tell a typo from unwalked ground), and `hiddenByExcludes` says the count is filtered —
-    the default system/cache/build tier is right for "find my invoice" and exactly wrong for "where is my disk space
+    doesn't exist" (Cmdr can't tell a typo from unwalked ground), and `hiddenByExcludes` says the count is filtered.
+    The default system/cache/build tier is right for "find my invoice" and exactly wrong for "where is my disk space
     going", where the hidden folders ARE the answer. The system prompt's § Coverage carries the rule; the authored
     sentences ride in `notes` beside the flags.
   - **❌ No `offset`, by decision.** Ranking is top-k, and an offset over a re-ranked run would skip and double-count
