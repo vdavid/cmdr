@@ -112,7 +112,6 @@ impl WebdavVolume {
         self.get_metadata_impl(path).await.is_ok()
     }
 
-
     /// Space on the root, as far as the server is willing to say.
     ///
     /// Three answers, because servers give three:

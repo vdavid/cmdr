@@ -150,7 +150,6 @@ impl AdbVolume {
         self.get_metadata_impl(path).await.is_ok()
     }
 
-
     /// What a symlink at `device` points at, or `None` when the target is
     /// missing or the device declined to say.
     ///

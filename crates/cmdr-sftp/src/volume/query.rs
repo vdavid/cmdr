@@ -103,7 +103,6 @@ impl SftpVolume {
         // question asked.
         self.get_metadata_impl(path).await.is_ok()
     }
-
 }
 
 /// One directory entry as a `FileEntry`, or `None` for the two the protocol

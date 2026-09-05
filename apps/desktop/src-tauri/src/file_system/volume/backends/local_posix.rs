@@ -236,11 +236,9 @@ impl Volume for LocalPosixVolume {
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
         Box::pin(async move {
-            spawn_blocking(move || {
-                get_single_entry(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path))
-            })
-            .await
-            .expect("spawn_blocking metadata closure doesn't panic and the task is uncancelable")
+            spawn_blocking(move || get_single_entry(&abs_path).map_err(|e| VolumeError::from_io_at(&e, &abs_path)))
+                .await
+                .expect("spawn_blocking metadata closure doesn't panic and the task is uncancelable")
         })
     }
 

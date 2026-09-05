@@ -1,7 +1,7 @@
 # Volume abstraction
 
 The `Volume` trait's app-side wiring: backends, the `VolumeManager` registry, eject. Every file system operation goes
-through a `Volume`, **paths relative to the volume root**.
+through a `Volume`, **relative to the volume root**.
 
 ## Module map
 
@@ -16,10 +16,9 @@ through a `Volume`, **paths relative to the volume root**.
   and answers `is_routed()`; match a `RoutedKind` only where the answer is about that one backend.
   `resolve_local_only` is for the ONE caller that can't `.await`. `DETAILS.md` § "Resolving a path: the two routes".
 - **Watcher-pre-registered volumes go in via `register_if_absent`**, else the FSEvents watcher overwrites an
-  `SmbVolume` with a `LocalPosixVolume`. Plain `register` is for replacement at the SAME root. `DETAILS.md`
-  § "Key decisions".
+  `SmbVolume` with a `LocalPosixVolume`; plain `register` replaces at the SAME root. `DETAILS.md` § "Key decisions".
 - **A volume the registry REMOVES is retired** (`Volume::retirement`), so a backend's watcher and reconnect loop stand
-  down. A replace doesn't. `DETAILS.md` § "Leaving the registry".
+  down; a replace doesn't. `DETAILS.md` § "Leaving the registry".
 - **Work that must WAIT for a volume subscribes with `on_volume_arrival`, ❌ never polls the registry.** A listener gets
   the ID only and runs INSIDE the registration, so it must return at once and hand real work to a task. `DETAILS.md`
   § "Telling someone a volume arrived".
@@ -44,7 +43,7 @@ through a `Volume`, **paths relative to the volume root**.
   backend.** Panes send absolute paths, the transfer dialog's dest box volume-relative ones, and a leading `/` doesn't
   tell them apart. Idempotent, so anchor without checking. `DETAILS.md` § "Path handling gotchas".
 - **`eject.rs` stops a `LocalExternal` index BEFORE `diskutil` runs**: an open watcher or handle at unmount can wedge
-  macOS FSKit (kernel-panic risk). `DETAILS.md` §§ "Eject", "Building a new volume".
+  macOS FSKit (kernel-panic risk). `DETAILS.md` § "Eject"; a new backend, § "Building a new volume".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

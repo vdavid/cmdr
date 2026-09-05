@@ -222,7 +222,9 @@ mod tests {
         );
         git::set_virtual_portal_enabled(true);
 
-        let resolved = manager.resolve("share", Path::new("/mnt/share/repo/.git/branches")).await;
+        let resolved = manager
+            .resolve("share", Path::new("/mnt/share/repo/.git/branches"))
+            .await;
         assert_eq!(resolved.routed, None);
         assert_eq!(resolved.volume.expect("the share itself").name(), "Share");
     }

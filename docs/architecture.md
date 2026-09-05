@@ -167,8 +167,8 @@ All under `apps/desktop/src-tauri/src/`.
   `file_system/volume/DETAILS.md` § "Building a new volume"
 - `listing_overlays.rs`: the listing-overlay seam, same registration shape. A `ListingOverlay` contributes rows a PANE
   sees that no volume holds, folded in by the listing pipeline; today's one contributor is the git portal's `.git/`
-  category rows (`file_system/git/overlay.rs`). Why it must never move into a `Volume`:
-  `file_system/volume/DETAILS.md` § "Architecture"
+  category rows (`file_system/git/overlay.rs`). Why it must never move into a `Volume`: `file_system/volume/DETAILS.md`
+  § "Architecture"
 - `mcp/`: MCP server (tools, YAML resources, agent-centric API)
 - `ai/`: llama-server lifecycle, model download, inference client
 - `analytics/`: Anonymous beta usage analytics: hourly `/heartbeat` sender (true DAU + a PII-free config-shape snapshot

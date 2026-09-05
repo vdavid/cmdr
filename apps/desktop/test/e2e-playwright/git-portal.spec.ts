@@ -11,16 +11,20 @@
  * 2. Navigate into `.git/branches/` and see the branch ref.
  * 3. Navigate into a branch and see the working-tree files at HEAD.
  *
+ * 4. Deleting the whole repo folder with the portal ON, which is the app-level
+ *    proof that no walker meets a virtual folder any more.
+ * 5. Flipping the portal off with a `.git/` pane open: the six rows go, the
+ *    real entries stay, and flipping back brings them straight back.
+ *
  * Cross-volume copy with executable-bit preservation lives in the Rust
  * integration test `file_system::git::portal_tests::cross_volume_copy_preserves_executable_bit`,
  * which drives the real `open_read_stream` and `write_from_stream` round-trip. Driving the full copy UI from Playwright
  * would need dialog automation we don't have, and the Rust test exercises the
- * load-bearing code path (the volume hook + write stream).
+ * load-bearing code path (the portal volume's read stream + the local write stream).
  *
- * Portal-toggle behavior is covered by Rust unit tests on
- * `git::try_route_listing` (volume-hook level, drives the AtomicBool the
- * toggle flips) and `git::watcher::refresh_all_virtual_listings_after_toggle`
- * (IPC + watcher invalidation), plus manual smoke per release.
+ * Editing, renaming, and removing a REAL file under `.git/` is
+ * `file_system::git::walker_exposure_tests::real_files_under_dot_git_stay_fully_mutable`,
+ * which drives every write method on the local volume directly.
  */
 
 import fs from 'fs'
@@ -29,6 +33,7 @@ import { execSync } from 'child_process'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
 import { ensureAppReady, getFixtureRoot, fileExistsInPane, pollUntil } from './helpers.js'
+import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
 
 /** Matches the `PageLike` alias used inside `helpers.ts`. */
 type PageLike = TauriPage | BrowserPageAdapter
@@ -96,6 +101,17 @@ async function paneHasFile(tauriPage: PageLike, paneIndex: number, name: string,
   return pollUntil(tauriPage, async () => fileExistsInPane(tauriPage, name, paneIndex), timeout)
 }
 
+async function paneLacksFile(tauriPage: PageLike, paneIndex: number, name: string, timeout = 5000): Promise<boolean> {
+  return pollUntil(tauriPage, async () => !(await fileExistsInPane(tauriPage, name, paneIndex)), timeout)
+}
+
+/** Flips the live portal setting the way `settings-applier.ts` does. */
+async function setPortalEnabled(tauriPage: PageLike, enabled: boolean): Promise<void> {
+  await tauriPage.evaluate(`(function() {
+    return window.__TAURI_INTERNALS__.invoke('set_show_virtual_git_portal', { enabled: ${enabled} });
+  })()`)
+}
+
 test.describe('Git portal', () => {
   test.beforeEach(() => {
     createGitRepoFixture()
@@ -139,6 +155,55 @@ test.describe('Git portal', () => {
     await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/tags/v1.0.0'))
     expect(await paneHasFile(tauriPage, 0, 'README.md')).toBe(true)
     expect(await paneHasFile(tauriPage, 0, 'scripts')).toBe(true)
+  })
+
+  // The portal is process-global, so a cell that turns it off puts it back.
+  test.afterEach(async ({ tauriPage }) => {
+    await setPortalEnabled(tauriPage, true)
+  })
+
+  test('deletes the whole repo folder with the portal on, leaving no .git behind', async ({ tauriPage }) => {
+    // The bug this pins: the six virtual folders used to reach the volume-aware
+    // delete walker, which refused each one (and every real file under `.git`)
+    // with `NotSupported`, stopping with the repo half-gone.
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    await mcpNavToPath('left', getFixtureRoot())
+    expect(await paneHasFile(tauriPage, 0, REPO_REL)).toBe(true)
+
+    await mcpCall('select', { pane: 'left', names: [REPO_REL] })
+    expect(await mcpCall('delete', { mode: 'delete', autoConfirm: true })).toContain('OK')
+
+    const gone = await mcpCall('await', {
+      pane: 'left',
+      condition: 'not_has_item',
+      value: REPO_REL,
+      timeoutSeconds: 20,
+    })
+    expect(gone).toContain('OK')
+    expect(fs.existsSync(path.join(repoPath(), '.git'))).toBe(false)
+    expect(fs.existsSync(repoPath())).toBe(false)
+  })
+
+  test('turning the portal off with a .git pane open drops the virtual rows and keeps the real ones', async ({
+    tauriPage,
+  }) => {
+    await ensureAppReady(tauriPage)
+    await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git'))
+    expect(await paneHasFile(tauriPage, 0, 'branches')).toBe(true)
+
+    // The setting flip alone isn't enough; the backend also refreshes every open
+    // `.git/` listing, and the refresh must re-read WITHOUT the overlay's rows.
+    await setPortalEnabled(tauriPage, false)
+    expect(await paneLacksFile(tauriPage, 0, 'branches')).toBe(true)
+    expect(await paneLacksFile(tauriPage, 0, 'commits')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'HEAD')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'config')).toBe(true)
+
+    // And back: the same refresh runs the overlay again.
+    await setPortalEnabled(tauriPage, true)
+    expect(await paneHasFile(tauriPage, 0, 'branches')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'HEAD')).toBe(true)
   })
 
   test('navigates commits/ and shows the single HEAD commit by short SHA', async ({ tauriPage }) => {

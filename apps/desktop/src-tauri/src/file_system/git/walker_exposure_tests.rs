@@ -161,7 +161,9 @@ async fn real_files_under_dot_git_stay_fully_mutable() {
         .open_read_stream(Path::new(".git/config"))
         .await
         .expect("`.git/config` streams as an ordinary file");
-    let size = std::fs::metadata(dir.join(".git/config")).expect("config is on disk").len();
+    let size = std::fs::metadata(dir.join(".git/config"))
+        .expect("config is on disk")
+        .len();
     volume
         .write_from_stream(Path::new(".git/config.bak"), size, source, &|_, _| {
             std::ops::ControlFlow::Continue(())
@@ -169,7 +171,9 @@ async fn real_files_under_dot_git_stay_fully_mutable() {
         .await
         .expect("writing under `.git` lands");
     assert_eq!(
-        std::fs::read(dir.join(".git/config.bak")).expect("the copy is on disk").len() as u64,
+        std::fs::read(dir.join(".git/config.bak"))
+            .expect("the copy is on disk")
+            .len() as u64,
         size
     );
 

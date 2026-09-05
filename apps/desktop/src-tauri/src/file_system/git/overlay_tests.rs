@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use super::overlay::{GitPortalOverlay, volume_holds_real_repos};
 use super::test_fixtures::{Fixture, cleanup, temp_dir};
-use crate::file_system::listing::caching_test_support::{WatchCoverageVolume, TestListing};
+use crate::file_system::listing::caching_test_support::{TestListing, WatchCoverageVolume};
 use crate::file_system::volume::{LocalPosixVolume, Volume, WatchCoverage};
 use crate::listing_overlays::{ListingOverlay, decorate};
 
@@ -76,7 +76,13 @@ fn only_the_dot_git_directory_itself_is_claimed() {
     let overlay = GitPortalOverlay;
 
     assert!(overlay.applies_to(&volume, Path::new("/repo/.git")));
-    for other in ["/repo", "/repo/.git/refs", "/repo/.git/hooks", "/repo/src", "/repo/.github"] {
+    for other in [
+        "/repo",
+        "/repo/.git/refs",
+        "/repo/.git/hooks",
+        "/repo/src",
+        "/repo/.github",
+    ] {
         assert!(!overlay.applies_to(&volume, Path::new(other)), "{other}");
     }
 }
