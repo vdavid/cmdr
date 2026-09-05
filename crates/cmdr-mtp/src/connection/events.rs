@@ -208,9 +208,7 @@ mod tests {
 mod device_lifecycle_test {
     use super::{MtpDeviceEvent, RecordingMtpDeviceEvents};
     use crate::connection::{DeviceWatch, MtpConnectionManager, MtpDisconnectReason, MtpVolumeRegistrar};
-    use crate::virtual_device::{
-        setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
-    };
+    use crate::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
     use cmdr_fs::volume::host::VolumeHost;
     use std::sync::Arc;
 
@@ -229,11 +227,8 @@ mod device_lifecycle_test {
             .expect("the virtual device must appear in discovery");
 
         let recorder = Arc::new(RecordingMtpDeviceEvents::new());
-        let manager = MtpConnectionManager::new(
-            VolumeHost::detached(),
-            recorder.clone(),
-            MtpVolumeRegistrar::detached(),
-        );
+        let manager =
+            MtpConnectionManager::new(VolumeHost::detached(), recorder.clone(), MtpVolumeRegistrar::detached());
 
         let info = manager
             .connect(&device_id, DeviceWatch::Off)

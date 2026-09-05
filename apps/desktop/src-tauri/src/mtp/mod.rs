@@ -22,12 +22,12 @@ pub mod macos_workaround;
 pub mod volume_wiring;
 pub mod watcher;
 
+#[cfg(feature = "virtual-mtp")]
+pub use cmdr_mtp::virtual_device;
 pub use cmdr_mtp::{
     ConnectedDeviceInfo, DeviceWatch, MtpConnectionError, MtpConnectionManager, MtpDeleteScope, MtpDeviceInfo,
     MtpDisconnectReason, MtpObjectInfo, MtpStorageInfo, MtpVolumeRegistrar, list_mtp_devices,
 };
-#[cfg(feature = "virtual-mtp")]
-pub use cmdr_mtp::virtual_device;
 pub use events::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
     MtpPtpcameradSuppressed, MtpStorageRemoved,

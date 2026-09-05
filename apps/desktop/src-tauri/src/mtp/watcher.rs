@@ -6,8 +6,8 @@
 //! is a passive consumer. It never orchestrates connections.
 
 use crate::ignore_poison::IgnorePoison;
-use log::{debug, error, info, warn};
 use cmdr_mtp::HotplugEvent;
+use log::{debug, error, info, warn};
 use std::collections::HashSet;
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;

@@ -10,9 +10,9 @@
 //! module of `mtp_test`, gated on the feature in `backends/mod.rs`.
 
 use super::Volume;
-use cmdr_mtp::MtpVolume;
 use crate::mtp::DeviceWatch;
 use crate::mtp::connection_manager;
+use cmdr_mtp::MtpVolume;
 use cmdr_mtp::virtual_device::VirtualDeviceFixture;
 use std::path::Path;
 
@@ -23,11 +23,17 @@ fn archive_test_zip() -> Vec<u8> {
     let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     let stored = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     let deflated = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-    w.start_file("a.txt", stored).expect("writing a fixture zip in memory can't fail");
-    w.write_all(b"hello from mtp").expect("writing a fixture zip in memory can't fail");
-    w.start_file("dir/b.txt", deflated).expect("writing a fixture zip in memory can't fail");
-    w.write_all(b"deflated over usb").expect("writing a fixture zip in memory can't fail");
-    w.finish().expect("writing a fixture zip in memory can't fail").into_inner()
+    w.start_file("a.txt", stored)
+        .expect("writing a fixture zip in memory can't fail");
+    w.write_all(b"hello from mtp")
+        .expect("writing a fixture zip in memory can't fail");
+    w.start_file("dir/b.txt", deflated)
+        .expect("writing a fixture zip in memory can't fail");
+    w.write_all(b"deflated over usb")
+        .expect("writing a fixture zip in memory can't fail");
+    w.finish()
+        .expect("writing a fixture zip in memory can't fail")
+        .into_inner()
 }
 
 /// Connects a virtual MTP device seeded with `zip_bytes` at `internal/bundle.zip`

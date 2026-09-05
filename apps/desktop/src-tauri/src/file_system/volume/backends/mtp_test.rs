@@ -13,15 +13,15 @@ use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use cmdr_mtp::MtpVolume;
-use cmdr_mtp::volume::volume_read_stream_to_chunk_stream;
 use super::{Volume, VolumeError, VolumeReadStream, WatchCoverage};
 use crate::mtp::connection_manager;
+use cmdr_mtp::MtpVolume;
+use cmdr_mtp::volume::volume_read_stream_to_chunk_stream;
 
 #[cfg(feature = "virtual-mtp")]
-use cmdr_mtp::volume::testing;
-#[cfg(feature = "virtual-mtp")]
 use crate::mtp::{DeviceWatch, MtpConnectionError};
+#[cfg(feature = "virtual-mtp")]
+use cmdr_mtp::volume::testing;
 
 #[test]
 fn test_can_watch_listings_returns_false() {
@@ -303,9 +303,7 @@ fn thread_recording_registrar() -> crate::mtp::MtpVolumeRegistrar {
 async fn a_live_watch_never_starts_before_the_volumes_it_reports_into_exist() {
     use crate::file_system::volume::manager::get_volume_manager;
     use crate::ignore_poison::IgnorePoison;
-    use cmdr_mtp::virtual_device::{
-        setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
-    };
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     ATTACH_THREADS.lock_ignore_poison().clear();

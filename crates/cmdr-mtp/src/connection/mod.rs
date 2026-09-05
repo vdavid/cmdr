@@ -46,9 +46,9 @@ mod volume_registrar;
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
 pub use errors::MtpConnectionError;
 use errors::map_mtp_error;
-pub use events::{MtpDeviceEvent, MtpDeviceEvents, no_device_events};
 #[cfg(any(test, feature = "testing"))]
 pub use events::RecordingMtpDeviceEvents;
+pub use events::{MtpDeviceEvent, MtpDeviceEvents, no_device_events};
 pub(crate) use file_ops::MtpReadSession;
 pub use handle_resolver::ResolvedMtpObject;
 pub use mutation_ops::MtpDeleteScope;

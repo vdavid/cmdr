@@ -2,10 +2,10 @@
 //! trait impl can't span files, and the MTP surface is large enough that the
 //! rest of the backend would disappear behind it.
 
+use super::MtpVolume;
 use super::cancel::MtpCancelBridge;
 use super::mapping::map_mtp_error;
 use super::streams::{MtpReadStream, mtp_read_window, volume_read_stream_to_chunk_stream};
-use super::MtpVolume;
 use crate::connection::{MtpConnectionError, MtpDeleteScope};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{

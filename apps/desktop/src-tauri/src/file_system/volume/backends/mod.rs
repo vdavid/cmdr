@@ -12,6 +12,8 @@
 
 mod local_posix;
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub use cmdr_mtp::MtpVolume;
 pub use local_posix::LocalPosixVolume;
 /// Cross-platform volume used-bytes helper (NSURL purgeable-aware on macOS,
 /// `statvfs` on Linux). Re-exported so the indexing module can read the scanned
@@ -19,8 +21,6 @@ pub use local_posix::LocalPosixVolume;
 pub(crate) use local_posix::get_space_info_for_path;
 pub(crate) use local_posix::rename_local_exclusive;
 pub(crate) use local_posix::rename_volume_error;
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use cmdr_mtp::MtpVolume;
 
 // Re-export shared `volume/` types so each backend submodule can keep using
 // `super::Volume`, `super::VolumeError`, `super::MutationEvent`, etc. without

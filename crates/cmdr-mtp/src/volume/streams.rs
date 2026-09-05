@@ -3,8 +3,8 @@
 //! mtp-rs on the way up.
 
 use super::mapping::map_mtp_error;
-use cmdr_fs::volume::{VolumeError, VolumeReadStream};
 use crate::connection::{MtpConnectionManager, MtpReadSession};
+use cmdr_fs::volume::{VolumeError, VolumeReadStream};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;

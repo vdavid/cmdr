@@ -68,6 +68,14 @@ use tauri_plugin_updater as _;
 // cmdr-adb is used in the adb/ module for Android-over-ADB support (macOS + Linux)
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use cmdr_adb as _;
+//noinspection ALL
+// `bytes` is a dev-dependency the MTP upload cells build their fake source streams
+// out of, and every one of them is behind `virtual-mtp`. The lanes that don't pass
+// that feature still LINK it into the lib test target, so without this the extern
+// reads as unused there. The production upload path lives in `cmdr-mtp`, which
+// declares its own copy.
+#[cfg(test)]
+use bytes as _;
 
 // These host primitives live in `cmdr-fs` so every crate in the workspace shares
 // one copy, and are re-exported here at their original paths: poison-free

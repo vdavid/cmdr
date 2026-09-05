@@ -60,7 +60,5 @@ pub(crate) fn is_attached(device_id: &str, storage_id: u32) -> bool {
 /// recording event sink, say — builds one with `MtpConnectionManager::new`.
 pub(crate) fn test_connection_manager() -> &'static Arc<MtpConnectionManager> {
     static MANAGER: OnceLock<Arc<MtpConnectionManager>> = OnceLock::new();
-    MANAGER.get_or_init(|| {
-        MtpConnectionManager::new(VolumeHost::detached(), no_device_events(), recording_registrar())
-    })
+    MANAGER.get_or_init(|| MtpConnectionManager::new(VolumeHost::detached(), no_device_events(), recording_registrar()))
 }

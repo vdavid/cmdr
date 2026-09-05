@@ -10,8 +10,8 @@
 //! Every test here drives a virtual MTP device, so the whole file carries that
 //! feature gate (declared in `backends/mod.rs`).
 
-use cmdr_mtp::MtpVolume;
 use super::{Volume, VolumeError};
+use cmdr_mtp::MtpVolume;
 use std::path::Path;
 
 use crate::mtp::DeviceWatch;
@@ -52,9 +52,7 @@ async fn connect_virtual_volume(
 /// same question the same way LocalPosix and SMB do.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_refuses_a_non_empty_folder_with_a_typed_error() {
-    use cmdr_mtp::virtual_device::{
-        setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
-    };
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -110,9 +108,7 @@ async fn delete_refuses_a_non_empty_folder_with_a_typed_error() {
 /// actually relies on.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_still_removes_an_empty_folder() {
-    use cmdr_mtp::virtual_device::{
-        setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
-    };
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -144,9 +140,7 @@ async fn delete_still_removes_an_empty_folder() {
 /// looking.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_honors_the_shared_non_recursion_contract() {
-    use cmdr_mtp::virtual_device::{
-        setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
-    };
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -175,9 +169,7 @@ async fn delete_honors_the_shared_non_recursion_contract() {
 /// the recursive entry point and the IPC command silently stopped working.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn tree_scope_still_removes_a_whole_subtree() {
-    use cmdr_mtp::virtual_device::{
-        setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
-    };
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -189,12 +181,7 @@ async fn tree_scope_still_removes_a_whole_subtree() {
         .expect("priming the DCIM listing");
 
     connection_manager()
-        .delete_object(
-            &device_id,
-            storage_id,
-            "/DCIM",
-            crate::mtp::MtpDeleteScope::Tree,
-        )
+        .delete_object(&device_id, storage_id, "/DCIM", crate::mtp::MtpDeleteScope::Tree)
         .await
         .expect("a Tree-scoped delete must remove the whole subtree");
 

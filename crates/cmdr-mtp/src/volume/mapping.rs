@@ -1,8 +1,8 @@
 //! One place where an mtp-rs connection error becomes a `VolumeError`, so every
 //! MTP call classifies a failure the same way.
 
-use cmdr_fs::volume::VolumeError;
 use crate::connection::MtpConnectionError;
+use cmdr_fs::volume::VolumeError;
 
 /// `ENOTEMPTY`, which POSIX numbers differently per platform. MTP builds on
 /// macOS and Linux only, so those are the two that exist.
