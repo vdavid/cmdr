@@ -59,9 +59,9 @@ portal on as much as off, which is what lets a repo-folder delete walk `.git/` t
 
 ## Two seams, no hooks
 
-`LocalPosixVolume` names git nowhere. `rg 'git' backends/local_posix.rs` is empty, and the ten `if` sites it used to
-carry (three route hooks, five mutation guards, the `notify_mutation` early return, plus the `is_virtual` watch skip in
-`listing/streaming.rs`) are gone. Two seams replace them, each with a rule a type enforces:
+`LocalPosixVolume` names git nowhere: `rg 'git' backends/local_posix.rs` is empty, and ❌ it must stay that way. A
+guard there once refused the REAL `.git/config` alongside the virtual folders, which stopped a repo-folder delete with
+`.git/` still on disk. Two seams reach a repository instead, each with a rule a TYPE enforces rather than an `if`:
 
 1. **The route.** `VolumeManager::resolve` sends any `.git/<category>/…` path to the read-only `GitPortalVolume`. Read
    only by trait default, unwatchable by `can_watch_listings() == false`, invisible to `mount_id_for_path` by type.

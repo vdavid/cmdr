@@ -228,11 +228,10 @@ The API contract says this crate emits no user-facing strings. Two things look l
 
 - **`pluralize`** formats "1 file" / "2 files". All 49 of its call sites build log lines. It lives here because it's a
   leaf with no dependencies, not because copy generation belongs in a filesystem crate. One of its outputs does reach a
-  UI: `PhaseRecord.trigger` renders in the developer debug panel, which is diagnostics, not product copy.
-- **`FileEntry::display_size` / `display_size_tooltip`** are `String` fields rendered verbatim in the Size column. They
-  are _written_ by the app-side git module; this crate only carries them. The bar is about production, not presence.
-
-Anyone grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first.
+  UI: `PhaseRecord.trigger` renders in the developer debug panel, which is diagnostics, not product copy. Anyone
+  grepping `String` in this crate and concluding the bar was abandoned should read this paragraph first. The Size column
+  used to be the second exception, as a pair of pre-worded `String` fields; it's `FileEntry::git_meta` now
+  (`src/git_meta.rs`), a typed `GitEntryMeta` the host words from its own catalog.
 
 ## `ScanBoundary`: one seam, so a walk can't count without asking
 

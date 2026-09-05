@@ -10,9 +10,10 @@ Per-backend `Volume` impls. Trait shape, capabilities, streaming patterns, "Buil
   here, `local_posix/{scan,streams}.rs` beside it. A trait impl can't span files, so a moved method stays a one-line
   delegation to a `pub(super)` inherent body (SMB carries the pattern further; see `crates/cmdr-smb/CLAUDE.md`).
 - **Every other backend is a crate**, imported by crate name at its call sites, never re-exported through here:
-  `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`, and `cmdr-mtp`. ❌ Don't add a
-  `pub use <crate>::*;` module here to spare a call site the crate name: it puts the backend back in a directory it
-  doesn't live in, and it becomes the place app-side tests drift to.
+  `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, and `cmdr-git` (the read-only
+  `GitPortalVolume` a `.git/<category>/` path routes to). ❌ Don't add a `pub use <crate>::*;` module here to spare a
+  call site the crate name: it puts the backend back in a directory it doesn't live in, and it becomes the place
+  app-side tests drift to.
 - **A crate backend's app-side tests live beside the app code they assert on**, not here. SMB's are in
   `file_system/write_operations/` (transfers, remote archives, the shared `smb_test_support.rs`),
   `file_system/listing/` (the pane-close watcher cell), and `file_system/volume/` (index scan, media fetch); the archive

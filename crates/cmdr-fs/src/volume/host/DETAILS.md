@@ -455,6 +455,13 @@ because retrofitting is where all the cost sits:
   gave: a crate-local typed event trait for the derives, `any(test, feature = "testing")` for the `cfg(test)` gates, and
   one argued visibility widening for the test hooks. What each half owns: `crates/cmdr-mtp/DETAILS.md` § "Where the
   boundary runs, and why".
+- **`cmdr-git` is the one backend that was never a mount**, and it's the proof the seam set fits a ROUTED volume too. A
+  repo's virtual `.git` trees answer through a read-only `GitPortalVolume` the manager routes to, so the crate needs
+  none of the lifecycle face: no discovery, no credentials, no reconnect, no hotplug. It reaches exactly ONE seam,
+  `runtime()`, because every `gix` call is blocking work. The listing re-reads a repo change drives run app-side
+  instead, off a crate-local `GitStateSink`: the same typed-event-trait answer MTP gave, rather than a new seam. The app
+  keeps the two things only an app can decide, which paths route there and the `.git/` landing rows that reach a PANE
+  and no walker. `crates/cmdr-git/DETAILS.md` § "Where the boundary runs, and why".
 - **`local_posix` stays app-resident permanently**, and that refusal was never the same shape as MTP's: it isn't a
   protocol backend reaching sideways, it's the app's own local machinery. It's the only caller of the real-FS reader
   that also serves the non-volume listing path, and the sole caller of `patch_listing_after_local_mutation`, which

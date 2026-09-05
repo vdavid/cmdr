@@ -70,10 +70,9 @@ landed, and the answer held for better reasons than the ones first recorded here
   `formatByteSize`'s parameter (~58 sites, no Rust) — the one narrow slice worth doing if more safety is wanted.
   `<Size bytes>` is handed a RATE in three places, so its prop would need `ByteCount | BytesPerSecond`.
 
-Two claims in the original version of this section were wrong and are corrected above: `bindings.ts` **can** carry a
-brand, and the `FileEntry` blocker named `display_size` / `display_size_tooltip`, which are `Option<String>` git-portal
-overrides ("12 commits ahead") and never byte counts at all. The byte fields are `size`, `physical_size`,
-`recursive_size`, `recursive_physical_size`.
+`bindings.ts` **can** carry a brand, and `FileEntry`'s byte fields are exactly `size`, `physical_size`,
+`recursive_size`, and `recursive_physical_size`. Nothing else on the entry is a byte count: the git portal's Size cell
+rides on `git_meta`, a typed `GitEntryMeta` the frontend words itself.
 
 ## The lint
 

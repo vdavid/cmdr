@@ -46,9 +46,8 @@ the crate boundary is what makes that a compile error rather than a habit.
      plus a `VolumeHost` handed in at construction; the app's adapters turn each answer into a frontend event or a
      cache write.
    - Crate backends (no `tauri`, verified alone by `cargo check -p <crate>`): `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-     `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanently)
-     and `GitPortalVolume` (`crates/cmdr-git`). `InMemoryVolume` (in `cmdr-fs`)
-     is the test and stress fixture.
+     `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`,
+     permanently). `InMemoryVolume` (in `cmdr-fs`) is the test and stress fixture.
 3. **The app-side half of each backend.** What a backend can't answer from its protocol alone, and what must know the
    concrete type: discovery UI, the keychain, the OS mount, the ptpcamerad workaround, and REGISTRATION. A backend never
    registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
@@ -78,7 +77,7 @@ VolumeManager (registry; resolve routes .zip paths to ArchiveVolume,
                and .git/<category>/ paths to GitPortalVolume)
         │
 backends ── file-ops face: impl Volume ──────────────────────────────┐
-  crate:  Archive  Smb  Sftp  WebDav  Adb  Mtp                       │ cmdr-fs: Volume trait,
+  crate:  Archive  Smb  Sftp  WebDav  Adb  Mtp  GitPortal            │ cmdr-fs: Volume trait,
   app:    LocalPosix (permanent)  InMemory (tests)                   │ types, walkers, host seams
         │  lifecycle face: VolumeHost seams
 app-side halves: wiring + registration, discovery, keychain, mounts, ptpcamerad, DeviceVolumeProvider, tauri events
@@ -146,7 +145,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path resolves a pair through `transfer_concurrency` (`write_operations/transfer/volume/copy.rs`), clamped to 32, and spawns that many `FuturesUnordered` tasks. It is NOT a plain `min()`: a volume answering `operations_are_local() == true` reports a CPU guard-rail rather than a transport limit, so its cap doesn't bound a remote peer. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16 (local); `SmbVolume` returns the `network.smbConcurrency` setting, default 10, range 1..=32; `MtpVolume` returns 1 (USB bulk transport is serial, and that 1 is what routes a phone to the serial driver); `InMemoryVolume` returns 32 (local).
 - `operations_are_local()`: whether one operation here is a local syscall rather than a transport round trip. A claim about COST, so it is a different question from `supports_local_fs_access` (an OS-mounted SMB share is `true` there, `false` here). Default `false`, the conservative answer in both directions. `true` for `LocalPosixVolume` and `InMemoryVolume` only.
 - `create_directory_all()`: reports `DirectoryCreation::{Created, AlreadyExisted}` for the LEAF. The copy driver skips its destination conflict pre-check entirely on `Created` (`transfer/DETAILS.md` § "Answering the pre-check from one listing"), so an overriding backend must answer honestly and answer `AlreadyExisted` when unsure — including when it lost a create race.
-- `exists()` / `is_directory()`: both default to deriving themselves from `get_metadata` (`is_ok()`, and the directory bit). Five backends take the default. Override only for a cheaper primitive or a different truth: `SmbVolume` answers `exists` with a bare protocol `stat` (and the share root without a round trip at all), `ArchiveVolume` reads its parsed central directory, `InMemoryVolume` its map, and `LocalPosixVolume` uses `symlink_metadata`, because a BROKEN symlink is still something on disk the user can see and delete while `get_metadata` would say it isn't there. `AdbVolume`, `SftpVolume`, and `WebDavVolume` keep an `exists` override for a lifecycle reason rather than a cost one: the default routes through their `noting`-wrapped `get_metadata`, so a bare existence probe on a dropped link would report a connection transition and drive a reconnect.
+- `exists()` / `is_directory()`: both default to deriving themselves from `get_metadata` (`is_ok()`, and the directory bit). `MtpVolume` and `GitPortalVolume` take both defaults, and `AdbVolume`, `SftpVolume`, and `WebDavVolume` take the `is_directory` one. Override only for a cheaper primitive or a different truth: `SmbVolume` answers `exists` with a bare protocol `stat` (and the share root without a round trip at all), `ArchiveVolume` reads its parsed central directory, `InMemoryVolume` its map, and `LocalPosixVolume` uses `symlink_metadata`, because a BROKEN symlink is still something on disk the user can see and delete while `get_metadata` would say it isn't there. `AdbVolume`, `SftpVolume`, and `WebDavVolume` keep an `exists` override for a lifecycle reason rather than a cost one: the default routes through their `noting`-wrapped `get_metadata`, so a bare existence probe on a dropped link would report a connection transition and drive a reconnect.
 - `local_path()`: returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount. ❗ Also THE predicate for "this volume's paths are ones a local library can open", which is what the git portal's route and listing overlay both key on (`file_system/git/DETAILS.md` § "Two seams, no hooks").
 - `supports_local_fs_access()`: whether `std::fs` operations (stat, read_dir) work on this volume's paths. Default `true`. `MtpVolume` and `SmbVolume` return `false`. Used to skip the legacy synthetic entry diff path (now superseded by `notify_mutation`).
 - `paths_are_os_visible()`: whether ANOTHER app can open a `file://` URL built from a path this volume hands out. Defaults to whatever `supports_local_fs_access()` says, which is right wherever the two coincide. `SmbVolume` is the one backend that splits them: it answers `false` above (its own I/O rides smb2, never `std::fs`) and `true` here, because the sneaky mount keeps the share OS-mounted and every path it yields is an ordinary `/Volumes/…` path. Consumed by the macOS drag-out path (`commands/file_system/drag.rs::locality_for_volume`) to pick the pasteboard layout: `false` means promise-only items, which only Finder accepts, so a backend that answers it wrong makes drags into browsers and mail clients silently do nothing while Finder keeps working. It is a claim about the MOUNT, not the backend kind, so it has to track the mount going away — see `note_root_mount_gone` below.
@@ -237,7 +236,7 @@ Without these, the volume can't even appear in the UI:
 - [ ] Implement `name()` and `root()` (return the display name and the path everything is relative to).
 - [ ] Implement `list_directory(path, on_progress)`: the core read. **Feed `on_progress` as you enumerate**, and don't rename the parameter to `_on_progress` to quiet the compiler. It drives the pane's "Loaded N files..." readout, which is all the user sees while a big folder reads; dropping it leaves them on "Opening folder..." for the whole wait, and nothing fails to say so. If your enumeration happens on a thread the callback can't reach (it's `Sync` but not `Send`, so `spawn_blocking` is out), publish counts into a shared tally and sample it from the async side: `LocalPosixVolume` is the worked example, described in `listing/DETAILS.md` § "Local listing progress".
 - [ ] Implement `get_metadata(path)`: per-entry stat.
-- [ ] Implement `exists(path)` and `is_directory(path)`. On backends where these would issue two round-trips, implement them in terms of `get_metadata` to share the cost.
+- [ ] Leave `exists(path)` and `is_directory(path)` on the trait default, which derives both from your `get_metadata`. Override one only for a cheaper protocol primitive, or for a truth `get_metadata` doesn't tell (a broken symlink, a probe that must not drive a reconnect).
 - [ ] Implement `get_space_info()`: for the volume usage bar and pre-copy space checks. Answer `SpaceInfo::Bounded` where the backend knows a capacity, `SpaceInfo::Unbounded { used_bytes }` where the storage has no ceiling but reports what it holds (a quota-less WebDAV account), and `VolumeError::NotSupported` where the protocol can't say at all. ❌ Never zeros: the pre-flight reads a zero `available` as "no room" and refuses every copy.
 - [ ] Register the volume via `VolumeManager::register_if_absent` (not `register`; see "Key decisions" below).
 - [ ] Add unit tests using a fake/in-memory harness or real fixtures.
@@ -627,8 +626,8 @@ Same guard family as `listing::caching_test_support::TestListingGuard` (over `LI
 knows nothing about `LISTING_CACHE`. Every backend that can be mutated overrides it.
 
 - `LocalPosixVolume` calls `file_system::listing::mutation::patch_listing_after_local_mutation`, which stats the affected
-  entry through `std::fs` and turns it into the right `DirectoryChange`. It early-returns for virtual git paths, whose
-  invalidations come through the `.git`-watcher pipeline instead.
+  entry through `std::fs` and turns it into the right `DirectoryChange`. It needs no git exception: a path in a virtual
+  `.git` tree never reaches this volume, because `resolve` routed it to the portal.
 - `SmbVolume` and `MtpVolume` build the entry from their own protocol's `get_metadata` (faster than `std::fs` would be,
   and on MTP `std::fs` isn't an option at all) and call `notify_directory_changed` directly.
 - `ArchiveVolume` never calls it, because it implements no mutation: `create_file`, `delete`, `rename`, and

@@ -141,12 +141,14 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/volume/`: `VolumeManager` plus the `backends/` umbrella, re-exporting the `Volume` trait and its types
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
 - `file_system/volume/backends/`: the one `Volume` impl that still lives in the app, `LocalPosixVolume`. Every crate
-  backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`) is imported by crate name at
-  its call sites, and each one's app-side tests sit beside the app code they assert on. What stays app-side is what
-  needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving
-- `file_system/git/`: the app's two git seams: the `.git/` listing overlay and the wiring (the parked portal, the
-  toggle, the `git-state-changed` event). The repository half is `crates/cmdr-git` hooks, typed git-error classification
-  (`FriendlyGitErrorKind`)
+  backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`) is imported by
+  crate name at its call sites, and each one's app-side tests sit beside the app code they assert on. What stays
+  app-side is what needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit /
+  transfer driving
+- `file_system/git/`: the app's two git seams, the `.git/` listing overlay and the wiring (the parked portal, the
+  toggle, `volume_holds_real_repos`, and the `git-state-changed` event). The route itself sits with the registry in
+  `file_system/volume/manager/git_routing.rs`; everything a repository answers, typed git-error classification
+  (`FriendlyGitErrorKind`) included, is `crates/cmdr-git`
 - `file_system/terminal.rs`: "Open terminal here": which terminal apps Cmdr knows, how each one takes a folder, and
   whether a pane's folder has a path a shell can reach. Rationale: the module's own docs; the sources behind the table:
   `docs/notes/terminal-launch-sources-2026-09-04.md`
