@@ -20,6 +20,10 @@ mod event_loop;
 pub mod events;
 mod file_ops;
 mod handle_resolver;
+/// Asserts on what this layer told the host it was handed, so it drives a real
+/// device.
+#[cfg(all(test, feature = "virtual-mtp"))]
+mod host_seam_test;
 mod mutation_ops;
 /// Every test here drives a virtual MTP device, so it carries that feature gate.
 #[cfg(all(test, feature = "virtual-mtp"))]
@@ -486,9 +490,10 @@ impl MtpConnectionManager {
             storages: connected_info.storages.clone(),
         });
 
-        // PII-free analytics: an MTP device connected. No device / product / storage identifiers
-        // ever cross.
-        crate::analytics::posthog::capture("mtp_connected", serde_json::json!({}));
+        // PII-free analytics: an MTP device connected. No device / product / storage
+        // identifiers ever cross, which the seam's `&[(&str, &str)]` shape is there
+        // to keep true.
+        self.host.analytics().record("mtp_connected", &[]);
 
         // Broadcast updated volume list (includes new MTP volumes)
         crate::volume_broadcast::emit_volumes_changed();
