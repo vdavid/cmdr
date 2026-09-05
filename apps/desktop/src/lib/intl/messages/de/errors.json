@@ -1393,20 +1393,20 @@
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
     "sourceHash": "bb4ac05"
   },
-  "errors.write.readOnlyDevice.title": "Schreibgeschütztes Gerät",
-  "@errors.write.readOnlyDevice.title": {
+  "errors.write.readOnlyDevice.destination.title": "Schreibgeschütztes Gerät",
+  "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.message": "{deviceName} ist schreibgeschützt. Du kannst Dateien davon kopieren, aber nicht darauf.",
-  "@errors.write.readOnlyDevice.message": {
+  "errors.write.readOnlyDevice.destination.message": "{deviceName} ist schreibgeschützt. Du kannst Dateien davon kopieren, aber nicht darauf.",
+  "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },
-  "errors.write.readOnlyDevice.suggestion": "Wähle ein anderes Ziel, das Schreiben unterstützt.",
-  "@errors.write.readOnlyDevice.suggestion": {
+  "errors.write.readOnlyDevice.destination.suggestion": "Wähle ein anderes Ziel, das Schreiben unterstützt.",
+  "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
-  "errors.write.readOnlyDevice.fallbackName": "Das Zielgerät",
-  "@errors.write.readOnlyDevice.fallbackName": {
+  "errors.write.readOnlyDevice.destination.fallbackName": "Das Zielgerät",
+  "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"
   },
   "errors.write.fileLocked.title": "Datei ist geschützt",
@@ -1636,5 +1636,21 @@
   "errors.eject.unexpected": "Etwas ist schiefgelaufen, und Cmdr konnte nicht erkennen, was genau.",
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
+  },
+  "errors.write.readOnlyDevice.source.title": "Schreibgeschützte Quelle",
+  "@errors.write.readOnlyDevice.source.title": {
+    "sourceHash": "5d77aa4"
+  },
+  "errors.write.readOnlyDevice.source.message": "{deviceName} ist schreibgeschützt. Du kannst Dateien daraus kopieren, aber nicht herausverschieben.",
+  "@errors.write.readOnlyDevice.source.message": {
+    "sourceHash": "ec7d263"
+  },
+  "errors.write.readOnlyDevice.source.suggestion": "Kopiere die Dateien stattdessen. Die Originale bleiben, wo sie sind.",
+  "@errors.write.readOnlyDevice.source.suggestion": {
+    "sourceHash": "f6a307b"
+  },
+  "errors.write.readOnlyDevice.source.fallbackName": "Die Quelle",
+  "@errors.write.readOnlyDevice.source.fallbackName": {
+    "sourceHash": "599f98e"
   }
 }

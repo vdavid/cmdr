@@ -69,7 +69,9 @@ describe('TransferErrorDialog: typed-error rendering', () => {
   })
 
   it('uses neutral styling (Info icon) for a needs_action category', async () => {
-    const target = mountDialog({ error: { type: 'read_only_device', path: '/p', deviceName: null } })
+    const target = mountDialog({
+      error: { type: 'read_only_device', path: '/p', deviceName: null, side: 'destination' },
+    })
     await tick()
     const icon = target.querySelector('.error-icon')
     expect(icon?.className).toContain('icon-info')
@@ -92,7 +94,10 @@ describe('TransferErrorDialog: typed-error rendering', () => {
 
   it('hides Retry when category is needs_action and retryHint is false', async () => {
     // read_only_device → needs_action, retryHint=false
-    const target = mountDialog({ error: { type: 'read_only_device', path: '/p', deviceName: null }, onRetry: () => {} })
+    const target = mountDialog({
+      error: { type: 'read_only_device', path: '/p', deviceName: null, side: 'destination' },
+      onRetry: () => {},
+    })
     await tick()
     const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
     expect(buttons).not.toContain('Retry')

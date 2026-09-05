@@ -26,7 +26,7 @@ use super::archive_edit::{compress_start, route_archive_copy_into};
 use super::event_sinks::OperationEventSink;
 use super::source_binding::ExpectedSources;
 use super::transfer::volume::{copy_between_volumes, move_between_volumes};
-use super::types::{VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
+use super::types::{ReadOnlySide, VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
 use crate::file_system::volume::Volume;
 use crate::file_system::volume::manager::{RoutedKind, get_volume_manager, path_routes_over_its_parent};
 use crate::operation_log::types::Initiator;
@@ -132,12 +132,16 @@ pub(crate) async fn resolve_source_volume(
 /// could never happen. Refusing before anything starts is the honest outcome,
 /// and the copy the user actually can do is one keystroke away.
 ///
-/// Named for the source volume, so the sentence the frontend renders reads
-/// "`.git` is read-only. You can copy files from it, but not to it."
+/// Named for the source volume and tagged [`ReadOnlySide::Source`], so the
+/// frontend renders the sentence about the half that actually refused: "`.git`
+/// is read-only. You can copy files out of it, but not move them out." Telling
+/// this user to choose a different destination would send them to fix the half
+/// that was fine.
 fn source_cannot_give_up_its_files(source_volume: &Arc<dyn Volume>) -> WriteOperationError {
     WriteOperationError::ReadOnlyDevice {
         path: source_volume.root().display().to_string(),
         device_name: Some(source_volume.name().to_string()),
+        side: ReadOnlySide::Source,
     }
 }
 
@@ -152,6 +156,7 @@ fn destination_takes_no_writes(dest_volume: &Arc<dyn Volume>) -> WriteOperationE
     WriteOperationError::ReadOnlyDevice {
         path: dest_volume.root().display().to_string(),
         device_name: Some(dest_volume.name().to_string()),
+        side: ReadOnlySide::Destination,
     }
 }
 

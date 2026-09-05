@@ -1393,20 +1393,20 @@
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
     "sourceHash": "bb4ac05"
   },
-  "errors.write.readOnlyDevice.title": "Skrivskyddad enhet",
-  "@errors.write.readOnlyDevice.title": {
+  "errors.write.readOnlyDevice.destination.title": "Skrivskyddad enhet",
+  "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.message": "{deviceName} är skrivskyddad. Du kan kopiera filer från den, men inte till den.",
-  "@errors.write.readOnlyDevice.message": {
+  "errors.write.readOnlyDevice.destination.message": "{deviceName} är skrivskyddad. Du kan kopiera filer från den, men inte till den.",
+  "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },
-  "errors.write.readOnlyDevice.suggestion": "Välj ett annat mål som stöder skrivning.",
-  "@errors.write.readOnlyDevice.suggestion": {
+  "errors.write.readOnlyDevice.destination.suggestion": "Välj ett annat mål som stöder skrivning.",
+  "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
-  "errors.write.readOnlyDevice.fallbackName": "Målenheten",
-  "@errors.write.readOnlyDevice.fallbackName": {
+  "errors.write.readOnlyDevice.destination.fallbackName": "Målenheten",
+  "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"
   },
   "errors.write.fileLocked.title": "Filen är låst",
@@ -1636,5 +1636,21 @@
   "errors.eject.unexpected": "Något gick fel och Cmdr kunde inte avgöra vad det var.",
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
+  },
+  "errors.write.readOnlyDevice.source.title": "Skrivskyddad källa",
+  "@errors.write.readOnlyDevice.source.title": {
+    "sourceHash": "5d77aa4"
+  },
+  "errors.write.readOnlyDevice.source.message": "{deviceName} är skrivskyddad. Du kan kopiera filer från den, men inte flytta ut dem.",
+  "@errors.write.readOnlyDevice.source.message": {
+    "sourceHash": "ec7d263"
+  },
+  "errors.write.readOnlyDevice.source.suggestion": "Kopiera dem i stället. Originalen blir kvar där de är.",
+  "@errors.write.readOnlyDevice.source.suggestion": {
+    "sourceHash": "f6a307b"
+  },
+  "errors.write.readOnlyDevice.source.fallbackName": "Källan",
+  "@errors.write.readOnlyDevice.source.fallbackName": {
+    "sourceHash": "599f98e"
   }
 }

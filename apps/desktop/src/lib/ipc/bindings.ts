@@ -9955,6 +9955,26 @@ export type QuitRequested = {
  */
 export type RangeEnd = { kind: 'line'; line: number; offset: number } | { kind: 'eof' }
 
+/**
+ *  Which half of a transfer refused the write, for [`WriteOperationError::ReadOnlyDevice`].
+ *
+ *  The two are different sentences, not different wordings of one: a read-only
+ *  DESTINATION means "put it somewhere else", a read-only SOURCE means "you can
+ *  copy out of here, you just can't move out of here", because a move needs a
+ *  delete the source will never do.
+ *
+ *  ❌ Never decide this by inspecting a path or a message. The refusing site
+ *  knows which half it was looking at and says so.
+ */
+export type ReadOnlySide =
+  /**
+   *  The SOURCE can't give up its files. A copy out of it works; a move
+   *  doesn't, because the source half of the move could never happen.
+   */
+  | 'source'
+  // The DESTINATION takes no writes, so nothing can land there.
+  | 'destination'
+
 // A single recent-path entry, persisted verbatim.
 export type RecentPathEntry = {
   id: string
@@ -13161,8 +13181,16 @@ export type WriteOperationError =
   | { type: 'cancelled'; message: string }
   // Device was disconnected during the operation (USB, MTP, etc.).
   | { type: 'device_disconnected'; path: string }
-  // Target device or volume is read-only.
-  | { type: 'read_only_device'; path: string; deviceName: string | null }
+  /**
+   *  A device or volume refused a write, and [`ReadOnlySide`] says WHICH half
+   *  of the transfer it was.
+   *
+   *  ❗ The side is load-bearing for the sentence the user reads: a move OFF a
+   *  read-only source is refused because the source has no delete to pair with
+   *  the copy, and telling that user to "choose a different destination" sends
+   *  them to fix the half that was fine.
+   */
+  | { type: 'read_only_device'; path: string; deviceName: string | null; side: ReadOnlySide }
   // File is locked (macOS immutable flag, "Operation not permitted" on delete).
   | { type: 'file_locked'; path: string }
   // Volume doesn't support trash (network mounts, FAT, etc.).

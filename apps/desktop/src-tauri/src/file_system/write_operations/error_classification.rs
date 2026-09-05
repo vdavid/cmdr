@@ -7,7 +7,7 @@
 
 use std::path::Path;
 
-use super::types::WriteOperationError;
+use super::types::{ReadOnlySide, WriteOperationError};
 
 /// Classifies a raw `std::io::Error` into a specific `WriteOperationError` variant.
 ///
@@ -25,9 +25,12 @@ pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperat
     if let Some(code) = e.raw_os_error() {
         match code {
             libc::EROFS => {
+                // EROFS came back from a WRITE, so the refusing half is the
+                // destination by construction.
                 return WriteOperationError::ReadOnlyDevice {
                     path,
                     device_name: None,
+                    side: ReadOnlySide::Destination,
                 };
             }
             libc::ENAMETOOLONG => return WriteOperationError::NameTooLong { path },

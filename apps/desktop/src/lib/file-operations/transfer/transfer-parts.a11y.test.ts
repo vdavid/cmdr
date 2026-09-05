@@ -222,7 +222,7 @@ describe('FallbackErrorContent a11y', () => {
 
   it('read_only_device (delete) has no a11y violations', async () => {
     const target = mountFallback(
-      { type: 'read_only_device', path: '/Volumes/ReadOnly/file.txt', deviceName: 'ReadOnly' },
+      { type: 'read_only_device', path: '/Volumes/ReadOnly/file.txt', deviceName: 'ReadOnly', side: 'destination' },
       'delete',
     )
     await tick()

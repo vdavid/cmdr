@@ -555,6 +555,15 @@ export interface OversizedFile {
   size: number
 }
 
+/**
+ * Which half of a transfer refused the write, for `read_only_device`.
+ *
+ * A read-only DESTINATION means "put it somewhere else"; a read-only SOURCE
+ * means "you can copy out of here, you just can't move out of here". The
+ * backend says which, so the frontend never guesses it from a path.
+ */
+export type ReadOnlySide = 'source' | 'destination'
+
 /** Error types for write operations (discriminated union). */
 export type WriteOperationError =
   | { type: 'source_not_found'; path: string }
@@ -566,7 +575,7 @@ export type WriteOperationError =
   | { type: 'symlink_loop'; path: string }
   | { type: 'cancelled'; message: string }
   | { type: 'device_disconnected'; path: string }
-  | { type: 'read_only_device'; path: string; deviceName: string | null }
+  | { type: 'read_only_device'; path: string; deviceName: string | null; side: ReadOnlySide }
   | { type: 'file_locked'; path: string }
   | { type: 'trash_not_supported'; path: string }
   | { type: 'connection_interrupted'; path: string }

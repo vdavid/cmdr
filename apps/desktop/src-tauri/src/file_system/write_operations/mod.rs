@@ -158,12 +158,12 @@ pub(crate) use state::{register_external_volume_op, release_external_volume_op};
 #[allow(unused_imports, reason = "Public API re-exports for consumers of this module")]
 pub use types::{
     ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, LifecycleStatus,
-    OperationStatus, OperationSummary, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
-    ScanPreviewProgressEvent, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder,
-    SourceItemOutcome, TransferActivity, TransferWaitReason, WriteCancelledEvent, WriteCompleteEvent,
-    WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSettledEvent,
-    WriteSourceItemDoneEvent,
+    OperationStatus, OperationSummary, ReadOnlySide, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent,
+    ScanPreviewErrorEvent, ScanPreviewProgressEvent, ScanPreviewStartResult, ScanPreviewTotals, ScanProgressEvent,
+    SortColumn, SortOrder, SourceItemOutcome, TransferActivity, TransferWaitReason, WriteCancelledEvent,
+    WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
+    WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 
 // Re-export for tests (these are pub(crate) in validation.rs and state.rs)

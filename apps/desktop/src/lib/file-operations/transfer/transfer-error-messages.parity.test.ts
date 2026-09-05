@@ -296,7 +296,7 @@ const cases: Case[] = [
   },
   {
     name: 'read_only_device (named)',
-    error: { type: 'read_only_device', path: '/p', deviceName: 'My Phone' },
+    error: { type: 'read_only_device', path: '/p', deviceName: 'My Phone', side: 'destination' },
     expected: {
       title: 'Read-only device',
       message: 'My Phone is read-only. You can copy files from it, but not to it.',
@@ -305,7 +305,7 @@ const cases: Case[] = [
   },
   {
     name: 'read_only_device (no name → fallback)',
-    error: { type: 'read_only_device', path: '/p', deviceName: null },
+    error: { type: 'read_only_device', path: '/p', deviceName: null, side: 'destination' },
     expected: {
       title: 'Read-only device',
       message: 'The target device is read-only. You can copy files from it, but not to it.',

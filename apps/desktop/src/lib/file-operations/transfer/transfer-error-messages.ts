@@ -219,6 +219,29 @@ function tooLargeForFilesystemMessage(
 }
 
 /**
+ * The read-only refusal, worded for the half that actually refused.
+ *
+ * A read-only DESTINATION means "put it somewhere else". A read-only SOURCE
+ * means "you can copy out of here, you just can't move out of here", because a
+ * move needs a delete the source will never do: a repo's virtual `.git` history,
+ * or a tar/7z archive. Telling that second user to choose a different
+ * destination would send them to fix the half that was fine.
+ *
+ * The backend states the side; ❌ never infer it from the path. Split out to
+ * keep `getUserFriendlyMessage` under the complexity ceiling.
+ */
+function readOnlyMessage(error: Extract<WriteOperationError, { type: 'read_only_device' }>): FriendlyErrorMessage {
+  const side = error.side === 'source' ? 'source' : 'destination'
+  return {
+    title: w(`readOnlyDevice.${side}.title`),
+    message: w(`readOnlyDevice.${side}.message`, {
+      deviceName: escapeHtml(error.deviceName ?? w(`readOnlyDevice.${side}.fallbackName`)),
+    }),
+    suggestion: w(`readOnlyDevice.${side}.suggestion`),
+  }
+}
+
+/**
  * Returns a user-friendly message for a transfer operation error.
  * Volume-agnostic: doesn't mention MTP, SMB, etc. directly.
  */
@@ -252,13 +275,7 @@ export function getUserFriendlyMessage(
         suggestion: w('insufficientSpace.suggestion'),
       }
     case 'read_only_device':
-      return {
-        title: w('readOnlyDevice.title'),
-        message: w('readOnlyDevice.message', {
-          deviceName: escapeHtml(error.deviceName ?? w('readOnlyDevice.fallbackName')),
-        }),
-        suggestion: w('readOnlyDevice.suggestion'),
-      }
+      return readOnlyMessage(error)
     case 'file_locked':
       return {
         title: w('fileLocked.title'),

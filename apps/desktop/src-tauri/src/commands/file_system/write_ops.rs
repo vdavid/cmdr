@@ -8,11 +8,11 @@ use crate::file_system::write_operations::{
 };
 use crate::file_system::{
     OperationEventSink, OperationSnapshot, OperationStatus, OperationSummary, PauseAllOutcome, PauseOutcome,
-    SortColumn, SortOrder, TauriEventSink, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
-    cancel_all_write_operations as ops_cancel_all_write_operations, cancel_operation as ops_cancel_operation,
-    cancel_operations as ops_cancel_operations, cancel_write_operation as ops_cancel_write_operation,
-    copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
-    dismiss_all_failed_operations as ops_dismiss_all_failed_operations,
+    ReadOnlySide, SortColumn, SortOrder, TauriEventSink, WriteOperationConfig, WriteOperationError,
+    WriteOperationStartResult, cancel_all_write_operations as ops_cancel_all_write_operations,
+    cancel_operation as ops_cancel_operation, cancel_operations as ops_cancel_operations,
+    cancel_write_operation as ops_cancel_write_operation, copy_files_start as ops_copy_files_start,
+    delete_files_start as ops_delete_files_start, dismiss_all_failed_operations as ops_dismiss_all_failed_operations,
     dismiss_failed_operation as ops_dismiss_failed_operation, get_operation_status as ops_get_operation_status,
     list_active_operations as ops_list_active_operations, list_operations as ops_list_operations,
     move_files_start as ops_move_files_start, pause_all as ops_pause_all, pause_operation as ops_pause_operation,
@@ -92,11 +92,19 @@ async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathB
 /// switched off, so a real folder called `foo.zip` or a real `.git/branches/`
 /// keeps taking ordinary local writes.
 ///
+/// `side` says which half of the transfer these paths are, because the two are
+/// different sentences: a move OFF a snapshot is refused by its SOURCE, and
+/// telling that user to choose a different destination names the half that was
+/// fine. Callers that check both halves ask twice, once per side.
+///
 /// A backend safety net behind the frontend's read-only capability gating. The
 /// transfers that legitimately cross a route (extract-out, copy out of a
 /// snapshot, writing into a zip) run through `copy_between_volumes`, which routes
 /// to the read-only volume, ❌ never this fast path.
-fn reject_if_routed_over_a_parent<'a>(paths: impl IntoIterator<Item = &'a PathBuf>) -> Result<(), WriteOperationError> {
+fn reject_if_routed_over_a_parent<'a>(
+    paths: impl IntoIterator<Item = &'a PathBuf>,
+    side: ReadOnlySide,
+) -> Result<(), WriteOperationError> {
     for path in paths {
         // Only a path INSIDE an archive is read-only. The `.zip` file itself is a
         // regular file — copying/moving/deleting/trashing it must work.
@@ -104,6 +112,7 @@ fn reject_if_routed_over_a_parent<'a>(paths: impl IntoIterator<Item = &'a PathBu
             return Err(WriteOperationError::ReadOnlyDevice {
                 path: path.to_string_lossy().into_owned(),
                 device_name: None,
+                side,
             });
         }
     }
@@ -178,7 +187,10 @@ fn local_transfer_request(
 ) -> Result<(Vec<PathBuf>, PathBuf, WriteOperationConfig), WriteOperationError> {
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let destination = PathBuf::from(expand_tilde(destination));
-    reject_if_routed_over_a_parent(sources.iter().chain(std::iter::once(&destination)))?;
+    // Twice, so the refusal names the half that actually refused rather than
+    // whichever path the loop happened to reach first.
+    reject_if_routed_over_a_parent(sources.iter(), ReadOnlySide::Source)?;
+    reject_if_routed_over_a_parent(std::iter::once(&destination), ReadOnlySide::Destination)?;
     Ok((sources, destination, config.unwrap_or_default()))
 }
 
@@ -289,8 +301,9 @@ pub async fn trash_files(
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let config = config.unwrap_or_default();
 
-    // Trashing an entry inside an archive is a mutation (read-only for now).
-    reject_if_routed_over_a_parent(sources.iter())?;
+    // Trashing an entry inside a routed namespace is a mutation of the thing that
+    // holds it, so the refusing half is the source the user selected.
+    reject_if_routed_over_a_parent(sources.iter(), ReadOnlySide::Source)?;
 
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_trash_files_start(
@@ -516,8 +529,8 @@ mod tests {
 
         // A path INSIDE the archive is refused with a typed read-only error...
         let inner = zip.join("inner.txt");
-        let err =
-            reject_if_routed_over_a_parent(std::iter::once(&inner)).expect_err("archive-inner path must be refused");
+        let err = reject_if_routed_over_a_parent(std::iter::once(&inner), ReadOnlySide::Source)
+            .expect_err("archive-inner path must be refused");
         assert!(
             matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
             "expected ReadOnlyDevice, got {err:?}"
@@ -525,12 +538,12 @@ mod tests {
 
         // ...while a plain local sibling passes (proves the guard, not a blanket reject).
         let plain = dir.path().join("plain.txt");
-        assert!(reject_if_routed_over_a_parent(std::iter::once(&plain)).is_ok());
+        assert!(reject_if_routed_over_a_parent(std::iter::once(&plain), ReadOnlySide::Source).is_ok());
 
         // ...AND the `.zip` FILE ITSELF passes: copying/moving/deleting/trashing a
         // zip file is a normal file op, not a write INSIDE the archive.
         assert!(
-            reject_if_routed_over_a_parent(std::iter::once(&zip)).is_ok(),
+            reject_if_routed_over_a_parent(std::iter::once(&zip), ReadOnlySide::Source).is_ok(),
             "the .zip file itself must not be refused"
         );
     }
@@ -549,19 +562,21 @@ mod tests {
         let snapshot = dir.join(".git/branches/main/README.md");
 
         git::wiring::set_virtual_portal_enabled(true);
-        let err =
-            reject_if_routed_over_a_parent(std::iter::once(&snapshot)).expect_err("a snapshot path must be refused");
+        let err = reject_if_routed_over_a_parent(std::iter::once(&snapshot), ReadOnlySide::Source)
+            .expect_err("a snapshot path must be refused");
         assert!(
             matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
             "expected ReadOnlyDevice, got {err:?}"
         );
 
         // The real files under `.git/` are the parent volume's, always writable.
-        assert!(reject_if_routed_over_a_parent(std::iter::once(&dir.join(".git/config"))).is_ok());
+        assert!(
+            reject_if_routed_over_a_parent(std::iter::once(&dir.join(".git/config")), ReadOnlySide::Source).is_ok()
+        );
 
         git::wiring::set_virtual_portal_enabled(false);
         assert!(
-            reject_if_routed_over_a_parent(std::iter::once(&snapshot)).is_ok(),
+            reject_if_routed_over_a_parent(std::iter::once(&snapshot), ReadOnlySide::Source).is_ok(),
             "with the portal off there is no route to protect"
         );
         git::wiring::set_virtual_portal_enabled(true);

@@ -299,6 +299,25 @@ pub struct OperationSummary {
 // Error enum (following MountError pattern)
 // ============================================================================
 
+/// Which half of a transfer refused the write, for [`WriteOperationError::ReadOnlyDevice`].
+///
+/// The two are different sentences, not different wordings of one: a read-only
+/// DESTINATION means "put it somewhere else", a read-only SOURCE means "you can
+/// copy out of here, you just can't move out of here", because a move needs a
+/// delete the source will never do.
+///
+/// ❌ Never decide this by inspecting a path or a message. The refusing site
+/// knows which half it was looking at and says so.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ReadOnlySide {
+    /// The SOURCE can't give up its files. A copy out of it works; a move
+    /// doesn't, because the source half of the move could never happen.
+    Source,
+    /// The DESTINATION takes no writes, so nothing can land there.
+    Destination,
+}
+
 /// Errors that can occur during write operations.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
@@ -344,10 +363,17 @@ pub enum WriteOperationError {
     DeviceDisconnected {
         path: String,
     },
-    /// Target device or volume is read-only.
+    /// A device or volume refused a write, and [`ReadOnlySide`] says WHICH half
+    /// of the transfer it was.
+    ///
+    /// ❗ The side is load-bearing for the sentence the user reads: a move OFF a
+    /// read-only source is refused because the source has no delete to pair with
+    /// the copy, and telling that user to "choose a different destination" sends
+    /// them to fix the half that was fine.
     ReadOnlyDevice {
         path: String,
         device_name: Option<String>,
+        side: ReadOnlySide,
     },
     /// File is locked (macOS immutable flag, "Operation not permitted" on delete).
     FileLocked {

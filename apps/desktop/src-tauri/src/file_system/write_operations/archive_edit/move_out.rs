@@ -15,6 +15,7 @@ use super::super::OperationEventSink;
 use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::super::operation_intent::is_cancelled;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
+use super::super::types::ReadOnlySide;
 use super::super::types::{
     CancelRollback, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteErrorEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
@@ -75,17 +76,18 @@ pub(crate) async fn route_archive_move_out(
         path: String::new(),
         message: "no entries to move".to_string(),
     })?;
-    let (archive_path, _) = cmdr_archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
+    let (archive_path, _) =
+        cmdr_archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first, ReadOnlySide::Source))?;
     // Moving OUT of a read-only archive would need to DELETE the source entries;
     // tar/7z can't be edited, so refuse (copy-out still works via the read path).
-    ensure_zip_writable(&archive_path)?;
+    ensure_zip_writable(&archive_path, ReadOnlySide::Source)?;
     // The inner (archive-root-relative) path of each top-level source, kept
     // paired with the source so the delete batch can be filtered to exactly the
     // sources that extract in full.
     let mut inner_by_source: Vec<(PathBuf, String)> = Vec::with_capacity(source_paths.len());
     for source in &source_paths {
-        let (source_archive, inner) =
-            cmdr_archive::archive_boundary_candidate(source).ok_or_else(|| read_only_error(source))?;
+        let (source_archive, inner) = cmdr_archive::archive_boundary_candidate(source)
+            .ok_or_else(|| read_only_error(source, ReadOnlySide::Source))?;
         if source_archive != archive_path {
             return Err(WriteOperationError::IoError {
                 path: source.display().to_string(),

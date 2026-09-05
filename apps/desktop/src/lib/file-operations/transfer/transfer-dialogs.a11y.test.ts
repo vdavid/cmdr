@@ -579,7 +579,12 @@ describe('TransferErrorDialog a11y', () => {
       target,
       props: {
         operationType: 'delete',
-        error: { type: 'read_only_device', path: '/Volumes/ReadOnly/file.txt', deviceName: 'ReadOnly' },
+        error: {
+          type: 'read_only_device',
+          path: '/Volumes/ReadOnly/file.txt',
+          deviceName: 'ReadOnly',
+          side: 'destination',
+        },
         onClose: () => {},
       },
     })

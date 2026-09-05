@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use super::super::OperationEventSink;
 use super::super::manager;
-use super::super::types::WriteOperationError;
+use super::super::types::{ReadOnlySide, WriteOperationError};
 use crate::file_system::volume::manager::RoutedKind;
 use crate::file_system::volume::manager::get_volume_manager;
 use cmdr_archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
@@ -44,10 +44,16 @@ pub(crate) fn normalize_inner_path(inner: &Path) -> String {
 
 /// The read-only refusal for a path that should have crossed an archive boundary
 /// but didn't confirm (a mislabeled or vanished `.zip`).
-pub(super) fn read_only_error(path: &Path) -> WriteOperationError {
+///
+/// `side` is the caller's to state: a move OUT of an archive is refused because
+/// the SOURCE can't give up its files, while a copy in or a delete inside is the
+/// DESTINATION refusing a write. Getting it wrong sends the user to fix the half
+/// that was fine.
+pub(super) fn read_only_error(path: &Path, side: ReadOnlySide) -> WriteOperationError {
     WriteOperationError::ReadOnlyDevice {
         path: path.display().to_string(),
         device_name: None,
+        side,
     }
 }
 
@@ -57,10 +63,10 @@ pub(super) fn read_only_error(path: &Path) -> WriteOperationError {
 /// target returns the typed read-only refusal, leaving the archive untouched. The
 /// routing predicates stay format-agnostic (they also gate reads and navigation);
 /// this is the single write-side chokepoint.
-pub(crate) fn ensure_zip_writable(archive_path: &Path) -> Result<(), WriteOperationError> {
+pub(crate) fn ensure_zip_writable(archive_path: &Path, side: ReadOnlySide) -> Result<(), WriteOperationError> {
     match cmdr_archive::format_for_path(archive_path) {
         Some(ArchiveFormat::Zip) => Ok(()),
-        _ => Err(read_only_error(archive_path)),
+        _ => Err(read_only_error(archive_path, side)),
     }
 }
 

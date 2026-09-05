@@ -2015,26 +2015,29 @@
     "description": "Recovery suggestion when files are too large for the destination's FAT32 filesystem. Plain text. exFAT is a filesystem-format name; keep it as-is.",
     "screenshot": "transfer-error-files_too_large_for_filesystem.png"
   },
-  "errors.write.readOnlyDevice.title": "Read-only device",
-  "errors.write.readOnlyDevice.message": "{deviceName} is read-only. You can copy files from it, but not to it.",
-  "errors.write.readOnlyDevice.suggestion": "Choose a different destination that supports writing.",
-  "@errors.write.readOnlyDevice.title": {
+  "errors.write.readOnlyDevice.destination.title": "Read-only device",
+  "errors.write.readOnlyDevice.destination.message": "{deviceName} is read-only. You can copy files from it, but not to it.",
+  "errors.write.readOnlyDevice.destination.suggestion": "Choose a different destination that supports writing.",
+  "@errors.write.readOnlyDevice.destination.title": {
     "description": "Title of the copy/move error dialog when the destination device is read-only. Plain text.",
-    "screenshot": "transfer-error-read_only_device.png"
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.readOnlyDevice.message": {
+  "@errors.write.readOnlyDevice.destination.message": {
     "description": "Body of the copy/move error dialog when the destination device is read-only. Plain text.",
     "placeholders": {
       "deviceName": "the device's name (HTML-escaped), or a fallback phrase like \"The target device\" when the name is unknown; leads the sentence"
     },
-    "screenshot": "transfer-error-read_only_device.png"
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.readOnlyDevice.suggestion": {
+  "@errors.write.readOnlyDevice.destination.suggestion": {
     "description": "Recovery suggestion when the destination device is read-only. Plain text.",
-    "screenshot": "transfer-error-read_only_device.png"
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.write.readOnlyDevice.fallbackName": "The target device",
-  "@errors.write.readOnlyDevice.fallbackName": {
+  "errors.write.readOnlyDevice.destination.fallbackName": "The target device",
+  "@errors.write.readOnlyDevice.destination.fallbackName": {
     "description": "Fallback for the device name in the read-only-device message when the actual name is unknown. Plain text, used as the subject of \"is read-only\".",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
@@ -2387,6 +2390,33 @@
   "errors.eject.unexpected": "Something went wrong, and Cmdr couldn't tell what.",
   "@errors.eject.unexpected": {
     "description": "The catch-all shown when nothing more specific applies. Keep it short and general rather than guessing at a reason; the technical reason is written to the log. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.readOnlyDevice.source.title": "Read-only source",
+  "@errors.write.readOnlyDevice.source.title": {
+    "description": "Title of the copy/move error dialog when the SOURCE is read-only, so a move out of it can't happen (a file inside a repo's virtual `.git` history, or inside a tar/7z archive). Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.readOnlyDevice.source.message": "{deviceName} is read-only. You can copy files out of it, but not move them out.",
+  "@errors.write.readOnlyDevice.source.message": {
+    "description": "Body of the copy/move error dialog when the SOURCE is read-only. The user asked to MOVE files out of somewhere that can never delete them, so the sentence offers the copy they can do. Plain text.",
+    "placeholders": {
+      "deviceName": "the source's name (HTML-escaped), for example \".git\", or a fallback phrase like \"The source\" when the name is unknown; leads the sentence"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.readOnlyDevice.source.suggestion": "Copy the files instead. The originals stay where they are.",
+  "@errors.write.readOnlyDevice.source.suggestion": {
+    "description": "Recovery suggestion when the SOURCE is read-only: copying works, and it leaves the originals untouched. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.readOnlyDevice.source.fallbackName": "The source",
+  "@errors.write.readOnlyDevice.source.fallbackName": {
+    "description": "Fallback for the source's name in the read-only-source message when the actual name is unknown. Plain text, used as the subject of \"is read-only\".",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   }

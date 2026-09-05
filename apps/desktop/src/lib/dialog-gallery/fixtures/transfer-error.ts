@@ -95,6 +95,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       type: 'read_only_device',
       path: '/Volumes/Cmdr 0.9.4/Cmdr.app',
       deviceName: 'Cmdr 0.9.4 (disk image)',
+      side: 'destination',
     },
   },
   file_locked: {

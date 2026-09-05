@@ -29,7 +29,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     destination: '/Volumes/Backup',
     supportsRollback: false,
     reverses: null,
-    error: { type: 'read_only_device', path: '/Volumes/Backup', deviceName: 'Backup' },
+    error: { type: 'read_only_device', path: '/Volumes/Backup', deviceName: 'Backup', side: 'destination' },
     ...over,
   }
 }

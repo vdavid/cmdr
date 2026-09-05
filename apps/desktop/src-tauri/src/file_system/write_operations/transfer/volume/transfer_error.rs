@@ -8,7 +8,7 @@
 
 use std::path::{Path, PathBuf};
 
-use super::super::super::types::{WriteErrorEvent, WriteOperationError, WriteOperationType};
+use super::super::super::types::{ReadOnlySide, WriteErrorEvent, WriteOperationError, WriteOperationType};
 use crate::file_system::volume::VolumeError;
 
 /// Which side of a transfer a failing path belongs to.
@@ -166,9 +166,11 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
         VolumeError::DeviceDisconnected(_) => WriteOperationError::DeviceDisconnected {
             path: context_path.to_string(),
         },
+        // The backend refused a WRITE, so it is the destination that is read-only.
         VolumeError::ReadOnly(_) => WriteOperationError::ReadOnlyDevice {
             path: context_path.to_string(),
             device_name: None,
+            side: ReadOnlySide::Destination,
         },
         VolumeError::StorageFull { .. } => WriteOperationError::InsufficientSpace {
             required: 0,

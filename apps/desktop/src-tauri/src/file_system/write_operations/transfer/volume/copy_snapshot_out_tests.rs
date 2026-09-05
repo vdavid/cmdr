@@ -111,7 +111,7 @@ async fn a_copy_out_of_a_snapshot_carries_a_file_and_a_folder_byte_for_byte() {
 /// the destination stays untouched rather than holding half a move.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_move_out_of_a_snapshot_is_refused_before_a_byte_is_written() {
-    use crate::file_system::write_operations::{WriteOperationError, start_volume_move};
+    use crate::file_system::write_operations::{ReadOnlySide, WriteOperationError, start_volume_move};
     use crate::operation_log::types::Initiator;
 
     let dir = repo_registered_as_the_local_drive("move_refused");
@@ -135,9 +135,17 @@ async fn a_move_out_of_a_snapshot_is_refused_before_a_byte_is_written() {
     .await
     .expect_err("a move out of a snapshot must be refused");
 
+    // The SIDE is the whole point of the refusal's wording: the destination was
+    // fine, and pointing this user at it would send them to fix the wrong half.
     assert!(
-        matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
-        "the typed read-only refusal, ❌ never a started-then-broken transfer: {err:?}"
+        matches!(
+            err,
+            WriteOperationError::ReadOnlyDevice {
+                side: ReadOnlySide::Source,
+                ..
+            }
+        ),
+        "the typed read-only refusal naming the SOURCE, ❌ never a started-then-broken transfer: {err:?}"
     );
     assert!(
         std::fs::read_dir(&dest_dir).expect("read dest").next().is_none(),
@@ -153,7 +161,7 @@ async fn a_move_out_of_a_snapshot_is_refused_before_a_byte_is_written() {
 /// starting and dying on its first write.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_copy_into_a_snapshot_is_refused_up_front() {
-    use crate::file_system::write_operations::{WriteOperationError, start_volume_copy};
+    use crate::file_system::write_operations::{ReadOnlySide, WriteOperationError, start_volume_copy};
     use crate::operation_log::types::Initiator;
 
     let dir = repo_registered_as_the_local_drive("drop_refused");
@@ -173,8 +181,14 @@ async fn a_copy_into_a_snapshot_is_refused_up_front() {
     .expect_err("a drop into a snapshot must be refused");
 
     assert!(
-        matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
-        "the typed read-only refusal: {err:?}"
+        matches!(
+            err,
+            WriteOperationError::ReadOnlyDevice {
+                side: ReadOnlySide::Destination,
+                ..
+            }
+        ),
+        "the typed read-only refusal naming the DESTINATION: {err:?}"
     );
 
     cleanup(&dir);

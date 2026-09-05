@@ -247,7 +247,8 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
         return Err(MutationError::RenameAcrossArchives);
     }
     // Only zip archives are writable; tar and 7z are browse + extract only.
-    archive_edit::ensure_zip_writable(&from_archive).map_err(|_| MutationError::ArchiveReadOnly)?;
+    archive_edit::ensure_zip_writable(&from_archive, crate::file_system::ReadOnlySide::Destination)
+        .map_err(|_| MutationError::ArchiveReadOnly)?;
 
     let from_inner = archive_edit::normalize_inner_path(&from_inner);
     let to_inner = archive_edit::normalize_inner_path(&to_inner);

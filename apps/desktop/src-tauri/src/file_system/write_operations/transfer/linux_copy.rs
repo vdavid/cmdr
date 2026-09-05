@@ -11,7 +11,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU8;
 
-use super::super::types::WriteOperationError;
+use super::super::types::{ReadOnlySide, WriteOperationError};
 
 /// Chunk size per `copy_file_range` call (4 MB).
 /// Larger than chunked_copy's 1 MB because this is an in-kernel operation
@@ -178,9 +178,11 @@ fn map_io_error(err: std::io::Error, source: &Path, destination: &Path) -> Write
                         };
                     }
                     libc::EROFS => {
+                        // EROFS on the destination of a copy.
                         return WriteOperationError::ReadOnlyDevice {
                             path: destination.display().to_string(),
                             device_name: None,
+                            side: ReadOnlySide::Destination,
                         };
                     }
                     libc::ENOTCONN | libc::ENETDOWN | libc::ENETUNREACH | libc::EHOSTUNREACH | libc::ETIMEDOUT => {
