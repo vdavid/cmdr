@@ -604,7 +604,7 @@ impl MtpConnectionManager {
     /// read, which is the safe direction. The oracle re-checks on the next
     /// pre-flight; the lock is held only for short bookkeeping operations on
     /// the device map, so we won't see sustained false negatives.
-    pub fn is_connected(&self, device_id: &str) -> bool {
+    pub(crate) fn is_connected(&self, device_id: &str) -> bool {
         match self.devices.try_lock() {
             Ok(guard) => guard.contains_key(device_id),
             Err(_) => false,
@@ -666,7 +666,7 @@ impl MtpConnectionManager {
 
     /// Handles a StoreAdded event: queries the new storage, registers its volume,
     /// and broadcasts the change so the frontend picks it up.
-    pub async fn handle_storage_added(&self, device_id: &str, storage_id: u32) {
+    pub(crate) async fn handle_storage_added(&self, device_id: &str, storage_id: u32) {
         let device_arc = {
             let devices = self.devices.lock().await;
             match devices.get(device_id) {
@@ -831,8 +831,8 @@ impl MtpConnectionManager {
     /// Test-only: how many `GetStorageInfo` round trips the bounded-read path has
     /// issued for this device. See `DeviceEntry::storage_lookups`. Only the
     /// virtual-device tests can assert it, so it carries that gate too.
-    #[cfg(all(any(test, feature = "testing"), feature = "virtual-device"))]
-    pub async fn storage_lookup_count(&self, device_id: &str) -> usize {
+    #[cfg(all(test, feature = "virtual-device"))]
+    pub(crate) async fn storage_lookup_count(&self, device_id: &str) -> usize {
         let devices = self.devices.lock().await;
         devices
             .get(device_id)
@@ -841,7 +841,7 @@ impl MtpConnectionManager {
     }
 
     /// Handles a StoreRemoved event: unregisters the volume and broadcasts the change.
-    pub async fn handle_storage_removed(&self, device_id: &str, storage_id: u32) {
+    pub(crate) async fn handle_storage_removed(&self, device_id: &str, storage_id: u32) {
         // Remove from DeviceEntry
         {
             let mut devices = self.devices.lock().await;

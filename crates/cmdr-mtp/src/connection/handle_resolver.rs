@@ -155,7 +155,7 @@ impl MtpConnectionManager {
     /// later, the MTP index writer; the index will additionally store a handle
     /// per entry so it can resolve removals (which this can't, the object being
     /// gone).
-    pub async fn resolve_handle_to_path(
+    pub(crate) async fn resolve_handle_to_path(
         &self,
         device_id: &str,
         storage_id: u32,

@@ -117,7 +117,7 @@ impl MtpConnectionManager {
     /// This is a separate method (not merged with `list_directory_with_cancel`)
     /// because the `&dyn Fn(usize)` callback is not `Send`, and the non-progress
     /// path must produce a `Send` future for use in Tauri commands and `tokio::spawn`.
-    pub async fn list_directory_with_progress_and_cancel(
+    pub(crate) async fn list_directory_with_progress_and_cancel(
         &self,
         device_id: &str,
         storage_id: u32,

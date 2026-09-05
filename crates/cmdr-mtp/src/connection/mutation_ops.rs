@@ -64,7 +64,7 @@ impl MtpConnectionManager {
     /// lists its children before it can do anything else, so `SingleNode`
     /// refuses on the listing it was going to fetch anyway — one fewer USB
     /// roundtrip than deleting, never one more.
-    pub async fn delete_object_with_cancel(
+    pub(crate) async fn delete_object_with_cancel(
         &self,
         device_id: &str,
         storage_id: u32,

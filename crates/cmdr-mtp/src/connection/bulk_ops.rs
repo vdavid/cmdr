@@ -46,7 +46,7 @@ impl MtpConnectionManager {
     /// folder), so `stop` is consulted before each of them and before each entry.
     /// It cannot be finer — a listing in flight is inside `mtp-rs` and this layer
     /// has nothing to interrupt it with.
-    pub async fn scan_for_copy_with_stop(
+    pub(crate) async fn scan_for_copy_with_stop(
         &self,
         device_id: &str,
         storage_id: u32,

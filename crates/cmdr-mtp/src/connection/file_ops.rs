@@ -158,7 +158,7 @@ impl MtpConnectionManager {
     /// so the foreground-priority scheduler still sees this read take its turn.
     /// Takes NO `foreground_guard` — a read is a background gate user
     /// (see [`open_read_session`](Self::open_read_session)).
-    pub async fn read_range_direct(
+    pub(crate) async fn read_range_direct(
         &self,
         device_id: &str,
         storage_id: u32,
