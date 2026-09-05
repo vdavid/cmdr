@@ -299,11 +299,19 @@ under `.git` are unaffected either way: they're the local volume's, and always w
 
 **Toggle invalidates open listings.** Flipping the atomic alone isn't enough: panes already showing a `.git/...`
 listing keep their cached children until the next navigation. So `set_show_virtual_git_portal` also calls
-`watcher::refresh_all_virtual_listings_after_toggle`, which iterates the watcher registry's subscribed repos and emits
-a `FullRefresh` for every cached listing under any worktree's six category prefixes (plus `.git/` itself). The helper
-`refresh_local_listings_under` is shared with the watcher's `invalidate_virtual_listings`, so both paths use the same
-prefix match, across every volume. A pane standing on a virtual path when the portal turns off gets `NotFound` from the
-parent volume (the directory isn't on disk) and the pane's own recovery runs.
+`watcher::refresh_all_virtual_listings_after_toggle`, which emits a `FullRefresh` for every cached listing that IS a
+`.git` directory or sits inside one, on any volume.
+
+**Gotcha**: that set comes from the LISTING CACHE, ❌ never from the watcher registry.
+**Why**: a pane standing in `.git/` doesn't imply a `subscribe_git_state` for that repo, so the registry-derived
+version left the pane the user was looking at showing six rows the portal no longer served, until they navigated away
+and back (caught by `git-portal.spec.ts`, 2026-09-05). Over-selecting here costs a re-read and nothing else, which is
+what makes a path-shape check the right instrument: it decides what to RE-READ, ❗ not what a mutation may touch. The
+watcher's own `invalidate_virtual_listings` still goes through `refresh_local_listings_under` with real repo roots,
+because there it HAS one.
+
+A pane standing on a virtual path when the portal turns off gets `NotFound` from the parent volume (the directory isn't
+on disk) and the pane's own recovery runs.
 
 **Decision**: Typed `VolumeError::FriendlyGit(FriendlyGitError)` variant
 **Why**: The portal volume's methods return `Result<_, VolumeError>` and the
