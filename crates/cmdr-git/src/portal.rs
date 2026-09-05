@@ -1,5 +1,6 @@
 //! The git portal: the value that owns everything the virtual `.git` trees are
-//! served from, and mints a [`GitPortalVolume`](crate::GitPortalVolume) per repo.
+//! served from, and that every [`GitPortalVolume`](crate::GitPortalVolume) is
+//! built over.
 //!
 //! One portal per process, parked by the app (`wiring.rs`) the way `volume_host`
 //! parks the host. It holds the [`RepoCache`] every open repo handle lives in,

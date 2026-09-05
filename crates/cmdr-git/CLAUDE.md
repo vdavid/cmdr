@@ -7,8 +7,9 @@ chip, and the read-only `Volume` that turns `.git/branches/`, `tags/`, `commits/
 
 ## Module map
 
-- `portal.rs` (`GitPortal`, which owns the repo cache, the watcher registry, and the sink, and mints one volume per
-  repo), `volume.rs` (`GitPortalVolume`), `path.rs` (the `VirtualGitPath` parser, the lexical `portal_route`).
+- `portal.rs` (`GitPortal`, which owns the repo cache, the watcher registry, and the sink, and is what every portal
+  volume is built over), `volume.rs` (`GitPortalVolume`), `path.rs` (the `VirtualGitPath` parser, the lexical
+  `portal_route`).
 - `repo.rs` (discovery, `RepoInfo`, `RepoCache`), `status.rs` (the cached status walk), `watcher.rs` (the per-repo
   `notify` debouncer), `state_sink.rs` (where it reports).
 - `virtual_listing.rs`, `log.rs`, `stash.rs`, `worktrees.rs`, `submodules.rs`, `tree.rs`, `snapshot_dates.rs`: one
@@ -32,8 +33,9 @@ chip, and the read-only `Volume` that turns `.git/branches/`, `tags/`, `commits/
   a `Volume`: the moment a copy scan or a delete walker sees a row with no inode behind it, a repo delete stops half-way
   with `.git/` still on disk.
 - **Every `gix` call runs on `VolumeHost::runtime().spawn_blocking`**, ❌ never on the caller's async worker.
-- **Test-gated behavior takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off when the app
-  compiles this crate as a dependency.
+- **Anything a CONSUMER's test needs takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off when
+  the app compiles this crate as a dependency. `cfg(test)` alone is for doors only this crate's own cells open
+  (`snapshot_dates::clear_cache`, `log::cancel_flag`).
 - **`missing_docs` is denied.** Every `pub` item says what a caller must know, and specta copies these into
   `bindings.ts`.
 

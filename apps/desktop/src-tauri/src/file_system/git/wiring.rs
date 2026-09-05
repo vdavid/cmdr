@@ -86,7 +86,7 @@ pub fn install_git_portal(app: &AppHandle) {
 /// The app's git portal.
 ///
 /// ❗ This is where the APP parks the one it built, ❌ not how a volume finds a
-/// portal: a `GitPortalVolume` carries the portal that minted it, and a test
+/// portal: a `GitPortalVolume` carries the portal it was built over, and a test
 /// builds its own. Falls back to a detached-sink portal (real host, nowhere to
 /// report) so a test binary that never runs `setup()` still browses a repo.
 pub fn portal() -> &'static Arc<GitPortal> {

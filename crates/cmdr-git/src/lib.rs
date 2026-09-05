@@ -27,8 +27,9 @@
 //!   cache, the per-repo `.git/*` watcher, and the [`GitStateSink`] that watcher
 //!   reports through. The app parks one; a test builds its own.
 //! - [`GitPortalVolume`] is a read-only `Volume` over one repository's virtual
-//!   trees, minted by the portal. A host routes to it and then knows nothing
-//!   about git: listing, reading, and copying out all go through the trait.
+//!   trees, built from an `Arc<GitPortal>` by its own constructor. A host routes
+//!   to it and then knows nothing about git: listing, reading, and copying out
+//!   all go through the trait.
 //! - [`repo_info`] and [`list_status`] are the chip's two answers, callable with
 //!   a [`RepoHandle`] alone.
 //!

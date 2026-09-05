@@ -58,8 +58,8 @@ pub struct GitPortalVolume {
 }
 
 impl GitPortalVolume {
-    /// Builds the portal volume for the worktree at `repo_root`, minted from
-    /// `portal` and backed by `parent`.
+    /// Builds the portal volume for the worktree at `repo_root`, over `portal`
+    /// and backed by `parent`.
     ///
     /// `parent` is the volume physically holding the repo: this one borrows its
     /// lane key and its free space, the way an `ArchiveVolume` borrows the volume
@@ -256,11 +256,9 @@ impl Volume for GitPortalVolume {
     }
 }
 
-/// What a classified path lists, for the portal volume AND for the `.git/` root
-/// hook in `mod.rs`, which delegates every arm but `Root` here so the two can't
-/// answer differently. A free function so the blocking closure needs only the
-/// classified triple, never the volume.
-pub(super) fn listing_for(virt: &VirtualGitPath, handle: &RepoHandle, root: &Path) -> Lookup<Vec<FileEntry>> {
+/// What a classified path lists. A free function so the blocking closure needs
+/// only the classified triple, never the volume.
+fn listing_for(virt: &VirtualGitPath, handle: &RepoHandle, root: &Path) -> Lookup<Vec<FileEntry>> {
     match virt {
         VirtualGitPath::Root => Ok(Some(virtual_listing::list_categories(handle, root))),
         VirtualGitPath::Category(Cat::Branches) => virtual_listing::list_branches(handle, root).map(Some),

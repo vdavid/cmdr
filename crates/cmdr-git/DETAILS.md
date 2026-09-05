@@ -94,7 +94,7 @@ path that proves it starts where the portal is parked, so the cell belongs at th
 
 **The portal lives where `.git` is a DIRECTORY.** The overlay contributes to a directory listing, and listing a gitlink
 fails `ENOTDIR`, so a linked worktree has no `.git/` landing page. What it does have is everything below:
-`path::classify` splits on the path SEGMENT and never stats, `portal_route` is the same pure string check, and `gix`
+`path::classify_in` splits on the path SEGMENT and never stats, `portal_route` is the same pure string check, and `gix`
 discovery follows the gitlink, so `<linked>/.git/branches` and deeper answer exactly as in the main worktree (verified
 2026-09-05, `a_linked_worktree_serves_the_categories_but_has_no_dot_git_landing`).
 

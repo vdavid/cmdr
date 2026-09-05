@@ -95,8 +95,6 @@ pub enum VirtualGitPath {
     RefTree(Cat, String, String),
 }
 
-impl VirtualGitPath {}
-
 /// The lexical half of the portal route: the worktree root of `path`, when
 /// `path` reaches into one of the six virtual categories under its `.git`.
 ///
