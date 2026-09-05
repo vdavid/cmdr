@@ -65,6 +65,13 @@ server, bokmärke, etc.) live in `style.md` § Terminology; this list is the set
 - **branch (git): `gren`** · standard Swedish git term; MS's "förgrena" is the verb sense. `tentative`.
 - **repository (git): `git-repository`** · keep the git loanword; MS's "centrallager" is the generic-storage sense.
   `tentative`.
+- **worktree (git): `worktree`, kept verbatim; working tree: `arbetsträd`** · English draws the two apart and so do we.
+  A "worktree" is git's own name for a linked checkout and the en `@key` descriptions say do NOT translate it (so
+  `errors.git.orphanedWorktree.*`, `settings.fileExplorer.git.showVirtualGitPortal.description`, and
+  `fileExplorer.git.size.linkedWorktrees` all carry it), while the generic "working tree" in `errors.git.bareRepo`,
+  `blobTooLarge`, and `gitDirPermissionDenied` is ordinary prose and reads `arbetsträd`. Agreement: `worktree` is an
+  en-word (`den här worktree:n`, `en länkad worktree`, plural `worktrees`). "working directory" stays the separate
+  `arbetskatalog`. `high`.
 - **startup disk: `startskiva`** · macOS Finder ("Startskiva", "Startskivevärde"). Boot drive. `high`.
 - **Privacy & Security (macOS pane): `Integritet och säkerhet`** · macOS SystemSettings. `high`.
 - **Full Disk Access (macOS permission): `Full skivtillgång`** · three live macOS bundles agree, including the very pane

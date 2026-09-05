@@ -1065,7 +1065,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "När du går in i `.git`, visa grenar, taggar, incheckningar och arbetsträd som bläddringsbara virtuella mappar. Stäng av för att i stället se det råa innehållet i `.git`.",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "När du går in i `.git`, visa grenar, taggar, incheckningar och worktrees som bläddringsbara virtuella mappar. Stäng av för att i stället se det råa innehållet i `.git`.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },

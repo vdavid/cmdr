@@ -64,7 +64,12 @@ Settled while translating `errors.json` (second pass, 2026-06-21):
   ("**{full_disk_access}** jogosultság").
 - handle (open file handle): `leíró` ("nyitott leíró") · descriptive · tentative.
 - git terms kept verbatim per the en `@key` do-not-translate notes: `git`, `worktree`, `commit`, `blob`, `repó` (repo).
-  "working tree" = `munkafa`; "bare repo" = `csupasz repó`; "git browser" (Cmdr feature) = `git böngésző`.
+  "working tree" = `munkafa`; "bare repo" = `csupasz repó`; "git browser" (Cmdr feature) = `git böngésző`. The verbatim
+  `worktree` covers every key naming git's linked checkout, the git-portal ones included
+  (`errors.git.orphanedWorktree.*`, `settings.fileExplorer.git.showVirtualGitPortal.description`,
+  `fileExplorer.git.size.linkedWorktrees` = `{countText} csatolt worktree`); `munkafa` is only for the generic "working
+  tree" in `errors.git.bareRepo`, `blobTooLarge`, and `gitDirPermissionDenied`. "working directory" stays the separate
+  `munkakönyvtár`. Suffixes attach with a hyphen (`worktree-eket`), as for other consonant-final loanwords.
 - cloud mount (`cmVolumes.displayName`, descriptive not a brand): `Felhőcsatolás` · descriptive · tentative.
 - your cloud provider (`genericCloudStorage.displayName`): `a felhőszolgáltatód` · descriptive · high.
 

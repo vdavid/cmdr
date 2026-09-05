@@ -1063,7 +1063,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "A `.git` mappába belépve az ágakat, címkéket, commitokat és munkapéldányokat böngészhető virtuális mappákként mutatja. Kapcsold ki, hogy helyette a nyers `.git` tartalmat lásd.",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "A `.git` mappába belépve az ágakat, címkéket, commitokat és worktree-eket böngészhető virtuális mappákként mutatja. Kapcsold ki, hogy helyette a nyers `.git` tartalmat lásd.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
