@@ -3,9 +3,23 @@
 //! Lists connected MTP devices without opening sessions.
 //! Used to populate the volume picker with available Android devices.
 
-use super::types::MtpDeviceInfo;
+use crate::types::MtpDeviceInfo;
 use log::{debug, warn};
 use mtp_rs::MtpDevice;
+
+/// The USB hotplug stream, and what it reports.
+///
+/// Re-exported from `mtp-rs` rather than wrapped: the app's watcher task treats
+/// each event as a TRIGGER to re-enumerate rather than as the source of truth
+/// (a virtual device never produces one, so only [`list_mtp_devices`] sees
+/// both), which leaves the payload as something it logs and nothing else. A
+/// translation layer over plain USB descriptor fields would buy nothing, and
+/// this is what keeps `mtp-rs` out of the app's own manifest.
+///
+/// The stream wakes only for MTP-capable devices and applies its own settle
+/// delay before enumerating, so hubs, mice, and chargers never reach a caller
+/// and there is no sleep to add around it.
+pub use mtp_rs::mtp::{HotplugEvent, watch_devices};
 
 /// Lists all connected MTP devices.
 ///
@@ -44,7 +58,7 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
                         manufacturer: d.manufacturer,
                         product: d.product,
                         serial_number: d.serial_number,
-                        usb_speed: d.speed.map(super::types::usb_speed_from_device),
+                        usb_speed: d.speed.map(crate::types::usb_speed_from_device),
                     }
                 })
                 .collect()

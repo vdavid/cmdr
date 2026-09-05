@@ -13,8 +13,8 @@
 
 use super::DeviceWatch;
 use super::MtpDeleteScope;
-use crate::mtp::connection_manager;
-use crate::mtp::virtual_device::{
+use super::testing::test_connection_manager as connection_manager;
+use crate::virtual_device::{
     VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
 use mtp_rs::ObjectHandle;
@@ -32,7 +32,7 @@ struct Device {
 async fn connect_device() -> Device {
     let fixture = setup_virtual_mtp_device();
 
-    let device_id = crate::mtp::list_mtp_devices()
+    let device_id = crate::list_mtp_devices()
         .into_iter()
         .find(|d| d.location_id == fixture.location_id)
         .map(|d| d.id)

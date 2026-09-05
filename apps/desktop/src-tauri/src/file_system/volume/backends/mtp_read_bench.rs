@@ -31,7 +31,7 @@
 
 use super::MtpVolume;
 use super::Volume;
-use crate::mtp::connection::DeviceWatch;
+use crate::mtp::DeviceWatch;
 use crate::mtp::connection_manager;
 use std::path::Path;
 use std::sync::Arc;
@@ -141,7 +141,7 @@ async fn mtp_read_range_hardware_bench() {
     );
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .ok();
     #[cfg(target_os = "macos")]

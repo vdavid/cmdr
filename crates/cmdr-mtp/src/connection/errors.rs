@@ -1,49 +1,89 @@
 //! Error types for MTP connection operations.
 
-/// Error types for MTP connection operations.
+/// Why an MTP operation couldn't happen, in a shape the app can act on.
+///
+/// Every variant carries the `device_id` it is about, because a message the user
+/// sees names the phone and several devices can be connected at once. ❌ Classify
+/// on the variant, never on the `Display` text: the words are for people and the
+/// app translates them.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum MtpConnectionError {
+    /// No live device enumerates under this id. It was unplugged, or it never
+    /// existed.
     DeviceNotFound {
+        /// The device this is about.
         device_id: String,
     },
+    /// The device is there, but nothing has opened a session on it. Connect
+    /// first.
     NotConnected {
+        /// The device this is about.
         device_id: String,
     },
+    /// Another process holds the USB device (`ptpcamerad` on macOS), so the open
+    /// can't happen until it lets go. This is the one the ptpcamerad workaround
+    /// answers.
     ExclusiveAccess {
+        /// The device this is about.
         device_id: String,
+        /// Who is holding it, when the OS would say. Best effort, for the
+        /// message only.
         blocking_process: Option<String>,
     },
+    /// A USB transfer ran out its own bound. The session is still open, so a
+    /// retry is reasonable.
     Timeout {
+        /// The device this is about.
         device_id: String,
     },
+    /// The device went away mid-operation. The session is gone and won't come
+    /// back without a replug.
     Disconnected {
+        /// The device this is about.
         device_id: String,
     },
+    /// The device answered with something the PTP layer couldn't make sense of.
     Protocol {
+        /// The device this is about.
         device_id: String,
+        /// What the transport said, for the log. ❌ Not for classification.
         message: String,
     },
-    /// Retryable.
+    /// The device is busy with something else. Retryable.
     DeviceBusy {
+        /// The device this is about.
         device_id: String,
     },
+    /// The storage has no room for the write.
     StorageFull {
+        /// The device this is about.
         device_id: String,
     },
+    /// The storage refused the write because it's read-only. Some devices report
+    /// a storage as writable and only say this at the moment of the write.
     StoreReadOnly {
+        /// The device this is about.
         device_id: String,
     },
     /// USB device file not accessible (Linux: missing udev rules; `EACCES`).
     PermissionDenied {
+        /// The device this is about.
         device_id: String,
     },
+    /// The caller cancelled, and the operation stopped at a safe PTP boundary.
+    /// Nothing is half-written on the wire.
     Cancelled {
+        /// The device this is about.
         device_id: String,
+        /// Which operation stopped, for the log.
         message: String,
     },
+    /// Nothing on the device answers to that path any more.
     ObjectNotFound {
+        /// The device this is about.
         device_id: String,
+        /// The storage-relative path that resolved to nothing.
         path: String,
     },
     /// A `SingleNode`-scoped delete was asked to remove a directory that still
@@ -55,7 +95,9 @@ pub enum MtpConnectionError {
     /// refusal: the same-volume move's source cleanup keeps a skipped child's
     /// only copy purely by letting the parent's delete fail here.
     DirectoryNotEmpty {
+        /// The device this is about.
         device_id: String,
+        /// The directory that still has children.
         path: String,
     },
     /// The cached parent-folder handle was rejected by the device during an
@@ -65,7 +107,9 @@ pub enum MtpConnectionError {
     /// Carries the destination folder path so the volume layer can surface a
     /// destination-correct message if the retry also fails.
     StaleParentHandle {
+        /// The device this is about.
         device_id: String,
+        /// Where the upload was headed, so a second failure can still name it.
         dest_folder: String,
     },
     /// mtp-rs reset the device in software to recover from a wedged transfer
@@ -79,10 +123,14 @@ pub enum MtpConnectionError {
     /// module `CLAUDE.md`), so this is the seatbelt for a genuine disconnect
     /// mid-transfer, not a routine path.
     SessionReset {
+        /// The device this is about.
         device_id: String,
     },
+    /// Anything the classifier couldn't place. A caller can only report it.
     Other {
+        /// The device this is about.
         device_id: String,
+        /// What went wrong, for the log.
         message: String,
     },
 }

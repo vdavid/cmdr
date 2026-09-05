@@ -24,10 +24,10 @@ use crate::file_system::volume::{MtpVolume, Volume};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::state::WriteOperationState;
 use crate::file_system::write_operations::types::{ConflictResolution, VolumeCopyConfig};
-use crate::mtp::connection::DeviceWatch;
-use crate::mtp::connection::MtpDisconnectReason;
+use crate::mtp::DeviceWatch;
+use crate::mtp::MtpDisconnectReason;
 use crate::mtp::connection_manager;
-use crate::mtp::virtual_device::{
+use cmdr_mtp::virtual_device::{
     rescan_virtual_device, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
 
@@ -38,7 +38,7 @@ use crate::mtp::virtual_device::{
 /// an assertion unwinds past the explicit teardown.
 struct VirtualDeviceGuard {
     _lock: tokio::sync::MutexGuard<'static, ()>,
-    fixture: crate::mtp::virtual_device::VirtualDeviceFixture,
+    fixture: cmdr_mtp::virtual_device::VirtualDeviceFixture,
 }
 
 impl Drop for VirtualDeviceGuard {

@@ -3,8 +3,8 @@
 //! mtp-rs on the way up.
 
 use super::mapping::map_mtp_error;
-use super::{VolumeError, VolumeReadStream};
-use crate::mtp::connection::{MtpConnectionManager, MtpReadSession};
+use cmdr_fs::volume::{VolumeError, VolumeReadStream};
+use crate::connection::{MtpConnectionManager, MtpReadSession};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -16,7 +16,7 @@ use std::sync::Arc;
 /// The laziness is load-bearing: collecting every chunk into a `Vec<Bytes>`
 /// before the first USB write risks OOM on a large file, and skips the transfer
 /// progress / cancel callback entirely.
-pub(in crate::file_system::volume::backends) fn volume_read_stream_to_chunk_stream<'a>(
+pub fn volume_read_stream_to_chunk_stream<'a>(
     stream: Box<dyn VolumeReadStream>,
     total: u64,
     on_progress: &'a (dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
@@ -54,7 +54,7 @@ pub(super) fn mtp_read_window() -> u32 {
             return override_window;
         }
     }
-    crate::mtp::connection::MTP_READ_WINDOW
+    crate::connection::MTP_READ_WINDOW
 }
 
 /// Bounded-window MTP read stream.

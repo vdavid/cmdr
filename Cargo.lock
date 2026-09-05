@@ -1376,6 +1376,7 @@ dependencies = [
  "cmdr-archive",
  "cmdr-fs",
  "cmdr-index",
+ "cmdr-mtp",
  "cmdr-sftp",
  "cmdr-smb",
  "cmdr-webdav",
@@ -1409,7 +1410,6 @@ dependencies = [
  "mimalloc",
  "mime_guess",
  "minisign-verify",
- "mtp-rs",
  "notify",
  "notify-debouncer-full",
  "nucleo-matcher",
@@ -1587,6 +1587,24 @@ dependencies = [
  "unicode-normalization",
  "usearch",
  "zip 8.6.0",
+]
+
+[[package]]
+name = "cmdr-mtp"
+version = "0.0.0"
+dependencies = [
+ "bytes",
+ "cmdr-fs",
+ "cmdr-mtp",
+ "futures-util",
+ "log",
+ "mtp-rs",
+ "serde",
+ "serde_json",
+ "specta",
+ "tempfile",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]

@@ -12,9 +12,9 @@ use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::analytics::RecordingAnalytics;
 
 use super::events::no_device_events;
+use super::testing::{is_attached, recording_registrar};
 use super::{DeviceWatch, MtpConnectionManager, MtpDisconnectReason, MtpVolumeRegistrar};
-use crate::file_system::volume::manager::get_volume_manager;
-use crate::mtp::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
+use crate::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock};
 
 /// A device connecting is a thing a user did, so it earns one counter. It has to
 /// travel the `AnalyticsSink` seam rather than the app's PostHog client: the
@@ -30,7 +30,7 @@ use crate::mtp::virtual_device::{setup_virtual_mtp_device, unregister_virtual_mt
 async fn connecting_a_device_records_one_counter_carrying_nothing_identifying() {
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
-    let device_id = crate::mtp::list_mtp_devices()
+    let device_id = crate::list_mtp_devices()
         .into_iter()
         .find(|d| d.location_id == fixture.location_id)
         .map(|d| d.id)
@@ -57,8 +57,8 @@ async fn connecting_a_device_records_one_counter_carrying_nothing_identifying() 
     );
 }
 
-/// A device that vanishes under the event loop has to leave the volume registry
-/// the same way an explicit disconnect does.
+/// A device that vanishes under the event loop has to leave the registrar the
+/// same way an explicit disconnect does.
 ///
 /// Two paths remove a device: `disconnect()`, which the settings toggle and the
 /// hotplug diff both take, and `handle_device_disconnected`, which the event loop
@@ -71,40 +71,29 @@ async fn connecting_a_device_records_one_counter_carrying_nothing_identifying() 
 async fn a_device_lost_under_the_event_loop_detaches_its_volumes() {
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
-    let device_id = crate::mtp::list_mtp_devices()
+    let device_id = crate::list_mtp_devices()
         .into_iter()
         .find(|d| d.location_id == fixture.location_id)
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
 
-    let manager = MtpConnectionManager::new(
-        VolumeHost::detached(),
-        no_device_events(),
-        crate::mtp::volume_wiring::volume_registrar(),
-    );
+    let manager = MtpConnectionManager::new(VolumeHost::detached(), no_device_events(), recording_registrar());
     let info = manager
         .connect(&device_id, DeviceWatch::Off)
         .await
         .expect("virtual-mtp connect should succeed");
-    let volume_ids: Vec<String> = info
-        .storages
-        .iter()
-        .map(|storage| cmdr_fs::volume::mtp_ids::mtp_volume_id(&device_id, storage.id))
-        .collect();
+    let storage_ids: Vec<u32> = info.storages.iter().map(|storage| storage.id).collect();
     assert!(
-        volume_ids.iter().all(|id| get_volume_manager().get(id).is_some()),
+        storage_ids.iter().all(|id| is_attached(&device_id, *id)),
         "the connect has to attach every storage first, or this proves nothing"
     );
 
     manager.handle_device_disconnected(&device_id).await;
     unregister_virtual_mtp_device(fixture.location_id);
 
-    let still_registered: Vec<&String> = volume_ids
-        .iter()
-        .filter(|id| get_volume_manager().get(id).is_some())
-        .collect();
+    let still_attached: Vec<&u32> = storage_ids.iter().filter(|id| is_attached(&device_id, **id)).collect();
     assert!(
-        still_registered.is_empty(),
-        "a device that went away leaves nothing behind, but these stayed: {still_registered:?}"
+        still_attached.is_empty(),
+        "a device that went away leaves nothing behind, but these storages stayed: {still_attached:?}"
     );
 }

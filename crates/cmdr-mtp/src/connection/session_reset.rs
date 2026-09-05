@@ -222,8 +222,8 @@ mod tests {
     fn detached_manager() -> std::sync::Arc<MtpConnectionManager> {
         MtpConnectionManager::new(
             cmdr_fs::volume::host::VolumeHost::detached(),
-            crate::mtp::connection::events::no_device_events(),
-            crate::mtp::connection::MtpVolumeRegistrar::detached(),
+            crate::connection::events::no_device_events(),
+            crate::connection::MtpVolumeRegistrar::detached(),
         )
     }
 
@@ -258,17 +258,17 @@ mod tests {
 
 /// Behavior against a live (virtual) device: what the reset teardown keeps and
 /// what it throws away.
-#[cfg(all(test, feature = "virtual-mtp"))]
+#[cfg(all(test, feature = "virtual-device"))]
 mod device_tests {
     use std::time::Duration;
 
     use super::super::DeviceWatch;
     use super::super::MtpConnectionError;
-    use crate::mtp::connection_manager;
-    use crate::mtp::virtual_device::{
+    use super::super::testing::{is_attached, test_connection_manager as connection_manager};
+    use crate::virtual_device::{
         VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
-    use crate::test_support::wait_until_async;
+    use cmdr_fs::testing::wait_until_async;
     use std::path::Path;
 
     struct Device {
@@ -281,7 +281,7 @@ mod device_tests {
     /// listing caches hold something a reset has to throw away.
     async fn connect_device() -> Device {
         let fixture = setup_virtual_mtp_device();
-        let device_id = crate::mtp::list_mtp_devices()
+        let device_id = crate::list_mtp_devices()
             .into_iter()
             .find(|d| d.location_id == fixture.location_id)
             .map(|d| d.id)
@@ -308,7 +308,7 @@ mod device_tests {
 
     async fn teardown(device: Device) {
         connection_manager()
-            .disconnect(&device.id, crate::mtp::connection::MtpDisconnectReason::User)
+            .disconnect(&device.id, crate::connection::MtpDisconnectReason::User)
             .await
             .ok();
         unregister_virtual_mtp_device(device.fixture.location_id);
@@ -351,7 +351,6 @@ mod device_tests {
     async fn session_reset_keeps_the_volume_in_the_sidebar() {
         let _guard = virtual_device_test_lock().lock().await;
         let device = connect_device().await;
-        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(&device.id, device.storage_id);
 
         assert!(
             connection_manager().tear_down_reset_session(&device.id).await,
@@ -359,10 +358,8 @@ mod device_tests {
         );
 
         assert!(
-            crate::file_system::volume::manager::get_volume_manager()
-                .get(&volume_id)
-                .is_some(),
-            "the device is still attached, so its volume must stay registered",
+            is_attached(&device.id, device.storage_id),
+            "the device is still attached, so its storage must stay registered as a volume",
         );
 
         teardown(device).await;
@@ -408,14 +405,13 @@ mod device_tests {
     async fn a_wedged_listing_recovers_without_dropping_the_device() {
         let _guard = virtual_device_test_lock().lock().await;
         let device = connect_device().await;
-        let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(&device.id, device.storage_id);
         super::super::directory_ops::disconnect_test_hooks::reset_count();
 
         // Arm the one-shot, then drive a real listing. `/DCIM` (not `/`) so the
         // 5 s `ListingCache` entry the primed root left behind can't answer from
         // memory and skip the device entirely.
         assert!(
-            mtp_rs::force_operation_wedge(crate::mtp::virtual_device::VIRTUAL_DEVICE_SERIAL),
+            mtp_rs::force_operation_wedge(crate::virtual_device::VIRTUAL_DEVICE_SERIAL),
             "the connected virtual device must be armable",
         );
         let err = connection_manager()
@@ -445,10 +441,8 @@ mod device_tests {
             "the device never left, so nothing may run the disconnect teardown",
         );
         assert!(
-            crate::file_system::volume::manager::get_volume_manager()
-                .get(&volume_id)
-                .is_some(),
-            "the volume must stay in the sidebar throughout the recovery",
+            is_attached(&device.id, device.storage_id),
+            "the storage must stay registered as a volume throughout the recovery",
         );
         assert!(
             connection_manager()

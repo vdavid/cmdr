@@ -24,12 +24,12 @@ use crate::file_system::listing::caching_test_support::{TestListing, TestListing
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{MtpVolume, ScanBoundary, Volume, WatchCoverage};
-use crate::mtp::connection::DeviceWatch;
-use crate::mtp::connection::MtpDisconnectReason;
+use crate::mtp::DeviceWatch;
+use crate::mtp::MtpDisconnectReason;
 use crate::mtp::connection_manager;
-use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
-use super::backends::mtp::testing;
+use cmdr_mtp::volume::testing;
 
 // `setup_virtual_mtp_device` gives every call its own temp backing root, so these
 // tests don't contend on the filesystem. They still take
@@ -69,7 +69,7 @@ fn insert_listing(tag: &str, volume_id: &str, path: &str, entries: Vec<FileEntry
 /// owning its temp backing dir. Held for the test body, released on drop.
 struct VirtualDeviceGuard {
     _lock: tokio::sync::MutexGuard<'static, ()>,
-    fixture: crate::mtp::virtual_device::VirtualDeviceFixture,
+    fixture: cmdr_mtp::virtual_device::VirtualDeviceFixture,
 }
 
 /// Connects the virtual MTP device, builds an `MtpVolume` for its first

@@ -748,7 +748,6 @@ impl MtpConnectionManager {
 
     /// Clears all listing caches for all connected devices. Call after rescan
     /// to ensure stale cached listings don't mask changes to the object tree.
-    #[allow(dead_code, reason = "used by rescan_virtual_mtp (virtual-mtp feature)")]
     pub async fn clear_all_listing_caches(&self) {
         let devices = self.devices.lock().await;
         for (device_id, entry) in devices.iter() {
@@ -887,7 +886,7 @@ impl MtpConnectionManager {
     /// `session_reset.rs`). Emitting `Removed` for it would drop a live device
     /// out of the sidebar.
     pub(super) async fn handle_device_disconnected(&self, device_id: &str) {
-        #[cfg(all(test, feature = "virtual-mtp"))]
+        #[cfg(all(test, feature = "virtual-device"))]
         disconnect_test_hooks::bump_count();
 
         debug!(
@@ -995,7 +994,7 @@ fn convert_object_infos(
 /// never reach the disconnect teardown, and nothing else observable tells the two
 /// apart in a unit test (both drop the entry, both flip the index Stale; the
 /// `Removed` event needs a device-events sink). Asserted by `session_reset.rs`.
-#[cfg(all(test, feature = "virtual-mtp"))]
+#[cfg(all(test, feature = "virtual-device"))]
 pub(super) mod disconnect_test_hooks {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -1005,11 +1004,11 @@ pub(super) mod disconnect_test_hooks {
         CALLS.fetch_add(1, Ordering::Relaxed);
     }
 
-    pub(in crate::mtp::connection) fn reset_count() {
+    pub(in crate::connection) fn reset_count() {
         CALLS.store(0, Ordering::Relaxed);
     }
 
-    pub(in crate::mtp::connection) fn count() -> usize {
+    pub(in crate::connection) fn count() -> usize {
         CALLS.load(Ordering::Relaxed)
     }
 }

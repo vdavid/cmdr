@@ -21,7 +21,7 @@
 use std::sync::{Arc, LazyLock};
 
 use super::MtpDisconnectReason;
-use crate::mtp::types::MtpStorageInfo;
+use crate::types::MtpStorageInfo;
 
 /// Something that happened to a device, as a value rather than as a sentence.
 #[derive(Debug, Clone)]
@@ -65,10 +65,6 @@ pub enum MtpDeviceEvent {
     /// Only Linux reports one: it's the platform where a missing udev rule is
     /// the likely cause and there's an install command to offer. The wire event
     /// is registered on every platform, so the variant stays unconditional.
-    #[cfg_attr(
-        not(target_os = "linux"),
-        expect(dead_code, reason = "only the Linux open path can classify a permission denial")
-    )]
     PermissionDenied {
         /// The device this is about.
         device_id: String,
@@ -105,19 +101,10 @@ pub fn no_device_events() -> Arc<dyn MtpDeviceEvents> {
 // consumer's test build would see the recorder vanish and have no way to assert
 // on the lifecycle sequence a user would have seen.
 #[cfg(any(test, feature = "testing"))]
-#[allow(
-    unused_imports,
-    reason = "re-exported for test modules across a still-crate-private path"
-)]
 pub use recording::RecordingMtpDeviceEvents;
 
 #[cfg(any(test, feature = "testing"))]
 mod recording {
-    // While this module still lives inside the app crate, `crate::mtp` is
-    // private, so `pub` here isn't reachable from outside and `deny(unused)`
-    // calls the recorder dead in a build that has the feature but no test target.
-    #![allow(dead_code, reason = "read from test modules across a still-crate-private path")]
-
     use std::sync::Mutex;
 
     use super::{MtpDeviceEvent, MtpDeviceEvents};
@@ -217,14 +204,14 @@ mod tests {
     }
 }
 
-#[cfg(all(test, feature = "virtual-mtp"))]
+#[cfg(all(test, feature = "virtual-device"))]
 mod device_lifecycle_test {
     use super::{MtpDeviceEvent, RecordingMtpDeviceEvents};
-    use crate::mtp::connection::{DeviceWatch, MtpDisconnectReason};
-    use crate::mtp::connection_manager_for_test;
-    use crate::mtp::virtual_device::{
+    use crate::connection::{DeviceWatch, MtpConnectionManager, MtpDisconnectReason, MtpVolumeRegistrar};
+    use crate::virtual_device::{
         setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
+    use cmdr_fs::volume::host::VolumeHost;
     use std::sync::Arc;
 
     /// The whole point of the trait: a real connect and disconnect report through
@@ -235,14 +222,18 @@ mod device_lifecycle_test {
     async fn a_connect_and_a_disconnect_report_through_the_sink_they_were_given() {
         let _guard = virtual_device_test_lock().lock().await;
         let fixture = setup_virtual_mtp_device();
-        let device_id = crate::mtp::list_mtp_devices()
+        let device_id = crate::list_mtp_devices()
             .into_iter()
             .find(|d| d.location_id == fixture.location_id)
             .map(|d| d.id)
             .expect("the virtual device must appear in discovery");
 
         let recorder = Arc::new(RecordingMtpDeviceEvents::new());
-        let manager = connection_manager_for_test(recorder.clone(), crate::mtp::volume_wiring::volume_registrar());
+        let manager = MtpConnectionManager::new(
+            VolumeHost::detached(),
+            recorder.clone(),
+            MtpVolumeRegistrar::detached(),
+        );
 
         let info = manager
             .connect(&device_id, DeviceWatch::Off)

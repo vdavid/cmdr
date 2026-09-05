@@ -1,0 +1,89 @@
+[package]
+name = "cmdr-mtp"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# "This is a test build." It widens two things from `#[cfg(test)]`-only to `pub`:
+# `volume::testing` (the `list_directory` call counter and the read-window
+# override) and the virtual-device fixture in `virtual_device` (which needs
+# `virtual-device` on as well, since the module itself lives behind that gate).
+#
+# The app's suites need both. Its fresh-listing oracle is app-side and asserts on
+# the counter this crate keeps, and its MTP transfer and archive cells drive the
+# same virtual device this crate's own cells do — one set of fixtures rather than
+# a second, drifting copy.
+#
+# `tempfile` comes along because `VirtualDeviceFixture` owns a scratch dir. It's a
+# NORMAL optional dependency rather than a dev one for the reason the app's is:
+# the fixture lives in the LIB, and a lib target can't see dev-dependencies.
+#
+# Never enable in a production build.
+testing = ["cmdr-fs/testing", "dep:tempfile"]
+# The `mtp-rs` virtual device: a fake Android phone backed by local directories,
+# registered in-process. It carries the whole session layer through connect,
+# browse, transfer, mutation, and unplug with no hardware, which is the only way
+# any of that is testable at all. The app forwards it as `virtual-mtp`.
+# Never enable in a production build.
+virtual-device = ["mtp-rs/virtual-device"]
+
+[dependencies]
+# The `Volume` trait, every type it exchanges, and the host seams this backend
+# asks the app through. The only crate below this one.
+cmdr-fs = { path = "../cmdr-fs" }
+# The MTP/PTP client: USB enumeration, the PTP session, and the virtual device.
+# Same version the app pinned before this crate existed, so nothing about the
+# wire behavior moved with the code.
+mtp-rs = "0.32.0"
+serde = { version = "1", features = ["derive"] }
+# Type export for the Rust↔TS bindings: the device list, the storage list, the
+# typed connection error, and the disconnect reason all cross IPC. Pinned to the
+# EXACT same version the app uses, for the reason `cmdr-fs` gives: two `specta`
+# crates in one graph would make these `Type` impls stop satisfying
+# `tauri-specta`, and the app's command signatures collect them transitively.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+log = "0.4"
+# The backend's own async surface: `sync` for the per-device session locks and
+# the retirement broadcast, `time` for the reopen backoff and the event-loop
+# debounce, `rt` for the handle background work spawns onto, and `macros` for
+# `select!`. Deliberately NOT `rt-multi-thread`: the runtime is the app's, handed
+# down through `VolumeHost::runtime`, and a backend that could build its own
+# would.
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+# `CancellationToken` and its `DropGuard`, which is how a cancelled listing or
+# transfer reaches the `mtp_rs::CancelToken` on the wire. Default features off,
+# the same shape `cmdr-fs` pins, so no second copy enters the graph.
+tokio-util = { version = "0.7.18", default-features = false }
+# The upload path takes a `Stream` of chunks, which is what `mtp-rs` writes from.
+futures-util = "0.3"
+# `Bytes`, the chunk type that stream carries.
+bytes = "1"
+# The scratch dir behind `VirtualDeviceFixture`. Optional and turned on only by
+# `testing`, so a shipped build never links it. Same shape as `blake3` in
+# `cmdr-smb`.
+tempfile = { version = "3", optional = true }
+
+[dev-dependencies]
+# Depending on ourselves turns `testing` on for every DEV target and leaves it off
+# for the lib, so a shipped build carries no fixtures. Same shape as `cmdr-adb`'s
+# and the app's own self dev-dependency. `virtual-device` rides along because
+# nearly every cell here needs a device to talk to.
+cmdr-mtp = { path = ".", features = ["testing", "virtual-device"] }
+# `wait_until_async` and the recording / scripted host-seam fakes this crate's
+# tests assert against.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# The wire-shape cells assert on the JSON a payload serializes to, which is the
+# contract the frontend reads.
+serde_json = "1"
+# The virtual-device suites drive real concurrency (an event loop, a reopen loop,
+# and the test body all making progress at once), so they need a multi-threaded
+# runtime the lib deliberately can't build for itself.
+tokio = { version = "1", features = ["rt-multi-thread"] }

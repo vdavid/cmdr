@@ -12,12 +12,12 @@
 //! feature gate (declared in `backends/mod.rs`).
 
 use super::Volume;
-use super::mtp::MtpVolume;
+use cmdr_mtp::MtpVolume;
 use std::path::Path;
 
-use crate::mtp::connection::DeviceWatch;
+use crate::mtp::DeviceWatch;
 use crate::mtp::connection_manager;
-use crate::mtp::virtual_device::{
+use cmdr_mtp::virtual_device::{
     VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
 use std::sync::Arc;
@@ -50,7 +50,7 @@ async fn connect_primed_volume(fixture: &VirtualDeviceFixture) -> (String, MtpVo
 /// first write with a bare protocol error.
 async fn teardown(device_id: &str, fixture: &VirtualDeviceFixture) {
     connection_manager()
-        .disconnect(device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
@@ -140,7 +140,7 @@ async fn export_honors_the_shared_handshake_contract() {
     let fixture = setup_virtual_mtp_device();
     let content = b"the bytes a copy would move";
     std::fs::write(fixture.root().join("internal/exported.txt"), content).expect("seed the file on the device");
-    crate::mtp::virtual_device::rescan_virtual_device();
+    cmdr_mtp::virtual_device::rescan_virtual_device();
     let (device_id, volume) = connect_primed_volume(&fixture).await;
 
     cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(&volume, Path::new("/exported.txt"), content)

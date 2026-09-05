@@ -6,10 +6,10 @@
 //! (`MtpDevice::storage()`), which the per-device storage cache must collapse to
 //! one per device, and must re-issue after an invalidation.
 
-use super::Volume;
-use super::mtp::MtpVolume;
-use crate::mtp::connection::DeviceWatch;
-use crate::mtp::connection_manager;
+use super::MtpVolume;
+use crate::DeviceWatch;
+use crate::connection::testing::test_connection_manager as connection_manager;
+use cmdr_fs::volume::Volume;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -25,20 +25,20 @@ struct Device {
     id: String,
     storage_id: u32,
     location_id: u64,
-    _fixture: crate::mtp::virtual_device::VirtualDeviceFixture,
+    _fixture: crate::virtual_device::VirtualDeviceFixture,
 }
 
 /// Connects a virtual MTP device seeded with `bytes` at `internal/blob.bin`, with
 /// the root path cache primed (`read_range` resolves handles cache-only).
 async fn connect_device_with_blob(bytes: &[u8]) -> Device {
-    use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device};
+    use crate::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device};
 
     let fixture = setup_virtual_mtp_device();
     let location_id = fixture.location_id;
     std::fs::write(fixture.root().join("internal/blob.bin"), bytes).expect("seed blob on device");
     rescan_virtual_device();
 
-    let device_id = crate::mtp::list_mtp_devices()
+    let device_id = crate::list_mtp_devices()
         .into_iter()
         .find(|d| d.location_id == location_id)
         .map(|d| d.id)
@@ -62,10 +62,10 @@ async fn connect_device_with_blob(bytes: &[u8]) -> Device {
 
 async fn teardown(device: Device) {
     connection_manager()
-        .disconnect(&device.id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device.id, crate::MtpDisconnectReason::User)
         .await
         .ok();
-    crate::mtp::virtual_device::unregister_virtual_mtp_device(device.location_id);
+    crate::virtual_device::unregister_virtual_mtp_device(device.location_id);
 }
 
 /// Every ranged read after the first must reuse the cached `Storage`: the whole
@@ -74,7 +74,7 @@ async fn teardown(device: Device) {
 /// `GetStorageInfo` per read.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn read_range_resolves_storage_info_once_per_device() {
-    let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
+    let _guard = crate::virtual_device::virtual_device_test_lock().lock().await;
     let bytes = payload(64 * 1024);
     let device = connect_device_with_blob(&bytes).await;
     let volume = MtpVolume::new(
@@ -110,7 +110,7 @@ async fn read_range_resolves_storage_info_once_per_device() {
 /// storage picture moved, and a cached `Storage` carries a snapshot of it.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn storage_info_invalidation_forces_a_fresh_storage_lookup() {
-    let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
+    let _guard = crate::virtual_device::virtual_device_test_lock().lock().await;
     let bytes = payload(16 * 1024);
     let device = connect_device_with_blob(&bytes).await;
     let volume = MtpVolume::new(
@@ -148,7 +148,7 @@ async fn storage_info_invalidation_forces_a_fresh_storage_lookup() {
 /// returns empty rather than erroring or hanging.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn read_range_clamps_at_end_of_file() {
-    let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
+    let _guard = crate::virtual_device::virtual_device_test_lock().lock().await;
     let bytes = payload(5000);
     let device = connect_device_with_blob(&bytes).await;
     let volume = MtpVolume::new(

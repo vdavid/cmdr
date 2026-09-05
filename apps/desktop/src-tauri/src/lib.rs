@@ -65,10 +65,6 @@ use tauri_plugin_mcp_bridge as _;
 // tauri_plugin_updater is only registered on non-macOS (custom updater handles macOS)
 #[cfg(target_os = "macos")]
 use tauri_plugin_updater as _;
-//noinspection ALL
-// mtp-rs is used in mtp/ module for Android device support (macOS + Linux)
-#[cfg(any(target_os = "macos", target_os = "linux"))]
-use mtp_rs as _;
 // cmdr-adb is used in the adb/ module for Android-over-ADB support (macOS + Linux)
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 use cmdr_adb as _;

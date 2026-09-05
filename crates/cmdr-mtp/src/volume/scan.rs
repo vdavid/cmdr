@@ -7,11 +7,12 @@
 //! rather than as one more `Volume` method. A trait impl can't span files, so the
 //! trait side stays in `mod.rs` and the work lives here.
 
-use super::super::{BatchScanResult, CopyScanResult, ScanConflict, SourceItemInfo, Volume, VolumeError};
 use super::MtpVolume;
 use super::mapping::map_mtp_error;
 use cmdr_fs::volume::scan_walk::conflicts_against;
-use cmdr_fs::volume::{ScanBoundary, ScanStop};
+use cmdr_fs::volume::{
+    BatchScanResult, CopyScanResult, ScanBoundary, ScanConflict, ScanStop, SourceItemInfo, Volume, VolumeError,
+};
 
 use cmdr_fs::entry::FileEntry;
 use log::debug;

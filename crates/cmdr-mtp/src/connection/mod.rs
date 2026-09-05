@@ -15,14 +15,14 @@
 mod bulk_ops;
 mod cache;
 mod directory_ops;
-pub(super) mod errors;
+pub(crate) mod errors;
 mod event_loop;
 pub mod events;
 mod file_ops;
 mod handle_resolver;
 /// Asserts on what this layer told the host it was handed, so it drives a real
 /// device.
-#[cfg(all(test, feature = "virtual-mtp"))]
+#[cfg(all(test, feature = "virtual-device"))]
 mod host_seam_test;
 /// The session-free cells: the manager's own bookkeeping and the free functions
 /// beside it.
@@ -30,20 +30,30 @@ mod host_seam_test;
 mod manager_test;
 mod mutation_ops;
 /// Every test here drives a virtual MTP device, so it carries that feature gate.
-#[cfg(all(test, feature = "virtual-mtp"))]
+#[cfg(all(test, feature = "virtual-device"))]
 mod path_cache_sync_test;
 mod scheduler;
 mod session_reset;
+/// The manager and the recording registrar this crate's own device cells drive.
+#[cfg(test)]
+pub(crate) mod testing;
+/// Who holds the device we couldn't open. macOS-only: it's the one platform
+/// where a system daemon takes MTP devices out from under us.
+#[cfg(target_os = "macos")]
+mod usb_owner;
 mod volume_registrar;
 
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
 pub use errors::MtpConnectionError;
 use errors::map_mtp_error;
-use events::{MtpDeviceEvent, MtpDeviceEvents};
+pub use events::{MtpDeviceEvent, MtpDeviceEvents, no_device_events};
+#[cfg(any(test, feature = "testing"))]
+pub use events::RecordingMtpDeviceEvents;
 pub(crate) use file_ops::MtpReadSession;
-pub(crate) use mutation_ops::MtpDeleteScope;
+pub use handle_resolver::ResolvedMtpObject;
+pub use mutation_ops::MtpDeleteScope;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
-pub(crate) use volume_registrar::MtpVolumeRegistrar;
+pub use volume_registrar::MtpVolumeRegistrar;
 
 use cmdr_fs::volume::host::VolumeHost;
 use log::{debug, error, info, warn};
@@ -55,7 +65,7 @@ use std::sync::{Arc, RwLock, Weak};
 use std::time::Duration;
 use tokio::sync::{Mutex, broadcast};
 
-use super::types::{MtpDeviceInfo, MtpStorageInfo};
+use crate::types::{MtpDeviceInfo, MtpStorageInfo};
 
 /// Per-USB-transfer timeout handed to mtp-rs, the ONE bound that can stop a
 /// stuck device without abandoning anything.
@@ -123,13 +133,6 @@ pub enum DeviceWatch {
     /// `StorageInfoChanged` for every file that lands in its backing directory,
     /// so a watched fixture drops the cached storage handle under a test that is
     /// counting round trips.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "only a caller driving the session itself turns the watch off, and that is a test"
-        )
-    )]
     Off,
 }
 
@@ -374,7 +377,7 @@ impl MtpConnectionManager {
                 // Check for exclusive access error
                 if e.is_exclusive_access() {
                     #[cfg(target_os = "macos")]
-                    let blocking_process = super::macos_workaround::get_usb_exclusive_owner();
+                    let blocking_process = usb_owner::get_usb_exclusive_owner();
                     #[cfg(not(target_os = "macos"))]
                     let blocking_process: Option<String> = None;
 
@@ -422,7 +425,7 @@ impl MtpConnectionManager {
             .ok()
             .and_then(|devs| devs.into_iter().find(|d| d.location_id == location_id))
             .and_then(|d| d.speed)
-            .map(crate::mtp::types::usb_speed_from_device);
+            .map(crate::types::usb_speed_from_device);
 
         let device_info = MtpDeviceInfo {
             id: device_id.to_string(),
@@ -784,7 +787,7 @@ impl MtpConnectionManager {
     /// otherwise invisible: `resolve_handle_to_path` silently falls back to a USB
     /// parent-chain walk when the reverse entry is missing, so a desync looks
     /// like correct behavior until a handle is reused or the object is gone.
-    #[cfg(all(test, feature = "virtual-mtp"))]
+    #[cfg(all(test, feature = "virtual-device"))]
     pub(crate) async fn cached_path_for_handle(
         &self,
         device_id: &str,
@@ -806,7 +809,7 @@ impl MtpConnectionManager {
     /// Test-only: the FORWARD (`path_to_handle`) side, for tests that need an
     /// object's handle without re-listing (a re-list would repopulate BOTH
     /// directions and mask exactly the desync under test).
-    #[cfg(all(test, feature = "virtual-mtp"))]
+    #[cfg(all(test, feature = "virtual-device"))]
     pub(crate) async fn cached_handle_for_path(
         &self,
         device_id: &str,
@@ -828,8 +831,8 @@ impl MtpConnectionManager {
     /// Test-only: how many `GetStorageInfo` round trips the bounded-read path has
     /// issued for this device. See `DeviceEntry::storage_lookups`. Only the
     /// virtual-device tests can assert it, so it carries that gate too.
-    #[cfg(all(test, feature = "virtual-mtp"))]
-    pub(crate) async fn storage_lookup_count(&self, device_id: &str) -> usize {
+    #[cfg(all(any(test, feature = "testing"), feature = "virtual-device"))]
+    pub async fn storage_lookup_count(&self, device_id: &str) -> usize {
         let devices = self.devices.lock().await;
         devices
             .get(device_id)
@@ -929,7 +932,7 @@ impl MtpConnectionManager {
 /// its location_id. This keeps the id OPAQUE (no substring interpretation) and
 /// works for both serial and location ids. `None` if no currently-connected device produces this id.
 fn resolve_device_location_id(device_id: &str) -> Option<u64> {
-    crate::mtp::list_mtp_devices()
+    crate::list_mtp_devices()
         .into_iter()
         .find(|d| d.id == device_id)
         .map(|d| d.location_id)

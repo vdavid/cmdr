@@ -13,68 +13,15 @@ use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use super::mtp::{MtpVolume, volume_read_stream_to_chunk_stream};
+use cmdr_mtp::MtpVolume;
+use cmdr_mtp::volume::volume_read_stream_to_chunk_stream;
 use super::{Volume, VolumeError, VolumeReadStream, WatchCoverage};
 use crate::mtp::connection_manager;
 
 #[cfg(feature = "virtual-mtp")]
-use super::mtp::testing;
+use cmdr_mtp::volume::testing;
 #[cfg(feature = "virtual-mtp")]
-use crate::mtp::connection::{DeviceWatch, MtpConnectionError};
-
-#[test]
-fn test_new_creates_volume() {
-    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Internal storage");
-    assert_eq!(vol.name(), "Internal storage");
-    assert_eq!(vol.device_id, "mtp-20-5");
-    assert_eq!(vol.storage_id, 65537);
-}
-
-#[test]
-fn test_root_path() {
-    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Internal storage");
-    assert_eq!(vol.root().to_string_lossy(), "mtp://mtp-20-5/65537");
-}
-
-#[test]
-fn test_to_mtp_path_empty() {
-    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Test");
-    assert_eq!(vol.to_mtp_path(Path::new("")), "");
-    assert_eq!(vol.to_mtp_path(Path::new("/")), "");
-    assert_eq!(vol.to_mtp_path(Path::new(".")), "");
-}
-
-#[test]
-fn test_to_mtp_path_relative() {
-    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Test");
-    assert_eq!(vol.to_mtp_path(Path::new("DCIM")), "DCIM");
-    assert_eq!(vol.to_mtp_path(Path::new("DCIM/Camera")), "DCIM/Camera");
-}
-
-#[test]
-fn test_to_mtp_path_absolute() {
-    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-20-5", 65537, "Test");
-    assert_eq!(vol.to_mtp_path(Path::new("/DCIM")), "DCIM");
-    assert_eq!(vol.to_mtp_path(Path::new("/DCIM/Camera")), "DCIM/Camera");
-}
-
-#[test]
-fn test_to_mtp_path_mtp_url_root() {
-    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-0-1", 65537, "Test");
-    // MTP URL for storage root
-    assert_eq!(vol.to_mtp_path(Path::new("mtp://mtp-0-1/65537")), "");
-}
-
-#[test]
-fn test_to_mtp_path_mtp_url_with_path() {
-    let vol = MtpVolume::new(Arc::clone(connection_manager()), "mtp-0-1", 65537, "Test");
-    // MTP URL with nested path
-    assert_eq!(vol.to_mtp_path(Path::new("mtp://mtp-0-1/65537/DCIM")), "DCIM");
-    assert_eq!(
-        vol.to_mtp_path(Path::new("mtp://mtp-0-1/65537/DCIM/Camera")),
-        "DCIM/Camera"
-    );
-}
+use crate::mtp::{DeviceWatch, MtpConnectionError};
 
 #[test]
 fn test_can_watch_listings_returns_false() {
@@ -215,7 +162,7 @@ fn test_listing_watch_coverage_is_none_when_device_not_connected() {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_listing_watch_coverage_flips_with_connection() {
-    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
     // Register a virtual device backed by a tmp dir.
     let _guard = virtual_device_test_lock().lock().await;
@@ -252,7 +199,7 @@ async fn test_listing_watch_coverage_flips_with_connection() {
 
     // Disconnect, then assert it drops again.
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     assert_eq!(
@@ -278,7 +225,7 @@ async fn test_listing_watch_coverage_flips_with_connection() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_them() {
     use crate::file_system::volume::manager::get_volume_manager;
-    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -310,7 +257,7 @@ async fn connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_the
     }
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     for volume_id in &volume_ids {
@@ -328,10 +275,10 @@ static ATTACH_THREADS: std::sync::Mutex<Vec<std::thread::ThreadId>> = std::sync:
 /// The app's real registrar with a note taken first, so a test can see WHERE the
 /// attach ran as well as what it produced.
 #[cfg(feature = "virtual-mtp")]
-fn thread_recording_registrar() -> crate::mtp::connection::MtpVolumeRegistrar {
+fn thread_recording_registrar() -> crate::mtp::MtpVolumeRegistrar {
     use crate::ignore_poison::IgnorePoison;
 
-    crate::mtp::connection::MtpVolumeRegistrar {
+    crate::mtp::MtpVolumeRegistrar {
         attach: |manager, device_id, storage_id, storage_name| {
             ATTACH_THREADS.lock_ignore_poison().push(std::thread::current().id());
             (crate::mtp::volume_wiring::volume_registrar().attach)(manager, device_id, storage_id, storage_name);
@@ -356,7 +303,7 @@ fn thread_recording_registrar() -> crate::mtp::connection::MtpVolumeRegistrar {
 async fn a_live_watch_never_starts_before_the_volumes_it_reports_into_exist() {
     use crate::file_system::volume::manager::get_volume_manager;
     use crate::ignore_poison::IgnorePoison;
-    use crate::mtp::virtual_device::{
+    use cmdr_mtp::virtual_device::{
         setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
 
@@ -371,8 +318,12 @@ async fn a_live_watch_never_starts_before_the_volumes_it_reports_into_exist() {
         .map(|d| d.id)
         .expect("the virtual device must appear in discovery");
 
-    let manager = crate::mtp::connection_manager_for_test(
-        crate::mtp::connection::events::no_device_events(),
+    // A SECOND manager, over the app's real host but with a registrar that
+    // records which thread each attach ran on. The `virtual_device_test_lock`
+    // this cell holds is what keeps it from racing the parked one.
+    let manager = crate::mtp::MtpConnectionManager::new(
+        crate::volume_host::host(),
+        cmdr_mtp::no_device_events(),
         thread_recording_registrar(),
     );
     let info = manager
@@ -400,7 +351,7 @@ async fn a_live_watch_never_starts_before_the_volumes_it_reports_into_exist() {
     }
 
     manager
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
@@ -436,7 +387,7 @@ impl futures_util::Stream for ErroringStream {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_failure_deletes_partial_object_on_device() {
-    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -486,7 +437,7 @@ async fn upload_failure_deletes_partial_object_on_device() {
     );
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -523,7 +474,7 @@ impl futures_util::Stream for CancellingStream {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
-    use crate::mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
+    use cmdr_mtp::virtual_device::{setup_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -573,7 +524,7 @@ async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
     );
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -607,7 +558,7 @@ impl futures_util::Stream for OneShotStream {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
-    use crate::mtp::virtual_device::{VIRTUAL_DEVICE_SERIAL, setup_virtual_mtp_device, virtual_device_test_lock};
+    use cmdr_mtp::virtual_device::{VIRTUAL_DEVICE_SERIAL, setup_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -635,7 +586,7 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
     // is now stale, so the next `SendObjectInfo` into it returns
     // `InvalidParentObject` (the field report). This drives the REAL device
     // behavior via mtp-rs, not a poke at cmdr's own cache.
-    mtp_rs::rekey_virtual_object(VIRTUAL_DEVICE_SERIAL, Path::new("Documents"))
+    cmdr_mtp::virtual_device::rekey_virtual_object(VIRTUAL_DEVICE_SERIAL, Path::new("Documents"))
         .expect("/Documents was listed, so it must be re-keyable");
 
     let filename = "healed.txt";
@@ -690,7 +641,7 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
     );
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
 }
@@ -705,7 +656,7 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn bounded_window_read_assembles_byte_exact() {
-    use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device, virtual_device_test_lock};
+    use cmdr_mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device, virtual_device_test_lock};
 
     let _guard = virtual_device_test_lock().lock().await;
     let fixture = setup_virtual_mtp_device();
@@ -793,7 +744,7 @@ async fn bounded_window_read_assembles_byte_exact() {
 
     testing::set_read_window(0);
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
 }

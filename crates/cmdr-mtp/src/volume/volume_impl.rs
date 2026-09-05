@@ -5,12 +5,13 @@
 use super::cancel::MtpCancelBridge;
 use super::mapping::map_mtp_error;
 use super::streams::{MtpReadStream, mtp_read_window, volume_read_stream_to_chunk_stream};
-use super::{
-    BatchScanResult, CopyScanResult, LaneKey, MtpVolume, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo,
-    Volume, VolumeError, VolumeReadStream, WatchCoverage,
-};
-use crate::mtp::connection::{MtpConnectionError, MtpDeleteScope};
+use super::MtpVolume;
+use crate::connection::{MtpConnectionError, MtpDeleteScope};
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::{
+    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError, VolumeReadStream, WatchCoverage,
+};
 use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};

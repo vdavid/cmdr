@@ -45,9 +45,10 @@ const MAX_WALK_DEPTH: usize = 256;
 /// `GetObjectInfo` on top of the handle→path walk. The handle itself is known by
 /// the caller (it's the event's handle), so it isn't repeated here.
 #[derive(Debug, Clone)]
-pub(crate) struct ResolvedMtpObject {
+pub struct ResolvedMtpObject {
     /// Full storage-relative path (leading `/`).
     pub path: PathBuf,
+    /// Whether the object is a folder, which decides the row the index writes.
     pub is_directory: bool,
     /// Logical size in bytes (`None` for directories).
     pub size: Option<u64>,
@@ -226,7 +227,11 @@ impl MtpConnectionManager {
 
     /// Resolve a PTP `ObjectAdded` / `ObjectInfoChanged` handle into the data an
     /// index upsert needs: its storage-relative path plus size / is-directory /
-    /// modified time. Used by the MTP watch→index path (`indexing::transports::mtp::watch`).
+    /// modified time. The one call the host's index watch path makes.
+    ///
+    /// `handle` is the 32-bit object handle the event carried, in the index's own
+    /// vocabulary: the PTP handle type stays inside this crate so a host never has
+    /// to name `mtp-rs` to ask.
     ///
     /// Two USB-touching steps under the device lock: the handle→path walk
     /// ([`resolve_handle_to_path`](Self::resolve_handle_to_path), usually one
@@ -241,12 +246,13 @@ impl MtpConnectionManager {
     /// via the index's stored handle instead), plus the usual timeout / protocol
     /// errors. On any error the caller simply skips the index update for this
     /// event (the next scan reconciles).
-    pub(crate) async fn resolve_object_for_index(
+    pub async fn resolve_object_for_index(
         &self,
         device_id: &str,
         storage_id: u32,
-        handle: ObjectHandle,
+        handle: u32,
     ) -> Result<ResolvedMtpObject, MtpConnectionError> {
+        let handle = ObjectHandle(u64::from(handle));
         let path = self.resolve_handle_to_path(device_id, storage_id, handle).await?;
 
         // Fetch the object's own metadata for the upsert.

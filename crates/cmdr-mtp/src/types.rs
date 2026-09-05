@@ -40,9 +40,14 @@ pub struct MtpDeviceInfo {
     pub location_id: u64,
     /// For example, 0x18d1 for Google.
     pub vendor_id: u16,
+    /// The USB product id, beside the vendor id.
     pub product_id: u16,
+    /// The maker, as the device reports it. Absent when it reports none.
     pub manufacturer: Option<String>,
+    /// The model, as the device reports it. What the picker shows when it's there.
     pub product: Option<String>,
+    /// The device's own serial. Present is what makes the id survive a replug to
+    /// another port; absent falls the id back to USB topology.
     pub serial_number: Option<String>,
     /// Negotiated USB link speed (slowest of host port, cable, device).
     /// `None` if the OS doesn't report it.
@@ -70,6 +75,8 @@ pub struct MtpStorageInfo {
     pub available_bytes: u64,
     /// For example, "FixedROM", "RemovableRAM".
     pub storage_type: Option<String>,
+    /// What the device SAYS. Some report a writable storage and only refuse at
+    /// the moment of the write, so a `false` here isn't a promise.
     pub is_read_only: bool,
 }
 

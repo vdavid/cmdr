@@ -18,7 +18,11 @@ workspace = true
 # Playwright E2E testing plugin (socket bridge to real webview). Never enable in production builds.
 playwright-e2e = ["dep:tauri-plugin-playwright", "cmdr-fs/playwright-e2e"]
 # Virtual MTP device for E2E testing (registers a fake Android device). Never enable in production builds.
-virtual-mtp = ["mtp-rs/virtual-device"]
+#
+# It forwards through `cmdr-mtp`, which owns the session layer and the virtual
+# device's registration, rather than naming `mtp-rs/virtual-device` directly: the
+# app has no `mtp-rs` dependency of its own any more.
+virtual-mtp = ["cmdr-mtp/virtual-device"]
 # Virtual SMB hosts for E2E testing (injects synthetic network hosts). Never enable in production builds.
 #
 # It forwards through `cmdr-smb`, which owns the SMB protocol layer, rather than
@@ -49,6 +53,7 @@ testing = [
   "cmdr-sftp/testing",
   "cmdr-webdav/testing",
   "cmdr-adb/testing",
+  "cmdr-mtp/testing",
 ]
 
 [[bin]]
@@ -265,9 +270,12 @@ freedesktop-icons = "0.4"
 # MIME type guessing from file extensions (for icon name resolution)
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
-# MTP (Android device) support via pure Rust implementation.
-mtp-rs = "0.32.0"
-bytes = "1"
+# The MTP backend: device discovery, the PTP session layer, and the `Volume` over
+# one device storage. No `tauri` in its tree, so `cargo check -p cmdr-mtp`
+# verifies it without building the app. The hotplug watcher, the ptpcamerad
+# workaround, the registrar wiring, and the frontend events stay here in `mtp/`.
+# It carries `mtp-rs`, which the app no longer names directly.
+cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
 mdns-sd = { version = "0.20", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
@@ -343,6 +351,10 @@ objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary
 
 
 [dev-dependencies]
+# `Bytes`, the chunk type the MTP upload cells feed a fake source stream with.
+# Dev-only now: the production upload path moved into `cmdr-mtp`, which declares
+# its own copy.
+bytes = "1"
 # `volume_strategy_sequential_tests.rs` builds a tarball fixture and is NOT
 # platform-gated, so `tar` has to be reachable from tests on every target. The
 # production side is macOS-only (see the per-target section above).
@@ -358,6 +370,13 @@ cmdr = { path = ".", features = ["testing"] }
 # Same crate as the normal dependency above, with the test-wait helpers
 # (`cmdr_fs::testing::wait_until`) switched on for dev targets only.
 cmdr-fs = { path = "../../../crates/cmdr-fs", features = ["testing"] }
+# Same crate as the per-target normal dependency above, with `testing` on for dev
+# targets only: that's what publishes the virtual-device fixture and the
+# `list_directory` counter the app's oracle cell asserts on. A plain
+# `[dev-dependencies]` entry is right even though the normal one is per-target —
+# the crate builds on every platform, and the app's MTP test modules carry the
+# platform gate themselves.
+cmdr-mtp = { path = "../../../crates/cmdr-mtp", features = ["testing"] }
 # SMB integration tests hash source and destination bytes to catch pipeline
 # corruption (dropped/duplicated chunks, concurrency bleed) that a simple
 # size-check or `Vec<u8>` equality would either miss or report uselessly

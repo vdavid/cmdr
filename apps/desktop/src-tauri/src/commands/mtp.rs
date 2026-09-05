@@ -4,7 +4,7 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 
 use crate::file_system::FileEntry;
-use crate::mtp::connection::MtpDeleteScope;
+use crate::mtp::MtpDeleteScope;
 use crate::mtp::{self, ConnectedDeviceInfo, MtpConnectionError, MtpDeviceInfo, MtpObjectInfo, MtpStorageInfo};
 
 /// Result of scanning an MTP path for copy operation.
@@ -61,7 +61,7 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
 #[specta::specta]
 pub async fn connect_mtp_device(device_id: String) -> Result<ConnectedDeviceInfo, MtpConnectionError> {
     mtp::connection_manager()
-        .connect(&device_id, mtp::connection::DeviceWatch::Live)
+        .connect(&device_id, mtp::DeviceWatch::Live)
         .await
 }
 

@@ -19,7 +19,7 @@ use super::MtpConnectionManager;
 /// manager comes along on `attach` because the volume it builds talks to the
 /// device through that manager, and a `fn` pointer has nothing captured to find
 /// one with.
-pub(crate) struct MtpVolumeRegistrar {
+pub struct MtpVolumeRegistrar {
     /// Make `(device_id, storage_id)` browsable under its MTP volume id.
     pub attach: fn(manager: &Arc<MtpConnectionManager>, device_id: &str, storage_id: u32, storage_name: &str),
     /// Stop offering `(device_id, storage_id)`.
@@ -32,14 +32,7 @@ impl MtpVolumeRegistrar {
     ///
     /// What a bench or a tool driving a session directly wants, and it's why the
     /// manager never carries an `Option<MtpVolumeRegistrar>`.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "only a caller driving sessions with no volume registry wants this, and that is a test"
-        )
-    )]
-    pub(crate) fn detached() -> Self {
+    pub fn detached() -> Self {
         Self {
             attach: |_manager, _device_id, _storage_id, _storage_name| {},
             detach: |_device_id, _storage_id| {},

@@ -10,10 +10,10 @@
 //! module of `mtp_test`, gated on the feature in `backends/mod.rs`.
 
 use super::Volume;
-use super::mtp::MtpVolume;
-use crate::mtp::connection::DeviceWatch;
+use cmdr_mtp::MtpVolume;
+use crate::mtp::DeviceWatch;
 use crate::mtp::connection_manager;
-use crate::mtp::virtual_device::VirtualDeviceFixture;
+use cmdr_mtp::virtual_device::VirtualDeviceFixture;
 use std::path::Path;
 
 /// Builds a small zip: one STORED root entry, one DEFLATED entry in a subdir.
@@ -23,11 +23,11 @@ fn archive_test_zip() -> Vec<u8> {
     let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     let stored = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     let deflated = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-    w.start_file("a.txt", stored).unwrap();
-    w.write_all(b"hello from mtp").unwrap();
-    w.start_file("dir/b.txt", deflated).unwrap();
-    w.write_all(b"deflated over usb").unwrap();
-    w.finish().unwrap().into_inner()
+    w.start_file("a.txt", stored).expect("writing a fixture zip in memory can't fail");
+    w.write_all(b"hello from mtp").expect("writing a fixture zip in memory can't fail");
+    w.start_file("dir/b.txt", deflated).expect("writing a fixture zip in memory can't fail");
+    w.write_all(b"deflated over usb").expect("writing a fixture zip in memory can't fail");
+    w.finish().expect("writing a fixture zip in memory can't fail").into_inner()
 }
 
 /// Connects a virtual MTP device seeded with `zip_bytes` at `internal/bundle.zip`
@@ -35,7 +35,7 @@ fn archive_test_zip() -> Vec<u8> {
 /// the root path cache primed.
 #[cfg(feature = "virtual-mtp")]
 async fn connect_virtual_device_with_zip(zip_bytes: &[u8]) -> (String, u32, VirtualDeviceFixture) {
-    use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device};
+    use cmdr_mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device};
 
     let fixture = setup_virtual_mtp_device();
     // Seed the zip into the writable internal storage's backing dir, then rescan
@@ -65,10 +65,10 @@ async fn connect_virtual_device_with_zip(zip_bytes: &[u8]) -> (String, u32, Virt
 #[cfg(feature = "virtual-mtp")]
 async fn teardown(device_id: &str, fixture: VirtualDeviceFixture) {
     connection_manager()
-        .disconnect(device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .ok();
-    crate::mtp::virtual_device::unregister_virtual_mtp_device(fixture.location_id);
+    cmdr_mtp::virtual_device::unregister_virtual_mtp_device(fixture.location_id);
 }
 
 /// Streams a virtual-MTP zip back off the device and parses it into a
@@ -114,7 +114,7 @@ async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
         out
     }
 
-    let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
+    let _guard = cmdr_mtp::virtual_device::virtual_device_test_lock().lock().await;
     let (device_id, storage_id, fixture) = connect_virtual_device_with_zip(&archive_test_zip()).await;
 
     let vol = Arc::new(MtpVolume::new(
@@ -164,7 +164,7 @@ async fn virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device() {
     struct NoHooks;
     impl MutationHooks for NoHooks {}
 
-    let _guard = crate::mtp::virtual_device::virtual_device_test_lock().lock().await;
+    let _guard = cmdr_mtp::virtual_device::virtual_device_test_lock().lock().await;
     let (device_id, storage_id, fixture) = connect_virtual_device_with_zip(&archive_test_zip()).await;
 
     let vol = Arc::new(MtpVolume::new(

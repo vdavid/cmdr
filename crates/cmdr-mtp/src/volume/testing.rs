@@ -14,12 +14,6 @@
 //! numbers and takes one, and that shape is what keeps an app-side test from
 //! quietly depending on the backend's internals.
 
-// The three `pub` functions below are the module's whole point, and they're read
-// from test modules that a narrower build doesn't compile. While this backend
-// still lives inside the app crate, `file_system::` is private, so `pub` here
-// isn't reachable from outside and `deny(unused)` calls them dead.
-#![allow(dead_code, reason = "read from test modules across a still-crate-private path")]
-
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 
 /// Bytes per read window, or 0 for the production default.

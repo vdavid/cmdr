@@ -57,7 +57,7 @@ impl MtpConnectionManager {
     /// `mtp/connection/DETAILS.md` § "Bounded-window reads".
     ///
     /// [`read_next_window`]: Self::read_next_window
-    pub async fn open_read_session(
+    pub(crate) async fn open_read_session(
         &self,
         device_id: &str,
         storage_id: u32,
@@ -125,7 +125,7 @@ impl MtpConnectionManager {
     /// module `CLAUDE.md`).
     ///
     /// [`open_read_session`]: Self::open_read_session
-    pub async fn read_next_window(
+    pub(crate) async fn read_next_window(
         &self,
         session: &mut MtpReadSession,
         device_id: &str,

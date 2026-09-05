@@ -5,6 +5,7 @@ members = [
   "crates/cmdr-archive",
   "crates/cmdr-fs",
   "crates/cmdr-index",
+  "crates/cmdr-mtp",
   "crates/cmdr-sftp",
   "crates/cmdr-smb",
   "crates/cmdr-webdav",

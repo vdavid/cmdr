@@ -17,16 +17,23 @@ mod streams;
 pub mod testing;
 mod volume_impl;
 
-// Re-exported for the sibling `mtp_test` module, which reaches it at `mtp::…`
-// rather than through the private `streams` submodule.
+/// `MtpVolume`'s identity and the path conversions every operation starts with.
 #[cfg(test)]
-pub(super) use streams::volume_read_stream_to_chunk_stream;
+mod path_test;
+/// The bounded-window read path, against a virtual device.
+#[cfg(all(test, feature = "virtual-device"))]
+mod read_range_test;
 
-use super::{
-    BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
-    VolumeError, VolumeReadStream, WatchCoverage,
-};
-use crate::mtp::connection::MtpConnectionManager;
+/// The `VolumeReadStream` → chunk-stream adapter the upload path feeds `mtp-rs`.
+///
+/// Published under the test gate for the cells that assert on its per-chunk
+/// progress and its cancellation, which sit beside the app's transfer pipeline.
+/// ❌ Not `cfg(test)` alone: that's set only while this crate builds its OWN test
+/// target, so a consumer's test build would see it vanish.
+#[cfg(any(test, feature = "testing"))]
+pub use streams::volume_read_stream_to_chunk_stream;
+
+use crate::connection::MtpConnectionManager;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 

@@ -14,7 +14,7 @@ use log::debug;
 use crate::device_volumes::{DeviceVolumeEntry, DeviceVolumeProvider, ProviderFuture, register_device_provider};
 use crate::file_system::volume::MtpVolume;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::mtp::connection::MtpVolumeRegistrar;
+use crate::mtp::MtpVolumeRegistrar;
 
 /// How this app turns an attached storage into a browsable volume.
 ///

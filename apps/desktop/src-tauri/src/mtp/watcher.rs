@@ -1,18 +1,18 @@
 //! USB hotplug watcher for MTP devices.
 //!
-//! Watches for MTP devices arriving and leaving via `mtp_rs::mtp::watch_devices()`.
+//! Watches for MTP devices arriving and leaving via `cmdr_mtp::watch_devices()`.
 //! On detection, auto-connects devices and emits `mtp-device-connected` /
 //! `mtp-device-disconnected` events (via the connection manager). The frontend
 //! is a passive consumer. It never orchestrates connections.
 
 use crate::ignore_poison::IgnorePoison;
 use log::{debug, error, info, warn};
-use mtp_rs::mtp::HotplugEvent;
+use cmdr_mtp::HotplugEvent;
 use std::collections::HashSet;
 use std::sync::{Mutex, OnceLock};
 use tauri::AppHandle;
 
-use super::connection::MtpDisconnectReason;
+use super::MtpDisconnectReason;
 
 /// Global app handle for emitting events from the watcher
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
@@ -146,7 +146,7 @@ fn initial_known_devices(enabled: bool, discovered: &HashSet<String>) -> HashSet
 fn auto_connect_device(device_id: String) {
     tauri::async_runtime::spawn(async move {
         let cm = super::connection_manager();
-        match cm.connect(&device_id, super::connection::DeviceWatch::Live).await {
+        match cm.connect(&device_id, super::DeviceWatch::Live).await {
             Ok(info) => {
                 info!(
                     "Auto-connected MTP device: {} ({} storages)",
@@ -226,7 +226,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
 
 /// The async hotplug watcher loop.
 ///
-/// `mtp_rs::mtp::watch_devices()` only wakes us for devices that are actually
+/// `cmdr_mtp::watch_devices()` only wakes us for devices that are actually
 /// MTP-capable, and it applies its own settle delay before enumerating, so mice,
 /// hubs, and chargers never reach this loop and there's no local sleep.
 ///
@@ -241,7 +241,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
 /// That can't double-count: `start_mtp_watcher` seeds `KNOWN_DEVICES` synchronously
 /// before spawning this task, so the initial burst diffs to nothing.
 async fn run_hotplug_watcher(_app: AppHandle) {
-    let hotplug_stream = match mtp_rs::mtp::watch_devices() {
+    let hotplug_stream = match cmdr_mtp::watch_devices() {
         Ok(stream) => stream,
         Err(e) => {
             error!("Failed to start MTP hotplug watcher: {}", e);
@@ -410,14 +410,14 @@ mod tests {
     #[cfg(all(target_os = "macos", feature = "virtual-mtp"))]
     #[test]
     fn a_device_set_that_is_only_virtual_needs_no_ptpcamerad_suppression() {
-        let virtual_id = crate::mtp::virtual_device::virtual_device_id();
+        let virtual_id = cmdr_mtp::virtual_device::virtual_device_id();
         assert!(!needs_ptpcamerad_suppression([virtual_id.as_str()]));
     }
 
     #[cfg(all(target_os = "macos", feature = "virtual-mtp"))]
     #[test]
     fn real_hardware_alongside_a_virtual_device_still_needs_suppression() {
-        let virtual_id = crate::mtp::virtual_device::virtual_device_id();
+        let virtual_id = cmdr_mtp::virtual_device::virtual_device_id();
         assert!(needs_ptpcamerad_suppression([virtual_id.as_str(), "mtp-real-phone"]));
     }
 

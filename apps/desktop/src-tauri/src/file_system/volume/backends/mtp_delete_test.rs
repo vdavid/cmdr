@@ -10,12 +10,12 @@
 //! Every test here drives a virtual MTP device, so the whole file carries that
 //! feature gate (declared in `backends/mod.rs`).
 
-use super::mtp::MtpVolume;
+use cmdr_mtp::MtpVolume;
 use super::{Volume, VolumeError};
 use std::path::Path;
 
-use crate::mtp::connection::DeviceWatch;
-use crate::mtp::connection::MtpConnectionError;
+use crate::mtp::DeviceWatch;
+use crate::mtp::MtpConnectionError;
 use crate::mtp::connection_manager;
 use std::sync::Arc;
 
@@ -24,7 +24,7 @@ use std::sync::Arc;
 /// cache-only). Returns the device id, storage id, the volume, and the
 /// storage's backing dir.
 async fn connect_virtual_volume(
-    fixture: &crate::mtp::virtual_device::VirtualDeviceFixture,
+    fixture: &cmdr_mtp::virtual_device::VirtualDeviceFixture,
 ) -> (String, u32, MtpVolume, std::path::PathBuf) {
     let device_id = crate::mtp::list_mtp_devices()
         .into_iter()
@@ -52,7 +52,7 @@ async fn connect_virtual_volume(
 /// same question the same way LocalPosix and SMB do.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_refuses_a_non_empty_folder_with_a_typed_error() {
-    use crate::mtp::virtual_device::{
+    use cmdr_mtp::virtual_device::{
         setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
 
@@ -89,7 +89,7 @@ async fn delete_refuses_a_non_empty_folder_with_a_typed_error() {
             &device_id,
             storage_id,
             "/Documents",
-            crate::mtp::connection::MtpDeleteScope::SingleNode,
+            crate::mtp::MtpDeleteScope::SingleNode,
         )
         .await;
     assert!(
@@ -98,7 +98,7 @@ async fn delete_refuses_a_non_empty_folder_with_a_typed_error() {
     );
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
@@ -110,7 +110,7 @@ async fn delete_refuses_a_non_empty_folder_with_a_typed_error() {
 /// actually relies on.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_still_removes_an_empty_folder() {
-    use crate::mtp::virtual_device::{
+    use cmdr_mtp::virtual_device::{
         setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
 
@@ -132,7 +132,7 @@ async fn delete_still_removes_an_empty_folder() {
     );
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
@@ -144,7 +144,7 @@ async fn delete_still_removes_an_empty_folder() {
 /// looking.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_honors_the_shared_non_recursion_contract() {
-    use crate::mtp::virtual_device::{
+    use cmdr_mtp::virtual_device::{
         setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
 
@@ -163,7 +163,7 @@ async fn delete_honors_the_shared_non_recursion_contract() {
     .await;
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);
@@ -175,7 +175,7 @@ async fn delete_honors_the_shared_non_recursion_contract() {
 /// the recursive entry point and the IPC command silently stopped working.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn tree_scope_still_removes_a_whole_subtree() {
-    use crate::mtp::virtual_device::{
+    use cmdr_mtp::virtual_device::{
         setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
 
@@ -193,7 +193,7 @@ async fn tree_scope_still_removes_a_whole_subtree() {
             &device_id,
             storage_id,
             "/DCIM",
-            crate::mtp::connection::MtpDeleteScope::Tree,
+            crate::mtp::MtpDeleteScope::Tree,
         )
         .await
         .expect("a Tree-scoped delete must remove the whole subtree");
@@ -204,7 +204,7 @@ async fn tree_scope_still_removes_a_whole_subtree() {
     );
 
     connection_manager()
-        .disconnect(&device_id, crate::mtp::connection::MtpDisconnectReason::User)
+        .disconnect(&device_id, crate::mtp::MtpDisconnectReason::User)
         .await
         .expect("virtual-mtp disconnect should succeed");
     unregister_virtual_mtp_device(fixture.location_id);

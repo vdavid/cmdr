@@ -16,9 +16,7 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use super::connection::MtpDisconnectReason;
-use super::connection::events::{MtpDeviceEvent, MtpDeviceEvents};
-use super::types::MtpStorageInfo;
+use cmdr_mtp::{MtpDeviceEvent, MtpDeviceEvents, MtpDisconnectReason, MtpStorageInfo};
 
 /// Emitted when an MTP device connects, or when a late-arriving storage is
 /// registered on an already-connected device (in which case `device_name` is

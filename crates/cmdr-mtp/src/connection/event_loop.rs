@@ -479,7 +479,7 @@ mod tests {
 
     use super::super::MtpConnectionManager;
     use super::listing_path_for;
-    use crate::test_support::wait_until_async;
+    use cmdr_fs::testing::wait_until_async;
 
     #[test]
     fn a_storage_root_listing_path_has_no_inner_segment() {
@@ -532,8 +532,8 @@ mod tests {
             cmdr_fs::volume::host::VolumeHost::builder()
                 .listings(listings as Arc<dyn cmdr_fs::volume::host::listings::ListingHost>)
                 .build(),
-            crate::mtp::connection::events::no_device_events(),
-            crate::mtp::connection::MtpVolumeRegistrar::detached(),
+            crate::connection::events::no_device_events(),
+            crate::connection::MtpVolumeRegistrar::detached(),
         )
     }
 
@@ -619,7 +619,7 @@ mod tests {
 /// The whole pane-refresh chain against a live (virtual) device: an object
 /// appears, the loop hears it, and the pane showing its folder is handed the new
 /// contents.
-#[cfg(all(test, feature = "virtual-mtp"))]
+#[cfg(all(test, feature = "virtual-device"))]
 mod device_tests {
     use std::path::PathBuf;
     use std::sync::Arc;
@@ -629,12 +629,12 @@ mod device_tests {
 
     use super::super::MtpConnectionManager;
 
-    use crate::mtp::connection::events::no_device_events;
-    use crate::mtp::connection::{DeviceWatch, MtpDisconnectReason, MtpVolumeRegistrar};
-    use crate::mtp::virtual_device::{
+    use crate::connection::events::no_device_events;
+    use crate::connection::{DeviceWatch, MtpDisconnectReason, MtpVolumeRegistrar};
+    use crate::virtual_device::{
         VIRTUAL_DEVICE_SERIAL, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
     };
-    use crate::test_support::wait_until_async;
+    use cmdr_fs::testing::wait_until_async;
     use cmdr_fs::volume::host::VolumeHost;
     use cmdr_fs::volume::host::listings::RecordingListings;
 
@@ -668,7 +668,7 @@ mod device_tests {
     async fn a_file_appearing_on_the_device_hands_the_pane_its_new_contents() {
         let _guard = virtual_device_test_lock().lock().await;
         let fixture = setup_virtual_mtp_device();
-        let device_id = crate::mtp::list_mtp_devices()
+        let device_id = crate::list_mtp_devices()
             .into_iter()
             .find(|d| d.location_id == fixture.location_id)
             .map(|d| d.id)

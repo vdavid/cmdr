@@ -8524,22 +8524,120 @@ export type MountResult = {
   alreadyMounted: boolean
 }
 
-// Error types for MTP connection operations.
+/**
+ *  Why an MTP operation couldn't happen, in a shape the app can act on.
+ *
+ *  Every variant carries the `device_id` it is about, because a message the user
+ *  sees names the phone and several devices can be connected at once. ❌ Classify
+ *  on the variant, never on the `Display` text: the words are for people and the
+ *  app translates them.
+ */
 export type MtpConnectionError =
-  | { type: 'deviceNotFound'; device_id: string }
-  | { type: 'notConnected'; device_id: string }
-  | { type: 'exclusiveAccess'; device_id: string; blocking_process: string | null }
-  | { type: 'timeout'; device_id: string }
-  | { type: 'disconnected'; device_id: string }
-  | { type: 'protocol'; device_id: string; message: string }
-  // Retryable.
-  | { type: 'deviceBusy'; device_id: string }
-  | { type: 'storageFull'; device_id: string }
-  | { type: 'storeReadOnly'; device_id: string }
+  /**
+   *  No live device enumerates under this id. It was unplugged, or it never
+   *  existed.
+   */
+  | {
+      type: 'deviceNotFound'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  The device is there, but nothing has opened a session on it. Connect
+   *  first.
+   */
+  | {
+      type: 'notConnected'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  Another process holds the USB device (`ptpcamerad` on macOS), so the open
+   *  can't happen until it lets go. This is the one the ptpcamerad workaround
+   *  answers.
+   */
+  | {
+      type: 'exclusiveAccess'
+      // The device this is about.
+      device_id: string
+      /**
+       *  Who is holding it, when the OS would say. Best effort, for the
+       *  message only.
+       */
+      blocking_process: string | null
+    }
+  /**
+   *  A USB transfer ran out its own bound. The session is still open, so a
+   *  retry is reasonable.
+   */
+  | {
+      type: 'timeout'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  The device went away mid-operation. The session is gone and won't come
+   *  back without a replug.
+   */
+  | {
+      type: 'disconnected'
+      // The device this is about.
+      device_id: string
+    }
+  // The device answered with something the PTP layer couldn't make sense of.
+  | {
+      type: 'protocol'
+      // The device this is about.
+      device_id: string
+      // What the transport said, for the log. ❌ Not for classification.
+      message: string
+    }
+  // The device is busy with something else. Retryable.
+  | {
+      type: 'deviceBusy'
+      // The device this is about.
+      device_id: string
+    }
+  // The storage has no room for the write.
+  | {
+      type: 'storageFull'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  The storage refused the write because it's read-only. Some devices report
+   *  a storage as writable and only say this at the moment of the write.
+   */
+  | {
+      type: 'storeReadOnly'
+      // The device this is about.
+      device_id: string
+    }
   // USB device file not accessible (Linux: missing udev rules; `EACCES`).
-  | { type: 'permissionDenied'; device_id: string }
-  | { type: 'cancelled'; device_id: string; message: string }
-  | { type: 'objectNotFound'; device_id: string; path: string }
+  | {
+      type: 'permissionDenied'
+      // The device this is about.
+      device_id: string
+    }
+  /**
+   *  The caller cancelled, and the operation stopped at a safe PTP boundary.
+   *  Nothing is half-written on the wire.
+   */
+  | {
+      type: 'cancelled'
+      // The device this is about.
+      device_id: string
+      // Which operation stopped, for the log.
+      message: string
+    }
+  // Nothing on the device answers to that path any more.
+  | {
+      type: 'objectNotFound'
+      // The device this is about.
+      device_id: string
+      // The storage-relative path that resolved to nothing.
+      path: string
+    }
   /**
    *  A `SingleNode`-scoped delete was asked to remove a directory that still
    *  has children, and refused. Nothing was deleted.
@@ -8550,7 +8648,13 @@ export type MtpConnectionError =
    *  refusal: the same-volume move's source cleanup keeps a skipped child's
    *  only copy purely by letting the parent's delete fail here.
    */
-  | { type: 'directoryNotEmpty'; device_id: string; path: string }
+  | {
+      type: 'directoryNotEmpty'
+      // The device this is about.
+      device_id: string
+      // The directory that still has children.
+      path: string
+    }
   /**
    *  The cached parent-folder handle was rejected by the device during an
    *  upload's `SendObjectInfo` (the device re-keyed its object handles since
@@ -8559,7 +8663,13 @@ export type MtpConnectionError =
    *  Carries the destination folder path so the volume layer can surface a
    *  destination-correct message if the retry also fails.
    */
-  | { type: 'staleParentHandle'; device_id: string; dest_folder: string }
+  | {
+      type: 'staleParentHandle'
+      // The device this is about.
+      device_id: string
+      // Where the upload was headed, so a second failure can still name it.
+      dest_folder: string
+    }
   /**
    *  mtp-rs reset the device in software to recover from a wedged transfer
    *  cancel. The PTP session is gone, but the device is STILL PLUGGED IN and
@@ -8572,8 +8682,19 @@ export type MtpConnectionError =
    *  module `CLAUDE.md`), so this is the seatbelt for a genuine disconnect
    *  mid-transfer, not a routine path.
    */
-  | { type: 'sessionReset'; device_id: string }
-  | { type: 'other'; device_id: string; message: string }
+  | {
+      type: 'sessionReset'
+      // The device this is about.
+      device_id: string
+    }
+  // Anything the classifier couldn't place. A caller can only report it.
+  | {
+      type: 'other'
+      // The device this is about.
+      device_id: string
+      // What went wrong, for the log.
+      message: string
+    }
 
 /**
  *  Emitted when an MTP device connects, or when a late-arriving storage is
@@ -8609,9 +8730,16 @@ export type MtpDeviceInfo = {
   locationId: number
   // For example, 0x18d1 for Google.
   vendorId: number
+  // The USB product id, beside the vendor id.
   productId: number
+  // The maker, as the device reports it. Absent when it reports none.
   manufacturer: string | null
+  // The model, as the device reports it. What the picker shows when it's there.
   product: string | null
+  /**
+   *  The device's own serial. Present is what makes the id survive a replug to
+   *  another port; absent falls the id back to USB topology.
+   */
   serialNumber: string | null
   /**
    *  Negotiated USB link speed (slowest of host port, cable, device).
@@ -8710,6 +8838,10 @@ export type MtpStorageInfo = {
   availableBytes: number
   // For example, "FixedROM", "RemovableRAM".
   storageType: string | null
+  /**
+   *  What the device SAYS. Some report a writable storage and only refuse at
+   *  the moment of the write, so a `false` here isn't a promise.
+   */
   isReadOnly: boolean
 }
 
