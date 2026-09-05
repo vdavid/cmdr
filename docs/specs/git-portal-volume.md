@@ -1,5 +1,16 @@
 # The git portal becomes a routed volume in `crates/cmdr-git`, and `LocalPosixVolume` stops knowing about git
 
+**Status (2026-09-05): M0 through M4 are done and on `worktree-git-portal-volume`.** Everything below describes the
+shape as built, and each milestone's own section records what it decided. The only work left is the manual QA David
+runs against a real app, which no automated cell covers:
+
+1. Browse each of the six categories in a repo's `.git/`.
+2. Copy a file out of a branch tree to another volume, and check the executable bit survives.
+3. Edit `.git/config` in place, then rename and delete a real file under `.git/`.
+4. Delete a whole repo folder, on the boot disk and on an external one.
+5. Toggle the portal off and on with a `.git/` pane open, and with a pane standing inside `.git/branches/`.
+6. Open a linked worktree's `.git`: the categories below it answer, and the landing listing does not (§ M3).
+
 **Problem.** The virtual `.git` portal (browsable `branches/`, `tags/`, `commits/`, `stash/`, `worktrees/`,
 `submodules/`) is implemented as ten `if` sites inside `LocalPosixVolume`: three route hooks on list, metadata, and
 read, plus seven `is_virtual` guards on every mutation method. Two more hand-enforced rules ride on top (the listing
