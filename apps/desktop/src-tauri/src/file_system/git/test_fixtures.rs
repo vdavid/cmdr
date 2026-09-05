@@ -63,14 +63,22 @@ const DEFAULT_COMMIT_SECS: u64 = 1_700_000_000;
 /// The path includes the module prefix, the supplied name, the PID, and a
 /// nanosecond timestamp, so concurrent test invocations don't collide.
 pub(super) fn temp_dir(module_prefix: &str, name: &str) -> PathBuf {
-    // allowed-fixed-temp-dir: the PID and nanosecond stamp below already make this
-    // unique per process and per run, and `Fixture` deliberately KEEPS the directory
-    // on panic for post-mortem inspection, which `TestDir`'s drop would undo
+    // allowed-fixed-temp-dir: the PID, counter, and nanosecond stamp below already
+    // make this unique per process and per run, and `Fixture` deliberately KEEPS the
+    // directory on panic for post-mortem inspection, which `TestDir`'s drop would undo.
+    //
+    // The counter is load-bearing, ❌ not decoration: the clock behind
+    // `SystemTime::now` doesn't resolve to the nanosecond, so two tests calling this
+    // with the same prefix and name from different threads can land on one path. The
+    // `remove_dir_all` below then wipes a repo another test is mid-way through
+    // building, which surfaces as an unrelated `commit_as: MustNotExist` panic.
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let dir = std::env::temp_dir().join(format!(
-        "cmdr_git_{}_{}_{}_{}",
+        "cmdr_git_{}_{}_{}_{}_{}",
         module_prefix,
         name,
         std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos())
