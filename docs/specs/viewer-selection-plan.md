@@ -269,7 +269,7 @@ left at offset 0 → `{ line - 1, offset: lineLength }`, both bounded by the fil
   line end, on an empty line, and **through the JSC-shaped segmenter stub already in that file** (a word ending in a
   digit must not be skipped, the exact bug documented there).
 - `viewer-caret-motion.test.ts` (new): every motion × both directions; a grapheme cluster (👨‍👩‍👧 and `e` + U+0301)
-  crossed in one step; line crossing at both ends; file-edge clamping; `null` on an uncached line; desired-column
+  crossed in one step; line crossing at both ends; file-edge clamping; the `{ focus: null, targetLine }` shape on an uncached line; desired-column
   preservation across a short line; the `EOF_LINE` `docEdge` case with `getTotalLines() === null`.
 
 **Checks**: `pnpm check --fast`.
@@ -459,7 +459,7 @@ primary control.
   and `.claude/rules/file-length-allowlist.md` forbids silently raising a number).
 - `routes/viewer/DETAILS.md`: rewrite § "Click cycle"'s last paragraph (the early-return rationale is now historical, so
   per `describe-current-not-history` it goes away rather than being narrated), extend § "Selection model" with
-  granularity, the motion model, the four decisions above, and the vocabulary boundary; add a short § "Text cursor".
+  granularity, the motion model, the nine decisions above, and the vocabulary boundary; add a short § "Text cursor".
 - `lib/settings/DETAILS.md` § "Restricted-window mode", plus the other places that ENUMERATE the restricted settings
   rather than just describing them: the doc comments on `RestrictedWindowSettings` and
   `RestrictedWindowPersistableSetting` (both say "these two booleans"), `src-tauri/capabilities/CLAUDE.md` § viewer, and
