@@ -254,13 +254,17 @@ volume-id string. The record has two halves, and which half answers is the whole
 - **To add a real backend:** override `is_writable` in Rust and there's nothing to do on this side.
 
 Consumers read the record directly: `SearchResultsView.svelte` reads `capabilitiesForKind('search-results')` (it always
-renders a search-results pane), and every capability-GUARD consumer reads it via `capabilitiesFor`. There's no
-Search-specific capabilities shim — `lib/search/capabilities.ts` keeps only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST`
-string. The guards:
+renders a search-results pane), and every capability-GUARD consumer reads it for a PANE via `capabilitiesForPane`.
+There's no Search-specific capabilities shim — `lib/search/capabilities.ts` keeps only the
+`SEARCH_RESULTS_NOT_A_FOLDER_TOAST` string. The guards:
 
 - **Dispatch** (`command-dispatch.ts::blockedByCapabilities`) + **F-bar** (`FunctionKeyBar.svelte`): paste, mkdir,
   mkfile, and rename all off `!canWrite`. One flag, because it's one question — Rust answers it with one
-  `backendCanWrite`, and splitting it here would be the hand-maintained duplicate all over again.
+  `backendCanWrite`, and splitting it here would be the hand-maintained duplicate all over again. Both read
+  `capabilitiesForPane(volumeId, path)`: a routed pane's volume id is the writable parent drive, so the volume row would
+  answer for the wrong thing. What differs between them is the ANSWER to a refusal, and deliberately: the F-bar disables
+  the button, while dispatch blocks (with its toast) only on the `search-results` kind and leaves the routed kinds to
+  `readOnlyRefusal`'s kind-worded alert, which is the last line for a shortcut bound outside the bar.
 - **Clipboard** (`clipboard-operations.ts`): the snapshot-clip path gate off `kind === 'search-results'`; the routed
   copy-out refusals off `routedCopyOutHint`, which maps `kind === 'archive'` / `'git-portal'` to their own "use F5/F6"
   toast (a routed path isn't OS-resolvable, so the system clipboard can't carry it); the MTP copy/cut/paste refusals
@@ -384,12 +388,15 @@ when the held manager mutates in place. Returning a snapshot would silently seve
 
 **`FunctionKeyBar` reads the store, not props.** The F-key bar is mounted in `+page.svelte` (a sibling of
 `DualPaneExplorer`, not a child), yet it derives its capability flags from `explorerState` directly: one
-`caps = $derived(capabilitiesFor(getActiveTab(getTabMgr(getFocusedPane())).volumeId))`, then `canMkdir` / `canMkfile` /
-`canRename` = `caps.canWrite` and `canSourceOps` = `caps.canBeSource` (capabilities, not a
-`volumeId === 'search-results'` string compare; `capabilitiesFor` resolves the `VolumeInfo` from the volume store, so
-the bar passes only the volumeId). A store getter inside a `$derived` is reactive across the component boundary, so
-there's no `onFocusedVolumeChange` callback or `+page.svelte` mirror `$state` in the chain. Per-pane read only (P1):
-touch the focused pane's manager, never both. `canSourceOps` is no longer a prop (it was a dead-true
+`activeTab = $derived(getActiveTab(getTabMgr(getFocusedPane())))` and
+`caps = $derived(capabilitiesForPane(activeTab.volumeId, activeTab.path))`, then `canMkdir` / `canMkfile` / `canRename`
+= `caps.canWrite` and `canSourceOps` = `caps.canBeSource` (capabilities, not a `volumeId === 'search-results'` string
+compare). ❌ The PANE's row, never `capabilitiesFor`'s volume row: both routed kinds are kind-from-path over a parent
+drive that is itself writable, so asking the volume id alone put New folder and Rename up as enabled inside a `.git`
+snapshot and inside a read-only tar, and the press then hit `readOnlyRefusal`'s alert. A zip keeps both, being the one
+archive format the managed edit flow writes. A store getter inside a `$derived` is reactive across the component
+boundary, so there's no `onFocusedVolumeChange` callback or `+page.svelte` mirror `$state` in the chain. Per-pane read
+only (P1): touch the focused pane's manager, never both. `canSourceOps` is no longer a prop (it was a dead-true
 `+page.svelte={true}` placeholder); a focused `network` pane now disables the source buttons too (`canBeSource: false`),
 which only makes the bar honest — those ops already no-op'd deep down on a network pane.
 

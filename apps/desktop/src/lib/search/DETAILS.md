@@ -582,16 +582,18 @@ The `search-results` row of the per-kind capability defaults (`lib/file-explorer
 `{ canWrite: false, canBeSource: true, hasBackendListing: false, … }` — a virtual kind, so it's one of the rows Rust has
 no `Volume` to publish for and the frontend defaults stand. `SearchResultsView.svelte` reads it directly via
 `capabilitiesForKind('search-results')` (the row context menu's `restrict` flag reads `!caps.canWrite`). Every
-capability-GUARD consumer reads the record via `capabilitiesFor`: the F-bar + keyboard dispatch (destination-op guards),
-clipboard (snapshot-clip `kind`, MTP refusal `kind === 'mtp'`), transfer/delete (`!hasBackendListing` source routing +
-the `search-results`-kind-scoped dest block), `pane-commands` (`isSnapshotPane` off `!hasBackendListing`), MCP sync
-(`!syncsToMcp`), and `has-parent` (`hasParentRow`). See `lib/file-explorer/pane/DETAILS.md` § "Volume capabilities" for
-the per-site breakdown. Consumers:
+capability-GUARD consumer reads the record for a PANE via `capabilitiesForPane`: the F-bar + keyboard dispatch
+(destination-op guards), clipboard (snapshot-clip `kind`, MTP refusal `kind === 'mtp'`), transfer/delete
+(`!hasBackendListing` source routing + the `search-results`-kind-scoped dest block), `pane-commands` (`isSnapshotPane`
+off `!hasBackendListing`), MCP sync (`!syncsToMcp`), and `has-parent` (`hasParentRow`). See
+`lib/file-explorer/pane/DETAILS.md` § "Volume capabilities" for the per-site breakdown. Consumers:
 
 - **F-key bar** (`lib/file-explorer/pane/FunctionKeyBar.svelte` mounted in `routes/(main)/+page.svelte`): derives its
   `canMkdir` / `canMkfile` / `canRename` (all = `caps.canWrite`) and `canSourceOps` (= `caps.canBeSource`) off
-  `capabilitiesFor(focusedVolumeId)`. On a `search-results` pane, F2 (Rename), F7 (New folder), and Shift+F4 (New file)
-  render visibly disabled; F5 / F6 / F8 (Copy / Move / Delete) stay enabled because the snapshot row is source-OK.
+  `capabilitiesForPane(focusedVolumeId, focusedPath)`. On a `search-results` pane, F2 (Rename), F7 (New folder), and
+  Shift+F4 (New file) render visibly disabled; F5 / F6 / F8 (Copy / Move / Delete) stay enabled because the snapshot row
+  is source-OK. The path half of that call is what extends the same treatment to the two routed kinds, whose volume id
+  is the writable parent drive: a `.git` snapshot and a read-only tar disable the same three, a zip keeps them.
 - **Right-click context menu**: `showFileContextMenu` IPC takes a `restrictDestinationActions` flag. When `true`, the
   Rust menu builder omits Rename and New folder. Source-side items (Open, Copy, Move, Delete, Show in Finder, Copy
   filename, Copy path) stay. The flag is set when `!canRename && !canMkdir`.

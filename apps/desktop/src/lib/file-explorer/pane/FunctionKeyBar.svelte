@@ -1,7 +1,7 @@
 <script lang="ts">
     import { explorerState } from './explorer-state.svelte'
     import { getActiveTab } from '../tabs/tab-state-manager.svelte'
-    import { capabilitiesFor } from './volume-capabilities'
+    import { capabilitiesForPane } from './volume-capabilities'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import { fnKeyToCommand } from './function-key-commands'
     import { tString } from '$lib/intl/messages.svelte'
@@ -42,7 +42,7 @@
     }
 
     /**
-     * Capabilities for the focused pane, read straight off the explorer store.
+     * Capabilities for the focused PANE, read straight off the explorer store.
      * The button `disabled` flags branch on the `VolumeCapabilities` record
      * (capabilities, not a `volumeId === 'search-results'` string
      * compare), the same source the dispatch guard and the context menu read. A
@@ -52,18 +52,20 @@
      * thing' toasts." Its rows are real files, so source ops (copy/move/delete)
      * stay enabled (`canBeSource: true`).
      *
-     * Reading the focused pane's active-tab `volumeId` through the store keeps
-     * this reactive across the component boundary: a store getter inside a
-     * `$derived` is reactive, a plain `explorerRef` method call isn't. Per-pane
-     * read only (P1): we touch the focused pane's manager, never both.
-     * `capabilitiesFor` resolves the `VolumeInfo` from the volume store, so we
-     * pass just the volumeId.
+     * ❌ `capabilitiesForPane`, never `capabilitiesFor`: the two ROUTED kinds are
+     * kind-from-PATH on top of a parent drive whose own row is writable, so asking
+     * the volume id alone offered New folder and Rename inside a `.git` snapshot and
+     * inside a read-only tar, and the press then hit `readOnlyRefusal`'s alert — the
+     * refusal dialog the principle above exists to avoid. A zip still enables both:
+     * it's the one archive format the managed edit flow can write.
+     *
+     * Reading the focused pane's active tab through the store keeps this reactive
+     * across the component boundary: a store getter inside a `$derived` is reactive,
+     * a plain `explorerRef` method call isn't. Per-pane read only (P1): we touch the
+     * focused pane's manager, never both.
      */
-    const caps = $derived(
-        capabilitiesFor(
-            getActiveTab(explorerState.getTabMgr(explorerState.getFocusedPane())).volumeId,
-        ),
-    )
+    const activeTab = $derived(getActiveTab(explorerState.getTabMgr(explorerState.getFocusedPane())))
+    const caps = $derived(capabilitiesForPane(activeTab.volumeId, activeTab.path))
     const canMkdir = $derived(caps.canWrite)
     const canMkfile = $derived(caps.canWrite)
     const canRename = $derived(caps.canWrite)

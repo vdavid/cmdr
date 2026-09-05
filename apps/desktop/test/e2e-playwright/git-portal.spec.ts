@@ -287,7 +287,30 @@ test.describe('Git portal', () => {
     // `select` focuses the pane, so the keystrokes below land on the snapshot.
     await mcpCall('select', { pane: 'left', names: ['readme.txt'] })
 
-    // F7 surfaces the read-only-portal alert up front, NOT the mkdir dialog.
+    // The F-bar renders what the snapshot can't honor as DISABLED rather than
+    // offering it and refusing on press: `docs/design-principles.md` puts a
+    // disabled key ahead of a "you did the wrong thing" dialog. The pane sits on
+    // the writable parent drive's volume id, so this only holds because the bar
+    // reads the PANE's capability row (`capabilitiesForPane`), kind from path.
+    // Buttons, in order: F2 Rename, F3 View, F4 Edit, F5 Copy, F6 Move,
+    // F7 New folder, F8 Delete.
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<string>(`(function() {
+            var bar = document.querySelector('.function-key-bar');
+            if (!bar) return 'no bar';
+            var b = bar.querySelectorAll('button');
+            if (b.length < 7) return 'only ' + b.length + ' buttons';
+            return 'rename=' + b[0].disabled + ' newFolder=' + b[5].disabled + ' copy=' + b[3].disabled;
+          })()`),
+        { timeout: 5000 },
+      )
+      // Copy stays live: a snapshot's rows are real content the transfer reads out.
+      .toBe('rename=true newFolder=true copy=false')
+
+    // A keystroke bypasses the bar, so the alert stays the last line: F7 surfaces
+    // the read-only-portal alert up front, NOT the mkdir dialog.
     await tauriPage.keyboard.press('F7')
     await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
     expect(await tauriPage.isVisible(MKDIR_DIALOG)).toBe(false)
