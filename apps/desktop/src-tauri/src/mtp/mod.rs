@@ -5,7 +5,7 @@
 //! call site walks through (the crate's names are re-exported here, so a caller
 //! writes `crate::mtp::…` whichever side the item is on).
 //!
-//! - `watcher`: the USB hotplug task, the `MTP_ENABLED` gate, auto-connect, and
+//! - `watcher`: the USB hotplug task, the enabled-setting push, auto-connect, and
 //!   the ptpcamerad calls. ADB's tracker twin, and app-side for the same reason:
 //!   it owns a policy, not a protocol.
 //! - `events`: the `tauri_specta` payloads the frontend subscribes to, and the

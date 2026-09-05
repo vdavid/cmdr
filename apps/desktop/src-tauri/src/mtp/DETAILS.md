@@ -63,7 +63,7 @@ Each event is only a trigger; `check_for_device_changes()` stays the reconciler,
 
 - **Virtual devices.** mtp-rs's watch is USB-only, so the E2E / `virtual-mtp` device produces no event. Only
   `list_mtp_devices()` sees both it and real hardware.
-- **The `MTP_ENABLED` gate.** Events arrive while auto-connect is off; the `KNOWN_DEVICES` diff is what picks the device
+- **The enabled gate** (`is_mtp_enabled`, which reads the manager's flag). Events arrive while auto-connect is off; the `KNOWN_DEVICES` diff is what picks the device
   up when it's switched back on.
 - **Cmdr's ids.** Auto-connect keys on `cmdr_fs::volume::mtp_ids::device_id_for(serial, location_id)`, derived in
   `discovery.rs`.
@@ -120,7 +120,7 @@ a retry after a transient MTP stat failure is cheap. What each delete branch doe
 ```
 USB plug-in
   → HotplugEvent::Arrived (watcher.rs; mtp-rs filters to MTP devices and owns the settle delay)
-  → check MTP_ENABLED gate, skip if disabled
+  → check is_mtp_enabled() (the manager's flag), skip if disabled
   → list_mtp_devices() (discovery.rs)
   → auto_connect_device() (watcher.rs)
     → MtpConnectionManager::connect()

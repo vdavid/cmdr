@@ -234,7 +234,7 @@ pub fn start_mtp_watcher(app: &AppHandle) {
 /// [`check_for_device_changes`]. The event payload can't drive auto-connect on its
 /// own because mtp-rs's watch is USB-only, so a virtual device (E2E, `virtual-mtp`)
 /// never produces one; `list_mtp_devices()` is the enumeration that sees both.
-/// The `MTP_ENABLED` gate also means events can arrive while auto-connect is off,
+/// The enabled gate (`is_mtp_enabled`, read off the manager) also means events can arrive while auto-connect is off,
 /// which the `KNOWN_DEVICES` diff reconciles when it's switched back on.
 ///
 /// The stream reports already-connected devices as `Arrived` on its first poll.
