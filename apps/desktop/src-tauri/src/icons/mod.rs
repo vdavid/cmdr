@@ -623,7 +623,10 @@ mod tests {
                 Some(std::ffi::OsStr::new("cmdr-icon-samples")),
                 "the folder sample shares the samples directory with the extension samples"
             );
-            assert!(sample.is_dir(), "the OS needs a real directory to hand back a folder icon");
+            assert!(
+                sample.is_dir(),
+                "the OS needs a real directory to hand back a folder icon"
+            );
         }
     }
 
