@@ -11,11 +11,11 @@ A backend has two faces, and MTP's split cleanly along them.
 **The file-ops face** is the `Volume` trait plus the `VolumeHost` seams: `MtpVolume` implements one and asks everything
 else through the other. That half needed no argument, because a `Volume` impl already names nothing but `cmdr-fs`.
 
-**The lifecycle face** is the session layer, and it's where the whole retrofit happened: opening a device, keeping its
-PTP session, polling its interrupt endpoint, recovering a session the phone dropped, and telling somebody a storage
-arrived. Every one of those used to reach sideways into the app.
+**The lifecycle face** is the session layer: opening a device, keeping its PTP session, polling its interrupt endpoint,
+recovering a session the phone dropped, and telling somebody a storage arrived. Every one of those is a place the app
+would otherwise be reached sideways, so each one goes through a seam here.
 
-What stayed up there is what genuinely needs the app:
+What the app keeps is what genuinely needs the app:
 
 - **The hotplug policy** (`mtp/watcher.rs`) — the `MTP_ENABLED` gate, the `KNOWN_DEVICES` diff, auto-connect, and the
   ptpcamerad calls. It owns a decision about when to connect, not a protocol. ADB's tracker is the same shape.

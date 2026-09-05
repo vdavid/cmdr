@@ -577,9 +577,9 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
   real `cmdr-smb` session (the BFS scanner, and media enrichment's byte fetcher). They live app-side because only this
   side can build both halves; the fixtures come from `write_operations::smb_test_support`
 
-`LocalPosixVolume`'s and `MtpVolume`'s own tests are colocated in `backends/` (`backends/DETAILS.md` § "Testing"). A
-crate backend's app-side cells sit beside the app code they assert on, not here or there:
-`crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
+`LocalPosixVolume`'s own tests are colocated in `backends/` (`backends/DETAILS.md` § "Testing"); `MtpVolume`'s live
+with it in `crates/cmdr-mtp/src/volume/`. A crate backend's app-side cells sit beside the app code they assert on, not
+here or there: `crates/cmdr-smb/DETAILS.md` § "Which side a test lives on".
 
 ### Test isolation for the global `VolumeManager`
 
