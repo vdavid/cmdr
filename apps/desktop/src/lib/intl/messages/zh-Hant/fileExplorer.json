@@ -996,7 +996,7 @@
   "@fileExplorer.git.size.stashEntries": {
     "sourceHash": "d9f98ff"
   },
-  "fileExplorer.git.size.linkedWorktrees": "{count, plural, other {{countText} 個關聯工作樹}}",
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, other {{countText} 個關聯 worktree}}",
   "@fileExplorer.git.size.linkedWorktrees": {
     "sourceHash": "7bc228e"
   },

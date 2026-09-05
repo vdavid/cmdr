@@ -126,6 +126,13 @@ AppKit + SystemSettings, 2026-06-21).
 - Files and Folders (pane literal) → Archivos y carpetas · macOS · high
 - git/worktree/repo/blob/commit/clone → kept as-is per do-not-translate (git terms); "repo" inflects naturally ("este
   repo", "los repos") · confirmed (prompt)
+- worktree (git) → `worktree`, verbatim; working tree → `árbol de trabajo` · English draws the two apart and so do we. A
+  worktree is git's own name for a linked checkout, so every key naming one carries it verbatim
+  (`errors.git.orphanedWorktree.*`, `settings.fileExplorer.git.showVirtualGitPortal.description`,
+  `fileExplorer.git.size.linkedWorktrees` = `{countText} worktree vinculado` / `worktrees vinculados`), while the
+  generic "working tree" in `errors.git.bareRepo`, `blobTooLarge`, and `gitDirPermissionDenied` is ordinary prose and
+  stays `árbol de trabajo`. Agreement: masculine, no accent, plural in -s (`un worktree vinculado`,
+  `dos worktrees vinculados`). "working directory" stays the separate `directorio de trabajo` · high
 
 ### Settled during the `licensing.json` + `ai.json` + `viewer.json` pass (macOS Finder/AppKit + MS terminology greps, 2026-06-21)
 

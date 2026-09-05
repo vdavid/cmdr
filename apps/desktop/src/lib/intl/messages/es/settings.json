@@ -1065,7 +1065,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "Al entrar en `.git`, muestra ramas, etiquetas, commits y árboles de trabajo como carpetas virtuales navegables. Desactívalo para ver en su lugar el contenido en bruto de `.git`.",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "Al entrar en `.git`, muestra ramas, etiquetas, commits y worktrees como carpetas virtuales navegables. Desactívalo para ver en su lugar el contenido en bruto de `.git`.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },

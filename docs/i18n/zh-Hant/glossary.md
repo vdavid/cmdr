@@ -965,3 +965,17 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
 - **Choose an app… → `選擇 App…`** · Apple 的 `Choose Application…`（`N137` 鍵）寫作 `選擇應用程式⋯`；`App`
   沿用詞彙表裡已定的說法 · `high`。
 - **terminal app → `終端機 App`** · 拉丁詞前後留空格，與目錄裡其餘 `App` 用法一致 · `high`。兩個值都不含撇號。
+
+## git 的 worktree（`errors.git.orphanedWorktree.*`、`settings.fileExplorer.git.showVirtualGitPortal.description`、`fileExplorer.git.size.linkedWorktrees`，2026-09-05）
+
+英文把 "worktree" 和 "working tree" 當成兩個詞用，繁體中文目錄也照此分開。
+
+- **worktree（git 的連結檢出）→ `worktree`，原樣保留** · en 的 `@key` 說明寫著 "\"worktree\" is a git term; do NOT
+  translate"，`de`、`fr`、`nl`、`pt`、`vi`、`hu`、`sv` 都是原樣 · `high`。三處都用它：錯誤面板
+  `errors.git.orphanedWorktree.*`（本來就是）、設定裡的
+  `settings.fileExplorer.git.showVirtualGitPortal.description`、git 入口 Size 欄的
+  `fileExplorer.git.size.linkedWorktrees` = `{countText} 個關聯 worktree`。此前後兩處寫作
+  `工作樹`，和解釋它的錯誤面板對不上，同一件事有了兩個名字。
+- **working tree（泛指工作區）→ `工作目錄樹`** · `errors.git.bareRepo`、`blobTooLarge`、 `gitDirPermissionDenied`
+  裡是一般行文，維持 `工作目錄樹` 不變 · `high`。
+- 拉丁詞前後留空格（`個關聯 worktree`），與目錄裡其餘拉丁詞一致；量詞仍是 `個`。`git worktree prune` 是指令，原樣。

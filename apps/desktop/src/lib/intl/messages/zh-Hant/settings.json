@@ -1063,7 +1063,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "進入 `.git` 時，把分支、標籤、提交和工作樹顯示為可瀏覽的虛擬資料夾。停用後則改為查看原始的 `.git` 內容。",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "進入 `.git` 時，把分支、標籤、提交和 worktree 顯示為可瀏覽的虛擬資料夾。停用後則改為查看原始的 `.git` 內容。",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },

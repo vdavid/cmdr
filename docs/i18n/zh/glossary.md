@@ -1865,3 +1865,17 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **Choose an app… → `选取 App…`** · Apple 的 `Choose Application…`（`N137` 键）写作 `选取应用程序…`；`App`
   沿用词汇表里已定的说法 · `high`。
 - **terminal app → `终端 App`** · 拉丁词前后留空格，与目录里其余 `App` 用法一致 · `high`。两个值都不含撇号。
+
+## git 的 worktree（`errors.git.orphanedWorktree.*`、`settings.fileExplorer.git.showVirtualGitPortal.description`、`fileExplorer.git.size.linkedWorktrees`，2026-09-05）
+
+英文把 "worktree" 和 "working tree" 当成两个词用，中文目录也照此分开。
+
+- **worktree（git 的关联检出）→ `worktree`，原样保留** · en 的 `@key` 说明写着 "\"worktree\" is a git term; do NOT
+  translate"，`de`、`fr`、`nl`、`pt`、`vi`、`hu`、`sv` 都是原样 · `high`。三处都用它：错误面板
+  `errors.git.orphanedWorktree.*`（本来就是）、设置里的
+  `settings.fileExplorer.git.showVirtualGitPortal.description`、git 门户 Size 栏的
+  `fileExplorer.git.size.linkedWorktrees` = `{countText} 个关联 worktree`。此前后两处写作
+  `工作树`，和解释它的错误面板对不上，同一个东西有了两个名字。
+- **working tree（泛指工作区）→ `工作树`** · `errors.git.bareRepo`、`blobTooLarge`、 `gitDirPermissionDenied`
+  里是普通行文，保持 `工作树` 不变 · `high`。
+- 拉丁词前后留空格（`个关联 worktree`），与目录里其余拉丁词一致；量词仍是 `个`。`git worktree prune` 是命令，原样。

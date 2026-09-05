@@ -1001,7 +1001,7 @@
   "@fileExplorer.git.size.stashEntries": {
     "sourceHash": "d9f98ff"
   },
-  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} árbol de trabajo vinculado} many {{countText} árboles de trabajo vinculados} other {{countText} árboles de trabajo vinculados}}",
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} worktree vinculado} many {{countText} worktrees vinculados} other {{countText} worktrees vinculados}}",
   "@fileExplorer.git.size.linkedWorktrees": {
     "sourceHash": "7bc228e"
   },
