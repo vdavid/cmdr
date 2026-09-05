@@ -58,7 +58,9 @@ pub(super) fn failure_token(error: &ViewerError) -> &'static str {
         ViewerError::OutOfRange => "out_of_range",
         ViewerError::TimedOut => "timed_out",
         ViewerError::ExtractTooLarge { .. } => "extract_too_large",
-        ViewerError::DestinationInsideArchive => "destination_inside_archive",
+        // A save-path refusal, so the OPEN emitter above never produces it; the
+        // arm is here for exhaustiveness and no shipped series carries the token.
+        ViewerError::DestinationIsReadOnly => "destination_read_only",
         ViewerError::Archive { .. } => "archive",
     }
 }

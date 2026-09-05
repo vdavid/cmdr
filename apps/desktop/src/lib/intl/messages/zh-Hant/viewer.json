@@ -362,6 +362,10 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
+  "viewer.saveAs.destinationReadOnly": "該位置是唯讀的。換一個資料夾儲存吧？",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
   "viewer.selection.toEndOfFile": "已選取從第 {line} 行到檔案結尾",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"

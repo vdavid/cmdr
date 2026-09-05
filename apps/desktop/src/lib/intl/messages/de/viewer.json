@@ -366,6 +366,10 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
+  "viewer.saveAs.destinationReadOnly": "Dieser Ort ist schreibgeschützt. Wähle einen anderen Ordner zum Speichern?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
   "viewer.selection.toEndOfFile": "Von Zeile {line} bis zum Ende der Datei ausgewählt",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"

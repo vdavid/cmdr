@@ -368,6 +368,10 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
+  "viewer.saveAs.destinationReadOnly": "Cet emplacement est en lecture seule. Choisis un autre dossier pour enregistrer ?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
   "viewer.selection.toEndOfFile": "Sélection de la ligne {line} jusqu''à la fin du fichier",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"

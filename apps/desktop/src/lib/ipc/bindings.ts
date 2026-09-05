@@ -12321,10 +12321,12 @@ export type ViewerError =
    */
   | { kind: 'extractTooLarge'; size: number; cap: number }
   /**
-   *  Saving a selection to a destination INSIDE an archive isn't supported (archives
-   *  are read-only in this phase). Rejected by `viewer_write_range_to_file`.
+   *  Saving a selection to a destination a ROUTE serves isn't supported: inside a
+   *  `.zip`, or inside a repo's virtual `.git` trees. Neither has a directory on
+   *  disk for the write to land in, and both are read-only besides. Rejected by
+   *  `viewer_write_range_to_file`.
    */
-  | { kind: 'destinationInsideArchive' }
+  | { kind: 'destinationIsReadOnly' }
   /**
    *  The archive entry can't be previewed (encrypted, corrupt, or an unsupported
    *  codec). Carries a message; the FE renders it without inspecting the string.

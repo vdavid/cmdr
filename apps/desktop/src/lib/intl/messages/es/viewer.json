@@ -363,6 +363,10 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
+  "viewer.saveAs.destinationReadOnly": "Esa ubicación es de solo lectura. ¿Eliges otra carpeta para guardar?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
   "viewer.selection.toEndOfFile": "Seleccionado desde la línea {line} hasta el final del archivo",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"

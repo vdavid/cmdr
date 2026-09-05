@@ -363,6 +363,10 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
+  "viewer.saveAs.destinationReadOnly": "Ez a hely csak olvasható. Választasz másik mappát a mentéshez?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
   "viewer.selection.toEndOfFile": "Kijelölve a(z) {line}. sortól a fájl végéig",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"

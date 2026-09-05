@@ -179,9 +179,11 @@ pub enum ViewerError {
         size: u64,
         cap: u64,
     },
-    /// Saving a selection to a destination INSIDE an archive isn't supported (archives
-    /// are read-only in this phase). Rejected by `viewer_write_range_to_file`.
-    DestinationInsideArchive,
+    /// Saving a selection to a destination a ROUTE serves isn't supported: inside a
+    /// `.zip`, or inside a repo's virtual `.git` trees. Neither has a directory on
+    /// disk for the write to land in, and both are read-only besides. Rejected by
+    /// `viewer_write_range_to_file`.
+    DestinationIsReadOnly,
     /// The archive entry can't be previewed (encrypted, corrupt, or an unsupported
     /// codec). Carries a message; the FE renders it without inspecting the string.
     Archive {
@@ -207,7 +209,10 @@ impl std::fmt::Display for ViewerError {
                     "This item is too large to preview from the archive (size {size}, limit {cap})"
                 )
             }
-            Self::DestinationInsideArchive => write!(f, "Can't save into an archive"),
+            // Display/log string only — the user sees the FE's friendly copy
+            // (`viewer.saveAs.destinationReadOnly`). Names no namespace, because
+            // both a `.zip` and a `.git` snapshot reach it.
+            Self::DestinationIsReadOnly => write!(f, "Can't save into a read-only location"),
             Self::Archive { message } => write!(f, "{message}"),
         }
     }

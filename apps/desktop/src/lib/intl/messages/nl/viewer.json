@@ -365,6 +365,10 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
+  "viewer.saveAs.destinationReadOnly": "Deze locatie is alleen-lezen. Kies je een andere map om in op te slaan?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
   "viewer.selection.toEndOfFile": "Geselecteerd van regel {line} tot het einde van het bestand",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"

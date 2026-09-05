@@ -3210,6 +3210,7 @@ export type MessageKey =
   | 'viewer.reloadToast.reload'
   | 'viewer.reloadToast.rotated'
   | 'viewer.saveAs.defaultName'
+  | 'viewer.saveAs.destinationReadOnly'
   | 'viewer.saveAs.panelFailed'
   | 'viewer.saveAs.saveFailed'
   | 'viewer.saveAs.saved'

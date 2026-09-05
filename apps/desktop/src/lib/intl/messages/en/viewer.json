@@ -549,6 +549,12 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
+  "viewer.saveAs.destinationReadOnly": "That location is read-only. Pick another folder to save into?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "description": "Warning toast when the chosen save destination can't take writes: a path inside a .zip archive, or inside a repository's virtual `.git` history. Conversational, and points at the way forward rather than at the refusal. Do not use the words \"error\" or \"failed\".",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
   "viewer.selection.toEndOfFile": "Selected from line {line} to the end of the file",
   "@viewer.selection.toEndOfFile": {
     "description": "Screen-reader announcement for a very large text selection that reaches the end of the file, naming the starting line number. \"line\" here is a line of text in the file.",

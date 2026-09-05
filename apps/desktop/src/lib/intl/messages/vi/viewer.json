@@ -363,6 +363,10 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
+  "viewer.saveAs.destinationReadOnly": "Vị trí đó chỉ đọc. Bạn chọn thư mục khác để lưu nhé?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
   "viewer.selection.toEndOfFile": "Đã chọn từ dòng {line} đến cuối tệp",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"

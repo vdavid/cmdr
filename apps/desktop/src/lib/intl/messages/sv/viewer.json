@@ -366,6 +366,10 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
+  "viewer.saveAs.destinationReadOnly": "Den platsen är skrivskyddad. Vill du välja en annan mapp att spara i?",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
   "viewer.selection.toEndOfFile": "Markerat från rad {line} till slutet av filen",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"

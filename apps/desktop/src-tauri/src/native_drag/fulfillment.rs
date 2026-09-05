@@ -98,17 +98,31 @@ impl FulfillError {
 /// [`RegistryResolver`]; tests pass a fixed `InMemoryVolume`. `Send + Sync`
 /// because the delegate drives `fulfill` from the promise queue thread.
 pub trait VolumeResolver: Send + Sync {
-    /// Returns the source volume for `volume_id`, or `None` if it's gone
-    /// (unmounted / disconnected since the drag started).
-    fn resolve(&self, volume_id: &str) -> Option<std::sync::Arc<dyn Volume>>;
+    /// Returns the volume that can serve `source_path` on `volume_id`, or `None`
+    /// if it's gone (unmounted / disconnected since the drag started).
+    ///
+    /// ❗ The PATH is part of the question, not decoration. A dragged item can
+    /// live in a namespace a ROUTE serves rather than on the volume the pane
+    /// named: inside a `.zip`, or inside a repo's virtual `.git` trees. Resolving
+    /// by id alone hands back the parent drive, whose `open_read_stream` then
+    /// meets a path with no inode and the promise fails on the drop.
+    fn resolve(&self, volume_id: &str, source_path: &Path) -> Option<std::sync::Arc<dyn Volume>>;
 }
 
 /// Production resolver: the global `VolumeManager`.
 pub struct RegistryResolver;
 
 impl VolumeResolver for RegistryResolver {
-    fn resolve(&self, volume_id: &str) -> Option<std::sync::Arc<dyn Volume>> {
-        crate::file_system::volume::manager::get_volume_manager().get(volume_id)
+    fn resolve(&self, volume_id: &str, source_path: &Path) -> Option<std::sync::Arc<dyn Volume>> {
+        let manager = crate::file_system::volume::manager::get_volume_manager();
+        // `resolve_local_only` is the SYNC sibling that routes a local `.zip` and a
+        // repo's `.git` snapshots; the async `resolve` would need this trait to be
+        // async for the one case it adds (a REMOTE archive parent), whose own
+        // `open_read_stream` can't serve an inner path either.
+        manager
+            .resolve_local_only(volume_id, source_path)
+            .volume
+            .or_else(|| manager.get(volume_id))
     }
 }
 
@@ -165,7 +179,7 @@ pub(crate) async fn fulfill_with_resolver(
     source_path: &Path,
     dest_path: &Path,
 ) -> Result<FulfillOutcome, FulfillError> {
-    let Some(volume) = resolver.resolve(source_volume_id) else {
+    let Some(volume) = resolver.resolve(source_volume_id, source_path) else {
         // The source vanished between drag-start and fulfillment.
         let err = VolumeError::DeviceDisconnected(format!("Volume '{source_volume_id}' is no longer available"));
         return Err(FulfillError::from_volume_error(&err, dest_path));
@@ -345,7 +359,7 @@ mod tests {
     struct FixedResolver(Option<Arc<dyn Volume>>);
 
     impl VolumeResolver for FixedResolver {
-        fn resolve(&self, _volume_id: &str) -> Option<Arc<dyn Volume>> {
+        fn resolve(&self, _volume_id: &str, _source_path: &Path) -> Option<Arc<dyn Volume>> {
             self.0.clone()
         }
     }

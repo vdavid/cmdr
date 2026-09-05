@@ -328,6 +328,11 @@ export function createViewerCopyOrchestrator(deps: CopyOrchestratorDeps) {
       // No toast; the user pressed Escape.
     } else if (res.reason === 'timedOut') {
       addToast(tString('viewer.saveAs.tooLong'), { level: 'warn' })
+    } else if (res.error?.kind === 'destinationIsReadOnly') {
+      // A path a route serves (inside a `.zip`, or inside a repo's `.git`
+      // history) has no folder on disk to land in. Naming that is the whole
+      // difference between a user who moves on and one who retries forever.
+      addToast(tString('viewer.saveAs.destinationReadOnly'), { level: 'warn' })
     } else {
       addToast(tString('viewer.saveAs.saveFailed'), { level: 'warn' })
     }

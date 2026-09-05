@@ -3,6 +3,7 @@
 #[cfg(target_os = "macos")]
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
 #[cfg(target_os = "macos")]
+use crate::file_system::volume::manager::path_routes_over_its_parent;
 use crate::native_drag::{self, DragSessionLocality};
 #[cfg(target_os = "macos")]
 use std::path::PathBuf;
@@ -39,6 +40,26 @@ fn locality_for_volume(volume_id: Option<&str>) -> DragSessionLocality {
     }
 }
 
+/// Whether this drag session can hand out real `file://` URLs, or has to promise
+/// the bytes instead.
+///
+/// A path a ROUTE serves isn't materializable as a local file URL — it lives
+/// inside the `.zip`, or inside a repo's virtual `.git` trees — so it forces a
+/// VIRTUAL session, a file-promise provider that streams the bytes on the drop,
+/// even though the source volume id is the local parent drive. The `.zip` file
+/// itself IS a real local file, so it stays a normal Local session, and so does a
+/// real file under `.git`.
+///
+/// ❗ One locality for the whole session, decided here: a mixed session is
+/// impossible by construction (one pane, one volume), and the pasteboard plan is
+/// keyed on a single value.
+fn session_locality(paths: &[PathBuf], source_volume_id: Option<&str>) -> DragSessionLocality {
+    if paths.iter().any(|p| path_routes_over_its_parent(p)) {
+        return DragSessionLocality::Virtual;
+    }
+    locality_for_volume(source_volume_id)
+}
+
 /// Begins a native drag with the given file paths. Used for single-file drags
 /// where the frontend has the path directly (no listing-cache lookup needed),
 /// and for the search-results pane's paths-by-value drag.
@@ -60,15 +81,7 @@ pub fn start_drag_paths(
     if path_bufs.is_empty() {
         return Err("No valid files to drag".to_string());
     }
-    // Archive-INNER paths aren't materializable as local file URLs (they live
-    // inside the `.zip`), so they force a VIRTUAL session — a file-promise
-    // provider — even though the source volume id is the local parent drive. The
-    // `.zip` file itself IS a real local file, so it stays a normal Local session.
-    let locality = if path_bufs.iter().any(|p| cmdr_archive::path_is_inside_archive(p)) {
-        DragSessionLocality::Virtual
-    } else {
-        locality_for_volume(source_volume_id.as_deref())
-    };
+    let locality = session_locality(&path_bufs, source_volume_id.as_deref());
     run_drag_on_main_thread(&app, path_bufs, PathBuf::from(icon_path), locality, source_volume_id)
 }
 
@@ -324,5 +337,50 @@ mod tests {
             DragSessionLocality::Local
         );
         assert_eq!(locality_for_volume(None), DragSessionLocality::Local);
+    }
+
+    /// A dragged item that a ROUTE serves has no `file://` URL to hand out, so
+    /// the session has to promise the bytes whatever the pane's volume says.
+    /// Both namespaces, and neither of their real-file neighbours.
+    #[test]
+    fn a_routed_path_forces_a_promise_session_and_a_real_one_does_not() {
+        use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
+
+        let dir = temp_dir("drag_locality", "snapshot");
+        let mut fixture = Fixture::init(dir.clone());
+        fixture.commit_file("README.md", b"hello\n", "initial");
+        crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+
+        // Inside a repo's history: no inode, so the promise provider streams it.
+        assert_eq!(
+            session_locality(&[dir.join(".git/branches/main/README.md")], Some("root")),
+            DragSessionLocality::Virtual
+        );
+        // Inside a `.zip`: the case this predicate already covered.
+        assert_eq!(
+            session_locality(&[dir.join("bundle.zip/inner.txt")], Some("root")),
+            DragSessionLocality::Virtual
+        );
+
+        // The neighbours that ARE real files on disk keep the local session: the
+        // `.zip` itself, a real entry under `.git`, and an ordinary file.
+        for real in [dir.join("bundle.zip"), dir.join(".git/config"), dir.join("README.md")] {
+            assert_eq!(
+                session_locality(std::slice::from_ref(&real), None),
+                DragSessionLocality::Local,
+                "{} is a real file on disk",
+                real.display()
+            );
+        }
+
+        // And with the portal off, a snapshot path is just a missing local path.
+        crate::file_system::git::wiring::set_virtual_portal_enabled(false);
+        assert_eq!(
+            session_locality(&[dir.join(".git/branches/main/README.md")], None),
+            DragSessionLocality::Local
+        );
+        crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+
+        cleanup(&dir);
     }
 }
