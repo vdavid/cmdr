@@ -240,20 +240,20 @@ platform, both mapped in `mouse-nav.ts`.
 monitor and emits the typed `mouse-nav` event to the main window; `setupMouseNavListener` (`listener-setup.ts`) turns
 the direction into the dispatch, behind the same `isModalDialogOpen()` guard as everything else.
 
-That monitor watches TWO kinds of event, because on macOS the mouse's driver decides which one the user's press
-becomes. It reads `buttonNumber` off `otherMouseUp` for a raw five-button mouse, and `deltaX` off `NSEventType::Swipe`
-for a Logi Options+ mouse, which substitutes a macOS swipe gesture and emits no mouse button at all. Both roads reach
-the same two directions. **Gotcha / Why:** the DOM listeners below never fire on a Logi Options+ mouse, and the reason
-is NOT that WKWebView withholds extra buttons — no mouse-button event is posted anywhere in the system, so an
-`otherMouse`-only monitor is just as blind as the webview. Confirming that took an AppKit probe;
+That monitor watches TWO kinds of event, because on macOS the mouse's driver decides which one the user's press becomes.
+It reads `buttonNumber` off `otherMouseUp` for a raw five-button mouse, and `deltaX` off `NSEventType::Swipe` for a Logi
+Options+ mouse, which substitutes a macOS swipe gesture and emits no mouse button at all. Both roads reach the same two
+directions. **Gotcha / Why:** the DOM listeners below never fire on a Logi Options+ mouse, and the reason is NOT that
+WKWebView withholds extra buttons — no mouse-button event is posted anywhere in the system, so an `otherMouse`-only
+monitor is just as blind as the webview. Confirming that took an AppKit probe;
 `docs/notes/mx-side-buttons-swipe-2026-09-04.md` is the canonical record of what each device actually delivers, and the
 one to read before touching either side of this feature.
 
 Three properties of the monitor matter here. It **swallows** the events it recognizes — an extra button so a
 webview-side reading can't fire Cmdr's middle-click gestures, a swipe so WKWebView's own back / forward gesture can't
 pop the SPA history underneath us. It only acts while the MAIN window is focused. And a swipe arrives as a PAIR whose
-first half carries no direction, so `action_for` swallows that half without dispatching; every other `otherMouse`
-event, the middle button included, is handed straight back.
+first half carries no direction, so `action_for` swallows that half without dispatching; every other `otherMouse` event,
+the middle button included, is handed straight back.
 
 **Linux: from the DOM.** `+page.svelte` registers two document listeners that both consult `navCommandForMouseButton`
 (mapping `button === 3 → nav.back`, `4 → nav.forward`):
