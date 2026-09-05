@@ -140,8 +140,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/write_operations/delete/`: Delete walker, trash, oracle-aware delete semantics
 - `file_system/volume/`: `VolumeManager` plus the `backends/` umbrella, re-exporting the `Volume` trait and its types
   from `crates/cmdr-fs/`. Checklist + capability matrix for new backends
-- `file_system/volume/backends/`: only the `Volume` impls that live in the app, `LocalPosixVolume` and `MtpVolume`.
-  Every crate backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`) is imported by crate name at
+- `file_system/volume/backends/`: the one `Volume` impl that still lives in the app, `LocalPosixVolume`. Every crate
+  backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`) is imported by crate name at
   its call sites, and each one's app-side tests sit beside the app code they assert on. What stays app-side is what
   needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving
 - `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
@@ -155,7 +155,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `clipboard/`: File clipboard (Cmd+C/X/V) with NSPasteboard interop; tracks cut state and validates at paste
 - `secrets/`: Pluggable secret storage: Keychain (macOS), Secret Service (Linux), encrypted-file fallback. SMB creds +
   AI keys
-- `mtp/`: MTP device management, file ops, event-based watching
+- `mtp/`: the app-side half of the MTP backend (`crates/cmdr-mtp/`): the USB hotplug task with its enabled gate and
+  auto-connect, the `tauri_specta` device events, the registrar and `MtpDeviceProvider` wiring, the macOS ptpcamerad
+  workaround, and where the app parks the one connection manager it built. See `mtp/CLAUDE.md`
 - `adb/`: the app-side half of the Android-over-ADB backend (`crates/cmdr-adb/`): the `host:track-devices` task, the
   `AdbDeviceProvider`, lazy connect on first navigation, eject (forget the device client-side), and the IPC commands.
   See `adb/CLAUDE.md`
@@ -263,10 +265,10 @@ All under `apps/desktop/src-tauri/src/`.
 ## Workspace crates
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-`cmdr-webdav`, and `cmdr-adb` carry no `tauri` dependency and no reach into the app; `index-crate-isolation` enforces
-that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`, `cmdr-smb`,
-`cmdr-sftp`, and `cmdr-webdav` at the numbers their audits landed on. The two dev CLIs and the vendored fork are
-ordinary members.
+`cmdr-webdav`, `cmdr-adb`, and `cmdr-mtp` carry no `tauri` dependency and no reach into the app; `index-crate-isolation`
+enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`,
+`cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, and `cmdr-mtp` at the numbers their audits landed on. The two dev CLIs and the
+vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -307,6 +309,13 @@ ordinary members.
   for its suites. The device-side twin of `cmdr-sftp`; the app-side half (tracker task, device provider, lazy connect,
   eject, IPC) is `apps/desktop/src-tauri/src/adb/`. Wire contract, `Volume` answers, and gaps:
   `crates/cmdr-adb/DETAILS.md`; guardrails: `crates/cmdr-adb/CLAUDE.md`
+- `crates/cmdr-mtp/`: everything Cmdr says to an Android phone or a PTP camera over USB. Device discovery, the
+  per-device PTP session layer (path ↔ handle caches, the priority gate, the interrupt-endpoint event loop, and the
+  session-reset recovery a screen lock triggers), `MtpVolume` over one storage area, and the fixture-backed virtual
+  device the E2E lane and a dev session drive. The app-side half (hotplug policy, the frontend events, the registrar
+  wiring, ptpcamerad) is `apps/desktop/src-tauri/src/mtp/`. Where the boundary runs and which side a test lives on:
+  `crates/cmdr-mtp/DETAILS.md`; the wire guardrails that keep a dropped future from wedging a phone:
+  `crates/cmdr-mtp/CLAUDE.md` and `crates/cmdr-mtp/src/connection/CLAUDE.md`
 - `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
   watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address
   building, `smb2::Error` classification, the share-listing vocabulary). The second backend in its own crate; what

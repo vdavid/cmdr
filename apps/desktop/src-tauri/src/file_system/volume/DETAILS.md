@@ -46,11 +46,8 @@ the crate boundary is what makes that a compile error rather than a habit.
      plus a `VolumeHost` handed in at construction; the app's adapters turn each answer into a frontend event or a
      cache write.
    - Crate backends (no `tauri`, verified alone by `cargo check -p <crate>`): `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-     `cmdr-webdav`, `cmdr-adb`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanent: the git portal
-     is implemented as its hooks) and `MtpVolume` (`backends/mtp/` over `src/mtp/`), which predates the seams and does
-     its lifecycle face the old way: the session layer holds a `tauri::AppHandle`, emits seven `tauri_specta::Event`
-     payloads itself, and reaches the listing cache, the registry, and `device_volumes` directly. `InMemoryVolume` (in
-     `cmdr-fs`) is the test and stress fixture.
+     `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanently:
+     the git portal is implemented as its hooks). `InMemoryVolume` (in `cmdr-fs`) is the test and stress fixture.
 3. **The app-side half of each backend.** What a backend can't answer from its protocol alone, and what must know the
    concrete type: discovery UI, the keychain, the OS mount, the ptpcamerad workaround, and REGISTRATION. A backend never
    registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
@@ -191,7 +188,7 @@ The write-op layer hands `Some(&state.backend_cancel)` (the same token
 ignore it are unaffected; volumes that consume it stop their wire activity, not
 just the loop above.
 
-See `apps/desktop/src-tauri/src/mtp/CLAUDE.md` § "Cancel propagation" for the
+See `apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Cancel propagation wiring" for the
 MTP-specific wiring and the rationale for "between-roundtrip" cancel vs PTP
 `CancelTransaction`.
 
@@ -296,7 +293,7 @@ The rest of this section is about **read-side** lifetime handling. Which pattern
 
 ### Pattern A: cached session + bounded windows (use when the SDK exposes a stateless partial-read primitive)
 
-If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`. Nothing is held between reads, so there's no lifetime gymnastics, no task, no channel, and no `Drop` to write. **Example: `MtpReadStream`** (`backends/mtp/mod.rs`), which loops mtp-rs's `WindowedDownload::next_window` (one `GetPartialObject64` each).
+If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`. Nothing is held between reads, so there's no lifetime gymnastics, no task, no channel, and no `Drop` to write. **Example: `MtpReadStream`** (`crates/cmdr-mtp/src/volume/mod.rs`), which loops mtp-rs's `WindowedDownload::next_window` (one `GetPartialObject64` each).
 
 ```rust
 struct MtpReadStream {
@@ -548,7 +545,7 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 **Why**: The three plausible copy paths (local↔local, local↔volume, volume↔volume) all reduce to "open a reader, pipe to a writer." The APFS clonefile fast path is the only one with a real capability difference. Routing the other two through a single streaming path means new backends (S3, WebDAV, FTP) implement two methods instead of four, concurrency lives in one place (`volume/copy.rs`), and features like resume / checksum / progress benefit every direction at once. Don't reintroduce `export_to_local` / `import_from_local`. See `docs/notes/phase4-volume-copy-unification.md`.
 
 **Decision**: `Volume::list_directory` / `scan_for_copy_batch_with_boundary` callbacks take a `ListingProgress { files, dirs, bytes }` struct (not `Fn(usize)` — files-only).
-**Why**: A files-only count makes MTP and Direct SMB scan previews show "0 bytes / N files / 0 dirs" climbing through the scan, because `run_volume_scan_preview` has nothing else to forward to the mid-stream `scan-preview-progress` event. The struct lets each backend track running file count, dir count, and byte total as it enumerates entries (MTP per-handle in `mtp/connection/directory_ops.rs`, SMB in a single tally pass after `list_directory_impl`, the default trait impl in `scan_for_copy_batch_with_boundary`). Self-documenting field semantics; room to grow (symlinks, special files). Streaming-listing UI callers (`commands/file_system/listing.rs`) read `progress.entries()` (= `files + dirs`) which preserves their "Loaded N entries…" display. The baseline-shift logic in `run_oracle_aware_batch_scan` shifts files / dirs / bytes together so cross-group accumulation stays cumulative. Pinned by `scan_preview_listing_progress_tests`.
+**Why**: A files-only count makes MTP and Direct SMB scan previews show "0 bytes / N files / 0 dirs" climbing through the scan, because `run_volume_scan_preview` has nothing else to forward to the mid-stream `scan-preview-progress` event. The struct lets each backend track running file count, dir count, and byte total as it enumerates entries (MTP per-handle in `crates/cmdr-mtp/src/connection/directory_ops.rs`, SMB in a single tally pass after `list_directory_impl`, the default trait impl in `scan_for_copy_batch_with_boundary`). Self-documenting field semantics; room to grow (symlinks, special files). Streaming-listing UI callers (`commands/file_system/listing.rs`) read `progress.entries()` (= `files + dirs`) which preserves their "Loaded N entries…" display. The baseline-shift logic in `run_oracle_aware_batch_scan` shifts files / dirs / bytes together so cross-group accumulation stays cumulative. Pinned by `scan_preview_listing_progress_tests`.
 
 **Decision**: Progress callbacks use `&dyn Fn(u64, u64) -> ControlFlow<()>`, not `FnMut`
 **Why**: The Volume trait is object-safe (`dyn Volume`), so callbacks must be `Fn` (not `FnMut`). Callers use `AtomicU64` for byte counters and `Cell<Instant>` for timestamps to mutate state inside a `Fn` closure. This avoids needing `RefCell` or `Mutex` in the hot path.

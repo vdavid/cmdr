@@ -4,8 +4,8 @@
 
 `Volume` has always been the API between Cmdr and a storage backend, and it has always lived below the app. What it
 never had was exclusivity: a backend could implement the trait and ALSO reach sideways into the listing cache, the
-keychain, the volume registry, the analytics client, and the settings module. `local_posix` and MTP still do, and
-nothing but this boundary stops the next one; SMB's retrofit had to unpick roughly two dozen such sites.
+keychain, the volume registry, the analytics client, and the settings module. `local_posix` still does, and nothing but
+this boundary stops the next one; SMB's retrofit had to unpick roughly two dozen such sites, MTP's about the same.
 
 Turning each reach into a named seam is what makes `cargo check -p cmdr-sftp` a complete verification loop: after the
 boundary, a sideways reach is either one of the traits here or a compile error. That's the whole payoff, and it's
@@ -300,12 +300,12 @@ the test that uses it moves into the crate with it.
 `detach_session_for_test`, because the app's scan-oracle cell that calls it asserts on the app's fresh-listing oracle
 and belongs on that side. Everything else went the other way, `SmbVolumeInner` included, which is now private.
 
-MTP's two, `test_hooks` and `test_window`, are one grant with the same argument. They're a `volume::testing` module of
-three functions (`list_directory_call_count`, `reset_list_directory_call_count`, `set_read_window`), and the cell that
-needs them across the boundary is the app's fresh-listing oracle again: it asserts the ORACLE issued no listing, which
-is an app claim, and no wrapper `Volume` can see the call because the scan reaches `MtpVolume::list_directory` by static
-dispatch. The module hands out two numbers and takes one; ❌ it must not grow into a way to read the backend's state,
-which is the same shape `cmdr_smb::volume::testing` holds to.
+MTP granted one too, and `cmdr_mtp::volume::testing` is it: three functions (`list_directory_call_count`,
+`reset_list_directory_call_count`, `set_read_window`), and the cell that needs them across the boundary is the app's
+fresh-listing oracle again: it asserts the ORACLE issued no listing, which is an app claim, and no wrapper `Volume` can
+see the call because the scan reaches `MtpVolume::list_directory` by static dispatch. The module hands out two numbers
+and takes one; ❌ it must not grow into a way to read the backend's state, which is the same shape
+`cmdr_smb::volume::testing` holds to.
 
 The `cfg` half is not optional: `cfg(test)` is set only for a crate's own test target, so leaving it would make the item
 vanish from a consumer's test build. This project has been bitten by that three times.
@@ -313,7 +313,8 @@ vanish from a consumer's test build. This project has been bitten by that three 
 ### Test modules reached through `use super::*`
 
 A backend whose `mod.rs` doubles as its suites' prelude glob makes the move hard to plan: what the glob pulls in isn't
-determinable without building, so the split can't be sized in advance. It's the biggest unknown MTP still carries.
+determinable without building, so the split can't be sized in advance. It was the biggest unknown MTP carried, and
+removing every glob before the move is what let its split be sized while reading rather than while compiling.
 
 SMB's answer, and the one to copy: the prelude moves to a `test_support.rs` beside the suites, and `mod.rs` goes back to
 importing what it uses. Deleting the `#![allow(unused_imports)]` the glob needed is what makes a dead import in the
@@ -393,8 +394,8 @@ Three things the adapters found that aren't trait shape, and matter to whoever w
 
 `cmdr-archive`, SMB, and SFTP are all fully on the seams: SMB takes a `VolumeHost` in `connect_smb_volume` and keeps it
 on the share-scoped `SmbVolumeInner`, SFTP takes one in `connect_sftp_volume`, and neither reaches anything in the app
-directly. `local_posix` and MTP still call `listing::caching`, `network::keychain`, and the rest, and stay app-resident
-on purpose. Which backends move and which don't: § "Which backends move" below.
+directly, and MTP is now the same. `local_posix` still calls `listing::caching`, `network::keychain`, and the rest, and
+stays app-resident on purpose. Which backends move and which don't: § "Which backends move" below.
 
 **Only the event sink needs a running app.** `volume_host::host()` hands out the app's real adapters even before
 `install()`, leaving only the frontend channel (and the app's runtime) unwired, because the listing cache, secret store,
@@ -448,17 +449,16 @@ because retrofitting is where all the cost sits:
   signature moved to fit it**. What it needed that didn't exist became a NEW seam, `HostKeys` (§ "Seam by seam") —
   growth rather than a break, because no earlier backend's security depended on recognizing a server across sessions.
   The backend itself: `crates/cmdr-sftp/DETAILS.md`.
-- **MTP is the last retrofit, and it is under way.** It is the one backend still reaching sideways (the listing cache at
-  four sites, the index handle, `tokio::spawn`, and a `tauri::AppHandle` that emits seven frontend events from inside
-  the session layer). The three things that once read as permanent refusals each have an answer, and they are the same
-  three answers SMB gave: a crate-local typed event trait for the derives, `any(test, feature = "testing")` for the
-  `cfg(test)` gates, and one argued visibility widening for `test_hooks`. Reasons in full:
-  `apps/desktop/src-tauri/src/file_system/volume/backends/DETAILS.md` § "Per-backend decisions"; the plan and its
-  milestones: `docs/specs/mtp-crate-extraction.md`.
-- **`local_posix` stays app-resident permanently**, and that refusal is not the same shape as MTP's: the git portal is
-  implemented as `LocalPosixVolume` hooks, so extracting the backend means extracting git or inventing a seam with one
-  implementor forever. The reasons are in the same section, because that's where someone proposing "let's complete the
-  set" will be standing.
+- **MTP was the last retrofit, and it is `crates/cmdr-mtp`.** It was the one backend still reaching sideways (the
+  listing cache at four sites, the index handle, `tokio::spawn`, and a `tauri::AppHandle` emitting seven frontend events
+  from inside the session layer). The three things that once read as permanent refusals got the same three answers SMB
+  gave: a crate-local typed event trait for the derives, `any(test, feature = "testing")` for the `cfg(test)` gates, and
+  one argued visibility widening for the test hooks. What each half owns: `crates/cmdr-mtp/DETAILS.md` § "Where the
+  boundary runs, and why".
+- **`local_posix` stays app-resident permanently**, and that refusal was never the same shape as MTP's: the git portal
+  is implemented as `LocalPosixVolume` hooks, so extracting the backend means extracting git or inventing a seam with
+  one implementor forever. The reasons are in the same section, because that's where someone proposing "let's complete
+  the set" will be standing.
 
 **Expect an extraction to surface latent defects**, and treat that as the point rather than a surprise. Archive's move
 found two: seven `.unwrap()`s that were legal only while the file was `cfg(test)` and became clippy `unwrap_used`

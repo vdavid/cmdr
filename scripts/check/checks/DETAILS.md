@@ -860,12 +860,12 @@ Who stays out, and why it's not an oversight:
 
 ### Why the feature set is `virtual-mtp`
 
-The MTP tests that drive a virtual device (`backends/mtp_test`, `mtp_archive_test`, `mtp_read_range_test`,
-`mtp_scan_oracle_tests`, `connection/path_cache_sync_test` — ~29 tests) only COMPILE under it. Without it
-`cargo nextest` silently filters them out, so they protected nothing while looking like coverage. It's test-only (never
-enters a production build) and costs ~2-4 s on a ~27 s suite, so it's the cheapest set that keeps the test lane honest.
-It MUST stay package-qualified (`cmdr/virtual-mtp`): a bare `--features virtual-mtp` changes meaning once more than one
-package is selected.
+The MTP tests that drive a virtual device only COMPILE under it: the app's (`backends/mtp_test`, `mtp_archive_test`,
+`mtp_scan_oracle_tests`, the transfer cells) and `cmdr-mtp`'s own, which the feature reaches through
+`cmdr-mtp/virtual-device`. Without it `cargo nextest` silently filters them out, so they protected nothing while looking
+like coverage. It's test-only (never enters a production build) and costs ~2-4 s on a ~27 s suite, so it's the cheapest
+set that keeps the test lane honest. It MUST stay package-qualified (`cmdr/virtual-mtp`): a bare
+`--features virtual-mtp` changes meaning once more than one package is selected.
 
 Prerequisites these tests rely on (per-test temp backing root, watcher off, `virtual_device_test_lock()`):
 `apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Rust tests that drive the device".
@@ -1675,21 +1675,27 @@ A PTP transaction is command → data → response over one bulk pipe, so droppi
 device expecting bytes nobody will send — that's the single trigger behind every phone wedge we've reproduced, and the
 software recovery isn't guaranteed to get the device back. mtp-rs bounds each USB transfer itself and fails cleanly, so
 an outer deadline (whose clock starts earlier) can only preempt a clean failure with a wedge. The check is a fast-lane
-Go scanner over `apps/desktop/src-tauri/src/mtp/` (modeled on `lock-poison`, reusing its `#[cfg(test)]`-mod skip) that
-flags `tokio::time::timeout(` and `.abort()`. Opt out with `// allowed-dropping-timeout: <reason>` when the dropped
-future genuinely holds nothing on the wire; the two current exceptions are the device-lock wait and the event loop's
-interrupt-endpoint poll. Rationale in full: `apps/desktop/src-tauri/src/mtp/connection/DETAILS.md` § "No dropping
-timeouts".
+Go scanner over BOTH MTP trees (modeled on `lock-poison`, reusing its `#[cfg(test)]`-mod skip) that flags
+`tokio::time::timeout(` and `.abort()`. Opt out with `// allowed-dropping-timeout: <reason>` when the dropped future
+genuinely holds nothing on the wire; the two current exceptions are the device-lock wait and the event loop's
+interrupt-endpoint poll. Rationale in full: `crates/cmdr-mtp/src/connection/DETAILS.md` § "No dropping timeouts".
 
 **Decision**: `mtp-no-transport-reset` check, with NO opt-out directive. **Why**: The Still Image Class `DEVICE_RESET`
 control request looks like the missing "unwedge the pipe" step in session-reset recovery, and it will keep looking like
 one to every future reader. On Android it's a kill switch: `MtpServer` answers it by dropping its FunctionFS endpoints
 and never re-arming them, while the USB controller stays `configured`, so the phone keeps enumerating and answering
 nothing until it's physically replugged (verified on a Pixel 9 Pro XL via `adb logcat`, 2026-07-21). The check is a
-fast-lane Go scanner over `apps/desktop/src-tauri/src/mtp/` flagging `reset_by_serial(` / `reset_by_location(` /
-`reset_first(` in any file, tests included. It has no directive on purpose: reintroducing a reset means deleting the
-check, and that deliberate act is the whole point. Rationale in full:
-`apps/desktop/src-tauri/src/mtp/connection/DETAILS.md` § "No transport reset in recovery".
+fast-lane Go scanner over both MTP trees flagging `reset_by_serial(` / `reset_by_location(` / `reset_first(` in any
+file, tests included. It has no directive on purpose: reintroducing a reset means deleting the check, and that
+deliberate act is the whole point. Rationale in full: `crates/cmdr-mtp/src/connection/DETAILS.md` § "No transport reset
+in recovery".
+
+**Both MTP scanners walk two trees**, because the subsystem does: `crates/cmdr-mtp/src` holds the session layer and the
+`Volume`, and the app's `src/mtp/` keeps the hotplug watcher, the registrar wiring, and the ptpcamerad workaround, all
+of which still issue mtp-rs calls. They resolve their roots through `rustScannerJurisdictions` (`Kinds: [KindApp]`,
+narrowed by a shared `mtpTrees`), the same shape `derive-default-justified` uses for the two filesystem trees. ❗ Pinned
+to `AppTreeOnly` they would have kept passing while guarding nothing, which is why each carries a Go cell that plants a
+violation inside the crate.
 
 **Decision**: Split `desktop-svelte-eslint` into fast (non-type-aware) and slow (full) checks. **Why**: Type-aware rules
 (`no-floating-promises`, `no-unsafe-*`, etc.) take ~45% of lint time due to TypeScript project service startup. The fast

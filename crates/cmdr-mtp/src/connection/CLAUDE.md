@@ -1,7 +1,7 @@
 # MTP connection
 
 The MTP session layer: opens devices, owns the per-device tokio task, exposes typed read/write ops. Parent:
-`../CLAUDE.md`.
+`crates/cmdr-mtp/CLAUDE.md`.
 
 ## File map
 
@@ -22,17 +22,16 @@ The MTP session layer: opens devices, owns the per-device tokio task, exposes ty
 - **Every foreground op MUST hold `foreground_guard(device_id)`** (nav, mutate, upload, visible-pane resolve), or
   background users won't yield. ❌ A READ takes none (a copy would yield to itself forever); gate the live index feed
   BEFORE device resolve; background users list via `list_directory_for_scan`, ❌ never `list_directory*`.
-- **❌ A `SessionReset` (mtp-rs `DeviceReset`) is NOT a disconnect**: `session_reset.rs` drops the entry, flips the index
-  Stale, KEEPS the sidebar volume, and reopens with backoff. ❌ Never route it to `handle_device_disconnected`, tighten
-  the backoff, or add a USB transport reset (`pnpm check mtp-no-transport-reset`). A REAL `Error::Disconnected` DOES
-  take that path, else the next `connect()` fails as "already connected".
+- **❌ A `SessionReset` (mtp-rs `DeviceReset`) is NOT a disconnect**: `session_reset.rs` drops the entry, flips the
+  index Stale, KEEPS the sidebar volume, and reopens with backoff. ❌ Never route it to `handle_device_disconnected`,
+  tighten the backoff, or add a USB transport reset (`pnpm check mtp-no-transport-reset`). A REAL `Error::Disconnected`
+  DOES take that path, else the next `connect()` fails as "already connected".
 - **The caches lie in specific ways.** `resolve_path_to_handle()` is cache-only, so list ancestors first.
   `PathHandleCache` is bidirectional: write via `insert` / `remove_path`, ❌ never `path_to_handle`, since devices REUSE
   handles and a desynced reverse map resolves a new object to a dead path. `ListingCache`'s 5 s TTL survives mutations;
   invalidate for read-after-write.
 - **A copy scan takes `scan_for_copy_with_stop`** (`bulk_ops.rs`), consulting the `ScanStop` per entry and BEFORE each
-  child listing: one listing is the round trip (~17 s for 1k entries). Plain `scan_for_copy` passes
-  `ScanStop::none()`.
+  child listing: one listing is the round trip (~17 s for 1k entries). Plain `scan_for_copy` passes `ScanStop::none()`.
 - **A suppressed event must win `EventDebouncer::claim_trailing` before re-emitting**: one per burst, never one per
   event, else a bulk copy livelocks the pane.
 - **A failed PTP upload must delete the partial object** (mtp-rs doesn't); a stale cached parent handle self-heals into

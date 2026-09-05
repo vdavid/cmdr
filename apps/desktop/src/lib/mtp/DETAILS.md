@@ -44,8 +44,8 @@ retries. The rules file ships at `src-tauri/resources/99-cmdr-mtp.rules` for deb
 
 ## Timeout
 
-MTP operations use a 30s timeout (backend `mtp/connection/mod.rs`, `MTP_TIMEOUT_SECS`), longer than the usual 10s,
-because some Android devices are slow (USB 2.0, old hardware).
+MTP operations use a 30s timeout (backend `crates/cmdr-mtp/src/connection/mod.rs`, `MTP_TIMEOUT_SECS`), longer than the
+usual 10s, because some Android devices are slow (USB 2.0, old hardware).
 
 ## Volume trait integration
 

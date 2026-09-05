@@ -490,7 +490,7 @@ safe boundary, while the user sees an instant cancel.
 
 ❌ Never `listing_task.abort()` there. Abort drops the listing future at whatever await point it's sitting on. For MTP
 that's mid-PTP-transaction: the device is left expecting bytes nobody will send, and it wedges until the user replugs
-the phone (`mtp/connection/CLAUDE.md` § the dropping-timeout guardrail). MTP bails between per-handle `GetObjectInfo`
+the phone; the guardrail is in `crates/cmdr-mtp/src/connection/CLAUDE.md`. MTP bails between per-handle `GetObjectInfo`
 round trips, so cooperative cancel costs at most one round trip of latency.
 
 Backends that ignore the token (local, in-memory, SMB today) run their listing to completion in the detached task.

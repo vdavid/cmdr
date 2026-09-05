@@ -36,8 +36,8 @@ chain materialization uses for a single path):
 - **Timeout-wrapped, but DETACHING**: each listing runs in its OWN task and `LIST_TIMEOUT` (120 s) races that task's
   JOIN HANDLE, so a wedged mount yields `VolumeScanError::Timeout` instead of parking forever. ❌ Never wrap the listing
   future directly: dropping the handle detaches the task, dropping the future cancels it mid-round-trip, and on MTP that
-  abandons a PTP transaction and wedges the phone (`mtp/connection/CLAUDE.md`). A background MTP scan crosses 120 s
-  routinely, since it parks at `background_yield_point` while the user is active.
+  abandons a PTP transaction and wedges the phone (`crates/cmdr-mtp/src/connection/CLAUDE.md`). A background MTP scan
+  crosses 120 s routinely, since it parks at `background_yield_point` while the user is active.
 - **`autoreleasepool`-drained per listing on macOS**: the SMB listing path touches NSURL/`NSString`-adjacent ObjC, and
   unpooled autoreleases leak multi-GB over a long walk (same rule as the writer thread). We can't hold an
   `autoreleasepool` guard across an `.await` (it isn't `Send`), so we drain AFTER the await resolves

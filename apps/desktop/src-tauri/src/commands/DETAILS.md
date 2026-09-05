@@ -340,7 +340,7 @@ fut)` breaks that: when the deadline fires it drops `fut` wherever it happens to
 For anything that can reach a device backend (any command taking a `volume_id`: `rename_file`,
 `check_rename_validity`, `scan_for_volume_copy`, `scan_volume_for_conflicts`), dropping mid-flight means dropping a PTP
 transaction mid-data-phase on MTP, which leaves the phone expecting bytes nobody will send and wedges it until replug.
-See `mtp/connection/DETAILS.md` § "No dropping timeouts".
+See `crates/cmdr-mtp/src/connection/DETAILS.md` § "No dropping timeouts".
 
 `util::timeout_detached_typed` is the shape to use: it spawns the future and races the deadline against the resulting
 JOIN HANDLE. On expiry the handle is dropped, which DETACHES the task rather than cancelling it, so the caller returns
