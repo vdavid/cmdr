@@ -353,8 +353,8 @@ everywhere, which is the point.
 `InMemoryVolume`, `LocalPosixVolume`, `AdbVolume`, and the Docker-gated `SmbVolume`, `SftpVolume`, and `WebdavVolume`
 run every one (InMemory's writability cell sits in `capabilities_test.rs`, next to the predicate it speaks for).
 `MtpVolume` runs all but `create_file`, which it doesn't implement (an upload there is `write_from_stream`, one
-`SendObject` transaction); its `delete` cell lives in `mtp_delete_test.rs` for the scaffolding that contract needs.
-`ArchiveVolume` is read-only: it runs the three that don't mutate and pins the rest of the ground with
+`SendObject` transaction); its `delete` cell lives in `cmdr-mtp`'s `volume/delete_test.rs` for the scaffolding that
+contract needs. `ArchiveVolume` is read-only: it runs the three that don't mutate and pins the rest of the ground with
 `every_mutation_is_unsupported`, and it is deliberately outside the conflict-scan one, since nothing copies INTO an
 archive through the volume. A backend that adds a mutation adds the matching call.
 

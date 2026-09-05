@@ -27,8 +27,8 @@ use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::listings::{ListingHost, RecordingListings};
 use cmdr_fs::volume::{DirectoryChange, SourceItemInfo, Volume, VolumeError, VolumeReadStream};
 
-use crate::connection::events::no_device_events;
 use crate::connection::MtpConnectionManager;
+use crate::connection::events::no_device_events;
 use crate::testing::{ConnectedDevice, connect_virtual_device, device_lock, recording_registrar, volume_for};
 use crate::volume::MtpVolume;
 
@@ -41,7 +41,12 @@ const WALKED_FILES: usize = 40;
 
 /// A device connected over a host whose listing seam records, plus the volume to
 /// walk it with.
-async fn recording_walk_fixture() -> (Arc<RecordingListings>, Arc<MtpConnectionManager>, ConnectedDevice, MtpVolume) {
+async fn recording_walk_fixture() -> (
+    Arc<RecordingListings>,
+    Arc<MtpConnectionManager>,
+    ConnectedDevice,
+    MtpVolume,
+) {
     let listings = Arc::new(RecordingListings::new());
     let host = VolumeHost::builder()
         .listings(Arc::clone(&listings) as Arc<dyn ListingHost>)
@@ -66,7 +71,10 @@ async fn a_walk_over_a_directory_reports_nothing_however_many_entries_it_holds()
     let (listings, manager, device, volume) = recording_walk_fixture().await;
     let dir = Path::new("/host-seam");
 
-    volume.create_directory(dir).await.expect("creating the walked directory");
+    volume
+        .create_directory(dir)
+        .await
+        .expect("creating the walked directory");
     for i in 0..WALKED_FILES {
         volume
             .write_from_stream(

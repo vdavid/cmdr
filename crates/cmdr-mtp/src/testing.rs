@@ -10,7 +10,7 @@
 //! wants a detached host that answers nothing, and an app cell wants the real
 //! wiring, so the listing cache, the index, and the volume registry see what the
 //! device reports. So every entry point takes the manager, and the app's
-//! `mtp_test_support.rs` shadows them with no-argument versions over its parked
+//! `mtp/test_support.rs` shadows them with no-argument versions over its parked
 //! one. Same shape as `cmdr_smb::volume::testing` and the app's
 //! `smb_test_support.rs`.
 //!

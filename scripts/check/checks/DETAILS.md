@@ -860,12 +860,12 @@ Who stays out, and why it's not an oversight:
 
 ### Why the feature set is `virtual-mtp`
 
-The MTP tests that drive a virtual device only COMPILE under it: the app's (`backends/mtp_test`, `mtp_archive_test`,
-`mtp_scan_oracle_tests`, the transfer cells) and `cmdr-mtp`'s own, which the feature reaches through
-`cmdr-mtp/virtual-device`. Without it `cargo nextest` silently filters them out, so they protected nothing while looking
-like coverage. It's test-only (never enters a production build) and costs ~2-4 s on a ~27 s suite, so it's the cheapest
-set that keeps the test lane honest. It MUST stay package-qualified (`cmdr/virtual-mtp`): a bare
-`--features virtual-mtp` changes meaning once more than one package is selected.
+The MTP tests that drive a virtual device only COMPILE under it: the app's (`mtp/volume_wiring_test`,
+`write_operations/mtp_archive_test`, `mtp_scan_oracle_tests`, the transfer cells) and `cmdr-mtp`'s own, which the
+feature reaches through `cmdr-mtp/virtual-device`. Without it `cargo nextest` silently filters them out, so they
+protected nothing while looking like coverage. It's test-only (never enters a production build) and costs ~2-4 s on a
+~27 s suite, so it's the cheapest set that keeps the test lane honest. It MUST stay package-qualified
+(`cmdr/virtual-mtp`): a bare `--features virtual-mtp` changes meaning once more than one package is selected.
 
 Prerequisites these tests rely on (per-test temp backing root, watcher off, `virtual_device_test_lock()`):
 `apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Rust tests that drive the device".

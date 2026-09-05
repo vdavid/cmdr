@@ -204,8 +204,8 @@ renames retain normal POSIX replacement semantics because the caller explicitly 
 ## Where the shared conformance assertions live
 
 `cmdr_fs::volume::conformance` holds the promises no backend may quietly opt out of, and each backend runs the ones it
-can: `mtp_conformance_test.rs`, `local_posix_conformance_test.rs`, and each remote crate's own `conformance_test.rs`
-collect them per backend, and `mtp_delete_test.rs` stays separate because the non-recursion contract is the one MTP has
+can: `local_posix_conformance_test.rs` here, and every crate backend's own `volume/conformance_test.rs`. MTP's
+`volume/delete_test.rs` stays separate from its conformance file because the non-recursion contract is the one MTP has
 to IMPLEMENT rather than inherit (`MtpDeleteScope`), with enough scaffolding to earn its own file. The roster and what
 each one defends: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
 
@@ -222,8 +222,7 @@ failure stays the caller's to see. It costs one extra parent listing, on the err
 `MtpVolume::rename` earns the `force == false` refusal by asking `exists(to)` and then moving. Every other backend
 claims the name with a primitive the other end refuses (`renamex_np(RENAME_EXCL)`, an SFTP `create_new` placeholder or
 plain `SSH_FXP_RENAME`, WebDAV's `Overwrite: F`, SMB's `ReplaceIfExists == false`), so MTP is the only one whose refusal
-has a window in it. The conformance cell is `mtp_conformance_test.rs`'s
-`rename_honors_the_shared_no_clobber_contract`.
+has a window in it. The conformance cell is `cmdr-mtp`'s `volume::conformance_test::rename_honors_the_shared_no_clobber_contract`.
 
 **Decision**: leave the window open and say so, rather than build machinery around it. **Why**: MTP offers nothing
 tighter to build on (verified on `mtp-rs` 0.32.0, source read, 2026-09-02). A same-directory rename is

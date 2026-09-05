@@ -33,12 +33,12 @@ mod mutation_ops;
 mod path_cache_sync_test;
 mod scheduler;
 mod session_reset;
-/// What an upload leaves on the device when its source stops early.
-#[cfg(all(test, feature = "virtual-device"))]
-mod upload_test;
 /// The manager and the recording registrar this crate's own device cells drive.
 #[cfg(test)]
 pub(crate) mod testing;
+/// What an upload leaves on the device when its source stops early.
+#[cfg(all(test, feature = "virtual-device"))]
+mod upload_test;
 /// Who holds the device we couldn't open. macOS-only: it's the one platform
 /// where a system daemon takes MTP devices out from under us.
 #[cfg(target_os = "macos")]

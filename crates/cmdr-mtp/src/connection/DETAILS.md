@@ -99,7 +99,7 @@ offsets, two sessions on 2026-07-20/21:
 
 The waste is stable across both; the bare read nearly doubled. In session 2 `old path - bare read` (2.62 ms) reconciles
 with the measured waste (2.70 ms) almost exactly, which is the check that the model is right. Cmdr's own `read_range`
-path, measured through `backends/mtp_read_bench.rs` in session 1, went from ~7.6-10.0 ms to ~5.7-6.2 ms per 256 KiB.
+path, measured through `volume/read_bench.rs` in session 1, went from ~7.6-10.0 ms to ~5.7-6.2 ms per 256 KiB.
 
 An earlier reading suggested `next_window` was ~2.45 ms slower than a bare `read_range` for the same bytes. It did NOT
 reproduce (session 2 had it faster), so it was noise: don't build anything on it.
@@ -188,7 +188,7 @@ yields `MtpConnectionError::Cancelled`, preserving cancel classification for the
 The delete needs a live device/session. If the device just disconnected, the delete fails: we log under
 `target: "mtp_upload"` and move on (the partial lingers, recognizable; nothing we can do with a dead device). A failed
 cleanup never masks the original upload error. Pinned by `upload_failure_deletes_partial_object_on_device` and
-`upload_cancel_deletes_partial_and_surfaces_cancelled` (virtual-mtp tests in `volume/backends/mtp_test.rs`).
+`upload_cancel_deletes_partial_and_surfaces_cancelled` (both in `connection/upload_test.rs`).
 
 ## Stale parent handle on upload (self-heal + one-shot retry)
 

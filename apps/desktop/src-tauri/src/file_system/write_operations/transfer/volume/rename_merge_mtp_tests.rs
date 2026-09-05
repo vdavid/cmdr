@@ -68,7 +68,6 @@ async fn prime_path_handles(volume: &Arc<dyn Volume>, dirs: &[&str]) {
     }
 }
 
-
 fn write_backing_file(backing: &Path, rel: &str, content: &[u8]) {
     let abs = backing.join(rel);
     std::fs::create_dir_all(abs.parent().expect("a seeded file always has a parent"))

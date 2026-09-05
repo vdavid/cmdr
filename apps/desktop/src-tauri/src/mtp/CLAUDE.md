@@ -14,6 +14,8 @@ rules (`resources/99-cmdr-mtp.rules`). The frontend (`src/lib/mtp/CLAUDE.md`) is
   `DeviceVolumeProvider`. `macos_workaround.rs`: ptpcamerad suppression and restore.
 - `mod.rs`: where the app parks the one manager it built (`install_connection_manager`, then `connection_manager()`),
   and the door the crate's names are re-exported through, so a call site writes `crate::mtp::…` either way.
+- `test_support.rs`: how every app-side MTP cell reaches a virtual device, over the parked manager. `DETAILS.md` lists
+  where those cells sit and why.
 
 ## Must-knows
 

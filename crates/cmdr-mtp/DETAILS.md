@@ -84,7 +84,36 @@ for every dev target and leaves them off for the lib, so a shipped build carries
 ## Which side a test lives on
 
 Split by what a cell **asserts**, never by what it connects to — the rule `crates/cmdr-smb/DETAILS.md` § "Which side a
-test lives on" states in full. Two consequences that bit during the extraction:
+test lives on" states in full. Both sides drive the same virtual device through the same fixtures.
+
+**Here**, if the assertion is about this backend:
+
+- `volume/volume_impl_test.rs` — what `MtpVolume` declares through the trait: the capability answers a caller routes on,
+  and the watch-coverage gate the app's fresh-listing oracle reads.
+- `volume/conformance_test.rs` — the shared `cmdr_fs::volume::conformance` promises, answered by a device rather than an
+  in-process double. `volume/delete_test.rs` is its third sibling: MTP is the one backend that has to IMPLEMENT
+  non-recursion rather than inherit it, and `MtpDeleteScope` needs enough scaffolding to earn a file.
+- `volume/read_range_test.rs` — both read paths, sharing one fixture: the DIRECT `read_range` (a ranged read costs one
+  device operation, not three) and the WINDOWED `open_read_stream` the copy engine and native drag-out go through.
+- `volume/streams_test.rs` — the `VolumeReadStream` → chunk-stream adapter, with no device behind it.
+- `volume/host_seam_test.rs` — the PACE of what this backend tells the listing seam, which no type can hold: one call
+  per mutation, none per directory entry. It seeds 40 files, then walks them with a listing, a stat, a stream, a ranged
+  read, and both scans, asserting `RecordingListings::change_count` doesn't move.
+- `volume/path_test.rs`, `connection/manager_test.rs`, `connection/path_cache_sync_test.rs`, `connection/upload_test.rs`
+  (what an upload leaves on the device when its source stops early), and `connection/host_seam_test.rs` (the analytics
+  counter and the registrar, which is where `handle_device_disconnected` is reachable).
+- `volume/read_bench.rs` — the hardware benchmark, `#[ignore]`d. ❗ On macOS the operator holds `ptpcamerad` off in
+  another terminal first: suppressing a system daemon is a host policy, which is why `macos_workaround` is app-side and
+  this file doesn't call it.
+
+**In the app**, if the assertion is about what the APP does with a phone, and the cell sits beside the app code it
+asserts on rather than beside the backend: `mtp/volume_wiring_test.rs` (that `volume_wiring` really registers, and that
+the attach runs inline on the connecting thread), `file_system/volume/mtp_scan_oracle_tests.rs` (the app's fresh-listing
+oracle), `file_system/write_operations/mtp_archive_test.rs` (archive routing, which this crate knows nothing about), and
+`file_system/write_operations/transfer/volume/rename_merge_mtp_tests.rs` plus `delete/volume_cancel_tests.rs` (the
+transfer and delete pipelines).
+
+Two consequences that bit during the extraction:
 
 **A cell that reaches the backend's internals belongs here, and a visibility widening is not the fix.** `to_mtp_path`
 and the `device_id` / `storage_id` fields are `pub(super)`; the cells asserting on them moved in as
@@ -93,12 +122,23 @@ and the `device_id` / `storage_id` fields are `pub(super)`; the cells asserting 
 **A cell that reached the app's volume registry was usually asserting on the registrar seam.** Three of them — a device
 lost under the event loop, and the two session-reset cells checking that a volume survives the recovery — now assert
 through `connection::testing`'s recording registrar. The registry was only ever an observation point for "did the seam
-fire", and the seam says the same thing with no app in the room. The app keeps the cells that assert the app's own half:
-that `volume_wiring` really registers, and that the attach runs inline on the connecting thread.
+fire", and the seam says the same thing with no app in the room.
 
-`connection::testing` is `#[cfg(test)] pub(crate)`: a shared manager over a detached host plus that recording registrar,
-both process-wide the way the app's parked manager is. Every cell reaching them holds `virtual_device_test_lock` for its
-whole span, and under `cargo nextest` each cell is its own process anyway.
+### The fixtures both sides share
+
+`testing` (behind the `testing` feature plus `virtual-device`) is the one door: it registers a fake phone, connects,
+primes the root listing, and takes it all away again, parametrized by the manager. ❗ Every entry point takes the
+manager, because that's the ONLY thing that differs across the boundary — a cell here wants a detached host that answers
+nothing, an app cell wants the real wiring so the listing cache, the index, and the volume registry see what the device
+reports. The app's `mtp/test_support.rs` shadows each one with a no-argument version over its parked manager, the shape
+`smb_test_support.rs` has.
+
+❗ Seed a device's backing dir BEFORE connecting it. The connect primes the root listing, so a file written after that
+is invisible until something invalidates the cache; `rescan_virtual_device` is for a device that's already open.
+
+`connection::testing` stays `#[cfg(test)] pub(crate)` and is NOT published: a shared manager over a detached host plus
+the recording registrar, both process-wide the way the app's parked manager is. Every cell reaching them holds
+`virtual_device_test_lock` for its whole span, and under `cargo nextest` each cell is its own process anyway.
 
 ## Running the suites
 

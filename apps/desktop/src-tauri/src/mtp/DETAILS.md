@@ -232,9 +232,9 @@ registry (open listings are looked up by volume id; the per-volume index routes 
 before the volumes existed would have nothing to land on and the update would be dropped. The registrar adds an
 indirection but not a delay: `attach_storage_volume` is a direct synchronous call. ❌ Never spawn it, never make it
 async. Pinned by `connect_attaches_a_volume_for_every_storage_and_disconnect_detaches_them`
-(`file_system/volume/backends/mtp_test.rs`), which asserts registration with no polling at all, so a scheduled attach
-fails it. It stays app-side deliberately: it asserts that the APP's registrar really reaches the volume registry, which
-is the half the crate's own seam cells can't see.
+(`volume_wiring_test.rs`), which asserts registration with no polling at all, so a scheduled attach fails it. It stays
+app-side deliberately: it asserts that the APP's registrar really reaches the volume registry, which is the half the
+crate's own seam cells can't see.
 
 **Gotcha: a test that connects a device must install the registrar.** `setup_virtual_mtp_device` does it, mirroring
 startup. Without it a `connect()` opens the device and leaves the sidebar empty, and the failure looks like a volume bug
@@ -283,3 +283,22 @@ is fully quiet, which avoids provoking the bug in practice.
 - `cmdr_fs`: the `mtp_ids` volume-id helpers.
 - `crate::file_system`: the volume registry the registrar writes to. ❌ Nothing in `cmdr-mtp` may name it, by the
   decision above.
+
+## Where the app-side MTP cells sit
+
+A cell goes beside the subsystem it ASSERTS on, never beside the backend. The full map, including what moved the other
+way, is [the crate's](../../../../../crates/cmdr-mtp/DETAILS.md#which-side-a-test-lives-on).
+
+- `volume_wiring_test.rs` — this module's own half: that `volume_wiring` really registers a storage in the app's volume
+  registry, and that the attach runs inline on the connecting thread.
+- `file_system/volume/mtp_scan_oracle_tests.rs` — the app's fresh-listing oracle, asserted with
+  `cmdr_mtp::volume::testing`'s `list_directory` counter (an oracle hit issues zero calls).
+- `file_system/write_operations/mtp_archive_test.rs` — archive browsing and remote editing over a device. The routing is
+  the app's; `cmdr-mtp` knows nothing about zips.
+- `file_system/write_operations/transfer/volume/rename_merge_mtp_tests.rs` and `.../delete/volume_cancel_tests.rs` — the
+  transfer and delete pipelines.
+
+`test_support.rs` is how all of them reach a device: it shadows each `cmdr_mtp::testing` entry point with a no-argument
+version over the manager THIS app parked, so the listing cache, the index, and the volume registry see what the device
+reports. ❗ Seed a device's backing dir BEFORE connecting; the connect primes the root listing, and a file written after
+that is invisible until something invalidates the cache.

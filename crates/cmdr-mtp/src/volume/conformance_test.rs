@@ -10,7 +10,6 @@
 
 use std::path::Path;
 
-
 use crate::testing::{ConnectedDevice, connect_virtual_device, device_lock, test_connection_manager, volume_for};
 use crate::volume::MtpVolume;
 

@@ -12,7 +12,8 @@ missing udev rule (`resources/99-cmdr-mtp.rules`) reads as `PermissionDenied`. T
   touching anything under there.
 - `volume/`: `MtpVolume`, one storage area behind the `Volume` trait, split as `volume_impl` / `streams` / `mapping` /
   `scan` / `cancel`, plus `testing` (the `list_directory` counter and the read-window override).
-- `virtual_device.rs`: the fixture-backed fake phone, behind the `virtual-device` feature.
+- `virtual_device.rs`: the fixture-backed fake phone, behind the `virtual-device` feature. `testing.rs` is what drives
+  it: register, connect, prime, tear down, over whichever manager the caller passes.
 
 ## Must-knows
 
@@ -26,6 +27,9 @@ missing udev rule (`resources/99-cmdr-mtp.rules`) reads as `PermissionDenied`. T
   Enforced by `pnpm check mtp-dropping-timeout` over this tree AND the app's.
 - **The manager is a VALUE.** `MtpConnectionManager::new(host, events, registrar)`. ❌ Never add a static here: the app
   parks its one manager, and a test builds its own (`connection::testing`).
+- **A test cell goes where its ASSERTION lives, never where its connection does.** The `Volume` contract, the byte path,
+  and the session layer are here; the app's registry, oracle, and pipelines stay app-side and reach the same fixtures
+  through `mtp/test_support.rs`. The file-by-file map is in `DETAILS.md`.
 - **❌ No English a user reads.** Every sentence is rendered host-side from the typed values here, which is also why
   `MtpDeviceEvents` reports an enum rather than a message.
 - **Test-gated behavior takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off when the app
