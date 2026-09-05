@@ -177,9 +177,18 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`)
   (`resolveLocation` — the agent path can live on any volume), replying `ok: false` if it can't resolve, then calls
   `explorerRef.navigate({ pane, to: { goTo }, source: 'mcp' })` and branches on the typed `NavigateResult`: a
   `'refused'` result forwards `result.reason.message` byte-identically as the `mcp-response` error; a `'started'` result
-  awaits `result.settled` before replying `ok: true`. Resolving at the edge also narrows the on-network refusal — a
-  local target from a network pane now switches volumes instead of refusing; only an `smb://` target still refuses. The
-  bus dispatch is fire-and-forget and can't surface this round-trip.
+  awaits `result.settled`. Resolving at the edge also narrows the on-network refusal — a local target from a network
+  pane now switches volumes instead of refusing; only an `smb://` target still refuses. The bus dispatch is
+  fire-and-forget and can't surface this round-trip.
+
+  **The reply says where the pane ended up, not where it was sent** (`mcp-nav-landing.ts`). `settled` alone can't carry
+  that: the switch arm resolves it as a no-op the moment the optimistic commit lands, so a cross-volume navigation acked
+  `ok: true` before the new volume had listed anything, and kept that `OK` when the listing died and an edge-flow
+  fallback moved the pane home. After a switch (the volume ids differ, the same test `navigate()` routes on) the adapter
+  waits for the pane to go QUIET — a listing other than the one it started with, then `quietMs` with no load in flight —
+  and classifies what it finds: `navigated`, `fell-back`, or `did-not-settle`. The reply carries that discriminant plus
+  the pane's resting `volumeId` and `path`; the Rust side words the tool result from the discriminant, ❌ never from the
+  message text. The in-place arm skips the wait, because there `settled` IS the listing.
 
   **Every way this handler declines also logs.** The three of them — the path not resolving to a volume, `navigate()`
   refusing, and no explorer being mounted — used to `return` in silence, because the only channel out is a reply keyed

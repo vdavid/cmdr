@@ -4,9 +4,42 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
-    AckSignal, NAV_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_round_trip, mcp_round_trip_with_timeout,
-    snapshot_generation, user_path_param, validate_path_exists, wait_for_ack,
+    AckSignal, NAV_ACK_TIMEOUT, NavAck, PaneStateStore, ToolError, ToolResult, mcp_nav_round_trip, mcp_round_trip,
+    mcp_round_trip_with_timeout, snapshot_generation, user_path_param, validate_path_exists, wait_for_ack,
 };
+
+/// Round-trip budget for `nav_to_path`. Generous because the FE waits for the listing to
+/// complete, and a remote share's can take a while; it also has to outlast the FE's own
+/// wait for the pane to come to rest (`mcp-nav-landing.ts` § `NAV_QUIET_WAIT`), so a pane
+/// that never settles is reported by the FE with the location it holds rather than
+/// surfacing here as a bare timeout.
+pub(super) const NAV_TO_PATH_TIMEOUT_SECS: u64 = 30;
+
+/// Word what the pane did with a navigation. Branches on the typed [`NavAck`], never on
+/// message text.
+///
+/// The requested path stands in when the FE reports an empty one (a malformed or
+/// outcome-less reply), so the message always names a place.
+pub(super) fn nav_result(pane: &str, requested: &str, ack: NavAck) -> ToolResult {
+    let landed_or = |landed: String| {
+        if landed.is_empty() {
+            requested.to_string()
+        } else {
+            landed
+        }
+    };
+    match ack {
+        NavAck::Navigated { path } => Ok(json!(format!("OK: Navigated {pane} pane to {}", landed_or(path)))),
+        NavAck::FellBack { path } => Err(ToolError::internal(format!(
+            "Navigation to {requested} didn't land: the {pane} pane came to rest at {} instead. Read cmdr://state to see what it's showing.",
+            landed_or(path)
+        ))),
+        NavAck::DidNotSettle { path } => Err(ToolError::internal(format!(
+            "Navigation to {requested} didn't settle: the {pane} pane is still listing and reports {}. Read cmdr://state to triage, then retry or use `await` to watch for the path.",
+            landed_or(path)
+        ))),
+    }
+}
 
 /// Execute a navigation command without parameters.
 /// These emit keyboard-equivalent events to the frontend.
@@ -184,14 +217,8 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
                 store.set_focused_pane(pane.to_string());
             }
 
-            mcp_round_trip_with_timeout(
-                app,
-                "mcp-nav-to-path",
-                json!({"pane": pane, "path": path}),
-                format!("OK: Navigated {pane} pane to {path}"),
-                30,
-            )
-            .await
+            let ack = mcp_nav_round_trip(app, json!({"pane": pane, "path": path}), NAV_TO_PATH_TIMEOUT_SECS).await?;
+            nav_result(pane, &path, ack)
         }
         "move_cursor" => {
             let pane = params

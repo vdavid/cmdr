@@ -137,6 +137,13 @@ export interface ExplorerAPI {
    * from the pane showing that directory.
    */
   getPaneListingId: (pane: 'left' | 'right') => string | null
+  /**
+   * Whether the pane's listing is mid-load. Paired with `getPaneListingId` it tells a
+   * navigation that has come to rest from one still in flight, which the MCP
+   * `nav_to_path` adapter needs after a volume switch: that arm commits the destination
+   * optimistically, so the pane reports the target long before it has been there.
+   */
+  isPaneLoading: (pane: 'left' | 'right') => boolean
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
   handleSelectionAction: (args: SelectionActionArgs) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => Promise<void>

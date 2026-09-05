@@ -2,6 +2,7 @@
 
 use std::path::Path;
 
+use super::nav::nav_result;
 use super::search::parse_human_size;
 use super::*;
 
@@ -317,6 +318,111 @@ fn parse_mcp_response_ignores_malformed_payloads() {
     assert_eq!(parse_mcp_response("not json", "r-1"), None);
     assert_eq!(parse_mcp_response(r#"{"requestId":42,"ok":true}"#, "r-1"), None);
     assert_eq!(parse_mcp_response(r#"{"ok":true}"#, "r-1"), None);
+}
+
+// === parse_nav_response + nav_result: the ack says what the pane DID ===
+//
+// `navigate()`'s volume-switch arm resolves its `settled` promise before the new
+// volume lists anything, so "the FE replied" never meant "the pane got there": a
+// cross-volume `nav_to_path` acked `OK: Navigated …` while an MTP-fatal fallback
+// quietly moved the pane home. The FE now names the outcome and the backend words
+// it, branching on the discriminant and never on message text.
+
+#[test]
+fn parse_nav_response_reads_the_landing_the_frontend_reported() {
+    let landed = r#"{"requestId":"r-1","ok":true,"outcome":"navigated","path":"/Users/david"}"#;
+    assert_eq!(
+        parse_nav_response(landed, "r-1"),
+        Some(Ok(NavAck::Navigated {
+            path: "/Users/david".to_string()
+        }))
+    );
+
+    let fell_back = r#"{"requestId":"r-1","ok":false,"outcome":"fell-back","path":"/Users/david"}"#;
+    assert_eq!(
+        parse_nav_response(fell_back, "r-1"),
+        Some(Ok(NavAck::FellBack {
+            path: "/Users/david".to_string()
+        }))
+    );
+
+    let unsettled = r#"{"requestId":"r-1","ok":false,"outcome":"did-not-settle","path":"smb://nas/share"}"#;
+    assert_eq!(
+        parse_nav_response(unsettled, "r-1"),
+        Some(Ok(NavAck::DidNotSettle {
+            path: "smb://nas/share".to_string()
+        }))
+    );
+}
+
+#[test]
+fn parse_nav_response_keeps_a_pre_move_refusal_verbatim() {
+    // The declines that happen before the pane moves (no explorer, an unresolvable
+    // path, a synchronous refusal) carry no outcome and keep their exact message.
+    let payload = r#"{"requestId":"r-1","ok":false,"error":"Pane is on the Network volume."}"#;
+    assert_eq!(
+        parse_nav_response(payload, "r-1"),
+        Some(Err("Pane is on the Network volume.".to_string()))
+    );
+}
+
+#[test]
+fn parse_nav_response_never_turns_a_malformed_reply_into_an_arrival() {
+    // No outcome and no `ok` is a failure, same rule as `parse_mcp_response`.
+    assert_eq!(
+        parse_nav_response(r#"{"requestId":"r-1"}"#, "r-1"),
+        Some(Err("Unknown error".to_string()))
+    );
+    // An unknown outcome is not a landing either.
+    assert_eq!(
+        parse_nav_response(r#"{"requestId":"r-1","outcome":"teleported"}"#, "r-1"),
+        Some(Err("Unknown error".to_string()))
+    );
+    // And someone else's reply is still not ours.
+    assert_eq!(
+        parse_nav_response(r#"{"requestId":"r-2","ok":true,"outcome":"navigated"}"#, "r-1"),
+        None
+    );
+}
+
+#[test]
+fn nav_result_reports_the_landing_place_not_the_request() {
+    let ok = nav_result(
+        "left",
+        "/tmp/link",
+        NavAck::Navigated {
+            path: "/tmp/link".to_string(),
+        },
+    )
+    .expect("navigated is a success");
+    assert_eq!(ok, json!("OK: Navigated left pane to /tmp/link"));
+
+    let fell_back = nav_result(
+        "left",
+        "mtp://phone/DCIM",
+        NavAck::FellBack {
+            path: "/Users/david".to_string(),
+        },
+    )
+    .expect_err("a fallback is not an OK");
+    assert!(fell_back.message.contains("mtp://phone/DCIM"), "names the request");
+    assert!(fell_back.message.contains("/Users/david"), "names where it landed");
+
+    let unsettled = nav_result(
+        "right",
+        "smb://nas/share",
+        NavAck::DidNotSettle {
+            path: "smb://nas/share".to_string(),
+        },
+    )
+    .expect_err("an unsettled pane is not an OK");
+    assert!(unsettled.message.contains("didn't settle"));
+}
+
+#[test]
+fn nav_result_falls_back_to_the_requested_path_when_the_reply_names_none() {
+    let ok = nav_result("left", "/Users", NavAck::Navigated { path: String::new() }).expect("still a success");
+    assert_eq!(ok, json!("OK: Navigated left pane to /Users"));
 }
 
 // === parse_operation_start_response: the autoConfirm-op correlation ===

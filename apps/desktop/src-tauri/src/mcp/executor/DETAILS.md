@@ -151,8 +151,10 @@ react faster than a full pane state push).
 ## `mcp_round_trip` for explicit FE responses
 
 When the backend can't fully validate preconditions (or has to wait on the OS), the tool emits an event with a
-`requestId` and waits for the FE to reply via `mcp-response` carrying `{ requestId, ok, error? }`. Response correlation
-lives in the pure, unit-tested `parse_mcp_response` in `mod.rs`. Per-tool:
+`requestId` and waits for the FE to reply via `mcp-response` carrying `{ requestId, ok, error? }`. One helper,
+`mcp_round_trip_parsed`, owns the id + listener + timeout for all of them; each caller brings the parser that says what
+its reply is allowed to mean (`parse_mcp_response`, `parse_operation_start_response`, `parse_nav_response` — all pure
+and unit-tested in `mod.rs`). Per-tool:
 
 - `move_cursor`, `set_setting` (5 s). The FE verifies the cursor actually landed (filename found, index in range), then
   (move_cursor) flushes the MCP state push (`syncStateToMcpNow`) before replying, so a follow-up `copy`/`move`/`delete`
@@ -164,7 +166,12 @@ lives in the pure, unit-tested `parse_mcp_response` in `mod.rs`. Per-tool:
 - `refresh` (5 s): the FE forces a backend re-read via `refreshListing(listingId, true)`, which bypasses the
   watcher-backed short-circuit, so `OK` means the directory was actually re-read on every volume. In the network
   browser the same command re-scans hosts instead.
-- `nav_to_path`: 30 s via `mcp_round_trip_with_timeout`; the FE delays the response until `handleListingComplete` fires.
+- `nav_to_path` (30 s, `mcp_nav_round_trip`): the reply carries a typed `outcome` plus the pane's resting location, and
+  `nav_result` (in `nav.rs`) words the tool result from that discriminant — `navigated` is the only `OK`; `fell-back`
+  and `did-not-settle` are errors naming both the request and where the pane actually is. The FE holds the response
+  until the pane comes to rest, which for a cross-volume switch is well past `settled` (that arm resolves it on the
+  optimistic commit, before the new volume lists anything — the last false-positive `OK`). `go_to_latest_download`
+  rides the same helper for its navigation leg, so it can't move a cursor in a directory the pane never reached.
 - `open_under_cursor`: 5 s via `mcp_round_trip_with_timeout`; opening a file delegates to the OS default app, so neither
   `GenerationAdvanced` nor `WindowAppeared` would fire.
 - Resources that need FE data use `resource_round_trip` (same pattern, returns the `data` field). Used by

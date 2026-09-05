@@ -1018,6 +1018,11 @@
         return getPaneRef(pane)?.getListingId() ?? null
     }
 
+    /** Whether the pane's listing is mid-load. `false` for a pane that isn't mounted. */
+    export function isPaneLoading(pane: 'left' | 'right'): boolean {
+        return getPaneRef(pane)?.isLoading() ?? false
+    }
+
     // noinspection JSUnusedGlobalSymbols -- consumed by quick-look-state
     export function routePanelKey(payload: {
         key: string

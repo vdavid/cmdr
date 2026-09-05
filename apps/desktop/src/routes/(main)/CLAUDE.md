@@ -10,8 +10,8 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
 - `command-dispatch.ts` + `command-handlers/` are the dispatch core and its family-grouped handlers; `listener-setup.ts`
   holds the menu / MCP-dialog / window-focus listeners; `window-services.ts` starts and stops every subscription the
   window holds for its lifetime.
-- Supporting pure modules: `startup-gates.ts`, `mcp-listeners.ts`, `explorer-api.ts`, `dispatch-dedup.ts`,
-  `global-keydown.ts`, `global-contextmenu.ts`.
+- Supporting pure modules: `startup-gates.ts`, `mcp-listeners.ts`, `mcp-nav-landing.ts`, `explorer-api.ts`,
+  `dispatch-dedup.ts`, `global-keydown.ts`, `global-contextmenu.ts`.
 
 ## Must-knows
 
@@ -33,6 +33,9 @@ via a typed API. Up: `apps/desktop/CLAUDE.md`, sibling: `../viewer/CLAUDE.md`.
   destination-side ops the focused pane can't satisfy.
 - **`mcp-listeners.ts` validate-parses each `mcp-*` payload** and dispatches typed `CommandId` consts, so a registry
   rename breaks compilation here.
+- **A `nav_to_path` ack must say where the pane ENDED UP.** `settled` doesn't answer that after a volume switch (it
+  resolves on the optimistic commit), so the adapter waits for the pane to go quiet and replies with a typed `navigated`
+  / `fell-back` / `did-not-settle` (`mcp-nav-landing.ts`). ❌ Don't ack on `settled` alone.
 - **E2E and debug listeners stay off the bus by design** (`e2e-trigger-file-drop`, the DEV `debug-*-error` ones call
   `explorerRef.*` directly). Don't "finish the migration". DETAILS § Off-bus hooks.
 - **`foreground-operation` is the one inbound channel from another WINDOW**: the queue's Show button asks this window to
