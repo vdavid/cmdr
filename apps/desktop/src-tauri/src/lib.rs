@@ -101,6 +101,10 @@ mod ai;
 mod analytics;
 mod app_lifecycle;
 pub mod benchmark;
+/// Test-only: invariants over the `capabilities/` manifests, which no other
+/// code references (Tauri reads them at build time).
+#[cfg(test)]
+mod capabilities;
 mod child_window_state;
 mod clipboard;
 mod commands;

@@ -42,9 +42,10 @@ window-creation perms are checked against the *calling* window.
   `$TEMP/drag-image.png`). A broad `fs:allow-remove` is "remove any path the process can", which a compromised main
   webview could exploit via raw `invoke('plugin:fs|remove', …)`, bypassing every typed-IPC guardrail. Only consumer:
   `file-explorer/drag/drag-drop.ts`. Renaming those temp files means updating the scope here (perms fail silently).
-- **Every window with a custom/overlay title bar needs `core:window:allow-start-dragging`** (`data-tauri-drag-region`
-  calls `window.startDragging()`). Without it the drag rejects silently and the title bar feels dead, while markup and
-  "has the attribute" tests still pass. Applies to `default.json`, `settings.json`, `viewer.json`.
+- **An overlay title bar needs BOTH `core:window:allow-start-dragging` and
+  `core:window:allow-internal-toggle-maximize`** (`drag.js` invokes one on click, the other on double-click). Missing
+  either kills that gesture silently; missing the second also auto-sends an error report. `core:default` bundles both.
+  Enforced by `apps/desktop/src-tauri/src/capabilities.rs`; why: `DETAILS.md` § Title-bar drag regions.
 - **`opener:allow-open-path` needs an explicit `"**/.*"` glob for hidden files.** The default `"**/*"` excludes
   dotfiles, so opening hidden files silently fails without the separate pattern.
 - **`playwright:default` can't go in any file here.** Its permission schemas exist only under the `playwright-e2e`

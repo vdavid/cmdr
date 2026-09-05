@@ -25,6 +25,23 @@ risk is low, but the structure is the foot-gun, any future gate slip would expos
 only need core window/webview/event/app-theme ops, devtools, and `store:default` (they reach the backend through typed
 app commands, which aren't ACL-gated, and through events), so `debug.json` carries `core:default` and is self-contained.
 
+## Title-bar drag regions need two permissions, not one
+
+Tauri injects `drag.js` into every webview (`tauri-2.11.5/src/window/scripts/drag.js`). On a click inside a
+`data-tauri-drag-region` it invokes `plugin:window|start_dragging`; on a double-click, `internal_toggle_maximize`. Both
+are ACL-gated, so a window with an overlay title bar needs both grants. `core:default` (which bundles
+`core:window:default`) carries them, which is why `default.json` and `debug.json` never had to name them, while
+`settings.json`, `viewer.json`, `queue.json`, and `shortcuts.json` list them one by one.
+
+Missing `internal_toggle_maximize` is worse than the usual silent permission failure. The invoke lives in Tauri's own
+injected script with no `.catch()`, so the rejection surfaces as an `FE:uncaught` unhandled promise rejection, which
+trips the error reporter's auto-send threshold: an ordinary double-click on a title bar uploads an error bundle. The
+gesture does nothing visible, so a user can repeat it several times, sending a bundle each time. That's how it reached
+us (ERR-ADEAR, 0.42.0, viewer window; all four secondary windows were affected).
+
+`apps/desktop/src-tauri/src/capabilities.rs` enforces the pair: any manifest granting `start-dragging` without
+`internal-toggle-maximize` fails the test. That's the guard, so the rule doesn't have to survive as prose alone.
+
 ## Viewer settings persistence path
 
 Because the viewer has no store access (see `CLAUDE.md`), viewer settings persist through the typed restricted-window
