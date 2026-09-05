@@ -503,32 +503,50 @@ state is unambiguous:
 `TurnResult` (`Answered` / `Failed(kind)` / `Cancelled`) is the caller's bookkeeping; the
 `AgentChatEvent`s already told the frontend everything.
 
-### Model-change events
+### Slot-change events
 
 `ProposalReady` is a display-only stream event. The runtime emits it only after the proposal dispatcher staged the rows
 in `main.db`; chat history persists the concise tool result, not proposal authority.
 
-A settings change can switch a thread's effective model mid-conversation; the thread logs
-it honestly as a UI-facing event row (`store::ConversationEvent::ModelChanged`) so the
-user sees which replies used which model. Two cooperating paths, one comparison
-(`conversations.last_model` vs the effective model):
+A settings change can move a thread's interactive slot mid-conversation, and the thread
+logs it honestly as UI-facing event rows so the user sees which replies ran under what.
+Two facets, each with its own persisted comparison and its own event:
 
-- **Send-time** (`record_model_transition`, at the turn's FIRST `End`, before the user
-  row): covers threads that weren't active when the setting changed (a resumed thread).
-  Running at first `End` keeps crash case b intact — a failed first attempt records
-  nothing, and the next successful turn re-runs the comparison, so the event is deferred,
-  never lost. The first turn of a thread only stamps `last_model` (nothing to switch from).
-- **Change-time** (`ChatRuntime::record_model_change`, called by the
-  `ask_cmdr_record_model_change` command when a model-affecting setting changes): awaits
-  the thread's single-flight lock, so with a turn in flight the event lands right AFTER
-  that reply (the turn keeps its already-resolved model — a change never yanks a running
-  request). The two paths can't double-log: whichever runs first updates `last_model`, and
-  the other sees "unchanged" and no-ops.
+- the **effective model** (`conversations.last_model`, `ConversationEvent::ModelChanged`);
+- the **chat memory size**, meaning the resolved prompt budget
+  (`conversations.last_chat_memory`, `ConversationEvent::ChatMemoryChanged`).
 
-The event's identity reaches the live rail via `AgentChatEvent::ModelChanged` (send-time)
-or the command's returned `MessageView` (change-time); history shows it via the `Event`
-role projection. Event rows never enter the LLM transcript (`load_transcript` filters
-them) or the prompt prefix.
+They are separate because a model switch usually moves the budget too, and "switched to X"
+doesn't say what it costs the thread — the budget is the part the user can't see anywhere
+else. A thread that changes both gets both lines, model first.
+
+⚠️ **`last_chat_memory` is deliberately NOT `last_prompt_budget`**, which holds the same
+number: that one is half of the gauge's pair (`conversation_context_usage`) and is written
+only beside the `last_prompt_tokens` it must be read with, so stamping it from a live
+settings change would leave the gauge reporting an old size against a new budget.
+
+Two cooperating paths run both comparisons:
+
+- **Send-time** (`record_model_transition` + `record_chat_memory_transition`, at the turn's
+  FIRST `End`, before the user row): covers threads that weren't active when the setting
+  changed (a resumed thread). Running at first `End` keeps crash case b intact — a failed
+  first attempt records nothing, and the next successful turn re-runs both comparisons, so
+  an event is deferred, never lost. A thread's first turn only stamps (nothing to change
+  from).
+- **Change-time** (`ChatRuntime::record_slot_change`, called by the
+  `ask_cmdr_record_slot_change` command when a slot-affecting setting changes): awaits the
+  thread's single-flight lock, so with a turn in flight the rows land right AFTER that reply
+  (the turn keeps what it already resolved — a change never yanks a running request). It
+  answers one `RecordedSlotEvent` per facet that moved, and `None` for a chat memory size
+  that couldn't be resolved (a local window under the floor) leaves that stamp alone rather
+  than clearing it. The two paths can't double-log: whichever runs first updates the stamp,
+  and the other sees "unchanged" and no-ops.
+
+An event's identity reaches the live rail via `AgentChatEvent::ModelChanged` /
+`ChatMemoryChanged` (send-time) or the command's returned `MessageView`s (change-time);
+history shows it via the `Event` role projection. Event rows never enter the LLM transcript
+(`load_transcript` filters them) or the prompt prefix, and they carry numbers and names
+rather than sentences, so the rail says them in the user's own language.
 
 **Decision: `Failed` carries `detail: Option<String>` — the source error's own wording —
 alongside the typed `kind`.** Why: the typed kinds alone left the user blind on the
@@ -620,7 +638,7 @@ can't cite it), `cost_tests.rs` (what the real shapes cost), and `test_support.r
 transcript builders and budgets they share). The runtime tests split the same way, over
 `runtime/test_support.rs`: `tests.rs` (single-flight, the per-message budgets, cancellation,
 the crash cases, cost, the typed error surface, and the attachment + consent gates),
-`repeat_tests.rs` (the repeat breaker), `context_budget_tests.rs`, `model_change_tests.rs`, and
+`repeat_tests.rs` (the repeat breaker), `context_budget_tests.rs`, `slot_change_tests.rs`, and
 `wake_tests.rs`. Put a new test in the module whose concern it matches rather than growing
 `tests.rs`.
 

@@ -36,9 +36,10 @@ The exact schema is in `migrations.rs`. The non-obvious choices:
 ## v2: `last_model` + event rows
 
 `conversations.last_model` (nullable; NULL = no completed turn yet) records the model a
-thread's most recent completed turn (or recorded model-change event) used. The chat
-runtime and the `ask_cmdr_record_model_change` command compare against it to decide when
-to log a "switched to X" timeline event; the full flow is `agent/chat/DETAILS.md` § Model-change events.
+thread's most recent completed turn (or recorded slot-change event) used. The chat runtime
+and the `ask_cmdr_record_slot_change` command compare against it to decide when to log a
+"switched to X" timeline event; `conversations.last_chat_memory` (v9) is its twin for the
+chat memory size. The full flow is `agent/chat/DETAILS.md` § Slot-change events.
 
 Event rows reuse the `messages` table with `role = 'event'` and `content_blocks` holding a
 typed `ConversationEvent` (not `Vec<AgentPart>`): they share the per-conversation `seq`,
@@ -79,6 +80,19 @@ completion. ⚠️ **It JOINs `conversations` and counts only the `notification`
 whole point of it existing beside `cost_summary`. Widening it to the whole meter would put two different budgets behind
 one number: a chatty afternoon on the rail would starve the wake loop, and a runaway wake loop would eat the user's own
 budget. A user-started thread has a NULL origin and never counts.
+
+## v9: `last_chat_memory`
+
+`conversations.last_chat_memory` (nullable; NULL = no completed turn yet) is `last_model`'s twin for the other half of
+the slot: the prompt-token budget the thread's most recent completed turn — or recorded chat-memory event — was
+assembled against.
+
+**Why a second column when v3's `last_prompt_budget` holds the same number.** That one belongs to the usage gauge and
+is written only as a PAIR with `last_prompt_tokens`, which is what makes a percentage meaningful. A live settings
+change has no prompt size to record beside it, so stamping the budget there would leave the gauge showing an old size
+against a new budget — a wrong number, in the one place the user goes to judge how full their chat is. The comparison
+that decides a timeline line and the measurement that fills a bar have different lifecycles; one column can't serve
+both.
 
 ## v8: the reserved quiet-wakes thread
 

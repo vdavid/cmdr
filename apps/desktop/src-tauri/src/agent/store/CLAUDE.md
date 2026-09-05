@@ -39,9 +39,9 @@ proposal spine. Depth: `DETAILS.md`.
   to the frontend. `StoredMessage` is not a wire type; the IPC layer derives a display `MessageView`.
 - **`role = 'event'` rows are UI timeline entries (typed `ConversationEvent`), NEVER transcript content.** The token
   lives outside `AgentRole` so the transcript loader can't feed one to a provider; a new reader of `messages` branches
-  on `StoredContent` and decides what an event means for it. They carry no `text_for_search`. ⚠️ And their limit: an
-  outcome recorded only as an event teaches the agent nothing (`../outcomes.rs`).
-  `conversations.last_model` (v2) records the last turn's model, powering model-change events.
+  on `StoredContent` and decides what an event means. No `text_for_search`. ⚠️ Their limit: an outcome recorded only as
+  an event teaches the agent nothing (`../outcomes.rs`). `last_model` (v2) + `last_chat_memory` (v9) power slot-change
+  events; ❌ never stamp v3's `last_prompt_budget`, it's the gauge's (`DETAILS.md` § v9).
 - **Consent lives in the `meta` table, not a settings preference.** `get_consent`/`set_consent`/`clear_consent` own the
   `ask_cmdr_consent_version` + `ask_cmdr_consent_at` rows; a partial or absent record reads as no consent, so the gate
   fails CLOSED. The copy version belongs to `agent::consent::CONSENT_COPY_VERSION`, not here.

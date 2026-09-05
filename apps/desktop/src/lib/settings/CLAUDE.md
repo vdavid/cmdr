@@ -45,9 +45,9 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   `<DateLabel>` (render); coloring only in `age-tier-utils.ts`. `'system'` mode reads `$lib/intl`'s `getFormatLocale()`;
   don't hardcode a locale or add a formatter. DETAILS § Date display.
 - **AI hot-apply** routes `ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` through `settings-applier.ts`
-  to `ai-config.ts::pushConfigToBackend()`, which re-reads every setting fresh; never pass cached values (callers just
-  `setSetting(...)`). Those three plus `askCmdr.interactiveModel` also nudge `noteModelSettingChanged()`;
-  `lib/ask-cmdr/DETAILS.md` § Model-change events.
+  to `ai-config.ts::pushConfigToBackend()`, which re-reads every setting fresh; never pass cached values, callers
+  `setSetting(...)`. Those three plus `askCmdr.interactiveModel` and `askCmdr.chatMemorySize` nudge
+  `noteSlotSettingChanged()`; `lib/ask-cmdr/DETAILS.md` § Slot-change events.
 - **Cloud AI API keys live in the OS secret store, never `settings.json`**, and a stored one is NEVER readable from a
   window: `getAiApiKeyStatus` reports is-set + a fingerprint, and `configureAi` / `checkAiConnection` take a provider id
   so the backend reads the key itself. ❌ Never pre-fill a key field. `docs/security.md` § "AI API keys".

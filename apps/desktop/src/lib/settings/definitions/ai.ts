@@ -134,8 +134,10 @@ export const aiSettings: SettingDefinitionSource[] = [
     // clamping, because that table will be wrong sometimes and the user may be right.
     // Presets rather than a free number field: the bounds are then unmisstateable, so
     // there's no below-minimum case and no validation copy. Read fresh per send by
-    // `load_ask_cmdr_chat_memory_size`, so it applies to the next message with no
-    // `settings-applier` case and never moves a turn already in flight.
+    // `load_ask_cmdr_chat_memory_size`, so it applies to the next message and never moves a
+    // turn already in flight. Its `settings-applier` case applies nothing for that reason:
+    // it only nudges the slot-change timeline, so an open thread says why its next reply
+    // carries a different amount of the chat.
     id: 'askCmdr.chatMemorySize',
     section: ['AI', 'Ask Cmdr'],
     labelKey: 'settings.askCmdr.chatMemorySize.label',
