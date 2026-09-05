@@ -10,6 +10,15 @@ that lives beside the code, and git holds the history.
 
 ## In progress
 
+- [ ] 2026-09-05 `viewer-selection-plan.md` - **The F3 viewer can select text three ways and two and a half of them are
+      broken.** A user reported that a double-click drag stays stuck on one word, Shift+Arrow does nothing, and
+      Option+Shift+Arrow does nothing; the code confirms all three (the drag isn't armed for a press counted 2 or 3, and
+      the keyboard router has no Left/Right branch at all). One idea carries the fix: selection granularity, so both
+      endpoints can be word- or line-snapped ranges, which also makes the "a twitch collapses the fresh word" defense
+      unnecessary rather than defended. Keyboard extension needs no caret in the model (it moves the existing `focus`),
+      so the new optional text cursor is a pure render layer over state that already exists. Five milestones: pointer
+      granularity, the pure motion model, keyboard wiring plus horizontal scroll, the `viewer.showTextCursor` setting
+      through the restricted-window allowlist, then docs. About a day.
 - [ ] 2026-09-03 `mtp-crate-extraction.md` - **MTP is the last backend that still reaches sideways into the app.** Its
       session layer holds a `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache and the
       index directly, and gates real behavior on nine inline `cfg(test)`s, so the backend on the flakiest hardware is
