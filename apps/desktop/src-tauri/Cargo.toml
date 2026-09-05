@@ -288,10 +288,6 @@ unicode-normalization = "0.1"
 urlencoding = "2.1.3"
 # Parsing the base URL a WebDAV sign-in form types, before the backend sees it.
 url = "2"
-# Percent-encoding the folder inside Warp's `warp://action/new_window?path=…` URI
-# ("open terminal here"). `urlencoding` above can't do it: it escapes `/` too, and the
-# scheme wants a literal path. Already in the lockfile via `cmdr-webdav`.
-percent-encoding = "2"
 # Semver comparison: the custom updater (macOS) and the cross-platform What's-new changelog slicer.
 semver = "1"
 
@@ -302,6 +298,12 @@ semver = "1"
 # lane). The cross-platform test that BUILDS a tarball gets it from
 # `[dev-dependencies]` instead.
 tar = "0.4"
+# Percent-encoding the folder inside Warp's `warp://action/new_window?path=…` URI
+# ("open terminal here"). Sits here rather than in the macOS+Linux table above for the
+# reason `tar` gives: `file_system/terminal.rs` is macOS-only, so on Linux the lib never
+# touches it. `urlencoding` (macOS+Linux table) can't do the job: it escapes `/` too, and
+# the scheme wants a literal path. Already in the lockfile via `cmdr-webdav`.
+percent-encoding = "2"
 file_icon_provider = "1.0.0"
 core-foundation = "0.10.1"
 core-services = "1.0.0"
