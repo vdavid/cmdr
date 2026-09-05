@@ -23,13 +23,14 @@ static KNOWN_DEVICES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 /// Flag to indicate watcher has been started
 static WATCHER_STARTED: OnceLock<()> = OnceLock::new();
 
-/// Whether MTP support is enabled, and the ONE copy of that bit.
+/// Whether MTP support is enabled, read from the manager, which owns the ONE
+/// copy of that bit.
 ///
-/// It lives on the connection manager rather than up here because the
-/// session-reset reopen loop reads it between attempts, so a recovery in flight
-/// can't resurrect a device the user just switched MTP off for, and that layer
-/// has to run with no app around it. When it's false the watcher loop still runs
-/// but `check_for_device_changes()` returns early and no auto-connects happen.
+/// It lives down there rather than up here because the session-reset reopen loop
+/// reads it between attempts, so a recovery in flight can't resurrect a device
+/// the user just switched MTP off for, and that layer has to run with no app
+/// around it. When it's false the watcher loop still runs but
+/// `check_for_device_changes()` returns early and no auto-connects happen.
 fn is_mtp_enabled() -> bool {
     super::connection_manager().is_enabled()
 }
@@ -442,7 +443,7 @@ mod tests {
 
         set_mtp_enabled_flag(false);
         assert!(!is_mtp_enabled());
-        assert!(!super::super::connection_manager().is_enabled());
+        assert!(!crate::mtp::connection_manager().is_enabled());
 
         set_mtp_enabled_flag(true);
         assert!(is_mtp_enabled());
