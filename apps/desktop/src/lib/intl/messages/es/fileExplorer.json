@@ -972,6 +972,84 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.git.size.branches": "{count, plural, one {{countText} rama} many {{countText} ramas} other {{countText} ramas}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, one {{countText} etiqueta} many {{countText} etiquetas} other {{countText} etiquetas}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd"
+  },
+  "fileExplorer.git.size.commits": "{count, plural, one {{countText} commit} many {{countText} commits} other {{countText} commits}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be",
+    "sameAsSourceJustification": "\"Commit\" is the loanword Spanish developers use, and the locale already ships it. The locale already ships this word untranslated for the same feature: the \"Show virtual git portal\" setting names the six categories with it."
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} entrada de stash} many {{countText} entradas de stash} other {{countText} entradas de stash}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} árbol de trabajo vinculado} many {{countText} árboles de trabajo vinculados} other {{countText} árboles de trabajo vinculados}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, one {{countText} submódulo} many {{countText} submódulos} other {{countText} submódulos}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} archivo} many {{countText} archivos} other {{countText} archivos}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "The `+n / -n` tally is symbols and numbers only. Every language that uses git reads it the same way, so there is nothing here to translate."
+  },
+  "fileExplorer.git.size.onBranch": "en {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, one {{countText} rama en este repositorio} many {{countText} ramas en este repositorio} other {{countText} ramas en este repositorio}}",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, one {{countText} etiqueta en este repositorio} many {{countText} etiquetas en este repositorio} other {{countText} etiquetas en este repositorio}}",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, one {{countText} commit accesible desde HEAD} many {{countText} commits accesibles desde HEAD} other {{countText} commits accesibles desde HEAD}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, one {{countText} archivo cambiado respecto al commit padre} many {{countText} archivos cambiados respecto al commit padre} other {{countText} archivos cambiados respecto al commit padre}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} por delante, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} por detrás de `{vs}`",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "86a1aa3"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Commit etiquetado {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Fijado en el commit {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Creado en la rama `{branch}`",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "cfdbd45"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "La rama `{branch}` está activa",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "730335d"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Desacoplado en {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
+  },
   "fileExplorer.selectionTooltip.selected": "Seleccionado",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

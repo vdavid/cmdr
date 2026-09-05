@@ -23,6 +23,7 @@ pub mod entry;
 pub mod file_provider;
 pub mod filesystem_kind;
 pub mod firmlinks;
+pub mod git_meta;
 pub mod icons;
 pub mod ignore_poison;
 pub mod log_rollup;

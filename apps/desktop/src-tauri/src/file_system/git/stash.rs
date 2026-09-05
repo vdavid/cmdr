@@ -29,6 +29,7 @@ use crate::file_system::listing::FileEntry;
 
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
+use cmdr_fs::git_meta::GitEntryMeta;
 
 /// Lists stash entries as virtual directory entries `0`, `1`, …
 ///
@@ -83,8 +84,7 @@ pub fn list_stashes(repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError
         // or `On main: <user message>`. Pull out the branch and surface
         // it as a friendly Size cell.
         if let Some(branch) = parse_stash_branch(subject) {
-            fe.display_size = Some(format!("on {}", branch));
-            fe.display_size_tooltip = Some(format!("Created on branch `{}`", branch));
+            fe.git_meta = Some(GitEntryMeta::StashedOnBranch { branch });
         }
         out.push(fe);
     }

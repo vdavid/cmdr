@@ -13,6 +13,7 @@ use super::path::{Cat, VirtualGitPath, classify};
 use super::repo::discover_repo;
 use super::test_fixtures::{Fixture, build_repo_with_branches, build_simple_repo, cleanup, git_cli, temp_dir};
 use super::{log as git_log, stash, submodules, virtual_listing, worktrees};
+use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
 
 // ── Root listing: counts and dates ──────────────────────────────────
 
@@ -27,17 +28,26 @@ fn root_listing_populates_size_with_item_counts() {
 
     let branches = by_name["branches"];
     assert_eq!(branches.size, Some(3), "main + feature-a + feature-b = 3 branches");
-    assert_eq!(branches.display_size.as_deref(), Some("3 branches"));
+    assert_eq!(
+        branches.git_meta,
+        Some(GitEntryMeta::Count {
+            counted: GitCountKind::Branches,
+            n: 3
+        })
+    );
 
     let commits = by_name["commits"];
     assert!(commits.size.is_some(), "commits/ category gets a count");
     assert!(
-        commits
-            .display_size
-            .as_deref()
-            .map(|s| s.contains("commit"))
-            .unwrap_or(false),
-        "commits/ display says 'commits'"
+        matches!(
+            commits.git_meta,
+            Some(GitEntryMeta::Count {
+                counted: GitCountKind::Commits,
+                ..
+            })
+        ),
+        "commits/ counts commits: {:?}",
+        commits.git_meta
     );
 
     // Real `.git/*` entries land in the mixed listing too. HEAD is the
@@ -50,12 +60,20 @@ fn root_listing_populates_size_with_item_counts() {
 }
 
 #[test]
-fn root_listing_pluralizes_singular_entries() {
+fn root_listing_reports_a_single_branch_as_a_count_of_one() {
     let (dir, _f) = build_simple_repo("m4", 1);
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_root(&handle, &root);
     let branches = entries.iter().find(|e| e.name == "branches").unwrap();
-    assert_eq!(branches.display_size.as_deref(), Some("1 branch"));
+    // The count reaches the frontend as a number; `one` vs `other` is the
+    // catalog's job, in each locale's own plural rules.
+    assert_eq!(
+        branches.git_meta,
+        Some(GitEntryMeta::Count {
+            counted: GitCountKind::Branches,
+            n: 1
+        })
+    );
     cleanup(&dir);
 }
 
@@ -68,11 +86,16 @@ fn branches_listing_populates_ahead_behind() {
     let entries = virtual_listing::list_branches(&handle, &root).unwrap();
 
     let feat = entries.iter().find(|e| e.name == "feat").expect("feat branch");
-    assert_eq!(feat.display_size.as_deref(), Some("+3 / -0"));
+    assert_eq!(
+        feat.git_meta,
+        Some(GitEntryMeta::AheadBehind {
+            ahead: 3,
+            behind: 0,
+            vs: "main".to_string(),
+        }),
+        "the fallback comparison branch travels with the counts"
+    );
     assert_eq!(feat.size, Some(3), "ahead-count is the within-category sort key");
-    let tip = feat.display_size_tooltip.as_deref().unwrap_or("");
-    assert!(tip.contains("3 commits ahead"), "tooltip mentions ahead: {}", tip);
-    assert!(tip.contains("`main`"), "tooltip mentions fallback branch: {}", tip);
     assert!(feat.modified_at.is_some(), "branch tip date populated");
 
     cleanup(&dir);
@@ -100,14 +123,14 @@ fn branches_default_branch_alone_has_blank_size() {
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_branches(&handle, &root).unwrap();
     let main = entries.iter().find(|e| e.name == "main").unwrap();
-    assert!(main.display_size.is_none(), "main with no upstream stays blank");
+    assert!(main.git_meta.is_none(), "main with no upstream stays blank");
     cleanup(&dir);
 }
 
-// ── Tags: short SHA ─────────────────────────────────────────────────
+// ── Tags: the commit a tag points at ────────────────────────────────
 
 #[test]
-fn tags_listing_populates_short_sha() {
+fn tags_listing_names_the_tagged_commit() {
     let (dir, f) = build_simple_repo("m4", 1);
     // Create a lightweight tag pointing at HEAD via gix.
     let head_id = f
@@ -129,9 +152,11 @@ fn tags_listing_populates_short_sha() {
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_tags(&handle, &root).unwrap();
     let v1 = entries.iter().find(|e| e.name == "v1.0").unwrap();
-    let sha = v1.display_size.as_deref().expect("display_size set");
-    assert_eq!(sha.len(), 7, "short SHA is 7 chars");
-    assert!(sha.chars().all(|c| c.is_ascii_hexdigit()), "all hex");
+    let Some(GitEntryMeta::TaggedCommit { id }) = &v1.git_meta else {
+        panic!("a tag names its commit: {:?}", v1.git_meta);
+    };
+    assert_eq!(id.len(), 40, "the FULL id crosses IPC; the cell shortens it");
+    assert!(id.chars().all(|c| c.is_ascii_hexdigit()), "all hex");
     assert!(v1.modified_at.is_some(), "tag carries a date");
     cleanup(&dir);
 }
@@ -146,8 +171,14 @@ fn commits_listing_populates_files_changed() {
     let top = &entries[0];
     let n = top.size.expect("files-changed size set");
     assert!(n >= 1, "at least one file changed in the second commit");
-    let label = top.display_size.as_deref().unwrap_or("");
-    assert!(label.contains("file"), "display says 'file' or 'files': {}", label);
+    assert_eq!(
+        top.git_meta,
+        Some(GitEntryMeta::Count {
+            counted: GitCountKind::FilesChanged,
+            n
+        }),
+        "the cell's count and the sort key are the same number"
+    );
     cleanup(&dir);
 }
 
@@ -164,8 +195,10 @@ fn stash_listing_extracts_branch_from_subject() {
     let entries = stash::list_stashes(&root).unwrap();
     let first = &entries[0];
     assert_eq!(
-        first.display_size.as_deref(),
-        Some("on main"),
+        first.git_meta,
+        Some(GitEntryMeta::StashedOnBranch {
+            branch: "main".to_string()
+        }),
         "stash subject parses to branch"
     );
     cleanup(&dir);
@@ -187,16 +220,21 @@ fn worktree_listing_shows_branch() {
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = worktrees::list_worktrees(&handle, &root).unwrap();
     let wt_entry = &entries[0];
-    assert_eq!(wt_entry.display_size.as_deref(), Some("on wt-branch"));
+    assert_eq!(
+        wt_entry.git_meta,
+        Some(GitEntryMeta::WorktreeOnBranch {
+            branch: "wt-branch".to_string()
+        })
+    );
     assert!(wt_entry.modified_at.is_some(), "worktree HEAD date set");
     cleanup(&dir);
     cleanup(&wt);
 }
 
-// ── Submodules: pinned short SHA ────────────────────────────────────
+// ── Submodules: the pinned commit ───────────────────────────────────
 
 #[test]
-fn submodule_listing_shows_pinned_sha() {
+fn submodule_listing_names_the_pinned_commit() {
     let (outer, _of) = build_simple_repo("m4", 1);
     let (inner, _if) = build_simple_repo("m4", 1);
     let inner_url = format!("file://{}", inner.display());
@@ -219,8 +257,10 @@ fn submodule_listing_shows_pinned_sha() {
     let (handle, root) = discover_repo(&outer).unwrap();
     let entries = submodules::list_submodules(&handle, &root).unwrap();
     let sm = &entries[0];
-    let sha = sm.display_size.as_deref().expect("submodule short SHA");
-    assert_eq!(sha.len(), 7);
+    let Some(GitEntryMeta::PinnedCommit { id }) = &sm.git_meta else {
+        panic!("a submodule names its pinned commit: {:?}", sm.git_meta);
+    };
+    assert_eq!(id.len(), 40, "the FULL id crosses IPC; the cell shortens it");
     assert!(sm.modified_at.is_some(), "pinned commit date");
     cleanup(&outer);
     cleanup(&inner);

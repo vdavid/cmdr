@@ -63,7 +63,7 @@ use crate::file_system::listing::FileEntry;
 use super::column_meta::files_changed_count;
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
-use crate::pluralize::pluralize;
+use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
 
 /// Hard cap on entries returned in a single `commits/` listing.
 ///
@@ -208,11 +208,10 @@ pub fn list_commits(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEnt
         // count, still a useful "size of this snapshot" cue.
         if let Some(n) = files_changed_count(&repo, id) {
             fe.size = Some(n);
-            fe.display_size = Some(pluralize(n, "file"));
-            fe.display_size_tooltip = Some(format!(
-                "{} changed compared to the parent commit",
-                pluralize(n, "file")
-            ));
+            fe.git_meta = Some(GitEntryMeta::Count {
+                counted: GitCountKind::FilesChanged,
+                n,
+            });
         }
         out.push(fe);
     }

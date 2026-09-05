@@ -972,6 +972,85 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.git.size.branches": "{count, plural, one {{countText} branche} many {{countText} branches} other {{countText} branches}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, one {{countText} tag} many {{countText} tags} other {{countText} tags}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd",
+    "sameAsSourceJustification": "\"Tag\" is the loanword French developers use, and the locale already ships it. The locale already ships this word untranslated for the same feature: the \"Show virtual git portal\" setting names the six categories with it."
+  },
+  "fileExplorer.git.size.commits": "{count, plural, one {{countText} commit} many {{countText} commits} other {{countText} commits}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be",
+    "sameAsSourceJustification": "\"Commit\" is the loanword French developers use, and the locale already ships it. The locale already ships this word untranslated for the same feature: the \"Show virtual git portal\" setting names the six categories with it."
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} entrée de stash} many {{countText} entrées de stash} other {{countText} entrées de stash}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} worktree lié} many {{countText} worktrees liés} other {{countText} worktrees liés}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, one {{countText} sous-module} many {{countText} sous-modules} other {{countText} sous-modules}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} fichier} many {{countText} fichiers} other {{countText} fichiers}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "The `+n / -n` tally is symbols and numbers only. Every language that uses git reads it the same way, so there is nothing here to translate."
+  },
+  "fileExplorer.git.size.onBranch": "sur {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, one {{countText} branche dans ce dépôt} many {{countText} branches dans ce dépôt} other {{countText} branches dans ce dépôt}}",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, one {{countText} tag dans ce dépôt} many {{countText} tags dans ce dépôt} other {{countText} tags dans ce dépôt}}",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, one {{countText} commit accessible depuis HEAD} many {{countText} commits accessibles depuis HEAD} other {{countText} commits accessibles depuis HEAD}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, one {{countText} fichier modifié par rapport au commit parent} many {{countText} fichiers modifiés par rapport au commit parent} other {{countText} fichiers modifiés par rapport au commit parent}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} d''avance, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} de retard sur `{vs}`",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "86a1aa3"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Commit taggé {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Épinglé sur le commit {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Créé sur la branche `{branch}`",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "cfdbd45"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "La branche `{branch}` est active",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "730335d"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Détaché sur {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
+  },
   "fileExplorer.selectionTooltip.selected": "Sélectionné",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

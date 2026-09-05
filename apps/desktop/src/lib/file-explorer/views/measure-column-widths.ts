@@ -23,6 +23,7 @@ import {
   getDisplayExtension,
   getDisplaySize,
   hasSizeMismatch,
+  wordGitMeta,
 } from './full-list-utils'
 import { tString } from '$lib/intl/messages.svelte'
 
@@ -204,14 +205,15 @@ function sizeTextForEntry(
   isRestricted: boolean,
 ): string {
   // TCC-restricted entries render `<no perms>` instead of the misleading `0`
-  // the indexer recorded after a denied scan. Keep this BEFORE the
-  // `entry.displaySize` check: restricted state takes priority over virtual
-  // git display strings (which wouldn't apply to favorites anyway).
+  // the indexer recorded after a denied scan. Keep this BEFORE the git check:
+  // restricted state takes priority over a virtual git row's wording (which
+  // wouldn't apply to favorites anyway).
   if (isRestricted) return tString('fileExplorer.dirSize.noPerms')
-  // Virtual git entries override the Size cell with a short string
-  // (`+12 / -3`, `5 files`, …); measure that instead of the byte format.
-  if (entry.displaySize != null) {
-    return entry.displaySize
+  // A virtual git row words its own Size cell (`+12 / -3`, `5 files`, …);
+  // measure that instead of the byte format. Same helper the renderer calls,
+  // so the two can't drift apart on a copy edit or a locale switch.
+  if (entry.gitMeta != null) {
+    return wordGitMeta(entry.gitMeta).override ?? ''
   }
   if (entry.isDirectory) {
     const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)

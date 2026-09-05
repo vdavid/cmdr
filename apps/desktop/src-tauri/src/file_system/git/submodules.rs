@@ -19,6 +19,7 @@ use crate::file_system::listing::FileEntry;
 
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
+use cmdr_fs::git_meta::GitEntryMeta;
 
 /// Lists submodules as virtual entries with `redirectToPath` set.
 pub fn list_submodules(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {
@@ -53,9 +54,9 @@ pub fn list_submodules(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<File
             && let Ok(id) = opened.head_id()
         {
             let target_id = id.detach();
-            let short: String = target_id.to_string().chars().take(7).collect();
-            fe.display_size = Some(short);
-            fe.display_size_tooltip = Some(format!("Pinned at commit {}", target_id));
+            fe.git_meta = Some(GitEntryMeta::PinnedCommit {
+                id: target_id.to_string(),
+            });
             if let Ok(commit) = opened.find_commit(target_id)
                 && let Ok(committer) = commit.committer()
                 && let Ok(time) = committer.time()

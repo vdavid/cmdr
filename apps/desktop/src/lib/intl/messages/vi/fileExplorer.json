@@ -970,6 +970,84 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.git.size.branches": "{count, plural, other {{countText} nhánh}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, other {{countText} thẻ}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd"
+  },
+  "fileExplorer.git.size.commits": "{count, plural, other {{countText} commit}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be",
+    "sameAsSourceJustification": "\"Commit\" is the loanword Vietnamese developers use, and the locale already ships it. The locale already ships this word untranslated for the same feature: the \"Show virtual git portal\" setting names the six categories with it."
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, other {{countText} mục stash}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, other {{countText} worktree liên kết}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, other {{countText} mô-đun con}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, other {{countText} tệp}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "The `+n / -n` tally is symbols and numbers only. Every language that uses git reads it the same way, so there is nothing here to translate."
+  },
+  "fileExplorer.git.size.onBranch": "trên {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, other {{countText} nhánh trong kho này}}",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, other {{countText} thẻ trong kho này}}",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, other {{countText} commit có thể truy cập từ HEAD}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, other {{countText} tệp đã thay đổi so với commit cha}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "Vượt trước {ahead, plural, other {{aheadText} commit}}, tụt sau {behind, plural, other {{behindText} commit}} so với `{vs}`",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "86a1aa3"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Commit được gắn thẻ {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Được ghim ở commit {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Được tạo trên nhánh `{branch}`",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "cfdbd45"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Nhánh `{branch}` đang được mở",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "730335d"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Tách rời tại {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
+  },
   "fileExplorer.selectionTooltip.selected": "Đã chọn",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

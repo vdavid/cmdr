@@ -6,8 +6,10 @@
 import { getSetting } from '$lib/settings/settings-store'
 import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 import type { FileEntry } from '../types'
-import { colorizeSizeString, formatSizeTriads } from '../selection/selection-info-utils'
+import { colorizeSizeString, formatNumber, formatSizeTriads } from '../selection/selection-info-utils'
 import { tString } from '$lib/intl/messages.svelte'
+import type { MessageKey } from '$lib/intl/keys.gen'
+import type { GitCountKind, GitEntryMeta } from '$lib/ipc/bindings'
 
 /** Layout constants for Full mode */
 export const FULL_LIST_ROW_HEIGHT = 20
@@ -192,17 +194,96 @@ export function measureDateColumnWidth(formatFn: (timestamp: number) => string):
 // ============================================================================
 
 /**
- * What the Size column should render for one row. Virtual git entries
- * carry a `displaySize` string that's rendered verbatim (`+12 / -3`,
- * `5 files`, `on main`, …); regular rows render formatted bytes from
- * `size` / `physicalSize`. This helper centralizes the decision so the
- * width-measurer and the renderer agree on what's drawn.
+ * What the Size column should render for one row. A virtual git entry has no
+ * byte count, so it carries a typed `gitMeta` fact (an ahead/behind pair, a
+ * count, a pinned commit) that this module words from the message catalog;
+ * regular rows render formatted bytes from `size` / `physicalSize`. This helper
+ * centralizes the decision so the width-measurer and the renderer agree on
+ * what's drawn.
  */
 export interface SizeDisplayPick {
   /** When set, render this string verbatim. */
   override?: string
   /** Optional rich tooltip for the override (also used as aria-label). */
   tooltip?: string
+}
+
+/** How many leading characters of a commit id the cell shows. A display choice, so it lives here. */
+const SHORT_ID_LENGTH = 7
+
+/**
+ * The catalog key each count kind words itself with. The cell and the tooltip
+ * are the same message for the three rows where the tooltip has nothing to add
+ * (`stash`, `worktrees`, `submodules`), so those map to one key.
+ */
+const COUNT_KEYS: Record<GitCountKind, { cell: MessageKey; tooltip: MessageKey }> = {
+  branches: { cell: 'fileExplorer.git.size.branches', tooltip: 'fileExplorer.git.tooltip.branches' },
+  tags: { cell: 'fileExplorer.git.size.tags', tooltip: 'fileExplorer.git.tooltip.tags' },
+  commits: { cell: 'fileExplorer.git.size.commits', tooltip: 'fileExplorer.git.tooltip.commits' },
+  stashEntries: { cell: 'fileExplorer.git.size.stashEntries', tooltip: 'fileExplorer.git.size.stashEntries' },
+  linkedWorktrees: {
+    cell: 'fileExplorer.git.size.linkedWorktrees',
+    tooltip: 'fileExplorer.git.size.linkedWorktrees',
+  },
+  submodules: { cell: 'fileExplorer.git.size.submodules', tooltip: 'fileExplorer.git.size.submodules' },
+  filesChanged: { cell: 'fileExplorer.git.size.filesChanged', tooltip: 'fileExplorer.git.tooltip.filesChanged' },
+}
+
+/**
+ * Words one virtual git entry's Size cell and its tooltip in the active locale.
+ *
+ * Every count goes through the catalog's `plural`, so each language picks its
+ * own forms: English switches noun at one, Hungarian never switches it at all,
+ * Chinese has a single form, and Portuguese carries a `many` category English
+ * has no use for. A commit id crosses IPC in full and is shortened here, so the
+ * tooltip can still name the whole thing.
+ */
+export function wordGitMeta(meta: GitEntryMeta): SizeDisplayPick {
+  switch (meta.kind) {
+    case 'count': {
+      const keys = COUNT_KEYS[meta.counted]
+      const params = { count: meta.n, countText: formatNumber(meta.n) }
+      return { override: tString(keys.cell, params), tooltip: tString(keys.tooltip, params) }
+    }
+    case 'aheadBehind': {
+      const params = {
+        ahead: meta.ahead,
+        aheadText: formatNumber(meta.ahead),
+        behind: meta.behind,
+        behindText: formatNumber(meta.behind),
+        vs: meta.vs,
+      }
+      return {
+        override: tString('fileExplorer.git.size.aheadBehind', params),
+        tooltip: tString('fileExplorer.git.tooltip.aheadBehind', params),
+      }
+    }
+    case 'taggedCommit':
+      return {
+        override: meta.id.slice(0, SHORT_ID_LENGTH),
+        tooltip: tString('fileExplorer.git.tooltip.taggedCommit', { id: meta.id }),
+      }
+    case 'pinnedCommit':
+      return {
+        override: meta.id.slice(0, SHORT_ID_LENGTH),
+        tooltip: tString('fileExplorer.git.tooltip.pinnedCommit', { id: meta.id }),
+      }
+    case 'worktreeDetachedAt':
+      return {
+        override: meta.id.slice(0, SHORT_ID_LENGTH),
+        tooltip: tString('fileExplorer.git.tooltip.worktreeDetached', { id: meta.id }),
+      }
+    case 'stashedOnBranch':
+      return {
+        override: tString('fileExplorer.git.size.onBranch', { branch: meta.branch }),
+        tooltip: tString('fileExplorer.git.tooltip.stashedOnBranch', { branch: meta.branch }),
+      }
+    case 'worktreeOnBranch':
+      return {
+        override: tString('fileExplorer.git.size.onBranch', { branch: meta.branch }),
+        tooltip: tString('fileExplorer.git.tooltip.worktreeOnBranch', { branch: meta.branch }),
+      }
+  }
 }
 
 /**
@@ -214,7 +295,7 @@ export interface SizeDisplayPick {
  * column with `<no perms>` because the indexer recorded `recursiveSize=0`
  * for the folder (couldn't read its contents), and rendering literal `0`
  * misleads the user into thinking the folder is empty. The override takes
- * priority over `entry.displaySize` since restricted state is the more
+ * priority over a git row's wording, since restricted state is the more
  * actionable signal.
  */
 export function pickSizeDisplay(entry: FileEntry, isRestricted = false): SizeDisplayPick {
@@ -224,8 +305,8 @@ export function pickSizeDisplay(entry: FileEntry, isRestricted = false): SizeDis
       tooltip: tString('fileExplorer.dirSize.noPermsTooltip'),
     }
   }
-  if (entry.displaySize != null) {
-    return { override: entry.displaySize, tooltip: entry.displaySizeTooltip ?? undefined }
+  if (entry.gitMeta != null) {
+    return wordGitMeta(entry.gitMeta)
   }
   return {}
 }

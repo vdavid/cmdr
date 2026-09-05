@@ -14,7 +14,7 @@ for the breadcrumb chip, status column, and the live `RepoInfo` store.
   `VirtualGitPath` / `classify` parser. `virtual_listing.rs`, `log.rs`, `stash.rs`, `worktrees.rs`, `submodules.rs`,
   `tree.rs`, `snapshot_dates.rs`: per-category listing + tree walks. `status.rs`: cached status walk.
   `read_blob.rs`: `GitBlobReadStream`. `watcher.rs`: per-repo notify debouncer. `column_meta.rs`: Modified/Size column
-  helpers. `FriendlyGitError` lives in `crates/cmdr-fs/src/volume/friendly_error/git.rs`
+  helpers, which hand back numbers and ids on a typed `git_meta`, never words. `FriendlyGitError` lives in `crates/cmdr-fs/src/volume/friendly_error/git.rs`
   (`VolumeError::FriendlyGit` carries it), aliased here as `git::friendly`.
 - Tauri commands, the watcher path set, the column tables, and the decision record are in `DETAILS.md`.
 
@@ -45,5 +45,8 @@ for the breadcrumb chip, status column, and the live `RepoInfo` store.
   would do nothing). Wire the IPC and the affordance together when a user first reports hitting the cap.
 - **Ref names render flat**: `feature/foo` is one entry, not nested. The classifier greedy-matches known refs
   longest-first. See `DETAILS.md` § "Ref-name flat rendering".
+- **The Size column carries a FACT, ❌ never a sentence.** Every virtual row sets `FileEntry.git_meta`
+  (`cmdr_fs::git_meta::GitEntryMeta`) and the frontend words it from the message catalog, so all 10 translations get the
+  cell and its tooltip with their own plural rules. Adding a row shape means a variant here plus its two catalog keys.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

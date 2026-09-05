@@ -974,6 +974,83 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.git.size.branches": "{count, plural, one {{countText} Branch} other {{countText} Branches}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, one {{countText} Tag} other {{countText} Tags}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd"
+  },
+  "fileExplorer.git.size.commits": "{count, plural, one {{countText} Commit} other {{countText} Commits}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be"
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} Stash-Eintrag} other {{countText} Stash-Einträge}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} verknüpfter Worktree} other {{countText} verknüpfte Worktrees}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, one {{countText} Submodul} other {{countText} Submodule}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} Datei} other {{countText} Dateien}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "The `+n / -n` tally is symbols and numbers only. Every language that uses git reads it the same way, so there is nothing here to translate."
+  },
+  "fileExplorer.git.size.onBranch": "auf {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, one {{countText} Branch in diesem Repo} other {{countText} Branches in diesem Repo}}",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, one {{countText} Tag in diesem Repo} other {{countText} Tags in diesem Repo}}",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, one {{countText} Commit, der von HEAD aus erreichbar ist} other {{countText} Commits, die von HEAD aus erreichbar sind}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, one {{countText} Datei gegenüber dem Eltern-Commit geändert} other {{countText} Dateien gegenüber dem Eltern-Commit geändert}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} Commit} other {{aheadText} Commits}} voraus, {behind, plural, one {{behindText} Commit} other {{behindText} Commits}} zurück gegenüber `{vs}`",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "86a1aa3"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Getaggter Commit {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Festgesetzt auf Commit {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Erstellt auf Branch `{branch}`",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "cfdbd45"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch `{branch}` ist ausgecheckt",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "730335d"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Losgelöst bei {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
+  },
   "fileExplorer.selectionTooltip.selected": "Ausgewählt",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

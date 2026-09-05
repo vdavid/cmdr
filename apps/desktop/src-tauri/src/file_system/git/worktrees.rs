@@ -26,6 +26,7 @@ use crate::file_system::listing::FileEntry;
 
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;
+use cmdr_fs::git_meta::GitEntryMeta;
 
 /// Lists linked worktrees as virtual entries with `redirectToPath` set.
 ///
@@ -74,13 +75,10 @@ fn populate_worktree_columns(fe: &mut FileEntry, wt_repo: &gix::Repository) {
             gix::head::Kind::Symbolic(reference) => {
                 let full = reference.name.as_bstr().to_string();
                 let branch = full.strip_prefix("refs/heads/").unwrap_or(&full).to_string();
-                fe.display_size = Some(format!("on {}", branch));
-                fe.display_size_tooltip = Some(format!("Branch `{}` is checked out", branch));
+                fe.git_meta = Some(GitEntryMeta::WorktreeOnBranch { branch });
             }
             gix::head::Kind::Detached { target, .. } => {
-                let short: String = target.to_string().chars().take(7).collect();
-                fe.display_size = Some(short.clone());
-                fe.display_size_tooltip = Some(format!("Detached at {}", target));
+                fe.git_meta = Some(GitEntryMeta::WorktreeDetachedAt { id: target.to_string() });
             }
             gix::head::Kind::Unborn(_) => {
                 // Fresh worktree without commits, leave the cell blank.

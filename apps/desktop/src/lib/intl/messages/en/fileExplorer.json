@@ -1425,6 +1425,155 @@
   "@fileExplorer.dirSize.staleLine": {
     "description": "Line in a folder''s size tooltip when the size is exact but was computed at an older point (the drive hasn''t been re-scanned since reconnecting), so it''s accurate-as-of-then but possibly stale now."
   },
+  "fileExplorer.git.size.branches": "{count, plural, one {{countText} branch} other {{countText} branches}}",
+  "@fileExplorer.git.size.branches": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `branches` row, saying how many branches the repository has.",
+    "placeholders": {
+      "countText": "the number of branches, already formatted for display",
+      "count": "the same number of branches (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.size.tags": "{count, plural, one {{countText} tag} other {{countText} tags}}",
+  "@fileExplorer.git.size.tags": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `tags` row, saying how many tags the repository has.",
+    "placeholders": {
+      "countText": "the number of tags, already formatted for display",
+      "count": "the same number of tags (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.size.commits": "{count, plural, one {{countText} commit} other {{countText} commits}}",
+  "@fileExplorer.git.size.commits": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `commits` row, saying how many commits the repository has.",
+    "placeholders": {
+      "countText": "the number of commits, already formatted for display",
+      "count": "the same number of commits (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} stash entry} other {{countText} stash entries}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `stash` row. A stash is a set of changes git holds aside so you can come back to them later; \"stash\" is the git term for it.",
+    "placeholders": {
+      "countText": "the number of stash entries, already formatted for display",
+      "count": "the same number of stash entries (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} linked worktree} other {{countText} linked worktrees}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `worktrees` row. A linked worktree is a second folder checked out from the same repository, so two branches can be open side by side; \"worktree\" is the git term for it.",
+    "placeholders": {
+      "countText": "the number of linked worktrees, already formatted for display",
+      "count": "the same number of linked worktrees (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, one {{countText} submodule} other {{countText} submodules}}",
+  "@fileExplorer.git.size.submodules": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `submodules` row. A submodule is another repository nested inside this one; \"submodule\" is the git term for it.",
+    "placeholders": {
+      "countText": "the number of submodules, already formatted for display",
+      "count": "the same number of submodules (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} file} other {{countText} files}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a single commit''s row, saying how many files that commit changed.",
+    "placeholders": {
+      "countText": "the number of files a commit changed, already formatted for display",
+      "count": "the same number of files a commit changed (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a single branch''s row, a compact tally of how far it has moved apart from the branch it''s compared against. The `+` and `-` signs mean \"has extra\" and \"is missing\" and read the same wherever git is used, so keep the shape unless your language genuinely reads it differently. Very short: the cell is one narrow column.",
+    "placeholders": {
+      "aheadText": "how many commits this branch has that the other one doesn''t, already formatted for display",
+      "behindText": "how many commits the other branch has that this one doesn''t, already formatted for display"
+    }
+  },
+  "fileExplorer.git.size.onBranch": "on {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a stash entry''s row or a linked worktree''s row, naming the branch it belongs to. Very short: the cell is one narrow column.",
+    "placeholders": {
+      "branch": "the branch name, for example \"main\" (a name, never translated)"
+    }
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, one {{countText} branch} other {{countText} branches}} on this repo",
+  "@fileExplorer.git.tooltip.branches": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `branches` row''s count. \"This repo\" is the repository the user is browsing.",
+    "placeholders": {
+      "countText": "the number of branches, already formatted for display",
+      "count": "the same number of branches (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, one {{countText} tag} other {{countText} tags}} on this repo",
+  "@fileExplorer.git.tooltip.tags": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `tags` row''s count. \"This repo\" is the repository the user is browsing.",
+    "placeholders": {
+      "countText": "the number of tags, already formatted for display",
+      "count": "the same number of tags (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, one {{countText} commit} other {{countText} commits}} reachable from HEAD",
+  "@fileExplorer.git.tooltip.commits": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `commits` row''s count. HEAD is git''s name for the commit currently checked out: keep it in capitals and untranslated. \"Reachable from HEAD\" means the commits in the history behind it.",
+    "placeholders": {
+      "countText": "the number of commits, already formatted for display",
+      "count": "the same number of commits (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, one {{countText} file} other {{countText} files}} changed compared to the parent commit",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a single commit row''s count. The parent commit is the one immediately before it in the history.",
+    "placeholders": {
+      "countText": "the number of files a commit changed, already formatted for display",
+      "count": "the same number of files a commit changed (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} ahead, {behind, plural, one {{behindText} commit} other {{behindText} commits}} behind `{vs}`",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a branch row''s `+n / -n` cell in words. \"Ahead\" means this branch has commits the other one doesn''t; \"behind\" means the other one has commits this branch doesn''t. The backticks around the branch name are punctuation that sets the name apart, so keep them.",
+    "placeholders": {
+      "aheadText": "how many commits this branch is ahead by, already formatted for display",
+      "ahead": "the same number (drives the singular/plural form)",
+      "behindText": "how many commits this branch is behind by, already formatted for display",
+      "behind": "the same number (drives the singular/plural form)",
+      "vs": "the branch being compared against, for example \"origin/main\" (a name, never translated)"
+    }
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Tagged commit {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a tag row, whose cell shows a shortened commit identifier. Names the full identifier of the commit the tag points at.",
+    "placeholders": {
+      "id": "the commit''s full identifier, a 40-character hexadecimal string"
+    }
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Pinned at commit {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a submodule row, whose cell shows a shortened commit identifier. A submodule is held at one exact commit, which is what \"pinned\" says.",
+    "placeholders": {
+      "id": "the commit''s full identifier, a 40-character hexadecimal string"
+    }
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Created on branch `{branch}`",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a stash entry''s row: which branch the user was on when they set those changes aside. The backticks around the branch name are punctuation that sets the name apart, so keep them.",
+    "placeholders": {
+      "branch": "the branch name, for example \"main\" (a name, never translated)"
+    }
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch `{branch}` is checked out",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree''s row: which branch that worktree currently has open. \"Checked out\" is the git term for the branch a folder is showing. The backticks around the branch name are punctuation that sets the name apart, so keep them.",
+    "placeholders": {
+      "branch": "the branch name, for example \"main\" (a name, never translated)"
+    }
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Detached at {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree''s row when no branch is open there, only one exact commit. \"Detached\" is git''s own word for that state (a detached HEAD), so carry the concept rather than the literal word if your language words it differently.",
+    "placeholders": {
+      "id": "the commit''s full identifier, a 40-character hexadecimal string"
+    }
+  },
   "fileExplorer.selectionTooltip.selected": "Selected",
   "@fileExplorer.selectionTooltip.selected": {
     "description": "Label in the selection-summary size tooltip for the size of the selected items. Pairs with \"Of total\".",

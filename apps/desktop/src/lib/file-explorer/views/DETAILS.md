@@ -483,3 +483,22 @@ factory that reaches back into a module the mounted component also imports deadl
 import is mid-flight when the factory awaits it). Keep the mocks file free of component imports. Its other job is
 completeness — one missing export or one absent numeric setting (which turns the fetch range into `NaN`) empties the
 list silently, which is the same wrong-reason pass in a different costume.
+
+## Wording a git portal row
+
+A row inside the virtual `.git` portal has no byte count to show, so the backend ships a typed fact on
+`FileEntry.gitMeta` (`GitEntryMeta`: a count, an ahead/behind pair, a tagged or pinned commit, a branch name) and
+`wordGitMeta` in `full-list-utils.ts` turns it into the cell text plus the tooltip that doubles as the aria-label. Keys
+live under `fileExplorer.git.size.*` (cell) and `fileExplorer.git.tooltip.*` (tooltip); the three rows whose tooltip
+would only repeat the cell point at the cell's key.
+
+Every count goes through the catalog's `plural`, which is the whole reason the fact travels typed: each language picks
+its own forms. English switches noun at one, Hungarian never switches it, Chinese has a single form, and Portuguese
+carries a `many` category English has no use for.
+
+**Gotcha**: a commit id crosses IPC in FULL, and the cell shortens it to `SHORT_ID_LENGTH` (seven) characters.
+**Why**: the tooltip names the whole id, so shipping the short form too would mean shipping both. Seven is a display
+choice, which is why it lives here rather than in the backend.
+
+❌ Never let the width measurer word a cell itself. It calls `wordGitMeta`, so a copy edit or a locale switch can't
+move the rendered text and the measured text apart.

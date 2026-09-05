@@ -40,7 +40,7 @@ here:
 - **`watcher.rs` does more than emit `git-state-changed`**: on a relevant `.git/*` mutation it also calls
   `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listing on the local volume, so an
   open portal pane refreshes rather than showing stale children.
-- **`column_meta.rs`'s count + noun formatting goes through `crate::pluralize`**, not inline string building.
+- **No English leaves this module for the Size column.** `column_meta.rs` and the per-category listers hand back numbers and ids on a typed `git_meta`; the words are the frontend's, from the message catalog. See § "Modified + Size columns for virtual entries".
 - **`log.rs::resolve_commit_id` resolves a SHA prefix even for an UNREACHABLE commit**, so browsing
   `commits/<sha>` works for something the rev-walk would never list.
 - **`walker_exposure_tests.rs` pins which non-pane walkers can reach a virtual entry**, because that set is what the
@@ -60,7 +60,8 @@ that isn't there. Four walkers matter, and only one of them can reach a virtual 
 - **The same guard also refuses the REAL files.** `is_virtual` matches any `.git` path SEGMENT, not a virtual category,
   so `delete`, `rename`, `create_file`, `create_directory`, and `write_from_stream` all refuse `.git/config` and
   `.git/HEAD` too, with the portal off as much as on. A volume-routed delete of a repo folder therefore stops with
-  `.git/` still on disk. The routing work in `docs/specs/git-portal-volume.md` removes the guards along with the hooks.
+  `.git/` still on disk. Narrowing the guards to `classify(..).is_some()` is the small fix; removing them with the
+  hooks is the structural one.
 - **The copy scan CAN'T.** `local_posix/scan.rs` walks with `walkdir` against the resolved path and never asks the
   volume for a listing.
 - **The LOCAL delete walker CAN'T.** It prefers a cached listing over `read_dir` only when the listing's watch covers
@@ -160,28 +161,39 @@ Branches like `feature/foo` show as a single entry called `feature/foo`, not nes
 
 ## Modified + Size columns for virtual entries
 
-Every virtual entry carries a real `modified_at` and most carry a `display_size` string that the frontend renders verbatim in the Full mode Size column. Backend-built; frontend is dumb.
+Every virtual entry carries a real `modified_at`, and most carry a typed `git_meta` (`GitEntryMeta` in
+`crates/cmdr-fs/src/git_meta.rs`) stating what the Size cell should say. The backend ships the FACT; the frontend words
+it (`src/lib/file-explorer/views/full-list-utils.ts::wordGitMeta`), so every row reads in the user's language with that
+language's plural rules. ❌ Never put a sentence in a variant.
 
-| Path | `modified_at` | `display_size` | `size` (sort key) |
+| Path | `modified_at` | `git_meta` | `size` (sort key) |
 |---|---|---|---|
-| `.git/branches/` | newest branch tip date | `12 branches` | branch count |
-| `.git/tags/` | newest tag/commit date | `5 tags` | tag count |
-| `.git/commits/` | HEAD committer date | `123 commits` | commit count (capped at 5000) |
-| `.git/stash/` | newest stash creation date | `3 stash entries` | stash count |
-| `.git/worktrees/` | newest linked worktree HEAD | `2 linked worktrees` | worktree count |
-| `.git/submodules/` | newest pinned commit | `1 submodule` | submodule count |
-| `branches/<name>/` | branch tip committer date | `+12 / -3` vs upstream (or fallback `main`/`master`) | ahead-count |
-| `tags/<name>/` | annotated tag date or commit date | short SHA | 0 |
-| `commits/<sha>/` | commit committer date | `5 files` (or `1 file`) | files-changed count |
-| `stash/<n>/` | stash creation date | `on main` (parsed from stash subject) | 0 |
-| `worktrees/<name>` (redirect) | worktree HEAD date | `on feature-x` or short SHA | 0 |
-| `submodules/<name>` (redirect) | pinned commit date | short SHA | 0 |
+| `.git/branches/` | newest branch tip date | `Count { Branches }` | branch count |
+| `.git/tags/` | newest tag/commit date | `Count { Tags }` | tag count |
+| `.git/commits/` | HEAD committer date | `Count { Commits }` | commit count (capped at 5000) |
+| `.git/stash/` | newest stash creation date | `Count { StashEntries }` | stash count |
+| `.git/worktrees/` | newest linked worktree HEAD | `Count { LinkedWorktrees }` | worktree count |
+| `.git/submodules/` | newest pinned commit | `Count { Submodules }` | submodule count |
+| `branches/<name>/` | branch tip committer date | `AheadBehind` vs upstream (or fallback `main`/`master`) | ahead-count |
+| `tags/<name>/` | annotated tag date or commit date | `TaggedCommit` | 0 |
+| `commits/<sha>/` | commit committer date | `Count { FilesChanged }` | files-changed count |
+| `stash/<n>/` | stash creation date | `StashedOnBranch` (parsed from the stash subject) | 0 |
+| `worktrees/<name>` (redirect) | worktree HEAD date | `WorktreeOnBranch` or `WorktreeDetachedAt` | 0 |
+| `submodules/<name>` (redirect) | pinned commit date | `PinnedCommit` | 0 |
 | inside snapshots: files | most recent commit that touched the file (fallback: snapshot commit date) | None (blob bytes) | blob bytes |
 | inside snapshots: subdirs | most recent commit that touched any file underneath (fallback: snapshot commit date) | None (recursive bytes) | recursive blob bytes |
 
-Cross-category Size sort is meaningless (ahead-count vs files-changed vs item count); that's an honest tradeoff. Each cell is self-explaining via `display_size_tooltip` (also used as the aria-label).
+Cross-category Size sort is meaningless (ahead-count vs files-changed vs item count); that's an honest tradeoff. Each
+cell is self-explaining via its tooltip, which is also the aria-label.
 
-The frontend reads `display_size` / `display_size_tooltip` from `FileEntry`; the Full mode renderer (`FullList.svelte`) calls `pickSizeDisplay` from `full-list-utils.ts`, and `measure-column-widths.ts` already widens the Size column to fit the override string.
+**Gotcha**: a commit id crosses IPC in FULL, and the cell shortens it to seven characters on the frontend.
+**Why**: the tooltip names the whole id, so shipping only the short form would mean shipping both. The seven is a
+display choice (`SHORT_ID_LENGTH` in `full-list-utils.ts`), which is where a display choice belongs.
+
+**Decision**: `AheadBehind` carries the comparison branch's name
+**Why**: the tooltip reads "3 commits ahead, 1 commit behind `origin/main`", and which branch that is depends on
+whether the branch has a configured upstream or fell back to `main` / `master`. Only the backend knows; carrying `vs`
+is what lets the frontend word the sentence without asking again.
 
 **Decision**: Eager-load ahead/behind for branches; eager-load files-changed for commits
 **Why**: Bench (release build, M-series): 100 branches with ahead/behind takes p50=33 ms / p95=36 ms, well under the 300 ms p95 budget the spec sets for the listing pipeline. Files-changed for 200 commits: p50=37 ms / p95=40 ms (200 µs / commit), so the typical Cmdr-sized repo (~3000 commits) lands ~600 ms and the 5000-commit cap lands ~1 s. We accept the worst-case 1 s on the cap because (1) Cmdr's own repo never hits the cap, (2) the listing pipeline runs the hook in `spawn_blocking` so the UI stays responsive, and (3) the alternative (lazy-load via a streamed IPC) would mean another round-trip per row and a placeholder `…` in the cell while it resolves. Worth re-checking if a user reports the 5000-commit cap feeling slow; the bench harness in `bench.rs` covers 1000 commits and `bench_list_commits_files_changed` covers 200.

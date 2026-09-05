@@ -9,10 +9,10 @@
 //!
 //! ## Size column (loose semantics)
 //!
-//! `display_size` overrides the byte-formatted Size cell with a short string per row (`+12 / -3`,
-//! `5 files`, `12 items`, `on main`, short SHA). The numeric `size` keeps a within-category sort
-//! key so the user can still sort by Size and get a useful order. Cross-category Size sorting is
-//! meaningless on purpose. Each cell is self-explaining via tooltip + aria-label.
+//! A virtual row has no byte count to show, so it carries a typed `git_meta` instead: an
+//! ahead/behind pair, a count, a pinned commit. The frontend words it from the message catalog,
+//! cell plus tooltip. The numeric `size` keeps a within-category sort key so the user can still
+//! sort by Size and get a useful order; cross-category Size sorting is meaningless on purpose.
 
 use std::path::Path;
 

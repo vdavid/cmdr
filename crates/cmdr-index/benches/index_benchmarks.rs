@@ -205,8 +205,7 @@ fn listing_entry(path: &str) -> FileEntry {
         recursive_size_complete: None,
         recursive_size_stale: None,
         redirect_to_path: None,
-        display_size: None,
-        display_size_tooltip: None,
+        git_meta: None,
     }
 }
 

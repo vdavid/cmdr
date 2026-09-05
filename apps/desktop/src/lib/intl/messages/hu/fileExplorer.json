@@ -970,6 +970,84 @@
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
+  "fileExplorer.git.size.branches": "{count, plural, one {{countText} ág} other {{countText} ág}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, one {{countText} címke} other {{countText} címke}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd"
+  },
+  "fileExplorer.git.size.commits": "{count, plural, one {{countText} commit} other {{countText} commit}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be",
+    "sameAsSourceJustification": "\"Commit\" is the loanword Hungarian developers use, and the locale already ships it. The locale already ships this word untranslated for the same feature: the \"Show virtual git portal\" setting names the six categories with it."
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} stash-bejegyzés} other {{countText} stash-bejegyzés}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} csatolt munkapéldány} other {{countText} csatolt munkapéldány}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, one {{countText} almodul} other {{countText} almodul}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} fájl} other {{countText} fájl}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "The `+n / -n` tally is symbols and numbers only. Every language that uses git reads it the same way, so there is nothing here to translate."
+  },
+  "fileExplorer.git.size.onBranch": "{branch} ágon",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "{count, plural, one {{countText} ág ebben a repóban} other {{countText} ág ebben a repóban}}",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "{count, plural, one {{countText} címke ebben a repóban} other {{countText} címke ebben a repóban}}",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "{count, plural, one {{countText} commit érhető el a HEAD felől} other {{countText} commit érhető el a HEAD felől}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "{count, plural, one {{countText} fájl változott a szülő committhoz képest} other {{countText} fájl változott a szülő committhoz képest}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commit}} előrébb, {behind, plural, one {{behindText} commit} other {{behindText} commit}} lemaradva ehhez képest: `{vs}`",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "86a1aa3"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Megcímkézett commit: {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Ehhez a committhoz rögzítve: {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Ezen az ágon készült: `{branch}`",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "cfdbd45"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Ez az ág van kicsekkolva: `{branch}`",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "730335d"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Levált állapot itt: {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
+  },
   "fileExplorer.selectionTooltip.selected": "Kijelölve",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

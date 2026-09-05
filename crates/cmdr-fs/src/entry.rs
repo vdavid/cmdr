@@ -191,18 +191,15 @@ pub struct FileEntry {
     /// `cmdr://state`, drag-drop, copy preview, Brief/Full renderers) carries
     /// it for free.
     pub redirect_to_path: Option<String>,
-    /// Loose Size-column override for virtual git entries: rendered verbatim
-    /// in the Full mode Size column instead of formatted bytes from `size`.
-    /// Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+    /// What a virtual git entry's Size cell states, as a fact rather than a
+    /// sentence: an ahead/behind pair, a count, a pinned commit. The frontend
+    /// words it from the message catalog (cell text plus the tooltip that
+    /// doubles as the aria-label), so it reads in the user's own language.
     /// `size` keeps the within-category numeric sort key (ahead-count for
-    /// branches, files-changed for commits, item count for category roots).
-    /// Cross-category Size sorting is meaningless and that's an honest
-    /// tradeoff. Each cell is self-explaining via tooltip + aria-label.
-    pub display_size: Option<String>,
-    /// Optional rich tooltip string for the Size cell, used when
-    /// `display_size` is set. Example: "12 commits ahead, 3 commits behind
-    /// `origin/main`". Doubles as the aria-label for screen readers.
-    pub display_size_tooltip: Option<String>,
+    /// branches, files-changed for commits, item count for category roots);
+    /// cross-category Size sorting is meaningless, and that's an honest
+    /// tradeoff. `None` on every non-portal entry.
+    pub git_meta: Option<crate::git_meta::GitEntryMeta>,
 }
 
 impl FileEntry {
@@ -237,8 +234,7 @@ impl FileEntry {
             recursive_size_complete: None,
             recursive_size_stale: None,
             redirect_to_path: None,
-            display_size: None,
-            display_size_tooltip: None,
+            git_meta: None,
         }
     }
 }

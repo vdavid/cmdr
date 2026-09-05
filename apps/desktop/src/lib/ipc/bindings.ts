@@ -206,21 +206,16 @@ export const commands = {
          */
         redirectToPath: string | null
         /**
-         *  Loose Size-column override for virtual git entries: rendered verbatim
-         *  in the Full mode Size column instead of formatted bytes from `size`.
-         *  Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+         *  What a virtual git entry's Size cell states, as a fact rather than a
+         *  sentence: an ahead/behind pair, a count, a pinned commit. The frontend
+         *  words it from the message catalog (cell text plus the tooltip that
+         *  doubles as the aria-label), so it reads in the user's own language.
          *  `size` keeps the within-category numeric sort key (ahead-count for
-         *  branches, files-changed for commits, item count for category roots).
-         *  Cross-category Size sorting is meaningless and that's an honest
-         *  tradeoff. Each cell is self-explaining via tooltip + aria-label.
+         *  branches, files-changed for commits, item count for category roots);
+         *  cross-category Size sorting is meaningless, and that's an honest
+         *  tradeoff. `None` on every non-portal entry.
          */
-        displaySize: string | null
-        /**
-         *  Optional rich tooltip string for the Size cell, used when
-         *  `display_size` is set. Example: "12 commits ahead, 3 commits behind
-         *  `origin/main`". Doubles as the aria-label for screen readers.
-         */
-        displaySizeTooltip: string | null
+        gitMeta: GitEntryMeta | null
       } | null,
       string
     >(__TAURI_INVOKE('get_file_at', { listingId, index, includeHidden })),
@@ -337,21 +332,16 @@ export const commands = {
          */
         redirectToPath: string | null
         /**
-         *  Loose Size-column override for virtual git entries: rendered verbatim
-         *  in the Full mode Size column instead of formatted bytes from `size`.
-         *  Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+         *  What a virtual git entry's Size cell states, as a fact rather than a
+         *  sentence: an ahead/behind pair, a count, a pinned commit. The frontend
+         *  words it from the message catalog (cell text plus the tooltip that
+         *  doubles as the aria-label), so it reads in the user's own language.
          *  `size` keeps the within-category numeric sort key (ahead-count for
-         *  branches, files-changed for commits, item count for category roots).
-         *  Cross-category Size sorting is meaningless and that's an honest
-         *  tradeoff. Each cell is self-explaining via tooltip + aria-label.
+         *  branches, files-changed for commits, item count for category roots);
+         *  cross-category Size sorting is meaningless, and that's an honest
+         *  tradeoff. `None` on every non-portal entry.
          */
-        displaySize: string | null
-        /**
-         *  Optional rich tooltip string for the Size cell, used when
-         *  `display_size` is set. Example: "12 commits ahead, 3 commits behind
-         *  `origin/main`". Doubles as the aria-label for screen readers.
-         */
-        displaySizeTooltip: string | null
+        gitMeta: GitEntryMeta | null
       } | null,
       string
     >(__TAURI_INVOKE('get_file_beside', { listingId, name, side, includeHidden })),
@@ -6364,21 +6354,16 @@ export type FileEntry = {
    */
   redirectToPath: string | null
   /**
-   *  Loose Size-column override for virtual git entries: rendered verbatim
-   *  in the Full mode Size column instead of formatted bytes from `size`.
-   *  Examples: `+12 / -3`, `5 files`, `12 items`, `on main`, short SHA.
+   *  What a virtual git entry's Size cell states, as a fact rather than a
+   *  sentence: an ahead/behind pair, a count, a pinned commit. The frontend
+   *  words it from the message catalog (cell text plus the tooltip that
+   *  doubles as the aria-label), so it reads in the user's own language.
    *  `size` keeps the within-category numeric sort key (ahead-count for
-   *  branches, files-changed for commits, item count for category roots).
-   *  Cross-category Size sorting is meaningless and that's an honest
-   *  tradeoff. Each cell is self-explaining via tooltip + aria-label.
+   *  branches, files-changed for commits, item count for category roots);
+   *  cross-category Size sorting is meaningless, and that's an honest
+   *  tradeoff. `None` on every non-portal entry.
    */
-  displaySize: string | null
-  /**
-   *  Optional rich tooltip string for the Size cell, used when
-   *  `display_size` is set. Example: "12 commits ahead, 3 commits behind
-   *  `origin/main`". Doubles as the aria-label for screen readers.
-   */
-  displaySizeTooltip: string | null
+  gitMeta: GitEntryMeta | null
 }
 
 /**
@@ -6625,6 +6610,92 @@ export type FuzzyJumpError =
     // The listing the caller asked about.
     listingId: string
   }
+
+/**
+ *  What a [`GitEntryMeta::Count`] is counting.
+ *
+ *  One variant per row that shows a count, because each one is worded
+ *  differently and pluralized on its own noun.
+ */
+export type GitCountKind =
+  // Local branches in the repo (`.git/branches/`).
+  | 'branches'
+  // Tags in the repo (`.git/tags/`).
+  | 'tags'
+  // Commits reachable from HEAD, capped (`.git/commits/`).
+  | 'commits'
+  // Entries on the stash (`.git/stash/`).
+  | 'stashEntries'
+  // Linked worktrees (`.git/worktrees/`).
+  | 'linkedWorktrees'
+  // Submodules declared in `.gitmodules` (`.git/submodules/`).
+  | 'submodules'
+  // Files a commit changed against its first parent.
+  | 'filesChanged'
+
+/**
+ *  What a virtual git entry's Size cell states.
+ *
+ *  The discriminant is `kind` on the wire, matching every other data-carrying
+ *  enum that crosses IPC. `Count`'s own sub-kind is therefore `counted`, not
+ *  `kind`.
+ */
+export type GitEntryMeta =
+  /**
+   *  How many of something the row holds. `n` doubles as the row's
+   *  within-category Size sort key.
+   */
+  | {
+      kind: 'count'
+      // What is being counted.
+      counted: GitCountKind
+      // How many.
+      n: number
+    }
+  // How far a branch has diverged from the branch it's compared against.
+  | {
+      kind: 'aheadBehind'
+      // Commits on this branch that the comparison branch doesn't have.
+      ahead: number
+      // Commits on the comparison branch that this one doesn't have.
+      behind: number
+      /**
+       *  The comparison branch's display name: the configured upstream
+       *  (`origin/main`), or the `main` / `master` fallback when the branch
+       *  tracks nothing.
+       */
+      vs: string
+    }
+  // The commit a tag points at. Full object id; the cell shows a short form.
+  | {
+      kind: 'taggedCommit'
+      // The commit's full object id.
+      id: string
+    }
+  // The commit a submodule is pinned at. Full object id.
+  | {
+      kind: 'pinnedCommit'
+      // The commit's full object id.
+      id: string
+    }
+  // The branch a stash entry was created on.
+  | {
+      kind: 'stashedOnBranch'
+      // The branch's short name.
+      branch: string
+    }
+  // The branch a linked worktree has checked out.
+  | {
+      kind: 'worktreeOnBranch'
+      // The branch's short name.
+      branch: string
+    }
+  // The commit a linked worktree sits at with no branch checked out.
+  | {
+      kind: 'worktreeDetachedAt'
+      // The commit's full object id.
+      id: string
+    }
 
 /**
  *  Typed `git-state-changed` Tauri event. Carries the repo root and a fresh

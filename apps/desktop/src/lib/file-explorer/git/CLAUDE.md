@@ -36,6 +36,12 @@ portal, the per-repo watcher, and git error CLASSIFICATION.
 - **Git error CLASSIFICATION lives in Rust, the WORDING lives here.** Rust ships a typed `FriendlyGitErrorKind`; the
   copy comes from `error-messages/git-error-messages.ts` + the `errors.git.*` catalog. Changing wording means editing
   the catalog; adding a state means both sides in one commit. `docs/guides/error-handling.md`.
+- **Same split for the portal's Size cells: Rust ships the FACT, this side words it.** `FileEntry.gitMeta` is a typed
+  `GitEntryMeta` (a count, an ahead/behind pair, a pinned commit), and `views/full-list-utils.ts::wordGitMeta` turns it
+  into cell text plus the tooltip that doubles as the aria-label, from the `fileExplorer.git.size.*` /
+  `fileExplorer.git.tooltip.*` keys. ❌ Never let a variant carry a sentence: every count goes through the catalog''s
+  `plural` so each language picks its own categories (Hungarian never pluralizes after a number, Chinese has one form,
+  Portuguese carries a `many` English lacks). The width measurer calls the same helper, so the two can''t drift.
 - **`FileEntry.redirectToPath`** is honored in `FilePane.svelte::handleNavigate`: when set, opening the entry navigates
   there directly instead of as a virtual subtree (used by `.git/worktrees/<name>` and `.git/submodules/<name>` → working
   dir). `FullList.svelte` shows an "Opens <path>" tooltip.

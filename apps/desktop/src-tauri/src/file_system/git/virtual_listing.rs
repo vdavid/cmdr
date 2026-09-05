@@ -30,7 +30,7 @@ use super::column_meta::{
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::path::{Cat, strip_ref_prefix};
 use super::repo::RepoHandle;
-use crate::pluralize::{pluralize, pluralize_with};
+use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
 
 /// Lists the portal root: real `.git/*` entries first, virtual category
 /// entries after.
@@ -111,81 +111,43 @@ fn read_real_dot_git(repo_root: &Path) -> Vec<FileEntry> {
 
 fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, repo_root: &Path) {
     let repo = handle.to_thread_local();
-    match cat {
+    let (counted, count) = match cat {
         Cat::Branches => {
-            let count = count_local_branches(&repo);
-            fe.size = Some(count);
-            fe.display_size = Some(pluralize_with(count, "branch", "branches"));
-            fe.display_size_tooltip = Some(format!(
-                "{} on this repo",
-                fe.display_size
-                    .as_ref()
-                    .expect("display_size set to Some on the line above")
-            ));
             fe.modified_at = newest_branch_tip_secs(handle);
+            (GitCountKind::Branches, count_local_branches(&repo))
         }
         Cat::Tags => {
-            let count = count_tags(&repo);
-            fe.size = Some(count);
-            fe.display_size = Some(pluralize(count, "tag"));
-            fe.display_size_tooltip = Some(format!(
-                "{} on this repo",
-                fe.display_size
-                    .as_ref()
-                    .expect("display_size set to Some on the line above")
-            ));
             fe.modified_at = newest_tag_secs(handle);
+            (GitCountKind::Tags, count_tags(&repo))
         }
         Cat::Commits => {
-            let count = count_commits_capped(&repo);
-            fe.size = Some(count);
-            fe.display_size = Some(pluralize(count, "commit"));
-            fe.display_size_tooltip = Some(format!(
-                "{} reachable from HEAD",
-                fe.display_size
-                    .as_ref()
-                    .expect("display_size set to Some on the line above")
-            ));
             fe.modified_at = head_commit_secs(handle);
+            (GitCountKind::Commits, count_commits_capped(&repo))
         }
         Cat::Stash => {
+            fe.modified_at = newest_stash_secs(repo_root);
             let count = super::stash::list_stashes(repo_root)
                 .map(|v| v.len() as u64)
                 .unwrap_or(0);
-            fe.size = Some(count);
-            fe.display_size = Some(pluralize_with(count, "stash entry", "stash entries"));
-            fe.display_size_tooltip = Some(
-                fe.display_size
-                    .clone()
-                    .expect("display_size set to Some on the line above"),
-            );
-            fe.modified_at = newest_stash_secs(repo_root);
+            (GitCountKind::StashEntries, count)
         }
         Cat::Worktrees => {
-            let entries = super::worktrees::list_worktrees(handle, repo_root).unwrap_or_default();
-            let count = entries.len() as u64;
-            fe.size = Some(count);
-            fe.display_size = Some(pluralize(count, "linked worktree"));
-            fe.display_size_tooltip = Some(
-                fe.display_size
-                    .clone()
-                    .expect("display_size set to Some on the line above"),
-            );
             fe.modified_at = newest_worktree_head_secs(&repo);
+            let count = super::worktrees::list_worktrees(handle, repo_root)
+                .map(|v| v.len() as u64)
+                .unwrap_or(0);
+            (GitCountKind::LinkedWorktrees, count)
         }
         Cat::Submodules => {
-            let entries = super::submodules::list_submodules(handle, repo_root).unwrap_or_default();
-            let count = entries.len() as u64;
-            fe.size = Some(count);
-            fe.display_size = Some(pluralize(count, "submodule"));
-            fe.display_size_tooltip = Some(
-                fe.display_size
-                    .clone()
-                    .expect("display_size set to Some on the line above"),
-            );
             fe.modified_at = newest_submodule_secs(&repo, handle, repo_root);
+            let count = super::submodules::list_submodules(handle, repo_root)
+                .map(|v| v.len() as u64)
+                .unwrap_or(0);
+            (GitCountKind::Submodules, count)
         }
-    }
+    };
+    fe.size = Some(count);
+    fe.git_meta = Some(GitEntryMeta::Count { counted, n: count });
 }
 
 /// Populates Modified + Size on a single `Ref(cat, name)` stat without
@@ -205,11 +167,11 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
                 }
                 if let Some(ab) = ahead_behind_for_branch(&repo, name, id) {
                     fe.size = Some(u64::from(ab.ahead));
-                    fe.display_size = Some(format!("+{} / -{}", ab.ahead, ab.behind));
-                    fe.display_size_tooltip = Some(format!(
-                        "{} commits ahead, {} commits behind `{}`",
-                        ab.ahead, ab.behind, ab.vs
-                    ));
+                    fe.git_meta = Some(GitEntryMeta::AheadBehind {
+                        ahead: ab.ahead,
+                        behind: ab.behind,
+                        vs: ab.vs,
+                    });
                 }
             }
         }
@@ -220,9 +182,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
                     fe.created_at = fe.modified_at;
                     fe.added_at = fe.modified_at;
                 }
-                let short: String = id.to_string().chars().take(7).collect();
-                fe.display_size = Some(short);
-                fe.display_size_tooltip = Some(format!("Tagged commit {}", id));
+                fe.git_meta = Some(GitEntryMeta::TaggedCommit { id: id.to_string() });
             }
         }
         Cat::Commits => {
@@ -234,11 +194,10 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
                 }
                 if let Some(n) = files_changed_count(&repo, id) {
                     fe.size = Some(n);
-                    fe.display_size = Some(pluralize(n, "file"));
-                    fe.display_size_tooltip = Some(format!(
-                        "{} changed compared to the parent commit",
-                        pluralize(n, "file")
-                    ));
+                    fe.git_meta = Some(GitEntryMeta::Count {
+                        counted: GitCountKind::FilesChanged,
+                        n,
+                    });
                 }
             }
         }
@@ -250,8 +209,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
                 fe.modified_at = found.modified_at;
                 fe.created_at = found.created_at;
                 fe.added_at = found.added_at;
-                fe.display_size = found.display_size;
-                fe.display_size_tooltip = found.display_size_tooltip;
+                fe.git_meta = found.git_meta;
             }
         }
         Cat::Worktrees => {
@@ -261,8 +219,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
                 fe.modified_at = found.modified_at;
                 fe.created_at = found.created_at;
                 fe.added_at = found.added_at;
-                fe.display_size = found.display_size;
-                fe.display_size_tooltip = found.display_size_tooltip;
+                fe.git_meta = found.git_meta;
             }
         }
         Cat::Submodules => {
@@ -272,8 +229,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
                 fe.modified_at = found.modified_at;
                 fe.created_at = found.created_at;
                 fe.added_at = found.added_at;
-                fe.display_size = found.display_size;
-                fe.display_size_tooltip = found.display_size_tooltip;
+                fe.git_meta = found.git_meta;
             }
         }
     }
@@ -383,9 +339,9 @@ fn pinned_commit_secs(sm: &gix::Submodule<'_>, repo_root: &Path) -> Option<i64> 
 /// Lists local branches as virtual directory entries.
 ///
 /// Each entry carries a real `modified_at` (branch tip's committer date)
-/// and a loose `display_size` showing ahead/behind relative to the
-/// branch's upstream, falling back to `main`/`master` for branches
-/// without a configured upstream. The numeric `size` field carries the
+/// and a `git_meta` stating ahead/behind relative to the branch's upstream,
+/// falling back to `main`/`master` for branches without a configured
+/// upstream. The numeric `size` field carries the
 /// ahead-count so within-category Size sort puts the most-ahead branch
 /// first.
 pub fn list_branches(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {
@@ -421,11 +377,11 @@ pub fn list_branches(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEn
             // Ahead/behind via upstream or fallback default branch.
             if let Some(ab) = ahead_behind_for_branch(&repo, &short, tip_id) {
                 fe.size = Some(u64::from(ab.ahead));
-                fe.display_size = Some(format!("+{} / -{}", ab.ahead, ab.behind));
-                fe.display_size_tooltip = Some(format!(
-                    "{} commits ahead, {} commits behind `{}`",
-                    ab.ahead, ab.behind, ab.vs
-                ));
+                fe.git_meta = Some(GitEntryMeta::AheadBehind {
+                    ahead: ab.ahead,
+                    behind: ab.behind,
+                    vs: ab.vs,
+                });
             }
         }
         out.push(fe);
@@ -473,12 +429,12 @@ pub fn list_tags(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>
                 fe.created_at = fe.modified_at;
                 fe.added_at = fe.modified_at;
             }
-            // Display the wrapped commit's short SHA. Annotated tags peel
-            // to their commit through gix's `peel_to_id` chain when
+            // The wrapped commit, whose short form the cell shows. Annotated
+            // tags peel to their commit through gix's `peel_to_id` chain when
             // reading via `references()`, so `target_id` is the commit.
-            let short_sha: String = target_id.to_string().chars().take(7).collect();
-            fe.display_size = Some(short_sha.clone());
-            fe.display_size_tooltip = Some(format!("Tagged commit {}", target_id));
+            fe.git_meta = Some(GitEntryMeta::TaggedCommit {
+                id: target_id.to_string(),
+            });
         }
         out.push(fe);
     }

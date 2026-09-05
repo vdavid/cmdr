@@ -1,7 +1,7 @@
 /**
  * Tests for full-list-utils.ts
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   getVisibleItemsCount,
   FULL_LIST_ROW_HEIGHT,
@@ -11,7 +11,10 @@ import {
   getNameColumnText,
   pickSizeDisplay,
 } from './full-list-utils'
+import type { SizeDisplayPick } from './full-list-utils'
 import type { FileEntry } from '../types'
+import type { GitCountKind } from '$lib/ipc/bindings'
+import { _setLocaleForTests } from '$lib/intl/locale'
 
 // Mock the settings store
 vi.mock('$lib/settings/settings-store', () => ({
@@ -130,31 +133,150 @@ describe('pickSizeDisplay', () => {
     }
   }
 
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
   it('returns an empty pick for normal rows', () => {
     expect(pickSizeDisplay(makeEntry({ size: 1234 }))).toEqual({})
   })
 
-  it('returns the override when a virtual entry sets displaySize', () => {
-    const pick = pickSizeDisplay(makeEntry({ displaySize: '+3 / -1' }))
-    expect(pick.override).toBe('+3 / -1')
-    expect(pick.tooltip).toBeUndefined()
-  })
-
-  it('forwards the rich tooltip when present', () => {
+  it('words an ahead/behind pair, cell and tooltip', () => {
     const pick = pickSizeDisplay(
-      makeEntry({
-        displaySize: '+3 / -1',
-        displaySizeTooltip: '3 commits ahead, 1 commit behind `origin/main`',
-      }),
+      makeEntry({ gitMeta: { kind: 'aheadBehind', ahead: 3, behind: 1, vs: 'origin/main' } }),
     )
     expect(pick.override).toBe('+3 / -1')
     expect(pick.tooltip).toBe('3 commits ahead, 1 commit behind `origin/main`')
   })
 
-  it('prefers override even when size is also set (sort key)', () => {
-    // Branches use `size` as the within-category sort key while showing the
-    // override string in the cell. The picker honors the override.
-    const pick = pickSizeDisplay(makeEntry({ size: 12, displaySize: '12 items' }))
-    expect(pick.override).toBe('12 items')
+  it('says "1 commit", not "1 commits"', () => {
+    // The old backend built this string with a bare `{n} commits`, so a branch
+    // one commit apart read as "1 commits ahead". Wording it from the catalog
+    // is what fixes it, in every locale at once.
+    const pick = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'aheadBehind', ahead: 1, behind: 0, vs: 'main' } }))
+    expect(pick.tooltip).toBe('1 commit ahead, 0 commits behind `main`')
+  })
+
+  it('words each count kind on its own noun', () => {
+    const cell = (counted: GitCountKind, n: number) =>
+      pickSizeDisplay(makeEntry({ gitMeta: { kind: 'count', counted, n } })).override
+    expect(cell('branches', 3)).toBe('3 branches')
+    expect(cell('tags', 5)).toBe('5 tags')
+    expect(cell('commits', 123)).toBe('123 commits')
+    expect(cell('stashEntries', 2)).toBe('2 stash entries')
+    expect(cell('linkedWorktrees', 2)).toBe('2 linked worktrees')
+    expect(cell('submodules', 4)).toBe('4 submodules')
+    expect(cell('filesChanged', 7)).toBe('7 files')
+  })
+
+  it('picks the singular form for each count kind', () => {
+    const cell = (counted: GitCountKind) =>
+      pickSizeDisplay(makeEntry({ gitMeta: { kind: 'count', counted, n: 1 } })).override
+    expect(cell('branches')).toBe('1 branch')
+    expect(cell('tags')).toBe('1 tag')
+    expect(cell('commits')).toBe('1 commit')
+    expect(cell('stashEntries')).toBe('1 stash entry')
+    expect(cell('linkedWorktrees')).toBe('1 linked worktree')
+    expect(cell('submodules')).toBe('1 submodule')
+    expect(cell('filesChanged')).toBe('1 file')
+  })
+
+  it('gives the three repo-wide counts a tooltip that says where they come from', () => {
+    const tip = (counted: GitCountKind, n: number) =>
+      pickSizeDisplay(makeEntry({ gitMeta: { kind: 'count', counted, n } })).tooltip
+    expect(tip('branches', 3)).toBe('3 branches on this repo')
+    expect(tip('tags', 1)).toBe('1 tag on this repo')
+    expect(tip('commits', 42)).toBe('42 commits reachable from HEAD')
+    expect(tip('filesChanged', 1)).toBe('1 file changed compared to the parent commit')
+  })
+
+  it('reuses the cell text as the tooltip where there is nothing to add', () => {
+    for (const counted of ['stashEntries', 'linkedWorktrees', 'submodules'] as const) {
+      const pick = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'count', counted, n: 2 } }))
+      expect(pick.tooltip).toBe(pick.override)
+    }
+  })
+
+  it('shortens a commit id for the cell and keeps the full one in the tooltip', () => {
+    const id = '0123456789abcdef0123456789abcdef01234567'
+    const tagged = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'taggedCommit', id } }))
+    expect(tagged.override).toBe('0123456')
+    expect(tagged.tooltip).toBe(`Tagged commit ${id}`)
+
+    const pinned = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'pinnedCommit', id } }))
+    expect(pinned.override).toBe('0123456')
+    expect(pinned.tooltip).toBe(`Pinned at commit ${id}`)
+
+    const detached = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'worktreeDetachedAt', id } }))
+    expect(detached.override).toBe('0123456')
+    expect(detached.tooltip).toBe(`Detached at ${id}`)
+  })
+
+  it('names the branch a stash entry and a worktree belong to', () => {
+    const stashed = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'stashedOnBranch', branch: 'main' } }))
+    expect(stashed.override).toBe('on main')
+    expect(stashed.tooltip).toBe('Created on branch `main`')
+
+    const worktree = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'worktreeOnBranch', branch: 'feature-x' } }))
+    expect(worktree.override).toBe('on feature-x')
+    expect(worktree.tooltip).toBe('Branch `feature-x` is checked out')
+  })
+
+  it('prefers the git wording even when size is also set (the sort key)', () => {
+    // Branches use `size` as the within-category sort key while the cell shows
+    // the wording. The picker honors the wording.
+    const pick = pickSizeDisplay(makeEntry({ size: 12, gitMeta: { kind: 'count', counted: 'branches', n: 12 } }))
+    expect(pick.override).toBe('12 branches')
+  })
+
+  it('lets the restricted-folder override win over a git row', () => {
+    const pick = pickSizeDisplay(makeEntry({ gitMeta: { kind: 'count', counted: 'branches', n: 3 } }), true)
+    expect(pick.override).not.toBe('3 branches')
+  })
+})
+
+describe('pickSizeDisplay across locales', () => {
+  function cell(counted: GitCountKind, n: number): SizeDisplayPick {
+    return pickSizeDisplay({
+      name: 'branches',
+      path: '/repo/.git/branches',
+      isDirectory: true,
+      isSymlink: false,
+      permissions: 0o755,
+      owner: '',
+      group: '',
+      iconId: 'git:branch',
+      extendedMetadataLoaded: true,
+      gitMeta: { kind: 'count', counted, n },
+    })
+  }
+
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  it('keeps the noun unchanged in Hungarian, which never pluralizes after a number', () => {
+    // Hungarian counts with the singular: "3 ág", never "3 ágak". The old
+    // backend built one English string for every language, so this reading was
+    // unreachable no matter what the user picked.
+    _setLocaleForTests('hu')
+    expect(cell('branches', 1).override).toBe('1 ág')
+    expect(cell('branches', 3).override).toBe('3 ág')
+  })
+
+  it('picks Portuguese forms from a category set English does not have', () => {
+    // Portuguese carries a `many` category English lacks, so its catalog
+    // branches on its own set rather than English's one/other.
+    _setLocaleForTests('pt')
+    expect(cell('stashEntries', 1).override).toBe('1 entrada de stash')
+    expect(cell('stashEntries', 3).override).toBe('3 entradas de stash')
+    expect(cell('branches', 2).tooltip).toBe('2 branches neste repositório')
+  })
+
+  it('drops the plural machinery entirely in Chinese, which has one form', () => {
+    _setLocaleForTests('zh')
+    expect(cell('branches', 1).override).toBe('1 个分支')
+    expect(cell('branches', 7).override).toBe('7 个分支')
+    expect(cell('commits', 7).tooltip).toBe('从 HEAD 可追溯到 7 次提交')
   })
 })

@@ -1,4 +1,4 @@
-import type { CompressedSizeEstimate, TagRef } from '$lib/ipc/bindings'
+import type { CompressedSizeEstimate, GitEntryMeta, TagRef } from '$lib/ipc/bindings'
 
 export interface FileEntry {
   name: string
@@ -68,19 +68,14 @@ export interface FileEntry {
    */
   redirectToPath?: string
   /**
-   * Loose Size-column override for virtual git entries, for example:
-   * `+12 / -3`, `5 files`, `12 items`, `on main`, a short SHA. When set,
-   * the Size cell renders this string verbatim instead of formatted
-   * bytes from `size`. Cross-category Size sorting is meaningless on
-   * purpose; each cell is self-explaining via tooltip + aria-label.
+   * What a virtual git entry's Size cell states, as a fact rather than a
+   * sentence: an ahead/behind pair, a count, a pinned commit. `wordGitMeta`
+   * in `views/full-list-utils.ts` turns it into the cell text plus the tooltip
+   * that doubles as the aria-label, so it reads in the user's own language
+   * with that language's plural rules. Cross-category Size sorting is
+   * meaningless on purpose.
    */
-  displaySize?: string
-  /**
-   * Long-form tooltip for the Size cell when `displaySize` is set.
-   * Example: "12 commits ahead, 3 commits behind `origin/main`".
-   * Doubles as the aria-label for screen readers.
-   */
-  displaySizeTooltip?: string
+  gitMeta?: GitEntryMeta
   /**
    * Parent directory path. Optional on FileEntry because normal directory
    * listings derive it implicitly from the containing folder, but search-results
