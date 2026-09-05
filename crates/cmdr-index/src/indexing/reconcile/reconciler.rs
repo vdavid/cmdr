@@ -953,9 +953,12 @@ impl Drop for BulkReconcileGuard {
 /// contract [`scanner::cover_subtree`] serves; pass `None` to fill the index and
 /// nothing else. It matters because this is also the cover walk's repair path
 /// (`lifecycle/cover`): the search that asked for that walk answers with the
-/// index's covered half plus what the walk hands back, and the covered half holds
-/// nothing under a frontier root — so a repair that stayed silent would answer as
-/// if the ground it just filled in were empty, and call that answer exhaustive.
+/// index's covered half plus what the walk hands back, and the covered half was
+/// read from an arena that PREDATES this pass. So the rows a repair creates reach
+/// the search through `emit` or through nothing, and a silent repair leaves that
+/// search short while its walk still ends `Completed` — a wrong answer calling
+/// itself exhaustive. ⚠️ Only the created rows: a row the index already held is
+/// the covered half's to report, and sending it too would double it.
 pub(crate) fn reconcile_subtree(
     root: &Path,
     space: &IndexPathSpace,

@@ -1,6 +1,7 @@
 # Cover-walk details
 
-The walk itself (`mod.rs`), standing one up (`bootstrap.rs`), and keeping two walks off the same ground (`live.rs`).
+The walk itself (`mod.rs`), which primitive reads a root (`ground.rs`), standing one up (`bootstrap.rs`), and keeping
+two walks off the same ground (`live.rs`).
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising. What the registry and the
 phase machine owe a walk, and what a walk owes them back, is `../DETAILS.md`.
 
@@ -32,13 +33,23 @@ that case's shape. The trait half needs no such split — it is add-only per dir
 path ever deletes: covering is add-only work.
 
 **The repair path REPORTS like every other primitive, and that is load-bearing.** A live search answers with the
-index's covered half plus what the walk hands back, and the covered half holds nothing under a frontier root. So the
-repair takes the same `EntrySender` the parallel walker does (`reconcile_subtree`'s `emit`) and returns a `ScanSummary`
-built from `ReconcileSummary::added` / `added_dirs`, counting the rows it CREATED and not the ones it updated (those
-were already the index's to report). Handing back `(None, Covered)` instead is a silent wrong answer, not a missing
-nicety: search a folder, then search its parent, and the parent's frontier root is exactly this case — the second search
-returned only the first one's rows, reported `foldersFound: 0`, and stamped `coverage.complete: true` over it.
-Regression-locked by `a_repaired_frontier_node_reports_the_rows_it_wrote`.
+index's covered half plus what the walk hands back. The covered half is an unpruned arena scan — it DOES serve rows
+under a frontier root, which is how the pre-existing ones still show up — but that arena was read before the walk
+started, so a row the walk creates reaches the search through the walk or through nothing. So the repair takes the same
+`EntrySender` the parallel walker does (`reconcile_subtree`'s `emit`) and returns a `ScanSummary` built from
+`ReconcileSummary::added` / `added_dirs`. Created rows only: an updated row was already in the arena, and sending it
+would double it in the results.
+
+Handing back `(None, Covered)` instead is a silent wrong answer, not a missing nicety: search a folder, then search its
+parent, and the parent's frontier root is exactly this case — the second search returned only the first one's rows,
+reported `foldersFound: 0`, and stamped `coverage.complete: true` over it. Regression-locked by
+`a_repaired_frontier_node_reports_the_rows_it_wrote`, and by
+`a_repair_whose_consumer_left_still_covers_the_ground` for the bounded channel that reporting now parks on.
+
+⚠️ One row shape still reaches nobody: a child that was a FILE and is now a DIRECTORY counts as an update, so it goes
+out through neither half — the arena holds the stale file row and the walk doesn't emit the new dir row. Narrow enough
+to accept (it needs a type change under an unlisted frontier root between two searches), and the next search over that
+ground, by then covered, serves it from the arena.
 
 **What it costs to cover a whole volume this way**, measured over a real 6.06M-entry `/` against today's
 truncate-and-bulk-build: `docs/notes/phased-vs-bulk-index-2026-08-14.md`. Two findings a caller planning many walks over
@@ -219,11 +230,13 @@ whoever's scope asked for the walk, so anything above the root is outside it.
 
 ## Where a cover test goes
 
-Four test files, split by the harness a test needs rather than by what it asserts; a test that reaches for the wrong one
+Five test files, split by the harness a test needs rather than by what it asserts; a test that reaches for the wrong one
 pays for a whole fixture it doesn't use.
 
 - `tests.rs` — the temp-tree `Fixture`: an index that already exists, over a real directory the LOCAL walker reads off
-  the disk. Frontier materialization, the non-virgin repair, claims, and cancellation live here.
+  the disk. Frontier materialization, claims, and cancellation live here.
+- `repair_tests.rs` — the same fixture, over the one case the parallel walker refuses: a frontier node the index already
+  holds rows under. What the repair keeps, what it reports, and what a departed consumer does to it.
 - `cold_drive_tests.rs` — the `ColdDrive` harness: a drive with NO index, driven through the public `Index` handle so
   the walk runs the real activation. Bootstrap, freshness, branches, and the two switches are here, because those are
   only observable from outside. The harness stays in the parent and the tests sit in `cold_drive_tests/`, by subject:
@@ -237,5 +250,6 @@ pays for a whole fixture it doesn't use.
 - `bench.rs` — the `#[ignore]`d parallel-vs-serial primitive measurement
   (`docs/notes/cover-walk-primitive-2026-08-05.md`).
 
-`test_support.rs` holds what more than one of them needs: `drain`, and (from `network_tests.rs`) the `Share` harness
-plus the instrumented `Volume` doubles. A fixture only one file uses stays in that file.
+`test_support.rs` holds what more than one of them needs: `drain`, the temp-tree `Fixture` (in
+`test_support/fixture.rs`, shared by `tests.rs` and `repair_tests.rs`), and the `Share` harness plus the instrumented
+`Volume` doubles `network_tests.rs` runs on. A fixture only one file uses stays in that file.

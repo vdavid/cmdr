@@ -194,8 +194,8 @@ impl Ground {
 ///
 /// ❌ It reports like every other primitive here, and that is not decoration: a
 /// search answers with the index's covered half plus the walk's rows, and the
-/// covered half holds NOTHING under a frontier root. `DETAILS.md` § "The repair
-/// path REPORTS".
+/// covered half can only hold rows the index ALREADY had. The rows a repair
+/// creates are nobody else's to report. `DETAILS.md` § "The repair path REPORTS".
 pub(super) fn repair_non_virgin(
     context: &CoverContext,
     root: &Path,
