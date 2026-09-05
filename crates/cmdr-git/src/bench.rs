@@ -1,10 +1,16 @@
 //! What the chip pipeline costs on a big repository, against the budgets it
 //! owes: discover + `repo_info` p95 ≤ 100 ms and `list_status` p95 ≤ 100 ms on
-//! a 50k-file repo. Today's readings and the one that's over: `DETAILS.md`
-//! § Performance.
+//! a 50k-file repo. Today's readings: `DETAILS.md` § Performance.
 //!
 //! Run with `cargo test --release -p cmdr-git -- --ignored --nocapture`. The
 //! fixture is built once into `target/test-fixtures/git/` and reused.
+//!
+//! ❌ Never time anything here without holding `measure_alone()`. These benches
+//! walk the same trees, and a reading taken beside another walk measures the
+//! contention, not the pipeline. That makes a full `--ignored` run strictly
+//! serial and slow — `bench_per_file_dates_50k_commits_under_budget` shells out
+//! ~100k `git` commands to build its fixture, and nothing else may run beside
+//! it — so name the bench you care about rather than running the file.
 
 #![cfg(test)]
 #![allow(
@@ -33,14 +39,25 @@ fn fixture_dir() -> PathBuf {
     p
 }
 
-fn ensure_fixture(dir: &Path) {
-    // Serialize fixture builds: when both bench tests run in parallel they
-    // raced into the same dir and one `git init` ran on a half-built tree.
-    // A process-wide mutex around the build is sufficient.
+/// Take the floor: hold this for the whole of a bench so nothing else here runs
+/// beside it.
+///
+/// Every bench in this file times a heavy filesystem or object-database walk against a
+/// budget, and `cargo test` runs them on several threads by default, so two walks over
+/// the same tree inflated each other's readings. `discover + repo_info` measured
+/// p50 92 ms / p95 114 ms beside `list_status` and p50 54 ms / p95 58 ms alone: the whole
+/// difference between failing the 100 ms hard cap and passing it with room to spare. A
+/// reading taken under another walk isn't the number the chip pipeline owes.
+///
+/// Also covers fixture building, which used to race two `git init`s into one half-built
+/// tree.
+fn measure_alone() -> std::sync::MutexGuard<'static, ()> {
     use std::sync::Mutex;
-    static BUILD_LOCK: Mutex<()> = Mutex::new(());
-    let _guard = BUILD_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    static BENCH_LOCK: Mutex<()> = Mutex::new(());
+    BENCH_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+}
 
+fn ensure_fixture(dir: &Path) {
     if dir.join(".git").exists() {
         return;
     }
@@ -93,6 +110,7 @@ fn percentile(mut samples: Vec<u128>, p: f64) -> u128 {
 #[test]
 #[ignore = "Builds a 50k-file fixture – opt-in via `cargo test -- --ignored`"]
 fn bench_50k_files_discover_and_repo_info_under_budget() {
+    let _alone = measure_alone();
     let dir = fixture_dir();
     ensure_fixture(&dir);
 
@@ -110,16 +128,17 @@ fn bench_50k_files_discover_and_repo_info_under_budget() {
         p50_us / 1000,
         p95_us / 1000
     );
-    // The plan's 50 ms target is aspirational. Empirically, even shelling out
-    // to `git status --untracked-files=no` (the lightest is-dirty check) takes
-    // ~75 ms on this fixture – gix lands within that ballpark, so the hard
-    // cap is the more realistic bound. Documented in `git/CLAUDE.md` § "Perf".
+    // The 50 ms target is aspirational: nearly all of this is `is_dirty()`'s
+    // worktree walk, and `git status --untracked-files=no --porcelain` walks the
+    // same fixture in ~50 ms, so gix has no headroom to give against the tool
+    // it's replacing. The hard cap is the bound that means something.
     assert!(p95_us / 1000 <= 100, "p95 over hard cap: {}ms", p95_us / 1000);
 }
 
 #[test]
 #[ignore = "Builds a 50k-file fixture – opt-in via `cargo test -- --ignored`"]
 fn bench_50k_files_list_status_under_budget() {
+    let _alone = measure_alone();
     use crate::status::invalidate_status_cache;
     let dir = fixture_dir();
     ensure_fixture(&dir);
@@ -189,6 +208,7 @@ fn build_branches_fixture(branches: usize, ahead: usize) -> TestDir {
 #[test]
 #[ignore = "Slow: builds a 100-branch fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_list_branches_with_ahead_behind() {
+    let _alone = measure_alone();
     use crate::virtual_listing;
     let dir = build_branches_fixture(100, 3);
     let (handle, root) = discover_repo(&dir).expect("discover");
@@ -247,6 +267,7 @@ fn build_deep_history_fixture(commits: usize, top_level_files: usize, name: &str
 #[test]
 #[ignore = "Slow: builds a 5000-commit fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_per_file_dates_5k_commits_under_budget() {
+    let _alone = measure_alone();
     use crate::path::Cat;
     use crate::snapshot_dates;
     use crate::virtual_listing;
@@ -295,6 +316,7 @@ fn bench_per_file_dates_5k_commits_under_budget() {
 #[test]
 #[ignore = "Very slow: builds a 50k-commit fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_per_file_dates_50k_commits_under_budget() {
+    let _alone = measure_alone();
     use crate::path::Cat;
     use crate::snapshot_dates;
     use crate::virtual_listing;
@@ -325,6 +347,7 @@ fn bench_per_file_dates_50k_commits_under_budget() {
 #[test]
 #[ignore = "Slow: builds a 200-commit fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_list_commits_files_changed() {
+    let _alone = measure_alone();
     use crate::log;
     let dir = TestDir::new("bench_commits");
     run(&dir, &["init", "-q", "-b", "main"]);

@@ -166,26 +166,31 @@ M1 Max, gix 0.87, 2026-09-05, median of three runs:
 
 | Metric                     | Budget          | Measured |
 | -------------------------- | --------------- | -------- |
-| `discover + repo_info` p50 | 50 ms target    | ~87 ms   |
-| `discover + repo_info` p95 | 100 ms hard cap | ~108 ms  |
-| `list_status` cold p50     | 100 ms          | ~67 ms   |
-| `list_status` cold p95     | 100 ms          | ~86 ms   |
-| `list_status` warm p50     | –               | ~96 µs   |
+| `discover + repo_info` p50 | 50 ms target    | ~54 ms   |
+| `discover + repo_info` p95 | 100 ms hard cap | ~58 ms   |
+| `list_status` cold p50     | 100 ms          | ~60 ms   |
+| `list_status` cold p95     | 100 ms          | ~68 ms   |
+| `list_status` warm p50     | –               | ~16 µs   |
 
-`list_status` lands inside budget cold, and a warm call is a cache hit in microseconds. Subsequent repo discovery calls
+Everything is inside budget, and a warm `list_status` is a cache hit in microseconds. Subsequent repo discovery calls
 hit the portal's repo-handle cache and run in microseconds too.
 
-**`discover + repo_info` is over its hard cap on this hardware**, so
-`bench_50k_files_discover_and_repo_info_under_budget` fails when run. All of it is `repo_info`'s `is_dirty()`, a full
-worktree walk; discovery itself is a cache hit after the first call. It's a real number to act on rather than a
-measurement artifact: `git status --untracked-files=no --porcelain` walks the SAME fixture in 50 ms on this machine
-(five runs, 2026-09-05), where the earlier table recorded 75 ms for it, so this machine is the faster one and `is_dirty`
-still costs ~26 ms more than the number that table carried. The likeliest cause is the gix 0.81 → 0.87 bump the earlier
-numbers predate. ❗ Nothing in the chip pipeline was made slower by the routing work: `repo_info` and `is_dirty` are
-untouched by it. Worth a look before the next release, since this is the call the breadcrumb chip waits on.
+**Take every reading with the bench holding `measure_alone()`, or it measures the wrong thing.** Each bench here walks a
+big tree, `cargo test` runs them on several threads by default, and two walks over the same fixture inflate each other:
+`discover + repo_info` reads p50 92 ms / p95 114 ms beside `list_status` and p50 54 ms / p95 58 ms alone, which is the
+difference between failing the hard cap and passing it with 40% to spare. `list_status` cold p95 climbs to 97 ms under
+the same contention, a hair off its own budget. The lock is in `bench.rs`; every bench takes it first.
 
-The bench is `#[ignore]`d, so no check lane runs it; take a reading with the command above after any change to the chip
-pipeline.
+`repo_info`'s `is_dirty()` — a full worktree walk — is nearly all of the `discover + repo_info` number; discovery itself
+is a cache hit after the first call. The 50 ms target is aspirational rather than reachable:
+`git status --untracked-files=no --porcelain` walks the same fixture in 50 ms on this machine (five runs, 2026-09-05),
+so gix has no headroom to give against the tool it replaces, and the 100 ms hard cap is the bound that means something.
+If the chip ever does need to render faster than a worktree walk, the lever is to split the fast question (repo + head +
+ahead/behind) from the slow one (dirty) and deliver the dirty flag as a second update over `git-state-changed`. Not
+needed at these numbers.
+
+The bench is `#[ignore]`d — it builds a 50k-file fixture — so no check lane runs it; take a reading with the command
+above after any change to the chip pipeline.
 
 ## The portal is a routed volume
 
