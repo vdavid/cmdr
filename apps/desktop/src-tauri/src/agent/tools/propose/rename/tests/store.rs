@@ -148,6 +148,53 @@ fn an_accepted_preflight_does_not_survive_a_store_reopen() {
     assert!(restarted.take_matching(&proposal_id, &allowed).is_none());
 }
 
+/// The same rule, over the several proposals ONE review now holds.
+///
+/// A job's batches accumulate into a single review, so a review lives longer than it used to:
+/// the user answers a 500-file rename once, at the end, and may leave it open. Every batch's
+/// approval still has to die with the process, and one surviving batch would be enough to apply
+/// a name against fingerprints taken before the app went away.
+#[test]
+fn no_batch_of_an_accumulated_review_keeps_its_approval_across_a_store_reopen() {
+    let dir = crate::test_support::TestDir::new("rename-acceptance-reopen-batches");
+    let db_path = dir.join("main.db");
+    let accepted = AcceptedRenamePreflights::default();
+    let batches = {
+        let conn = crate::agent::store::open_write_connection(&db_path).expect("open");
+        let mut batches = Vec::new();
+        for (source, destination) in [("/shots/a.png", "b.png"), ("/shots/c.png", "d.png")] {
+            let proposal = staged(
+                &conn,
+                vec![draft_row(source, destination, EvidenceSource::Filename, "old name")],
+            );
+            let allowed: Vec<String> = proposal.rows.iter().map(|row| row.row_id.clone()).collect();
+            record_acceptance(&conn, last_group_id(&conn), &[], 200).expect("preflight");
+            accepted.record(
+                &proposal.proposal_id,
+                AcceptedPreflight {
+                    allowed_row_ids: allowed.clone(),
+                    fingerprints: vec![],
+                },
+            );
+            batches.push((proposal.proposal_id, allowed));
+        }
+        batches
+    };
+
+    let restarted = AcceptedRenamePreflights::default();
+    let conn = crate::agent::store::open_write_connection(&db_path).expect("reopen");
+    for (proposal_id, allowed) in &batches {
+        assert!(
+            super::super::store::load(&conn, proposal_id).expect("load").is_some(),
+            "every batch of the review is still there to answer"
+        );
+        assert!(
+            restarted.matching(proposal_id, allowed).is_none(),
+            "but not one of them may apply without preflighting again"
+        );
+    }
+}
+
 /// Staging is two commits (the spine owns group creation, so evidence can only be written once
 /// its ops have ids), which leaves one crash window: a group whose rows have no evidence. A row
 /// like that is the thing this module exists to prevent, a name on screen with nothing saying
