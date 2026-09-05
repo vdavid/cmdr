@@ -466,6 +466,15 @@ name, path, and `isDirectory`. It needs `..` as a real answer (like copy-path) A
 existing getter), because it chooses between the folder under the cursor and the pane's own. The rules themselves are
 pure and live in `$lib/open-terminal/terminal-target.ts`; this is only the read.
 
+**A command that ACTS on the cursor row calls `refreshCursorEntry()`, ❌ never the plain `getCursorEntry()`.** The
+displayed entry is fed by an `$effect` firing one `get_file_at` per cursor move, so for a round trip after a move it
+still holds the row the cursor just left. Displaying a stale row for a few milliseconds is fine; acting on one is not,
+and the gap widens on a slow mount. Arrow-down then ⌥⌘T is an ordinary keyboard sequence, and it opened the previous
+row's folder until `getCursorRowForTerminal()` was made async over the re-read. `getCursorEntry()` stays as it was for
+the display and mirror readers, which want the cheap cached answer. The E2E spec
+(`test/e2e-playwright/open-terminal-here.spec.ts`) is what catches a regression here: it drives a real cursor move, and
+no unit test can reach the race.
+
 **Self-drag identity (drop builds from app state, not the pasteboard).** `drag-drop-controller.svelte.ts::handleDrop`
 consumes the self-drag identity recorded at drag start (`drag/drag-drop.ts::recordSelfDragIdentity`) instead of
 resolving the pasteboard-derived paths, but only when `getIsDraggingFromSelf()` is true AND the recorded

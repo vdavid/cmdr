@@ -510,6 +510,11 @@ list would claim this Mac has fewer terminals than it does; staying disabled cla
 
 **Deep-linking here** uses the standard row anchor:
 `openSettingsWindow(surface, ['Behavior', 'Navigation & file ops'], settingAnchorId('behavior.openTerminalHereApp'))`.
+Both "Open terminal here" toasts arrive that way, and the hidden `behavior.openTerminalHereToastSeen` flag beside the
+row is theirs. The first-use picker that can WRITE this setting on the user's behalf (when exactly one terminal is
+running and the stored choice is still Terminal.app), the rule that it never overrides an explicit non-Terminal choice,
+and the toasts themselves all live in `apps/desktop/src/lib/open-terminal/DETAILS.md`. This row only reads and writes
+the value.
 
 ### Global go-to-latest hotkey: on/off in the Downloads card, combo edited in Keyboard shortcuts
 

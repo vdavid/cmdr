@@ -3,6 +3,11 @@
 Depth behind `CLAUDE.md`. The spec that decided all of this is `docs/specs/open-terminal-here.md`; the launch table, the
 per-app recipes, and why there's no window-vs-tab control are `src-tauri/src/file_system/DETAILS.md`.
 
+The whole feature is macOS-only, and the gating is per surface rather than one flag: the palette entry and the shortcut
+come from `isMacOS()` in `commands/sources/file-list.ts`, and the menu item from the Rust side. Bundle ids and launch
+recipes are a macOS vocabulary, and Linux has no default terminal either, so a Linux build would bring its own table
+rather than reuse this one.
+
 ## What "here" means
 
 `resolveTerminalFolder` takes the pane's own path, its volume KIND, and the cursor row, and answers one folder or

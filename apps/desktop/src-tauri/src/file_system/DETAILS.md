@@ -96,6 +96,9 @@ macOS has no system-wide "default terminal" setting. Finder's own "New Terminal 
 Terminal.app, and iTerm2 works around that by installing its own service. So Cmdr carries a table, the way VS Code,
 Marta, and Raycast do.
 
+The external paper trail behind the table (every bundle id's source and date, why each app gets the recipe it gets, and
+the per-app window-vs-tab survey) is `docs/notes/terminal-launch-sources-2026-09-04.md`. Read it before adding an app.
+
 - **`KNOWN_TERMINALS`** holds bundle id, display name, and a `LaunchRecipe` for Terminal, Alacritty, Ghostty, Hyper,
   iTerm2, kitty, Warp, and WezTerm. Every bundle id carries its verification source and date in the doc comment above
   the table; a new entry owes the same. Adding one is a single struct literal, nothing else.
@@ -104,18 +107,14 @@ Marta, and Raycast do.
   Alacritty, which won't take a folder as a document; the `-n` is load-bearing, since without it a running instance is
   merely activated and the args are dropped. `WarpUri` is Warp's documented scheme. A custom "Choose an app…" pick is
   launched with `open -a <app path> <dir>`.
-- **No window-vs-tab control, deliberately.** No portable mechanism exists: Terminal follows the system "Prefer tabs
-  when opening documents" setting, Ghostty opens a tab when handed a folder, iTerm2 would need AppleScript (an
-  Automation permission prompt), kitty and WezTerm need their own remote control, and Alacritty has no tabs. Each app
-  is launched the way it natively takes a folder, and the app's own preferences decide (verified 2026-09-03 against
-  [Warp's URI scheme docs](https://docs.warp.dev/terminal/more-features/uri-scheme/) and
-  [Ghostty's folder-open discussion](https://github.com/ghostty-org/ghostty/discussions/5910)).
+- **No window-vs-tab control, deliberately.** No portable mechanism exists, and the six vendors answer the question six
+  different ways. Each app is launched the way it natively takes a folder, and the app's own preferences decide. The
+  per-app survey and its sources are in the note above; don't re-litigate the toggle without reading it.
 - **`launch_argv` is pure** (choice + folder → argv), which is what makes every recipe unit-testable without launching
   anything. Nothing goes through a shell, so awkward folder names travel as ordinary arguments; Warp's URI is the one
   place that needs encoding, and its `WARP_PATH_SET` keeps `/` literal (legal in a query, and the shape Warp's docs
-  show) while encoding `&`, `?`, `#`, `%`, `+`, space, quotes, and every non-ASCII byte. Verified 2026-09-04 against
-  installed Terminal, Ghostty, and Warp by opening a folder named `Ünnepi "terv" & co` and reading back the spawned
-  shell's cwd.
+  show) while encoding `&`, `?`, `#`, `%`, `+`, space, quotes, and every non-ASCII byte. The launch-time verification
+  that pins that set is in the note above.
 - **Installed-ness is one `URLForApplicationWithBundleIdentifier:` call per app**, asked whenever the settings row
   renders and again at launch time. ❌ Never a `/Applications` scan, and no "Refresh" button, because there's nothing
   to refresh.

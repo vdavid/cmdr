@@ -26,6 +26,9 @@ two toasts around the launch. Backend counterpart: `src-tauri/src/file_system/te
   hint, and a flag spent today would eat it. `first-use-pick.ts` owns this.
 - **`listTerminalApps` runs only while the hint is unspent.** After that the stored choice is the whole answer, so the
   ordinary path costs one IPC, not two.
+- **The cursor row is RE-READ before acting on it, ❌ never the displayed one.** `getCursorRowForTerminal()` awaits
+  `refreshCursorEntry()`, because the displayed cursor entry is one IPC behind a move: arrow-down then ⌥⌘T would
+  otherwise open the folder the cursor just left. `file-explorer/pane/DETAILS.md`.
 - **The missing-app name is asked for BEFORE the setting is reset**, while the setting still names the app that's gone.
   `terminal_app_display_name` is a table lookup, which is all that's left once the bundle is uninstalled; `null` means
   Cmdr has no name and the toast uses its nameless wording. ❌ Never show the bundle id.

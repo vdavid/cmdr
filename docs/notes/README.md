@@ -49,6 +49,12 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing as the evidence behind a decision that would otherwise look arbitrary:**
 
+- `terminal-launch-sources-2026-09-04.md` — where every bundle id and launch recipe in the "open terminal here" table
+  came from, each with its source and date, and the per-app survey behind the decision NOT to offer a window-vs-tab
+  control. Read it before adding a terminal to `KNOWN_TERMINALS` (a new entry owes the same standard: a source, not a
+  recollection), before trusting an id that looks right, and before anyone proposes the tab toggle again: the six
+  vendors answer that question six different ways, and only Warp could honor it cleanly. It also names the four
+  external changes that would invalidate these answers.
 - `phased-vs-bulk-index-2026-08-14.md` — the measurement gate the phased-indexing plan set for itself, and the running
   record of what the phased shape costs. **The current number is 1.75×** (the shipped machine over a real `/`, against a
   same-evening bulk baseline of 40.5 s), with `home_covered_at` at 42.5–44.1 s, which is parity with the bulk build's
