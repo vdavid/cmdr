@@ -62,12 +62,15 @@ a number.
 ## Which side a test lives on
 
 **A cell goes where its ASSERTION lives, never where its fixture does.** What a repository answers is here: the
-categories, the column metadata, the snapshot dates, the classifier, the `Volume` contract, the status cache, and the
-watcher's debounce. What the APP does with those answers stays app-side beside the code it exercises: the route, the
-listing overlay, the toggle, the `git-state-changed` payload, and the walker-exposure regressions.
+categories, the column metadata, the snapshot dates, the classifier, the `Volume` contract, and the status cache. What
+the APP does with those answers stays app-side beside the code it exercises: the route, the listing overlay, the
+toggle, the `git-state-changed` payload, and the walker-exposure regressions.
 
-The instrument for the app half is the `testing` feature: `cmdr_git::test_fixtures` builds the repository, and
-`RecordingGitStateSink` makes a watcher report observable without a window.
+The instrument for the app half is the `testing` feature: `test_fixtures` builds the repository, and
+`RecordingGitStateSink` makes a watcher report observable without a window. **That recorder is what a subscription cell
+asserts through**, and the one that does lives app-side: it drives the parked portal's `subscribe_state`, writes five
+commits inside the 200 ms window, and expects exactly one `repo_changed`. The debounce is this crate's contract, but the
+path that proves it starts where the portal is parked, so the cell belongs at that end.
 
 ## Linked worktrees
 
