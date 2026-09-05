@@ -127,8 +127,14 @@ verbatim and both are capped by an LRU; `ResolvedVolume.routed` says which one f
   non-empty archive-inner path, and anything the portal serves right now. It is deliberately narrow at both edges. The
   `.zip` FILE itself is an ordinary file that a copy, a move, and the viewer must treat as bytes on disk, and a `.git`
   path stops counting the moment the portal toggle goes off. Whoever acts on the answer still reads `resolved.routed`;
-  this only decides whether to ask. Its askers are the transfer source resolver, the scan-preview source, the viewer's
-  materialization, and the viewer's open budget.
+  this only decides whether to ask. Its askers are the transfer source resolver, the scan-preview source, the local
+  write fast path's guard, the viewer's materialization and open budget, the agent's `inspect_file` and its proposal
+  boundary, and the MCP path-existence probe.
+- **❌ The path predicate and `Volume::routes_over_a_parent` are two questions, and merging them would cost one of
+  them.** The trait method asks whether a volume that ALREADY EXISTS is one a route minted, which is what keeps it out
+  of the mount lookup; answering it needs the volume. The path predicate is asked before any volume has been resolved,
+  which is the only reason it can stay lexical. One predicate serving both would force a `stat` on the hot path, or a
+  downcast where only a path is in hand.
 - **A routed volume is not a mount.** `mount_id_for_path` skips one because it says so: `Volume::routes_over_a_parent`
   is `false` by default and `true` on `ArchiveVolume` (root = the `.zip`) and `GitPortalVolume` (root =
   `<worktree>/.git`), either of which would otherwise win the longest-root race for every path inside it. ❌ Never a

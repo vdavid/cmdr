@@ -168,6 +168,13 @@ pub trait Volume: Send + Sync {
     /// Default `false`, so an ordinary backend says nothing. ❗ A new routed
     /// backend MUST override it to `true`: nothing else can tell, and the
     /// symptom is silent.
+    ///
+    /// ❌ Not the same question as a host's "could this PATH route?" predicate,
+    /// and the two must not be collapsed. This one is about a volume that
+    /// already exists, and answering it needs the volume. That one is lexical,
+    /// asked before any volume has been resolved, so that a hot path can skip
+    /// the resolve entirely. Merging them would force either a `stat` on that
+    /// hot path or a downcast where only a path is in hand.
     fn routes_over_a_parent(&self) -> bool {
         false
     }

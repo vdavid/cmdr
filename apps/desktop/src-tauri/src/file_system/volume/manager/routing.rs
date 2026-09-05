@@ -64,6 +64,12 @@ pub struct ResolvedVolume {
 /// Call sites use it as the cheap gate in front of an `await`ed `resolve`, so an
 /// ordinary local or remote path pays nothing; whoever then acts on the answer
 /// reads [`ResolvedVolume::routed`], never this.
+///
+/// ❌ Not the same question as [`Volume::routes_over_a_parent`],
+/// which asks whether a volume that already EXISTS is one a route minted (what
+/// keeps it out of the mount lookup). This one is about a path, and is asked
+/// before any volume has been resolved. Keeping them apart is what lets this one
+/// stay lexical.
 pub fn path_routes_over_its_parent(path: &Path) -> bool {
     let inside_an_archive =
         cmdr_archive::archive_boundary_candidate(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
