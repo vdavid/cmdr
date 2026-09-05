@@ -50,6 +50,8 @@ mod exif_tests;
 mod find;
 #[cfg(test)]
 mod find_tests;
+#[cfg(test)]
+mod git_snapshot_tests;
 mod pdf;
 #[cfg(test)]
 mod pdf_tests;
@@ -70,12 +72,12 @@ use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_viewer::archive_extract::extract_if_archive_inner;
 use crate::file_viewer::content_kind::{
     CLASSIFY_HEAD_LEN, ViewerContentKind, classify_viewer_content, looks_binary, media_mime,
 };
 use crate::file_viewer::encoding::detect_from_head;
 use crate::file_viewer::media::read_image_dimensions;
+use crate::file_viewer::routed_extract::extract_if_routed;
 use crate::file_viewer::{Matcher, SearchMode, ViewerError};
 use crate::mcp::{ToolError, ToolResult, fit_to_result_budget, is_virtual_path};
 use crate::search::{format_size, format_timestamp};
@@ -142,7 +144,7 @@ pub enum UnreadableReason {
     /// `NotSupported`). Not a damaged file, so never reported as one.
     Unsupported,
     /// A file inside an archive over the viewer's 256 MiB extraction cap
-    /// (`archive_extract::EXTRACT_CAP_BYTES`), refused before any byte was extracted.
+    /// (`routed_extract::EXTRACT_CAP_BYTES`), refused before any byte was extracted.
     TooLargeToExtract,
 }
 
@@ -483,7 +485,7 @@ impl From<ViewerError> for ReadFailure {
 /// Inspect one path. Blocking: runs on the pool under the runner's deadline, which flips
 /// `cancel` when the path is out of time (the line-index build and the search check it).
 pub(crate) fn inspect_path(path: &str, ask: &TextAsk, cancel: &AtomicBool) -> FileRow {
-    inspect_path_with(path, ask, cancel, &extract_if_archive_inner)
+    inspect_path_with(path, ask, cancel, &extract_if_routed)
 }
 
 /// [`inspect_path`] with the archive extract step injected (tests shrink its cap and
@@ -509,6 +511,10 @@ pub(crate) fn inspect_path_with(path: &str, ask: &TextAsk, cancel: &AtomicBool, 
     }
 
     let p = Path::new(path);
+    if let Some(row) = inspect_routed_path(&owned, p, &volume_id, ask, cancel, extract) {
+        return row;
+    }
+
     let meta = match std::fs::metadata(p) {
         Ok(m) => m,
         Err(e) => return status_for(owned, ReadFailure::Io(e)),
@@ -521,6 +527,44 @@ pub(crate) fn inspect_path_with(path: &str, ask: &TextAsk, cancel: &AtomicBool, 
         Ok(content) => ok_row(owned, p, Some(size), modified_secs(&meta), content),
         Err(failure) => status_for(owned, failure),
     }
+}
+
+/// The row for a file only a ROUTE can serve, or `None` when no route does and the
+/// plain `std::fs` pipeline should answer.
+///
+/// The archive family is handled before this by `archive::route_archive_path`, which
+/// has richer rows to give (the entry list, the encrypted and corrupt verdicts). What
+/// reaches here is a repo's `.git` snapshot: no inode to `stat`, so the entry is
+/// streamed to a bounded temp and read from there, exactly as the viewer does it. A
+/// path the confirm rejects (a mislabeled `.zip`, a `.git` that isn't a repository)
+/// falls through to the plain pipeline.
+///
+/// ❗ No `modified`: the temp was written a moment ago, and quoting its mtime would
+/// report today's date for a file committed years back.
+fn inspect_routed_path(
+    owned: &str,
+    p: &Path,
+    volume_id: &str,
+    ask: &TextAsk,
+    cancel: &AtomicBool,
+    extract: ExtractFn,
+) -> Option<FileRow> {
+    use crate::file_system::volume::manager::path_routes_over_its_parent;
+
+    if !path_routes_over_its_parent(p) {
+        return None;
+    }
+    let materialized = match extract(p, volume_id) {
+        Ok(Some(entry)) => entry,
+        Ok(None) => return None,
+        Err(e) => return Some(status_for(owned.to_string(), ReadFailure::Viewer(e))),
+    };
+    let _cleanup = archive::TempCleanup(materialized.cleanup_dir);
+    let size = std::fs::metadata(&materialized.temp_file).map(|m| m.len()).unwrap_or(0);
+    Some(match read_content(&materialized.temp_file, size, ask, cancel) {
+        Ok(content) => ok_row(owned.to_string(), p, Some(size), None, content),
+        Err(failure) => status_for(owned.to_string(), failure),
+    })
 }
 
 /// An `ok` row: the metadata every kind shares, named after the requested path.

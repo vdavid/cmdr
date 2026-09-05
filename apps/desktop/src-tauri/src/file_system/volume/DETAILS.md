@@ -120,8 +120,8 @@ verbatim and both are capped by an LRU; `ResolvedVolume.routed` says which one f
   `resolved.path`, so the "path unchanged" contract lives in one place.
 - **Most readers ask `is_routed()`, not the kind.** Skipping drive-index enrich/verify and refusing writes follow from
   being routed at all: neither kind's paths are real FS paths and neither takes a mutation. Match a variant only where
-  the answer is about that ONE backend — the archive-edit changeset driver, the archive preview, the viewer's extract
-  path, and the fresh-listing oracle's unconfirmed-remote-archive guard.
+  the answer is about that ONE backend — the archive-edit changeset driver, the archive preview, the routed
+  materialization's error mapping, and the fresh-listing oracle's unconfirmed-remote-archive guard.
 - **`path_routes_over_its_parent(path)` is the cheap gate in front of an `await`ed `resolve`** (same module). Pure
   string work plus one atomic read, true for exactly the paths with no file of their own on the parent volume: a
   non-empty archive-inner path, and anything the portal serves right now. It is deliberately narrow at both edges. The
@@ -616,7 +616,7 @@ resolve `None` to `"root"`, so the volume has to be registered under exactly tha
 
 Under plain `cargo test` a crate's tests share one process, so those tests are all writing to one `"root"` slot:
 - Installing an **equivalent** volume idempotently is safe. `ensure_root_volume()` (duplicated in `create/tests.rs`,
-  `write_operations/paste_clipboard_tests.rs`, `file_viewer/archive_extract_test.rs`, and `commands/rename.rs`)
+  `write_operations/paste_clipboard_tests.rs`, `file_viewer/routed_extract_test.rs`, and `commands/rename.rs`)
   `register_if_absent`s a local-FS `"root"`, so whoever runs first wins and the value is the same either way.
 - Installing a **different** volume needs `manager::test_support::TestVolumeRegistration`, which restores the previous
   registration from `Drop` (unwind included). Without it, `commands/file_system/write_ops.rs`'s `InMemoryVolume` `"root"`

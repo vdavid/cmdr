@@ -7,7 +7,7 @@
 //! the plain pipeline as text or binary. A directory (the archive root, or one inside it)
 //! is listed from the archive's cached index, which is where `encrypted` lives (`FileEntry`
 //! can't carry it). A file is streamed to the viewer's bounded temp
-//! (`file_viewer::archive_extract`, the same 256 MiB refuse-before-extract cap) and read by
+//! (`file_viewer::routed_extract`, the same 256 MiB refuse-before-extract cap) and read by
 //! the normal per-kind pipeline, and [`TempCleanup`] removes the temp however the read ends.
 //! An encrypted file is refused before any byte is extracted: the tool has no password path.
 
@@ -21,7 +21,7 @@ use crate::file_system::volume::VolumeError;
 use crate::file_system::volume::manager::RoutedKind;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_viewer::ViewerError;
-use crate::file_viewer::archive_extract::ExtractedEntry;
+use crate::file_viewer::routed_extract::ExtractedEntry;
 use crate::search::format_size;
 use cmdr_archive::ArchiveNode;
 use cmdr_archive::{ArchiveVolume, archive_boundary_candidate, format_for_path};
@@ -31,7 +31,7 @@ use cmdr_archive::{ArchiveVolume, archive_boundary_candidate, format_for_path};
 pub(crate) const MAX_ARCHIVE_ENTRIES: usize = 200;
 
 /// The extract step, as a value so a test can shrink the cap and point the temp at its own
-/// dir. Production passes `archive_extract::extract_if_archive_inner`.
+/// dir. Production passes `routed_extract::extract_if_routed`.
 pub(crate) type ExtractFn<'a> = &'a (dyn Fn(&Path, &str) -> Result<Option<ExtractedEntry>, ViewerError> + Sync);
 
 // ── Result DTOs ─────────────────────────────────────────────────────────────
@@ -213,7 +213,7 @@ fn inspect_archive_path(
 
 /// Removes an extraction's temp subdir when dropped, so an early return or a panic in
 /// the per-kind pipeline can't leak it. The viewer ties the same dir to its session
-/// instead (`file_viewer/DETAILS.md` § Preview inside an archive).
+/// instead (`file_viewer/DETAILS.md` § Preview of a routed file).
 pub(crate) struct TempCleanup(pub(crate) PathBuf);
 
 impl Drop for TempCleanup {

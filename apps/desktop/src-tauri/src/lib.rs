@@ -445,7 +445,7 @@ pub fn run() {
             // data dir (so side-by-side dev/prod/worktree instances never reap each
             // other's live temps), and reap any `.cmdr-viewer-*` orphan left by a crash.
             if let Ok(data_dir) = config::resolved_app_data_dir(app.handle()) {
-                file_viewer::init_archive_extract_dir(data_dir.join("viewer-extract"));
+                file_viewer::init_routed_extract_dir(data_dir.join("viewer-extract"));
 
                 // Point the in-flight transfer-partial ledger at the data dir and
                 // clear the `.cmdr-tmp-*` partials an earlier run recorded and never

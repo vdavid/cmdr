@@ -14,26 +14,26 @@ use tauri::menu::MenuItemKind;
 
 const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Open budget for a preview INSIDE an archive: the whole entry is streamed out to a
-/// bounded temp first, so it needs the recursive-scan tier, not the 2 s read tier. The
-/// extraction cap keeps the worst case bounded. A non-archive open keeps the strict 2 s.
-const VIEWER_ARCHIVE_TIMEOUT: Duration = Duration::from_secs(30);
+/// Open budget for a preview of a ROUTED file (inside a `.zip`, or inside a repo's
+/// virtual `.git` trees): the whole entry is streamed out to a bounded temp first, so
+/// it needs the recursive-scan tier, not the 2 s read tier. The extraction cap keeps
+/// the worst case bounded. An ordinary on-disk open keeps the strict 2 s.
+const VIEWER_ROUTED_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Picks the open timeout for `path`: the generous archive budget when the path is
-/// INSIDE a `.zip` (a temp-extract, which is slow — more so pulling from a remote
-/// parent), else the strict 2 s. Viewing the `.zip` file itself is a normal read, so
-/// it keeps the strict budget.
+/// Picks the open timeout for `path`: the generous routed budget when a route serves
+/// the path (a temp materialization, which is slow — more so pulling a `.zip` from a
+/// remote parent, or a blob out of a big pack), else the strict 2 s. Viewing the
+/// `.zip` file itself is a normal read, so it keeps the strict budget.
 ///
-/// This is a pure string check (a non-empty inner under a `.zip` component), no I/O
+/// `path_routes_over_its_parent` is a pure string check plus one atomic read, no I/O
 /// and no confirm: the budget is a heuristic, not a correctness gate, so it needs no
-/// `volume_id` and never touches the disk or network. Over-granting the archive
-/// budget to a mislabeled `.zip` is harmless (the open fails fast on its own).
+/// `volume_id` and never touches the disk or network. Over-granting the generous
+/// budget to a mislabeled `.zip` or a `.git` that isn't a repository is harmless (the
+/// open fails fast on its own).
 fn open_timeout_for(path: &str) -> Duration {
     let expanded = crate::commands::file_system::expand_tilde(path);
-    let looks_archive_inner = cmdr_archive::archive_boundary_candidate(std::path::Path::new(&expanded))
-        .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
-    if looks_archive_inner {
-        VIEWER_ARCHIVE_TIMEOUT
+    if crate::file_system::volume::manager::path_routes_over_its_parent(std::path::Path::new(&expanded)) {
+        VIEWER_ROUTED_TIMEOUT
     } else {
         VIEWER_TIMEOUT
     }

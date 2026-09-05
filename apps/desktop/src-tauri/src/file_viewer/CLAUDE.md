@@ -14,8 +14,9 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - Backend selection: `< 1MB` → `FullLoad`; else `ByteSeek` (instant open) + a background `LineIndex` upgrade.
 - Media (Image/PDF): `content_kind.rs`, `media.rs` (`cmdr-media://` token map), `media_protocol.rs` (scheme handler),
   `media_backend.rs`, `media_session.rs`. See `DETAILS.md` § "Media rendering".
-- `archive_extract.rs`: preview-in-zip (streams an archive-inner entry to a bounded temp); the agent's `inspect_file`
-  is its second caller and removes its own temp. See `DETAILS.md` § "Preview inside an archive".
+- `routed_extract.rs`: preview of a ROUTED file (streams an archive entry or a `.git` snapshot blob to a bounded temp);
+  the agent's `inspect_file` is its second caller and removes its own temp. See `DETAILS.md` § "Preview of a routed
+  file".
 - `headless.rs`: `open_text_backend` (the backend pick with no session around it) and `open_scan_backend` (no index,
   for a `search`); the agent's `inspect_file` reads through both. `content_kind::looks_binary`, the byte-level
   text-vs-binary call. `DETAILS.md` § "Headless reads".
@@ -53,10 +54,11 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   arithmetic depends on this; stripping `\r` later needs the same change there.
 - **Cancellation is per-read / per-search, never session-wide**: `read_range` and `search` check the cancel flag inside
   the per-line loop (not just between chunks), so concurrent reads don't race a shared flag.
-- **Never open an archive-inner path (`/…/foo.zip/inner`) via `std::fs` here.** The viewer core is `std::fs`-only, so
-  `open_session` routes such a path through `archive_extract` (bounded temp-extract, deleted on close via
-  `ViewerSession.extract_cleanup`); the cap refuses BEFORE extraction (zip-bomb guard). See `DETAILS.md` § "Preview
-  inside an archive".
+- **Never open a ROUTED path via `std::fs` here** (`/…/foo.zip/inner`, `/…/.git/branches/main/src/lib.rs`): neither has
+  an inode. The viewer core is `std::fs`-only, so `open_session` sends such a path through `routed_extract` (bounded
+  temp, deleted on close via `ViewerSession.extract_cleanup`); the cap refuses BEFORE materializing (zip-bomb guard).
+  Ask `volume::manager::path_routes_over_its_parent`, ❌ never an archive-only check. See `DETAILS.md` § "Preview of a
+  routed file".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

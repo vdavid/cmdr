@@ -6,7 +6,6 @@
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
 pub(crate) mod analytics;
-pub(crate) mod archive_extract;
 mod byte_seek;
 pub mod content_kind;
 pub mod encoding;
@@ -18,14 +17,13 @@ mod media_backend;
 pub mod media_protocol;
 mod media_session;
 pub(crate) mod range_read;
+pub(crate) mod routed_extract;
 mod search_matcher;
 pub mod session;
 pub mod watcher;
 
 #[cfg(test)]
 mod analytics_test;
-#[cfg(test)]
-mod archive_extract_test;
 #[cfg(test)]
 mod byte_seek_test;
 #[cfg(test)]
@@ -43,6 +41,8 @@ mod media_protocol_test;
 #[cfg(test)]
 mod media_session_test;
 #[cfg(test)]
+mod routed_extract_test;
+#[cfg(test)]
 mod search_cancel_test_support;
 #[cfg(test)]
 mod search_matcher_test;
@@ -51,11 +51,11 @@ mod session_test;
 #[cfg(test)]
 mod watcher_test;
 
-pub use archive_extract::init_archive_extract_dir;
 pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
 pub use media_session::MediaDimensions;
 pub use range_read::RangeEnd;
+pub use routed_extract::init_routed_extract_dir;
 pub use search_matcher::{Matcher, SearchMode};
 pub use session::{
     EncodingOptions, SearchPollResult, ViewerOpenResult, ViewerSessionStatus, cancel_read, close_session,
@@ -171,10 +171,10 @@ pub enum ViewerError {
     /// The read exceeded the IPC timeout. The frontend can offer Retry; the underlying
     /// backend read continues until it sees the per-read cancel flag or completes.
     TimedOut,
-    /// Previewing a file inside an archive would extract more than the preview cap.
-    /// Refused before any extraction (the zip-bomb guard for preview); `size` is the
-    /// entry's declared uncompressed size, `cap` the limit. See
-    /// `file_viewer::archive_extract`.
+    /// Previewing a file that lives inside a route (an archive entry, a file in a
+    /// repo's `.git` snapshot) would materialize more than the preview cap. Refused
+    /// before any extraction (the zip-bomb guard for preview); `size` is the entry's
+    /// declared size, `cap` the limit. See `file_viewer::routed_extract`.
     ExtractTooLarge {
         size: u64,
         cap: u64,

@@ -1702,3 +1702,46 @@ fn test_set_encoding_ascii_compatible_is_instant() {
 
     session::close_session(&sid).unwrap();
 }
+
+/// The viewer opens a file that lives in a repo's `.git` snapshot: the portal
+/// volume streams the blob to a bounded temp and the viewer opens THAT, exactly
+/// as it does for an entry inside a zip. Before the materialization covered
+/// every route, `file_path.exists()` was false for a snapshot path and the open
+/// answered `notFound`.
+#[test]
+fn opens_a_file_out_of_a_git_snapshot_and_reads_its_lines() {
+    use crate::file_system::git;
+    use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
+    use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
+    use std::sync::Arc;
+
+    let dir = temp_dir("viewer_session", "git_snapshot");
+    let mut fixture = Fixture::init(dir.clone());
+    fixture.commit_file("README.md", b"first line\nsecond line\n", "initial");
+    // (nextest isolates the process-global manager per test.)
+    get_volume_manager().register("root", Arc::new(LocalPosixVolume::new("Root", dir.to_str().unwrap())));
+    git::wiring::set_virtual_portal_enabled(true);
+
+    let snapshot = dir.join(".git/branches/main/README.md");
+    let opened = session::open_session(snapshot.to_str().unwrap(), "root").expect("the snapshot file opens");
+    assert_eq!(opened.initial_lines.lines[0], "first line");
+    assert_eq!(opened.initial_lines.lines[1], "second line");
+    // The session is named for the path the user asked for, not for the temp.
+    assert!(opened.file_name.ends_with("README.md"));
+
+    session::close_session(&opened.session_id).expect("close");
+
+    // A directory in the snapshot is a directory, ❌ never an empty preview.
+    assert!(matches!(
+        session::open_session(dir.join(".git/branches/main").to_str().unwrap(), "root"),
+        Err(ViewerError::IsDirectory)
+    ));
+    // And a path that isn't in the snapshot is honestly missing.
+    assert!(matches!(
+        session::open_session(dir.join(".git/branches/main/nope.txt").to_str().unwrap(), "root"),
+        Err(ViewerError::NotFound { .. })
+    ));
+
+    cleanup(&dir);
+}

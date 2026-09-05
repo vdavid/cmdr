@@ -21,7 +21,7 @@ use std::sync::Arc;
 /// the caller named, it's a read-only volume mapping a namespace onto it" — so
 /// most sites ask [`ResolvedVolume::is_routed`]. Match a variant only where the
 /// answer is genuinely about that ONE backend (the archive-edit driver, the
-/// archive preview, the viewer's extract path).
+/// archive preview, the routed materialization's error mapping).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RoutedKind {
     /// The path crossed a `.zip` boundary into an [`ArchiveVolume`](cmdr_archive::ArchiveVolume).

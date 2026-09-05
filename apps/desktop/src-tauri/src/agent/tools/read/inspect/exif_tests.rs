@@ -16,7 +16,7 @@ use super::tests::assert_text_only;
 use super::*;
 use crate::file_system::volume::LocalPosixVolume;
 use crate::file_system::volume::manager::get_volume_manager;
-use crate::file_viewer::archive_extract::{EXTRACT_CAP_BYTES, extract_if_archive_inner_with};
+use crate::file_viewer::routed_extract::{EXTRACT_CAP_BYTES, extract_if_routed_with};
 use crate::test_support::TestDir;
 use cmdr_archive::test_fixtures::{build_zip, stored};
 
@@ -283,7 +283,7 @@ fn an_image_inside_a_zip_carries_its_exif() {
     );
     let extract_dir = TestDir::new("inspect_exif_zip_extract");
     let extract = |requested: &Path, volume_id: &str| {
-        extract_if_archive_inner_with(requested, volume_id, &extract_dir, EXTRACT_CAP_BYTES)
+        extract_if_routed_with(requested, volume_id, &extract_dir, EXTRACT_CAP_BYTES)
     };
     let row = inspect_path_with(
         zip.join("shot.jpg").to_str().unwrap(),

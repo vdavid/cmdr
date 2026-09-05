@@ -1,18 +1,17 @@
-//! Tests for preview-in-zip temp-extraction (`archive_extract`).
+//! Tests for preview-in-zip temp-extraction (`routed_extract`).
 
 use std::io::Write as _;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use super::ViewerError;
-use super::archive_extract::{
-    EXTRACT_CAP_BYTES, extract_if_archive_inner_with, init_archive_extract_dir, is_orphan_extract_name,
-    reap_orphan_extracts,
+use super::routed_extract::{
+    EXTRACT_CAP_BYTES, extract_if_routed_with, init_routed_extract_dir, is_orphan_extract_name, reap_orphan_extracts,
 };
 use super::session;
 
 /// Serializes the tests that drive `open_session` (they share the process-wide extract
-/// dir set by `init_archive_extract_dir`).
+/// dir set by `init_routed_extract_dir`).
 static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Registers a real local-FS "root" volume so `resolve("root", …)` finds a parent for
@@ -72,7 +71,7 @@ fn non_archive_path_returns_none() {
     std::fs::write(&plain, b"hi").expect("seed");
     let extract = tempfile::tempdir().expect("extract dir");
 
-    let got = extract_if_archive_inner_with(&plain, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve");
+    let got = extract_if_routed_with(&plain, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve");
     assert!(got.is_none(), "a non-archive path must not extract");
 }
 
@@ -87,14 +86,13 @@ fn the_zip_file_itself_returns_none_so_it_views_as_raw_bytes() {
     // The `.zip` FILE itself is NOT temp-extracted — it views as raw bytes like any
     // binary file. (Extracting inner "" would address the archive ROOT, a directory,
     // and error — so pre-fix this would panic here.)
-    let got =
-        extract_if_archive_inner_with(&zip, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve the .zip file");
+    let got = extract_if_routed_with(&zip, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve the .zip file");
     assert!(got.is_none(), "the .zip file itself must not extract (raw-bytes view)");
 
     // A path INSIDE the archive DOES extract to a temp.
     let inner = zip.join("inner.txt");
     let extracted =
-        extract_if_archive_inner_with(&inner, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve inner entry");
+        extract_if_routed_with(&inner, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve inner entry");
     assert!(extracted.is_some(), "an inner path extracts to a temp");
 }
 
@@ -113,7 +111,7 @@ fn refuses_oversize_entry_before_extracting() {
     build_zip(&zip, &[("data.bin", &vec![0u8; entry_len])]);
 
     let inner = zip.join("data.bin");
-    let err = extract_if_archive_inner_with(&inner, "root", extract.path(), 10).expect_err("oversize must be refused");
+    let err = extract_if_routed_with(&inner, "root", extract.path(), 10).expect_err("oversize must be refused");
     assert!(
         matches!(err, ViewerError::ExtractTooLarge { size, cap: 10 } if size == entry_len as u64),
         "expected ExtractTooLarge with the full declared size (refused before extraction), got {err:?}"
@@ -139,7 +137,7 @@ fn directory_entry_in_zip_is_rejected() {
     build_zip(&zip, &[("sub/", b""), ("sub/f.txt", b"x")]);
 
     let inner = zip.join("sub");
-    let err = extract_if_archive_inner_with(&inner, "root", extract.path(), EXTRACT_CAP_BYTES)
+    let err = extract_if_routed_with(&inner, "root", extract.path(), EXTRACT_CAP_BYTES)
         .expect_err("a directory entry can't be previewed");
     assert!(
         matches!(err, ViewerError::IsDirectory),
@@ -152,7 +150,7 @@ fn text_file_in_zip_round_trips_and_temp_is_deleted_on_close() {
     let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     ensure_root_volume();
     let extract = tempfile::tempdir().expect("extract dir");
-    init_archive_extract_dir(extract.path().to_path_buf());
+    init_routed_extract_dir(extract.path().to_path_buf());
 
     let src = tempfile::tempdir().expect("src dir");
     let zip = src.path().join("bundle.zip");
@@ -201,7 +199,7 @@ fn image_in_zip_opens_as_media_and_temp_is_deleted_on_close() {
     let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     ensure_root_volume();
     let extract = tempfile::tempdir().expect("extract dir");
-    init_archive_extract_dir(extract.path().to_path_buf());
+    init_routed_extract_dir(extract.path().to_path_buf());
 
     let src = tempfile::tempdir().expect("src dir");
     let zip = src.path().join("pics.zip");
