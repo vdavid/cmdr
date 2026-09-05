@@ -702,6 +702,9 @@ pub fn run() {
             // Apply direct SMB connection setting (default: true)
             file_system::set_direct_smb_enabled(saved_settings.direct_smb_connection.unwrap_or(true));
             file_system::git::set_virtual_portal_enabled(saved_settings.show_virtual_git_portal.unwrap_or(true));
+            // Where the `.git/*` watcher reports a repo change: the chip's event
+            // and the re-read of every open virtual listing.
+            file_system::git::wiring::install_git_state_sink(app.handle());
             // The portal's `.git/` landing rows. Everything below `.git/` is a
             // routed volume instead; this seam is what keeps the six rows out of
             // every walker (`listing_overlays.rs`).

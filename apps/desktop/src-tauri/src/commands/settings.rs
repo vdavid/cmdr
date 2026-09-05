@@ -279,7 +279,7 @@ pub fn persist_restricted_window_setting(
 #[specta::specta]
 pub async fn set_show_virtual_git_portal(enabled: bool) {
     crate::file_system::git::set_virtual_portal_enabled(enabled);
-    crate::file_system::git::watcher::refresh_all_virtual_listings_after_toggle();
+    crate::file_system::git::wiring::refresh_all_virtual_listings_after_toggle();
 }
 
 /// Update menu accelerator for a command.

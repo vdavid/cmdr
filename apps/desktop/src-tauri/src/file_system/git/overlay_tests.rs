@@ -116,7 +116,7 @@ fn the_toggle_refresh_reaches_a_dot_git_pane_with_no_repo_subscription() {
         .path(dir.join("src"))
         .insert("git-toggle-elsewhere");
 
-    let targeted = super::watcher::listings_inside_a_dot_git();
+    let targeted = super::wiring::listings_inside_a_dot_git();
     let paths: Vec<&PathBuf> = targeted.iter().map(|(_, path)| path).collect();
 
     assert!(paths.contains(&&dot_git), "the `.git/` pane itself: {paths:?}");
@@ -153,7 +153,7 @@ fn the_refresh_reaches_a_portal_listing_on_a_non_default_volume() {
         .path(dir.join("src"))
         .insert("git-refresh-elsewhere");
 
-    let targeted = super::watcher::listings_under(&super::watcher::virtual_category_prefixes(&dot_git));
+    let targeted = super::wiring::listings_under(&super::wiring::virtual_category_prefixes(&dot_git));
     let paths: Vec<&PathBuf> = targeted.iter().map(|(_, path)| path).collect();
 
     assert!(

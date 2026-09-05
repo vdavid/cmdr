@@ -1,35 +1,25 @@
-//! Per-repo watcher: subscribes to `.git/*` mutable-state paths and re-emits
+//! Per-repo watcher: subscribes to `.git/*` mutable-state paths and recomputes
 //! `RepoInfo` whenever they change.
 //!
-//! Frontend never polls. The chip subscribes once via `subscribe_git_state`
-//! and updates reactively from `git-state-changed` events. Debounce is 200 ms
-//! per repo, matching the existing listing watcher in `file_system/listing/`.
+//! Frontend never polls. The chip subscribes once and updates reactively from
+//! whatever the host does with a [`GitStateSink`] report. Debounce is 200 ms per
+//! repo, matching the existing listing watcher in `file_system/listing/`.
+//!
+//! ❌ Nothing here names a window. The watcher recomputes a typed snapshot and
+//! reports it; wording it and refreshing panes is the host's, through the sink.
 
 #[cfg(test)]
 use crate::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use notify::RecursiveMode;
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
-use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
-use tauri_specta::Event;
 
 use super::repo::{RepoInfo, discover_repo, repo_info};
-
-/// Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
-/// `RepoInfo` snapshot. The `…Payload` suffix wouldn't kebab-case to the existing
-/// wire string, so the name is pinned via `event_name`.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-#[serde(rename_all = "camelCase")]
-#[tauri_specta(event_name = "git-state-changed")]
-pub struct GitStateChangedPayload {
-    pub repo_root: String,
-    pub info: RepoInfo,
-}
+use super::state_sink::GitStateSink;
 
 /// One per repo. Owns the notify-rs debouncer and the subscriber count.
 struct Subscription {
@@ -59,7 +49,11 @@ impl GitWatcherRegistry {
     /// Adds a subscriber for `repo_root`. Spawns the watcher on first call,
     /// bumps the refcount on subsequent ones. Returns the current `RepoInfo`
     /// snapshot synchronously so the chip never sees an empty interim state.
-    pub fn subscribe(&self, app: AppHandle, repo_root: &Path) -> Result<RepoInfo, super::FriendlyGitError> {
+    pub fn subscribe(
+        &self,
+        sink: Arc<dyn GitStateSink>,
+        repo_root: &Path,
+    ) -> Result<RepoInfo, super::FriendlyGitError> {
         let canonical = repo_root.canonicalize().unwrap_or_else(|_| repo_root.to_path_buf());
 
         let (handle, root) = discover_repo(&canonical)?;
@@ -73,12 +67,11 @@ impl GitWatcherRegistry {
 
         // First subscriber: start the debouncer.
         let watcher_root = root.clone();
-        let app_for_cb = app.clone();
         let mut debouncer = new_debouncer(Duration::from_millis(200), None, move |result: DebounceEventResult| {
             if result.is_err() {
                 return;
             }
-            recompute_and_emit(&app_for_cb, &watcher_root);
+            recompute_and_report(sink.as_ref(), &watcher_root);
         })
         .map_err(|e| {
             super::FriendlyGitError::with_source(super::FriendlyGitErrorKind::CorruptRepo, e.to_string(), e)
@@ -152,130 +145,24 @@ pub fn get_watcher_registry() -> &'static GitWatcherRegistry {
     REG.get_or_init(GitWatcherRegistry::new)
 }
 
-fn recompute_and_emit(app: &AppHandle, repo_root: &Path) {
+/// Recomputes the repo's snapshot and hands it to the sink.
+///
+/// The status cache is dropped BEFORE the report goes out: a subscriber reacts
+/// to a report by asking for status, and a cache still holding the pre-change
+/// walk would answer that with what the user just stopped seeing.
+///
+/// Any `.git/*` mutation we watch for is a superset of "the index might have
+/// moved", so the drop is unconditional. Cheap (a `HashMap` remove), so it isn't
+/// worth filtering by event type.
+fn recompute_and_report(sink: &dyn GitStateSink, repo_root: &Path) {
     let Ok((handle, root)) = discover_repo(repo_root) else {
         return;
     };
     let Ok(info) = repo_info(&handle, &root) else {
         return;
     };
-    let payload = GitStateChangedPayload {
-        repo_root: root.display().to_string(),
-        info,
-    };
-    let _ = payload.emit(app);
-
-    // Any `.git/*` mutation we watch for is a superset of "the index might
-    // have moved", so we drop the cached status snapshot every time. The
-    // next `list_status` call re-walks. Cheap (HashMap remove) so we don't
-    // bother filtering by event type.
     super::status::invalidate_status_cache(&root);
-
-    invalidate_virtual_listings(&root);
-}
-
-/// Test entry point for `invalidate_virtual_listings`.
-#[cfg(test)]
-pub(crate) fn invalidate_for_test(repo_root: &Path) {
-    invalidate_virtual_listings(repo_root)
-}
-
-/// Invalidates any open virtual `.git/{branches,tags,commits,stash,worktrees,submodules}/...`
-/// listings on the local volume so they re-read after a ref change.
-fn invalidate_virtual_listings(repo_root: &Path) {
-    let dot_git = repo_root.join(".git");
-    refresh_local_listings_under(&virtual_category_prefixes(&dot_git));
-}
-
-/// Builds prefixes for every virtual subtree under `<dot_git>/`. The portal
-/// toggle and the watcher both share this set: any listing path starting with
-/// any prefix is a virtual portal listing.
-pub(crate) fn virtual_category_prefixes(dot_git: &Path) -> Vec<PathBuf> {
-    use crate::file_system::git::path::Cat;
-    Cat::ALL.iter().map(|c| dot_git.join(c.as_segment())).collect()
-}
-
-/// Iterates the listing cache and emits `FullRefresh` for any listing whose
-/// path matches any of `prefixes` (prefix-match, including the prefix itself).
-///
-/// ❗ Every volume, not only the boot one. A repo lives just as happily on an
-/// external disk or an OS-mounted share, and those get their own volume ids;
-/// filtering to the default volume left an open portal pane on one showing
-/// stale children after a `git checkout`. The prefixes are absolute host paths
-/// under a real `.git`, which a protocol-only volume's paths can never match.
-pub(crate) fn refresh_local_listings_under(prefixes: &[PathBuf]) {
-    use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
-
-    for (volume_id, listing_path) in listings_under(prefixes) {
-        notify_directory_changed(&volume_id, &listing_path, DirectoryChange::FullRefresh);
-    }
-}
-
-/// The `(volume_id, path)` pairs [`refresh_local_listings_under`] would refresh:
-/// every cached listing whose path is one of `prefixes` or sits under one.
-///
-/// Split out from the refresh so the choice can be asserted on without an
-/// `AppHandle` (`notify_directory_changed` is a no-op before one is registered).
-pub(crate) fn listings_under(prefixes: &[PathBuf]) -> Vec<(String, PathBuf)> {
-    use crate::file_system::listing::caching::{find_listings_for_path_on_volume, get_listing_path, snapshot_listings};
-
-    if prefixes.is_empty() {
-        return Vec::new();
-    }
-    let mut out = Vec::new();
-    for entry in snapshot_listings() {
-        let Some(listing_path) = get_listing_path(&entry.listing_id) else {
-            continue;
-        };
-        let matches = prefixes
-            .iter()
-            .any(|prefix| listing_path.starts_with(prefix) || *prefix == listing_path);
-        if !matches {
-            continue;
-        }
-        if !find_listings_for_path_on_volume(Some(&entry.volume_id), &listing_path).is_empty() {
-            out.push((entry.volume_id, listing_path));
-        }
-    }
-    out
-}
-
-/// Refreshes every open listing the portal toggle can change: a repo's `.git/`
-/// itself (whose rows gain or lose the six categories) and anything under it.
-/// Called when the user flips the setting, so panes already showing one pick the
-/// change up without a manual reload.
-///
-/// **Asks the LISTING CACHE which listings those are, ❌ never the watcher
-/// registry.** A pane standing in `.git/` doesn't imply a `subscribe_git_state`
-/// for that repo, so deriving the set from subscribed repos left the pane the
-/// user was looking at showing six rows the portal no longer serves (caught by
-/// `git-portal.spec.ts`, 2026-09-05).
-///
-/// Over-selecting here is a re-read and nothing more, which is why a path-shape
-/// check is the right instrument: ❗ it decides what to RE-READ, not what a
-/// mutation may touch. That distinction is exactly what the deleted
-/// `local_posix` guards got wrong.
-pub fn refresh_all_virtual_listings_after_toggle() {
-    use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
-
-    for (volume_id, path) in listings_inside_a_dot_git() {
-        notify_directory_changed(&volume_id, &path, DirectoryChange::FullRefresh);
-    }
-}
-
-/// Every cached listing whose path IS a `.git` directory or sits inside one.
-pub(crate) fn listings_inside_a_dot_git() -> Vec<(String, PathBuf)> {
-    use crate::file_system::listing::caching::{get_listing_path, snapshot_listings};
-    use std::path::Component;
-
-    snapshot_listings()
-        .into_iter()
-        .filter_map(|entry| get_listing_path(&entry.listing_id).map(|path| (entry.volume_id, path)))
-        .filter(|(_, path)| {
-            path.components()
-                .any(|component| matches!(component, Component::Normal(segment) if segment == ".git"))
-        })
-        .collect()
+    sink.repo_changed(&root, info);
 }
 
 /// Returns the gitdir for a worktree (handles gitlink files).

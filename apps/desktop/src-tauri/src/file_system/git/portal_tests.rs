@@ -361,7 +361,7 @@ fn watcher_invalidates_branches_listing_on_new_branch() {
             "portal_tests: new branch",
         )
         .expect("create branch ref");
-    super::watcher::invalidate_for_test(&root);
+    super::wiring::refresh_virtual_listings(&root);
 
     // Assert the listing is still in the cache (we full-refresh, not evict).
     assert!(listing.is_cached());

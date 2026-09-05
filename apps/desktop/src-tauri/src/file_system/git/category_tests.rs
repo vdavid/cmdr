@@ -266,7 +266,7 @@ fn watcher_invalidates_commits_listing_on_new_commit() {
 
     // Add a new commit and run the watcher invalidation entry point.
     f.commit_file("new.txt", b"x\n", "added new");
-    super::watcher::invalidate_for_test(&root);
+    super::wiring::refresh_virtual_listings(&root);
 
     // The listing is still in the cache (we full-refresh, not evict).
     assert!(listing.is_cached());

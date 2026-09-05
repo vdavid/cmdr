@@ -7,9 +7,8 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use tauri::AppHandle;
-
 use crate::commands::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+use crate::file_system::git::wiring::git_state_sink;
 use crate::file_system::git::{
     EntryStatus, FriendlyGitError, RepoInfo, discover_repo, get_watcher_registry, list_status, repo_info,
 };
@@ -52,7 +51,8 @@ pub async fn get_git_repo_info(path: String) -> TimedOut<Option<RepoInfo>> {
 /// Without this, IPC could freeze waiting for the watcher to register.
 #[tauri::command]
 #[specta::specta]
-pub async fn subscribe_git_state(app: AppHandle, repo_root: String) -> Result<RepoInfo, GitSubscribeError> {
+pub async fn subscribe_git_state(repo_root: String) -> Result<RepoInfo, GitSubscribeError> {
+    let sink = git_state_sink();
     blocking_typed_result_with_timeout(
         GIT_SUBSCRIBE_TIMEOUT,
         || GitSubscribeError::TimedOut,
@@ -60,7 +60,7 @@ pub async fn subscribe_git_state(app: AppHandle, repo_root: String) -> Result<Re
         move || {
             let path = PathBuf::from(&repo_root);
             get_watcher_registry()
-                .subscribe(app, &path)
+                .subscribe(sink, &path)
                 .map_err(|error| GitSubscribeError::Git { error })
         },
     )

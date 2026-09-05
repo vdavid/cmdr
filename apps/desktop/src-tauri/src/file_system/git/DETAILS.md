@@ -36,10 +36,12 @@ here:
   `ErrorCategory` and `raw_detail()` builds the technical-details string (kind token + path/raw); ALL user-facing copy
   lives on the frontend in `src/lib/error-messages/git-error-messages.ts`, and so do the writing-rules tests
   (`friendly-error-style.test.ts`, every kind × rendered output). Adding a variant means touching both sides.
-- **`watcher.rs` does more than emit `git-state-changed`**: on a relevant `.git/*` mutation it also calls
-  `notify_directory_changed(.., FullRefresh)` for every cached listing under any of the repo's six category prefixes,
-  so an open portal pane refreshes rather than showing stale children. Every volume, not only the boot one: a repo on
-  an external disk gets its own volume id, and its portal panes went stale while that filter was there.
+- **`watcher.rs` names no window.** It notices a relevant `.git/*` mutation, recomputes `RepoInfo`, drops the status
+  cache, and reports through `GitStateSink` (`state_sink.rs`). `wiring.rs` is the app's answer: it emits
+  `git-state-changed` and calls `notify_directory_changed(.., FullRefresh)` for every cached listing under any of the
+  repo's six category prefixes, so an open portal pane refreshes rather than showing stale children. Every volume, not
+  only the boot one: a repo on an external disk gets its own volume id, and its portal panes went stale while that
+  filter was there.
 - **`overlay.rs` is the `.git/` half**: the `ListingOverlay` contributor that puts the six category rows into a repo's
   `.git/` listing, for a PANE and nothing else (`src/listing_overlays.rs`).
 - **No English leaves this module for the Size column.** `column_meta.rs` and the per-category listers hand back numbers and ids on a typed `git_meta`; the words are the frontend's, from the message catalog. See § "Modified + Size columns for virtual entries".
@@ -277,8 +279,9 @@ walk per index change, store the result in a process-global
 `RwLock<HashMap<RepoRoot, CachedStatus>>`, and slice by `dir_in_worktree` on
 each call. Cached calls land sub-millisecond on the same fixture (warm p95 in
 the bench is bounded by an arbitrary 5 ms ceiling so a busy CI doesn't flake).
-The watcher (`watcher.rs::recompute_and_emit`) drops the cache entry on every
-`.git/*` mutation it observes, so the next call repopulates. The
+The watcher (`watcher.rs::recompute_and_report`) drops the cache entry on every
+`.git/*` mutation it observes, BEFORE the report goes out, so a subscriber that reacts by asking for status can't be
+answered with the walk it just invalidated. The
 `unsubscribe`-on-last-pane path also drops the entry so an unwatched repo
 doesn't pin a full-repo-sized snapshot.
 
@@ -299,7 +302,7 @@ under `.git` are unaffected either way: they're the local volume's, and always w
 
 **Toggle invalidates open listings.** Flipping the atomic alone isn't enough: panes already showing a `.git/...`
 listing keep their cached children until the next navigation. So `set_show_virtual_git_portal` also calls
-`watcher::refresh_all_virtual_listings_after_toggle`, which emits a `FullRefresh` for every cached listing that IS a
+`wiring::refresh_all_virtual_listings_after_toggle`, which emits a `FullRefresh` for every cached listing that IS a
 `.git` directory or sits inside one, on any volume.
 
 **Gotcha**: that set comes from the LISTING CACHE, ❌ never from the watcher registry.
@@ -307,8 +310,8 @@ listing keep their cached children until the next navigation. So `set_show_virtu
 version left the pane the user was looking at showing six rows the portal no longer served, until they navigated away
 and back (caught by `git-portal.spec.ts`, 2026-09-05). Over-selecting here costs a re-read and nothing else, which is
 what makes a path-shape check the right instrument: it decides what to RE-READ, ❗ not what a mutation may touch. The
-watcher's own `invalidate_virtual_listings` still goes through `refresh_local_listings_under` with real repo roots,
-because there it HAS one.
+watcher-driven `wiring::refresh_virtual_listings` still goes through `refresh_local_listings_under` with real repo
+roots, because there it HAS one.
 
 A pane standing on a virtual path when the portal turns off gets `NotFound` from the parent volume (the directory isn't
 on disk) and the pane's own recovery runs.
@@ -380,7 +383,7 @@ enumerate worktree gitdirs via `std::fs::read_dir(<common>/worktrees)`
 at subscribe time and register one watch per existing `HEAD`. Worktrees
 added later are picked up indirectly: `git worktree add` always touches
 the main repo's `HEAD` too, which fires our existing main-HEAD watch
-and re-emits `git-state-changed`. The cost is a few extra watcher
+and drives another report. The cost is a few extra watcher
 entries (typical worktree counts are 1-5) – negligible.
 
 **Decision**: `Cat::browses_commit_tree()` covers branches/tags/commits/stash

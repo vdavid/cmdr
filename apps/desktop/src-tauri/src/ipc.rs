@@ -56,7 +56,7 @@ use crate::events::index_mapping::{
     IndexRescanNotificationEvent, IndexScanAbortedEvent, IndexScanCompleteEvent, IndexScanProgressEvent,
     IndexScanStartedEvent, MediaEnrichProgressEvent, MediaEnrichTerminalEvent,
 };
-use crate::file_system::git::watcher::GitStateChangedPayload;
+use crate::file_system::git::wiring::GitStateChangedPayload;
 use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
     ListingReadCompleteEvent,

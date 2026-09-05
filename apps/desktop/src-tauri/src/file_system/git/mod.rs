@@ -45,12 +45,14 @@ pub mod read_blob;
 pub mod repo;
 pub mod snapshot_dates;
 pub mod stash;
+pub mod state_sink;
 pub mod status;
 pub mod submodules;
 pub mod tree;
 pub mod virtual_listing;
 pub mod volume;
 pub mod watcher;
+pub mod wiring;
 pub mod worktrees;
 
 #[cfg(test)]
@@ -72,6 +74,8 @@ mod tests;
 mod volume_tests;
 #[cfg(test)]
 mod walker_exposure_tests;
+#[cfg(test)]
+mod wiring_tests;
 
 #[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use friendly::{FriendlyGitError, FriendlyGitErrorKind};
