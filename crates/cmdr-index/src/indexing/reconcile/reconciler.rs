@@ -599,6 +599,10 @@ impl EventReconciler {
 /// Summary of a subtree reconciliation.
 pub(crate) struct ReconcileSummary {
     pub added: u64,
+    /// Directories among [`added`](Self::added). A caller reporting a walk's work
+    /// needs the split; nothing else does, so ❌ don't grow a second counter per
+    /// kind here.
+    pub added_dirs: u64,
     pub removed: u64,
     pub updated: u64,
     /// Directories the walk reached but couldn't list, almost always because
@@ -656,7 +660,7 @@ pub(crate) struct LiveChild {
 }
 
 /// Outcome of diffing ONE directory's live children against its DB rows.
-pub(crate) struct DirDiff {
+pub(crate) struct DirDiff<'a> {
     pub added: u64,
     pub removed: u64,
     pub updated: u64,
@@ -669,8 +673,18 @@ pub(crate) struct DirDiff {
     pub matched_child_dirs: Vec<(i64, String)>,
     /// Names of NEW child dirs created this pass — the caller flushes the writer,
     /// resolves their ids, then recurses (the id isn't known until the insert
-    /// commits).
+    /// commits). ⚠️ Wider than the new-ROW set below: a child that was a file and
+    /// is now a directory is an UPDATE whose subtree still has to be walked.
     pub new_child_dir_names: Vec<String>,
+    /// Every child this pass CREATED a row for, borrowed from the listing it was
+    /// diffed against. Empty for an unchanged directory, so the no-op-cheap
+    /// property costs nothing here.
+    ///
+    /// A caller only filling the index can ignore it. A caller with a LIVE
+    /// consumer can't: a row the index already held is the index's to report, and
+    /// a row this pass wrote is nobody else's — so a walk that doesn't hand these
+    /// over answers as if the ground it just covered were empty.
+    pub added_children: Vec<&'a LiveChild>,
 }
 
 /// Diff one directory's live listing against its DB children and emit only the
@@ -694,17 +708,18 @@ pub(crate) struct DirDiff {
 /// reconcile-stops-at-the-root prod bug: a share with only its top dirs indexed
 /// would match them, write nothing, recurse nowhere, and "complete" instantly
 /// over an unscanned tree.)
-pub(crate) fn diff_dir_against_db(
+pub(crate) fn diff_dir_against_db<'a>(
     dir_id: i64,
-    live_children: &[LiveChild],
+    live_children: &'a [LiveChild],
     db_children: &[store::EntryRow],
     writer: &IndexWriter,
-) -> DirDiff {
+) -> DirDiff<'a> {
     let mut added: u64 = 0;
     let mut removed: u64 = 0;
     let mut updated: u64 = 0;
     let mut matched_child_dirs: Vec<(i64, String)> = Vec::new();
     let mut new_child_dir_names: Vec<String> = Vec::new();
+    let mut added_children: Vec<&'a LiveChild> = Vec::new();
 
     let mut db_by_name: std::collections::HashMap<String, &store::EntryRow> =
         std::collections::HashMap::with_capacity(db_children.len());
@@ -791,6 +806,7 @@ pub(crate) fn diff_dir_against_db(
             });
             // UpsertEntryV2 auto-propagates deltas in the writer.
             added += 1;
+            added_children.push(child);
 
             if is_dir && !is_symlink {
                 new_child_dir_names.push(child.name.clone());
@@ -816,6 +832,7 @@ pub(crate) fn diff_dir_against_db(
         updated,
         matched_child_dirs,
         new_child_dir_names,
+        added_children,
     }
 }
 
@@ -931,17 +948,30 @@ impl Drop for BulkReconcileGuard {
 /// via `network_scanner::reconcile_volume_via_trait`, which reuses the shared
 /// [`diff_dir_against_db`] but stamps + runs ONE `ComputeAllAggregates` (the
 /// single-aggregate constraint the perf bench measured), never per-dir propagation.
+///
+/// `emit` is where a live consumer receives the rows this pass CREATES, the same
+/// contract [`scanner::cover_subtree`] serves; pass `None` to fill the index and
+/// nothing else. It matters because this is also the cover walk's repair path
+/// (`lifecycle/cover`): the search that asked for that walk answers with the
+/// index's covered half plus what the walk hands back, and the covered half holds
+/// nothing under a frontier root — so a repair that stayed silent would answer as
+/// if the ground it just filled in were empty, and call that answer exhaustive.
 pub(crate) fn reconcile_subtree(
     root: &Path,
     space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
     cancel: &CancellationToken,
+    // Dropped the moment the consumer goes away (a closed search dialog), which
+    // stops the emitting without stopping the walk: the rows are in the index for
+    // the next query either way.
+    mut emit: Option<&scanner::EntrySender>,
 ) -> Result<ReconcileSummary, String> {
     let start = Instant::now();
     // Arm the writer-wait probe, discarding whatever ran on this thread before.
     let _ = writer_wait();
     let mut added: u64 = 0;
+    let mut added_dirs: u64 = 0;
     let mut removed: u64 = 0;
     let mut updated: u64 = 0;
 
@@ -983,6 +1013,7 @@ pub(crate) fn reconcile_subtree(
                         log::debug!("reconcile_subtree: parent of {root_str} is not a directory row, escalating");
                         return Ok(ReconcileSummary {
                             added: 0,
+                            added_dirs: 0,
                             removed: 0,
                             updated: 0,
                             unreadable_dirs: 0,
@@ -1002,6 +1033,7 @@ pub(crate) fn reconcile_subtree(
                     log::debug!("reconcile_subtree: neither root nor parent in DB, escalating: {root_str}");
                     return Ok(ReconcileSummary {
                         added: 0,
+                        added_dirs: 0,
                         removed: 0,
                         updated: 0,
                         unreadable_dirs: 0,
@@ -1024,6 +1056,7 @@ pub(crate) fn reconcile_subtree(
                     log::debug!("reconcile_subtree: can't stat root {root_str}: {e}");
                     return Ok(ReconcileSummary {
                         added: 0,
+                        added_dirs: 0,
                         removed: 0,
                         updated: 0,
                         unreadable_dirs: 0,
@@ -1058,6 +1091,13 @@ pub(crate) fn reconcile_subtree(
                 log::warn!("reconcile_subtree: flush after root upsert failed: {e}");
             }
             added += 1;
+            // ❌ Counted, never handed to `emit`, and that can't cost a consumer a
+            // row: a cover walk materializes its root before the repair runs
+            // (`cover/bootstrap`) and reports it there, so this branch is only ever
+            // reached with no consumer attached.
+            if metadata.is_dir() {
+                added_dirs += 1;
+            }
 
             match space.resolve_abs(conn, &root_str) {
                 Ok(Some(id)) => id,
@@ -1068,6 +1108,7 @@ pub(crate) fn reconcile_subtree(
                     log::warn!("reconcile_subtree: root still not in DB after upsert, skipping: {root_str}");
                     return Ok(ReconcileSummary {
                         added,
+                        added_dirs,
                         removed: 0,
                         updated: 0,
                         unreadable_dirs: 0,
@@ -1132,8 +1173,10 @@ pub(crate) fn reconcile_subtree(
 
         let diff = diff_dir_against_db(dir_id, &live_children, &db_children, writer);
         added += diff.added;
+        added_dirs += diff.added_children.iter().filter(|child| child.is_directory).count() as u64;
         removed += diff.removed;
         updated += diff.updated;
+        hand_rows_over(&mut emit, &dir_path, &diff.added_children);
         for (child_id, child_name) in diff.matched_child_dirs {
             queue.push_back((dir_path.join(child_name), child_id));
         }
@@ -1181,6 +1224,7 @@ pub(crate) fn reconcile_subtree(
 
     Ok(ReconcileSummary {
         added,
+        added_dirs,
         removed,
         updated,
         unreadable_dirs,
@@ -1189,6 +1233,50 @@ pub(crate) fn reconcile_subtree(
         escalation: None,
         cancelled: cancel.is_cancelled(),
     })
+}
+
+/// How many created rows cross to a live consumer at once.
+///
+/// One directory's worth would do on any ordinary tree, and a directory with a
+/// million new children is not ordinary: the channel behind this is bounded at a
+/// few batches (`cover::BATCH_QUEUE_DEPTH`) on the understanding that a batch is
+/// about this size, and one unbounded batch would quietly undo that. Matches the
+/// parallel walker's own batch size.
+const EMIT_CHUNK: usize = 2_000;
+
+/// Hand the rows one directory's diff created to whoever is consuming this pass
+/// live, in bounded batches.
+///
+/// A consumer that has gone away (a closed search dialog) just stops being fed:
+/// `emit` is dropped and the walk runs on, because its rows are already in the
+/// index for the next query to find. Same contract as the parallel walker's own
+/// `emit` (`scanner/insert_visitor.rs`).
+fn hand_rows_over(emit: &mut Option<&scanner::EntrySender>, dir_path: &Path, created: &[&LiveChild]) {
+    if emit.is_none() || created.is_empty() {
+        return;
+    }
+    for chunk in created.chunks(EMIT_CHUNK) {
+        let batch: Vec<scanner::CoveredEntry> = chunk
+            .iter()
+            .map(|child| scanner::CoveredEntry {
+                path: dir_path.join(&child.name),
+                is_directory: child.is_directory,
+                is_symlink: child.is_symlink,
+                // The sizes a LISTING shows, pre-dedup: the writer's hardlink dedup
+                // keeps the stored recursive sums honest, and a search result
+                // showing a hardlinked file as 0 bytes would just be wrong.
+                logical_size: child.snap.logical_size,
+                physical_size: child.snap.physical_size,
+                modified_at: child.snap.modified_at,
+            })
+            .collect();
+        if let Some(sender) = emit
+            && sender.send(batch).is_err()
+        {
+            *emit = None;
+            return;
+        }
+    }
 }
 
 /// One filesystem child of a reconciled directory: its name, its classification

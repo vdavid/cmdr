@@ -166,7 +166,12 @@ field-for-field over a tree of files with known sizes, an empty dir, a symlink, 
 unicode name, a fifo, and an excluded basename.
 
 **The shared per-dir diff.** `reconciler::diff_dir_against_db(dir_id, live_children, db_children, writer)` is the one
-place the add/remove/modify/type-change diff lives. THREE walk sources feed it source-agnostic `LiveChild`s: the local
+place the add/remove/modify/type-change diff lives. It hands back the children it CREATED (`DirDiff::added_children`,
+borrowed from the listing, empty on an unchanged dir so the no-op-cheap property survives) alongside the counts.
+⚠️ That set is NOT `new_child_dir_names`: a child that was a file and is now a directory is an UPDATE whose subtree
+still has to be walked, so it is in the second list and not the first. `reconcile_subtree`'s optional `emit` hands the
+created rows to a live consumer, which is what the cover walk's repair path needs — see
+`../lifecycle/cover/DETAILS.md` § "The repair path REPORTS". THREE walk sources feed it source-agnostic `LiveChild`s: the local
 live small-scope reconcile (`reconcile_subtree`), the local full-tree rescan (`local_reconcile::run_local_reconcile`, a
 BFS), and the network full rescan (`volume_scanner::reconcile_volume_via_trait`, `Volume::list_directory` BFS). It keeps
 `next_id` from the shared `Arc<AtomicI64>` (never `MAX(id)`). The shared FINISH (stamp listed dirs → ONE

@@ -275,6 +275,58 @@ fn a_non_virgin_frontier_node_is_repaired_without_losing_rows() {
     );
 }
 
+/// The repair path REPORTS what it wrote, to the consumer and in the totals.
+///
+/// A live search's answer is the index's covered half plus what the walk hands
+/// back, and the covered half by definition holds nothing under a frontier root.
+/// So a repair that writes rows silently makes the search that paid for it answer
+/// as if that ground were empty — and, because the run still ends `Completed`,
+/// call the short answer exhaustive. The shape is ordinary: search one folder,
+/// then search its parent.
+#[test]
+fn a_repaired_frontier_node_reports_the_rows_it_wrote() {
+    let f = Fixture::new();
+    let root = f.tree.path();
+    std::fs::create_dir_all(root.join("F/G")).expect("dirs");
+    std::fs::create_dir_all(root.join("F/sibling")).expect("dirs");
+    std::fs::write(root.join("F/G/kept.txt"), "kept").expect("file");
+    std::fs::write(root.join("F/new.txt"), "new").expect("file");
+    std::fs::write(root.join("F/sibling/deep.txt"), "deep").expect("file");
+    f.seed_chain(&root.join("F"));
+
+    // The first search covers G, materializing F above it without listing it.
+    drain(start(
+        f.context(),
+        vec![f.path("F/G")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+        WalkFor::TheIndex,
+    ));
+    f.writer.flush_blocking().expect("flush");
+    assert_eq!(f.listed_epoch(&f.path("F")), 0, "precondition: F is a frontier node");
+
+    // The second search asks for F, which the parallel walker refuses.
+    let (entries, outcome) = drain(start(
+        f.context(),
+        vec![f.path("F")],
+        CoverageDimension::Listing,
+        CancellationToken::new(),
+        WalkFor::TheIndex,
+    ));
+    f.writer.flush_blocking().expect("flush");
+
+    let mut emitted: Vec<String> = entries.iter().map(|e| e.path.to_string_lossy().to_string()).collect();
+    emitted.sort();
+    assert_eq!(
+        emitted,
+        [f.path("F/new.txt"), f.path("F/sibling"), f.path("F/sibling/deep.txt")],
+        "every row the repair wrote reached the consumer: nothing else will ever report them \
+         to the search that asked for this walk"
+    );
+    assert_eq!(outcome.entries_found, 3, "and the totals count the same rows");
+    assert_eq!(outcome.dirs_found, 1, "F/sibling among them");
+}
+
 // ── Ground the index has no row for ──────────────────────────────────
 
 /// A frontier path with no `entries` row is walkable, and the chain the walk
@@ -664,11 +716,14 @@ fn a_cancelled_repair_is_reported_as_cancelled_not_covered() {
 
     let cancel = CancellationToken::new();
     cancel.cancel();
+    let (sender, _batches) = sync_channel(1);
+    let (summary, verdict) = repair_non_virgin(&f.context(), &root.join("F"), &sender, &cancel);
     assert_eq!(
-        repair_non_virgin(&f.context(), &root.join("F"), &cancel),
+        verdict,
         RootOutcome::Cancelled,
         "a repair whose token had already fired covered nothing"
     );
+    assert_eq!(summary.map(|s| s.total_entries), Some(0), "and wrote nothing to report");
 }
 
 /// Cancelling before the walk starts leaves the frontier where it was, and says

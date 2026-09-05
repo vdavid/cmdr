@@ -31,6 +31,15 @@ see `../../scanner/DETAILS.md` § "Three scan roots"). It compares by name and w
 that case's shape. The trait half needs no such split — it is add-only per directory, so it simply takes the case. ❌ No
 path ever deletes: covering is add-only work.
 
+**The repair path REPORTS like every other primitive, and that is load-bearing.** A live search answers with the
+index's covered half plus what the walk hands back, and the covered half holds nothing under a frontier root. So the
+repair takes the same `EntrySender` the parallel walker does (`reconcile_subtree`'s `emit`) and returns a `ScanSummary`
+built from `ReconcileSummary::added` / `added_dirs`, counting the rows it CREATED and not the ones it updated (those
+were already the index's to report). Handing back `(None, Covered)` instead is a silent wrong answer, not a missing
+nicety: search a folder, then search its parent, and the parent's frontier root is exactly this case — the second search
+returned only the first one's rows, reported `foldersFound: 0`, and stamped `coverage.complete: true` over it.
+Regression-locked by `a_repaired_frontier_node_reports_the_rows_it_wrote`.
+
 **What it costs to cover a whole volume this way**, measured over a real 6.06M-entry `/` against today's
 truncate-and-bulk-build: `docs/notes/phased-vs-bulk-index-2026-08-14.md`. Two findings a caller planning many walks over
 one volume needs. First, the shallow stitch and the frontier query are free (0.2 s and 5 ms across 1,496 walks), so the

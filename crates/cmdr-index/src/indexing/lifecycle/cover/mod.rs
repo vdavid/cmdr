@@ -650,7 +650,7 @@ impl Ground {
                 ) {
                     Ok(summary) => (Some(summary), RootOutcome::Covered),
                     Err(ScanError::Cancelled(summary)) => (Some(summary), RootOutcome::Cancelled),
-                    Err(ScanError::NotVirgin) => (None, repair_non_virgin(context, root, cancel)),
+                    Err(ScanError::NotVirgin) => repair_non_virgin(context, root, sender, cancel),
                     Err(e) => {
                         // One unwalkable root doesn't stop the others: it simply stays
                         // frontier, and the next search asks for it again.
@@ -702,19 +702,29 @@ impl Ground {
     }
 }
 
-/// The repair path for a frontier node the index already holds rows under.
+/// The repair path for a frontier node the index already holds rows under: an
+/// earlier walk materialized it on its way to a child, or a verification pass
+/// wrote children under it without listing it. Unsafe for the parallel walker,
+/// whose fresh ids would collide; the serial reconcile compares by name and writes
+/// only differences.
 ///
-/// Rare — it takes a verification pass writing children under a directory nothing
-/// listed — and unsafe for the parallel walker, whose fresh ids would collide.
-/// The serial reconcile compares by name and writes only differences, so it can
-/// take the case without deleting anything.
-fn repair_non_virgin(context: &CoverContext, root: &Path, cancel: &CancellationToken) -> RootOutcome {
+/// ❌ It reports like every other primitive here, and that is not decoration: a
+/// search answers with the index's covered half plus the walk's rows, and the
+/// covered half holds NOTHING under a frontier root. `DETAILS.md` § "The repair
+/// path REPORTS".
+fn repair_non_virgin(
+    context: &CoverContext,
+    root: &Path,
+    sender: &SyncSender<Vec<CoveredEntry>>,
+    cancel: &CancellationToken,
+) -> (Option<ScanSummary>, RootOutcome) {
+    let started = std::time::Instant::now();
     let db_path = context.writer.db_path();
     let conn = match IndexStore::open_read_connection(&db_path) {
         Ok(conn) => conn,
         Err(e) => {
             log::warn!("Cover: couldn't open a connection to repair {}: {e}", root.display());
-            return RootOutcome::Failed;
+            return (None, RootOutcome::Failed);
         }
     };
     match crate::indexing::reconcile::reconciler::reconcile_subtree(
@@ -723,6 +733,7 @@ fn repair_non_virgin(context: &CoverContext, root: &Path, cancel: &CancellationT
         &conn,
         &context.writer,
         cancel,
+        Some(sender),
     ) {
         Ok(summary) => {
             log::debug!(
@@ -732,15 +743,26 @@ fn repair_non_virgin(context: &CoverContext, root: &Path, cancel: &CancellationT
                 summary.removed,
                 summary.updated,
             );
-            if summary.cancelled {
+            // Only the rows this pass CREATED: the ones it updated were already
+            // the index's to report, so counting them would credit this walk with
+            // rows the search had before it started. The cover outcome reads these
+            // two counts and nothing else, so the bytes stay 0.
+            let scanned = ScanSummary {
+                total_entries: summary.added,
+                total_dirs: summary.added_dirs,
+                total_physical_bytes: 0,
+                duration_ms: u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+            };
+            let verdict = if summary.cancelled {
                 RootOutcome::Cancelled
             } else {
                 RootOutcome::Covered
-            }
+            };
+            (Some(scanned), verdict)
         }
         Err(e) => {
             log::warn!("Cover: couldn't repair {}: {e}", root.display());
-            RootOutcome::Failed
+            (None, RootOutcome::Failed)
         }
     }
 }

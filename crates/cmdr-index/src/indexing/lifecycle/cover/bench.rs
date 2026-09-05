@@ -114,7 +114,7 @@ fn measure_one(root: &Path, primitive: Primitive) -> (std::time::Duration, u64, 
         }
         Primitive::Serial => {
             let conn = IndexStore::open_read_connection(&db_path).expect("read connection");
-            crate::indexing::reconcile::reconciler::reconcile_subtree(root, &space, &conn, &writer, &cancel)
+            crate::indexing::reconcile::reconciler::reconcile_subtree(root, &space, &conn, &writer, &cancel, None)
                 .expect("serial reconcile");
         }
     }
