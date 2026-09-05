@@ -562,7 +562,7 @@
         const ve = asViewerError(e)
         if (ve) {
             if (ve.kind === 'timedOut') return { message: tString('viewer.error.timeout'), isTimeout: true }
-            if (ve.kind === 'extractTooLarge') return { message: tString('viewer.error.archiveTooLarge'), isTimeout: false }
+            if (ve.kind === 'extractTooLarge') return { message: tString('viewer.error.tooLargeToPreview'), isTimeout: false }
             if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), isTimeout: false }
         }
         return { message: tString('viewer.error.readFailed'), isTimeout: false }

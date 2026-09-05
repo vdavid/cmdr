@@ -233,3 +233,12 @@ fn image_in_zip_opens_as_media_and_temp_is_deleted_on_close() {
         "media temp must be deleted on session close, found {after:?}"
     );
 }
+
+/// The cap fires for a `.zip` entry AND for a blob in a repo's virtual `.git`
+/// snapshot, so its log line names no namespace. Pinned because "from the archive"
+/// read as a plain lie once the git portal started routing through here.
+#[test]
+fn the_too_large_display_string_names_no_particular_routed_source() {
+    let rendered = ViewerError::ExtractTooLarge { size: 9, cap: 2 }.to_string();
+    assert_eq!(rendered, "This item is too large to preview from here (size 9, limit 2)");
+}

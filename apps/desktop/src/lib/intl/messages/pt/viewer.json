@@ -27,9 +27,9 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
-  "viewer.error.archiveTooLarge": "Este arquivo é muito grande para pré-visualizar de dentro do arquivo compactado. Copie-o para fora primeiro e depois abra-o.",
-  "@viewer.error.archiveTooLarge": {
-    "sourceHash": "1bf7d91"
+  "viewer.error.tooLargeToPreview": "Este arquivo é muito grande para pré-visualizar daqui. Copie-o para fora primeiro e depois abra-o.",
+  "@viewer.error.tooLargeToPreview": {
+    "sourceHash": "8696039"
   },
   "viewer.error.archiveUnreadable": "Não foi possível abrir este arquivo de dentro do arquivo compactado. Ele pode estar criptografado, danificado ou usar um formato que o Cmdr não consegue ler.",
   "@viewer.error.archiveUnreadable": {

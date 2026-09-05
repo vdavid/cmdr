@@ -27,9 +27,9 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
-  "viewer.error.archiveTooLarge": "Tệp này quá lớn để xem trước từ bên trong tệp nén. Hãy sao chép nó ra ngoài trước, rồi mở.",
-  "@viewer.error.archiveTooLarge": {
-    "sourceHash": "1bf7d91"
+  "viewer.error.tooLargeToPreview": "Tệp này quá lớn để xem trước từ đây. Hãy sao chép nó ra ngoài trước, rồi mở.",
+  "@viewer.error.tooLargeToPreview": {
+    "sourceHash": "8696039"
   },
   "viewer.error.archiveUnreadable": "Không thể mở tệp này từ tệp nén. Có thể tệp bị mã hóa, hỏng, hoặc dùng định dạng mà Cmdr không đọc được.",
   "@viewer.error.archiveUnreadable": {

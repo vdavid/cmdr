@@ -203,11 +203,10 @@ impl std::fmt::Display for ViewerError {
             Self::TimedOut => write!(f, "Read timed out"),
             Self::ExtractTooLarge { size, cap } => {
                 // Display/log string only — the user sees the FE's friendly copy
-                // (`viewer.error.archiveTooLarge`). Phrased to avoid a `1 bytes` singular.
-                write!(
-                    f,
-                    "This item is too large to preview from the archive (size {size}, limit {cap})"
-                )
+                // (`viewer.error.tooLargeToPreview`). Phrased to avoid a `1 bytes`
+                // singular. Names no namespace: a `.zip` entry and a `.git` snapshot
+                // blob both reach this cap.
+                write!(f, "This item is too large to preview from here (size {size}, limit {cap})")
             }
             // Display/log string only — the user sees the FE's friendly copy
             // (`viewer.saveAs.destinationReadOnly`). Names no namespace, because

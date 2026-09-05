@@ -61,8 +61,9 @@ pub async fn viewer_open(
 ) -> Result<ViewerOpenResult, ViewerError> {
     let timeout = open_timeout_for(&path);
     // Typed `ViewerError` (never a stringified message) so the FE can render friendly
-    // copy for the archive family — `ExtractTooLarge` (preview cap), `Archive`
-    // (encrypted / corrupt / unsupported codec) — matching `viewer_read_range`.
+    // copy for the routed family — `ExtractTooLarge` (the preview cap, which a `.zip`
+    // entry and a `.git` snapshot blob both reach), `Archive` (encrypted / corrupt /
+    // unsupported codec) — matching `viewer_read_range`.
     match tokio::time::timeout(
         timeout,
         tokio::task::spawn_blocking(move || {

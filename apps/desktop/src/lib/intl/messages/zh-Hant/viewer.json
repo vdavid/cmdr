@@ -27,9 +27,9 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
-  "viewer.error.archiveTooLarge": "這個檔案太大，沒辦法直接從封存檔裡預覽。請先把它複製出來，再開啟。",
-  "@viewer.error.archiveTooLarge": {
-    "sourceHash": "1bf7d91"
+  "viewer.error.tooLargeToPreview": "這個檔案太大，沒辦法直接從這裡預覽。請先把它複製出來，再開啟。",
+  "@viewer.error.tooLargeToPreview": {
+    "sourceHash": "8696039"
   },
   "viewer.error.archiveUnreadable": "無法從封存檔裡開啟這個檔案。它可能已加密、已損壞，或用了 Cmdr 讀不了的格式。",
   "@viewer.error.archiveUnreadable": {

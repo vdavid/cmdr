@@ -170,9 +170,10 @@ a 30 s budget (`VIEWER_ROUTED_TIMEOUT`, the recursive-scan tier) when a route se
 otherwise. The pick is `path_routes_over_its_parent`, pure string work with no I/O: the budget is a heuristic, not a
 correctness gate, so over-granting it to a mislabeled `.zip` is harmless.
 
-⚠️ **One wording gap:** `ViewerError::ExtractTooLarge` renders as "too large to preview from the archive", which is what
-a >256 MiB blob in a `.git` snapshot would also say. Rare enough to leave, and a fix is a new frontend key in every
-locale.
+`ViewerError::ExtractTooLarge` names no namespace, in the Rust `Display` string and in the frontend copy it maps to
+(`viewer.error.tooLargeToPreview`, "too big to preview from here"): a `.zip` entry and a >256 MiB blob in a `.git`
+snapshot both reach this cap, so naming one of them would be a plain lie in the other case. Pinned on both sides
+(`routed_extract_test.rs`, `viewer-i18n-parity.test.ts`).
 
 **Per-instance extract dir + startup reaper.** The dir is `<app_data_dir>/viewer-extract` (set by
 `init_routed_extract_dir` from `lib.rs`), so side-by-side dev/prod/worktree instances never reap each other's live

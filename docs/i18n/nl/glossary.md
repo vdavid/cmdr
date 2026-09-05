@@ -629,7 +629,7 @@ REVIEW FLAGS (archive-browsing pass):
 - **read-only archive → "Alleen-lezen archief" (with space)** to match the neighboring `deviceTitle` "Alleen-lezen
   apparaat". This diverges from the errors.json no-space compound rule ("alleen-lezenvolume"). Worth a locale-wide
   decision on which form wins for "alleen-lezen" + noun.
-- **preview (verb) → "bekijken"** in `viewer.error.archiveTooLarge` ("om vanuit het archief te bekijken"); macOS
+- **preview (verb) → "bekijken"** in `viewer.error.tooLargeToPreview` ("om vanaf hier te bekijken"); macOS
   "Voorvertoning" is the Quick-Look noun, so the plain verb "bekijken" (view) is used. Subjective.
 
 From the paste-clipboard-as-file pass (5 `settings.fileOperations.pasteClipboardAsFile.*` + 2
