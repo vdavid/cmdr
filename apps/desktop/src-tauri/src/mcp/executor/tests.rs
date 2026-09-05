@@ -174,6 +174,35 @@ async fn test_validate_path_exists() {
     assert!(validate_path_exists("smb://server/share/missing").await.is_ok());
 }
 
+/// A path a ROUTE serves has no inode, so `Path::exists()` answers a confident
+/// false and would refuse every `nav` into a repo's snapshots or into a zip.
+#[tokio::test]
+async fn validate_path_exists_lets_a_routed_path_through() {
+    use crate::file_system::git;
+
+    git::wiring::set_virtual_portal_enabled(true);
+    assert!(
+        validate_path_exists("/tmp/some-repo/.git/branches/main").await.is_ok(),
+        "a snapshot path is the portal's to answer for"
+    );
+    assert!(
+        validate_path_exists("/tmp/bundle.zip/inner.txt").await.is_ok(),
+        "an archive-inner path is the archive volume's"
+    );
+
+    // The real files under `.git/` are ordinary local files, so they keep the check.
+    let err = validate_path_exists("/tmp/some-repo/.git/config").await.unwrap_err();
+    assert_eq!(err.code, INVALID_PARAMS);
+
+    // And with the portal off, a snapshot path is an ordinary missing local path.
+    git::wiring::set_virtual_portal_enabled(false);
+    let err = validate_path_exists("/tmp/some-repo/.git/branches/main")
+        .await
+        .unwrap_err();
+    assert_eq!(err.code, INVALID_PARAMS);
+    git::wiring::set_virtual_portal_enabled(true);
+}
+
 #[test]
 fn test_path_exists_validation() {
     // Test that Path::new().exists() works as expected for our validation

@@ -378,13 +378,20 @@ pub(crate) fn is_virtual_path(path: &str) -> bool {
 
 /// Validates that an agent-supplied path exists, without wedging on a hung mount.
 ///
-/// Virtual paths (see `is_virtual_path`) skip the check — the local filesystem knows
-/// nothing about them; the frontend's navigation/open path is the authority there.
+/// Two kinds of path skip the check, for the same reason: the local filesystem knows
+/// nothing about them, so `Path::exists()` would answer a confident false. Scheme
+/// paths (`mtp://…`, `smb://…`, see `is_virtual_path`), and paths a ROUTE serves —
+/// inside a `.zip`, or inside a repo's virtual `.git` trees — where the volume that
+/// answers has no inode to offer. The frontend's navigation/open path is the
+/// authority for both, and it refuses an unreachable one honestly.
+///
 /// The local probe runs on the blocking pool under a 2 s timeout because
 /// `Path::exists()` on a dead network mount can block indefinitely, and an MCP handler
 /// must never do un-timed filesystem I/O (same contract as `commands/util.rs`).
 async fn validate_path_exists(path: &str) -> Result<(), ToolError> {
-    if is_virtual_path(path) {
+    if is_virtual_path(path)
+        || crate::file_system::volume::manager::path_routes_over_its_parent(std::path::Path::new(path))
+    {
         return Ok(());
     }
     let owned = path.to_string();
