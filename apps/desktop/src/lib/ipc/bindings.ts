@@ -12294,10 +12294,10 @@ export type ViewerError =
    */
   | { kind: 'timedOut' }
   /**
-   *  Previewing a file inside an archive would extract more than the preview cap.
-   *  Refused before any extraction (the zip-bomb guard for preview); `size` is the
-   *  entry's declared uncompressed size, `cap` the limit. See
-   *  `file_viewer::archive_extract`.
+   *  Previewing a file that lives inside a route (an archive entry, a file in a
+   *  repo's `.git` snapshot) would materialize more than the preview cap. Refused
+   *  before any extraction (the zip-bomb guard for preview); `size` is the entry's
+   *  declared size, `cap` the limit. See `file_viewer::routed_extract`.
    */
   | { kind: 'extractTooLarge'; size: number; cap: number }
   /**
