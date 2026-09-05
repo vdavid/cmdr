@@ -52,7 +52,7 @@ function repoPath(): string {
  * tears down any prior copy first so individual test runs start clean.
  *
  * Layout:
- * - `README.md`            (regular file, stable content)
+ * - `readme.txt`           (regular file, stable content)
  * - `scripts/run.sh`       (executable file, mode 0755)
  * - `branches/main` HEAD ➜ commits these two files
  */
@@ -61,8 +61,8 @@ function createGitRepoFixture(): void {
   if (fs.existsSync(repo)) fs.rmSync(repo, { recursive: true, force: true })
   fs.mkdirSync(repo, { recursive: true })
 
-  const readme = path.join(repo, 'README.md')
-  fs.writeFileSync(readme, '# Git portal fixture\n\nSynthesized at test time.\n')
+  const readme = path.join(repo, 'readme.txt')
+  fs.writeFileSync(readme, 'Git portal fixture\n\nSynthesized at test time.\n')
 
   const scripts = path.join(repo, 'scripts')
   fs.mkdirSync(scripts, { recursive: true })
@@ -143,7 +143,7 @@ test.describe('Git portal', () => {
     expect(await paneHasFile(tauriPage, 0, 'main')).toBe(true)
 
     await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/branches/main'))
-    expect(await paneHasFile(tauriPage, 0, 'README.md')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
     expect(await paneHasFile(tauriPage, 0, 'scripts')).toBe(true)
   })
 
@@ -156,7 +156,7 @@ test.describe('Git portal', () => {
     expect(await paneHasFile(tauriPage, 0, 'v1.0.0')).toBe(true)
 
     await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/tags/v1.0.0'))
-    expect(await paneHasFile(tauriPage, 0, 'README.md')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
     expect(await paneHasFile(tauriPage, 0, 'scripts')).toBe(true)
   })
 
@@ -224,24 +224,26 @@ test.describe('Git portal', () => {
 
     await mcpNavToPath('right', outDir)
     await mcpNavToPath('left', path.join(repoPath(), '.git/branches/main'))
-    expect(await paneHasFile(tauriPage, 0, 'README.md')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
 
     // `select` focuses the pane, so the copy runs from the snapshot into the
     // right pane's real folder.
-    await mcpCall('select', { pane: 'left', names: ['README.md', 'scripts'] })
+    await mcpCall('select', { pane: 'left', names: ['readme.txt', 'scripts'] })
     expect(await mcpCall('copy', { autoConfirm: true })).toContain('OK')
 
     const landed = await mcpCall('await', {
       pane: 'right',
       condition: 'has_item',
-      value: 'README.md',
+      value: 'readme.txt',
       timeoutSeconds: 20,
     })
     expect(landed).toContain('OK')
 
     // Byte-for-byte, both the top-level file and the folder's contents.
     await expect.poll(() => fs.existsSync(path.join(outDir, 'scripts', 'run.sh')), { timeout: 20000 }).toBe(true)
-    expect(fs.readFileSync(path.join(outDir, 'README.md'))).toEqual(fs.readFileSync(path.join(repoPath(), 'README.md')))
+    expect(fs.readFileSync(path.join(outDir, 'readme.txt'))).toEqual(
+      fs.readFileSync(path.join(repoPath(), 'readme.txt')),
+    )
     expect(fs.readFileSync(path.join(outDir, 'scripts', 'run.sh'))).toEqual(
       fs.readFileSync(path.join(repoPath(), 'scripts', 'run.sh')),
     )
