@@ -28,7 +28,12 @@ use crate::state_sink::GitStateSink;
 /// How long a burst of `.git/*` writes is allowed to settle before one report
 /// goes out. A `git checkout` rewrites `HEAD`, `index`, and a pile of refs, and
 /// the chip wants the state after all of it rather than a report per file.
-const DEBOUNCE: Duration = Duration::from_millis(200);
+///
+/// `pub` only so the `testing`-gated [`crate::test_fixtures`] can re-export it:
+/// this module is private, so nothing outside reaches it any other way. A suite
+/// asserting "one report per burst" has to wait out this window to know the
+/// count is final, and a hand-copied 200 would keep passing if this moved.
+pub const DEBOUNCE: Duration = Duration::from_millis(200);
 
 /// What a backend calls once a repository's `.git/*` writes have settled.
 type RepoChanged = Arc<dyn Fn() + Send + Sync>;

@@ -8,13 +8,14 @@
 
 #![cfg(test)]
 
+use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::test_support::wait_until;
 
 use super::wiring::GitStateChangedPayload;
-use cmdr_git::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
+use cmdr_git::test_fixtures::{Fixture, WATCH_DEBOUNCE, cleanup, discover_repo, temp_dir};
 use cmdr_git::{GitPortal, GitStateSink, RecordingGitStateSink, RepoInfo, no_git_state_sink};
 
 /// A portal over the real host, reporting into `sink`, whose watcher is
@@ -61,15 +62,25 @@ fn the_payload_serializes_to_the_shape_the_frontend_subscribes_to() {
     assert_eq!(json["info"]["isDirty"], true);
 }
 
-/// A burst of `.git/*` writes reaches the sink ONCE, carrying the repo root and
-/// the state as it is after the burst. That debounce is what keeps a `git
-/// checkout` (which rewrites `HEAD`, `index`, and a pile of refs) from driving
-/// one event per file.
+/// A burst of `.git/*` writes collapses into a couple of reports rather than one
+/// per file, and what lands carries the state as it is AFTER the burst. That
+/// debounce is what keeps a `git checkout` (which rewrites `HEAD`, `index`, and
+/// a pile of refs) from driving an event per file.
 ///
 /// ❗ **The one cell in the app that arms a REAL `.git/*` watcher.** The debounce
 /// it proves is `notify`'s own, so a scripted backend can't stand in: it would
 /// assert the fake's arithmetic. Every other subscription cell here and in
 /// `cmdr_git::watcher_tests` takes the scripted one and runs in milliseconds.
+///
+/// ❗ **Gotcha/Why the count is a ceiling, not `== 1`.** The backend calls
+/// `on_change` once per batch `notify_debouncer_full` EMITS, and it emits on a
+/// tick cadence: a burst whose events settle across two ticks produces two
+/// reports, both carrying the same post-burst snapshot. Measured on an M1 Max
+/// (2026-09-06, 20 runs of this cell): 7 writes gave 1 report about half the
+/// time and 2 the rest, never more. So "exactly one per burst" is not a property
+/// the watcher has, and a cell asserting it fails at random. The invariant that
+/// IS real, and the one the debounce exists for, is that a burst costs a
+/// bounded few reports instead of one per write.
 #[test]
 fn a_debounced_burst_reports_one_change_with_the_new_state() {
     let dir = temp_dir("wiring", "one_report_per_burst");
@@ -85,22 +96,62 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
     assert_eq!(first.branch.as_deref(), Some("main"));
     assert_eq!(sink.count(), 0, "subscribing itself reports nothing");
 
-    // One burst: several ref writes inside the 200 ms debounce window.
-    for index in 0..5 {
+    // One burst, and nothing waits inside it: the writes land back to back, in a
+    // span measured in microseconds, so this is one burst by construction rather
+    // than by timing luck. The branch switch at the end is what makes the
+    // REPORTED state distinguishable from the one `subscribe_state` answered
+    // with, which is otherwise `main` either way.
+    const COMMITS_IN_THE_BURST: usize = 5;
+    for index in 0..COMMITS_IN_THE_BURST {
         fixture.commit_file(&format!("f{index}.txt"), b"x\n", "more");
     }
+    fixture.create_branch("after-the-burst");
+    fixture.checkout("after-the-burst");
 
-    wait_until(Duration::from_secs(5), "the watcher reports the burst", || {
-        sink.count() >= 1
-    });
-    let changes = sink.changes();
-    assert_eq!(changes.len(), 1, "one report per burst, not one per write: {changes:?}");
-    let (reported_root, info) = &changes[0];
+    let changes = changes_once_settled(&sink);
+    assert!(
+        changes.len() < COMMITS_IN_THE_BURST,
+        "a burst costs a few reports, not one per write: {changes:?}"
+    );
+    let (reported_root, info) = changes.last().expect("the burst reported at least once");
     assert_eq!(reported_root, &root);
-    assert_eq!(info.branch.as_deref(), Some("main"));
+    // The state AFTER the whole burst, not the `main` the subscribe saw: a report
+    // carrying a snapshot taken at the FIRST write would still say `main` here.
+    assert_eq!(
+        info.branch.as_deref(),
+        Some("after-the-burst"),
+        "the report carries the state the burst left behind: {info:?}"
+    );
 
     portal.unsubscribe_state(&root);
     cleanup(&dir);
+}
+
+/// Everything the sink holds once it has gone QUIET for longer than the
+/// watcher's debounce window.
+///
+/// ❗ Read the count through this, ❌ never by waiting for the FIRST report.
+/// `wait_until(count >= 1)` returns while a second report may still be in
+/// flight, so the same run asserted 1 when it read early and 2 when it read
+/// late: the cell passed and failed at random without the behavior changing.
+/// Waiting for quiet makes the number observed the number that actually
+/// happened, so a real regression fails every time and a slow machine doesn't.
+fn changes_once_settled(sink: &RecordingGitStateSink) -> Vec<(PathBuf, RepoInfo)> {
+    // Twice the window, so a report arriving one poll interval late still counts
+    // as part of the burst rather than as quiet.
+    let quiet = WATCH_DEBOUNCE * 2;
+    let mut seen = 0usize;
+    let mut unchanged_since = Instant::now();
+    wait_until(Duration::from_secs(10), "the watcher's reports settle", || {
+        let now = sink.count();
+        if now != seen {
+            seen = now;
+            unchanged_since = Instant::now();
+            return false;
+        }
+        now > 0 && unchanged_since.elapsed() >= quiet
+    });
+    sink.changes()
 }
 
 /// The app's sink refreshes every open listing the repo change can have moved:

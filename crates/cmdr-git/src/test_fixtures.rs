@@ -52,6 +52,15 @@ use cmdr_fs::volume::friendly_error::git::FriendlyGitError;
 
 use crate::repo::{RepoCache, RepoHandle};
 
+/// The watcher's debounce window, for a suite asserting on how many reports a
+/// burst of `.git/*` writes produced.
+///
+/// The count is only final once nothing further can arrive, so such a test
+/// waits for the sink to stay quiet for longer than this. Re-exported rather
+/// than copied: a hand-written `200` would keep passing if the real window
+/// moved, and quietly stop proving anything.
+pub use crate::watcher::DEBOUNCE as WATCH_DEBOUNCE;
+
 /// The author every fixture commit carries, so a snapshot listing's name column
 /// is the same on every machine.
 pub const TEST_AUTHOR_NAME: &str = "Cmdr Test";

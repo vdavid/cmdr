@@ -21,7 +21,7 @@ chip, and the read-only `Volume` that turns `.git/branches/`, `tags/`, `commits/
 
 - **❌ Nothing here may name `tauri`, `tauri_specta`, or `cmdr`.** `cargo check -p cmdr-git --all-targets` is the whole
   verification loop, and `index-crate-isolation` proves the tree stays app-free.
-- **The public surface is capped** at what the app uses today, with no headroom: 12 root promises, and EVERY module is
+- **The public surface is capped** at what the app uses today, with no headroom: 11 root promises, and EVERY module is
   private, so a host can name no path into this crate. A new `pub` needs David's say-so, like a `file-length` entry. The
   item-by-item argument is in `DETAILS.md`.
 - **Everything mutable is a field on `GitPortal`**, ❌ never a static: the repo cache, the watcher registry, the sink.

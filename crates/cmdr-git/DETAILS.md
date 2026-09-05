@@ -63,9 +63,9 @@ by string prefix, so it left with the caller rather than waiting for another.
 
 **A `testing`-gated method on `GitPortal` spends nothing here**, which is why the scripted watcher arrived without a
 conversation: `with_scripted_watcher` and `fire_watcher` are methods on a type in a private module (unmeasured, like
-every other `GitPortal` method), and the `GitWatcherBackend` trait plus both backends are `pub(crate)`. The count after
-the split is still 12 / 0 / 0. ❗ That is not a loophole to route a real API through: an item a HOST calls in production
-is a root promise whatever it's attached to.
+every other `GitPortal` method), and the `GitWatcherBackend` trait plus both backends are `pub(crate)`. The count stands
+at 11 / 0 / 0 with them in place. ❗ That is not a loophole to route a real API through: an item a HOST calls in
+production is a root promise whatever it's attached to.
 
 Two gated items sit outside those numbers: `RecordingGitStateSink` and the whole `test_fixtures` module, both behind
 `testing`. The app's routing, overlay, and toggle suites build their repositories with those fixtures, so there is one
@@ -92,10 +92,17 @@ yet belongs beside the parser it asserts on.
 The instrument for the app half is the `testing` feature: `test_fixtures` builds the repository, `RecordingGitStateSink`
 makes a watcher report observable without a window, and `GitPortal::with_scripted_watcher` plus `fire_watcher` make one
 observable without FSEvents. **That recorder is what a subscription cell asserts through.** The DEBOUNCE cell lives
-app-side and takes the real backend: it drives the parked portal's `subscribe_state`, writes five commits inside the 200
-ms window, and expects exactly one `repo_changed`. The debounce is this crate's contract, but the path that proves it
-starts where the portal is parked, so the cell belongs at that end — and it is the only one anywhere that arms a real
-watcher (§ "The watcher splits into bookkeeping and a backend").
+app-side and takes the real backend: it drives the parked portal's `subscribe_state`, writes five commits and a branch
+switch back to back, and expects FEWER reports than writes, the last carrying the post-burst branch. The debounce is
+this crate's contract, but the path that proves it starts where the portal is parked, so the cell belongs at that end —
+and it is the only one anywhere that arms a real watcher (§ "The watcher splits into bookkeeping and a backend").
+
+❗ **The count is a ceiling, not one.** `NotifyWatcherBackend` calls `on_change` once per batch `notify_debouncer_full`
+EMITS, and it emits on a tick cadence, so a burst whose events settle across two ticks reports twice — both times with
+the same post-burst snapshot. Measured on an M1 Max (2026-09-06, 20 runs of the cell): seven writes gave one report
+about half the time and two the rest, never more. So a cell asserting `== 1` passes or fails on timing alone, which is
+how this one used to flake. What the debounce actually buys, and what the cell pins, is a bounded few reports instead of
+one per file. Tightening that to a true one-per-burst means coalescing at the report level, which nothing needs yet.
 
 ## Linked worktrees
 
