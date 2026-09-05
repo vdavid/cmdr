@@ -10,10 +10,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::overlay::GitPortalOverlay;
-use super::test_fixtures::{Fixture, cleanup, temp_dir};
 use crate::file_system::listing::caching_test_support::{TestListing, WatchCoverageVolume};
 use crate::file_system::volume::{LocalPosixVolume, Volume, WatchCoverage};
 use crate::listing_overlays::{ListingOverlay, decorate};
+use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
 
 fn repo(name: &str) -> PathBuf {
     let dir = temp_dir("git_overlay", name);
@@ -167,5 +167,34 @@ fn the_refresh_reaches_a_portal_listing_on_a_non_default_volume() {
 
     drop(on_external);
     drop(elsewhere);
+    cleanup(&dir);
+}
+
+/// ONE app-side switch, read by both seams: the overlay stops contributing the
+/// `.git/` category rows and the route stops sending `.git/<category>/` to the
+/// portal volume. The toggle is process-global, so the cell restores it.
+#[test]
+fn the_toggle_silences_both_portal_seams() {
+    let dir = repo("portal_toggle");
+    let dot_git = dir.join(".git");
+    let overlay = GitPortalOverlay;
+    let volume = LocalPosixVolume::new("Test", &dir);
+
+    super::wiring::set_virtual_portal_enabled(true);
+    assert!(super::wiring::is_virtual_portal_enabled());
+    assert!(overlay.applies_to(&volume, &dot_git), "the overlay claims .git/");
+    assert!(
+        cmdr_git::portal_route(&dot_git.join("branches")).is_some(),
+        "the route claims .git/branches"
+    );
+
+    super::wiring::set_virtual_portal_enabled(false);
+    assert!(!super::wiring::is_virtual_portal_enabled());
+    assert!(
+        !overlay.applies_to(&volume, &dot_git),
+        "with the portal off, .git/ is whatever is on disk"
+    );
+
+    super::wiring::set_virtual_portal_enabled(true);
     cleanup(&dir);
 }

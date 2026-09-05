@@ -1,4 +1,4 @@
-//! What [`GitPortalVolume`](super::volume::GitPortalVolume) promises as a
+//! What [`GitPortalVolume`](crate::volume::GitPortalVolume) promises as a
 //! `Volume`: the shared read-only conformance assertions every backend runs,
 //! plus the portal-specific half of its namespace.
 
@@ -9,10 +9,11 @@ use std::sync::Arc;
 
 use cmdr_fs::volume::conformance;
 
-use super::portal::GitPortal;
-use super::test_fixtures::{EntryKind, Fixture, cleanup, temp_dir};
-use super::volume::GitPortalVolume;
-use crate::file_system::volume::{DirectoryCreation, LocalPosixVolume, Volume, VolumeError};
+use crate::portal::GitPortal;
+use crate::test_fixtures::{EntryKind, Fixture, cleanup, temp_dir};
+use crate::volume::GitPortalVolume;
+use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::{DirectoryCreation, InMemoryVolume, Volume, VolumeError};
 
 /// A repo with one commit on `main` (a plain file and an executable one), a
 /// second branch, and a tag, plus the portal volume serving it.
@@ -29,10 +30,10 @@ fn portal_over_a_repo(name: &str) -> (PathBuf, GitPortalVolume) {
     );
     fixture.create_branch("feature/foo");
 
-    let parent: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Parent", &dir));
+    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent"));
     let portal = Arc::new(GitPortal::new(
-        crate::volume_host::host(),
-        super::state_sink::no_git_state_sink(),
+        VolumeHost::detached(),
+        crate::state_sink::no_git_state_sink(),
     ));
     let volume = portal.volume_for(dir.clone(), parent);
     (dir, volume)
@@ -165,10 +166,10 @@ async fn a_dot_git_that_is_not_a_repository_answers_not_found() {
     std::fs::create_dir_all(dir.join(".git")).expect("make a bare .git directory");
     std::fs::write(dir.join(".git").join("HEAD"), b"not a repo\n").expect("seed junk");
 
-    let parent: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Parent", &dir));
+    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent"));
     let portal = Arc::new(GitPortal::new(
-        crate::volume_host::host(),
-        super::state_sink::no_git_state_sink(),
+        VolumeHost::detached(),
+        crate::state_sink::no_git_state_sink(),
     ));
     let volume = portal.volume_for(dir.clone(), parent);
 
@@ -277,7 +278,7 @@ async fn every_mutation_is_unsupported() {
 #[tokio::test]
 async fn the_capability_answers_match_a_routed_read_only_volume() {
     let (dir, volume) = portal_over_a_repo("capabilities");
-    let parent = LocalPosixVolume::new("Parent", &dir);
+    let parent = InMemoryVolume::new("Parent");
 
     assert!(!volume.can_watch_listings());
     assert_eq!(

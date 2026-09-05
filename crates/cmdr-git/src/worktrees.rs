@@ -24,9 +24,9 @@ use std::path::Path;
 
 use cmdr_fs::entry::FileEntry;
 
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::RepoHandle;
+use crate::repo::RepoHandle;
 use cmdr_fs::git_meta::GitEntryMeta;
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// Lists linked worktrees as virtual entries with `redirectToPath` set.
 ///

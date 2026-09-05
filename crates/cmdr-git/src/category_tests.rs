@@ -9,9 +9,9 @@
 
 use std::path::PathBuf;
 
-use super::path::{Cat, VirtualGitPath, classify};
-use super::test_fixtures::{Fixture, build_simple_repo, cleanup, discover_repo, git_cli, git_cli_capture, temp_dir};
-use super::{log as git_log, stash, submodules, worktrees};
+use crate::path::{Cat, VirtualGitPath, classify};
+use crate::test_fixtures::{Fixture, build_simple_repo, cleanup, discover_repo, git_cli, git_cli_capture, temp_dir};
+use crate::{log as git_log, stash, submodules, worktrees};
 
 // ── commits ───────────────────────────────────────────────────────────
 
@@ -244,30 +244,4 @@ fn list_submodules_redirects_to_working_dir() {
 
     cleanup(&outer);
     cleanup(&inner);
-}
-
-// ── watcher invalidation for new categories ──────────────────────────
-
-#[test]
-fn watcher_invalidates_commits_listing_on_new_commit() {
-    use crate::file_system::listing::caching_test_support::TestListing;
-    use crate::file_system::volume::DEFAULT_VOLUME_ID;
-
-    let (dir, mut f) = build_simple_repo("m3", 1);
-    let (handle, root) = discover_repo(&dir).unwrap();
-    let entries = git_log::list_commits(&handle, &root).unwrap();
-
-    let listing = TestListing::new()
-        .volume(DEFAULT_VOLUME_ID)
-        .path(root.join(".git").join("commits"))
-        .entries(entries)
-        .insert("git-commits-invalidate");
-
-    // Add a new commit and run the watcher invalidation entry point.
-    f.commit_file("new.txt", b"x\n", "added new");
-    super::wiring::refresh_virtual_listings(&root);
-
-    // The listing is still in the cache (we full-refresh, not evict).
-    assert!(listing.is_cached());
-    cleanup(&dir);
 }

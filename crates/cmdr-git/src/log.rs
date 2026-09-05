@@ -60,10 +60,10 @@ use gix::traverse::commit::simple::CommitTimeOrder;
 
 use cmdr_fs::entry::FileEntry;
 
-use super::column_meta::files_changed_count;
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::RepoHandle;
+use crate::column_meta::files_changed_count;
+use crate::repo::RepoHandle;
 use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// Hard cap on entries returned in a single `commits/` listing.
 ///

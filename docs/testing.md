@@ -196,9 +196,9 @@ helper module, or the body of a `#[cfg(test)] mod` inside a production file. Opt
 anything is reported as orphaned, so the opt-outs can't quietly outlive their reason.
 
 Two exceptions stay on a raw OS-temp path deliberately, and both name their reason in a comment:
-`updater/installer.rs`'s `staging_dir_sits_under_temp_dir` asserts on the path itself, and
-`git/test_fixtures.rs::temp_dir` is already process-and-run unique (PID plus a nanosecond stamp) and keeps its directory
-on panic on purpose, for post-mortem inspection. Production code that stages into the OS temp dir (the updater, the icon
+`updater/installer.rs`'s `staging_dir_sits_under_temp_dir` asserts on the path itself, and `cmdr-git`'s
+`test_fixtures::temp_dir` is already process-and-run unique (PID plus a nanosecond stamp) and keeps its directory on
+panic on purpose, for post-mortem inspection. Production code that stages into the OS temp dir (the updater, the icon
 sample files, `smb_smbclient`'s auth file, `write_operations/scratch_dir.rs`) is correct as-is and is not test
 scaffolding.
 

@@ -1,7 +1,7 @@
 //! Git-portal routing for the [`VolumeManager`]: the half of
 //! [`resolve`](VolumeManager::resolve) that sends a path reaching into a repo's
 //! virtual `.git` trees to a read-only
-//! [`GitPortalVolume`](crate::file_system::git::volume::GitPortalVolume), plus
+//! [`GitPortalVolume`](cmdr_git::GitPortalVolume), plus
 //! the LRU that caps how many stay registered.
 //!
 //! The archive half is `archive_routing.rs` and the dispatcher over both is
@@ -40,7 +40,7 @@ impl VolumeManager {
         if !git::wiring::is_virtual_portal_enabled() {
             return None;
         }
-        let repo_root = git::path::portal_route(path)?;
+        let repo_root = cmdr_git::portal_route(path)?;
         // The requested volume physically holds the repo, so it's the portal's
         // parent (shared lane key and space info).
         let parent = self.get(volume_id)?;
@@ -109,8 +109,8 @@ fn git_portal_volume_id(repo_root: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::file_system::git::test_fixtures::{Fixture, cleanup, temp_dir};
     use crate::file_system::volume::LocalPosixVolume;
+    use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
 
     /// The portal's root for the repo at `dir`. Canonical, because registration
     /// canonicalizes so two spellings of one repo share a registration, and on

@@ -27,7 +27,7 @@ pub enum RoutedKind {
     /// The path crossed a `.zip` boundary into an [`ArchiveVolume`](cmdr_archive::ArchiveVolume).
     Archive,
     /// The path reached into a repo's virtual `.git` trees, so a
-    /// [`GitPortalVolume`](crate::file_system::git::volume::GitPortalVolume)
+    /// [`GitPortalVolume`](cmdr_git::GitPortalVolume)
     /// serves it.
     GitPortal,
 }

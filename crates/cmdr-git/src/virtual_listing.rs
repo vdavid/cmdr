@@ -21,20 +21,20 @@ use gix::refs::PartialName;
 
 use cmdr_fs::entry::FileEntry;
 
-use super::Lookup;
-use super::column_meta::{
+use crate::Lookup;
+use crate::column_meta::{
     ahead_behind_for_branch, commit_meta, files_changed_count, head_commit_secs, newest_branch_tip_secs,
     newest_tag_secs, tag_or_commit_secs,
 };
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::path::{Cat, strip_ref_prefix};
-use super::repo::RepoHandle;
+use crate::path::{Cat, strip_ref_prefix};
+use crate::repo::RepoHandle;
 use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// The six virtual category rows on their own, in display order, with their
 /// Modified and Size cells filled in.
 ///
-/// This is what a [`GitPortalVolume`](super::volume::GitPortalVolume) lists at
+/// This is what a [`GitPortalVolume`](crate::volume::GitPortalVolume) lists at
 /// its own root: the volume serves the virtual namespace and nothing else, so
 /// the real `.git/*` entries are the parent volume's to list.
 pub fn list_categories(handle: &RepoHandle, repo_root: &Path) -> Vec<FileEntry> {
@@ -80,21 +80,21 @@ fn populate_root_category(fe: &mut FileEntry, cat: Cat, handle: &RepoHandle, rep
         }
         Cat::Stash => {
             fe.modified_at = newest_stash_secs(repo_root);
-            let count = super::stash::list_stashes(repo_root)
+            let count = crate::stash::list_stashes(repo_root)
                 .map(|v| v.len() as u64)
                 .unwrap_or(0);
             (GitCountKind::StashEntries, count)
         }
         Cat::Worktrees => {
             fe.modified_at = newest_worktree_head_secs(&repo);
-            let count = super::worktrees::list_worktrees(handle, repo_root)
+            let count = crate::worktrees::list_worktrees(handle, repo_root)
                 .map(|v| v.len() as u64)
                 .unwrap_or(0);
             (GitCountKind::LinkedWorktrees, count)
         }
         Cat::Submodules => {
             fe.modified_at = newest_submodule_secs(&repo, handle, repo_root);
-            let count = super::submodules::list_submodules(handle, repo_root)
+            let count = crate::submodules::list_submodules(handle, repo_root)
                 .map(|v| v.len() as u64)
                 .unwrap_or(0);
             (GitCountKind::Submodules, count)
@@ -140,7 +140,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
             }
         }
         Cat::Commits => {
-            if let Ok(id) = super::log::resolve_commit_id(handle, name) {
+            if let Ok(id) = crate::log::resolve_commit_id(handle, name) {
                 if let Ok(meta) = commit_meta(&repo, id) {
                     fe.modified_at = u64::try_from(meta.committer_secs).ok();
                     fe.created_at = fe.modified_at;
@@ -157,7 +157,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
         }
         Cat::Stash => {
             if let Ok(idx) = name.parse::<usize>()
-                && let Ok(entries) = super::stash::list_stashes(repo_root)
+                && let Ok(entries) = crate::stash::list_stashes(repo_root)
                 && let Some(found) = entries.into_iter().nth(idx)
             {
                 fe.modified_at = found.modified_at;
@@ -167,7 +167,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
             }
         }
         Cat::Worktrees => {
-            if let Ok(entries) = super::worktrees::list_worktrees(handle, repo_root)
+            if let Ok(entries) = crate::worktrees::list_worktrees(handle, repo_root)
                 && let Some(found) = entries.into_iter().find(|e| e.name == name)
             {
                 fe.modified_at = found.modified_at;
@@ -177,7 +177,7 @@ fn populate_ref_columns(fe: &mut FileEntry, cat: Cat, name: &str, handle: &RepoH
             }
         }
         Cat::Submodules => {
-            if let Ok(entries) = super::submodules::list_submodules(handle, repo_root)
+            if let Ok(entries) = crate::submodules::list_submodules(handle, repo_root)
                 && let Some(found) = entries.into_iter().find(|e| e.name == name)
             {
                 fe.modified_at = found.modified_at;
@@ -228,7 +228,7 @@ fn count_commits_capped(repo: &gix::Repository) -> u64 {
         count = count.saturating_add(1);
         // Cap matches `log::MAX_COMMITS` so the `.git/commits/` Size cell
         // ("5000 commits") matches what the user sees on entering.
-        if count >= super::log::MAX_COMMITS as u64 {
+        if count >= crate::log::MAX_COMMITS as u64 {
             break;
         }
     }
@@ -236,7 +236,7 @@ fn count_commits_capped(repo: &gix::Repository) -> u64 {
 }
 
 fn newest_stash_secs(repo_root: &Path) -> Option<u64> {
-    let entries = super::stash::list_stashes(repo_root).ok()?;
+    let entries = crate::stash::list_stashes(repo_root).ok()?;
     entries.iter().filter_map(|e| e.modified_at).max()
 }
 
@@ -399,10 +399,10 @@ pub fn list_tags(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>
 /// Returns metadata for a single virtual entry.
 pub fn get_metadata_for(
     repo_root: &Path,
-    virt: &super::path::VirtualGitPath,
+    virt: &crate::path::VirtualGitPath,
     handle: &RepoHandle,
 ) -> Lookup<FileEntry> {
-    use super::path::VirtualGitPath::*;
+    use crate::path::VirtualGitPath::*;
     match virt {
         Root => {
             let path = repo_root.join(".git").to_string_lossy().into_owned();
@@ -481,7 +481,7 @@ pub fn get_metadata_for(
             Ok(Some(fe))
         }
         RefTree(cat, name, sub) => {
-            let Some(commit_id) = super::resolve_commit_for_cat(handle, *cat, name)? else {
+            let Some(commit_id) = crate::resolve_commit_for_cat(handle, *cat, name)? else {
                 return Ok(None);
             };
             let display_path = repo_root
@@ -489,7 +489,7 @@ pub fn get_metadata_for(
                 .join(cat.as_segment())
                 .join(name)
                 .join(sub.replace('/', std::path::MAIN_SEPARATOR_STR));
-            super::tree::get_tree_entry(handle, commit_id, sub, &display_path)
+            crate::tree::get_tree_entry(handle, commit_id, sub, &display_path)
         }
     }
 }

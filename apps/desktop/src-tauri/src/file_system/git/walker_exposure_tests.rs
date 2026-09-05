@@ -12,11 +12,11 @@
 
 use std::path::{Path, PathBuf};
 
-use super::test_fixtures::{Fixture, cleanup, temp_dir};
 use crate::file_system::LocalPosixVolume;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::listing::caching_test_support::TestListing;
 use crate::file_system::volume::Volume;
+use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
 
 const CATEGORIES: [&str; 6] = ["branches", "tags", "commits", "stash", "worktrees", "submodules"];
 
@@ -271,7 +271,7 @@ async fn a_linked_worktree_serves_the_categories_but_has_no_dot_git_landing() {
         .parent()
         .unwrap()
         .join(format!("{}_linked", dir.file_name().unwrap().to_string_lossy()));
-    super::test_fixtures::git_cli(
+    cmdr_git::test_fixtures::git_cli(
         &dir,
         &["worktree", "add", &linked.to_string_lossy(), "-b", "linked-branch"],
     );
@@ -295,15 +295,12 @@ async fn a_linked_worktree_serves_the_categories_but_has_no_dot_git_landing() {
     // The categories under it are the portal's, reached through the route, which
     // is pure string work and never stats the `.git`.
     assert!(
-        super::path::portal_route(&gitlink.join("branches")).is_some(),
+        cmdr_git::portal_route(&gitlink.join("branches")).is_some(),
         "a linked worktree's categories still route"
     );
-    let (virt, ..) = super::path::classify(&gitlink.join("branches")).expect("classify follows the gitlink");
-    assert_eq!(virt, super::path::VirtualGitPath::Category(super::path::Cat::Branches));
-
-    let portal = std::sync::Arc::new(super::portal::GitPortal::new(
+    let portal = std::sync::Arc::new(cmdr_git::GitPortal::new(
         crate::volume_host::host(),
-        super::state_sink::no_git_state_sink(),
+        cmdr_git::no_git_state_sink(),
     ));
     let parent: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Parent", &linked));
     let branches = portal

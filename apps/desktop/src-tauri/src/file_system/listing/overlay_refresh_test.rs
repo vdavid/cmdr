@@ -13,12 +13,12 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::file_system::git::test_fixtures::{Fixture, cleanup, temp_dir};
 use crate::file_system::listing::caching::notify_full_refresh;
 use crate::file_system::listing::caching_test_support::{TestListing, unique_test_id};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{LocalPosixVolume, Volume};
+use cmdr_git::test_fixtures::{Fixture, cleanup, temp_dir};
 
 const CATEGORIES: [&str; 6] = ["branches", "tags", "commits", "stash", "worktrees", "submodules"];
 

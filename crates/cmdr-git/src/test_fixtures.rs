@@ -1,40 +1,33 @@
-//! Shared test helpers for building git repository fixtures.
+//! Repositories to assert against, built in process through `gix`.
 //!
-//! Background: every `*_tests.rs` file under this module used to define
-//! its own `fn git(dir, args)` that shelled out to the system `git` CLI
-//! and chained dozens of those calls in `build_simple_repo` /
-//! `build_repo_with_branches` / `commit_with_date`. A single fixture
-//! with three feature branches and 8 total commits cost ~31
-//! `fork+exec` of `git`, which is fast in isolation but borderline
-//! against the project's intentional 8 s nextest cap once
-//! `pnpm check` runs other checks in parallel. Two of those
-//! tests (`commits_listing_cancellation_polls_atomic_flag`,
-//! `branches_listing_sorts_by_ahead_count_within_category`) were
-//! observed crossing the cap in back-to-back runs.
-//!
-//! This module replaces the shell-out chains with in-process gix calls.
-//! `gix` is already a heavyweight dependency in this crate (54 sub-
-//! crates in `Cargo.lock`), so we pay no new dependency cost. Each
-//! commit creation goes from ~50-150 ms (process spawn + git startup +
-//! index manipulation + ref update) to single-digit microseconds (one
-//! blob write, one tree edit, one commit object, one ref update — all
-//! in-process loose-object writes).
+//! Behind `testing`, so a shipped build carries none of it. The host's own
+//! routing, overlay, and toggle suites build their repositories with these, so
+//! there is one set of fixtures rather than two that drift. ❌ Never enable the
+//! feature in production.
 //!
 //! ## What lives here
 //!
-//! - [`temp_dir`]: per-test unique temp directory under `std::env::temp_dir()`.
-//! - [`cleanup`]: best-effort `remove_dir_all` for the directory.
-//! - [`Fixture`]: thin wrapper around a `gix::Repository` with helpers
-//!   for the patterns the tests need (write a file + commit it, create
-//!   a branch, switch HEAD to a branch).
+//! - [`temp_dir`]: a per-test unique directory under `std::env::temp_dir()`,
+//!   KEPT on panic so a failure can be inspected. [`cleanup`] is the
+//!   best-effort removal a passing test ends with.
+//! - [`Fixture`]: a `gix::Repository` plus the operations a suite needs — write
+//!   a file and commit it (at a given time, with given modes), create a branch,
+//!   switch HEAD.
+//! - [`discover_repo`]: the handle a suite that only wants to read one needs,
+//!   opened through a cache of its own rather than a portal's.
 //!
-//! ## Operations NOT covered (still shell-out)
+//! **Why `gix` rather than the `git` CLI**: each commit costs single-digit
+//! microseconds in process (one blob, one tree edit, one commit object, one ref
+//! update) against ~50-150 ms for a `fork+exec`. A fixture with three branches
+//! and eight commits used to spawn ~31 processes, which crossed the 8 s nextest
+//! cap under `pnpm check` contention.
 //!
-//! gix 0.81 doesn't expose public APIs for stash creation,
-//! `git worktree add`, or `git submodule add`. The handful of tests
-//! that need those operations keep using a thin [`git_cli`] helper
-//! that wraps `Command::new("git")`. The cost there is bounded: each
-//! affected test makes a few CLI calls instead of dozens.
+//! ## What still shells out
+//!
+//! `gix` exposes no public API for stash creation, `git worktree add`, or
+//! `git submodule add` (verified on gix 0.87, 2026-09-05), so the suites that
+//! need those call [`git_cli`], a thin `Command::new("git")` wrapper. The cost
+//! is bounded: a few calls in a handful of cells.
 
 // Test-only support module: each helper here is used by a subset of
 // the sibling `*_tests.rs` files. `cargo check` would otherwise treat
@@ -50,13 +43,19 @@ use std::process::{Command, Stdio};
 use gix::ObjectId;
 use gix::actor::SignatureRef;
 use gix::bstr::BStr;
-pub(super) use gix::object::tree::EntryKind;
+/// Whether a committed entry is a plain file, an executable one, or a tree.
+/// Re-exported so a caller doesn't need its own `gix` dependency to say so.
+pub use gix::object::tree::EntryKind;
 
-use super::friendly::FriendlyGitError;
-use super::repo::{RepoCache, RepoHandle};
+use cmdr_fs::volume::friendly_error::git::FriendlyGitError;
 
-pub(super) const TEST_AUTHOR_NAME: &str = "Cmdr Test";
-pub(super) const TEST_AUTHOR_EMAIL: &str = "test@cmdr.local";
+use crate::repo::{RepoCache, RepoHandle};
+
+/// The author every fixture commit carries, so a snapshot listing's name column
+/// is the same on every machine.
+pub const TEST_AUTHOR_NAME: &str = "Cmdr Test";
+/// The author email every fixture commit carries.
+pub const TEST_AUTHOR_EMAIL: &str = "test@cmdr.local";
 
 /// Default time used by [`Fixture::commit_file`]. Per-test code that needs
 /// distinct timestamps calls [`Fixture::commit_file_at`] instead.
@@ -65,7 +64,7 @@ const DEFAULT_COMMIT_SECS: u64 = 1_700_000_000;
 /// Creates a fresh per-process temp directory under `std::env::temp_dir()`.
 /// The path includes the module prefix, the supplied name, the PID, and a
 /// nanosecond timestamp, so concurrent test invocations don't collide.
-pub(crate) fn temp_dir(module_prefix: &str, name: &str) -> PathBuf {
+pub fn temp_dir(module_prefix: &str, name: &str) -> PathBuf {
     // The counter is load-bearing, ❌ not decoration: the clock behind
     // `SystemTime::now` doesn't resolve to the nanosecond, so two tests calling this
     // with the same prefix and name from different threads can land on one path. The
@@ -94,7 +93,7 @@ pub(crate) fn temp_dir(module_prefix: &str, name: &str) -> PathBuf {
 /// Best-effort cleanup. Tests call this at the end of the body so a
 /// successful run leaves no debris; a panicking run still leaves the
 /// directory for post-mortem inspection.
-pub(crate) fn cleanup(dir: &Path) {
+pub fn cleanup(dir: &Path) {
     let _ = std::fs::remove_dir_all(dir);
 }
 
@@ -103,7 +102,7 @@ pub(crate) fn cleanup(dir: &Path) {
 /// `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars so deterministic
 /// timestamps stay deterministic, and silences output so test logs
 /// stay readable.
-pub(super) fn git_cli(dir: &Path, args: &[&str]) {
+pub fn git_cli(dir: &Path, args: &[&str]) {
     let status = Command::new("git")
         .current_dir(dir)
         .args(args)
@@ -119,7 +118,7 @@ pub(super) fn git_cli(dir: &Path, args: &[&str]) {
 }
 
 /// Same as [`git_cli`] but captures stdout.
-pub(super) fn git_cli_capture(dir: &Path, args: &[&str]) -> Vec<u8> {
+pub fn git_cli_capture(dir: &Path, args: &[&str]) -> Vec<u8> {
     Command::new("git")
         .current_dir(dir)
         .args(args)
@@ -138,7 +137,7 @@ pub(super) fn git_cli_capture(dir: &Path, args: &[&str]) -> Vec<u8> {
 /// `commit_*` call should write to (mirrors how `git checkout` flips
 /// the active branch). Defaults to `main` (gix's default for new
 /// repos).
-pub(crate) struct Fixture {
+pub struct Fixture {
     pub(super) dir: PathBuf,
     pub(super) repo: gix::Repository,
     /// Active branch name (without `refs/heads/` prefix). Each commit
@@ -165,7 +164,7 @@ impl Fixture {
     /// creation, so a write after `gix::init` is invisible to the original
     /// handle. macOS dev machines tend to have global config set so the
     /// fallback worked there; Docker images don't, which surfaced the bug.
-    pub(crate) fn init(dir: PathBuf) -> Self {
+    pub fn init(dir: PathBuf) -> Self {
         let _initial = gix::init(&dir).expect("gix::init");
         Self::seed_committer_config(&dir);
         let repo = gix::open(&dir).expect("gix::open (post-config)");
@@ -198,14 +197,14 @@ impl Fixture {
     /// Write `content` to `<dir>/<file>` and commit it on the current
     /// branch. Returns the new commit's ObjectId. Uses
     /// [`DEFAULT_COMMIT_SECS`] for both author and committer time.
-    pub(crate) fn commit_file(&mut self, file: &str, content: &[u8], message: &str) -> ObjectId {
+    pub fn commit_file(&mut self, file: &str, content: &[u8], message: &str) -> ObjectId {
         self.commit_files(&[(file, content)], message, DEFAULT_COMMIT_SECS)
     }
 
     /// Like [`commit_file`](Self::commit_file) but with a specific
     /// epoch second. Used by `snapshot_dates_tests` to seed
     /// reproducible per-file dates.
-    pub(super) fn commit_file_at(&mut self, file: &str, content: &[u8], message: &str, secs: u64) -> ObjectId {
+    pub fn commit_file_at(&mut self, file: &str, content: &[u8], message: &str, secs: u64) -> ObjectId {
         self.commit_files(&[(file, content)], message, secs)
     }
 
@@ -214,7 +213,7 @@ impl Fixture {
     /// updates on top of the current HEAD tree. Carries over every
     /// already-tracked entry from the parent's tree (so commits are
     /// additive — drop the world before reusing this for a delete).
-    pub(super) fn commit_files(&mut self, files: &[(&str, &[u8])], message: &str, secs: u64) -> ObjectId {
+    pub fn commit_files(&mut self, files: &[(&str, &[u8])], message: &str, secs: u64) -> ObjectId {
         let with_mode: Vec<(&str, &[u8], EntryKind)> = files
             .iter()
             .map(|(rel, content)| (*rel, *content, EntryKind::Blob))
@@ -226,7 +225,7 @@ impl Fixture {
     /// the [`EntryKind`] per entry, so tests can pin executable mode
     /// bits (`BlobExecutable`) on commits without going through a CLI
     /// `chmod`+`git add` dance.
-    pub(super) fn commit_files_with_modes(
+    pub fn commit_files_with_modes(
         &mut self,
         files: &[(&str, &[u8], EntryKind)],
         message: &str,
@@ -299,7 +298,7 @@ impl Fixture {
     /// Creates a new branch at the current branch's tip without
     /// switching to it. Equivalent to `git branch <name>` followed by
     /// staying on the current branch.
-    pub(crate) fn create_branch(&self, name: &str) {
+    pub fn create_branch(&self, name: &str) {
         let tip = self
             .current_branch_tip()
             .expect("create_branch requires at least one commit on parent");
@@ -320,7 +319,7 @@ impl Fixture {
     /// Equivalent to `git checkout <name>` from a test's POV — we
     /// don't sync the worktree, which is fine because tests rebuild
     /// file contents before each commit.
-    pub(super) fn checkout(&mut self, name: &str) {
+    pub fn checkout(&mut self, name: &str) {
         let ref_name = format!("refs/heads/{name}");
         // Re-open the repo so changes to packed-refs / HEAD are
         // observed by subsequent calls. gix's in-memory ref iter
@@ -358,7 +357,7 @@ impl Fixture {
 
 /// One repo with `commits` commits on `main`, each touching `README.md`.
 /// Replaces the per-file `build_simple_repo` helpers.
-pub(super) fn build_simple_repo(prefix: &str, commits: usize) -> (PathBuf, Fixture) {
+pub fn build_simple_repo(prefix: &str, commits: usize) -> (PathBuf, Fixture) {
     let dir = temp_dir(prefix, "simple");
     let mut fixture = Fixture::init(dir.clone());
     for n in 0..commits {
@@ -371,7 +370,7 @@ pub(super) fn build_simple_repo(prefix: &str, commits: usize) -> (PathBuf, Fixtu
 /// in `branches`. Each branch has `extra` extra commits on top of
 /// `main`, so its ahead-count vs `main` matches `extra`. HEAD stays
 /// on `main` at the end.
-pub(super) fn build_repo_with_branches(prefix: &str, branches: &[(&str, usize)]) -> (PathBuf, Fixture) {
+pub fn build_repo_with_branches(prefix: &str, branches: &[(&str, usize)]) -> (PathBuf, Fixture) {
     let dir = temp_dir(prefix, "branches");
     let mut fixture = Fixture::init(dir.clone());
     fixture.commit_file("README.md", b"main\n", "initial");
@@ -393,7 +392,7 @@ pub(super) fn build_repo_with_branches(prefix: &str, branches: &[(&str, usize)])
 /// shouldn't have to build one, and a fresh cache per call keeps this from
 /// becoming a global in disguise. Code that browses through the portal opens
 /// repositories through ITS cache instead.
-pub(crate) fn discover_repo(path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
+pub fn discover_repo(path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
     RepoCache::new().discover(path)
 }
 

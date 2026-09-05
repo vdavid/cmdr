@@ -33,10 +33,10 @@ use std::sync::Arc;
 
 use cmdr_fs::volume::scan_walk::{self, ScanSource, Walking};
 
-use super::path::{self, Cat, VirtualGitPath};
-use super::portal::GitPortal;
-use super::repo::RepoHandle;
-use super::{Lookup, found_or_not_found, list_ref_tree, log, stash, submodules, virtual_listing, worktrees};
+use crate::path::{self, Cat, VirtualGitPath};
+use crate::portal::GitPortal;
+use crate::repo::RepoHandle;
+use crate::{Lookup, found_or_not_found, list_ref_tree, log, stash, submodules, virtual_listing, worktrees};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, ScanBoundary, SpaceInfo, Volume,
@@ -190,7 +190,7 @@ impl Volume for GitPortalVolume {
             };
             let opened = match &virt {
                 VirtualGitPath::RefTree(cat, name, sub) if cat.browses_commit_tree() => {
-                    super::open_blob(&handle, *cat, name, sub)
+                    crate::open_blob(&handle, *cat, name, sub)
                 }
                 // A category, a ref, or a leaf row: a directory has no bytes.
                 _ => return Err(VolumeError::NotSupported),

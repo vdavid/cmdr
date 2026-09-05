@@ -14,11 +14,11 @@ use gix::object::tree::EntryKind;
 
 use cmdr_fs::entry::FileEntry;
 
-use super::Lookup;
-use super::column_meta::recursive_tree_size;
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::RepoHandle;
-use super::snapshot_dates;
+use crate::Lookup;
+use crate::column_meta::recursive_tree_size;
+use crate::repo::RepoHandle;
+use crate::snapshot_dates;
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// Per-blob byte cap for cross-volume copies and previews. Above this we
 /// surface a friendly "blob too big" rather than allocate the whole thing.

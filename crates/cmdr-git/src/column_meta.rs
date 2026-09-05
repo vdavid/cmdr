@@ -19,8 +19,8 @@ use std::path::Path;
 use gix::ObjectId;
 use gix::object::tree::EntryKind;
 
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::{RepoHandle, count_ahead_behind};
+use crate::repo::{RepoHandle, count_ahead_behind};
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// Picks a fallback comparison branch for ahead/behind when the branch has no configured upstream.
 /// Tries `main`, then `master`. Returns the resolved tip commit id of the fallback so callers can

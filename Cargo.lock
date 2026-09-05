@@ -1375,6 +1375,7 @@ dependencies = [
  "cmdr-adb",
  "cmdr-archive",
  "cmdr-fs",
+ "cmdr-git",
  "cmdr-index",
  "cmdr-mtp",
  "cmdr-sftp",
@@ -1398,7 +1399,6 @@ dependencies = [
  "futures-util",
  "genai",
  "getrandom 0.4.3",
- "gix",
  "icns",
  "image",
  "kamadak-exif",
@@ -1548,6 +1548,21 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-stream",
+]
+
+[[package]]
+name = "cmdr-git"
+version = "0.0.0"
+dependencies = [
+ "cmdr-fs",
+ "cmdr-git",
+ "filetime",
+ "gix",
+ "notify",
+ "notify-debouncer-full",
+ "serde",
+ "specta",
+ "tokio",
 ]
 
 [[package]]

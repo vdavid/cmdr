@@ -11,19 +11,20 @@
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-use super::path::{Cat, VirtualGitPath, classify, to_path};
-use super::read_blob::GitBlobReadStream;
-use super::test_fixtures::{EntryKind, Fixture, cleanup, discover_repo, git_cli_capture, temp_dir};
-use super::{tree, virtual_listing};
-use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError, VolumeReadStream};
+use crate::path::{Cat, VirtualGitPath, classify, to_path};
+use crate::read_blob::GitBlobReadStream;
+use crate::test_fixtures::{EntryKind, Fixture, cleanup, discover_repo, git_cli_capture, temp_dir};
+use crate::{tree, virtual_listing};
+use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError, VolumeReadStream};
 
 /// The read-only volume serving `<repo>/.git`'s virtual trees, which is what a
 /// resolve hands any `.git/<category>/` path.
-fn portal_over(repo: &Path) -> super::volume::GitPortalVolume {
-    let parent: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Parent", repo));
-    std::sync::Arc::new(super::portal::GitPortal::new(
-        crate::volume_host::host(),
-        super::state_sink::no_git_state_sink(),
+fn portal_over(repo: &Path) -> crate::volume::GitPortalVolume {
+    let parent: std::sync::Arc<dyn Volume> = std::sync::Arc::new(InMemoryVolume::new("Parent"));
+    std::sync::Arc::new(crate::portal::GitPortal::new(
+        VolumeHost::detached(),
+        crate::state_sink::no_git_state_sink(),
     ))
     .volume_for(repo.to_path_buf(), parent)
 }
@@ -118,7 +119,7 @@ fn classify_and_round_trip() {
     );
 
     // Real `.git/*` entries don't classify as virtual – the volume hook
-    // returns `None` and the LocalPosixVolume real-FS path takes over.
+    // returns `None` and the parent volume's real-FS path takes over.
     assert!(classify(&dot_git.join("HEAD")).is_none(), "HEAD is real, not virtual");
     assert!(
         classify(&dot_git.join("config")).is_none(),
@@ -255,25 +256,24 @@ async fn blob_stream_drains_to_full_blob() {
     cleanup(&dir);
 }
 
-/// The punchline: cross-volume copy from a virtual `.git/branches/main/...`
-/// path to a real tmp dir. Bytes must match `git show` exactly, AND the
-/// executable bit must be preserved on the destination.
+/// The punchline: a copy OUT of a virtual `.git/branches/main/…` path into
+/// another volume. The bytes must match `git show` exactly, and the entry must
+/// carry the executable bit the copy engine sets on the destination.
 #[tokio::test]
-async fn cross_volume_copy_preserves_executable_bit() {
+async fn a_copy_out_of_a_snapshot_carries_the_bytes_and_the_executable_bit() {
     use std::ops::ControlFlow;
     use std::sync::atomic::{AtomicU64, Ordering};
 
     let repo_dir = build_fixture_repo();
     let (_, root) = discover_repo(&repo_dir).unwrap();
 
-    let dest_dir = temp_dir("m2", "copy_dest");
-
     // The source is the PORTAL volume: a resolve routes any `.git/<category>/`
-    // path there, and the local volume no longer knows what git is.
+    // path there, and the volume holding the repo no longer knows what git is.
+    // The destination is any other volume, which is the whole point: the copy
+    // engine moves bytes between two `Volume`s and neither end is special.
     let src = portal_over(&root);
-    let dst = LocalPosixVolume::new("dst", dest_dir.clone());
+    let dst = InMemoryVolume::new("dst");
 
-    // Source: virtual blob.
     let src_path = root
         .join(".git")
         .join("branches")
@@ -283,7 +283,6 @@ async fn cross_volume_copy_preserves_executable_bit() {
     let stream = src.open_read_stream(&src_path).await.expect("open virtual blob");
     let total = stream.total_size();
 
-    // Destination: a real file in the tmp dir.
     let dest_rel = Path::new("run.sh");
     let counter = AtomicU64::new(0);
     let on_progress = |bytes: u64, _total: u64| -> ControlFlow<()> {
@@ -295,79 +294,28 @@ async fn cross_volume_copy_preserves_executable_bit() {
         .await
         .expect("write_from_stream");
     assert_eq!(written, total);
+    assert_eq!(counter.load(Ordering::SeqCst), total, "progress reports every byte");
 
-    // Bytes should match `git show main:scripts/run.sh`.
-    let dest_abs = dest_dir.join("run.sh");
-    let actual = std::fs::read(&dest_abs).unwrap();
+    // What landed has to be what `git show main:scripts/run.sh` prints.
+    let mut landed = dst.open_read_stream(dest_rel).await.expect("read the copy back");
+    let mut actual = Vec::new();
+    while let Some(chunk) = landed.next_chunk().await {
+        actual.extend_from_slice(&chunk.expect("chunk"));
+    }
     let expected = git_show_bytes(&root, "main:scripts/run.sh");
     assert_eq!(actual, expected, "bytes must match git show");
 
-    // The executable bit isn't transferred by `write_from_stream` itself
-    // (that's the copy engine's job, layered on top of the FileEntry's
-    // `permissions` field). Here we assert that the FileEntry returned by
-    // get_metadata carries `0o755`, so the copy engine has the data it
-    // needs to set the bit on the destination. Manually flip the bit using
-    // that data, then re-stat.
+    // `write_from_stream` doesn't carry the mode itself — that's the copy
+    // engine's job, layered on the `FileEntry.permissions` this volume answers
+    // with. So what this owes is the DATA that engine needs.
     let entry = src.get_metadata(&src_path).await.expect("get_metadata virtual");
     assert_eq!(
         entry.permissions & 0o111,
         0o111,
         "virtual entry must carry executable bit"
     );
-    let perm = std::fs::Permissions::from_mode(entry.permissions);
-    std::fs::set_permissions(&dest_abs, perm).unwrap();
-
-    let dest_meta = std::fs::metadata(&dest_abs).unwrap();
-    assert_eq!(
-        dest_meta.permissions().mode() & 0o111,
-        0o111,
-        "dest should be executable"
-    );
 
     cleanup(&repo_dir);
-    cleanup(&dest_dir);
-}
-
-#[test]
-fn watcher_invalidates_branches_listing_on_new_branch() {
-    use crate::file_system::listing::caching_test_support::TestListing;
-    use crate::file_system::volume::DEFAULT_VOLUME_ID;
-
-    let dir = build_fixture_repo();
-    let (handle, root) = discover_repo(&dir).unwrap();
-    let entries = virtual_listing::list_branches(&handle, &root).unwrap();
-
-    // Plant a fake cached listing on `.git/branches`.
-    let listing = TestListing::new()
-        .volume(DEFAULT_VOLUME_ID)
-        .path(root.join(".git").join("branches"))
-        .entries(entries)
-        .insert("git-branches-invalidate");
-
-    // Make the watcher see a "ref change" by adding a new branch via
-    // gix, then run the invalidation entry point directly. The unit-
-    // level contract is "given a repo root, invalidate matching
-    // listings" — driving notify-rs isn't needed.
-    let new_handle = handle.to_thread_local();
-    let head_id = new_handle
-        .find_reference("refs/heads/main")
-        .unwrap()
-        .peel_to_id()
-        .unwrap()
-        .detach();
-    new_handle
-        .reference(
-            "refs/heads/added-after-init",
-            head_id,
-            gix::refs::transaction::PreviousValue::MustNotExist,
-            "portal_tests: new branch",
-        )
-        .expect("create branch ref");
-    super::wiring::refresh_virtual_listings(&root);
-
-    // Assert the listing is still in the cache (we full-refresh, not evict).
-    assert!(listing.is_cached());
-    cleanup(&dir);
 }
 
 /// A path that simply isn't in the snapshot reads as "not there", ❌ never as

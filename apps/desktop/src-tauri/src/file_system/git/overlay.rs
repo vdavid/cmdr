@@ -1,7 +1,7 @@
 //! The portal's half of the pane: the six category rows that join a repo's real
 //! `.git/` listing.
 //!
-//! Everything BELOW `.git/` is a routed volume (`volume.rs`), which a pane, a
+//! Everything BELOW `.git/` is a routed volume (`cmdr_git::GitPortalVolume`), which a pane, a
 //! walker, and a scan all reach the same way. `.git/` itself can't be, because
 //! it is a real directory whose real entries must stay editable and deletable;
 //! so the six rows reach the pane as a [`ListingOverlay`] contribution instead,

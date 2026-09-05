@@ -6077,6 +6077,10 @@ export type EncryptionInfoDto = {
 export type EntryStatus = {
   // Path relative to the repo's working tree root, with `/` separators.
   relativePath: string
+  /**
+   *  What changed about it. Staged changes win over worktree ones, matching
+   *  git's XY column precedence.
+   */
   code: EntryStatusCode
 }
 

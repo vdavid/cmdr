@@ -1,0 +1,70 @@
+[package]
+name = "cmdr-git"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# "This is a test build." It widens `test_fixtures` (the in-process `gix` repo
+# builder, the `git` CLI shell-outs for what `gix` doesn't expose, and the
+# scratch-dir helpers) and `RecordingGitStateSink` from `#[cfg(test)]`-only to
+# `pub`, so the app's routing, overlay, and toggle suites build their repos with
+# the same fixtures this crate's own cells do rather than growing a second,
+# drifting copy.
+#
+# No `tempfile` rides along, unlike `cmdr-mtp`'s: a `Fixture`'s directory is
+# deliberately KEPT when a test panics, so `TestDir`'s drop is the wrong shape
+# and `test_fixtures::temp_dir` mints the path itself.
+#
+# Never enable in a production build.
+testing = ["cmdr-fs/testing"]
+
+[dependencies]
+# The `Volume` trait, every type it exchanges, `FriendlyGitError`, `GitEntryMeta`,
+# and the host seams this backend asks the app through. The only crate below this
+# one.
+cmdr-fs = { path = "../cmdr-fs" }
+# The pure-Rust git implementation: discovery, refs, the object database, the
+# status walk, and the rev-walks behind every category listing. Same version the
+# app pinned before this crate existed, so nothing about what a repository
+# answers moved with the code.
+gix = "0.87"
+# The `.git/*` watcher's file-system events, and the 200 ms debounce that turns a
+# `git checkout`'s burst of ref writes into one report. Same pair the app's own
+# watchers use, at the versions it pins.
+notify = "8"
+notify-debouncer-full = "0.7.0"
+serde = { version = "1", features = ["derive"] }
+# Type export for the Rust↔TS bindings: `RepoInfo` and `EntryStatus` cross IPC.
+# Pinned to the EXACT same version the app uses, for the reason `cmdr-fs` gives:
+# two `specta` crates in one graph would make these `Type` impls stop satisfying
+# `tauri-specta`, and the app's command signatures collect them transitively.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+
+# ❌ No `tokio` and no `log` here, and neither is an oversight. The runtime a
+# portal volume spawns blocking `gix` work onto arrives as a `Handle` through
+# `VolumeHost::runtime`, so this crate never names tokio; and nothing here logs,
+# because every failure leaves as a typed `FriendlyGitError` the host words.
+
+[dev-dependencies]
+# Depending on ourselves turns `testing` on for every DEV target and leaves it off
+# for the lib, so a shipped build carries no fixtures. Same shape as `cmdr-mtp`'s,
+# `cmdr-adb`'s, and the app's own self dev-dependency.
+cmdr-git = { path = ".", features = ["testing"] }
+# `TestDir`, `wait_until`, `InMemoryVolume`, and the shared read-only `Volume`
+# conformance cells every backend runs.
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# The status-cache cell forces an index-file mtime forward, which is exactly what
+# the cache keys on. Same pin the app carries.
+filetime = "0.2"
+# The portal-volume cells are `#[tokio::test]`s, and the copy-scan ones drive a
+# walk and its boundary at once, so they need a multi-threaded runtime the lib
+# deliberately can't build for itself.
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

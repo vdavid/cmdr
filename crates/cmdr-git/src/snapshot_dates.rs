@@ -54,8 +54,8 @@ use gix::bstr::ByteSlice;
 use gix::revision::walk::Sorting;
 use gix::traverse::commit::simple::CommitTimeOrder;
 
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::RepoHandle;
+use crate::repo::RepoHandle;
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// How many commits we'll walk back per listing before falling back to the
 /// snapshot date. Bigger than the typical churn window for a 50k-commit
@@ -309,7 +309,7 @@ fn collect_top_level_names(
 ) -> Result<Vec<String>, FriendlyGitError> {
     // A directory that isn't in this snapshot contributes no names, which is
     // what an empty list already means to every caller.
-    let Some(tree) = super::tree::resolve_tree_at(repo, commit_id, dir_path)? else {
+    let Some(tree) = crate::tree::resolve_tree_at(repo, commit_id, dir_path)? else {
         return Ok(Vec::new());
     };
     let mut out = Vec::new();

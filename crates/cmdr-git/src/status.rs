@@ -22,8 +22,8 @@ use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::RepoHandle;
+use crate::repo::RepoHandle;
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// Single-character status code.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
@@ -55,6 +55,7 @@ pub enum EntryStatusCode {
 pub struct EntryStatus {
     /// Path relative to the repo's working tree root, with `/` separators.
     pub relative_path: String,
+    /// What changed about it; a staged change wins over a worktree one.
     pub code: EntryStatusCode,
 }
 
@@ -363,8 +364,8 @@ mod cache_tests {
     //! repo so we exercise the gix status walk path. Total runtime ~200 ms each.
     use std::process::{Command, Stdio};
 
-    use super::super::test_fixtures::discover_repo;
     use super::*;
+    use crate::test_fixtures::discover_repo;
     use cmdr_fs::testing::TestDir;
 
     fn temp_repo(name: &str) -> TestDir {

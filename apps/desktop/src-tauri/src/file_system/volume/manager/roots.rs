@@ -9,9 +9,9 @@
 //! `../DETAILS.md` § "A volume ID owns a set of mount roots".
 
 use super::{Volume, VolumeManager};
-use crate::file_system::git::volume::GitPortalVolume;
 use crate::ignore_poison::RwLockIgnorePoison;
 use cmdr_archive::ArchiveVolume;
+use cmdr_git::GitPortalVolume;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 

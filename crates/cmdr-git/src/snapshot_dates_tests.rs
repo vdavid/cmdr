@@ -7,10 +7,10 @@
 
 #![cfg(test)]
 
-use super::path::Cat;
-use super::snapshot_dates::{self, MAX_COMMITS_PER_WALK};
-use super::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
-use super::{tree, virtual_listing};
+use crate::path::Cat;
+use crate::snapshot_dates::{self, MAX_COMMITS_PER_WALK};
+use crate::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
+use crate::{tree, virtual_listing};
 
 fn temp(name: &str) -> std::path::PathBuf {
     temp_dir("snapshot_dates", name)

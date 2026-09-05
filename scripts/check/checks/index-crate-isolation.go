@@ -214,6 +214,30 @@ var surfaceGuardedCrates = []struct {
 		// Measured 2026-09-05, at the extraction, and set to exactly what the crate
 		// exposes — no headroom, so the first addition has to be argued for.
 		//
+		// EVERY module is private, so a host can name no path into this crate at all
+		// and all 12 promises arrive as root re-exports. That's why both other buckets
+		// are zero, and it's the tightest shape any backend crate here has taken:
+		// `GitPortal`'s own methods are reachable but unmeasured, so the item-by-item
+		// argument in the crate's `DETAILS.md` is what holds them, not this number.
+		//
+		// The 12 serve four callers, and a new one should name which:
+		// browsing (`GitPortal`, `GitPortalVolume`, `portal_route`), the chip
+		// (`RepoInfo`, `repo_info`, `RepoHandle`), the status column (`EntryStatus`,
+		// `EntryStatusCode`, `list_status`), and reporting a change
+		// (`GitStateSink`, `no_git_state_sink`, `virtual_category_prefixes`).
+		//
+		// Item-by-item: `crates/cmdr-git/DETAILS.md` § "The public surface is capped".
+		Name: "cmdr-git",
+		Ceilings: surfaceCeilings{
+			RootPromises:   12,
+			PublicModules:  0,
+			SubsystemItems: 0,
+		},
+	},
+	{
+		// Measured 2026-09-05, at the extraction, and set to exactly what the crate
+		// exposes — no headroom, so the first addition has to be argued for.
+		//
 		// The session layer is most of this crate and NONE of it is a public module:
 		// `connection` is private, so all 12 of its names arrive as root re-exports,
 		// which is why the root bucket is large and the subsystem one tiny. Two public

@@ -53,6 +53,7 @@ testing = [
   "cmdr-sftp/testing",
   "cmdr-webdav/testing",
   "cmdr-adb/testing",
+  "cmdr-git/testing",
   "cmdr-mtp/testing",
 ]
 
@@ -99,6 +100,13 @@ cmdr-webdav = { path = "../../../crates/cmdr-webdav" }
 # The Android-over-ADB backend: a real-filesystem `Volume` per device behind the
 # ADB server, beside MTP. No `tauri`, no user-facing words; `docs/specs/android-adb-backend.md`.
 cmdr-adb = { path = "../../../crates/cmdr-adb" }
+# Everything Cmdr knows about a git repository: repo info, per-entry status, the
+# `.git/*` watcher, and the read-only `Volume` over a repository's virtual trees.
+# No `tauri` in its tree, so `gix` stays out of this manifest and
+# `cargo check -p cmdr-git` verifies the whole thing without building the app.
+# The route, the listing overlay, the toggle, and the `git-state-changed` event
+# stay here in `file_system/git/wiring.rs`.
+cmdr-git = { path = "../../../crates/cmdr-git" }
 # The index: the file index, the media index, and folder importance, behind one
 # `Index` handle. Tauri-free by design and enforced — the app is its host, which
 # is why every seam it needs is answered in `src/index_host.rs` and nowhere else.
@@ -207,16 +215,6 @@ zip = { version = "8.6", default-features = false, features = ["deflate", "aes-c
 flate2 = "1"
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
 rand = "0.10"
-# Pure-Rust git library for the git browser (M1: discover, repo info, status).
-# Pinned at 0.85.0 (published 2026-06-22, ~4 weeks old at landing) per
-# project rule on avoiding 0-day vulns. Default features include `status`,
-# `basic`, and `extras` which cover discover + ahead/behind + status walk.
-# `Repository::edit_tree()` is used by `file_system/git/test_fixtures.rs` so
-# test fixtures build via gix instead of dozens of `git` CLI `fork+exec` calls
-# (each ~50-150 ms on a loaded machine; one fixture chain used to spawn ~31 of
-# them and time out the 8 s nextest cap under check.sh contention). It needed a
-# `tree-editor` feature through 0.86 and rides the default set from 0.87 on.
-gix = { version = "0.87" }
 # Multi-provider LLM client. Normalizes OpenAI / OpenAI Responses / Anthropic / Gemini /
 # xAI / Groq / DeepSeek / Ollama / OpenRouter / etc. Auto-routes `gpt-5*` / `*-codex` /
 # `*-pro` to the Responses API; uses native protocols for Anthropic + Gemini. Replaces
@@ -379,6 +377,10 @@ cmdr-fs = { path = "../../../crates/cmdr-fs", features = ["testing"] }
 # the crate builds on every platform, and the app's MTP test modules carry the
 # platform gate themselves.
 cmdr-mtp = { path = "../../../crates/cmdr-mtp", features = ["testing"] }
+# Same crate as the normal dependency above, with `testing` on for dev targets
+# only: that's what publishes the repository fixtures the app's routing, overlay,
+# and toggle cells build their repos with.
+cmdr-git = { path = "../../../crates/cmdr-git", features = ["testing"] }
 # SMB integration tests hash source and destination bytes to catch pipeline
 # corruption (dropped/duplicated chunks, concurrency bleed) that a simple
 # size-check or `Vec<u8>` equality would either miss or report uselessly

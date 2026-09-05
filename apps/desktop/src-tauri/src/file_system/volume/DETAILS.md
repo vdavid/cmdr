@@ -47,7 +47,7 @@ the crate boundary is what makes that a compile error rather than a habit.
      cache write.
    - Crate backends (no `tauri`, verified alone by `cargo check -p <crate>`): `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
      `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`. App-resident: `LocalPosixVolume` (`backends/local_posix.rs`, permanently)
-     and `GitPortalVolume` (`apps/desktop/src-tauri/src/file_system/git/volume.rs`, until it moves to `cmdr-git`). `InMemoryVolume` (in `cmdr-fs`)
+     and `GitPortalVolume` (`crates/cmdr-git`). `InMemoryVolume` (in `cmdr-fs`)
      is the test and stress fixture.
 3. **The app-side half of each backend.** What a backend can't answer from its protocol alone, and what must know the
    concrete type: discovery UI, the keychain, the OS mount, the ptpcamerad workaround, and REGISTRATION. A backend never

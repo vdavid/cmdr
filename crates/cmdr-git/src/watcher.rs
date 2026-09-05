@@ -8,18 +8,19 @@
 //! ❌ Nothing here names a window. The watcher recomputes a typed snapshot and
 //! reports it; wording it and refreshing panes is the host's, through the sink.
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 use notify::RecursiveMode;
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
-use super::repo::{RepoCache, RepoInfo, repo_info};
-use super::state_sink::GitStateSink;
+use crate::repo::{RepoCache, RepoInfo, repo_info};
+use crate::state_sink::GitStateSink;
 
 /// One per repo. Owns the notify-rs debouncer and the subscriber count.
 struct Subscription {
@@ -58,7 +59,7 @@ impl GitWatcherRegistry {
         repos: Arc<RepoCache>,
         sink: Arc<dyn GitStateSink>,
         repo_root: &Path,
-    ) -> Result<RepoInfo, super::FriendlyGitError> {
+    ) -> Result<RepoInfo, FriendlyGitError> {
         let canonical = repo_root.canonicalize().unwrap_or_else(|_| repo_root.to_path_buf());
 
         let (handle, root) = repos.discover(&canonical)?;
@@ -78,9 +79,7 @@ impl GitWatcherRegistry {
             }
             recompute_and_report(&repos, sink.as_ref(), &watcher_root);
         })
-        .map_err(|e| {
-            super::FriendlyGitError::with_source(super::FriendlyGitErrorKind::CorruptRepo, e.to_string(), e)
-        })?;
+        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
 
         for path in watch_paths(&root) {
             // Some paths (`refs/`) are dirs, others (`HEAD`, `index`) are files.
@@ -124,13 +123,13 @@ impl GitWatcherRegistry {
             if sub.refcount == 0 {
                 inner.remove(&canonical);
                 repos.evict(&canonical);
-                super::status::invalidate_status_cache(&canonical);
+                crate::status::invalidate_status_cache(&canonical);
             }
         }
     }
 
     /// For tests: count active repos.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing"))]
     pub fn active_repo_count(&self) -> usize {
         self.inner.lock_ignore_poison().len()
     }
@@ -158,7 +157,7 @@ fn recompute_and_report(repos: &RepoCache, sink: &dyn GitStateSink, repo_root: &
     let Ok(info) = repo_info(&handle, &root) else {
         return;
     };
-    super::status::invalidate_status_cache(&root);
+    crate::status::invalidate_status_cache(&root);
     sink.repo_changed(&root, info);
 }
 

@@ -163,24 +163,37 @@ Full rationale is in the code's own docs now: `file_system/git/DETAILS.md` § "T
 
 ### M3: the move
 
-- `crates/cmdr-git/` modeled on `crates/cmdr-adb/Cargo.toml` (workspace lints, `#![deny(missing_docs)]`, `testing`
-  feature, self dev-dependency). Decisions 3 and 4 (the sink and the parked value) as their own commits before the
-  `git mv`. `index-crate-isolation`: guarded crate plus surface ceilings justified in the crate's `DETAILS.md`.
-  `cargo deny check`. Every `use super::*` prelude in the moving tests replaced first; every rustdoc link to an app
-  symbol made prose.
-- Gate: `cargo check -p cmdr-git --all-targets` with no app in the graph, bindings zero-diff,
-  `pnpm check --include-slow`.
+Done. `crates/cmdr-git/` holds everything a repository can answer; the app keeps `overlay.rs` and `wiring.rs`. Four
+things it decided that the plan left open:
+
+- **The crate has NO public module.** All 12 promises arrive as root re-exports, so a host can name no path into it,
+  which is tighter than any backend crate before it. `GitPortal`'s methods are therefore reachable but unmeasured, so
+  what holds them is the item-by-item list in `crates/cmdr-git/DETAILS.md` § "The public surface is capped", not the
+  ceiling.
+- **`volume_holds_real_repos` landed app-side**, in `wiring.rs`. It reads a `Volume` capability
+  (`local_path().is_some()`), both callers are the app's two seams, and nothing in the crate ever asks it.
+- **Two statics stayed**, and the crate's `DETAILS.md` draws the line: a memo keyed by content (`snapshot_dates`) or by
+  `(root, mtime)` (`status`) is correct for any number of portals, so it may; anything owning a resource's lifecycle
+  (the `RepoCache`) may not, and became a portal field.
+- **The test files moved with their subject**, which overlaps M4's split. Leaving them app-side would have forced a
+  `pub` on `path::classify`, `Cat`, and every category lister, which is exactly the widening the ceiling exists to
+  prevent. Six cells stayed behind or were folded into an app cell: the toggle, the two watcher-invalidation ones, and
+  the walker-exposure set.
+- **`gix` left the app manifest** (nothing else used it); `notify`, `notify-debouncer-full`, and `walkdir` stayed,
+  because the local, downloads, file-viewer, and Linux-volume watchers still use them.
+
+One unrelated fix rode along: `cmdr-fs` was borrowing `tokio/macros` from whichever consumer happened to enable it, so
+`cargo check -p cmdr-git` was the first build to find it missing. It declares the feature itself now.
 
 ### M4: tests and docs
 
-- Split by what a cell asserts: portal, category, column-meta, snapshot-date, and fixture cells to the crate; routing,
-  overlay, toggle, watcher-adapter, and walker-regression cells stay app-side beside the code they exercise.
-- `crates/cmdr-git/CLAUDE.md` + `DETAILS.md` from today's `git/` docs (the hook contract section is deleted, not
-  rewritten; the performance table and the watcher path set move). `file_system/git/CLAUDE.md` shrinks to the wiring.
-  `file_system/volume/CLAUDE.md` + `DETAILS.md` (the "Git delegation hooks" section goes; § "Architecture" gains the
-  overlay seam beside the registry), `backends/DETAILS.md`, `docs/architecture.md`,
-  `apps/desktop/src/lib/file-explorer/git/CLAUDE.md` (the typed meta). Allowlist entries for moved files carry over at
-  their current numbers as a rename; anything new is a finding, not a silent bump.
+- The split by what a cell asserts largely landed with M3 (see above). What's left is a pass over both sides for cells
+  that ended up on the wrong one, and `crates/cmdr-git/src/tests.rs`, whose name no longer says what it holds.
+- The crate's `C+D.md` pair, the shrunk `file_system/git/` pair, `docs/architecture.md`, `AGENTS.md`, and the
+  `lock-poison` allowlist carry-overs landed with M3. What's left: `file_system/volume/CLAUDE.md` + `DETAILS.md` (§
+  "Architecture" gains the overlay seam beside the registry), `backends/DETAILS.md`, and
+  `apps/desktop/src/lib/file-explorer/git/CLAUDE.md` (the typed meta). Anything new in an allowlist is a finding, not a
+  silent bump.
 - Manual QA (David): browse each of the six categories, copy a file out of a branch tree to another volume, edit
   `.git/config` in place, delete a repo folder, toggle the portal off and on with a `.git/` pane open, open a linked
   worktree's `.git`.

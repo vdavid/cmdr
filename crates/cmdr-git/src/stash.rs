@@ -27,9 +27,9 @@ use std::process::{Command, Stdio};
 
 use cmdr_fs::entry::FileEntry;
 
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::RepoHandle;
+use crate::repo::RepoHandle;
 use cmdr_fs::git_meta::GitEntryMeta;
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// Lists stash entries as virtual directory entries `0`, `1`, …
 ///

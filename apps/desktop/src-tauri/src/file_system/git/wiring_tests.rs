@@ -13,11 +13,9 @@ use std::time::Duration;
 
 use crate::test_support::wait_until;
 
-use super::portal::GitPortal;
-use super::repo::RepoInfo;
-use super::state_sink::{GitStateSink, RecordingGitStateSink, no_git_state_sink};
-use super::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
 use super::wiring::GitStateChangedPayload;
+use cmdr_git::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
+use cmdr_git::{GitPortal, GitStateSink, RecordingGitStateSink, RepoInfo, no_git_state_sink};
 
 /// A portal over the real host, reporting into `sink`. What the app parks, minus
 /// the window.
@@ -90,11 +88,12 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
     cleanup(&dir);
 }
 
-/// The app's sink refreshes the open virtual listings for the repo that
-/// changed. Asserted through the selection the refresh makes rather than the
-/// `FullRefresh` itself, which needs a registered `AppHandle` to land.
+/// The app's sink refreshes every open virtual listing for the repo that
+/// changed, whichever category it is. Asserted through the selection the refresh
+/// makes rather than the `FullRefresh` itself, which needs a registered
+/// `AppHandle` to land.
 #[test]
-fn a_report_selects_the_repos_open_virtual_listings() {
+fn a_report_selects_every_open_virtual_listing_for_the_repo() {
     use crate::file_system::listing::caching_test_support::TestListing;
     use crate::file_system::volume::DEFAULT_VOLUME_ID;
 
@@ -103,17 +102,35 @@ fn a_report_selects_the_repos_open_virtual_listings() {
     fixture.commit_file("README.md", b"hello\n", "initial");
     let (_, root) = discover_repo(&dir).expect("the fixture is a repo");
 
-    let branches = root.join(".git").join("branches");
-    let _listing = TestListing::new()
-        .volume(DEFAULT_VOLUME_ID)
-        .path(branches.clone())
-        .insert("wiring-refresh-selection");
+    let dot_git = root.join(".git");
+    let branches = dot_git.join("branches");
+    let commits = dot_git.join("commits");
+    let listings = [
+        TestListing::new()
+            .volume(DEFAULT_VOLUME_ID)
+            .path(branches.clone())
+            .insert("wiring-refresh-branches"),
+        TestListing::new()
+            .volume(DEFAULT_VOLUME_ID)
+            .path(commits.clone())
+            .insert("wiring-refresh-commits"),
+    ];
 
-    let selected = super::wiring::listings_under(&super::wiring::virtual_category_prefixes(&root.join(".git")));
-    assert!(
-        selected.iter().any(|(_, path)| path == &branches),
-        "the branches listing is what a ref change re-reads: {selected:?}"
-    );
+    let selected = super::wiring::listings_under(&super::wiring::virtual_category_prefixes(&dot_git));
+    for path in [&branches, &commits] {
+        assert!(
+            selected.iter().any(|(_, listed)| listed == path),
+            "{} is what a ref change re-reads: {selected:?}",
+            path.display()
+        );
+    }
+
+    // A full refresh, ❌ never an evict: the pane keeps its rows until the
+    // re-read lands, so the user never sees an empty list flash by.
+    super::wiring::refresh_virtual_listings(&root);
+    for listing in &listings {
+        assert!(listing.is_cached(), "the listing survives the refresh");
+    }
 
     cleanup(&dir);
 }

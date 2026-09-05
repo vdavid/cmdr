@@ -9,7 +9,7 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
-use super::repo::RepoInfo;
+use crate::repo::RepoInfo;
 
 /// Reports that a repository's mutable state changed.
 ///
@@ -38,15 +38,18 @@ pub fn no_git_state_sink() -> Arc<dyn GitStateSink> {
     Arc::clone(&DETACHED)
 }
 
-#[cfg(test)]
+// ❌ Not `cfg(test)` alone: that's set only while a crate compiles its OWN test
+// target, so a consumer's test build would see the recorder vanish and have no
+// way to assert on what the watcher reported.
+#[cfg(any(test, feature = "testing"))]
 pub use recording::RecordingGitStateSink;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing"))]
 mod recording {
     use std::path::{Path, PathBuf};
     use std::sync::Mutex;
 
-    use super::{GitStateSink, RepoInfo};
+    use crate::{GitStateSink, RepoInfo};
     use cmdr_fs::ignore_poison::IgnorePoison;
 
     /// A [`GitStateSink`] that remembers what it was told, so a test can assert
@@ -84,8 +87,8 @@ mod recording {
 
 #[cfg(test)]
 mod tests {
-    use super::super::repo::RepoInfo;
-    use super::{GitStateSink, RecordingGitStateSink, no_git_state_sink};
+    use crate::repo::RepoInfo;
+    use crate::{GitStateSink, RecordingGitStateSink, no_git_state_sink};
     use std::path::Path;
 
     fn a_snapshot() -> RepoInfo {

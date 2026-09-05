@@ -9,11 +9,11 @@
 
 use std::os::unix::fs::PermissionsExt;
 
-use super::path::{Cat, VirtualGitPath, classify};
-use super::test_fixtures::{
+use crate::path::{Cat, VirtualGitPath, classify};
+use crate::test_fixtures::{
     Fixture, build_repo_with_branches, build_simple_repo, cleanup, discover_repo, git_cli, temp_dir,
 };
-use super::{log as git_log, stash, submodules, virtual_listing, worktrees};
+use crate::{log as git_log, stash, submodules, virtual_listing, worktrees};
 use cmdr_fs::git_meta::{GitCountKind, GitEntryMeta};
 
 // ── Root listing: counts and dates ──────────────────────────────────
@@ -24,7 +24,7 @@ fn root_listing_populates_size_with_item_counts() {
     let (handle, root) = discover_repo(&dir).unwrap();
     let entries = virtual_listing::list_categories(&handle, &root);
 
-    let by_name: std::collections::HashMap<&str, &crate::file_system::listing::FileEntry> =
+    let by_name: std::collections::HashMap<&str, &cmdr_fs::entry::FileEntry> =
         entries.iter().map(|e| (e.name.as_str(), e)).collect();
 
     let branches = by_name["branches"];
@@ -274,7 +274,7 @@ fn snapshot_files_borrow_commit_date() {
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
         .unwrap()
         .expect("main exists");
-    let entries = super::tree::list_tree(&handle, commit, "", &p)
+    let entries = crate::tree::list_tree(&handle, commit, "", &p)
         .unwrap()
         .expect("the snapshot root is there");
     for fe in &entries {
@@ -312,7 +312,7 @@ fn snapshot_dirs_carry_recursive_bytes() {
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
         .unwrap()
         .expect("main exists");
-    let entries = super::tree::list_tree(&handle, commit, "", &p)
+    let entries = crate::tree::list_tree(&handle, commit, "", &p)
         .unwrap()
         .expect("the snapshot root is there");
     let scripts = entries.iter().find(|e| e.name == "scripts").unwrap();

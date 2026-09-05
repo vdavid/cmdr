@@ -8,14 +8,14 @@
 //! (`portal.rs`), ❌ never a static of its own. Every caller opens a repository
 //! through a portal's cache, so one process shares one set of open handles.
 //!
-//! [`GitPortal`]: super::portal::GitPortal
+//! [`GitPortal`]: crate::portal::GitPortal
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 use serde::{Deserialize, Serialize};
 
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// Snapshot of mutable repo state for the breadcrumb chip.
 ///
@@ -187,7 +187,7 @@ pub(crate) fn count_commits_between(repo: &gix::Repository, tip: gix::ObjectId, 
 
 /// Open `gix` repositories, keyed by canonical worktree root.
 ///
-/// A VALUE, ❌ never a static: the [`GitPortal`](super::portal::GitPortal) owns
+/// A VALUE, ❌ never a static: the [`GitPortal`](crate::portal::GitPortal) owns
 /// the one the process shares, so a test (and, later, the crate) can hold its
 /// own without reaching a global.
 pub struct RepoCache {

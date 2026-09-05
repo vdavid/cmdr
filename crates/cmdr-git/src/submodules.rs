@@ -17,9 +17,9 @@ use gix::bstr::ByteSlice;
 
 use cmdr_fs::entry::FileEntry;
 
-use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
-use super::repo::RepoHandle;
+use crate::repo::RepoHandle;
 use cmdr_fs::git_meta::GitEntryMeta;
+use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 
 /// Lists submodules as virtual entries with `redirectToPath` set.
 pub fn list_submodules(handle: &RepoHandle, repo_root: &Path) -> Result<Vec<FileEntry>, FriendlyGitError> {

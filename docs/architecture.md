@@ -144,8 +144,9 @@ All under `apps/desktop/src-tauri/src/`.
   backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`) is imported by crate name at
   its call sites, and each one's app-side tests sit beside the app code they assert on. What stays app-side is what
   needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit / transfer driving
-- `file_system/git/`: Git browser: repo discovery/info/status, watcher, virtual `.git` portal wired through `Volume`
-  hooks, typed git-error classification (`FriendlyGitErrorKind`)
+- `file_system/git/`: the app's two git seams: the `.git/` listing overlay and the wiring (the parked portal, the
+  toggle, the `git-state-changed` event). The repository half is `crates/cmdr-git` hooks, typed git-error classification
+  (`FriendlyGitErrorKind`)
 - `file_system/terminal.rs`: "Open terminal here": which terminal apps Cmdr knows, how each one takes a folder, and
   whether a pane's folder has a path a shell can reach. Rationale: the module's own docs; the sources behind the table:
   `docs/notes/terminal-launch-sources-2026-09-04.md`
@@ -269,10 +270,10 @@ All under `apps/desktop/src-tauri/src/`.
 ## Workspace crates
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-`cmdr-webdav`, `cmdr-adb`, and `cmdr-mtp` carry no `tauri` dependency and no reach into the app; `index-crate-isolation`
-enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`, `cmdr-archive`,
-`cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, and `cmdr-mtp` at the numbers their audits landed on. The two dev CLIs and the
-vendored fork are ordinary members.
+`cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, and `cmdr-git` carry no `tauri` dependency and no reach into the app;
+`index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`,
+`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-mtp`, and `cmdr-git` at the numbers their audits landed
+on. The two dev CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -320,6 +321,13 @@ vendored fork are ordinary members.
   wiring, ptpcamerad) is `apps/desktop/src-tauri/src/mtp/`. Where the boundary runs and which side a test lives on:
   `crates/cmdr-mtp/DETAILS.md`; the wire guardrails that keep a dropped future from wedging a phone:
   `crates/cmdr-mtp/CLAUDE.md` and `crates/cmdr-mtp/src/connection/CLAUDE.md`
+- `crates/cmdr-git/`: everything Cmdr knows about a git repository. Repo discovery and info for the breadcrumb chip, the
+  cached per-entry status walk behind the status column, the per-repo `.git/*` watcher (reporting a typed snapshot
+  through a `GitStateSink`, never to a window), and `GitPortalVolume`, the read-only `Volume` that turns `.git`'s
+  branches, tags, commits, stash, worktrees, and submodules into browsable trees a copy can stream out of. The app-side
+  half (the route, the `.git/` listing overlay, the toggle, the `git-state-changed` event) is
+  `apps/desktop/src-tauri/src/file_system/git/`. Where the boundary runs, the capped surface, and every decision:
+  `crates/cmdr-git/DETAILS.md`; guardrails: `crates/cmdr-git/CLAUDE.md`
 - `crates/cmdr-smb/`: everything Cmdr says to an SMB server. `SmbVolume` over a live smb2 session, with its change
   watcher, reconnect state machine, and refcounted scan-connection pool, plus the protocol layer under it (address
   building, `smb2::Error` classification, the share-listing vocabulary). The second backend in its own crate; what

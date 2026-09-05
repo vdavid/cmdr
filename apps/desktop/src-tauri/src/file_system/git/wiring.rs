@@ -20,11 +20,9 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
-use super::path::Cat;
-use super::portal::GitPortal;
-use super::repo::RepoInfo;
-use super::state_sink::{GitStateSink, no_git_state_sink};
-use crate::file_system::volume::Volume;
+use cmdr_fs::volume::Volume;
+pub(crate) use cmdr_git::virtual_category_prefixes;
+use cmdr_git::{GitPortal, GitStateSink, RepoInfo, no_git_state_sink};
 
 /// Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
 /// `RepoInfo` snapshot. The `…Payload` suffix wouldn't kebab-case to the existing
@@ -134,12 +132,6 @@ pub fn volume_holds_real_repos(volume: &dyn Volume) -> bool {
 pub(crate) fn refresh_virtual_listings(repo_root: &Path) {
     let dot_git = repo_root.join(".git");
     refresh_local_listings_under(&virtual_category_prefixes(&dot_git));
-}
-
-/// Builds prefixes for every virtual subtree under `<dot_git>/`. Any listing
-/// path starting with any prefix is a virtual portal listing.
-pub(crate) fn virtual_category_prefixes(dot_git: &Path) -> Vec<PathBuf> {
-    Cat::ALL.iter().map(|c| dot_git.join(c.as_segment())).collect()
 }
 
 /// Iterates the listing cache and emits `FullRefresh` for any listing whose

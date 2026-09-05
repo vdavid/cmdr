@@ -21,7 +21,7 @@
 
 use std::path::{Component, Path, PathBuf};
 
-use super::repo::{RepoCache, RepoHandle};
+use crate::repo::{RepoCache, RepoHandle};
 
 /// Top-level categories under `.git/`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -117,10 +117,20 @@ pub fn portal_route(path: &Path) -> Option<PathBuf> {
     Some(worktree_root)
 }
 
+/// Every path under `<dot_git>/` the portal serves: the six category roots.
+///
+/// A listing path that starts with one of these is a virtual portal listing, so
+/// a host re-reading after a ref change knows which of its open listings the
+/// change can have moved. ❗ It answers what to RE-READ, ❌ never what a mutation
+/// may touch.
+pub fn virtual_category_prefixes(dot_git: &Path) -> Vec<PathBuf> {
+    Cat::ALL.iter().map(|cat| dot_git.join(cat.as_segment())).collect()
+}
+
 /// [`classify_in`] against a cache of its own.
 ///
 /// Test-only: production classification runs inside a
-/// [`GitPortalVolume`](super::volume::GitPortalVolume), which holds the portal
+/// [`GitPortalVolume`](crate::volume::GitPortalVolume), which holds the portal
 /// whose cache it uses. A fresh cache per call costs one repository open, which
 /// is what keeps this convenience from being a global in disguise.
 #[cfg(test)]
@@ -136,7 +146,7 @@ pub(crate) fn classify(path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathB
 /// entry rather than a virtual category. Errors are surfaced by the operation
 /// that follows, never here: this is a router.
 ///
-/// A [`GitPortalVolume`](super::volume::GitPortalVolume) passes its own
+/// A [`GitPortalVolume`](crate::volume::GitPortalVolume) passes its own
 /// portal's cache rather than reaching the app's parked one.
 pub fn classify_in(repos: &RepoCache, path: &Path) -> Option<(VirtualGitPath, RepoHandle, PathBuf)> {
     let (worktree_root, after_dot_git) = split_at_dot_git(path)?;

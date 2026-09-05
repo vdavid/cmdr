@@ -12,13 +12,14 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use cmdr_fs::volume::friendly_error::git::FriendlyGitError;
 use cmdr_fs::volume::host::VolumeHost;
 
-use super::repo::{RepoCache, RepoInfo};
-use super::state_sink::GitStateSink;
-use super::virtual_listing;
-use super::volume::GitPortalVolume;
-use super::watcher::GitWatcherRegistry;
+use crate::repo::{RepoCache, RepoHandle, RepoInfo};
+use crate::state_sink::GitStateSink;
+use crate::virtual_listing;
+use crate::volume::GitPortalVolume;
+use crate::watcher::GitWatcherRegistry;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::Volume;
 
@@ -57,7 +58,7 @@ impl GitPortal {
 
     /// Opens (or reuses) the repository containing `path`, answering its handle
     /// and canonical worktree root.
-    pub fn discover(&self, path: &Path) -> Result<(super::repo::RepoHandle, PathBuf), super::FriendlyGitError> {
+    pub fn discover(&self, path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
         self.repos.discover(path)
     }
 
@@ -98,7 +99,7 @@ impl GitPortal {
     /// Adds a subscriber for the repository at `repo_root`, starting its `.git/*`
     /// watcher on the first one. Answers the current [`RepoInfo`] synchronously,
     /// so a subscriber never sees an empty interim state.
-    pub fn subscribe_state(&self, repo_root: &Path) -> Result<RepoInfo, super::FriendlyGitError> {
+    pub fn subscribe_state(&self, repo_root: &Path) -> Result<RepoInfo, FriendlyGitError> {
         self.watchers
             .subscribe(Arc::clone(&self.repos), Arc::clone(&self.sink), repo_root)
     }
@@ -109,8 +110,13 @@ impl GitPortal {
         self.watchers.unsubscribe(&self.repos, repo_root);
     }
 
-    /// For tests: how many repositories currently have a watcher.
-    #[cfg(test)]
+    /// How many repositories currently have a `.git/*` watcher running.
+    ///
+    /// A test door, gated so a consumer's suites can assert on it too: the
+    /// host's toggle cells check that a `.git/` pane drives a refresh without
+    /// any repository being subscribed, which is only a premise worth stating if
+    /// it can be read.
+    #[cfg(any(test, feature = "testing"))]
     pub fn watched_repo_count(&self) -> usize {
         self.watchers.active_repo_count()
     }

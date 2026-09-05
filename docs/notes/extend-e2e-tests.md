@@ -63,8 +63,8 @@ the shared test suite isn't set up to do cleanly.
 
 ### git-portal.spec.ts
 
-**Source surface**: `src-tauri/src/file_system/git/{virtual_listing,path,tree}.rs`. Frontend pane orchestration is
-generic; the portal lives entirely in the volume hooks.
+**Source surface**: `crates/cmdr-git/src/{virtual_listing,path,tree}.rs`. Frontend pane orchestration is generic; the
+portal lives entirely in the volume hooks.
 
 **Behaviors covered (before)**: 2 active tests (portal root entries; branches/main tree) + 2 skipped (cross-volume copy;
 portal toggle), both documented.

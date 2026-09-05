@@ -15,9 +15,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Instant;
 
-use super::repo::repo_info;
-use super::status::list_status;
-use super::test_fixtures::discover_repo;
+use crate::repo::repo_info;
+use crate::status::list_status;
+use crate::test_fixtures::discover_repo;
 use cmdr_fs::testing::TestDir;
 
 const FILE_COUNT: usize = 50_000;
@@ -119,7 +119,7 @@ fn bench_50k_files_discover_and_repo_info_under_budget() {
 #[test]
 #[ignore = "Builds a 50k-file fixture – opt-in via `cargo test -- --ignored`"]
 fn bench_50k_files_list_status_under_budget() {
-    use super::status::invalidate_status_cache;
+    use crate::status::invalidate_status_cache;
     let dir = fixture_dir();
     ensure_fixture(&dir);
 
@@ -188,7 +188,7 @@ fn build_branches_fixture(branches: usize, ahead: usize) -> TestDir {
 #[test]
 #[ignore = "Slow: builds a 100-branch fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_list_branches_with_ahead_behind() {
-    use super::virtual_listing;
+    use crate::virtual_listing;
     let dir = build_branches_fixture(100, 3);
     let (handle, root) = discover_repo(&dir).expect("discover");
 
@@ -246,9 +246,9 @@ fn build_deep_history_fixture(commits: usize, top_level_files: usize, name: &str
 #[test]
 #[ignore = "Slow: builds a 5000-commit fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_per_file_dates_5k_commits_under_budget() {
-    use super::path::Cat;
-    use super::snapshot_dates;
-    use super::virtual_listing;
+    use crate::path::Cat;
+    use crate::snapshot_dates;
+    use crate::virtual_listing;
     let dir = build_deep_history_fixture(5_000, 100, "5k");
     let (handle, _) = discover_repo(&dir).expect("discover");
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
@@ -294,9 +294,9 @@ fn bench_per_file_dates_5k_commits_under_budget() {
 #[test]
 #[ignore = "Very slow: builds a 50k-commit fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_per_file_dates_50k_commits_under_budget() {
-    use super::path::Cat;
-    use super::snapshot_dates;
-    use super::virtual_listing;
+    use crate::path::Cat;
+    use crate::snapshot_dates;
+    use crate::virtual_listing;
     let dir = build_deep_history_fixture(50_000, 100, "50k");
     let (handle, _) = discover_repo(&dir).expect("discover");
     let commit = virtual_listing::resolve_ref_commit(&handle, Cat::Branches, "main")
@@ -324,7 +324,7 @@ fn bench_per_file_dates_50k_commits_under_budget() {
 #[test]
 #[ignore = "Slow: builds a 200-commit fixture; opt-in via `cargo test -- --ignored`"]
 fn bench_list_commits_files_changed() {
-    use super::log;
+    use crate::log;
     let dir = TestDir::new("bench_commits");
     run(&dir, &["init", "-q", "-b", "main"]);
     run(&dir, &["config", "user.name", "Bench"]);
