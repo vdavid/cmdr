@@ -990,9 +990,10 @@ pub(super) fn publish_replacement(listing_id: &str, entries: Vec<FileEntry>, ove
     }
 
     crate::file_system::listing::operations::update_listing_entries(listing_id, sorted);
-    if let Ok(mut cache) = LISTING_CACHE.write()
-        && let Some(listing) = cache.get_mut(listing_id)
-    {
+    // `write_ignore_poison`: skipping this on poison would leave a `.git/` listing
+    // recorded as undecorated while it holds six contributed rows, and the
+    // fresh-listing oracle would then hand them to a delete walker.
+    if let Some(listing) = LISTING_CACHE.write_ignore_poison().get_mut(listing_id) {
         listing.set_overlay_rows(overlay_rows);
     }
     enqueue_diff(listing_id, changes);

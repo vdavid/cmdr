@@ -5,6 +5,7 @@
 //! and updates reactively from `git-state-changed` events. Debounce is 200 ms
 //! per repo, matching the existing listing watcher in `file_system/listing/`.
 
+#[cfg(test)]
 use crate::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -239,26 +240,42 @@ pub(crate) fn listings_under(prefixes: &[PathBuf]) -> Vec<(String, PathBuf)> {
     out
 }
 
-/// Refreshes every cached `.git/{branches,tags,commits,stash,worktrees,submodules}/...`
-/// listing across all currently-watched repos. Called when the user flips
-/// the virtual-portal setting so already-open panes pick up the change
-/// without a manual reload.
+/// Refreshes every open listing the portal toggle can change: a repo's `.git/`
+/// itself (whose rows gain or lose the six categories) and anything under it.
+/// Called when the user flips the setting, so panes already showing one pick the
+/// change up without a manual reload.
 ///
-/// We pull the repo set from the watcher registry: anything we've subscribed
-/// to is by definition a worktree the user is looking at. Repos with no
-/// active subscription have no open listings to invalidate.
+/// **Asks the LISTING CACHE which listings those are, ❌ never the watcher
+/// registry.** A pane standing in `.git/` doesn't imply a `subscribe_git_state`
+/// for that repo, so deriving the set from subscribed repos left the pane the
+/// user was looking at showing six rows the portal no longer serves (caught by
+/// `git-portal.spec.ts`, 2026-09-05).
+///
+/// Over-selecting here is a re-read and nothing more, which is why a path-shape
+/// check is the right instrument: ❗ it decides what to RE-READ, not what a
+/// mutation may touch. That distinction is exactly what the deleted
+/// `local_posix` guards got wrong.
 pub fn refresh_all_virtual_listings_after_toggle() {
-    let registry = get_watcher_registry();
-    let roots: Vec<PathBuf> = registry.inner.lock_ignore_poison().keys().cloned().collect();
-    let mut prefixes = Vec::new();
-    for root in roots {
-        let dot_git = root.join(".git");
-        prefixes.extend(virtual_category_prefixes(&dot_git));
-        // Also catch `.git` itself: if a pane sits at `.git/`, the toggle
-        // changes its rendered children (real + virtual vs. real-only).
-        prefixes.push(dot_git);
+    use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+
+    for (volume_id, path) in listings_inside_a_dot_git() {
+        notify_directory_changed(&volume_id, &path, DirectoryChange::FullRefresh);
     }
-    refresh_local_listings_under(&prefixes);
+}
+
+/// Every cached listing whose path IS a `.git` directory or sits inside one.
+pub(crate) fn listings_inside_a_dot_git() -> Vec<(String, PathBuf)> {
+    use crate::file_system::listing::caching::{get_listing_path, snapshot_listings};
+    use std::path::Component;
+
+    snapshot_listings()
+        .into_iter()
+        .filter_map(|entry| get_listing_path(&entry.listing_id).map(|path| (entry.volume_id, path)))
+        .filter(|(_, path)| {
+            path.components()
+                .any(|component| matches!(component, Component::Normal(segment) if segment == ".git"))
+        })
+        .collect()
 }
 
 /// Returns the gitdir for a worktree (handles gitlink files).

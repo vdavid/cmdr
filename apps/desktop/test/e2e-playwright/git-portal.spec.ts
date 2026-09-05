@@ -32,7 +32,7 @@ import path from 'path'
 import { execSync } from 'child_process'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { test, expect } from './fixtures.js'
-import { ensureAppReady, getFixtureRoot, fileExistsInPane, pollUntil } from './helpers.js'
+import { dismissAllToasts, ensureAppReady, getFixtureRoot, fileExistsInPane, pollUntil } from './helpers.js'
 import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
 
 /** Matches the `PageLike` alias used inside `helpers.ts`. */
@@ -183,6 +183,7 @@ test.describe('Git portal', () => {
     expect(gone).toContain('OK')
     expect(fs.existsSync(path.join(repoPath(), '.git'))).toBe(false)
     expect(fs.existsSync(repoPath())).toBe(false)
+    await dismissAllToasts(tauriPage)
   })
 
   test('turning the portal off with a .git pane open drops the virtual rows and keeps the real ones', async ({

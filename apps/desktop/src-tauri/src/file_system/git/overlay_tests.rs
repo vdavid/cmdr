@@ -87,6 +87,48 @@ fn only_the_dot_git_directory_itself_is_claimed() {
     }
 }
 
+/// The toggle refreshes the pane the user is actually looking at, which means
+/// asking the LISTING CACHE rather than the watcher registry: standing in
+/// `.git/` doesn't imply a `subscribe_git_state` for that repo, and deriving the
+/// set from subscribed repos left the pane showing six rows the portal no longer
+/// served.
+#[test]
+fn the_toggle_refresh_reaches_a_dot_git_pane_with_no_repo_subscription() {
+    let dir = repo("toggle_targets");
+    let dot_git = std::fs::canonicalize(&dir).expect("canonical").join(".git");
+
+    // No `subscribe_git_state` anywhere: just two open listings.
+    assert_eq!(
+        super::watcher::get_watcher_registry().active_repo_count(),
+        0,
+        "this cell's premise is that nothing is subscribed"
+    );
+    let at_dot_git = TestListing::new()
+        .volume("local-external-1234")
+        .path(dot_git.clone())
+        .insert("git-toggle-dot-git");
+    let inside = TestListing::new()
+        .volume("root")
+        .path(dot_git.join("branches"))
+        .insert("git-toggle-inside");
+    let elsewhere = TestListing::new().volume("root").path(dir.join("src")).insert("git-toggle-elsewhere");
+
+    let targeted = super::watcher::listings_inside_a_dot_git();
+    let paths: Vec<&PathBuf> = targeted.iter().map(|(_, path)| path).collect();
+
+    assert!(paths.contains(&&dot_git), "the `.git/` pane itself: {paths:?}");
+    assert!(paths.contains(&&dot_git.join("branches")), "and one inside it: {paths:?}");
+    assert!(
+        !paths.iter().any(|p| p.ends_with("src")),
+        "a listing outside any `.git` is left alone: {paths:?}"
+    );
+
+    drop(at_dot_git);
+    drop(inside);
+    drop(elsewhere);
+    cleanup(&dir);
+}
+
 /// The watcher's post-change refresh reaches a portal listing on ANY volume, not
 /// only the boot one. A repo lives just as happily on an external disk, which
 /// gets its own volume id; filtering to the default volume left a portal pane
