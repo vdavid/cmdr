@@ -1,9 +1,13 @@
 # One review for one job, not one dialog per batch
 
-**Problem**: Ask Cmdr's bulk rename asks the user to approve the same job several times. A 500-file rename opens five
-review dialogs at a 60,000-token budget and twenty at the default, because the model can only emit about 101 plan rows
-per reply and each reply is staged and reviewed on its own. The user is asked to make one decision, repeatedly, on
-exactly the operation where careful review matters most.
+**Status**: shipped 2026-09-06, option (a). What follows describes the design as built; option (c) below is the only
+part still open.
+
+**Problem**: Ask Cmdr's bulk rename asked the user to approve the same job several times. A 500-file rename opened five
+review dialogs at a 60,000-token budget and 22 at the default, because the model can only emit about 101 plan rows per
+reply and each reply was staged and reviewed on its own. Worse, each new dialog CANCELLED the plan the previous one was
+showing, so a half-answered review could vanish under the cursor mid-turn. The user was asked to make one decision,
+repeatedly, on exactly the operation where careful review matters most.
 
 **The fix is presentational**: accumulate a job's proposals into one review, apply them as the operations they already
 are, and leave every safety property exactly where it is. ❌ This is not per-rule approval, which David declined on
@@ -23,17 +27,25 @@ The cap is the model's REPLY, not the context window. `files_per_batch` takes th
 what the completion slot can return:
 
 - `reply_fits = (AGENT_MAX_OUTPUT_TOKENS − REASONING_RESERVE_TOKENS) / PLAN_ROW_TOKENS_PER_FILE = (12,000 − 6,000) / 59 = 101`
-- `files_per_batch(16,000) = 25`; `files_per_batch(60,000) = 101`, where the reply is the binding half. Its doc comment:
-  a 60,000-token budget "holds 145 files comfortably in the prompt and can only get about 101 of them back".
+- `prompt_fits = (budget × 90% − FIXED_PROMPT_OVERHEAD_TOKENS) / RENAME_TOKENS_PER_FILE`, with the overhead at 6,263 (19
+  tool declarations plus a 1,994-token system prompt) and 349 tokens per file.
+- `files_per_batch(16,000) = 23` (the PROMPT binds); `files_per_batch(60,000) = 101` (the REPLY binds, against 136 the
+  prompt would hold). 16,000 is `DEFAULT_PROMPT_TOKEN_BUDGET`, so 500 files is 22 batches at the default and five at
+  60,000.
+
+⚠️ **Every one of these numbers moves when a tool joins the view**, and the batch count with it, so re-derive rather
+than quoting this section. `agent/chat/budget.rs` owns them and `agent/chat/context/cost_tests.rs` pins them against the
+shipped assets (verified 2026-09-06).
 
 Overshooting does not degrade gracefully: the reply is cut off mid-JSON and the whole plan is lost. So batching stays,
 and this spec changes only where the user meets it.
 
 ## What changes
 
-1. **A review holds N proposals, not one.** `openRenameReview` (`ask-cmdr-rename-review.svelte.ts`) currently calls
-   `discardRenameReview()` and replaces the review with the incoming proposal, so a second batch destroys the first. It
-   grows a job-scoped form: rows accumulate, and the dialog renders them as one list.
+1. **A review holds N proposals, not one.** `openRenameReview` (`ask-cmdr-rename-review.svelte.ts`) called
+   `discardRenameReview()` and replaced the review with the incoming proposal, so a second batch destroyed the first. It
+   became a job-scoped form: `stageRenameProposal` collects, `openStagedRenameReview` shows, rows accumulate, and the
+   dialog renders them as one list.
 2. **Apply issues one operation per proposal.** `applyRenameReview` calls `applyBulkRename(proposalId, allowedRowIds)`
    once today; it becomes one call per proposal that still has allowed rows, in order. Each returns its own operation
    id, which is what the thread already expects.
@@ -41,10 +53,10 @@ and this spec changes only where the user meets it.
    `jobOperationIds` / `jobFileCount`, and `undoRenameLine` already takes a `'batch' | 'job'` scope. Feeding it N ids
    from one apply is the same shape it already handles from N sequential applies. ⚠️ Its rule that only the NEWEST line
    carries the job-wide undo has to keep holding when the ids arrive together rather than one at a time.
-4. **`rememberDeniedNames` loses its cross-batch job.** It exists because batches are sequential today, so a later batch
-   can learn from names the user rejected in an earlier one. Once the user decides once, at the end, there is no later
-   batch to teach. Keep it for the within-review revise case and say plainly in its doc comment that the sequential
-   feedback loop is gone, or the next reader will think it broke.
+4. **`rememberDeniedNames` loses its cross-batch job.** It existed because batches were sequential, so a later batch
+   could learn from names the user rejected in an earlier one. Once the user decides once, at the end, there is no later
+   batch to teach. It stays for the user's NEXT message ("not like that, try dates instead"), and its doc comment says
+   so, or the next reader will think it broke.
 
 ## What does not change, and why that is the point
 
@@ -77,7 +89,9 @@ Two things the July plan listed as blockers are already resolved in shipped code
 - **(c) Open immediately and grow.** Rows appear as batches land. Best feedback, and it makes preflight a moving target
   while the user is already reading.
 
-**Recommend (a)**, with (c) as a follow-up once the shape is proven. ❌ Not (b): a prediction that can silently fail to
+**David chose (a)**, 2026-09-05, and that is what shipped: `proposalReady` stages, and `done` / `failed` / the user's
+own Stop each open one review over everything staged. A `discarded` thread hands its plans back instead — there is no
+conversation left to review against. (c) remains the follow-up. ❌ Not (b): a prediction that can silently fail to
 resolve is worse than a wait.
 
 ## Size
@@ -90,10 +104,15 @@ per-rule alternative expensive.
 - `BulkRenameReviewDialog.svelte`: render the accumulated list, and show which folder a row belongs to once a job can
   span parents.
 - `ask-cmdr-stream.svelte.ts`: hold `proposalReady` events until the turn ends, per (a).
-- No backend change is expected. Confirm that before starting: if apply-time preflight assumes one proposal per review
-  anywhere in `propose/rename/preflight.rs`, that assumption moves.
+- No backend change was needed, as expected: `preflight`, `AcceptedRenamePreflights`, `apply_bulk_rename`, and
+  `cancel_bulk_rename_proposal` are all keyed by proposal id and hold nothing review-wide. `store.rs`'s module header
+  now says so, so nobody widens one of them to "the review".
 
 ## Tests
+
+All six landed; the first was seen red before the fix. TS titles read as prose, so the names below map to
+`ask-cmdr-rename-review.test.ts`, `ask-cmdr-rename-undo.test.ts`, `BulkRenameReviewDialog.a11y.test.ts`, and
+`propose/rename/tests/store.rs`.
 
 - **`a_second_batch_does_not_destroy_the_first_review`** — the regression that motivates the whole spec. **Test-first.**
 - **`applying_a_multi_batch_review_starts_one_operation_per_proposal`**, and the thread line carries every id.

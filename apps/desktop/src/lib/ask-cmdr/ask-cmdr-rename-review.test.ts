@@ -208,7 +208,7 @@ describe('one review for one job', () => {
   })
 })
 
-describe('carrying denials into the next batch', () => {
+describe('carrying denials into the next message', () => {
   async function openTwoRowReview(): Promise<void> {
     sendMessage('rename these')
     stageBatch('proposal-1', [

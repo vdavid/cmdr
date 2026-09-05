@@ -92,8 +92,8 @@ interface AskCmdrState {
    * `null` means no turn has been measured, which the gauge shows as nothing at all. */
   contextUsage: ContextUsage | null
   /** Destination names the user turned down in the last review, newest first, waiting to ride
-   * the NEXT send so the following batch doesn't propose the same style again. Cleared once
-   * sent: they're feedback on one decision, not a permanent denylist. */
+   * the NEXT send so a retry doesn't propose the same style again. Cleared once sent: they're
+   * feedback on one decision, not a permanent denylist. */
   deniedNames: string[]
 }
 

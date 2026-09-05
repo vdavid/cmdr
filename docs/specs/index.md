@@ -105,13 +105,14 @@ that lives beside the code, and git holds the history.
       recorded nowhere, because a 2-second-granularity destination (FAT32, a network mount) would otherwise drift every
       file and strand a whole copy on the stick.
 
-- [ ] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** A 500-file bulk
-      rename opens five review dialogs at a 60,000-token budget and twenty at the default, because the model can emit
-      only ~101 plan rows per reply and each reply is staged and reviewed on its own. The fix is presentational:
-      accumulate a job's proposals into one review, apply them as the operations they already are, and leave every
-      guardrail per row. ❌ Not the per-rule approval question in `open-decisions.md`, which was answered no. Depends on
-      two properties shipped code already has (a proposal never expires, and the dialog renders every row without
-      paging), so what remains is frontend and store-shape work with one design choice: open the review on turn end.
+- [x] 2026-08-28 `rename-review-grouping.md` - **One review for one job, not one dialog per batch.** SHIPPED 2026-09-06.
+      A 500-file bulk rename opened five review dialogs at a 60,000-token budget and 22 at the default, because the
+      model can emit only ~101 plan rows per reply and each reply was staged and reviewed on its own, cancelling the
+      plan the user was reading. `proposalReady` now stages a plan, the turn's end opens one review over all of them,
+      and Apply starts one operation per batch in staging order. Presentational only: preflight, revise, apply, and
+      cancel stay keyed by proposal id, so every guardrail stays per row, and no backend change was needed. ❌ Not the
+      per-rule approval question in `open-decisions.md`, which was answered no. Follow-up still open: option (c),
+      opening the review immediately and growing it as batches land.
 - [ ] 2026-08-21 `open-decisions.md` - **Questions that gate work but aren't work.** One call left, in PISS form:
       whether a file that exhausts its retries ends the whole operation or the batch carries on and reports what it
       missed. Six others were answered on 2026-09-05 (four drafts of user-facing copy ratified as shipped, per-rule

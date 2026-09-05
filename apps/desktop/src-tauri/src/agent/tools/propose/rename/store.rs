@@ -23,6 +23,11 @@
 //! The rows are immutable to the AGENT: [`revise_row`] is the one mutation, it belongs to the
 //! user, and it invalidates the accepted preflight so the new name can't reach the filesystem
 //! unchecked (see [`super::revise`]).
+//!
+//! ⚠️ **One review is not one proposal.** A job too big for one model reply arrives as a run of
+//! plans, and the dialog shows them as one list (`apps/desktop/src/lib/ask-cmdr/DETAILS.md` §
+//! One review for one job). Everything here stays per proposal — preflight, acceptance, apply,
+//! and cancel are keyed by proposal id — so don't widen any of it to "the review".
 
 use std::collections::HashMap;
 use std::path::Path;

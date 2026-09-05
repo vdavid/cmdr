@@ -291,6 +291,38 @@ Opening the rail grows the MAIN window by the rail's width instead of squeezing 
   rail mounts on open); `markRailFocused` on composer focus; Escape → `returnFocusToPane`
   (`.dual-pane-explorer.focus()`).
 
+## One review for one job
+
+A rename too big for one model reply arrives as a run of staged plans: `budget::files_per_batch` caps a batch at about
+101 rows, because the reply, not the context window, is the binding half, and overshooting cuts the plan off mid-JSON.
+Each batch used to open its own dialog, and each `openRenameReview` cancelled the plan the previous one was showing, so
+a user answering a 500-file job was asked the same question several times and could watch a half-answered plan vanish.
+
+Now `proposalReady` STAGES a plan (`stageRenameProposal`) and the end of the turn opens one review over everything
+staged (`openStagedRenameReview`). Every way a turn can end flushes: `done`, `failed`, and the user's own Stop, since
+the plans exist on the spine either way and a staged plan nobody sees is one nobody can answer. A `discarded` thread is
+the exception — there is no conversation left to review against, so its plans are handed back with
+`cancelBulkRenameProposal`.
+
+The cost of the turn boundary, taken deliberately: nothing shows while the model works through the batches. Opening
+immediately and growing the list was the alternative, and it makes preflight a moving target under a user who is already
+reading.
+
+**The grouping is presentational; the proposal stays the unit.** `BulkRenameReview` is a list of
+`BulkRenameReviewProposal`s, each with its own rows, `preflighting`, `expired`, and `requestVersion`, because preflight,
+revise, apply, and cancel are all keyed by proposal id on the backend (`propose/rename/store.rs`). So every guardrail
+stays per row: the evidence check, pane-scoped source validation, the fingerprinted preflight, and the fingerprint
+recheck at write time. Apply loops over the batches in STAGING order, one `apply_bulk_rename` each, and stops at the
+first refusal, leaving the rest revalidated and still answerable. A batch the user turned down whole is consumed with
+the rest when Apply finishes: they answered it.
+
+A rename group binds one parent folder (`start_bulk_rename` refuses a row that would change it), so a job across folders
+is several batches. The dialog puts a folder heading above each run of rows for exactly that case, and shows none at all
+when every row shares a folder.
+
+Thumbnail tokens are minted per ROW rather than per proposal, so a later batch doesn't re-mint the rows already on
+screen, and a row that leaves the review owes its token back right then (the token map has no window-close choke point).
+
 ## Rename review apply
 
 `BulkRenameReviewDialog` owns the user's allow/deny decisions. Its Apply action sends only the staged proposal id and
@@ -319,9 +351,10 @@ Apply hands back a queued operation id, and `noteRenameApplied` turns it into a 
 files." plus an Undo. This is the only safety net that fires after the names are real, which is the only moment the user
 can tell a name is wrong.
 
-A line per batch, so a run of several reads as a run. Only the newest still-undoable line carries the job-wide "Undo all
-N batches", and its `jobOperationIds` are built from the run's own lines — never from a previous line's set, which
-already includes its predecessors (that bug shipped duplicate ids to the backend and a test caught it).
+A line per batch, so a run of several reads as a run. One Apply over a multi-batch review produces that run in one go,
+which is the same shape as a run built one turn at a time. Only the newest still-undoable line carries the job-wide
+"Undo all N batches", and its `jobOperationIds` are built from the run's own lines — never from a previous line's set,
+which already includes its predecessors (that bug shipped duplicate ids to the backend and a test caught it).
 
 **The id order is the data-safety part.** `undoOperations` receives them in APPLY order and the backend reverses
 newest-batch-first (`src-tauri/src/operation_log/rollback/order.rs`): a later batch can have renamed a file into a name
@@ -461,9 +494,6 @@ whether THAT turn set anything aside isn't persisted, and inventing a count woul
 it, so no thread inherits another's fill.
 
 ## The E2E fake-LLM path
-
-The stream also carries a display-only `proposalReady` rename-plan snapshot. The review dialog owns it in the next
-feature slice; until then the rail deliberately does not treat the event as approval or a filesystem action.
 
 The app has no real AI provider under E2E, so `commands/agent/chat.rs::resolve_agent_llm` routes the send through a
 scripted `FakeAgentLlm` when `CMDR_E2E_ASK_CMDR_FAKE=1` (set for the whole E2E run by the
