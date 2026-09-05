@@ -50,6 +50,13 @@ rm -rf /tmp/cmdr-smb-leases && ./stop.sh   # clear all leases, then down
 (cd ../../../../scripts/check && go run ./stack-lease status smb)
 ```
 
+### The mount tests hang but the containers are fine
+
+When `smb_integration_mount_guest_no_dialog` / `smb_integration_mount_non_ascii_share` time out while every container
+reports healthy and `mount_smbfs` mounts the same share instantly, the fixtures are innocent and restarting them fixes
+nothing: suspect a wedged macOS `NetAuthSysAgent` instead. Diagnosis and the one-line fix:
+`apps/desktop/src-tauri/src/network/DETAILS.md` § Gotchas.
+
 `contention-check.sh` in this directory is the repeatable acceptance test for the whole mechanism: a dummy holder must
 survive another session's full acquire→run→release cycle, and the stack must down only at zero holders.
 
