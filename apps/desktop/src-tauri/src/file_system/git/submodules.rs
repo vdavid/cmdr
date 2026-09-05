@@ -15,7 +15,7 @@ use std::path::Path;
 
 use gix::bstr::ByteSlice;
 
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
 
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;

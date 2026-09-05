@@ -19,8 +19,8 @@ use super::state_sink::GitStateSink;
 use super::virtual_listing;
 use super::volume::GitPortalVolume;
 use super::watcher::GitWatcherRegistry;
-use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::Volume;
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::Volume;
 
 /// Everything the virtual `.git` portal needs to answer, in one value.
 pub struct GitPortal {

@@ -12,7 +12,7 @@ use std::path::Path;
 
 use gix::object::tree::EntryKind;
 
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
 
 use super::Lookup;
 use super::column_meta::recursive_tree_size;

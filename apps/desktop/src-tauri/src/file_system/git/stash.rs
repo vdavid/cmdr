@@ -25,7 +25,7 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
 
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};
 use super::repo::RepoHandle;

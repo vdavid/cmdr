@@ -83,8 +83,8 @@ pub use repo::{RepoInfo, repo_info};
 #[allow(unused_imports, reason = "Public API re-exports consumed by IPC commands")]
 pub use status::{EntryStatus, EntryStatusCode, list_status};
 
-use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{VolumeError, VolumeReadStream};
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::{VolumeError, VolumeReadStream};
 
 /// The answer of a portal lookup that can legitimately find nothing.
 ///

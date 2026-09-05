@@ -9,7 +9,7 @@
 //! reports it; wording it and refreshing panes is the host's, through the sink.
 
 #[cfg(test)]
-use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::ignore_poison::IgnorePoison;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};

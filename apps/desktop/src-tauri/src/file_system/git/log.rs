@@ -58,7 +58,7 @@ use gix::ObjectId;
 use gix::revision::walk::Sorting;
 use gix::traverse::commit::simple::CommitTimeOrder;
 
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
 
 use super::column_meta::files_changed_count;
 use super::friendly::{FriendlyGitError, FriendlyGitErrorKind};

@@ -49,40 +49,6 @@ pub enum EntryStatusCode {
     Conflicted,
 }
 
-impl EntryStatusCode {
-    /// One-glyph render for the Full-mode status column.
-    #[allow(dead_code, reason = "Public helper used by frontend tests and future Rust callers")]
-    pub fn glyph(&self) -> &'static str {
-        match self {
-            EntryStatusCode::Modified => "M",
-            EntryStatusCode::Added => "A",
-            EntryStatusCode::Deleted => "D",
-            EntryStatusCode::Renamed => "R",
-            EntryStatusCode::Copied => "C",
-            EntryStatusCode::TypeChange => "T",
-            EntryStatusCode::Untracked => "?",
-            EntryStatusCode::Ignored => "!",
-            EntryStatusCode::Conflicted => "U",
-        }
-    }
-
-    /// Long form, for `aria-label` / tooltip.
-    #[allow(dead_code, reason = "Public helper used by frontend tests and future Rust callers")]
-    pub fn label(&self) -> &'static str {
-        match self {
-            EntryStatusCode::Modified => "Modified",
-            EntryStatusCode::Added => "Added",
-            EntryStatusCode::Deleted => "Deleted",
-            EntryStatusCode::Renamed => "Renamed",
-            EntryStatusCode::Copied => "Copied",
-            EntryStatusCode::TypeChange => "Type changed",
-            EntryStatusCode::Untracked => "Untracked",
-            EntryStatusCode::Ignored => "Ignored",
-            EntryStatusCode::Conflicted => "Conflicted",
-        }
-    }
-}
-
 /// One status entry, surfaced to the frontend as `{ path, code }`.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -399,7 +365,7 @@ mod cache_tests {
 
     use super::super::test_fixtures::discover_repo;
     use super::*;
-    use crate::test_support::TestDir;
+    use cmdr_fs::testing::TestDir;
 
     fn temp_repo(name: &str) -> TestDir {
         let dir = TestDir::new(&format!("status_cache_{name}"));

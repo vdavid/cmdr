@@ -37,8 +37,8 @@ use super::path::{self, Cat, VirtualGitPath};
 use super::portal::GitPortal;
 use super::repo::RepoHandle;
 use super::{Lookup, found_or_not_found, list_ref_tree, log, stash, submodules, virtual_listing, worktrees};
-use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{
+use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, ScanBoundary, SpaceInfo, Volume,
     VolumeError, VolumeReadStream,
 };

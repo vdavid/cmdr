@@ -18,7 +18,7 @@ use std::time::Instant;
 use super::repo::repo_info;
 use super::status::list_status;
 use super::test_fixtures::discover_repo;
-use crate::test_support::TestDir;
+use cmdr_fs::testing::TestDir;
 
 const FILE_COUNT: usize = 50_000;
 const RUNS: usize = 21; // p95 of 21 sorted samples = the 20th.

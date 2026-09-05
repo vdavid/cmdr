@@ -84,8 +84,8 @@ mod recording {
 
 #[cfg(test)]
 mod tests {
+    use super::super::repo::RepoInfo;
     use super::{GitStateSink, RecordingGitStateSink, no_git_state_sink};
-    use crate::file_system::git::repo::RepoInfo;
     use std::path::Path;
 
     fn a_snapshot() -> RepoInfo {

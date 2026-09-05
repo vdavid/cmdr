@@ -19,7 +19,7 @@ use std::path::Path;
 
 use gix::refs::PartialName;
 
-use crate::file_system::listing::FileEntry;
+use cmdr_fs::entry::FileEntry;
 
 use super::Lookup;
 use super::column_meta::{

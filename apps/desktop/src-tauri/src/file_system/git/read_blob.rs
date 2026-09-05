@@ -15,7 +15,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use crate::file_system::volume::{VolumeError, VolumeReadStream};
+use cmdr_fs::volume::{VolumeError, VolumeReadStream};
 
 /// 256 KB – matches the consumer-friendly chunk size used by network read streams.
 const CHUNK_SIZE: usize = 256 * 1024;
