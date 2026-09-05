@@ -115,6 +115,20 @@ impl GitPortal {
             .subscribe(Arc::clone(&self.repos), Arc::clone(&self.sink), repo_root)
     }
 
+    /// [`subscribe_state`](Self::subscribe_state) without the snapshot: adds a
+    /// subscriber and answers the CANONICAL root to release it by.
+    ///
+    /// What a host arming the watcher on behalf of an open listing asks for. It
+    /// has nowhere to put a `RepoInfo`, and reading one walks the worktree for
+    /// `is_dirty`, which is the expensive half of the handshake. Pair every call
+    /// with one [`unsubscribe_state`](Self::unsubscribe_state) on the root this
+    /// answered.
+    pub fn watch_repo(&self, repo_root: &Path) -> Result<PathBuf, FriendlyGitError> {
+        self.watchers
+            .arm(Arc::clone(&self.repos), Arc::clone(&self.sink), repo_root)
+            .map(|(_, root)| root)
+    }
+
     /// Drops one subscriber. The last one out stops the watcher and releases
     /// what that repository was holding open.
     pub fn unsubscribe_state(&self, repo_root: &Path) {

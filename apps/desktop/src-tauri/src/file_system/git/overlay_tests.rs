@@ -142,7 +142,8 @@ fn the_toggle_refresh_reaches_a_dot_git_pane_with_no_repo_subscription() {
 #[test]
 fn the_refresh_reaches_a_portal_listing_on_a_non_default_volume() {
     let dir = repo("refresh_targets");
-    let dot_git = std::fs::canonicalize(&dir).expect("canonical").join(".git");
+    let root = std::fs::canonicalize(&dir).expect("canonical");
+    let dot_git = root.join(".git");
 
     let on_external = TestListing::new()
         .volume("local-external-1234")
@@ -153,7 +154,7 @@ fn the_refresh_reaches_a_portal_listing_on_a_non_default_volume() {
         .path(dir.join("src"))
         .insert("git-refresh-elsewhere");
 
-    let targeted = super::wiring::listings_under(&super::wiring::virtual_category_prefixes(&dot_git));
+    let targeted = super::wiring::listings_a_repo_change_re_reads(&root);
     let paths: Vec<&PathBuf> = targeted.iter().map(|(_, path)| path).collect();
 
     assert!(

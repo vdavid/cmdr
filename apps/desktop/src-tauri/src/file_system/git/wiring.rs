@@ -66,8 +66,22 @@ static PORTAL: OnceLock<Arc<GitPortal>> = OnceLock::new();
 
 /// Builds a portal over this app: the real volume host, reporting repo changes
 /// into `app`.
+#[cfg(not(test))]
 fn build_portal(sink: Arc<dyn GitStateSink>) -> Arc<GitPortal> {
     Arc::new(GitPortal::new(crate::volume_host::host(), sink))
+}
+
+/// The same portal in a test binary, with a SCRIPTED watcher: `fire_watcher`
+/// stands in for the operating system.
+///
+/// Every cell that reaches [`portal`] gets this one, which is what makes an
+/// arming assertion cost a repository open rather than a real FSEvents stream
+/// over ~10 `.git/*` paths. A cell that wants the real thing builds its own
+/// portal with `GitPortal::new`, and exactly one does (`wiring_tests`, for the
+/// debounce).
+#[cfg(test)]
+fn build_portal(sink: Arc<dyn GitStateSink>) -> Arc<GitPortal> {
+    Arc::new(GitPortal::with_scripted_watcher(crate::volume_host::host(), sink))
 }
 
 /// Parks the app's git portal, reporting repo changes into `app`.
@@ -141,49 +155,61 @@ pub fn volume_holds_real_repos(volume: &dyn Volume) -> bool {
     volume.local_path().is_some()
 }
 
-/// Re-reads any open virtual `.git/{branches,tags,commits,stash,worktrees,submodules}/…`
-/// listing for `repo_root`, so a pane standing in one picks up a ref change.
+/// Re-reads every open listing a repo change can have moved, so a pane standing
+/// in one picks up a ref change.
 pub(crate) fn refresh_virtual_listings(repo_root: &Path) {
-    let dot_git = repo_root.join(".git");
-    refresh_local_listings_under(&virtual_category_prefixes(&dot_git));
-}
-
-/// Iterates the listing cache and emits `FullRefresh` for any listing whose
-/// path matches any of `prefixes` (prefix-match, including the prefix itself).
-///
-/// ❗ Every volume, not only the boot one. A repo lives just as happily on an
-/// external disk or an OS-mounted share, and those get their own volume ids;
-/// filtering to the default volume left an open portal pane on one showing
-/// stale children after a `git checkout`. The prefixes are absolute host paths
-/// under a real `.git`, which a protocol-only volume's paths can never match.
-pub(crate) fn refresh_local_listings_under(prefixes: &[PathBuf]) {
     use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
 
-    for (volume_id, listing_path) in listings_under(prefixes) {
+    for (volume_id, listing_path) in listings_a_repo_change_re_reads(repo_root) {
         notify_directory_changed(&volume_id, &listing_path, DirectoryChange::FullRefresh);
     }
 }
 
-/// The `(volume_id, path)` pairs [`refresh_local_listings_under`] would refresh:
-/// every cached listing whose path is one of `prefixes` or sits under one.
+/// The `(volume_id, path)` pairs a change to the repo at `repo_root` re-reads:
+/// every open listing at or under one of the six virtual
+/// `.git/{branches,tags,commits,stash,worktrees,submodules}/…` trees, plus the
+/// repo's `.git/` itself.
+///
+/// ❗ `.git/` is in the set because its six category rows carry live counts
+/// ("12 branches"), which the overlay reads off the repository each time the
+/// listing is built. `.git/`'s own FSEvents watch is non-recursive, so creating
+/// `refs/heads/feature` never touches it and those counts would sit at whatever
+/// they were when the pane opened.
+///
+/// ❗ `.git/` is matched EXACTLY, ❌ never as a prefix: prefix-matching it would
+/// pull in every real subdirectory (`objects/`, `hooks/`, `logs/`) and re-read,
+/// on every commit, panes a ref change can't have moved.
+///
+/// ❗ Every volume, not only the boot one. A repo lives just as happily on an
+/// external disk or an OS-mounted share, and those get their own volume ids;
+/// filtering to the default volume left an open portal pane on one showing stale
+/// children after a `git checkout`. These are absolute host paths under a real
+/// `.git`, which a protocol-only volume's paths can never match.
 ///
 /// Split out from the refresh so the choice can be asserted on without an
 /// `AppHandle` (`notify_directory_changed` is a no-op before one is registered).
-pub(crate) fn listings_under(prefixes: &[PathBuf]) -> Vec<(String, PathBuf)> {
+pub(crate) fn listings_a_repo_change_re_reads(repo_root: &Path) -> Vec<(String, PathBuf)> {
+    let dot_git = repo_root.join(".git");
+    let trees = virtual_category_prefixes(&dot_git);
+    listings_matching(|listing_path| {
+        *listing_path == dot_git || trees.iter().any(|tree| listing_path.starts_with(tree))
+    })
+}
+
+/// Every open listing whose path `wanted` accepts, as `(volume_id, path)`.
+///
+/// The one walk of the listing cache both selections go through, so "which
+/// listings does this change reach?" is answered by a predicate rather than by a
+/// second copy of the iteration.
+fn listings_matching(wanted: impl Fn(&Path) -> bool) -> Vec<(String, PathBuf)> {
     use crate::file_system::listing::caching::{find_listings_for_path_on_volume, get_listing_path, snapshot_listings};
 
-    if prefixes.is_empty() {
-        return Vec::new();
-    }
     let mut out = Vec::new();
     for entry in snapshot_listings() {
         let Some(listing_path) = get_listing_path(&entry.listing_id) else {
             continue;
         };
-        let matches = prefixes
-            .iter()
-            .any(|prefix| listing_path.starts_with(prefix) || *prefix == listing_path);
-        if !matches {
+        if !wanted(&listing_path) {
             continue;
         }
         if !find_listings_for_path_on_volume(Some(&entry.volume_id), &listing_path).is_empty() {

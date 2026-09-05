@@ -21,7 +21,9 @@ Three files, and each is one of the app's answers:
 - **`wiring.rs`** — the parked `GitPortal` (`install_git_portal` at startup, `portal()` with a detached-sink fallback so
   a test binary that never runs `setup()` still browses), the toggle both seams consult, `volume_holds_real_repos`, the
   `GitStateChangedPayload` event and the sink that emits it, and the listing re-reads a repo change or a toggle drives.
-- **`mod.rs`** — the two module declarations and the `cmdr_git` re-exports the IPC commands import.
+- **`arming.rs`** — the `ListingLifecycle` observer (`crate::listing_lifecycle`) that keeps a repo's `.git/*` watcher
+  armed while a pane is showing one of its virtual listings. § "Who arms the repo watcher".
+- **`mod.rs`** — the module declarations and the `cmdr_git` re-exports the IPC commands import.
 
 The route itself lives with the registry that owns it: `file_system/volume/manager/git_routing.rs`.
 
@@ -31,9 +33,40 @@ The route itself lives with the registry that owns it: `file_system/volume/manag
 has nothing on disk, so `notify` answers "No path was found" and spams the warn log; the portal volume returns
 `can_watch_listings() == false`, which keeps every one of them out with no path check anywhere. Invalidation arrives
 from the per-repo `.git/HEAD`, `refs/`, `packed-refs` watchers instead. `.git/` itself is a real directory on the local
-volume, so it now IS watched, which is what makes an open `.git/` pane notice a new `MERGE_HEAD`. Two things ride on
+volume, so it IS watched, which is what makes an open `.git/` pane notice a new `MERGE_HEAD`. Two things ride on
 that and are tested: a `FullRefresh` re-runs the overlays (else the six rows vanish from the pane), and the
 fresh-listing oracle declines any overlay-decorated listing (else a delete walker gets the six rows).
+
+That FSEvents watch on `.git/` is non-recursive, so it sees a new direct child and nothing deeper. What keeps a `.git/`
+pane's category-row COUNTS honest after a `git branch` is the per-repo watcher instead, which is why that pane arms one
+of its own (§ "Who arms the repo watcher").
+
+## Who arms the repo watcher
+
+**The OPEN LISTINGS do, ❌ not the frontend's subscription.** `arming.rs` registers a `ListingLifecycle` observer; the
+listing pipeline calls it when a listing enters the cache and when it leaves, and the observer takes and gives back one
+subscriber on `wiring::portal()`. Two listing shapes arm: a path inside one of the six virtual trees, and the repo's own
+`.git/` (its category rows carry live counts). The refcount is the watcher registry's own, so a working-tree pane and a
+`.git/` pane on one repo cost one watcher between them.
+
+**Why the backend owns it.** `src/lib/file-explorer/pane/git-browser-sync.svelte.ts` calls `subscribeGitState` only
+while the breadcrumb chip or the status column is switched on, and only for the repo it looked up from the pane's path.
+So three cases had nothing arming the watcher and sat on the refs as they were when the pane opened: a lone `branches/`
+pane, a pane the MCP server drove, and any window with both git features off. Backend arming holds for all three and for
+whatever asks next.
+
+**The arm is detached, and the reconcile is not optional.** `arm_detached` hands the subscribe to
+`tauri::async_runtime::spawn_blocking`, because arming is a repository open plus one FSEvents stream per watched
+`.git/*` path and a listing open must not sit on a runtime worker for it. `list_directory_end` then runs the release
+against a map the arm may not have written yet, so the arm re-checks listing-cache membership afterwards and gives the
+subscriber straight back if the listing ended meanwhile. Same shape, same reason, as `watcher::start_watching_detached`.
+❗ `list_directory_end` calls the observer AFTER removing the cache entry, which is what makes that membership check
+answer honestly.
+
+**What a change then re-reads**: `wiring::listings_a_repo_change_re_reads`. The six virtual trees by prefix, and the
+repo's `.git/` itself by EXACT match. `.git/` is in the set because its category rows carry counts the overlay reads off
+the repository, and its own FSEvents watch is non-recursive so a new `refs/heads/…` never touches it. It is not a prefix
+because that would re-read `objects/` and `hooks/` panes on every commit.
 
 ## What each walker sees
 

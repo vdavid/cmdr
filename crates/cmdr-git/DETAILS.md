@@ -135,6 +135,12 @@ the suite's 8 s cap at all (measured 2026-09-05).
 type in a private module, so `index-crate-isolation` doesn't measure them, and both are `testing`-gated so a shipped
 build carries neither. The trait and both backends are `pub(crate)`: nothing outside this crate names them.
 
+**Two ways in, because two callers want different things.** `GitPortal::subscribe_state` arms the watcher AND reads the
+`RepoInfo` the breadcrumb chip's handshake needs. `GitPortal::watch_repo` arms it and answers only the canonical root to
+release by: that's what a host arming on behalf of an open listing asks for, and it skips the `is_dirty` walk over the
+worktree, which is the expensive half. ❗ A failed handshake still releases what it armed, or a caller handed an error
+would never unsubscribe.
+
 ## Watcher path set
 
 - `<repo>/.git/HEAD`

@@ -103,6 +103,11 @@ the six-hour backstop that reclaims a leaked one is `orphan_reaper.rs`.
    delete dialog, drag, clipboard).
 6. `list_directory_end()` stops the watcher and removes from the cache (primary, fast eviction).
 
+Both ends also tell `crate::listing_lifecycle`, the seam for subsystems that keep something alive while a pane is
+showing a directory (today: the git portal's per-repo watcher, which a virtual path can't arm through the FSEvents
+watcher). ❗ The close call comes AFTER the cache removal: an observer's own detached arm reconciles against
+listing-cache membership, so releasing while the entry is still there lets a racing arm re-take what was just released.
+
 ### Backstop reaper
 
 `start_orphan_listing_reaper` (spawned in `lib.rs` setup) sweeps every `REAPER_SWEEP_INTERVAL` (30 min) and tears down

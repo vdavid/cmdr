@@ -141,6 +141,7 @@ pub mod licensing;
 pub(crate) mod linux_distro;
 #[cfg(target_os = "linux")]
 mod linux_icons;
+mod listing_lifecycle;
 mod listing_overlays;
 mod location;
 #[cfg(target_os = "macos")]
@@ -713,6 +714,10 @@ pub fn run() {
             // routed volume instead; this seam is what keeps the six rows out of
             // every walker (`listing_overlays.rs`).
             file_system::git::overlay::register();
+            // And the observer that keeps a repo's `.git/*` watcher armed for as
+            // long as a pane is showing one of its virtual listings, so a lone
+            // `branches/` pane stays live (`listing_lifecycle.rs`).
+            file_system::git::arming::register();
             file_system::staging::set_show_safe_save_files(saved_settings.show_safe_save_files.unwrap_or(true));
             file_system::staging::set_show_staging_temps(saved_settings.show_staging_temp_files.unwrap_or(false));
             file_system::set_smb_concurrency(saved_settings.smb_concurrency.unwrap_or(10) as usize);

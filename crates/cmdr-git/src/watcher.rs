@@ -22,7 +22,7 @@ use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKin
 use notify::RecursiveMode;
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
-use crate::repo::{RepoCache, RepoInfo, repo_info};
+use crate::repo::{RepoCache, RepoHandle, RepoInfo, repo_info};
 use crate::state_sink::GitStateSink;
 
 /// How long a burst of `.git/*` writes is allowed to settle before one report
@@ -199,27 +199,26 @@ impl GitWatcherRegistry {
     }
 
     /// Adds a subscriber for `repo_root`. Arms the watch on first call, bumps
-    /// the refcount on subsequent ones. Returns the current `RepoInfo` snapshot
-    /// synchronously so the chip never sees an empty interim state.
+    /// the refcount on subsequent ones. Answers the repository's handle and its
+    /// canonical root, which is the spelling every later `unsubscribe` has to
+    /// use.
     ///
     /// `repos` is shared rather than borrowed because the change callback
     /// outlives this call: every recompute opens the repository through the same
     /// cache the caller's own lookups use.
-    pub fn subscribe(
+    pub fn arm(
         &self,
         repos: Arc<RepoCache>,
         sink: Arc<dyn GitStateSink>,
         repo_root: &Path,
-    ) -> Result<RepoInfo, FriendlyGitError> {
+    ) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
         let canonical = repo_root.canonicalize().unwrap_or_else(|_| repo_root.to_path_buf());
-
         let (handle, root) = repos.discover(&canonical)?;
-        let info = repo_info(&handle, &root)?;
 
         let mut inner = self.inner.lock().expect("git watcher mutex poisoned");
         if let Some(sub) = inner.get_mut(&root) {
             sub.refcount = sub.refcount.saturating_add(1);
-            return Ok(info);
+            return Ok((handle, root));
         }
 
         // First subscriber: arm the watch.
@@ -234,7 +233,27 @@ impl GitWatcherRegistry {
                 _watch: watch,
             },
         );
-        Ok(info)
+        Ok((handle, root))
+    }
+
+    /// [`arm`](Self::arm) plus the current `RepoInfo`, read synchronously so the
+    /// chip never sees an empty interim state.
+    ///
+    /// ❗ The snapshot is the expensive half (`is_dirty` walks the worktree), so
+    /// a caller that only wants the watcher running asks for `arm` instead.
+    pub fn subscribe(
+        &self,
+        repos: Arc<RepoCache>,
+        sink: Arc<dyn GitStateSink>,
+        repo_root: &Path,
+    ) -> Result<RepoInfo, FriendlyGitError> {
+        let release = Arc::clone(&repos);
+        let (handle, root) = self.arm(repos, sink, repo_root)?;
+        repo_info(&handle, &root).inspect_err(|_| {
+            // A caller handed an error will never unsubscribe, so give the hold
+            // back rather than leaking a watch nobody knows about.
+            self.unsubscribe(&release, &root);
+        })
     }
 
     /// Drops a subscriber. Tears the watch down on the last unsubscribe, and

@@ -12,6 +12,8 @@ Frontend counterpart: `apps/desktop/src/lib/file-explorer/git/CLAUDE.md`.
   `GitPortal::category_rows` and does nothing else.
 - `wiring.rs`: the parked portal, the toggle both seams consult, `volume_holds_real_repos`, the `git-state-changed`
   payload and the sink that emits it, and the listing re-reads a repo change or a toggle drives.
+- `arming.rs`: the `ListingLifecycle` observer that keeps a repo's `.git/*` watcher armed while a pane is showing one
+  of its virtual listings.
 - The route itself is `file_system/volume/manager/git_routing.rs`, with the registry that owns it. The IPC commands are
   `commands/file_system/git.rs`.
 
@@ -30,6 +32,10 @@ Frontend counterpart: `apps/desktop/src/lib/file-explorer/git/CLAUDE.md`.
   screen. That set comes from the LISTING CACHE, ❌ never the watcher registry. `DETAILS.md` § Decisions.
 - **The portal is parked, ❌ never rebuilt.** `wiring::portal()` is the app's one `GitPortal`; a second would open every
   repository twice and watch it twice.
+- **A repo's watcher is armed by its OPEN LISTINGS, ❌ never by a frontend subscription alone.** `arming.rs` takes a
+  subscriber when a portal listing opens and gives it back when it closes, sharing the chip's refcount. The chip's
+  `subscribeGitState` only fires while a git feature is on and only for the working tree, so a lone `branches/` pane
+  used to go stale. `DETAILS.md` § "Who arms the repo watcher".
 - **A virtual listing is unwatchable by TYPE** (`can_watch_listings()` false), and `.git/` itself IS watched. So a
   `FullRefresh` there must re-run the overlays, and the fresh-listing oracle must keep declining a decorated listing.
   `DETAILS.md` § "A virtual listing is unwatchable by type".

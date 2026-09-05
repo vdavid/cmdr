@@ -172,6 +172,10 @@ All under `apps/desktop/src-tauri/src/`.
   sees that no volume holds, folded in by the listing pipeline; today's one contributor is the git portal's `.git/`
   category rows (`file_system/git/overlay.rs`). Why it must never move into a `Volume`: `file_system/volume/DETAILS.md`
   § "Architecture"
+- `listing_lifecycle.rs`: the listing-lifecycle seam, same registration shape. A `ListingLifecycle` observer hears which
+  directories a PANE has open; today's one observer keeps a repo's `.git/*` watcher armed while a pane shows one of its
+  virtual listings (`apps/desktop/src-tauri/src/file_system/git/arming.rs`). Why arming is the backend's:
+  `apps/desktop/src-tauri/src/file_system/git/DETAILS.md` § "Who arms the repo watcher"
 - `mcp/`: MCP server (tools, YAML resources, agent-centric API)
 - `ai/`: llama-server lifecycle, model download, inference client
 - `analytics/`: Anonymous beta usage analytics: hourly `/heartbeat` sender (true DAU + a PII-free config-shape snapshot

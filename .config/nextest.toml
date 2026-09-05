@@ -239,6 +239,22 @@ filter = '''
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The git portal's ONE real-`.git/*` watcher cell. It arms a real `notify` debouncer over a
+# repository's ~10 watched paths, writes five commits inside the 200 ms window, and blocks on
+# the debounced delivery with a 5 s in-test wait — so it is squarely the delivery-blocking
+# class this group exists for. Measured on an M3 Max: 0.47 s idle, 1.6 s inside a saturated
+# `cargo nextest run --workspace` (2026-09-05), against the global 8 s cap. 20 s puts the cap
+# above its own 5 s wait so the assertion (which prints the reports it got) decides, and the
+# group keeps its live streams from multiplying the other watcher tests' starvation.
+#
+# ❗ It is the only cell anywhere that arms a real git watcher, and it has to stay that way:
+# every other subscription cell takes `GitPortal::with_scripted_watcher` and runs in ~0.05 s.
+# `crates/cmdr-git/DETAILS.md` § "The watcher splits into bookkeeping and a backend".
+filter = 'test(a_debounced_burst_reports_one_change_with_the_new_state)'
+test-group = 'real-notify'
+slow-timeout = { period = "20s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # SELF-HEALING real-FSEvents tests — no retries. Each keeps producing the
 # observable mutation until the watch delivers, so neither the just-registered
 # arming window nor a lone coalesced/dropped event can starve it, all inside one

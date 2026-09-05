@@ -600,6 +600,10 @@ pub(crate) async fn read_directory_with_progress(
     if volume.can_watch_listings() {
         start_watching_detached(listing_id, path);
     }
+    // And whatever else a subsystem keeps alive while a pane shows this
+    // directory: today the git portal's per-repo watcher, which a virtual path
+    // can't arm through the line above. `crate::listing_lifecycle`.
+    crate::listing_lifecycle::listing_opened(listing_id, volume.as_ref(), path);
     let watcher_start_ms = watcher_start_t.elapsed().as_millis();
 
     // Volume root for the event (the FE uses it to decide "at volume root"). For

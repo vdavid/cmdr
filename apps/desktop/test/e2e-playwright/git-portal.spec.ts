@@ -20,6 +20,10 @@
  *    which is the app-level proof that the transfer reads through the portal
  *    rather than looking for an inode that isn't there.
  *
+ * 7. A LONE `branches/` pane picking up a branch created on the CLI, which is
+ *    the app-level proof that the repo's watcher follows the open listing rather
+ *    than the breadcrumb chip's subscription.
+ *
  * Executable-bit preservation on that copy lives in the Rust integration test
  * `cmdr_git::volume_tests::a_copy_out_of_a_snapshot_carries_the_bytes_and_the_executable_bit`,
  * and the routing plus engine leg in
@@ -86,19 +90,26 @@ function createGitRepoFixture(): void {
   fs.chmodSync(runSh, 0o755)
 
   // Init + commit. We pin author to keep SHAs stable across runs.
-  const env = {
-    ...process.env,
-    GIT_AUTHOR_NAME: 'Cmdr Test',
-    GIT_AUTHOR_EMAIL: 'test@cmdr.local',
-    GIT_COMMITTER_NAME: 'Cmdr Test',
-    GIT_COMMITTER_EMAIL: 'test@cmdr.local',
-    GIT_AUTHOR_DATE: '2025-01-01T00:00:00Z',
-    GIT_COMMITTER_DATE: '2025-01-01T00:00:00Z',
-  }
-  execSync('git init -q -b main', { cwd: repo, env })
-  execSync('git add .', { cwd: repo, env })
-  execSync('git commit -q -m "Add fixture content"', { cwd: repo, env })
-  execSync('git tag v1.0.0', { cwd: repo, env })
+  gitInRepo('init -q -b main')
+  gitInRepo('add .')
+  gitInRepo('commit -q -m "Add fixture content"')
+  gitInRepo('tag v1.0.0')
+}
+
+/** Runs `git <args>` inside the fixture repo, with the pinned author identity. */
+function gitInRepo(args: string): void {
+  execSync(`git ${args}`, {
+    cwd: repoPath(),
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: 'Cmdr Test',
+      GIT_AUTHOR_EMAIL: 'test@cmdr.local',
+      GIT_COMMITTER_NAME: 'Cmdr Test',
+      GIT_COMMITTER_EMAIL: 'test@cmdr.local',
+      GIT_AUTHOR_DATE: '2025-01-01T00:00:00Z',
+      GIT_COMMITTER_DATE: '2025-01-01T00:00:00Z',
+    },
+  })
 }
 
 /**
@@ -295,6 +306,23 @@ test.describe('Git portal', () => {
 
     // The snapshot is untouched either way.
     expect(await paneHasFile(tauriPage, 0, 'readme.txt')).toBe(true)
+  })
+
+  test('a lone branches pane picks up a branch created on the CLI', async ({ tauriPage }) => {
+    // The bug this pins: the per-repo `.git/*` watcher used to be armed only by
+    // the breadcrumb chip's `subscribeGitState`, which fires for the repo a pane
+    // is standing in the WORKING TREE of. With `branches/` the only pane on the
+    // repo, nothing armed it and the pane sat on the refs as they were when it
+    // opened. Arming now follows the open listing, backend-side.
+    await ensureAppReady(tauriPage)
+    await navigateLeftPaneTo(tauriPage, path.join(repoPath(), '.git/branches'))
+    expect(await paneHasFile(tauriPage, 0, 'main')).toBe(true)
+    expect(await paneHasFile(tauriPage, 0, 'picked-up-live', 1000)).toBe(false)
+
+    gitInRepo('branch picked-up-live')
+
+    // 200 ms debounce, then the report drives a `FullRefresh` of this listing.
+    expect(await paneHasFile(tauriPage, 0, 'picked-up-live', 15000)).toBe(true)
   })
 
   test('navigates commits/ and shows the single HEAD commit by short SHA', async ({ tauriPage }) => {

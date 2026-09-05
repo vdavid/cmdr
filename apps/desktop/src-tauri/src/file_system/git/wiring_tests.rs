@@ -103,10 +103,11 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
     cleanup(&dir);
 }
 
-/// The app's sink refreshes every open virtual listing for the repo that
-/// changed, whichever category it is. Asserted through the selection the refresh
-/// makes rather than the `FullRefresh` itself, which needs a registered
-/// `AppHandle` to land.
+/// The app's sink refreshes every open listing the repo change can have moved:
+/// each of the six virtual trees, and the repo's `.git/` itself, whose category
+/// rows carry live counts. Asserted through the selection the refresh makes
+/// rather than the `FullRefresh` itself, which needs a registered `AppHandle` to
+/// land.
 #[test]
 fn a_report_selects_every_open_virtual_listing_for_the_repo() {
     use crate::file_system::listing::caching_test_support::TestListing;
@@ -129,10 +130,14 @@ fn a_report_selects_every_open_virtual_listing_for_the_repo() {
             .volume(DEFAULT_VOLUME_ID)
             .path(commits.clone())
             .insert("wiring-refresh-commits"),
+        TestListing::new()
+            .volume(DEFAULT_VOLUME_ID)
+            .path(dot_git.clone())
+            .insert("wiring-refresh-dot-git"),
     ];
 
-    let selected = super::wiring::listings_under(&super::wiring::virtual_category_prefixes(&dot_git));
-    for path in [&branches, &commits] {
+    let selected = super::wiring::listings_a_repo_change_re_reads(&root);
+    for path in [&branches, &commits, &dot_git] {
         assert!(
             selected.iter().any(|(_, listed)| listed == path),
             "{} is what a ref change re-reads: {selected:?}",

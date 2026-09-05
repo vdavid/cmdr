@@ -111,6 +111,10 @@ pub async fn list_directory_start_with_volume(
     if volume.can_watch_listings() {
         start_watching_detached(&listing_id, path);
     }
+    // And whatever else a subsystem keeps alive while a pane shows this
+    // directory: today the git portal's per-repo watcher, which a virtual path
+    // can't arm through the line above. `crate::listing_lifecycle`.
+    crate::listing_lifecycle::listing_opened(&listing_id, volume.as_ref(), path);
 
     benchmark::log_event("list_directory_start RETURNING");
     Ok(ListingStartResult {
@@ -131,6 +135,11 @@ pub fn list_directory_end(listing_id: &str) {
     if let Ok(mut cache) = LISTING_CACHE.write() {
         cache.remove(listing_id);
     }
+
+    // AFTER the cache removal, ❗ never before: an observer's own detached arm
+    // reconciles against listing-cache membership, so releasing while the entry
+    // is still there lets a racing arm re-take what this just gave back.
+    crate::listing_lifecycle::listing_closed(listing_id);
 }
 
 // ============================================================================
