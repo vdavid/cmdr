@@ -16,21 +16,20 @@ Backend module for the git browser. Provides:
 - Typed git-error classification end-to-end: every git failure reaches `ErrorPane` as a typed `FriendlyGitErrorKind`,
   which the frontend renders into a warm title + explanation + suggestion (`src/lib/error-messages/git-error-messages.ts`).
 
-**The portal root listing mixes real `.git/*` entries (HEAD, config, hooks/, objects/, refs/, …) with the six virtual
-categories so the user sees everything in one place.**
+**A repo's `.git/` listing mixes real entries (HEAD, config, hooks/, objects/, refs/, …) with the six virtual
+categories so the user sees everything in one place.** The real half is the LOCAL volume's ordinary `read_dir`; the six
+join it in the listing pipeline, through the overlay (§ "Two seams, no hooks").
 
 ## File map
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
-map. What each piece DOES is in the sections below: the hook order in § "Volume hook contract", the toggle in § Decisions
+map. What each piece DOES is in the sections below: the route and the overlay in § "Two seams, no hooks", the toggle in § Decisions
 ("Live-toggleable portal"), `classify`'s greedy ref matching in § "Ref-name flat rendering", the status cache, the
 snapshot-date walk, the 5000-commit cap, the stash shell-out, the `worktrees()` / `submodules()` choices, `RepoCache`'s
 longest-root lookup, and the typed `VolumeError::FriendlyGit` variant all in § Decisions, blob memory in § "Honest blob
 streaming", and the column semantics in § "Modified + Size columns". Only the layout facts that none of those carry live
 here:
 
-- **`virtual_listing.rs` reads real `.git/*` entries with `std::fs`, never through a `Volume`.** Going through the
-  volume would recurse straight back into the git hook that called it.
 - **`tree.rs` reflects `EntryKind::BlobExecutable` into the entry's permissions**, which is what makes a cross-volume
   copy out of the portal preserve the executable bit.
 - **`friendly.rs` is classification only, deliberately word-free.** `kind.category()` maps a variant to an
@@ -38,8 +37,11 @@ here:
   lives on the frontend in `src/lib/error-messages/git-error-messages.ts`, and so do the writing-rules tests
   (`friendly-error-style.test.ts`, every kind × rendered output). Adding a variant means touching both sides.
 - **`watcher.rs` does more than emit `git-state-changed`**: on a relevant `.git/*` mutation it also calls
-  `notify_directory_changed(.., FullRefresh)` for any cached `.git/{branches,tags}/` listing on the local volume, so an
-  open portal pane refreshes rather than showing stale children.
+  `notify_directory_changed(.., FullRefresh)` for every cached listing under any of the repo's six category prefixes,
+  so an open portal pane refreshes rather than showing stale children. Every volume, not only the boot one: a repo on
+  an external disk gets its own volume id, and its portal panes went stale while that filter was there.
+- **`overlay.rs` is the `.git/` half**: the `ListingOverlay` contributor that puts the six category rows into a repo's
+  `.git/` listing, for a PANE and nothing else (`src/listing_overlays.rs`).
 - **No English leaves this module for the Size column.** `column_meta.rs` and the per-category listers hand back numbers and ids on a typed `git_meta`; the words are the frontend's, from the message catalog. See § "Modified + Size columns for virtual entries".
 - **`log.rs::resolve_commit_id` resolves a SHA prefix even for an UNREACHABLE commit**, so browsing
   `commits/<sha>` works for something the rev-walk would never list.
@@ -52,42 +54,38 @@ here:
 ## What each walker sees
 
 A virtual entry is a name with no inode. A pane renders one; anything that stats, copies, or removes one meets a path
-that isn't there. Four walkers matter, and only one of them can reach a virtual entry today (verified on macOS 26.6,
-`cargo test --lib file_system::git::walker_exposure_tests`, 2026-09-05):
+that isn't there. **No walker can reach one**, and that follows from the shape rather than from a guard (verified on
+macOS 26.6, `cargo test --lib file_system::git::walker_exposure_tests`, 2026-09-05):
 
-- **The volume-aware delete walker CAN.** It lists through `Volume::list_directory`, so on any non-boot volume (an
-  external disk, a share, a phone) a repo delete meets all six categories and refuses each with `NotSupported`.
-- **The same guard also refuses the REAL files.** `is_virtual` matches any `.git` path SEGMENT, not a virtual category,
-  so `delete`, `rename`, `create_file`, `create_directory`, and `write_from_stream` all refuse `.git/config` and
-  `.git/HEAD` too, with the portal off as much as on. A volume-routed delete of a repo folder therefore stops with
-  `.git/` still on disk. Narrowing the guards to `classify(..).is_some()` is the small fix; removing them with the
-  hooks is the structural one.
-- **The copy scan CAN'T.** `local_posix/scan.rs` walks with `walkdir` against the resolved path and never asks the
-  volume for a listing.
-- **The LOCAL delete walker CAN'T.** It prefers a cached listing over `read_dir` only when the listing's watch covers
-  every writer, and `listing/streaming.rs` arms no watch anywhere under `.git`, so `listing_watch_coverage` answers
-  `None` and the oracle declines. That one fact is what keeps the boot-volume delete and the scan preview honest; a
-  future watch armed under `.git` would hand six phantom rows straight to a delete walker.
-- **The drive index CAN'T.** Local volumes are walked by `cmdr-index`'s guarded walker with raw syscalls, and that crate
-  can't name the app's git module. SMB and MTP go through the trait scanner, and the route would answer for a `.git` on
-  a share, but `mount_id_for_path` skips a routed volume by type so nothing indexes through one.
+- **A walker lists through `Volume::list_directory`, and no `Volume` holds a category row.** The six reach a pane from
+  the listing pipeline's overlay step; `LocalPosixVolume` answers `.git/` with what `read_dir` found. So the volume
+  delete walker, the trait scanner, and every other `Volume` consumer see a plain directory.
+- **The routed portal volume can't be walked into by accident either.** It serves only `.git/<category>/…`, refuses
+  every mutation by trait default, and `mount_id_for_path` skips it by TYPE so nothing indexes through one.
+- **The copy scan never asks a volume at all.** `local_posix/scan.rs` walks with `walkdir` against the resolved path.
+- **The LOCAL delete walker asks the fresh-listing oracle first**, and the oracle declines any listing an overlay
+  decorated (`CachedListing::has_overlay_rows`). That is the one place where the pane's extra rows and a walker's read
+  could have met: `.git/` is a real directory, so a pane on one arms a real watch and the listing would otherwise pass
+  the freshness test. ❌ Never let a decorated listing answer that oracle.
+- **The drive index CAN'T.** Local volumes are walked by `cmdr-index`'s guarded walker with raw syscalls, and that
+  crate can't name the app's git module.
 
-Routing hasn't changed that table yet: a walker meets the virtual rows through the portal-root HOOK, which still lists
-the six categories under `.git/`. What changes it is the listing overlay, which moves those rows out of every listing
-except a pane's.
+Real files under `.git` are ordinary local files throughout: readable, writable, renamable, and deletable, with the
+portal on as much as off, which is what lets a repo-folder delete walk `.git/` to the end.
 
 ## Linked worktrees
 
-`git worktree add` writes `.git` as a FILE holding `gitdir: <common>/worktrees/<name>`. `path::classify` splits on the
-path segment and never stats, so the portal answers there exactly as in the main worktree. `read_real_dot_git` follows
-the gitlink and lists `<common>/worktrees/<name>/`'s real entries (`HEAD`, `index`, `refs/`, `commondir`, `gitdir`,
-`logs/`) under rewritten `<linked>/.git/…` paths.
+`git worktree add` writes `.git` as a FILE holding `gitdir: <common>/worktrees/<name>`.
 
-**Gotcha**: those rewritten paths don't resolve. `<linked>/.git/HEAD` is a path THROUGH a file, so reading it fails with
-`ENOTDIR`; the rows are visible but not openable.
-**Why**: the rewrite exists so the pane's breadcrumb stays inside the worktree the user is standing in. Fixing it means
-either mapping each row back to its real gitdir path or dropping the real rows in a linked worktree; both are decisions
-the routing plan makes, so don't paper over one here.
+**The portal lives where `.git` is a DIRECTORY.** The overlay contributes to a directory listing, and listing a gitlink
+fails `ENOTDIR`, so a linked worktree has no `.git/` landing page. What it does have is everything below:
+`path::classify` splits on the path SEGMENT and never stats, `portal_route` is the same pure string check, and `gix`
+discovery follows the gitlink, so `<linked>/.git/branches` and deeper answer exactly as in the main worktree (verified
+2026-09-05, `a_linked_worktree_serves_the_categories_but_has_no_dot_git_landing`).
+
+**Why that's the right trade.** The landing listing used to rewrite the real gitdir's entries under `<linked>/.git/…`,
+where they were visible but not openable (`<linked>/.git/HEAD` is a path THROUGH a file, so reading it is `ENOTDIR`).
+Losing rows nobody could open costs less than a `stat` on the route, which runs on every path-bearing call.
 
 ## Tauri commands
 
@@ -155,13 +153,13 @@ pipeline.
 has. `VolumeManager::resolve` routes any path with a `.git/<category>/` segment to it (`volume/DETAILS.md` §
 "Resolving a path: the two routes") and hands it the input path verbatim; the volume maps that path to
 `(repo, category, ref, tree path)` with `path::classify_in` and answers from the same `virtual_listing` / `log` /
-`tree` code the hooks call.
+`tree` code the overlay's row builder calls.
 
 - **Its namespace is the six categories and what's under them, nothing else.** Listing its root
   (`<worktree>/.git`) answers the six category rows ALONE, via `virtual_listing::list_categories`. Real `.git/*`
   entries are the parent volume's, which is what keeps `.git/config` editable and lets a repo-folder delete walk
-  `.git/` as an ordinary directory. `virtual_listing::list_root` (real entries plus the six) is what the portal-root
-  HOOK still serves until the listing overlay replaces it.
+  `.git/` as an ordinary directory. A pane sees the two halves together because the listing pipeline
+  folds the overlay's rows into the local volume's read.
 - **A `.git` that isn't a repository is `NotFound`, decided here.** Routing is lexical and does no I/O, so "is there
   actually a repo at this path?" is answered on first use, through the portal's `RepoCache`. ❌ Don't add a `stat` to
   the route to pre-empt it.
@@ -182,20 +180,32 @@ cache is a VALUE the portal owns, ❌ not a static of its own; `portal()` is onl
 the call sites that predate the portal (`repo::discover_repo` from an IPC command, the watcher) share one cache instead
 of opening every repo twice. A volume always holds its own `Arc<GitPortal>`.
 
-## Volume hook contract
+## Two seams, no hooks
 
-The hook order inside `LocalPosixVolume` is fixed and load-bearing:
+`LocalPosixVolume` names git nowhere. `rg 'git' backends/local_posix.rs` is empty, and the ten `if` sites it used to
+carry (three route hooks, five mutation guards, the `notify_mutation` early return, plus the `is_virtual` watch skip in
+`listing/streaming.rs`) are gone. Two seams replace them, each with a rule a type enforces:
 
-1. `resolve(path)` runs first (existing). It normalizes absolute vs. relative paths against the volume root.
-2. After `resolve`, the volume method calls `git::try_route_*(resolved_path)`. If `Some`, that result is the volume method's return. Otherwise the existing real-FS path runs.
+1. **The route.** `VolumeManager::resolve` sends any `.git/<category>/…` path to the read-only `GitPortalVolume`. Read
+   only by trait default, unwatchable by `can_watch_listings() == false`, invisible to `mount_id_for_path` by type.
+   `volume/DETAILS.md` § "Resolving a path: the two routes".
+2. **The overlay.** `git::overlay::GitPortalOverlay` contributes the six category rows to a repo's `.git/` listing, run
+   by `listing/streaming.rs::read_directory_with_progress` (and `listing/operations.rs`, and again on every
+   watcher-driven `FullRefresh`) after the volume's entries arrive and before the cache insert. Pane-only by
+   construction: `src/listing_overlays.rs`.
 
-Three hook points:
+Both consult ONE app-side switch, `git::is_virtual_portal_enabled()`, so the toggle is "no route" plus "no
+contribution".
 
-- `list_directory` → `git::try_route_listing(resolved_path) -> Option<Result<Vec<FileEntry>, VolumeError>>`
-- `get_metadata` → `git::try_route_metadata(resolved_path) -> Option<Result<FileEntry, VolumeError>>`
-- `open_read_stream` → `git::try_open_blob_stream(resolved_path) -> Option<Result<Box<dyn VolumeReadStream>, VolumeError>>`
+**The overlay's predicate**: the listed directory's last segment is `.git`, the volume answers `local_path().is_some()`
+(so `gix` can open its paths), and the portal is on. ❗ Cheap and zero-I/O, because it runs on every listing in the app;
+"is there a repository here?" is answered when the rows are built, not when the predicate is asked. The route asks the
+volume half of the same question (`git::overlay::volume_holds_real_repos`), so the portal appears in exactly one set of
+places.
 
-All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) detect virtual paths via `git::is_virtual(path)` and return `VolumeError::NotSupported` immediately. `notify_mutation` early-returns for virtual paths since git mutations happen out-of-band; cache invalidation flows through the `.git`-watcher pipeline (`watcher.rs`).
+**A `.git` inside a repo's working tree that isn't that repo's gitdir gets nothing.** `gix` discovery walks UP, so a
+placeholder directory named `.git` in a test corpus would otherwise be handed the enclosing repo's branches; the
+contributor compares the discovered root against the listed directory's parent.
 
 ## A miss is not a damaged repo
 
@@ -250,12 +260,12 @@ whether the branch has a configured upstream or fell back to `main` / `master`. 
 is what lets the frontend word the sentence without asking again.
 
 **Decision**: Eager-load ahead/behind for branches; eager-load files-changed for commits
-**Why**: Bench (release build, M-series): 100 branches with ahead/behind takes p50=33 ms / p95=36 ms, well under the 300 ms p95 budget the spec sets for the listing pipeline. Files-changed for 200 commits: p50=37 ms / p95=40 ms (200 µs / commit), so the typical Cmdr-sized repo (~3000 commits) lands ~600 ms and the 5000-commit cap lands ~1 s. We accept the worst-case 1 s on the cap because (1) Cmdr's own repo never hits the cap, (2) the listing pipeline runs the hook in `spawn_blocking` so the UI stays responsive, and (3) the alternative (lazy-load via a streamed IPC) would mean another round-trip per row and a placeholder `…` in the cell while it resolves. Worth re-checking if a user reports the 5000-commit cap feeling slow; the bench harness in `bench.rs` covers 1000 commits and `bench_list_commits_files_changed` covers 200.
+**Why**: Bench (release build, M-series): 100 branches with ahead/behind takes p50=33 ms / p95=36 ms, well under the 300 ms p95 budget the spec sets for the listing pipeline. Files-changed for 200 commits: p50=37 ms / p95=40 ms (200 µs / commit), so the typical Cmdr-sized repo (~3000 commits) lands ~600 ms and the 5000-commit cap lands ~1 s. We accept the worst-case 1 s on the cap because (1) Cmdr's own repo never hits the cap, (2) the listing pipeline runs the row build in `spawn_blocking` so the UI stays responsive, and (3) the alternative (lazy-load via a streamed IPC) would mean another round-trip per row and a placeholder `…` in the cell while it resolves. Worth re-checking if a user reports the 5000-commit cap feeling slow; the bench harness in `bench.rs` covers 1000 commits and `bench_list_commits_files_changed` covers 200.
 
 ## Decisions
 
-**Decision**: Mixed real + virtual portal root listing; `raw/` escape hatch dropped
-**Why**: Hiding real `.git/*` contents behind a separate `raw/` category meant two extra clicks (open `.git/`, open `raw/`) for anyone wanting to peek at `HEAD`, `config`, `hooks/`, `objects/`, etc. The virtual entries already cover the friendly view; surfacing the real entries in the same listing gives power users one-click access without the `raw/` indirection. The classifier (`path::classify`) returns `None` for any `.git/*` segment that isn't a virtual category name, so the volume hook falls through to the real-FS path automatically. No new code on the read side: the existing LocalPosixVolume handles it. Real entries whose name collides with a virtual category get filtered out: the deprecated `.git/branches/` directory (git itself stopped writing to it years ago) and `.git/worktrees/` in linked-worktree setups (its internals belong to git, not to the user) hide behind the friendly virtual entries. Power users who really want the raw bytes open the gitdir from the terminal. Sort order: real entries dirs-first alphabetical (matching the listing pipeline default), then the six virtual categories in fixed order (branches, tags, commits, stash, worktrees, submodules).
+**Decision**: `.git/` shows real entries and the six virtual ones together; no `raw/` escape hatch
+**Why**: Hiding real `.git/*` contents behind a separate `raw/` category meant two extra clicks for anyone wanting to peek at `HEAD`, `config`, `hooks/`, or `objects/`. The virtual rows already cover the friendly view; showing the real entries in the same listing gives one-click access with no indirection, and costs nothing on the read side because the real half IS the local volume's ordinary listing. A real entry whose name collides with a virtual category gives way to it (the overlay's shadowing rule): the deprecated `.git/branches/` directory git stopped writing years ago, and `.git/worktrees/` in a linked-worktree setup, whose internals belong to git rather than to the user. The pane's own sort orders the merged rows; the six carry no sort privilege of their own.
 
 **Decision**: Per-file Modified dates inside snapshot listings via walk-once batching
 **Why**: The snapshot date ("when this commit landed") is the same value for every file inside a `branches/main/`, `commits/<sha>/`, etc. listing: semantically correct as a "frozen point in time", but useless as a "when did I last work on this?" hint. We now run a single rev-walk per `(commit_id, dir_path)` listing: from the snapshot commit backwards by commit time, first-parent only, diffing each commit against its first parent (gix's `Tree::changes()::for_each_to_obtain_tree`). Each `Change.location` is matched against the directory's top-level entries; the first-seen commit's committer time wins. The walk stops early when every entry is dated, after `MAX_COMMITS_PER_WALK` (1000), or when the rev-walk exits. Initial commits short-circuit. Cache is process-global, FIFO-bounded at 50 keys, content-addressable so it never invalidates. Bench: 100 entries × 5000 commits cold p95=21 ms (budget 200 ms), warm p95=2 µs. 50k-commit fixture sits inside the 500 ms budget too. Entries that don't surface within the cap fall back to the snapshot date so the cell never reads as blank.
@@ -282,31 +292,21 @@ walk the full worktree with `--untracked-files=normal` and let the cache do
 the work.
 
 **Decision**: Live-toggleable portal via a process-global `AtomicBool`
-**Why**: `try_route_listing` / `try_route_metadata` / `try_open_blob_stream`
-each early-return `None` when the toggle is off, falling through to the
-real-FS path. This keeps the toggle a no-op cost (one atomic load per
-hook call). The setter is wired live from the frontend
-(`set_show_virtual_git_portal`) and seeded at startup from
-`Settings::show_virtual_git_portal`. Mutation guards (`is_virtual` in
-`local_posix`) intentionally don't consult the toggle: even with the
-portal off we don't want Cmdr to write to `.git/HEAD` from a copy
-dialog. Power users who really want to mutate `.git` use a terminal.
+**Why**: One atomic load, read by the route before it routes and by the overlay before it contributes, so the toggle
+costs nothing on a path that isn't a repo's. The setter is wired live from the frontend
+(`set_show_virtual_git_portal`) and seeded at startup from `Settings::show_virtual_git_portal`. Writes to real files
+under `.git` are unaffected either way: they're the local volume's, and always were editable from a terminal.
 
-**Toggle invalidates open virtual listings.** Flipping the atomic alone
-isn't enough: panes already showing a virtual `.git/...` listing keep
-their cached children until the next navigation. So
-`set_show_virtual_git_portal` also calls
-`watcher::refresh_all_virtual_listings_after_toggle`, which iterates
-the watcher registry's subscribed repos and emits a `FullRefresh` for
-every cached listing under any worktree's `.git/{branches,tags,commits,
-stash,worktrees,submodules}/...` (plus `.git/` itself). The helper
-`refresh_local_listings_under` is shared with the watcher's
-`invalidate_virtual_listings`, so both paths use the same prefix-match
-logic and only touch the local volume (SMB / MTP volumes can't be
-inside the host's `.git`).
+**Toggle invalidates open listings.** Flipping the atomic alone isn't enough: panes already showing a `.git/...`
+listing keep their cached children until the next navigation. So `set_show_virtual_git_portal` also calls
+`watcher::refresh_all_virtual_listings_after_toggle`, which iterates the watcher registry's subscribed repos and emits
+a `FullRefresh` for every cached listing under any worktree's six category prefixes (plus `.git/` itself). The helper
+`refresh_local_listings_under` is shared with the watcher's `invalidate_virtual_listings`, so both paths use the same
+prefix match, across every volume. A pane standing on a virtual path when the portal turns off gets `NotFound` from the
+parent volume (the directory isn't on disk) and the pane's own recovery runs.
 
 **Decision**: Typed `VolumeError::FriendlyGit(FriendlyGitError)` variant
-**Why**: The volume hooks return `Result<_, VolumeError>` and the
+**Why**: The portal volume's methods return `Result<_, VolumeError>` and the
 streaming pipeline calls `listing_error_from_volume_error` to compute
 the `ErrorPane` payload. We carry the structured payload through a
 typed enum variant so the path from "git layer detected something" to
@@ -354,8 +354,8 @@ because tapping it would do nothing useful: pagination IPC isn't
 wired). When the first user reports hitting the cap, add the IPC + a
 real Load-more entry together so the affordance actually works.
 
-**Decision**: Volume hook stays single-shot; cancellation via task abort + polled flag
-**Why**: The `Volume::list_directory` contract is "compute Vec, return", and the git hook honours that – no
+**Decision**: A portal listing stays single-shot; cancellation via task abort + polled flag
+**Why**: The `Volume::list_directory` contract is "compute Vec, return", and the portal honours it – no
 `ListingEventSink` streaming here. Cancellation
 works two ways: (1) the listing pipeline's `spawn_blocking` task can be
 aborted on cancel, dropping the iterator; (2) we poll a per-process
@@ -363,7 +363,7 @@ aborted on cancel, dropping the iterator; (2) we poll a per-process
 commit so a *cooperative* cancel takes effect within one commit decode
 (microseconds). The flag is opt-in for tests and unused by production
 listings (which rely on task abort). Changing to streaming would require
-revisiting the hook contract everywhere.
+revisiting the trait contract everywhere.
 
 **Decision**: Per-worktree HEAD watch registration on enumeration
 **Why**: notify-debouncer-full doesn't natively glob, so
@@ -443,12 +443,11 @@ upstream *ref* via `find_reference` on every call, so moving `refs/remotes/origi
 `git update-ref refs/remotes/origin/main main` to zero the ahead count) IS picked up on the next chip refresh. This is
 the lever the screenshot guide uses to force a clean `main` chip; see `docs/guides/screenshots.md`.
 
-**Gotcha**: Listings on virtual portal paths must skip `start_watching`
-**Why**: `listing/streaming.rs` starts a `notify` watcher on the listing's
-directory. For virtual paths (`.git/branches/...` etc.) the on-disk path
-doesn't exist, so `notify` errors with "No path was found" and the warn
-log spams every navigation. The fix: skip the watcher start when
-`git::is_virtual(path)`. Cache invalidation for virtual listings flows
-through `git::watcher::invalidate_virtual_listings` (via the per-repo
-`.git/HEAD`, `refs/`, `packed-refs` watchers), so no notify watch is
-needed on the virtual side.
+**Decision**: a virtual listing is unwatchable by TYPE, and `.git/` itself IS watched
+**Why**: `listing/streaming.rs` arms a `notify` watch on any listing whose volume says it can carry one. A virtual path
+has nothing on disk, so `notify` answers "No path was found" and spams the warn log; the portal volume returns
+`can_watch_listings() == false`, which keeps every one of them out with no path check anywhere. Invalidation arrives
+from the per-repo `.git/HEAD`, `refs/`, `packed-refs` watchers instead. `.git/` itself is a real directory on the local
+volume, so it now IS watched, which is what makes an open `.git/` pane notice a new `MERGE_HEAD`. Two things ride on
+that and are tested: a `FullRefresh` re-runs the overlays (else the six rows vanish from the pane), and the
+fresh-listing oracle declines any overlay-decorated listing (else a delete walker gets the six rows).

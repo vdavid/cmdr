@@ -54,7 +54,17 @@ the crate boundary is what makes that a compile error rather than a habit.
    registers itself; a wiring module (`network/smb_upgrade.rs`, `network/sftp_volume_wiring.rs`,
    `network/webdav_volume_wiring.rs`, `adb/`, `mtp/volume_wiring.rs`) mints the volume, hands it the app's `VolumeHost`
    (`src-tauri/src/volume_host.rs`), and inserts it. Device backends also register a `DeviceVolumeProvider`
-   (`device_volumes.rs`) so the volume list and eject can fold over them.
+   (`device_volumes.rs`) so the volume list and eject can fold over them. Beside that registry sits a second one with
+   the same shape, `listing_overlays.rs`: a `ListingOverlay` contributes extra rows to ONE directory's listing, folded
+   in by the listing pipeline (`listing/streaming.rs`, `listing/operations.rs`, and every watcher-driven `FullRefresh`)
+   after the volume's entries arrive and before the cache insert. A contributed row shadows a real one of the same
+   name. Today's one contributor is the git portal, which puts the six virtual category rows into a repo's `.git/`
+   listing (`file_system/git/overlay.rs`).
+   ❌ **Never move an overlay into a `Volume` impl or into the volume manager.** Contributed rows must reach a PANE and
+   nothing else: a copy scan, a delete walker, and the indexer all list through `Volume`, and the last time one of them
+   could see a row with no inode behind it, deleting a repo folder stopped with `.git/` still on disk. The same rule is
+   why a listing an overlay decorated is never authoritative for a walker: `CachedListing::has_overlay_rows` records
+   it, and `try_get_authoritative_listing` declines any listing carrying some, whatever its watch reports.
 4. **The registry: `VolumeManager`** (`manager.rs`). Volume id → `Arc<dyn Volume>`, plus the mount-root set per entry,
    archive routing in `resolve`, retirement on removal, and the arrival subscription.
 5. **The consumers.** `write_operations/` (copy, move, delete, the cross-volume engine), `listing/` (panes and the
@@ -377,24 +387,6 @@ destination goes through, plus `path_exists`.
 ## Integration status
 
 `LocalPosixVolume` is wired into the indexing subsystem. `VolumeManager` is actively used.
-
-## Git delegation hooks
-
-The virtual trees themselves are a ROUTE now (§ "Resolving a path: the two routes"): `resolve` sends any path under
-`.git/<category>/` to a `GitPortalVolume`, which never reaches the hooks below. What's left for them is the portal ROOT
-(`.git/` itself, a mixed listing of real entries plus the six categories) and the mutation guards. Both go away in the
-same milestone that adds the listing overlay; until then a virtual path is served by whichever comes first, and the two
-agree because they share `virtual_listing`.
-
-`LocalPosixVolume` delegates three read-side methods to the git module after `resolve()`:
-
-- `list_directory` calls `git::try_route_listing(resolved_path)`. Returns the virtual listing for `.git/`, `.git/branches/...`, `.git/tags/...`, `.git/commits/...`, `.git/stash/...`, `.git/worktrees/...`, or `.git/submodules/...`. Real `.git/*` entries (HEAD, config, hooks/, objects/, refs/, etc.) get `None` from the hook and fall through to real-FS listing. The portal root (`.git/`) returns a mixed listing: real entries plus the six virtual categories.
-- `get_metadata` calls `git::try_route_metadata(resolved_path)`.
-- `open_read_stream` calls `git::try_open_blob_stream(resolved_path)`. Returns a `GitBlobReadStream` for blobs inside refs; real `.git/*` files fall through to the LocalPosixVolume real-FS reader.
-
-All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `write_from_stream`) detect virtual paths via `git::is_virtual(path)` and return `VolumeError::NotSupported` immediately. `notify_mutation` early-returns for virtual paths since git mutations happen out-of-band (the user runs `git` in a terminal); state changes flow through the `.git`-watcher pipeline (`file_system/git/watcher.rs`) instead.
-
-The hook order is fixed: `resolve()` first (normalizes the path), then `try_route_*`. This lets the user open `.git` from any volume-rooted path and get the portal regardless of whether the frontend sent an absolute or relative path.
 
 ## Eject
 

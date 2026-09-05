@@ -16,7 +16,7 @@ Frontend                          Backend
    |<--- listing-opening event --------| (just before read_dir)
    |<--- listing-progress event -------| (every 200ms, { listingId, loadedCount })
    |<--- listing-read-complete event --| (when read_dir finishes, { listingId, totalCount })
-   |                            [sorting + caching; watcher arm dispatched, not awaited]
+   |                            [overlay rows folded in; sorting + caching; watcher arm dispatched, not awaited]
    |<--- listing-complete event -------| (ready, { listingId, totalCount, volumeRoot })
    |                                   |
    |-- getFileRange(listingId, ...) -->| (on-demand fetching)
@@ -26,6 +26,25 @@ Frontend                          Backend
 `listing-complete` is what commits the listing in the pane, so nothing slow may sit in front of it. Arming the FSEvents
 watch used to, and no longer does: `start_watching_detached` hands it to the blocking pool. Why arming is slow, what
 that cost, and the two rules that keep it cheap: `../DETAILS.md` § "Arming a listing watch is detached".
+
+## The overlay step
+
+Between the index enrich and the sort, `read_directory_with_progress` calls `crate::listing_overlays::decorate`, which
+folds in rows a PANE sees that the volume doesn't hold. `listing/operations.rs` (the sync sibling) and
+`caching::notify_full_refresh_locked` (the watcher-driven re-read) do the same, in the same place, so a refresh can't
+quietly strip them.
+
+Today's one contributor is the git portal, which puts the six virtual category rows into a repo's `.git/` listing.
+Placement matters three ways:
+
+- **After enrich**: a contributed row has no drive-index entry, so there is nothing to look up for it.
+- **Before the sort**: the rows land wherever the pane's own sort puts them, with no ordering privilege of their own.
+- **Before the cache insert**: the pane reads its rows out of the cache, so a row that isn't there isn't shown.
+
+`CachedListing` records how many rows came from an overlay, and `try_get_authoritative_listing` declines any listing
+carrying some. A decorated listing is a PANE view, never a picture of a directory a delete walker or a copy scan may
+reuse. ❌ Never let one answer that oracle: the rows have no inode behind them, and a walker that meets one stops
+mid-operation. The seam and the reasoning: `src/listing_overlays.rs`, `volume/DETAILS.md` § "Architecture".
 
 ## Local listing progress
 
