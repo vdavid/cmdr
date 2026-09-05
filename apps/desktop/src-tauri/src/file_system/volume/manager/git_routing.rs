@@ -63,7 +63,11 @@ impl VolumeManager {
         // than fighting over the ID.
         let repo_root = std::fs::canonicalize(&repo_root).unwrap_or(repo_root);
         let portal_id = git_portal_volume_id(&repo_root);
-        let volume = Arc::new(git::wiring::portal().volume_for(repo_root, Arc::clone(&parent)));
+        let volume = Arc::new(cmdr_git::GitPortalVolume::new(
+            Arc::clone(git::wiring::portal()),
+            repo_root,
+            Arc::clone(&parent),
+        ));
         self.register_if_absent(&portal_id, volume);
         self.touch_git_portal_lru(&portal_id);
 

@@ -133,16 +133,16 @@ pipeline.
 ## The portal is a routed volume
 
 `GitPortalVolume` (`volume.rs`) is a read-only `Volume` over one repo's virtual trees, the same shape `ArchiveVolume`
-has. `VolumeManager::resolve` routes any path with a `.git/<category>/` segment to it (`volume/DETAILS.md` § "Resolving
-a path: the two routes") and hands it the input path verbatim; the volume maps that path to
-`(repo, category, ref, tree path)` with `path::classify_in` and answers from the same `virtual_listing` / `log` / `tree`
-code the overlay's row builder calls.
+has. The host's `VolumeManager::resolve` routes any path with a `.git/<category>/` segment to it
+(`apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Resolving a path: the two routes") and hands it the input path verbatim; the volume maps that path to
+`(repo, category, ref, tree path)` with `path::classify_in` and answers from the same `virtual_listing` / `log` /
+`tree` code `GitPortal::category_rows` calls for the host's `.git/` listing.
 
 - **Its namespace is the six categories and what's under them, nothing else.** Listing its root (`<worktree>/.git`)
   answers the six category rows ALONE, via `virtual_listing::list_categories`. Real `.git/*` entries are the parent
   volume's, which is what keeps `.git/config` editable and lets a repo-folder delete walk `.git/` as an ordinary
-  directory. A pane sees the two halves together because the listing pipeline folds the overlay's rows into the local
-  volume's read.
+  directory. A pane sees the two halves together because the host's listing pipeline folds the category rows into the
+  local volume's read.
 - **A `.git` that isn't a repository is `NotFound`, decided here.** Routing is lexical and does no I/O, so "is there
   actually a repo at this path?" is answered on first use, through the portal's `RepoCache`. ❌ Don't add a `stat` to
   the route to pre-empt it.
@@ -174,7 +174,7 @@ mean a test's evictions reaching the app's handles and back.
 ## A miss is not a damaged repo
 
 Every portal lookup that can legitimately find nothing answers `Lookup<T>` (`Result<Option<T>, FriendlyGitError>`, in
-`mod.rs`): `Ok(None)` means "that path isn't in this snapshot", `Err` means the repo couldn't answer at all.
+`lib.rs`): `Ok(None)` means "that path isn't in this snapshot", `Err` means the repo couldn't answer at all.
 `found_or_not_found` folds the first into `VolumeError::NotFound` carrying the path the caller asked for, which is what
 the transfer layer renders as the user's own file name, and the second into `VolumeError::FriendlyGit` with the
 git-specific repair copy.
@@ -329,7 +329,7 @@ negligible.
 **Decision**: `Cat::browses_commit_tree()` covers branches/tags/commits/stash **Why**: All four categories browse a
 commit tree, just resolved differently. Branches/tags peel through refs, commits resolve a SHA prefix, stash expands
 `stash@{n}`, but the _tree-walking_ code path is identical. The method name describes the contract. The dispatch lives
-in `mod.rs::resolve_commit_for_cat`.
+in `lib.rs::resolve_commit_for_cat`.
 
 **Decision**: Use `gix::Repository::status()` for `list_status` (not a `git status --porcelain=v2 -z` shell-out)
 **Why**: In gix 0.81, `Repository::status().into_iter()` runs both a `TreeIndex` leg (HEAD vs index, for staged changes)

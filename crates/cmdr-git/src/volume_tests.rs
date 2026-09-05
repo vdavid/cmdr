@@ -35,7 +35,7 @@ fn portal_over_a_repo(name: &str) -> (PathBuf, GitPortalVolume) {
         VolumeHost::detached(),
         crate::state_sink::no_git_state_sink(),
     ));
-    let volume = portal.volume_for(dir.clone(), parent);
+    let volume = GitPortalVolume::new(portal, dir.clone(), parent);
     (dir, volume)
 }
 
@@ -171,7 +171,7 @@ async fn a_dot_git_that_is_not_a_repository_answers_not_found() {
         VolumeHost::detached(),
         crate::state_sink::no_git_state_sink(),
     ));
-    let volume = portal.volume_for(dir.clone(), parent);
+    let volume = GitPortalVolume::new(portal, dir.clone(), parent);
 
     let branches = virtual_path(&dir, "branches");
     assert!(matches!(

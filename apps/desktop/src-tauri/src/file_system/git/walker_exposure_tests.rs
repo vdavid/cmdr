@@ -303,8 +303,7 @@ async fn a_linked_worktree_serves_the_categories_but_has_no_dot_git_landing() {
         cmdr_git::no_git_state_sink(),
     ));
     let parent: std::sync::Arc<dyn Volume> = std::sync::Arc::new(LocalPosixVolume::new("Parent", &linked));
-    let branches = portal
-        .volume_for(linked.clone(), parent)
+    let branches = cmdr_git::GitPortalVolume::new(portal, linked.clone(), parent)
         .list_directory(&gitlink.join("branches"), None)
         .await
         .expect("the portal lists branches in a linked worktree");

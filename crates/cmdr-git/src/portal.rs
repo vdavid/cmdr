@@ -18,10 +18,8 @@ use cmdr_fs::volume::host::VolumeHost;
 use crate::repo::{RepoCache, RepoHandle, RepoInfo};
 use crate::state_sink::GitStateSink;
 use crate::virtual_listing;
-use crate::volume::GitPortalVolume;
 use crate::watcher::GitWatcherRegistry;
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::Volume;
 
 /// Everything the virtual `.git` portal needs to answer, in one value.
 pub struct GitPortal {
@@ -60,17 +58,6 @@ impl GitPortal {
     /// and canonical worktree root.
     pub fn discover(&self, path: &Path) -> Result<(RepoHandle, PathBuf), FriendlyGitError> {
         self.repos.discover(path)
-    }
-
-    /// Mints the read-only volume serving `<repo_root>/.git`'s virtual trees.
-    ///
-    /// `parent` is the volume physically holding the repo: the portal borrows
-    /// its lane key and its free space, the way an `ArchiveVolume` borrows the
-    /// volume holding the `.zip`. Cheap and infallible; the repo is opened on
-    /// first use through the shared cache, and a `.git` that isn't a repository
-    /// answers `NotFound` rather than failing to construct.
-    pub fn volume_for(self: &Arc<Self>, repo_root: PathBuf, parent: Arc<dyn Volume>) -> GitPortalVolume {
-        GitPortalVolume::new(Arc::clone(self), repo_root, parent)
     }
 
     /// The six category rows for the repo whose worktree root is `worktree_root`,

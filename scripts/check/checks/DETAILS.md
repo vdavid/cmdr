@@ -1381,7 +1381,7 @@ doubles as production code.
 
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
   scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
-  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-mtp` — reaches `tauri`,
+  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-mtp`, `cmdr-git` — reaches `tauri`,
   `tauri-specta`, or `cmdr` anywhere in its `cargo metadata` tree, plus a per-bucket public-surface ceiling on all of
   them except `cmdr-fs`, which is permanently uncapped: it's shared vocabulary whose job is to be named from everywhere.
   See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own entry in

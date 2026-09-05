@@ -22,11 +22,11 @@ use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError, VolumeReadStream};
 /// resolve hands any `.git/<category>/` path.
 fn portal_over(repo: &Path) -> crate::volume::GitPortalVolume {
     let parent: std::sync::Arc<dyn Volume> = std::sync::Arc::new(InMemoryVolume::new("Parent"));
-    std::sync::Arc::new(crate::portal::GitPortal::new(
+    let portal = std::sync::Arc::new(crate::portal::GitPortal::new(
         VolumeHost::detached(),
         crate::state_sink::no_git_state_sink(),
-    ))
-    .volume_for(repo.to_path_buf(), parent)
+    ));
+    crate::volume::GitPortalVolume::new(portal, repo.to_path_buf(), parent)
 }
 
 fn git_show_bytes(dir: &Path, spec: &str) -> Vec<u8> {

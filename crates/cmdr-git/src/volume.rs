@@ -58,10 +58,15 @@ pub struct GitPortalVolume {
 }
 
 impl GitPortalVolume {
-    /// Builds the portal volume for the worktree at `repo_root`, backed by
-    /// `parent`. Prefer [`GitPortal::volume_for`], which is the same call with
-    /// the portal already in hand.
-    pub(super) fn new(portal: Arc<GitPortal>, repo_root: PathBuf, parent: Arc<dyn Volume>) -> Self {
+    /// Builds the portal volume for the worktree at `repo_root`, minted from
+    /// `portal` and backed by `parent`.
+    ///
+    /// `parent` is the volume physically holding the repo: this one borrows its
+    /// lane key and its free space, the way an `ArchiveVolume` borrows the volume
+    /// holding the `.zip`. Cheap and infallible; the repository is opened on
+    /// first use through the portal's shared cache, and a `.git` that isn't one
+    /// answers `NotFound` rather than failing to construct.
+    pub fn new(portal: Arc<GitPortal>, repo_root: PathBuf, parent: Arc<dyn Volume>) -> Self {
         Self {
             portal,
             dot_git: repo_root.join(".git"),
