@@ -1,8 +1,8 @@
 # The git portal becomes a routed volume in `crates/cmdr-git`, and `LocalPosixVolume` stops knowing about git
 
 **Status (2026-09-05): M0 through M4 are done and on `worktree-git-portal-volume`.** Everything below describes the
-shape as built, and each milestone's own section records what it decided. The only work left is the manual QA David
-runs against a real app, which no automated cell covers:
+shape as built, and each milestone's own section records what it decided. The only work left is the manual QA David runs
+against a real app, which no automated cell covers:
 
 1. Browse each of the six categories in a repo's `.git/`.
 2. Copy a file out of a branch tree to another volume, and check the executable bit survives.

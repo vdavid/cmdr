@@ -122,9 +122,8 @@ the main-HEAD watch (`git worktree add` writes to the main repo's `HEAD` too).
 
 ## Performance
 
-Bench result on the 50k-file synth repo, release build
-(`cargo test --release -p cmdr-git -- --ignored`), measured on an M1 Max, gix 0.87, 2026-09-05, median
-of three runs:
+Bench result on the 50k-file synth repo, release build (`cargo test --release -p cmdr-git -- --ignored`), measured on an
+M1 Max, gix 0.87, 2026-09-05, median of three runs:
 
 | Metric                     | Budget          | Measured |
 | -------------------------- | --------------- | -------- |
