@@ -586,7 +586,7 @@ pub fn list_dir_schema() -> Value {
     serde_json::json!({
         "type": "object",
         "properties": {
-            "path": { "type": "string", "description": "Absolute or ~-relative folder. To find where space goes, start at a volume root or ~ with sortBy size and drill into the biggest child. Relay the coverage block and any lower-bound size rather than a total the index can't back." },
+            "path": { "type": "string", "description": "Absolute or ~-relative folder to list. Relay the coverage block and any lower-bound size rather than a total the index can't back." },
             "sortBy": {
                 "type": "string",
                 "enum": ["name", "size", "modified"],
