@@ -566,16 +566,20 @@ pub async fn handle_directory_change(listing_id: &str) {
 
     let mut new_entries = new_entries;
 
-    // Enrich with index data so diff entries have recursive_size etc.
-    {
+    // The listing's sort params, taken once: the overlay pass between the enrich
+    // and the sort is `async`, and the cache guard can't be held across it.
+    let sort_params = {
         use crate::file_system::listing::cached_listing::LISTING_CACHE;
 
-        if let Ok(cache) = LISTING_CACHE.read()
-            && let Some(listing) = cache.get(listing_id)
-        {
-            index().enrich(&listing.volume_id, &mut new_entries);
-        }
-    }
+        LISTING_CACHE.read().ok().and_then(|cache| {
+            cache
+                .get(listing_id)
+                .map(|l| (l.sort_by, l.sort_order, l.directory_sort_mode))
+        })
+    };
+
+    // Enrich with index data so diff entries have recursive_size etc.
+    index().enrich(&volume_id, &mut new_entries);
 
     // Re-run the overlays, in the same place in the pipeline the first read ran
     // them (after the enrich, before the sort). `list_directory` above answers
@@ -591,20 +595,8 @@ pub async fn handle_directory_change(listing_id: &str) {
 
     // Re-sort new_entries by the listing's sort params so compute_diff compares
     // two lists in the same order (list_directory returns entries in Name/Asc).
-    {
-        use crate::file_system::listing::cached_listing::LISTING_CACHE;
-        use crate::file_system::listing::sorting::sort_entries;
-
-        if let Ok(cache) = LISTING_CACHE.read()
-            && let Some(listing) = cache.get(listing_id)
-        {
-            sort_entries(
-                &mut new_entries,
-                listing.sort_by,
-                listing.sort_order,
-                listing.directory_sort_mode,
-            );
-        }
+    if let Some((sort_by, sort_order, directory_sort_mode)) = sort_params {
+        crate::file_system::listing::sorting::sort_entries(&mut new_entries, sort_by, sort_order, directory_sort_mode);
     }
 
     // Compute diff
