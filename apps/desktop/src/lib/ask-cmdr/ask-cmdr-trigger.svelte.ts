@@ -32,7 +32,7 @@ import {
 const log = getAppLogger('askCmdr')
 
 export type { RailMessage, RailToolCall } from './ask-cmdr-messages'
-export type { BulkRenameReview, BulkRenameReviewRow } from './ask-cmdr-state.svelte'
+export type { BulkRenameReview, BulkRenameReviewProposal, BulkRenameReviewRow } from './ask-cmdr-state.svelte'
 export {
   askCmdrState,
   hasOlderMessages,

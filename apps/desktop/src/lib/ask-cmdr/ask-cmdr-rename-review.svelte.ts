@@ -1,19 +1,24 @@
 /**
  * The bulk-rename review: the state slice behind `BulkRenameReviewDialog.svelte`.
  *
- * A `proposalReady` streaming event opens it, every user decision and every relevant pane
- * change revalidates it against the backend, Apply starts one managed operation for the rows
- * the user allowed, and a finished batch leaves an undo line in the thread.
+ * A turn's `proposalReady` events stage plans here, the end of the turn opens ONE review over
+ * all of them, every user decision and every relevant pane change revalidates it against the
+ * backend, Apply starts one managed operation per staged plan, and each leaves an undo line in
+ * the thread.
  *
  * The SERVER owns the outcome throughout: a name the user types goes over IPC and comes back
  * validated (never patched locally), preflight is what makes an edited name applicable at
  * all, and Apply sends opaque row ids, not paths.
+ *
+ * **Grouping is presentational, and every guardrail stays per row**: the evidence check, the
+ * pane-scoped source validation, the fingerprinted preflight, and the fingerprint recheck at
+ * write time all still run per row, inside the proposal that row belongs to.
  */
 
 import { getAppLogger } from '$lib/logging/logger'
 import { SvelteSet } from 'svelte/reactivity'
 import type { RailMessage } from './ask-cmdr-messages'
-import { askCmdrState, type BulkRenameReviewRow } from './ask-cmdr-state.svelte'
+import { askCmdrState, type BulkRenameReviewProposal, type BulkRenameReviewRow } from './ask-cmdr-state.svelte'
 import { undoStateFromReport } from './rename-undo'
 import {
   applyBulkRename,
@@ -26,31 +31,84 @@ import {
 
 const log = getAppLogger('askCmdr')
 
-export function openRenameReview(proposal: Extract<AskCmdrStreamEvent, { type: 'proposalReady' }>['proposal']): void {
-  discardRenameReview()
-  askCmdrState.renameReview = {
-    proposalId: proposal.proposalId,
-    rows: proposal.rows.map((row) => ({
-      ...row,
-      allowed: true,
-      blockedReason: null,
-      warnings: [],
-      nameRejected: false,
-    })),
-    preflighting: false,
-    expired: false,
-    requestVersion: 0,
-  }
-  void refreshRenamePreflight()
+type ProposalSnapshot = Extract<AskCmdrStreamEvent, { type: 'proposalReady' }>['proposal']
+
+/**
+ * The plans this turn has staged but not shown yet.
+ *
+ * The review opens on the turn boundary, so the user meets a 500-file job once rather than
+ * once per batch. Plain module state: nothing renders from it, and it lives exactly as long as
+ * the turn does.
+ */
+let stagedProposals: ProposalSnapshot[] = []
+
+/** Stage one batch. It joins the review the current turn is building, and shows on turn end. */
+export function stageRenameProposal(proposal: ProposalSnapshot): void {
+  stagedProposals.push(proposal)
 }
 
-/** Change one row's user decision, then revalidate the exact allowed subset. */
-export function setRenameRowAllowed(rowId: string, allowed: boolean): void {
+/**
+ * Show everything this turn staged, as one review.
+ *
+ * Called on every way a turn can end, including a failure and the user's own Stop: the plans
+ * exist on the spine either way, and a staged plan the user never sees is a plan they can't
+ * answer.
+ */
+export function openStagedRenameReview(): void {
+  const staged = stagedProposals
+  stagedProposals = []
+  if (staged.length === 0) return
+  const proposals = staged.map(
+    (proposal): BulkRenameReviewProposal => ({
+      proposalId: proposal.proposalId,
+      rows: proposal.rows.map((row) => ({
+        ...row,
+        allowed: true,
+        blockedReason: null,
+        warnings: [],
+        nameRejected: false,
+      })),
+      preflighting: false,
+      expired: false,
+      requestVersion: 0,
+    }),
+  )
   const review = askCmdrState.renameReview
-  const row = review?.rows.find((candidate) => candidate.rowId === rowId)
-  if (!review || !row || (row.blockedReason && allowed)) return
+  // A review already on screen GROWS rather than being replaced: replacing it cancelled a plan
+  // the user was reading, and asked them the same question again.
+  if (review) review.proposals.push(...proposals)
+  else askCmdrState.renameReview = { proposals }
+  for (const proposal of proposals) void refreshRenamePreflight(proposal.proposalId)
+}
+
+/** Drop what this turn staged without showing it: the thread it belonged to is gone. */
+export function discardStagedRenameProposals(): void {
+  const staged = stagedProposals
+  stagedProposals = []
+  for (const proposal of staged) void cancelBulkRenameProposal(proposal.proposalId)
+}
+
+/** The proposal with this id, as it stands NOW, or `null` if the review moved on without it. */
+function liveProposal(proposalId: string): BulkRenameReviewProposal | null {
+  return askCmdrState.renameReview?.proposals.find((candidate) => candidate.proposalId === proposalId) ?? null
+}
+
+/** The row as it stands NOW, or `null` if the review closed or was replaced meanwhile. */
+function liveRenameRow(proposalId: string, rowId: string): BulkRenameReviewRow | null {
+  return liveProposal(proposalId)?.rows.find((candidate) => candidate.rowId === rowId) ?? null
+}
+
+/** Every row on show, whichever proposal staged it. */
+function allRenameRows(): BulkRenameReviewRow[] {
+  return askCmdrState.renameReview?.proposals.flatMap((proposal) => proposal.rows) ?? []
+}
+
+/** Change one row's user decision, then revalidate its proposal's exact allowed subset. */
+export function setRenameRowAllowed(proposalId: string, rowId: string, allowed: boolean): void {
+  const row = liveRenameRow(proposalId, rowId)
+  if (!row || (row.blockedReason && allowed)) return
   row.allowed = allowed
-  void refreshRenamePreflight()
+  void refreshRenamePreflight(proposalId)
 }
 
 /**
@@ -61,71 +119,70 @@ export function setRenameRowAllowed(rowId: string, allowed: boolean): void {
  * accepted preflight — so the fresh preflight below is what lets the edited name be applied at
  * all. A name it won't take leaves the row on the name it had, said plainly on the row.
  */
-export async function reviseRenameRow(rowId: string, destinationName: string): Promise<void> {
-  const review = askCmdrState.renameReview
-  const row = review?.rows.find((candidate) => candidate.rowId === rowId)
-  if (!review || !row || review.expired) return
+export async function reviseRenameRow(proposalId: string, rowId: string, destinationName: string): Promise<void> {
+  const proposal = liveProposal(proposalId)
+  const row = proposal?.rows.find((candidate) => candidate.rowId === rowId)
+  if (!proposal || !row || proposal.expired) return
   // No IPC for a field the user left as it was (a blur after no edit, or Enter twice).
   if (destinationName === row.destinationName) {
     row.nameRejected = false
     return
   }
   try {
-    const revised = await reviseBulkRenameRow(review.proposalId, rowId, destinationName)
-    const current = liveRenameRow(review.proposalId, rowId)
+    const revised = await reviseBulkRenameRow(proposalId, rowId, destinationName)
+    const current = liveRenameRow(proposalId, rowId)
     if (!current) return
     current.destinationName = revised.destinationName
     current.evidence = revised.evidence
     current.coverage = revised.coverage
     current.nameRejected = false
-    await refreshRenamePreflight()
+    await refreshRenamePreflight(proposalId)
   } catch (e) {
     log.warn('revising a proposed name failed: {error}', { error: String(e) })
-    const current = liveRenameRow(review.proposalId, rowId)
+    const current = liveRenameRow(proposalId, rowId)
     if (current) current.nameRejected = true
   }
 }
 
-/** The row as it stands NOW, or `null` if the review closed or was replaced meanwhile. */
-function liveRenameRow(proposalId: string, rowId: string): BulkRenameReviewRow | null {
-  const current = askCmdrState.renameReview
-  if (!current || current.proposalId !== proposalId) return null
-  return current.rows.find((candidate) => candidate.rowId === rowId) ?? null
-}
-
-/** Allow every row the latest preflight did not block. */
+/** Allow every row the latest preflight did not block, across every batch. */
 export function allowAllRenameRows(): void {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  for (const row of review.rows) {
-    if (!row.blockedReason) row.allowed = true
+  for (const proposal of askCmdrState.renameReview?.proposals ?? []) {
+    for (const row of proposal.rows) {
+      if (!row.blockedReason) row.allowed = true
+    }
+    void refreshRenamePreflight(proposal.proposalId)
   }
-  void refreshRenamePreflight()
 }
 
 /** Deny every row. This sends no filesystem request and creates no operation. */
 export function denyAllRenameRows(): void {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  for (const row of review.rows) row.allowed = false
-  void refreshRenamePreflight()
+  for (const proposal of askCmdrState.renameReview?.proposals ?? []) {
+    for (const row of proposal.rows) row.allowed = false
+    void refreshRenamePreflight(proposal.proposalId)
+  }
 }
 
-/** Revalidates a review when the pane's existing file watcher reports a name
- * that participates in the proposal. The backend remains authoritative; this
- * name filter only avoids unrelated watcher traffic causing extra IPC. */
+/** Revalidates the batches a review holds when the pane's existing file watcher reports a
+ * name that participates in one of them. The backend remains authoritative; this name filter
+ * only avoids unrelated watcher traffic causing extra IPC, and keeps a job spanning several
+ * folders from re-preflighting every batch over one folder's change. */
 export async function renameReviewListingChanged(
   changes: ReadonlyArray<{ type?: string; entry: { name: string } }>,
 ): Promise<void> {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  const reviewedNames = new SvelteSet(review.rows.flatMap((row) => [row.sourceName, row.destinationName]))
-  if (changes.some((change) => reviewedNames.has(change.entry.name))) await refreshRenamePreflight()
+  const changed = new SvelteSet(changes.map((change) => change.entry.name))
+  const affected = (askCmdrState.renameReview?.proposals ?? []).filter((proposal) =>
+    proposal.rows.some((row) => changed.has(row.sourceName) || changed.has(row.destinationName)),
+  )
+  await Promise.all(affected.map((proposal) => refreshRenamePreflight(proposal.proposalId)))
 }
 
 /** The destination names in this review the user did NOT take: denied rows, and (when the whole
  * review is cancelled) every row. Names only — what the model needs is the fact that a style was
- * rejected, and a reason would be its own words handed back to it. */
+ * rejected, and a reason would be its own words handed back to it.
+ *
+ * A job is answered once now, so there is no later batch in the same job to teach. What this
+ * still feeds is the user's NEXT message ("not like that, try dates instead"), which is why it
+ * survives the grouping. */
 function rememberDeniedNames(rows: { allowed: boolean; destinationName: string }[]): void {
   const denied = rows.filter((row) => !row.allowed).map((row) => row.destinationName)
   if (denied.length === 0) return
@@ -133,36 +190,77 @@ function rememberDeniedNames(rows: { allowed: boolean; destinationName: string }
   askCmdrState.deniedNames = [...denied, ...askCmdrState.deniedNames]
 }
 
-/** Cancel closes the review and consumes its server-owned proposal. */
+/** Cancel closes the review and consumes every proposal it holds. */
 export function cancelRenameReview(): void {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  // Cancelling turns down every row, and that is exactly the feedback the next batch needs.
-  rememberDeniedNames(review.rows.map((row) => ({ allowed: false, destinationName: row.destinationName })))
-  askCmdrState.renameReview = null
-  void cancelBulkRenameProposal(review.proposalId)
+  if (!askCmdrState.renameReview) return
+  // Cancelling turns down every row, and that is exactly the feedback the next try needs.
+  rememberDeniedNames(allRenameRows().map((row) => ({ allowed: false, destinationName: row.destinationName })))
+  closeRenameReview()
 }
 
-/** Starts the one managed operation for the rows the user currently allows. */
+/**
+ * Start one managed operation per batch, for the rows the user currently allows.
+ *
+ * Sequential, in staging order, because that is the order undo has to reverse: a later batch
+ * can have taken a name an earlier one freed. A batch that fails leaves itself and everything
+ * after it in the review, revalidated, so the user can answer what is left.
+ */
 export async function applyRenameReview(): Promise<void> {
   const review = askCmdrState.renameReview
-  if (!review || review.preflighting || review.expired) return
-  const allowedRowIds = review.rows.filter((row) => row.allowed && !row.blockedReason).map((row) => row.rowId)
-  if (allowedRowIds.length === 0) return
-  review.preflighting = true
-  try {
-    const started = await applyBulkRename(review.proposalId, allowedRowIds)
-    // Applying a subset is a decision about the rest: carry those names into the next batch.
-    rememberDeniedNames(review.rows)
-    noteRenameApplied(started.operationId, allowedRowIds.length)
-    if (askCmdrState.renameReview?.proposalId === review.proposalId) askCmdrState.renameReview = null
-  } catch (e) {
-    const current = askCmdrState.renameReview
-    if (!current || current.proposalId !== review.proposalId) return
-    current.preflighting = false
-    log.warn('starting the rename plan failed: {error}', { error: String(e) })
-    void refreshRenamePreflight()
+  if (!review || review.proposals.some((proposal) => proposal.preflighting)) return
+  const pending = review.proposals
+    .filter((proposal) => !proposal.expired)
+    .map((proposal) => ({
+      proposalId: proposal.proposalId,
+      allowedRowIds: proposal.rows.filter((row) => row.allowed && !row.blockedReason).map((row) => row.rowId),
+    }))
+    .filter((batch) => batch.allowedRowIds.length > 0)
+  if (pending.length === 0) return
+  // Read the decisions before the first batch leaves the review, so a run that stops partway
+  // still reports what the user turned down in the batches that did start.
+  const decisions = allRenameRows().map((row) => ({ allowed: row.allowed, destinationName: row.destinationName }))
+  for (const proposal of review.proposals) proposal.preflighting = true
+  let applied = 0
+  for (const batch of pending) {
+    try {
+      const started = await applyBulkRename(batch.proposalId, batch.allowedRowIds)
+      applied += 1
+      noteRenameApplied(started.operationId, batch.allowedRowIds.length)
+      dropAppliedProposal(batch.proposalId)
+    } catch (e) {
+      log.warn('starting the rename plan failed: {error}', { error: String(e) })
+      break
+    }
   }
+  // Applying a subset is a decision about the rest: carry those names into the next message.
+  if (applied > 0) rememberDeniedNames(decisions)
+  if (applied === pending.length) {
+    // Every batch the user allowed something in has started. A batch still here is one they
+    // turned down whole, which is an answer too, so it is consumed rather than left on screen.
+    closeRenameReview()
+    return
+  }
+  // A batch refused to start, so the rest of the job is still the user's to answer and goes
+  // back to a checked state.
+  for (const proposal of askCmdrState.renameReview?.proposals ?? []) {
+    proposal.preflighting = false
+    void refreshRenamePreflight(proposal.proposalId)
+  }
+}
+
+/** Close the review, consuming every proposal still in it. */
+function closeRenameReview(): void {
+  const review = askCmdrState.renameReview
+  if (!review) return
+  askCmdrState.renameReview = null
+  for (const proposal of review.proposals) void cancelBulkRenameProposal(proposal.proposalId)
+}
+
+/** Take a started batch out of the review; the rest of the job is still on screen. */
+function dropAppliedProposal(proposalId: string): void {
+  const review = askCmdrState.renameReview
+  if (!review) return
+  review.proposals = review.proposals.filter((proposal) => proposal.proposalId !== proposalId)
 }
 
 /**
@@ -172,7 +270,8 @@ export async function applyRenameReview(): Promise<void> {
  * because that's where the user is looking and because a run of batches then reads
  * as a run. **Only the newest line carries the job-wide undo**, and only once a run
  * has more than one batch: the previous lines hand their ids over and keep just
- * their own Undo, so "undo everything" appears once, at the bottom.
+ * their own Undo, so "undo everything" appears once, at the bottom. That holds
+ * whether the ids arrive one turn at a time or together from one Apply.
  */
 export function noteRenameApplied(operationId: string, fileCount: number): void {
   const run = renameRunLines()
@@ -242,27 +341,26 @@ export async function undoRename(
   }
 }
 
+/** Close the review and consume every proposal it holds, plus anything staged but unshown. */
 export function discardRenameReview(): void {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  askCmdrState.renameReview = null
-  void cancelBulkRenameProposal(review.proposalId)
+  discardStagedRenameProposals()
+  closeRenameReview()
 }
 
-async function refreshRenamePreflight(): Promise<void> {
-  const review = askCmdrState.renameReview
-  if (!review) return
-  const version = review.requestVersion + 1
-  review.requestVersion = version
-  review.preflighting = true
+async function refreshRenamePreflight(proposalId: string): Promise<void> {
+  const proposal = liveProposal(proposalId)
+  if (!proposal) return
+  const version = proposal.requestVersion + 1
+  proposal.requestVersion = version
+  proposal.preflighting = true
   // Validate every displayed row, including denied and previously blocked rows.
   // Otherwise a target that disappears after blocking its row could never make
   // that row reviewable again. Apply still submits only the user's allowed ids.
-  const allowedRowIds = review.rows.map((row) => row.rowId)
+  const allowedRowIds = proposal.rows.map((row) => row.rowId)
   try {
-    const result = await preflightBulkRename(review.proposalId, allowedRowIds)
-    const current = askCmdrState.renameReview
-    if (!current || current.proposalId !== review.proposalId || current.requestVersion !== version) return
+    const result = await preflightBulkRename(proposalId, allowedRowIds)
+    const current = liveProposal(proposalId)
+    if (!current || current.requestVersion !== version) return
     current.preflighting = false
     current.expired = result.status === 'expired'
     if (current.expired) return
@@ -273,8 +371,8 @@ async function refreshRenamePreflight(): Promise<void> {
       if (row.blockedReason) row.allowed = false
     }
   } catch (e) {
-    const current = askCmdrState.renameReview
-    if (!current || current.proposalId !== review.proposalId || current.requestVersion !== version) return
+    const current = liveProposal(proposalId)
+    if (!current || current.requestVersion !== version) return
     current.preflighting = false
     log.warn('checking the rename plan failed: {error}', { error: String(e) })
   }

@@ -21,7 +21,11 @@
 
 import { getAppLogger } from '$lib/logging/logger'
 import type { RailMessage } from './ask-cmdr-messages'
-import { openRenameReview } from './ask-cmdr-rename-review.svelte'
+import {
+  discardStagedRenameProposals,
+  openStagedRenameReview,
+  stageRenameProposal,
+} from './ask-cmdr-rename-review.svelte'
 import { askCmdrState, currentAssistant, finalizeAssistant, lastUserMessage } from './ask-cmdr-state.svelte'
 import {
   cancelAskCmdr,
@@ -99,6 +103,9 @@ export function stopStreaming(): void {
   finalizeAssistant()
   askCmdrState.streaming = false
   clearProgressWatchdog()
+  // A stopped turn may still have staged plans, and a staged plan the user never sees is one
+  // they can't answer.
+  openStagedRenameReview()
 }
 
 /**
@@ -160,7 +167,9 @@ function applyStreamEvent(event: AskCmdrStreamEvent): void {
       applyToolFinished(event.callId, event.ok)
       return
     case 'proposalReady':
-      openRenameReview(event.proposal)
+      // Staged, not shown: a big rename arrives as a run of plans, and the review opens over
+      // all of them when the turn ends. See `ask-cmdr-rename-review.svelte.ts`.
+      stageRenameProposal(event.proposal)
       return
     case 'done':
       applyDone(event.messageId)
@@ -284,6 +293,8 @@ function applyDone(messageId: number): void {
   finalizeAssistant(messageId)
   askCmdrState.streaming = false
   clearProgressWatchdog()
+  // The turn boundary is what makes a job's batches ONE review.
+  openStagedRenameReview()
 }
 
 function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
@@ -291,6 +302,8 @@ function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
   askCmdrState.messages.push({ kind: 'error', errorKind: kind, detail: detail ?? undefined })
   askCmdrState.streaming = false
   clearProgressWatchdog()
+  // Whatever got staged before the failure is real and still the user's to answer.
+  openStagedRenameReview()
 }
 
 /**
@@ -306,6 +319,9 @@ function applyDiscarded(): void {
   askCmdrState.contextUsage = null
   askCmdrState.streaming = false
   clearProgressWatchdog()
+  // There is no thread left to review against, so this turn's plans go back rather than
+  // opening a dialog for a conversation that no longer exists.
+  discardStagedRenameProposals()
 }
 
 function resetProgressWatchdog(): void {

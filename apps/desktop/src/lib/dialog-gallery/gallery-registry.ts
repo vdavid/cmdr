@@ -20,605 +20,612 @@ export type GalleryHostWindow = 'main' | 'settings' | 'viewer'
 
 /** One reviewable variant of a dialog. */
 export interface DialogGalleryState {
-  /** Stable id, unique within the entry. Rides the trigger event to the main window. */
-  id: string
-  /** Button label in the Debug list. */
-  label: string
-  /** Optional caveat shown under the button (a side effect, or what the state can't show). */
-  note?: string
+    /** Stable id, unique within the entry. Rides the trigger event to the main window. */
+    id: string
+    /** Button label in the Debug list. */
+    label: string
+    /** Optional caveat shown under the button (a side effect, or what the state can't show). */
+    note?: string
 }
 
 interface DialogGalleryEntryBase {
-  /** The registered soft dialog this row previews. */
-  dialogId: SoftDialogId
-  /** Row label in the Debug list. */
-  label: string
-  /**
-   * Where the dialog lives in the shipping app. The gallery renders every row over
-   * the MAIN window, so a `settings` / `viewer` row is showing you the dialog on a
-   * backdrop it never has in production. The row says so; that's the deal.
-   */
-  hostWindow: GalleryHostWindow
-  /** Reviewable variants. Empty for a `not-triggerable` row. */
-  states: DialogGalleryState[]
-  /** Optional caveat that applies to every state of this dialog. */
-  note?: string
-  /**
-   * How the preview opens, when the harness rendering the component with
-   * fixture props (the default) isn't how this dialog works:
-   *
-   * - `store-seeded`: the gallery patches the real module `$state` store and the
-   *   APP's own mount site renders the dialog, because it takes no content props
-   *   and would render EMPTY from the harness. The patch is undone when the
-   *   dialog closes, so a preview never leaves the app half-seeded.
-   * - `app-command`: the gallery dispatches the app's own command, because the
-   *   open flag isn't in any store (`onboarding` lives in a local `$state` in
-   *   `routes/(main)/+page.svelte`).
-   * - `event-seeded`: the gallery arranges the dialog's preconditions and emits
-   *   the real backend event it self-mounts off (`drive-index-stale`).
-   *
-   * The Debug panel discloses this per row, and the harness's mount sweep knows
-   * these rows render nothing of their own.
-   */
-  openedBy?: 'store-seeded' | 'app-command' | 'event-seeded'
-  /**
-   * The dialog does real work on mount (scans, conflict lookups, path
-   * resolution), so it runs against a real throwaway directory. The Debug panel
-   * creates that directory through a dev-only IPC, ferries its landmarks in the
-   * trigger, and the main window navigates the focused pane there. The panel
-   * discloses all of that once per row, so the notes don't have to repeat it.
-   */
-  usesFixtureDir?: boolean
+    /** The registered soft dialog this row previews. */
+    dialogId: SoftDialogId
+    /** Row label in the Debug list. */
+    label: string
+    /**
+     * Where the dialog lives in the shipping app. The gallery renders every row over
+     * the MAIN window, so a `settings` / `viewer` row is showing you the dialog on a
+     * backdrop it never has in production. The row says so; that's the deal.
+     */
+    hostWindow: GalleryHostWindow
+    /** Reviewable variants. Empty for a `not-triggerable` row. */
+    states: DialogGalleryState[]
+    /** Optional caveat that applies to every state of this dialog. */
+    note?: string
+    /**
+     * How the preview opens, when the harness rendering the component with
+     * fixture props (the default) isn't how this dialog works:
+     *
+     * - `store-seeded`: the gallery patches the real module `$state` store and the
+     *   APP's own mount site renders the dialog, because it takes no content props
+     *   and would render EMPTY from the harness. The patch is undone when the
+     *   dialog closes, so a preview never leaves the app half-seeded.
+     * - `app-command`: the gallery dispatches the app's own command, because the
+     *   open flag isn't in any store (`onboarding` lives in a local `$state` in
+     *   `routes/(main)/+page.svelte`).
+     * - `event-seeded`: the gallery arranges the dialog's preconditions and emits
+     *   the real backend event it self-mounts off (`drive-index-stale`).
+     *
+     * The Debug panel discloses this per row, and the harness's mount sweep knows
+     * these rows render nothing of their own.
+     */
+    openedBy?: 'store-seeded' | 'app-command' | 'event-seeded'
+    /**
+     * The dialog does real work on mount (scans, conflict lookups, path
+     * resolution), so it runs against a real throwaway directory. The Debug panel
+     * creates that directory through a dev-only IPC, ferries its landmarks in the
+     * trigger, and the main window navigates the focused pane there. The panel
+     * discloses all of that once per row, so the notes don't have to repeat it.
+     */
+    usesFixtureDir?: boolean
 }
 
 export type DialogGalleryEntry = DialogGalleryEntryBase &
-  (
-    | { status: 'ready'; reason?: never }
-    /** `reason` is required, and it's what the Debug row shows instead of buttons. */
-    | { status: 'not-triggerable'; reason: string }
-  )
+    (
+        | { status: 'ready'; reason?: never }
+        /** `reason` is required, and it's what the Debug row shows instead of buttons. */
+        | { status: 'not-triggerable'; reason: string }
+    )
 
 /** A modal-looking overlay that is deliberately NOT in `SOFT_DIALOG_REGISTRY`. */
 export interface UnregisteredOverlayEntry {
-  /** Free-form id: this is not a `SoftDialogId`, and the coverage check ignores it. */
-  overlayId: string
-  label: string
-  hostWindow: GalleryHostWindow
-  /** Why it isn't registered, and how to evoke it by hand. */
-  reason: string
+    /** Free-form id: this is not a `SoftDialogId`, and the coverage check ignores it. */
+    overlayId: string
+    label: string
+    hostWindow: GalleryHostWindow
+    /** Why it isn't registered, and how to evoke it by hand. */
+    reason: string
 }
 
 export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
-  // ── Alerts ────────────────────────────────────────────────────────────────
-  {
-    dialogId: 'alert',
-    label: 'Alert',
-    hostWindow: 'main',
-    status: 'ready',
-    states: [
-      { id: 'short', label: 'Short message' },
-      { id: 'long', label: 'Long message' },
-      { id: 'custom-button', label: 'Custom button label' },
-      { id: 'long-unbroken-path', label: 'Unbreakable long path' },
-      { id: 'path-past-display-cap', label: 'Path past the display cap' },
-    ],
-  },
+    // ── Alerts ────────────────────────────────────────────────────────────────
+    {
+        dialogId: 'alert',
+        label: 'Alert',
+        hostWindow: 'main',
+        status: 'ready',
+        states: [
+            { id: 'short', label: 'Short message' },
+            { id: 'long', label: 'Long message' },
+            { id: 'custom-button', label: 'Custom button label' },
+            { id: 'long-unbroken-path', label: 'Unbreakable long path' },
+            { id: 'path-past-display-cap', label: 'Path past the display cap' },
+        ],
+    },
 
-  // ── File operations ───────────────────────────────────────────────────────
-  {
-    dialogId: 'delete-confirmation',
-    label: 'Delete confirmation',
-    hostWindow: 'main',
-    status: 'ready',
-    usesFixtureDir: true,
-    note: 'The scan is real: the climbing file and folder tally, the total size, and the throughput line all come from scanning the fixture files. Confirming deletes NOTHING — the delete lives in the onConfirm prop, which the gallery leaves empty.',
-    states: [
-      { id: 'trash-single', label: 'One item, to Trash' },
-      { id: 'trash-many', label: 'Five items, to Trash' },
-      { id: 'permanent-single', label: 'One item, permanently' },
-      { id: 'permanent-many', label: 'Five items, permanently' },
-      {
-        id: 'no-trash-support',
-        label: 'Volume without Trash',
-        note: 'What MTP and most network shares look like: no toggle, permanent only.',
-      },
-      {
-        id: 'long-name',
-        label: 'A name that never fits',
-        note: 'The row shortens; hovering it gives the full path, and dragging a side edge widens the panel.',
-      },
-    ],
-  },
-  {
-    dialogId: 'transfer-confirmation',
-    label: 'Copy / move confirmation',
-    hostWindow: 'main',
-    status: 'ready',
-    usesFixtureDir: true,
-    note: 'Everything the dialog computes runs for real: the source scan, the destination free-space query, and the conflict pre-check (the destination folder already holds entries named like some of the sources, so it finds actual conflicts). Confirming copies or moves NOTHING — the operation lives in the onConfirm prop, which the gallery leaves empty. Switching the toggle to Compress is a fourth state you can reach from any of these.',
-    states: [
-      { id: 'copy', label: 'Copy five items' },
-      { id: 'move', label: 'Move five items' },
-      { id: 'copy-single', label: 'Copy one item' },
-    ],
-  },
-  {
-    dialogId: 'transfer-progress',
-    label: 'Transfer progress',
-    hostWindow: 'main',
-    status: 'not-triggerable',
-    reason:
-      'Start a real copy (F5), move, or delete and you have it — that’s also the only way to see it. Every phase it shows is driven by a live operation on the backend’s write-progress / write-conflict / write-error / write-cancelled / write-settled stream: the scan phase, the two bars, pause and queue, the flush at the end, and the conflict section it embeds (TransferConflictDialog is a section of this dialog’s body, not its own chrome). Choosing a phase from the gallery would need a script that replays that stream, which nobody has written yet.',
-    states: [],
-  },
-  {
-    dialogId: 'rollback-confirmation',
-    label: 'Rollback confirmation',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Deleting nothing: the rollback lives in the onConfirm prop, which the gallery leaves empty. In the app it stacks over whichever surface offered Rollback — the progress dialog, the main window`s clash prompt, a row in the operation queue window, or a row in the operation log. One state per wording: what rolling back DOES differs per operation, so undoing a move must not be worded as a delete.',
-    states: [
-      { id: 'stopAndDelete', label: 'Running copy' },
-      { id: 'stopAndMoveBack', label: 'Running move' },
-      { id: 'undoByDeleting', label: 'Undo a finished copy' },
-      { id: 'undoByMovingBack', label: 'Undo a finished move' },
-      { id: 'undoByRenamingBack', label: 'Undo a finished rename' },
-    ],
-  },
-  {
-    dialogId: 'operation-conflict',
-    label: 'Operation conflict',
-    hostWindow: 'main',
-    status: 'not-triggerable',
-    reason:
-      'Only a real operation can raise it. It appears when a copy or move that no progress dialog is showing (one sent to the queue with F2) hits a name clash deep inside a merging folder, which the upfront check can’t see. Getting here means staging a genuine clash under a folder that already exists at the destination, picking “Ask for each”, backgrounding the operation, and letting it reach that file — the body is the same TransferConflictDialog the progress dialog embeds, so the gallery’s transfer-progress row covers what it looks like.',
-    states: [],
-  },
-  {
-    dialogId: 'transfer-error',
-    label: 'Transfer error',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'One state per WriteOperationError variant: the dialog derives its title, explanation, suggestion, icon, container tint, and Retry button entirely from the typed error. Retry just closes the preview, since there is nothing to retry.',
-    states: [
-      { id: 'source_not_found', label: 'Source not found' },
-      { id: 'destination_not_found', label: 'Destination not found' },
-      { id: 'destination_exists', label: 'Destination exists' },
-      { id: 'permission_denied', label: 'Permission denied' },
-      { id: 'insufficient_space', label: 'Not enough space' },
-      { id: 'destination_inside_source', label: 'Destination inside source' },
-      { id: 'symlink_loop', label: 'Symlink loop' },
-      { id: 'cancelled', label: 'Cancelled' },
-      { id: 'device_disconnected', label: 'Device disconnected' },
-      { id: 'read_only_device', label: 'Read-only device' },
-      { id: 'file_locked', label: 'File locked' },
-      { id: 'trash_not_supported', label: 'Trash not supported' },
-      { id: 'connection_interrupted', label: 'Connection interrupted' },
-      { id: 'read_error', label: 'Read error' },
-      { id: 'write_error', label: 'Write error' },
-      { id: 'name_too_long', label: 'Name too long' },
-      { id: 'invalid_name', label: 'Invalid name' },
-      { id: 'delete_pending', label: 'Delete pending' },
-      { id: 'files_too_large_for_filesystem', label: 'Too large for the filesystem (three files)' },
-      { id: 'files_too_large_for_filesystem-single', label: 'Too large for the filesystem (one file)' },
-      { id: 'io_error', label: 'I/O error' },
-      { id: 'archive_needs_password', label: 'Archive needs a password' },
-    ],
-  },
-  {
-    dialogId: 'mkdir-confirmation',
-    label: 'New folder',
-    hostWindow: 'main',
-    status: 'ready',
-    usesFixtureDir: true,
-    note: 'This one WRITES. The dialog calls createDirectory() itself, so Create really makes a folder — inside the fixture directory, which is why these rows point there. The conflict check runs against the pane’s live listing, and the AI name suggestions are the real ones (they need a local model to appear).',
-    states: [
-      { id: 'empty', label: 'Empty name' },
-      { id: 'prefilled', label: 'Pre-filled name' },
-      { id: 'conflict', label: 'Name that already exists', note: 'A folder really in there, so the warning is live.' },
-      { id: 'too-long', label: 'Name past the length limit' },
-    ],
-  },
-  {
-    dialogId: 'new-file-confirmation',
-    label: 'New file',
-    hostWindow: 'main',
-    status: 'ready',
-    usesFixtureDir: true,
-    note: 'This one WRITES too: the dialog calls createFile() itself, inside the fixture directory. No AI suggestions here (that strip is the folder dialog’s), and the conflict check runs against the pane’s live listing.',
-    states: [
-      { id: 'empty', label: 'Empty name' },
-      { id: 'prefilled', label: 'Pre-filled name' },
-      { id: 'conflict', label: 'Name that already exists', note: 'A file really in there, so the warning is live.' },
-      { id: 'too-long', label: 'Name past the length limit' },
-    ],
-  },
-  {
-    dialogId: 'rename-conflict',
-    label: 'Rename conflict',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'The dialog is a comparison: it highlights whichever side is newer and whichever is larger, so both directions are here.',
-    states: [
-      { id: 'newer-and-larger', label: 'Yours is newer and larger' },
-      { id: 'older-and-smaller', label: 'Yours is older and smaller' },
-    ],
-  },
-  {
-    dialogId: 'extension-change',
-    label: 'Extension change',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Ticking “always allow” and confirming writes the real fileOperations.allowFileExtensionChanges setting.',
-    states: [
-      { id: 'typical', label: '.txt → .zip' },
-      { id: 'long-extension', label: 'Long extensions' },
-    ],
-  },
-  {
-    dialogId: 'archive-password',
-    label: 'Archive password',
-    hostWindow: 'main',
-    status: 'ready',
-    states: [
-      { id: 'first-attempt', label: 'First attempt' },
-      { id: 'wrong-attempt', label: 'Wrong password re-prompt' },
-    ],
-  },
+    // ── File operations ───────────────────────────────────────────────────────
+    {
+        dialogId: 'delete-confirmation',
+        label: 'Delete confirmation',
+        hostWindow: 'main',
+        status: 'ready',
+        usesFixtureDir: true,
+        note: 'The scan is real: the climbing file and folder tally, the total size, and the throughput line all come from scanning the fixture files. Confirming deletes NOTHING — the delete lives in the onConfirm prop, which the gallery leaves empty.',
+        states: [
+            { id: 'trash-single', label: 'One item, to Trash' },
+            { id: 'trash-many', label: 'Five items, to Trash' },
+            { id: 'permanent-single', label: 'One item, permanently' },
+            { id: 'permanent-many', label: 'Five items, permanently' },
+            {
+                id: 'no-trash-support',
+                label: 'Volume without Trash',
+                note: 'What MTP and most network shares look like: no toggle, permanent only.',
+            },
+            {
+                id: 'long-name',
+                label: 'A name that never fits',
+                note: 'The row shortens; hovering it gives the full path, and dragging a side edge widens the panel.',
+            },
+        ],
+    },
+    {
+        dialogId: 'transfer-confirmation',
+        label: 'Copy / move confirmation',
+        hostWindow: 'main',
+        status: 'ready',
+        usesFixtureDir: true,
+        note: 'Everything the dialog computes runs for real: the source scan, the destination free-space query, and the conflict pre-check (the destination folder already holds entries named like some of the sources, so it finds actual conflicts). Confirming copies or moves NOTHING — the operation lives in the onConfirm prop, which the gallery leaves empty. Switching the toggle to Compress is a fourth state you can reach from any of these.',
+        states: [
+            { id: 'copy', label: 'Copy five items' },
+            { id: 'move', label: 'Move five items' },
+            { id: 'copy-single', label: 'Copy one item' },
+        ],
+    },
+    {
+        dialogId: 'transfer-progress',
+        label: 'Transfer progress',
+        hostWindow: 'main',
+        status: 'not-triggerable',
+        reason: 'Start a real copy (F5), move, or delete and you have it — that’s also the only way to see it. Every phase it shows is driven by a live operation on the backend’s write-progress / write-conflict / write-error / write-cancelled / write-settled stream: the scan phase, the two bars, pause and queue, the flush at the end, and the conflict section it embeds (TransferConflictDialog is a section of this dialog’s body, not its own chrome). Choosing a phase from the gallery would need a script that replays that stream, which nobody has written yet.',
+        states: [],
+    },
+    {
+        dialogId: 'rollback-confirmation',
+        label: 'Rollback confirmation',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Deleting nothing: the rollback lives in the onConfirm prop, which the gallery leaves empty. In the app it stacks over whichever surface offered Rollback — the progress dialog, the main window`s clash prompt, a row in the operation queue window, or a row in the operation log. One state per wording: what rolling back DOES differs per operation, so undoing a move must not be worded as a delete.',
+        states: [
+            { id: 'stopAndDelete', label: 'Running copy' },
+            { id: 'stopAndMoveBack', label: 'Running move' },
+            { id: 'undoByDeleting', label: 'Undo a finished copy' },
+            { id: 'undoByMovingBack', label: 'Undo a finished move' },
+            { id: 'undoByRenamingBack', label: 'Undo a finished rename' },
+        ],
+    },
+    {
+        dialogId: 'operation-conflict',
+        label: 'Operation conflict',
+        hostWindow: 'main',
+        status: 'not-triggerable',
+        reason: 'Only a real operation can raise it. It appears when a copy or move that no progress dialog is showing (one sent to the queue with F2) hits a name clash deep inside a merging folder, which the upfront check can’t see. Getting here means staging a genuine clash under a folder that already exists at the destination, picking “Ask for each”, backgrounding the operation, and letting it reach that file — the body is the same TransferConflictDialog the progress dialog embeds, so the gallery’s transfer-progress row covers what it looks like.',
+        states: [],
+    },
+    {
+        dialogId: 'transfer-error',
+        label: 'Transfer error',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'One state per WriteOperationError variant: the dialog derives its title, explanation, suggestion, icon, container tint, and Retry button entirely from the typed error. Retry just closes the preview, since there is nothing to retry.',
+        states: [
+            { id: 'source_not_found', label: 'Source not found' },
+            { id: 'destination_not_found', label: 'Destination not found' },
+            { id: 'destination_exists', label: 'Destination exists' },
+            { id: 'permission_denied', label: 'Permission denied' },
+            { id: 'insufficient_space', label: 'Not enough space' },
+            { id: 'destination_inside_source', label: 'Destination inside source' },
+            { id: 'symlink_loop', label: 'Symlink loop' },
+            { id: 'cancelled', label: 'Cancelled' },
+            { id: 'device_disconnected', label: 'Device disconnected' },
+            { id: 'read_only_device', label: 'Read-only device' },
+            { id: 'file_locked', label: 'File locked' },
+            { id: 'trash_not_supported', label: 'Trash not supported' },
+            { id: 'connection_interrupted', label: 'Connection interrupted' },
+            { id: 'read_error', label: 'Read error' },
+            { id: 'write_error', label: 'Write error' },
+            { id: 'name_too_long', label: 'Name too long' },
+            { id: 'invalid_name', label: 'Invalid name' },
+            { id: 'delete_pending', label: 'Delete pending' },
+            { id: 'files_too_large_for_filesystem', label: 'Too large for the filesystem (three files)' },
+            { id: 'files_too_large_for_filesystem-single', label: 'Too large for the filesystem (one file)' },
+            { id: 'io_error', label: 'I/O error' },
+            { id: 'archive_needs_password', label: 'Archive needs a password' },
+        ],
+    },
+    {
+        dialogId: 'mkdir-confirmation',
+        label: 'New folder',
+        hostWindow: 'main',
+        status: 'ready',
+        usesFixtureDir: true,
+        note: 'This one WRITES. The dialog calls createDirectory() itself, so Create really makes a folder — inside the fixture directory, which is why these rows point there. The conflict check runs against the pane’s live listing, and the AI name suggestions are the real ones (they need a local model to appear).',
+        states: [
+            { id: 'empty', label: 'Empty name' },
+            { id: 'prefilled', label: 'Pre-filled name' },
+            {
+                id: 'conflict',
+                label: 'Name that already exists',
+                note: 'A folder really in there, so the warning is live.',
+            },
+            { id: 'too-long', label: 'Name past the length limit' },
+        ],
+    },
+    {
+        dialogId: 'new-file-confirmation',
+        label: 'New file',
+        hostWindow: 'main',
+        status: 'ready',
+        usesFixtureDir: true,
+        note: 'This one WRITES too: the dialog calls createFile() itself, inside the fixture directory. No AI suggestions here (that strip is the folder dialog’s), and the conflict check runs against the pane’s live listing.',
+        states: [
+            { id: 'empty', label: 'Empty name' },
+            { id: 'prefilled', label: 'Pre-filled name' },
+            {
+                id: 'conflict',
+                label: 'Name that already exists',
+                note: 'A file really in there, so the warning is live.',
+            },
+            { id: 'too-long', label: 'Name past the length limit' },
+        ],
+    },
+    {
+        dialogId: 'rename-conflict',
+        label: 'Rename conflict',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'The dialog is a comparison: it highlights whichever side is newer and whichever is larger, so both directions are here.',
+        states: [
+            { id: 'newer-and-larger', label: 'Yours is newer and larger' },
+            { id: 'older-and-smaller', label: 'Yours is older and smaller' },
+        ],
+    },
+    {
+        dialogId: 'extension-change',
+        label: 'Extension change',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Ticking “always allow” and confirming writes the real fileOperations.allowFileExtensionChanges setting.',
+        states: [
+            { id: 'typical', label: '.txt → .zip' },
+            { id: 'long-extension', label: 'Long extensions' },
+        ],
+    },
+    {
+        dialogId: 'archive-password',
+        label: 'Archive password',
+        hostWindow: 'main',
+        status: 'ready',
+        states: [
+            { id: 'first-attempt', label: 'First attempt' },
+            { id: 'wrong-attempt', label: 'Wrong password re-prompt' },
+        ],
+    },
 
-  // ── Navigation and selection ──────────────────────────────────────────────
-  {
-    dialogId: 'go-to-path',
-    label: 'Go to path',
-    hostWindow: 'main',
-    status: 'ready',
-    usesFixtureDir: true,
-    note: 'Live against the fixture directory: type Photos/exported and the box resolves it for real, type Photos/exported/nope.txt and the nearest-ancestor hint appears. The recent-paths list is your real one, and removing a row removes it for real. “Go to path” closes the preview instead of jumping — the gallery has no navigation behind it — and the clipboard prefill is the real one, so it depends on what you last copied.',
-    states: [{ id: 'fixture-dir', label: 'Open' }],
-  },
-  {
-    dialogId: 'search',
-    label: 'Search',
-    hostWindow: 'main',
-    status: 'not-triggerable',
-    reason:
-      'Left out on purpose, with nothing blocking it. SearchDialog takes plain props, the drive index is live in dev, and ⌘F (or the MCP open_search_dialog tool) opens it right now, so it’s the easiest dialog in the app to reach by hand. Wiring it in with a canned result set is a follow-up nobody has done yet.',
-    states: [],
-  },
-  {
-    dialogId: 'selection-add',
-    label: 'Select files…',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Filters a fixture folder snapshot, not the live pane, so committing changes no selection. Recent selections and the AI strip are real (they read the same settings and IPC production does).',
-    states: [
-      { id: 'mixed-folder', label: 'Mixed folder' },
-      { id: 'snapshot-pane', label: 'Search-results snapshot pane' },
-      { id: 'empty-folder', label: 'Empty folder' },
-    ],
-  },
-  {
-    dialogId: 'selection-remove',
-    label: 'Deselect files…',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Same component as “Select files…” in remove mode: different title, primary action, and recent-items history.',
-    states: [{ id: 'mixed-folder', label: 'Mixed folder' }],
-  },
+    // ── Navigation and selection ──────────────────────────────────────────────
+    {
+        dialogId: 'go-to-path',
+        label: 'Go to path',
+        hostWindow: 'main',
+        status: 'ready',
+        usesFixtureDir: true,
+        note: 'Live against the fixture directory: type Photos/exported and the box resolves it for real, type Photos/exported/nope.txt and the nearest-ancestor hint appears. The recent-paths list is your real one, and removing a row removes it for real. “Go to path” closes the preview instead of jumping — the gallery has no navigation behind it — and the clipboard prefill is the real one, so it depends on what you last copied.',
+        states: [{ id: 'fixture-dir', label: 'Open' }],
+    },
+    {
+        dialogId: 'search',
+        label: 'Search',
+        hostWindow: 'main',
+        status: 'not-triggerable',
+        reason: 'Left out on purpose, with nothing blocking it. SearchDialog takes plain props, the drive index is live in dev, and ⌘F (or the MCP open_search_dialog tool) opens it right now, so it’s the easiest dialog in the app to reach by hand. Wiring it in with a canned result set is a follow-up nobody has done yet.',
+        states: [],
+    },
+    {
+        dialogId: 'selection-add',
+        label: 'Select files…',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Filters a fixture folder snapshot, not the live pane, so committing changes no selection. Recent selections and the AI strip are real (they read the same settings and IPC production does).',
+        states: [
+            { id: 'mixed-folder', label: 'Mixed folder' },
+            { id: 'snapshot-pane', label: 'Search-results snapshot pane' },
+            { id: 'empty-folder', label: 'Empty folder' },
+        ],
+    },
+    {
+        dialogId: 'selection-remove',
+        label: 'Deselect files…',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Same component as “Select files…” in remove mode: different title, primary action, and recent-items history.',
+        states: [{ id: 'mixed-folder', label: 'Mixed folder' }],
+    },
 
-  // ── Ask Cmdr and AI ───────────────────────────────────────────────────────
-  {
-    dialogId: 'bulk-rename-review',
-    label: 'Bulk rename review',
-    hostWindow: 'main',
-    status: 'ready',
-    openedBy: 'store-seeded',
-    note: 'Apply WILL fail, and that’s expected: it keys on a proposal id the backend staged, which a fixture has no counterpart for, so the attempt logs a warning and the review stays up. Cancel and Escape work normally. Nothing here renames anything.',
-    states: [
-      { id: 'all-allowed', label: 'Six rows, all allowed' },
-      {
-        id: 'some-blocked',
-        label: 'Blocked rows and warnings',
-        note: 'Both blocked reasons plus both warning badges at once; a real proposal rarely shows them together.',
-      },
-      { id: 'long-names', label: 'Long and non-ASCII names' },
-      {
-        id: 'why-this-name',
-        label: 'Every evidence source',
-        note: 'All five sources at once, including a quote long enough to wrap. The three non-image labels are the honest ones: nothing was read inside those files.',
-      },
-      {
-        id: 'edited-names',
-        label: 'Edited, kept, and refused names',
-        note: 'The states around editing a name: one the user typed (which claims no evidence at all), one Cmdr kept because it read nothing inside the file, and one whose typed name the backend wouldn’t take.',
-      },
-      { id: 'expired', label: 'Proposal expired' },
-    ],
-  },
-  {
-    dialogId: 'suggested-ops',
-    label: 'Suggested ops',
-    hostWindow: 'main',
-    status: 'not-triggerable',
-    reason:
-      'Half-built: the file list, the per-group disclosure, and Reject work, but Approve waits on the M4a bridge, so a preview would show a dialog nobody can finish a decision in. It gets store-seeded fixtures (an irreversible group, a folder that will be created, a pattern-matched group, and a 60,000-op group) once approving is real.',
-    states: [],
-  },
-  {
-    dialogId: 'delete-ai-model',
-    label: 'Delete local AI model',
-    hostWindow: 'settings',
-    status: 'ready',
-    note: 'Deleting nothing: the uninstall lives in the onConfirm prop, which the gallery leaves empty. In the app this sits in the Settings window over AI › Provider.',
-    states: [
-      { id: 'idle', label: 'Confirm' },
-      {
-        id: 'deleting',
-        label: 'Delete in flight',
-        note: 'Title, body, and both buttons all change; Escape and Enter are dead here.',
-      },
-    ],
-  },
-  {
-    dialogId: 'forget-memory',
-    label: 'Forget Ask Cmdr memory',
-    hostWindow: 'settings',
-    status: 'ready',
-    note: 'Forgetting nothing: the delete lives in the onConfirm prop, which the gallery leaves empty. In the app this sits in the Settings window over AI › Ask Cmdr, under "What Ask Cmdr remembers".',
-    states: [
-      { id: 'idle', label: 'Confirm' },
-      { id: 'forgetting', label: 'Delete in flight', note: 'Both buttons go dead, and Enter with them.' },
-    ],
-  },
+    // ── Ask Cmdr and AI ───────────────────────────────────────────────────────
+    {
+        dialogId: 'bulk-rename-review',
+        label: 'Bulk rename review',
+        hostWindow: 'main',
+        status: 'ready',
+        openedBy: 'store-seeded',
+        note: 'Apply WILL fail, and that’s expected: it keys on a proposal id the backend staged, which a fixture has no counterpart for, so the attempt logs a warning and the review stays up. Cancel and Escape work normally. Nothing here renames anything.',
+        states: [
+            { id: 'all-allowed', label: 'Six rows, all allowed' },
+            {
+                id: 'some-blocked',
+                label: 'Blocked rows and warnings',
+                note: 'Both blocked reasons plus both warning badges at once; a real proposal rarely shows them together.',
+            },
+            { id: 'long-names', label: 'Long and non-ASCII names' },
+            {
+                id: 'why-this-name',
+                label: 'Every evidence source',
+                note: 'All five sources at once, including a quote long enough to wrap. The three non-image labels are the honest ones: nothing was read inside those files.',
+            },
+            {
+                id: 'edited-names',
+                label: 'Edited, kept, and refused names',
+                note: 'The states around editing a name: one the user typed (which claims no evidence at all), one Cmdr kept because it read nothing inside the file, and one whose typed name the backend wouldn’t take.',
+            },
+            {
+                id: 'spanning-folders',
+                label: 'A job across two folders',
+                note: 'One review over the batches of one job. A rename group binds one parent folder, so a job across folders is several batches, several operations, and one decision.',
+            },
+            { id: 'expired', label: 'Proposal expired' },
+        ],
+    },
+    {
+        dialogId: 'suggested-ops',
+        label: 'Suggested ops',
+        hostWindow: 'main',
+        status: 'not-triggerable',
+        reason: 'Half-built: the file list, the per-group disclosure, and Reject work, but Approve waits on the M4a bridge, so a preview would show a dialog nobody can finish a decision in. It gets store-seeded fixtures (an irreversible group, a folder that will be created, a pattern-matched group, and a 60,000-op group) once approving is real.',
+        states: [],
+    },
+    {
+        dialogId: 'delete-ai-model',
+        label: 'Delete local AI model',
+        hostWindow: 'settings',
+        status: 'ready',
+        note: 'Deleting nothing: the uninstall lives in the onConfirm prop, which the gallery leaves empty. In the app this sits in the Settings window over AI › Provider.',
+        states: [
+            { id: 'idle', label: 'Confirm' },
+            {
+                id: 'deleting',
+                label: 'Delete in flight',
+                note: 'Title, body, and both buttons all change; Escape and Enter are dead here.',
+            },
+        ],
+    },
+    {
+        dialogId: 'forget-memory',
+        label: 'Forget Ask Cmdr memory',
+        hostWindow: 'settings',
+        status: 'ready',
+        note: 'Forgetting nothing: the delete lives in the onConfirm prop, which the gallery leaves empty. In the app this sits in the Settings window over AI › Ask Cmdr, under "What Ask Cmdr remembers".',
+        states: [
+            { id: 'idle', label: 'Confirm' },
+            { id: 'forgetting', label: 'Delete in flight', note: 'Both buttons go dead, and Enter with them.' },
+        ],
+    },
 
-  // ── Devices, network, and indexing ────────────────────────────────────────
-  {
-    dialogId: 'connect-to-server',
-    label: 'Connect to server',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'ONE state, and it has side effects. Opening it starts real mDNS discovery on purpose (the dialog does that in onMount so the macOS Local Network prompt fires alongside the dialog rather than after Connect), so expect that prompt. Its connecting and error states live in internal component state with no prop to reach them, so what you see here is the idle state only. Typing a real address and pressing Connect opens a real socket.',
-    states: [{ id: 'idle', label: 'Open' }],
-  },
-  {
-    dialogId: 'move-to-applications',
-    label: 'Move Cmdr to Applications',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Shipping trigger is an update found while the bundle sits somewhere read-only; the gallery passes the same prop directly.',
-    states: [
-      { id: 'translocated', label: 'Opened from Downloads' },
-      { id: 'read-only-volume', label: 'Running from a disk image' },
-    ],
-  },
-  {
-    dialogId: 'mtp-permission',
-    label: 'MTP permission (Linux)',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Linux-only in the shipping app (it explains a udev rule); the gallery opens it on any platform.',
-    states: [{ id: 'default', label: 'Open' }],
-  },
-  {
-    dialogId: 'ptpcamerad',
-    label: 'ptpcamerad conflict',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'The workaround command comes from a real IPC call on mount, so it shows this platform’s command.',
-    states: [
-      { id: 'known-process', label: 'Named blocking process' },
-      { id: 'unknown', label: 'Unknown blocking process' },
-    ],
-  },
-  {
-    dialogId: 'drive-index-stale',
-    label: 'Stale drive index',
-    hostWindow: 'main',
-    status: 'ready',
-    openedBy: 'event-seeded',
-    note: 'Needs an external drive, share, or phone mounted, and names a real one: the copy reads the name out of the volume store, so with nothing mounted the preview says so rather than printing an id. Two real writes: it turns indexing.staleNotify back on if you’d disabled it, and it clears the one-time flag before every trigger, which is what makes this row repeatable. The app shows this dialog once per machine, so a preview spends that one shot, and “Never show again” turns the setting off for real. The drive’s freshness badge won’t move: it reads the backend’s real freshness, and this replays the event without touching the index.',
-    states: [{ id: 'default', label: 'Open' }],
-  },
+    // ── Devices, network, and indexing ────────────────────────────────────────
+    {
+        dialogId: 'connect-to-server',
+        label: 'Connect to server',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'ONE state, and it has side effects. Opening it starts real mDNS discovery on purpose (the dialog does that in onMount so the macOS Local Network prompt fires alongside the dialog rather than after Connect), so expect that prompt. Its connecting and error states live in internal component state with no prop to reach them, so what you see here is the idle state only. Typing a real address and pressing Connect opens a real socket.',
+        states: [{ id: 'idle', label: 'Open' }],
+    },
+    {
+        dialogId: 'move-to-applications',
+        label: 'Move Cmdr to Applications',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Shipping trigger is an update found while the bundle sits somewhere read-only; the gallery passes the same prop directly.',
+        states: [
+            { id: 'translocated', label: 'Opened from Downloads' },
+            { id: 'read-only-volume', label: 'Running from a disk image' },
+        ],
+    },
+    {
+        dialogId: 'mtp-permission',
+        label: 'MTP permission (Linux)',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Linux-only in the shipping app (it explains a udev rule); the gallery opens it on any platform.',
+        states: [{ id: 'default', label: 'Open' }],
+    },
+    {
+        dialogId: 'ptpcamerad',
+        label: 'ptpcamerad conflict',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'The workaround command comes from a real IPC call on mount, so it shows this platform’s command.',
+        states: [
+            { id: 'known-process', label: 'Named blocking process' },
+            { id: 'unknown', label: 'Unknown blocking process' },
+        ],
+    },
+    {
+        dialogId: 'drive-index-stale',
+        label: 'Stale drive index',
+        hostWindow: 'main',
+        status: 'ready',
+        openedBy: 'event-seeded',
+        note: 'Needs an external drive, share, or phone mounted, and names a real one: the copy reads the name out of the volume store, so with nothing mounted the preview says so rather than printing an id. Two real writes: it turns indexing.staleNotify back on if you’d disabled it, and it clears the one-time flag before every trigger, which is what makes this row repeatable. The app shows this dialog once per machine, so a preview spends that one shot, and “Never show again” turns the setting off for real. The drive’s freshness badge won’t move: it reads the backend’s real freshness, and this replays the event without touching the index.',
+        states: [{ id: 'default', label: 'Open' }],
+    },
 
-  // ── Licensing and app lifecycle ───────────────────────────────────────────
-  {
-    dialogId: 'quit-confirmation',
-    label: 'Quit while operations run',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Static here, and quitting nothing: the real dialog mirrors a countdown the Rust quit gate owns, and both buttons are props the gallery leaves pointing at close. Each state pins its own second, so you can review the last-second wording without waiting for it. It renders above any other dialog (`--z-modal-top`), which you can see by opening a conflict dialog first.',
-    states: [
-      { id: 'one-copy', label: 'One copy running' },
-      { id: 'several-operations', label: 'Five operations' },
-      { id: 'long-names', label: 'Names that never fit' },
-      { id: 'last-second', label: 'One second left' },
-    ],
-  },
-  {
-    dialogId: 'acknowledgements',
-    label: 'Acknowledgements',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Loads the generated dependency list on open, so the two long lists reflect what actually ships right now. Regenerate with `pnpm check third-party-notices`.',
-    states: [{ id: 'default', label: 'Open' }],
-  },
-  {
-    dialogId: 'about',
-    label: 'About Cmdr',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'ONE state, and it isn’t a fixture. The license block and version come from the licensing store’s cached status and a version IPC, so you’re reviewing THIS machine’s real license state; a different machine shows different copy. There are no props to override it.',
-    states: [{ id: 'default', label: 'Open' }],
-  },
-  {
-    dialogId: 'license',
-    label: 'License key',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'ONE state, and it isn’t a fixture. The dialog takes only callbacks; the existing-license panel, the server-invalid retry, the confirm-reset step, and the loading state all come from the licensing store plus an on-mount IPC, so you get whatever this machine’s license happens to be. Activating or resetting a key here does it for real.',
-    states: [{ id: 'default', label: 'Open' }],
-  },
-  {
-    dialogId: 'expiration',
-    label: 'License expired',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Closing it records the real “expiration modal shown” flag, and Renew opens getcmdr.com in a browser.',
-    states: [
-      { id: 'organization', label: 'With organization name' },
-      { id: 'personal', label: 'Without organization name' },
-    ],
-  },
-  {
-    dialogId: 'commercial-reminder',
-    label: 'Commercial licensing reminder',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Dismissing it records the real dismissal timestamp, so the app won’t remind you again for a while. The other button opens getcmdr.com/pricing in a browser.',
-    states: [{ id: 'default', label: 'Open' }],
-  },
-  {
-    dialogId: 'onboarding',
-    label: 'Onboarding wizard',
-    hostWindow: 'main',
-    status: 'ready',
-    openedBy: 'app-command',
-    note: 'The real wizard, with real state: every page reads this machine’s Full Disk Access, AI, and beta settings, and each step’s buttons DO what they say (Deny records the real choice, Allow wants a restart, the beta email really signs up, the optional toggles really write). It always opens at step 1 and the preview jumps the cursor from there — otherwise steps 2-4 are unreachable without committing to an FDA choice first. There’s no Escape and no × by design: finishing it marks this machine onboarded.',
-    states: [
-      {
-        id: 'step-1-fda',
-        label: 'Step 1: Full disk access',
-        note: 'macOS-only in the app; Linux skips straight to step 2.',
-      },
-      { id: 'step-2-ai', label: 'Step 2: AI provider' },
-      { id: 'step-3-beta', label: 'Step 3: Open beta' },
-      { id: 'step-4-optional', label: 'Step 4: Optional setup' },
-    ],
-  },
-  {
-    dialogId: 'whats-new',
-    label: 'What’s new',
-    hostWindow: 'main',
-    status: 'ready',
-    openedBy: 'store-seeded',
-    note: 'Fixture changelog entries, rendered through the same markdown path the real ones take. “Don’t show this again” writes the real whatsNew.showOnUpdate setting (and toasts), and the changelog link opens getcmdr.com in a browser.',
-    states: [
-      { id: 'one-release', label: 'One release' },
-      {
-        id: 'several-releases',
-        label: 'Three releases, long entries',
-        note: 'The lead is a numbered list, which is why it renders in a div rather than a p.',
-      },
-      {
-        id: 'empty',
-        label: 'Nothing to show',
-        note: 'Manual-reopen only in the app: an auto-show with an empty slice silently stamps instead.',
-      },
-    ],
-  },
-  {
-    dialogId: 'operation-log',
-    label: 'Operation log',
-    hostWindow: 'main',
-    status: 'ready',
-    openedBy: 'store-seeded',
-    note: 'Fixture operations covering every kind, initiator, status, and rollback state. Expanding one fetches its items for REAL, and a fixture operation isn’t in the log, so every row expands to “no recorded items” — reviewing the item list itself needs a genuine operation.',
-    states: [
-      { id: 'loading', label: 'Loading', note: 'Stays spinning: nothing is being read behind it.' },
-      { id: 'populated', label: 'Seven operations' },
-      {
-        id: 'more-pages',
-        label: 'With “Load more”',
-        note: 'Load more appends this machine’s REAL log page, so the list becomes a mix.',
-      },
-      { id: 'empty', label: 'No operations yet' },
-      { id: 'load-error', label: 'Couldn’t read the log' },
-    ],
-  },
+    // ── Licensing and app lifecycle ───────────────────────────────────────────
+    {
+        dialogId: 'quit-confirmation',
+        label: 'Quit while operations run',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Static here, and quitting nothing: the real dialog mirrors a countdown the Rust quit gate owns, and both buttons are props the gallery leaves pointing at close. Each state pins its own second, so you can review the last-second wording without waiting for it. It renders above any other dialog (`--z-modal-top`), which you can see by opening a conflict dialog first.',
+        states: [
+            { id: 'one-copy', label: 'One copy running' },
+            { id: 'several-operations', label: 'Five operations' },
+            { id: 'long-names', label: 'Names that never fit' },
+            { id: 'last-second', label: 'One second left' },
+        ],
+    },
+    {
+        dialogId: 'acknowledgements',
+        label: 'Acknowledgements',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Loads the generated dependency list on open, so the two long lists reflect what actually ships right now. Regenerate with `pnpm check third-party-notices`.',
+        states: [{ id: 'default', label: 'Open' }],
+    },
+    {
+        dialogId: 'about',
+        label: 'About Cmdr',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'ONE state, and it isn’t a fixture. The license block and version come from the licensing store’s cached status and a version IPC, so you’re reviewing THIS machine’s real license state; a different machine shows different copy. There are no props to override it.',
+        states: [{ id: 'default', label: 'Open' }],
+    },
+    {
+        dialogId: 'license',
+        label: 'License key',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'ONE state, and it isn’t a fixture. The dialog takes only callbacks; the existing-license panel, the server-invalid retry, the confirm-reset step, and the loading state all come from the licensing store plus an on-mount IPC, so you get whatever this machine’s license happens to be. Activating or resetting a key here does it for real.',
+        states: [{ id: 'default', label: 'Open' }],
+    },
+    {
+        dialogId: 'expiration',
+        label: 'License expired',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Closing it records the real “expiration modal shown” flag, and Renew opens getcmdr.com in a browser.',
+        states: [
+            { id: 'organization', label: 'With organization name' },
+            { id: 'personal', label: 'Without organization name' },
+        ],
+    },
+    {
+        dialogId: 'commercial-reminder',
+        label: 'Commercial licensing reminder',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Dismissing it records the real dismissal timestamp, so the app won’t remind you again for a while. The other button opens getcmdr.com/pricing in a browser.',
+        states: [{ id: 'default', label: 'Open' }],
+    },
+    {
+        dialogId: 'onboarding',
+        label: 'Onboarding wizard',
+        hostWindow: 'main',
+        status: 'ready',
+        openedBy: 'app-command',
+        note: 'The real wizard, with real state: every page reads this machine’s Full Disk Access, AI, and beta settings, and each step’s buttons DO what they say (Deny records the real choice, Allow wants a restart, the beta email really signs up, the optional toggles really write). It always opens at step 1 and the preview jumps the cursor from there — otherwise steps 2-4 are unreachable without committing to an FDA choice first. There’s no Escape and no × by design: finishing it marks this machine onboarded.',
+        states: [
+            {
+                id: 'step-1-fda',
+                label: 'Step 1: Full disk access',
+                note: 'macOS-only in the app; Linux skips straight to step 2.',
+            },
+            { id: 'step-2-ai', label: 'Step 2: AI provider' },
+            { id: 'step-3-beta', label: 'Step 3: Open beta' },
+            { id: 'step-4-optional', label: 'Step 4: Optional setup' },
+        ],
+    },
+    {
+        dialogId: 'whats-new',
+        label: 'What’s new',
+        hostWindow: 'main',
+        status: 'ready',
+        openedBy: 'store-seeded',
+        note: 'Fixture changelog entries, rendered through the same markdown path the real ones take. “Don’t show this again” writes the real whatsNew.showOnUpdate setting (and toasts), and the changelog link opens getcmdr.com in a browser.',
+        states: [
+            { id: 'one-release', label: 'One release' },
+            {
+                id: 'several-releases',
+                label: 'Three releases, long entries',
+                note: 'The lead is a numbered list, which is why it renders in a div rather than a p.',
+            },
+            {
+                id: 'empty',
+                label: 'Nothing to show',
+                note: 'Manual-reopen only in the app: an auto-show with an empty slice silently stamps instead.',
+            },
+        ],
+    },
+    {
+        dialogId: 'operation-log',
+        label: 'Operation log',
+        hostWindow: 'main',
+        status: 'ready',
+        openedBy: 'store-seeded',
+        note: 'Fixture operations covering every kind, initiator, status, and rollback state. Expanding one fetches its items for REAL, and a fixture operation isn’t in the log, so every row expands to “no recorded items” — reviewing the item list itself needs a genuine operation.',
+        states: [
+            { id: 'loading', label: 'Loading', note: 'Stays spinning: nothing is being read behind it.' },
+            { id: 'populated', label: 'Seven operations' },
+            {
+                id: 'more-pages',
+                label: 'With “Load more”',
+                note: 'Load more appends this machine’s REAL log page, so the list becomes a mix.',
+            },
+            { id: 'empty', label: 'No operations yet' },
+            { id: 'load-error', label: 'Couldn’t read the log' },
+        ],
+    },
 
-  // ── Feedback and diagnostics ──────────────────────────────────────────────
-  {
-    dialogId: 'feedback',
-    label: 'Send feedback',
-    hostWindow: 'main',
-    status: 'ready',
-    openedBy: 'store-seeded',
-    note: 'ONE state: the dialog holds its text, its character count, and its sending / sent / failed states internally, so only the empty form is reachable from outside. Send really posts — in a dev build to localhost:8787, so with no local api-server running you get the send-failed state rather than a message in Discord. The attach-email row always shows: it names the beta contact email when this machine has one on file, and otherwise offers a field to type one in. A successful send writes the shared updates.attachEmailToReports setting, plus analytics.email when an address was typed.',
-    states: [{ id: 'default', label: 'Open' }],
-  },
-  {
-    dialogId: 'error-report',
-    label: 'Error report',
-    hostWindow: 'main',
-    status: 'ready',
-    openedBy: 'store-seeded',
-    note: 'The preview is REAL: on mount it builds a redacted bundle from this machine’s actual logs and settings, so the size, the id, and the file list are all genuine. Send goes to localhost:8787 in a dev build (nothing listening means the send-failed state), and there’s a dev-only “Save bundle to disk” button that really writes a zip.',
-    states: [
-      { id: 'blank', label: 'Empty note' },
-      {
-        id: 'from-toast',
-        label: 'Note pre-filled from a toast',
-        note: 'A multi-line message with a long path, the way the toast link ferries it in.',
-      },
-      {
-        id: 'amend',
-        label: 'Adding a note to an auto-sent report',
-        note: 'What the “Error report sent” toast opens: the report Flow B already shipped, with a note box that adds to THAT report instead of sending a second one. It reads the real backend stash, which only exists once this run has actually auto-sent something, so on a machine that hasn’t, this row honestly shows the “can’t take a note any more” dead end. To see the full shape, turn on Settings > Updates > “Send error reports automatically” and trigger a real error first.',
-      },
-    ],
-  },
-  {
-    dialogId: 'crash-report',
-    label: 'Crash report',
-    hostWindow: 'main',
-    status: 'ready',
-    note: 'Send uploads nothing in a dev build (the Rust command skips the POST), but it still writes the sticky “always send” / attach-email settings and deletes any real pending crash file. The attach-email row always shows: it names the beta contact email when this machine has one on file, and otherwise offers a field to type one in.',
-    states: [
-      { id: 'panic', label: 'Panic the app died of' },
-      { id: 'survived-panic', label: 'Panic the app kept running through' },
-      { id: 'signal-no-report-id', label: 'Older report, no fate and no report id' },
-    ],
-  },
+    // ── Feedback and diagnostics ──────────────────────────────────────────────
+    {
+        dialogId: 'feedback',
+        label: 'Send feedback',
+        hostWindow: 'main',
+        status: 'ready',
+        openedBy: 'store-seeded',
+        note: 'ONE state: the dialog holds its text, its character count, and its sending / sent / failed states internally, so only the empty form is reachable from outside. Send really posts — in a dev build to localhost:8787, so with no local api-server running you get the send-failed state rather than a message in Discord. The attach-email row always shows: it names the beta contact email when this machine has one on file, and otherwise offers a field to type one in. A successful send writes the shared updates.attachEmailToReports setting, plus analytics.email when an address was typed.',
+        states: [{ id: 'default', label: 'Open' }],
+    },
+    {
+        dialogId: 'error-report',
+        label: 'Error report',
+        hostWindow: 'main',
+        status: 'ready',
+        openedBy: 'store-seeded',
+        note: 'The preview is REAL: on mount it builds a redacted bundle from this machine’s actual logs and settings, so the size, the id, and the file list are all genuine. Send goes to localhost:8787 in a dev build (nothing listening means the send-failed state), and there’s a dev-only “Save bundle to disk” button that really writes a zip.',
+        states: [
+            { id: 'blank', label: 'Empty note' },
+            {
+                id: 'from-toast',
+                label: 'Note pre-filled from a toast',
+                note: 'A multi-line message with a long path, the way the toast link ferries it in.',
+            },
+            {
+                id: 'amend',
+                label: 'Adding a note to an auto-sent report',
+                note: 'What the “Error report sent” toast opens: the report Flow B already shipped, with a note box that adds to THAT report instead of sending a second one. It reads the real backend stash, which only exists once this run has actually auto-sent something, so on a machine that hasn’t, this row honestly shows the “can’t take a note any more” dead end. To see the full shape, turn on Settings > Updates > “Send error reports automatically” and trigger a real error first.',
+            },
+        ],
+    },
+    {
+        dialogId: 'crash-report',
+        label: 'Crash report',
+        hostWindow: 'main',
+        status: 'ready',
+        note: 'Send uploads nothing in a dev build (the Rust command skips the POST), but it still writes the sticky “always send” / attach-email settings and deletes any real pending crash file. The attach-email row always shows: it names the beta contact email when this machine has one on file, and otherwise offers a field to type one in.',
+        states: [
+            { id: 'panic', label: 'Panic the app died of' },
+            { id: 'survived-panic', label: 'Panic the app kept running through' },
+            { id: 'signal-no-report-id', label: 'Older report, no fate and no report id' },
+        ],
+    },
 
-  // ── File viewer ───────────────────────────────────────────────────────────
-  {
-    dialogId: 'viewer-copy-confirm',
-    label: 'Viewer copy confirmation',
-    hostWindow: 'viewer',
-    status: 'ready',
-    states: [
-      { id: 'known-size', label: 'Known size' },
-      { id: 'unknown-size', label: 'Unknown size', note: 'A ByteSeek range we never scrolled through.' },
-    ],
-  },
-  {
-    dialogId: 'viewer-copy-refuse',
-    label: 'Viewer copy too large',
-    hostWindow: 'viewer',
-    status: 'ready',
-    states: [{ id: 'too-large', label: 'Over the limit' }],
-  },
+    // ── File viewer ───────────────────────────────────────────────────────────
+    {
+        dialogId: 'viewer-copy-confirm',
+        label: 'Viewer copy confirmation',
+        hostWindow: 'viewer',
+        status: 'ready',
+        states: [
+            { id: 'known-size', label: 'Known size' },
+            { id: 'unknown-size', label: 'Unknown size', note: 'A ByteSeek range we never scrolled through.' },
+        ],
+    },
+    {
+        dialogId: 'viewer-copy-refuse',
+        label: 'Viewer copy too large',
+        hostWindow: 'viewer',
+        status: 'ready',
+        states: [{ id: 'too-large', label: 'Over the limit' }],
+    },
 ]
 
 export const UNREGISTERED_OVERLAY_ENTRIES: UnregisteredOverlayEntry[] = [
-  {
-    overlayId: 'command-palette',
-    label: 'Command palette',
-    hostWindow: 'main',
-    reason:
-      'Its own overlay, not a ModalDialog, so it reports nothing to the dialog tracker. Press ⌘⇧P in the main window (the default binding; Settings › Keyboard shortcuts can change it).',
-  },
-  {
-    overlayId: 'network-login-form',
-    label: 'Network login form',
-    hostWindow: 'main',
-    reason:
-      'Not modal at all: it renders INSIDE a pane (role="dialog", but the rest of the app stays interactive, which is why it’s the one sanctioned opt-out from the dialog focus trap). To see it: point a pane at Network (⌥F1 / ⌥F2 › Network) and open a password-protected SMB share. A share whose saved password went stale shows the same form through the pane’s reauth view.',
-  },
-  {
-    overlayId: 'pane-volume-chooser',
-    label: 'Pane volume chooser',
-    hostWindow: 'main',
-    reason: 'A pane-owned dropdown, not a dialog. Click a pane’s volume breadcrumb, or press ⌥F1 (left) / ⌥F2 (right).',
-  },
+    {
+        overlayId: 'command-palette',
+        label: 'Command palette',
+        hostWindow: 'main',
+        reason: 'Its own overlay, not a ModalDialog, so it reports nothing to the dialog tracker. Press ⌘⇧P in the main window (the default binding; Settings › Keyboard shortcuts can change it).',
+    },
+    {
+        overlayId: 'network-login-form',
+        label: 'Network login form',
+        hostWindow: 'main',
+        reason: 'Not modal at all: it renders INSIDE a pane (role="dialog", but the rest of the app stays interactive, which is why it’s the one sanctioned opt-out from the dialog focus trap). To see it: point a pane at Network (⌥F1 / ⌥F2 › Network) and open a password-protected SMB share. A share whose saved password went stale shows the same form through the pane’s reauth view.',
+    },
+    {
+        overlayId: 'pane-volume-chooser',
+        label: 'Pane volume chooser',
+        hostWindow: 'main',
+        reason: 'A pane-owned dropdown, not a dialog. Click a pane’s volume breadcrumb, or press ⌥F1 (left) / ⌥F2 (right).',
+    },
 ]

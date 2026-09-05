@@ -203,20 +203,32 @@ describe('reporting the result', () => {
   })
 })
 
+/** One staged batch inside a review, trimmed to the fields Apply reads. */
+function batch(proposalId: string, rows: Array<{ rowId: string; allowed: boolean }>) {
+  return {
+    proposalId,
+    rows: rows.map((row) => ({ ...row, blockedReason: null })),
+    preflighting: false,
+    expired: false,
+    requestVersion: 0,
+  }
+}
+
+/** Put a review on screen the way the end of a turn does. */
+function openReview(...proposals: ReturnType<typeof batch>[]): void {
+  askCmdrState.renameReview = { proposals } as unknown as typeof askCmdrState.renameReview
+}
+
 describe('applying a review', () => {
   it('records the started batch, so the result carries an undo', async () => {
     applyRenameMock.mockResolvedValue({ operationId: 'op-42', operationType: 'rename' })
-    askCmdrState.renameReview = {
-      proposalId: 'p-1',
-      rows: [
-        { rowId: 'r-1', allowed: true, blockedReason: null },
-        { rowId: 'r-2', allowed: true, blockedReason: null },
-        { rowId: 'r-3', allowed: false, blockedReason: null },
-      ],
-      preflighting: false,
-      expired: false,
-      requestVersion: 0,
-    } as unknown as typeof askCmdrState.renameReview
+    openReview(
+      batch('p-1', [
+        { rowId: 'r-1', allowed: true },
+        { rowId: 'r-2', allowed: true },
+        { rowId: 'r-3', allowed: false },
+      ]),
+    )
     const { applyRenameReview } = await import('./ask-cmdr-trigger.svelte')
 
     await applyRenameReview()
@@ -225,6 +237,44 @@ describe('applying a review', () => {
     expect(lines()).toHaveLength(1)
     expect(lines()[0].operationId).toBe('op-42')
     expect(lines()[0].fileCount).toBe(2)
+  })
+
+  /**
+   * A job's batches now land from ONE Apply rather than one per dialog, so the ids arrive
+   * together. The rule they have to keep obeying: "undo everything" appears once, on the newest
+   * line, and every earlier line keeps only its own Undo.
+   */
+  it('leaves the job-wide undo on the newest line only, when the ids arrive together', async () => {
+    applyRenameMock
+      .mockResolvedValueOnce({ operationId: 'op-1', operationType: 'rename' })
+      .mockResolvedValueOnce({ operationId: 'op-2', operationType: 'rename' })
+      .mockResolvedValueOnce({ operationId: 'op-3', operationType: 'rename' })
+    openReview(
+      batch('p-1', [{ rowId: 'r-1', allowed: true }]),
+      batch('p-2', [
+        { rowId: 'r-2', allowed: true },
+        { rowId: 'r-3', allowed: true },
+      ]),
+      batch('p-3', [{ rowId: 'r-4', allowed: true }]),
+    )
+    const { applyRenameReview } = await import('./ask-cmdr-trigger.svelte')
+
+    await applyRenameReview()
+
+    expect(lines().map((line) => line.operationId)).toEqual(['op-1', 'op-2', 'op-3'])
+    expect(lines().map((line) => line.jobOperationIds)).toEqual([[], [], ['op-1', 'op-2', 'op-3']])
+    // The tally on that one line covers the whole job, not just its own batch.
+    expect(lines().map((line) => line.fileCount)).toEqual([1, 2, 1])
+    expect(lines()[2].jobFileCount).toBe(4)
+
+    // And the job undo sends every id in APPLY order, which is the only order the backend
+    // can reverse safely.
+    undoOperationsMock.mockResolvedValue(
+      report({ operations: [operation('op-3', 1), operation('op-2', 2), operation('op-1', 1)], restored: 4 }),
+    )
+    await undoRename(lines()[2], 'job')
+
+    expect(undoOperationsMock).toHaveBeenCalledWith(['op-1', 'op-2', 'op-3'])
   })
 })
 

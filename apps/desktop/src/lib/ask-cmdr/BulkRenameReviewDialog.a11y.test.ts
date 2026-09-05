@@ -8,9 +8,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushSync, mount, tick } from 'svelte'
+import { flushSync, mount, tick, unmount } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
-import type { BulkRenameReview, BulkRenameReviewRow } from './ask-cmdr-trigger.svelte'
+import type { BulkRenameReview, BulkRenameReviewProposal, BulkRenameReviewRow } from './ask-cmdr-trigger.svelte'
 
 const { actions, watcher, media, viewer } = vi.hoisted(() => ({
   actions: {
@@ -20,7 +20,7 @@ const { actions, watcher, media, viewer } = vi.hoisted(() => ({
     denyAll: vi.fn(),
     setAllowed: vi.fn(),
     listingChanged: vi.fn(),
-    revise: vi.fn<(payload: { rowId: string; destinationName: string }) => Promise<void>>(),
+    revise: vi.fn<(payload: { proposalId: string; rowId: string; destinationName: string }) => Promise<void>>(),
   },
   watcher: {
     handler: null as ((diff: { changes: unknown[] }) => void) | null,
@@ -54,14 +54,14 @@ vi.mock('./ask-cmdr-trigger.svelte', async () => {
     denyAllRenameRows: () => {
       actions.denyAll()
     },
-    setRenameRowAllowed: (rowId: string, allowed: boolean) => {
-      actions.setAllowed(rowId, allowed)
+    setRenameRowAllowed: (proposalId: string, rowId: string, allowed: boolean) => {
+      actions.setAllowed(proposalId, rowId, allowed)
     },
     renameReviewListingChanged: (changes: unknown[]) => {
       actions.listingChanged(changes)
     },
-    reviseRenameRow: async (rowId: string, destinationName: string) => {
-      await actions.revise({ rowId, destinationName })
+    reviseRenameRow: async (proposalId: string, rowId: string, destinationName: string) => {
+      await actions.revise({ proposalId, rowId, destinationName })
     },
   }
 })
@@ -105,7 +105,8 @@ function row(overrides: Partial<BulkRenameReviewRow> = {}): BulkRenameReviewRow 
   }
 }
 
-function review(overrides: Partial<BulkRenameReview> = {}): BulkRenameReview {
+/** One staged batch, the unit the backend preflights and applies. */
+function batch(overrides: Partial<BulkRenameReviewProposal> = {}): BulkRenameReviewProposal {
   return {
     proposalId: 'opaque-proposal-id',
     rows: [
@@ -144,14 +145,32 @@ function review(overrides: Partial<BulkRenameReview> = {}): BulkRenameReview {
   }
 }
 
+/** A review over one batch, which is what a job small enough for one model reply looks like. */
+function review(overrides: Partial<BulkRenameReviewProposal> = {}): BulkRenameReview {
+  return { proposals: [batch(overrides)] }
+}
+
 /** Markup a model could smuggle into `detail`; the column must show it, not run it. */
 const MARKUP_DETAIL = '<img src=x onerror="boom">'
+
+/** The dialog this test mounted, so the next one starts with nothing of it left standing. */
+let mounted: Record<string, unknown> | null = null
 
 function mountDialog(): HTMLElement {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(BulkRenameReviewDialog, { target, props: {} })
+  mounted = mount(BulkRenameReviewDialog, { target, props: {} })
   return target
+}
+
+/** Tear the previous dialog down for real. Left mounted, it keeps reacting to the shared
+ *  review state and answers for tokens its own test minted. */
+function unmountDialog(): void {
+  if (!mounted) return
+  const previous = mounted
+  mounted = null
+  void unmount(previous, { outro: false })
+  flushSync()
 }
 
 function requiredElement(target: ParentNode, selector: string): HTMLElement {
@@ -192,6 +211,7 @@ function checkboxByLabel(target: ParentNode, label: string): HTMLInputElement {
 }
 
 beforeEach(() => {
+  unmountDialog()
   media.tokenFor.clear()
   media.mint.mockReset()
   media.mint.mockImplementation((path: string) => Promise.resolve(media.tokenFor.get(path) ?? null))
@@ -445,7 +465,7 @@ describe('BulkRenameReviewDialog', () => {
   /** Model-authored text reaches this column, so it must never be interpreted as markup. */
   it('renders evidence detail as plain text, never as markup', async () => {
     reviewState.renameReview = review({
-      rows: review()
+      rows: batch()
         .rows.slice(0, 1)
         .map((row) => ({ ...row, evidence: { source: 'imageText' as const, detail: MARKUP_DETAIL } })),
     })
@@ -471,7 +491,7 @@ describe('BulkRenameReviewDialog', () => {
     requiredButton(target, 'button[aria-label="Rename 2 files"]').click()
     requiredButton(target, '.modal-footer button:not([aria-label])').click()
 
-    expect(actions.setAllowed).toHaveBeenCalledWith('opaque-row-one', false)
+    expect(actions.setAllowed).toHaveBeenCalledWith('opaque-proposal-id', 'opaque-row-one', false)
     expect(actions.allowAll).toHaveBeenCalledOnce()
     expect(actions.denyAll).toHaveBeenCalledOnce()
     expect(actions.apply).toHaveBeenCalledOnce()
@@ -505,6 +525,7 @@ describe('BulkRenameReviewDialog', () => {
     typeName(input, 'Klarna payment 2026-07-24.png')
     input.dispatchEvent(new FocusEvent('blur'))
     expect(actions.revise).toHaveBeenCalledWith({
+      proposalId: 'opaque-proposal-id',
       rowId: 'opaque-row-one',
       destinationName: 'Klarna payment 2026-07-24.png',
     })
@@ -512,6 +533,7 @@ describe('BulkRenameReviewDialog', () => {
     typeName(input, 'Klarna payment confirmation 2026-07-24.png')
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(actions.revise).toHaveBeenLastCalledWith({
+      proposalId: 'opaque-proposal-id',
       rowId: 'opaque-row-one',
       destinationName: 'Klarna payment confirmation 2026-07-24.png',
     })
@@ -530,6 +552,7 @@ describe('BulkRenameReviewDialog', () => {
     input.dispatchEvent(new FocusEvent('blur'))
 
     expect(actions.revise).toHaveBeenCalledWith({
+      proposalId: 'opaque-proposal-id',
       rowId: 'opaque-row-blocked',
       destinationName: 'after-three (2).png',
     })
@@ -599,9 +622,68 @@ describe('BulkRenameReviewDialog', () => {
     await expectNoA11yViolations(target)
   })
 
+  /**
+   * A rename group binds one parent folder, so a job across folders is several staged batches
+   * and one review. The list has to say which folder a row is in, or "Invoice 2026-06.pdf →
+   * Invoice 2026-06.pdf" is reviewed without knowing which one it is.
+   */
+  it('names both folders when one job spans two, and answers them together', async () => {
+    reviewState.renameReview = {
+      proposals: [
+        batch({
+          proposalId: 'batch-one',
+          rows: [row({ rowId: 'shots-row', sourcePath: '/shots/before-one.png' })],
+        }),
+        batch({
+          proposalId: 'batch-two',
+          rows: [
+            row({
+              rowId: 'invoices-row',
+              sourceName: 'invoice-2026-06.pdf',
+              destinationName: 'Invoice 2026-06.pdf',
+              sourcePath: '/Documents/invoices/invoice-2026-06.pdf',
+              evidence: { source: 'metadata', detail: 'Created 2026-06-02' },
+            }),
+          ],
+        }),
+      ],
+    }
+    const target = mountDialog()
+    await tick()
+
+    // Both folders are named, once each, above the rows they own.
+    const headings = [...target.querySelectorAll('.folder-heading')].map((heading) => heading.textContent.trim())
+    expect(headings).toEqual(['/shots', '/Documents/invoices'])
+    expect(target.querySelectorAll('tbody')).toHaveLength(2)
+    // One decision covers both: the count and the button speak for the whole job.
+    expect(requiredElement(target, '[role="status"]').textContent).toContain('2 renames allowed')
+
+    // A row's edit is scoped to the batch that staged it, since revise, preflight, and apply
+    // are all per proposal on the backend.
+    typeName(nameInput(target, 'invoices-row'), 'Invoice 2026-06 (paid).pdf')
+    nameInput(target, 'invoices-row').dispatchEvent(new FocusEvent('blur'))
+    expect(actions.revise).toHaveBeenCalledWith({
+      proposalId: 'batch-two',
+      rowId: 'invoices-row',
+      destinationName: 'Invoice 2026-06 (paid).pdf',
+    })
+
+    requiredButton(target, 'button[aria-label="Rename 2 files"]').click()
+    expect(actions.apply).toHaveBeenCalledOnce()
+    await expectNoA11yViolations(target)
+  })
+
+  /** A single-folder job is the common case, and it gets no heading at all. */
+  it('names no folder when every row is in the same one', async () => {
+    const target = mountDialog()
+    await tick()
+
+    expect(target.querySelectorAll('.folder-heading')).toHaveLength(0)
+  })
+
   it('disables and labels Apply when no valid row remains allowed', async () => {
     reviewState.renameReview = review({
-      rows: review().rows.map((row) => ({ ...row, allowed: false })),
+      rows: batch().rows.map((row) => ({ ...row, allowed: false })),
     })
     const target = mountDialog()
     await tick()
