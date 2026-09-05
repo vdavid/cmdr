@@ -514,7 +514,7 @@ pub async fn handle_directory_change(listing_id: &str) {
 
     // Re-read the directory via the Volume trait (works for all volume types).
     // Falls back to list_directory_core for listings whose volume was unregistered.
-    let new_entries = if let Some(vol) = volume {
+    let new_entries = if let Some(vol) = volume.clone() {
         match vol.list_directory(&path, None).await {
             Ok(entries) => entries,
             Err(crate::file_system::VolumeError::NotFound(_)) => {
@@ -564,10 +564,33 @@ pub async fn handle_directory_change(listing_id: &str) {
         }
     };
 
+    let mut new_entries = new_entries;
+
+    // Enrich with index data so diff entries have recursive_size etc.
+    {
+        use crate::file_system::listing::cached_listing::LISTING_CACHE;
+
+        if let Ok(cache) = LISTING_CACHE.read()
+            && let Some(listing) = cache.get(listing_id)
+        {
+            index().enrich(&listing.volume_id, &mut new_entries);
+        }
+    }
+
+    // Re-run the overlays, in the same place in the pipeline the first read ran
+    // them (after the enrich, before the sort). `list_directory` above answers
+    // with the real directory alone, so without this a `refresh_listing` (⌘R, and
+    // the top-up every copy, move, and delete fires when it settles) would empty
+    // a repo's six portal rows out of an open `.git/` pane. A listing whose
+    // volume was unregistered took the `std::fs` fallback and has nothing to
+    // decorate through, so it keeps the count it had.
+    let overlay_rows = match &volume {
+        Some(vol) => OverlayRows::Recounted(crate::listing_overlays::decorate(vol, &path, &mut new_entries).await),
+        None => OverlayRows::Unchanged,
+    };
+
     // Re-sort new_entries by the listing's sort params so compute_diff compares
     // two lists in the same order (list_directory returns entries in Name/Asc).
-    // Also enrich with index data so diff entries have recursive_size etc.
-    let mut new_entries = new_entries;
     {
         use crate::file_system::listing::cached_listing::LISTING_CACHE;
         use crate::file_system::listing::sorting::sort_entries;
@@ -575,7 +598,6 @@ pub async fn handle_directory_change(listing_id: &str) {
         if let Ok(cache) = LISTING_CACHE.read()
             && let Some(listing) = cache.get(listing_id)
         {
-            index().enrich(&listing.volume_id, &mut new_entries);
             sort_entries(
                 &mut new_entries,
                 listing.sort_by,
@@ -592,10 +614,8 @@ pub async fn handle_directory_change(listing_id: &str) {
         return; // No actual changes
     }
 
-    // Update the unified LISTING_CACHE with new entries. The overlays did NOT
-    // re-run here: this is a diff against the entries a previous read already
-    // decorated, so the stored contributed-row count still describes them.
-    update_listing_entries(listing_id, new_entries, OverlayRows::Unchanged);
+    // Update the unified LISTING_CACHE with new entries.
+    update_listing_entries(listing_id, new_entries, overlay_rows);
 
     crate::file_system::listing::diff_emitter::enqueue_diff(listing_id, changes);
 }

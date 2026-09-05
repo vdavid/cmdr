@@ -157,3 +157,50 @@ async fn a_diff_patch_leaves_the_contributed_row_count_alone() {
 
     cleanup(&dir);
 }
+
+/// The OTHER refresh path: `refresh_listing` (⌘R, and the top-up every copy,
+/// move, and delete fires when it settles) re-reads through the volume, which
+/// holds none of the six category rows. It has to run the overlays for the same
+/// reason the FSEvents path does, or one ⌘R on an open `.git/` pane empties the
+/// portal out of it and leaves a row count claiming the six are still there.
+#[tokio::test]
+async fn a_listing_refresh_of_dot_git_keeps_the_portal_rows() {
+    let dir = repo("listing_refresh");
+    let dot_git = dir.join(".git");
+    crate::file_system::git::wiring::set_virtual_portal_enabled(true);
+    crate::file_system::git::overlay::register();
+
+    let volume_id = unique_test_id("overlay-listing-refresh-vol");
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Repo", &dir));
+    get_volume_manager().register(&volume_id, Arc::clone(&volume));
+
+    let mut entries = volume.list_directory(&dot_git, None).await.expect("listing .git");
+    let added = crate::listing_overlays::decorate(&volume, &dot_git, &mut entries).await;
+    assert_eq!(added, 6);
+    let listing = TestListing::new()
+        .volume(&volume_id)
+        .path(dot_git.clone())
+        .entries(entries)
+        .overlay_rows(added)
+        .insert("overlay-listing-refresh");
+
+    // A new real file, so the re-read differs from the cache and the diff lands.
+    std::fs::write(dot_git.join("ORIG_HEAD"), b"0000\n").expect("write ORIG_HEAD");
+    crate::file_system::watcher::handle_directory_change(listing.id()).await;
+
+    let names = listing.entry_names();
+    assert!(names.iter().any(|n| n == "ORIG_HEAD"), "the re-read landed: {names:?}");
+    for category in CATEGORIES {
+        assert!(
+            names.iter().any(|n| n == category),
+            "{category} lost to the refresh: {names:?}"
+        );
+    }
+    assert!(
+        listing.with_listing(|l| l.has_overlay_rows()),
+        "the refreshed listing is still a pane view, not a walker's picture of the directory"
+    );
+
+    get_volume_manager().unregister(&volume_id);
+    cleanup(&dir);
+}
