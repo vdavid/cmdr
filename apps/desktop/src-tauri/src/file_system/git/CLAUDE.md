@@ -24,7 +24,7 @@ for the breadcrumb chip, status column, and the live `RepoInfo` store.
 
 - **A virtual path is a ROUTE, not a hook: `resolve` sends `.git/<category>/…` to `GitPortalVolume`.** The hooks in
   `mod.rs` still serve the portal ROOT (`.git/` itself) and the mutation guards, and both halves answer from the same
-  `virtual_listing` code. `DETAILS.md` §§ "The portal is a routed volume", "Volume hook contract".
+  `virtual_listing` code. `DETAILS.md` § "The portal is a routed volume", and § "Volume hook contract".
 - **The portal volume serves the six categories and NOTHING else.** Real `.git/*` entries stay on the parent volume,
   which is what keeps `.git/config` editable and a repo-folder delete able to walk `.git/`. ❌ Never widen its
   namespace to real entries.
@@ -44,8 +44,8 @@ for the breadcrumb chip, status column, and the live `RepoInfo` store.
 - **`GitBlobReadStream` costs one blob of RAM**; its chunks are an API shape, not memory streaming. Blobs over
   `tree::MAX_BLOB_BYTES` are refused up-front. `DETAILS.md` § "Honest blob streaming".
 - **`repo_info` is the expensive call in the chip pipeline** (`is_dirty()` walks the worktree), so don't add work to
-  the chip-refresh path without re-benchmarking. `DETAILS.md` §§ "Performance", "Decisions" (also: `list_status`
-  caching, the flat `feature/foo` ref rendering, and the silent 5000-entry log cap).
+  the chip-refresh path without re-benchmarking. `DETAILS.md` § "Performance"; its § "Decisions" also covers
+  `list_status` caching, the flat `feature/foo` ref rendering, and the silent 5000-entry log cap.
 - **The Size column carries a FACT, ❌ never a sentence.** Every virtual row sets `FileEntry.git_meta`
   (`cmdr_fs::git_meta::GitEntryMeta`); the frontend words it from the catalog, so all 10 translations get the cell and
   its tooltip. A new row shape means a variant here plus its two catalog keys.

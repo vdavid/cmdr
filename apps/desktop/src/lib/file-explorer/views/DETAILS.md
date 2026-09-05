@@ -496,9 +496,9 @@ Every count goes through the catalog's `plural`, which is the whole reason the f
 its own forms. English switches noun at one, Hungarian never switches it, Chinese has a single form, and Portuguese
 carries a `many` category English has no use for.
 
-**Gotcha**: a commit id crosses IPC in FULL, and the cell shortens it to `SHORT_ID_LENGTH` (seven) characters.
-**Why**: the tooltip names the whole id, so shipping the short form too would mean shipping both. Seven is a display
-choice, which is why it lives here rather than in the backend.
+**Gotcha**: a commit id crosses IPC in FULL, and the cell shortens it to `SHORT_ID_LENGTH` (seven) characters. **Why**:
+the tooltip names the whole id, so shipping the short form too would mean shipping both. Seven is a display choice,
+which is why it lives here rather than in the backend.
 
-❌ Never let the width measurer word a cell itself. It calls `wordGitMeta`, so a copy edit or a locale switch can't
-move the rendered text and the measured text apart.
+❌ Never let the width measurer word a cell itself. It calls `wordGitMeta`, so a copy edit or a locale switch can't move
+the rendered text and the measured text apart.

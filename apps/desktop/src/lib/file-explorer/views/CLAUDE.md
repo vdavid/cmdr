@@ -25,9 +25,9 @@ pixel-accurate width measurement via `@chenglou/pretext`, and the `*-utils.ts` t
   padding (`--spacing-scrollbar-width`). ❌ Don't move it inside, and ❌ don't reintroduce a header-height shift between
   `scrollTop` and the spacer offset: the clamp hides row 0, the `..` cursor. Pinned by `FullListHeader.test.ts` and
   `test/e2e-playwright/full-cursor-page-nav.spec.ts`.
-- **A git portal row's Size cell is WORDED here, from the typed `gitMeta` fact.** `wordGitMeta`
-  (`full-list-utils.ts`) is the one place; the renderer reaches it via `pickSizeDisplay`, the width measurer calls it
-  directly. `DETAILS.md` § "Wording a git portal row".
+- **A git portal row's Size cell is WORDED here, from the typed `gitMeta` fact.** `wordGitMeta` (`full-list-utils.ts`)
+  is the one place; the renderer reaches it via `pickSizeDisplay`, the width measurer calls it directly. `DETAILS.md` §
+  "Wording a git portal row".
 - **`getDirSizeDisplayState()` (`full-list-utils.ts`) is the single source of truth for a directory's size-column
   state**, for both `FullList.svelte`'s cell and `measure-column-widths.ts`; re-inline it in either and text and width
   drift. The hourglass on top is PER ROW: the measurer takes the pane's own `isSizeUpdating(entry)`, ❌ never a
