@@ -93,16 +93,38 @@ The instrument for the app half is the `testing` feature: `test_fixtures` builds
 makes a watcher report observable without a window, and `GitPortal::with_scripted_watcher` plus `fire_watcher` make one
 observable without FSEvents. **That recorder is what a subscription cell asserts through.** The DEBOUNCE cell lives
 app-side and takes the real backend: it drives the parked portal's `subscribe_state`, writes five commits and a branch
-switch back to back, and expects FEWER reports than writes, the last carrying the post-burst branch. The debounce is
-this crate's contract, but the path that proves it starts where the portal is parked, so the cell belongs at that end —
-and it is the only one anywhere that arms a real watcher (§ "The watcher splits into bookkeeping and a backend").
+switch back to back, and expects EXACTLY one report carrying the post-burst branch. The debounce is this crate's
+contract, but the path that proves it starts where the portal is parked, so the cell belongs at that end — and it is the
+only one anywhere that arms a real watcher (§ "The watcher splits into bookkeeping and a backend"). The coalescing that
+makes the count one is asserted crate-side on the scripted backend (`watcher_tests`), where a "second batch" is a second
+`fire_watcher` and costs no FSEvents.
 
-❗ **The count is a ceiling, not one.** `NotifyWatcherBackend` calls `on_change` once per batch `notify_debouncer_full`
-EMITS, and it emits on a tick cadence, so a burst whose events settle across two ticks reports twice — both times with
-the same post-burst snapshot. Measured on an M1 Max (2026-09-06, 20 runs of the cell): seven writes gave one report
-about half the time and two the rest, never more. So a cell asserting `== 1` passes or fails on timing alone, which is
-how this one used to flake. What the debounce actually buys, and what the cell pins, is a bounded few reports instead of
-one per file. Tightening that to a true one-per-burst means coalescing at the report level, which nothing needs yet.
+## One burst is one report
+
+`NotifyWatcherBackend` calls `on_change` once per batch `notify_debouncer_full` EMITS, and it emits on a tick cadence
+(with no tick rate given it takes a quarter of the timeout, so 50 ms here). One burst whose per-path deadlines straddle
+a tick boundary therefore arrives as two batches, both recomputing the same post-burst snapshot. Measured on an M1 Max
+(2026-09-06, 20 runs of the DEBOUNCE cell): 13 ms of writes gave one batch about two-thirds of the time and two, 58–66
+ms apart, the rest. Each report costs a `git-state-changed` event and a `FullRefresh` of every open portal and `.git/`
+pane, so the second is pure waste.
+
+**`recompute_and_report` drops it.** Each live watch carries the `(Instant, RepoInfo)` of its last report, created empty
+by `GitWatcherRegistry::arm` and dropped with the last unsubscribe, so the first report after arming is unconditional. A
+recompute whose snapshot equals that one AND lands less than `DEBOUNCE` after it goes nowhere.
+
+**Why the window is not a heuristic.** An emission is never sooner than `DEBOUNCE` after the write behind it:
+`DebounceDataInner::debounced_events` expires an event only once `now - event.time >= timeout` (read in
+notify-debouncer-full 0.7.0, 2026-09-06), and notify's own delivery latency only adds to that. So a report landing less
+than `DEBOUNCE` after the previous one can only be about writes that preceded the previous report's own recompute, which
+means the snapshot it carried already reflects them. An identical snapshot inside the window therefore has provably no
+news in it, and one outside it may well have.
+
+❌ **Never widen this to "skip any repeat, whatever the gap".** `RepoInfo` is what the breadcrumb chip shows, not a
+fingerprint of the repository: a second `git branch`, a commit in a worktree that stays dirty, and a `git add` in an
+already-dirty repo each leave every field byte-identical. Those still have to reach the `.git/branches/` and
+`.git/commits/` panes and the status column, which re-read on the report rather than on its payload. Swallowing one is
+the same class of bug as the symlink mismatch that left a `branches/` pane stale (2026-09-05), and
+`watcher_tests::the_same_state_after_the_window_is_news_again` is the cell that holds the line.
 
 ## Linked worktrees
 

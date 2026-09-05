@@ -62,25 +62,25 @@ fn the_payload_serializes_to_the_shape_the_frontend_subscribes_to() {
     assert_eq!(json["info"]["isDirty"], true);
 }
 
-/// A burst of `.git/*` writes collapses into a couple of reports rather than one
-/// per file, and what lands carries the state as it is AFTER the burst. That
-/// debounce is what keeps a `git checkout` (which rewrites `HEAD`, `index`, and
-/// a pile of refs) from driving an event per file.
+/// A burst of `.git/*` writes collapses into ONE report, and what lands carries
+/// the state as it is AFTER the burst. That's what keeps a `git checkout` (which
+/// rewrites `HEAD`, `index`, and a pile of refs) from driving an event per file
+/// and a re-read of every open portal pane per file.
 ///
 /// ❗ **The one cell in the app that arms a REAL `.git/*` watcher.** The debounce
 /// it proves is `notify`'s own, so a scripted backend can't stand in: it would
 /// assert the fake's arithmetic. Every other subscription cell here and in
 /// `cmdr_git::watcher_tests` takes the scripted one and runs in milliseconds.
 ///
-/// ❗ **Gotcha/Why the count is a ceiling, not `== 1`.** The backend calls
-/// `on_change` once per batch `notify_debouncer_full` EMITS, and it emits on a
-/// tick cadence: a burst whose events settle across two ticks produces two
-/// reports, both carrying the same post-burst snapshot. Measured on an M1 Max
-/// (2026-09-06, 20 runs of this cell): 7 writes gave 1 report about half the
-/// time and 2 the rest, never more. So "exactly one per burst" is not a property
-/// the watcher has, and a cell asserting it fails at random. The invariant that
-/// IS real, and the one the debounce exists for, is that a burst costs a
-/// bounded few reports instead of one per write.
+/// ❗ **Why one is a real number here.** `notify_debouncer_full` emits on a tick
+/// cadence, so this burst reaches the backend as one batch or two (measured on an
+/// M1 Max, 2026-09-06, 20 runs: 13 ms of writes, one batch about two-thirds of
+/// the time and two, ~60 ms apart, the rest). `cmdr_git::watcher::recompute_and_report`
+/// drops the second when it recomputes the same snapshot inside the debounce
+/// window, so the count stops depending on where the tick boundary fell. What
+/// coalescing does NOT do is swallow a later change that leaves `RepoInfo`
+/// untouched: `cmdr_git::watcher_tests::the_same_state_after_the_window_is_news_again`
+/// is the cell for that.
 #[test]
 fn a_debounced_burst_reports_one_change_with_the_new_state() {
     let dir = temp_dir("wiring", "one_report_per_burst");
@@ -109,11 +109,12 @@ fn a_debounced_burst_reports_one_change_with_the_new_state() {
     fixture.checkout("after-the-burst");
 
     let changes = changes_once_settled(&sink);
-    assert!(
-        changes.len() < COMMITS_IN_THE_BURST,
-        "a burst costs a few reports, not one per write: {changes:?}"
+    assert_eq!(
+        changes.len(),
+        1,
+        "one burst, one report, whichever way the debouncer batched it: {changes:?}"
     );
-    let (reported_root, info) = changes.last().expect("the burst reported at least once");
+    let (reported_root, info) = &changes[0];
     assert_eq!(reported_root, &root);
     // The state AFTER the whole burst, not the `main` the subscribe saw: a report
     // carrying a snapshot taken at the FIRST write would still say `main` here.

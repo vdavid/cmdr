@@ -1,8 +1,9 @@
 //! What the watcher registry promises, asserted without the operating system.
 //!
 //! The bookkeeping is this crate's: one watch per repository however many
-//! subscribers it has, torn down with the last one, and a change reaching the
-//! sink with a freshly read snapshot. All of it runs against
+//! subscribers it has, torn down with the last one, a change reaching the sink
+//! with a freshly read snapshot, and one burst of writes costing one report
+//! however the debouncer batched it. All of it runs against
 //! [`GitPortal::with_scripted_watcher`], so a cell here costs a repository open
 //! rather than a real FSEvents stream.
 //!
@@ -12,6 +13,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
 use crate::{GitPortal, GitStateSink, RecordingGitStateSink, no_git_state_sink};
@@ -81,6 +83,101 @@ fn a_change_reports_the_root_and_a_freshly_read_snapshot() {
         Some("feature"),
         "the report re-reads the repository rather than replaying the handshake"
     );
+
+    portal.unsubscribe_state(&root);
+    cleanup(&dir);
+}
+
+/// One burst of `.git/*` writes costs ONE report, however the debouncer batched
+/// it. `notify_debouncer_full` emits on a tick cadence, so a burst whose
+/// per-path deadlines straddle a tick arrives as two calls carrying the same
+/// post-burst state, and each report costs a window event plus a re-read of
+/// every open portal pane.
+#[test]
+fn a_second_call_carrying_the_same_state_reports_nothing() {
+    let (dir, root, mut fixture) = a_repo("coalesced_repeat");
+    let sink = Arc::new(RecordingGitStateSink::new());
+    let portal = scripted_portal(Arc::clone(&sink) as Arc<dyn GitStateSink>);
+
+    portal.subscribe_state(&root).expect("subscribing answers the state");
+    fixture.create_branch("feature");
+    fixture.checkout("feature");
+
+    assert!(portal.fire_watcher(&root), "the repo has a watch to fire");
+    assert!(portal.fire_watcher(&root), "the second batch of the same burst");
+
+    let changes = sink.changes();
+    assert_eq!(changes.len(), 1, "the repeat has no news in it: {changes:?}");
+    assert_eq!(changes[0].1.branch.as_deref(), Some("feature"));
+
+    portal.unsubscribe_state(&root);
+    cleanup(&dir);
+}
+
+/// Coalescing ❌ never swallows a real change: two bursts leaving DIFFERENT
+/// state report twice, back to back, with no quiet between them.
+#[test]
+fn two_bursts_with_different_end_states_both_report() {
+    let (dir, root, mut fixture) = a_repo("two_end_states");
+    let sink = Arc::new(RecordingGitStateSink::new());
+    let portal = scripted_portal(Arc::clone(&sink) as Arc<dyn GitStateSink>);
+
+    portal.subscribe_state(&root).expect("subscribing answers the state");
+
+    fixture.create_branch("first-stop");
+    fixture.checkout("first-stop");
+    assert!(portal.fire_watcher(&root), "the repo has a watch to fire");
+
+    fixture.create_branch("second-stop");
+    fixture.checkout("second-stop");
+    assert!(portal.fire_watcher(&root), "and again");
+
+    let branches: Vec<Option<String>> = sink.changes().into_iter().map(|(_, info)| info.branch).collect();
+    assert_eq!(
+        branches,
+        vec![Some("first-stop".to_string()), Some("second-stop".to_string())],
+        "each end state is its own report"
+    );
+
+    portal.unsubscribe_state(&root);
+    cleanup(&dir);
+}
+
+/// The SAME snapshot reported again after the debounce window still goes out.
+///
+/// ❗ This is why the coalescing is windowed rather than "skip any repeat".
+/// `RepoInfo` is what the breadcrumb chip shows, ❌ not a fingerprint of the
+/// repository: a second `git branch`, a commit in a worktree that stays dirty,
+/// and a `git add` in a dirty repo all leave it byte-identical while the
+/// `.git/branches/` and `.git/commits/` panes and the status column each have
+/// something new to show. Inside the window a repeat is provably the same burst
+/// (an emission never comes sooner than the window after the write behind it);
+/// outside it, it's news.
+#[test]
+fn the_same_state_after_the_window_is_news_again() {
+    let (dir, root, fixture) = a_repo("window_expiry");
+    let sink = Arc::new(RecordingGitStateSink::new());
+    let portal = scripted_portal(Arc::clone(&sink) as Arc<dyn GitStateSink>);
+
+    portal.subscribe_state(&root).expect("subscribing answers the state");
+    assert!(portal.fire_watcher(&root), "the repo has a watch to fire");
+
+    // A ref the chip's snapshot can't see: `branch` is still `main` either way.
+    fixture.create_branch("invisible-to-the-chip");
+    // allowed-test-sleep: the debounce window IS the subject; this cell exists to
+    // assert what happens once it has passed, and there is no condition to wait on.
+    std::thread::sleep(crate::watcher::DEBOUNCE + Duration::from_millis(50));
+    assert!(portal.fire_watcher(&root), "and again, a window later");
+
+    let changes = sink.changes();
+    assert_eq!(
+        changes.len(),
+        2,
+        "a later repeat is a change the chip can't see: {changes:?}"
+    );
+    for (_, info) in &changes {
+        assert_eq!(info.branch.as_deref(), Some("main"), "the snapshot really is identical");
+    }
 
     portal.unsubscribe_state(&root);
     cleanup(&dir);

@@ -41,6 +41,13 @@ That FSEvents watch on `.git/` is non-recursive, so it sees a new direct child a
 pane's category-row COUNTS honest after a `git branch` is the per-repo watcher instead, which is why that pane arms one
 of its own (§ "Who arms the repo watcher").
 
+❗ **A repo change reaches these panes as a report, ❌ not as a payload.** `TauriGitStateSink` emits
+`git-state-changed` AND calls `refresh_virtual_listings`, and the refresh re-reads the repository rather than reading
+the `RepoInfo` it was handed. So a `git branch` moves the pane even though every field of that snapshot is
+identical. The watcher coalesces repeats to keep one burst of writes at one refresh, and the window that makes that
+safe for changes the snapshot can't see is `crates/cmdr-git/DETAILS.md` § "One burst is one report". A pane that needs
+to move on something `RepoInfo` doesn't carry is exactly what that window protects.
+
 ## Who arms the repo watcher
 
 **The OPEN LISTINGS do, ❌ not the frontend's subscription.** `arming.rs` registers a `ListingLifecycle` observer; the

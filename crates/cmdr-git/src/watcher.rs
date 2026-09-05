@@ -3,7 +3,9 @@
 //!
 //! Frontend never polls. The chip subscribes once and updates reactively from
 //! whatever the host does with a [`GitStateSink`] report. Debounce is 200 ms per
-//! repo, matching the existing listing watcher in `file_system/listing/`.
+//! repo, matching the existing listing watcher in `file_system/listing/`, and
+//! [`recompute_and_report`] drops a repeat inside that window so one burst of
+//! writes costs one report however the debouncer batches it.
 //!
 //! Two halves, split so a test can assert one without paying for the other:
 //! [`GitWatcherRegistry`] does the bookkeeping (one watch per repository,
@@ -16,8 +18,9 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 use notify::RecursiveMode;
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
@@ -29,6 +32,8 @@ use crate::state_sink::GitStateSink;
 /// goes out. A `git checkout` rewrites `HEAD`, `index`, and a pile of refs, and
 /// the chip wants the state after all of it rather than a report per file.
 ///
+/// Doubles as the window [`recompute_and_report`] coalesces a repeat inside.
+///
 /// `pub` only so the `testing`-gated [`crate::test_fixtures`] can re-export it:
 /// this module is private, so nothing outside reaches it any other way. A suite
 /// asserting "one report per burst" has to wait out this window to know the
@@ -37,6 +42,13 @@ pub const DEBOUNCE: Duration = Duration::from_millis(200);
 
 /// What a backend calls once a repository's `.git/*` writes have settled.
 type RepoChanged = Arc<dyn Fn() + Send + Sync>;
+
+/// When one repository's watch last reported, and what that report carried.
+///
+/// One per live watch, created by [`GitWatcherRegistry::arm`] and shared with
+/// the change callback, so it starts empty on every arm and dies with the last
+/// unsubscribe. That's what makes the first report after arming unconditional.
+type LastReport = Arc<Mutex<Option<(Instant, RepoInfo)>>>;
 
 /// What a subscription arms so a repository's `.git/*` writes come back as one
 /// debounced report.
@@ -50,7 +62,9 @@ type RepoChanged = Arc<dyn Fn() + Send + Sync>;
 /// [`GitPortal::with_scripted_watcher`]: crate::GitPortal::with_scripted_watcher
 pub(crate) trait GitWatcherBackend: Send + Sync {
     /// Starts watching the gitdir of the repository at `repo_root`, calling
-    /// `on_change` once per debounced burst on a thread of the backend's own.
+    /// `on_change` once per batch it emits, on a thread of the backend's own.
+    /// ❗ A burst can arrive as more than one batch; making that ONE report is
+    /// [`recompute_and_report`]'s job, ❌ not a promise a backend has to keep.
     ///
     /// The returned value keeps the watch alive and stops it when dropped, which
     /// is the whole contract: the registry stores it and never looks inside.
@@ -228,7 +242,9 @@ impl GitWatcherRegistry {
 
         // First subscriber: arm the watch.
         let watcher_root = root.clone();
-        let on_change: RepoChanged = Arc::new(move || recompute_and_report(&repos, sink.as_ref(), &watcher_root));
+        let last_report: LastReport = Arc::new(Mutex::new(None));
+        let on_change: RepoChanged =
+            Arc::new(move || recompute_and_report(&repos, sink.as_ref(), &watcher_root, &last_report));
         let watch = self.backend.watch(&root, on_change)?;
 
         inner.insert(
@@ -299,7 +315,8 @@ impl Default for GitWatcherRegistry {
     }
 }
 
-/// Recomputes the repo's snapshot and hands it to the sink.
+/// Recomputes the repo's snapshot and hands it to the sink, unless the same
+/// snapshot already went out for this burst.
 ///
 /// The status cache is dropped BEFORE the report goes out: a subscriber reacts
 /// to a report by asking for status, and a cache still holding the pre-change
@@ -308,7 +325,28 @@ impl Default for GitWatcherRegistry {
 /// Any `.git/*` mutation we watch for is a superset of "the index might have
 /// moved", so the drop is unconditional. Cheap (a `HashMap` remove), so it isn't
 /// worth filtering by event type.
-fn recompute_and_report(repos: &RepoCache, sink: &dyn GitStateSink, repo_root: &Path) {
+///
+/// ## Why a repeat inside the window is nothing to tell
+///
+/// A backend calls this once per batch it emits, and `notify_debouncer_full`
+/// emits on a tick cadence: one burst of writes whose per-path deadlines
+/// straddle a tick boundary arrives as two batches, both recomputing the same
+/// post-burst state. Each report costs a window event and a re-read of every
+/// open portal pane, so the second one is pure waste.
+///
+/// The guard drops exactly that repeat and provably nothing else. An emission
+/// is never sooner than [`DEBOUNCE`] after the write behind it, so a report
+/// landing LESS than that after the previous one can only be about writes that
+/// preceded the previous report's own recompute, which means they are already in
+/// the snapshot it carried. An identical snapshot inside the window therefore
+/// has no news in it.
+///
+/// ❌ Never widen this to "identical snapshot, whatever the gap". `RepoInfo`
+/// answers the breadcrumb chip, and plenty of real changes leave it untouched:
+/// a second `git branch`, a commit on a worktree that stays dirty, a `git add`
+/// in a dirty repo. Each of those still has to reach the `.git/branches/` and
+/// `.git/commits/` panes and the status column, and outside the window they do.
+fn recompute_and_report(repos: &RepoCache, sink: &dyn GitStateSink, repo_root: &Path, last_report: &LastReport) {
     let Ok((handle, root)) = repos.discover(repo_root) else {
         return;
     };
@@ -316,6 +354,20 @@ fn recompute_and_report(repos: &RepoCache, sink: &dyn GitStateSink, repo_root: &
         return;
     };
     crate::status::invalidate_status_cache(&root);
+
+    {
+        let mut last = last_report.lock_ignore_poison();
+        if let Some((reported_at, reported)) = last.as_ref()
+            && reported_at.elapsed() < DEBOUNCE
+            && reported == &info
+        {
+            return;
+        }
+        // Stamped BEFORE the sink runs, so the gap this compares is the one the
+        // debouncer scheduled. A slow sink then costs an extra report rather
+        // than stretching the window over a change that came after it.
+        *last = Some((Instant::now(), info.clone()));
+    }
     sink.repo_changed(&root, info);
 }
 
