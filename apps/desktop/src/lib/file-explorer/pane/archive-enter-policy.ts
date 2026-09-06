@@ -5,13 +5,12 @@
  *
  * Three outcomes: `browse` (step inside like a folder), `open` (hand the file to
  * its external app via LaunchServices), or `ask` (show the Browse | Open popup so
- * the user picks per-Enter). A format's default is overridable per-format in
- * Settings › Behavior › Archives; the stored overrides are a pinned-shape JSON
- * object (`{ zip: 'ask', bundle: 'open', … }`) parsed by `parseEnterBehaviorOverrides`.
+ * the user picks per-Enter). Each format carries its own registry setting
+ * (`behavior.archiveEnter.<format>`), rendered in Settings › Behavior › Archives.
  *
- * This module is a pure leaf (no I/O, no store, no Svelte): FilePane reads the
- * live setting and passes the parsed overrides in, so the decision is unit-testable
- * in isolation. Classification is extension-only, mirroring the backend's
+ * This module is a pure leaf (no I/O, no store, no Svelte): the caller reads the live
+ * settings and passes the actions in, so the decision is unit-testable in isolation.
+ * Classification is extension-only, mirroring the backend's
  * `has_supported_archive_extension` (the cheap check the listing already ran);
  * the backend magic-byte confirms the real archive at navigation time.
  */
@@ -30,8 +29,12 @@ export type ArchiveFormatKey = 'zip' | 'ooxml' | 'bundle'
  */
 export type ArchiveEnterSettingId = `behavior.archiveEnter.${ArchiveFormatKey}`
 
-/** The stored per-format override map (a subset — unset formats use their default). */
-export type EnterBehaviorOverrides = Partial<Record<ArchiveFormatKey, EnterAction>>
+/**
+ * What Enter does, per format. Partial: a format the caller didn't supply falls back
+ * to its `defaultAction`, which is also the registry default for its setting, so both
+ * paths land on the same answer.
+ */
+export type EnterBehaviorByFormat = Partial<Record<ArchiveFormatKey, EnterAction>>
 
 /** The entry fields the resolver reads (a subset of `FileEntry`). */
 export interface EnterCandidate {
@@ -122,40 +125,32 @@ function classify(entry: EnterCandidate): FormatDescriptor | null {
 }
 
 /**
- * The Enter action for an entry given the user's per-format overrides, or `null`
- * when the entry is neither an archive, a document package, nor a bundle (the
- * caller then does its ordinary open/browse).
+ * The Enter action for an entry given the per-format actions, or `null` when the entry
+ * is neither an archive, a document package, nor a bundle (the caller then does its
+ * ordinary open/browse).
  */
-export function resolveEnterPolicy(entry: EnterCandidate, overrides: EnterBehaviorOverrides): EnterAction | null {
+export function resolveEnterPolicy(entry: EnterCandidate, behavior: EnterBehaviorByFormat): EnterAction | null {
   const format = classify(entry)
   if (!format) return null
-  return overrides[format.key] ?? format.defaultAction
+  return behavior[format.key] ?? format.defaultAction
 }
 
-function isEnterAction(value: unknown): value is EnterAction {
+/** Whether `value` is one of the three actions the resolver can return. */
+export function isEnterAction(value: unknown): value is EnterAction {
   return typeof value === 'string' && (ENTER_ACTIONS as readonly string[]).includes(value)
 }
 
-function isFormatKey(value: string): value is ArchiveFormatKey {
-  return ARCHIVE_ENTER_FORMATS.some((f) => f.key === value)
-}
-
 /**
- * Parse the stored JSON overrides into a clean map, keeping only known format
- * keys with valid actions. Malformed, empty, or non-object input yields `{}` (all
- * formats fall to their defaults) — the setting can never wedge the Enter key.
+ * The per-format actions, read through `read` (in practice `getSetting`, which is
+ * why this takes the reader rather than importing it: the module stays a pure leaf
+ * and the map is trivial to fake in a test).
+ *
+ * Reads every format, so a newly added one is picked up here for free.
  */
-export function parseEnterBehaviorOverrides(stored: string): EnterBehaviorOverrides {
-  let raw: unknown
-  try {
-    raw = JSON.parse(stored)
-  } catch {
-    return {}
+export function enterBehaviorFromSettings(read: (id: ArchiveEnterSettingId) => EnterAction): EnterBehaviorByFormat {
+  const behavior: EnterBehaviorByFormat = {}
+  for (const format of ARCHIVE_ENTER_FORMATS) {
+    behavior[format.key] = read(format.settingId)
   }
-  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return {}
-  const result: EnterBehaviorOverrides = {}
-  for (const [key, value] of Object.entries(raw)) {
-    if (isFormatKey(key) && isEnterAction(value)) result[key] = value
-  }
-  return result
+  return behavior
 }

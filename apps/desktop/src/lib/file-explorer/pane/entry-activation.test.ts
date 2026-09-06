@@ -19,7 +19,7 @@ import type { FileEntry } from '../types'
 const { ipc, settings, policy, viewer, navigate } = vi.hoisted<{
   ipc: { openFile: Mock }
   settings: { getSetting: Mock }
-  policy: { resolveEnterPolicy: Mock; parseEnterBehaviorOverrides: Mock; pathInsideArchive: Mock }
+  policy: { resolveEnterPolicy: Mock; enterBehaviorFromSettings: Mock; pathInsideArchive: Mock }
   viewer: { openFileViewer: Mock }
   navigate: { resolveLocationOrToast: Mock }
 }>(() => ({
@@ -27,7 +27,7 @@ const { ipc, settings, policy, viewer, navigate } = vi.hoisted<{
   settings: { getSetting: vi.fn() },
   policy: {
     resolveEnterPolicy: vi.fn(),
-    parseEnterBehaviorOverrides: vi.fn(),
+    enterBehaviorFromSettings: vi.fn(),
     pathInsideArchive: vi.fn(),
   },
   viewer: { openFileViewer: vi.fn() },
@@ -38,7 +38,7 @@ vi.mock('$lib/tauri-commands', () => ({ openFile: ipc.openFile }))
 vi.mock('$lib/settings', () => ({ getSetting: settings.getSetting }))
 vi.mock('./archive-enter-policy', () => ({
   resolveEnterPolicy: policy.resolveEnterPolicy,
-  parseEnterBehaviorOverrides: policy.parseEnterBehaviorOverrides,
+  enterBehaviorFromSettings: policy.enterBehaviorFromSettings,
 }))
 vi.mock('./volume-capabilities', () => ({ pathInsideArchive: policy.pathInsideArchive }))
 vi.mock('$lib/file-viewer/open-viewer', () => ({ openFileViewer: viewer.openFileViewer }))
@@ -78,7 +78,7 @@ describe('createEntryActivation', () => {
     ipc.openFile.mockResolvedValue(undefined)
     policy.pathInsideArchive.mockReturnValue(false)
     policy.resolveEnterPolicy.mockReturnValue(null)
-    policy.parseEnterBehaviorOverrides.mockReturnValue({})
+    policy.enterBehaviorFromSettings.mockReturnValue({})
     settings.getSetting.mockReturnValue('')
     paneState = { currentPath: '/dir', isSearchResultsView: false }
     calls = {

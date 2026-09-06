@@ -69,7 +69,8 @@ describe('searchable rows match the markup they describe', () => {
       const filtersRows = source.includes('shouldShow(')
 
       for (const row of rows) {
-        it(`${row.id} renders its label key`, () => {
+        // allowed-pluralize-noun: `renders` is the verb of a test name, not a count and a noun
+    it(`${row.id} renders its label key`, () => {
           expect(source).toContain(row.labelKey)
         })
 

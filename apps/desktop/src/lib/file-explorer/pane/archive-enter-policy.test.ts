@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   ARCHIVE_ENTER_FORMATS,
-  parseEnterBehaviorOverrides,
+  enterBehaviorFromSettings,
   resolveEnterPolicy,
-  type EnterBehaviorOverrides,
+  type ArchiveEnterSettingId,
+  type EnterAction,
+  type EnterBehaviorByFormat,
   type EnterCandidate,
 } from './archive-enter-policy'
 import { getSettingDefinition, settingsRegistry } from '$lib/settings/settings-registry'
@@ -69,35 +71,33 @@ describe('resolveEnterPolicy classification', () => {
   })
 })
 
-describe('resolveEnterPolicy overrides', () => {
-  it('applies a per-format override over the default', () => {
-    const overrides: EnterBehaviorOverrides = { zip: 'browse', bundle: 'open' }
-    expect(resolveEnterPolicy(file('foo.zip', true), overrides)).toBe('browse')
-    expect(resolveEnterPolicy(dir('Safari.app'), overrides)).toBe('open')
+describe('resolveEnterPolicy per-format actions', () => {
+  it('applies the action chosen for that format', () => {
+    const behavior: EnterBehaviorByFormat = { zip: 'browse', bundle: 'open' }
+    expect(resolveEnterPolicy(file('foo.zip', true), behavior)).toBe('browse')
+    expect(resolveEnterPolicy(dir('Safari.app'), behavior)).toBe('open')
   })
 
-  it('falls back to the format default when no override is set for that format', () => {
-    const overrides: EnterBehaviorOverrides = { zip: 'browse' }
-    expect(resolveEnterPolicy(dir('Safari.app'), overrides)).toBe('ask')
+  it('falls back to the format default when the caller supplied no action for it', () => {
+    const behavior: EnterBehaviorByFormat = { zip: 'browse' }
+    expect(resolveEnterPolicy(dir('Safari.app'), behavior)).toBe('ask')
   })
 })
 
-describe('parseEnterBehaviorOverrides', () => {
-  it('parses a stored JSON object, keeping only known formats and actions', () => {
-    const parsed = parseEnterBehaviorOverrides('{"zip":"browse","bundle":"open"}')
-    expect(parsed).toEqual({ zip: 'browse', bundle: 'open' })
-  })
+describe('enterBehaviorFromSettings', () => {
+  it('reads one setting per format, so a new format needs no change here', () => {
+    const stored: Record<string, EnterAction> = {
+      'behavior.archiveEnter.zip': 'browse',
+      'behavior.archiveEnter.ooxml': 'ask',
+      'behavior.archiveEnter.bundle': 'open',
+    }
+    const read = (id: ArchiveEnterSettingId): EnterAction => stored[id]
 
-  it('drops unknown format keys and invalid actions', () => {
-    const parsed = parseEnterBehaviorOverrides('{"zip":"nope","rar":"browse","bundle":"ask"}')
-    expect(parsed).toEqual({ bundle: 'ask' })
-  })
+    const behavior = enterBehaviorFromSettings(read)
 
-  it('returns an empty object for malformed or empty input', () => {
-    expect(parseEnterBehaviorOverrides('')).toEqual({})
-    expect(parseEnterBehaviorOverrides('not json')).toEqual({})
-    expect(parseEnterBehaviorOverrides('[]')).toEqual({})
-    expect(parseEnterBehaviorOverrides('null')).toEqual({})
+    expect(behavior).toEqual({ zip: 'browse', ooxml: 'ask', bundle: 'open' })
+    // Every format is covered, so the resolver never falls back to a default here.
+    expect(Object.keys(behavior).sort()).toEqual(ARCHIVE_ENTER_FORMATS.map((f) => f.key).sort())
   })
 })
 
@@ -132,7 +132,7 @@ describe('ARCHIVE_ENTER_FORMATS ↔ settings registry parity', () => {
       // Every action the resolver understands has to be offerable, or a row would be
       // missing a choice the policy can still resolve to.
       const values = definition?.constraints?.options?.map((o) => o.value)
-      expect(values, `${format.settingId} options`).toEqual(['browse', 'open', 'ask'])
+      expect(values, `options of ${format.settingId}`).toEqual(['browse', 'open', 'ask'])
     }
   })
 

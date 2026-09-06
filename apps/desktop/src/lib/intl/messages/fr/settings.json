@@ -386,14 +386,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Ouverture des archives et des paquets",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Choisissez ce que fait la touche Entrée pour chaque format : parcourir le contenu comme un dossier, ouvrir dans une autre application, ou demander à chaque fois.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Archives",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8",

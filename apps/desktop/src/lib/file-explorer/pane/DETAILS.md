@@ -1172,12 +1172,22 @@ Pressing Enter on an archive or a macOS app bundle (`.app`/`.bundle`/`.framework
 open in the default app, or ask. The decision is a pure function; the UI is a small popup.
 
 - **`archive-enter-policy.ts` is the pure resolver**:
-  `resolveEnterPolicy(entry, overrides) -> 'browse' | 'open' | 'ask' | null`. `null` means the entry is an ordinary
+  `resolveEnterPolicy(entry, behavior) -> 'browse' | 'open' | 'ask' | null`. `null` means the entry is an ordinary
   file/folder (the caller does its normal open/browse). Zip archives default Ask (matched off `entry.isArchive`, so
   tar/7z join automatically when the backend flags them); bundles default Ask (matched by directory extension);
-  Office/app packages (`.docx`/`.xlsx`/`.pptx`/`.jar`/`.apk`) default Open and aren't user-configurable yet (browse-into
-  isn't supported for them). Per-format overrides come from the `behavior.archiveEnterBehavior` setting (a pinned-shape
-  JSON object, parsed by `parseEnterBehaviorOverrides`).
+  Office/app packages (`.docx`/`.xlsx`/`.pptx`/`.jar`/`.apk`) default Open. The actions come in as a per-format map;
+  `enterBehaviorFromSettings(getSetting)` builds it by walking the format list, so the resolver stays a pure leaf and a
+  new format is read for free.
+- **A format IS its setting.** Each descriptor carries a `settingId` (`behavior.archiveEnter.zip` / `.ooxml` /
+  `.bundle`), which is the whole answer to "can the user configure this format?" — there is no second `configurable`
+  flag to disagree with it. `archive-enter-policy.test.ts` asserts parity both ways: every format names a registry entry
+  whose default and options match it, and every `behavior.archiveEnter.*` entry belongs to a format. Adding `tar` means
+  adding both halves, or the test is red.
+- **❗ `ARCHIVE_ENTER_FORMATS` is ordered by MATCH SPECIFICITY, not by display order.** `classify` is first-match-wins
+  and the zip matcher is the broadest predicate there is (`isArchive === true`), so `ooxml` — a strict subset, since an
+  Office file is a zip — must precede it. Once the backend flags `.docx` as an archive, a zip-first order would swallow
+  every Office document into the zip row and the Office documents setting would silently stop working. A test pins the
+  order with a `.docx` carrying `isArchive: true`.
 - **`handleNavigate` consults it before the browse arm**, but only when NOT `pathInsideArchive(entry.path)` (a file
   inside an archive keeps the viewer interim). `ask` → `enterMenu.openFor`; `open` → `openEntryExternally` (`openFile`,
   i.e. LaunchServices — a `.zip` opens in the OS archive tool, a `.app` launches); `browse` → falls through to
@@ -1188,8 +1198,10 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
   guard (`key-dispatch.ts`, which only exempts `[role="dialog"]`) doesn't yank focus off the `role="menu"`; on close the
   controller calls `restoreFocus` (`onRequestFocus`), which re-focuses the explorer container so keyboard routing
   resumes. `Configure…` deep-links to `openSettingsWindow('enter-menu', ['Behavior', 'Archives'])`.
-- **Settings** live in `settings/sections/ArchivesSection.svelte` (a custom section: two `ToggleGroup` cards over the
-  one JSON setting, so the format list extends without a registry entry per format).
+- **Settings** live in `settings/sections/ArchivesSection.svelte`: three registry-driven `SettingRow` +
+  `SettingToggleGroup` rows over the three ids, so the section itself reads, writes, defaults, and validates nothing.
+  Installs from before the split are carried over by settings migration 5 (`settings/settings-store.ts`), which unpacks
+  the old `behavior.archiveEnterBehavior` JSON blob into the three keys and deletes it.
 
 ## Analytics emitted from this directory
 

@@ -589,7 +589,11 @@ Current cases: v2 renamed `appearance.dateColors`'s "off" value to "none"; v3 st
 that already had image indexing on, so the new "only folders I choose" default doesn't silently narrow what they've
 already indexed; v4 moves onboarding's four keys (`isOnboarded`, `fullDiskAccessChoice`, `termsAcceptedVersion`,
 `termsAcceptedAt`) from top-level legacy names onto their `onboarding.*` registry ids and deletes the originals, which
-the sparse save can't prune on its own. A migration that changes a BACKEND-read setting also needs the same rule applied
+the sparse save can't prune on its own; v5 unpacks the `behavior.archiveEnterBehavior` JSON blob
+(`{ zip: 'ask', bundle: 'open' }`) into one `behavior.archiveEnter.<format>` key per archive format and deletes the
+blob, writing nothing for a format the blob never named (so an untouched format stays on its registry default) and
+nothing at all for a blob it can't read (every format then falls to its default, the same answer the resolver already
+gave for an unreadable blob). A migration that changes a BACKEND-read setting also needs the same rule applied
 Rust-side (v3: `media_index::gate::scope_from_settings`), because the backend reads `settings.json` at startup and would
 otherwise see the raw default on the launch before the migration writes the key.
 

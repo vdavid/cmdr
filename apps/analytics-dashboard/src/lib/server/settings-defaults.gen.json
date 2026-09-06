@@ -1298,7 +1298,6 @@
     "indexing.askForEachDrive": true,
     "indexing.enabled": true,
     "indexing.firstStaleDialogShown": false,
-    "indexing.indexSize": false,
     "indexing.staleNotify": true,
     "listing.briefColumnWidthMaxPx": 400,
     "listing.briefColumnWidthMode": "paneWidth",

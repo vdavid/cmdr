@@ -24,7 +24,7 @@ import type { Location } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
 import { basenameOf, type CanonicalPath } from '$lib/path/canonical'
 import { pathInsideArchive } from './volume-capabilities'
-import { resolveEnterPolicy, parseEnterBehaviorOverrides } from './archive-enter-policy'
+import { resolveEnterPolicy, enterBehaviorFromSettings } from './archive-enter-policy'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { resolveLocationOrToast } from '../navigation/navigate-and-select'
 import type { LoadDirectoryArgs } from './types'
@@ -113,7 +113,7 @@ export function createEntryActivation(deps: EntryActivationDeps): EntryActivatio
     // below. `browse` falls through to the folder-browse arm; `open` launches;
     // `ask` shows the Browse | Open | Configure popup.
     if (!pathInsideArchive(deps.getCurrentPath())) {
-      const action = resolveEnterPolicy(entry, parseEnterBehaviorOverrides(getSetting('behavior.archiveEnterBehavior')))
+      const action = resolveEnterPolicy(entry, enterBehaviorFromSettings(getSetting))
       if (action) {
         // From search results, opening any real entry must switch to its real
         // volume first (no popup on the snapshot pane — mirrors the arms below).

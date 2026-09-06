@@ -385,14 +385,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "打开压缩文件和应用程序包",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "选择每种格式按 Enter 键时的行为：像文件夹一样浏览它、用其他应用打开它，或者每次都询问。",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "压缩文件",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

@@ -387,14 +387,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Öppna arkiv och paket",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Välj vad Enter gör för varje format: bläddra i det som en mapp, öppna det i en annan app, eller fråga varje gång.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Arkiv",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

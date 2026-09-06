@@ -31,13 +31,14 @@ sections compose).
   `behavior.doubleClickOnPaneNotificationSeen` and `behavior.openTerminalHereToastSeen` flags (one-time-hint trackers)
   are registered but render no row. Each card frame gated via `anyVisible(shouldShow, ...)` (the card-group pattern).
 - **`TerminalAppSelect.svelte`** + **`terminal-app-options.ts`**: the "Open terminal here uses" control. See below.
-- **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). A
-  CUSTOM section (not registry-driven rows): all formats live in ONE pinned-shape JSON setting
-  (`behavior.archiveEnterBehavior`, `{ zip, bundle }`), so the format list extends without a registry entry per format.
-  Two labeled `SectionCard`s — Archives (the zip row) and App bundles — each a `lib/ui/ToggleGroup`
-  (`semantics="toggles"`) bound to the parsed override, writing the merged JSON back. Defaults + the pure classification
-  live in `file-explorer/pane/archive-enter-policy.ts`; this file only renders and persists. Both cards gated via
-  `anyVisible(shouldShow, 'behavior.archiveEnterBehavior')`. The Archives card ALSO holds a "Compression level" row: a
+- **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). Fully
+  registry-driven — one setting per format (`behavior.archiveEnter.zip` / `.ooxml` / `.bundle`), each a `SettingRow` +
+  `SettingToggleGroup`, so this file reads, writes, defaults, and validates nothing of its own. Two labeled
+  `SectionCard`s: Archives holds zip AND the zip-based documents and app packages (`.docx`/`.jar`/…), since both are
+  things Cmdr browses into; App bundles holds `.app`/`.bundle`/`.framework`, which are folders rather than files. The
+  format list, the matcher behind each id, and the defaults live in
+  `file-explorer/pane/archive-enter-policy.ts`, pinned to these registry entries by the parity test there. Cards gated
+  via `anyVisible(shouldShow, ...)` over their own member ids. The Archives card ALSO holds a "Compression level" row: a
   registry-backed `behavior.archiveCompressionLevel` slider (1–9, default 6) with "Faster"/"Smaller" `endLabels`,
   hand-rendered here like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by
   id, and it governs every user-driven zip write; the effect on the archive is single-sourced in the backend mutation

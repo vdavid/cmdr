@@ -132,12 +132,15 @@ async function navigatePaneTo(tauriPage: PageLike, pane: 'left' | 'right', targe
 const ENTER_MENU = '.menu-content'
 
 /**
- * Sets the per-format Enter behavior (the `behavior.archiveEnterBehavior` pinned-
- * shape JSON) through the same MCP `set_setting` path the UI uses. `set_setting`
- * round-trips, so the setting is live by the time this resolves.
+ * Sets the Enter behavior of one or more formats through the same MCP `set_setting`
+ * path the UI uses — one call per format, since each is its own
+ * `behavior.archiveEnter.<format>` setting. `set_setting` round-trips, so every
+ * setting is live by the time this resolves.
  */
 async function setArchiveEnterBehavior(behavior: Record<string, string>): Promise<void> {
-  await mcpCall('set_setting', { id: 'behavior.archiveEnterBehavior', value: JSON.stringify(behavior) })
+  for (const [format, action] of Object.entries(behavior)) {
+    await mcpCall('set_setting', { id: `behavior.archiveEnter.${format}`, value: action })
+  }
 }
 
 test.describe('Archive browsing', () => {

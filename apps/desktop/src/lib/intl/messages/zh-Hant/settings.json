@@ -385,14 +385,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "開啟壓縮檔和套件",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "選擇每種格式按 Enter 鍵時的行為：像資料夾一樣瀏覽它、用其他 App 開啟它，或者每次都詢問。",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "壓縮檔",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

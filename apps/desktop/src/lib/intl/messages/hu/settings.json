@@ -385,14 +385,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Archívumok és csomagok megnyitása",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Válaszd ki, mit tegyen az Enter az egyes formátumoknál: böngészés mappaként, megnyitás egy másik appban, vagy rákérdezés minden alkalommal.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Archívumok",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

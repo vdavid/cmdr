@@ -70,10 +70,8 @@ async function navigatePaneTo(tauriPage: PageLike, pane: 'left' | 'right', targe
  * the Ask menu. `set_setting` round-trips, so it's live by the time this resolves.
  */
 async function setArchiveBrowse(): Promise<void> {
-  await mcpCall('set_setting', {
-    id: 'behavior.archiveEnterBehavior',
-    value: JSON.stringify({ zip: 'browse', bundle: 'browse' }),
-  })
+  await mcpCall('set_setting', { id: 'behavior.archiveEnter.zip', value: 'browse' })
+  await mcpCall('set_setting', { id: 'behavior.archiveEnter.bundle', value: 'browse' })
 }
 
 /** Reads the Compress dialog's path-input value (the editable `.zip` target). */

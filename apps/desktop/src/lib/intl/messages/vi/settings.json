@@ -383,14 +383,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Mở tệp nén và gói ứng dụng",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Chọn xem nhấn Enter sẽ làm gì với mỗi định dạng: duyệt bên trong như một thư mục, mở trong ứng dụng khác, hoặc hỏi mỗi lần.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Tệp nén",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

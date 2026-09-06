@@ -497,14 +497,6 @@
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
 
-  "settings.archives.enterBehavior.label": "Opening archives and bundles",
-  "@settings.archives.enterBehavior.label": {
-    "description": "Search label for the Behavior > Archives settings section, which sets what pressing Enter does on an archive or a macOS app bundle. \"Enter\" is the Return/Enter key; do not translate the key name if your language keeps it in English."
-  },
-  "settings.archives.enterBehavior.description": "Choose what pressing Enter does for each format: browse inside it like a folder, open it in another app, or ask each time.",
-  "@settings.archives.enterBehavior.description": {
-    "description": "Search help text for the Behavior > Archives section. \"Enter\" is the Return/Enter key."
-  },
   "settings.archives.card.archives": "Archives",
   "@settings.archives.card.archives": {
     "description": "Card title in Settings > Behavior > Archives, grouping the archive formats Cmdr can browse into (zip today). \"Cmdr\" is the product name; do not translate it."

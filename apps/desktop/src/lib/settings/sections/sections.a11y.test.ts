@@ -258,7 +258,9 @@ describe('AppearanceZoomSection a11y', () => {
 /** Tier 3 a11y tests for `ArchivesSection.svelte`. */
 describe('ArchivesSection a11y', () => {
   useSettings((key: string) => {
-    if (key === 'behavior.archiveEnterBehavior') return '{}'
+    if (key === 'behavior.archiveEnter.zip') return 'ask'
+    if (key === 'behavior.archiveEnter.ooxml') return 'open'
+    if (key === 'behavior.archiveEnter.bundle') return 'ask'
     if (key === 'behavior.archiveCompressionLevel') return 6
     return undefined
   })

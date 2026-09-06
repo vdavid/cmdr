@@ -386,14 +386,6 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.archives.enterBehavior.label": "Abrir arquivos compactados e pacotes",
-  "@settings.archives.enterBehavior.label": {
-    "sourceHash": "554e1f7"
-  },
-  "settings.archives.enterBehavior.description": "Escolha o que pressionar Enter faz em cada formato: navegar dentro dele como em uma pasta, abrir em outro aplicativo ou perguntar a cada vez.",
-  "@settings.archives.enterBehavior.description": {
-    "sourceHash": "26dfc0c"
-  },
   "settings.archives.card.archives": "Arquivos compactados",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"
