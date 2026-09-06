@@ -238,7 +238,9 @@ pub enum BackendKind {
     GitPortal,
 }
 
-/// What a "Sign in" affordance on a volume may ask a person for.
+/// What a "Sign in" affordance on a volume asks a person for: the FORM the sheet
+/// renders, decided by the backend rather than by the sheet's mode or the
+/// protocol's name.
 ///
 /// ❗ **Read from the live volume at the moment the affordance renders**, ❌
 /// never captured when the volume was opened. A backend that authenticates per
@@ -248,19 +250,52 @@ pub enum BackendKind {
 /// volume that now wants a password with no way in, and a stale
 /// [`KeyPassphrase`](Self::KeyPassphrase) asks for a secret the session doesn't
 /// use. [`Volume::sign_in_prompt`](super::Volume::sign_in_prompt) is the read.
+///
+/// ❗ **Whether the username is editable is a property of the VARIANT, not of the
+/// sheet's mode.** [`Password`](Self::Password) and
+/// [`KeyPassphrase`](Self::KeyPassphrase) render it read-only, because SFTP's and
+/// WebDAV's `reconnect_with_credentials` refuse a changed username: the volume id
+/// IS the account, and authenticating as somebody else under this volume's name
+/// would index another account's files.
+/// [`UsernamePassword`](Self::UsernamePassword) renders it editable, because SMB
+/// accepts a new username and rewrites its params, which is how re-auth-as-
+/// someone-else works. One implementer reading "read-only" as a mode rule would
+/// break SMB; one reading "editable" as a mode rule would break SFTP.
+///
+/// **Reserved, ❌ not added until a producer exists**:
+/// - `AccessKeys { session_token: bool }` for S3: an access key id, a secret
+///   access key, and optionally a session token.
+/// - `Oauth { provider }`: a "Continue in your browser" button and a waiting
+///   state, with the callback coming home backend-side; "remember" is implicit
+///   there (the refresh token is the only sane state), and a revoked token
+///   surfaces as [`ConnectionState::NeedsSignIn`] behind the same banner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "snake_case")]
-pub enum SignInPrompt {
+#[serde(tag = "kind", rename_all = "snake_case", rename_all_fields = "camelCase")]
+pub enum SignInShape {
     /// ❌ Nothing to ask, so ❌ no sign-in button. The session comes back on its
     /// own (an ssh-agent identity, an unencrypted key file), and there is no
     /// secret a person could type that would help.
     Nothing,
-    /// The account's password. Persisted on a successful sign-in, so the next
-    /// reconnect is silent.
+    /// The account's password, under a read-only username.
+    ///
+    /// ❗ An attended sign-in REFRESHES a remembered secret and ❌ never seeds
+    /// one: the store is written only where it already holds a secret for this
+    /// account, so a user who declined to remember it stays declined
+    /// (`crates/cmdr-sftp/DETAILS.md` § "The two switches").
     Password,
-    /// The passphrase on a key file. ❗ Used for that session and ❌ never saved:
-    /// persisting it would undo what encrypting the key asked for.
+    /// The passphrase on a key file, under a read-only username.
+    ///
+    /// ❗ Same rule as [`Password`](Self::Password), refresh included: this is
+    /// NOT a never-save variant. Encrypting a key asks that the passphrase not be
+    /// left lying around, and a user who chose to remember it has already
+    /// answered that question themselves.
     KeyPassphrase,
+    /// A username AND a password, both editable: SMB, where the SHARE is the
+    /// identity and the account is a field on it.
+    UsernamePassword {
+        /// Whether the sheet offers "Connect as guest" beside the two fields.
+        guest_allowed: bool,
+    },
 }
 
 /// Identifies the shared physical resource a volume contends for, so the

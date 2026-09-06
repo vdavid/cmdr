@@ -14,7 +14,7 @@ use std::time::Duration;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
-    ScanBoundary, ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    ScanBoundary, ScanConflict, SignInShape, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
     WatchCoverage,
 };
 use cmdr_fs::volume::{patching, scan_walk};
@@ -325,8 +325,8 @@ impl Volume for AdbVolume {
 
     /// The device authorizes the HOST on its own screen; there is no secret a
     /// person could type here.
-    fn sign_in_prompt(&self) -> SignInPrompt {
-        SignInPrompt::Nothing
+    fn sign_in_prompt(&self) -> SignInShape {
+        SignInShape::Nothing
     }
 
     fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {

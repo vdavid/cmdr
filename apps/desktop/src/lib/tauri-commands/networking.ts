@@ -7,7 +7,7 @@ import { throwReconnectError } from '$lib/file-explorer/network/reconnect-error'
 import type {
   MountResult,
   NetworkHostContextAction,
-  SignInPrompt,
+  SignInShape,
   SmbCredentials,
   SmbFellBackToOsMount,
   UpgradeResult,
@@ -22,7 +22,7 @@ import type {
   ShareListResult,
 } from '../file-explorer/types'
 
-export type { SignInPrompt }
+export type { SignInShape }
 
 /** Result of connecting to a manually-specified server. */
 export interface ManualConnectResult {
@@ -446,7 +446,7 @@ export async function reconnectSmbVolumeWithCredentials(
  * wrong: a needless password box is recoverable, a wrong `'nothing'` is a volume
  * the user can't sign in to at all.
  */
-export async function getVolumeSignInState(volumeId: string): Promise<SignInPrompt> {
+export async function getVolumeSignInState(volumeId: string): Promise<SignInShape> {
   return await commands.getVolumeSignInState(volumeId)
 }
 

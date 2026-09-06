@@ -398,8 +398,8 @@ pub async fn reconnect_smb_volume_with_credentials(
 /// to sign in, and this platform has no volume that could answer better.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_volume_sign_in_state(_volume_id: String) -> cmdr_fs::volume::SignInPrompt {
-    cmdr_fs::volume::SignInPrompt::Password
+pub async fn get_volume_sign_in_state(_volume_id: String) -> cmdr_fs::volume::SignInShape {
+    cmdr_fs::volume::SignInShape::Password
 }
 
 /// Probe for a Finder-saved SMB password (stub: always false).

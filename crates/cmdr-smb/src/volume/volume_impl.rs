@@ -525,6 +525,31 @@ impl Volume for SmbVolume {
         cmdr_fs::volume::BackendKind::Smb
     }
 
+    /// A share asks for a USERNAME beside the password: the share is the
+    /// identity, so `reconnect_with_credentials` accepts a different account and
+    /// rewrites this volume's params. The trait default would render the username
+    /// read-only and take "sign in as someone else" away.
+    ///
+    /// ❗ `guest_allowed` reports the only guest fact a VOLUME holds: that this
+    /// session itself got in as a guest. A share that also accepts guests but was
+    /// opened with credentials answers `false`, and the sheet then shows two
+    /// fields and no guest button — the honest rendering of "we don't know". The
+    /// host-level answer lives in the app's share-listing cache
+    /// (`network::smb_cache::get_cached_shares_auth_mode`), which this crate has
+    /// no business reading.
+    fn sign_in_prompt(&self) -> cmdr_fs::volume::SignInShape {
+        // `try_read`, ❌ never a blocking read: this is a sync trait method the
+        // async IPC thread calls, and the only writer is a reconnect that holds
+        // the lock for a moment. Losing the race costs the guest button for one
+        // render, which is the harmless way to be wrong.
+        let guest_allowed = self
+            .inner
+            .params
+            .try_read()
+            .is_ok_and(|params| params.username.eq_ignore_ascii_case("Guest") && params.password.is_empty());
+        cmdr_fs::volume::SignInShape::UsernamePassword { guest_allowed }
+    }
+
     fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(self.inner.do_attempt_reconnect())
     }

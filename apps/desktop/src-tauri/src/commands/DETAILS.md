@@ -86,9 +86,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   in-place reconnect (`reconnect_smb_volume`: backend single-flighted via `Volume::attempt_reconnect`;
   `reconnect_smb_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via
-  `Volume::reconnect_with_credentials`), what a sign-in would ask for (`get_volume_sign_in_state`, via
-  `Volume::sign_in_prompt` — read live when a banner renders, ❌ never carried on a connect result; an unregistered id
-  and a backend with no story of its own both answer `password`, the safe way to be wrong), per-volume disconnect (`disconnect_smb_volume`: macOS shells out to
+  `Volume::reconnect_with_credentials`), what FORM a sign-in takes (`get_volume_sign_in_state`, via
+  `Volume::sign_in_prompt` — a `SignInShape` tagged on `kind`, read live when a banner renders, ❌ never carried on a
+  connect result and ❌ never derived from the protocol or the sheet's mode; an unregistered id and a backend with no
+  story of its own both answer `password`, the safe way to be wrong, and a share answers `username_password` because
+  the share is the identity and the account is a field on it), per-volume disconnect (`disconnect_smb_volume`: macOS shells out to
   `diskutil unmount`, Linux drops the smb2 session). Borrow Finder's saved password (macOS):
   `system_has_saved_smb_password` (prompt-free probe driving the "Use saved password" offer) and
   `upgrade_to_smb_volume_using_saved_password` (consent-gated read via `secrets::system_keychain_smb` → direct smb2 →

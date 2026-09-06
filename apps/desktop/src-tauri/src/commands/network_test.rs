@@ -8,7 +8,7 @@
 
 use std::sync::Arc;
 
-use cmdr_fs::volume::{InMemoryVolume, SignInPrompt, Volume};
+use cmdr_fs::volume::{InMemoryVolume, SignInShape, Volume};
 
 use super::get_volume_sign_in_state;
 
@@ -27,7 +27,7 @@ async fn a_volume_with_no_sign_in_story_of_its_own_asks_for_a_password() {
 
     assert_eq!(
         get_volume_sign_in_state(volume_id.to_string()).await,
-        SignInPrompt::Password
+        SignInShape::Password
     );
 
     manager.unregister(volume_id);
@@ -43,6 +43,31 @@ async fn a_volume_with_no_sign_in_story_of_its_own_asks_for_a_password() {
 async fn an_id_nothing_is_registered_under_asks_for_a_password() {
     assert_eq!(
         get_volume_sign_in_state("sign-in-state-nothing-is-here".to_string()).await,
-        SignInPrompt::Password
+        SignInShape::Password
+    );
+}
+
+/// The wire shape is internally tagged on `kind`, so the frontend reads it as a
+/// discriminated union and a variant that grows a field doesn't change how the
+/// other variants parse.
+///
+/// Pinned here because this is an IPC contract: `bindings.ts` generates the TS
+/// union from it, and the sheet switches on `kind`.
+#[test]
+fn the_sign_in_shape_rides_the_wire_tagged_on_kind() {
+    use cmdr_fs::volume::SignInShape;
+
+    assert_eq!(
+        serde_json::to_value(SignInShape::Nothing).unwrap(),
+        serde_json::json!({ "kind": "nothing" })
+    );
+    assert_eq!(
+        serde_json::to_value(SignInShape::KeyPassphrase).unwrap(),
+        serde_json::json!({ "kind": "key_passphrase" })
+    );
+    assert_eq!(
+        serde_json::to_value(SignInShape::UsernamePassword { guest_allowed: true }).unwrap(),
+        serde_json::json!({ "kind": "username_password", "guestAllowed": true }),
+        "fields are camelCase on the wire, like every other IPC payload",
     );
 }

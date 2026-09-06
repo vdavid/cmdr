@@ -873,7 +873,9 @@ is that a sign-in UI genuinely branches on all of it.
 `reconnectSmbVolume(volumeId)`, `reconnectSmbVolumeWithCredentials(volumeId, username, password)`, and
 `getVolumeSignInState(volumeId)` call `Volume::attempt_reconnect`, `Volume::reconnect_with_credentials`, and
 `Volume::sign_in_prompt` on whatever is registered, so they work on an SFTP volume as they stand. For the passphrase
-rung, `password` carries the key passphrase. All three live in `apps/desktop/src-tauri/src/commands/network.rs` and are
+rung, `password` carries the key passphrase. `getVolumeSignInState` answers a `SignInShape` tagged on `kind`, and both
+SFTP variants (`password`, `key_passphrase`) render the username READ-ONLY, which is the same rule
+`reconnect_with_credentials` enforces: the volume id is the account. All three live in `apps/desktop/src-tauri/src/commands/network.rs` and are
 wrapped in `apps/desktop/src/lib/tauri-commands/networking.ts`.
 
 `SftpConnectResult` is tagged on `outcome`:
@@ -990,7 +992,7 @@ With `autoReconnect` on (off makes every "unattended reconnect" cell `NotSupport
 | `keyboard_interactive` | `NeedsCredentials` without dialing         | `password`       | refreshes a remembered secret, dials |
 
 A volume that is not SFTP, and an id nothing is registered under, both answer `password` (`Volume::sign_in_prompt`'s
-default). That is the safe way to be wrong: this is only ever asked about a volume that just reported
+default; a share answers `username_password { guestAllowed }` instead). That is the safe way to be wrong: this is only ever asked about a volume that just reported
 `needs_credentials`, so a needless password box is recoverable while a wrong `nothing` is a volume nobody can sign in
 to. The rung-by-rung cells are `crates/cmdr-sftp/src/volume/reconnect_test.rs`; the default's are
 `apps/desktop/src-tauri/src/commands/network_test.rs`.
@@ -1016,7 +1018,7 @@ to. The rung-by-rung cells are `crates/cmdr-sftp/src/volume/reconnect_test.rs`; 
   appears once the backend knows what it's warning about.
 - ❗ **The frontend's reconnect manager already asks, and stores the answer without showing it.**
   `smb-reconnect-manager.svelte.ts`'s `handleNeedsAuth` calls `getVolumeSignInState` on every flip to `needs-auth` and
-  writes it into the volume's entry, readable through `getSignInPrompt(volumeId)`. Nothing renders it yet, on purpose,
+  writes it into the volume's entry, readable through `getSignInShape(volumeId)`. Nothing renders it yet, on purpose,
   the same way `needs_host_key_approval` is handled there: the sign-in UI is the piece still to build, and this is the
   value it reads.
 
