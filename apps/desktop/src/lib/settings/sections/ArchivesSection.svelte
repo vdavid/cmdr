@@ -83,11 +83,13 @@
         </SectionCard>
     {/if}
 
-    {#if shouldShow(BUNDLE_ID)}
+    {#if anyVisible(shouldShow, BUNDLE_ID)}
         <SectionCard label={tString('settings.archives.card.bundles')}>
-            <SettingRow id={BUNDLE_ID} label={bundleDef.label} description={bundleDef.description} {searchQuery}>
-                <SettingToggleGroup id={BUNDLE_ID} />
-            </SettingRow>
+            {#if shouldShow(BUNDLE_ID)}
+                <SettingRow id={BUNDLE_ID} label={bundleDef.label} description={bundleDef.description} {searchQuery}>
+                    <SettingToggleGroup id={BUNDLE_ID} />
+                </SettingRow>
+            {/if}
         </SectionCard>
     {/if}
 </SettingsSection>

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   ARCHIVE_ENTER_FORMATS,
@@ -142,5 +144,17 @@ describe('ARCHIVE_ENTER_FORMATS ↔ settings registry parity', () => {
 
     expect(registered.length).toBeGreaterThan(0) // guard against the prefix silently changing
     expect([...registered].sort()).toEqual([...declared].sort())
+  })
+
+  it('every format has a row in ArchivesSection, so none is configurable only on paper', () => {
+    // The last silent way to add a format: registry entry, matcher, migration — and no
+    // row. A registry entry alone renders NOTHING (`docs/guides/adding-a-new-setting.md`
+    // opens on that trap), so the setting would exist, persist, and be searchable while
+    // the Archives page never showed it. Reading the source is how `searchable-rows.test.ts`
+    // pins the same class of claim about markup in another file.
+    const source = readFileSync(resolve(process.cwd(), 'src/lib/settings/sections/ArchivesSection.svelte'), 'utf8')
+    for (const format of ARCHIVE_ENTER_FORMATS) {
+      expect(source, `${format.settingId} has no row in ArchivesSection.svelte`).toContain(format.settingId)
+    }
   })
 })
