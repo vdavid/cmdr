@@ -114,8 +114,8 @@ sections compose).
     note says so), the live per-drive `MediaIndexProgressSummary`, the two display toggles
     (`mediaIndex.showFileStatusIcons` for the file-list badges, `mediaIndex.showInSearch` for the Search dialog's image
     grid, which is off by default and gates that grid alone: `lib/search/DETAILS.md` § The image grid answers two
-    settings), and the `mediaIndex.parallelism` slider. All four gate on the live master toggle, so they appear only
-    once indexing is on.
+    settings), and the `mediaIndex.parallelism` slider. The progress summary, both display toggles, and the slider gate
+    on the live master toggle, so they appear only once indexing is on.
   - "Folders to index" (`settings.mediaIndex.cards.folders`): the bespoke `MediaIndexScope` (which itself hosts
     `MediaIndexImportanceSlider`, which hosts `MediaIndexReclaim`), `MediaIndexChosenFolders`, and the
     `MediaIndexNetworkVolumes` opt-in list.
@@ -123,9 +123,11 @@ sections compose).
 
   Cards 2 and 3 gate on the live master toggle. Composes the self-contained media components — it renders and gates
   them; the logic lives in each. The `mediaIndex.*` registry entries all live at
-  `section: ['Indexing', 'Image indexing']` (a setting's one home), and card 1's rows carry
+  `section: ['Indexing', 'Image indexing']` (a setting's one home), and card 1's three switch rows carry
   `cardKey: 'settings.mediaIndex.cards.enable'` so searching the card's VISIBLE title reaches them (the `cardKey`
   contract in `docs/guides/adding-a-new-setting.md`: it must be the key the card actually renders).
+  `mediaIndex.parallelism` sits in the same card but carries no `cardKey`, so searching "Enable indexing" surfaces the
+  three switches and not the slider; give it one if that gap ever bites.
 
 - **`MediaIndexScope.svelte`**: the `mediaIndex.scope` radio group — index only the folders the user chose (the default)
   or automatically by folder importance. It OWNS the importance slider's visibility: the slider renders only in the

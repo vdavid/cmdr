@@ -1928,7 +1928,7 @@
   },
   "settings.section.imageIndexing": "Image indexing",
   "@settings.section.imageIndexing": {
-    "description": "Settings subsection title under Indexing: Image indexing (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short; match the card title \"settings.mediaIndex.card\".",
+    "description": "Settings subsection title under Indexing: Image indexing (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short.",
     "screenshot": "settings-appearance.png"
   },
   "settings.section.ai": "AI",

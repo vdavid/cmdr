@@ -424,8 +424,8 @@ subsection). The mechanism:
   `<SectionCard label=…>` displays, so the title is findable. `buildSearchableText` appends the resolved `card` LAST in
   the parts array.
 
-**A `cardKey` naming a title no card renders fails SILENTLY, and has.** Every `mediaIndex.*` row in the Image indexing
-page's first card pointed at `settings.mediaIndex.card` ("Image search") while the card had come to render
+**A `cardKey` naming a title no card renders fails SILENTLY, and has.** Both `mediaIndex.*` rows in the Image indexing
+page's first card that carried a `cardKey` pointed at `settings.mediaIndex.card` ("Image search") while the card renders
 `settings.mediaIndex.cards.enable` ("Enable indexing"): searching the title the user can read returned an EMPTY result
 set, and nothing anywhere complained, because a resolvable `MessageKey` is all the type asks for. Nothing structural
 prevents the next one, so `settings-search.test.ts` § "card title indexing" pins the searches by title for that card;
