@@ -7,7 +7,7 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 
 - `DualPaneExplorer.svelte`: root, owns both panes, unified key/command dispatch, the dialog manager, the MCP surface.
 - `FilePane.svelte`: one pane (lifecycle `$state`, the `FilePaneAPI` exports, the alt-view `{#if}` chain). Its
-  controller and the rest live in siblings: `*.svelte.ts` state factories, `*.ts` pure helpers, listed in DETAILS.
+  controller and helpers are siblings, listed in DETAILS.
 
 ## Must-knows
 
@@ -17,8 +17,7 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   selection, and listing UI state stay LOCAL to `FilePane` (perf P3).
 - **Guard logic branches on `VolumeCapabilities`, ❌ never volume-id strings.** Rust answers what a volume CAN DO
   (`VolumeInfo.capabilities` → `canWrite` / `canBeSource`); `volume-capabilities.ts` classifies what it IS. ❌ Never
-  source KIND from the backend: an un-upgraded SMB share is served by a local one. `capabilitiesFor` / `volumeKindOf`
-  stay TOTAL (unknown ids fall to `local`); the tint classifier `volumeKindFor` never gets that default.
+  source KIND from the backend: an un-upgraded SMB share is served by a local one.
 - **The two ROUTED panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone**
   — an archive or `.git`-portal pane keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z and portal snapshots
   READ-ONLY. Real files under `.git/` keep the drive's row.
@@ -47,7 +46,7 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **`DualPaneExplorer.svelte` and `FilePane.svelte` are `file-length`-flagged**: don't add to them, and ❌ don't carve
   child components either. Cross-cutting state → a `*.svelte.ts` factory, pure logic → a `*.ts` helper.
 
-`DETAILS.md` holds the file table, the key-dispatch focus guard's dialog exemption, the walk-up fallback's volume
+`DETAILS.md` holds the file table, the classifiers' totality rule, the key-dispatch focus guard, the walk-up volume
 re-resolve, `getTabMgr`'s live `$state` holder, the select-only cursor jump, the MTP clipboard gate, self-drag identity,
-the volume tint's `hasColorMix` fallback, `ErrorPane`'s ways out, and why the remaining volume-id compares are not
-guards. Read it before any non-trivial work here.
+the volume tint fallback, `ErrorPane`'s ways out, and why the remaining volume-id compares are not guards. Read it
+before any non-trivial work here.
