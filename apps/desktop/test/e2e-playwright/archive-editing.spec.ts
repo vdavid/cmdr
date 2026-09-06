@@ -213,6 +213,45 @@ test.describe('Archive editing', () => {
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
   })
 
+  test('MOVING a file into the archive root lands it inside and removes the original', async ({ tauriPage }) => {
+    // F6, not F5, and that single keypress is the whole point of this test.
+    // Copy always routes cross-volume, so it can't tell a correct archive-root
+    // destination from a broken one. Move has the local `moveFiles` fast path, and
+    // the destination pane sitting AT `sample.zip` is the one shape that regresses
+    // when the destination is asked the NARROW archive question: the fast path
+    // runs and the backend refuses with "Destination must be a directory".
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    // Right pane AT the archive root — where Enter on a zip lands you.
+    await navigatePaneTo(tauriPage, 'right', `${fixtureRoot}/left/sample.zip`)
+    await expect
+      .poll(async () => (await mcpReadResource('cmdr://state?compact=true')).includes('sample.zip'), { timeout: 5000 })
+      .toBeTruthy()
+
+    await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
+    await settleFocusedPaneOnLeft(tauriPage, `${fixtureRoot}/left`)
+
+    const found = await moveCursorToFile(tauriPage, 'file-b.txt')
+    expect(found).toBe(true)
+    await tauriPage.keyboard.press('F6')
+    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+    await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
+    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 15000 }).toBeTruthy()
+    await expectAndDismissToast(tauriPage, 'file')
+
+    // A move, so the original is gone from disk...
+    await expect
+      .poll(() => !fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt')), { timeout: 10000 })
+      .toBeTruthy()
+    // ...and the entry is inside the archive.
+    await enterEntry(tauriPage, 'sample.zip')
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'file-b.txt'), { timeout: 10000 }).toBeTruthy()
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
+  })
+
   test('cancelling a paste into the archive leaves the zip contents intact', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)

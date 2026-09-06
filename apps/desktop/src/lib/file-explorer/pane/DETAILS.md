@@ -1111,6 +1111,18 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   suffix, at which point the same predicate would have killed Quick Look on every Office document. A trailing slash
   still reads as the archive ROOT (`/a/foo.zip/` has an empty inner path), which the naive length check gets wrong.
 
+  **Destination wide, source narrow.** ❗ The choice is per ARGUMENT, not per call site: one function can need both.
+  `isVolumeMove` is the case — a DESTINATION names a container to write INTO (the enter-it question, so wide), while a
+  SOURCE is a thing being operated ON (narrow). The backend encodes the identical asymmetry, which is what settles it:
+  `create` uses `path_crosses_archive_boundary` because a new entry's parent can BE the `.zip`, while delete and the
+  move source use `path_is_inside_archive` (`volume/manager/archive_routing.rs`). **Decision/Why**: asking narrow on
+  BOTH sides looks tidy and silently breaks F6 into an open zip pane — the pane sits AT `/a/foo.zip`, which is exactly
+  where Enter on a zip lands you, narrow answers `false`, both ids are the parent drive, the local `moveFiles` fast path
+  runs, and the backend stats a regular file and refuses with "Destination must be a directory". Copy is unaffected (it
+  always routes cross-volume), as are move-out and a move into a SUBfolder, so the gap is narrow enough to survive a
+  casual test pass; `transfer-dispatch.test.ts` pins the archive-root destination and the mixed source/destination case
+  precisely because of that.
+
 - **`capabilitiesForPane(volumeId, path)`** returns the `archive` capability row when the path crosses an archive, else
   defers to `capabilitiesFor(volumeId)`. The pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so
   `hasBackendListing` / `hasParentRow` / `syncsToMcp` / `canWrite` are all true for a zip; a tar, 7z, or OOXML boundary
@@ -1131,14 +1143,14 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
 - **Edits are managed ops, not instant.** A zip mutation is an O(archive) temp+rename rewrite, so mkdir/mkfile/rename
   inside a zip return an OPERATION handle, not a landed path, and copy/move into or out of a zip route through
   `copyBetweenVolumes`/`moveBetweenVolumes` (never the local `moveFiles` fast-path — `transfer/transfer-dispatch.ts`'s
-  `isVolumeMove` OR-s in `pathInsideArchive(sourcePaths | destinationPath)`, the NARROW check, so a same-drive move of
-  something INSIDE an archive still crosses while a move of the `.zip` file itself keeps the fast path). The cursor
-  lands on the new/renamed entry when the backing `.zip`'s live-watch refresh arrives (the durable `pendingCursorName`
-  channel in `listing-diff-sync`, consumed on the refresh diff — no timer). `handleNewFileCreated` skips its
-  open-in-editor for an archive target (the file is created async and an archive-inner path isn't editable in place).
-  Deleting inside a zip is PERMANENT (no Trash inside an archive): `openDeleteDialog` forces `isPermanent`/`isArchive`
-  and drops `supportsTrash`, and `DeleteDialog` shows the archive warning. The queue row for a zip edit is the
-  `archive_edit` `WriteOperationType` (`file-archive` glyph, "Editing archive" label; no scan phase).
+  `isVolumeMove` asks the DESTINATION the wide question and each SOURCE the narrow one; see § "Destination wide, source
+  narrow" below for why that asymmetry is load-bearing). The cursor lands on the new/renamed entry when the backing
+  `.zip`'s live-watch refresh arrives (the durable `pendingCursorName` channel in `listing-diff-sync`, consumed on the
+  refresh diff — no timer). `handleNewFileCreated` skips its open-in-editor for an archive target (the file is created
+  async and an archive-inner path isn't editable in place). Deleting inside a zip is PERMANENT (no Trash inside an
+  archive): `openDeleteDialog` forces `isPermanent`/`isArchive` and drops `supportsTrash`, and `DeleteDialog` shows the
+  archive warning. The queue row for a zip edit is the `archive_edit` `WriteOperationType` (`file-archive` glyph,
+  "Editing archive" label; no scan phase).
 - **Navigation is nearly free.** `handleNavigate` forks on `entry.isDirectory || entry.isArchive` (a zip stays
   `isDirectory:false`; `isArchive` is backend-computed, extension-only, crosses IPC on `FileEntry`), routing in-place
   (same parent-drive volume) via `browseIntoEntry`. The Enter-behavior policy (below) runs FIRST and can divert to a
