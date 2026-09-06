@@ -101,6 +101,14 @@ pub(crate) struct VolumeSummary {
     /// `needs_sign_in` / `needs_host_key_approval` / `saved`). `None` for anything
     /// with no session: a local disk, a favorite, the hub row.
     pub connection_state: Option<&'static str>,
+    /// Whether the DEVICE behind the row can be opened right now (`ready` /
+    /// `waiting_for_authorization` / `unavailable_offline` /
+    /// `unavailable_no_permissions`). `None` for anything that isn't a device.
+    ///
+    /// ❗ A separate question from [`connection_state`](Self::connection_state):
+    /// a phone waiting for its "Allow USB debugging?" tap is LISTED, so without
+    /// this an agent reads a browsable row and gets a refusal it can't explain.
+    pub device_readiness: Option<&'static str>,
     /// Where the volume is mounted, the path a search scope names to cover this
     /// drive. `None` for a volume with no filesystem path (MTP storages, the
     /// synthetic `Network` root), which is also exactly where a search can't reach.
@@ -146,6 +154,27 @@ pub(crate) fn connection_state_token(state: cmdr_fs::volume::ConnectionState) ->
         S::NeedsSignIn => "needs_sign_in",
         S::NeedsHostKeyApproval => "needs_host_key_approval",
         S::Saved => "saved",
+    }
+}
+
+/// The agent-facing token for a device's readiness. One mapping, beside
+/// [`connection_state_token`], for the same reason: two surfaces, one wire word.
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(
+        dead_code,
+        reason = "called only from the macOS `snapshot_volumes` path, like `connection_state_token`"
+    )
+)]
+pub(crate) fn device_readiness_token(readiness: cmdr_fs::volume::DeviceReadiness) -> &'static str {
+    use cmdr_fs::volume::{DeviceReadiness as R, DeviceUnavailableReason as Why};
+    match readiness {
+        R::Ready => "ready",
+        R::WaitingForAuthorization => "waiting_for_authorization",
+        R::Unavailable { reason: Why::Offline } => "unavailable_offline",
+        R::Unavailable {
+            reason: Why::NoPermissions,
+        } => "unavailable_no_permissions",
     }
 }
 
@@ -197,6 +226,9 @@ fn push_volume(lines: &mut Vec<String>, v: &VolumeSummary) {
     }
     if let Some(state) = v.connection_state {
         lines.push(format!("    connectionState: {}", state));
+    }
+    if let Some(readiness) = v.device_readiness {
+        lines.push(format!("    deviceReadiness: {}", readiness));
     }
     // Raw bytes AND a formatted size, never one instead of the other. The raw pair
     // is what a reader does arithmetic with ("is 40 GB of downloads worth
@@ -277,6 +309,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
         };
         for loc in &locations {
             let connection_state = loc.connection_state.map(connection_state_token);
+            let device_readiness = loc.device_readiness.map(device_readiness_token);
             let kind = kind_for_location(loc.fs_type.as_deref(), loc.connection_state.is_some());
             // Path-based status resolution routes each volume to its OWN index (see
             // `indexing::routing::volume_id_for_local_path`): a mounted-but-unindexed
@@ -287,6 +320,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 name: loc.name.clone(),
                 id: loc.id.clone(),
                 kind,
+                device_readiness,
                 filesystem: loc.fs_type.clone(),
                 read_only: Some(loc.mount_is_read_only),
                 ejectable: Some(loc.is_ejectable),
@@ -307,6 +341,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             ejectable: None,
             index_status: None,
             connection_state: None,
+            device_readiness: None,
             mount_path: None,
             space: None,
         });
@@ -323,6 +358,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             ejectable: None,
             index_status: Some(status_token(status.enabled, status.freshness)),
             connection_state: None,
+            device_readiness: None,
             mount_path: Some("/".to_string()),
             space: space_summary(cmdr_index::ROOT_VOLUME_ID),
         });
@@ -358,6 +394,9 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                     ejectable: Some(true),
                     index_status: Some(index_status_token(&status)),
                     connection_state: None,
+                    // Every storage this path lists belongs to a device the session
+                    // layer already has open, so there is nothing left to wait for.
+                    device_readiness: Some("ready"),
                     // An MTP storage has no filesystem path to scope a search with.
                     mount_path: None,
                     space: space_summary(&volume_id),
@@ -383,6 +422,7 @@ mod tests {
             ejectable: Some(false),
             index_status: Some("fresh"),
             connection_state: None,
+            device_readiness: None,
             mount_path: Some("/".to_string()),
             space: None,
         }
@@ -453,6 +493,7 @@ mod tests {
             ejectable: Some(true),
             index_status: Some("stale"),
             connection_state: Some("direct"),
+            device_readiness: None,
             mount_path: Some("/Volumes/naspi".to_string()),
             space: None,
         };
@@ -474,6 +515,7 @@ mod tests {
             ejectable: Some(true),
             index_status: Some("off"),
             connection_state: None,
+            device_readiness: None,
             mount_path: None,
             space: None,
         };
@@ -483,6 +525,57 @@ mod tests {
         assert!(yaml.contains("readOnly: true"));
         assert!(!yaml.contains("filesystem:"));
         assert!(!yaml.contains("connectionState:"));
+    }
+
+    /// ❗ A phone waiting for its "Allow USB debugging?" tap IS listed, so the
+    /// row has to say why it can't be opened. Without `deviceReadiness` an agent
+    /// reads a browsable ADB row and gets a refusal it can't explain, and the
+    /// session field is the wrong place to say it (that would enrol a device with
+    /// no session in a reconnect loop).
+    #[test]
+    fn an_adb_row_says_what_the_device_is_waiting_for_without_claiming_a_session() {
+        let waiting = VolumeSummary {
+            name: "Pixel 8".to_string(),
+            id: "adb-R58M12345".to_string(),
+            kind: VolumeKind::Adb,
+            filesystem: None,
+            read_only: Some(false),
+            ejectable: Some(true),
+            index_status: None,
+            connection_state: None,
+            device_readiness: Some(device_readiness_token(
+                cmdr_fs::volume::DeviceReadiness::WaitingForAuthorization,
+            )),
+            mount_path: None,
+            space: None,
+        };
+        let yaml = build_volumes_yaml(&[waiting]);
+        assert!(yaml.contains("deviceReadiness: waiting_for_authorization"));
+        assert!(
+            !yaml.contains("connectionState:"),
+            "presence is not a session; a device with no session must not read as one"
+        );
+    }
+
+    /// Each unavailable reason gets its own token, so a tooltip can say which.
+    #[test]
+    fn every_readiness_has_its_own_wire_word() {
+        use cmdr_fs::volume::{DeviceReadiness as R, DeviceUnavailableReason as Why};
+        assert_eq!(device_readiness_token(R::Ready), "ready");
+        assert_eq!(
+            device_readiness_token(R::WaitingForAuthorization),
+            "waiting_for_authorization"
+        );
+        assert_eq!(
+            device_readiness_token(R::Unavailable { reason: Why::Offline }),
+            "unavailable_offline"
+        );
+        assert_eq!(
+            device_readiness_token(R::Unavailable {
+                reason: Why::NoPermissions
+            }),
+            "unavailable_no_permissions"
+        );
     }
 
     #[test]
@@ -496,6 +589,7 @@ mod tests {
             ejectable: None,
             index_status: None,
             connection_state: None,
+            device_readiness: None,
             mount_path: None,
             space: None,
         };
@@ -517,6 +611,7 @@ mod tests {
             ejectable: None,
             index_status: None,
             connection_state: None,
+            device_readiness: None,
             mount_path: None,
             space: None,
         };

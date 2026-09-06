@@ -46,6 +46,14 @@ pub struct VolumeSnapshot {
     /// every remote backend, so it is not an "is this SMB" test; `kind` is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub connection_state: Option<String>,
+    /// Whether the DEVICE behind the row can be opened right now: `ready` /
+    /// `waiting_for_authorization` / `unavailable_offline` /
+    /// `unavailable_no_permissions`. Absent for anything that isn't a device.
+    /// ❗ A different question from `connection_state`: a phone waiting for its
+    /// "Allow USB debugging?" tap is LISTED, so without this the row reads as
+    /// browsable and every call against it is a refusal you can't explain.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub device_readiness: Option<String>,
     /// Where the volume is mounted, and the path `search`'s `scope` names to cover
     /// this drive rather than the boot one. Absent for a volume with no filesystem
     /// path (MTP storages, the `Network` root), which is also where a search can't
@@ -84,6 +92,7 @@ pub(crate) fn to_volume_snapshots(summaries: &[VolumeSummary]) -> Vec<VolumeSnap
             ejectable: v.ejectable,
             index_status: v.index_status.map(|s| s.to_string()),
             connection_state: v.connection_state.map(|s| s.to_string()),
+            device_readiness: v.device_readiness.map(|s| s.to_string()),
             mount_path: v.mount_path.clone(),
             total_bytes: v.space.and_then(|s| s.total_bytes()),
             total_human: v.space.and_then(|s| s.total_bytes()).map(format_size),
@@ -125,6 +134,7 @@ mod tests {
             ejectable: None,
             index_status,
             connection_state: smb,
+            device_readiness: None,
             mount_path: Some(format!("/Volumes/{name}")),
             space: None,
         }

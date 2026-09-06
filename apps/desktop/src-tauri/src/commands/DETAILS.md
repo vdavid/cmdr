@@ -98,6 +98,13 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   - ❗ **An SMB host lists NO places and cannot be pinned here.** `known_shares.rs` stores no share rows, carries no
     port, and a mounted share's id comes from `statfs` (an IP where the store holds an mDNS name), so no id derivable
     from the store would match the mounted volume. SMB places keep reaching the switcher as mounted volumes.
+  - ❗ **`forget_server` drops the SESSION too**, unregisters the volume, and emits `VolumeUnmounted` BEFORE
+    `volumes-changed`. A forgotten server is gone: leaving its session up would keep a switcher row no store knows about
+    and no second "Forget" can reach, and the pane consumer needs the redirect to land ahead of the row's removal, or it
+    is left standing on a volume nothing can name. A tab on a forgotten server becomes a home tab.
+  - `disconnect_place` emits `VolumeUnmounted` as well, so a pane goes home rather than failing every listing against a
+    registry that stopped answering. ❌ No ordering rule there: the ROW survives a disconnect (it becomes `saved`), so
+    the consumer has nothing to race. ❌ And no new "you disconnected" pane state: a `saved` row dials on activation.
   - `update_saved_server` takes a `ServerTarget`, the same shape the add sheet collects, because an edit and an add
     differ only in whether the fields arrived prefilled. It carries no PIN: `set_place_pinned` is the one writer that
     moves one, because the stores' `remember` deliberately preserves a stored pin on every replace.
@@ -168,6 +175,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   tab / network host), the view-mode + hidden-files + pin-tab + reopen-tab sync commands, and `activate_window_menu`
   (per-window focus-gain: swaps the macOS app menu bar between main/viewer, then enables/disables file-scoped items via
   the private `set_menu_context` helper; see `menu/DETAILS.md`).
+  - ❗ **`show_volume_row_context_menu` takes an optional `ServerRowMenu`**, and a server row gets Disconnect / Forget
+    saved password / Forget server instead of Eject: "Eject" promises safe-to-unplug and a server has nothing to unplug.
+    The CALLER says which items apply (this command is synchronous, and a secret-store read on the popup path would
+    block the IPC handler thread); `busy_volume_ids()` is filled in here and disables all three exactly like Eject.
+  - ❗ **The picked action crosses as the typed `VolumeContextActionKind`**, ❌ never a free string. `menu_handlers.rs`
+    maps menu id → action through one table, so what it recognizes and what it emits can't drift.
 - **`quick_look.rs`**: `quick_look_open` / `quick_look_set_path` / `quick_look_close` (native `QLPreviewPanel`
   singleton on macOS, no-op stubs elsewhere; 2 s main-thread-hop timeout). See `crate::quick_look`.
 - **`window_ordering.rs`**: `show_main_window` / `order_window_to_back`. `show_main_window` is the ONE path that makes

@@ -19,11 +19,13 @@ USB, authorization, and wireless pairing; a client only ever asks it for a socke
 consequences the code is shaped around:
 
 - **Starting the server is a one-shot.** `server::AdbEndpoint::connect` answers a refused loopback connect with one
-  `adb -P <port> start-server` per process, through the binary `server::locate_adb_binary` finds (`$ADB`, `$PATH`,
+  `adb -P <port> start-server` per process, through the binary `server::locate_adb_binary` finds: the path the app
+  configured (`set_adb_binary_override`, from `fileOperations.adbBinaryPath`) first, then `$ADB`, `$PATH`,
   `$ANDROID_HOME/platform-tools`, `$ANDROID_SDK_ROOT/platform-tools`, `~/Library/Android/sdk/platform-tools`, then the
-  Homebrew and `/usr/local` bins). No binary is `AdbConnectError::AdbNotInstalled`; a second refusal after a start is
-  `ServerUnreachable`, and both are the user's to look at. `AdbEndpoint::at(addr)` (fixtures, a forwarded port) never
-  starts anything.
+  Homebrew and `/usr/local` bins. ❗ The override wins only while it is RUNNABLE: a path that went stale (an SDK moved,
+  a typo saved in Settings) falls through to the search rather than making every device vanish. No binary is
+  `AdbConnectError::AdbNotInstalled`; a second refusal after a start is `ServerUnreachable`, and both are the user's to
+  look at. `AdbEndpoint::at(addr)` (fixtures, a forwarded port) never starts anything.
 - **One socket per operation, no shared session.** Every sync operation opens its own `sync:` socket and closes it with
   the operation. A shared session behind a mutex deadlocks a same-volume copy (the source stream holds it while the
   destination write waits) and parks every listing while a transfer is paused mid-file. The server multiplexes sockets
@@ -195,13 +197,11 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   `track-devices` like any other.
 - **Real-device pass pending**: the authorize prompt, an `unauthorized` → `device` transition mid-session, a 2 GB `RECV`
   / `SEND`, and a `/data` listing on a non-rooted phone (expect `PermissionDenied` carrying the path).
-- **A settings switch for the `adb` binary path**, for machines where it is neither on `PATH` nor under `$ANDROID_HOME`;
-  `$ADB` is the only override today.
 
 ## The public surface
 
 The crate is in `guardedIndexCrates`, so nothing here may name `cmdr`, `tauri`, or `tauri-specta`. The root re-exports
 are the app's whole vocabulary: `AdbVolume`, `connect_adb_volume`, `AdbConnectionParams`, `AdbEndpoint`, `AdbDevice`,
-`AdbDeviceState`, `DeviceTracker`, `list_devices`, `track_devices`, `DeviceFeatures`, `AdbError`, and `AdbConnectError`.
-`errors`, `features`, `params`, and `devices` are `pub(crate)`; ❗ keep them that way, since a `pub mod` promises
-everything `pub` inside it.
+`AdbDeviceState`, `DeviceTracker`, `list_devices`, `track_devices`, `DeviceFeatures`, `AdbError`, `AdbConnectError`,
+`locate_adb_binary`, `set_adb_binary_override`, and `forget_start_attempt`. `errors`, `features`, `params`, and
+`devices` are `pub(crate)`; ❗ keep them that way, since a `pub mod` promises everything `pub` inside it.
