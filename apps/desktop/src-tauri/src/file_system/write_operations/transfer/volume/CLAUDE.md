@@ -12,8 +12,9 @@ concurrent driver), the cross-, same-volume, and single-file moves, and the merg
   policy, backend, and mid-merge cancel/rollback/retry. Assert it through `safety_oracle.rs`, ❌ never inline; new cells
   go in `safety_grid_tests.rs`.
 - **Dir-vs-dir is NEVER a conflict**, only file-vs-file — REAL dirs only: a link-to-dir lists as `is_directory`, so ask
-  `rename_merge::merges_as_a_directory`, ❌ never `Volume::is_directory` (it follows links, and the "merge" then renames
-  the TARGET's children away). **Overwrite means merge for dirs, replace for files**, enforced at the
+  `rename_merge::merges_as_a_directory`, ❌ never `Volume::is_directory` (follows links; the merge then empties the
+  TARGET). `transfer/DETAILS.md` § "Symlinks are opaque to a move". **Overwrite means merge for dirs, replace for
+  files**, enforced at the
   `apply_volume_conflict_resolution` call site, ❌ not by `Volume::delete`. NOT reversible.
 - **A MOVE's source sweep spares every child the merge skipped** (`remove_tree`'s `preserve` set): that child's source
   is the ONLY copy.

@@ -18,7 +18,8 @@ File map: `DETAILS.md` § Files.
 - **A source that would land on ITSELF is a duplicate, ❌ never a conflict**: settled by `dev+ino` per TOP-LEVEL source
   before either engine's loop; every answer the conflict machinery has destroys the original. DETAILS § "Self-collision".
 - **A symlink is a LEAF to every move engine**: ask `validation::is_real_directory`, ❌ never `Path::is_dir` (it follows
-  links, so a "merge" renames the TARGET's entries out of a folder nobody selected). DETAILS § "Symlinks are opaque".
+  links, so a "merge" renames the TARGET's entries out of a folder nobody selected). DETAILS § "Symlinks are opaque to
+  a move".
 - **A ledger entry carries the identity it landed with, ❌ never an mtime** (`../ledger.rs`): local = size +
   `(dev,ino)`, volume = size, a partial marked as ITS OWN. Ledgers POP as they reverse. DETAILS § "What the in-flight
   ledgers record".
