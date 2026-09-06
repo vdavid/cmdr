@@ -43,6 +43,12 @@ use crate::file_system::volume::{Volume, VolumeError};
 pub(super) struct ResolvedConflict {
     /// Where the streaming writer should land bytes.
     pub write_path: PathBuf,
+    /// `true` ⇒ resolving this clash RESERVED `write_path` with a zero-byte
+    /// `O_EXCL` placeholder (a `Rename` pick on a local-FS destination). A caller
+    /// whose write then never happens owes taking it back: on disk that
+    /// placeholder is indistinguishable from an empty file the copy produced.
+    /// `naming.rs::ClaimedName` is where the answer comes from.
+    pub reserved_placeholder: bool,
     /// `Some(orig)` ⇒ `write_path` is a temp sibling; after a successful write the
     /// caller must delete `orig` (it survived the full write) then rename
     /// `write_path` → `orig`. `None` ⇒ `write_path` is final, write directly.
@@ -110,14 +116,15 @@ pub(super) async fn resolve_volume_conflict(
     // child onto the destination it was handed, so a renamed root carries its
     // whole subtree. `../DETAILS.md` § "Self-collision (duplicating in place)".
     if is_the_same_item(source_volume, source_path, dest_volume, dest_path) {
-        let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
+        let unique = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
         log::info!(
             "resolve_volume_conflict: {} is already in the destination, duplicating it as {}",
             source_path.display(),
-            unique_path.display()
+            unique.path.display()
         );
         return Ok(Some(ResolvedConflict {
-            write_path: unique_path,
+            write_path: unique.path,
+            reserved_placeholder: unique.reserved_on_disk,
             replace_after_write: None,
         }));
     }
@@ -137,6 +144,7 @@ pub(super) async fn resolve_volume_conflict(
     if source_is_directory && destination_is_directory {
         return Ok(Some(ResolvedConflict {
             write_path: dest_path.to_path_buf(),
+            reserved_placeholder: false,
             replace_after_write: None,
         }));
     }
@@ -540,6 +548,7 @@ async fn apply_volume_conflict_resolution(
                 let temp = temp_sibling_path(dest_path);
                 return Ok(Some(ResolvedConflict {
                     write_path: temp,
+                    reserved_placeholder: false,
                     replace_after_write: Some(dest_path.to_path_buf()),
                 }));
             }
@@ -580,14 +589,16 @@ async fn apply_volume_conflict_resolution(
             }
             Ok(Some(ResolvedConflict {
                 write_path: dest_path.to_path_buf(),
+                reserved_placeholder: false,
                 replace_after_write: None,
             }))
         }
         ConflictResolution::Rename => {
             // Find a unique name - we need to check what exists on the volume
-            let unique_path = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
+            let unique = find_unique_volume_name(dest_volume, dest_path, source_is_directory, claimed).await;
             Ok(Some(ResolvedConflict {
-                write_path: unique_path,
+                write_path: unique.path,
+                reserved_placeholder: unique.reserved_on_disk,
                 replace_after_write: None,
             }))
         }

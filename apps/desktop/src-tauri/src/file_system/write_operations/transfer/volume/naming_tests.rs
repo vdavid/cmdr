@@ -27,7 +27,8 @@ async fn local_fs_rename_reserves_the_chosen_name_on_disk() {
 
     let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
 
-    let unique = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default()).await;
+    let claimed = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default()).await;
+    let unique = claimed.path;
 
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (1).txt");
     // The O_EXCL placeholder must already exist on disk after the call.
@@ -35,8 +36,16 @@ async fn local_fs_rename_reserves_the_chosen_name_on_disk() {
         unique.exists(),
         "reservation must create the placeholder on a local-FS dest"
     );
+    // And the caller is TOLD, because it owes taking the placeholder back if its
+    // write never happens.
+    assert!(
+        claimed.reserved_on_disk,
+        "a reservation that put a file on disk has to say so"
+    );
     // A second call escalates to (2), proving the first reservation persisted.
-    let next = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default()).await;
+    let next = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default())
+        .await
+        .path;
     assert_eq!(next.file_name().unwrap().to_string_lossy(), "notes (2).txt");
 }
 
@@ -48,7 +57,9 @@ async fn local_fs_rename_keeps_extension_in_the_right_place() {
     std::fs::write(&target, b"x").unwrap();
 
     let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
-    let unique = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default()).await;
+    let unique = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default())
+        .await
+        .path;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "report (1).pdf");
     assert!(unique.exists(), "reservation must create the placeholder");
 }
@@ -63,13 +74,17 @@ async fn non_local_dest_does_not_reserve_a_placeholder() {
     dst.create_file(Path::new("/notes.txt"), b"old").await.unwrap();
     let dst_dyn: Arc<dyn Volume> = dst.clone();
 
-    let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes.txt"), false, &ClaimedNames::default()).await;
+    let claimed = find_unique_volume_name(&dst_dyn, Path::new("/notes.txt"), false, &ClaimedNames::default()).await;
+    let unique = claimed.path;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (1).txt");
     // No placeholder was created on the in-memory volume.
     assert!(
         !dst.exists(&unique).await,
         "non-local dest must not pre-create the renamed name"
     );
+    // So nothing owes a cleanup, and a caller that deleted this name would be
+    // deleting something it never created.
+    assert!(!claimed.reserved_on_disk, "a probed name reserved nothing");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -84,7 +99,9 @@ async fn local_fs_rename_continues_a_trailing_sequence() {
 
     let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
 
-    let unique = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default()).await;
+    let unique = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default())
+        .await
+        .path;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (2).txt");
 }
 
@@ -96,7 +113,9 @@ async fn non_local_dest_continues_a_trailing_sequence_too() {
     dst.create_file(Path::new("/notes (1).txt"), b"old").await.unwrap();
     let dst_dyn: Arc<dyn Volume> = dst.clone();
 
-    let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes (1).txt"), false, &ClaimedNames::default()).await;
+    let unique = find_unique_volume_name(&dst_dyn, Path::new("/notes (1).txt"), false, &ClaimedNames::default())
+        .await
+        .path;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "notes (2).txt");
 }
 
@@ -113,7 +132,9 @@ async fn a_directory_name_is_never_reserved_with_a_file_placeholder() {
 
     let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
 
-    let unique = find_unique_volume_name(&vol, &target, true, &ClaimedNames::default()).await;
+    let unique = find_unique_volume_name(&vol, &target, true, &ClaimedNames::default())
+        .await
+        .path;
 
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "docs (1)");
     assert!(
@@ -130,7 +151,9 @@ async fn a_dot_in_a_directory_name_is_part_of_the_name_on_a_volume() {
     dst.create_directory(Path::new("/backup.2024")).await.unwrap();
     let dst_dyn: Arc<dyn Volume> = dst.clone();
 
-    let unique = find_unique_volume_name(&dst_dyn, Path::new("/backup.2024"), true, &ClaimedNames::default()).await;
+    let unique = find_unique_volume_name(&dst_dyn, Path::new("/backup.2024"), true, &ClaimedNames::default())
+        .await
+        .path;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "backup.2024 (1)");
 }
 
@@ -146,6 +169,7 @@ async fn a_non_numeric_parenthetical_is_not_a_sequence_on_a_volume() {
         false,
         &ClaimedNames::default(),
     )
-    .await;
+    .await
+    .path;
     assert_eq!(unique.file_name().unwrap().to_string_lossy(), "Report (final) (1).pdf");
 }

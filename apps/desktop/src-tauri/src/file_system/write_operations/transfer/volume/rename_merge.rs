@@ -334,6 +334,10 @@ async fn resolve_child(
         Some(ResolvedConflict {
             write_path,
             replace_after_write,
+            // A same-volume move clears whatever sits at the resolved name below
+            // (its rename can't replace), so the reservation needs no separate
+            // answer here.
+            reserved_placeholder: _,
         }) => Ok(MergeChildResolution::Proceed {
             write_path,
             replace: replace_after_write,

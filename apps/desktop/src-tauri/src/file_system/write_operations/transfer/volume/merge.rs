@@ -37,6 +37,7 @@ use super::super::super::types::WriteOperationError;
 use super::super::dest_name_index::{DestLookup, DestNameIndex};
 use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskPhase, TaskProbeHandle, TaskRole, set_task_phase};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
+use super::naming::take_back_reservation;
 use super::preflight::SourceFileFacts;
 use super::strategy::{
     CreatedPaths, FileWindow, LandingName, MergeCtx, MergeProbe, WriteStaging, note_pending_for_local_dest,
@@ -227,6 +228,7 @@ async fn copy_leaf<'a>(
     dest_volume: &'a Arc<dyn Volume>,
     write_dest: PathBuf,
     replace_after_write: Option<PathBuf>,
+    reserved_placeholder: bool,
     staging: WriteStaging,
     state: &'a Arc<WriteOperationState>,
     created: &'a CreatedPaths,
@@ -236,7 +238,7 @@ async fn copy_leaf<'a>(
     // ❗ `.at(&child_source)` is the whole point: this is the deepest frame that
     // knows WHICH file failed. Report it one level up and the user gets the name
     // of the folder they selected instead of the file that broke.
-    let bytes = stream_pipe_file(
+    let streamed = stream_pipe_file(
         source_volume,
         &child_source,
         source_facts,
@@ -246,8 +248,15 @@ async fn copy_leaf<'a>(
         on_file_progress,
         staging,
     )
-    .await
-    .at(&child_source)?;
+    .await;
+    // This child gave up (a read failure, a cancel between chunks), so the name
+    // it reserved has to go back. Nothing else knows about the reservation:
+    // `created` is written on SUCCESS below, so a leftover placeholder is an
+    // empty file no rollback claims and no sweep can find.
+    if streamed.is_err() && reserved_placeholder {
+        take_back_reservation(dest_volume, &write_dest).await;
+    }
+    let bytes = streamed.at(&child_source)?;
     // Safe-replace finalize for a file→file Overwrite: the temp now holds the
     // complete new bytes; swap it over the original. On finalize error the temp
     // is preserved as committed data (see `finalize_safe_replace`).
@@ -533,6 +542,9 @@ async fn merge_level<'a>(
         // about to take is one we believe FREE. A resolver decision below is
         // what turns that into a claim (`staged_write.rs::LandingName`).
         let mut landing = LandingName::ExpectedFree;
+        // Nothing has reserved anything for this child either, until a `Rename`
+        // resolution below says otherwise.
+        let mut reserved_placeholder = false;
         if let Some(hit) = dest_hit
             && let Some(ctx) = merge
         {
@@ -551,9 +563,14 @@ async fn merge_level<'a>(
                     (ctx.on_file_skipped)(skipped_bytes);
                     continue;
                 }
-                MergeChildDecision::Proceed { write_path, replace } => {
+                MergeChildDecision::Proceed {
+                    write_path,
+                    replace,
+                    reserved_placeholder: reserved,
+                } => {
                     write_dest = write_path;
                     replace_after_write = replace;
+                    reserved_placeholder = reserved;
                     // The resolver picked this name: a `Rename` reserved it with
                     // a placeholder, an Overwrite across types already cleared
                     // it. Either way what the landing may find there is ours.
@@ -624,6 +641,7 @@ async fn merge_level<'a>(
                 dest_volume,
                 write_dest,
                 replace_after_write,
+                reserved_placeholder,
                 staging,
                 state,
                 created,
@@ -690,9 +708,13 @@ enum MergeChildDecision {
     Skip,
     /// Proceed writing to `write_path`; `replace` is `Some(orig)` for a
     /// file→file safe-replace (write to a temp sibling, finalize after).
+    /// `reserved_placeholder` says the resolver put a zero-byte `O_EXCL` file at
+    /// `write_path` to hold the name, which the leaf owes taking back if its
+    /// write never happens (`naming.rs::ClaimedName`).
     Proceed {
         write_path: PathBuf,
         replace: Option<PathBuf>,
+        reserved_placeholder: bool,
     },
 }
 
@@ -749,9 +771,11 @@ async fn resolve_merge_child(
         Ok(Some(ResolvedConflict {
             write_path,
             replace_after_write,
+            reserved_placeholder,
         })) => Ok(MergeChildDecision::Proceed {
             write_path,
             replace: replace_after_write,
+            reserved_placeholder,
         }),
         // The resolver returns a typed `WriteOperationError`; map cancellation
         // back to the `VolumeError::Cancelled` this function's callers expect so
