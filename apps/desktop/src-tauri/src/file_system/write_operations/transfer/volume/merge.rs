@@ -256,7 +256,7 @@ async fn copy_leaf<'a>(
     if streamed.is_err() && reserved_placeholder {
         take_back_reservation(dest_volume, &write_dest).await;
     }
-    let bytes = streamed.at(&child_source)?;
+    let bytes = streamed.map_err(|f| f.at_source_or_rescued_dest(&child_source, &write_dest))?;
     // Safe-replace finalize for a file→file Overwrite: the temp now holds the
     // complete new bytes; swap it over the original. On finalize error the temp
     // is preserved as committed data (see `finalize_safe_replace`).

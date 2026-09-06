@@ -27,8 +27,10 @@ use super::super::super::types::{
 };
 use super::super::super::unique_name::ClaimedNames;
 use super::super::dest_name_index::fold;
-use super::naming::{find_unique_volume_name, rescue_out_of_temp_space};
-use super::transfer_error::{FinalizeFailure, PathRole, map_volume_error};
+use super::super::recovered_name::FinalizeFailure;
+use super::super::recovered_name::rescue_out_of_temp_space;
+use super::naming::find_unique_volume_name;
+use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
 
 /// What the destination holds at one TOP-LEVEL name, for the conflict pre-check

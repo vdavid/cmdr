@@ -21,6 +21,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use super::super::super::recovered_name::FinalizeFailure;
 use super::super::faulty_volume::forward_volume_methods;
 use super::test_support::make_state;
 use super::*;
@@ -141,7 +142,7 @@ async fn pipe(
     state: &Arc<WriteOperationState>,
     from: &str,
     to: &str,
-) -> Result<u64, VolumeError> {
+) -> Result<u64, FinalizeFailure> {
     stream_pipe_file(
         source_volume,
         Path::new(from),
@@ -282,7 +283,13 @@ async fn a_cancelled_server_side_copy_leaves_no_destination_behind() {
     .await;
 
     assert!(
-        matches!(outcome, Err(VolumeError::Cancelled(_))),
+        matches!(
+            outcome,
+            Err(FinalizeFailure {
+                error: VolumeError::Cancelled(_),
+                ..
+            })
+        ),
         "a cancel is a cancel, not a fallback to the slow path: {outcome:?}"
     );
     assert!(

@@ -52,8 +52,9 @@ Stop-prompt answer still does, in both directions).
   `fix(copy): the only copy of a file whose cross-volume overwrite couldn't finish stops being deleted by the next transfer into that folder`
   (`finalize_safe_replace` renames the temp to a ` (recovered)` name, and a new typed
   `WriteOperationError::NewDataKeptAt` tells the user where it is), plus the frontend half. Left open: a failed
-  `staged_write::land` (delete succeeded, second rename failed) leaves committed data under a `.cmdr-tmp-*` name the
-  same way, on a narrower trigger.
+  `staged_write::land` (delete succeeded, second rename failed) had the same shape on a narrower trigger, and is fixed
+  too: it rescues the bytes and reports the path through the same `FinalizeFailure`, which moved to
+  `transfer/recovered_name.rs` so both landings reach it.
 - **#12** fixed:
   `fix(copy): a cross-volume copy whose conflict resolution refuses stops abandoning its half-built destination without cleanup, a rollback, or a word to the user`
   (`drive_transfer_concurrent` answers an outcome and can no longer return `Err`, so the post-loop always runs).

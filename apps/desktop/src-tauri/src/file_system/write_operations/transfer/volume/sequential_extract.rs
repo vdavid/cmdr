@@ -172,7 +172,10 @@ pub(super) async fn extract_sequential_subtree(
             staged.target(),
         )
         .await;
-        staged.commit(dest_volume).await.at(&file.source_path)?;
+        staged
+            .commit(dest_volume)
+            .await
+            .map_err(|f| f.at_source_or_rescued_dest(&file.source_path, &planned.dest_path))?;
 
         // Safe-replace finalize for a file→file Overwrite (same as the per-entry
         // path): the temp holds the complete new bytes; swap it over the original.

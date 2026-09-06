@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::super::types::WriteOperationError;
-use super::naming::rescue_out_of_temp_space;
+use super::super::recovered_name::rescue_out_of_temp_space;
 use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::staging::StagingTemp;
 use crate::file_system::volume::{Volume, VolumeError};

@@ -9,6 +9,7 @@
 use std::path::{Path, PathBuf};
 
 use super::super::super::types::{ReadOnlySide, WriteErrorEvent, WriteOperationError, WriteOperationType};
+use super::super::recovered_name::FinalizeFailure;
 use crate::file_system::volume::VolumeError;
 
 /// Which side of a transfer a failing path belongs to.
@@ -60,24 +61,6 @@ impl From<(VolumeError, PathBuf)> for WriteFailure {
         let error = map_volume_error(&path.display().to_string(), PathRole::Source, volume_error);
         Self { error }
     }
-}
-
-/// What a failed `conflict::finalize_safe_replace` leaves behind, and where.
-///
-/// ❗ The path is TYPED data, not prose: it travels to the user through
-/// `WriteOperationError::NewDataKeptAt` so the dialog can name the file they
-/// have to go and look at. ❌ Never parse it back out of a message.
-#[derive(Debug)]
-pub(in crate::file_system::write_operations) struct FinalizeFailure {
-    /// What the destination said.
-    pub error: VolumeError,
-    /// Where the only complete copy of the NEW bytes is now, when the original
-    /// is already gone: the ` (recovered)` name, or the `.cmdr-tmp-*` temp when
-    /// even that rename couldn't happen.
-    ///
-    /// `None` when the original was never deleted, so nothing was rescued and
-    /// nothing was lost.
-    pub new_data_at: Option<PathBuf>,
 }
 
 /// Turns a failed safe-replace finalize into the typed error the user reads.
@@ -159,6 +142,24 @@ impl FinalizeFailure {
             path: dest_path.to_path_buf(),
             error: self.error,
             new_data_at: self.new_data_at,
+        }
+    }
+
+    /// Labels a failure that may or may not have rescued anything, for the write
+    /// paths that can produce either.
+    ///
+    /// A rescue means the user's new file is sitting under a name they'd never
+    /// find on their own, so the DESTINATION is what they have to be pointed at
+    /// (`at_destination`). Everything else is an ordinary transfer failure and
+    /// gets the source item the walker was on, which is what `at()` is for.
+    pub(super) fn at_source_or_rescued_dest(self, source_path: &Path, dest_path: &Path) -> PathedVolumeError {
+        if self.new_data_at.is_some() {
+            return self.at_destination(dest_path);
+        }
+        PathedVolumeError {
+            path: source_path.to_path_buf(),
+            error: self.error,
+            new_data_at: None,
         }
     }
 }
