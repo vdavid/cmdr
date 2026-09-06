@@ -20,6 +20,7 @@ beside the code, and the file survives only so he can judge the work against the
       cursor") and `apps/desktop/src/lib/settings/DETAILS.md` § "Restricted-window mode".
 
 ## In progress
+
 - [ ] 2026-09-03 `mtp-crate-extraction.md` - **MTP is the last backend that still reaches sideways into the app.** Its
       session layer holds a `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache and the
       index directly, and gates real behavior on nine inline `cfg(test)`s, so the backend on the flakiest hardware is
