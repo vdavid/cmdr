@@ -772,6 +772,10 @@
   "@commands.serversEdit.label": {
     "description": "Command name that opens the form for changing a saved server''s address, account, or options. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means \"this opens something\"; keep it. Appears in the command palette and in Settings under Keyboard shortcuts."
   },
+  "commands.serversConnect.label": "Connect to server…",
+  "@commands.serversConnect.label": {
+    "description": "Command-palette entry and shortcut label for opening the form that adds a server. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means “this opens something”; keep it."
+  },
   "commands.networkRefresh.label": "Refresh network hosts",
   "@commands.networkRefresh.label": {
     "description": "Command name that re-scans the network for hosts (servers). Appears in the command palette.",

@@ -12,6 +12,7 @@
  * is on, and a toast for "you weren't pointing at a server" is noise.
  */
 import { runServerRowAction } from '$lib/file-explorer/navigation/server-row-actions'
+import { openAddServerSheet } from '$lib/servers/open-sign-in'
 import { serverCommandTarget, type ServerCommandTarget } from '$lib/servers/server-command-target'
 import { getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
@@ -77,11 +78,16 @@ export const serversHandlers = {
     await runServerRowAction({ action: 'forget-secret', volumeId: server.volumeId, volumeName: server.name })
   },
 
-  'servers.edit': ({ explorerRef }) => {
+  'servers.edit': async ({ explorerRef }) => {
     const server = target(explorerRef)
-    // The sheet that edits a server is the next milestone's. The id is registered
-    // now so the shortcut has a settings row and ⌘E is reserved rather than
-    // landing on whatever else claims it later.
-    log.info('Editing {volumeId} is waiting on the sign-in sheet', { volumeId: server?.volumeId ?? '(none)' })
+    if (!server) return
+    await runServerRowAction({ action: 'edit', volumeId: server.volumeId, volumeName: server.name })
+  },
+
+  'servers.connect': async () => {
+    // ⌘K, Finder's binding for the same thing. ❗ It opens the sheet directly
+    // rather than through `serverCommandTarget`: adding a server is about no
+    // server in particular, so what the pane is pointing at is irrelevant.
+    await openAddServerSheet({ onSmbHandOff: () => {} })
   },
 } satisfies Partial<CommandHandlerRecord>

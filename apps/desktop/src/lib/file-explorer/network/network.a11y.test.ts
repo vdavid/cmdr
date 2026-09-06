@@ -1,12 +1,13 @@
 /**
- * Tier 3 a11y tests for the network browsing surfaces: the connect dialog, the
- * host list, the login form, the share list, and the OS-mount fallback toast.
+ * Tier 3 a11y tests for the network browsing surfaces: the host list, the login
+ * form, the share list, and the OS-mount fallback toast.
  *
  * One file per component would cost about five times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
  * costs"). Each block below keeps its component's own doc comment, props, and
  * assertions, including the three `it.skip`s parked on a real, unfixed
- * `aria-required-parent` violation.
+ * `aria-required-parent` violation. Adding a server lives in the sign-in sheet
+ * now; its own blocks are `$lib/servers/servers.a11y.test.ts`.
  *
  * One stub genuinely disagrees between blocks: `getShareState` is `undefined` for
  * the host list and a loaded result for the share list, so it reads a mutable each
@@ -17,7 +18,6 @@
 
 import { describe, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
-import ConnectToServerDialog from './ConnectToServerDialog.svelte'
 import ServersHub from './ServersHub.svelte'
 import NetworkLoginForm from './NetworkLoginForm.svelte'
 import PlacesBrowser from './PlacesBrowser.svelte'
@@ -61,7 +61,6 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  connectToServer: vi.fn(() => Promise.resolve({ host: { id: 'h', name: 'nas.local' }, sharePath: null })),
   ensureNetworkDiscoveryStarted: vi.fn(() => Promise.resolve()),
   updateLeftPaneState: vi.fn(() => Promise.resolve()),
   updateRightPaneState: vi.fn(() => Promise.resolve()),
@@ -107,28 +106,6 @@ vi.mock('./smb-login-hosts', () => ({
 // between tests keeps each audit looking at its own container only.
 afterEach(() => {
   document.body.innerHTML = ''
-})
-
-/**
- * Tier 3 a11y tests for `ConnectToServerDialog.svelte`.
- *
- * Modal for entering a server address. Covers the idle, connecting, and
- * error states.
- */
-describe('ConnectToServerDialog a11y', () => {
-  it('default (idle state) has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(ConnectToServerDialog, {
-      target,
-      props: {
-        onConnect: () => {},
-        onClose: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
 })
 
 /**

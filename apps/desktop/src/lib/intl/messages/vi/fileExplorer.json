@@ -313,22 +313,6 @@
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "fileExplorer.network.connectDialog.title": "Kết nối với máy chủ",
-  "@fileExplorer.network.connectDialog.title": {
-    "sourceHash": "de6cce0"
-  },
-  "fileExplorer.network.connectDialog.addressAriaLabel": "Địa chỉ máy chủ",
-  "@fileExplorer.network.connectDialog.addressAriaLabel": {
-    "sourceHash": "8be8971"
-  },
-  "fileExplorer.network.connectDialog.addressPlaceholder": "tên máy chủ, địa chỉ IP, hoặc URL smb://",
-  "@fileExplorer.network.connectDialog.addressPlaceholder": {
-    "sourceHash": "60c33b2"
-  },
-  "fileExplorer.network.connectDialog.examples": "Ví dụ: mynas.local, 192.168.1.100, smb://server/share",
-  "@fileExplorer.network.connectDialog.examples": {
-    "sourceHash": "10794ec"
-  },
   "fileExplorer.network.browser.searching": "Đang tìm kiếm...",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
