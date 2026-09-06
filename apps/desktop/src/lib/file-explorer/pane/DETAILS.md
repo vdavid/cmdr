@@ -214,14 +214,21 @@ a just-deselected row reads as wrong. The target comes from `firstSelectedIndex`
 land on the same first row it actually selected. Both sides apply the identical skip, so an `idxs` still carrying a
 leading `0` can't park the cursor on the synthetic `..` row.
 
-**Snapshot pane (`volumeId === 'search-results'`).** Two integration points that MUST stay coupled: `computeHasParent`
-returns `false` (no `..` row, via the `hasParentRow` capability), and opening a real entry from the result rows leaves
-the snapshot volume. `FilePane.handleNavigate` gates the latter on the `isSearchResultsView` capability (the
-`caps.kind === 'search-results'` classifier, never a raw id compare), resolves the entry's `Location`
-(`resolveLocationOrToast`, shared with the other nav edges), and bubbles it via the `onGoToLocation` callback →
-`navigate({ to: { goTo } })`, whose switch arm changes volume (a different volume than `search-results`). An
-unresolvable entry shows the shared friendly toast. Skipping the has-parent rule breaks selection (off-by-one); skipping
-the resolve+switch poisons the pane with `volumeId === 'search-results'` + a real path. `onGoToLocation` (go to a
+**Snapshot pane (`volumeId === 'search-results'`).** FOUR integration points that MUST stay coupled, and skipping one
+gives an off-by-one selection, a stuck `search-results` path, a delete on rows nobody picked, or an MCP delete refused
+by stale pane state:
+
+1. `computeHasParent` returns `false` (no `..` row, via the `hasParentRow` capability).
+2. Opening a real entry from the result rows leaves the snapshot volume (below).
+3. `snapshot-selection-sync.svelte.ts` remaps the pane's index selection BY PATH whenever the snapshot changes — no
+   listing diff does it, because the rows aren't a directory listing (§ File map).
+4. The pane mirrors to MCP off the snapshot rather than off a backend listing (§ File map, `mcp-sync`).
+
+`FilePane.handleNavigate` gates the second on the `isSearchResultsView` capability (the `caps.kind === 'search-results'`
+classifier, never a raw id compare), resolves the entry's `Location` (`resolveLocationOrToast`, shared with the other
+nav edges), and bubbles it via the `onGoToLocation` callback → `navigate({ to: { goTo } })`, whose switch arm changes
+volume (a different volume than `search-results`). An unresolvable entry shows the shared friendly toast. Skip the
+resolve+switch and the pane is poisoned with `volumeId === 'search-results'` + a real path. `onGoToLocation` (go to a
 location) and `onVolumeChange` (deliberate volume-(re)select) are the two distinct intents — `Location` carries no
 `volumePath`, so the location-only callback is the clean seam.
 
