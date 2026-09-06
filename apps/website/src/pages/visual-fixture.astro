@@ -1,0 +1,34 @@
+---
+/**
+ * The visual-regression fixture page, rendered through the real blog pipeline.
+ *
+ * Why it exists: the committed Playwright baselines used to be full-page shots of real posts and
+ * marketing pages, so every copy edit invalidated ~1 MB of PNGs and every new post added pressure
+ * for another baseline. This page exercises the same rehype plugins (download dropdown, theme
+ * images, figure rows, comparison slider, inline icons) plus Shiki and smartypants, on ~10 KB of
+ * deliberately frozen content, so a baseline moves only when the machinery moves.
+ *
+ * Why it's a page import rather than a blog collection entry: staying out of `src/content/blog`
+ * keeps it off /blog, out of rss.xml, and away from the /og/[slug].png route, so no production
+ * listing has to learn to filter it. It's `noindex` and excluded from the sitemap (astro.config.ts),
+ * so it ships as an unlinked, uncrawled page.
+ *
+ * Keep in sync: `e2e/visual.spec.ts` shoots this page, and `src/fixtures/visual-fixture.md` is the
+ * content. Adding a markdown transform means adding a block there, not shooting another real post.
+ *
+ * oxfmt reformats the fixture markdown like any other file (it joins the figure-row and slider image
+ * lines onto one line, which `rehypeBlogMedia` still parses). No guard needed: if a formatter change
+ * ever did break a transform, the committed baselines are exactly what would catch it.
+ */
+import BlogLayout from '../layouts/BlogLayout.astro'
+import { Content, frontmatter } from '../fixtures/visual-fixture.md'
+---
+
+<BlogLayout
+    title={frontmatter.title}
+    description={frontmatter.description}
+    date={frontmatter.date}
+    noindex
+>
+    <Content />
+</BlogLayout>

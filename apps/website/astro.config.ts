@@ -25,7 +25,14 @@ export default defineConfig({
     // extra round trip on first paint.
     inlineStylesheets: 'always',
   },
-  integrations: [sitemap(), smartQuotesIntegration(), stripEmptySrcsetIntegration()],
+  integrations: [
+    // /visual-fixture is the Playwright rendering fixture (src/pages/visual-fixture.astro): it has to
+    // build so the baselines can shoot it, but it's not content, so keep it out of the sitemap. It
+    // carries `noindex` too.
+    sitemap({ filter: (page) => !page.includes('/visual-fixture') }),
+    smartQuotesIntegration(),
+    stripEmptySrcsetIntegration(),
+  ],
   server: {
     port: parseInt(process.env.PORT || '4829', 10),
   },

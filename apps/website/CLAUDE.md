@@ -60,9 +60,11 @@ Color scheme.
 
 ## Gotchas
 
-- **Visual baselines (`e2e/visual.spec.ts`) are per-OS; refresh BOTH.** Updating one platform strands the other
-  (`-linux` is what CI checks) and reddens CI later. Use `apps/website/scripts/update-visual-baselines.sh` (needs
-  Docker; `scripts/release.sh` auto-runs it). [DETAILS.md](DETAILS.md) § Visual baselines.
+- **Visual baselines (`e2e/visual.spec.ts`) shoot machinery, never content.** Six Linux-only region shots anchored on
+  `/visual-fixture`. ❌ Never shoot a marketing page or real post full-page: they churn on every copy edit. New markdown
+  transform → add a block to `src/fixtures/visual-fixture.md`. Refresh:
+  `apps/website/scripts/update-visual-baselines.sh` (Docker; `scripts/release.sh` auto-runs it).
+  [DETAILS.md](DETAILS.md) § Visual baselines.
 - **Keep TS generic calls single-line in `.astro` `<script>` blocks** — the astro-eslint parser chokes on multi-line,
   cascade-blocking build/deploy.
 - **Typed lint needs `astro sync` first**, and the `.astro` block deliberately omits the `no-unsafe-*` rules (they

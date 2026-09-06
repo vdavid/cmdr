@@ -13,9 +13,10 @@ interface Props {
     description: string
     date: string
     ogImage?: string
+    noindex?: boolean
 }
 
-const { title, description, date, ogImage } = Astro.props
+const { title, description, date, ogImage, noindex = false } = Astro.props
 
 const formattedDate = new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -47,7 +48,7 @@ if (ogImage) {
 }
 ---
 
-<Layout title={`${title} | Cmdr blog`} description={description} ogImage={ogImage}>
+<Layout title={`${title} | Cmdr blog`} description={description} ogImage={ogImage} noindex={noindex}>
     <Header />
     <main class="mx-auto max-w-3xl px-6 pt-32 pb-24">
         <script type="application/ld+json" set:html={JSON.stringify(blogPostingSchema)} />

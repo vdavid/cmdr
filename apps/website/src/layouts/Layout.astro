@@ -6,12 +6,15 @@ interface Props {
     title: string
     description?: string
     ogImage?: string
+    /** Ask crawlers to skip this page. Set on unlinked pages that still have to build, like /visual-fixture. */
+    noindex?: boolean
 }
 
 const {
     title,
     description = 'The fastest two-pane file manager for macOS. Indexes your whole drive in minutes, shows folder sizes everywhere, instant search, keyboard-driven everything. Built in Rust, free for personal use.',
     ogImage = '/og-default.png',
+    noindex = false,
 } = Astro.props
 ---
 
@@ -22,6 +25,7 @@ const {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="description" content={description} />
+        {noindex && <meta name="robots" content="noindex, nofollow" />}
         <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)" />
         <meta name="color-scheme" content="dark light" />

@@ -337,27 +337,54 @@ can't show.
 
 ## Visual baselines
 
-`e2e/visual.spec.ts` screenshots every main page in light and dark and diffs against committed PNGs
-(`maxDiffPixelRatio: 0.01`). Baselines are per-OS: Playwright suffixes each snapshot with the platform it ran on, so
-`features-light-chromium-darwin.png` (local macOS) and `features-light-chromium-linux.png` (CI's ubuntu-latest) are
-distinct files. CI only checks the `-linux` set; the `-darwin` set is for local `pnpm --filter @cmdr/website test:e2e`
-runs on a Mac.
+`e2e/visual.spec.ts` diffs six committed PNGs (`maxDiffPixelRatio: 0.01`), totalling ~550 KB:
 
-**Why this bites at release time.** The website E2E job is path-gated (`apps/website/**`), so baseline drift stays
-latent until a website-touching push runs it. Release prep edits `feature-status.json` (renders `/features`) and
-`roadmap.astro`, which grow those pages; if the `-linux` baseline isn't refreshed, CI goes red right after the release
-tags. macOS can't produce the `-linux` PNGs (font antialiasing differs from Linux), so they must be rendered on Linux.
+- `fixture-light` / `fixture-dark`: `article.blog-content` on `/visual-fixture`, the only pair shot in both themes.
+- `fixture-dropdown`: the in-prose download dropdown, opened, clipped to itself.
+- `home-fold`: `/` at viewport size (nav, hero, split button, theme toggle).
+- `pricing-tiers`: the `[data-visual="pricing-tiers"]` grid.
+- `footer`: the `<footer>`, which is shared sitewide, so one shot covers every page.
 
-**`scripts/update-visual-baselines.sh`** refreshes both platforms:
+**Two rules keep the set from regrowing.**
 
-- `-darwin` natively; `-linux` in `mcr.microsoft.com/playwright:v<version>-noble`, pinned (derived, not hardcoded) to
-  the installed `@playwright/test` version so the bundled chromium and Noble fonts track CI's ubuntu-latest. The
-  ultimate check that the container matches the runner is CI itself passing against the committed `-linux` baselines.
+1. _Shoot machinery, never content._ `/visual-fixture` (`src/pages/visual-fixture.astro` rendering
+   `src/fixtures/visual-fixture.md`) exercises every rehype transform, Shiki, and smartypants on frozen non-editorial
+   copy, so a baseline moves only when the machinery moves. Adding a markdown transform means adding a block there.
+2. _Shoot regions, not pages._ Structural regressions show in the first fold and in specific components; mid-page prose
+   is most of the bytes and none of the signal, and it's what grows as the site gets written.
+
+**Why the set looks like this.** It used to be 28 full-page PNGs of the marketing pages and two real posts, 16 MB in the
+tree and 47 MB across history (about a fifth of `.git`). The churn was concentrated and avoidable: `features` alone had
+13 revisions (it renders `feature-status.json`, so every release invalidated ~840 KB) against two or three for
+everything else, and every one of those diffs was an intentional copy change rather than a caught regression. Two shots
+also re-rendered the same 5,722 px page to record one open dropdown. The current set stays still when you publish a
+post, edit marketing copy, or ship a release.
+
+**Baselines are Linux-only.** CI runs ubuntu-latest and macOS renders different font antialiasing, so a `-darwin` set
+would be a second copy of every byte that CI never checks (it was half the old 16 MB). `visual.spec.ts` calls
+`test.skip()` on other platforms, which is what stops the darwin set from reappearing the next time the suite runs on a
+Mac; the trade is that `pnpm --filter @cmdr/website test:e2e` no longer covers visual regressions locally.
+
+**`scripts/update-visual-baselines.sh`** renders them in `mcr.microsoft.com/playwright:v<version>-noble`, pinned
+(derived, not hardcoded) to the installed `@playwright/test` so chromium and the Noble fonts track CI's runner. The
+ultimate check that the container matches the runner is CI itself passing against the committed baselines.
+
 - Compare-then-`--last-failed`: it runs a normal comparison and only re-shoots baselines that actually fail the
-  threshold, so passing (sub-threshold-noisy) pages aren't churned. Idempotent (a no-op when everything already passes).
+  threshold, so passing (sub-threshold-noisy) shots aren't churned. Idempotent (a no-op when everything already passes).
 - The container installs and builds into anonymous volumes and chowns the written PNGs back, so it never overwrites the
   caller's macOS `node_modules`/`dist`. Requires Docker; a stopped Docker aborts before any change.
+- `--full` sets `VISUAL_FULL=1`, which swaps in a `snapshotPathTemplate` (playwright.config.ts) pointing at the
+  gitignored `e2e/visual-full-snapshots/` and shoots every real page full-page in both themes (~7 MB). It's the coverage
+  the region set gives up: capture before an Astro major upgrade, upgrade, re-run to compare, then delete the dir.
+  **Gotcha:** the redirect has to be a separate directory, not a `full/` prefix in the snapshot name, because Playwright
+  flattens a `/` in a name into a `-`, which would drop the files beside the committed baselines and get them committed.
+  `/changelog` is excluded from this set: at ~75,000 px, consecutive captures disagree on the height and Playwright can
+  never stabilize it.
 
-`scripts/release.sh` calls it after the release copy is finalized and before the release commit, so `git add -u` folds
-any refreshed baselines into the `chore(release)` commit and a release never ships a stale baseline. First wired in for
-the v0.34.0 follow-up (2026-07-19).
+`scripts/release.sh` calls the script after the release copy is finalized and before the release commit, so `git add -u`
+folds any refreshed baselines into the `chore(release)` commit. With `/features` no longer shot, a release should no
+longer touch a baseline at all; the call stays as a cheap guard.
+
+The fixture page ships in production as an unlinked, `noindex` page, excluded from the sitemap by the `filter` in
+`astro.config.ts`. Keeping it out of `src/content/blog/` is what spares `/blog`, `rss.xml`, and the `/og/[slug].png`
+route from having to learn to skip it.

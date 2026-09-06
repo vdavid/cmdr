@@ -27,5 +27,9 @@ npm-debug.log*
 # Astro
 .astro/
 
+# Full-page visual shots (VISUAL_FULL=1). Captured on demand to diff an Astro major upgrade, then
+# discarded; the committed region baselines live in e2e/visual.spec.ts-snapshots/. See e2e/visual.spec.ts.
+e2e/visual-full-snapshots/
+
 # Lighthouse CI
 .lighthouseci/

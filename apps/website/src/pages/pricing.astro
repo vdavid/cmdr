@@ -90,7 +90,9 @@ const faq = [
         </div>
 
         <!-- Pricing Cards -->
-        <div class="mb-16 grid gap-6 md:grid-cols-3">
+        <!-- `data-visual` is the anchor for the committed visual baseline (e2e/visual.spec.ts); the
+             tier grid is shot on its own so copy changes elsewhere on the page don't churn it. -->
+        <div data-visual="pricing-tiers" class="mb-16 grid gap-6 md:grid-cols-3">
             <!-- Personal (Free) -->
             <div class="flex flex-col rounded-2xl border border-border bg-surface p-6">
                 <div class="mb-4">

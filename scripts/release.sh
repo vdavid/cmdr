@@ -99,12 +99,11 @@ sed -i '' "s/## \[Unreleased\]/## [$VERSION] - $TODAY/" CHANGELOG.md
 CHANGE_DATE=$(date -v+3y +%Y-%m-%d)
 sed -i '' "s/^Change Date:.*/Change Date:          $CHANGE_DATE/" LICENSE
 
-# Refresh the website's visual baselines against the finalized release copy. Roadmap and
-# feature-status edits grow pages that have snapshots (most often /features), so a release
-# would otherwise ship a stale Linux baseline and turn CI red right after tagging. This
-# regenerates both platforms and the `git add -u` below stages whatever actually moved.
-# Requires Docker (the Linux baselines can't be rendered on macOS); a missing/stopped Docker
-# aborts here, before tagging.
+# Refresh the website's visual baselines against the finalized release copy, so a release can't
+# ship a stale one and turn CI red right after tagging. The baselines are region-scoped and no
+# longer cover /features, so release-prep copy shouldn't move any of them; this stays as a cheap
+# guard, and the `git add -u` below stages whatever actually moved. Requires Docker (the Linux
+# baselines can't be rendered on macOS); a missing/stopped Docker aborts here, before tagging.
 apps/website/scripts/update-visual-baselines.sh
 
 # Run oxfmt across the repo so CHANGELOG / package.json / tauri.conf.json drift from
