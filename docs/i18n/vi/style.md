@@ -271,6 +271,16 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `menu.volume.forgetSavedPasswordBusy` (`Quên mật khẩu đã lưu (đang bận)`), `menu.volume.forgetServerBusy`
   (`Quên máy chủ (đang bận)`). Mục gốc và dạng mờ phải khớp từng chữ để người đọc thấy đó là một mục ở hai trạng thái;
   ❌ đừng nghĩ ra dấu hiệu thứ hai (`đang dùng`, `bận`) cho khóa mới. Thuật ngữ: `glossary.md` § busy.
+- **`Quên` là ngoại lệ có chủ ý của luật `xóa` / `gỡ bỏ`.** Khi tiếng Anh gọi hành động là "Forget" (bỏ một máy chủ hay
+  một mật khẩu đã lưu khỏi danh sách của Cmdr), tiếng Việt viết `Quên` ở mọi bề mặt: mục menu, tiêu đề hộp thoại, thân
+  hộp thoại, và cả toast hỏng (`Cmdr không thể quên {name}.`). macOS làm y vậy với Wi‑Fi (`Forget` → `Quên`). Chỉ dùng
+  `xóa` khi tiếng Anh thật sự nói "delete"/"remove" (`fileExplorer.network.deletePasswordFailed`).
+- **"Reach" có hai lối, tùy đích đến.** Một MÁY CHỦ thì `không kết nối được tới` (`licensing.error.network`,
+  `servers.refusal.unreachable`); một ĐƯỜNG DẪN hay ổ đĩa thì `không thể truy cập` (`fileExplorer.unreachable.title`,
+  `.locationUnreachableToast`). Bằng chứng: `glossary.md` § Trung tâm máy chủ.
+- **Một cú rớt mạng là `Đã mất kết nối`, không phải `Kết nối đã bị ngắt`.** `ngắt` thuộc về hành động chủ ý
+  (`Ngắt kết nối`), nên dùng nó cho sự cố sẽ làm hai trạng thái khác hẳn nhau đọc y như nhau. macOS: `CFNetwork`
+  (`The network connection was lost.` → `Đã mất kết nối mạng.`).
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

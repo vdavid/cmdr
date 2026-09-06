@@ -1426,6 +1426,58 @@
   "@fileExplorer.navigation.volumeOptionsTooltip": {
     "sourceHash": "570fb94"
   },
+  "fileExplorer.navigation.connectionTooltipDisconnected": "De verbinding is verbroken. Cmdr probeert opnieuw verbinding te maken.",
+  "@fileExplorer.navigation.connectionTooltipDisconnected": {
+    "sourceHash": "58af304"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsSignIn": "Uitgelogd. Open deze server om opnieuw in te loggen.",
+  "@fileExplorer.navigation.connectionTooltipNeedsSignIn": {
+    "sourceHash": "6105b01"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "De sleutel van deze server is gewijzigd. Open de server om de sleutel te bekijken.",
+  "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
+    "sourceHash": "5743c29"
+  },
+  "fileExplorer.navigation.connectionTooltipSaved": "Opgeslagen. Open de server om te verbinden.",
+  "@fileExplorer.navigation.connectionTooltipSaved": {
+    "sourceHash": "4d94616"
+  },
+  "fileExplorer.navigation.disconnectPlaceAriaLabel": "Verbreek de verbinding met {name}",
+  "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "fileExplorer.navigation.disconnectBusyTooltip": "Verbinding verbreken kan niet terwijl er bewerkingen op deze server bezig zijn",
+  "@fileExplorer.navigation.disconnectBusyTooltip": {
+    "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr kon de verbinding met {name} niet verbreken.",
+  "@fileExplorer.navigation.disconnectRefusedToast": {
+    "sourceHash": "7cd7fd2"
+  },
+  "fileExplorer.navigation.forgetServerConfirmTitle": "Vergeet server",
+  "@fileExplorer.navigation.forgetServerConfirmTitle": {
+    "sourceHash": "e43c85d"
+  },
+  "fileExplorer.navigation.forgetServerConfirm": "{name} vergeten? Cmdr verbreekt de verbinding en haalt de server uit de lijst. Je bestanden blijven op de server staan.",
+  "@fileExplorer.navigation.forgetServerConfirm": {
+    "sourceHash": "6a43f67"
+  },
+  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr kon {name} niet vergeten.",
+  "@fileExplorer.navigation.forgetServerRefusedToast": {
+    "sourceHash": "0603090"
+  },
+  "fileExplorer.navigation.forgetSecretConfirmTitle": "Vergeet opgeslagen wachtwoord",
+  "@fileExplorer.navigation.forgetSecretConfirmTitle": {
+    "sourceHash": "ed68566"
+  },
+  "fileExplorer.navigation.forgetSecretConfirm": "Het opgeslagen wachtwoord voor {name} vergeten? Cmdr vraagt het opnieuw de volgende keer dat je verbinding maakt.",
+  "@fileExplorer.navigation.forgetSecretConfirm": {
+    "sourceHash": "300d043"
+  },
+  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr kon het opgeslagen wachtwoord voor {name} niet vergeten.",
+  "@fileExplorer.navigation.forgetSecretRefusedToast": {
+    "sourceHash": "940eb59"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Werp {name} uit",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"

@@ -1935,3 +1935,69 @@ o inglês cita o Office.
   `Pacotes de aplicativo` abaixo dela — a mesma separação que o inglês faz entre `packages` e `app bundles`.
 - **Moldura da frase → `O que pressionar Enter faz em um …, … ou ….`** · exatamente a moldura das chaves irmãs
   `settings.archives.zip.description` e `settings.archives.bundle.description` · `high`. Sem apóstrofo no valor.
+## O hub de servidores: painel de conexão, esquecer servidor e esquecer senha (`servers.*`, `fileExplorer.navigation.connectionTooltip*` / `disconnect*` / `forget*`)
+
+Superfície nova: o painel que mostra o servidor conectando ou recusando (SMB, SFTP, WebDAV), o pontinho de conexão de
+cada linha do seletor de volumes, e os dois diálogos de confirmação (esquecer o servidor, esquecer a senha salva). A
+pilha de referência não existe nesta máquina, então as fontes vêm do macOS instalado (26.6.2, build 25G83, 2026-09-06),
+o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" descreve.
+
+- **server → `servidor`** · Finder pt-BR, `ConnectToWindow.strings` (`1.title` `Connect to Server` →
+  `Conectar ao Servidor`, `YEA-3L-WnW.placeholderString` `Server Address` → `Endereço do Servidor`) e
+  `LocalizableMerged.strings` (`FR15`, `N84`, `SD13` `Connected servers` → `Servidores conectados`) · confirmed
+- **disconnect → `Desconectar`** · Finder pt-BR `LocalizableMerged.strings` `MR10.1` e `N200` (`Disconnect` →
+  `Desconectar`); é o que o catálogo já publica em `fileExplorer.smbReconnect.disconnect`,
+  `fileExplorer.unreachable.disconnect` e `menu.network.disconnect`, então `servers.paneState.disconnect` copia byte a
+  byte · confirmed. ❌ Nunca `Ejetar` num servidor: não há nada para desplugar.
+- **Keychain Access → `Acesso às Chaves`; certificate → `certificado`** · o próprio app, `InfoPlist.loctable` do
+  `Keychain Access.app` (`CFBundleDisplayName` pt_BR = `Acesso às Chaves`, `certificate` = `certificado`) · confirmed. O
+  catálogo já usava a forma em `fileExplorer.network.share.forgetPasswordTooltip` e `ai.secretError.keychainBody`.
+- **trust → `confiar` / `confiança`** · Keychain Access pt-BR (`Trust Settings` → `Ajustes de Confiança`, `is trusted` →
+  `é confiável`) · confirmed. Daí `O macOS não confia no certificado deste servidor.` e
+  `O Cmdr ainda não confia na chave de {host}.`
+- **(SSH) host key → `chave`** · sem termo próprio no macOS pt-BR para a chave de host, e o inglês também diz só "key"
+  depois da primeira menção; `chave` sozinho basta porque a frase já nomeia o servidor · high
+- **SSH settings (o `known_hosts` da pessoa) → `ajustes de SSH`** · `ajustes` é a palavra da Apple para settings
+  (`Ajustes do Sistema`, `Ajustes de Confiança`), e o catálogo já a publica em
+  `settings.appearance.appColor.description` · high
+- **sign in → `iniciar sessão` (com artigo em texto corrido: `iniciar a sessão`)** · o catálogo já assentou
+  (`fileExplorer.network.signIn` = `Iniciar sessão`, `fileExplorer.smbReauth.savedPasswordFailed` =
+  `Inicie a sessão para reconectar.`) · confirmed. Daí `sign-in method` → **`método de início de sessão`**, na forma
+  nominal que a Apple usa em `Itens de Início de Sessão`.
+- **Signed out → `Sessão encerrada.`** · estado que concorda com a SESSÃO, não com a pessoa, que é como esta § evita
+  gênero sem glifo nenhum · high
+- **doesn't support → `não oferece suporte a`** · forma já publicada em `errors.volume.notSupported` e
+  `errors.write.trashNotSupported.message` · confirmed. Por isso `servers.refusal.authMethodUnsupported` inverte a frase
+  (`O Cmdr ainda não oferece suporte ao método de início de sessão que este servidor usa.`): manter o servidor como
+  sujeito exigiria um `a que` que trava a leitura.
+- **That doesn't look like … → `Isso não parece …`** · molde já publicado em `common.attachEmailInvalid`
+  (`That doesn't look like an email address` → `Isso não parece um e-mail`), e `endereço de servidor` vem do
+  `fileExplorer.network.connectDialog.addressAriaLabel` (`Endereço do servidor`) · confirmed
+- **Cmdr couldn't X → `O Cmdr não conseguiu X`** · o molde do catálogo inteiro
+  (`settings.mediaIndex.reclaim.couldNotDelete`, `errors.listing.notFound.explanation`), e o `O Cmdr` por extenso é a
+  regra do style.md § "Uma frase de resultado nunca fica sem sujeito" · confirmed
+- **drop the connection → `encerrar a conexão`** · o catálogo já publica `desconecte para encerrá-la` em
+  `fileExplorer.unreachable.detailSmbGaveUp` · high
+- **A dica do botão desligado copia a irmã do ejetar, trocando só o verbo e o substantivo do alvo.**
+  `disconnectBusyTooltip` = `Não é possível desconectar enquanto há operações em andamento neste servidor`, palavra por
+  palavra o `fileExplorer.navigation.ejectBusyTooltip` já publicado (`… ejetar … neste dispositivo`). As duas ocupam o
+  mesmo lugar da interface e qualquer diferença de estrutura lê como outra regra.
+- **Nada nestas frases concorda com `{name}`.** O `{name}` é um nome de servidor que a pessoa escolheu, então nenhum
+  particípio nem pronome se apoia nele: `forgetServerConfirm` diz `tira esse servidor da lista` (não `para de listá-lo`)
+  e `forgetSecretConfirm` diz `vai pedir a senha` (não `vai pedi-la`). Mesma regra do style.md § final.
+
+Consistência de valor idêntico (`desktop-i18n-term-consistency` pareia pelo inglês, então estas são cópias byte a byte
+das chaves irmãs já publicadas): `Forget server` → `Esquecer servidor` (`menu.network.forgetServer`),
+`Forget saved password` → `Esquecer senha salva` (`menu.network.forgetSavedPassword`,
+`fileExplorer.network.share.forgetPassword`), `Disconnect` → `Desconectar`, `Cancel` → `Cancelar`, `Try again` →
+`Tentar novamente` (`fileExplorer.errorPane.tryAgain`).
+
+`fileExplorer.navigation.disconnectPlaceAriaLabel` = `Desconectar {name}`, e a substring que satisfaz a contenção WCAG
+2.5.3 é **`Desconectar`**, exatamente o rótulo visível de `servers.paneState.disconnect` e
+`fileExplorer.smbReconnect.disconnect`.
+
+Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `estar a` + infinitivo (o progressivo saiu como gerúndio,
+`está trabalhando`), `consoante`, `Rever`, ou `você` omitido onde a forma verbal fica ambígua
+(`na próxima vez que você se conectar`). Ênclise em pt-BR nos infinitivos e imperativos (`restabelecê-la`, `Abra-o`,
+`Adicione-o`), nunca próclise antes do infinitivo. Nenhum valor leva apóstrofo ASCII, então não há `''` a dobrar, e
+nenhum `sameAsSourceJustification`: os 28 valores diferem do inglês.

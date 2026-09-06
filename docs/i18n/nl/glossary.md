@@ -2339,3 +2339,84 @@ niet.
   eronder — dezelfde scheiding die het Engels maakt met `packages` tegenover `app bundles`.
 - **Zinsframe → `Wat Enter doet bij een …, … of ….`** · precies het frame van de zustersleutels
   `settings.archives.zip.description` en `settings.archives.bundle.description` · `high`. Geen apostrof in de waarde.
+## De serverhub: verbindingsscherm, verbindingstooltips en de vergeet-bevestigingen (`servers.*`, `fileExplorer.navigation.connectionTooltip*`, `.disconnect*`, `.forget*`)
+
+Nieuw oppervlak: het paneel dat je ziet terwijl Cmdr een server opent (of weigert te openen), de tooltip op het
+verbindingsbolletje van een serverrij in de volumeschakelaar, en de twee bevestigingsvensters die een server of het
+bewaarde wachtwoord vergeten. De referentiestapel ontbreekt op deze machine, dus Tier 1 komt uit de LIVE macOS-bundels
+(`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?"), alles geverifieerd op macOS 26.6.2, build
+25G83, 2026-09-06. Tier 2 (Microsoft) was onbereikbaar; wat alleen daarmee te beslissen viel, staat op `tentative`.
+
+Termen die uit de bundels kwamen:
+
+- **Keychain Access (de app) → `Sleutelhangertoegang`** · `Keychain Access.app/Contents/Resources/InfoPlist.loctable`,
+  `nl` → `CFBundleName: "Sleutelhangertoegang"` · `high`. De catalogus schreef dit al zo in
+  `ai.secretError.keychainBody`, dus de nieuwe zin sluit daarop aan. `Keychain` alleen blijft `Sleutelhanger`
+  (`fileExplorer.network.login.rememberInKeychain`).
+- **Connecting to X… → `Verbinden met {name}…`** · Finder `LocalizableMerged` `MN1` (`Verbinden met '^0'…`) en
+  NetAuthAgent `Localizable.loctable` `CONNECTING_TO_HOST` (`Verbinden met '%@'.`) · `high`. Geen aanhalingstekens om
+  `{name}`, omdat het Engels ze ook niet heeft.
+- **server address → `serveradres`** · Finder `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString` (`Server Address`
+  → `Serveradres`) · `high`. Eén woord, zoals elk Nederlands samengesteld zelfstandig naamwoord.
+- **certificate → `certificaat`; to trust → `vertrouwen`; not trusted → `wordt niet vertrouwd`** · Keychain Access
+  `InfoPlist.loctable` (`certificate` → `certificaat`) plus de systeembrede patronen
+  (`Deze website wordt niet vertrouwd en doet zich mogelijk voor als %@`, `Het pakket '%@' wordt niet vertrouwd`) ·
+  `high`.
+- **SSH-sleutel, `known_hosts`, SSH-instellingen** · Apple schrijft `SSH key` → `SSH-sleutel` en
+  `your SSH known_hosts file` → `het known_hosts-bestand voor SSH` (Opdrachten/Schermdeling `ScreenSharing.loctable`
+  `sshTunnelHostKeyChangedMessage`) · `high`. In deze pass gaat het Engels niet verder dan `key`, dus de waarde zegt
+  gewoon `de sleutel van {host}`; `SSH settings` wordt `je SSH-instellingen`, met het al vaste `instellingen`.
+- **didn't answer in time → `reageerde niet op tijd`** · niet nieuw, maar hier hergebruikt uit
+  `errors.volume.connectionTimeout` (`De verbinding reageerde niet op tijd`) · `high`.
+
+Vormen die uit de eigen catalogus kwamen, niet uit de bundels (consistentie wint van een frisse keuze, en
+`desktop-i18n-term-consistency` telt dezelfde Engelse bron als één term):
+
+- `Disconnect` → **`Verbreek`**, byte-identiek aan `menu.network.disconnect`, `fileExplorer.smbReconnect.disconnect` en
+  `fileExplorer.unreachable.disconnect` (en aan Finder `MR10.1` / `N200`).
+- `Cancel` → **`Annuleer`** (18 zusjes, plus NetAuthAgent `CANCEL`), `Try again` → **`Probeer opnieuw`** (5 zusjes).
+- `Forget server` → **`Vergeet server`** en `Forget saved password` → **`Vergeet opgeslagen wachtwoord`**, gelijk aan
+  `menu.network.forgetServer` / `menu.network.forgetSavedPassword` / `fileExplorer.network.share.forgetPassword`. De
+  bevestigingstitel is hetzelfde Engels als het menu-item dat het venster opent, dus hij is ook in het Nederlands
+  hetzelfde: de gebruiker klikt op `Vergeet server` en leest `Vergeet server`.
+- **`disconnectBusyTooltip` volgt zijn zusje letterlijk.** `ejectBusyTooltip` luidt
+  `Uitwerpen kan niet terwijl er bewerkingen op dit apparaat bezig zijn`, dus deze wordt
+  `Verbinding verbreken kan niet terwijl er bewerkingen op deze server bezig zijn`. Eén patroon, twee slots.
+- **De bevestigingsvraag staat in de infinitief-eindvorm**, zoals `fileExplorer.network.browser.removeHostConfirm`
+  (`{hostName} uit de serverlijst verwijderen?`) en `settings.mediaIndex.clip.deleteConfirmTitle`. Dus
+  `{name} vergeten?` en `Het opgeslagen wachtwoord voor {name} vergeten?`, met de knop ernaast in de imperatief.
+- **`stops listing it` → `haalt de server uit de lijst`** · `serverlijst` is al de term in `removeHostConfirm`, en de
+  serverrij verdwijnt letterlijk uit die lijst · `high`.
+
+De ARIA-regel: **`disconnectPlaceAriaLabel` → `Verbreek de verbinding met {name}`**. Het zichtbare label van deze actie
+is `Verbreek` (`servers.paneState.disconnect`, `fileExplorer.smbReconnect.disconnect`), en dat woord staat als eerste
+woord letterlijk in de toegankelijke naam, dus WCAG 2.5.3 (Label in Name) klopt. Het letterlijke zusjespatroon
+(`ejectVolumeAriaLabel` → `Werp {name} uit`) kan hier niet: je verbreekt in het Nederlands een verbinding, geen server.
+De zin volgt daarom `fileExplorer.smbReconnect.disconnectTooltip` (`… en verbreek de verbinding met de server`).
+
+Nieuw gemunte vormen, zonder bron in een bundel:
+
+- **sign-in method → `inlogmethode`** · de catalogus zegt overal `inloggen` / `ingelogd` / `Log in`
+  (`fileExplorer.network.signIn`, `.browser.status.loggedIn`), dus dit is het consistente samengestelde woord ·
+  `tentative` (geen Apple- of Microsoft-bron; Microsoft was onbereikbaar op deze machine).
+- **Signed out → `Uitgelogd`** · de tegenhanger van het al aanwezige `Ingelogd`
+  (`fileExplorer.network.browser.status.loggedIn`) · `high`.
+- **compromised (een sleutel die als onveilig gemarkeerd staat) → `gecompromitteerd`** · Apple heeft dit woord niet: het
+  komt bij een certificaat op `ingetrokken` uit en bij privacy op `in gevaar gebracht`, en geen van beide zegt wat
+  `@revoked` in `known_hosts` bedoelt. `gecompromitteerd` is het gangbare Nederlandse beveiligingswoord · `tentative`,
+  zie de review-vlaggen hieronder.
+
+Geen `sameAsSourceJustification` in deze pass: alle 28 waarden verschillen van het Engels. Geen apostrof in de waarden,
+dus ook geen ICU-verdubbeling nodig. Merknamen ongemoeid: `Cmdr`, `macOS`, `Mac`, `WebDAV`, `SSH`.
+
+### Review-vlaggen van deze pass
+
+- **`gecompromitteerd`** (`servers.refusal.hostKeyRevoked`): geen Tier-1- of Tier-2-bron. Alternatief was `ingetrokken`
+  (Apples woord voor een certificaat), maar dat zegt "niet meer geldig" en niet "onveilig gebleken", wat het Engels
+  expres wél zegt. Laat een moedertaalspreker bevestigen dat de zin niet te formeel klinkt in een klein paneel.
+- **`inlogmethode`** (`servers.refusal.authMethodUnsupported`): consistent met de catalogus, maar ongesourcet.
+  `aanmeldmethode` is de andere kandidaat; die zou een sweep over de hele `inloggen`-familie vragen.
+- **`Voeg het in Sleutelhangertoegang toe`** (`servers.refusal.certificateUntrusted`): het partikel staat achteraan
+  zoals `style.md` en Apple (`Voeg het lettertype aan de stijl toe`) voorschrijven, maar met een tussengeschoven
+  voorzetselgroep is `Voeg het toe in Sleutelhangertoegang` in gesproken Nederlands gangbaarder. Bevestig welke vorm in
+  een smal paneel beter leest.

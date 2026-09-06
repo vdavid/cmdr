@@ -1423,6 +1423,58 @@
   "@fileExplorer.navigation.volumeOptionsTooltip": {
     "sourceHash": "570fb94"
   },
+  "fileExplorer.navigation.connectionTooltipDisconnected": "La connexion s''est interrompue. Cmdr essaie de la rétablir.",
+  "@fileExplorer.navigation.connectionTooltipDisconnected": {
+    "sourceHash": "58af304"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsSignIn": "Session fermée. Ouvrez ce serveur pour vous identifier à nouveau.",
+  "@fileExplorer.navigation.connectionTooltipNeedsSignIn": {
+    "sourceHash": "6105b01"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "La clé de ce serveur a changé. Ouvrez-le pour examiner la clé.",
+  "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
+    "sourceHash": "5743c29"
+  },
+  "fileExplorer.navigation.connectionTooltipSaved": "Enregistré. Ouvrez-le pour vous connecter.",
+  "@fileExplorer.navigation.connectionTooltipSaved": {
+    "sourceHash": "4d94616"
+  },
+  "fileExplorer.navigation.disconnectPlaceAriaLabel": "Se déconnecter de {name}",
+  "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "fileExplorer.navigation.disconnectBusyTooltip": "Impossible de se déconnecter tant que des opérations sont en cours sur ce serveur",
+  "@fileExplorer.navigation.disconnectBusyTooltip": {
+    "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr n''a pas pu se déconnecter de {name}.",
+  "@fileExplorer.navigation.disconnectRefusedToast": {
+    "sourceHash": "7cd7fd2"
+  },
+  "fileExplorer.navigation.forgetServerConfirmTitle": "Oublier le serveur",
+  "@fileExplorer.navigation.forgetServerConfirmTitle": {
+    "sourceHash": "e43c85d"
+  },
+  "fileExplorer.navigation.forgetServerConfirm": "Oublier {name} ? Cmdr ferme la connexion et ne l''affiche plus. Vos fichiers restent sur le serveur.",
+  "@fileExplorer.navigation.forgetServerConfirm": {
+    "sourceHash": "6a43f67"
+  },
+  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr n''a pas pu oublier {name}.",
+  "@fileExplorer.navigation.forgetServerRefusedToast": {
+    "sourceHash": "0603090"
+  },
+  "fileExplorer.navigation.forgetSecretConfirmTitle": "Oublier le mot de passe enregistré",
+  "@fileExplorer.navigation.forgetSecretConfirmTitle": {
+    "sourceHash": "ed68566"
+  },
+  "fileExplorer.navigation.forgetSecretConfirm": "Oublier le mot de passe enregistré pour {name} ? Cmdr vous le demandera à la prochaine connexion.",
+  "@fileExplorer.navigation.forgetSecretConfirm": {
+    "sourceHash": "300d043"
+  },
+  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr n''a pas pu oublier le mot de passe enregistré pour {name}.",
+  "@fileExplorer.navigation.forgetSecretRefusedToast": {
+    "sourceHash": "940eb59"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Éjecter {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"

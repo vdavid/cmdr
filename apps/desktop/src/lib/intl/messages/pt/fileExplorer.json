@@ -1424,6 +1424,58 @@
   "@fileExplorer.navigation.volumeOptionsTooltip": {
     "sourceHash": "570fb94"
   },
+  "fileExplorer.navigation.connectionTooltipDisconnected": "A conexão foi perdida. O Cmdr está trabalhando para restabelecê-la.",
+  "@fileExplorer.navigation.connectionTooltipDisconnected": {
+    "sourceHash": "58af304"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsSignIn": "Sessão encerrada. Abra este servidor para iniciar a sessão de novo.",
+  "@fileExplorer.navigation.connectionTooltipNeedsSignIn": {
+    "sourceHash": "6105b01"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "A chave deste servidor mudou. Abra-o para ver a chave.",
+  "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
+    "sourceHash": "5743c29"
+  },
+  "fileExplorer.navigation.connectionTooltipSaved": "Salvo. Abra-o para conectar.",
+  "@fileExplorer.navigation.connectionTooltipSaved": {
+    "sourceHash": "4d94616"
+  },
+  "fileExplorer.navigation.disconnectPlaceAriaLabel": "Desconectar {name}",
+  "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "fileExplorer.navigation.disconnectBusyTooltip": "Não é possível desconectar enquanto há operações em andamento neste servidor",
+  "@fileExplorer.navigation.disconnectBusyTooltip": {
+    "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.disconnectRefusedToast": "O Cmdr não conseguiu desconectar de {name}.",
+  "@fileExplorer.navigation.disconnectRefusedToast": {
+    "sourceHash": "7cd7fd2"
+  },
+  "fileExplorer.navigation.forgetServerConfirmTitle": "Esquecer servidor",
+  "@fileExplorer.navigation.forgetServerConfirmTitle": {
+    "sourceHash": "e43c85d"
+  },
+  "fileExplorer.navigation.forgetServerConfirm": "Esquecer {name}? O Cmdr encerra a conexão e tira esse servidor da lista. Seus arquivos continuam no servidor.",
+  "@fileExplorer.navigation.forgetServerConfirm": {
+    "sourceHash": "6a43f67"
+  },
+  "fileExplorer.navigation.forgetServerRefusedToast": "O Cmdr não conseguiu esquecer {name}.",
+  "@fileExplorer.navigation.forgetServerRefusedToast": {
+    "sourceHash": "0603090"
+  },
+  "fileExplorer.navigation.forgetSecretConfirmTitle": "Esquecer senha salva",
+  "@fileExplorer.navigation.forgetSecretConfirmTitle": {
+    "sourceHash": "ed68566"
+  },
+  "fileExplorer.navigation.forgetSecretConfirm": "Esquecer a senha salva de {name}? O Cmdr vai pedir a senha na próxima vez que você se conectar.",
+  "@fileExplorer.navigation.forgetSecretConfirm": {
+    "sourceHash": "300d043"
+  },
+  "fileExplorer.navigation.forgetSecretRefusedToast": "O Cmdr não conseguiu esquecer a senha salva de {name}.",
+  "@fileExplorer.navigation.forgetSecretRefusedToast": {
+    "sourceHash": "940eb59"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Ejetar {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"

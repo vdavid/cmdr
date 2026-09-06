@@ -1416,6 +1416,58 @@
   "@fileExplorer.navigation.volumeOptionsTooltip": {
     "sourceHash": "570fb94"
   },
+  "fileExplorer.navigation.connectionTooltipDisconnected": "Anslutningen bröts. Cmdr arbetar på att få tillbaka den.",
+  "@fileExplorer.navigation.connectionTooltipDisconnected": {
+    "sourceHash": "58af304"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsSignIn": "Utloggad. Öppna den här servern för att logga in igen.",
+  "@fileExplorer.navigation.connectionTooltipNeedsSignIn": {
+    "sourceHash": "6105b01"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "Den här serverns nyckel har ändrats. Öppna servern för att titta på nyckeln.",
+  "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
+    "sourceHash": "5743c29"
+  },
+  "fileExplorer.navigation.connectionTooltipSaved": "Sparad. Öppna den för att ansluta.",
+  "@fileExplorer.navigation.connectionTooltipSaved": {
+    "sourceHash": "4d94616"
+  },
+  "fileExplorer.navigation.disconnectPlaceAriaLabel": "Koppla från {name}",
+  "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "fileExplorer.navigation.disconnectBusyTooltip": "Det går inte att koppla från medan åtgärder pågår på den här servern",
+  "@fileExplorer.navigation.disconnectBusyTooltip": {
+    "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr kunde inte koppla från {name}.",
+  "@fileExplorer.navigation.disconnectRefusedToast": {
+    "sourceHash": "7cd7fd2"
+  },
+  "fileExplorer.navigation.forgetServerConfirmTitle": "Glöm servern",
+  "@fileExplorer.navigation.forgetServerConfirmTitle": {
+    "sourceHash": "e43c85d"
+  },
+  "fileExplorer.navigation.forgetServerConfirm": "Glöm {name}? Cmdr släpper anslutningen och slutar visa servern i listan. Dina filer ligger kvar på servern.",
+  "@fileExplorer.navigation.forgetServerConfirm": {
+    "sourceHash": "6a43f67"
+  },
+  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr kunde inte glömma {name}.",
+  "@fileExplorer.navigation.forgetServerRefusedToast": {
+    "sourceHash": "0603090"
+  },
+  "fileExplorer.navigation.forgetSecretConfirmTitle": "Glöm sparat lösenord",
+  "@fileExplorer.navigation.forgetSecretConfirmTitle": {
+    "sourceHash": "ed68566"
+  },
+  "fileExplorer.navigation.forgetSecretConfirm": "Glöm det sparade lösenordet för {name}? Cmdr frågar efter det nästa gång du ansluter.",
+  "@fileExplorer.navigation.forgetSecretConfirm": {
+    "sourceHash": "300d043"
+  },
+  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr kunde inte glömma det sparade lösenordet för {name}.",
+  "@fileExplorer.navigation.forgetSecretRefusedToast": {
+    "sourceHash": "940eb59"
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Mata ut {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"

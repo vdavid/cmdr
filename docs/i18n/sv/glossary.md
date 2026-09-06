@@ -2110,3 +2110,66 @@ documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even
   (style.md § no comma before `och`/`eller`) · `high`. ❗ `settings.archives.bundle.description` still carries that
   calqued comma (`.bundle, eller .framework`). It was out of scope for this pass, so the two rows differ in punctuation
   until someone fixes it.
+## Serverhubben: anslutningsläget, avvisningarna och glöm-dialogerna (2026-09-06; de 15 `servers.*` + 13 `fileExplorer.navigation.connectionTooltip*`/`.disconnect*`/`.forget*`)
+
+Ny yta: en panelvy som visar hur en serveranslutning går (`servers.paneState.*`), tio texter som säger varför servern sa
+nej (`servers.refusal.*`), prickens knappbeskrivningar i volymväljaren, och de två bekräftelsedialogerna för att glömma
+en server respektive dess sparade lösenord.
+
+Belägget kommer från de LEVANDE macOS-paketen, inte från referenshögen: `_ignored/i18n/` finns inte på den här maskinen
+(den är gitignorerad och ligger bara i en klon), och `docs/i18n/reference-pile/how-to-mine.md` § ”No pile on this
+machine?” är den dokumenterade reservvägen. Allt nedan är läst på macOS 26.6.2, build 25G83, 2026-09-06.
+
+- **Connecting to X… → `Ansluter till {name}…`** · svensk Finder `LocalizableMerged.strings` `MN1` = ”Ansluter till ^0…”
+  (och `PW28` = ”Ansluter till server”). Katalogen säger redan samma sak i `fileExplorer.network.share.connecting` ·
+  `high`.
+- **server address → `serveradress`** · Finder `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString` =
+  ”Serveradress”; katalogens `fileExplorer.network.connectDialog.addressAriaLabel` har det redan · `high`.
+- **disconnect → `koppla från`** · Finder `LocalizableMerged.strings` `MR10.1` = ”Koppla från”, och katalogens
+  `fileExplorer.smbReconnect.disconnect`/`unreachable.disconnect` säger samma · `high`. Aria-etiketten
+  `fileExplorer.navigation.disconnectPlaceAriaLabel` blir därför `Koppla från {name}`, byggd precis som systerraden
+  `ejectVolumeAriaLabel` (”Mata ut {name}”). Delsträngen som uppfyller WCAG 2.5.3 är `Koppla från`, ordagrant och i
+  ordning.
+- **Keychain Access (appnamnet) → `Nyckelhanterare`** · `Keychain Access.app/Contents/Resources/InfoPlist.loctable`,
+  `sv` → `CFBundleDisplayName` = ”Nyckelhanterare”; samma ord i `SecurityInterface.framework` sv (”öppna certifikatet i
+  Nyckelhanterare”). Katalogens `ai.secretError.keychainBody` använder det redan · `confirmed`. `nyckelring` är
+  BEHÅLLAREN inuti appen (`InfoPlist.loctable` `keychain` = ”nyckelring”), inte appen.
+- **trust (verb) → `lita på`; trusted → `betrodd`/`betrott`** ·
+  `SecurityInterface.framework/Resources/Localizable.loctable` sv: ”Vill du att datorn ska lita på certifikat som
+  signerats av ”%@”…”, ”Det här certifikatet märks som betrott…”, knappen `Trust` = ”Lita på” · `high`. Därav
+  `servers.refusal.certificateUntrusted` = ”macOS litar inte på …” och `hostKeyUntrusted` = ”Cmdr litar inte på …”.
+- **certificate → `certifikat`** · samma `InfoPlist.loctable` (`certificate` = ”certifikat”) · `confirmed`.
+- **(SSH) host key → bara `nyckel`** · engelskan säger medvetet ”key”, inte ”host key”, så svenskan gör likadant. ❌
+  Skriv inte genitiv på `{host}`: värdet är okontrollerat och kan sluta på s-ljud (`nas`), där svenskan inte lägger till
+  något. Skriv i stället `nyckeln från {host}` · `high` (konstruktionen), `tentative` (att `nyckel` räcker som term utan
+  `värd`-led, men engelskan gör samma val).
+- **compromised (om en återkallad nyckel) → `komprometterad`** · standardordet i svensk säkerhetstext; ingen
+  förstahandskälla i de lästa paketen · `tentative`, låg risk. Ramen `är märkt som …` speglar `SecurityInterface` sv
+  ”märks som betrott”.
+- **sign-in method → `inloggningsmetod`** · byggt på katalogens satta `sign in → logga in`
+  (`fileExplorer.network.signIn`, `.login.title`) · `high`.
+- **Signed out (tillstånd på prickens knappbeskrivning) → `Utloggad.`** · samma rot som `logga in`/`logga ut`
+  (`errors.provider.iCloud.serious`: ”Logga ut och in igen”). En-genus, så formen stämmer både mot `anslutningen` och
+  mot `du` · `high`.
+- **doesn't support yet → `stöder … inte än`** · katalogens `errors.git.bareRepo.title` (”Bare-repon stöds inte än”) och
+  de många `stöder`-raderna i `errors.json` · `high`.
+- **The connection dropped → `Anslutningen bröts`** · ordagrant katalogens egen `errors.listing.connectionDropped.title`
+  · `high`. Cmdrs återanslutningsloop beskrivs med `arbetar på att`, som är katalogens register
+  (`askCmdr.tool.unknown.doing` = ”Arbetar”); `jobbar` förekommer ingenstans.
+- **Can't disconnect while operations are in progress →
+  `Det går inte att koppla från medan åtgärder pågår på den här servern`** · exakt ramen från systerraden
+  `fileExplorer.navigation.ejectBusyTooltip` (”Det går inte att mata ut medan åtgärder pågår på den här enheten”) ·
+  `high`. ❗ Det här är knappbeskrivningen på en AVSTÄNGD knapp i panelvyn, inte ett menyalternativ, så den bär INTE
+  menyernas ` (upptagen)`-markör (se style-guiden § Busy (disabled) menu items).
+- **Forget server → `Glöm servern`; Forget saved password → `Glöm sparat lösenord`** · redan satta i `menu.network.*`
+  och `fileExplorer.network.share.forgetPassword`; dialogrubrikerna ärver dem ordagrant så samma handling heter samma
+  sak i meny och dialog · `high`.
+- **drops the connection → `släpper anslutningen`; stops listing it → `slutar visa servern i listan`** · `släppa` är
+  katalogens verb för att ge upp en anslutning (`reconnect.finalAttempt`, `unreachable.detailSmbGaveUp`), och huvudordet
+  skrivs ut eftersom både `anslutningen` och `servern` är en-genus och ett ensamt `den` skulle bli tvetydigt · `high`.
+- **Your files stay on the server → `Dina filer ligger kvar på servern`** · `ligga kvar` är katalogens satta bild för
+  det som blir orört (`trash.undonePartial`, `pane.directConnection*Toast`) · `high`.
+
+Inga `sameAsSourceJustification` i det här passet: alla 28 värden skiljer sig från engelskan. Ingen apostrof i något
+värde, så ICU-dubbleringen `''` blir aldrig aktuell. Ingen ny termdrift heller: `Cancel`, `Try again`, `Disconnect`,
+`Forget server` och `Forget saved password` återanvänder exakt de svenska formerna katalogen redan hade.

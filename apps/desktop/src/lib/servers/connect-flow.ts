@@ -23,7 +23,12 @@
  * can run for 30 s and this promise doesn't settle until it is over.
  */
 
-import { cancelServerConnect, connectSavedPlace, newServerAttemptId, type ServerConnectOutcome } from '$lib/tauri-commands'
+import {
+  cancelServerConnect,
+  connectSavedPlace,
+  newServerAttemptId,
+  type ServerConnectOutcome,
+} from '$lib/tauri-commands'
 import { smbReconnectManager } from '$lib/file-explorer/network/smb-reconnect-manager.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import type { ConnectionState } from '$lib/file-explorer/types'

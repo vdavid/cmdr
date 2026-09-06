@@ -345,12 +345,11 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   MtpConnectionView) and the SelectionInfo footer (`paneViewKind === 'normal'`). The RUNTIME-state branches
   (`unreachable`, the SAVED-place dial, SMB reconnecting / gave-up / needs-auth sign-in, the inline SMB upgrade login,
   `loading` / `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical
-  precedence. This is a
-  derived discriminant, NOT a new component. The per-feature gates (git lookup, type-to-jump keystroke, dir-exists poll)
-  read `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
-  (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for the jump) STAY — MTP has
-  a backend listing but git can't run on it, there's no on-disk path to `pathExists`-poll, and the not-yet-connected
-  sub-state isn't a kind capability. `caps` is derived once per pane
+  precedence. This is a derived discriminant, NOT a new component. The per-feature gates (git lookup, type-to-jump
+  keystroke, dir-exists poll) read `!caps.hasBackendListing` for the "is there a real directory" half; the
+  MTP-path-specific checks (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for
+  the jump) STAY — MTP has a backend listing but git can't run on it, there's no on-disk path to `pathExists`-poll, and
+  the not-yet-connected sub-state isn't a kind capability. `caps` is derived once per pane
   (`caps = $derived(capabilitiesForPane(volumeId, currentPath))`); the named `isNetworkView` / `isSearchResultsView`
   deriveds re-source off `caps.kind`.
 

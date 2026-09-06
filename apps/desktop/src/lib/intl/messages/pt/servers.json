@@ -1,0 +1,62 @@
+{
+  "servers.paneState.connecting": "Conectando a {name}…",
+  "@servers.paneState.connecting": {
+    "sourceHash": "7fb114e"
+  },
+  "servers.paneState.connectingHint": "Isso pode levar alguns segundos.",
+  "@servers.paneState.connectingHint": {
+    "sourceHash": "c830378"
+  },
+  "servers.paneState.cancel": "Cancelar",
+  "@servers.paneState.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.paneState.tryAgain": "Tentar novamente",
+  "@servers.paneState.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "servers.paneState.disconnect": "Desconectar",
+  "@servers.paneState.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "servers.refusal.authenticationRejected": "Essa senha não funcionou para {username}.",
+  "@servers.refusal.authenticationRejected": {
+    "sourceHash": "b2c42b0"
+  },
+  "servers.refusal.needsCredentials": "Este servidor pede uma senha.",
+  "@servers.refusal.needsCredentials": {
+    "sourceHash": "f5f689b"
+  },
+  "servers.refusal.authMethodUnsupported": "O Cmdr ainda não oferece suporte ao método de início de sessão que este servidor usa.",
+  "@servers.refusal.authMethodUnsupported": {
+    "sourceHash": "62b963e"
+  },
+  "servers.refusal.certificateUntrusted": "O macOS não confia no certificado deste servidor. Adicione-o no Acesso às Chaves e tente novamente.",
+  "@servers.refusal.certificateUntrusted": {
+    "sourceHash": "6db00c6"
+  },
+  "servers.refusal.notAWebdavServer": "Nenhum serviço WebDAV responde neste endereço.",
+  "@servers.refusal.notAWebdavServer": {
+    "sourceHash": "4c702d4"
+  },
+  "servers.refusal.invalidUrl": "Isso não parece um endereço de servidor.",
+  "@servers.refusal.invalidUrl": {
+    "sourceHash": "9a121ac"
+  },
+  "servers.refusal.timedOut": "{host} não respondeu a tempo.",
+  "@servers.refusal.timedOut": {
+    "sourceHash": "7662825"
+  },
+  "servers.refusal.unreachable": "O Cmdr não conseguiu alcançar {host}.",
+  "@servers.refusal.unreachable": {
+    "sourceHash": "ae716c3"
+  },
+  "servers.refusal.hostKeyUntrusted": "O Cmdr ainda não confia na chave de {host}.",
+  "@servers.refusal.hostKeyUntrusted": {
+    "sourceHash": "40a9d28"
+  },
+  "servers.refusal.hostKeyRevoked": "A chave de {host} está marcada como comprometida nos seus ajustes de SSH neste Mac. O Cmdr não vai se conectar a esse servidor.",
+  "@servers.refusal.hostKeyRevoked": {
+    "sourceHash": "47aacda"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "servers.paneState.connecting": "Verbinden met {name}…",
+  "@servers.paneState.connecting": {
+    "sourceHash": "7fb114e"
+  },
+  "servers.paneState.connectingHint": "Dit kan een paar seconden duren.",
+  "@servers.paneState.connectingHint": {
+    "sourceHash": "c830378"
+  },
+  "servers.paneState.cancel": "Annuleer",
+  "@servers.paneState.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.paneState.tryAgain": "Probeer opnieuw",
+  "@servers.paneState.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "servers.paneState.disconnect": "Verbreek",
+  "@servers.paneState.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "servers.refusal.authenticationRejected": "Dat wachtwoord werkte niet voor {username}.",
+  "@servers.refusal.authenticationRejected": {
+    "sourceHash": "b2c42b0"
+  },
+  "servers.refusal.needsCredentials": "Deze server vraagt om een wachtwoord.",
+  "@servers.refusal.needsCredentials": {
+    "sourceHash": "f5f689b"
+  },
+  "servers.refusal.authMethodUnsupported": "Deze server gebruikt een inlogmethode die Cmdr nog niet ondersteunt.",
+  "@servers.refusal.authMethodUnsupported": {
+    "sourceHash": "62b963e"
+  },
+  "servers.refusal.certificateUntrusted": "macOS vertrouwt het certificaat van deze server niet. Voeg het in Sleutelhangertoegang toe en probeer het opnieuw.",
+  "@servers.refusal.certificateUntrusted": {
+    "sourceHash": "6db00c6"
+  },
+  "servers.refusal.notAWebdavServer": "Op dit adres reageert niets op WebDAV.",
+  "@servers.refusal.notAWebdavServer": {
+    "sourceHash": "4c702d4"
+  },
+  "servers.refusal.invalidUrl": "Dat lijkt geen serveradres te zijn.",
+  "@servers.refusal.invalidUrl": {
+    "sourceHash": "9a121ac"
+  },
+  "servers.refusal.timedOut": "{host} reageerde niet op tijd.",
+  "@servers.refusal.timedOut": {
+    "sourceHash": "7662825"
+  },
+  "servers.refusal.unreachable": "Cmdr kon {host} niet bereiken.",
+  "@servers.refusal.unreachable": {
+    "sourceHash": "ae716c3"
+  },
+  "servers.refusal.hostKeyUntrusted": "Cmdr vertrouwt de sleutel van {host} nog niet.",
+  "@servers.refusal.hostKeyUntrusted": {
+    "sourceHash": "40a9d28"
+  },
+  "servers.refusal.hostKeyRevoked": "De sleutel van {host} is in je SSH-instellingen op deze Mac gemarkeerd als gecompromitteerd. Cmdr maakt er geen verbinding mee.",
+  "@servers.refusal.hostKeyRevoked": {
+    "sourceHash": "47aacda"
+  }
+}

@@ -1903,3 +1903,49 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **连接词 → `和`** · 目录中「X and Y」型标签几乎都用 `和`（`颜色和格式`、`日期和时间`、`提示和警告`）· `high`。
 - **句式 → `在 …、…、… 或 … 上按 Enter 键时的行为。`** · 与同类键 `settings.archives.zip.description`、
   `settings.archives.bundle.description` 完全相同的格式 · `high`。值中没有撇号。
+## 服务器面板与卷切换器里的服务器行（`servers.*`、`fileExplorer.navigation.connectionTooltip*`/`disconnect*`/`forget*`，2026-09-06）
+
+新界面：窗格里的服务器连接状态（正在连接 / 被拒绝的各种原因），以及卷切换器里每一行服务器的连接圆点提示、断开连接按钮、“忘记服务器”和“清除保存的密码”两个确认对话框。
+
+参考堆（`_ignored/i18n/zh-CN/`）在这台机器上不存在，改用指南许可的实时 macOS 包取词：Finder、NetAuthAgent、“钥匙串访问”（都验证于 macOS
+26.6.2 / 25G83，`plutil` 读 `zh_CN.lproj`，2026-09-06）。
+
+- **server → `服务器`** · Finder zh_CN（`Connect to Server` → `连接服务器`）、NetAuthAgent、目录里既有用法 ·
+  `confirmed`。量词用 `台`（`这台服务器`），与目录里已有的 `这台服务器的管理员` 一致。
+- **connect → `连接`；Connecting to X… → `正在连接到 {name}…`** · Finder zh_CN `Connect` → `连接`；句式沿用同胞键
+  `fileExplorer.network.share.connecting`（`正在连接到 {hostName}…`）· `confirmed`。
+- **disconnect → `断开连接`** · Finder zh_CN `Disconnect` → `断开连接`，目录里
+  `fileExplorer.smbReconnect.disconnect`、`unreachable.disconnect`、`menu.network.disconnect` 都是它 ·
+  `confirmed`。`servers.paneState.disconnect` 必须与它们一字不差（`i18n-terms` 会比）。
+- **Try again（按钮）→ `重试`** · Finder zh_CN `Try Again` → `重试`；目录里
+  `fileExplorer.errorPane.tryAgain`、`mtp.tryAgain`、`networkMount.tryAgain`、`licensing.dialog.tryAgain` 全是 `重试` ·
+  `confirmed`。❌ 别写 `再试一次`（那是 `zh-Hant` 的选择）。
+- **Cancel → `取消`** · 全目录唯一说法 · `confirmed`。
+- **Keychain Access（App 名）→ `钥匙串访问`，加引号** · “钥匙串访问” App 的 `Localizable.loctable`
+  zh_CN（`Keychain Access` → `钥匙串访问`），目录里 `ai.secretError.keychainBody` 已经写作 `打开“钥匙串访问”` ·
+  `confirmed`。
+- **certificate → `证书`；trust → `信任`** · 同一个包（`root certificate` → `根证书`，`trusted` → `信任`）·
+  `confirmed`。
+- **host key（SSH 主机密钥）→ `主机密钥`** · macOS 26.6.2 的 SSH 未知主机提示 zh_CN 写作
+  `主机密钥的指纹为%@。`（`plutil` 扫 loctable 命中，2026-09-06；行业通用说法也是它）·
+  `high`。`connectionTooltipNeedsHostKey` 第二句里回指时用短的 `密钥`，避免一句话里两次 `主机密钥`。
+- **Sign in → `登录`；Signed out → `已退出登录`** · macOS zh_CN `Sign In` → `登录`、`Sign Out` → `退出登录`；目录里
+  `fileExplorer.network.signIn` = `登录` · `confirmed`。
+- **Forget server → `忘记服务器`** · 沿用目录里已有的 `menu.network.forgetServer` ·
+  `confirmed`。`fileExplorer.navigation.forgetServerConfirmTitle` 与它同源，必须同字。
+- **Forget saved password → `清除保存的密码`** · 沿用 `menu.network.forgetSavedPassword` 和
+  `fileExplorer.network.share.forgetPassword` · `confirmed`。所以对话框正文和提示条也用
+  `清除`（`要清除 {name} 保存的密码吗？`），不跟着 `忘记` 走：同一个对话框里两个动词会对不上。
+- **注意 Apple 的 `忽略此网络`**：macOS 把 Wi-Fi 的 “Forget This Network” 译成
+  `忽略此网络`（`WiFiSettingsKit.framework`，26.6.2）。这里没跟它——目录里 `忘记服务器` / `清除保存的密码` 先落地了，而且
+  `忽略` 在“从列表里移除一台服务器”的语境下会读成“跳过”。
+- **`disconnectPlaceAriaLabel` → `断开连接：{name}`** · 无障碍名必须原样包含可见标签的词（WCAG 2.5.3）。`断开连接`
+  连续出现，满足包含关系；冒号只是分隔，`i18n-aria` 的比较会剥掉全角标点 · `confirmed`。
+- **`disconnectBusyTooltip` → `此服务器上有操作正在进行，无法断开连接`** · 句式照抄同一位置的兄弟键
+  `fileExplorer.navigation.ejectBusyTooltip`（`此设备上有操作正在进行，无法推出`），所以这里保留 `此` 而不是 `这个` ·
+  `high`。
+- **Cmdr couldn't X → `Cmdr 无法X`** · 目录通用写法 · `confirmed`。`servers.refusal.unreachable` 例外，用更口语的
+  `Cmdr 连不上 {host}。`，与 `无法连到` 同义但更短，适合窗格里的一行。
+- **compromised（主机密钥被吊销）→ `已泄露`** · 无 Apple 对应词；`已泄露` 在中文安全语境里通用，且比 `已失陷` 好懂 ·
+  `tentative`，建议母语者复核。
+- 28 个值都不含撇号，所以没有 ICU 转义问题；也没有一个与英文相同，不需要 `sameAsSourceJustification`。

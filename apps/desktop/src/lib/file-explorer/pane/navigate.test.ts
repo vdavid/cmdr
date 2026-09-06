@@ -34,7 +34,10 @@ const VOLUMES = new Map<string, { id: string; name: string; path: string }>([
   ['root', { id: 'root', name: 'Macintosh HD', path: '/' }],
   ['ext', { id: 'ext', name: 'Ext', path: '/Volumes/Ext' }],
   ['network', { id: 'network', name: 'Network', path: 'smb://' }],
-  ['sftp-nas-local-22-ada', { id: 'sftp-nas-local-22-ada', name: 'Naspolya', path: 'sftp://ada@nas.local:22/srv/data' }],
+  [
+    'sftp-nas-local-22-ada',
+    { id: 'sftp-nas-local-22-ada', name: 'Naspolya', path: 'sftp://ada@nas.local:22/srv/data' },
+  ],
 ])
 
 /** A FilePane stub: every method a no-op, `navigateToPath` returns a resolvable promise we can track. */
@@ -779,7 +782,11 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
 
   it('server path on a pane not on that place is refused', () => {
     const result = navigate(
-      { pane: 'left', to: { goTo: { volumeId: 'root', path: 'sftp://ada@nas.local:22/srv/data/photos' } }, source: 'mcp' },
+      {
+        pane: 'left',
+        to: { goTo: { volumeId: 'root', path: 'sftp://ada@nas.local:22/srv/data/photos' } },
+        source: 'mcp',
+      },
       h.deps,
     )
     expect(result).toEqual({
@@ -801,7 +808,7 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
     expect(result.status).toBe('refused')
   })
 
-  it('a path under the pane\'s own server root is accepted', () => {
+  it("a path under the pane's own server root is accepted", () => {
     h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
     const result = navigate(
       {
