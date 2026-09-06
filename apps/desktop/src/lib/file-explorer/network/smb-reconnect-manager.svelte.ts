@@ -78,7 +78,7 @@ interface VolumeEntry {
    *
    * ❗ A tagged union: switch on `kind` and ❌ never derive the form from the
    * protocol or from the mode the sheet is in. Whether the username is editable
-   * is the VARIANT's answer (`crates/cmdr-fs/src/volume/types.rs`).
+   * is the VARIANT's answer (`crates/cmdr-fs/src/volume/connection.rs`).
    */
   signIn: SignInShape | null
   /** Active `setTimeout` handle for the next attempt, if `status === 'waiting'`. */

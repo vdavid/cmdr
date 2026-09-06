@@ -10,7 +10,7 @@
  * module exists to prevent.
  *
  * The Rust twin of `isLiveSession` is `ConnectionState::is_live`
- * (`crates/cmdr-fs/src/volume/types.rs`).
+ * (`crates/cmdr-fs/src/volume/connection.rs`).
  */
 
 import type { ConnectionState } from '../types'
