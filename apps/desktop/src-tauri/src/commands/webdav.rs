@@ -149,7 +149,7 @@ pub async fn connect_webdav_volume(
     let mut params = WebdavConnectionParams::new(base_url, &username, remote_root);
     params.auto_reconnect = auto_reconnect;
 
-    match webdav_volume_wiring::connect_and_register(&display_name, params, &attempt_id).await {
+    match webdav_volume_wiring::connect_and_register(&display_name, params, &attempt_id, None).await {
         WebdavConnection::Connected { volume_id } => {
             WebdavConnectResult::Connected(ConnectedWebdavVolume { volume_id })
         }

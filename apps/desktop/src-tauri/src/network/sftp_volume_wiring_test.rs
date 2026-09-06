@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use cmdr_sftp::volume::testing::{FIXTURE_PASSWORD, FIXTURE_ROOT, FIXTURE_USER, fixture_port};
 
+use crate::network::one_shot_credentials::SecretOffer;
 use crate::network::sftp_volume_wiring::{self, SftpConnection};
 use crate::network::{keychain, sftp_host_keys, sftp_known_servers};
 use cmdr_sftp::SftpConnectionParams;
@@ -44,7 +45,7 @@ async fn signed_in_already(params: &SftpConnectionParams) {
     .expect("the test secret store always accepts");
 
     // First contact, then the approval, which is exactly what the frontend does.
-    let first = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-attempt").await;
+    let first = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-attempt", None).await;
     let SftpConnection::NeedsHostKeyApproval(prompt) = first else {
         // Another cell in this binary may have approved the same fixture already;
         // that is a connected volume, not a failure.
@@ -64,7 +65,8 @@ async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_serv
     let params = stock_params();
     signed_in_already(&params).await;
 
-    let outcome = sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt").await;
+    let outcome =
+        sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt", None).await;
     let SftpConnection::Connected { volume_id, rung } = outcome else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
@@ -102,7 +104,8 @@ async fn sftp_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
     let params = stock_params();
     signed_in_already(&params).await;
 
-    let first = sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt").await;
+    let first =
+        sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt", None).await;
     let SftpConnection::Connected { volume_id, .. } = first else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
@@ -121,7 +124,8 @@ async fn sftp_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
     sftp_known_servers::remember(unpinned);
     sftp_volume_wiring::disconnect(&volume_id).await;
 
-    let again = sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt-2").await;
+    let again =
+        sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt-2", None).await;
     let SftpConnection::Connected { volume_id, .. } = again else {
         panic!("the same fixture connects again");
     };
@@ -142,7 +146,7 @@ async fn sftp_integration_disconnecting_drops_the_session_and_unregisters_the_vo
     let params = stock_params();
     signed_in_already(&params).await;
     let SftpConnection::Connected { volume_id, .. } =
-        sftp_volume_wiring::connect_and_register("fixture", params, "fixture-attempt").await
+        sftp_volume_wiring::connect_and_register("fixture", params, "fixture-attempt", None).await
     else {
         panic!("a fixture with its key approved and its password stored must connect");
     };
@@ -195,7 +199,7 @@ async fn sftp_integration_an_unapproved_server_asks_before_it_connects() {
         sftp_host_keys::forget_trusted_host_key(&params.host, params.port, &algorithm);
     }
 
-    let outcome = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-attempt").await;
+    let outcome = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-attempt", None).await;
     let SftpConnection::NeedsHostKeyApproval(prompt) = outcome else {
         panic!("a server with no approved key must ask about it before anything else");
     };
@@ -240,7 +244,7 @@ async fn cancelling_a_hanging_connect_ends_it_and_registers_nothing() {
 
     let dialing = params.clone();
     let connecting =
-        tokio::spawn(async move { sftp_volume_wiring::connect_and_register("Nowhere", dialing, ATTEMPT).await });
+        tokio::spawn(async move { sftp_volume_wiring::connect_and_register("Nowhere", dialing, ATTEMPT, None).await });
 
     // The attempt is cancelable from the moment the dial is in the air, which is
     // the whole reason the id is the caller's.
@@ -277,4 +281,90 @@ async fn cancelling_a_hanging_connect_ends_it_and_registers_nothing() {
 
     // The entry is gone with the attempt, so a second cancel finds nothing.
     assert!(!sftp_volume_wiring::cancel_connect(ATTEMPT));
+}
+
+// ── A secret that is used once and never stored ──────────────────────
+
+/// Approves the fixture's host key without leaving a secret behind, so a cell
+/// about where the secret came from starts with an empty store.
+async fn host_key_approved(params: &SftpConnectionParams) {
+    let first = sftp_volume_wiring::connect_and_register("fixture", params.clone(), "fixture-approve", None).await;
+    let SftpConnection::NeedsHostKeyApproval(prompt) = first else {
+        // Another cell in this binary may have approved the same fixture already.
+        return;
+    };
+    sftp_volume_wiring::approve_host_key(&prompt.host, prompt.port, &prompt.algorithm, &prompt.fingerprint)
+        .await
+        .expect(FIXTURE);
+}
+
+/// ❗ **A one-shot secret connects and stays out of the store.**
+///
+/// "Connect once without remembering" used to mean save → dial → delete, and a
+/// Keychain entry that exists for a second is not the user's choice. The offer
+/// with `remember: false` runs the dial against `one_shot_credentials`, so the
+/// server comes up with nothing written behind it.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_a_one_shot_secret_connects_and_leaves_the_store_empty() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let params = stock_params();
+    host_key_approved(&params).await;
+    assert!(
+        !keychain::has_credentials(&params.credential_service(), Some(&params.username)),
+        "the cell starts with nothing stored, which is what makes the dial's source unambiguous"
+    );
+
+    let outcome = sftp_volume_wiring::connect_and_register(
+        "Fixture server",
+        params.clone(),
+        "sftp-one-shot",
+        Some(SecretOffer {
+            secret: FIXTURE_PASSWORD.to_string(),
+            remember: false,
+        }),
+    )
+    .await;
+    let SftpConnection::Connected { volume_id, rung } = outcome else {
+        panic!("the offered secret is what proves this dial; the agent is off and nothing is stored");
+    };
+    assert_eq!(rung, cmdr_sftp::auth::AuthRungUsed::Password);
+
+    assert!(
+        !keychain::has_credentials(&params.credential_service(), Some(&params.username)),
+        "❗ a one-shot secret is never written: that is the whole meaning of the switch"
+    );
+
+    sftp_volume_wiring::disconnect(&volume_id).await;
+}
+
+/// The other half of the switch: `remember: true` writes the secret first, so the
+/// next dial (and every unattended reconnect) reads it back the ordinary way.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_a_remembered_secret_is_in_the_store_after_the_dial() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let params = stock_params();
+    host_key_approved(&params).await;
+
+    let outcome = sftp_volume_wiring::connect_and_register(
+        "Fixture server",
+        params.clone(),
+        "sftp-remembered",
+        Some(SecretOffer {
+            secret: FIXTURE_PASSWORD.to_string(),
+            remember: true,
+        }),
+    )
+    .await;
+    let SftpConnection::Connected { volume_id, .. } = outcome else {
+        panic!("a remembered secret is saved before the dial, so the dial reads it back");
+    };
+
+    assert!(
+        keychain::has_credentials(&params.credential_service(), Some(&params.username)),
+        "the switch means exactly one thing: the secret is in the store"
+    );
+
+    sftp_volume_wiring::disconnect(&volume_id).await;
 }

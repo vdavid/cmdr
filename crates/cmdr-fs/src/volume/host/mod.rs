@@ -153,6 +153,23 @@ impl VolumeHost {
         self.credentials.as_ref()
     }
 
+    /// The same host with a different secret store, for one dial.
+    ///
+    /// ❗ Every other seam is carried across, which is the point: a connect that
+    /// answers its own credential still reaches the real panes, the real trust
+    /// store, and the real event channel. Rebuilding a host from
+    /// [`builder`](Self::builder) instead would silently drop all of them.
+    ///
+    /// ❗ **The volume built by that dial keeps the host it was dialed with**, so
+    /// a wrapper handing out a secret has to stop doing that when the attempt
+    /// ends. The app's `network::one_shot_credentials` is that wrapper and owns
+    /// the guard that disarms it.
+    #[must_use]
+    pub fn with_credentials(mut self, credentials: Arc<dyn CredentialStore>) -> Self {
+        self.credentials = credentials;
+        self
+    }
+
     /// The SSH host keys this machine already trusts.
     pub fn host_keys(&self) -> &dyn HostKeys {
         self.host_keys.as_ref()

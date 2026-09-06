@@ -15,6 +15,7 @@ pub mod connect_wiring;
 pub mod known_shares;
 pub mod manual_servers;
 pub mod mdns_discovery;
+pub mod one_shot_credentials;
 
 // The durable trusted-SSH-host-key store, which answers the `HostKeys` seam.
 // Not SMB's business, but it lives here for the same reason `credential_store`

@@ -15,6 +15,7 @@ use cmdr_webdav::WebdavConnectionParams;
 
 use cmdr_webdav::volume::testing::{FIXTURE_USER, fixture_target};
 
+use crate::network::one_shot_credentials::SecretOffer;
 use crate::network::webdav_volume_wiring::{self, WebdavConnection};
 use crate::network::{keychain, webdav_known_servers};
 
@@ -86,7 +87,7 @@ async fn a_connect_that_ends_takes_its_attempt_entry_with_it_and_registers_nothi
 
     let outcome = tokio::time::timeout(
         Duration::from_secs(15),
-        webdav_volume_wiring::connect_and_register("Nowhere", params.clone(), ATTEMPT),
+        webdav_volume_wiring::connect_and_register("Nowhere", params.clone(), ATTEMPT, None),
     )
     .await
     .expect("a dial with nothing in the store answers without touching the network");
@@ -149,7 +150,8 @@ async fn webdav_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
             .expect("a successful connect remembers the server")
     };
 
-    let first = webdav_volume_wiring::connect_and_register("Fixture server", params.clone(), "webdav-pin-1").await;
+    let first =
+        webdav_volume_wiring::connect_and_register("Fixture server", params.clone(), "webdav-pin-1", None).await;
     let WebdavConnection::Connected { volume_id } = first else {
         panic!("a fixture with its password stored must connect");
     };
@@ -162,11 +164,82 @@ async fn webdav_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
     webdav_known_servers::remember(unpinned);
     webdav_volume_wiring::disconnect(&volume_id).await;
 
-    let again = webdav_volume_wiring::connect_and_register("Fixture server", params.clone(), "webdav-pin-2").await;
+    let again =
+        webdav_volume_wiring::connect_and_register("Fixture server", params.clone(), "webdav-pin-2", None).await;
     let WebdavConnection::Connected { volume_id } = again else {
         panic!("the same fixture connects again");
     };
     assert!(!saved().pinned, "the unpin survives the reconnect");
+
+    webdav_volume_wiring::disconnect(&volume_id).await;
+}
+
+/// ❗ **A one-shot secret connects and stays out of the store.**
+///
+/// "Connect once without remembering" used to mean save → dial → delete, and a
+/// Keychain entry that exists for a second is not the user's choice. The offer
+/// with `remember: false` runs the dial against `one_shot_credentials`, so the
+/// server comes up with nothing written behind it.
+#[tokio::test]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn webdav_integration_a_one_shot_secret_connects_and_leaves_the_store_empty() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let target = fixture_target("APACHE", 13480, FIXTURE_USER);
+    let params = target.params();
+    assert!(
+        !keychain::has_credentials(&params.credential_service(), Some(&params.username)),
+        "the cell starts with nothing stored, which is what makes the dial's source unambiguous"
+    );
+
+    let outcome = webdav_volume_wiring::connect_and_register(
+        "Fixture server",
+        params.clone(),
+        "webdav-one-shot",
+        Some(SecretOffer {
+            secret: target.password.clone(),
+            remember: false,
+        }),
+    )
+    .await;
+    let WebdavConnection::Connected { volume_id } = outcome else {
+        panic!("the offered secret is what proves this dial; nothing else could");
+    };
+
+    assert!(
+        !keychain::has_credentials(&params.credential_service(), Some(&params.username)),
+        "❗ a one-shot secret is never written: that is the whole meaning of the switch"
+    );
+
+    webdav_volume_wiring::disconnect(&volume_id).await;
+}
+
+/// The other half of the switch: `remember: true` writes the secret first, so the
+/// next dial (and every unattended reconnect) reads it back the ordinary way.
+#[tokio::test]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn webdav_integration_a_remembered_secret_is_in_the_store_after_the_dial() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let target = fixture_target("APACHE", 13480, FIXTURE_USER);
+    let params = target.params();
+
+    let outcome = webdav_volume_wiring::connect_and_register(
+        "Fixture server",
+        params.clone(),
+        "webdav-remembered",
+        Some(SecretOffer {
+            secret: target.password.clone(),
+            remember: true,
+        }),
+    )
+    .await;
+    let WebdavConnection::Connected { volume_id } = outcome else {
+        panic!("a remembered secret is saved before the dial, so the dial reads it back");
+    };
+
+    assert!(
+        keychain::has_credentials(&params.credential_service(), Some(&params.username)),
+        "the switch means exactly one thing: the secret is in the store"
+    );
 
     webdav_volume_wiring::disconnect(&volume_id).await;
 }

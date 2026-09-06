@@ -447,6 +447,39 @@ and every connect outcome: `crates/cmdr-webdav/DETAILS.md` § "Connecting from t
 connect finished is ordinary. And a `Cancelled` outcome never reaches `register` or `remember`, so a cancelled connect
 leaves no volume, no saved server, and no secret.
 
+### A secret used for one dial and never stored
+
+`connect_sftp_volume` and `connect_webdav_volume` take ❌ no password argument, on purpose: a secret that never appears
+in a connect param can't leak through an IPC argument, a log line, or a crash report, so both dials read the secret
+store instead. That leaves "connect once without remembering" with nowhere to put the secret, and save → dial → delete
+is not an answer: a Keychain entry that exists for a second is not what the user asked for, and a crash between the two
+steps leaves it there forever.
+
+`one_shot_credentials.rs` is the seam that closes it. Both wirings take `Option<SecretOffer>` (`{ secret, remember }`,
+what a sign-in sheet just collected) and hand it to `host_for_dial`, which answers with the host that dial should run
+against:
+
+- **No offer**: the app's ordinary host. Every connect that isn't answering a sign-in.
+- **`remember: true`**: `keychain::save_credentials` first, on a blocking task with the same 15 s deadline the secret
+  commands use, then the ordinary host. The dial reads it back the way it reads every stored secret, so a
+  save-then-connect round-trip from the frontend is one round-trip shorter and means exactly the same thing.
+- **`remember: false`**: `VolumeHost::with_credentials(OneShotCredentials)`, which answers this one `(service, scope)`
+  from memory, forwards every other key to the real store, and ❗ never writes (`save_credentials` answers
+  `CredentialsNotStored`, the documented "the store said no" every backend already logs and carries on from).
+
+❗ **The wrapper wins over a stored entry for the same key.** A person typing a password is correcting the one that is
+saved, and letting the stale one answer first is how a dial gets refused with the password the user just replaced.
+
+❗ **The offer ends with the attempt, and that takes a guard.** `connect_*_volume` hands the dial's host to the volume
+it builds, so the wrapper outlives the attempt whatever we do; `OneShotGuard`'s `Drop` empties it, so the reconnect that
+comes later reads the real (empty) store and asks a person. That IS what the switch means
+(`crates/cmdr-sftp/DETAILS.md` § "The two switches"). The wiring holds it as `let (host, _offer) = …`, so it goes when
+the connect function returns, however it returns.
+
+❗ **A store that declines the write falls back to the wrapper.** The user typed a secret and this dial has to use it;
+all that's lost is "silent next time". Dialing without it would answer `needs_credentials` to someone who just entered
+their password.
+
 ## The one edge that must not come back
 
 `network/` and the SMB backend (`crates/cmdr-smb/src/volume/`) sat in a single nine-module dependency cycle for a
