@@ -77,14 +77,27 @@
         </span>
     </button>
     {#if expanded}
+        <!--
+          ⚠️ Keyed by POSITION, ❌ never by path. A digest is a frozen record of one wake, read
+          off a persisted message: it never reorders, grows, or shrinks, so position IS the
+          identity and a content key buys nothing. It costs plenty, though. A path key is unique
+          only while the backend holds up its end, and a duplicate key THROWS: the throw escapes
+          the Svelte flush, which rolls the whole batch back, so one repeated path takes the
+          rail's rendering down for as long as the block stays expanded. Expanding a digest must
+          never cost the user the panel.
+
+          The backend folds its digest by folder (`agent/wake/compact.rs`, pinned by
+          `a_folder_busy_across_windows_gets_one_line`), so a repeat is a bug there and gets
+          caught there, ❌ never here at the price of the panel.
+        -->
         <ul class="detail">
-            {#each folders as folder (folder.folder)}
+            {#each folders as folder, index (index)}
                 <li>
                     <span class="path" use:tooltip={{ text: folder.folder, overflowOnly: true }}>{folder.folder}</span>
                     <span class="counts">{changeLines(folder).join(', ')}</span>
                 </li>
             {/each}
-            {#each rollups as rollup (rollup.ancestor)}
+            {#each rollups as rollup, index (index)}
                 <li class="rollup">{rollupLine(rollup)}</li>
             {/each}
         </ul>

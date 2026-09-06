@@ -80,6 +80,24 @@ describe('AskCmdrWakeDigest', () => {
     expect(rollup).toContain('40')
   })
 
+  /**
+   * The backend folds its digest by folder (`agent/wake/compact.rs`), so a repeated path is a
+   * backend bug. It must still not be a CRASH here: a throw inside the each block escapes the
+   * Svelte flush, which rolls the whole batch back and takes the rail's rendering down with it
+   * for as long as the block stays expanded. Expanding a wake digest is not allowed to cost the
+   * user the panel.
+   */
+  it('renders a repeated folder path rather than throwing', async () => {
+    const target = render([
+      folder({ folder: '/Users/dana/Downloads', created: 3 }),
+      folder({ folder: '/Users/dana/Downloads', created: 5 }),
+    ])
+    await tick()
+    toggleOf(target).click()
+    await tick()
+    expect(target.querySelectorAll('.detail li')).toHaveLength(2)
+  })
+
   /** A folder name is attacker-controlled: the rail renders it as escaped plain text, and
    *  this is the one block whose whole content comes from disk. */
   it('renders a folder name as text, never as markup', async () => {
