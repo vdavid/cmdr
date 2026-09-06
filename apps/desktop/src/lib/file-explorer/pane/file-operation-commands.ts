@@ -288,7 +288,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /**
-   * Builds transfer dialog props for a search-results source pane (M8d).
+   * Builds transfer dialog props for a search-results source pane.
    * The snapshot view has no backend listing, so the listing-id-driven
    * builders don't apply; we read the snapshot directly and feed
    * absolute paths into `buildTransferPropsFromSnapshot`. Returns `null`
@@ -462,7 +462,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /**
-   * Search-results pane delete path (M8c). The focused pane is on the
+   * Search-results pane delete path. The focused pane is on the
    * `search-results://<id>` virtual volume, so there's no backend listing to
    * fetch entries from; we read the snapshot directly.
    *

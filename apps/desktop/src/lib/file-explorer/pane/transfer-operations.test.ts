@@ -336,7 +336,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
   })
 })
 
-describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
+describe('buildTransferPropsFromSnapshot (source-side ops)', () => {
   it('returns null when no source paths are supplied', () => {
     expect(
       buildTransferPropsFromSnapshot('copy', [], [], true, '/dest', 'vol-dest', 'name', 'ascending', 'root'),

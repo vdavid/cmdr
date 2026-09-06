@@ -290,7 +290,7 @@ describe('SearchResultsView', () => {
     target.remove()
   })
 
-  it('forwards `selectedIndices` to FullList without crashing (M8d)', async () => {
+  it('forwards `selectedIndices` to FullList without crashing', async () => {
     const id = 'sr-sel'
     getOrCreate(id, makeSnapshot(id, [makeEntry('a.txt'), makeEntry('b.txt'), makeEntry('c.txt')]))
 
@@ -305,7 +305,7 @@ describe('SearchResultsView', () => {
         isFocused: true,
         sortBy: 'name',
         sortOrder: 'ascending',
-        // Pre-select the middle row; M8d wires this through to FullList.
+        // Pre-select the middle row; the view wires this through to FullList.
         selectedIndices: new Set([1]),
         onNavigate: () => {},
         onSelect: (args: SelectPayload) => {

@@ -41,7 +41,7 @@
         /**
          * Selected indices within the snapshot's entries. The snapshot pane shares
          * `FilePane.selection` state with normal panes; indices are 0-based (no `..`
-         * row). M8d: drives source-side copy/move/cut behaviour.
+         * row). Drives source-side copy / move / cut / delete.
          */
         selectedIndices?: Set<number>
         /** Called when the user activates a row (Enter / double-click). */

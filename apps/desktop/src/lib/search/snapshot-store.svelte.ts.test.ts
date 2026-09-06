@@ -256,7 +256,7 @@ describe('snapshot-store', () => {
     })
   })
 
-  describe('removeEntryFromAllSnapshots (M8c delete sync)', () => {
+  describe('removeEntryFromAllSnapshots (cross-snapshot delete sync)', () => {
     it('removes a path from every snapshot that contains it and bumps the mutation tick', () => {
       const sharedEntry = makeEntry('shared.txt')
       const otherEntry = makeEntry('other.txt')
@@ -317,7 +317,7 @@ describe('snapshot-store', () => {
     })
   })
 
-  describe('resolveSnapshotPaths (M8d source-side ops)', () => {
+  describe('resolveSnapshotPaths (source-side ops)', () => {
     it('resolves selected indices into absolute paths in input order', () => {
       getOrCreate('sr-1', makeSnapshot('sr-1'))
       expect(resolveSnapshotPaths('sr-1', [0, 1], 0)).toEqual(['/Users/test/a.txt', '/Users/test/b.txt'])

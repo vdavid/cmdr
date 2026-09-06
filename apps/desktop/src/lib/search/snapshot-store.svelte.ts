@@ -17,8 +17,7 @@
  * `setPaneHistory` helpers (defined around line 311–335) and
  * `tabs/tab-state-manager.svelte.ts::switchTab` (which only touches `cursorFilename`
  * and `activeTabId`, never `history`). Net effect: snapshot refs survive `{#key}`
- * re-creation because history isn't owned by the pane. M8b can rely on this without
- * re-verifying.
+ * re-creation because history isn't owned by the pane.
  *
  * The store is pure module state (not a `$state` reactive store) because consumers
  * read snapshots imperatively at render time — there's no DOM that should re-render
@@ -333,9 +332,9 @@ export function resolveSnapshotEntries(
   const indices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
   const entries: SearchResultEntry[] = []
   for (const idx of indices) {
-    // Runtime bounds guard: callers can pass stale indices (the M8c delete-sync
-    // shortens `entries` while in-flight selections still reference the old
-    // length).
+    // Runtime bounds guard: callers can pass stale indices (the cross-snapshot
+    // delete sync shortens `entries` while in-flight selections still reference
+    // the old length).
     const entry = snapshot.entries[idx]
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard
     if (entry) entries.push(entry)

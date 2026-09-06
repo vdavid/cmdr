@@ -610,7 +610,7 @@ describe('tab-state-manager', () => {
   })
 
   // ---------------------------------------------------------------------------
-  // Snapshot ref integration (M8a)
+  // Snapshot ref integration
   // ---------------------------------------------------------------------------
 
   describe('search-results snapshot refcounting', () => {

@@ -203,16 +203,18 @@ Second virtual-volume namespace alongside `network`. `volumeId === 'search-resul
 `search-results://<snapshot-id>` (opaque to filesystem APIs). The view selection runs off the pane's
 `VolumeCapabilities`: `FilePane`'s `paneViewKind` derived (`caps.kind === 'search-results'`) picks `SearchResultsView`
 in the `{#if/elseif}` chain, and the "is there a real directory" per-feature gates (git lookups, listing watcher,
-dir-exists poll, MCP file sync) read `!caps.hasBackendListing` — the same gate that skips a `network` pane. See
-`pane/DETAILS.md` § "Volume capabilities" for the per-site breakdown (capabilities, not a
-`volumeId === 'search-results'` string compare).
+dir-exists poll) read `!caps.hasBackendListing` — the same gate that skips a `network` pane. The pane still MIRRORS to
+MCP, off its snapshot rather than a listing; only `network` opts out of that (`caps.syncsToMcp`). See `pane/DETAILS.md`
+§ "Volume capabilities" for the per-site breakdown (capabilities, not a `volumeId === 'search-results'` string compare).
 
 `SearchResultsView` reads the snapshot from `$lib/search/snapshot-store.svelte` and feeds its entries into `FullList`
 via `staticEntries`. No backend listing exists, no IPC traffic. Each adapted entry's `name` field is the friendly full
 path (home folder shown as `~`); the col-name cell mid-truncates via `useShortenMiddle` and surfaces the full path on
 hover. There's no separate Path column anymore. The view exports a small API (`setCursorIndex` / `findItemIndex` /
 `openCursorItem` / `isMissing`) used by FilePane's keyboard handler; `findItemIndex` matches on the basename of `path`
-so type-to-jump / MCP keep working with plain filenames.
+so type-to-jump / MCP keep working with plain filenames. The column header names its columns and claims no sort
+(`caps.sortsRows`), because the rows render in the engine's ranked order: `../search/DETAILS.md` § "Source-side ops from
+the snapshot pane".
 
 Navigation:
 

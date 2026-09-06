@@ -689,8 +689,8 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   do that.
 - **No operation snapshot is taken**, because `entries-snapshot::fetchSelectedNames` returns early on a pane with no
   listing id. The name snapshot exists to feed listing-diff-driven selection adjustment, which doesn't run here; the
-  path-based remap below does that job instead. Before the guard, `getFileAt('')` rejected with "Listing not found"
-  inside a `void`-ed call, so every F5 / F6 / F8 from a snapshot pane with a partial selection raised an unhandled
+  path-based remap below does that job instead. Without the guard, `getFileAt('')` rejects with "Listing not found"
+  inside a `void`-ed call, so every F5 / F6 / F8 from a snapshot pane with a partial selection raises an unhandled
   promise rejection.
 - **Drag-out** uses the `'paths'` drag context in `lib/file-explorer/drag/drag-drop.ts`: when `FullList` is rendered
   with `staticEntries` and the user drags a selection, the FE builds a paths array from `getEntryAt(idx)` and routes
@@ -699,8 +699,10 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   rows the operation actually took disappear from every snapshot that referenced them; a skipped one stays.
 
 **MCP sees the pane, so an agent's delete acts on the rows on screen.** The snapshot pane mirrors to the MCP `PaneState`
-store like any other pane, with its rows read off the frontend snapshot instead of a backend listing. Plumbing and the
-guardrail: `file-explorer/pane/DETAILS.md` § "Volume capabilities".
+store like any other pane, with its rows read off the frontend snapshot instead of a backend listing.
+
+Both that and the header rule below are cells on the per-kind capability table; plumbing and guardrails:
+`file-explorer/pane/DETAILS.md` § "Volume capabilities".
 
 **The column header claims no sort, because the pane performs none.** The rows go to `FullList` as `staticEntries` and
 render in the order the search engine ranked them, so the pane's `sortBy` / `sortOrder` govern nothing here. The header
@@ -708,7 +710,7 @@ therefore comes through `sortable={caps.sortsRows}` (false for this kind): the f
 buttons, the `is-active` column, and the direction caret go. ❌ Don't wire a real sort in by re-ordering `entries`
 instead: every source-side op above resolves a selected index against `snapshot.entries[i]`, so a view-only reorder
 would hand a delete the wrong file. A genuine sort has to reach the ops too, which means resolving through the SORTED
-view rather than the store's array. Capability plumbing: `file-explorer/pane/DETAILS.md` § "Volume capabilities".
+view rather than the store's array.
 
 Destination-side write ops are still blocked: pasting INTO a search-results pane shows the canonical
 `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` (via the F-bar disablement, the menu item omission, and the dispatcher's

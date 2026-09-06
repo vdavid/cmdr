@@ -35,7 +35,7 @@ useSearchDialog(SearchDialog)
 
 afterEach(unmountAllDialogs)
 
-describe('SearchDialog "Open in pane" (M8b)', () => {
+describe('SearchDialog "Open in pane"', () => {
   beforeEach(async () => {
     await resetSearchDialogTest()
     addRecentSearchMock.mockClear()

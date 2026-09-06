@@ -1186,8 +1186,8 @@
 
     // Effective total count includes ".." entry if not at root.
     // For search-results panes, the snapshot owns the count (the backend
-    // `totalCount` state stays at 0 because no listing IPC ran). M8d depends on
-    // this so Cmd+A / range-select span the snapshot's entries.
+    // `totalCount` state stays at 0 because no listing IPC ran), which is what
+    // lets Cmd+A / range-select span the snapshot's entries.
     const effectiveTotalCount = $derived.by(() => {
         if (isSearchResultsView) return searchResultsCount
         return hasParent ? totalCount + 1 : totalCount
@@ -1761,7 +1761,7 @@
                     // Reuse the regular pane's click semantics so shift-range
                     // and cmd-toggle behave identically. The snapshot pane has
                     // no `..` row, so `hasParent` is always false; `handleSelect`
-                    // honours it via the bound `hasParent` state. M8d.
+                    // honours it via the bound `hasParent` state.
                     handleSelect({ index, shiftKey: shiftKey ?? false, metaKey: metaKey ?? false })
                 }}
                 onVisibleRangeChange={handleVisibleRangeChange}
