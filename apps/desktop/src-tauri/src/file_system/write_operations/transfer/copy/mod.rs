@@ -110,6 +110,35 @@ fn commit_journaling_created_dirs(transaction: CopyTransaction, operation_id: &s
     transaction.commit();
 }
 
+/// The FAILING terminal path's close-out: same journaling, but the folder→file
+/// asides are kept for the user instead of discarded, and whatever failed is
+/// re-labelled so the dialog can name where each file went.
+///
+/// A failure keeps every file that landed, which includes a folder that took one
+/// of the user's filenames with only part of its subtree in it
+/// (`ledger::CopyTransaction::commit_keeping_displaced_aside`). Ordinary
+/// failures displace nothing, and those get their own error back untouched.
+fn fail_keeping_displaced_aside(
+    transaction: CopyTransaction,
+    operation_id: &str,
+    error: WriteOperationError,
+) -> WriteOperationError {
+    crate::file_system::write_operations::journal::record_created_dirs(operation_id, &transaction.created_dirs);
+    let recovered = transaction.commit_keeping_displaced_aside();
+    if recovered.is_empty() {
+        return error;
+    }
+    log::warn!(
+        "copy_files_with_progress: op={} kept {} displaced original(s) under a ` (recovered)` name",
+        operation_id,
+        recovered.len()
+    );
+    WriteOperationError::OriginalsKeptAside {
+        cause: Box::new(error),
+        recovered,
+    }
+}
+
 // ============================================================================
 // Copy implementation
 // ============================================================================
@@ -559,17 +588,17 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                         files_processed: files_done,
                         rollback: CancelRollback::none(),
                     });
-                } else {
-                    // A failure keeps what landed, exactly like the arm below.
-                    // Every file in the ledger is complete, and one of them may
-                    // have replaced the user's original.
-                    commit_journaling_created_dirs(transaction, operation_id);
-                    events.emit_error(WriteErrorEvent::new(
-                        operation_id.to_string(),
-                        WriteOperationType::Copy,
-                        e.clone(),
-                    ));
+                    return Err(e);
                 }
+                // A failure keeps what landed, exactly like the arm below. Every
+                // file in the ledger is complete, and one of them may have
+                // replaced the user's original.
+                let e = fail_keeping_displaced_aside(transaction, operation_id, e);
+                events.emit_error(WriteErrorEvent::new(
+                    operation_id.to_string(),
+                    WriteOperationType::Copy,
+                    e.clone(),
+                ));
                 return Err(e);
             }
 
@@ -672,14 +701,16 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             // where the same reversal runs with the whole picture in front of
             // them. Routed through `log_error!` so opt-in users get an auto
             // error report (copy failures are exactly the kind of "this didn't
-            // work" we want signal on).
+            // work" we want signal on). A folder that replaced one of the user's
+            // FILES keeps its name too, so the file it displaced becomes a
+            // ` (recovered)` sibling rather than going with the aside.
             crate::log_error!(
                 "copy_files_with_progress: failed op={} error={:?}, keeping {} completed files",
                 operation_id,
                 e,
                 transaction.created_files().len(),
             );
-            commit_journaling_created_dirs(transaction, operation_id);
+            let e = fail_keeping_displaced_aside(transaction, operation_id, e);
             events.emit_error(WriteErrorEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Copy,

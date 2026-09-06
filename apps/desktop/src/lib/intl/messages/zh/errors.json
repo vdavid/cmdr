@@ -1449,6 +1449,26 @@
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
+  "errors.write.originalsKeptAside.title": "你的文件换了个名字",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "有个文件夹占了 {path} 这个名字，所以你的文件现在在 {keptAt}。什么都没被扔掉。",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "有几个文件夹占了你 {count} 个文件的名字，所以这些文件现在都换了名字。什么都没被扔掉；下面的技术详情里每一个都列出来了。",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "打开 {keptAt} 看一下。等你把那个文件夹挪开，就可以把文件的名字改回来。",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "下面的详情里写了每个文件在哪儿。等你把那些文件夹挪开，就可以把名字都改回来。",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "无法拷贝",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

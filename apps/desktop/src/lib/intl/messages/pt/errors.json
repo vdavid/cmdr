@@ -1449,6 +1449,26 @@
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
+  "errors.write.originalsKeptAside.title": "Seu arquivo ficou com um nome novo",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Uma pasta ficou com o nome {path}, então seu arquivo agora está em {keptAt}. Nada foi descartado.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Pastas ficaram com os nomes de {count} dos seus arquivos, então esses arquivos agora estão com nomes novos. Nada foi descartado; os detalhes técnicos abaixo listam todos eles.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Abra {keptAt} para conferir. Assim que tirar a pasta do caminho, você pode devolver o nome ao seu arquivo.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Veja nos detalhes abaixo onde está cada arquivo. Assim que tirar as pastas do caminho, você pode devolver os nomes a eles.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "Não foi possível copiar",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

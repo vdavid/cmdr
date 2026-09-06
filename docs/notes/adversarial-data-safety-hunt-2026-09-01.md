@@ -42,6 +42,12 @@ types; an explicit Stop-prompt answer still does, in both directions).
   `fix(copy): a copy that fails partway stops deleting the files that already replaced the user's originals` (the local
   engine matches the volume engine: a failure keeps what landed and cleans only the partial, on BOTH error arms).
   `reversal::reverse_copy_transaction` has no production caller left and is `#[cfg(test)]`.
+- **#6 × #13**, an interaction the two fixes created between them, fixed by
+  `fix(copy): a copy that fails with a folder half-replacing one of your files keeps that file`. #13 made the displaced
+  file a `DisplacedEntry` on the `CopyTransaction`, which `commit()` discards; #6 then made the failure arm COMMIT
+  rather than roll back. A batch that failed with a directory still replacing a file therefore deleted the user's
+  original. The failure arm now calls `commit_keeping_displaced_aside`, which renames each aside to a ` (recovered)`
+  sibling, and reports them in a typed `WriteOperationError::OriginalsKeptAside` wrapping the real cause.
 - **#7** fixed:
   `fix(copy): the only copy of a file whose cross-volume overwrite couldn't finish stops being deleted by the next transfer into that folder`
   (`finalize_safe_replace` renames the temp to a ` (recovered)` name, and a new typed

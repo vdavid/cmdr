@@ -16,6 +16,7 @@ use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 
 use super::overwrite::DisplacedEntry;
+use super::types::RecoveredOriginal;
 
 /// One destination path this operation put on disk, with the identity a reversal
 /// rechecks before removing it or renaming it back.
@@ -319,6 +320,24 @@ impl CopyTransaction {
         for displaced in self.displaced.drain(..) {
             displaced.discard();
         }
+    }
+
+    /// Commits what landed, but keeps every displaced entry for the user under a
+    /// ` (recovered)` name, and answers where each one went.
+    ///
+    /// The FAILURE outcome, and the reason [`CopyTransaction::commit`] can go on
+    /// meaning "what replaced them is staying". A failure keeps the files that
+    /// landed, so a folder that was replacing one of the user's files keeps its
+    /// name too — with only part of its subtree in it. Discarding the aside there
+    /// would delete the user's file to make room for a half-built folder;
+    /// restoring it has nowhere to go. So it becomes a sibling, and the caller
+    /// names it in the failure the user reads.
+    pub fn commit_keeping_displaced_aside(mut self) -> Vec<RecoveredOriginal> {
+        self.committed = true;
+        self.displaced
+            .drain(..)
+            .map(DisplacedEntry::keep_as_recovered_sibling)
+            .collect()
     }
 }
 

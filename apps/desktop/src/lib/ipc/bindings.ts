@@ -10088,6 +10088,21 @@ export type ReconnectError =
     }
 
 /**
+ *  One file a failed copy kept under a new name, because a folder that was
+ *  replacing it took its own. Carried by
+ *  [`WriteOperationError::OriginalsKeptAside`].
+ */
+export type RecoveredOriginal = {
+  // The name the file had, which the folder now wears.
+  path: string
+  /**
+   *  Where its bytes are now. Typed, so nothing has to parse a path back out
+   *  of prose.
+   */
+  keptAt: string
+}
+
+/**
  *  `reduce-transparency-changed`: the macOS Accessibility > Display > Reduce
  *  transparency setting changed. `reduce` is the new value (`true` = reduce
  *  transparency / use opaque backgrounds).
@@ -13323,6 +13338,19 @@ export type WriteOperationError =
       // What the destination said when the rename was refused.
       message: string
     }
+  /**
+   *  The operation failed, and a folder that was replacing one of the user's
+   *  files had already taken its name. Everything that landed is kept, so the
+   *  folder stays; the file it displaced is beside it under a ` (recovered)`
+   *  name rather than being thrown away with the aside.
+   *
+   *  ❗ `recovered` is the whole point of the variant, and it is never empty:
+   *  nothing else in the app tells the user their file changed names. `cause`
+   *  carries what actually failed, so the dialog keeps that error's own advice
+   *  (a full disk still says "free up space") instead of flattening every
+   *  failure into one sentence.
+   */
+  | { type: 'originals_kept_aside'; cause: WriteOperationError; recovered: RecoveredOriginal[] }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

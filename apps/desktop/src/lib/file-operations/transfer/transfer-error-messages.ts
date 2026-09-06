@@ -140,6 +140,24 @@ const simpleMessageFactories: Partial<
     message: w(`ioError.message.${op}`),
     suggestion: w('ioError.suggestion'),
   }),
+  // The advice splits on the OPERATION and the platform, never on `error.path`:
+  // a refused delete sends a macOS user to Full Disk Access, everyone else to
+  // permissions, and a refused copy to the destination.
+  permission_denied: (op) => ({
+    title: w('permissionDenied.title'),
+    message: w(`permissionDenied.message.${op}`),
+    suggestion:
+      op === 'delete' || op === 'trash'
+        ? isMacOS()
+          ? w('permissionDenied.suggestion.deleteMac')
+          : w('permissionDenied.suggestion.deleteOther')
+        : w('permissionDenied.suggestion.default'),
+  }),
+  file_locked: () => ({
+    title: w('fileLocked.title'),
+    message: w('fileLocked.message'),
+    suggestion: isMacOS() ? w('fileLocked.suggestion.mac') : w('fileLocked.suggestion.other'),
+  }),
 }
 
 /** Drives the dialog's icon, container tint, and Retry-button visibility. */
@@ -189,6 +207,10 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // it is just under a different name, and the one move left is the user's
   // (renaming it), which the suggestion spells out.
   new_data_kept_at: { category: 'needs_action', retryHint: false },
+  // No Retry: the copy stopped for its own reason, and re-running it would land
+  // on the folder that's already there. The move left is the user's, once
+  // they've decided what to do with the folder.
+  originals_kept_aside: { category: 'needs_action', retryHint: false },
   // A password-protected archive source. The FE prompts for a password and
   // retries, so this classification is only the fallback if the prompt is
   // bypassed; retryHint stays on so the generic dialog still offers a retry.
@@ -256,6 +278,35 @@ function readOnlyMessage(error: Extract<WriteOperationError, { type: 'read_only_
 }
 
 /**
+ * Builds the message for a copy that stopped with one of the user's files
+ * renamed out of a folder's way.
+ *
+ * Two facts, in that order: their file still exists and here is where, then why
+ * the copy stopped. The second half comes from the cause's own message, so a
+ * full disk still reads as a full disk instead of being flattened into "the copy
+ * stopped". Split out to keep `getUserFriendlyMessage` under the complexity
+ * ceiling.
+ */
+function originalsKeptAsideMessage(
+  error: Extract<WriteOperationError, { type: 'originals_kept_aside' }>,
+  operationType: TransferOperationType,
+): FriendlyErrorMessage {
+  const cause = getUserFriendlyMessage(error.cause, operationType)
+  const one = error.recovered.length === 1 ? error.recovered[0] : undefined
+  const moved = one
+    ? w('originalsKeptAside.message.one', { path: escapeHtml(one.path), keptAt: escapeHtml(one.keptAt) })
+    : w('originalsKeptAside.message.many', { count: String(error.recovered.length) })
+  const next = one
+    ? w('originalsKeptAside.suggestion.one', { keptAt: escapeHtml(one.keptAt) })
+    : w('originalsKeptAside.suggestion.many')
+  return {
+    title: w('originalsKeptAside.title'),
+    message: `${moved} ${cause.message}`,
+    suggestion: `${next} ${cause.suggestion}`,
+  }
+}
+
+/**
  * Returns a user-friendly message for a transfer operation error.
  * Volume-agnostic: doesn't mention MTP, SMB, etc. directly.
  */
@@ -267,18 +318,6 @@ export function getUserFriendlyMessage(
   if (simpleFactory) return simpleFactory(operationType)
 
   switch (error.type) {
-    case 'permission_denied': {
-      const isDeleteOp = operationType === 'delete' || operationType === 'trash'
-      return {
-        title: w('permissionDenied.title'),
-        message: w(`permissionDenied.message.${operationType}`),
-        suggestion: isDeleteOp
-          ? isMacOS()
-            ? w('permissionDenied.suggestion.deleteMac')
-            : w('permissionDenied.suggestion.deleteOther')
-          : w('permissionDenied.suggestion.default'),
-      }
-    }
     case 'insufficient_space':
       return {
         title: w('insufficientSpace.title'),
@@ -305,12 +344,6 @@ export function getUserFriendlyMessage(
         }),
         suggestion: w(`duplicateSourceNames.suggestion.${operationType}`),
       }
-    case 'file_locked':
-      return {
-        title: w('fileLocked.title'),
-        message: w('fileLocked.message'),
-        suggestion: isMacOS() ? w('fileLocked.suggestion.mac') : w('fileLocked.suggestion.other'),
-      }
     case 'invalid_name':
       // The destination refused the NAME, so it never looked the file up and a
       // retry re-sends the same impossible request. One transfer can descend a
@@ -334,6 +367,8 @@ export function getUserFriendlyMessage(
         }),
         suggestion: w('newDataKeptAt.suggestion', { keptAt: escapeHtml(error.keptAt) }),
       }
+    case 'originals_kept_aside':
+      return originalsKeptAsideMessage(error, operationType)
     case 'files_too_large_for_filesystem':
       return tooLargeForFilesystemMessage(error)
     default:
@@ -404,6 +439,15 @@ function variantDetailLines(error: WriteOperationError): string[] {
   // file is at the second one and nowhere else.
   if (error.type === 'new_data_kept_at') {
     return [`Path: ${error.path}`, `New data kept at: ${error.keptAt}`, `Error: ${error.message}`]
+  }
+  // Every renamed file, because the message only names one of them, and the
+  // details block is the only place a user with several can find the rest. The
+  // cause's own lines follow, so a bug report still carries what stopped the copy.
+  if (error.type === 'originals_kept_aside') {
+    return [
+      ...error.recovered.map((entry) => `Kept ${entry.path} at: ${entry.keptAt}`),
+      ...getTechnicalDetails(error.cause).split('\n'),
+    ]
   }
   if (error.type === 'cancelled' && error.message) {
     return [`Details: ${error.message}`]

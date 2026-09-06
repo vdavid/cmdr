@@ -1449,6 +1449,26 @@
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
+  "errors.write.originalsKeptAside.title": "Je bestand staat onder een nieuwe naam",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Een map heeft de naam {path} overgenomen, dus je bestand staat nu op {keptAt}. Er is niets weggegooid.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Mappen hebben de namen van {count} van je bestanden overgenomen, dus die bestanden staan nu onder nieuwe namen. Er is niets weggegooid; de technische details hieronder noemen ze allemaal.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Open {keptAt} om het te bekijken. Zodra je de map opzij hebt gezet, kun je je bestand weer zijn eigen naam geven.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "In de details hieronder staat waar elk bestand is. Zodra je de mappen opzij hebt gezet, kun je ze weer hun eigen naam geven.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "Kopiëren lukte niet",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

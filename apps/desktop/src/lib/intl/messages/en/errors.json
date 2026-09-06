@@ -2103,6 +2103,44 @@
       }
     }
   },
+  "errors.write.originalsKeptAside.title": "Your file is under a new name",
+  "errors.write.originalsKeptAside.message.one": "A folder took the name {path}, so your file is now at {keptAt}. Nothing was thrown away.",
+  "errors.write.originalsKeptAside.message.many": "Folders took the names of {count} of your files, so those files are now under new names. Nothing was thrown away; the technical details below list every one.",
+  "errors.write.originalsKeptAside.suggestion.one": "Open {keptAt} to check it. Once you've moved the folder out of the way, you can rename your file back.",
+  "errors.write.originalsKeptAside.suggestion.many": "Check the details below for where each file is. Once you've moved the folders out of the way, you can rename them back.",
+  "@errors.write.originalsKeptAside.title": {
+    "description": "Title of the copy error dialog when the copy stopped partway and a folder replacing one of the user's files kept its name, so that file was renamed to a \" (recovered)\" sibling. Plain text."
+  },
+  "@errors.write.originalsKeptAside.message.one": {
+    "description": "Body of the copy error dialog when exactly one of the user's files was renamed out of a folder's way. Plain text. It has to be clear the file still exists and where it is.",
+    "placeholders": {
+      "path": {
+        "description": "The full path the user's file used to have, which a folder now has, inserted verbatim. Do not translate or reformat it."
+      },
+      "keptAt": {
+        "description": "The full path where the user's file is now, inserted verbatim. Do not translate or reformat it."
+      }
+    }
+  },
+  "@errors.write.originalsKeptAside.message.many": {
+    "description": "Body of the copy error dialog when several of the user's files were renamed out of folders' way. Plain text.",
+    "placeholders": {
+      "count": {
+        "description": "How many files were renamed. Always two or more."
+      }
+    }
+  },
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "description": "Recovery suggestion when one file was renamed out of a folder's way. Plain text.",
+    "placeholders": {
+      "keptAt": {
+        "description": "The full path where the user's file is now, inserted verbatim. Do not translate or reformat it."
+      }
+    }
+  },
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "description": "Recovery suggestion when several files were renamed out of folders' way. Plain text."
+  },
   "errors.write.fallback.title.copy": "Couldn't copy",
   "errors.write.fallback.title.move": "Couldn't move",
   "errors.write.fallback.title.delete": "Couldn't delete",

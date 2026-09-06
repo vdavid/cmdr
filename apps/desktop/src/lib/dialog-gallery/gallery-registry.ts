@@ -203,6 +203,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'files_too_large_for_filesystem', label: 'Too large for the filesystem (three files)' },
       { id: 'files_too_large_for_filesystem-single', label: 'Too large for the filesystem (one file)' },
       { id: 'new_data_kept_at', label: 'New file kept under another name' },
+      { id: 'originals_kept_aside', label: 'Your file kept under another name' },
       { id: 'io_error', label: 'I/O error' },
       { id: 'archive_needs_password', label: 'Archive needs a password' },
     ],

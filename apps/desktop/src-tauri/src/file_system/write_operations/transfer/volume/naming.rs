@@ -10,7 +10,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::super::unique_name::{ClaimedNames, NameCandidates};
+use super::super::super::unique_name::{ClaimedNames, NameCandidates, RESCUE_NAME_ATTEMPTS, recovered_sibling};
 use crate::file_system::volume::{Volume, VolumeError};
 
 /// A name this operation has taken, and whether taking it PUT SOMETHING ON DISK.
@@ -146,11 +146,6 @@ fn resolve_local_path(root: &Path, path: &Path) -> PathBuf {
     cmdr_fs::volume::root_anchored(root, path)
 }
 
-/// The suffix a rescued file wears, so a person meeting it in their pane can
-/// tell what it is. Draft copy: filenames carry no locale here, the same way the
-/// ` (N)` duplicate convention doesn't.
-const RECOVERED_SUFFIX: &str = " (recovered)";
-
 /// Gets the complete new bytes out of `.cmdr-tmp-*` space and into a real
 /// filename next to where they were meant to land.
 ///
@@ -201,26 +196,6 @@ fn keeps_its_temp_name(temp: &Path) -> PathBuf {
         temp.display()
     );
     temp.to_path_buf()
-}
-
-/// How many ` (N)` variants a rescue tries before leaving the bytes under their
-/// temp name. Deliberately small: a destination holding eight `notes (recovered)
-/// (N)` files is one where something else is very wrong.
-const RESCUE_NAME_ATTEMPTS: u32 = 8;
-
-/// `/dir/notes.txt` → `/dir/notes (recovered).txt`, extension kept where it
-/// belongs.
-fn recovered_sibling(orig: &Path) -> PathBuf {
-    let parent = orig.parent().unwrap_or(Path::new(""));
-    let stem = orig.file_stem().map(|s| s.to_string_lossy().to_string());
-    let name = match (stem, orig.extension()) {
-        (Some(stem), Some(ext)) => format!("{stem}{RECOVERED_SUFFIX}.{}", ext.to_string_lossy()),
-        (Some(stem), None) => format!("{stem}{RECOVERED_SUFFIX}"),
-        // A path with no file name at all can't be helped; the caller's rename
-        // will fail and report the temp.
-        (None, _) => format!("cmdr{RECOVERED_SUFFIX}"),
-    };
-    parent.join(name)
 }
 
 /// Removes the `O_EXCL` placeholder a `Rename` resolution reserved for a child

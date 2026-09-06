@@ -461,11 +461,47 @@ pub enum WriteOperationError {
         /// What the destination said when the rename was refused.
         message: String,
     },
+    /// The operation failed, and a folder that was replacing one of the user's
+    /// files had already taken its name. Everything that landed is kept, so the
+    /// folder stays; the file it displaced is beside it under a ` (recovered)`
+    /// name rather than being thrown away with the aside.
+    ///
+    /// ❗ `recovered` is the whole point of the variant, and it is never empty:
+    /// nothing else in the app tells the user their file changed names. `cause`
+    /// carries what actually failed, so the dialog keeps that error's own advice
+    /// (a full disk still says "free up space") instead of flattening every
+    /// failure into one sentence.
+    OriginalsKeptAside {
+        cause: Box<WriteOperationError>,
+        recovered: Vec<RecoveredOriginal>,
+    },
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,
         message: String,
     },
+}
+
+/// One file a failed copy kept under a new name, because a folder that was
+/// replacing it took its own. Carried by
+/// [`WriteOperationError::OriginalsKeptAside`].
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RecoveredOriginal {
+    /// The name the file had, which the folder now wears.
+    pub path: String,
+    /// Where its bytes are now. Typed, so nothing has to parse a path back out
+    /// of prose.
+    pub kept_at: String,
+}
+
+impl RecoveredOriginal {
+    pub(super) fn new(path: &std::path::Path, kept_at: &std::path::Path) -> Self {
+        Self {
+            path: path.display().to_string(),
+            kept_at: kept_at.display().to_string(),
+        }
+    }
 }
 
 /// A file that exceeds the destination filesystem's per-file size limit.

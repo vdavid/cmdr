@@ -601,6 +601,38 @@ const cases: Case[] = [
     },
   },
   {
+    name: 'originals_kept_aside (one)',
+    error: {
+      type: 'originals_kept_aside',
+      cause: { type: 'source_not_found', path: '/src/thing/b.txt' },
+      recovered: [{ path: '/dst/thing', keptAt: '/dst/thing (recovered)' }],
+    },
+    expected: {
+      title: 'Your file is under a new name',
+      message:
+        'A folder took the name /dst/thing, so your file is now at /dst/thing (recovered). Nothing was thrown away. The file or folder you tried to copy no longer exists.',
+      suggestion:
+        "Open /dst/thing (recovered) to check it. Once you've moved the folder out of the way, you can rename your file back. It may have been moved, renamed, or deleted. Try refreshing the file list.",
+    },
+  },
+  {
+    name: "originals_kept_aside (many, keeping the cause's own advice)",
+    error: {
+      type: 'originals_kept_aside',
+      cause: { type: 'insufficient_space', required: REQUIRED, available: AVAILABLE, volumeName: null },
+      recovered: [
+        { path: '/dst/one', keptAt: '/dst/one (recovered)' },
+        { path: '/dst/two', keptAt: '/dst/two (recovered)' },
+      ],
+    },
+    expected: {
+      title: 'Your file is under a new name',
+      message: `Folders took the names of 2 of your files, so those files are now under new names. Nothing was thrown away; the technical details below list every one. The destination needs ${requiredSize} but only has ${availableSize} available.`,
+      suggestion:
+        "Check the details below for where each file is. Once you've moved the folders out of the way, you can rename them back. Free up some space on the destination by deleting unnecessary files, or choose a different location.",
+    },
+  },
+  {
     name: 'files_too_large_for_filesystem (many)',
     error: {
       type: 'files_too_large_for_filesystem',

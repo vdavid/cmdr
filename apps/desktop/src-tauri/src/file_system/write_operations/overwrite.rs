@@ -21,7 +21,8 @@ use uuid::Uuid;
 
 use super::in_flight_temps::TempHome;
 use super::state::WriteOperationState;
-use super::types::WriteOperationError;
+use super::types::{RecoveredOriginal, WriteOperationError};
+use super::unique_name::{NameCandidates, RESCUE_NAME_ATTEMPTS, recovered_sibling};
 use crate::file_system::staging::StagingTemp;
 
 /// Result of applying a conflict resolution.
@@ -287,6 +288,53 @@ impl DisplacedEntry {
                 self.original.display(),
                 e
             );
+        }
+    }
+
+    /// Keeps the entry for the user under a ` (recovered)` name beside the
+    /// folder that took its own, and answers where it went.
+    ///
+    /// ❗ **The outcome for a FAILED operation**, which keeps every file that
+    /// landed (`transfer/copy/mod.rs`, `PostLoopIntent::Failed`). The folder is
+    /// staying at the original name with only part of its subtree in it, so
+    /// [`DisplacedEntry::restore`] has nowhere to put the file back and
+    /// [`DisplacedEntry::discard`] would delete the user's only copy of it. A
+    /// file called `notes (recovered).txt` is one they can find; a
+    /// `.cmdr-temp-<uuid>` is one the pane hides and the next launch sweeps.
+    ///
+    /// Only `AlreadyExists` earns another candidate, and only
+    /// [`RESCUE_NAME_ATTEMPTS`] of them: every other refusal (a read-only
+    /// destination, a dead mount) would refuse each candidate identically. When
+    /// nothing lands, the aside path is the honest answer and the caller reports
+    /// THAT, the same shape the volume engine's rescue takes
+    /// (`transfer/volume/naming.rs::rescue_out_of_temp_space`).
+    pub(crate) fn keep_as_recovered_sibling(self) -> RecoveredOriginal {
+        let recovered = recovered_sibling(&self.original);
+        let mut candidates = NameCandidates::for_file(&recovered);
+        // The bare ` (recovered)` name first; `NameCandidates` starts at ` (1)`.
+        let mut candidate = recovered.clone();
+        loop {
+            match rename_no_replace(self.aside.path(), &candidate) {
+                Ok(()) => return RecoveredOriginal::new(&self.original, &candidate),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(e) => {
+                    crate::log_error!(
+                        "DisplacedEntry::keep_as_recovered_sibling: couldn't give {} a real name: {}",
+                        self.aside.path().display(),
+                        e
+                    );
+                    return RecoveredOriginal::new(&self.original, self.aside.path());
+                }
+            }
+            if candidates.attempts() >= RESCUE_NAME_ATTEMPTS {
+                log::warn!(
+                    "DisplacedEntry::keep_as_recovered_sibling: every ` (N)` variant of {} is taken",
+                    recovered.display()
+                );
+                return RecoveredOriginal::new(&self.original, self.aside.path());
+            }
+            candidate = candidates.current();
+            candidates.advance();
         }
     }
 

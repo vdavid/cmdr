@@ -1449,6 +1449,26 @@
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
+  "errors.write.originalsKeptAside.title": "你的檔案換了個名字",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "有個資料夾占了 {path} 這個名字，所以你的檔案現在在 {keptAt}。什麼都沒被丟掉。",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "有幾個資料夾占了你 {count} 個檔案的名字，所以這些檔案現在都換了名字。什麼都沒被丟掉；下面的技術詳情裡每一個都列出來了。",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "打開 {keptAt} 看一下。等你把那個資料夾挪開，就可以把檔案的名字改回來。",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "下面的詳情裡寫了每個檔案在哪裡。等你把那些資料夾挪開，就可以把名字都改回來。",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "無法複製",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

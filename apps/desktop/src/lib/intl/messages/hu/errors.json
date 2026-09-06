@@ -1449,6 +1449,26 @@
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
+  "errors.write.originalsKeptAside.title": "A fájlod új néven van meg",
+  "@errors.write.originalsKeptAside.title": {
+    "sourceHash": "1db5ba0"
+  },
+  "errors.write.originalsKeptAside.message.one": "Egy mappa elvette a(z) {path} nevet, így a fájlod most itt van: {keptAt}. Semmi nem veszett el.",
+  "@errors.write.originalsKeptAside.message.one": {
+    "sourceHash": "e3bc267"
+  },
+  "errors.write.originalsKeptAside.message.many": "Mappák vették el {count} fájlod nevét, így ezek a fájlok most új néven vannak meg. Semmi nem veszett el; az alábbi technikai részletek mindegyiket felsorolják.",
+  "@errors.write.originalsKeptAside.message.many": {
+    "sourceHash": "9430f63"
+  },
+  "errors.write.originalsKeptAside.suggestion.one": "Nyisd meg a(z) {keptAt} fájlt, és nézd meg. Ha félretetted a mappát, visszanevezheted a fájlodat.",
+  "@errors.write.originalsKeptAside.suggestion.one": {
+    "sourceHash": "6c53394"
+  },
+  "errors.write.originalsKeptAside.suggestion.many": "Az alábbi részletekben látod, melyik fájl hol van. Ha félretetted a mappákat, visszanevezheted őket.",
+  "@errors.write.originalsKeptAside.suggestion.many": {
+    "sourceHash": "7934c84"
+  },
   "errors.write.fallback.title.copy": "Nem sikerült a másolás",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

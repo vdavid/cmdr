@@ -179,6 +179,22 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       message: 'os error 60: Operation timed out',
     },
   },
+  // The copy stopped partway with a folder standing where one of the user's files
+  // was. The fixture keeps the folder's name and the recovered name side by side,
+  // which is the pair the reader has to make sense of.
+  originals_kept_aside: {
+    operationType: 'copy',
+    error: {
+      type: 'originals_kept_aside',
+      cause: { type: 'source_not_found', path: '/Users/david/projects/notes/2026-07-24.md' },
+      recovered: [
+        {
+          path: '/Volumes/naspi/papers/finances/2026-tax-return',
+          keptAt: '/Volumes/naspi/papers/finances/2026-tax-return (recovered)',
+        },
+      ],
+    },
+  },
   io_error: {
     operationType: 'copy',
     error: {
