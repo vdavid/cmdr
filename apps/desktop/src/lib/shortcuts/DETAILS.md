@@ -140,9 +140,9 @@ The chains mirror what renders together in the app:
   The file list renders in both view modes, so a mode-scoped key genuinely collides with a File-list key. Brief and Full
   stay siblings (neither chain contains the other), so they don't conflict with each other — the registry binds `←`/`→`
   in both on purpose, and the modes never coexist.
-- `Main window/Network`, `Main window/Share browser`, `Main window/Volume chooser` → siblings of `Main window/File list`
-  (under `Main window` → `App`, but not under the file list). A pane shows one of them INSTEAD of the file list, so
-  their keys don't collide with File-list keys.
+- `Main window/Servers`, `Main window/Places`, `Main window/Volume chooser` → siblings of `Main window/File list` (under
+  `Main window` → `App`, but not under the file list). A pane shows one of them INSTEAD of the file list, so their keys
+  don't collide with File-list keys.
 - `Command palette` → inherits `Main window` → `App` (it overlays the main window).
 - `About window` and `Onboarding` → inherit `App` only (standalone/modal contexts).
 
@@ -457,7 +457,7 @@ with registry declaration order as the stable tiebreaker for equal specificity. 
 `shortcut-dispatch.test.ts`; without the scope rule, an unrelated registry reorder could silently flip a kept conflict's
 winner.
 
-**Sibling scopes don't conflict, but they still share one winner.** `Main window/File list` and `Main window/Network`
+**Sibling scopes don't conflict, but they still share one winner.** `Main window/File list` and `Main window/Servers`
 are siblings, so `scopesOverlap` says no clash and `registry-conflicts.test.ts` stays quiet — yet the dispatch map is
 global and keyless of context, so the same combo in both scopes leaves ONE of them dead at runtime. That's why ⌘R is a
 single `Main window` command (`pane.refresh`) that routes on what the focused pane shows, rather than one binding per

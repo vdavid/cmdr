@@ -74,7 +74,7 @@ trigger the frontend's follow-up. Reusing `dialog.confirm` for that third one is
 "programmatically answer an open dialog" seam, so the tool needs no command id of its own.
 
 `CommandScope` is a union of string literals: `'App'`, `'Main window'`, `'Main window/File list'`,
-`'Main window/Brief mode'`, `'Main window/Full mode'`, `'Main window/Network'`, `'Main window/Share browser'`,
+`'Main window/Brief mode'`, `'Main window/Full mode'`, `'Main window/Servers'`, `'Main window/Places'`,
 `'Main window/Volume chooser'`, `'About window'`, `'Onboarding'`, `'Command palette'`. Scope is documentation-only.
 
 ## Command registry

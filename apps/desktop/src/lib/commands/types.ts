@@ -17,8 +17,8 @@ export type CommandScope =
   | 'Main window/File list' // File list navigation/actions
   | 'Main window/Brief mode' // Brief mode specific
   | 'Main window/Full mode' // Full mode specific
-  | 'Main window/Network' // Network browser
-  | 'Main window/Share browser' // Share browser
+  | 'Main window/Servers' // The servers hub (the saved-and-nearby list)
+  | 'Main window/Places' // The places under one account (an SMB host's shares)
   | 'Main window/Volume chooser' // Volume dropdown
   | 'Main window/Error screen' // The full-pane error screen (ErrorPane)
   | 'About window' // About window commands

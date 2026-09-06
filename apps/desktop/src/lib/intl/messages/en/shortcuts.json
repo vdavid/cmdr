@@ -55,9 +55,9 @@
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
-  "shortcuts.scope.network": "Network",
-  "@shortcuts.scope.network": {
-    "description": "Group heading in the Keyboard shortcuts list for commands in the network browser (finding servers on the network). A short section title.",
+  "shortcuts.scope.servers": "Servers",
+  "@shortcuts.scope.servers": {
+    "description": "Group heading in the Keyboard shortcuts list for keys that work in the servers hub: the list of every server the user saved plus the ones Cmdr found nearby. A short section title.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
@@ -67,9 +67,9 @@
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
-  "shortcuts.scope.shareBrowser": "Share browser",
-  "@shortcuts.scope.shareBrowser": {
-    "description": "Group heading in the Keyboard shortcuts list for commands in the share browser (the shared folders on a network server). A short section title.",
+  "shortcuts.scope.places": "Places",
+  "@shortcuts.scope.places": {
+    "description": "Group heading in the Keyboard shortcuts list for keys that work in the list of places under one server: the shared folders on an SMB host today, a storage account''s buckets later. A short section title.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 

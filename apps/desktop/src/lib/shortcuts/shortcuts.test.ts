@@ -53,13 +53,13 @@ describe('scope-hierarchy', () => {
     it('returns Network as a sibling of File list (under Main window, App)', () => {
       // Sibling views replace the file list in a pane, so they sit beside it (not
       // under it): under Main window + App, but not under Main window/File list.
-      const scopes = getActiveScopes('Main window/Network')
-      expect(scopes).toEqual(['Main window/Network', 'Main window', 'App'])
+      const scopes = getActiveScopes('Main window/Servers')
+      expect(scopes).toEqual(['Main window/Servers', 'Main window', 'App'])
     })
 
     it('returns Share browser as a sibling of File list (under Main window, App)', () => {
-      const scopes = getActiveScopes('Main window/Share browser')
-      expect(scopes).toEqual(['Main window/Share browser', 'Main window', 'App'])
+      const scopes = getActiveScopes('Main window/Places')
+      expect(scopes).toEqual(['Main window/Places', 'Main window', 'App'])
     })
 
     it('returns Volume chooser as a sibling of File list (under Main window, App)', () => {
@@ -111,8 +111,8 @@ describe('scope-hierarchy', () => {
     })
 
     it('Network does NOT overlap with File list (sibling views in a pane)', () => {
-      expect(scopesOverlap('Main window/Network', 'Main window/File list')).toBe(false)
-      expect(scopesOverlap('Main window/File list', 'Main window/Network')).toBe(false)
+      expect(scopesOverlap('Main window/Servers', 'Main window/File list')).toBe(false)
+      expect(scopesOverlap('Main window/File list', 'Main window/Servers')).toBe(false)
     })
 
     it('Volume chooser overlaps with Main window', () => {
@@ -134,8 +134,8 @@ describe('scope-hierarchy', () => {
       expect(scopes).toContain('Main window/File list')
       expect(scopes).toContain('Main window/Brief mode')
       expect(scopes).toContain('Main window/Full mode')
-      expect(scopes).toContain('Main window/Network')
-      expect(scopes).toContain('Main window/Share browser')
+      expect(scopes).toContain('Main window/Servers')
+      expect(scopes).toContain('Main window/Places')
       expect(scopes).toContain('Main window/Volume chooser')
       expect(scopes).toContain('Command palette')
       expect(scopes).toContain('About window')
