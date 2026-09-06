@@ -116,6 +116,19 @@ describe('fetchEntriesSnapshot', () => {
       expect(entries[0]?.extendedMetadataLoaded).toBe(true)
     })
 
+    it('hands the Selection matcher basenames, not the full paths the pane shows', async () => {
+      // The pane's Name column shows `~/found/one.txt`; the mask the Selection
+      // dialog matches has to see `one.txt`, or `*.txt` selects nothing. The two
+      // adapters differ on purpose, so pin the one that feeds the matcher.
+      const entries = await fetchEntriesSnapshot({
+        ...base,
+        isSearchResultsView: true,
+        searchSnapshot: snapshotOf(['one.txt']),
+      })
+      expect(entries[0]?.name).toBe('one.txt')
+      expect(entries[0]?.path).toBe('/found/one.txt')
+    })
+
     it('yields nothing when the snapshot is gone', async () => {
       const entries = await fetchEntriesSnapshot({ ...base, isSearchResultsView: true, searchSnapshot: undefined })
       expect(entries).toEqual([])
@@ -164,6 +177,38 @@ describe('fetchSelectedNames', () => {
     })
     expect(ipc.getFileAt).toHaveBeenCalledTimes(2)
     expect(names).toEqual(['file-0', 'file-2'])
+  })
+
+  it('takes no operation snapshot on a pane with no backend listing', async () => {
+    // A search-results pane has no listing id, and `getFileAt('')` rejects with
+    // "Listing not found". The caller runs this as `void snapshotSelectionForOperation()`,
+    // so the rejection surfaced as an unhandled promise rejection on every F5 /
+    // F6 / F8 started from a snapshot pane with a partial selection.
+    const names = await fetchSelectedNames({
+      listingId: '',
+      includeHidden: true,
+      hasParent: false,
+      isAllSelected: false,
+      selectedIndices: [0, 2],
+    })
+    expect(names).toEqual([])
+    expect(ipc.getFileAt).not.toHaveBeenCalled()
+  })
+
+  it('takes no operation snapshot on a listing-less pane even when everything is selected', async () => {
+    // The `all` short-circuit used to run first, so Cmd+A on a snapshot pane
+    // recorded an operation snapshot that nothing there can consume: no listing
+    // diff runs on that pane, and `clearSourcePaneAfterTransfer` never reaches it
+    // (its birth-folder gate can't match a `search-results://<id>` path).
+    const names = await fetchSelectedNames({
+      listingId: '',
+      includeHidden: true,
+      hasParent: false,
+      isAllSelected: true,
+      selectedIndices: [0, 1, 2],
+    })
+    expect(names).toEqual([])
+    expect(ipc.getFileAt).not.toHaveBeenCalled()
   })
 
   it('drops entries the backend no longer has', async () => {

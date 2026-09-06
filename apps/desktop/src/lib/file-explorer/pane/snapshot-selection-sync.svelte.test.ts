@@ -197,6 +197,54 @@ describe('createSnapshotSelectionSync', () => {
     expect(pane.selection.getSelectedIndices()).toEqual([1])
   })
 
+  it('leaves a PARTIAL delete\'s survivors selected, unlike a normal pane, which clears outright', () => {
+    // Decision, not an oversight. A normal pane's `clearSourcePaneAfterTransfer`
+    // clears indices that stopped describing anything; here the remap has already
+    // dropped every row the operation took, so what is left is exactly the rows
+    // the user picked that are STILL THERE (a permission-denied one, say). That
+    // is a retry, and it can never act on a file nobody chose. The birth-folder
+    // gate can't reach this pane anyway (`search-results://<id>` is never an
+    // operation's `sourceFolderPath`); ❌ don't widen it to match.
+    getOrCreate('sr-partial', makeSnapshot('sr-partial', ['a.txt', 'b.txt', 'c.txt', 'd.txt']))
+    const pane = wire('sr-partial')
+    pane.selection.setSelectedIndices([0, 1, 2])
+    pane.setCursor(0)
+
+    // The delete took a.txt and b.txt; c.txt was refused and keeps its row.
+    removeEntryFromAllSnapshots('/Users/test/a.txt')
+    removeEntryFromAllSnapshots('/Users/test/b.txt')
+    flushSync()
+
+    expect(pane.selection.getSelectedIndices()).toEqual([0])
+  })
+
+  it('clamps the cursor into the list when the last row is purged out from under it', () => {
+    getOrCreate('sr-last', makeSnapshot('sr-last', ['a.txt', 'b.txt', 'c.txt']))
+    const pane = wire('sr-last')
+    pane.setCursor(2)
+
+    removeEntryFromAllSnapshots('/Users/test/c.txt')
+    flushSync()
+
+    expect(pane.getCursor()).toBe(1)
+  })
+
+  it('leaves nothing selected when a purge takes both rows of a duplicated path', () => {
+    // The live walk dedups against the indexed half, so two rows for one file is
+    // a race the store defends against rather than a normal state. The purge
+    // filters by path, so it takes both; the remap must not leave either index
+    // behind pointing at some other file.
+    getOrCreate('sr-dup', makeSnapshot('sr-dup', ['a.txt', 'a.txt', 'b.txt']))
+    const pane = wire('sr-dup')
+    pane.selection.setSelectedIndices([0, 1, 2])
+
+    removeEntryFromAllSnapshots('/Users/test/a.txt')
+    flushSync()
+
+    expect(getSnapshot('sr-dup')?.entries).toHaveLength(1)
+    expect(pane.selection.getSelectedIndices()).toEqual([0])
+  })
+
   it('leaves a selection alone while a running walk appends rows', () => {
     getOrCreate('sr-3', makeSnapshot('sr-3', ['a.txt', 'b.txt']))
     const pane = wire('sr-3')

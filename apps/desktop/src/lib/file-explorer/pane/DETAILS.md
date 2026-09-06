@@ -89,7 +89,10 @@ suite:
   mutation tick, which also keeps `effectiveTotalCount` (Cmd+A, cursor clamping) honest after a purge.
 - `path-sync.ts` / `hidden-files-resync.ts`: the prop-driven reload truth table, and the cursor follow after the
   hidden-files toggle.
-- `entries-snapshot.ts`: the Selection dialog's entry list and the operation's selected-names snapshot.
+- `entries-snapshot.ts`: the Selection dialog's entry list and the operation's selected-names snapshot. Both adapt a
+  search snapshot's rows; the Selection list keeps the search engine's BASENAME in `name` (a mask like `*.txt` has to
+  mean the filename), unlike `SearchResultsView`'s own adapter, which synthesizes the `~`-shortened full path for the
+  Name column. `SearchResultEntry.parentPath` is home-relative too, so it is display text and never a path to join onto.
 - `network-host-state.svelte.ts`: the open Network host and its queued auto-mount share.
 - `rename-flow.svelte.ts`: the whole inline-rename flow (activation, save, the dialogs, the arrow-key chain). It lives
   here because it hangs off the pane, but everything it does is documented next to the rest of rename in
@@ -660,7 +663,17 @@ and still happens; changing a selection the user made somewhere else is not.
 
 A snapshot pane is outside this rule rather than an exception to it: its `search-results://<id>` can never equal an
 operation's `sourceFolderPath`, so neither selection tail ever runs there. Its selection is kept honest by the entries
-array instead, `snapshot-selection-sync.svelte.ts` above.
+array instead, `snapshot-selection-sync.svelte.ts` above. Two consequences, both deliberate:
+
+- **A PARTIAL delete leaves the survivors selected**, where a normal pane clears the selection outright. What the rows
+  mean differs: `clearSourcePaneAfterTransfer` clears indices that no longer describe anything, while the remap has
+  already dropped every row the operation took, so what is left is exactly the rows the user picked that are still
+  there — a permission-denied one, say. Leaving them selected is a retry, and it can't act on a file nobody chose.
+  ❌ Don't "fix" the divergence by threading the pane's own path into birth context: that trades a useful state for a
+  matching one. Pinned in `snapshot-selection-sync.svelte.test.ts`.
+- **No operation snapshot is recorded at all.** `entries-snapshot::fetchSelectedNames` returns early when the pane has
+  no listing id, ahead of its `'all'` short-circuit, so there is nothing for the never-running
+  `clearOperationSnapshot()` to leave behind.
 
 **❌ No dialog handler purges a search snapshot, in either family.** A dialog holds what the operation was ASKED to do,
 and the purge needs what it DID; a snapshot also outlives every pane and dialog, in every window. So it is a

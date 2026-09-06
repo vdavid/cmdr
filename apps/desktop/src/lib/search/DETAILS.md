@@ -675,6 +675,11 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   (`go-to-trash::goToTrashedItems`) need a real directory. `sourceVolumeId` is `root` and `supportsTrash` is true,
   because the rows are real local files; per-row volume detection doesn't exist yet, so a result from a read-only
   external volume would still be offered the trash.
+- **No operation snapshot is taken**, because `entries-snapshot::fetchSelectedNames` returns early on a pane with no
+  listing id. The name snapshot exists to feed listing-diff-driven selection adjustment, which doesn't run here; the
+  path-based remap below does that job instead. Before the guard, `getFileAt('')` rejected with "Listing not found"
+  inside a `void`-ed call, so every F5 / F6 / F8 from a snapshot pane with a partial selection raised an unhandled
+  promise rejection.
 - **Drag-out** uses the `'paths'` drag context in `lib/file-explorer/drag/drag-drop.ts`: when `FullList` is rendered
   with `staticEntries` and the user drags a selection, the FE builds a paths array from `getEntryAt(idx)` and routes
   through `start_drag_paths`.
