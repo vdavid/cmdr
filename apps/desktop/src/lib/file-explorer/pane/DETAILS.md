@@ -93,6 +93,8 @@ suite:
   search snapshot's rows; the Selection list keeps the search engine's BASENAME in `name` (a mask like `*.txt` has to
   mean the filename), unlike `SearchResultsView`'s own adapter, which synthesizes the `~`-shortened full path for the
   Name column. `SearchResultEntry.parentPath` is home-relative too, so it is display text and never a path to join onto.
+- `snapshot-source-volume.ts`: which real volume a search-results pane's rows live on, for the delete and transfer
+  openers. ❌ Never assume `root` there — any volume with a persisted index is searchable, SMB and MTP included.
 - `network-host-state.svelte.ts`: the open Network host and its queued auto-mount share.
 - `rename-flow.svelte.ts`: the whole inline-rename flow (activation, save, the dialogs, the arrow-key chain). It lives
   here because it hangs off the pane, but everything it does is documented next to the rest of rename in

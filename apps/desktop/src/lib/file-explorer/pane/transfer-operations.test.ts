@@ -338,13 +338,13 @@ describe('buildTransferPropsFromDroppedPaths', () => {
 
 describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
   it('returns null when no source paths are supplied', () => {
-    expect(buildTransferPropsFromSnapshot('copy', [], [], true, '/dest', 'vol-dest', 'name', 'ascending')).toBeNull()
+    expect(buildTransferPropsFromSnapshot('copy', [], [], true, '/dest', 'vol-dest', 'name', 'ascending', 'root')).toBeNull()
   })
 
   it('returns null when paths and flags lengths disagree', () => {
     // Defensive: would otherwise misreport file/folder counts.
     expect(
-      buildTransferPropsFromSnapshot('copy', ['/a/x', '/a/y'], [false], true, '/dest', 'vol-dest', 'name', 'ascending'),
+      buildTransferPropsFromSnapshot('copy', ['/a/x', '/a/y'], [false], true, '/dest', 'vol-dest', 'name', 'ascending', 'root'),
     ).toBeNull()
   })
 
@@ -358,6 +358,7 @@ describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
       'vol-dest',
       'name',
       'ascending',
+      'vol-src',
     )
 
     if (!props) throw new Error('expected non-null props')
@@ -371,8 +372,10 @@ describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
     ])
     expect(props.destinationPath).toBe('/Users/a/desktop')
     expect(props.destVolumeId).toBe('vol-dest')
-    // Source is always 'root' for snapshot panes (entries live on the local FS).
-    expect(props.sourceVolumeId).toBe('root')
+    // The caller places the rows against the live volume list and passes the
+    // answer in; this builder never assumes one. `file-operation-commands`
+    // resolves it through `snapshot-source-volume.ts`.
+    expect(props.sourceVolumeId).toBe('vol-src')
   })
 
   it('sets direction based on which pane is the source (isLeft=true → direction "right")', () => {
@@ -385,6 +388,7 @@ describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
       'vol-dest',
       'name',
       'ascending',
+      'root',
     )
     if (!left) throw new Error('expected non-null left')
     expect(left.direction).toBe('right')
@@ -398,6 +402,7 @@ describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
       'vol-dest',
       'name',
       'ascending',
+      'root',
     )
     if (!right) throw new Error('expected non-null right')
     expect(right.direction).toBe('left')
@@ -413,6 +418,7 @@ describe('buildTransferPropsFromSnapshot (M8d source-side ops)', () => {
       'vol-dest',
       'name',
       'ascending',
+      'root',
     )
     if (!props) throw new Error('expected non-null props')
     expect(props.operationType).toBe('move')

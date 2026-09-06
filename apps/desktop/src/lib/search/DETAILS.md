@@ -672,9 +672,17 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   `hasBackendListing` gate. The resolved entries become the dialog's `DeleteSourceItem[]`, `isFromCursor` is true only
   on the cursor fallback (it picks the dialog's title), and `sourceFolderPath` is the COMMON PARENT of the resolved
   paths: a result set is gathered from anywhere, and both the dialog's "from" line and the trash toast's volume lookup
-  (`go-to-trash::goToTrashedItems`) need a real directory. `sourceVolumeId` is `root` and `supportsTrash` is true,
-  because the rows are real local files; per-row volume detection doesn't exist yet, so a result from a read-only
-  external volume would still be offered the trash.
+  (`go-to-trash::goToTrashedItems`) need a real directory.
+- **Which volume the op runs against** comes from `file-explorer/pane/snapshot-source-volume.ts`, shared by the delete
+  and transfer openers. ❌ Never assume `root`: a search covers exactly one volume and any volume with a persisted
+  `index-{volume_id}.db` is searchable, including an SMB share and an MTP storage
+  (`src-tauri/src/search/volumes.rs`). `sourceVolumeId` picks the delete and copy/move dispatch paths
+  (`file-operations/transfer/transfer-dispatch.ts`), and `supportsTrash` decides whether the dialog offers the trash at
+  all, so both are read off the resolved volume the way a normal pane reads them off its own. Resolution is the
+  frontend half of `transfer-entry::resolveSourceVolumeId` (longest-prefix per path, favorites excluded, unanimity
+  required, else `root`); it stays synchronous because these paths came out of one volume's index, so the volume list
+  settles it without a backend round-trip. `supportsTrash` is optimistic on a miss, since a `false` would force the
+  dialog into a PERMANENT delete and a resolution miss must never do that.
 - **No operation snapshot is taken**, because `entries-snapshot::fetchSelectedNames` returns early on a pane with no
   listing id. The name snapshot exists to feed listing-diff-driven selection adjustment, which doesn't run here; the
   path-based remap below does that job instead. Before the guard, `getFileAt('')` rejected with "Listing not found"

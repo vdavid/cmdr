@@ -1,5 +1,4 @@
 import {
-  DEFAULT_VOLUME_ID,
   createDirectory,
   createFile,
   getFileAt,
@@ -10,6 +9,7 @@ import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { getSnapshot, resolveSnapshotEntries } from '$lib/search/snapshot-store.svelte'
+import { resolveSnapshotSourceVolume } from './snapshot-source-volume'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { getAppLogger } from '$lib/logging/logger'
 import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
@@ -302,8 +302,10 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * `resolveSnapshotEntries` answers both with an empty list.
    *
    * `canBeSource: true` per the `search-results` capability row: source-side
-   * operations always run against the real underlying files. After a move
-   * completes, `dialog-state::handleTransferComplete` already purges moved
+   * operations always run against the real underlying files. The volume they run
+   * against comes from `resolveSnapshotSourceVolume`, which places the rows
+   * against the live volume list rather than assuming the boot drive. After a
+   * move completes, `dialog-state::handleTransferComplete` already purges moved
    * paths from every snapshot via `removeEntryFromAllSnapshots`.
    */
   function buildSnapshotTransferProps(
@@ -335,6 +337,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       access.getPaneVolumeId(other),
       sortBy,
       sortOrder,
+      resolveSnapshotSourceVolume(sourcePaths, access.getVolumes()).volumeId,
     )
   }
 
@@ -476,13 +479,10 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    *
    * `sourceFolderPath` is the common parent of the resolved paths: a result set
    * is gathered from anywhere, and the dialog's "from" line plus the trash
-   * toast's volume lookup both need a real directory. The volume id we report
-   * to the dialog is `'root'`: the actual file lives on the local filesystem,
-   * and the existing permanent-delete / move-to-trash IPC routes through the
-   * local path. `supportsTrash = true` because the underlying file is on a
-   * trash-capable volume (we don't have per-snapshot-row volume detection yet;
-   * if the search ever indexes external read-only volumes we'd need to look
-   * that up per entry).
+   * toast's volume lookup both need a real directory. The volume id and the trash
+   * affordance come from `resolveSnapshotSourceVolume`, which places the rows
+   * against the live volume list: a search covers one volume and it need not be
+   * the boot drive, so neither can be assumed.
    */
   function openDeleteFromSearchResults({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
@@ -525,17 +525,18 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const sourcePaths = entries.map((entry) => entry.path)
 
     const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
+    const sourceVolume = resolveSnapshotSourceVolume(sourcePaths, access.getVolumes())
 
     dialogs.showDeleteConfirmation({
       sourceItems,
       sourcePaths,
       sourceFolderPath: getCommonParentPath(sourcePaths),
       isPermanent: permanent,
-      supportsTrash: true,
+      supportsTrash: sourceVolume.supportsTrash,
       isFromCursor: !hasSelection,
       sortColumn: sortBy,
       sortOrder,
-      sourceVolumeId: DEFAULT_VOLUME_ID,
+      sourceVolumeId: sourceVolume.volumeId,
       autoConfirm,
       mcpRequestId,
       initiator,

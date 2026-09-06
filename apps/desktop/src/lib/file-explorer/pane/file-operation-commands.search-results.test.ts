@@ -61,6 +61,7 @@ import {
   buildPaneRef,
   snapshot,
   snapshotEntry,
+  volume,
   type DialogsStub,
 } from './file-operation-commands.test-harness'
 
@@ -127,6 +128,28 @@ describe('openTransferDialog on a search-results pane', () => {
     })
   })
 
+  it('copies from the volume the rows live on, so the transfer routes through its backend', async () => {
+    // `sourceVolumeId` picks the copy/move dispatch path
+    // (`transfer/transfer-dispatch.ts::isVolumeMove`, `dispatchCopy`). Rows found
+    // on a non-boot volume have to name it, or a move off an SMB share or an MTP
+    // storage takes the local-filesystem fast path.
+    getSnapshotSpy.mockReturnValue(
+      snapshot([snapshotEntry({ path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' })]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
+    const access = buildAccess({
+      focusedPane: 'left',
+      paneRefs: { left: paneRef },
+      volumeIds: { left: 'search-results', right: 'root' },
+      volumes: [volume({ id: 'root', path: '/' }), volume({ id: 'vol-stick', name: 'Stick', path: '/Volumes/Stick' })],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openTransferDialog('move')
+
+    expect(dialogs.showTransfer.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'vol-stick' })
+  })
+
   it('does not open a snapshot transfer when the snapshot index is stale (out of range)', async () => {
     getSnapshotSpy.mockReturnValue(snapshot([snapshotEntry()]))
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [9] })
@@ -159,6 +182,103 @@ describe('openTransferDialog on a search-results pane', () => {
 })
 
 describe('openDeleteDialog on a search-results pane', () => {
+  it('reports the volume the rows actually live on, not root', async () => {
+    // A search covers one volume, and it need not be the boot drive: any volume
+    // with a persisted index is searchable (`src-tauri/src/search/volumes.rs`).
+    // A permanent delete routes on `sourceVolumeId`, so reporting `root` for rows
+    // on another volume sends the operation down the local-filesystem path.
+    getSnapshotSpy.mockReturnValue(
+      snapshot([
+        snapshotEntry({ name: 'a.txt', path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' }),
+        snapshotEntry({ name: 'b.txt', path: '/Volumes/Stick/b.txt', parentPath: '/Volumes/Stick' }),
+      ]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 1] })
+    const access = buildAccess({
+      paneRefs: { left: paneRef },
+      volumeIds: { left: 'search-results' },
+      volumes: [
+        volume({ id: 'root', path: '/' }),
+        volume({ id: 'vol-stick', name: 'Stick', path: '/Volumes/Stick', supportsTrash: false }),
+      ],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: true })
+
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ sourceVolumeId: 'vol-stick' })
+  })
+
+  it('drops the trash affordance when the rows sit on a volume with no trash', async () => {
+    // exFAT and every network mount answer `supportsTrash: false`
+    // (`volumes/fs_type.rs`). Offering "Move to trash" there gives the user a
+    // button whose operation the backend can only fail.
+    getSnapshotSpy.mockReturnValue(
+      snapshot([snapshotEntry({ name: 'a.txt', path: '/Volumes/Stick/a.txt', parentPath: '/Volumes/Stick' })]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
+    const access = buildAccess({
+      paneRefs: { left: paneRef },
+      volumeIds: { left: 'search-results' },
+      volumes: [
+        volume({ id: 'root', path: '/' }),
+        volume({ id: 'vol-stick', name: 'Stick', path: '/Volumes/Stick', supportsTrash: false }),
+      ],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ supportsTrash: false })
+  })
+
+  it('keeps root and its trash for rows on the boot volume', async () => {
+    getSnapshotSpy.mockReturnValue(
+      snapshot([snapshotEntry({ name: 'a.txt', path: '/Users/me/a.txt', parentPath: '/Users/me' })]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
+    const access = buildAccess({
+      paneRefs: { left: paneRef },
+      volumeIds: { left: 'search-results' },
+      volumes: [
+        volume({ id: 'root', path: '/' }),
+        volume({ id: 'vol-stick', name: 'Stick', path: '/Volumes/Stick', supportsTrash: false }),
+      ],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
+      sourceVolumeId: 'root',
+      supportsTrash: true,
+    })
+  })
+
+  it('falls back to root when no registered volume claims the rows', async () => {
+    // The honest unknown, the same answer `transfer-entry::resolveSourceVolumeId`
+    // gives a drag it cannot place. Optimistic on trash, so an unplaceable row
+    // keeps the trash option and lets the backend answer for it, rather than
+    // being forced into a permanent delete by a resolution miss.
+    getSnapshotSpy.mockReturnValue(
+      snapshot([snapshotEntry({ name: 'a.txt', path: '/nowhere/a.txt', parentPath: '/nowhere' })]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
+    const access = buildAccess({
+      paneRefs: { left: paneRef },
+      volumeIds: { left: 'search-results' },
+      volumes: [volume({ id: 'vol-stick', name: 'Stick', path: '/Volumes/Stick', supportsTrash: false })],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
+      sourceVolumeId: 'root',
+      supportsTrash: true,
+    })
+  })
+
   it('builds the delete dialog from the snapshot cursor entry on a search-results pane', async () => {
     getSnapshotSpy.mockReturnValue(
       snapshot([snapshotEntry({ name: 'hit.md', path: '/real/hit.md', parentPath: '/real' })]),
