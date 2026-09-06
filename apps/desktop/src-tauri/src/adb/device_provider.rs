@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, RwLock};
 
-use cmdr_adb::{AdbDevice, AdbVolume};
+use cmdr_adb::{AdbDevice, AdbDeviceState, AdbVolume};
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
-use cmdr_fs::volume::Volume;
+use cmdr_fs::volume::{DeviceReadiness, DeviceUnavailableReason, Volume};
 
 use crate::device_volumes::{DeviceVolumeEntry, DeviceVolumeProvider, ProviderFuture, notify_devices_changed};
 use crate::file_system::volume::manager::get_volume_manager;
@@ -83,6 +83,55 @@ pub(crate) fn serial_of_path(path: &str) -> Option<&str> {
     (!serial.is_empty()).then_some(serial)
 }
 
+/// How ready a device in `state` is, or `None` for one that has no filesystem
+/// to offer and must not become a row at all.
+///
+/// ❗ `recovery`, `bootloader`, and `sideload` are a phone that isn't running
+/// Android, and `Unknown` is a state word this crate can't read: listing either
+/// would put a row on screen that can never open. Everything else IS listed,
+/// because the states that need the user (the "Allow USB debugging?" tap) are
+/// exactly the ones a hidden row would leave silent.
+fn readiness_of(state: AdbDeviceState) -> Option<DeviceReadiness> {
+    match state {
+        AdbDeviceState::Ready => Some(DeviceReadiness::Ready),
+        // A TCP device mid-handshake and an RSA handshake in flight both end at
+        // the same place the user is looking: the phone's own prompt.
+        AdbDeviceState::Unauthorized | AdbDeviceState::Authorizing | AdbDeviceState::Connecting => {
+            Some(DeviceReadiness::WaitingForAuthorization)
+        }
+        AdbDeviceState::Offline => Some(DeviceReadiness::Unavailable {
+            reason: DeviceUnavailableReason::Offline,
+        }),
+        AdbDeviceState::NoPermissions => Some(DeviceReadiness::Unavailable {
+            reason: DeviceUnavailableReason::NoPermissions,
+        }),
+        AdbDeviceState::Recovery | AdbDeviceState::Bootloader | AdbDeviceState::Sideload | AdbDeviceState::Unknown => {
+            None
+        }
+    }
+}
+
+/// One entry per device that has a filesystem to offer, dialed or not.
+///
+/// Pure on purpose: the provider's own state is process-wide, and the mapping
+/// is what the cells assert on.
+fn entries_for(devices: &[AdbDevice]) -> Vec<DeviceVolumeEntry> {
+    devices
+        .iter()
+        .filter_map(|d| {
+            Some(DeviceVolumeEntry {
+                id: cmdr_fs::volume::adb_volume_id(&d.serial),
+                name: d.display_name(),
+                path: device_path(&d.serial),
+                fs_type: "adb",
+                mount_is_read_only: false,
+                device_readiness: Some(readiness_of(d.state)?),
+                usb_speed: None,
+            })
+        })
+        .collect()
+}
+
 /// ADB's answer to `device_volumes::DeviceVolumeProvider`.
 pub(crate) struct AdbDeviceProvider;
 
@@ -91,26 +140,14 @@ impl DeviceVolumeProvider for AdbDeviceProvider {
         "adb"
     }
 
-    /// One entry per `Ready` device, dialed or not: a device with no volume yet
-    /// is listed so the user can click it, and the first `adb://` navigation
-    /// connects it (`commands/volumes.rs`).
+    /// One entry per device with a filesystem to offer, dialed or not and
+    /// whatever it is waiting for: a device with no volume yet is listed so the
+    /// user can click it, and the first `adb://` navigation connects it
+    /// (`commands/volumes.rs`). [`readiness_of`] says which states are listed.
     ///
     /// Follow-up: an " (ADB)" suffix when an MTP entry shares the name.
     fn entries(&self) -> ProviderFuture<'_, Vec<DeviceVolumeEntry>> {
-        Box::pin(async {
-            cached_devices()
-                .iter()
-                .filter(|d| d.is_ready())
-                .map(|d| DeviceVolumeEntry {
-                    id: cmdr_fs::volume::adb_volume_id(&d.serial),
-                    name: d.display_name(),
-                    path: device_path(&d.serial),
-                    fs_type: "adb",
-                    mount_is_read_only: false,
-                    usb_speed: None,
-                })
-                .collect()
-        })
+        Box::pin(async { entries_for(&cached_devices()) })
     }
 
     fn owns_volume_id<'a>(&'a self, volume_id: &'a str) -> ProviderFuture<'a, bool> {
@@ -152,6 +189,75 @@ impl DeviceVolumeProvider for AdbDeviceProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn device(serial: &str, state: AdbDeviceState) -> AdbDevice {
+        AdbDevice {
+            serial: serial.to_string(),
+            state,
+            product: None,
+            model: None,
+            device: None,
+            transport_id: None,
+        }
+    }
+
+    #[test]
+    fn a_ready_device_is_listed_ready() {
+        let entries = entries_for(&[device("R58M1", AdbDeviceState::Ready)]);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].device_readiness, Some(DeviceReadiness::Ready));
+        assert_eq!(entries[0].path, "adb://R58M1");
+        assert_eq!(entries[0].id, cmdr_fs::volume::adb_volume_id("R58M1"));
+    }
+
+    #[test]
+    fn a_phone_still_owing_its_allow_tap_is_listed_and_waiting() {
+        for state in [
+            AdbDeviceState::Unauthorized,
+            AdbDeviceState::Authorizing,
+            AdbDeviceState::Connecting,
+        ] {
+            let entries = entries_for(&[device("R58M1", state)]);
+            assert_eq!(
+                entries.first().map(|e| e.device_readiness),
+                Some(Some(DeviceReadiness::WaitingForAuthorization)),
+                "{state:?} is the moment the user has to act, so the row has to be there"
+            );
+        }
+    }
+
+    #[test]
+    fn a_device_the_daemon_cant_use_is_listed_with_its_reason() {
+        let offline = entries_for(&[device("R58M1", AdbDeviceState::Offline)]);
+        assert_eq!(
+            offline.first().map(|e| e.device_readiness),
+            Some(Some(DeviceReadiness::Unavailable {
+                reason: DeviceUnavailableReason::Offline
+            }))
+        );
+        let no_permissions = entries_for(&[device("R58M1", AdbDeviceState::NoPermissions)]);
+        assert_eq!(
+            no_permissions.first().map(|e| e.device_readiness),
+            Some(Some(DeviceReadiness::Unavailable {
+                reason: DeviceUnavailableReason::NoPermissions
+            }))
+        );
+    }
+
+    #[test]
+    fn a_phone_that_is_not_running_android_is_not_a_row() {
+        for state in [
+            AdbDeviceState::Recovery,
+            AdbDeviceState::Bootloader,
+            AdbDeviceState::Sideload,
+            AdbDeviceState::Unknown,
+        ] {
+            assert!(
+                entries_for(&[device("R58M1", state)]).is_empty(),
+                "{state:?} has no filesystem to offer, so it must not become a row"
+            );
+        }
+    }
 
     #[test]
     fn serial_of_path_reads_the_host_segment_only() {

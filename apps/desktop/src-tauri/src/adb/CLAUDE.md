@@ -10,18 +10,25 @@ the `Volume` are `crates/cmdr-adb/` (read its `CLAUDE.md`). Same split as `mtp/v
 - `device_provider.rs`: `AdbDevices` (the list the tracker last pushed + connected volumes by serial, one process-wide
   `RwLock`) and `AdbDeviceProvider`, ADB's `device_volumes::DeviceVolumeProvider`.
 - `volume_wiring.rs`: `install_device_provider` and `start_adb_tracker` (once each, from `lib.rs` setup),
-  `connect_adb_device` (dial, `register_if_absent`, remember), `volume_id_for_path` (what
+  `connect_adb_device` (dial, `register_if_absent`, remember), `cancel_connect`, `volume_id_for_path` (what
   `commands/volumes.rs::resolve_path_to_volume` calls for an `adb://` path).
-- `commands.rs`: `list_adb_devices`, `connect_adb_device`, `get_adb_install_status`, `recheck_adb_install`, and
-  `AdbConnectOutcomeError`, the typed IPC mirror of `AdbConnectError`.
+- `commands.rs`: `list_adb_devices`, `connect_adb_device`, `cancel_adb_connect`, `get_adb_install_status`,
+  `recheck_adb_install`, and `AdbConnectOutcomeError`, the typed IPC mirror of `AdbConnectError`.
 
 ## Must-knows
 
 - **❗ Path scheme is `adb://<serial>[/device path]`; volume id `adb:<serial>`** (`cmdr_fs::volume::adb_volume_id`).
   ❌ Never build or split either by hand: `device_path` / `serial_of_path` here, `adb-path-utils.ts` on the frontend.
-- **❗ A device is listed before it's connected.** `entries()` lists every `Ready` device from the cache; the volume is
-  dialed on the first `adb://<serial>` navigation. ❌ Never dial from `entries()`: the listing runs on every
-  `volumes-changed`.
+- **❗ A device is listed before it's connected, and before it's authorized.** `entries()` lists every cached device
+  that has a filesystem to offer, carrying a `device_readiness` (`ready`, `waiting_for_authorization`, `unavailable`);
+  only `recovery` / `bootloader` / `sideload` / an unreadable state word are left out. The volume is dialed on the
+  first `adb://<serial>` navigation. ❌ Never dial from `entries()`: the listing runs on every `volumes-changed`.
+- **❗ Readiness is PRESENCE, and `connection_state` stays `None` on a device row.** A phone waiting for its "Allow
+  USB debugging?" tap has no session, so enrolling it in the reconnect backoff dials nothing forever
+  (`cmdr_fs::volume::connection`).
+- **❗ A dial is cancelable and the id is the CALLER's.** `connect_adb_device(serial, attempt_id)` files the attempt
+  before it touches the wire, so a pane arms its cancel button first; `cancel_adb_connect(attempt_id)` calls it off. A
+  navigation's own dial files under `adb-navigation:<serial>`.
 - **❗ The tracker callback (`apply_device_list`) is synchronous and unregisters inline.** It runs on the runtime
   inside `cmdr_adb::track_devices`; a serial that left the list gets `note_device_gone` + `unregister`, which retires
   its volume. ❌ Never spawn from it, or a pane keeps a dead volume until the task gets scheduled.

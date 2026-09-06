@@ -27,11 +27,24 @@ export async function listAdbDevices(): Promise<AdbDevice[]> {
 /**
  * Connects a device and registers it as a volume. Resolves to the volume id
  * (`adb-…`); throws {@link AdbConnectFailure} with the typed reason otherwise.
+ *
+ * `attemptId` is the caller's own name for this dial, minted BEFORE the call so
+ * a cancel button is armed while the phone still shows its "Allow USB
+ * debugging?" prompt. {@link cancelAdbConnect} takes the same id.
  */
-export async function connectAdbDevice(serial: string): Promise<string> {
-  const res = await commands.connectAdbDevice(serial)
+export async function connectAdbDevice(serial: string, attemptId: string): Promise<string> {
+  const res = await commands.connectAdbDevice(serial, attemptId)
   if (res.status === 'error') throw new AdbConnectFailure(res.error)
   return res.data
+}
+
+/**
+ * Calls off the dial running under `attemptId`, resolving to whether one was.
+ * A `false` is ordinary: a cancel racing a dial that just finished finds
+ * nothing filed.
+ */
+export async function cancelAdbConnect(attemptId: string): Promise<boolean> {
+  return await commands.cancelAdbConnect(attemptId)
 }
 
 /** Where Cmdr found `adb` and whether the device list is live. Reads what is already known. */

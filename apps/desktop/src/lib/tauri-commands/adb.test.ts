@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
     listAdbDevices: vi.fn(),
+    cancelAdbConnect: vi.fn(),
     connectAdbDevice: vi.fn(),
   },
 }))
@@ -18,6 +19,7 @@ import { AdbConnectFailure, asAdbConnectError, connectAdbDevice, listAdbDevices,
 // The shim casts `commands`; the mock carries the two ADB commands.
 const mocked = commands as unknown as {
   listAdbDevices: ReturnType<typeof vi.fn>
+  cancelAdbConnect: ReturnType<typeof vi.fn>
   connectAdbDevice: ReturnType<typeof vi.fn>
 }
 
@@ -47,15 +49,15 @@ describe('listAdbDevices', () => {
 describe('connectAdbDevice', () => {
   it('hands the serial to the command and resolves to the volume id', async () => {
     mocked.connectAdbDevice.mockResolvedValueOnce({ status: 'ok', data: 'adb-pixel-7-a1b2c3d' })
-    expect(await connectAdbDevice('R58M12345')).toBe('adb-pixel-7-a1b2c3d')
-    expect(mocked.connectAdbDevice).toHaveBeenCalledWith('R58M12345')
+    expect(await connectAdbDevice('R58M12345', 'adb-1')).toBe('adb-pixel-7-a1b2c3d')
+    expect(mocked.connectAdbDevice).toHaveBeenCalledWith('R58M12345', 'adb-1')
   })
 
   it('throws a typed failure that a catch site can read back', async () => {
     mocked.connectAdbDevice.mockResolvedValueOnce({ status: 'error', error: { type: 'unauthorized' } })
     let caught: unknown
     try {
-      await connectAdbDevice('R58M12345')
+      await connectAdbDevice('R58M12345', 'adb-1')
     } catch (e) {
       caught = e
     }

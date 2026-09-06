@@ -12,6 +12,8 @@ use std::sync::Arc;
 use log::debug;
 
 use crate::device_volumes::{DeviceVolumeEntry, DeviceVolumeProvider, ProviderFuture, register_device_provider};
+use cmdr_fs::volume::DeviceReadiness;
+
 use crate::file_system::volume::MtpVolume;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::mtp::MtpVolumeRegistrar;
@@ -95,6 +97,10 @@ impl DeviceVolumeProvider for MtpDeviceProvider {
                         path: format!("mtp://{}/{}", device.device.id, storage.id),
                         fs_type: "mtp",
                         mount_is_read_only: storage.is_read_only,
+                        // Every storage listed here belongs to a device the
+                        // session layer already has open, so there is nothing
+                        // left to wait for.
+                        device_readiness: Some(DeviceReadiness::Ready),
                         usb_speed: device.device.usb_speed,
                     });
                 }

@@ -17,6 +17,7 @@ use std::pin::Pin;
 use std::sync::{Arc, LazyLock, RwLock};
 
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
+use cmdr_fs::volume::DeviceReadiness;
 
 use crate::usb_speed::UsbSpeed;
 use crate::volume_listing::{LocationCategory, LocationInfo};
@@ -36,6 +37,11 @@ pub(crate) struct DeviceVolumeEntry {
     pub fs_type: &'static str,
     /// Whether the storage refuses writes.
     pub mount_is_read_only: bool,
+    /// How ready the device behind the storage is, when its provider can tell:
+    /// a phone still owing its "Allow USB debugging?" tap is listed and waiting,
+    /// ❗ never enrolled in a reconnect loop (`ConnectionState` is the session
+    /// question and stays `None` here).
+    pub device_readiness: Option<DeviceReadiness>,
     /// The USB link speed, when the backend can see it.
     pub usb_speed: Option<UsbSpeed>,
 }
@@ -102,7 +108,7 @@ pub(crate) async fn append_device_volumes(volumes: &mut Vec<LocationInfo>) {
 /// Appends `providers`' storages to `volumes`, each as a `MobileDevice` entry.
 ///
 /// What every device storage has in common lives here, once: ejectable, no
-/// trash, no icon, not a disk image, no SMB state, and `capabilities: None`
+/// trash, no icon, not a disk image, no session state, and `capabilities: None`
 /// because enrichment fills that from the registered `Volume` afterwards.
 pub(crate) async fn append_from(volumes: &mut Vec<LocationInfo>, providers: &[Arc<dyn DeviceVolumeProvider>]) {
     for provider in providers {
@@ -125,7 +131,7 @@ fn location_from_entry(entry: DeviceVolumeEntry) -> LocationInfo {
         fs_type: Some(entry.fs_type.to_string()),
         supports_trash: false,
         connection_state: None,
-        device_readiness: None,
+        device_readiness: entry.device_readiness,
         usb_speed: entry.usb_speed,
         capabilities: None,
     }

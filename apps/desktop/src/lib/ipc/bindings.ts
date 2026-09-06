@@ -3231,9 +3231,22 @@ export const commands = {
     typedError<MtpScanResult, MtpConnectionError>(__TAURI_INVOKE('scan_mtp_for_copy', { deviceId, storageId, path })),
   // The ADB devices the server last reported, from the cache the tracker keeps.
   listAdbDevices: () => __TAURI_INVOKE<AdbDevice[]>('list_adb_devices'),
-  // Dials the device with `serial` and answers its volume id.
-  connectAdbDevice: (serial: string) =>
-    typedError<string, AdbConnectOutcomeError>(__TAURI_INVOKE('connect_adb_device', { serial })),
+  /**
+   *  Dials the device with `serial` and answers its volume id.
+   *
+   *  ❗ `attempt_id` is the CALLER's own name for this dial, made before the call
+   *  so a cancel button is armed while the phone is still showing its "Allow USB
+   *  debugging?" prompt. [`cancel_adb_connect`] takes the same id.
+   */
+  connectAdbDevice: (serial: string, attemptId: string) =>
+    typedError<string, AdbConnectOutcomeError>(__TAURI_INVOKE('connect_adb_device', { serial, attemptId })),
+  /**
+   *  Calls off the dial running under `attempt_id`, answering whether one was.
+   *
+   *  A `false` is ordinary, never a problem to report: a cancel racing a dial that
+   *  just finished finds nothing filed.
+   */
+  cancelAdbConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_adb_connect', { attemptId }),
   /**
    *  Where the `adb` binary is and whether the device list is live, as the
    *  settings screen renders it. Reads what is already known; ❌ no re-check.
