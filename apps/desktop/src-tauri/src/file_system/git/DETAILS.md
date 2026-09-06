@@ -71,6 +71,13 @@ subscriber straight back if the listing ended meanwhile. Same shape, same reason
 ❗ `list_directory_end` calls the observer AFTER removing the cache entry, which is what makes that membership check
 answer honestly.
 
+**Deleting the repository needs nothing extra from this side.** The panes standing in its virtual trees close their
+listings, which releases every hold `arming.rs` took, and a report for a repository that no longer opens never leaves
+`cmdr_git` at all (`crates/cmdr-git/DETAILS.md` § "A repository that is deleted under its own watch"). So the sink
+raises no `git-state-changed` for it and `refresh_virtual_listings` is never called with its root. ❗ A hold whose
+listing outlives the folder is released by that listing's own close, ❌ never by the deletion: the arming map is keyed
+by listing id precisely so a release gives back what its own open took.
+
 **What a change then re-reads**: `wiring::listings_a_repo_change_re_reads`. The six virtual trees by prefix, and the
 repo's `.git/` itself by EXACT match. `.git/` is in the set because its category rows carry counts the overlay reads off
 the repository, and its own FSEvents watch is non-recursive so a new `refs/heads/…` never touches it. It is not a prefix

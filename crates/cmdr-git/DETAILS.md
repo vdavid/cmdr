@@ -157,11 +157,17 @@ M-series machine the two app-side subscription cells ran 0.35 s and 0.58 s; on t
 runs in 0.05 s, and under a saturated `cargo nextest run --workspace` the difference is what decided whether they met
 the suite's 8 s cap at all (measured 2026-09-05).
 
-**Exactly one cell in the repo takes the real backend**:
-`file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`. The debounce
-it proves is `notify`'s own, and so is the watch surviving git's rename over `HEAD`, so a fake standing in for either
-would assert the fake's arithmetic. ❌ Don't add a second: a new real-watcher property belongs as another act inside
-that cell, which is where its second burst came from.
+**Two cells in the repo take the real backend**, and each one is about something only an operating system does.
+
+- `file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`: the
+  debounce is `notify`'s own, and so is the watch surviving git's rename over `HEAD`, so a fake standing in for either
+  would assert the fake's arithmetic.
+- `watcher_tests::a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`: a scripted backend has no
+  watches to LOSE, so only a real one can say what a repository's removal does to them.
+
+❌ Don't add a third for a property either of those already arms a watcher for: a new burst behaviour belongs as
+another act inside the first, which is where its second burst came from, and a new teardown behaviour inside the
+second.
 
 **Neither door costs public surface.** `GitPortal::with_scripted_watcher` and `GitPortal::fire_watcher` are methods on a
 type in a private module, so `index-crate-isolation` doesn't measure them, and both are `testing`-gated so a shipped
@@ -172,6 +178,22 @@ build carries neither. The trait and both backends are `pub(crate)`: nothing out
 release by: that's what a host arming on behalf of an open listing asks for, and it skips the `is_dirty` walk over the
 worktree, which is the expensive half. ❗ A failed handshake still releases what it armed, or a caller handed an error
 would never unsubscribe.
+
+## A repository that is deleted under its own watch
+
+Deleting a repo folder is an ordinary thing to do in a file manager, and the pane that was just looking at it is what
+armed the watch. On Linux the removal arrives as `Remove` events on every watched directory plus an `IN_IGNORED` per
+dying watch; on macOS as FSEvents for the same paths. Either way it is a WRITE by any filter, so the recompute runs.
+
+What happens then is the whole behaviour: `recompute_and_report` opens the repository, `RepoCache::discover` fails
+because there is nothing there, and it returns without touching the sink. So a repository that is gone raises no
+`git-state-changed` event and drives no `FullRefresh` of a listing that is equally gone.
+
+❗ The registry hold SURVIVES the deletion, on purpose. The subscriber has not left, and only its own
+`unsubscribe_state` may free the slot; freeing it here would drop a hold somebody still owes back and unbalance the
+refcount for the next repository at that path. The `notify` debouncer is dropped with the subscription as always, and
+dropping a watch whose inode is gone is fine. `watcher_tests::a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`
+pins all of it.
 
 ## Watcher path set
 

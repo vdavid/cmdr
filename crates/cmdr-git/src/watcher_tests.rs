@@ -7,15 +7,18 @@
 //! [`GitPortal::with_scripted_watcher`], so a cell here costs a repository open
 //! rather than a real FSEvents stream.
 //!
-//! The one cell that pays for a real watcher is app-side
+//! Two cells pay for a real watcher, because what they prove is the operating
+//! system's rather than the registry's: the debounce is app-side
 //! (`file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`),
-//! because the debounce it proves is `notify`'s and no fake can stand in for it.
+//! and what a DELETED repository does to its own watch is
+//! [`a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`] here.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
 use crate::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
+use crate::repo::RepoInfo;
 use crate::{GitPortal, GitStateSink, RecordingGitStateSink, no_git_state_sink};
 use cmdr_fs::volume::host::VolumeHost;
 
@@ -398,4 +401,84 @@ fn the_last_unsubscribe_leaves_nothing_to_fire() {
     assert!(!portal.fire_watcher(&root), "the watch went with the last subscriber");
     assert_eq!(sink.count(), 0);
     cleanup(&dir);
+}
+
+/// ❗ **A repository that is DELETED under an armed watch goes quiet**, gives its
+/// registry slot back, and takes nothing down with it.
+///
+/// Deleting a repo folder is an ordinary thing to do in a file manager, and the
+/// watch is armed by the pane that was just looking at it. On Linux the removal
+/// arrives as a burst of `Remove` events on every watched directory plus an
+/// `IN_IGNORED` per dying watch, which is a real change by any filter: the
+/// recompute runs, finds no repository, and must simply stop there. A report for
+/// a repo that no longer exists would reach the sink, and the app's sink re-reads
+/// every open `.git/` listing off it.
+///
+/// ❗ The registry hold survives the deletion on purpose: the subscriber has not
+/// left, and only its own `unsubscribe_state` may free the slot. Freeing it here
+/// would drop a hold somebody still owes back and unbalance the refcount.
+///
+/// The one cell in this file that arms a REAL watcher: a scripted backend has no
+/// operating system to lose its watches to, so it could only assert the fake.
+#[test]
+fn a_deleted_repository_stops_reporting_and_still_gives_its_hold_back() {
+    let (dir, root, _fixture) = a_repo("deleted_under_watch");
+    let sink = Arc::new(RecordingGitStateSink::new());
+    let portal = GitPortal::new(VolumeHost::detached(), Arc::clone(&sink) as Arc<dyn GitStateSink>);
+
+    portal.subscribe_state(&root).expect("subscribing arms a real watch");
+    assert_eq!(sink.count(), 0, "subscribing itself reports nothing");
+
+    // The whole folder, `.git` and all: what the app's delete walker does to a
+    // repo the user selected in a pane.
+    std::fs::remove_dir_all(&dir).expect("the repo folder goes");
+
+    let changes = changes_once_quiet(&sink);
+    assert!(
+        changes.is_empty(),
+        "a repository that is gone has no state to report: {changes:?}"
+    );
+    assert_eq!(
+        portal.watched_repo_count(),
+        1,
+        "the subscriber still holds its slot; only its own unsubscribe frees it"
+    );
+
+    portal.unsubscribe_state(&root);
+    assert_eq!(
+        portal.watched_repo_count(),
+        0,
+        "the hold comes back even though the repository it named is gone"
+    );
+}
+
+/// Everything the sink holds once it has stayed still for longer than the
+/// watcher's debounce window.
+///
+/// ❗ Waits for QUIET rather than for a count, because the failures this guards
+/// against are "one report" and "a report every window forever", and only a
+/// settled number tells them apart. Polls rather than sleeping the whole budget
+/// so a clean run costs two windows.
+fn changes_once_quiet(sink: &RecordingGitStateSink) -> Vec<(PathBuf, RepoInfo)> {
+    let quiet_for = crate::watcher::DEBOUNCE * 2;
+    // Reached in ~425 ms on a clean run; the deadline only bites when reports keep
+    // coming, which is the failure, and it stays well inside nextest's 8 s cap.
+    let deadline = std::time::Instant::now() + Duration::from_secs(3);
+    let mut last_seen = sink.count();
+    let mut still_since = std::time::Instant::now();
+    while std::time::Instant::now() < deadline {
+        // allowed-test-sleep: polling interval for a real OS watcher's delivery,
+        // which has no condition to await on other than the passage of time.
+        std::thread::sleep(Duration::from_millis(25));
+        let now = sink.count();
+        if now == last_seen {
+            if still_since.elapsed() >= quiet_for {
+                return sink.changes();
+            }
+        } else {
+            last_seen = now;
+            still_since = std::time::Instant::now();
+        }
+    }
+    sink.changes()
 }
