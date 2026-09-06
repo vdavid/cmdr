@@ -27,6 +27,7 @@
     import { capabilitiesForKind } from './volume-capabilities'
     import { showFileContextMenu } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
+    import { snapshotBasename, snapshotContextMenuPaths } from './snapshot-context-menu'
     import type { SearchResultEntry } from '$lib/ipc/bindings'
     import type { ListViewAPI } from './types'
 
@@ -136,8 +137,9 @@
     }
 
     /**
-     * Adapted FileEntry array for FullList. Derived from `snapshot.entries`; changes
-     * only when the snapshot id changes (the snapshot itself is immutable once stored).
+     * Adapted FileEntry array for FullList. Re-derives with `snapshot` above, so it
+     * follows both a pane navigation and a store mutation (a walk appending rows, a
+     * purge removing one).
      */
     const entries = $derived<FileEntry[]>(snapshot ? snapshot.entries.map(adaptEntry) : [])
 
@@ -157,12 +159,7 @@
      * type-to-jump and MCP) still pass plain filenames.
      */
     export function findItemIndex(name: string): number {
-        return entries.findIndex((e) => basename(e.path) === name)
-    }
-
-    function basename(path: string): string {
-        const idx = path.lastIndexOf('/')
-        return idx >= 0 ? path.slice(idx + 1) : path
+        return entries.findIndex((e) => snapshotBasename(e.path) === name)
     }
 
     /**
@@ -222,7 +219,8 @@
             // basename) copies the same string.
             // `canOpenTerminalHere` stays off: a snapshot pane is a result set, not
             // a folder, so there's nothing for "here" to mean.
-            void showFileContextMenu(entry.path, basename(entry.path), entry.isDirectory, [entry.path], {
+            const paths = snapshotContextMenuPaths(entry.path, entries, selectedIndices)
+            void showFileContextMenu(entry.path, snapshotBasename(entry.path), entry.isDirectory, paths, {
                 restrictDestinationActions: !caps.canWrite,
             })
         }}

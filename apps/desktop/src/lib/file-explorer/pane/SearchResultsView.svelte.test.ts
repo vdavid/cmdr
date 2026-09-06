@@ -24,9 +24,13 @@ vi.mock('$lib/text-size.svelte', () => ({
   getEffectiveScale: () => 1,
   onDebouncedScaleChange: () => () => {},
 }))
+/** The Rust menu builder's positional signature, as one rest tuple: `[path, filename, isDirectory, paths, options]`. */
+const showFileContextMenuSpy = vi.fn<(...args: [string, string, boolean, string[], unknown?]) => Promise<void>>()
+
 vi.mock('$lib/tauri-commands', () => ({
   getDirStatsBatch: () => Promise.resolve([]),
   listen: () => Promise.resolve(() => {}),
+  showFileContextMenu: (...args: [string, string, boolean, string[], unknown?]) => showFileContextMenuSpy(...args),
 }))
 vi.mock('$lib/icon-cache', () => ({
   iconCacheCleared: {
@@ -107,6 +111,7 @@ function makeSnapshot(id: string, entries: SearchResultEntry[]): SearchSnapshot 
 describe('SearchResultsView', () => {
   beforeEach(() => {
     _resetForTesting()
+    showFileContextMenuSpy.mockClear()
   })
 
   it('renders rows from a stored snapshot', async () => {
@@ -260,6 +265,66 @@ describe('SearchResultsView', () => {
     expect(navigatedPath).toBe('/Users/test/second.txt')
 
     target.remove()
+  })
+
+  describe('right-click acts on the whole selection', () => {
+    /** Mounts a three-row snapshot pane with `selected` pre-selected and returns its rows. */
+    async function mountRows(id: string, selected: Set<number>) {
+      getOrCreate(id, makeSnapshot(id, [makeEntry('a.txt'), makeEntry('b.txt'), makeEntry('c.txt')]))
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      mount(SearchResultsView, {
+        target,
+        props: {
+          path: `search-results://${id}`,
+          cursorIndex: 0,
+          isFocused: true,
+          sortBy: 'name',
+          sortOrder: 'ascending',
+          selectedIndices: selected,
+          onNavigate: () => {},
+          onSelect: () => {},
+        },
+      })
+      await tick()
+      return { target, rows: target.querySelectorAll('.file-entry') }
+    }
+
+    function rightClick(row: Element) {
+      row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    }
+
+    it('hands the menu every selected path when the clicked row is part of the selection', async () => {
+      // Finder's rule, and the one `pane-pointer::handleContextMenu` follows on a
+      // normal pane: Delete / Copy / Move from the menu act on what is selected.
+      const { target, rows } = await mountRows('sr-menu-selection', new Set([0, 2]))
+
+      rightClick(rows[0])
+
+      expect(showFileContextMenuSpy).toHaveBeenCalledTimes(1)
+      expect(showFileContextMenuSpy.mock.calls[0][3]).toEqual(['/Users/test/a.txt', '/Users/test/c.txt'])
+      target.remove()
+    })
+
+    it('acts on the clicked row alone when it sits outside the selection', async () => {
+      const { target, rows } = await mountRows('sr-menu-outside', new Set([0, 2]))
+
+      rightClick(rows[1])
+
+      expect(showFileContextMenuSpy.mock.calls[0][3]).toEqual(['/Users/test/b.txt'])
+      target.remove()
+    })
+
+    it('labels the menu with the basename, not the friendly full path shown in the Name column', async () => {
+      const { target, rows } = await mountRows('sr-menu-label', new Set())
+
+      rightClick(rows[1])
+
+      expect(showFileContextMenuSpy.mock.calls[0][0]).toBe('/Users/test/b.txt')
+      expect(showFileContextMenuSpy.mock.calls[0][1]).toBe('b.txt')
+      expect(showFileContextMenuSpy.mock.calls[0][3]).toEqual(['/Users/test/b.txt'])
+      target.remove()
+    })
   })
 
   it('reports isMissing() === true when the snapshot lookup fails', async () => {
