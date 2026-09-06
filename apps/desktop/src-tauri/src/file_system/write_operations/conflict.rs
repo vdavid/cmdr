@@ -23,57 +23,137 @@ use super::types::{
 use super::unique_name::find_unique_name;
 
 // ============================================================================
-// Apply-to-all state (two-bucket latches)
+// Apply-to-all state (per-shape latches)
 // ============================================================================
+
+/// Which shape a clash is, as far as the apply-to-all latches care.
+///
+/// The two cross-type directions get their own buckets because the dialog puts
+/// a DIFFERENT question for each: replacing a folder with a file throws a tree
+/// away, replacing a file with a folder throws the file away, and the prompt
+/// names both kinds (`build_conflict_event`'s `source_is_directory` /
+/// `destination_is_directory`). An answer to one of those questions is consent
+/// to that act and to nothing else, so it may not leak into the other shapes.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum ClashKind {
+    /// Both sides the same kind of entry: file↔file, folder↔folder, link↔link.
+    SameKind,
+    /// A leaf landing on a real directory.
+    FileOverFolder,
+    /// A directory landing on a leaf.
+    FolderOverFile,
+}
+
+impl ClashKind {
+    /// Classifies a clash from what is ARRIVING and whether the destination is
+    /// a real directory.
+    ///
+    /// `destination_is_real_dir: None` is a destination that wouldn't stat, and
+    /// reads as `SameKind` on purpose: an unanswerable type is never grounds
+    /// for a destructive cross-type act, and the write below refuses an
+    /// occupied name of its own accord.
+    pub(super) fn of(incoming: IncomingItem, destination_is_real_dir: Option<bool>) -> Self {
+        match (incoming, destination_is_real_dir) {
+            (IncomingItem::Leaf, Some(true)) => Self::FileOverFolder,
+            (IncomingItem::Directory, Some(false)) => Self::FolderOverFile,
+            _ => Self::SameKind,
+        }
+    }
+
+    /// Whether enacting a resolution here would replace one kind of entry with
+    /// another.
+    pub(super) const fn is_cross_type(self) -> bool {
+        !matches!(self, Self::SameKind)
+    }
+}
 
 /// Per-operation "apply to all" latch state for conflict resolution.
 ///
-/// Splits into two buckets so the destructive file-to-folder clash variant
-/// (replacing a directory with a file) can be tracked separately from the
-/// normal (file↔file / folder↔folder / folder↔file) variants. See
-/// `apply_to_all_tests` for the full rule set; the short version:
+/// One bucket per [`ClashKind`], so a choice only ever carries to clashes that
+/// put the same question. See `apply_to_all_tests` for the full rule set; the
+/// short version:
 ///
-/// - A choice latched on a *normal* clash applies to subsequent normal
-///   clashes. Only Skip / Rename carry over to file-to-folder; Overwrite
-///   variants don't.
-/// - A choice latched on a *file-to-folder* clash applies to subsequent
-///   file-to-folder clashes. If it was the **first** clash of the whole
-///   operation, the latch spreads to the normal bucket too.
+/// - A choice latched on a clash applies to subsequent clashes of that same
+///   shape.
+/// - From the same-kind bucket, only Skip / Rename reach a cross-type clash.
+///   An Overwrite there answered a question about two files.
+/// - A cross-type choice that was the **first** clash of the whole operation
+///   spreads to the same-kind bucket too (the person had seen nothing else, so
+///   they were answering for the operation). It never spreads to the OTHER
+///   cross-type bucket: that is a different destructive act.
 // DEFAULT-OK: nothing latched and no clash seen yet is precisely the state before the
 // operation's first conflict.
 #[derive(Debug, Default, Clone, Copy)]
 pub(super) struct ApplyToAll {
-    normal: Option<ConflictResolution>,
-    file_to_folder: Option<ConflictResolution>,
+    same_kind: Option<ConflictResolution>,
+    file_over_folder: Option<ConflictResolution>,
+    folder_over_file: Option<ConflictResolution>,
     /// `false` until the first clash (any kind) has been resolved. Used to
-    /// decide whether a "* all" choice in a file-to-folder dialog should
-    /// spread to the normal bucket — only if the file-to-folder clash was
-    /// the very first one the user saw.
+    /// decide whether a "* all" choice in a cross-type dialog should spread to
+    /// the same-kind bucket — only if that clash was the very first one the
+    /// user saw.
     has_seen_clash: bool,
 }
 
-/// Returns the latched resolution that applies to the next clash, or `None`
-/// if there's nothing latched yet for the given clash type. Encodes the
-/// Skip/Rename carry-over rule: when looking up a file-to-folder clash, fall
-/// back to the normal bucket only when the latched value there is one of
-/// the safe variants.
-pub(super) fn apply_to_all_effective(state: &ApplyToAll, is_file_to_folder: bool) -> Option<ConflictResolution> {
-    if is_file_to_folder {
-        state.file_to_folder.or(match state.normal {
-            Some(r @ (ConflictResolution::Skip | ConflictResolution::Rename)) => Some(r),
-            _ => None,
-        })
-    } else {
-        state.normal
+/// A resolution the latches answered with, plus whether a person answered it
+/// on a prompt for THIS clash shape.
+#[derive(Clone, Copy, Debug)]
+pub(super) struct LatchedResolution {
+    resolution: ConflictResolution,
+    /// `true` only when the value came from the bucket for THIS cross-type
+    /// shape. Nothing but an answered prompt naming both kinds fills one, which
+    /// is what can make the carry consent where a blanket policy isn't.
+    answered_for_this_shape: bool,
+}
+
+impl LatchedResolution {
+    /// The answer a person just gave on a Stop prompt for this very clash. Same
+    /// standing as a carry latched on this shape: they saw both kinds named.
+    const fn answered_now(resolution: ConflictResolution) -> Self {
+        Self {
+            resolution,
+            answered_for_this_shape: true,
+        }
+    }
+
+    /// This answer, held to what it may enact at `kind`. For the sites that
+    /// already have a latch and so never need the configured fallback.
+    pub(super) fn at(self, kind: ClashKind, destination: &dyn std::fmt::Display) -> ConflictResolution {
+        resolution_for_clash(Some(self), self.resolution, kind, destination)
+    }
+}
+
+/// Returns the latched resolution that applies to the next clash of `kind`, or
+/// `None` if nothing is latched for it yet.
+pub(super) fn apply_to_all_effective(state: &ApplyToAll, kind: ClashKind) -> Option<LatchedResolution> {
+    let blanket = |resolution| LatchedResolution {
+        resolution,
+        answered_for_this_shape: false,
+    };
+    // Only the non-destructive same-kind carries reach across types.
+    let same_kind_carry = || match state.same_kind {
+        Some(r @ (ConflictResolution::Skip | ConflictResolution::Rename)) => Some(blanket(r)),
+        _ => None,
+    };
+    match kind {
+        ClashKind::SameKind => state.same_kind.map(blanket),
+        ClashKind::FileOverFolder => state
+            .file_over_folder
+            .map(LatchedResolution::answered_now)
+            .or_else(same_kind_carry),
+        ClashKind::FolderOverFile => state
+            .folder_over_file
+            .map(LatchedResolution::answered_now)
+            .or_else(same_kind_carry),
     }
 }
 
 /// Records a user response. `apply_to_all == false` doesn't latch but still
-/// flips `has_seen_clash`, so a later file-to-folder "* all" choice won't be
-/// considered "first" and won't spread to the normal bucket.
+/// flips `has_seen_clash`, so a later cross-type "* all" choice won't be
+/// considered "first" and won't spread to the same-kind bucket.
 pub(super) fn apply_to_all_record(
     state: &mut ApplyToAll,
-    is_file_to_folder: bool,
+    kind: ClashKind,
     resolution: ConflictResolution,
     apply_to_all: bool,
 ) {
@@ -82,15 +162,17 @@ pub(super) fn apply_to_all_record(
     if !apply_to_all {
         return;
     }
-    if is_file_to_folder {
-        state.file_to_folder = Some(resolution);
-        // File-to-folder clash + "* all" + first-ever clash → spread to
-        // normal too. After this point both buckets agree.
-        if was_first_clash {
-            state.normal = Some(resolution);
-        }
-    } else {
-        state.normal = Some(resolution);
+    let bucket = match kind {
+        ClashKind::SameKind => &mut state.same_kind,
+        ClashKind::FileOverFolder => &mut state.file_over_folder,
+        ClashKind::FolderOverFile => &mut state.folder_over_file,
+    };
+    *bucket = Some(resolution);
+    // A cross-type answer that was the operation's first clash spreads to the
+    // same-kind bucket: nothing else had been shown, so it was an answer for
+    // the operation. The other cross-type bucket is left alone.
+    if kind.is_cross_type() && was_first_clash {
+        state.same_kind = Some(resolution);
     }
 }
 
@@ -124,10 +206,17 @@ impl IncomingItem {
             Self::Leaf
         }
     }
+
+    /// The same answer from a caller that already resolved the question, like
+    /// the cross-volume engine's `resolve_source_is_directory`.
+    pub(super) const fn of_directory_flag(is_directory: bool) -> Self {
+        if is_directory { Self::Directory } else { Self::Leaf }
+    }
 }
 
-/// The resolution a BLANKET policy is allowed to enact on this clash: itself,
-/// unless it would replace one kind of entry with another, in which case `Skip`.
+/// The resolution that decides this clash: the latch's answer if there is one,
+/// otherwise the configured policy, reduced to `Skip` when it would replace one
+/// kind of entry with another without anyone having consented to that.
 ///
 /// `Overwrite`, `OverwriteSmaller`, and `OverwriteOlder` are all answers about
 /// two FILES — "the one at the destination is stale, put the source there". The
@@ -138,29 +227,64 @@ impl IncomingItem {
 /// directory's `len()` is its inode's own size, so every ordinary file looks
 /// "bigger" and "Overwrite all smaller" deleted destination folders wholesale.
 ///
-/// This governs the policy nobody looked at per item: the configured
-/// `conflict_resolution` and an apply-to-all carry. An Overwrite a person picked
-/// on a Stop prompt for THIS pair still replaces — the dialog names both types,
-/// and that click is the consent a blanket policy lacks. All three engines
-/// (local, cross-volume, in-archive) call this, so the rule is one rule.
-pub(super) fn blanket_resolution_across_types(
-    resolution: ConflictResolution,
-    is_cross_type: bool,
+/// **Consent is what separates the two, and it is per SHAPE, not per item.** A
+/// person answering a cross-type prompt saw both kinds named in it, so a plain
+/// `Overwrite` from them replaces — including the "* all" carry it latched,
+/// which the dialog labels for exactly that act ("Overwrite folders with
+/// files"). Refusing the carry would make the checkbox a trap: the first item
+/// replaces and every one after it is skipped, with nothing on screen saying
+/// so. What has no consent is a policy nobody looked at per item: the
+/// configured `conflict_resolution`, and a same-kind carry reaching across
+/// types.
+///
+/// ❗ **The conditional variants are refused across types no matter who asked.**
+/// The dialog offers "Overwrite all smaller" / "Overwrite all older" on a
+/// cross-type prompt too, but neither label names the cross-type act, and
+/// neither can ask its own question here: a directory's `len()` is its inode's
+/// own size, so every ordinary file looks "bigger" and `OverwriteSmaller` would
+/// clear destination folders wholesale. Only a plain `Overwrite` is consent.
+///
+/// All three engines (local, cross-volume, in-archive) call this, so the rule
+/// is one rule.
+pub(super) fn resolution_for_clash(
+    latched: Option<LatchedResolution>,
+    configured: ConflictResolution,
+    kind: ClashKind,
     destination: &dyn std::fmt::Display,
 ) -> ConflictResolution {
-    if !is_cross_type {
+    let answered_here = latched.is_some_and(|l| l.answered_for_this_shape);
+    let resolution = latched.map_or(configured, |l| l.resolution);
+    if !kind.is_cross_type() {
         return resolution;
     }
     match resolution {
+        // The one button that names the act, clicked on a prompt for this shape.
+        ConflictResolution::Overwrite if answered_here => ConflictResolution::Overwrite,
         ConflictResolution::Overwrite | ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
             log::info!(
                 target: "conflict_resolution",
-                "{resolution:?}: skipping {destination}, because a folder and a file can't replace each other under a blanket policy"
+                "{resolution:?}: skipping {destination}, because a folder and a file can only replace each other on an explicit Overwrite answered for that clash"
             );
             ConflictResolution::Skip
         }
         other => other,
     }
+}
+
+/// [`resolution_for_clash`] for the answer a person has just given on a Stop
+/// prompt for this very clash.
+///
+/// The Stop arm can't skip this step: the dialog's "Overwrite all smaller" /
+/// "Overwrite all older" buttons reach it directly, and the conditional
+/// reduction behind them compares an incoming file against a DIRECTORY INODE's
+/// size. Every ordinary file wins that comparison, so the first cross-type item
+/// a person answered that way lost its destination folder.
+pub(super) fn answered_resolution_for_clash(
+    resolution: ConflictResolution,
+    kind: ClashKind,
+    destination: &dyn std::fmt::Display,
+) -> ConflictResolution {
+    LatchedResolution::answered_now(resolution).at(kind, destination)
 }
 
 // ============================================================================
@@ -193,23 +317,15 @@ pub(super) fn resolve_conflict(
     // real directory is a cross-type clash. `dest_meta` follows links and would
     // call that pair folder-on-folder, which is the one answer that walks into
     // the link. `validation::is_real_directory` holds the why.
-    let source_is_directory = incoming == IncomingItem::Directory;
     let destination_is_real_dir = fs::symlink_metadata(dest_path).map(|m| m.is_dir()).ok();
-    let is_file_to_folder = !source_is_directory && destination_is_real_dir == Some(true);
-    // A destination we couldn't stat is left out of both: an unanswerable type
-    // is never grounds for a destructive cross-type act, and the write below
-    // refuses an occupied name of its own accord.
-    let is_cross_type = is_file_to_folder || (source_is_directory && destination_is_real_dir == Some(false));
+    let kind = ClashKind::of(incoming, destination_is_real_dir);
 
-    // Determine effective conflict resolution
-    let latched = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder);
-    // A blanket policy — the config's, or one latched by an earlier "* all" —
-    // never replaces a folder with a file or a file with a folder.
-    let resolution = blanket_resolution_across_types(
-        latched.unwrap_or(config.conflict_resolution),
-        is_cross_type,
-        &dest_path.display(),
-    );
+    // Determine effective conflict resolution. A policy nobody looked at per
+    // item — the config's, or a same-kind "* all" reaching across types — never
+    // replaces a folder with a file or a file with a folder; a carry latched on
+    // this very shape does, because a person answered for it.
+    let latched = apply_to_all_effective(apply_to_all_resolution, kind);
+    let resolution = resolution_for_clash(latched, config.conflict_resolution, kind, &dest_path.display());
 
     match resolution {
         ConflictResolution::Stop => {
@@ -296,14 +412,15 @@ pub(super) fn resolve_conflict(
                     // their own metadata, not the file that originally prompted.
                     apply_to_all_record(
                         apply_to_all_resolution,
-                        is_file_to_folder,
+                        kind,
                         response.resolution,
                         response.apply_to_all,
                     );
-                    // Reduce conditional variants to Overwrite / Skip against this
-                    // file's already-fetched metadata, then apply.
-                    let effective =
-                        reduce_conditional_resolution(response.resolution, source_meta.as_ref(), dest_meta.as_ref());
+                    // Hold the answer to what it can consent to at this shape,
+                    // then reduce conditional variants to Overwrite / Skip
+                    // against this file's already-fetched metadata, and apply.
+                    let answered = answered_resolution_for_clash(response.resolution, kind, &dest_path.display());
+                    let effective = reduce_conditional_resolution(answered, source_meta.as_ref(), dest_meta.as_ref());
                     apply_resolution(effective, dest_path)
                 }
                 Err(_) => {
@@ -332,7 +449,7 @@ pub(super) fn resolve_conflict(
 ///
 /// It compares two files and nothing else. A clash whose sides are different
 /// KINDS never gets here under a blanket policy —
-/// [`blanket_resolution_across_types`] has already turned it into a `Skip` —
+/// [`resolution_for_clash`] has already turned it into a `Skip` —
 /// which is why a folder's `len()` (its own inode's size, not its contents')
 /// can't decide anything.
 ///

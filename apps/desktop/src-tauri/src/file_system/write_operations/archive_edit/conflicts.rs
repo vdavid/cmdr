@@ -12,7 +12,8 @@ use uuid::Uuid;
 
 use super::super::OperationEventSink;
 use super::super::conflict::{
-    ApplyToAll, apply_to_all_effective, apply_to_all_record, blanket_resolution_across_types,
+    ApplyToAll, ClashKind, IncomingItem, answered_resolution_for_clash, apply_to_all_effective, apply_to_all_record,
+    resolution_for_clash,
 };
 use super::super::state::{ConflictResolutionResponse, WriteOperationState};
 use super::super::types::{ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent};
@@ -40,11 +41,14 @@ pub(super) enum ConflictMode<'a> {
 /// user (storing the oneshot sender BEFORE emitting `write-conflict`, then blocking
 /// on the answer — the Stop-mode ordering must-know).
 ///
-/// Both blanket routes — the fixed policy and a latched "* all" — go through
-/// `blanket_resolution_across_types`, so an `Overwrite` variant never deletes an
-/// archive DIRECTORY that a file happens to share a name with. Only the prompt's
-/// own answer can do that, and it named both types. Same rule as the local-FS
+/// Every route goes through `resolution_for_clash`, so an `Overwrite` variant
+/// never deletes an archive DIRECTORY that a file happens to share a name with
+/// unless a person answered a plain Overwrite on a prompt for that shape — the
+/// answer itself, or the "* all" carry it latched. Same rule as the local-FS
 /// and cross-volume engines.
+///
+/// Only one direction exists here: a file always ARRIVES (a folder copied in is
+/// walked into its files), so a clash is either same-kind or file-over-folder.
 pub(super) fn resolve_effective(
     mode: &mut ConflictMode<'_>,
     inner: &str,
@@ -53,16 +57,17 @@ pub(super) fn resolve_effective(
     index: &ArchiveIndex,
     is_file_to_folder: bool,
 ) -> Result<ConflictResolution, PlanError> {
+    let kind = ClashKind::of(IncomingItem::Leaf, Some(is_file_to_folder));
     match mode {
-        ConflictMode::Policy(c) => Ok(blanket_resolution_across_types(*c, is_file_to_folder, &inner)),
+        ConflictMode::Policy(c) => Ok(resolution_for_clash(None, *c, kind, &inner)),
         ConflictMode::Interactive {
             events,
             operation_id,
             state,
             apply_to_all,
         } => {
-            if let Some(saved) = apply_to_all_effective(apply_to_all, is_file_to_folder) {
-                return Ok(blanket_resolution_across_types(saved, is_file_to_folder, &inner));
+            if let Some(saved) = apply_to_all_effective(apply_to_all, kind) {
+                return Ok(saved.at(kind, &inner));
             }
             let response = prompt_archive_conflict(
                 *events,
@@ -74,13 +79,8 @@ pub(super) fn resolve_effective(
                 archive_path,
                 is_file_to_folder,
             )?;
-            apply_to_all_record(
-                apply_to_all,
-                is_file_to_folder,
-                response.resolution,
-                response.apply_to_all,
-            );
-            Ok(response.resolution)
+            apply_to_all_record(apply_to_all, kind, response.resolution, response.apply_to_all);
+            Ok(answered_resolution_for_clash(response.resolution, kind, &inner))
         }
     }
 }

@@ -179,12 +179,14 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   the OS mount the design routes around); planning inside the op is what keeps a remote plan on the pulled bytes. A
   pre-resolved policy resolves each collision non-interactively (`build_copy_into_changeset`): Skip drops the add;
   Overwrite deletes the existing entry then adds (a clean replace); Rename picks a unique ` (n)` name;
-  OverwriteSmaller/Older compare size/mtime (strict). **A BLANKET Overwrite variant never crosses types**: an incoming
-  FILE landing on an archive DIRECTORY of that name reduces to Skip, whether the policy is the pre-resolved one or a
-  latched "* all", so it can't delete the directory and everything under it. `conflicts.rs::resolve_effective` routes
-  both through the shared `../conflict.rs::blanket_resolution_across_types`, which the local-FS and cross-volume engines
-  answer with too; the conditional variants had no honest question to ask there anyway (a directory node carries no size
-  and no mtime). Only an answer a person gave on the prompt for that pair replaces. The mirror direction never consults
+  OverwriteSmaller/Older compare size/mtime (strict). **Crossing types takes a person's consent**: an incoming FILE
+  landing on an archive DIRECTORY of that name reduces to Skip under the pre-resolved policy and under a same-kind
+  latched "* all", so neither can delete the directory and everything under it. What does replace is a plain Overwrite
+  answered on the prompt for that shape, and the "* all" it latched into the file-over-folder bucket — the person saw
+  both kinds named. `conflicts.rs::resolve_effective` routes every arm through the shared
+  `../conflict.rs::resolution_for_clash`, which the local-FS and cross-volume engines answer with too; the conditional
+  variants stay refused whoever asked, having no honest question to ask here anyway (a directory node carries no size
+  and no mtime). The mirror direction never consults
   the policy at all: a source DIRECTORY meeting a same-named FILE entry just skips its `mkdir` and adds its children
   under the name. Pinned by
   `copy_into_tests.rs::a_blanket_overwrite_never_replaces_an_archive_directory_with_a_file`. **The Stop policy prompts

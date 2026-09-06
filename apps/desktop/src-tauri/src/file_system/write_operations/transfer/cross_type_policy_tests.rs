@@ -27,6 +27,7 @@ use super::super::types::{ConflictResolution, WriteOperationConfig};
 use super::conflict_responder_test_support::ConflictResponderSink;
 use super::copy::copy_files_with_progress_inner;
 use super::move_op::move_files_with_progress_inner;
+use crate::ignore_poison::IgnorePoison;
 use crate::test_support::TestDir;
 
 fn temp(name: &str) -> TestDir {
@@ -278,4 +279,189 @@ fn an_explicitly_answered_overwrite_still_replaces_a_folder_with_a_file() {
         "an explicit Overwrite must replace the folder with the incoming file"
     );
     assert_eq!(fs::metadata(&landed).unwrap().len(), 100_000);
+}
+
+// ============================================================================
+// The explicit answer's "apply to all" carries across the same cross-type shape
+// ============================================================================
+//
+// The bucket a cross-type "* all" latches into can only ever be filled by a
+// click on a prompt that NAMED both types — the dialog relabels its
+// apply-to-all button "Overwrite folders with files" for exactly this case. So
+// the carry is consented, and the blanket refusal above must not touch it.
+// Without these cells the checkbox is a trap: the first item replaces and every
+// one after it is skipped, silently.
+//
+// Each test answers ONE prompt and asserts the prompt COUNT, which is what
+// separates a carry from a re-prompt: the responder sink answers whatever it
+// sees, so "both replaced" alone would pass even if nothing latched.
+
+/// Two file→folder clashes, one answer. `ConflictResponderSink` answers with
+/// `apply_to_all: true`, so the second clash must never reach a prompt AND must
+/// still be replaced.
+#[test]
+fn an_answered_overwrite_all_carries_to_the_next_folder_a_file_lands_on() {
+    let dir = temp("carry_file_over_folder");
+    let src_root = dir.join("src");
+    let dst_root = dir.join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    for name in ["1-notes", "2-notes"] {
+        fs::create_dir_all(dst_root.join(name)).unwrap();
+        fs::write(src_root.join(name), format!("source-{name}")).unwrap();
+        fs::write(dst_root.join(name).join("precious.txt"), "precious user data").unwrap();
+    }
+    let state = state();
+    let events = ConflictResponderSink::new(&state, ConflictResolution::Overwrite, true);
+
+    copy_files_with_progress_inner(
+        &events,
+        "op-carry-file-over-folder",
+        &state,
+        &[src_root.join("1-notes"), src_root.join("2-notes")],
+        &dst_root,
+        &policy(ConflictResolution::Stop),
+    )
+    .expect("the copy should succeed");
+
+    assert_eq!(
+        events.inner.conflicts.lock_ignore_poison().len(),
+        1,
+        "the second clash must be decided by the latch, not by a second prompt"
+    );
+    for name in ["1-notes", "2-notes"] {
+        let landed = dst_root.join(name);
+        assert!(
+            fs::symlink_metadata(&landed).unwrap().is_file(),
+            "'Overwrite folders with files' must replace {name}, not silently skip it"
+        );
+        assert_eq!(fs::read_to_string(&landed).unwrap(), format!("source-{name}"));
+    }
+}
+
+/// The mirror shape: two folder→file clashes, one answer, both replaced.
+#[test]
+fn an_answered_overwrite_all_carries_to_the_next_file_a_folder_lands_on() {
+    let dir = temp("carry_folder_over_file");
+    let src_root = dir.join("src");
+    let dst_root = dir.join("dst");
+    fs::create_dir_all(&dst_root).unwrap();
+    for name in ["1-thing", "2-thing"] {
+        fs::create_dir_all(src_root.join(name)).unwrap();
+        fs::write(src_root.join(name).join("sentinel.txt"), format!("source-{name}")).unwrap();
+        fs::write(dst_root.join(name), "precious user bytes").unwrap();
+    }
+    let state = state();
+    let events = ConflictResponderSink::new(&state, ConflictResolution::Overwrite, true);
+
+    copy_files_with_progress_inner(
+        &events,
+        "op-carry-folder-over-file",
+        &state,
+        &[src_root.join("1-thing"), src_root.join("2-thing")],
+        &dst_root,
+        &policy(ConflictResolution::Stop),
+    )
+    .expect("the copy should succeed");
+
+    assert_eq!(
+        events.inner.conflicts.lock_ignore_poison().len(),
+        1,
+        "the second clash must be decided by the latch, not by a second prompt"
+    );
+    for name in ["1-thing", "2-thing"] {
+        let landed = dst_root.join(name);
+        assert!(
+            fs::symlink_metadata(&landed).unwrap().is_dir(),
+            "an answered folder→file Overwrite all must replace {name}, not silently skip it"
+        );
+        assert_eq!(
+            fs::read_to_string(landed.join("sentinel.txt")).unwrap(),
+            format!("source-{name}")
+        );
+    }
+}
+
+/// The other half of the conjunction: consent is per SHAPE. An "Overwrite all"
+/// answered on a plain file→file prompt says nothing about throwing a folder
+/// away, so the cross-type clash after it must still ask. Two prompts, not one.
+#[test]
+fn an_overwrite_all_answered_on_a_plain_clash_never_carries_across_types() {
+    let dir = temp("no_carry_from_plain");
+    let src_root = dir.join("src");
+    let dst_root = dir.join("dst");
+    fs::create_dir_all(&src_root).unwrap();
+    fs::create_dir_all(&dst_root).unwrap();
+    // `1-norm.txt` (file→file) is processed before `2-notes` (file→folder).
+    fs::write(src_root.join("1-norm.txt"), "source-norm").unwrap();
+    fs::write(dst_root.join("1-norm.txt"), "dest-norm").unwrap();
+    fs::write(src_root.join("2-notes"), "source-notes").unwrap();
+    fs::create_dir_all(dst_root.join("2-notes")).unwrap();
+    fs::write(dst_root.join("2-notes/precious.txt"), "precious user data").unwrap();
+    let state = state();
+    let events = ConflictResponderSink::new(&state, ConflictResolution::Overwrite, true);
+
+    copy_files_with_progress_inner(
+        &events,
+        "op-no-carry-from-plain",
+        &state,
+        &[src_root.join("1-norm.txt"), src_root.join("2-notes")],
+        &dst_root,
+        &policy(ConflictResolution::Stop),
+    )
+    .expect("the copy should succeed");
+
+    assert_eq!(
+        events.inner.conflicts.lock_ignore_poison().len(),
+        2,
+        "a same-kind Overwrite all must not decide a cross-type clash on its own"
+    );
+}
+
+/// Consent is to the ACT the prompt named, and the conditional variants never
+/// name it. The dialog offers "Overwrite all smaller" / "Overwrite all older"
+/// on a cross-type prompt too (their labels say nothing about types, and the
+/// smaller one is only disabled when the destination size is unknown), but the
+/// comparison behind them is meaningless here: a directory's `len()` is its own
+/// inode's, a few hundred bytes, so EVERY ordinary file looks "bigger" and the
+/// folder goes. Clicking one on a cross-type prompt must skip, not delete.
+#[test]
+fn an_answered_overwrite_smaller_never_deletes_the_folder_it_cannot_compare() {
+    let dir = temp("answered_smaller_file_over_folder");
+    let (src_root, dst_root) = file_over_folder_fixture(&dir);
+    let state = state();
+    // The dialog's smaller/older buttons only ever send `apply_to_all: true`.
+    let events = ConflictResponderSink::new(&state, ConflictResolution::OverwriteSmaller, true);
+
+    copy_files_with_progress_inner(
+        &events,
+        "op-answered-smaller-file-over-folder",
+        &state,
+        &[src_root.join("notes")],
+        &dst_root,
+        &policy(ConflictResolution::Stop),
+    )
+    .expect("the copy should finish, having skipped the cross-type clash");
+
+    assert_folder_survived(&dst_root);
+}
+
+/// The mirror: a folder landing on a file, answered "Overwrite all older".
+#[test]
+fn an_answered_overwrite_older_never_deletes_the_file_it_cannot_compare() {
+    let dir = temp("answered_older_folder_over_file");
+    let (src_root, dst_root) = folder_over_file_fixture(&dir);
+    let state = state();
+    let events = ConflictResponderSink::new(&state, ConflictResolution::OverwriteOlder, true);
+
+    copy_files_with_progress_inner(
+        &events,
+        "op-answered-older-folder-over-file",
+        &state,
+        &[src_root.join("thing")],
+        &dst_root,
+        &policy(ConflictResolution::Stop),
+    )
+    .expect("the copy should finish, having skipped the cross-type clash");
+
+    assert_file_survived(&dst_root);
 }

@@ -7,10 +7,12 @@
 //!   delete the original and rename the temp in (`finalize_safe_replace`), so a
 //!   mid-stream failure can't lose both the old and the new copy
 //! - Overwrite (dir→dir): merge into the existing tree (no delete)
-//! - Overwrite (cross-type): only ever from a Stop prompt a person answered for
-//!   that pair — delete the dest first, then write. A BLANKET Overwrite (the
-//!   config's, or an apply-to-all carry) refuses across types and Skips;
-//!   `../../conflict.rs::blanket_resolution_across_types` holds the rule.
+//! - Overwrite (cross-type): only ever from a plain Overwrite a person answered
+//!   on a prompt for that SHAPE, carry included — delete the dest first, then
+//!   write. A policy nobody looked at per item (the config's, a same-kind
+//!   apply-to-all carry) refuses across types and Skips, and so do the
+//!   conditional variants whoever asked for them;
+//!   `../../conflict.rs::resolution_for_clash` holds the rule.
 //! - Rename: Find unique name like "file (1).txt"
 
 use std::collections::HashSet;
@@ -18,7 +20,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::super::conflict::{
-    ApplyToAll, apply_to_all_effective, apply_to_all_record, blanket_resolution_across_types,
+    ApplyToAll, ClashKind, IncomingItem, answered_resolution_for_clash, apply_to_all_effective, apply_to_all_record,
+    resolution_for_clash,
 };
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::state::WriteOperationState;
@@ -119,13 +122,13 @@ pub(super) async fn resolve_volume_conflict(
     // `None` falls back to the trait call for callers without the hint.
     source_is_directory_hint: Option<bool>,
 ) -> Result<Option<ResolvedConflict>, WriteOperationError> {
-    // Classify the clash up front so the two-bucket lookup and store stay
-    // consistent. ❌ Neither probe may fall back to `false`: `is_file_to_folder`
-    // below is `!source_is_directory && destination_is_directory`, so a guessed
-    // `false` on the SOURCE flips the destructive cross-type latch on for a
-    // folder, and Overwrite's cross-type arm then recursively deletes the user's
-    // destination folder. A guessed `false` on the DESTINATION reaches the same
-    // arm's bare `delete`. An unanswerable stat fails the item instead.
+    // Classify the clash up front so the per-shape latch lookup and store stay
+    // consistent. ❌ Neither probe may fall back to `false`: `ClashKind::of`
+    // below reads both sides, so a guessed `false` on the SOURCE files a folder
+    // under the wrong shape's latch, and Overwrite's cross-type arm then
+    // recursively deletes the user's destination folder. A guessed `false` on
+    // the DESTINATION reaches the same arm's bare `delete`. An unanswerable
+    // stat fails the item instead.
     let source_is_directory = match source_is_directory_hint {
         Some(is_dir) => is_dir,
         None => source_volume
@@ -161,7 +164,6 @@ pub(super) async fn resolve_volume_conflict(
     }
 
     let destination_is_directory = resolve_dest_is_directory(dest_volume, dest_path).await?;
-    let is_file_to_folder = !source_is_directory && destination_is_directory;
 
     // Dir-vs-dir is NOT a conflict — it's an unconditional merge. No policy
     // lookup, no `write-conflict` emit, no Stop prompt: a source folder landing
@@ -182,17 +184,17 @@ pub(super) async fn resolve_volume_conflict(
 
     // Dir-vs-dir left above and self-collision left before it, so the two sides
     // differing means one is a folder and the other a leaf.
-    let is_cross_type = source_is_directory != destination_is_directory;
-
-    // Determine effective conflict resolution. A blanket policy — the config's,
-    // or one latched by an earlier "* all" — never replaces a folder with a file
-    // or a file with a folder; `blanket_resolution_across_types` holds the why.
-    let latched = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder);
-    let resolution = blanket_resolution_across_types(
-        latched.unwrap_or(config.conflict_resolution),
-        is_cross_type,
-        &dest_path.display(),
+    let kind = ClashKind::of(
+        IncomingItem::of_directory_flag(source_is_directory),
+        Some(destination_is_directory),
     );
+
+    // Determine effective conflict resolution. A policy nobody looked at per
+    // item — the config's, or a same-kind "* all" reaching across types — never
+    // replaces a folder with a file or a file with a folder; a plain Overwrite
+    // answered for this very shape does. `resolution_for_clash` holds the why.
+    let latched = apply_to_all_effective(apply_to_all_resolution, kind);
+    let resolution = resolution_for_clash(latched, config.conflict_resolution, kind, &dest_path.display());
 
     match resolution {
         ConflictResolution::Stop => {
@@ -222,11 +224,13 @@ pub(super) async fn resolve_volume_conflict(
             // mutex, the task ahead of it may have answered with an "…all" choice
             // that resolves this clash too. If so, apply that resolution without
             // prompting — the queued prompt silently collapses.
-            if let Some(saved) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder) {
-                // A carry is a blanket answer, so it stops where the config
-                // policy does. `Skip` from here needs no reduction, but running
-                // it through keeps the one path.
-                let saved = blanket_resolution_across_types(saved, is_cross_type, &dest_path.display());
+            if let Some(saved) = apply_to_all_effective(apply_to_all_resolution, kind) {
+                // A carry stops exactly where it would have on the up-front
+                // lookup: honoured across types when it was answered for this
+                // shape, refused when it is a same-kind policy reaching over.
+                // `Skip` needs no reduction, but running it through keeps the
+                // one path.
+                let saved = saved.at(kind, &dest_path.display());
                 let effective = reduce_volume_conditional_resolution(
                     saved,
                     source_volume,
@@ -358,12 +362,17 @@ pub(super) async fn resolve_volume_conflict(
                     // "first" if a regular clash happened earlier in this op.
                     apply_to_all_record(
                         apply_to_all_resolution,
-                        is_file_to_folder,
+                        kind,
                         response.resolution,
                         response.apply_to_all,
                     );
+                    // Hold the answer to what it can consent to at this shape
+                    // before the conditional reduction, which across types
+                    // would be comparing against a directory. Local twin:
+                    // `../../conflict.rs`.
+                    let answered = answered_resolution_for_clash(response.resolution, kind, &dest_path.display());
                     let effective = reduce_volume_conditional_resolution(
-                        response.resolution,
+                        answered,
                         source_volume,
                         source_path,
                         dest_volume,

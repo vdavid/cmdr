@@ -820,34 +820,40 @@ async fn a_blanket_overwrite_never_deletes_a_file_a_folder_landed_on() {
     }
 }
 
-/// The apply-to-all carry is a blanket policy too: an "Overwrite all" latched on
-/// an earlier clash decides this item without anyone looking at it, so it stops
-/// at the same line the config policy does.
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_latched_overwrite_all_never_clears_a_folder_a_file_landed_on() {
-    let source = Arc::new(InMemoryVolume::new("source"));
-    source.create_file(Path::new("/notes"), b"incoming").await.unwrap();
-    let source_dyn: Arc<dyn Volume> = source.clone();
+/// Builds the file→folder clash both cells below resolve: an incoming FILE
+/// `/notes` against a destination FOLDER `/notes/` holding one child.
+fn file_over_folder_volumes() -> (Arc<InMemoryVolume>, Arc<InMemoryVolume>) {
+    (
+        Arc::new(InMemoryVolume::new("source")),
+        Arc::new(InMemoryVolume::new("dest")),
+    )
+}
 
-    let dest = Arc::new(InMemoryVolume::new("dest"));
+/// Resolves that clash under `apply_to_all` and `configured`.
+///
+/// ⚠️ `configured` must never be `Stop` unless the latch is guaranteed to
+/// answer: nothing here responds to a prompt, so the resolve would park on a
+/// oneshot forever and hang the test binary.
+async fn resolve_file_over_folder_with_latch(
+    op: &str,
+    mut apply_to_all: ApplyToAll,
+    configured: ConflictResolution,
+) -> (Option<ResolvedConflict>, Arc<InMemoryVolume>) {
+    let (source, dest) = file_over_folder_volumes();
+    source.create_file(Path::new("/notes"), b"incoming").await.unwrap();
     dest.create_directory(Path::new("/notes")).await.unwrap();
     dest.create_file(Path::new("/notes/precious.txt"), b"precious user data")
         .await
         .unwrap();
+    let source_dyn: Arc<dyn Volume> = source.clone();
     let dest_dyn: Arc<dyn Volume> = dest.clone();
 
     let events = CollectorEventSink::new();
     let state = Arc::new(WriteOperationState::new(std::time::Duration::from_millis(0)));
-    // Stop, so nothing but the latch can answer: if the refusal were missing,
-    // the latch's Overwrite would run without a prompt.
     let config = VolumeCopyConfig {
-        conflict_resolution: ConflictResolution::Stop,
+        conflict_resolution: configured,
         ..VolumeCopyConfig::default()
     };
-    let mut apply_to_all = ApplyToAll::default();
-    // An "Overwrite all" a person picked on a file→folder prompt, which the
-    // latch spreads to both buckets when it's the operation's first clash.
-    apply_to_all_record(&mut apply_to_all, true, ConflictResolution::Overwrite, true);
 
     let resolved = resolve_volume_conflict(
         &source_dyn,
@@ -856,7 +862,7 @@ async fn a_latched_overwrite_all_never_clears_a_folder_a_file_landed_on() {
         Path::new("/notes"),
         &config,
         &events,
-        "op-latched-cross-type",
+        op,
         &state,
         &mut apply_to_all,
         None,
@@ -864,11 +870,70 @@ async fn a_latched_overwrite_all_never_clears_a_folder_a_file_landed_on() {
         Some(false),
     )
     .await
-    .expect("a refused cross-type clash is a Skip, never a failure");
+    .expect("resolving a cross-type clash is never a failure");
+    (resolved, dest)
+}
 
-    assert!(resolved.is_none(), "a latched Overwrite across types must Skip");
+/// A carry latched on a file→folder prompt REPLACES, here as on the local
+/// engine. The button that fills this bucket says "Overwrite folders with
+/// files"; refusing its carry would overwrite the first folder and silently
+/// skip the rest.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_latched_cross_type_overwrite_all_replaces_the_folder_it_was_answered_for() {
+    let mut apply_to_all = ApplyToAll::default();
+    apply_to_all_record(
+        &mut apply_to_all,
+        ClashKind::FileOverFolder,
+        ConflictResolution::Overwrite,
+        true,
+    );
+
+    // `Stop` is safe here precisely because the latch answers; if the carry
+    // were refused this would park on a prompt nothing responds to.
+    let (resolved, dest) =
+        resolve_file_over_folder_with_latch("op-latched-cross-type", apply_to_all, ConflictResolution::Stop).await;
+
+    assert!(
+        resolved.is_some(),
+        "an answered 'Overwrite folders with files' must carry, not Skip"
+    );
+    assert!(
+        !dest.exists(Path::new("/notes/precious.txt")).await,
+        "the folder the person consented to replace must be gone"
+    );
+}
+
+/// The counterweight: a carry latched on a SAME-KIND prompt is a blanket policy
+/// as far as this clash is concerned. Nobody was shown a folder, so it never
+/// reaches across — the configured policy decides instead, and `Skip` here
+/// proves the Overwrite in the same-kind bucket did not leak over.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_latched_same_kind_overwrite_all_never_clears_a_folder_a_file_landed_on() {
+    let mut apply_to_all = ApplyToAll::default();
+    // A non-latching answer first, so the first-clash spread can't put this
+    // Overwrite into the cross-type bucket by the back door.
+    apply_to_all_record(
+        &mut apply_to_all,
+        ClashKind::SameKind,
+        ConflictResolution::Skip,
+        /* apply_to_all */ false,
+    );
+    apply_to_all_record(
+        &mut apply_to_all,
+        ClashKind::SameKind,
+        ConflictResolution::Overwrite,
+        true,
+    );
+
+    let (resolved, dest) =
+        resolve_file_over_folder_with_latch("op-latched-same-kind", apply_to_all, ConflictResolution::Skip).await;
+
+    assert!(
+        resolved.is_none(),
+        "the same-kind Overwrite must not reach this clash; the configured Skip decides it"
+    );
     assert!(
         dest.exists(Path::new("/notes/precious.txt")).await,
-        "a latched Overwrite must not recursively delete the destination folder"
+        "a blanket Overwrite must not recursively delete the destination folder"
     );
 }
