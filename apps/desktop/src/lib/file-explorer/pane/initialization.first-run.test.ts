@@ -222,3 +222,48 @@ describe('loadPersistedState on a first run', () => {
     expect(appStatus.saveAppStatusNow).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * A tab restored onto a server.
+ *
+ * `resolveVolumeId` distrusts the stored id and re-resolves by PATH, which is
+ * what makes a `saved` row and the live volume it becomes interchangeable: both
+ * carry the same id (`cmdr_fs::volume::ids`), and the resolver's `sftp://` arm
+ * answers the saved entry without dialing. ❗ The dial happens when the user
+ * ACTIVATES the tab, never at launch (`docs/specs/servers-hub-plan.md` § D14).
+ */
+describe('restoring a tab that stood on a server', () => {
+  beforeEach(() => {
+    appStatus.hasPersistedPaneState.mockResolvedValue(true)
+    appStatus.loadPaneTabs.mockImplementation((side: 'left' | 'right') => {
+      const paneTabs = freshPaneTabs(side)
+      if (side === 'left') {
+        paneTabs.tabs[0].path = 'sftp://ada@nas.local:22/srv/data/photos'
+        paneTabs.tabs[0].volumeId = 'sftp-nas-local-22-ada'
+      }
+      return Promise.resolve(paneTabs)
+    })
+    commands.resolvePathVolume.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.startsWith('sftp://')
+          ? { volume: { id: 'sftp-nas-local-22-ada' }, timedOut: false }
+          : { volume: { id: 'root' }, timedOut: false },
+      ),
+    )
+  })
+
+  it('lands on the saved place, keeping both the id and the subpath', async () => {
+    const state = await initialize()
+    const tab = getActiveTab(state.leftTabMgr)
+    expect(tab.path).toBe('sftp://ada@nas.local:22/srv/data/photos')
+    expect(tab.volumeId).toBe('sftp-nas-local-22-ada')
+  })
+
+  it('falls back to the default volume when nothing answers for the path', async () => {
+    // A forgotten server, or one whose saved entry is gone: the tab has to land
+    // somewhere real rather than on a volume the app denies exists.
+    commands.resolvePathVolume.mockResolvedValue({ volume: null, timedOut: false })
+    const state = await initialize()
+    expect(getActiveTab(state.leftTabMgr).volumeId).toBe('root')
+  })
+})

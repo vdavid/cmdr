@@ -75,8 +75,19 @@ async function getStore(): Promise<Store> {
  * Resolves a persisted path, falling back to ~ if nothing exists.
  * Uses resolveValidPath with no timeout (startup paths are local, no hung-mount risk at load time)
  * and the caller's pathExistsFn (which may be mocked in tests).
+ *
+ * ❗ **A `<scheme>://` path is returned as it stands, unprobed.** It belongs to a
+ * volume with no local mount (a server, a phone), so `pathExists` is false for
+ * every one of them at launch and probing can only ever shorten a path that was
+ * right. Launch must NOT dial a server to find out either: four servers waking a
+ * Mac would be four Keychain reads and four network waits nobody asked for
+ * (`docs/specs/servers-hub-plan.md` § D14). The tab comes back on its subpath
+ * and dials when the user activates it. The `volumeId === 'network'` exemptions
+ * at this function's four call sites are the same idea, one volume at a time;
+ * this rule is PATH-shaped, so it covers the volumes that don't have a fixed id.
  */
 async function resolvePersistedPath(path: string, pathExistsFn: (p: string) => Promise<boolean>): Promise<string> {
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(path)) return path
   return (await resolveValidPath(path, { pathExistsFn, timeoutMs: 0 })) ?? DEFAULT_PATH
 }
 
