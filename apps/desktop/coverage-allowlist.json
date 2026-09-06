@@ -40,9 +40,6 @@
     "file-explorer/navigation/volume-breadcrumb-handlers.svelte.ts": {
       "reason": "Extracted from VolumeBreadcrumb.svelte; reactive Svelte state + DOM event listeners (keyboard mode, submenu/popup controllers), depends on parent component refs"
     },
-    "file-explorer/network/ConnectToServerDialog.svelte": {
-      "reason": "Network dialog, depends on Tauri connectToServer command"
-    },
     "file-explorer/network/PlacesBrowser.svelte": {
       "reason": "Network component, needs integration tests (renamed from ShareBrowser.svelte)"
     },
