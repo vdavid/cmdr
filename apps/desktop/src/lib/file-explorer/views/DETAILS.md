@@ -77,7 +77,10 @@ refs, and the row template). Four siblings hold the rest, each with its own suit
   paths-by-value flavour a static-entries pane needs.
 - **`FullListHeader.svelte`** — the column header, rendered above the scroll container. It owns `.header-row` /
   `.header-icon` / `.header-name-ext` / `.header-git` (all self-contained: no rule reaches outside the header's own
-  sub-tree), and takes a `scrollbarWidth` prop it spends on its right padding (see § Key decisions).
+  sub-tree), and takes a `scrollbarWidth` prop it spends on its right padding (see § Key decisions). Its `sortable` prop
+  (default on, threaded down to each `SortableHeader`) turns the four triggers into plain labels for a pane whose rows
+  don't follow its sort — no button, no active column, no caret, and no caret allowance in the measured tracks. Only the
+  search-results snapshot pane passes it today; what drives it and why: `../pane/DETAILS.md` § "Volume capabilities".
 
 ### Where the row styles live
 
@@ -345,10 +348,10 @@ decision both the cell and (implicitly, since name is `1fr` and unmeasured) the 
 
 Sort-by-extension keeps its CLICK affordance in this mode: `FullListHeader` splits the single Name-column header into
 two `SortableHeader` triggers inside a `.header-name-ext` flex row (Name fills, Ext right-aligned and shrink-to-label),
-both clickable, each showing its caret when active. The split lives INSIDE the `1fr` Name track, so the Ext trigger
-costs the pane no column width and the measurer reserves none for it. ❌ Don't remove it: without it, `sort.byExtension`
-(palette / shortcut) is the only route left. Pinned by `FullList.ext-in-name-header.test.ts` and
-`FullListHeader.test.ts`.
+both clickable, each showing its caret when active (both plain labels under `sortable={false}`, which changes the markup
+inside the split, never the split itself). The split lives INSIDE the `1fr` Name track, so the Ext trigger costs the
+pane no column width and the measurer reserves none for it. ❌ Don't remove it: without it, `sort.byExtension` (palette
+/ shortcut) is the only route left. Pinned by `FullList.ext-in-name-header.test.ts` and `FullListHeader.test.ts`.
 
 Brief view is unaffected (it already renders `file.name` whole). The inline rename editor's column span shrinks in this
 mode (`.col-rename.no-ext-col`) so it doesn't bleed into the Size column now that the Ext track is gone.

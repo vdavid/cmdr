@@ -120,6 +120,16 @@ export interface VolumeCapabilities {
    * False only for the two virtual kinds.
    */
   hasParentRow: boolean
+  /**
+   * The pane's `sortBy` / `sortOrder` govern the ORDER its rows render in, so
+   * the column header may claim that sort and offer a click to change it.
+   * False for the two virtual kinds: a search-results pane renders the engine's
+   * ranked order through `staticEntries` (and every source-side op resolves a
+   * selected index against `snapshot.entries[i]`, so re-ordering the view would
+   * hand a delete the wrong file), and a network pane renders no file list at
+   * all. See `pane/DETAILS.md` § "Volume capabilities".
+   */
+  sortsRows: boolean
   /** Mirrors pane state to the MCP `PaneState` store (network/search panes are skipped — they have other owners). */
   syncsToMcp: boolean
 }
@@ -139,6 +149,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
+    sortsRows: true,
     syncsToMcp: true,
   }),
   smb: Object.freeze({
@@ -147,6 +158,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
+    sortsRows: true,
     syncsToMcp: true,
   }),
   mtp: Object.freeze({
@@ -155,6 +167,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
+    sortsRows: true,
     syncsToMcp: true,
   }),
   adb: Object.freeze({
@@ -165,6 +178,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
+    sortsRows: true,
     syncsToMcp: true,
   }),
   network: Object.freeze({
@@ -177,6 +191,9 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: false,
     canBeSource: false,
     hasParentRow: false,
+    // `sortsRows: false` alongside them: NetworkMountView renders a host/share
+    // list, not a `FullList`, so no column header ever asks the question.
+    sortsRows: false,
     syncsToMcp: false,
   }),
   'search-results': Object.freeze({
@@ -186,6 +203,9 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: false,
     canBeSource: true,
     hasParentRow: false,
+    // `sortsRows: false`: the rows arrive ranked by the search engine and render
+    // in that order, so the column header names the columns and claims no sort.
+    sortsRows: false,
     syncsToMcp: false,
   }),
   archive: Object.freeze({
@@ -205,6 +225,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
+    sortsRows: true,
     syncsToMcp: true,
   }),
   'git-portal': Object.freeze({
@@ -223,6 +244,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: false,
     canBeSource: true,
     hasParentRow: true,
+    sortsRows: true,
     syncsToMcp: true,
   }),
 })

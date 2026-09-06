@@ -139,6 +139,16 @@
          * unset — the listing-cache path remains the default.
          */
         staticEntries?: FileEntry[]
+        /**
+         * Whether this pane's rows follow its `sortBy` / `sortOrder`
+         * (`caps.sortsRows`). The default is the ordinary listing, which does. A
+         * `staticEntries` pane that renders a FIXED order (the search-results
+         * snapshot, ranked by the search engine) passes `false`, and the column
+         * header drops its sort triggers, its active column, and its caret rather
+         * than name an order the rows are not in. It also stops reserving the
+         * caret's width in the measured column tracks.
+         */
+        sortable?: boolean
     }
 
     const {
@@ -179,6 +189,7 @@
         onStartRename,
         onDragInitiate,
         staticEntries,
+        sortable = true,
     }: Props = $props()
 
     /**
@@ -421,6 +432,7 @@
             isSizeUpdating,
             showSizeMismatchWarning,
             sortBy,
+            sortable,
             sizeFormatOpts,
             isRestricted,
             showExtensionInName,
@@ -632,6 +644,7 @@
         {gitColumnVisible}
         {skipTransition}
         {scrollbarWidth}
+        {sortable}
         {onSortChange}
     />
     <!-- Scrollable file list. `role="listbox"` lives on the inner rows wrapper

@@ -94,6 +94,22 @@ describe('computeFullListColumnWidths', () => {
     expect(extSorted.size).toBe(nameSorted.size)
   })
 
+  it('reserves no caret room on a pane whose rows do not follow its sort', () => {
+    _setMeasureForTests(fakeMeasure)
+    // `sortable: false` (the search-results snapshot pane) renders plain labels
+    // with no caret, so the active column must not reserve the caret's width
+    // either — otherwise the header track is 12px wider than anything drawn in it.
+    const sorted = computeFullListColumnWidths({ ...baseArgs, entries: [], sortBy: 'extension' })
+    const unsorted = computeFullListColumnWidths({
+      ...baseArgs,
+      entries: [],
+      sortBy: 'extension',
+      sortable: false,
+    })
+    expect(unsorted.ext).toBeLessThan(sorted.ext)
+    expect(unsorted.ext).toBe(computeFullListColumnWidths({ ...baseArgs, entries: [] }).ext)
+  })
+
   it('widens size column when a large file is present', () => {
     _setMeasureForTests(fakeMeasure)
     const small = computeFullListColumnWidths({

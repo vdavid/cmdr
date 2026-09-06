@@ -59,7 +59,8 @@ const HEADER_CHROME_ACTIVE = 12
  * Header overhead for a column that isn't being sorted: the caret is
  * `display: none`, which collapses both the glyph and the flex gap. The
  * button's padding is offset by the negative margin, so the label is flush
- * against the track edges and chrome is zero.
+ * against the track edges and chrome is zero. Every column on an unsortable
+ * pane (`sortable: false`) gets this too — that header draws no caret at all.
  */
 const HEADER_CHROME_INACTIVE = 0
 
@@ -275,6 +276,13 @@ export function computeFullListColumnWidths(args: {
   isSizeUpdating: (entry: FileEntry) => boolean
   showSizeMismatchWarning: boolean
   sortBy: SortColumn
+  /**
+   * Whether the pane's rows follow `sortBy` at all (`caps.sortsRows`). When
+   * `false` the header renders plain labels with no caret, so NO column gets the
+   * active-column allowance and the measured track matches what's drawn. Defaults
+   * to the ordinary sorted listing.
+   */
+  sortable?: boolean
   sizeFormatOpts: SizeFormatOpts
   /** Returns `true` for paths in the TCC-restricted set so the size cell
    * widths account for the `<no perms>` override. Defaults to never-restricted. */
@@ -295,6 +303,7 @@ export function computeFullListColumnWidths(args: {
     isSizeUpdating,
     showSizeMismatchWarning,
     sortBy,
+    sortable = true,
     sizeFormatOpts,
     isRestricted,
     showExtensionInName = false,
@@ -314,7 +323,8 @@ export function computeFullListColumnWidths(args: {
   // headers render proportionally, so they use the plain `measure`.
   const measureNum = (text: string): number => measure(tabularize(text))
 
-  const chromeFor = (column: SortColumn): number => (sortBy === column ? HEADER_CHROME_ACTIVE : HEADER_CHROME_INACTIVE)
+  const chromeFor = (column: SortColumn): number =>
+    sortable && sortBy === column ? HEADER_CHROME_ACTIVE : HEADER_CHROME_INACTIVE
 
   // Start with header widths (the column must fit its header regardless of data).
   let extMax = measure(tString('fileExplorer.columns.ext')) + chromeFor('extension')

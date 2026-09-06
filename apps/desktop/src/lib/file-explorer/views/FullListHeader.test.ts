@@ -36,6 +36,7 @@ function mountHeaderRaw(props: {
   gitColumnVisible: boolean
   skipTransition: boolean
   scrollbarWidth: number
+  sortable?: boolean
   onSortChange?: (column: SortColumn) => void
 }) {
   const target = document.createElement('div')
@@ -44,7 +45,7 @@ function mountHeaderRaw(props: {
   return target
 }
 
-/** The sort trigger labels, in DOM order. */
+/** The column labels, in DOM order. Covers both sort triggers and static labels. */
 function labels(target: HTMLElement): (string | null)[] {
   return [...target.querySelectorAll('.sortable-header .label')].map((el) => el.textContent)
 }
@@ -113,6 +114,37 @@ describe('sorting', () => {
     expect(() => {
       target.querySelector<HTMLButtonElement>('button.sortable-header')?.click()
     }).not.toThrow()
+  })
+})
+
+/**
+ * A pane whose rows do NOT follow its sort (`sortable={false}`, today the
+ * search-results snapshot pane) must not claim one. The labels and their column
+ * tracks stay; the button semantics, the active column, and the direction arrow
+ * all go, because a click here would do nothing and the arrow would name an order
+ * the rows are not in.
+ */
+describe('a pane whose rows do not follow its sort', () => {
+  it('keeps the four column labels', () => {
+    expect(labels(mountHeader({ sortable: false }))).toEqual(['Name', 'Ext', 'Size', 'Modified'])
+  })
+
+  it('renders no buttons, so nothing promises a click will do something', () => {
+    expect(mountHeader({ sortable: false }).querySelectorAll('button')).toHaveLength(0)
+  })
+
+  it('lights no column and draws no direction arrow, whatever the pane last sorted by', () => {
+    const target = mountHeader({ sortable: false, sortBy: 'size' as SortColumn })
+
+    expect(target.querySelector('.sortable-header.is-active')).toBeNull()
+    expect(target.querySelector('.sort-indicator')).toBeNull()
+  })
+
+  it('still folds Ext into the Name track when the extension rides in the name', () => {
+    const target = mountHeader({ sortable: false, showExtensionInName: true })
+
+    expect(labels(target)).toEqual(['Name', 'Ext', 'Size', 'Modified'])
+    expect(target.querySelectorAll('.header-name-ext .sortable-header')).toHaveLength(2)
   })
 })
 

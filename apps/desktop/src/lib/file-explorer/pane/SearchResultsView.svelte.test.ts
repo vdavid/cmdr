@@ -178,8 +178,8 @@ describe('SearchResultsView', () => {
     }
 
     it("keeps the snapshot's own order whatever the pane is sorted by", async () => {
-      // The pane's `sortBy` / `sortOrder` reach `FullList` and light its header
-      // indicator, but `staticEntries` are rendered as given: the search engine
+      // The pane's `sortBy` / `sortOrder` reach `FullList` but govern nothing here:
+      // `staticEntries` are rendered as given, because the search engine
       // already ranked them, and re-ordering them in the view would break the
       // whole subsystem's invariant, that a selected index and `snapshot.entries[i]`
       // name the same row. Every source-side op resolves through that index.
@@ -206,13 +206,11 @@ describe('SearchResultsView', () => {
       target.remove()
     })
 
-    it('leaves the header sort buttons inert, because there is no `onSortChange` to hand them', async () => {
-      // `FullListHeader` falls back to a no-op when the callback is absent, and
-      // this view deliberately passes none. Clicking a column header therefore
-      // does nothing at all. That is safe (the rows can't reorder under an
-      // index-based selection) but it is not visible: the header still renders a
-      // live-looking sort control and an indicator on whichever column the pane
-      // last sorted by. See the audit finding in `search/DETAILS.md`.
+    it('offers no sort trigger in the header, because a click could not reorder the rows', async () => {
+      // The rows come through `staticEntries` in the engine's order, so a sort
+      // control here would promise something the pane can't do. The
+      // `search-results` capability row turns `sortsRows` off and the header
+      // renders plain labels: no button, no click target, nothing to press.
       const id = 'sr-header'
       getOrCreate(id, makeSnapshot(id, [makeEntry('b.txt'), makeEntry('a.txt')]))
 
@@ -232,22 +230,16 @@ describe('SearchResultsView', () => {
       })
       await tick()
 
-      const before = rowLabels(target)
       const headers = [...target.querySelectorAll<HTMLElement>('.sortable-header')]
       expect(headers.length).toBeGreaterThan(0)
-      for (const header of headers) header.click()
-      await tick()
-
-      expect(rowLabels(target)).toEqual(before)
+      expect(headers.filter((el) => el.tagName === 'BUTTON')).toEqual([])
       target.remove()
     })
 
-    it('still lights the indicator on whichever column the pane was sorted by', async () => {
-      // The visible half of the same gap: the Size header comes up `is-active`
-      // with a direction arrow while the rows sit in the engine's order and the
-      // button does nothing. A user reading the header is told the list is sorted
-      // by size. Reported as a finding rather than fixed here, because what the
-      // header SHOULD say on a result set is a product call.
+    it('lights no column and shows no arrow, whatever the pane last sorted by', async () => {
+      // The user report behind this: a header reading "sorted by size, descending"
+      // over a ranked result set that is in neither order. The labels stay so the
+      // columns are still named; the claim goes.
       const id = 'sr-indicator'
       getOrCreate(id, makeSnapshot(id, [makeEntry('b.txt'), makeEntry('a.txt')]))
 
@@ -267,8 +259,11 @@ describe('SearchResultsView', () => {
       })
       await tick()
 
-      const active = target.querySelector('.sortable-header.is-active')
-      expect(active?.textContent).toContain('Size')
+      expect(target.querySelector('.sortable-header.is-active')).toBeNull()
+      expect(target.querySelector('.sort-indicator')).toBeNull()
+      // The column is still named, so the pane reads as a file list.
+      const labels = [...target.querySelectorAll('.sortable-header .label')].map((el) => el.textContent)
+      expect(labels).toContain('Size')
       target.remove()
     })
   })

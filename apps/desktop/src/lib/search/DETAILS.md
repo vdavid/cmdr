@@ -698,6 +698,14 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
 - **Post-move snapshot cleanup**: covered by the cross-snapshot purge above. After F6 or F8 from the snapshot pane, the
   rows the operation actually took disappear from every snapshot that referenced them; a skipped one stays.
 
+**The column header claims no sort, because the pane performs none.** The rows go to `FullList` as `staticEntries` and
+render in the order the search engine ranked them, so the pane's `sortBy` / `sortOrder` govern nothing here. The header
+therefore comes through `sortable={caps.sortsRows}` (false for this kind): the four column labels stay, the sort
+buttons, the `is-active` column, and the direction caret go. ❌ Don't wire a real sort in by re-ordering `entries`
+instead: every source-side op above resolves a selected index against `snapshot.entries[i]`, so a view-only reorder
+would hand a delete the wrong file. A genuine sort has to reach the ops too, which means resolving through the SORTED
+view rather than the store's array. Capability plumbing: `file-explorer/pane/DETAILS.md` § "Volume capabilities".
+
 Destination-side write ops are still blocked: pasting INTO a search-results pane shows the canonical
 `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` (via the F-bar disablement, the menu item omission, and the dispatcher's
 `blockedByCapabilities` guard). `openTransferDialog` also blocks F5/F6 when the OPPOSITE pane is a snapshot, so the

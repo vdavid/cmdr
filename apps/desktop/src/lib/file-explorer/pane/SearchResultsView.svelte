@@ -83,10 +83,11 @@
     )
 
     /**
-     * Capability flags driving the row context menu. This view always renders a
-     * `search-results` pane, so it reads the `search-results` row of the per-kind
-     * defaults directly (capabilities, not a `volumeId === 'search-results'`
-     * string compare). The pure `capabilitiesForKind` needs no store lookup.
+     * Capability flags driving the row context menu and the column header. This
+     * view always renders a `search-results` pane, so it reads the
+     * `search-results` row of the per-kind defaults directly (capabilities, not a
+     * `volumeId === 'search-results'` string compare). The pure
+     * `capabilitiesForKind` needs no store lookup.
      */
     const caps = capabilitiesForKind('search-results')
 
@@ -183,6 +184,13 @@
 </script>
 
 {#if snapshot}
+    <!-- `sortable={caps.sortsRows}` is FALSE for this kind. The pane's `sortBy` /
+         `sortOrder` still cross (FullList wants them for its size-column format), but
+         the rows render in the search engine's ranked order, so the header names its
+         columns and claims no sort: no active column, no caret, no click target. An
+         actual sort would have to reach the ops too, which resolve a selected index
+         against `snapshot.entries[i]`. See `search/DETAILS.md` § "Source-side ops from
+         the snapshot pane". -->
     <FullList
         bind:this={fullListRef}
         listingId=""
@@ -197,6 +205,7 @@
         currentPath={path}
         {sortBy}
         {sortOrder}
+        sortable={caps.sortsRows}
         {onSelect}
         {onNavigate}
         {onVisibleRangeChange}
