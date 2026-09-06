@@ -120,7 +120,7 @@
 
     /** A card's member ids: its settings, plus the row ids of any extras it renders. */
     function cardMemberIds(group: AdvancedCardGroup): string[] {
-        const ids = group.settings.map((s) => s.id as string)
+        const ids: string[] = group.settings.map((s) => s.id)
         return hasLoggingExtras(group) ? [...ids, ...LOGGING_ROW_IDS] : ids
     }
 
