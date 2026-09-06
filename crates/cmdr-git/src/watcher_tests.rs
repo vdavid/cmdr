@@ -238,7 +238,7 @@ fn only_the_paths_a_snapshot_reads_are_worth_a_recompute() {
     let matters = |relative: &str| crate::watcher::is_repo_state_path(&git_dir, &git_dir.join(relative));
 
     for path in ["HEAD", "index", "packed-refs", "MERGE_HEAD", "ORIG_HEAD", "FETCH_HEAD"] {
-        assert!(matters(path), "{path} decides a RepoInfo");
+        assert!(matters(path), "{path} should decide a RepoInfo");
     }
     for path in [
         "refs",
