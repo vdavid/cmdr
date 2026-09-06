@@ -545,11 +545,11 @@
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
   },
-  "settings.mediaIndex.showInSearch.label": "Show image results in Search",
+  "settings.mediaIndex.showInSearch.label": "在搜尋中顯示影像結果",
   "@settings.mediaIndex.showInSearch.label": {
     "sourceHash": "45dd528"
   },
-  "settings.mediaIndex.showInSearch.description": "Search adds a row of matching images above your files. Matching is still rough, so it''s off until you want it.",
+  "settings.mediaIndex.showInSearch.description": "搜尋會在你的檔案上方加一排相符的影像。比對還很粗略，所以先關著，等你想用再打開。",
   "@settings.mediaIndex.showInSearch.description": {
     "sourceHash": "5b62cab"
   },

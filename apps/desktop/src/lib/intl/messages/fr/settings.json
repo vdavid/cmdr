@@ -547,11 +547,11 @@
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "sourceHash": "62dda47"
   },
-  "settings.mediaIndex.showInSearch.label": "Show image results in Search",
+  "settings.mediaIndex.showInSearch.label": "Afficher les résultats d''images dans Rechercher",
   "@settings.mediaIndex.showInSearch.label": {
     "sourceHash": "45dd528"
   },
-  "settings.mediaIndex.showInSearch.description": "Search adds a row of matching images above your files. Matching is still rough, so it''s off until you want it.",
+  "settings.mediaIndex.showInSearch.description": "Rechercher ajoute une rangée d''images correspondantes au-dessus de vos fichiers. La correspondance est encore approximative, donc l''option reste désactivée tant que vous n''en avez pas envie.",
   "@settings.mediaIndex.showInSearch.description": {
     "sourceHash": "5b62cab"
   },
