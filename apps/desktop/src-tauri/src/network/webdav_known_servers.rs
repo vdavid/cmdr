@@ -59,6 +59,25 @@ pub struct KnownWebdavServer {
     /// place, and that is the only place the default is spelled on the frontend.
     #[serde(default = "reconnects_automatically")]
     pub auto_reconnect: bool,
+    /// Whether this server's place shows in the volume switcher.
+    ///
+    /// ❗ **A `remember` never changes it.** That function runs on EVERY
+    /// successful connect, so a pin taken from the caller would put an unpinned
+    /// row back in the switcher the next time the session came back — an unpin
+    /// that undoes itself. The stored value wins on replace, and the caller's
+    /// value is honored only when the entry is NEW, which is what makes "a new
+    /// place is pinned on its first successful connect" true without making a
+    /// reconnect re-pin anything.
+    ///
+    /// ❗ Defaults to OFF, the opposite of `auto_reconnect` and for the same
+    /// reason: read a missing field the way the behavior already shipping reads.
+    /// Nothing was in the switcher before pins, so `true` would drop every saved
+    /// server into it at once.
+    /// ⚠️ `serde(default)` makes specta type this `pinned?: boolean`. ❌ Don't let
+    /// a call site infer the default from that `undefined`: `getKnownWebdavServers` in `tauri-commands/webdav.ts` fills it in one
+    /// place, and that is the only place the default is spelled on the frontend.
+    #[serde(default)]
+    pub pinned: bool,
     /// When this server was last connected to, ISO 8601, so a picker can sort by
     /// recency.
     pub last_connected_at: String,
@@ -154,6 +173,12 @@ pub fn all() -> Vec<KnownWebdavServer> {
 /// Adds `server`, or replaces the entry for the same `(url, username)`.
 ///
 /// The URL is stored normalized, so the picker shows one spelling.
+///
+/// ❗ **`server.pinned` is honored only when the entry is NEW.** On a replace the
+/// STORED pin wins, because this runs on every successful connect: a pin taken
+/// from the caller would put an unpinned row back in the switcher the next time
+/// the session came back, which is an unpin that undoes itself. Changing a pin is
+/// its own writer's job.
 pub fn remember(mut server: KnownWebdavServer) {
     server.url = normalize_url(&server.url);
     {
@@ -166,7 +191,10 @@ pub fn remember(mut server: KnownWebdavServer) {
             // Replacing rather than appending: a second entry for one pair would
             // show the same server twice in a picker, and the two would drift as
             // only one of them got updated.
-            Some(existing) => *existing = server,
+            Some(existing) => {
+                server.pinned = existing.pinned;
+                *existing = server;
+            }
             None => store.known_webdav_servers.push(server),
         }
     }

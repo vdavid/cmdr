@@ -24,8 +24,9 @@ Frontend: `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`. Auth-flow back
 
 ## Must-knows
 
-- **SFTP's and WebDAV's two per-server switches are independent**: the Keychain entry IS "remember the secret", and
-  `auto_reconnect` ❗ defaults to ON. `crates/cmdr-sftp/DETAILS.md`.
+- **SFTP's and WebDAV's per-server switches are independent**: the Keychain entry IS "remember the secret",
+  `auto_reconnect` ❗ defaults ON, and `pinned` ❗ defaults OFF and ❗ survives a reconnect.
+  `crates/cmdr-sftp/DETAILS.md`.
 - **SFTP and WebDAV key everything by `(host, port, username)`** (volume id, saved server, secret store); ❌ never the
   host alone, or two accounts share a secret and a reconnect retries the wrong one. A trusted host KEY is keyed
   `(host, port, algorithm)`. ❌ Never write `~/.ssh/known_hosts`. `crates/cmdr-sftp/DETAILS.md`.

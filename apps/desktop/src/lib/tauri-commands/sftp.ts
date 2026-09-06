@@ -170,20 +170,27 @@ export async function deleteSftpCredentials(host: string, port: number, username
 }
 
 /** A saved server with every switch spelled out, which is what a picker or an edit form needs. */
-export type SavedSftpServer = KnownSftpServer & { autoReconnect: boolean }
+export type SavedSftpServer = KnownSftpServer & { autoReconnect: boolean; pinned: boolean }
 
 /**
  * Every SFTP server the user has connected to.
  *
- * `autoReconnect` is typed optional on the generated `KnownSftpServer` because a
- * file written before that switch existed omits it. This is the one place that
- * gap is closed, and on — SFTP has always reconnected on its own, so reading a
- * missing field as off would switch it off under every server saved so far.
- * Nowhere else should be spelling that default.
+ * `autoReconnect` and `pinned` are typed optional on the generated
+ * `KnownSftpServer` because a file written before either existed omits it. This
+ * is the one place both gaps are closed, and they close the OPPOSITE way:
+ * `autoReconnect` defaults ON (SFTP has always reconnected on its own, so
+ * reading a missing field as off would switch it off under every server saved so
+ * far) and `pinned` defaults OFF (nothing was in the switcher before pins, so on
+ * would drop every saved server into it at once). ❌ Nowhere else should be
+ * spelling either default.
  */
 export async function getKnownSftpServers(): Promise<SavedSftpServer[]> {
   const servers = await commands.getKnownSftpServers()
-  return servers.map((server) => ({ ...server, autoReconnect: server.autoReconnect ?? true }))
+  return servers.map((server) => ({
+    ...server,
+    autoReconnect: server.autoReconnect ?? true,
+    pinned: server.pinned ?? false,
+  }))
 }
 
 /**

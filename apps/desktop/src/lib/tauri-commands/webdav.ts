@@ -117,18 +117,25 @@ export async function deleteWebdavCredentials(url: string, username: string): Pr
 }
 
 /** A saved server with every switch spelled out, which is what a picker or an edit form needs. */
-export type SavedWebdavServer = KnownWebdavServer & { autoReconnect: boolean }
+export type SavedWebdavServer = KnownWebdavServer & { autoReconnect: boolean; pinned: boolean }
 
 /**
  * Every WebDAV server the user has connected to.
  *
- * `autoReconnect` is typed optional on the generated `KnownWebdavServer` because a
- * file written before that switch existed omits it. This is the one place that
- * gap is closed, and on. Nowhere else should be spelling that default.
+ * `autoReconnect` and `pinned` are typed optional on the generated
+ * `KnownWebdavServer` because a file written before either existed omits it.
+ * This is the one place both gaps are closed, and they close the OPPOSITE way:
+ * `autoReconnect` defaults ON, `pinned` defaults OFF (nothing was in the switcher
+ * before pins, so on would drop every saved server into it at once).
+ * ❌ Nowhere else should be spelling either default.
  */
 export async function getKnownWebdavServers(): Promise<SavedWebdavServer[]> {
   const servers = await commands.getKnownWebdavServers()
-  return servers.map((server) => ({ ...server, autoReconnect: server.autoReconnect ?? true }))
+  return servers.map((server) => ({
+    ...server,
+    autoReconnect: server.autoReconnect ?? true,
+    pinned: server.pinned ?? false,
+  }))
 }
 
 /**

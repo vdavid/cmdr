@@ -5,14 +5,15 @@
 //! App-side because that is what these assert on. The dial itself and the byte
 //! path are the crate's own cells (`crates/cmdr-webdav/DETAILS.md`).
 //!
-//! ❗ The cells that reach a server need the Docker stack:
-//! `apps/desktop/test/webdav-servers/start.sh`. Everything here runs without
-//! one; the fixture-backed lifecycle cells live beside the fixtures once they
-//! land.
+//! ❗ Every `webdav_integration_` cell here needs the Docker stack:
+//! `apps/desktop/test/webdav-servers/start.sh`. Everything else runs without
+//! one.
 
 use std::time::Duration;
 
 use cmdr_webdav::WebdavConnectionParams;
+
+use cmdr_webdav::volume::testing::{FIXTURE_USER, fixture_target};
 
 use crate::network::webdav_volume_wiring::{self, WebdavConnection};
 use crate::network::{keychain, webdav_known_servers};
@@ -118,4 +119,54 @@ async fn a_connect_that_ends_takes_its_attempt_entry_with_it_and_registers_nothi
         !webdav_volume_wiring::cancel_connect(ATTEMPT),
         "the attempt's entry goes out with the connect, however the connect ended"
     );
+}
+
+/// ❗ **A reconnect never puts an unpinned server back in the switcher.**
+///
+/// The connect path asks for `pinned: true`, which is how a NEW place lands in
+/// the switcher on its first successful connect. A server the user has since
+/// unpinned has to survive the next connect unpinned, or the unpin undoes itself
+/// the moment the session comes back. `webdav_known_servers::remember` is where
+/// the stored value wins.
+#[tokio::test]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn webdav_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let target = fixture_target("APACHE", 13480, FIXTURE_USER);
+    let params = target.params();
+    keychain::save_credentials(
+        &params.credential_service(),
+        Some(&params.username),
+        &params.username,
+        &target.password,
+    )
+    .expect("the test secret store always accepts");
+
+    let saved = || {
+        webdav_known_servers::all()
+            .into_iter()
+            .find(|entry| entry.username == params.username)
+            .expect("a successful connect remembers the server")
+    };
+
+    let first = webdav_volume_wiring::connect_and_register("Fixture server", params.clone(), "webdav-pin-1").await;
+    let WebdavConnection::Connected { volume_id } = first else {
+        panic!("a fixture with its password stored must connect");
+    };
+    assert!(saved().pinned, "a first connect pins the new place");
+
+    // The user unpins it, then the session drops and comes back.
+    let mut unpinned = saved();
+    unpinned.pinned = false;
+    webdav_known_servers::forget(&unpinned.url, &unpinned.username);
+    webdav_known_servers::remember(unpinned);
+    webdav_volume_wiring::disconnect(&volume_id).await;
+
+    let again = webdav_volume_wiring::connect_and_register("Fixture server", params.clone(), "webdav-pin-2").await;
+    let WebdavConnection::Connected { volume_id } = again else {
+        panic!("the same fixture connects again");
+    };
+    assert!(!saved().pinned, "the unpin survives the reconnect");
+
+    webdav_volume_wiring::disconnect(&volume_id).await;
 }

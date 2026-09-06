@@ -7552,6 +7552,26 @@ export type KnownSftpServer = {
    */
   autoReconnect?: boolean
   /**
+   *  Whether this server's place shows in the volume switcher.
+   *
+   *  ❗ **A `remember` never changes it.** That function runs on EVERY
+   *  successful connect, so a pin taken from the caller would put an unpinned
+   *  row back in the switcher the next time the session came back — an unpin
+   *  that undoes itself. The stored value wins on replace, and the caller's
+   *  value is honored only when the entry is NEW, which is what makes "a new
+   *  place is pinned on its first successful connect" true without making a
+   *  reconnect re-pin anything.
+   *
+   *  ❗ Defaults to OFF, the opposite of `auto_reconnect` and for the same
+   *  reason: read a missing field the way the behavior already shipping reads.
+   *  Nothing was in the switcher before pins, so `true` would drop every saved
+   *  server into it at once.
+   *  ⚠️ `serde(default)` makes specta type this `pinned?: boolean`. ❌ Don't let
+   *  a call site infer the default from that `undefined`: `getKnownSftpServers` in `tauri-commands/sftp.ts` fills it in one
+   *  place, and that is the only place the default is spelled on the frontend.
+   */
+  pinned?: boolean
+  /**
    *  When this server was last connected to, ISO 8601, so a picker can sort by
    *  recency.
    */
@@ -7595,6 +7615,26 @@ export type KnownWebdavServer = {
    *  place, and that is the only place the default is spelled on the frontend.
    */
   autoReconnect?: boolean
+  /**
+   *  Whether this server's place shows in the volume switcher.
+   *
+   *  ❗ **A `remember` never changes it.** That function runs on EVERY
+   *  successful connect, so a pin taken from the caller would put an unpinned
+   *  row back in the switcher the next time the session came back — an unpin
+   *  that undoes itself. The stored value wins on replace, and the caller's
+   *  value is honored only when the entry is NEW, which is what makes "a new
+   *  place is pinned on its first successful connect" true without making a
+   *  reconnect re-pin anything.
+   *
+   *  ❗ Defaults to OFF, the opposite of `auto_reconnect` and for the same
+   *  reason: read a missing field the way the behavior already shipping reads.
+   *  Nothing was in the switcher before pins, so `true` would drop every saved
+   *  server into it at once.
+   *  ⚠️ `serde(default)` makes specta type this `pinned?: boolean`. ❌ Don't let
+   *  a call site infer the default from that `undefined`: `getKnownWebdavServers` in `tauri-commands/webdav.ts` fills it in one
+   *  place, and that is the only place the default is spelled on the frontend.
+   */
+  pinned?: boolean
   /**
    *  When this server was last connected to, ISO 8601, so a picker can sort by
    *  recency.

@@ -187,9 +187,11 @@ The app's commands (owned by `apps/desktop`):
 `connected | authentication_rejected | needs_credentials | certificate_untrusted | not_a_webdav_server | timed_out | unreachable | cancelled`
 (`AuthMethodUnsupported` surfaces as `authentication_rejected` until the frontend grows a word for it),
 `cancelWebdavConnect`, `disconnectWebdavVolume`, `saveWebdavCredentials(url, username, secret)` / `hasWebdavCredentials`
-/ `deleteWebdavCredentials`, `getKnownWebdavServers` / `updateKnownWebdavServer` / `forgetKnownWebdavServer`,
-`getWebdavUnattendedReconnect(volumeId)`, and the backend-neutral `reconnectSmbVolume` /
-`reconnectSmbVolumeWithCredentials` / `getVolumeSignInState`.
+/ `deleteWebdavCredentials`, `getKnownWebdavServers` / `updateKnownWebdavServer` / `forgetKnownWebdavServer` (❗ neither
+write can change `pinned`: `webdav_known_servers::remember` honors it only for a NEW entry and carries the stored value
+across on a replace, so a reconnect can't undo an unpin; it defaults to FALSE, and `getKnownWebdavServers` in
+`tauri-commands/webdav.ts` is the one place that default is spelled), `getWebdavUnattendedReconnect(volumeId)`, and the
+backend-neutral `reconnectSmbVolume` / `reconnectSmbVolumeWithCredentials` / `getVolumeSignInState`.
 
 ## Which side a test lives on
 
