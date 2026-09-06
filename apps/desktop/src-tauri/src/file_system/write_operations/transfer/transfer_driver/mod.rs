@@ -152,7 +152,14 @@ pub(in crate::file_system::write_operations::transfer) use sync_driver::drive_tr
 /// welded `volume::r#move`, `volume::move_cross`, and `volume::move_same` into
 /// one module cycle: the dispatcher imported the two engines, and both engines
 /// imported the dispatcher back for these three lines.
-pub(super) type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
+///
+/// ❗ The `Result` is the data-safety half. `Ok(None)` means the destination
+/// SAID the name is free; an `Err` means it wouldn't say, and the driver fails
+/// that item rather than writing. ❌ Never fold the two together: a flaky link
+/// then becomes a silent overwrite under a Skip or Stop policy, because no
+/// resolver runs, no policy is consulted, and the landing clears whatever the
+/// probe was asked about.
+pub(super) type FetchFut<'a> = Pin<Box<dyn Future<Output = Result<Option<u64>, WriteOperationError>> + Send + 'a>>;
 
 /// Per-call future shape for [`drive_transfer_serial_async`]'s `conflict_resolver`
 /// closure. See [`FetchFut`] for why these live with the driver.

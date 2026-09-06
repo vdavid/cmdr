@@ -156,11 +156,21 @@ where
         };
 
         // Conflict detection via caller-supplied dest meta fetcher.
-        // `Some(size)` => conflict; `None` => no conflict (or stat failed,
-        // treated identically to no-conflict at the top-level — same shape as
-        // today's `dest_volume.get_metadata(...).await.ok()` check in
-        // `copy_volumes_with_progress`).
-        let dest_size_hint = dest_meta_fetcher(&initial_dest_path).await;
+        // `Ok(Some(size))` => conflict; `Ok(None)` => the destination said the
+        // name is free. An `Err` is neither: the destination wouldn't say, so
+        // this item fails HERE, before any resolver or write. See `FetchFut`.
+        let dest_size_hint = match dest_meta_fetcher(&initial_dest_path).await {
+            Ok(hint) => hint,
+            Err(e) => {
+                return TransferLoopOutcome {
+                    files_done,
+                    bytes_done,
+                    files_skipped,
+                    bytes_skipped,
+                    intent: PostLoopIntent::Failed(e),
+                };
+            }
+        };
 
         let (resolved_dest, replace_after_write, dest_name_claimed) = if dest_size_hint.is_some() {
             log::debug!(

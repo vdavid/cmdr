@@ -31,6 +31,35 @@ use super::naming::{find_unique_volume_name, rescue_out_of_temp_space};
 use super::transfer_error::{FinalizeFailure, PathRole, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
 
+/// What the destination holds at one TOP-LEVEL name, for the conflict pre-check
+/// every engine runs before it writes.
+///
+/// `Ok(None)` ⇒ the destination said the name is free. `Ok(Some(size))` ⇒
+/// something is there and the caller routes it through the resolver.
+///
+/// ❗ **Only `NotFound` means free.** A `ConnectionTimeout`, a
+/// `DeviceSessionReset`, a `PermissionDenied` — anything else — is the
+/// destination refusing to answer, and reading that as "nothing is there" is
+/// the whole bug: the item skips the resolver, the Skip/Stop policy is never
+/// consulted, and the landing then clears whatever the probe was asked about.
+/// So it fails THAT item, at the destination path. Same discipline
+/// `merge.rs::what_the_destination_holds` follows one level down, for a merge
+/// child.
+///
+/// ❌ No retry here. Per-file retry belongs to `retry.rs`, inside
+/// `stream_pipe_file`, and a second layer above it would multiply the wait a
+/// user sits through on a dead link (`transfer/CLAUDE.md`).
+pub(super) async fn size_of_whatever_is_at(
+    dest_volume: &Arc<dyn Volume>,
+    path: &Path,
+) -> Result<Option<u64>, WriteOperationError> {
+    match dest_volume.get_metadata(path).await {
+        Ok(entry) => Ok(Some(entry.size.unwrap_or(0))),
+        Err(VolumeError::NotFound(_)) => Ok(None),
+        Err(e) => Err(map_volume_error(&path.display().to_string(), PathRole::Destination, e)),
+    }
+}
+
 /// Outcome of resolving a volume conflict.
 ///
 /// The caller writes streaming bytes to `write_path`. When `replace_after_write`

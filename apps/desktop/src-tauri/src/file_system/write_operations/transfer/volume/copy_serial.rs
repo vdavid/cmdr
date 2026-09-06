@@ -185,13 +185,9 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     if let Some(probe) = op_probe_precheck.as_ref() {
                         probe.set_driver_phase(DriverPhase::PreparingNext, &p_owned.display().to_string());
                     }
-                    // `Some(_)` signals a conflict; preserve the existing
-                    // "treat any successful stat as a conflict" semantics.
-                    dest_volume
-                        .get_metadata(&p_owned)
-                        .await
-                        .ok()
-                        .map(|m| m.size.unwrap_or(0))
+                    // Any successful stat is a conflict; a stat that can't
+                    // answer fails the item rather than writing.
+                    super::conflict::size_of_whatever_is_at(&dest_volume, &p_owned).await
                 })
             }
         },

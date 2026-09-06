@@ -104,6 +104,10 @@ mod rename_merge_test_support;
 #[cfg(test)]
 mod finalize_recovery_tests;
 
+/// What each engine does when the destination won't say whether a name is taken.
+#[cfg(test)]
+mod dest_precheck_failure_tests;
+
 #[cfg(test)]
 mod preflight_stop_tests;
 #[cfg(test)]

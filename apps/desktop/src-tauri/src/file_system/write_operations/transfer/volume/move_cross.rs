@@ -227,11 +227,7 @@ pub(crate) async fn move_volumes_with_progress(
                         super::super::transfer_probe::DriverPhase::PreparingNext,
                         &p_owned.display().to_string(),
                     );
-                    dest_volume
-                        .get_metadata(&p_owned)
-                        .await
-                        .ok()
-                        .map(|m| m.size.unwrap_or(0))
+                    super::conflict::size_of_whatever_is_at(&dest_volume, &p_owned).await
                 })
             }
         },
