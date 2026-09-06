@@ -17,6 +17,7 @@ import { fileHandlers } from './file-handlers'
 import { clipboardHandlers } from './clipboard-handlers'
 import { selectionHandlers } from './selection-handlers'
 import { tagHandlers } from './tag-handlers'
+import { serversHandlers } from './servers-handlers'
 import { miscHandlers } from './misc-handlers'
 import type { CommandHandlerRecord } from './types'
 
@@ -31,6 +32,7 @@ export const commandHandlers: CommandHandlerRecord = {
   ...clipboardHandlers,
   ...selectionHandlers,
   ...tagHandlers,
+  ...serversHandlers,
   ...miscHandlers,
 }
 

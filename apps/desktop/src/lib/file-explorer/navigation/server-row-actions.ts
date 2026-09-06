@@ -18,6 +18,7 @@ import {
   forgetServerSecret,
   hasServerSecret,
   listSavedServers,
+  setPlacePinned,
   showVolumeRowContextMenu,
   type ServerRowMenu,
 } from '$lib/tauri-commands'
@@ -105,6 +106,26 @@ export async function forgetSavedServer(volumeId: string, volumeName: string): P
   }
 }
 
+/**
+ * Moves a place's pin, from the "Pin / unpin server" command.
+ *
+ * ❗ Not confirmed, unlike the two forgets: unpinning loses nothing (the server
+ * stays saved and stays in the hub), and the same command puts it back.
+ */
+export async function setServerPinned(volumeId: string, volumeName: string, pinned: boolean): Promise<void> {
+  try {
+    await setPlacePinned(volumeId, pinned)
+    addToast(
+      tString(pinned ? 'fileExplorer.navigation.serverPinnedToast' : 'fileExplorer.navigation.serverUnpinnedToast', {
+        name: volumeName,
+      }),
+      { level: 'success' },
+    )
+  } catch (e) {
+    refused('Pinning', volumeId, e, 'fileExplorer.navigation.pinRefusedToast', volumeName)
+  }
+}
+
 /** Asks first, then forgets the place's remembered secret, keeping the server. */
 export async function forgetSavedSecret(volumeId: string, volumeName: string): Promise<void> {
   const confirmed = await confirmDialog(
@@ -120,7 +141,8 @@ export async function forgetSavedSecret(volumeId: string, volumeName: string): P
 }
 
 /**
- * Runs the item the user picked from a server row's native menu.
+ * Runs the item the user picked from a server row's native menu, or the palette
+ * command that mirrors it.
  *
  * ❗ The one consumer, wired from `DualPaneExplorer` (which owns the
  * `volume-context-action` listener), because these actions are global: the row
@@ -150,10 +172,16 @@ export async function runServerRowAction(payload: {
     case 'forget-server':
       await forgetSavedServer(volumeId, volumeName)
       return
-    case 'open':
     case 'pin':
     case 'unpin':
+      await setServerPinned(volumeId, volumeName, action === 'pin')
+      return
+    case 'open':
     case 'edit':
+      // No producer yet. `open` is Enter in the hub and a click in the switcher,
+      // both of which run the `navigate()` transaction this module can't reach;
+      // `edit` waits for the sign-in sheet. They log rather than silently doing
+      // nothing, so the first menu that emits one says so.
       log.info('A server row asked for {action} on {volumeId}, which has no handler yet', { action, volumeId })
       return
     case 'eject':
@@ -178,7 +206,8 @@ function refused(
   key:
     | 'fileExplorer.navigation.disconnectRefusedToast'
     | 'fileExplorer.navigation.forgetServerRefusedToast'
-    | 'fileExplorer.navigation.forgetSecretRefusedToast',
+    | 'fileExplorer.navigation.forgetSecretRefusedToast'
+    | 'fileExplorer.navigation.pinRefusedToast',
   volumeName: string,
 ): void {
   log.warn('{what} {volumeId} broke down: {error}', { what, volumeId, error: String(error) })

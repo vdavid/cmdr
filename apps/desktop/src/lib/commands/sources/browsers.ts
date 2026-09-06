@@ -51,6 +51,49 @@ export const browsersCommands: CommandSource[] = [
   },
 
   // ============================================================================
+  // Servers
+  // ============================================================================
+  {
+    // Takes the focused pane to the servers hub, wherever it is. The one command
+    // here that needs no server under the cursor.
+    id: 'servers.show',
+    nameKey: 'commands.serversShow.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'servers.togglePin',
+    nameKey: 'commands.serversTogglePin.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'servers.disconnect',
+    nameKey: 'commands.serversDisconnect.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    id: 'servers.forgetSecret',
+    nameKey: 'commands.serversForgetSecret.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: [],
+  },
+  {
+    // ⌘E lives in the hub's own scope, a sibling of the file list's, so it can
+    // never meet a file-list binding.
+    id: 'servers.edit',
+    nameKey: 'commands.serversEdit.label',
+    scope: 'Main window/Servers',
+    showInPalette: true,
+    shortcuts: ['⌘E'],
+  },
+
+  // ============================================================================
   // Volume chooser
   // ============================================================================
   {
