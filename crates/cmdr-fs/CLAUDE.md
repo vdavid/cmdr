@@ -8,13 +8,13 @@ path; prefer that in app code (`crate::file_system::volume::VolumeError`), `cmdr
 
 - `volume/`: the trait, its types, `connection.rs` (the REMOTE vocabulary: `ConnectionState`, `DeviceReadiness`,
   `BackendKind`, `SignInShape`; ❗ confusing any two is a bug, and its header says how), `InMemoryVolume`, `ids` +
-  `canonical_root` (the ID funnel and double-mount collapse),
-  `retirement.rs` (how background work learns it stopped being the live volume), `channel_stream.rs` (the consumer half
-  of a network backend's read path), `scan_boundary.rs` + `scan_stop.rs` (the one seam a copy scan touches per entry: it
-  reports counts AND answers Cancel and Pause), the four modules a stat-and-listing backend gets its `Volume` bodies
-  from (`scan_walk.rs`, `mkdir_all.rs`, `patching.rs`, `secret_store.rs`), `friendly_error/` (typed, word-free
-  classification), `usb_speed.rs` (❗ its doc comment reaches `bindings.ts`), and `host/` (what a backend needs from the
-  app, as named traits; read `src/volume/host/CLAUDE.md` before writing a backend).
+  `canonical_root` (the ID funnel and double-mount collapse), `retirement.rs` (how background work learns it stopped
+  being the live volume), `channel_stream.rs` (the consumer half of a network backend's read path), `scan_boundary.rs` +
+  `scan_stop.rs` (the one seam a copy scan touches per entry: it reports counts AND answers Cancel and Pause), the four
+  modules a stat-and-listing backend gets its `Volume` bodies from (`scan_walk.rs`, `mkdir_all.rs`, `patching.rs`,
+  `secret_store.rs`), `friendly_error/` (typed, word-free classification), `usb_speed.rs` (❗ its doc comment reaches
+  `bindings.ts`), and `host/` (what a backend needs from the app, as named traits; read `src/volume/host/CLAUDE.md`
+  before writing a backend).
 - `entry.rs` + `icons/` (`FileEntry` and the classifiers behind `get_icon_id`), `sqlite_util.rs` (the ONE process-wide
   page-cache slab and the factories all five stores open through), `staging.rs` (`StagingTemp`, the ONLY way to name a
   scratch file).

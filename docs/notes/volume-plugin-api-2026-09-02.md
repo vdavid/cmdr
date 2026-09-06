@@ -101,10 +101,10 @@ re-derives them:
 
 ## The two gaps that still stand
 
-1. **OAuth and browser-based auth.** `SignInPrompt` (since widened into `SignInShape`), `NeedsCredentials`, and the whole `volume-connection-changed`
-   recovery story are password-shaped, and `HostKeys` covers SSH-style trust. There is no seam for "open a browser, come
-   back with a token, refresh it before it expires." This blocks every git host and every proprietary consumer cloud,
-   first-party or plugin. **Worth building regardless of whether plugins happen.**
+1. **OAuth and browser-based auth.** `SignInPrompt` (since widened into `SignInShape`), `NeedsCredentials`, and the
+   whole `volume-connection-changed` recovery story are password-shaped, and `HostKeys` covers SSH-style trust. There is
+   no seam for "open a browser, come back with a token, refresh it before it expires." This blocks every git host and
+   every proprietary consumer cloud, first-party or plugin. **Worth building regardless of whether plugins happen.**
 2. **Path-triggered volume routing.** "This path crosses into something I serve" exists exactly once, hardcoded to
    archive magic bytes in `file_system/volume/manager/archive_routing.rs`. `ArchiveVolume` is a proper stacked volume
    (its `lane_key` and `get_space_info` delegate to the parent volume holding the `.zip`), so the shape is proven; it
