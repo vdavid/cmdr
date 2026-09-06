@@ -2616,3 +2616,87 @@ Notes de formulation :
   `Ajouter un serveur…`) : la note « trois points » du style guide vise les clés dont la source anglaise écrit `...`.
 - Une seule valeur est identique à l'anglais (`servers.hub.colType`), et elle porte sa `sameAsSourceJustification`.
   Toutes les apostrophes sont ASCII et doublées (`n''a`, `l''endroit`, `s''affiche`).
+
+## Le hub des serveurs : la feuille de connexion et la clé d'hôte SSH (2026-09-07, 46 clés `servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.*`, `goToPath.dialog.*Server`, `commands.serversConnect.label`)
+
+La feuille modale qui ajoute, modifie, ou ré-identifie un serveur (SMB, SFTP, WebDAV), l'étape d'approbation de la clé
+d'hôte SSH qui s'y insère, et deux lignes d'aperçu sous « Aller au chemin ». Le tas de références (`_ignored/i18n/fr/`)
+est absent de cette machine (chemin absolu du clone principal vérifié, `~/projects-git/vdavid/cmdr/_ignored/` n'existe
+pas) ; les termes viennent donc des paquets macOS installés (`plutil -convert json` sur les `.strings` / `.loctable`,
+macOS 26.6.2 build 25G83, 2026-09-07) et du catalogue `fr` déjà livré.
+
+- **Protocol (l'en-tête du sélecteur) → `Protocole`** · `AddPrinter.app/PlugIns/IP.plugin` (`IP.loctable`,
+  `100257.ibExternalAccessibilityDescription`), Wireless Diagnostics (`WDWiFiScan.loctable`,
+  `AYh-hx-E2Q.headerCell.title`), et System Profiler (`SPStorageReporter`, clé `protocol`) rendent tous `Protocol` par
+  `Protocole` · `high`.
+- **SMB / SFTP / WebDAV → verbatim** · Apple garde les sigles de protocole en français : NetAuthAgent
+  `Localizable.loctable` (`SMB_PASSWORD` → `Mot de passe SMB`, `WEBDAV_PASSWORD` → `Mot de passe WebDAV`),
+  NetworkSettingsIntents (`SMB` → `SMB`), Sharing.appex (`SSH_INFO_GENERAL` → « … via SSH et SFTP »), WorkflowKit («
+  serveurs SMB/CIFS, NFS, FTP (lecture seule) ou WebDAV ») · `high`. Les trois options du sélecteur portent donc une
+  `sameAsSourceJustification`.
+- **passphrase → `phrase secrète`** · AuthenticationServices `fr.lproj/Localizable.strings`, clé `Passphrase` →
+  `Phrase secrète` (macOS 26.6.2 build 25G83, 2026-09-07) · `high`. `Key passphrase` (celle qui déverrouille le FICHIER
+  de clé SSH, pas le mot de passe du compte) devient `Phrase secrète de la clé`. À distinguer de `mot de passe`, que le
+  catalogue réserve au compte.
+- **fingerprint (l'empreinte d'une clé) → `empreinte`** · Apple rend `fingerprint` par `empreinte numérique` dans Safari
+  (`fr.lproj/Localizable.strings` : `Fingerprinting defense` → `Protection contre le vol des empreintes numériques`, et
+  « pour créer une « empreinte numérique » et vous identifier ») · `high`. Notre contexte est déjà celui d'une clé, donc
+  `empreinte` seule suffit ; `Key fingerprint` → `Empreinte de la clé`. Le mot est féminin, ce qui rend
+  `Je l''ai vérifiée` sûr côté accord.
+- **to trust (une clé d'hôte) → `approuver`** · reprend le terme déjà fixé pour les certificats (§ Le hub des serveurs :
+  panneau de connexion) et la valeur livrée `servers.refusal.hostKeyUntrusted`
+  (`Cmdr n''a pas encore approuvé la clé de {host}.`) · `high`. ❗ Apple traduit le `Trust` NU d'un appairage d'appareil
+  par `Se fier` (SecurityInterface `Localizable.loctable`, UsersGroups.appex, RemotePairingDevice, clé `Trust`) : ne le
+  reprenez PAS ici, `Se fier à la nouvelle clé` divergerait de la clé déjà livrée et `desktop-i18n-term-consistency`
+  compterait l'écart.
+- **remote (ce qui est sur le serveur) → `distant`, postposé** · Apple construit `serveur distant` (Directory Utility
+  `Localizable.loctable`, ScreenSharing, WorkflowKit) et `ordinateur distant` (AppleScript, Sharing.appex) · `high`.
+  `Remote folder` → `Dossier distant`. Pas `À distance`, que System Profiler et FinderKit réservent au `Remote` employé
+  seul comme valeur de colonne.
+- **Browse… (le bouton qui ouvre le sélecteur de fichiers système) → `Parcourir…`** · Finder
+  `fr.lproj/ConnectToWindow.strings`, clé `48.title` : `Browse` → `Parcourir`, dans la fenêtre « Connexion au serveur »
+  elle-même (macOS 26.6.2 build 25G83, 2026-09-07) · `high`. Même mot que `settings.archives.opt.browse`, déjà livré.
+- **key file (le fichier de clé privée SSH) → `Fichier de clé`** · construit sur `clé`, le terme du catalogue pour une
+  clé (`ai.secretError.*`, `servers.refusal.hostKeyUntrusted`) · `high`. Pas `Fichier de clé privée` : l'anglais ne dit
+  pas `private`, et le champ vit déjà sous « Avancé ».
+- **ssh, ssh-agent, Nextcloud → verbatim** · noms de commande et de produit ; `ssh` reste en minuscules comme dans la
+  source · `high`.
+
+Notes de formulation :
+
+- **Les titres de la feuille sont des infinitifs**, comme tous les libellés d'action du set `fr` (style guide §
+  Formality) : `Ajouter un serveur`, `Modifier {name}`, `S''identifier sur {name}`. Le verbe `s''identifier` vient du
+  glossaire (§ Terms) et des clés livrées `fileExplorer.network.signIn` et `fileExplorer.smbReauth.savedPasswordFailed`
+  ; `se connecter` reste réservé à l'action réseau (`fileExplorer.network.connect` → `Se connecter`).
+- **Cinq libellés reprennent MOT POUR MOT une clé déjà livrée**, sinon `desktop-i18n-term-consistency` compte une
+  divergence : `Se connecter` (`fileExplorer.network.connect`), `S''identifier` (`fileExplorer.network.signIn`),
+  `Se connecter en tant qu''invité` (`fileExplorer.network.login.connectAsGuest`), `Mémoriser dans le trousseau`
+  (`fileExplorer.network.login.rememberInKeychain`), `Avancé` (`settings.section.advanced`).
+- **`Sign in with a username and password` s'écrit en toutes lettres**, contrairement au voisin
+  `fileExplorer.network.login.signInWithCredentials` (`S''identifier avec des identifiants`) : la source anglaise a
+  changé de formulation, donc le français aussi (`S''identifier avec un nom d''utilisateur et un mot de passe`).
+- **`How to connect` n'est pas `Mode de connexion`.** Le voisin `fileExplorer.network.login.connectionModeLegend` porte
+  ce dernier ; la nouvelle étiquette d'accessibilité pose une question et se rend par `Comment se connecter`.
+- **La citation d'un libellé de case à cocher garde les guillemets français** avec espace intérieure :
+  `Activez « Mémoriser dans le trousseau » et identifiez-vous une fois.` (style guide § Notes).
+- **`Signed out of {name}` nomme la session, pas la personne** : `Session fermée sur {name}`, sur le moule de
+  `servers.hub.status.signedOut` (`Session fermée`) et de `connectionTooltipNeedsSignIn`. Un participe accordé au sujet
+  donnerait `Déconnecté(e)`, que la règle de genre interdit.
+- **`Cmdr stopped connecting to {name}` → `Cmdr a interrompu la connexion à {name}`.** L'anglais dit un arrêt délibéré,
+  pas un échec, donc ni le moule `Cmdr n''a pas pu…` ni `erreur` / `échec` (bannis). `interrompre` nomme l'observation
+  et laisse la suite au corps du message.
+- **`I''ve checked it` → `Je l''ai vérifiée`** : première personne, l'utilisateur qui parle. L'accord porte sur
+  `l''empreinte` (féminin) affichée juste au-dessus, jamais sur la personne. `vérifier` est le verbe du catalogue pour
+  contrôler quelque chose (`servers.hub.status.waitingForKey` → `En attente de votre vérification de la clé`) ; il se
+  distingue d'`examiner`, réservé au `look at the key` de `connectionTooltipNeedsHostKey`.
+- **`nas.local` reste tel quel** : `NAS` est le même sigle en français (`servers.hub.emptyMessage` écrit déjà « un Mac
+  ou un NAS ») et `.local` est le suffixe mDNS réservé. Traduire l'exemple afficherait une adresse qui ne résout pas.
+  D'où sa `sameAsSourceJustification`.
+- **Les deux lignes d'aperçu de « Aller au chemin » restent à la 3e personne du présent**, comme la source :
+  `Ouvre {name}`, `Ajoute un serveur`. Pas d'infinitif ici : ce ne sont pas des libellés d'action mais la description de
+  ce que fera la touche Entrée.
+- **Les `…` suivent la source caractère pour caractère** : U+2026 dans `Connexion…`, `Parcourir…`, `S''identifier…`,
+  `Se connecter au serveur…`.
+- Quatre valeurs sont identiques à l'anglais (`servers.sheet.protocolSmb`, `protocolSftp`, `protocolWebdav`,
+  `addressPlaceholder`) et portent chacune leur `sameAsSourceJustification`. Toutes les apostrophes sont ASCII et
+  doublées (`S''identifier`, `d''hôte`, `qu''invité`, `l''empreinte`, `s''est`, `d''approuver`).

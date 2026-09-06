@@ -2272,3 +2272,109 @@ làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
 - **`servers.hub.rowCount`** · `vi` chỉ có nhánh `other`, nên `{count, plural, other {{countText} máy chủ}}`; danh từ
   không biến đổi theo số.
 - Không khóa nào trong 28 khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.
+
+## Trung tâm máy chủ, đợt 3: tấm thêm/sửa máy chủ + câu hỏi tin cậy khóa SSH (46 khóa `servers.sheet.*` / `servers.hostKey.*` / `servers.paneState.*` + `goToPath.dialog.opens|addsServer` + `commands.serversConnect.label`, 2026-09-07)
+
+Bề mặt: một tấm (sheet) duy nhất dùng cho cả ba việc — thêm một máy chủ mới (SMB / SFTP / WebDAV), đăng nhập lại vào một
+máy chủ đang hỏi mật khẩu, và sửa một máy chủ đã lưu — cộng bước hỏi có tin cậy khóa SSH của máy chủ hay không (lần đầu,
+và khi khóa đã đổi), hai khung trạng thái tương ứng trong khung tệp, và hai dòng xem trước dưới ô Đi tới đường dẫn.
+
+Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1), nên mọi dẫn chứng Apple lấy trực tiếp từ bundle macOS đang cài
+(`.loctable` + `.lproj/*.strings`, `plistlib.load(f)['vi']` so với `['en']`), macOS 26.6.2 build 25G83, 2026-09-07. Cách
+làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?". Nguồn giàu nhất cho đợt này là hộp thoại
+Kết nối với máy chủ của chính Apple (`NetAuthAgent.app/…/{AuthDialog,Localizable}.loctable`), vốn có gần đủ mọi nhãn mà
+tấm của Cmdr cần.
+
+### Thuật ngữ chốt trong đợt này
+
+- **protocol → `Giao thức`** · macOS `AddPrinter/IP.plugin` (`Protocol:` → `Giao thức:`, và `100257`
+  `ibExternalAccessibilityDescription` `Protocol` → `Giao thức` — đúng y bề mặt của ta, một tên phụ trợ cho bộ chọn) ·
+  `high`. Catalog đã dùng `giao thức` ở `servers.refusal.notAWebdavServer`.
+- **sign in to X → `Đăng nhập vào X`** · macOS Setup Assistant (`Sign In to iCloud` → `Đăng nhập vào iCloud`), CloudKit
+  (`Sign in to %1$@.` → `Đăng nhập vào %1$@.`), và catalog đã ship `fileExplorer.network.login.title`
+  (`Sign in to "{target}"` → `Đăng nhập vào "{target}"`) · `high`.
+- **passphrase → `cụm từ mật khẩu`; "Key passphrase" → `Cụm từ mật khẩu của khóa`** · macOS Certificate Assistant
+  (`Enter Passphrase:` → `Nhập Cụm từ mật khẩu:`), `DiskManagement` và `DiskImages2` dùng `cụm từ mật khẩu` xuyên suốt ·
+  `high`. Thêm `của khóa` vì tiếng Anh cố tình phân biệt nó với mật khẩu của TÀI KHOẢN ở ngay trên; bỏ đi thì hai ô
+  trong cùng một biểu mẫu đọc như nhau.
+- **fingerprint (của một khóa hay chứng nhận) → `dấu vân tay`** · macOS `Security.framework/Certificate.loctable`
+  (`Fingerprints` → `Dấu vân tay`, chính là mục dấu vân tay của chứng nhận trong Truy cập chuỗi khóa) · `high`. ❗ **Đây
+  là đính chính cho ghi chú của đợt 1** ("❌ đừng dùng `dấu vân tay`"): ghi chú đó nói về việc dịch chữ **key**, chứ
+  không phải chữ **fingerprint**. Apple dùng `dấu vân tay` cho cả dấu vân tay sinh trắc học lẫn dấu vân tay mật mã, nên
+  hai từ tiếng Anh vẫn tách nhau đúng như bản gốc: key = `khóa`, fingerprint = `dấu vân tay`.
+- **trust (nhãn nút) → `Tin cậy`** · macOS Setup Assistant `To Another Mac View` (`89.label` `Trust` → `Tin cậy`), khớp
+  với `tin cậy` / `không tin cậy` đã chốt ở đợt 1 · `high`.
+- **Keychain (tính năng, trong một ô đánh dấu) → `chuỗi khóa`** · macOS Certificate Assistant (`Keychain` →
+  `Chuỗi khóa`, `in your keychain` → `trong chuỗi khóa của bạn`), NetAuthAgent (`Remember this password in my keychain`
+  → `Nhớ mật khẩu này trong chuỗi khóa của tôi`) · `high`. `servers.sheet.remember` có tiếng Anh y hệt
+  `fileExplorer.network.login.rememberInKeychain`, nên phải dùng đúng giá trị đã ship: `Ghi nhớ trong chuỗi khóa`
+  (`desktop-i18n-term-consistency` bắt lỗi nếu lệch).
+- **Advanced (mục gập lại) → `Nâng cao`** · macOS Finder `vi.lproj/PreferencesWindow.strings` (`Advanced` → `Nâng cao`),
+  và catalog đã có `settings.section.advanced` cùng tiếng Anh · `high`.
+- **Browse… (nút mở bộ chọn tệp) → `Duyệt…`** · macOS `StandardAdditions.osax/ChooseApplication` (`Browse...` →
+  `Duyệt...`, đúng một nút mở bộ chọn tệp) và NetAuthAgent (`Browse` → `Duyệt`); catalog đã có
+  `settings.archives.opt.browse` = `Duyệt` · `high`. Giữ dấu … (U+2026) như bản gốc.
+- **remote → `từ xa`; "Remote folder" → `Thư mục từ xa`** · macOS Finder `LocalizableMerged` (`Remote` → `Từ xa`,
+  `Remote Volume` → `Ổ đĩa từ xa`) · `high`. Cùng khuôn với `Ổ đĩa từ xa` nên người đọc nhận ra ngay đây là chỗ trên máy
+  chủ, không phải trên máy mình.
+- **hostname → `tên máy chủ`** · macOS Certificate Assistant (`Hostname mismatch` → `Tên máy chủ không khớp`),
+  AddPrinter (`Enter host name or IP address.` → `Nhập tên máy chủ hoặc địa chỉ IP.`) · `high`.
+- **owner (của một máy chủ) → `chủ sở hữu`** · macOS iCloud `CloudKitVetting` (`the owner stopped sharing it` →
+  `chủ sở hữu đã dừng chia sẻ`) · `high`. `chủ sở hữu máy chủ` dài nhưng rõ; ❌ đừng rút thành `chủ máy chủ`, nghe như
+  một danh từ ghép lạ.
+- **stopped <làm gì> → `đã dừng <động từ>`** · macOS Keychain First Aid (`Repair stopped by user` →
+  `Người dùng đã dừng sửa chữa`), iCloud (`stopped sharing it` → `đã dừng chia sẻ`) · `high`. Nên
+  `Cmdr stopped connecting to {name}` → `Cmdr đã dừng kết nối tới {name}`. ❌ Đừng dùng `ngắt`: `ngắt` thuộc về hành
+  động chủ ý của NGƯỜI DÙNG (`Ngắt kết nối`), còn ở đây chính Cmdr là bên dừng lại.
+- **signed out of X → `đã đăng xuất khỏi X`** · macOS Erase Assistant (`Failed to sign out of iCloud` →
+  `Không thể đăng xuất khỏi iCloud`, `signed out of Apple Music…` → `đăng xuất khỏi Apple Music…`) · `high`. Khớp với
+  `Đã đăng xuất` đã chốt ở đợt 2.
+- **reinstalled → `cài đặt lại`** · macOS StartupDisk (`needs to be reinstalled` → `cần được cài đặt lại`), StorageUI ·
+  `high`.
+- **reconnect automatically → `Tự động kết nối lại`** · catalog đặt trạng từ lên trước xuyên suốt
+  (`settings.updates.autoCheck.label` = `Tự động kiểm tra cập nhật`, `settings.updates.errorReports.label` =
+  `Tự động gửi báo cáo trục trặc`, `fileExplorer.navigation.spaceRetryingAuto` = `Đang tự động thử lại…`) · `high`.
+- **"check X against Y" → `đối chiếu X với Y`; "check" trần → `kiểm tra`** · macOS dùng `đối chiếu` cho việc so khớp
+  (TouchID `matching accuracy` → `độ chính xác khi đối chiếu`), còn `kiểm tra` là từ catalog đã chọn cho chính việc này
+  ở `servers.hub.status.waitingForKey` = `Đang chờ bạn kiểm tra khóa` · `high`. Hai từ chia nhau theo cấu trúc câu tiếng
+  Anh: có vế "against/với cái gì" thì `đối chiếu`, không có thì `kiểm tra`.
+- **"something is sitting between you and it" → `có gì đó đang nằm giữa bạn và máy chủ`** · macOS không có chuỗi nào nói
+  về tấn công xen giữa, nên đây là lối tả bằng tiếng Việt đời thường, giữ nguyên hình ảnh của bản gốc thay vì gọi tên
+  thuật ngữ (`tấn công xen giữa`) mà người đọc phổ thông không cần · `tentative`.
+- **guest → `khách`; "Connect as guest" → `Kết nối với tư cách khách`** · macOS `SystemFolderLocalizations` (`Guest` →
+  `Khách`), loginwindow (`logged in as a guest user` → `đăng nhập với tư cách người dùng khách`); catalog đã ship đúng
+  giá trị này ở `fileExplorer.network.login.connectAsGuest` và `fileExplorer.network.browser.status.guest` · `high`.
+
+### Ghi chú theo chuỗi
+
+- **`servers.sheet.addressHelp` →
+  `Một tên máy chủ, một địa chỉ bạn đã sao chép, hoặc cả một dòng lệnh ssh. Cmdr tự chọn giao thức.`** · `ssh` giữ
+  nguyên chữ thường như `@key.description` yêu cầu; `dòng lệnh ssh` chứ không `dòng ssh`, vì `lệnh` là từ đã chốt cho
+  một câu lệnh shell (`style.md`) và bỏ nó đi thì `dòng ssh` không thành tiếng Việt. Câu hai viết ở thì hiện tại, thêm
+  `tự` để nói rõ người dùng không phải chọn.
+- **`servers.sheet.needsStoredSecret`** · trích dẫn phải khớp TỪNG CHỮ nhãn ô đánh dấu ngay phía trên, nên trong ngoặc
+  kép cong là `“Ghi nhớ trong chuỗi khóa”`, không phải một biến thể mới. `Việc tự kết nối lại` mở đầu bằng `Việc` để câu
+  có chủ ngữ, cùng khuôn với `Việc tìm máy chủ trên mạng cục bộ đang tắt.` của đợt 2.
+- **`servers.hostKey.changedBody` và `servers.paneState.hostKeyChangedHint` dùng chung một câu giữa** · tiếng Anh viết
+  gần y hệt (`This can mean…` / `That can mean…`), nên tiếng Việt dùng đúng một câu:
+  `Có thể máy chủ đã được cài đặt lại, hoặc có gì đó đang nằm giữa bạn và máy chủ.` Người đọc gặp cùng một cảnh báo ở
+  hai bề mặt thì phải thấy cùng một chữ, đúng luật "chuỗi chị em" trong `style.md`. Bỏ `Điều này có nghĩa là` vì tiếng
+  Việt không cần vế dẫn; `Có thể …` đã mang đủ sắc thái phỏng đoán và ngắn hơn hẳn.
+- **`servers.hostKey.changedDisclosure` → `Tôi đã kiểm tra rồi`** · ngôi thứ nhất, chính người dùng nói, đúng như bản
+  gốc. Dùng `kiểm tra` (không phải `đối chiếu`) để nối thẳng với `Đang chờ bạn kiểm tra khóa` ở cột Trạng thái: đây là
+  câu trả lời cho đúng lời nhắc đó.
+- **`servers.paneState.hostKeyChangedHint` mở đầu bằng `Khóa của máy chủ đã thay đổi.`** · tiếng Anh dùng đại từ
+  (`Its key changed.`), tiếng Việt viết rõ `của máy chủ` vì tiêu đề ngay trên đã nêu tên riêng và một đại từ trống ở đây
+  sẽ đọc lửng.
+- **`goToPath.dialog.opensServer` / `.addsServer` → `Mở {name}` / `Thêm một máy chủ`** · dòng xem trước, ngôi thứ ba thì
+  hiện tại; tiếng Việt không chia động từ nên chỉ còn động từ trần, đúng lối macOS Installer
+  (`Installs %@ for the first time.` → `Cài đặt %@ lần đầu tiên.`). Giữ `một` ở chuỗi thứ hai để nó đọc như một lời mô
+  tả chứ không phải nhãn nút `Thêm máy chủ…` ở bảng máy chủ.
+- **`commands.serversConnect.label` → `Kết nối với máy chủ…`** · tiếng Anh trùng khít
+  `settings.network.permissionIntroConnectLink`, và Finder vi gọi `Connect to Server…` đúng như vậy (`LocalizableMerged`
+  `N84`). Ràng buộc của `desktop-i18n-term-consistency`.
+- **Bốn khóa mang `sameAsSourceJustification`**: `servers.sheet.protocolSmb` / `.protocolSftp` / `.protocolWebdav` (tên
+  giao thức, macOS vi giữ nguyên: NetAuthAgent `WEBDAV_PASSWORD` → `Mật khẩu WebDAV`, `FTP_PASSWORD` → `Mật khẩu FTP`)
+  và `servers.sheet.addressPlaceholder` (`nas.local`, một tên máy ví dụ: `nas` là chữ viết tắt catalog giữ nguyên,
+  `.local` là hậu tố mDNS).
+- Không giá trị nào trong 46 khóa chứa dấu nháy đơn, nên không có dấu nháy nào phải nhân đôi.

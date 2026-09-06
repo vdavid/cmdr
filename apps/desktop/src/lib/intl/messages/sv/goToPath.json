@@ -38,5 +38,13 @@
   "goToPath.toast.pressToGoBack": "Tryck på <chip></chip> för att gå tillbaka.",
   "@goToPath.toast.pressToGoBack": {
     "sourceHash": "ee851b2"
+  },
+  "goToPath.dialog.opensServer": "Öppnar {name}",
+  "@goToPath.dialog.opensServer": {
+    "sourceHash": "e3fb00e"
+  },
+  "goToPath.dialog.addsServer": "Lägger till en server",
+  "@goToPath.dialog.addsServer": {
+    "sourceHash": "8e73f74"
   }
 }

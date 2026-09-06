@@ -129,5 +129,182 @@
   "servers.refusal.hostKeyRevoked": "De sleutel van {host} is in je SSH-instellingen op deze Mac gemarkeerd als gecompromitteerd. Cmdr maakt er geen verbinding mee.",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
+  },
+  "servers.sheet.addTitle": "Voeg server toe",
+  "@servers.sheet.addTitle": {
+    "sourceHash": "1099b2a"
+  },
+  "servers.sheet.signInTitle": "Log in bij {name}",
+  "@servers.sheet.signInTitle": {
+    "sourceHash": "47e7f20"
+  },
+  "servers.sheet.editTitle": "Wijzig {name}",
+  "@servers.sheet.editTitle": {
+    "sourceHash": "2313fe2"
+  },
+  "servers.sheet.connect": "Verbind",
+  "@servers.sheet.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "servers.sheet.signIn": "Log in",
+  "@servers.sheet.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "servers.sheet.save": "Bewaar",
+  "@servers.sheet.save": {
+    "sourceHash": "1509f56"
+  },
+  "servers.sheet.cancel": "Annuleer",
+  "@servers.sheet.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.sheet.connecting": "Verbinden…",
+  "@servers.sheet.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "servers.sheet.protocolLegend": "Protocol",
+  "@servers.sheet.protocolLegend": {
+    "sourceHash": "cf08833",
+    "sameAsSourceJustification": "Dutch for this picker label is \"Protocol\": macOS renders \"Protocol:\"→\"Protocol:\" (IP.loctable) and \"Protocol\"→\"Protocol\" (WDWiFiScan.loctable) (verified on macOS 26.6.2, build 25G83, 2026-09-07)."
+  },
+  "servers.sheet.protocolSmb": "SMB",
+  "@servers.sheet.protocolSmb": {
+    "sourceHash": "f54ab2d",
+    "sameAsSourceJustification": "A protocol acronym Dutch keeps verbatim; macOS nl writes \"SMB-wachtwoord\" for \"SMB Password\" (NetAuthAgent Localizable.loctable) (verified on macOS 26.6.2, build 25G83, 2026-09-07). Also a BRAND_WORD in i18n-catalog-lib.ts."
+  },
+  "servers.sheet.protocolSftp": "SFTP",
+  "@servers.sheet.protocolSftp": {
+    "sourceHash": "b07c0f4",
+    "sameAsSourceJustification": "A protocol acronym Dutch keeps verbatim, like the sibling \"SMB\"; macOS nl leaves the transfer-protocol acronyms untouched (\"FTP-wachtwoord\", \"WebDAV-wachtwoord\", NetAuthAgent Localizable.loctable) (verified on macOS 26.6.2, build 25G83, 2026-09-07)."
+  },
+  "servers.sheet.protocolWebdav": "WebDAV",
+  "@servers.sheet.protocolWebdav": {
+    "sourceHash": "d92634e",
+    "sameAsSourceJustification": "A protocol name Dutch keeps verbatim; macOS nl writes \"WebDAV-wachtwoord\" for \"WebDAV Password\" (NetAuthAgent Localizable.loctable) (verified on macOS 26.6.2, build 25G83, 2026-09-07)."
+  },
+  "servers.sheet.address": "Adres",
+  "@servers.sheet.address": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.sheet.addressPlaceholder": "nas.local",
+  "@servers.sheet.addressPlaceholder": {
+    "sourceHash": "5e0ec1d",
+    "sameAsSourceJustification": "A sample hostname, not prose: \"nas\" is the ordinary Dutch abbreviation too (the catalog already writes \"de meeste NAS-hardware thuis\" in settings.network.smbConcurrency.description), and \".local\" is the mDNS suffix macOS shows unchanged in every locale."
+  },
+  "servers.sheet.addressHelp": "Een hostnaam, een adres dat je hebt gekopieerd, of een hele ssh-regel. Cmdr kiest het protocol.",
+  "@servers.sheet.addressHelp": {
+    "sourceHash": "f91dc8a"
+  },
+  "servers.sheet.username": "Gebruikersnaam",
+  "@servers.sheet.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "servers.sheet.password": "Wachtwoord",
+  "@servers.sheet.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "servers.sheet.passphrase": "Sleutelwachtzin",
+  "@servers.sheet.passphrase": {
+    "sourceHash": "2510031"
+  },
+  "servers.sheet.remember": "Onthoud in Sleutelhanger",
+  "@servers.sheet.remember": {
+    "sourceHash": "3fd7384"
+  },
+  "servers.sheet.connectionModeLegend": "Manier van verbinden",
+  "@servers.sheet.connectionModeLegend": {
+    "sourceHash": "2198ec8"
+  },
+  "servers.sheet.connectAsGuest": "Verbind als gast",
+  "@servers.sheet.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "servers.sheet.signInWithCredentials": "Log in met een gebruikersnaam en wachtwoord",
+  "@servers.sheet.signInWithCredentials": {
+    "sourceHash": "d71eef0"
+  },
+  "servers.sheet.advanced": "Geavanceerd",
+  "@servers.sheet.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "servers.sheet.name": "Naam",
+  "@servers.sheet.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.remoteFolder": "Externe map",
+  "@servers.sheet.remoteFolder": {
+    "sourceHash": "71525cd"
+  },
+  "servers.sheet.keyFile": "Sleutelbestand",
+  "@servers.sheet.keyFile": {
+    "sourceHash": "33c7999"
+  },
+  "servers.sheet.browse": "Blader…",
+  "@servers.sheet.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "servers.sheet.useAgent": "Gebruik ssh-agent",
+  "@servers.sheet.useAgent": {
+    "sourceHash": "21f2e2c"
+  },
+  "servers.sheet.autoReconnect": "Verbind automatisch opnieuw",
+  "@servers.sheet.autoReconnect": {
+    "sourceHash": "a56b579"
+  },
+  "servers.sheet.needsStoredSecret": "Automatisch opnieuw verbinden werkt alleen als Cmdr je wachtwoord onthoudt. Zet ‘Onthoud in Sleutelhanger’ aan en log één keer in.",
+  "@servers.sheet.needsStoredSecret": {
+    "sourceHash": "32336f3"
+  },
+  "servers.sheet.tryNextcloudAddress": "Probeer het Nextcloud-adres",
+  "@servers.sheet.tryNextcloudAddress": {
+    "sourceHash": "1afdfc7"
+  },
+  "servers.hostKey.firstContactTitle": "Voor het eerst verbinden met {host}",
+  "@servers.hostKey.firstContactTitle": {
+    "sourceHash": "6282d68"
+  },
+  "servers.hostKey.firstContactBody": "Vergelijk de vingerafdruk hieronder met die van de servereigenaar en vertrouw de sleutel daarna.",
+  "@servers.hostKey.firstContactBody": {
+    "sourceHash": "befd6c3"
+  },
+  "servers.hostKey.changedTitle": "De sleutel van {host} is gewijzigd",
+  "@servers.hostKey.changedTitle": {
+    "sourceHash": "dde14d6"
+  },
+  "servers.hostKey.changedBody": "Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Controleer de vingerafdruk bij de servereigenaar voordat je de sleutel vertrouwt.",
+  "@servers.hostKey.changedBody": {
+    "sourceHash": "34552a6"
+  },
+  "servers.hostKey.changedDisclosure": "Ik heb het gecontroleerd",
+  "@servers.hostKey.changedDisclosure": {
+    "sourceHash": "29d1f63"
+  },
+  "servers.hostKey.fingerprintLabel": "Vingerafdruk van de sleutel",
+  "@servers.hostKey.fingerprintLabel": {
+    "sourceHash": "26f8639"
+  },
+  "servers.hostKey.trustAndConnect": "Vertrouw en verbind",
+  "@servers.hostKey.trustAndConnect": {
+    "sourceHash": "0cce535"
+  },
+  "servers.hostKey.trustNewKey": "Vertrouw de nieuwe sleutel",
+  "@servers.hostKey.trustNewKey": {
+    "sourceHash": "772baac"
+  },
+  "servers.paneState.signedOut": "Uitgelogd bij {name}",
+  "@servers.paneState.signedOut": {
+    "sourceHash": "b1d908f"
+  },
+  "servers.paneState.signIn": "Log in…",
+  "@servers.paneState.signIn": {
+    "sourceHash": "a6a5723"
+  },
+  "servers.paneState.hostKeyChanged": "Cmdr verbindt niet meer met {name}",
+  "@servers.paneState.hostKeyChanged": {
+    "sourceHash": "ac65ece"
+  },
+  "servers.paneState.hostKeyChangedHint": "De sleutel is gewijzigd. Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Verbreek de verbinding en open de server opnieuw om de vingerafdruk te controleren.",
+  "@servers.paneState.hostKeyChangedHint": {
+    "sourceHash": "923de62"
   }
 }

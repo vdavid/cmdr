@@ -2534,3 +2534,148 @@ Notities:
 - **`Wijzig server…`** (`commands.serversEdit.label`): Apple-gesourcet, maar los gelezen kan het klinken als "wissel van
   server". `Wijzig serverinstellingen…` is ondubbelzinnig en drie woorden lang. Bevestig welke in het opdrachtenpalet
   beter leest.
+
+## Het serververbindingsvenster en de sleutelvraag (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`, `goToPath.dialog.opensServer`/`.addsServer`, `commands.serversConnect.label`, 2026-09-07)
+
+Zesenveertig sleutels voor het venster waarin je een server toevoegt of erop inlogt (SFTP, WebDAV, SMB), voor de stap
+waarin je de SSH-sleutel van een server vertrouwt, en voor twee voorbeeldregels onder `Ga naar pad`.
+
+De referentiestapel (`_ignored/i18n/nl/`) ontbreekt op deze machine (de M1-agentbox), dus Tier 1 komt uit de LIVE
+macOS-bundels volgens `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?". Alles geverifieerd op
+macOS 26.6.2, build 25G83, 2026-09-07. Tier 2 (Microsoft) was onbereikbaar.
+
+Termen die letterlijk uit de bundels kwamen:
+
+- **Add Server → `Voeg server toe`** · macOS `Localizable.loctable` (`Add Server`→`Voeg server toe`) · high. Precies de
+  vorm die `servers.hub.addServer` al gebruikt, dus de venstertitel en de rij eronder zeggen hetzelfde.
+- **Connect (knop) → `Verbind`; Connect to Server → `Verbind met server`** · Finder `nl.lproj/ConnectToWindow.strings`
+  `46.title` en `1.title`, plus NetAuthAgent `AuthDialog.loctable` `600218.title` · high.
+- **Browse… → `Blader…`** · Finder `nl.lproj/ConnectToWindow.strings` `48.title` (`Browse`→`Blader`), naast de knop die
+  daar hetzelfde doet: een bladervenster openen · high. ❌ NIET `Bladeren`: dat is de infinitief die Safari's menubalk
+  gebruikt, en dit is een knop (imperatiefregel in `style.md`).
+- **Sign in to X → `Log in bij X`** · CloudKit `Localizable.loctable` (`Sign In to %1$@`→`Log in bij %1$@`), plus tien
+  gelijkvormige zinnen (`Log in bij iCloud`, `Log in bij je Apple Account`, `Log in bij de App Store`) · high. ⚠️ Het al
+  aanwezige `fileExplorer.network.login.title` zegt `Inloggen op ‘{target}’`; het Engels daarvan verschilt
+  (aanhalingstekens, `{target}`), dus de consistentiecontrole telt ze niet als één term. `bij` is beter gesourcet dan
+  `op`; een sweep over die ene oudere sleutel staat in de review-vlaggen.
+- **Signed out of X → `Uitgelogd bij X`** · macOS `Localizable.loctable` (`iCloud Signed Out`→`Uitgelogd bij iCloud`),
+  en `Uitgelogd` was al de gevestigde toestandsnaam (`servers.hub.status.signedOut`) · high.
+- **Sign In → `Log in`; Log In → `Log in`** · macOS `Localizable.loctable`, gelijk aan de catalogus
+  (`fileExplorer.network.signIn`) · high.
+- **Guest → `Gast`; Connect As → `Verbind als`** · NetAuthAgent `AuthDialog.loctable` `RiA-l0-ASw.title` /
+  `PHL-pS-ELV.title` · high. `Connect as guest` blijft byte-identiek aan `fileExplorer.network.login.connectAsGuest`
+  (`Verbind als gast`).
+- **Remember in Keychain → `Onthoud in Sleutelhanger`** · byte-identiek Engels aan
+  `fileExplorer.network.login.rememberInKeychain`, dus die waarde wint van een frisse keuze. Apples eigen zin is
+  `Remember this password in my keychain`→`Bewaar wachtwoord in mijn sleutelhanger` (NetAuthAgent `AuthDialog.loctable`
+  `600268.title`), wat `sleutelhanger` bevestigt · high.
+- **passphrase → `wachtzin`; Key passphrase → `Sleutelwachtzin`** · Apple schrijft overal `wachtzin`
+  (`SecErrorMessages.loctable`, `P12Password.loctable` `Enter Passphrase:`→`Geef wachtzin op:`, DiskImages
+  `Incorrect passphrase`→`Onjuiste wachtzin`) en maakt er samenstellingen mee
+  (`A FileVault “Disk Passphrase” User is required.`→`Een FileVault-gebruiker met een schijfwachtzin is vereist.`) ·
+  high op `wachtzin`, `tentative` op de samenstelling `Sleutelwachtzin`. ❌ NIET `wachtwoordzin` en niet `passphrase`.
+- **remote → `extern(e)`; Remote folder → `Externe map`** · Finder `LocalizableMerged.loctable`
+  (`Remote Volume`→`Extern volume`), Schermdeling (`the remote computer`→`de externe computer`), Schijfhulpprogramma
+  (`the remote server`→`de externe server`) · high.
+- **Trust → `Vertrouw`; Always Trust → `Vertrouw altijd`** · macOS `Localizable.loctable` · high. Dus
+  `Trust and connect` → `Vertrouw en verbind` (twee gebiedende stammen naast elkaar, zoals de knopregel voorschrijft) en
+  `Trust the new key` → `Vertrouw de nieuwe sleutel`.
+- **fingerprint → `vingerafdruk`** · Apple localiseert dit ook voor een server-identiteit
+  (`The fingerprint of the SCEP server “%@” does not match.`→`De vingerafdruk van de SCEP-server '%@' komt niet overeen.`),
+  en `Fingerprint`→`Vingerafdruk` staat door het hele systeem · high, met een kanttekening: Apples eigen SSH-teksten in
+  Opdrachten laten `fingerprint` juist ONVERTAALD staan (`De fingerprint van de sleutel van de host is %@.`). Die twee
+  strings zijn de zwakste Apple-Nederlandse teksten die deze pass tegenkwam (`de key van de host` in de zusterzin), dus
+  de systeembrede `vingerafdruk` wint. Zie de review-vlaggen.
+- **Key fingerprint → `Vingerafdruk van de sleutel`** · de genitiefvorm die Apple voor precies dit gebruikt
+  (`De vingerafdruk van de SCEP-server`, `De fingerprint van de sleutel van de host`) · high. Niet de samenstelling
+  `Sleutelvingerafdruk`: Apple zet de bezitter achter het woord zodra het om een sleutel of server gaat.
+- **Reconnect → `Verbind opnieuw`; Reconnect automatically → `Verbind automatisch opnieuw`** · macOS
+  `Localizable.loctable` (`Reconnect`→`Verbind opnieuw`) plus Mail `ComposingPreferences.loctable`, waar `Automatically`
+  als `Verstuur automatisch` staat: het bijwoord komt direct achter de stam, het partikel blijft achteraan · high.
+- **X has stopped Y-ing → `X … niet meer …`** · Apples vaste omzetting van deze Engelse vorm
+  (`This podcast has stopped updating …`→`Deze podcast wordt niet meer bijgewerkt …`,
+  `%1$@ has stopped viewing the photos in your stream.`→`%1$@ bekijkt niet meer de foto's in je stream.`) · high. Dus
+  `Cmdr stopped connecting to {name}` → `Cmdr verbindt niet meer met {name}`, in de tegenwoordige tijd, want het paneel
+  blijft staan tot de gebruiker iets doet.
+- **has changed → `is gewijzigd`** · Schermdeling `ControlCommand.loctable`
+  (`The remote host identification has changed for “%@”.`→`De identificatie van de externe host is gewijzigd voor '%@'.`)
+  · high. Dus `{host}''s key changed` → `De sleutel van {host} is gewijzigd`.
+- **Protocol → `Protocol`** · `IP.loctable` (`Protocol:`→`Protocol:`) en `WDWiFiScan.loctable` · high, en dus een
+  `sameAsSourceJustification`.
+- **hostname → `hostnaam`** · nu wél gesourcet (AirPortSettings `Hostname`→`Hostnaam`, OID `Host Name`→`Hostnaam`), dus
+  de oude `tentative` in de bovenste termenlijst mag op `high`.
+- **Save → `Bewaar`; Advanced → `Geavanceerd`; Never → `Nooit`; Try Again → `Probeer opnieuw`** · macOS
+  `Localizable.loctable`, alle vier al in de catalogus · high.
+
+Vormen die uit de eigen catalogus kwamen (byte-identiek Engels wint van een frisse keuze):
+
+- `Cancel` → `Annuleer`, `Username` → `Gebruikersnaam`, `Password` → `Wachtwoord`, `Name` → `Naam`, `Address` → `Adres`
+  (`servers.hub.colAddress`), `Advanced` → `Geavanceerd` (`settings.section.advanced`), `Connect as guest` →
+  `Verbind als gast`, `Remember in Keychain` → `Onthoud in Sleutelhanger`, `Sign in` → `Log in`, `Connect` → `Verbind`,
+  `Connect to server…` → `Verbind met server…` (`settings.network.permissionIntroConnectLink`, en gelijk aan Finders
+  `Verbind met server`).
+
+Nieuw gemunte vormen, zonder bron in een bundel:
+
+- **Key file → `Sleutelbestand`** · de gebruikelijke Nederlandse samenstelling, in lijn met Apples `known_hosts-bestand`
+  en `SSH-sleutel` · `tentative`.
+- **How to connect → `Manier van verbinden`** · toegankelijke naam van de gast-of-account-keuze, alleen voor
+  schermlezers. Letterlijk `Hoe verbinden` leest niet; de zelfstandige groep wel. Het zusje
+  `fileExplorer.network.login.connectionModeLegend` (`Connection mode`) blijft `Verbindingsmodus`, want dat is ander
+  Engels · `tentative`.
+- **server's owner → `de servereigenaar`** · gewone Nederlandse samenstelling; het alternatief
+  `de eigenaar van de server` maakte de zin twaalf tekens langer in een regel die het Engels in één adem zegt ·
+  `tentative`.
+- **ssh line → `ssh-regel`** · `regel` is al de vertaling van `line` in deze catalogus, en `ssh` blijft kleingeschreven
+  en onvertaald zoals de `@key` vraagt; koppelteken zoals bij `SMB-share` · high.
+- **Sleutelwachtzin** en **Externe map**: zie hierboven.
+
+Notities:
+
+- **`{name}` en `{host}` zijn ongecontroleerde invoegingen**, dus geen enkel voornaamwoord verwijst ernaar.
+  `changedTitle` zegt `De sleutel van {host} is gewijzigd` (lidwoord, geen `zijn/haar`), en `hostKeyChangedHint` opent
+  met `De sleutel is gewijzigd.` in plaats van `Zijn sleutel …`.
+- **`Disconnect` wordt in een zin altijd `Verbreek de verbinding`**, nooit `Verbreek de server`: dat is de al
+  vastgelegde ARIA-regel bij `disconnectPlaceAriaLabel`. `hostKeyChangedHint` volgt hem.
+- **De aanhalingstekens in `needsStoredSecret` zijn de enkele krulletjes `‘…’`** die macOS-Nederlands gebruikt, niet de
+  Engelse dubbele. U+2018/U+2019 is geen ICU-escapeteken (alleen de ASCII `'` is dat), dus er is geen verdubbeling
+  nodig.
+- **Geen enkele van de 46 waarden bevat een ASCII-apostrof**, dus nergens ICU-verdubbeling. De ellips is overal het
+  enkele teken `…` (U+2026), ook in `Blader…`, `Log in…`, `Verbinden…` en `Verbind met server…`.
+- `sameAsSourceJustification` staat op vijf sleutels: `servers.sheet.protocolLegend` (Apple laat `Protocol` staan),
+  `servers.sheet.protocolSmb`/`.protocolSftp`/`.protocolWebdav` (protocolnamen; macOS-Nederlands schrijft
+  `SMB-wachtwoord`, `FTP-wachtwoord`, `WebDAV-wachtwoord`) en `servers.sheet.addressPlaceholder` (`nas.local` is een
+  voorbeeldhostnaam: `nas` is ook in het Nederlands de gangbare afkorting, en `.local` is het mDNS-achtervoegsel dat
+  macOS in elke taal onvertaald toont).
+- **Mijngereedschap-valkuil, waard om te onthouden:** `grep -a "<Engelse tekst>"` vindt NIETS in een `.loctable`, ook al
+  staat de tekst erin; de recept-notitie in `how-to-mine.md` suggereert van wel. `plutil`/`plistlib` uitpakken is de
+  enige betrouwbare weg. Op deze machine ontbreekt `timeout` bovendien, dus een commando dat ermee begint faalt
+  stilletjes met `command not found` en leest als "geen resultaten". Een `python3` + `plistlib` sweep over alle 7.185
+  `.loctable`-bestanden onder `/System` levert in één minuut een `en`→`nl`-index van 271.441 paren op; dat is het
+  snelste vervangende Tier 1 dat deze pass gevonden heeft.
+
+### Review-vlaggen van deze pass
+
+- **`vingerafdruk` voor een SSH-vingerafdruk** (`hostKey.firstContactBody`, `.changedBody`, `.fingerprintLabel`,
+  `paneState.hostKeyChangedHint`): Apple zelf is verdeeld. De systeembrede keuze is `vingerafdruk` (ook voor een
+  servercertificaat), maar Apples twee SSH-specifieke zinnen laten `fingerprint` staan. Bevestig dat een Nederlandse
+  gebruiker die een `SHA256:`-string vergelijkt `vingerafdruk` herkent.
+- **`Sleutelwachtzin`** (`sheet.passphrase`): `wachtzin` is stevig gesourcet, de samenstelling niet. Alternatief:
+  `Wachtzin voor de sleutel` (langer, maar ondubbelzinnig naast het veld `Sleutelbestand` eronder).
+- **`Log in bij {name}` vs. het oudere `Inloggen op ‘{target}’`** (`sheet.signInTitle` tegenover
+  `fileExplorer.network.login.title`): twee inlogvensters met twee voorzetsels én twee registers (gebiedend tegenover
+  infinitief). Het nieuwe is Tier-1-gesourcet en volgt de `@key`-instructie ("VERB phrase, imperative"). Bevestig een
+  sweep van het oudere naar `Log in bij ‘{target}’`.
+- **`Manier van verbinden`** (`sheet.connectionModeLegend`): alleen-schermlezerlabel, geen bron. Alternatieven:
+  `Hoe je verbinding maakt` (dichter bij het Engels, langer) of hergebruik van `Verbindingsmodus`, dat het zusje al zegt
+  maar ander Engels vertaalt.
+- **`Cmdr verbindt niet meer met {name}`** (`paneState.hostKeyChanged`): Apples vorm voor dit Engels, maar hij zegt
+  tegenwoordige tijd waar het Engels verleden tijd zegt. Bevestig dat de kop niet leest als "Cmdr ondersteunt deze
+  server niet meer" in plaats van "dit is nu geblokkeerd".
+- **`Sleutelbestand`** (`sheet.keyFile`): gemunt. `Bestand met de sleutel` is de omschrijvende variant; de samenstelling
+  past beter in een smal formulierlabel.
+- **`servereigenaar`** (`hostKey.firstContactBody`, `.changedBody`): gemunt. Bevestig dat het niet als "de eigenaar van
+  servers" leest.
+- **`Voor het eerst verbinden met {host}`** (`hostKey.firstContactTitle`): infinitief, omdat dit een situatie beschrijft
+  en geen opdracht geeft; de knop eronder (`Vertrouw en verbind`) draagt de imperatief. Bevestig dat de twee registers
+  naast elkaar kloppen.

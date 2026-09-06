@@ -2240,3 +2240,87 @@ läst på macOS 26.6.2, build 25G83, 2026-09-06.
 `Forget saved password` återanvänder ordagrant `menu.network.forgetSavedPassword` (”Glöm sparat lösenord”), så samma
 handling heter samma sak i meny och kommandopalett. Ingen apostrof i något värde, så ICU-dubbleringen `''` blir aldrig
 aktuell. Enda `sameAsSourceJustification` i passet är `servers.hub.colStatus`.
+
+## Serverhubben: anslutningsarket, värdnyckeln och Gå till sökväg (2026-09-07; de 43 `servers.sheet.*`/`.hostKey.*`/`.paneState.*` + 2 `goToPath.dialog.*Server` + `commands.serversConnect.label`)
+
+Ny yta: modalarket där man skriver in en server (SMB, SFTP, WebDAV), SSH-frågan om värdnyckeln inuti det, och två
+förhandsrader under Gå till sökväg.
+
+Belägget kommer från de LEVANDE macOS-paketen, inte från referenshögen: `_ignored/i18n/` finns inte på den här maskinen
+(den är gitignorerad och ligger bara i en klon), och `docs/i18n/reference-pile/how-to-mine.md` § ”No pile on this
+machine?” är den dokumenterade reservvägen. Allt Apple-belägg nedan är läst på macOS 26.6.2, build 25G83, 2026-09-07. ❗
+`grep` hittar ingenting inuti en `.loctable`; strängarna togs ut med `plutil -convert json -o -`.
+
+Rikaste källan för hela arket är Apples egen anslutningsdialog:
+`NetAuthAgent.app/Contents/Resources/AuthDialog.loctable` och `.../Localizable.loctable`, plus Finders
+`sv.lproj/ConnectToWindow.strings`.
+
+- **Connecting… → `Ansluter…`** · ordagrant NetAuthAgent `Localizable.loctable` `CONNECTING_TO_GENERIC` (”Connecting…” =
+  ”Ansluter…”) · `high`.
+- **Protocol (som tillgänglighetsnamn på en väljare) → `Protokoll`** · `AddPrinter.app/…/IP.plugin/…/IP.loctable`
+  `100257.ibExternalAccessibilityDescription` = ”Protokoll” (samma slags dolda namn på samma slags protokollväljare),
+  och `100268.title` = ”Protokoll:” · `high`.
+- **Browse… → `Bläddra…`** · Finder `sv.lproj/ConnectToWindow.strings` `48.title` = ”Bläddra”, alltså Bläddra-knappen i
+  Apples Anslut till server-fönster · `high`. Punkterna står kvar, som i engelskan.
+- **hostname → `värdnamn`** · Certificate Assistant `EvalCerts.loctable` `DSi-jV-fn4.title` = ”Värdnamn:”, Automator
+  `Variables.loctable` ”Host name” = ”Värdnamn”, AddPrinter ”Enter host name or IP address.” = ”Ange värdnamn eller
+  IP-adress.” · `high`. Passar katalogens redan satta `nätverksvärdar` (`commands.networkRefresh.label`).
+- **passphrase → `lösenfras`** · Certificate Assistant `P12Password.loctable` `23.title` (”Enter Passphrase:” = ”Ange
+  lösenfras:”) och `Security.framework/…/SecErrorMessages.loctable` (”Passphrase is required for import/export.” =
+  ”Lösenfras krävs för import/export.”) · `high`. ❌ Inte `lösenordsfras`, som bara är OID-namnet i
+  `Security.framework/…/OID.loctable`, alltså en fältetikett i ett certifikat och inte UI-språk.
+- **fingerprint (på en nyckel eller ett certifikat) → `fingeravtryck`** · `Security.framework/…/Certificate.loctable`
+  ”Fingerprints” = ”Fingeravtryck”, och ConfigurationProfilesUI `str_SCEP_InvalidFingerprint` = ”Fingeravtrycket för
+  SCEP-servern ”%@” matchar inte.” · `high`. Neutrum: `ett fingeravtryck`, `fingeravtrycket`.
+- **`Key passphrase` → `Nyckelns lösenfras`; `Key fingerprint` → `Nyckelns fingeravtryck`** · genitivform på båda, så de
+  två `Key …`-etiketterna i samma ark läses som ett par. En sammansättning (`nyckellösenfras`) blir ogenomskinlig, och
+  `Lösenfras för nyckeln` är för lång för en fältetikett bredvid `Namn` och `Adress` · `high`.
+- **Sign in to X → `Logga in på X`** · katalogens `fileExplorer.network.login.title` (”Logga in på ”{target}””) och
+  Setup Assistant `ICLOUD_ONLY_LOGIN_TITLE` (”Sign In to iCloud” = ”Logga in på iCloud”) · `high`. Knappen `Sign in…`
+  blir `Logga in…`, ordagrant ConfigurationProfilesUI `str_SignInToWorkOrSchoolAccount_Button`.
+- **Signed out of X → `Utloggad från X`** · `Utloggad` var satt i hubbpasset; `från` är Apples preposition för
+  riktningen (ConfigurationProfilesUI `str_BMAIDSignIn_Progress_SignOut` = ”Loggar ut från ”%@”…”) · `high`.
+- **Trust (knapp) → `Lita på`, men objektet skrivs ut** · `SecurityInterface.framework/…/Localizable.loctable` `Trust` =
+  ”Lita på” · `high`. ❗ Svenskan kan inte lämna partikelverbet naket som engelskans ”Trust and connect”, så knapparna
+  heter `Lita på nyckeln och anslut` och `Lita på den nya nyckeln`. Samma skäl gör att `I''ve checked it` blir
+  `Jag har kontrollerat nyckeln`: både `nyckeln` (en) och `fingeravtrycket` (ett) finns i rutan, så ett ensamt pronomen
+  pekar åt två håll.
+- **{host}''s key changed → `Nyckeln från {host} har ändrats`** · genitiv på `{host}` är förbjuden (okontrollerat värde,
+  kan sluta på s-ljud), och `nyckeln från {host}` är redan katalogens form i `servers.refusal.hostKeyUntrusted`/
+  `.hostKeyRevoked` · `high`.
+- **reinstalled → `har installerats om`** · Apples verb är `installera om` (Problem Reporter: ”You may need to reinstall
+  the application.” = ”Du kanske måste installera om appen.”, Erase Assistant: ”Reinstall macOS…” = ”Installera om
+  macOS…”) · `high`.
+- **Remote folder → `Mapp på servern`** · ❌ inte en `fjärr`-sammansättning. Apple har visserligen `fjärrinloggning`,
+  `fjärrhantering` och `fjärrsynkronisering` (`CoreTypes.bundle/…/InfoPlist.loctable`, SSMenuAgent), men `fjärrmapp`
+  finns inte i något läst paket och läser som jargong i en fältetikett. `@key` säger uttryckligen ”which folder ON THE
+  SERVER”, och katalogen skriver redan `på servern` (`errors.listing.remotePermissionDenied.suggestion`,
+  `fileExplorer.navigation.forgetServerConfirm`) · `high`.
+- **Key file → `Nyckelfil`** · sammansättning av katalogens satta `nyckel` (`ai.cloud.apiKeyLabel` = ”API-nyckel”) och
+  `fil`; ingen förstahandskälla har termen · `tentative`, låg risk (samma slags konventionssammansättning som
+  `fillista`).
+- **Reconnect (imperativ) → `Återanslut`** · FinanceKitUI `RECONNECT_ACCOUNTS_TITLE` (”Reconnect Your Existing Accounts”
+  = ”Återanslut dina befintliga konton”) · `high`. `Reconnect automatically` följer Apples ordföljd verb + `automatiskt`
+  (Dock: ”Automatically hide and show the Dock” = ”Göm och visa Dock automatiskt”), alltså `Återanslut automatiskt`.
+- **How to connect (dolt gruppnamn) → `Hur du ansluter`** · systerraden
+  `fileExplorer.network.login.connectionModeLegend` heter `Anslutningsläge`, men engelskan har medvetet bytt till en
+  fråga här, så svenskan gör samma sak; `du`-tilltalet är katalogens (style-guiden § Formality) · `high`.
+- **Try the Nextcloud address → `Prova Nextcloud-adressen`** · `prova` är katalogens verb för att testa något
+  (`errors.*`: ”Så här kan du prova”, `viewer.saveAs.*`: ”Prova en mindre markering?”), medan `Försök igen` är
+  reserverat för `Try again`. Varumärket tar bindestreck i sammansättningen, som Apples `Time Machine-skiva` · `high`.
+- **Cmdr stopped connecting to X → `Cmdr stoppade anslutningen till {name}`** · `stoppa` är katalogens verb för att
+  avbryta något som pågår (`fileOperations.cancelRollback.*`: ”Cmdr stoppade det här på din begäran.”), medan `Avbryt`
+  hör till knappen · `high`.
+- **Opens X / Adds a server (förhandsrader under Gå till sökväg) → `Öppnar {name}` / `Lägger till en server`** · presens
+  tredje person, som engelskan; obestämd artikel i den andra eftersom det är en ny server · `high`.
+
+Återanvänt ordagrant från katalogen, så ingen ny termdrift uppstår: `Avbryt`, `Anslut` (`fileExplorer.network.connect`),
+`Logga in` (`.signIn`), `Spara`, `Namn`, `Adress`, `Avancerat` (`settings.section.advanced`), `Användarnamn`,
+`Lösenord`, `Anslut som gäst`, `Kom ihåg i nyckelringen` (`fileExplorer.network.login.rememberInKeychain`),
+`Lägg till server` (`servers.hub.addServer` utan punkterna), `Anslut till server…`
+(`settings.network.permissionIntroConnectLink`) och `Redigera` (`menu.bar.edit`).
+
+Fyra `sameAsSourceJustification` i passet: `servers.sheet.protocolSmb`, `.protocolSftp`, `.protocolWebdav`
+(protokollnamn som macOS sv själv skriver latinskt, ”WebDAV-lösenord”/”AFP-lösenord” i NetAuthAgent) och
+`.addressPlaceholder` (`nas.local` är ett exempelvärdnamn med Bonjour-suffixet `.local`, identiskt på svenska). Ingen
+apostrof i något värde, så ICU-dubbleringen `''` blir aldrig aktuell.

@@ -127,5 +127,181 @@
   "servers.refusal.hostKeyRevoked": "A chave de {host} está marcada como comprometida nos seus ajustes de SSH neste Mac. O Cmdr não vai se conectar a esse servidor.",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
+  },
+  "servers.sheet.addTitle": "Adicionar servidor",
+  "@servers.sheet.addTitle": {
+    "sourceHash": "1099b2a"
+  },
+  "servers.sheet.signInTitle": "Iniciar sessão em {name}",
+  "@servers.sheet.signInTitle": {
+    "sourceHash": "47e7f20"
+  },
+  "servers.sheet.editTitle": "Editar {name}",
+  "@servers.sheet.editTitle": {
+    "sourceHash": "2313fe2"
+  },
+  "servers.sheet.connect": "Conectar",
+  "@servers.sheet.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "servers.sheet.signIn": "Iniciar sessão",
+  "@servers.sheet.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "servers.sheet.save": "Salvar",
+  "@servers.sheet.save": {
+    "sourceHash": "1509f56"
+  },
+  "servers.sheet.cancel": "Cancelar",
+  "@servers.sheet.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.sheet.connecting": "Conectando…",
+  "@servers.sheet.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "servers.sheet.protocolLegend": "Protocolo",
+  "@servers.sheet.protocolLegend": {
+    "sourceHash": "cf08833"
+  },
+  "servers.sheet.protocolSmb": "SMB",
+  "@servers.sheet.protocolSmb": {
+    "sourceHash": "f54ab2d",
+    "sameAsSourceJustification": "Protocol name, kept verbatim in pt-BR as everywhere else in the catalog (style.md § Brand and do-not-translate lists SMB; enforced by desktop-i18n-dont-translate). macOS pt-BR ships it untranslated too (Finder pt_BR.lproj/ConnectToWindow.strings offers smb:// unchanged)."
+  },
+  "servers.sheet.protocolSftp": "SFTP",
+  "@servers.sheet.protocolSftp": {
+    "sourceHash": "b07c0f4",
+    "sameAsSourceJustification": "Protocol name, kept verbatim in pt-BR: macOS pt-BR never translates it (Finder pt_BR.lproj/ConnectToWindow.strings keeps the ftp/sftp scheme as-is, macOS 26.6.2 build 25G83, 2026-09-06), and the catalog already publishes SFTP unchanged in settings.appearance.tintSmb.description."
+  },
+  "servers.sheet.protocolWebdav": "WebDAV",
+  "@servers.sheet.protocolWebdav": {
+    "sourceHash": "d92634e",
+    "sameAsSourceJustification": "Protocol name, kept verbatim in pt-BR: the sibling servers.refusal.notAWebdavServer already ships “Nenhum serviço WebDAV responde neste endereço.” with the acronym untouched, and macOS pt-BR keeps WebDAV as-is."
+  },
+  "servers.sheet.address": "Endereço",
+  "@servers.sheet.address": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.sheet.addressPlaceholder": "nas.local",
+  "@servers.sheet.addressPlaceholder": {
+    "sourceHash": "5e0ec1d",
+    "sameAsSourceJustification": "An example hostname, not prose: `nas.local` is a literal mDNS name and stays identical in every locale. The `.local` suffix belongs to the protocol, and `nas` is the same three letters the catalog already publishes as the NAS acronym (settings.network.smbConcurrency.description)."
+  },
+  "servers.sheet.addressHelp": "Um nome de host, um endereço que você copiou ou uma linha ssh inteira. O Cmdr escolhe o protocolo.",
+  "@servers.sheet.addressHelp": {
+    "sourceHash": "f91dc8a"
+  },
+  "servers.sheet.username": "Nome de usuário",
+  "@servers.sheet.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "servers.sheet.password": "Senha",
+  "@servers.sheet.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "servers.sheet.passphrase": "Frase-senha da chave",
+  "@servers.sheet.passphrase": {
+    "sourceHash": "2510031"
+  },
+  "servers.sheet.remember": "Lembrar no Acesso às Chaves",
+  "@servers.sheet.remember": {
+    "sourceHash": "3fd7384"
+  },
+  "servers.sheet.connectionModeLegend": "Como conectar",
+  "@servers.sheet.connectionModeLegend": {
+    "sourceHash": "2198ec8"
+  },
+  "servers.sheet.connectAsGuest": "Conectar como convidado",
+  "@servers.sheet.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "servers.sheet.signInWithCredentials": "Iniciar sessão com nome de usuário e senha",
+  "@servers.sheet.signInWithCredentials": {
+    "sourceHash": "d71eef0"
+  },
+  "servers.sheet.advanced": "Avançado",
+  "@servers.sheet.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "servers.sheet.name": "Nome",
+  "@servers.sheet.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.remoteFolder": "Pasta remota",
+  "@servers.sheet.remoteFolder": {
+    "sourceHash": "71525cd"
+  },
+  "servers.sheet.keyFile": "Arquivo de chave",
+  "@servers.sheet.keyFile": {
+    "sourceHash": "33c7999"
+  },
+  "servers.sheet.browse": "Escolher…",
+  "@servers.sheet.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "servers.sheet.useAgent": "Usar o ssh-agent",
+  "@servers.sheet.useAgent": {
+    "sourceHash": "21f2e2c"
+  },
+  "servers.sheet.autoReconnect": "Reconectar automaticamente",
+  "@servers.sheet.autoReconnect": {
+    "sourceHash": "a56b579"
+  },
+  "servers.sheet.needsStoredSecret": "Para reconectar sozinho, o Cmdr precisa de uma senha salva. Ative “Lembrar no Acesso às Chaves” e inicie a sessão uma vez.",
+  "@servers.sheet.needsStoredSecret": {
+    "sourceHash": "32336f3"
+  },
+  "servers.sheet.tryNextcloudAddress": "Tentar o endereço do Nextcloud",
+  "@servers.sheet.tryNextcloudAddress": {
+    "sourceHash": "1afdfc7"
+  },
+  "servers.hostKey.firstContactTitle": "Primeira conexão com {host}",
+  "@servers.hostKey.firstContactTitle": {
+    "sourceHash": "6282d68"
+  },
+  "servers.hostKey.firstContactBody": "Confira a impressão digital abaixo com a que você recebeu de quem cuida do servidor, depois confie na chave.",
+  "@servers.hostKey.firstContactBody": {
+    "sourceHash": "befd6c3"
+  },
+  "servers.hostKey.changedTitle": "A chave de {host} mudou",
+  "@servers.hostKey.changedTitle": {
+    "sourceHash": "dde14d6"
+  },
+  "servers.hostKey.changedBody": "Isso pode significar que o servidor foi reinstalado, ou que algo está entre você e ele. Confira a impressão digital com quem cuida do servidor antes de confiar na chave.",
+  "@servers.hostKey.changedBody": {
+    "sourceHash": "34552a6"
+  },
+  "servers.hostKey.changedDisclosure": "Já conferi",
+  "@servers.hostKey.changedDisclosure": {
+    "sourceHash": "29d1f63"
+  },
+  "servers.hostKey.fingerprintLabel": "Impressão digital da chave",
+  "@servers.hostKey.fingerprintLabel": {
+    "sourceHash": "26f8639"
+  },
+  "servers.hostKey.trustAndConnect": "Confiar e conectar",
+  "@servers.hostKey.trustAndConnect": {
+    "sourceHash": "0cce535"
+  },
+  "servers.hostKey.trustNewKey": "Confiar na nova chave",
+  "@servers.hostKey.trustNewKey": {
+    "sourceHash": "772baac"
+  },
+  "servers.paneState.signedOut": "Sessão encerrada em {name}",
+  "@servers.paneState.signedOut": {
+    "sourceHash": "b1d908f"
+  },
+  "servers.paneState.signIn": "Iniciar sessão…",
+  "@servers.paneState.signIn": {
+    "sourceHash": "a6a5723"
+  },
+  "servers.paneState.hostKeyChanged": "O Cmdr parou de conectar a {name}",
+  "@servers.paneState.hostKeyChanged": {
+    "sourceHash": "ac65ece"
+  },
+  "servers.paneState.hostKeyChangedHint": "A chave do servidor mudou. Isso pode significar que ele foi reinstalado, ou que algo está entre você e ele. Desconecte e abra o servidor de novo para conferir a impressão digital.",
+  "@servers.paneState.hostKeyChangedHint": {
+    "sourceHash": "923de62"
   }
 }

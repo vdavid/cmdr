@@ -652,6 +652,10 @@
   "@commands.serversEdit.label": {
     "sourceHash": "a3282a7"
   },
+  "commands.serversConnect.label": "連接伺服器…",
+  "@commands.serversConnect.label": {
+    "sourceHash": "6188f47"
+  },
   "commands.networkRefresh.label": "重新整理網路主機",
   "@commands.networkRefresh.label": {
     "sourceHash": "73966bd"

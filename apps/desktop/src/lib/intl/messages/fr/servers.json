@@ -127,5 +127,181 @@
   "servers.refusal.hostKeyRevoked": "La clé de {host} est marquée comme compromise dans vos réglages SSH sur ce Mac. Cmdr ne s''y connectera pas.",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
+  },
+  "servers.sheet.addTitle": "Ajouter un serveur",
+  "@servers.sheet.addTitle": {
+    "sourceHash": "1099b2a"
+  },
+  "servers.sheet.signInTitle": "S''identifier sur {name}",
+  "@servers.sheet.signInTitle": {
+    "sourceHash": "47e7f20"
+  },
+  "servers.sheet.editTitle": "Modifier {name}",
+  "@servers.sheet.editTitle": {
+    "sourceHash": "2313fe2"
+  },
+  "servers.sheet.connect": "Se connecter",
+  "@servers.sheet.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "servers.sheet.signIn": "S''identifier",
+  "@servers.sheet.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "servers.sheet.save": "Enregistrer",
+  "@servers.sheet.save": {
+    "sourceHash": "1509f56"
+  },
+  "servers.sheet.cancel": "Annuler",
+  "@servers.sheet.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.sheet.connecting": "Connexion…",
+  "@servers.sheet.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "servers.sheet.protocolLegend": "Protocole",
+  "@servers.sheet.protocolLegend": {
+    "sourceHash": "cf08833"
+  },
+  "servers.sheet.protocolSmb": "SMB",
+  "@servers.sheet.protocolSmb": {
+    "sourceHash": "f54ab2d",
+    "sameAsSourceJustification": "Apple keeps the protocol acronym verbatim in French macOS: NetAuthAgent `Localizable.loctable` key `SMB_PASSWORD` -> \"Mot de passe SMB\", NetworkSettingsIntents `Localizable.loctable` key `SMB` -> \"SMB\" (macOS 26.6.2 build 25G83, 2026-09-06). It is also on the catalog's own brand list."
+  },
+  "servers.sheet.protocolSftp": "SFTP",
+  "@servers.sheet.protocolSftp": {
+    "sourceHash": "b07c0f4",
+    "sameAsSourceJustification": "Apple keeps the protocol acronym verbatim in French macOS: Sharing.appex `Localizable.loctable` key `SSH_INFO_GENERAL` -> \"La connexion à distance autorise les utilisateurs d'autres ordinateurs à accéder à cet ordinateur via SSH et SFTP.\" (macOS 26.6.2 build 25G83, 2026-09-06)."
+  },
+  "servers.sheet.protocolWebdav": "WebDAV",
+  "@servers.sheet.protocolWebdav": {
+    "sourceHash": "d92634e",
+    "sameAsSourceJustification": "Apple keeps the protocol name verbatim in French macOS: NetAuthAgent `Localizable.loctable` key `WEBDAV_PASSWORD` -> \"Mot de passe WebDAV\", WorkflowKit `Localizable.loctable` -> \"serveurs SMB/CIFS, NFS, FTP (lecture seule) ou WebDAV\" (macOS 26.6.2 build 25G83, 2026-09-06). The shipped `servers.refusal.notAWebdavServer` already keeps it."
+  },
+  "servers.sheet.address": "Adresse",
+  "@servers.sheet.address": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.sheet.addressPlaceholder": "nas.local",
+  "@servers.sheet.addressPlaceholder": {
+    "sourceHash": "5e0ec1d",
+    "sameAsSourceJustification": "A literal example hostname, not prose: `nas` is the same abbreviation in French (the shipped `servers.hub.emptyMessage` writes \"un Mac ou un NAS\") and `.local` is the reserved mDNS suffix macOS itself shows (Finder `ConnectToWindow.strings` fr placeholder \"Adresse du serveur\" takes the same form). Translating it would print an address that does not resolve."
+  },
+  "servers.sheet.addressHelp": "Un nom d''hôte, une adresse que vous avez copiée, ou toute une ligne ssh. Cmdr choisit le protocole.",
+  "@servers.sheet.addressHelp": {
+    "sourceHash": "f91dc8a"
+  },
+  "servers.sheet.username": "Nom d''utilisateur",
+  "@servers.sheet.username": {
+    "sourceHash": "e3b89e9"
+  },
+  "servers.sheet.password": "Mot de passe",
+  "@servers.sheet.password": {
+    "sourceHash": "e7cf3ef"
+  },
+  "servers.sheet.passphrase": "Phrase secrète de la clé",
+  "@servers.sheet.passphrase": {
+    "sourceHash": "2510031"
+  },
+  "servers.sheet.remember": "Mémoriser dans le trousseau",
+  "@servers.sheet.remember": {
+    "sourceHash": "3fd7384"
+  },
+  "servers.sheet.connectionModeLegend": "Comment se connecter",
+  "@servers.sheet.connectionModeLegend": {
+    "sourceHash": "2198ec8"
+  },
+  "servers.sheet.connectAsGuest": "Se connecter en tant qu''invité",
+  "@servers.sheet.connectAsGuest": {
+    "sourceHash": "d3cee9e"
+  },
+  "servers.sheet.signInWithCredentials": "S''identifier avec un nom d''utilisateur et un mot de passe",
+  "@servers.sheet.signInWithCredentials": {
+    "sourceHash": "d71eef0"
+  },
+  "servers.sheet.advanced": "Avancé",
+  "@servers.sheet.advanced": {
+    "sourceHash": "9f088db"
+  },
+  "servers.sheet.name": "Nom",
+  "@servers.sheet.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.remoteFolder": "Dossier distant",
+  "@servers.sheet.remoteFolder": {
+    "sourceHash": "71525cd"
+  },
+  "servers.sheet.keyFile": "Fichier de clé",
+  "@servers.sheet.keyFile": {
+    "sourceHash": "33c7999"
+  },
+  "servers.sheet.browse": "Parcourir…",
+  "@servers.sheet.browse": {
+    "sourceHash": "93c6b66"
+  },
+  "servers.sheet.useAgent": "Utiliser ssh-agent",
+  "@servers.sheet.useAgent": {
+    "sourceHash": "21f2e2c"
+  },
+  "servers.sheet.autoReconnect": "Se reconnecter automatiquement",
+  "@servers.sheet.autoReconnect": {
+    "sourceHash": "a56b579"
+  },
+  "servers.sheet.needsStoredSecret": "La reconnexion automatique nécessite un mot de passe mémorisé. Activez « Mémoriser dans le trousseau » et identifiez-vous une fois.",
+  "@servers.sheet.needsStoredSecret": {
+    "sourceHash": "32336f3"
+  },
+  "servers.sheet.tryNextcloudAddress": "Essayer l''adresse Nextcloud",
+  "@servers.sheet.tryNextcloudAddress": {
+    "sourceHash": "1afdfc7"
+  },
+  "servers.hostKey.firstContactTitle": "Première connexion à {host}",
+  "@servers.hostKey.firstContactTitle": {
+    "sourceHash": "6282d68"
+  },
+  "servers.hostKey.firstContactBody": "Comparez l''empreinte ci-dessous avec celle que le propriétaire du serveur vous a communiquée, puis approuvez la clé.",
+  "@servers.hostKey.firstContactBody": {
+    "sourceHash": "befd6c3"
+  },
+  "servers.hostKey.changedTitle": "La clé de {host} a changé",
+  "@servers.hostKey.changedTitle": {
+    "sourceHash": "dde14d6"
+  },
+  "servers.hostKey.changedBody": "Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s''est interposé entre vous et lui. Vérifiez l''empreinte auprès du propriétaire du serveur avant d''approuver la clé.",
+  "@servers.hostKey.changedBody": {
+    "sourceHash": "34552a6"
+  },
+  "servers.hostKey.changedDisclosure": "Je l''ai vérifiée",
+  "@servers.hostKey.changedDisclosure": {
+    "sourceHash": "29d1f63"
+  },
+  "servers.hostKey.fingerprintLabel": "Empreinte de la clé",
+  "@servers.hostKey.fingerprintLabel": {
+    "sourceHash": "26f8639"
+  },
+  "servers.hostKey.trustAndConnect": "Approuver et se connecter",
+  "@servers.hostKey.trustAndConnect": {
+    "sourceHash": "0cce535"
+  },
+  "servers.hostKey.trustNewKey": "Approuver la nouvelle clé",
+  "@servers.hostKey.trustNewKey": {
+    "sourceHash": "772baac"
+  },
+  "servers.paneState.signedOut": "Session fermée sur {name}",
+  "@servers.paneState.signedOut": {
+    "sourceHash": "b1d908f"
+  },
+  "servers.paneState.signIn": "S''identifier…",
+  "@servers.paneState.signIn": {
+    "sourceHash": "a6a5723"
+  },
+  "servers.paneState.hostKeyChanged": "Cmdr a interrompu la connexion à {name}",
+  "@servers.paneState.hostKeyChanged": {
+    "sourceHash": "ac65ece"
+  },
+  "servers.paneState.hostKeyChangedHint": "Sa clé a changé. Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s''est interposé entre vous et lui. Déconnectez-vous, puis ouvrez-le à nouveau pour vérifier l''empreinte.",
+  "@servers.paneState.hostKeyChangedHint": {
+    "sourceHash": "923de62"
   }
 }
