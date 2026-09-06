@@ -652,6 +652,10 @@
   "@commands.serversEdit.label": {
     "sourceHash": "a3282a7"
   },
+  "commands.serversConnect.label": "Mit Server verbinden…",
+  "@commands.serversConnect.label": {
+    "sourceHash": "6188f47"
+  },
   "commands.networkRefresh.label": "Netzwerk-Hosts aktualisieren",
   "@commands.networkRefresh.label": {
     "sourceHash": "73966bd"
