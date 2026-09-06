@@ -455,10 +455,6 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.mediaIndex.card": "Bildersuche",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
-  },
   "settings.mediaIndex.privacyNote": "Das läuft vollständig auf deinem Mac über Apples integriertes Vision-Framework. Deine Bilder verlassen deinen Computer nie, und es sind kein KI-Anbieter und kein API-Schlüssel beteiligt.",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"

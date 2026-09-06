@@ -456,10 +456,6 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.mediaIndex.card": "Afbeeldingen doorzoeken",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
-  },
   "settings.mediaIndex.privacyNote": "Dit draait volledig op je Mac met Apples ingebouwde Vision-framework. Je afbeeldingen verlaten je computer nooit, en er komt geen AI-aanbieder of API-sleutel aan te pas.",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"

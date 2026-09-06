@@ -2799,7 +2799,6 @@ export type MessageKey =
   | 'settings.mediaIndex.alwaysIndexFolders.label'
   | 'settings.mediaIndex.alwaysIndexVolumes.description'
   | 'settings.mediaIndex.alwaysIndexVolumes.label'
-  | 'settings.mediaIndex.card'
   | 'settings.mediaIndex.cards.enable'
   | 'settings.mediaIndex.cards.folders'
   | 'settings.mediaIndex.chosenFolders.add'

@@ -569,10 +569,6 @@
     "screenshot": "settings-indexing-drive-indexing.png"
   },
 
-  "settings.mediaIndex.card": "Image search",
-  "@settings.mediaIndex.card": {
-    "description": "Title of the settings card that groups image-content indexing (searching the text inside images). In Settings > AI > Image search."
-  },
   "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple''s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
   "settings.mediaIndex.clip.title": "Semantic search",
   "@settings.mediaIndex.clip.title": {

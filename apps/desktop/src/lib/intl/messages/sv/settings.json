@@ -455,10 +455,6 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.mediaIndex.card": "Bildsökning",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
-  },
   "settings.mediaIndex.privacyNote": "Det här körs helt på din Mac med Apples inbyggda Vision-ramverk. Dina bilder lämnar aldrig din dator, och ingen AI-leverantör eller API-nyckel är inblandad.",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"

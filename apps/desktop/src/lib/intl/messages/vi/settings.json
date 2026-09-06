@@ -451,10 +451,6 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.mediaIndex.card": "Tìm kiếm hình ảnh",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
-  },
   "settings.mediaIndex.privacyNote": "Việc này chạy hoàn toàn trên máy Mac của bạn bằng Vision framework tích hợp của Apple. Hình ảnh của bạn không bao giờ rời khỏi máy tính, và không có nhà cung cấp AI hay khóa API nào tham gia.",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"

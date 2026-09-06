@@ -111,13 +111,14 @@ export const indexingSettings: SettingDefinitionSource[] = [
   // ========================================================================
   {
     // Master toggle for image-content (OCR) indexing. Off by default; live-applied to
-    // the `media_index` backend scheduler via `set_image_index_enabled`. Its own card
-    // in `ImageIndexingSection.svelte`, titled by `cardKey`.
+    // the `media_index` backend scheduler via `set_image_index_enabled`. Lives in the
+    // "Enable indexing" card of `ImageIndexingSection.svelte`, so `cardKey` is the key
+    // that card's title renders (searching the visible title has to reach the row).
     id: 'mediaIndex.enabled',
     section: ['Indexing', 'Image indexing'],
     labelKey: 'settings.mediaIndex.enabled.label',
     descriptionKey: 'settings.mediaIndex.enabled.description',
-    cardKey: 'settings.mediaIndex.card',
+    cardKey: 'settings.mediaIndex.cards.enable',
     keywords: ['image', 'photo', 'ocr', 'text', 'search', 'index', 'picture', 'screenshot', 'content'],
     type: 'boolean',
     default: false,
@@ -132,7 +133,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
     section: ['Indexing', 'Image indexing'],
     labelKey: 'settings.mediaIndex.showFileStatusIcons.label',
     descriptionKey: 'settings.mediaIndex.showFileStatusIcons.description',
-    cardKey: 'settings.mediaIndex.card',
+    cardKey: 'settings.mediaIndex.cards.enable',
     keywords: ['image', 'photo', 'badge', 'icon', 'overlay', 'indicator', 'status', 'indexed'],
     type: 'boolean',
     default: true,

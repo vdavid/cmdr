@@ -453,10 +453,6 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.mediaIndex.card": "Képkeresés",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
-  },
   "settings.mediaIndex.privacyNote": "Ez teljes egészében a Macen fut az Apple beépített Vision keretrendszerével. A képeid soha nem hagyják el a számítógépedet, és nincs benne AI-szolgáltató vagy API-kulcs.",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"

@@ -453,10 +453,6 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.mediaIndex.card": "影像搜尋",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
-  },
   "settings.mediaIndex.privacyNote": "這一切完全在你的 Mac 上，透過 Apple 內建的 Vision 框架執行。你的影像絕不離開你的電腦，也不涉及任何 AI 提供者或 API 金鑰。",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"

@@ -455,10 +455,6 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.mediaIndex.card": "Recherche d''images",
-  "@settings.mediaIndex.card": {
-    "sourceHash": "a4a68f1"
-  },
   "settings.mediaIndex.privacyNote": "Tout cela fonctionne entièrement sur votre Mac grâce au framework Vision intégré d''Apple. Vos images ne quittent jamais votre ordinateur, et aucun fournisseur d''IA ni clé d''API n''est impliqué.",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
