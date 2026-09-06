@@ -56,7 +56,7 @@ const SYNTHETIC_PATH = 'sftp://e2e@e2e-nothing-here.invalid:22'
  * both panes.
  */
 async function publishSyntheticServer(tauriPage: PageLike): Promise<void> {
-  const real = await tauriPage.evaluate<unknown>(
+  const real = await tauriPage.evaluate(
     `window.__TAURI_INTERNALS__.invoke('list_volumes').then(function (r) { return r.data; })`,
   )
   const row = {

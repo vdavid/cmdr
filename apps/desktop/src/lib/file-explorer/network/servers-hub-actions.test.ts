@@ -10,12 +10,13 @@
 
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
+import type { NetworkHost, VolumeInfo } from '../types'
 
 const removeManualServer = vi.fn(() => Promise.resolve())
 const disconnectNetworkHost = vi.fn(() => Promise.resolve(['/Volumes/Public']))
 const showNetworkHostContextMenu = vi.fn(() => Promise.resolve())
 const forgetSavedServer = vi.fn(() => Promise.resolve())
-const openServerRowMenu = vi.fn(() => Promise.resolve())
+const openServerRowMenu = vi.fn((_volume: VolumeInfo) => Promise.resolve())
 const forgetCredentials = vi.fn(() => Promise.resolve())
 const addToast = vi.fn()
 const confirmDialog = vi.fn(() => Promise.resolve(true))
@@ -32,7 +33,7 @@ vi.mock('./network-store.svelte', () => ({
 }))
 vi.mock('../navigation/server-row-actions', () => ({
   forgetSavedServer: (...args: unknown[]) => forgetSavedServer(...(args as [])),
-  openServerRowMenu: (...args: unknown[]) => openServerRowMenu(...(args as [])),
+  openServerRowMenu: (volume: VolumeInfo) => openServerRowMenu(volume),
 }))
 vi.mock('$lib/ui/toast', () => ({
   addToast: (...args: unknown[]) => {
@@ -43,7 +44,6 @@ vi.mock('$lib/utils/confirm-dialog', () => ({ confirmDialog: (...args: unknown[]
 
 import { createHubActions } from './servers-hub-actions'
 import type { HubRow } from './servers-hub-rows'
-import type { NetworkHost, VolumeInfo } from '../types'
 
 const host: NetworkHost = { id: 'h1', name: 'Attic NAS', ipAddress: '10.0.0.4', port: 445, source: 'manual' }
 
@@ -102,7 +102,12 @@ const savedHostRow: HubRow = {
 }
 
 /** A host only mDNS knows about: nothing of the user's to remove. */
-const nearbyOnlyRow: HubRow = { ...savedHostRow, id: 'h2', saved: null, host: { ...host, id: 'h2', source: 'discovered' } }
+const nearbyOnlyRow: HubRow = {
+  ...savedHostRow,
+  id: 'h2',
+  saved: null,
+  host: { ...host, id: 'h2', source: 'discovered' },
+}
 
 const liveVolume: VolumeInfo = {
   id: 'sftp-nas.local-22-ada',
@@ -179,7 +184,7 @@ describe('openMenu', () => {
   it('stands in for a place the volume list has no row for, rather than skipping the menu', async () => {
     // A saved server that is neither pinned nor connected isn't in the listing.
     await actions([]).openMenu(placeRow)
-    const volume = openServerRowMenu.mock.calls[0][0] as VolumeInfo
+    const volume = openServerRowMenu.mock.calls[0][0]
     expect(volume.id).toBe('sftp-nas.local-22-ada')
     expect(volume.path).toBe('sftp://ada@nas.local:22')
     expect(volume.connectionState).toBeNull()

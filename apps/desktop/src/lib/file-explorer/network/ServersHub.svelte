@@ -168,8 +168,8 @@
 
     /** The row under the cursor, or `null` on the add row. */
     function rowUnderCursor(): HubRow | null {
-        if (isCursorOnAddRow) return null
-        return rows[cursorIndex] ?? null
+        if (isCursorOnAddRow || cursorIndex < 0 || cursorIndex >= rows.length) return null
+        return rows[cursorIndex]
     }
 
     /**
@@ -382,8 +382,8 @@
     }
 
     function handleRowDoubleClick(index: number) {
-        const row = rows[index]
-        if (row) openRow(row)
+        if (index < 0 || index >= rows.length) return
+        openRow(rows[index])
     }
 
     function handleAddRowClick() {
