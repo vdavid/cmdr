@@ -207,35 +207,35 @@
          Consent lives in `main.db`, not the registry, so the row is searchable through
          `AskCmdrSection.rows.ts` rather than a setting. -->
     {#if shouldShow('row:askCmdr.consent')}
-    <div class="enable-row">
-        <div class="enable-status">
-            <span class="status-label">
-                {#if enabled}
-                    {tString('settings.askCmdr.status.on')}
-                {:else if needsReconsent}
-                    {tString('settings.askCmdr.status.needsReview')}
-                {:else}
-                    {tString('settings.askCmdr.status.off')}
-                {/if}
-            </span>
-            {#if enabled && consentState.acceptedAt}
-                <span class="status-since">
-                    {tString('settings.askCmdr.status.onSince', { date: localIsoDate(consentState.acceptedAt) })}
+        <div class="enable-row">
+            <div class="enable-status">
+                <span class="status-label">
+                    {#if enabled}
+                        {tString('settings.askCmdr.status.on')}
+                    {:else if needsReconsent}
+                        {tString('settings.askCmdr.status.needsReview')}
+                    {:else}
+                        {tString('settings.askCmdr.status.off')}
+                    {/if}
                 </span>
-            {:else if needsReconsent}
-                <span class="status-changed">{tString('settings.askCmdr.status.changed')}</span>
-            {/if}
+                {#if enabled && consentState.acceptedAt}
+                    <span class="status-since">
+                        {tString('settings.askCmdr.status.onSince', { date: localIsoDate(consentState.acceptedAt) })}
+                    </span>
+                {:else if needsReconsent}
+                    <span class="status-changed">{tString('settings.askCmdr.status.changed')}</span>
+                {/if}
+            </div>
+            <Button variant={enabled ? 'secondary' : 'primary'} disabled={busy} onclick={() => void toggle()}>
+                {#if enabled}
+                    {tString('settings.askCmdr.turnOff')}
+                {:else if needsReconsent}
+                    {tString('settings.askCmdr.turnBackOn')}
+                {:else}
+                    {tString('settings.askCmdr.turnOn')}
+                {/if}
+            </Button>
         </div>
-        <Button variant={enabled ? 'secondary' : 'primary'} disabled={busy} onclick={() => void toggle()}>
-            {#if enabled}
-                {tString('settings.askCmdr.turnOff')}
-            {:else if needsReconsent}
-                {tString('settings.askCmdr.turnBackOn')}
-            {:else}
-                {tString('settings.askCmdr.turnOn')}
-            {/if}
-        </Button>
-    </div>
     {/if}
 
     <!-- What Ask Cmdr sends (the same copy as the opt-in screen). Open by default for
