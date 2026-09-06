@@ -959,7 +959,7 @@ pub(crate) async fn copy_volumes_with_progress(
             deep_skipped_files: Arc::clone(&deep_skipped_files),
             deep_skipped_bytes: Arc::clone(&deep_skipped_bytes),
         })
-        .await?;
+        .await;
         last_dest_path = outcome.last_dest_path;
         copy_error = outcome.copy_error;
         // Sync counters for post-loop reporting.

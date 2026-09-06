@@ -117,13 +117,19 @@ pub(super) struct ConcurrentOutcome {
 
 /// Runs the sliding window to completion, cancellation, or the first failure.
 ///
-/// Returns `Err` only when conflict resolution itself fails; a failed transfer
-/// comes back as `ConcurrentOutcome::copy_error` so the caller's post-loop still
-/// runs its rollback and cleanup.
-pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> Result<ConcurrentOutcome, WriteFailure> {
+/// ❗ **Answers an outcome, never an `Err`**, and that is a data-safety property
+/// rather than a style choice. EVERY failure this driver can meet, a task's and
+/// conflict resolution's own alike, comes back as `ConcurrentOutcome::copy_error`, so
+/// the caller's post-loop always runs: counter sync, deep-skip folding, the
+/// created-dir journal rows, the cancel reclassification, the abandoned-staged-
+/// write sweep, the rollback branch, and the terminal event. A resolver error
+/// that short-circuited out of here skipped all of it and left the user with a
+/// half-built destination nothing had swept and no `write-cancelled` to explain
+/// it.
+pub(super) async fn drive_transfer_concurrent(ctx: ConcurrentCopy<'_>) -> ConcurrentOutcome {
     let mut driver = ConcurrentDriver::new(ctx);
-    driver.run().await?;
-    Ok(driver.finish())
+    driver.run().await;
+    driver.finish()
 }
 
 /// One task per top-level source item, streaming end to end. The future owns
@@ -187,9 +193,17 @@ impl<'a> ConcurrentDriver<'a> {
     /// Fill the window, wait for something, record it. Ends when the sources and
     /// the window are both empty, on the first task failure, or when a
     /// wind-down deadline expires.
-    async fn run(&mut self) -> Result<(), WriteFailure> {
+    async fn run(&mut self) {
         loop {
-            self.spawn_ready_tasks().await?;
+            if let Err(failure) = self.spawn_ready_tasks().await {
+                // Conflict resolution refused (the destination couldn't be
+                // probed, a Stop prompt lost its answer). Recorded like a task
+                // failure and handled by the same post-loop: the sources already
+                // in flight are dropped, their staged partials swept from the
+                // in-flight ledger, and the user gets a terminal event.
+                self.record_resolver_failure(failure);
+                break;
+            }
             if self.in_flight.is_empty() {
                 break;
             }
@@ -208,7 +222,6 @@ impl<'a> ConcurrentDriver<'a> {
                 },
             }
         }
-        Ok(())
     }
 
     /// Keep preparing and pushing sources until either they run out or the
@@ -487,6 +500,23 @@ impl<'a> ConcurrentDriver<'a> {
             error: e,
             new_data_at,
         }));
+    }
+
+    /// Conflict resolution failed while preparing a source, which is not one
+    /// task's failure but the whole batch's. Recorded the same way so the
+    /// post-loop can't tell them apart, and ❌ never overwriting a failure a task
+    /// already reported: the first one is the one that stopped the operation.
+    fn record_resolver_failure(&mut self, failure: WriteFailure) {
+        log::warn!(
+            target: "copy",
+            "copy_volumes_with_progress: op={} couldn't resolve a conflict; winding down {} in-flight task(s): {:?}",
+            self.ctx.operation_id,
+            self.in_flight.len(),
+            failure.error,
+        );
+        if self.copy_error.is_none() {
+            self.copy_error = Some(failure);
+        }
     }
 
     /// Hand the post-loop what it needs, after letting go of whatever is left in

@@ -353,6 +353,8 @@ So the walker is reported apart (` walkers=1`, and a ` (walker)` marker on its o
 count. `activity.in_flight`, which the UI reads, still counts every row: it answers "how many things are open", not
 "how full is the window".
 
+**Both drivers hand a failure BACK, and neither returns it.** `drive_transfer_concurrent` answers a `ConcurrentOutcome` with no `Result` around it, and the serial driver's `async_driver.rs` turns a resolver refusal into `PostLoopIntent::Failed`. Every failure a driver can meet, a task's and conflict resolution's own alike, therefore reaches `copy_volumes_with_progress`'s post-loop, which is the only place that syncs the counters, folds the deep skips, journals the created dirs, reclassifies a Cancelled-shaped error into the cancel path, sweeps the abandoned staged writes, runs the rollback branch, and emits the terminal event. ❌ Never give either driver an `Err` path back to the phase runner: the concurrent one had one (`spawn_ready_tasks().await?`), and a resolver refusal then skipped that entire list, dropped every in-flight task's future mid-write, left the sources that HAD copied out of the rollback ledger, and gave the user no terminal event to explain the half-built destination. Pinned by `copy_concurrent_driver_tests.rs::a_conflict_resolution_failure_comes_back_in_the_outcome`.
+
 **Every driver announces its own phase** through `OperationProbe::set_driver_phase`, and a driver that forgets reports
 the initial `starting` for the whole transfer, which tells a dump's reader nothing. What each phase means is on
 `DriverPhase`; where the two shapes set them:
