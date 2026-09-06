@@ -112,6 +112,9 @@ mod rename_merge_mtp_tests;
 mod rename_merge_pause_tests;
 #[cfg(test)]
 mod rename_merge_stat_tests;
+/// A symlink is an opaque entry to the merge, never a directory to descend.
+#[cfg(test)]
+mod rename_merge_symlink_tests;
 #[cfg(test)]
 mod rename_merge_tests;
 #[cfg(test)]

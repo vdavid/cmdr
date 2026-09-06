@@ -90,6 +90,21 @@ pub(super) struct RenameMergeCtx<'a> {
     pub overwrote: &'a std::sync::atomic::AtomicBool,
 }
 
+/// May this entry be MERGED into, rather than renamed as one opaque thing?
+///
+/// Only a real directory may. The listing reports a symlink whose target is a
+/// directory as `is_directory: true` (`listing/reading.rs`:
+/// `metadata.is_dir() || target_is_dir`), and a merge that believes it lists the
+/// TARGET and renames the target's children out of a folder the user never
+/// selected — or, on the destination side, lands their files through the link,
+/// outside the folder they picked. `is_symlink` rides along on every `FileEntry`
+/// for exactly this. A link facing a real directory is a cross-type clash for
+/// the file policy, like any other. `transfer/DETAILS.md` § "Symlinks are opaque
+/// to a move"; the local engines' twin is `validation::is_real_directory`.
+fn merges_as_a_directory(entry: &FileEntry) -> bool {
+    entry.is_directory && !entry.is_symlink
+}
+
 /// The decision recorded for a child whose name hit the dest map, so a
 /// late-detected (case-folded / TOCTOU) `AlreadyExists` on the SAME child can
 /// finalize that decision instead of re-prompting.
@@ -160,8 +175,9 @@ pub(super) async fn rename_merge_directory(
         let child_dest = dest_dir.join(&entry.name);
         let dest_hit = dest_by_name.get(&entry.name);
 
-        if entry.is_directory && dest_hit.is_some_and(|d| d.is_directory) {
-            // Dir-vs-dir: always merge, never prompt. Recurse.
+        if merges_as_a_directory(entry) && dest_hit.is_some_and(merges_as_a_directory) {
+            // Real dir vs real dir: always merge, never prompt. Recurse. A
+            // symlink on either side is a leaf and falls to the resolver below.
             Box::pin(rename_merge_directory(
                 ctx,
                 &child_source,
@@ -250,7 +266,7 @@ async fn late_detected_collision(
         .into_iter()
         .find(|e| e.name.to_lowercase() == target_name);
 
-    if entry.is_directory && dest_entry.as_ref().is_some_and(|d| d.is_directory) {
+    if merges_as_a_directory(entry) && dest_entry.as_ref().is_some_and(merges_as_a_directory) {
         // Case-folded dir-vs-dir: enter the merge recursion like any other
         // dir-dir, targeting the dest's actual (case-folded) path so renames land
         // in the directory the backend already has.
@@ -289,9 +305,11 @@ async fn resolve_child(
 ) -> Result<MergeChildResolution, WriteOperationError> {
     // The source listing entry already tells us the type and size, saving the
     // resolver a redundant `is_directory` probe. Deep children aren't top-level
-    // sources, so there's no preflight hint to reuse.
-    let source_is_directory_hint = Some(entry.is_directory);
-    let source_size_hint = if entry.is_directory { None } else { entry.size };
+    // sources, so there's no preflight hint to reuse. A symlink is a LEAF here
+    // however its target reads, so the resolver hears "file" and treats the
+    // clash as the cross-type one it is.
+    let source_is_directory_hint = Some(merges_as_a_directory(entry));
+    let source_size_hint = if merges_as_a_directory(entry) { None } else { entry.size };
 
     let mut latched = *ctx.apply_to_all.lock_ignore_poison();
     let resolved = resolve_volume_conflict(
@@ -342,7 +360,7 @@ async fn apply_child_decision(
         MergeChildResolution::Proceed { write_path, replace } => (write_path, replace),
     };
 
-    if entry.is_directory {
+    if merges_as_a_directory(entry) {
         // A directory child that resolved to Proceed is a cross-type
         // Overwrite/Rename (dir source vs a same-named dest FILE). The resolver
         // already cleared/relocated the dest entry. If `write_path` is now a
