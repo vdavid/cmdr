@@ -16,7 +16,6 @@ use super::super::conflict::ApplyToAll;
 use super::super::durability::flush_created_destinations;
 use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::CopyTransaction;
-use super::super::reversal::reverse_copy_transaction;
 use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
@@ -540,9 +539,9 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             // Land the scanned directories the per-file loop didn't create:
             // empty dirs (and branches of only empty dirs) have no files, so
             // without this they'd silently never arrive at the destination.
-            // Outcomes mirror the loop's arms: Cancelled keeps what's copied
-            // (commit, so the Drop safety-net can't roll it back), any other
-            // error rolls back like `PostLoopIntent::Failed`.
+            // Outcomes mirror the loop's arms: both a Cancelled and any other
+            // error keep what's copied (commit, so the `Drop` safety net can't
+            // roll it back), the way `PostLoopIntent::Failed` does.
             if let Err(e) = create_scanned_dirs_at_destination(
                 &scan_result.dirs,
                 sources,
@@ -561,10 +560,10 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                         rollback: CancelRollback::none(),
                     });
                 } else {
-                    // Error cleanup, and it rechecks like the Rollback button
-                    // does: deleting a file somebody else has modified is wrong
-                    // whatever brought Cmdr here.
-                    reverse_copy_transaction(&mut transaction);
+                    // A failure keeps what landed, exactly like the arm below.
+                    // Every file in the ledger is complete, and one of them may
+                    // have replaced the user's original.
+                    commit_journaling_created_dirs(transaction, operation_id);
                     events.emit_error(WriteErrorEvent::new(
                         operation_id.to_string(),
                         WriteOperationType::Copy,
@@ -664,15 +663,23 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             Err(cancellation)
         }
         PostLoopIntent::Failed(e) => {
-            // Non-cancellation error - always rollback. Routed through `log_error!`
-            // so opt-in users get an auto error report (copy failures are exactly
-            // the kind of "this didn't work" we want signal on).
+            // A failure KEEPS every file that landed and cleans only the partial,
+            // which `overwrite::stage_and_land_file` already did on its way out.
+            // ❌ Never auto-delete them: a file in this ledger may have replaced
+            // the user's original, and that original went the moment the new
+            // bytes took its name — so removing the replacement leaves neither
+            // copy. The user can still roll the operation back from history,
+            // where the same reversal runs with the whole picture in front of
+            // them. Routed through `log_error!` so opt-in users get an auto
+            // error report (copy failures are exactly the kind of "this didn't
+            // work" we want signal on).
             crate::log_error!(
-                "copy_files_with_progress: failed op={} error={:?}, rolling back",
+                "copy_files_with_progress: failed op={} error={:?}, keeping {} completed files",
                 operation_id,
                 e,
+                transaction.created_files().len(),
             );
-            reverse_copy_transaction(&mut transaction);
+            commit_journaling_created_dirs(transaction, operation_id);
             events.emit_error(WriteErrorEvent::new(
                 operation_id.to_string(),
                 WriteOperationType::Copy,
@@ -686,3 +693,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
 #[cfg(test)]
 #[path = "copy_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "copy_failure_tests.rs"]
+mod copy_failure_tests;

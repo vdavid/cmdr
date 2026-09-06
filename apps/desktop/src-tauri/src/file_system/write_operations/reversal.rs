@@ -24,7 +24,9 @@ use std::path::Path;
 use crate::operation_log::rollback::{ItemResult, SkipTally, SnapshotVerdict, verify_snapshot};
 use crate::operation_log::types::SkipReason;
 
-use super::ledger::{CopyTransaction, WrittenFile, WrittenIdentity};
+#[cfg(test)]
+use super::ledger::CopyTransaction;
+use super::ledger::{WrittenFile, WrittenIdentity};
 use super::types::{CancelRollback, CancelRollbackOutcome};
 
 /// What a reversal found at a path its ledger claims.
@@ -165,15 +167,15 @@ pub(crate) fn remove_local_file(file: &WrittenFile) -> ItemResult {
 /// first, then the directories it created deepest-first and empty-only, then
 /// the entries it displaced, back to their own names.
 ///
-/// The error-cleanup path's reversal. It rechecks like the Rollback button does
-/// — deleting a file somebody else has modified is wrong whatever brought Cmdr
-/// here — while everything this operation actually wrote still goes, so the
-/// half-copied tree the cleanup exists to remove is removed. ❌ Not the panic
-/// net: `CopyTransaction`'s `Drop` runs its own unconditional sweep, for the
-/// reason written there.
-///
-/// The caller must still commit the transaction; this has already removed
-/// whatever it removed.
+/// **The cells' composition, and only theirs.** In production a person is
+/// always behind a reversal, so the walk that runs is
+/// `transfer::copy::rollback::rollback_with_progress` — the same order and the
+/// same per-item recheck, plus the reverse-progress frames and the mid-rollback
+/// stop check a person needs. Nothing auto-reverses a copy any more: a failure
+/// keeps what landed, because a file in that ledger may already have replaced
+/// the user's original. This one exists so the recheck rules can be exercised
+/// on a bare ledger without a sink.
+#[cfg(test)]
 pub(crate) fn reverse_copy_transaction(transaction: &mut CopyTransaction) -> ReversalTally {
     let mut tally = ReversalTally::default();
     while let Some(file) = transaction.pop_file() {

@@ -281,8 +281,9 @@ impl CopyTransaction {
     /// Removes everything this ledger still claims, no questions asked.
     ///
     /// **The panic net's body, and nothing else's.** Every reversal a person can
-    /// observe goes through `reversal::reverse_copy_transaction`, which rechecks
-    /// each entry and leaves anything that changed since. This one runs because a
+    /// observe goes through `transfer::copy::rollback::rollback_with_progress`,
+    /// which rechecks each entry and leaves anything that changed since (and a
+    /// FAILURE reverses nothing at all: it keeps what landed). This one runs because a
     /// thread died mid-copy, where a destination is as likely half-written as
     /// complete and nobody is left to read a report about what got left behind.
     /// ❌ Don't "fix" the inconsistency by teaching it to skip on drift: that
