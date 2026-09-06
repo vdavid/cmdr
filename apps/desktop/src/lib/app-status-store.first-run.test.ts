@@ -121,3 +121,72 @@ describe('saveAppStatusNow', () => {
     expect(disk.get('rightPath')).toBe('~/two')
   })
 })
+
+/**
+ * Restoring a tab that stood on a server.
+ *
+ * ❗ Launch must not dial: four saved servers waking a Mac would be four Keychain
+ * reads and four network waits nobody asked for. So the path is taken as it
+ * stands, and the pane dials only when the user activates the tab
+ * (`docs/specs/servers-hub-plan.md` § D14). The failure this catches is quiet and
+ * total: probing a remote path answers false for every parent, the walk-up chops
+ * the scheme, and the tab reopens on the boot disk's home folder.
+ */
+describe('a restored server tab', () => {
+  const neverExists = vi.fn(() => Promise.resolve(false))
+
+  beforeEach(() => {
+    neverExists.mockClear()
+  })
+
+  it('keeps its subpath, and nothing probes the server', async () => {
+    disk.set('leftTabs', {
+      activeTabId: 'tab-1',
+      tabs: [
+        {
+          id: 'tab-1',
+          path: 'sftp://ada@nas.local:22/srv/data/photos',
+          volumeId: 'sftp-nas-local-22-ada',
+          sortBy: 'name',
+          sortOrder: 'ascending',
+          viewMode: 'full',
+          pinned: false,
+        },
+      ],
+    })
+    const paneTabs = await loadPaneTabs('left', neverExists)
+    expect(paneTabs.tabs[0].path).toBe('sftp://ada@nas.local:22/srv/data/photos')
+    expect(paneTabs.tabs[0].volumeId).toBe('sftp-nas-local-22-ada')
+    expect(neverExists).not.toHaveBeenCalled()
+  })
+
+  it('still walks up a LOCAL tab that went missing', async () => {
+    disk.set('leftTabs', {
+      activeTabId: 'tab-1',
+      tabs: [
+        {
+          id: 'tab-1',
+          path: '/Volumes/gone/photos',
+          volumeId: 'ext',
+          sortBy: 'name',
+          sortOrder: 'ascending',
+          viewMode: 'full',
+          pinned: false,
+        },
+      ],
+    })
+    const paneTabs = await loadPaneTabs('left', neverExists)
+    expect(paneTabs.tabs[0].path).toBe('~')
+    expect(neverExists).toHaveBeenCalled()
+  })
+
+  it('leaves both pane paths on their servers too', async () => {
+    disk.set('leftVolumeId', 'sftp-nas-local-22-ada')
+    disk.set('leftPath', 'sftp://ada@nas.local:22/srv/data')
+    disk.set('rightVolumeId', 'root')
+    disk.set('rightPath', '/Users/ada')
+    const status = await loadAppStatus(neverExists)
+    expect(status.leftPath).toBe('sftp://ada@nas.local:22/srv/data')
+    expect(status.rightPath).toBe('~')
+  })
+})

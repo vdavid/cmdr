@@ -34,6 +34,7 @@ const VOLUMES = new Map<string, { id: string; name: string; path: string }>([
   ['root', { id: 'root', name: 'Macintosh HD', path: '/' }],
   ['ext', { id: 'ext', name: 'Ext', path: '/Volumes/Ext' }],
   ['network', { id: 'network', name: 'Network', path: 'smb://' }],
+  ['sftp-nas-local-22-ada', { id: 'sftp-nas-local-22-ada', name: 'Naspolya', path: 'sftp://ada@nas.local:22/srv/data' }],
 ])
 
 /** A FilePane stub: every method a no-op, `navigateToPath` returns a resolvable promise we can track. */
@@ -773,6 +774,73 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
     expect(result).toEqual({
       status: 'refused',
       reason: { kind: 'adb-unconnected', message: 'Pane is not on this ADB volume. Call select_volume first.' },
+    })
+  })
+
+  it('server path on a pane not on that place is refused', () => {
+    const result = navigate(
+      { pane: 'left', to: { goTo: { volumeId: 'root', path: 'sftp://ada@nas.local:22/srv/data/photos' } }, source: 'mcp' },
+      h.deps,
+    )
+    expect(result).toEqual({
+      status: 'refused',
+      reason: { kind: 'server-unconnected', message: 'Pane is not on this server volume. Call select_volume first.' },
+    })
+  })
+
+  it('server path on a pane on a DIFFERENT server is refused: two servers can both have /srv/data', () => {
+    h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
+    const result = navigate(
+      {
+        pane: 'left',
+        to: { goTo: { volumeId: 'sftp-nas-local-22-ada', path: 'sftp://ada@other.local:22/srv/data/photos' } },
+        source: 'mcp',
+      },
+      h.deps,
+    )
+    expect(result.status).toBe('refused')
+  })
+
+  it('a path under the pane\'s own server root is accepted', () => {
+    h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
+    const result = navigate(
+      {
+        pane: 'left',
+        to: { goTo: { volumeId: 'sftp-nas-local-22-ada', path: 'sftp://ada@nas.local:22/srv/data/photos' } },
+        source: 'mcp',
+      },
+      h.deps,
+    )
+    expect(result.status).toBe('started')
+  })
+
+  it('a sibling of the server root is refused, not silently anchored onto it', () => {
+    // ❗ `/srv/data-1` is a legal name. A string-prefix test would accept it and
+    // ask the server for a directory the volume does not contain.
+    h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
+    const result = navigate(
+      {
+        pane: 'left',
+        to: { goTo: { volumeId: 'sftp-nas-local-22-ada', path: 'sftp://ada@nas.local:22/srv/data-1/photos' } },
+        source: 'mcp',
+      },
+      h.deps,
+    )
+    expect(result.status).toBe('refused')
+  })
+
+  it('on-server-volume pane refuses a local path with the exact "on the … server volume" string', () => {
+    h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
+    const result = navigate(
+      { pane: 'left', to: { goTo: { volumeId: 'sftp-nas-local-22-ada', path: '/Users/me/doc' } }, source: 'mcp' },
+      h.deps,
+    )
+    expect(result).toEqual({
+      status: 'refused',
+      reason: {
+        kind: 'server-unconnected',
+        message: 'Pane is on the Naspolya server volume. Use select_volume to switch to a local volume first.',
+      },
     })
   })
 

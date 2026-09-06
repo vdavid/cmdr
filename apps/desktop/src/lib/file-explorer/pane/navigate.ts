@@ -131,6 +131,7 @@ import {
 import { isPathOnVolume, type DetermineNavigationPathArgs } from '../navigation/path-navigation'
 import { tString } from '$lib/intl/messages.svelte'
 import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
+import { isServerPath, isServerVolumeId } from '$lib/servers/server-path-utils'
 import type { Location } from '$lib/tauri-commands'
 
 /** Where a navigation originates. Drives focus + history-push behavior, never the destination. */
@@ -177,6 +178,7 @@ export interface NavigateRefusal {
     | 'smb-path-unsupported'
     | 'mtp-unconnected'
     | 'adb-unconnected'
+    | 'server-unconnected'
     | 'pane-unavailable'
     | 'no-volume-resolved'
   /** EXACT current refusal string, forwarded verbatim as the `mcp-response` error. Pinned byte-for-byte. */
@@ -350,6 +352,43 @@ function validateAdbNavigation(
     }
   }
   return null
+}
+
+/**
+ * Server capability check, the ADB twin for an SFTP or WebDAV place: a scheme
+ * path is navigable only while the pane sits on the volume rooted at or above
+ * it. Returns a refusal or `null`.
+ *
+ * ❗ The test is "is the target under the pane volume's OWN root", by whole path
+ * components, ❌ never a string prefix: two servers can both hold `/srv/data`,
+ * and `/srv/data-1` is a legal sibling of `/srv/data` that a string compare
+ * would accept and then ask the wrong server for. The Rust twin is
+ * `cmdr_fs::volume::remote_paths::RemoteRoot::to_remote_path`, which refuses the
+ * same three shapes for the same reason.
+ */
+function validateServerNavigation(
+  deps: NavigateDeps,
+  path: string,
+  volumeId: string,
+  volumeName: string | undefined,
+): NavigateRefusal | null {
+  if (isServerPath(path)) {
+    const volumeRoot = isServerVolumeId(volumeId) ? deps.getVolumePathById(volumeId) : undefined
+    if (!volumeRoot || !isUnderServerRoot(volumeRoot, path)) {
+      return { kind: 'server-unconnected', message: 'Pane is not on this server volume. Call select_volume first.' }
+    }
+  } else if (isServerVolumeId(volumeId)) {
+    return {
+      kind: 'server-unconnected',
+      message: `Pane is on the ${volumeName ?? volumeId} server volume. Use select_volume to switch to a local volume first.`,
+    }
+  }
+  return null
+}
+
+/** Whether `path` is the volume root or sits under it, matched by whole components. */
+function isUnderServerRoot(volumeRoot: string, path: string): boolean {
+  return path === volumeRoot || path.startsWith(`${volumeRoot}/`)
 }
 
 /** A resolved no-op `settled` — for branches that commit state without driving a listing. */
@@ -663,7 +702,8 @@ function navigateInPlace(deps: NavigateDeps, intent: NavigateIntent, path: strin
   // MTP capability refusal (synchronous).
   const mtpRefusal =
     validateMtpNavigation(path, currentVolumeId, currentVolumeName) ??
-    validateAdbNavigation(deps, path, currentVolumeId, currentVolumeName)
+    validateAdbNavigation(deps, path, currentVolumeId, currentVolumeName) ??
+    validateServerNavigation(deps, path, currentVolumeId, currentVolumeName)
   if (mtpRefusal) return { status: 'refused', reason: mtpRefusal }
 
   const paneRef = deps.getPaneRef(pane)
