@@ -44,7 +44,8 @@ fn a_share_or_a_phone_walks_over_the_trait_and_never_locally() {
         let share = ColdDrive::with_volume("cover-cold-share-test", |volume| {
             volume
                 .with_local_fs_access()
-                .with_smb_connection_state(cmdr_fs::volume::SmbConnectionState::Direct)
+                .with_connection_state(cmdr_fs::volume::ConnectionState::Direct)
+                .with_backend_kind(cmdr_fs::volume::BackendKind::Smb)
         });
         assert!(walks_over_the_trait(&share), "a live smb2 session is not local ground");
     }

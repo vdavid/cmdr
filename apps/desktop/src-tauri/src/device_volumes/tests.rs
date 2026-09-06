@@ -72,7 +72,7 @@ async fn append_from_folds_every_provider_into_mobile_device_entries() {
         assert!(v.capabilities.is_none(), "enrichment fills capabilities afterwards");
         assert!(v.icon.is_none());
         assert!(!v.is_disk_image);
-        assert!(v.smb_connection_state.is_none());
+        assert!(v.connection_state.is_none());
     }
     assert_eq!(volumes[0].fs_type.as_deref(), Some("mtp"));
     assert_eq!(volumes[1].fs_type.as_deref(), Some("adb"));

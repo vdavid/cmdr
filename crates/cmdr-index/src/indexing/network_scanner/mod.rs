@@ -313,7 +313,7 @@ fn drain_autorelease_pool() {
 /// `DeviceDisconnected` is the one `VolumeError` variant that means "the volume
 /// is gone": a dropped MTP device AND a broken SMB smb2 session both surface as
 /// `DeviceDisconnected` from `list_directory` (the SMB-connection-state
-/// `Disconnected` is a separate enum used by the FE-facing `smb_connection_state`
+/// `Disconnected` is a separate enum used by the FE-facing `connection_state`
 /// probe, not returned from a listing call). A `ConnectionTimeout` is handled by
 /// the `Timeout`/consecutive-failure path, not here.
 fn is_typed_disconnect(e: &cmdr_fs::volume::VolumeError) -> bool {

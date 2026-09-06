@@ -337,7 +337,7 @@ fn os_mounted_smb_shares() -> Vec<(String, SmbMountInfo)> {
         .into_iter()
         .filter_map(|(id, _name)| {
             let vol = manager.get(&id)?;
-            if vol.smb_connection_state().is_some() {
+            if vol.backend_kind() == cmdr_fs::volume::BackendKind::Smb {
                 return None;
             }
             let path = vol.root().to_string_lossy().to_string();

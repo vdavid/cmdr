@@ -545,12 +545,33 @@ pub trait Volume: Send + Sync {
     // Lifecycle: Optional, default no-op
     // ========================================
 
-    /// Returns the SMB connection state if this is an SMB volume.
+    /// How live this volume's SESSION is, or `None` when it has no session to
+    /// speak of (a local disk, an archive, the git portal).
     ///
-    /// Only `SmbVolume` returns `Some`. Used by the frontend to show a connection
-    /// quality indicator (green = direct smb2, yellow = OS mount fallback).
-    fn smb_connection_state(&self) -> Option<SmbConnectionState> {
+    /// Every connecting backend answers: SMB, SFTP, WebDAV, and ADB. The frontend
+    /// draws the switcher dot from it and the reconnect manager decides whether to
+    /// run a backoff cycle.
+    ///
+    /// ❗ **`is_some()` is not an "is this SMB" test.** Four backends answer, so a
+    /// caller that means "SMB" has to ask [`backend_kind`](Self::backend_kind)
+    /// instead; the alternative is the SMB indexer receiving an `sftp://` root.
+    fn connection_state(&self) -> Option<ConnectionState> {
         None
+    }
+
+    /// Which backend serves this volume.
+    ///
+    /// For the few app decisions that are genuinely about the transport (which
+    /// indexer transport may walk it, whether the file viewer treats its paths as
+    /// local, whether an SMB upgrade has anything to do).
+    ///
+    /// The default is [`BackendKind::Local`], so a test double compiles without
+    /// naming one and an unclassified backend gets no remote treatment.
+    /// ❌ Never published to the frontend: `volume-capabilities.ts` classifies a
+    /// pane off `fsType` and category, and an un-upgraded SMB share served by
+    /// `LocalPosixVolume` would answer `Local` here.
+    fn backend_kind(&self) -> BackendKind {
+        BackendKind::Local
     }
 
     /// What a "Sign in" affordance on this volume may ask for, **right now**.

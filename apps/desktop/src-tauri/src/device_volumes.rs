@@ -124,7 +124,8 @@ fn location_from_entry(entry: DeviceVolumeEntry) -> LocationInfo {
         is_disk_image: false,
         fs_type: Some(entry.fs_type.to_string()),
         supports_trash: false,
-        smb_connection_state: None,
+        connection_state: None,
+        device_readiness: None,
         usb_speed: entry.usb_speed,
         capabilities: None,
     }

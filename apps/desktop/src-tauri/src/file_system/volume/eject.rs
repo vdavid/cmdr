@@ -214,7 +214,7 @@ pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
                 volume_id: volume_id.to_string(),
             })?;
         let mount_path = volume.root().to_string_lossy().to_string();
-        let is_smb = volume.smb_connection_state().is_some();
+        let is_smb = volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb;
         (mount_path, is_smb)
     };
 
@@ -330,7 +330,7 @@ pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
             volume_id: volume_id.to_string(),
         })?;
 
-    if volume.smb_connection_state().is_none() {
+    if volume.backend_kind() != cmdr_fs::volume::BackendKind::Smb {
         return Err(EjectError::NotAnSmbVolume {
             volume_id: volume_id.to_string(),
         });

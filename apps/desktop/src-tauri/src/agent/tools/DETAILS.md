@@ -108,7 +108,8 @@ tool-result JSON the model reads. Every tool maps 1:1 to a `ToolId` variant.
   `unanswered`. The sole disk reader among the handlers; how it reads and how it times out: § Reading a
   file the way the viewer does.
 - **`list_volumes`** (`read/volumes.rs`) — every volume with `indexStatus` (`fresh`/`scanning`/`stale`/`off`) and, for
-  SMB, `smbConnectionState` (`direct`/`os_mount`/`disconnected`), straight from `snapshot_volumes` so tokens can't drift.
+  a remote one, `connectionState` (`direct`/`os_mount`/`disconnected`/`needs_sign_in`/`needs_host_key_approval`/`saved`),
+  straight from `snapshot_volumes` so tokens can't drift.
   Space rides along as `totalBytes` / `availableBytes` plus `totalHuman` / `availableHuman`, each pair present exactly
   when the poller has a reading (the same pair `cmdr://state`'s `volumes:` renders; see `mcp/DETAILS.md`).
   `mountPath` is what makes a `search` of anything but the boot volume expressible: `search` covers ONE volume per call

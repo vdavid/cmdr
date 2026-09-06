@@ -364,6 +364,10 @@ impl Volume for ArchiveVolume {
         &self.name
     }
 
+    fn backend_kind(&self) -> cmdr_fs::volume::BackendKind {
+        cmdr_fs::volume::BackendKind::Archive
+    }
+
     fn root(&self) -> &Path {
         &self.archive_path
     }

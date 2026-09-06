@@ -2,7 +2,7 @@
  * Per-pane background tinting by volume type.
  *
  * Three reactive state slots track the current values of
- * `appearance.tint{Local,Smb,Mtp}`. `FilePane.svelte` calls
+ * `appearance.tint{Local,Smb,Mtp}` (`tintSmb` covers every server kind). `FilePane.svelte` calls
  * `getPaneTintBg(...)` on every render of its volume info; the call resolves
  * the pane's volume kind and returns either a `color-mix(...)` expression
  * (modern WebKit) or a precomputed sRGB hex (old WebKit), or `null` when the
@@ -85,7 +85,7 @@ export function cleanupVolumeTints(): void {
   initialized = false
 }
 
-export type VolumeKind = 'local' | 'smb' | 'mtp' | 'adb' | 'other'
+export type VolumeKind = 'local' | 'smb' | 'sftp' | 'webdav' | 'mtp' | 'adb' | 'other'
 
 /**
  * Pure classifier: pick the tint bucket for a volume.
@@ -98,6 +98,12 @@ export type VolumeKind = 'local' | 'smb' | 'mtp' | 'adb' | 'other'
  * category alone can't tell the two transports apart. The two share the
  * `tintMtp` setting (one "mobile device" tint), so the split only matters to
  * callers that key behavior on the transport.
+ *
+ * ❗ `sftp` and `webdav` are checked BEFORE the `category === 'network'` arm,
+ * which every server row also carries. Without that a server pane would be an SMB
+ * pane: the SMB capability row, the system-clipboard gate open, and Open terminal
+ * firing with an `sftp://` path. All three share the `tintSmb` setting (one
+ * "Servers" tint), so the split only matters to behavior.
  */
 export function volumeKindFor(
   volumeId: string,
@@ -106,6 +112,8 @@ export function volumeKindFor(
 ): VolumeKind {
   if (isAdbVolumeId(volumeId) || fsType === 'adb') return 'adb'
   if (isMtpVolumeId(volumeId) || category === 'mobile_device') return 'mtp'
+  if (fsType === 'sftp') return 'sftp'
+  if (fsType === 'webdav') return 'webdav'
   if (category === 'network' || fsType === 'smbfs') return 'smb'
   if (
     volumeId === 'root' ||
@@ -121,7 +129,10 @@ export function volumeKindFor(
 /** Returns the selected tint for a given volume kind (reactive). */
 function tintForKind(kind: VolumeKind): VolumeTintColor {
   if (kind === 'local') return tintLocal
-  if (kind === 'smb') return tintSmb
+  // One "Servers" tint across SMB, SFTP, and WebDAV. ❌ No fourth setting: three
+  // definition sites, a section row, and two parity tests for a color nobody
+  // asked to set separately.
+  if (kind === 'smb' || kind === 'sftp' || kind === 'webdav') return tintSmb
   if (kind === 'mtp' || kind === 'adb') return tintMtp
   return 'none'
 }

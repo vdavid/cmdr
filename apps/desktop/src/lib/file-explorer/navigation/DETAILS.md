@@ -187,17 +187,25 @@ restricted by macOS" `ListingError` shown in `ErrorPane`, so the indicator and t
 user simply lacks rights to (a root-owned `lost+found` on a share) is deliberately NOT in the set: no System Settings
 grant would free it, so an indicator promising one would mislead.
 
-### SMB connection indicator
+### Connection indicator
 
-SMB volumes with an active `SmbVolume` in the backend carry `smbConnectionState: 'direct' | 'os_mount'`. The component
-renders a small colored circle (green = direct smb2 session, yellow = OS mount fallback) both in the dropdown and in the
-closed breadcrumb label. Yellow state has a submenu trigger in the dropdown and a clickable button (circle + down arrow)
-in the breadcrumb, both opening a "Connect directly for faster access" menu item. Clicking it hands off to
-`connectDirectly` in `../network/direct-connect.ts`, which owns the whole flow (stored credentials → saved-password
-probe → login form) and every toast along it; the OS-mount fallback notice presses the same function. This component's
-only job in it is the credential surface: it passes a callback that routes `credentialsNeeded` to `onSmbUpgradeLogin`,
-so the form opens in THIS pane (the dropdown can list any volume, and the form belongs where the click was). The flow
-itself: `../network/DETAILS.md` § "Connect directly". Submenu supports full keyboard navigation (ArrowRight to open,
+Every volume a connecting backend serves carries a `connectionState` (`crates/cmdr-fs/src/volume/types.rs` has the six
+variants), and a saved-but-unconnected server carries `saved`. The component renders a small colored circle both in the
+dropdown and in the closed breadcrumb label, its modifier class built from the state name — so ❗ a variant with no
+`.smb-indicator-<state>` rule in `VolumeBreadcrumb.svelte` renders as an unpainted circle. Green = a live session, amber
+= the OS-mount fallback or a waiting sign-in, red = a changed host key, hollow = `saved`. The dot's TOOLTIP still knows
+two words (`direct` and everything else); the remaining states get their own copy in the servers-hub switcher milestone,
+since a new English string owes ten translations.
+
+❌ Never read `connectionState` with `!= null` — `connection-state.ts` holds the named predicates
+(`hasReconnectLoop`, `isLiveSession`, `showsDisconnect`), and `eject-predicate.ts` composes two of them. Yellow state
+has a submenu trigger in the dropdown and a clickable button (circle + down arrow) in the breadcrumb, both opening a
+"Connect directly for faster access" menu item. Clicking it hands off to `connectDirectly` in
+`../network/direct-connect.ts`, which owns the whole flow (stored credentials → saved-password probe → login form) and
+every toast along it; the OS-mount fallback notice presses the same function. This component's only job in it is the
+credential surface: it passes a callback that routes `credentialsNeeded` to `onSmbUpgradeLogin`, so the form opens in
+THIS pane (the dropdown can list any volume, and the form belongs where the click was). The flow itself:
+`../network/DETAILS.md` § "Connect directly". Submenu supports full keyboard navigation (ArrowRight to open,
 ArrowLeft/Escape to close, Enter to activate).
 
 ### Eject button + row context menu

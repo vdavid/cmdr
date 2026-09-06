@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::testing::wait_until_async;
-use cmdr_fs::volume::{InMemoryVolume, SmbConnectionState, Volume};
+use cmdr_fs::volume::{ConnectionState, InMemoryVolume, Volume};
 
 use crate::indexing::events::{EventSink, IndexEventKind, RecordingSink};
 use crate::indexing::handle::{Index, IndexBuildError, StartOutcome};
@@ -60,7 +60,8 @@ fn in_memory_share(root: &str) -> Arc<dyn Volume> {
     Arc::new(
         InMemoryVolume::with_entries("Acceptance", entries)
             .with_root(root)
-            .with_smb_connection_state(SmbConnectionState::Direct),
+            .with_connection_state(ConnectionState::Direct)
+            .with_backend_kind(cmdr_fs::volume::BackendKind::Smb),
     )
 }
 

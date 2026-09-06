@@ -29,7 +29,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onVolumeConnectionChanged: () => Promise.resolve(mockUnlisten),
 }))
 
-import { initVolumeStore, cleanupVolumeStore, getVolumes } from './volume-store.svelte'
+import { initVolumeStore, cleanupVolumeStore, getVolumes, toConnectionState } from './volume-store.svelte'
 
 /** A share mounted twice: two paths, one volume ID. */
 function doublyMountedShare(): VolumeInfo[] {
@@ -94,5 +94,18 @@ describe('volume-store duplicate IDs', () => {
     await initVolumeStore()
 
     expect(getVolumes()).toEqual(distinct)
+  })
+})
+
+describe('toConnectionState — the wire enum the picker renders', () => {
+  it('maps every wire variant, so a dropped session reaches the dot before the next volumes-changed', () => {
+    // `needs_credentials` and `needs_host_key_approval` used to fall to `null`, so
+    // a live server that stopped retrying kept rendering as connected until the
+    // backend happened to republish the whole list. The pane's `signed_out` state
+    // rides on this mapping.
+    expect(toConnectionState('connected')).toBe('direct')
+    expect(toConnectionState('disconnected')).toBe('disconnected')
+    expect(toConnectionState('needs_credentials')).toBe('needs_sign_in')
+    expect(toConnectionState('needs_host_key_approval')).toBe('needs_host_key_approval')
   })
 })

@@ -15,7 +15,7 @@ use std::sync::atomic::Ordering;
 ///
 /// Stored as `AtomicU8` for lock-free reads from any thread. The internal state
 /// machine is binary (`Direct ⇄ Disconnected`). The "OS mount" fallback the
-/// frontend shows lives at the outer `SmbConnectionState` layer (see
+/// frontend shows lives at the outer `cmdr_fs::volume::ConnectionState` layer (see
 /// `enrich_from_volume_registry` in `volumes/smb.rs`) and never reaches
 /// this atomic on the smb2 hot path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -151,8 +151,13 @@ impl SmbVolumeInner {
 /// `SmbVolume` rather than its inner state: the connection-quality indicator and
 /// the debug window's diagnostics dashboard.
 impl SmbVolume {
-    /// Returns the current connection state.
-    pub fn connection_state(&self) -> ConnectionState {
+    /// The share's own connection state.
+    ///
+    /// Named apart from [`Volume::connection_state`](cmdr_fs::volume::Volume::connection_state),
+    /// which this type also implements: an inherent method shadows a trait one,
+    /// so two same-named accessors returning two different enums would resolve by
+    /// receiver type and silently hand a caller the wrong one.
+    pub fn session_state(&self) -> ConnectionState {
         self.inner.connection_state()
     }
 

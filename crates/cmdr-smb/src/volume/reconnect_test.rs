@@ -30,7 +30,7 @@ async fn attempt_reconnect_noop_when_already_direct() {
     let vol = make_test_volume_direct();
     let result = vol.inner.do_attempt_reconnect().await;
     assert!(result.is_ok(), "expected Ok when already Direct, got {:?}", result);
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
 }
 
 #[tokio::test]
@@ -63,7 +63,7 @@ async fn single_flight_concurrent_callers_serialize() {
     });
     assert!(r1.is_ok());
     assert!(r2.is_ok());
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
 }
 
 /// Several in-flight ops all meet the same broken session, and each one runs the
@@ -78,7 +78,7 @@ async fn transition_to_disconnected_idempotent() {
     vol.inner.transition_to_disconnected();
     vol.inner.transition_to_disconnected();
 
-    assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+    assert_eq!(vol.session_state(), ConnectionState::Disconnected);
     assert_eq!(
         events.transitions(),
         vec![(RECORDED_ID.to_string(), VolumeConnection::Disconnected)],
@@ -96,7 +96,7 @@ async fn transition_to_direct_idempotent() {
     vol.inner.transition_to_direct();
     vol.inner.transition_to_direct();
 
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
     assert_eq!(
         events.transitions(),
         vec![(RECORDED_ID.to_string(), VolumeConnection::Connected)],
@@ -120,7 +120,7 @@ async fn a_retired_share_announces_nothing_under_an_id_it_no_longer_owns() {
     vol.inner.transition_to_disconnected();
 
     assert_eq!(
-        vol.connection_state(),
+        vol.session_state(),
         ConnectionState::Disconnected,
         "the share still tracks its own state for whoever still holds it"
     );
@@ -173,7 +173,7 @@ fn on_unmount_marks_volume_dead() {
     assert!(!vol.inner.unmounted.load(Ordering::Relaxed));
     vol.on_unmount();
     assert!(vol.inner.unmounted.load(Ordering::Relaxed));
-    assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+    assert_eq!(vol.session_state(), ConnectionState::Disconnected);
 }
 
 /// Being superseded is not being unmounted. The successor took the volume id,

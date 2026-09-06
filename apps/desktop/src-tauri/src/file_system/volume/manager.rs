@@ -320,7 +320,7 @@ impl VolumeManager {
     /// Returns all registered volumes as (id, handle) pairs. Unlike [`list_volumes`]
     /// (which returns display names), this hands back the `Volume` handles so callers
     /// can inspect capabilities (`root`, `supports_local_fs_access`,
-    /// `smb_connection_state`). Used by the file viewer's locality check.
+    /// `connection_state`). Used by the file viewer's locality check.
     ///
     /// [`list_volumes`]: Self::list_volumes
     pub fn list_volumes_with_handles(&self) -> Vec<(String, Arc<dyn Volume>)> {

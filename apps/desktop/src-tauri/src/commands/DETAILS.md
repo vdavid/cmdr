@@ -43,9 +43,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `spawn_blocking` under the read timeout, never a subtree walk; per-item failures map to `None` so a virtual MTP/SMB
   path on the pasteboard can't poison the batch. The pure `stat_paths_kinds_blocking` helper is reused by
   `clipboard.rs::read_clipboard_files`. `drag.rs`: native drag, self-drag overlay (see "Drag session locality" below).
-  `e2e_support.rs`: feature-gated E2E/debug commands. `listing.rs::path_exists` is SMB-aware: a disconnected SMB volume
-  returns an immediate `false`, so it re-checks `smb_connection_state()` and reports `timedOut: true` instead, and a
-  transient blip can't evict the user from a network folder. `TimedOut<T>`'s TS twin lives in
+  `e2e_support.rs`: feature-gated E2E/debug commands. `listing.rs::path_exists` is session-aware: a remote volume whose session
+  drops returns an immediate `false`, so it re-checks `connection_state()` and reports `timedOut: true` unless the
+  session is still live, and a transient blip can't evict the user from a network folder. `TimedOut<T>`'s TS twin lives in
   `$lib/tauri-commands/ipc-types.ts`; every typed error enum's twin is generated into `$lib/ipc/bindings.ts`.
 - **`volumes.rs`** (macOS): `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume`
   (statfs-based, no volume enumeration), `resolve_location`. The latter two share one `resolve_path_to_volume` body

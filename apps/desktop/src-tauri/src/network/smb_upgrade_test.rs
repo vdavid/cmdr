@@ -151,7 +151,7 @@ mod tracking {
         pub(super) on_unmount_called: Arc<AtomicBool>,
         pub(super) on_superseded_called: Arc<AtomicBool>,
         root: PathBuf,
-        smb_state: Option<crate::file_system::volume::SmbConnectionState>,
+        smb_state: Option<crate::file_system::volume::ConnectionState>,
     }
 
     /// The hook flags of one `TrackingVolume`, for assertions.
@@ -161,9 +161,9 @@ mod tracking {
     }
 
     impl TrackingVolume {
-        /// A volume that isn't an SMB volume at all (`smb_connection_state()`
-        /// is `None`), which is what an OS-mounted share looks like before
-        /// its upgrade.
+        /// A volume that isn't an SMB volume at all (no session, and
+        /// `backend_kind()` is `Local`), which is what an OS-mounted share looks
+        /// like before its upgrade.
         pub(super) fn create(label: &str) -> (Arc<dyn Volume>, Hooks) {
             Self::create_with_smb_state(label, None)
         }
@@ -172,7 +172,7 @@ mod tracking {
         /// "is this already upgraded?" checks.
         pub(super) fn create_with_smb_state(
             label: &str,
-            smb_state: Option<crate::file_system::volume::SmbConnectionState>,
+            smb_state: Option<crate::file_system::volume::ConnectionState>,
         ) -> (Arc<dyn Volume>, Hooks) {
             Self::create_at(&format!("/tmp/tracking-{label}"), smb_state)
         }
@@ -183,7 +183,7 @@ mod tracking {
         /// one ID, so a pair standing in for a replace has to share this.
         pub(super) fn create_at(
             root: &str,
-            smb_state: Option<crate::file_system::volume::SmbConnectionState>,
+            smb_state: Option<crate::file_system::volume::ConnectionState>,
         ) -> (Arc<dyn Volume>, Hooks) {
             let unmounted = Arc::new(AtomicBool::new(false));
             let superseded = Arc::new(AtomicBool::new(false));
@@ -243,8 +243,17 @@ mod tracking {
         fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
             Box::pin(async { Err(VolumeError::NotSupported) })
         }
-        fn smb_connection_state(&self) -> Option<crate::file_system::volume::SmbConnectionState> {
+        fn connection_state(&self) -> Option<crate::file_system::volume::ConnectionState> {
             self.smb_state
+        }
+        /// ❗ Paired with `smb_state`: a state without the kind is a volume the
+        /// upgrade's `is_already_direct` sees as some other backend's live session,
+        /// which is exactly the confusion the kind exists to prevent.
+        fn backend_kind(&self) -> crate::file_system::volume::BackendKind {
+            match self.smb_state {
+                Some(_) => crate::file_system::volume::BackendKind::Smb,
+                None => crate::file_system::volume::BackendKind::Local,
+            }
         }
         fn on_unmount(&self) {
             self.on_unmount_called.store(true, Ordering::Relaxed);
@@ -497,7 +506,7 @@ async fn a_slow_first_attempt_spends_the_retry_budget() {
 /// seconds, and the third replacement landed mid-copy.
 #[tokio::test]
 async fn upgrading_an_already_direct_volume_costs_nothing() {
-    use crate::file_system::volume::{SmbConnectionState, smb_volume_id};
+    use crate::file_system::volume::{ConnectionState, smb_volume_id};
 
     // TEST-NET-2 (RFC 5737): reserved, never routed. If the upgrade doesn't
     // short-circuit, it tries to connect here and fails.
@@ -506,8 +515,7 @@ async fn upgrading_an_already_direct_volume_costs_nothing() {
     let volume_id = smb_volume_id(server, 445, share);
     let manager = crate::file_system::volume::manager::get_volume_manager();
 
-    let (direct, _) =
-        tracking::TrackingVolume::create_with_smb_state("already-direct", Some(SmbConnectionState::Direct));
+    let (direct, _) = tracking::TrackingVolume::create_with_smb_state("already-direct", Some(ConnectionState::Direct));
     manager.register(&volume_id, std::sync::Arc::clone(&direct));
 
     let result = try_smb_upgrade(server, share, "/Volumes/unreachable", None, None, 445, &volume_id).await;
@@ -529,7 +537,7 @@ async fn upgrading_an_already_direct_volume_costs_nothing() {
 /// which is the one that fired the redundant upgrades.
 #[tokio::test]
 async fn the_auto_upgrade_path_skips_an_already_direct_volume() {
-    use crate::file_system::volume::{SmbConnectionState, smb_volume_id};
+    use crate::file_system::volume::{ConnectionState, smb_volume_id};
 
     let server = "198.51.100.8";
     let share = "unreachable";
@@ -537,7 +545,7 @@ async fn the_auto_upgrade_path_skips_an_already_direct_volume() {
     let manager = crate::file_system::volume::manager::get_volume_manager();
 
     let (direct, _) =
-        tracking::TrackingVolume::create_with_smb_state("already-direct-auto", Some(SmbConnectionState::Direct));
+        tracking::TrackingVolume::create_with_smb_state("already-direct-auto", Some(ConnectionState::Direct));
     manager.register(&volume_id, std::sync::Arc::clone(&direct));
 
     let start = std::time::Instant::now();
@@ -564,13 +572,13 @@ async fn the_auto_upgrade_path_skips_an_already_direct_volume() {
 /// user on a broken volume.
 #[test]
 fn only_a_healthy_direct_volume_short_circuits_the_upgrade() {
-    use crate::file_system::volume::SmbConnectionState;
+    use crate::file_system::volume::ConnectionState;
     let manager = crate::file_system::volume::manager::get_volume_manager();
 
     for (label, state, expected) in [
-        ("direct", Some(SmbConnectionState::Direct), true),
-        ("disconnected", Some(SmbConnectionState::Disconnected), false),
-        ("os-mount-state", Some(SmbConnectionState::OsMount), false),
+        ("direct", Some(ConnectionState::Direct), true),
+        ("disconnected", Some(ConnectionState::Disconnected), false),
+        ("os-mount-state", Some(ConnectionState::OsMount), false),
         ("plain-local", None, false),
     ] {
         let volume_id = format!("test-already-direct-{label}");

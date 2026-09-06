@@ -87,7 +87,7 @@ after one, and a new item should name which of two audiences it serves:
   `try_list_shares_*` calls, the three `classify_*` / `is_auth_error` readers, `convert_shares`, and the four vocabulary
   types that cross IPC.
 - **Constructing and asking after a share**, for `network/smb_upgrade.rs` and the debug window's diagnostics dashboard:
-  `connect_smb_volume`, `SmbVolume` with `new` / `volume_id` / `connection_state` / `diagnostics`, `SmbConnectionParams`
+  `connect_smb_volume`, `SmbVolume` with `new` / `volume_id` / `session_state` / `diagnostics`, `SmbConnectionParams`
   with its five fields, and `ConnectionState`.
 
 Four public modules is the whole tree a host can name a path into: `connection`, `errors`, `types`, `volume`. Everything

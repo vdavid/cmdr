@@ -306,6 +306,23 @@ impl Volume for AdbVolume {
         self.inner.mark_gone_silently();
     }
 
+    /// Where the dialed device stands. ❗ Only two states: the device authorizes
+    /// the host on its own screen, so there is no `NeedsSignIn` to rest in.
+    /// Whether a device is PRESENT at all is `DeviceReadiness`, which the device
+    /// provider sets on the row rather than the volume.
+    fn connection_state(&self) -> Option<cmdr_fs::volume::ConnectionState> {
+        use crate::volume::ConnectionState;
+        use cmdr_fs::volume::ConnectionState as Published;
+        Some(match self.inner.connection_state() {
+            ConnectionState::Connected => Published::Direct,
+            ConnectionState::Disconnected => Published::Disconnected,
+        })
+    }
+
+    fn backend_kind(&self) -> cmdr_fs::volume::BackendKind {
+        cmdr_fs::volume::BackendKind::Adb
+    }
+
     /// The device authorizes the HOST on its own screen; there is no secret a
     /// person could type here.
     fn sign_in_prompt(&self) -> SignInPrompt {

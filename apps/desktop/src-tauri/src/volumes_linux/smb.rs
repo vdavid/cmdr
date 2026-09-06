@@ -7,18 +7,22 @@
 use super::{LocationCategory, LocationInfo, ids::volume_id_for_mount, linux_mounts};
 use std::path::Path;
 
-/// Enriches discovered locations with what only the registered `Volume` knows.
+/// Enriches discovered locations with what only the registered `Volume` knows:
+/// its capability surface and how live its session is.
 ///
 /// The twin of macOS `volumes::enrich_from_volume_registry`, and it must stay
-/// one: the frontend doesn't branch on platform, so a capability published on
-/// one and not the other is a pane whose buttons differ by OS. Only the
-/// capability half exists here — Linux has no smb2 session tracking, so
-/// `smb_connection_state` stays `None`.
+/// one: the frontend doesn't branch on platform, so a capability or a connection
+/// state published on one and not the other is a pane whose buttons differ by OS.
+/// ❗ The `OsMount` half is macOS-only, because that fallback is a `mount_smbfs`
+/// the Linux build never performs; a registered `SftpVolume` or `WebdavVolume`
+/// reports `Direct` here exactly as it does there, which is what the Docker E2E
+/// lane needs to see.
 pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
     let manager = crate::file_system::volume::manager::get_volume_manager();
     for vol in volumes.iter_mut() {
         if let Some(registered) = manager.get(&vol.id) {
             vol.capabilities = Some(registered.capabilities());
+            vol.connection_state = registered.connection_state();
         }
     }
 }
@@ -141,7 +145,8 @@ pub(super) fn get_network_mounts() -> Vec<LocationInfo> {
                 supports_trash: false,
                 mount_is_read_only: false,
                 is_disk_image: false,
-                smb_connection_state: None,
+                connection_state: None,
+                device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
             });
@@ -150,6 +155,56 @@ pub(super) fn get_network_mounts() -> Vec<LocationInfo> {
 
     mounts.sort_by_key(|m| m.name.to_lowercase());
     mounts
+}
+
+#[cfg(test)]
+mod enrichment_tests {
+    use super::*;
+    use crate::file_system::volume::manager::get_volume_manager;
+    use cmdr_fs::volume::InMemoryVolume;
+    use std::sync::Arc;
+
+    /// The Linux half of the macOS twin's cell (`volumes/smb.rs`). The frontend
+    /// doesn't branch on platform, so a live server that greys out under the
+    /// Docker E2E lane and not on a Mac is a pane whose buttons differ by OS.
+    #[test]
+    fn a_registered_server_keeps_its_live_session_through_enrichment() {
+        let id = "enrichment-test-sftp-session";
+        get_volume_manager().register(
+            id,
+            Arc::new(
+                InMemoryVolume::new("photos")
+                    .with_connection_state(cmdr_fs::volume::ConnectionState::Direct)
+                    .with_backend_kind(cmdr_fs::volume::BackendKind::Sftp),
+            ),
+        );
+
+        let mut locations = vec![LocationInfo {
+            id: id.to_string(),
+            name: "photos".to_string(),
+            path: "sftp://ada@nas:22/srv".to_string(),
+            category: LocationCategory::Network,
+            icon: None,
+            is_ejectable: false,
+            fs_type: Some("sftp".to_string()),
+            supports_trash: false,
+            mount_is_read_only: false,
+            is_disk_image: false,
+            connection_state: None,
+            device_readiness: None,
+            usb_speed: None,
+            capabilities: None,
+        }];
+        enrich_from_volume_registry(&mut locations);
+
+        assert_eq!(
+            locations[0].connection_state,
+            Some(cmdr_fs::volume::ConnectionState::Direct),
+            "a live server survives enrichment as `direct`",
+        );
+
+        get_volume_manager().unregister(id);
+    }
 }
 
 #[cfg(test)]

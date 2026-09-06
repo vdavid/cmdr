@@ -18,6 +18,7 @@ import { directConnectionUnavailableMessage } from '../network/upgrade-messages'
 import { registerSmbLoginHost } from '../network/smb-login-hosts'
 import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
 import { resolveValidPath } from '../navigation/path-resolution'
+import { hasReconnectLoop } from '../navigation/connection-state'
 import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
@@ -76,8 +77,13 @@ export interface SmbViewState {
 export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
   let smbUpgradeLogin = $state<SmbUpgradeLoginState | null>(null)
 
-  /** True if this pane is on an SMB share (any state: direct, os_mount, or disconnected). */
-  const isSmbVolume = $derived(deps.getCurrentVolumeInfo()?.smbConnectionState != null)
+  /**
+   * True when the per-volume reconnect manager owns this pane's volume, so the
+   * pane subscribes. ❗ Not a `!= null` test on the state any more: a saved server
+   * that was never connected carries one and has no cycle to join, and enrolling
+   * it would start a backoff loop against a server nobody asked to dial.
+   */
+  const isSmbVolume = $derived(hasReconnectLoop(deps.getCurrentVolumeInfo()?.connectionState))
   /**
    * The per-volume reconnect cycle state, or null if no cycle is running. The
    * manager is the single source of truth for the view. By the time this is
@@ -101,7 +107,7 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
   $effect(() => {
     if (!isSmbVolume) return
     const targetVolumeId = deps.getVolumeId()
-    const isDisconnected = deps.getCurrentVolumeInfo()?.smbConnectionState === 'disconnected'
+    const isDisconnected = deps.getCurrentVolumeInfo()?.connectionState === 'disconnected'
     const onSuccess = () => {
       const path = deps.getCurrentPath()
       log.info('[FilePane] SMB reconnect succeeded for {volumeId}, reloading {path}', {

@@ -158,7 +158,7 @@ fn read_head(file_path: &Path, max: usize) -> Vec<u8> {
 /// media rendering in v1). MTP has no POSIX path; SMB paths can block. We consult the
 /// registered volumes: the most-specific volume by mount-root prefix decides. A volume
 /// is "local" when it supports `std::fs` access AND is not an SMB mount
-/// (`smb_connection_state().is_none()`). When no registered volume claims the path
+/// (`backend_kind() != Smb`). When no registered volume claims the path
 /// (the path is a real file outside any mount, e.g. under `/`), it's local.
 fn is_local_posix_path(file_path: &Path) -> bool {
     let manager = crate::file_system::volume::manager::get_volume_manager();
@@ -169,7 +169,8 @@ fn is_local_posix_path(file_path: &Path) -> bool {
         // specific mounts (longer roots) win the tie.
         if file_path.starts_with(root) {
             let depth = root.components().count();
-            let is_local = volume.supports_local_fs_access() && volume.smb_connection_state().is_none();
+            let is_local =
+                volume.supports_local_fs_access() && volume.backend_kind() != cmdr_fs::volume::BackendKind::Smb;
             if best.is_none_or(|(d, _)| depth > d) {
                 best = Some((depth, is_local));
             }

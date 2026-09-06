@@ -2,15 +2,17 @@
 //! of a `statfs` mount source, tagging volumes with their SMB connection state,
 //! and deriving the SMB-aware volume ID.
 
-use super::{LocationInfo, SmbConnectionState, is_smb_fs_type};
+use super::{ConnectionState, LocationInfo, is_smb_fs_type};
 
 /// Enriches discovered locations with everything only the registered `Volume`
-/// knows: its capability surface and its SMB connection state.
+/// knows: its capability surface and how live its session is.
 ///
 /// Discovery builds a `LocationInfo` from the mount (name, path, icon, fs type);
 /// what the BACKEND can do lives on the `Volume` in `VolumeManager`, and this is
 /// where the two meet. For each location it looks up the registered volume by id
-/// and copies `capabilities()` plus `smb_connection_state()` across. A location
+/// and copies `capabilities()` plus `connection_state()` across (which is what
+/// keeps a registered SFTP or WebDAV volume's `Direct` from being wiped back to
+/// `None`). A location
 /// with no registered volume (a favorite, or one discovery found before
 /// registration) keeps `capabilities: None`, and the frontend falls back to its
 /// per-kind defaults. SMB shares without a direct smb2 session (typical
@@ -25,13 +27,13 @@ pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
     for vol in volumes.iter_mut() {
         if let Some(registered) = manager.get(&vol.id) {
             vol.capabilities = Some(registered.capabilities());
-            vol.smb_connection_state = registered.smb_connection_state();
+            vol.connection_state = registered.connection_state();
         }
 
         // SMB shares without a direct smb2 connection show as OsMount (yellow).
         // This covers pre-existing mounts registered as LocalPosixVolume at startup.
-        if vol.smb_connection_state.is_none() && is_smb_fs_type(vol.fs_type.as_deref()) {
-            vol.smb_connection_state = Some(SmbConnectionState::OsMount);
+        if vol.connection_state.is_none() && is_smb_fs_type(vol.fs_type.as_deref()) {
+            vol.connection_state = Some(ConnectionState::OsMount);
         }
     }
 }
@@ -218,7 +220,8 @@ mod enrichment_tests {
             supports_trash: true,
             mount_is_read_only: false,
             is_disk_image: false,
-            smb_connection_state: None,
+            connection_state: None,
+            device_readiness: None,
             usb_speed: None,
             capabilities: None,
         }
@@ -243,6 +246,38 @@ mod enrichment_tests {
             "InMemoryVolume is writable and must say so"
         );
         assert!(published.can_export, "InMemoryVolume exports and must say so");
+
+        get_volume_manager().unregister(id);
+    }
+
+    /// The servers arm publishes a row for a registered SFTP or WebDAV volume, and
+    /// enrichment runs after it. Before four backends answered the accessor this
+    /// step would have wiped that row's `Direct` back to `None`, greying a live
+    /// server in the switcher and unsubscribing the pane from its reconnect cycle.
+    #[test]
+    fn a_registered_server_keeps_its_live_session_through_enrichment() {
+        let id = "enrichment-test-sftp-session";
+        get_volume_manager().register(
+            id,
+            Arc::new(
+                InMemoryVolume::new("photos")
+                    .with_connection_state(ConnectionState::Direct)
+                    .with_backend_kind(cmdr_fs::volume::BackendKind::Sftp),
+            ),
+        );
+
+        let mut locations = vec![LocationInfo {
+            fs_type: Some("sftp".to_string()),
+            category: crate::volumes::LocationCategory::Network,
+            ..location(id)
+        }];
+        enrich_from_volume_registry(&mut locations);
+
+        assert_eq!(
+            locations[0].connection_state,
+            Some(ConnectionState::Direct),
+            "a live server survives enrichment as `direct`",
+        );
 
         get_volume_manager().unregister(id);
     }

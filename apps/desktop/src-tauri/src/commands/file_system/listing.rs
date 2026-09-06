@@ -119,10 +119,11 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
         .await
         .volume
     {
-        // For SMB volumes, an immediate `false` from `exists()` may be the connection
-        // being dead (`clone_session` returns `Err`) rather than the path actually missing.
-        // Snapshot whether this is an SMB volume by whether it reports an SMB connection state.
-        let is_smb = volume.smb_connection_state().is_some();
+        // On a remote volume an immediate `false` from `exists()` may be the session
+        // dying (`clone_session` returns `Err`) rather than the path actually missing.
+        // Snapshot whether this volume HAS a session, so the answer can be re-checked
+        // against it below.
+        let has_session = volume.connection_state().is_some();
 
         // The transfer dialog asks about its VOLUME-RELATIVE destination box
         // (`/photos`), the panes about absolute paths. Anchoring folds both into
@@ -132,9 +133,9 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
         let path_for_check = cmdr_fs::volume::root_anchored(volume.root(), Path::new(&expanded_path));
         match tokio::time::timeout(PATH_EXISTS_TIMEOUT, volume.exists(&path_for_check)).await {
             Ok(exists) => {
-                // SMB volume just transitioned to `Disconnected`? The `false` we got back
-                // is meaningless. Surface it as a timeout-equivalent so callers know.
-                if !exists && is_smb && volume.smb_connection_state().is_none() {
+                // The session dropped while we asked? Then the `false` we got back is
+                // meaningless. Surface it as a timeout-equivalent so callers know.
+                if !exists && has_session && !volume.connection_state().is_some_and(|s| s.is_live()) {
                     return TimedOut {
                         data: false,
                         timed_out: true,

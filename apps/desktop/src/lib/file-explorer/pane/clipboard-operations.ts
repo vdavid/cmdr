@@ -29,23 +29,28 @@ const log = getAppLogger('fileExplorer')
 type DialogState = ReturnType<typeof createDialogState>
 
 /**
- * True when the focused pane is an MTP device, which can't use the system
- * clipboard (virtual paths can't go on the OS clipboard) — the copy/cut/paste
- * refusal that points the user at F5/F6 instead.
+ * True when the focused pane's paths can't go on the system clipboard — the
+ * copy/cut/paste refusal that points the user at F5/F6 instead.
+ *
+ * Four kinds qualify, and every one of them hands out a scheme path no other app
+ * can open: `mtp://`, `adb://`, `sftp://`, `webdav://`. ❌ Don't generalize this
+ * to a "no system clipboard" capability: `network` and `search-results` lack one
+ * too, and an MTP-worded toast firing on a reachable network paste would be a
+ * new, mis-worded toast.
+ *
+ * ❗ A positive list, and the union it reads from doesn't check it: a new
+ * scheme-path kind that isn't added here silently puts an unusable path on the
+ * user's clipboard.
  *
  * Reads the kind off the capability record rather than a `startsWith('mtp-')`
- * string compare. ❌ Don't generalize this to a "no system clipboard" capability:
- * `network` and `search-results` lack one too, and an MTP-worded toast firing on
- * a reachable network paste would be a new, mis-worded toast. On the live
- * clipboard-time pane id set this is byte-equivalent to the old
- * `volumeId.startsWith('mtp-')` gate — live MTP panes carry `mtp-{…}` ids, which
- * classify to `kind === 'mtp'`; nothing else does (pinned by the equivalence test
- * in `clipboard-operations.test.ts`).
+ * string compare. On the live clipboard-time pane id set the MTP half is
+ * byte-equivalent to the old `volumeId.startsWith('mtp-')` gate — live MTP panes
+ * carry `mtp-{…}` ids, which classify to `kind === 'mtp'`; nothing else does
+ * (pinned by the equivalence test in `clipboard-operations.test.ts`).
  */
 function isMtpClipboardRefusal(volumeId: string): boolean {
-  // `adb` rides along: an `adb://` path is as invisible to the OS clipboard as an `mtp://` one.
   const kind = capabilitiesFor(volumeId).kind
-  return kind === 'mtp' || kind === 'adb'
+  return kind === 'mtp' || kind === 'adb' || kind === 'sftp' || kind === 'webdav'
 }
 
 /**

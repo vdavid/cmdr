@@ -39,9 +39,11 @@ export interface TerminalTargetCursorEntry {
  *
  * `local` and `smb` do: an OS-mounted share and a direct smb2 session both keep an
  * ordinary `/Volumes/…` mount alive, which is the same reading Rust takes with
- * `Volume::paths_are_os_visible()`. MTP and ADB don't, and the two virtual kinds
- * (`network`, `search-results`) aren't folders at all. `archive` never reaches
- * here: an archive pane is classified by the drive underneath it.
+ * `Volume::paths_are_os_visible()`. MTP, ADB, SFTP, and WebDAV don't — none of
+ * them has a mount, and their paths carry a scheme a shell can't `cd` into — and
+ * the two virtual kinds (`network`, `search-results`) aren't folders at all.
+ * `archive` never reaches here: an archive pane is classified by the drive
+ * underneath it.
  *
  * ❌ Never a test on the path string. A share whose mount went away still looks
  * local; Rust catches that one at launch time and answers `not_a_local_path`.

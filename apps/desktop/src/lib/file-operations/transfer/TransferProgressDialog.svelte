@@ -151,7 +151,7 @@
     const scanTitle = $derived(operationType === 'archive_edit' ? '' : tString(scanTitleMap[operationType]))
     const volumes = $derived(getVolumes())
     const destUsesNativeSmb = $derived(
-        volumes.find((v) => v.id === destVolumeId)?.smbConnectionState === 'os_mount',
+        volumes.find((v) => v.id === destVolumeId)?.connectionState === 'os_mount',
     )
 
     // Source/destination labels for the direction header. At a volume root the

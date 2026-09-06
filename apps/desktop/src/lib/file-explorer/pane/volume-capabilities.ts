@@ -37,7 +37,7 @@
  * The table carries STRUCTURAL, per-kind capability (can this namespace host a
  * backend listing, does it have a `..`, is paste-into meaningful). The other
  * per-VOLUME runtime flags (`mountIsReadOnly`, `supportsTrash`,
- * `smbConnectionState`) stay on `VolumeInfo` and layer ON TOP.
+ * `connectionState`) stay on `VolumeInfo` and layer ON TOP.
  *
  * `mountIsReadOnly` and `capabilities.backendCanWrite` sound like one question
  * and are two: whether THIS mount takes writes right now (a read-only `.dmg`, a
@@ -48,7 +48,7 @@
  * ## One classifier, not two
  *
  * `volume-tint.svelte.ts::volumeKindFor` classifies into
- * `'local' | 'smb' | 'mtp' | 'adb' | 'other'` for tinting, collapsing the two virtual
+ * `'local' | 'smb' | 'sftp' | 'webdav' | 'mtp' | 'adb' | 'other'` for tinting, collapsing the two virtual
  * kinds + favorites into the untinted `'other'`. `volumeKindOf` here is the
  * SUPERSET: it adds the two virtual kinds as first-class, then DELEGATES to
  * `volumeKindFor` for the real kinds, overriding only its `'other'` fall-through
@@ -65,8 +65,15 @@ import { getShowVirtualGitPortal } from '$lib/settings/reactive-settings.svelte'
 
 /**
  * The closed set of volume kinds. The discriminant — every capability lookup
- * goes kind → record. No `'other'` member: the two virtual kinds plus the four
- * real kinds plus the two routed ones, nothing else. A real-but-unclassified
+ * goes kind → record. No `'other'` member: the two virtual kinds plus the six
+ * real kinds plus the two routed ones, nothing else.
+ *
+ * ❗ **Nothing switches exhaustively over this union.** Every consumer is a
+ * positive-list comparison (`kind === 'mtp' || kind === 'adb'`,
+ * `kind === 'smb'`), so adding a member compiles clean everywhere and the new
+ * kind silently falls out of each list. Adding one means walking the consumers:
+ * `pane/clipboard-operations.ts`, `volume-tint.svelte.ts`,
+ * `search/search-target-volume.ts`, and `open-terminal/terminal-target.ts`. A real-but-unclassified
  * volume defaults to `'local'` (see `volumeKindOf`), so the kind → table lookup
  * is total.
  *
@@ -81,6 +88,8 @@ import { getShowVirtualGitPortal } from '$lib/settings/reactive-settings.svelte'
 export type VolumeKind =
   | 'local' // real filesystem volume (root, attached, cloud_drive, main_volume)
   | 'smb' // mounted SMB share (real backend listing, smb path scheme on the share)
+  | 'sftp' // an SFTP server (real backend listing, sftp:// scheme, no system clipboard, no terminal)
+  | 'webdav' // a WebDAV server (real backend listing, webdav:// scheme, no system clipboard, no terminal)
   | 'mtp' // connected MTP storage (real backend listing, mtp:// scheme, no system clipboard)
   | 'adb' // an Android device over ADB (real backend listing, adb:// scheme, no system clipboard)
   | 'network' // the synthetic SMB browser virtual volume (host/share list, smb:// namespace)
@@ -153,6 +162,31 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canWrite: true,
     canBeSource: true,
     hasParentRow: true,
+    syncsToMcp: true,
+  }),
+  sftp: Object.freeze({
+    // A server: a real backend listing over a session Cmdr owns, with `..` and a
+    // sort like any folder. Split from `smb` because there is no OS mount behind
+    // it: its paths carry an `sftp://` scheme the system clipboard and a shell
+    // can't use, which `clipboard-operations.ts` and `canOpenTerminalIn` gate on.
+    // Write and export come from the backend's published answer, laid over these.
+    kind: 'sftp',
+    hasBackendListing: true,
+    canWrite: true,
+    canBeSource: true,
+    hasParentRow: true,
+    sortsRows: true,
+    syncsToMcp: true,
+  }),
+  webdav: Object.freeze({
+    // The `sftp` row, for the same reasons: a session-backed listing with no OS
+    // mount behind it.
+    kind: 'webdav',
+    hasBackendListing: true,
+    canWrite: true,
+    canBeSource: true,
+    hasParentRow: true,
+    sortsRows: true,
     syncsToMcp: true,
   }),
   mtp: Object.freeze({
@@ -257,9 +291,10 @@ export function volumeKindOf(
   if (volumeId === 'network') return 'network'
   if (volumeId === 'search-results') return 'search-results'
   const tintKind = volumeKindFor(volumeId, fsType, category)
-  // `volumeKindFor` returns 'local' | 'smb' | 'mtp' | 'adb' | 'other'. The first four
-  // are real kinds in our union; 'other' (favorites + real-but-unclassified)
-  // defaults to 'local' — the only sane capability set for a listable volume.
+  // `volumeKindFor` returns 'local' | 'smb' | 'sftp' | 'webdav' | 'mtp' | 'adb' |
+  // 'other'. The first six are real kinds in our union; 'other' (favorites +
+  // real-but-unclassified) defaults to 'local' — the only sane capability set for
+  // a listable volume.
   return tintKind === 'other' ? 'local' : tintKind
 }
 

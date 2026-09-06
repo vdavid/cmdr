@@ -277,6 +277,23 @@ impl Volume for WebdavVolume {
         });
     }
 
+    /// Where this connection stands, for the switcher dot and the pane's connect
+    /// views. HTTP has no session, so `Direct` means the last request that
+    /// reached the wire came back.
+    fn connection_state(&self) -> Option<cmdr_fs::volume::ConnectionState> {
+        use crate::volume::ConnectionState;
+        use cmdr_fs::volume::ConnectionState as Published;
+        Some(match self.inner.connection_state() {
+            ConnectionState::Connected => Published::Direct,
+            ConnectionState::Disconnected => Published::Disconnected,
+            ConnectionState::NeedsCredentials => Published::NeedsSignIn,
+        })
+    }
+
+    fn backend_kind(&self) -> cmdr_fs::volume::BackendKind {
+        cmdr_fs::volume::BackendKind::Webdav
+    }
+
     /// One rung, one prompt: a password always mends this backend.
     fn sign_in_prompt(&self) -> SignInPrompt {
         SignInPrompt::Password

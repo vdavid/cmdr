@@ -218,13 +218,12 @@ where
 /// directly" recovery path after a share dropped; short-circuiting it would
 /// dead-end the user on a broken volume.
 pub(crate) fn is_already_direct(volume_id: &str) -> bool {
-    use crate::file_system::volume::SmbConnectionState;
-    matches!(
-        crate::file_system::volume::manager::get_volume_manager()
-            .get(volume_id)
-            .and_then(|v| v.smb_connection_state()),
-        Some(SmbConnectionState::Direct)
-    )
+    use crate::file_system::volume::{BackendKind, ConnectionState};
+    // ❗ Both halves: a live SFTP or WebDAV session also reports `Direct`, and
+    // treating one as an upgraded share would skip the mount this function guards.
+    crate::file_system::volume::manager::get_volume_manager()
+        .get(volume_id)
+        .is_some_and(|v| v.backend_kind() == BackendKind::Smb && v.connection_state() == Some(ConnectionState::Direct))
 }
 
 /// One lock per volume id, so only one upgrade attempt for a given share is ever

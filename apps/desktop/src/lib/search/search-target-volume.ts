@@ -17,17 +17,23 @@ import { volumeKindOf } from '$lib/file-explorer/pane/volume-capabilities'
 import { ROOT_VOLUME_ID } from '$lib/indexing'
 
 /**
- * Whether a volume is a network share, by its TYPED kind rather than its category.
+ * Whether a volume is a network share or a server, by its TYPED kind rather than
+ * its category — which switches the coverage-honesty copy to the network voice.
  *
  * A `category === 'network'` test alone misses the common case: an SMB share Cmdr
  * couldn't upgrade to a direct connection stays an OS mount under `/Volumes`, and the
  * volume list hands it back as `attached_volume` with `fsType: 'smbfs'`. Voicing that
  * as a local drive tells a NAS user their boot disk isn't indexed. `volumeKindOf` is
  * the single frontend classifier (`file-explorer/pane/CLAUDE.md`) and
- * covers both shapes.
+ * covers every shape.
+ *
+ * ❗ A positive list over a union nothing checks exhaustively: a remote kind
+ * missing here gets the LOCAL coverage voice, which reads as a claim about a
+ * drive the search never touched.
  */
 function isNetworkVolume(info: VolumeInfo): boolean {
-  return volumeKindOf(info.id, info.fsType, info.category) === 'smb'
+  const kind = volumeKindOf(info.id, info.fsType, info.category)
+  return kind === 'smb' || kind === 'sftp' || kind === 'webdav'
 }
 
 /** The volume a Search session covers, plus what the dialog needs to voice it. */

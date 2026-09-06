@@ -24,6 +24,10 @@ impl Volume for MtpVolume {
         &self.name
     }
 
+    fn backend_kind(&self) -> cmdr_fs::volume::BackendKind {
+        cmdr_fs::volume::BackendKind::Mtp
+    }
+
     fn root(&self) -> &Path {
         &self.root
     }

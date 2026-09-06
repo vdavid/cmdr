@@ -293,10 +293,13 @@ fn to_envelope_volume(summary: &VolumeSummary) -> EnvelopeVolume {
         Some("stale") => EnvelopeFreshness::Stale,
         _ => EnvelopeFreshness::Off,
     };
-    let connectivity = match summary.smb_connection_state {
+    let connectivity = match summary.connection_state {
         Some("direct") => Some(EnvelopeConnectivity::Direct),
         Some("os_mount") => Some(EnvelopeConnectivity::OsMount),
         Some("disconnected") => Some(EnvelopeConnectivity::Disconnected),
+        Some("needs_sign_in") => Some(EnvelopeConnectivity::NeedsSignIn),
+        Some("needs_host_key_approval") => Some(EnvelopeConnectivity::NeedsHostKeyApproval),
+        Some("saved") => Some(EnvelopeConnectivity::Saved),
         _ => None,
     };
     EnvelopeVolume {

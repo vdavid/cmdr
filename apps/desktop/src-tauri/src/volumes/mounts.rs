@@ -160,7 +160,7 @@ fn build_attached_location(
         // touch NSURL / NSWorkspace / DiskArbitration here — those are exactly the
         // calls that hang on a dead mount (which is also why the ID gets no UUID
         // to key on). `is_ejectable` is cosmetically moot for network mounts (the
-        // eject affordance keys on `smbConnectionState`, and the eject flow forces
+        // eject affordance keys on `connectionState`, and the eject flow forces
         // it true), so a safe `false` costs nothing.
         let id = volume_id_for(path, Some(&fs_type), smb_info(mount).as_ref(), None);
         (id, network_name(mount), false, None, false)
@@ -187,7 +187,8 @@ fn build_attached_location(
         supports_trash,
         mount_is_read_only: mount.is_read_only,
         is_disk_image,
-        smb_connection_state: None,
+        connection_state: None,
+        device_readiness: None,
         usb_speed: None,
         capabilities: None,
     })

@@ -439,7 +439,7 @@
                 isOpen = false
             },
             highlightedSupportsSubmenu: () =>
-                highlightedIndex >= 0 && allVolumes[highlightedIndex]?.smbConnectionState === 'os_mount',
+                highlightedIndex >= 0 && allVolumes[highlightedIndex]?.connectionState === 'os_mount',
             openSubmenuAtHighlight: () => {
                 const el = dropdownRef?.querySelector(
                     `.volume-item[data-index="${String(highlightedIndex)}"]`,
@@ -742,12 +742,12 @@
             use:tooltip={`${usbSpeedDisplay(currentVolume)}\n${tString('fileExplorer.navigation.usbSpeedNegotiated')}`}
         ></span>
     {/if}
-    {#if currentVolume?.smbConnectionState === 'direct'}
+    {#if currentVolume?.connectionState === 'direct'}
         <span
             class="smb-indicator breadcrumb-smb-indicator smb-indicator-direct"
             use:tooltip={getConnectionTooltip('direct')}
         ></span>
-    {:else if currentVolume?.smbConnectionState === 'os_mount'}
+    {:else if currentVolume?.connectionState === 'os_mount'}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <span
@@ -862,7 +862,7 @@
                         onmousedown={isFavorite ? (e: MouseEvent) => { fav.handleMouseDown(volume, e) } : undefined}
                         onmouseover={(e: MouseEvent) => {
                             handleVolumeHover(volume)
-                            if (volume.smbConnectionState === 'os_mount') {
+                            if (volume.connectionState === 'os_mount') {
                                 submenu.open(volume.id, e.currentTarget as HTMLElement)
                             } else if (submenu.volumeId) {
                                 submenu.close()
@@ -916,12 +916,12 @@
                         {#if volume.mountIsReadOnly}
                             <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}><Icon name="lock" size={14} aria-hidden="true" /></span>
                         {/if}
-                        {#if volume.smbConnectionState}
+                        {#if volume.connectionState}
                             <span
-                                class="smb-indicator smb-indicator-{volume.smbConnectionState}"
-                                use:tooltip={getConnectionTooltip(volume.smbConnectionState)}
+                                class="smb-indicator smb-indicator-{volume.connectionState}"
+                                use:tooltip={getConnectionTooltip(volume.connectionState)}
                             ></span>
-                            {#if volume.smbConnectionState === 'os_mount'}
+                            {#if volume.connectionState === 'os_mount'}
                                 <span class="submenu-trigger"></span>
                             {/if}
                         {/if}
@@ -1485,7 +1485,10 @@
         }
     }
 
-    /* ── SMB connection indicators ───────────────────────────────── */
+    /* ── Connection indicators ───────────────────────────────────────
+       One dot per remote row, its modifier class built from the state
+       name, so every `ConnectionState` variant needs a rule here or its
+       dot renders as an unpainted circle. */
 
     .smb-indicator {
         width: 10px;
@@ -1503,6 +1506,30 @@
     /*noinspection CssUnusedSymbol*/
     .smb-indicator-os_mount {
         background-color: var(--color-warning);
+    }
+
+    /* Waiting on the user, not on the network: the same amber as the
+       OS-mount fallback, because both are "reachable, but not the way you
+       asked for". */
+    /*noinspection CssUnusedSymbol*/
+    .smb-indicator-needs_sign_in {
+        background-color: var(--color-warning);
+    }
+
+    /* A changed host key is the one state that is a warning about the
+       server rather than about Cmdr. */
+    /*noinspection CssUnusedSymbol*/
+    .smb-indicator-needs_host_key_approval {
+        background-color: var(--color-error);
+    }
+
+    /* A saved place nobody has dialed: hollow, so a row the user can open
+       reads as "here, not connected" rather than as a failure. */
+    /*noinspection CssUnusedSymbol*/
+    .smb-indicator-saved {
+        background-color: transparent;
+        border: 1.5px solid var(--color-border-strong);
+        opacity: 0.7;
     }
 
     /* In the dropdown, push the indicator to the far right */

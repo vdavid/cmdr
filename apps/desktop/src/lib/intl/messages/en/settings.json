@@ -192,14 +192,14 @@
     "description": "Help text for the local-volume tint. A pane is one of the two file lists; a local drive is internal/external disk storage (not network).",
     "screenshot": "settings-appearance.png"
   },
-  "settings.appearance.tintSmb.label": "Tint SMB/network panes",
+  "settings.appearance.tintSmb.label": "Tint server panes (SMB, SFTP, WebDAV)",
   "@settings.appearance.tintSmb.label": {
-    "description": "Label for the color-tint picker applied to panes showing an SMB or network share. \"SMB\" is the network file-sharing protocol name; keep it as-is.",
+    "description": "Label for the color-tint picker applied to panes showing a server: an SMB share, an SFTP server, or a WebDAV server. \"SMB\", \"SFTP\", and \"WebDAV\" are protocol names; keep all three as-is.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.appearance.tintSmb.description": "Background tint applied to panes showing an SMB or network share.",
+  "settings.appearance.tintSmb.description": "Background tint applied to panes showing an SMB share, an SFTP server, or a WebDAV server.",
   "@settings.appearance.tintSmb.description": {
-    "description": "Help text for the SMB/network tint. \"SMB\" is a protocol name; keep it. A pane is one of the two file lists.",
+    "description": "Help text for the server tint. \"SMB\", \"SFTP\", and \"WebDAV\" are protocol names; keep them. A pane is one of the two file lists.",
     "screenshot": "settings-appearance.png"
   },
   "settings.appearance.tintMtp.label": "Tint MTP panes",

@@ -5,8 +5,8 @@
 //! without touching the real file system.
 
 use super::{
-    CopyScanResult, LaneKey, ScanConflict, SmbConnectionState, SourceItemInfo, SpaceInfo, Volume, VolumeError,
-    VolumeReadStream,
+    BackendKind, ConnectionState, CopyScanResult, LaneKey, ScanConflict, SourceItemInfo, SpaceInfo, Volume,
+    VolumeError, VolumeReadStream,
 };
 use crate::entry::FileEntry;
 use crate::ignore_poison::IgnorePoison;
@@ -105,10 +105,14 @@ pub struct InMemoryVolume {
     /// routes a folder into a destructive file-shaped branch. Set via
     /// [`Self::set_stat_failing`]. Empty by default.
     stat_failing: RwLock<HashSet<PathBuf>>,
-    /// What [`Volume::smb_connection_state`] reports. `None` (the default) is a
-    /// volume that isn't a share at all; `Some` lets a test drive a code path
-    /// gated on a live smb2 session without a server.
-    smb_connection_state: Option<SmbConnectionState>,
+    /// What [`Volume::connection_state`] reports. `None` (the default) is a
+    /// volume with no session at all; `Some` lets a test drive a code path gated
+    /// on a live remote session without a server.
+    connection_state: Option<ConnectionState>,
+    /// What [`Volume::backend_kind`] reports. [`BackendKind::Local`] by default,
+    /// so a double only names a transport when the code under test asks about
+    /// one.
+    backend_kind: BackendKind,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -134,17 +138,25 @@ impl InMemoryVolume {
             rename_to_failing: RwLock::new(HashSet::new()),
             create_directory_not_found: false,
             stat_failing: RwLock::new(HashSet::new()),
-            smb_connection_state: None,
+            connection_state: None,
+            backend_kind: BackendKind::Local,
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
     }
 
-    /// Makes [`Volume::smb_connection_state`] report `state`, so this volume passes
-    /// (or fails) a gate that requires a live smb2 session. Everything else stays
-    /// in memory: nothing here talks to a server.
-    pub fn with_smb_connection_state(mut self, state: SmbConnectionState) -> Self {
-        self.smb_connection_state = Some(state);
+    /// Makes [`Volume::connection_state`] report `state`, so this volume passes
+    /// (or fails) a gate that requires a live session. Everything else stays in
+    /// memory: nothing here talks to a server.
+    pub fn with_connection_state(mut self, state: ConnectionState) -> Self {
+        self.connection_state = Some(state);
+        self
+    }
+
+    /// Makes [`Volume::backend_kind`] report `kind`, so this volume stands in for
+    /// a share, a server, or a phone at a gate that dispatches on the transport.
+    pub fn with_backend_kind(mut self, kind: BackendKind) -> Self {
+        self.backend_kind = kind;
         self
     }
 
@@ -477,8 +489,12 @@ impl Volume for InMemoryVolume {
         &self.name
     }
 
-    fn smb_connection_state(&self) -> Option<SmbConnectionState> {
-        self.smb_connection_state
+    fn connection_state(&self) -> Option<ConnectionState> {
+        self.connection_state
+    }
+
+    fn backend_kind(&self) -> BackendKind {
+        self.backend_kind
     }
 
     fn root(&self) -> &Path {

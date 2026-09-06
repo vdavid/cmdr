@@ -22,7 +22,7 @@ async fn smb_integration_listing_watch_coverage_flips_with_connection() {
     // "watcher present AND Direct," and a half-broken volume must not be
     // treated as fresh.
     let vol = make_docker_volume().await;
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
     assert_eq!(
         vol.listing_watch_coverage(Path::new("/")),
         WatchCoverage::EveryWriter,
@@ -48,7 +48,7 @@ async fn smb_integration_attempt_reconnect_rebuilds_session() {
     // 4. Call attempt_reconnect; verify it succeeds and state is Direct.
     // 5. Verify hot-path ops work again.
     let vol = make_docker_volume().await;
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
     assert!(vol.list_directory_impl(Path::new("")).await.is_ok());
 
     // Simulate "the server hung up": drop the smb2 session and flip state.
@@ -63,7 +63,7 @@ async fn smb_integration_attempt_reconnect_rebuilds_session() {
         *tree_guard = None;
     }
     vol.inner.transition_to_disconnected();
-    assert_eq!(vol.connection_state(), ConnectionState::Disconnected);
+    assert_eq!(vol.session_state(), ConnectionState::Disconnected);
 
     // Hot-path op should fail: clone_session refuses while Disconnected.
     let result = vol.list_directory_impl(Path::new("")).await;
@@ -78,7 +78,7 @@ async fn smb_integration_attempt_reconnect_rebuilds_session() {
         .do_attempt_reconnect()
         .await
         .expect("attempt_reconnect should succeed against a live Docker SMB");
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
 
     // And hot-path ops should work again.
     let entries = vol
@@ -94,11 +94,11 @@ async fn smb_integration_attempt_reconnect_noop_when_already_direct() {
     // Call reconnect against a live, healthy session. Should be a fast no-op
     // (no extra round-trip to the server).
     let vol = make_docker_volume().await;
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
     let start = std::time::Instant::now();
     vol.inner.do_attempt_reconnect().await.unwrap();
     let elapsed = start.elapsed();
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
     // No-op should be effectively instant. Any real session build would
     // take tens of ms minimum even against localhost. Pad the bound for
     // CI noise.
@@ -255,7 +255,7 @@ async fn smb_integration_an_unmatched_scan_session_end_cannot_wedge_the_pool_ope
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_superseded_volume_still_serves_its_holders() {
     let vol = Arc::new(make_docker_volume().await);
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
 
     // What an in-flight operation holds across the swap.
     let held = Arc::clone(&vol);
@@ -271,7 +271,7 @@ async fn smb_integration_superseded_volume_still_serves_its_holders() {
         "a superseded volume must keep serving its holders: an upgrade is not a disconnect"
     );
     assert_eq!(
-        held.connection_state(),
+        held.session_state(),
         ConnectionState::Direct,
         "supersede must not flip the connection state"
     );
@@ -334,7 +334,7 @@ async fn smb_integration_superseded_volume_reconnects_without_reclaiming_the_id(
         .do_attempt_reconnect()
         .await
         .expect("a retired volume still rebuilds for the operation holding it");
-    assert_eq!(vol.connection_state(), ConnectionState::Direct);
+    assert_eq!(vol.session_state(), ConnectionState::Direct);
     assert!(
         vol.list_directory_impl(Path::new("")).await.is_ok(),
         "the holder's work continues on the rebuilt session"

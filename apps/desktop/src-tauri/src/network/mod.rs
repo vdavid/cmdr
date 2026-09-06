@@ -253,7 +253,7 @@ pub struct NetworkHostContextAction {
 /// `Direct ⇄ Disconnected`, and widens into `Connected` / `Disconnected` through a
 /// `From` impl there. `NeedsCredentials` has no counterpart in it: no backend ever
 /// rests in that state, it rides alongside a failed reconnect attempt. The OS-mount
-/// fallback likewise lives only at the outer `SmbConnectionState` layer (driven by
+/// fallback likewise lives only at the outer `ConnectionState` layer (driven by
 /// `enrich_from_volume_registry`), never here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
@@ -299,7 +299,7 @@ pub struct VolumeConnectionChanged {
 /// with its own smb2 session is staying on the macOS kernel mount instead.
 ///
 /// This is the one moment nothing else in the app announces. The yellow
-/// `smbConnectionState` dot shows the resulting STATE, but a fallback that happens
+/// `connectionState` dot shows the resulting STATE, but a fallback that happens
 /// while the user is elsewhere (the startup pass, an auto-remount) is otherwise
 /// silent, and the share keeps working at a fraction of the speed. The frontend
 /// raises a notice with a retry button.

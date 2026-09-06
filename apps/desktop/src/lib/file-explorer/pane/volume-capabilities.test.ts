@@ -79,6 +79,24 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: true,
       syncsToMcp: true,
     },
+    sftp: {
+      kind: 'sftp',
+      hasBackendListing: true,
+      canWrite: true,
+      canBeSource: true,
+      hasParentRow: true,
+      sortsRows: true,
+      syncsToMcp: true,
+    },
+    webdav: {
+      kind: 'webdav',
+      hasBackendListing: true,
+      canWrite: true,
+      canBeSource: true,
+      hasParentRow: true,
+      sortsRows: true,
+      syncsToMcp: true,
+    },
     mtp: {
       kind: 'mtp',
       hasBackendListing: true,
@@ -188,6 +206,15 @@ describe('volumeKindOf — the unified superset classifier', () => {
     expect(volumeKindOf('adb-pixel-7-a1b2c3d', 'adb', 'mobile_device')).toBe('adb')
   })
 
+  it('gives SFTP and WebDAV their own kinds, ahead of the network category', () => {
+    // A server row is `category: 'network'`, which used to mean SMB and would give
+    // an SFTP pane the SMB capability row and an Open-terminal button that fires
+    // with an `sftp://` path. `fsType` is what tells the three apart.
+    expect(volumeKindOf('sftp-nas-22-ada', 'sftp', 'network')).toBe('sftp')
+    expect(volumeKindOf('webdav-cloud-443-ada', 'webdav', 'network')).toBe('webdav')
+    expect(volumeKindOf('volumesnaspi', 'smbfs', 'network')).toBe('smb')
+  })
+
   it('the favorite edge resolves to its containing real volume kind (local)', () => {
     // A favorite is a virtual id pointing at a real path; the tint classifier
     // returns `'other'` (untinted) for it, but a capability lookup must yield a
@@ -212,6 +239,8 @@ describe('volumeKindOf — the unified superset classifier', () => {
       ['mtp-1:1', undefined, 'mobile_device'],
       ['adb-pixel-7-a1b2c3d', 'adb', 'mobile_device'],
       ['x', 'smbfs', undefined],
+      ['sftp-nas-22-ada', 'sftp', 'network'],
+      ['webdav-cloud-443-ada', 'webdav', 'network'],
       ['fav', undefined, 'favorite'],
       ['weird', undefined, undefined],
     ]

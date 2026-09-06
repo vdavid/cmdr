@@ -81,7 +81,7 @@ async fn classify(volume_id: &str) -> Classified {
         return Classified::FallThrough;
     };
     let mount_root = volume.root().to_path_buf();
-    let is_smb_session = volume.smb_connection_state().is_some();
+    let is_smb_session = volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb;
 
     let probe_root = mount_root.clone();
     let facts = match tokio::time::timeout(

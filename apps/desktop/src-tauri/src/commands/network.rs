@@ -400,7 +400,7 @@ pub async fn upgrade_to_smb_volume_inner(volume_id: String) -> Result<UpgradeRes
     let mount_path = volume.root().to_string_lossy().to_string();
 
     // Check if already an SmbVolume
-    if volume.smb_connection_state().is_some() {
+    if volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb {
         return Ok(UpgradeResult::Success);
     }
 
@@ -499,7 +499,7 @@ pub async fn upgrade_to_smb_volume_with_credentials(
     let volume = manager.get(&volume_id).ok_or("Volume not found")?;
     let mount_path = volume.root().to_string_lossy().to_string();
 
-    if volume.smb_connection_state().is_some() {
+    if volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb {
         return Ok(UpgradeResult::Success);
     }
 
@@ -613,7 +613,7 @@ pub async fn upgrade_to_smb_volume_using_saved_password(
     let volume = manager.get(&volume_id).ok_or("Volume not found")?;
     let mount_path = volume.root().to_string_lossy().to_string();
 
-    if volume.smb_connection_state().is_some() {
+    if volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb {
         return Ok(UpgradeResult::Success);
     }
 

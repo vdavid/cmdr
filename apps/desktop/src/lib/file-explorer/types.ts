@@ -1,4 +1,6 @@
-import type { CompressedSizeEstimate, GitEntryMeta, TagRef } from '$lib/ipc/bindings'
+import type { CompressedSizeEstimate, DeviceReadiness, GitEntryMeta, TagRef } from '$lib/ipc/bindings'
+
+export type { DeviceReadiness } from '$lib/ipc/bindings'
 
 export interface FileEntry {
   name: string
@@ -194,12 +196,28 @@ export type LocationCategory =
   | 'mobile_device'
 
 /**
- * SMB connection quality. `direct` = smb2 session active, `os_mount` = OS mount
- * fallback, `disconnected` = SmbVolume exists but its smb2 session is broken
- * (the reconnect manager runs the recovery cycle). Non-SMB volumes carry no
+ * How live a remote volume's session is. Mirrors Rust's `ConnectionState`.
+ *
+ * `direct` = a live session Cmdr owns (smb2, SFTP, WebDAV, a dialed phone),
+ * `os_mount` = SMB's kernel-mount fallback, `disconnected` = the session dropped
+ * and the backoff loop owns recovery, `needs_sign_in` = the backend stopped
+ * retrying because a credential is missing, `needs_host_key_approval` = SFTP's
+ * server key isn't the trusted one, `saved` = a pinned place that isn't connected
+ * and has nothing in flight. A local disk, a favorite, and the hub row carry no
  * value at all.
+ *
+ * ❌ Never test this with `!= null` — that used to mean "is this SMB" and no
+ * longer answers anything. Use the named predicates in
+ * `navigation/connection-state.ts`, and `pane/volume-capabilities.ts` for which
+ * KIND of volume this is.
  */
-export type SmbConnectionState = 'direct' | 'os_mount' | 'disconnected'
+export type ConnectionState =
+  | 'direct'
+  | 'os_mount'
+  | 'disconnected'
+  | 'needs_sign_in'
+  | 'needs_host_key_approval'
+  | 'saved'
 
 /**
  * What the registered backend for a volume can do, straight from Rust's
@@ -243,8 +261,20 @@ export interface VolumeInfo {
   fsType?: string
   /** Whether this volume supports macOS trash. `undefined` means unknown (treat as `true`). */
   supportsTrash?: boolean
-  /** SMB connection state. Only set for volumes with an active SmbVolume in the backend. */
-  smbConnectionState?: SmbConnectionState
+  /**
+   * How live this volume's session is. Set for every volume a connecting backend
+   * serves (SMB, SFTP, WebDAV, ADB) plus a saved-but-unconnected server.
+   * ❌ Never an "is this SMB" test: `navigation/connection-state.ts` has the
+   * predicates, `pane/volume-capabilities.ts` has the kind.
+   */
+  connectionState?: ConnectionState | null
+  /**
+   * Whether the DEVICE behind this row is reachable, which is a different
+   * question from how live a session is. Set by the device providers only: a
+   * phone waiting for its "Allow USB debugging?" tap is present, and must never
+   * start a reconnect backoff.
+   */
+  deviceReadiness?: DeviceReadiness | null
   /** Negotiated USB link speed. Only set for MTP/mobile volumes. */
   usbSpeed?: UsbSpeed
   /** What the registered backend can do. Absent when no backend is registered for this id. */

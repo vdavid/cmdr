@@ -83,7 +83,7 @@ function vol(over: Partial<VolumeInfo>): VolumeInfo {
     supportsTrash: true,
     mountIsReadOnly: false,
     isDiskImage: false,
-    smbConnectionState: null,
+    connectionState: null,
     usbSpeed: null,
     ...over,
   } as VolumeInfo

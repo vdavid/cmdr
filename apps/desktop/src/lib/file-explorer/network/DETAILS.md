@@ -187,7 +187,7 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
    `SessionExpired`, flips to `Disconnected`, and emits `volume-connection-changed { volumeId, state: "disconnected" }`.
    The event is backend-neutral (any connecting backend emits it); everything below is what the frontend does with it,
    and a new backend inherits all of it. (See `crates/cmdr-smb/DETAILS.md` § SMB live-reconnect lifecycle.)
-2. **`stores/volume-store.svelte.ts`** patches the matching volume's `smbConnectionState`, keeping the picker dot, the
+2. **`stores/volume-store.svelte.ts`** patches the matching volume's `connectionState`, keeping the picker dot, the
    breadcrumb, and `currentVolumeInfo` reactive without waiting for the next `volumes-changed`.
 3. **`smb-reconnect-manager.svelte.ts`** (if any subscribers are present) starts a per-volume backoff cycle calling
    `reconnectSmbVolume(volumeId)` per tick. Resolves when the BE emits a follow-up `state: "connected"` event. Only its
@@ -229,7 +229,7 @@ Ignoring it is the safe half — the backend has already stopped retrying — an
 the key belongs with the SFTP sign-in UI. `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
 
 Lazy-nav path: opening a share that's already `Disconnected` (no fresh event in flight), the FilePane `$effect` notices
-`currentVolumeInfo?.smbConnectionState === 'disconnected'` and calls `manager.startCycle(volumeId)` directly.
+`currentVolumeInfo?.connectionState === 'disconnected'` and calls `manager.startCycle(volumeId)` directly.
 
 Disconnect button: `disconnectSmbVolume(volumeId)` shells out to `diskutil unmount` (macOS) → FSEvents fires →
 `SmbVolume::on_unmount` → volume removed from `VolumeManager` → `volumes-changed` removes it from the picker.

@@ -20,7 +20,7 @@ use crate::indexing::host::volumes::SmbUpgradeRefusal;
 use crate::indexing::lifecycle::freshness;
 use crate::indexing::lifecycle::master;
 use crate::indexing::lifecycle::state;
-use cmdr_fs::volume::SmbConnectionState;
+use cmdr_fs::volume::{BackendKind, ConnectionState};
 
 /// Why an SMB volume couldn't be indexed. Typed (and serialized as a
 /// snake_case tag) so callers and the per-drive UX classify by variant on BOTH sides
@@ -30,7 +30,8 @@ use cmdr_fs::volume::SmbConnectionState;
 pub enum SmbIndexGateReason {
     /// No volume is registered for this id (unmounted, or never seen).
     NotRegistered,
-    /// The volume isn't an SMB share at all (no `smb_connection_state`).
+    /// The volume isn't an SMB share at all: a different backend serves it, or
+    /// it's an ordinary local disk on no network mount.
     NotAnSmbVolume,
     /// The share is OS-mounted but the upgrade to a direct smb2 session failed
     /// (network unreachable, server refused). Indexing stays disabled.
@@ -63,11 +64,14 @@ impl std::fmt::Display for SmbIndexGateReason {
 
 /// Whether the volume registered under `volume_id` is a live, direct (smb2)
 /// SMB volume ready to index right now. Pure inspection — no upgrade attempt.
+///
+/// ❗ Both halves are load-bearing: four backends answer `connection_state()`, so
+/// a `Direct` alone would let a live SFTP or WebDAV session through this gate and
+/// hand its `sftp://` root to the smb2 walker.
 fn is_direct_smb(volume_id: &str) -> bool {
     crate::indexing::host::volumes::current()
         .get(volume_id)
-        .and_then(|v| v.smb_connection_state())
-        .is_some_and(|s| s == SmbConnectionState::Direct)
+        .is_some_and(|v| v.backend_kind() == BackendKind::Smb && v.connection_state() == Some(ConnectionState::Direct))
 }
 
 /// Ensure the SMB volume is in the `Direct` (smb2) state, upgrading from
@@ -87,27 +91,34 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
         log::warn!(target: "indexing::smb_index", "SMB index gate: no volume registered for '{volume_id}'");
         return Err(SmbIndexGateReason::NotRegistered);
     };
-    match volume.smb_connection_state() {
-        // Already a direct smb2 session: ready to index.
-        Some(SmbConnectionState::Direct) => return Ok(volume.root().to_path_buf()),
-        // A live SmbVolume whose session dropped. Don't silently index a stale
-        // session; the FE reconnect flow owns recovery.
-        Some(SmbConnectionState::Disconnected) => {
-            log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' smb2 session is disconnected");
-            return Err(SmbIndexGateReason::Disconnected);
+    // A server this transport has no business walking: SFTP, WebDAV, and a dialed
+    // phone all report a healthy `connection_state()` too, so the transport
+    // question is `backend_kind()`. An un-upgraded share is the one exception
+    // below: it is served by `LocalPosixVolume` and answers `Local` here.
+    if !matches!(volume.backend_kind(), BackendKind::Smb | BackendKind::Local) {
+        log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' is served by a backend this transport can't walk");
+        return Err(SmbIndexGateReason::NotAnSmbVolume);
+    }
+    if volume.backend_kind() == BackendKind::Smb {
+        match volume.connection_state() {
+            // Already a direct smb2 session: ready to index.
+            Some(ConnectionState::Direct) => return Ok(volume.root().to_path_buf()),
+            // A live SmbVolume whose session dropped. Don't silently index a stale
+            // session; the FE reconnect flow owns recovery.
+            _ => {
+                log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' smb2 session is disconnected");
+                return Err(SmbIndexGateReason::Disconnected);
+            }
         }
-        // os_mount: a LocalPosixVolume on an smbfs mount. Fall through to upgrade.
-        Some(SmbConnectionState::OsMount) | None => {}
     }
 
-    // The `None` case is the os_mount one in practice (LocalPosixVolume on an
-    // smbfs mount returns `None` from `smb_connection_state`). But a `None` that
-    // ISN'T an smbfs mount is a non-SMB volume — reject it rather than trying to
-    // upgrade a local disk.
-    if volume.smb_connection_state().is_none()
-        && volumes
-            .smb_volume_id_for_path(&volume.root().to_string_lossy())
-            .is_none()
+    // A `Local` volume here is the os_mount case in practice: a `LocalPosixVolume`
+    // on an smbfs mount, which the upgrade below turns into an `SmbVolume`. One
+    // that ISN'T on an smbfs mount is an ordinary disk — reject it rather than
+    // trying to upgrade it.
+    if volumes
+        .smb_volume_id_for_path(&volume.root().to_string_lossy())
+        .is_none()
     {
         log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' is not an SMB volume");
         return Err(SmbIndexGateReason::NotAnSmbVolume);
@@ -330,6 +341,27 @@ mod tests {
                 assert_eq!(i == j, a == b, "{a:?} vs {b:?} equality must track identity");
             }
         }
+    }
+
+    #[tokio::test]
+    async fn the_smb_gate_refuses_a_server_that_isnt_smb() {
+        // Four backends answer `connection_state()` now, so a gate reading
+        // `is_some()` would hand this SFTP session to the SMB indexer and walk an
+        // `sftp://` root over smb2. The transport question is `backend_kind()`.
+        use cmdr_fs::volume::{BackendKind, ConnectionState, InMemoryVolume};
+
+        let sftp = InMemoryVolume::new("photos")
+            .with_connection_state(ConnectionState::Direct)
+            .with_backend_kind(BackendKind::Sftp);
+        let provider = crate::indexing::host::volumes::FakeVolumeProvider::shared();
+        provider.register("sftp-nas-22-ada", Arc::new(sftp));
+        let _installed = crate::indexing::host::volumes::install_for_test(provider);
+
+        assert_eq!(
+            ensure_direct_smb("sftp-nas-22-ada").await,
+            Err(SmbIndexGateReason::NotAnSmbVolume),
+            "a live SFTP session is not a share this transport may walk",
+        );
     }
 
     // ── The reconnect auto-resume gate ────────────────────────────────────

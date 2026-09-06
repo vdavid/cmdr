@@ -591,7 +591,7 @@
                     {/if}
                 </div>
 
-                {#if selectedVolume?.smbConnectionState === 'os_mount'}
+                {#if selectedVolume?.connectionState === 'os_mount'}
                     <p class="smb-native-note">
                         {tString('fileOperations.transferDialog.smbNativeNote')}
                     </p>
