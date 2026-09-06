@@ -1458,6 +1458,7 @@ pub fn root_anchored(root: &Path, path: &Path) -> PathBuf {
 // `volume::VolumeError`, `volume::smb_volume_id`, etc.
 mod capabilities;
 mod channel_stream;
+mod connection;
 mod ids;
 mod in_memory;
 pub mod mkdir_all;
@@ -1490,6 +1491,7 @@ pub mod host;
 
 pub use capabilities::VolumeCapabilities;
 pub use channel_stream::ChannelReadStream;
+pub use connection::{BackendKind, ConnectionState, DeviceReadiness, DeviceUnavailableReason, SignInShape};
 pub use ids::*;
 pub use in_memory::InMemoryVolume;
 pub use mkdir_all::{MadeDirectories, MakesDirectories};
