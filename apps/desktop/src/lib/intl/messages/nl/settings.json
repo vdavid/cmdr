@@ -1079,6 +1079,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Tekstcursor tonen",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Toon een knipperende cursor in het weergavevenster die aangeeft vanaf welk punt een selectie met het toetsenbord groeit.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "MCP-server inschakelen",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

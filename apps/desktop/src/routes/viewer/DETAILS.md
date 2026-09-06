@@ -25,6 +25,8 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   (pointer/drag/context-menu controller), **`viewer-word.ts`** (word-boundary via `Intl.Segmenter`: the word under a
   caret, and the next boundary in either direction), **`viewer-selection-granularity.ts`** (pure caret → word/line range
   snapping and the two-range union), **`viewer-caret-motion.ts`** (pure `moveFocus`: the five keyboard motions).
+- Text cursor: **`viewer-text-cursor.svelte.ts`** (pure `toSpacerRelative` + the `createViewerTextCursor` measurer),
+  **`ViewerTextCursor.svelte`** (the one absolutely-positioned bar). See § "Text cursor".
 - **`viewer-search-scroll.ts`**: pure per-axis scroll math. `recenterOffset` centres a search match from its rendered
   rect; `ensureVisibleOffset` nudges a line just into view for keyboard extension. Different coordinate spaces, see §
   "Keyboard motion model".
@@ -374,6 +376,45 @@ Every extend press ends in a scroll, on both the landed and the uncached path:
 `caretRectFor(content, point)` (a zero-width rect on an EDGE of the character box — see its doc comment for why an edge
 pick rather than a fallback ladder) and `measureColumnWidth(content)` (one column's advance, cached by the scroll
 composable and dropped when the text scale settles).
+
+## Text cursor
+
+An optional thin blinking bar at the selection's focus, off by default (`viewer.showTextCursor`). Purely a render layer
+over state that already exists: nothing about it feeds back into the selection, the keyboard, or the scroll composable,
+which is what lets it be a setting rather than a mode.
+
+**Vocabulary boundary, because the two words are one letter apart in meaning.** **Caret** is a resolved text POSITION
+(`LineOffset`, `caretFromPoint`, `viewer-caret-geometry.ts`, `caretRectFor`) and predates this feature. **Text cursor**
+is the rendered ELEMENT, and it owns the setting id, the `.text-cursor` class, `ViewerTextCursor.svelte`, and
+`viewer-text-cursor.svelte.ts`. `caretRectFor` returning the box the text cursor paints is exactly where a future agent
+starts calling the rendered bar "the caret" and then wonders why `viewer-caret-geometry.ts` renders nothing.
+
+- **Where it mounts**: inside `.scroll-spacer`, as a SIBLING of `.lines-container`. Gotcha/Why: ❌ never inside
+  `.lines-container`. `runWrappedLineHeightEffect` computes `avgWrappedLineHeight` as that container's height divided by
+  `children.length`, so one extra child shrinks the average and corrupts `scrollLineHeight`, `visibleFrom` /
+  `visibleTo`, and `spacerHeight` in word-wrap mode until the height map is ready. A cursor that quietly breaks virtual
+  scrolling is the worst bug this feature could ship.
+- **How it's placed**: `caretRectFor(content, focus)` measured live, then `toSpacerRelative` subtracts the spacer's
+  `getBoundingClientRect()`. Gotcha/Why: that subtraction is the WHOLE conversion. ❌ Never add
+  `translateY(linesOffset)` on top of it: `caretRectFor` bottoms out in `Range.getClientRects()`, so its rect is a
+  VIEWPORT rect read off the rendered row and already carries the container's transform and the scroll position.
+  Applying the transform twice puts the cursor 10⁵-10⁷ px off screen on a large file.
+- **When it's hidden**: media mode, the setting off, no selection, a focus line that isn't rendered (including the
+  `EOF_LINE` sentinel, which has no row of its own), or a rect that measures no height.
+- **Re-measured** in an `$effect` the page wires, after `tick()`, keyed on the selection focus plus everything that can
+  move a rendered row under an unchanged focus: the scroll position, `linesOffset`, the rendered line set, and the wrap
+  flag. A superseded run is dropped by a generation counter rather than racing the current one.
+- **Blink**: a CSS `step-end` animation, added only under `@media (prefers-reduced-motion: no-preference)` so reduced
+  motion gets a solid bar, and re-keyed with `{#key}` on every focus change. Without the re-key, a keypress landing in
+  the blink's "off" half looks like the cursor vanished (design principle 3).
+- **`aria-hidden`**: a visual echo of a selection the page's own `aria-live` region already announces, so a second
+  announcement would be noise. It's its own component so `viewer.a11y.test.ts` can mount it; that file mounts individual
+  components by design and never mounts `+page.svelte`.
+- **The setting is read reactively** through `getViewerShowTextCursor()` (`lib/settings/reactive-settings.svelte.ts`),
+  not a one-shot `getSetting` at mount, because the viewer has no control of its own for it: a flip in Settings has to
+  reach an already-open viewer. `viewer.wordWrap` reads once at mount only because `W` is its primary control.
+  Restricted windows already receive live updates over the cross-window `settings:changed` event, so this costs nothing
+  extra. Plumbing: `lib/settings/DETAILS.md` § "Restricted-window mode".
 
 ## Title-bar overlay toolbar
 

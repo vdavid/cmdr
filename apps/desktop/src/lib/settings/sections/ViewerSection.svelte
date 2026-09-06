@@ -16,10 +16,11 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const wordWrapDef = getSettingDefinition('viewer.wordWrap') ?? { label: '', description: '' }
+    const textCursorDef = getSettingDefinition('viewer.showTextCursor') ?? { label: '', description: '' }
 </script>
 
 <SettingsSection title={tString('settings.section.viewer')}>
-    {#if anyVisible(shouldShow, 'viewer.wordWrap')}
+    {#if anyVisible(shouldShow, 'viewer.wordWrap', 'viewer.showTextCursor')}
         <SectionCard>
             {#if shouldShow('viewer.wordWrap')}
                 <SettingRow
@@ -29,6 +30,16 @@
                     {searchQuery}
                 >
                     <SettingSwitch id="viewer.wordWrap" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('viewer.showTextCursor')}
+                <SettingRow
+                    id="viewer.showTextCursor"
+                    label={textCursorDef.label}
+                    description={textCursorDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="viewer.showTextCursor" />
                 </SettingRow>
             {/if}
         </SectionCard>

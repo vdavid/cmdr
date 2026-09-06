@@ -43,6 +43,9 @@
     } from './selection.svelte'
     import { createViewerCopy, createViewerCopyOrchestrator } from './viewer-copy.svelte'
     import { createViewerPointerDrag } from './viewer-pointer-drag.svelte'
+    import { createViewerTextCursor } from './viewer-text-cursor.svelte'
+    import ViewerTextCursor from './ViewerTextCursor.svelte'
+    import { getViewerShowTextCursor } from '$lib/settings/reactive-settings.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import ViewerContextMenu from './ViewerContextMenu.svelte'
     import ViewerToolbar from './ViewerToolbar.svelte'
@@ -163,6 +166,11 @@
     }
 
     let unsubscribeLanguage: (() => void) | undefined
+
+    // `.scroll-spacer`, the box the text cursor is positioned against. Not on the scroll
+    // composable: nothing else needs it, and the cursor is the only thing measured
+    // against the spacer rather than the scroll container.
+    let spacerRef = $state<HTMLDivElement>()
 
     // Window lifecycle state: prevents closing before WebKit is fully initialized
     let windowReady = $state(false)
@@ -328,6 +336,16 @@
         getFileName: () => fileName,
     })
 
+    // The optional text cursor. `getLayoutKey` names everything that can move a rendered
+    // row while the focus stays where it is; the measurement itself lives in the composable.
+    const textCursor = createViewerTextCursor({
+        isEnabled: () => getViewerShowTextCursor(),
+        getFocus: () => selection.selection?.focus ?? null,
+        getContentRef: () => scroll.contentRef,
+        getSpacerRef: () => spacerRef,
+        getLayoutKey: () => [scroll.scrollTop, scroll.linesOffset, scroll.visibleLines, scroll.wordWrap],
+    })
+
     // Each pointer setter also ends the keyboard's vertical run: a click or drag picks a
     // new column, so the next Shift+Up/Down aims from there rather than from wherever an
     // earlier run was heading. `keyboard` is defined below and read lazily here.
@@ -406,6 +424,12 @@
     $effect(() => {
         if (isMedia) return
         search.runDebounceEffect()
+    })
+
+    // Re-place the optional text cursor after anything that moves the focus or its row
+    $effect(() => {
+        if (isMedia) return
+        textCursor.runMeasureEffect()
     })
 
     function closeWindow() {
@@ -1089,6 +1113,7 @@
         >
             <div
                 class="scroll-spacer"
+                bind:this={spacerRef}
                 style="height: {scroll.spacerHeight}px; min-width: {scroll.wordWrap
                     ? 0
                     : scroll.contentWidth}px"
@@ -1112,6 +1137,10 @@
                         </div>
                     {/each}
                 </div>
+                <!-- A SIBLING of `.lines-container`, never a child: that container's
+                     height is divided by its child count to derive the average wrapped
+                     line height. -->
+                <ViewerTextCursor box={textCursor.box} blinkKey={textCursor.blinkKey} />
             </div>
         </div>
     {/if}

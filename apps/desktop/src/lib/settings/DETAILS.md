@@ -174,10 +174,12 @@ content; see `src-tauri/capabilities/CLAUDE.md` § viewer). It calls `initialize
 which never touches the store plugin:
 
 - **Reads**: the cache seeds from the typed `get_restricted_window_settings` backend command (allowlist:
-  `viewer.wordWrap`, `fileViewer.suppressBinaryWarning`, `appearance.textSize`, `appearance.appColor`,
-  `appearance.fileSizeFormat`; the command reads `settings.json` fresh, so the snapshot lags the main window's cache by
-  at most the 500 ms save debounce). Live updates after open arrive through the regular cross-window `settings:changed`
-  event.
+  `viewer.wordWrap`, `viewer.showTextCursor`, `fileViewer.suppressBinaryWarning`, `appearance.textSize`,
+  `appearance.appColor`, `appearance.fileSizeFormat`, `appearance.language`; the command reads `settings.json` fresh, so
+  the snapshot lags the main window's cache by at most the 500 ms save debounce). Live updates after open arrive through
+  the regular cross-window `settings:changed` event, and a setting a restricted window has to follow LIVE also needs a
+  slot in `reactive-settings.svelte.ts` (`viewer.showTextCursor` has one; `viewer.wordWrap` deliberately doesn't,
+  because the viewer reads it once at mount and `W` owns it from there).
 - **Writes**: `setSetting` skips the store save and forwards allowlisted ids through the typed
   `persist_restricted_window_setting` command (enum-validated on the Rust side), which emits to the main window;
   `restricted-settings-bridge.ts` (mounted in the main layout) re-checks the allowlist and persists via

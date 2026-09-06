@@ -1078,6 +1078,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Textcursor anzeigen",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Einen blinkenden Cursor in der Cmdr-Vorschau anzeigen, der markiert, von wo aus sich eine Auswahl per Tastatur erweitert.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "MCP-Server aktivieren",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

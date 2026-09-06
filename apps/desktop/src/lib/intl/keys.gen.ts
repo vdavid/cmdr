@@ -3025,6 +3025,8 @@ export type MessageKey =
   | 'settings.updates.errorReports.description'
   | 'settings.updates.errorReports.label'
   | 'settings.updates.sendErrorReport'
+  | 'settings.viewer.showTextCursor.description'
+  | 'settings.viewer.showTextCursor.label'
   | 'settings.viewer.wordWrap.description'
   | 'settings.viewer.wordWrap.label'
   | 'settings.whatsNew.lastSeenVersion.description'

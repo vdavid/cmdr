@@ -30,6 +30,7 @@ let ipc: IpcRecorder
 
 const snapshot: RestrictedWindowSettings = {
   viewerWordWrap: true,
+  viewerShowTextCursor: true,
   fileViewerSuppressBinaryWarning: null,
   appearanceTextSize: 125,
   appearanceAppColor: 'cmdr-gold',
@@ -63,6 +64,9 @@ describe('initializeSettings({ restrictedWindow: true })', () => {
     await store.initializeSettings({ restrictedWindow: true })
 
     expect(store.getSetting('viewer.wordWrap')).toBe(true)
+    // The viewer has no control of its own for the text cursor, so the Settings toggle
+    // only reaches it through this snapshot and the cross-window change event.
+    expect(store.getSetting('viewer.showTextCursor')).toBe(true)
     expect(store.getSetting('appearance.textSize')).toBe(125)
     expect(store.getSetting('appearance.appColor')).toBe('cmdr-gold')
     // The operation queue window renders `<Size>` and is restricted, so the binary/SI
@@ -122,6 +126,21 @@ describe('setSetting in restricted mode', () => {
     expect(ipc.calls.some((c) => c.command.startsWith('plugin:store|'))).toBe(false)
   })
 
+  it('round-trips the text-cursor toggle through the typed command', async () => {
+    ipc.mock('get_restricted_window_settings', () => snapshot)
+    ipc.mock('persist_restricted_window_setting', () => null)
+    const store = await importStore()
+    await store.initializeSettings({ restrictedWindow: true })
+
+    store.setSetting('viewer.showTextCursor', false)
+    await Promise.resolve()
+
+    const call = ipc.lastCall('persist_restricted_window_setting')
+    expect(call?.payload).toMatchObject({ setting: 'viewerShowTextCursor', value: false })
+    expect(store.getSetting('viewer.showTextCursor')).toBe(false)
+    expect(ipc.calls.some((c) => c.command.startsWith('plugin:store|'))).toBe(false)
+  })
+
   it('treats non-allowlisted settings as session-only (no persist call)', async () => {
     ipc.mock('get_restricted_window_settings', () => snapshot)
     const store = await importStore()
@@ -147,6 +166,25 @@ describe('restricted-settings bridge (main-window side)', () => {
     bridge.handlePersistRestrictedSetting({ id: 'viewer.wordWrap', value: true })
 
     expect(storeMock.persistSettingFromRestrictedWindow).toHaveBeenCalledWith('viewer.wordWrap', true)
+    vi.doUnmock('./settings-store')
+  })
+
+  it('persists the text-cursor toggle but not an id dressed up to look like it', async () => {
+    vi.doMock('./settings-store', () => ({
+      persistSettingFromRestrictedWindow: vi.fn(),
+    }))
+    const storeMock = await import('./settings-store')
+    const bridge = await import('./restricted-settings-bridge')
+
+    bridge.handlePersistRestrictedSetting({ id: 'viewer.showTextCursor', value: true })
+    expect(storeMock.persistSettingFromRestrictedWindow).toHaveBeenCalledWith('viewer.showTextCursor', true)
+
+    // The allowlist matches whole ids, so neither a near miss nor a prefix gets through.
+    vi.mocked(storeMock.persistSettingFromRestrictedWindow).mockClear()
+    bridge.handlePersistRestrictedSetting({ id: 'viewer.showTextCursor.enabled', value: true })
+    bridge.handlePersistRestrictedSetting({ id: 'viewer.textCursor', value: true })
+    expect(storeMock.persistSettingFromRestrictedWindow).not.toHaveBeenCalled()
+
     vi.doUnmock('./settings-store')
   })
 

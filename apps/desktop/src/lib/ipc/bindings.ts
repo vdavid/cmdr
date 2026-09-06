@@ -10267,10 +10267,16 @@ export type RestrictedPathsChangedPayload = {
 /**
  *  The settings a restricted-capability window may persist. A typed enum (not a
  *  free-form id string) so the write allowlist is enforced at the IPC boundary:
- *  a compromised viewer webview can only flip these two booleans, never touch
- *  licensing, error-report opt-in, MCP, or any other store key.
+ *  a compromised viewer webview can only flip the view-preference booleans
+ *  listed here, never touch licensing, error-report opt-in, MCP, or any other
+ *  store key. Mirrored by `RESTRICTED_PERSISTABLE_SETTINGS` in
+ *  `src/lib/settings/settings-store.ts` and `PERSIST_ALLOWLIST` in
+ *  `src/lib/settings/restricted-settings-bridge.ts`.
  */
-export type RestrictedWindowPersistableSetting = 'viewerWordWrap' | 'fileViewerSuppressBinaryWarning'
+export type RestrictedWindowPersistableSetting =
+  | 'viewerWordWrap'
+  | 'viewerShowTextCursor'
+  | 'fileViewerSuppressBinaryWarning'
 
 /**
  *  The settings a restricted-capability window (the viewer) reads at startup via
@@ -10284,6 +10290,7 @@ export type RestrictedWindowPersistableSetting = 'viewerWordWrap' | 'fileViewerS
  */
 export type RestrictedWindowSettings = {
   viewerWordWrap: boolean | null
+  viewerShowTextCursor: boolean | null
   fileViewerSuppressBinaryWarning: boolean | null
   appearanceTextSize: number | null
   appearanceAppColor: string | null

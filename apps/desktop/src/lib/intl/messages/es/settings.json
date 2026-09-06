@@ -1077,6 +1077,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Mostrar el cursor de texto",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Muestra un cursor parpadeante en el visor de archivos que marca desde dónde se extiende una selección hecha con el teclado.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "Activar el servidor MCP",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

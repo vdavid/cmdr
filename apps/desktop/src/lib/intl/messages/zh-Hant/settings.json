@@ -1075,6 +1075,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "顯示文字游標",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "在檔案檢視器中顯示閃爍的游標，標示以鍵盤選取時選取範圍從哪裡開始延伸。",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "啟用 MCP 伺服器",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

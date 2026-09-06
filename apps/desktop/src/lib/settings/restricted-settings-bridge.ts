@@ -10,7 +10,7 @@
  * `persist-restricted-setting` event. This bridge runs in the main window
  * (always alive) and persists through the normal store pipeline.
  *
- * The allowlist is enforced twice: the backend enum can only express the two
+ * The allowlist is enforced twice: the backend enum can only express the
  * permitted settings, and this handler re-checks the id (defense in depth —
  * any webview can emit arbitrary events, so the event payload alone is
  * untrusted).
@@ -26,7 +26,11 @@ import { getAppLogger } from '$lib/logging/logger'
 const log = getAppLogger('restricted-settings-bridge')
 
 /** Mirrors the backend's `RestrictedWindowPersistableSetting` enum mapping. */
-const PERSIST_ALLOWLIST: ReadonlySet<string> = new Set(['viewer.wordWrap', 'fileViewer.suppressBinaryWarning'])
+const PERSIST_ALLOWLIST: ReadonlySet<string> = new Set([
+  'viewer.wordWrap',
+  'viewer.showTextCursor',
+  'fileViewer.suppressBinaryWarning',
+])
 
 interface PersistRestrictedSettingPayload {
   id: string

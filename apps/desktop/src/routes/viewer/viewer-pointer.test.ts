@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 
-import { caretFromPoint, caretFromPointClamped } from './viewer-pointer'
+import { caretFromPoint, caretFromPointClamped, caretRectFor } from './viewer-pointer'
 
 /**
  * The fake layout every test measures against. `.file-content` fills a 400x200 box,
@@ -91,6 +91,11 @@ function mountViewer(lineHtml: string[], { cols = Number.POSITIVE_INFINITY } = {
     lineTops.push(lineTop)
     line.getBoundingClientRect = () =>
       rect(CONTENT.left, lineTop, CONTENT.right, lineTop + height) as unknown as DOMRect
+    // `.line-text` shrink-wraps its own content, so it starts at the gutter's right edge
+    // and is as wide as the text. `caretRectFor` reads it for the empty-line fallback,
+    // where there is no character box to measure.
+    lineText.getBoundingClientRect = () =>
+      rect(TEXT_LEFT, lineTop, TEXT_LEFT + start * CHAR_W, lineTop + height) as unknown as DOMRect
     top += height
   }
 
@@ -218,5 +223,82 @@ describe('caretFromPointClamped', () => {
   it('pulls a point right of the content in to the end of the row under it', () => {
     const { content } = mountViewer(['hello world', 'second line'])
     expect(caretFromPointClamped(content, CONTENT.right + 500, PAD_TOP + 9)).toEqual({ line: 0, offset: 11 })
+  })
+})
+
+describe('caretRectFor', () => {
+  /** A zero-width box on the grid: `col` is a character column, `row` a visual row. */
+  function edge(col: number, row: number, lineTop = PAD_TOP) {
+    const x = TEXT_LEFT + col * CHAR_W
+    return { left: x, right: x, top: lineTop + row * ROW_H, bottom: lineTop + (row + 1) * ROW_H }
+  }
+
+  it('picks the left edge of the character at an interior offset', () => {
+    const { content } = mountViewer(['hello world'])
+    expect(caretRectFor(content, { line: 0, offset: 4 })).toEqual(edge(4, 0))
+  })
+
+  it('picks the left edge of the first character at the start of a line', () => {
+    const { content } = mountViewer(['hello world'])
+    expect(caretRectFor(content, { line: 0, offset: 0 })).toEqual(edge(0, 0))
+  })
+
+  it('picks the RIGHT edge of the last character at the end of a line', () => {
+    // The edge rule's whole reason for being. `measureChar` clamps its probe to
+    // `length - 1`, so offset 11 measures the box of `d` and would otherwise paint a
+    // caret one glyph too far left — exactly where Shift+End and every rightward walk
+    // park it.
+    const { content } = mountViewer(['hello world'])
+    expect(caretRectFor(content, { line: 0, offset: 11 })).toEqual(edge(11, 0))
+  })
+
+  it('clamps an offset past the end of the line to that same right edge', () => {
+    const { content } = mountViewer(['hello world'])
+    expect(caretRectFor(content, { line: 0, offset: 40 })).toEqual(edge(11, 0))
+  })
+
+  it('never lands between the surrogates of an astral codepoint', () => {
+    // "a👋b": the emoji spans offsets 1..3 and two grid cells, so both its offsets
+    // resolve to its left edge.
+    const { content } = mountViewer(['a👋b'])
+    expect(caretRectFor(content, { line: 0, offset: 1 })).toEqual(edge(1, 0))
+    expect(caretRectFor(content, { line: 0, offset: 2 })).toEqual(edge(1, 0))
+    expect(caretRectFor(content, { line: 0, offset: 3 })).toEqual(edge(3, 0))
+  })
+
+  it('sums offsets across nested <mark> and <span> elements', () => {
+    const { content } = mountViewer(['foo<mark>bar</mark><span class="selected">baz</span>!'])
+    expect(caretRectFor(content, { line: 0, offset: 7 })).toEqual(edge(7, 0))
+    expect(caretRectFor(content, { line: 0, offset: 10 })).toEqual(edge(10, 0))
+  })
+
+  it('takes its height from the character box, not the (multi-row) wrapped line', () => {
+    // "abcdefghij" at four columns: rows "abcd" / "efgh" / "ij". The row is three rows
+    // tall; the caret at the line's end must be one row tall, on the last of them.
+    const { content } = mountViewer(['abcdefghij'], { cols: 4 })
+    expect(caretRectFor(content, { line: 0, offset: 10 })).toEqual(edge(2, 2))
+  })
+
+  it('paints an interior wrap point at the start of the next visual row', () => {
+    // Documented downstream affinity: offset 4 sits between rows, and `rangeRect`
+    // prefers the rect with width, which is the first glyph of row two. Leave it.
+    const { content } = mountViewer(['abcdefghij'], { cols: 4 })
+    expect(caretRectFor(content, { line: 0, offset: 4 })).toEqual(edge(0, 1))
+  })
+
+  it('falls back to the row rect on an empty line', () => {
+    const { content } = mountViewer(['first', '', 'third'])
+    expect(caretRectFor(content, { line: 1, offset: 0 })).toEqual(edge(0, 0, PAD_TOP + ROW_H))
+  })
+
+  it('returns null for a line that is not rendered', () => {
+    const { content } = mountViewer(['hello world'])
+    expect(caretRectFor(content, { line: 7, offset: 0 })).toBeNull()
+  })
+
+  it('returns null when the character box cannot be measured', () => {
+    const { content } = mountViewer(['hello world'])
+    vi.spyOn(Range.prototype, 'getClientRects').mockReturnValue([] as unknown as DOMRectList)
+    expect(caretRectFor(content, { line: 0, offset: 3 })).toBeNull()
   })
 })

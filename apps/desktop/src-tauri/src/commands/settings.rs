@@ -218,12 +218,16 @@ pub fn get_restricted_window_settings(app: AppHandle) -> crate::settings::Restri
 
 /// The settings a restricted-capability window may persist. A typed enum (not a
 /// free-form id string) so the write allowlist is enforced at the IPC boundary:
-/// a compromised viewer webview can only flip these two booleans, never touch
-/// licensing, error-report opt-in, MCP, or any other store key.
+/// a compromised viewer webview can only flip the view-preference booleans
+/// listed here, never touch licensing, error-report opt-in, MCP, or any other
+/// store key. Mirrored by `RESTRICTED_PERSISTABLE_SETTINGS` in
+/// `src/lib/settings/settings-store.ts` and `PERSIST_ALLOWLIST` in
+/// `src/lib/settings/restricted-settings-bridge.ts`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum RestrictedWindowPersistableSetting {
     ViewerWordWrap,
+    ViewerShowTextCursor,
     FileViewerSuppressBinaryWarning,
 }
 
@@ -232,6 +236,7 @@ impl RestrictedWindowPersistableSetting {
     pub fn setting_id(self) -> &'static str {
         match self {
             Self::ViewerWordWrap => "viewer.wordWrap",
+            Self::ViewerShowTextCursor => "viewer.showTextCursor",
             Self::FileViewerSuppressBinaryWarning => "fileViewer.suppressBinaryWarning",
         }
     }

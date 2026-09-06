@@ -452,6 +452,7 @@ export interface SettingsValues {
 
   // Viewer
   'viewer.wordWrap': boolean
+  'viewer.showTextCursor': boolean
   'fileViewer.suppressBinaryWarning': boolean
 
   // AI

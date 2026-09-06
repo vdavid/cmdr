@@ -1080,6 +1080,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Afficher le curseur de texte",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Affiche un curseur clignotant dans la visionneuse de fichiers, indiquant le point à partir duquel une sélection au clavier s''étend.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "Activer le serveur MCP",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

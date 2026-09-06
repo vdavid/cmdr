@@ -1075,6 +1075,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Szövegkurzor megjelenítése",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Villogó kurzor megjelenítése a fájlmegjelenítőben, amely megmutatja, honnan növekszik a billentyűzettel készült kijelölés.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "MCP-szerver bekapcsolása",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

@@ -379,6 +379,7 @@ fn parse_string_array(json: &serde_json::Value, key: &str) -> Vec<String> {
 #[serde(rename_all = "camelCase")]
 pub struct RestrictedWindowSettings {
     pub viewer_word_wrap: Option<bool>,
+    pub viewer_show_text_cursor: Option<bool>,
     pub file_viewer_suppress_binary_warning: Option<bool>,
     pub appearance_text_size: Option<f64>,
     pub appearance_app_color: Option<String>,
@@ -418,6 +419,7 @@ fn parse_restricted_window_settings(contents: &str) -> RestrictedWindowSettings 
     };
     RestrictedWindowSettings {
         viewer_word_wrap: json.get("viewer.wordWrap").and_then(|v| v.as_bool()),
+        viewer_show_text_cursor: json.get("viewer.showTextCursor").and_then(|v| v.as_bool()),
         file_viewer_suppress_binary_warning: json.get("fileViewer.suppressBinaryWarning").and_then(|v| v.as_bool()),
         appearance_text_size: json.get("appearance.textSize").and_then(|v| v.as_f64()),
         appearance_app_color: json

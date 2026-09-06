@@ -1075,6 +1075,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "显示文本光标",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "在文件查看器中显示闪烁的光标，标出使用键盘选择时选区从哪里开始扩展。",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "启用 MCP 服务器",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

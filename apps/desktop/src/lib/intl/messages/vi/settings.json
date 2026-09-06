@@ -1073,6 +1073,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Hiển thị con trỏ văn bản",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Hiển thị con trỏ nhấp nháy trong trình xem tệp, đánh dấu điểm mà vùng chọn bằng bàn phím mở rộng ra.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "Bật máy chủ MCP",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

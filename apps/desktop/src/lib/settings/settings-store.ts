@@ -76,6 +76,7 @@ let restrictedWindowMode = false
  *  allowlist; this map only decides which `setSetting` calls are forwarded. */
 const RESTRICTED_PERSISTABLE_SETTINGS: Partial<Record<SettingId, RestrictedWindowPersistableSetting>> = {
   'viewer.wordWrap': 'viewerWordWrap',
+  'viewer.showTextCursor': 'viewerShowTextCursor',
   'fileViewer.suppressBinaryWarning': 'fileViewerSuppressBinaryWarning',
 }
 
@@ -238,6 +239,7 @@ async function initializeSettingsRestricted(): Promise<void> {
     // Mechanical mapping: each snapshot field name spells out its setting id.
     const mapped: Partial<Record<SettingId, unknown>> = {
       'viewer.wordWrap': snapshot.viewerWordWrap,
+      'viewer.showTextCursor': snapshot.viewerShowTextCursor,
       'fileViewer.suppressBinaryWarning': snapshot.fileViewerSuppressBinaryWarning,
       'appearance.textSize': snapshot.appearanceTextSize,
       'appearance.appColor': snapshot.appearanceAppColor,

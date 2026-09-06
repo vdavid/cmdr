@@ -1334,6 +1334,7 @@
     "updates.autoCheck": true,
     "updates.crashReports": true,
     "updates.errorReports": false,
+    "viewer.showTextCursor": false,
     "viewer.wordWrap": false,
     "whatsNew.showOnUpdate": true
   }

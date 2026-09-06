@@ -1077,6 +1077,14 @@
   "@settings.viewer.wordWrap.description": {
     "sourceHash": "8a87bd2"
   },
+  "settings.viewer.showTextCursor.label": "Visa textmarkör",
+  "@settings.viewer.showTextCursor.label": {
+    "sourceHash": "9e4b4ba"
+  },
+  "settings.viewer.showTextCursor.description": "Visa en blinkande textmarkör i förhandsvisningen, som visar varifrån en markering med tangentbordet växer.",
+  "@settings.viewer.showTextCursor.description": {
+    "sourceHash": "b5e542e"
+  },
   "settings.developer.mcpEnabled.label": "Aktivera MCP-server",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"

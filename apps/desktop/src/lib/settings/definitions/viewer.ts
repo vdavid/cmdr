@@ -19,4 +19,17 @@ export const viewerSettings: SettingDefinitionSource[] = [
     default: false,
     component: 'switch',
   },
+  {
+    id: 'viewer.showTextCursor',
+    section: ['Viewer'],
+    labelKey: 'settings.viewer.showTextCursor.label',
+    descriptionKey: 'settings.viewer.showTextCursor.description',
+    keywords: ['viewer', 'cursor', 'caret', 'text', 'insertion', 'point', 'blink', 'selection'],
+    type: 'boolean',
+    // Off by design: the viewer is for looking at a file, not editing one, so a
+    // blinking bar would be noise for most people. The setting is here for those
+    // who expect an editor.
+    default: false,
+    component: 'switch',
+  },
 ]
