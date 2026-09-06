@@ -448,9 +448,8 @@ its places; no credentials are asked until a listing or mount refuses.
 
 `crates/cmdr-fs/src/volume/connection.rs` (M0 step 1 grew `types.rs` past its size bar, so the five remote-vocabulary
 types moved to a module of their own; `mod.rs` re-exports them, so every import path is unchanged), internally tagged
-the way the outcome enums are
-(`#[serde(tag = "kind", rename_all = "snake_case", rename_all_fields = "camelCase")]`), so the TS side is a
-discriminated union on `kind`:
+the way the outcome enums are (`#[serde(tag = "kind", rename_all = "snake_case", rename_all_fields = "camelCase")]`), so
+the TS side is a discriminated union on `kind`:
 
 ```
 SignInShape =
