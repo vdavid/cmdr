@@ -10,14 +10,42 @@ that lives beside the code, and git holds the history.
 
 ## Shipped, kept for review
 
-Wipe each of these as soon as David has read it (`DETAILS.md` § "Wiping a shipped spec"): the durable intent is already
-beside the code, and the file survives only so he can judge the work against the plan it came from.
+Each of these shipped and its durable intent already lives beside the code; the file survives only so David can judge
+the work against the plan it came from. Wipe per `DETAILS.md` § "Wiping a shipped spec" once the entry's own condition
+below is met.
 
 - [x] 2026-09-05 `viewer-selection-plan.md` - the three reported F3-viewer selection gaps (a double-click drag stuck on
       one word, Shift+Arrow dead, Option+Shift+Arrow dead), plus keyboard extension, horizontal scroll on the bare
       arrows, and the optional `viewer.showTextCursor`. Durable intent lives in
       `apps/desktop/src/routes/viewer/DETAILS.md` (§ "Selection granularity", § "Keyboard motion model", § "Text
       cursor") and `apps/desktop/src/lib/settings/DETAILS.md` § "Restricted-window mode".
+- [x] 2026-09-03 `agent-search-tool.md` - **Shipped, all six milestones.** Ask Cmdr can find a file by name: the one
+      authored `search` entry now serves both views and answers with typed JSON, so a walk still running reads as a
+      lower bound instead of the four confident "nothing matched" replies that prompted the spec. `coverage.complete` is
+      derived once beside the seven flags that each say a different sentence, `matchCountHuman` wears its `≥` so the
+      caveat can't be shed, `entries` goes through `fit_to_result_budget` on top of a `limit` clamped to 200, and
+      `list_volumes` hands over the `mountPath` that makes "search my NAS" expressible. `ai_search` stayed out by
+      decision. The schema trim paid for part of the new declaration, and the rest moved three pins plus the local
+      window floor, which rose to 32,768 because the 19th declaration broke the old one. Design and rules now live
+      beside the code (`mcp/executor/DETAILS.md` § The search result, `agent/tools/DETAILS.md` § The tool catalog and §
+      The size contract, `agent/chat/DETAILS.md` § What the budgets buy). **Wipe per `DETAILS.md` § "Wiping a shipped
+      spec"** once the watch item finds a home: whether the model offers to turn image indexing on when the content half
+      is the half that was asked for. That wipe is a one-way door, so it waits for David.
+- [x] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
+      user asked for "Open terminal here"; macOS has no default-terminal setting, so Cmdr keeps its own known-terminals
+      table (bundle id + launch recipe, queried live via `NSWorkspace`, no scan, no Refresh button), defaults to
+      Terminal, asks once on first use when another terminal is installed, and exposes one dropdown row in Navigation &
+      file ops plus a "Choose an app…" escape hatch. Deliberately no window-vs-tab control in v1: no universal mechanism
+      exists, so each terminal's own preference decides. Four milestones, about one agent-day.
+- [x] 2026-08-31 `smb-foreground-lease-plan.md` - **Shipped, all three milestones.** A background SMB upload now stands
+      aside for the folder you're actually waiting on: a listing holds an RAII lease so "busy" is a fact rather than a
+      decaying estimate, the parked upload wakes on that lease dropping, and a single-shot write is exempt from the
+      per-file 4 MiB floor that kept every photo and document from yielding once. The design and its bounds now live
+      beside the code (`apps/desktop/src-tauri/src/priority/DETAILS.md`, `write_operations/transfer/DETAILS.md`, and
+      `crates/cmdr-smb/DETAILS.md`), the deferred pre-file yield gate for the 1 MiB–4 MiB band included. **Wipe per
+      `DETAILS.md` § "Wiping a shipped spec"** once one refusal recorded nowhere else finds a home there: no foreground
+      stamping in `path_exists` / `get_file_range` / `refresh_listing`, since background callers would pin a share
+      permanently busy. That wipe is a one-way door, so it waits for David.
 
 ## In progress
 
@@ -40,26 +68,6 @@ beside the code, and the file survives only so he can judge the work against the
       pane-only overlay seam that scans and walkers never see. Three rules become types. `display_size` becomes a typed
       `GitEntryMeta` the frontend words per locale; the watcher moves with a typed sink. Sequenced after
       `mtp-crate-extraction.md`; can go first if that stalls. About three days.
-- [x] 2026-09-03 `agent-search-tool.md` - **Shipped, all six milestones.** Ask Cmdr can find a file by name: the one
-      authored `search` entry now serves both views and answers with typed JSON, so a walk still running reads as a
-      lower bound instead of the four confident "nothing matched" replies that prompted the spec. `coverage.complete` is
-      derived once beside the seven flags that each say a different sentence, `matchCountHuman` wears its `≥` so the
-      caveat can't be shed, `entries` goes through `fit_to_result_budget` on top of a `limit` clamped to 200, and
-      `list_volumes` hands over the `mountPath` that makes "search my NAS" expressible. `ai_search` stayed out by
-      decision. The schema trim paid for part of the new declaration, and the rest moved three pins plus the local
-      window floor, which rose to 32,768 because the 19th declaration broke the old one. Design and rules now live
-      beside the code (`mcp/executor/DETAILS.md` § The search result, `agent/tools/DETAILS.md` § The tool catalog and §
-      The size contract, `agent/chat/DETAILS.md` § What the budgets buy). **Wipe per `DETAILS.md` § "Wiping a shipped
-      spec"** once the watch item finds a home: whether the model offers to turn image indexing on when the content half
-      is the half that was asked for. That wipe is a one-way door, so it waits for David.
-
-- [x] 2026-09-03 `open-terminal-here.md` - **A keyboard-first file manager with no way to hand a folder to a shell.** A
-      user asked for "Open terminal here"; macOS has no default-terminal setting, so Cmdr keeps its own known-terminals
-      table (bundle id + launch recipe, queried live via `NSWorkspace`, no scan, no Refresh button), defaults to
-      Terminal, asks once on first use when another terminal is installed, and exposes one dropdown row in Navigation &
-      file ops plus a "Choose an app…" escape hatch. Deliberately no window-vs-tab control in v1: no universal mechanism
-      exists, so each terminal's own preference decides. Four milestones, about one agent-day.
-
 - [ ] 2026-09-02 `android-adb-ui.md` - **The ADB backend works and nobody can reach it.** No connect flow, no device
       picker, no settings, and no words for the six ways a connect refuses. Eight decisions, taken rather than listed:
       one switcher row per phone with MTP as the default face and ADB a mode you switch it into; non-ready devices shown
@@ -92,16 +100,6 @@ beside the code, and the file survives only so he can judge the work against the
       finishing costs: a real-device pass (authorize prompt, `unauthorized` → `device` mid-session, a 2 GB transfer, a
       `/data` listing on a non-rooted phone), then three deliberate deferrals (`sendrecv_v2` compression off until
       measured, wireless pairing left to the server, a settings switch for the `adb` binary path).
-
-- [x] 2026-08-31 `smb-foreground-lease-plan.md` - **Shipped, all three milestones.** A background SMB upload now stands
-      aside for the folder you're actually waiting on: a listing holds an RAII lease so "busy" is a fact rather than a
-      decaying estimate, the parked upload wakes on that lease dropping, and a single-shot write is exempt from the
-      per-file 4 MiB floor that kept every photo and document from yielding once. The design and its bounds now live
-      beside the code (`apps/desktop/src-tauri/src/priority/DETAILS.md`, `write_operations/transfer/DETAILS.md`, and
-      `crates/cmdr-smb/DETAILS.md`), the deferred pre-file yield gate for the 1 MiB–4 MiB band included. **Wipe per
-      `DETAILS.md` § "Wiping a shipped spec"** once one refusal recorded nowhere else finds a home there: no foreground
-      stamping in `path_exists` / `get_file_range` / `refresh_listing`, since background callers would pin a share
-      permanently busy. That wipe is a one-way door, so it waits for David.
 
 - [ ] 2026-08-31 `rollback-recheck-plan.md` - **Cancelling an operation deletes files it no longer wrote, and the move
       case overwrites silently.** The history dialog's Roll back verifies every item against a recorded snapshot and
