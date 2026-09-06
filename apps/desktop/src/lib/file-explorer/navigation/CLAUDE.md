@@ -12,8 +12,8 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   its disk-space state machine, and the favorites interaction layer.
 - `favorites-analytics.ts`: `favorite_opened`, from the two `category === 'favorite'` branches (`navigate()` below them
   sees only the containing volume).
-- `server-row-actions.ts`: what a SERVER row's menu offers and what each item does (the menu, Disconnect, Pin/unpin,
-  the two Forgets), shared by the switcher, the hub, and the palette's server commands.
+- `server-row-actions.ts`: what a SERVER row's menu offers and what each item does (the menu, Disconnect, Pin/unpin, the
+  two Forgets), shared by the switcher, the hub, and the palette's server commands.
 - `filesystem-label.ts`: the `fsType` → label maps. A NETWORK row answers with its PROTOCOL (`protocolLabel`, which the
   servers hub's Type column reads too), because a place with no local mount has no filesystem to name.
 

@@ -20,22 +20,17 @@
         clearShareState,
         fetchShares,
         refreshAllStaleShares,
-        getCredentialStatus,
-        checkCredentialsForHost,
-        forgetCredentials,
     } from './network-store.svelte'
     import { getStatusTooltip } from './host-status'
     import { buildHubRows, type HubRow, type HubRowStatus } from './servers-hub-rows'
     import { hubMcpEntries } from './servers-hub-mcp'
+    import { createHubActions } from './servers-hub-actions'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { NetworkHost, VolumeInfo } from '../types'
+    import type { NetworkHost } from '../types'
     import {
         updateLeftPaneState,
         updateRightPaneState,
-        removeManualServer,
-        showNetworkHostContextMenu,
         onNetworkHostContextAction,
-        disconnectNetworkHost,
         listSavedServers,
         type PaneState,
         type SavedServer,
@@ -45,9 +40,6 @@
     import { openSettingsWindow, settingAnchorId } from '$lib/settings/settings-window'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { protocolLabel } from '../navigation/filesystem-label'
-    import { forgetSavedServer, openServerRowMenu } from '../navigation/server-row-actions'
-    import { confirmDialog } from '$lib/utils/confirm-dialog'
-    import { addToast } from '$lib/ui/toast'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { eventMatchesCommand } from '$lib/shortcuts'
     import { triggerNetworkDiscovery } from './lazy-trigger'
@@ -93,6 +85,17 @@
     const discoveryEnabled = $derived(getNetworkEnabled())
     const rows = $derived(buildHubRows({ saved: savedServers, hosts, volumes }))
 
+    /**
+     * F8, the row menus, and the SMB host menu's answers. Live getters, ❌ never
+     * snapshots: the rows change under a menu that is still open.
+     */
+    const actions = createHubActions({
+        getRows: () => rows,
+        getHosts: () => hosts,
+        getVolumes: () => volumes,
+        refreshSaved: refreshSavedServers,
+    })
+
     let cursorIndex = $state(0)
     let listContainer: HTMLDivElement | undefined = $state()
     let containerHeight = $state(0)
@@ -117,7 +120,7 @@
         refreshAllStaleShares()
 
         void onNetworkHostContextAction((payload) => {
-            void handleHostContextAction(payload)
+            void actions.runHostAction(payload)
         }).then((fn) => {
             unlistenContextAction = fn
         })
@@ -364,7 +367,7 @@
             const row = rowUnderCursor()
             if (row) {
                 e.preventDefault()
-                void handleForget(row)
+                void actions.forget(row)
             }
             return
         }
@@ -397,131 +400,6 @@
         if (!row.lastConnectedAt) return null
         const parsed = Date.parse(row.lastConnectedAt)
         return Number.isNaN(parsed) ? null : Math.floor(parsed / 1000)
-    }
-
-    /**
-     * F8. A saved server goes (after a confirmation); a host only mDNS knows about
-     * has nothing to forget, and says so.
-     */
-    async function handleForget(row: HubRow): Promise<void> {
-        if (!row.saved) {
-            addToast(tString('fileExplorer.network.browser.cannotRemoveDiscovered'), { level: 'warn' })
-            return
-        }
-        if (row.volumeId) {
-            // A one-place server: the servers family owns the confirmation and the
-            // toast, so the hub and the switcher's menu ask the same question.
-            await forgetSavedServer(row.volumeId, row.name)
-            return
-        }
-        await removeSavedSmbHost(row)
-    }
-
-    /** Forgets a saved SMB host, which is a manual-server entry rather than a place. */
-    async function removeSavedSmbHost(row: HubRow): Promise<void> {
-        const confirmed = await confirmDialog(
-            tString('fileExplorer.network.browser.removeHostConfirm', { hostName: row.name }),
-            tString('fileExplorer.network.browser.removeHostConfirmButton'),
-        )
-        if (!confirmed) return
-        try {
-            await removeManualServer(row.id)
-            addToast(tString('fileExplorer.network.browser.hostRemoved', { hostName: row.name }), { level: 'success' })
-            await refreshSavedServers()
-        } catch {
-            addToast(tString('fileExplorer.network.browser.hostRemoveFailed', { hostName: row.name }), {
-                level: 'error',
-            })
-        }
-    }
-
-    /**
-     * Right-click.
-     *
-     * A one-place row raises the SERVERS menu (Disconnect, Forget saved password,
-     * Forget server), the same one the switcher row raises, so the two surfaces
-     * can't drift. An SMB host keeps its own host menu, whose Disconnect unmounts
-     * shares rather than dropping a session.
-     */
-    async function handleRowContextMenu(e: MouseEvent, row: HubRow): Promise<void> {
-        e.preventDefault()
-        if (row.volumeId) {
-            await openServerRowMenu(volumeForRow(row))
-            return
-        }
-        const host = row.host
-        if (!host) return
-        if (getCredentialStatus(host.name) === 'unknown') {
-            await checkCredentialsForHost(host.name)
-        }
-        void showNetworkHostContextMenu(
-            host.id,
-            host.name,
-            host.source === 'manual',
-            getCredentialStatus(host.name) === 'has_creds',
-        )
-    }
-
-    /**
-     * The row's `VolumeInfo`, for the menu builder.
-     *
-     * The volume list is the source when it has the row; a saved server that is
-     * neither pinned nor connected has no row there, and the stand-in carries the
-     * three fields the menu actually reads.
-     */
-    function volumeForRow(row: HubRow): VolumeInfo {
-        const known = volumes.find((volume) => volume.id === row.volumeId)
-        if (known) return known
-        return {
-            id: row.volumeId ?? row.id,
-            name: row.name,
-            path: row.saved?.places[0]?.appRoot ?? '',
-            category: 'network',
-            isEjectable: false,
-            fsType: row.protocol,
-            connectionState: null,
-        }
-    }
-
-    /** Actions dispatched from the native SMB-host context menu. */
-    async function handleHostContextAction(payload: { action: string; hostId: string; hostName: string }) {
-        switch (payload.action) {
-            case 'forget-server': {
-                const row = rows.find((r) => r.host?.id === payload.hostId || r.id === payload.hostId)
-                if (row) await handleForget(row)
-                break
-            }
-            case 'forget-password': {
-                try {
-                    await forgetCredentials(payload.hostName)
-                    addToast(tString('fileExplorer.network.forgotPassword', { hostName: payload.hostName }), {
-                        level: 'success',
-                    })
-                } catch {
-                    addToast(tString('fileExplorer.network.deletePasswordFailed'), { level: 'error' })
-                }
-                break
-            }
-            case 'disconnect': {
-                const host = hosts.find((h) => h.id === payload.hostId)
-                if (!host) break
-                try {
-                    const unmounted = await disconnectNetworkHost(host.id, host.name, host.ipAddress)
-                    if (unmounted.length > 0) {
-                        addToast(tString('fileExplorer.network.browser.disconnected', { hostName: payload.hostName }), {
-                            level: 'success',
-                        })
-                    } else {
-                        addToast(tString('fileExplorer.network.browser.noMountedShares', { hostName: payload.hostName }))
-                    }
-                } catch (e) {
-                    addToast(tString('fileExplorer.network.browser.disconnectFailed', { message: String(e) }), {
-                        level: 'error',
-                    })
-                }
-                break
-            }
-        }
     }
 
     /** Re-read the saved list and re-fetch every host's shares (user-initiated). */
@@ -583,7 +461,8 @@
                     handleRowDoubleClick(index)
                 }}
                 oncontextmenu={(e: MouseEvent) => {
-                    void handleRowContextMenu(e, row)
+                    e.preventDefault()
+                    void actions.openMenu(row)
                 }}
                 onkeydown={() => {}}
             >
