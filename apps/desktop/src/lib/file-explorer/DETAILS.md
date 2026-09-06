@@ -284,11 +284,9 @@ Context-menu wiring on the snapshot pane:
   `Copy ~/Library/.../test.md` instead of `Copy test.md`. The action itself is correct either way because
   `entryUnderCursor.name` on a snapshot pane mirrors the raw `SearchResultEntry.name` (a basename). Cmd+C / Cmd+X call
   the paths-by-value clipboard IPCs (`copy_paths_to_clipboard` / `cut_paths_to_clipboard`) instead of the
-  listing-id-keyed family. F5 / F6 (the unified transfer dialog) detect `volumeId === 'search-results'` and call
-  `transfer-operations::buildTransferPropsFromSnapshot` with paths resolved from `snapshot-store::resolveSnapshotPaths`;
-  the existing `copy_files` / `move_files` IPCs already accept paths-by-value, so no IPC change was needed for the
-  transfer path. Drag-out uses the `'paths'` drag context (see `drag/CLAUDE.md`) which routes through
-  `start_drag_paths`. Post-move snapshot cleanup is the cleanup hook in `dialog-state::handleTransferComplete`.
+  listing-id-keyed family. Which rows every source-side op acts on, F5 / F6 / F8 included, and where post-operation
+  snapshot cleanup happens: `../search/DETAILS.md` § "Source-side ops from the snapshot pane". Drag-out uses the
+  `'paths'` drag context (see `drag/CLAUDE.md`) which routes through `start_drag_paths`.
 
 For the dialog-side wiring see `../search/CLAUDE.md`.
 

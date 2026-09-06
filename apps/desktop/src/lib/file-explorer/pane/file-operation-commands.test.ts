@@ -39,7 +39,19 @@ vi.mock('$lib/tauri-commands', () => ({
 
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
 
-vi.mock('$lib/search/snapshot-store.svelte', () => ({ getSnapshot: getSnapshotSpy }))
+// `resolveSnapshotEntries` is the store's own index→entry resolution (selection
+// wins, cursor is the fallback, out-of-range dropped), unit-tested in
+// `search/snapshot-store.svelte.ts.test.ts`. Standing it up over the fixture
+// snapshot keeps these tests about which rows the OPENERS act on.
+vi.mock('$lib/search/snapshot-store.svelte', () => ({
+  getSnapshot: getSnapshotSpy,
+  resolveSnapshotEntries: (_id: string, selectedIndices: number[], cursorIndex: number) => {
+    const snap = getSnapshotSpy()
+    if (!snap) return []
+    const indices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
+    return indices.flatMap((i) => (i >= 0 && i < snap.entries.length ? [snap.entries[i]] : []))
+  },
+}))
 
 // Source/dest routing reads the capability table via `capabilitiesFor`, which
 // resolves fsType/category from the volume store for real ids. The 'search-results'
@@ -841,6 +853,79 @@ describe('openDeleteDialog', () => {
       isFromCursor: true,
       sourceVolumeId: 'root',
     })
+  })
+
+  it('deletes every selected row on a search-results pane, not only the cursor row', async () => {
+    // ERR-Q373S: Cmd+A then F8 in a search-results pane deleted a single file.
+    // The snapshot pane shares `FilePane.selection` with normal panes, so the
+    // delete opener has to honour it exactly like the copy/move opener does.
+    getSnapshotSpy.mockReturnValue(
+      snapshot([
+        snapshotEntry({ name: 'a.txt', path: '/real/a.txt', parentPath: '/real', size: 1 }),
+        snapshotEntry({ name: 'b.txt', path: '/real/b.txt', parentPath: '/real', size: 2 }),
+        snapshotEntry({ name: 'c.txt', path: '/real/c.txt', parentPath: '/real', size: 3 }),
+      ]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 2], cursorIndex: 1 })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation).toHaveBeenCalledTimes(1)
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
+      sourcePaths: ['/real/a.txt', '/real/c.txt'],
+      sourceItems: [
+        { name: 'a.txt', size: 1, isDirectory: false },
+        { name: 'c.txt', size: 3, isDirectory: false },
+      ],
+      isFromCursor: false,
+    })
+  })
+
+  it('reports the common parent when a snapshot selection spans several folders', async () => {
+    // The dialog's "From <path>" line and the trash toast's volume lookup both
+    // read `sourceFolderPath`, so it has to stay a real directory. The common
+    // ancestor is the honest one for a result set gathered from everywhere.
+    getSnapshotSpy.mockReturnValue(
+      snapshot([
+        snapshotEntry({ name: 'a.txt', path: '/Users/me/docs/a.txt', parentPath: '/Users/me/docs' }),
+        snapshotEntry({ name: 'b.txt', path: '/Users/me/photos/b.txt', parentPath: '/Users/me/photos' }),
+      ]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 1] })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
+      sourceFolderPath: '/Users/me',
+    })
+  })
+
+  it('skips a stale selected index on a search-results pane and keeps the rest', async () => {
+    getSnapshotSpy.mockReturnValue(
+      snapshot([snapshotEntry({ name: 'a.txt', path: '/real/a.txt', parentPath: '/real' })]),
+    )
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 9] })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ sourcePaths: ['/real/a.txt'] })
+  })
+
+  it('bails on a search-results pane whose whole selection is stale', async () => {
+    getSnapshotSpy.mockReturnValue(snapshot([snapshotEntry()]))
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [7, 9] })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false })
+
+    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
 
   it('bails on a search-results pane whose cursor is out of range', async () => {

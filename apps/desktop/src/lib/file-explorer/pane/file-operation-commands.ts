@@ -9,7 +9,7 @@ import {
 import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
-import { getSnapshot } from '$lib/search/snapshot-store.svelte'
+import { getSnapshot, resolveSnapshotEntries } from '$lib/search/snapshot-store.svelte'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { getAppLogger } from '$lib/logging/logger'
 import { toBackendCursorIndex, toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
@@ -21,6 +21,7 @@ import {
   buildTransferPropsFromSelection,
   buildTransferPropsFromCursor,
   buildTransferPropsFromSnapshot,
+  getCommonParentPath,
   getDestinationVolumeInfo,
 } from './transfer-operations'
 import { capabilitiesFor, capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
@@ -297,7 +298,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * The snapshot view has no backend listing, so the listing-id-driven
    * builders don't apply; we read the snapshot directly and feed
    * absolute paths into `buildTransferPropsFromSnapshot`. Returns `null`
-   * when there's no snapshot or nothing under the cursor / selection.
+   * when there's no snapshot or nothing under the cursor / selection —
+   * `resolveSnapshotEntries` answers both with an empty list.
    *
    * `canBeSource: true` per the `search-results` capability row: source-side
    * operations always run against the real underlying files. After a move
@@ -313,30 +315,14 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const SEARCH_RESULTS_PREFIX = 'search-results://'
     if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
     const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
-    const snapshot = getSnapshot(snapshotId)
-    if (!snapshot) return null
 
     const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-    const useIndices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
+    const entries = resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex)
+    if (entries.length === 0) return null
 
-    const sourcePaths: string[] = []
-    const isDirectoryFlags: boolean[] = []
-    for (const idx of useIndices) {
-      // TS doesn't model array bounds (no `noUncheckedIndexedAccess`), so
-      // `snapshot.entries[idx]` is typed as non-undefined. The guard is
-      // still load-bearing at runtime: `selectedIndices` can carry stale
-      // indices after a snapshot mutation (the M8c delete-sync rewrites
-      // the entries array, but in-flight selections may briefly point
-      // past the new end).
-
-      const entry = snapshot.entries[idx]
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (!entry) continue
-      sourcePaths.push(entry.path)
-      isDirectoryFlags.push(entry.isDirectory)
-    }
-    if (sourcePaths.length === 0) return null
+    const sourcePaths = entries.map((entry) => entry.path)
+    const isDirectoryFlags = entries.map((entry) => entry.isDirectory)
 
     const other = access.otherPane(pane)
     const { sortBy, sortOrder } = access.getPaneSort(pane)
@@ -481,15 +467,22 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   /**
    * Search-results pane delete path (M8c). The focused pane is on the
    * `search-results://<id>` virtual volume, so there's no backend listing to
-   * fetch entries from; we read the snapshot directly. Today the snapshot
-   * pane doesn't expose a multi-selection of its own, so we delete the
-   * single cursor row. The volume id we report to the dialog is `'root'`:
-   * the actual file lives on the local filesystem, and the existing
-   * permanent-delete / move-to-trash IPC routes through the local path.
-   * `supportsTrash = true` because the underlying file is on a trash-capable
-   * volume (we don't have per-snapshot-row volume detection yet; if the
-   * search ever indexes external read-only volumes we'd need to look that
-   * up per entry).
+   * fetch entries from; we read the snapshot directly.
+   *
+   * The snapshot pane shares `FilePane.selection` with normal panes, so F8 acts
+   * on the selection when there is one and falls back to the cursor row when
+   * there isn't — the same rule the clipboard and transfer openers follow, and
+   * decided in the one place all three call (`resolveSnapshotEntries`).
+   *
+   * `sourceFolderPath` is the common parent of the resolved paths: a result set
+   * is gathered from anywhere, and the dialog's "from" line plus the trash
+   * toast's volume lookup both need a real directory. The volume id we report
+   * to the dialog is `'root'`: the actual file lives on the local filesystem,
+   * and the existing permanent-delete / move-to-trash IPC routes through the
+   * local path. `supportsTrash = true` because the underlying file is on a
+   * trash-capable volume (we don't have per-snapshot-row volume detection yet;
+   * if the search ever indexes external read-only volumes we'd need to look
+   * that up per entry).
    */
   function openDeleteFromSearchResults({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
@@ -505,43 +498,41 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       log.warn('openDeleteFromSearchResults: snapshot {id} not found, bailing', { id: snapshotId })
       return
     }
+    const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
+    const hasSelection = selectedIndices.length > 0
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-    // Cursor might be out of range (clamping is best-effort in the search-
-    // results keyboard path); the cast lets us handle the empty case
-    // explicitly instead of crashing later in `entry.path`.
-    const entry = snapshot.entries[cursorIndex] as (typeof snapshot.entries)[number] | undefined
-    if (!entry) {
-      log.warn('openDeleteFromSearchResults: no entry at cursor {idx}, bailing', { idx: cursorIndex })
+    // Both the cursor and a selected index can point past the end (clamping is
+    // best-effort in the search-results keyboard path, and a cross-snapshot
+    // delete shortens `entries` under a live selection), so the resolver drops
+    // what it can't find and we bail on an empty result.
+    const entries = resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex)
+    if (entries.length === 0) {
+      log.warn(
+        'openDeleteFromSearchResults: nothing to delete (hasSelection={hasSelection}, cursorIndex={idx}), bailing',
+        { hasSelection, idx: cursorIndex },
+      )
       return
     }
 
-    const sourceItems: DeleteSourceItem[] = [
-      {
-        name: entry.name,
-        size: entry.size ?? undefined,
-        isDirectory: entry.isDirectory,
-        isSymlink: false,
-        recursiveSize: undefined,
-        recursiveFileCount: undefined,
-      },
-    ]
-    const sourcePaths = [entry.path]
+    const sourceItems: DeleteSourceItem[] = entries.map((entry) => ({
+      name: entry.name,
+      size: entry.size ?? undefined,
+      isDirectory: entry.isDirectory,
+      isSymlink: false,
+      recursiveSize: undefined,
+      recursiveFileCount: undefined,
+    }))
+    const sourcePaths = entries.map((entry) => entry.path)
 
     const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
-
-    // Snapshot entries are guaranteed to have parentPath set by the search
-    // backend (`SearchResultEntry::parentPath` is required, see bindings).
-    // The fallback isn't hit in practice, but `'/'` is a safe display
-    // value if the field is ever absent.
-    const sourceFolderPath = entry.parentPath !== '' ? entry.parentPath : '/'
 
     dialogs.showDeleteConfirmation({
       sourceItems,
       sourcePaths,
-      sourceFolderPath,
+      sourceFolderPath: getCommonParentPath(sourcePaths),
       isPermanent: permanent,
       supportsTrash: true,
-      isFromCursor: true,
+      isFromCursor: !hasSelection,
       sortColumn: sortBy,
       sortOrder,
       sourceVolumeId: DEFAULT_VOLUME_ID,

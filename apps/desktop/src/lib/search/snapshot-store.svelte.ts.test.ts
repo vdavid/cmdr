@@ -12,6 +12,7 @@ import {
   incrementRef,
   nextSnapshotId,
   removeEntryFromAllSnapshots,
+  resolveSnapshotEntries,
   resolveSnapshotPaths,
   setLastAttemptId,
   SNAPSHOT_ENTRIES_CAP,
@@ -316,6 +317,33 @@ describe('snapshot-store', () => {
     it('returns an empty array when the snapshot is empty and the cursor is out of range', () => {
       getOrCreate('sr-1', makeSnapshot('sr-1', { entries: [] }))
       expect(resolveSnapshotPaths('sr-1', [], 0)).toEqual([])
+    })
+  })
+
+  describe('resolveSnapshotEntries', () => {
+    it('hands back whole entries so a caller can read name, size, and isDirectory', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotEntries('sr-1', [1], 0)).toEqual([
+        expect.objectContaining({ name: 'b.txt', path: '/Users/test/b.txt' }),
+      ])
+    })
+
+    it('gives the selection priority over the cursor, the rule every source-side op shares', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotEntries('sr-1', [0, 1], 1).map((e) => e.path)).toEqual([
+        '/Users/test/a.txt',
+        '/Users/test/b.txt',
+      ])
+    })
+
+    it('falls back to the cursor row when nothing is selected', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotEntries('sr-1', [], 1).map((e) => e.path)).toEqual(['/Users/test/b.txt'])
+    })
+
+    it('drops indices a shortened entries array no longer has', () => {
+      getOrCreate('sr-1', makeSnapshot('sr-1'))
+      expect(resolveSnapshotEntries('sr-1', [0, 99], 0).map((e) => e.path)).toEqual(['/Users/test/a.txt'])
     })
   })
 })

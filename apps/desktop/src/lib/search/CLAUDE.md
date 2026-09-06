@@ -22,7 +22,8 @@ writes), `search-run-tracking.ts` (the analytics clock). `search-state.svelte.ts
   translated pattern.
 - **"Open in pane" promotes to the `search-results://` virtual volume**, not a FilePane mode. Refcount is the ONLY
   lifetime authority, and a tab close transfers ref ownership to the `ClosedTab` so a reopen can't double-count.
-  Destination write ops are blocked on such a pane (F5/F6 included, when the OPPOSITE pane is one); source ops run.
+  Destination write ops are blocked on such a pane (F5/F6 included, when the OPPOSITE pane is one); source ops run, and
+  ❌ never re-derive which rows they act on: `resolveSnapshotEntries` decides (selection first, cursor as fallback).
 - **"Open in pane" during a live walk KEEPS the walk** (`walk-handoff.svelte.ts`), so the close must NAME it
   (`releaseSearchIndex(handedOffRunId())`) or the walk dies as the pane appears, silently. A reopen ADOPTS through
   `source.resume`, ❌ never re-runs.

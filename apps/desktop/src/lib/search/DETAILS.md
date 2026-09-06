@@ -647,24 +647,34 @@ themselves, by design — see the store's header).
 
 ### Source-side ops from the snapshot pane
 
-With `isSourceOK: true`, Cmd+C / Cmd+X / F5 / F6 / drag-out run against the cursor + selection in the snapshot pane. The
-snapshot pane shares `FilePane.selection` state with normal panes. Wire path:
+With `isSourceOK: true`, Cmd+C / Cmd+X / F5 / F6 / F8 / drag-out run against the cursor + selection in the snapshot
+pane. The snapshot pane shares `FilePane.selection` state with normal panes, so every one of them takes the SELECTION
+when there is one and the cursor row only as a fallback. That rule is decided once, in
+`snapshot-store::resolveSnapshotEntries` (out-of-range indices dropped, no `hasParent` offset because a snapshot pane
+has no `..` row); `resolveSnapshotPaths` is the same call narrowed to paths. ❌ Never re-derive it per op: F8 read the
+cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wire path:
 
 - **Cmd+C / Cmd+X** route through `DualPaneExplorer.copyToClipboard` / `cutToClipboard`, which detect the snapshot pane
   via `getSnapshotClipboardPaths` and call `copy_paths_to_clipboard` / `cut_paths_to_clipboard` (paths-by-value sibling
   IPCs of the listing-id-keyed `copy_files_to_clipboard` family). The Rust commands reuse
   `clipboard::write_file_urls_to_clipboard` and `set_cut_state` / `clear_cut_state`, so the system clipboard contract
   (file URLs + newline-separated text) is identical.
-- **F5 / F6** route through `openUnifiedTransferDialog`, which detects `volumeId === 'search-results'` and calls
-  `transfer-operations::buildTransferPropsFromSnapshot` instead of the listing-id-driven builders. The snapshot's
-  selected (or cursor) entries are resolved to paths via `snapshot-store::resolveSnapshotPaths`, fed into the same
-  `TransferDialogPropsData` shape every transfer uses, and the existing `copy_files` / `move_files` IPCs run with
-  `sources: Vec<String>`.
+- **F5 / F6** route through `openUnifiedTransferDialog`, which routes off the kind's `hasBackendListing` capability and
+  calls `transfer-operations::buildTransferPropsFromSnapshot` instead of the listing-id-driven builders. The resolved
+  entries feed the same `TransferDialogPropsData` shape every transfer uses, and the existing `copy_files` /
+  `move_files` IPCs run with `sources: Vec<String>`.
+- **F8 / Shift+F8** route through `file-operation-commands::openDeleteFromSearchResults`, on the same
+  `hasBackendListing` gate. The resolved entries become the dialog's `DeleteSourceItem[]`, `isFromCursor` is true only
+  on the cursor fallback (it picks the dialog's title), and `sourceFolderPath` is the COMMON PARENT of the resolved
+  paths: a result set is gathered from anywhere, and both the dialog's "from" line and the trash toast's volume lookup
+  (`go-to-trash::goToTrashedItems`) need a real directory. `sourceVolumeId` is `root` and `supportsTrash` is true,
+  because the rows are real local files; per-row volume detection doesn't exist yet, so a result from a read-only
+  external volume would still be offered the trash.
 - **Drag-out** uses the `'paths'` drag context in `lib/file-explorer/drag/drag-drop.ts`: when `FullList` is rendered
   with `staticEntries` and the user drags a selection, the FE builds a paths array from `getEntryAt(idx)` and routes
   through `start_drag_paths`.
-- **Post-move snapshot cleanup**: covered by the cross-snapshot purge above. After F6 from the snapshot pane, the rows
-  the move actually took disappear from every snapshot that referenced them; a skipped one stays.
+- **Post-move snapshot cleanup**: covered by the cross-snapshot purge above. After F6 or F8 from the snapshot pane, the
+  rows the operation actually took disappear from every snapshot that referenced them; a skipped one stays.
 
 Destination-side write ops are still blocked: pasting INTO a search-results pane shows the canonical
 `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` (via the F-bar disablement, the menu item omission, and the dispatcher's

@@ -301,9 +301,11 @@ export function getDebugStats(): {
 }
 
 /**
- * Resolves a list of cursor / selected indices into absolute paths from a
- * snapshot. Used by the search-results pane source-side ops (M8d) to feed the
- * paths-based clipboard / transfer IPCs.
+ * Resolves a list of cursor / selected indices into snapshot entries. The one
+ * index→entry resolution every source-side op on the snapshot pane shares:
+ * clipboard (Cmd+C / Cmd+X), transfer (F5 / F6), and delete (F8) all reach the
+ * rows through here, so "the selection wins, the cursor is the fallback" is
+ * decided once instead of three times.
  *
  * - `selectedIndices`: frontend indices into `snapshot.entries`. Out-of-range
  *   indices are skipped (defensive — the snapshot is immutable from the store's
@@ -315,20 +317,29 @@ export function getDebugStats(): {
  * empty. The snapshot pane never has a `..` row, so there's no `hasParent`
  * adjustment.
  */
-export function resolveSnapshotPaths(snapshotId: string, selectedIndices: number[], cursorIndex: number): string[] {
+export function resolveSnapshotEntries(
+  snapshotId: string,
+  selectedIndices: number[],
+  cursorIndex: number,
+): SearchResultEntry[] {
   const snapshot = store.get(snapshotId)
   if (!snapshot) return []
   const indices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
-  const paths: string[] = []
+  const entries: SearchResultEntry[] = []
   for (const idx of indices) {
     // Runtime bounds guard: callers can pass stale indices (the M8c delete-sync
     // shortens `entries` while in-flight selections still reference the old
     // length).
     const entry = snapshot.entries[idx]
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard
-    if (entry) paths.push(entry.path)
+    if (entry) entries.push(entry)
   }
-  return paths
+  return entries
+}
+
+/** [`resolveSnapshotEntries`] narrowed to absolute paths, for the ops that only need those. */
+export function resolveSnapshotPaths(snapshotId: string, selectedIndices: number[], cursorIndex: number): string[] {
+  return resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex).map((e) => e.path)
 }
 
 /**
