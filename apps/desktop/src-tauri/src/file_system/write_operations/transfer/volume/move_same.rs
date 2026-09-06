@@ -706,6 +706,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                 files_processed: files_moved + already_in_place,
                 files_skipped,
                 bytes_processed: bytes_moved,
+                appeared_during_move: None,
             });
             Ok(())
         }

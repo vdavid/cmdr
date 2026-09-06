@@ -10,11 +10,10 @@
 //! real mount points.
 
 use super::cross_fs::move_with_staging;
-use super::test_support::{make_state, run_cross_fs_move, run_same_fs_move};
+use super::test_support::{make_state, outcomes_for, removal_flags_for, run_cross_fs_move, run_same_fs_move};
 use super::*;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationPhase, WriteProgressEvent};
-use crate::ignore_poison::IgnorePoison;
 
 /// CRITICAL ordering invariant. The final destination's dir entry must be
 /// fsynced (the `Flushing` pass) BEFORE the source originals are deleted.
@@ -381,29 +380,6 @@ fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
 // (`apps/desktop/src/lib/search/snapshot-purge.ts`), so a `true` for a path that
 // is still on disk drops a row for a file the user can still open. Inferring
 // removal from the operation type is exactly what these cases break.
-
-/// The outcomes this run reported for `path`, in emit order. The LAST one is the
-/// operation's verdict on that source (`types::SourceItemOutcome`).
-fn outcomes_for(events: &CollectorEventSink, path: &Path) -> Vec<SourceItemOutcome> {
-    events
-        .source_items_done
-        .lock_ignore_poison()
-        .iter()
-        .filter(|e| e.source_path == path.display().to_string())
-        .map(|e| e.outcome)
-        .collect()
-}
-
-/// The `source_removed` flags this run reported for `path`, in emit order.
-fn removal_flags_for(events: &CollectorEventSink, path: &Path) -> Vec<bool> {
-    events
-        .source_items_done
-        .lock_ignore_poison()
-        .iter()
-        .filter(|e| e.source_path == path.display().to_string())
-        .map(|e| e.source_removed)
-        .collect()
-}
 
 #[test]
 fn a_same_fs_move_that_took_the_whole_item_reports_it_removed() {

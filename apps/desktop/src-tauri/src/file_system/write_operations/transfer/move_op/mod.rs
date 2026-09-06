@@ -34,6 +34,7 @@ use crate::operation_log::types::SkipReason;
 
 mod cross_fs;
 mod same_fs;
+mod source_sweep;
 
 // ============================================================================
 // Move rollback tracking
@@ -503,6 +504,12 @@ mod test_support;
 #[cfg(test)]
 #[path = "move_op_tests.rs"]
 mod tests;
+
+/// What the cross-FS move's source sweep may remove: the staged set, and
+/// nothing that appeared alongside it.
+#[cfg(test)]
+#[path = "move_source_sweep_tests.rs"]
+mod move_source_sweep_tests;
 
 /// What a move REPORTS while it runs: the phases it announces and the counts
 /// under them. Its sibling above owns what a move does to the files.

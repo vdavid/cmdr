@@ -317,6 +317,7 @@ pub(super) fn move_with_rename(
         files_processed: files_done + already_in_place,
         files_skipped,
         bytes_processed: 0, // Rename doesn't track bytes
+        appeared_during_move: None,
     });
 
     Ok(())

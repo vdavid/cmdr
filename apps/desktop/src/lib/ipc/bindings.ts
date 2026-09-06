@@ -4670,6 +4670,32 @@ export type AppStatus =
   | { type: 'expired'; organizationName: string | null; expiredAt: string; showModal: boolean }
 
 /**
+ *  Items that turned up in a move's source folder after the scan counted it: a
+ *  download finishing, a sync client landing a file, an editor saving. The copy
+ *  phase never saw them, so the source sweep leaves them (and whatever holds
+ *  them) alone, and the operation says so instead of reporting a clean move.
+ *
+ *  Typed, never a sentence: the FE words this in ten locales.
+ */
+export type AppearedDuringMove = {
+  /**
+   *  How many items stayed behind. A whole unknown subtree counts once, since
+   *  that's the item the user would recognize in the pane.
+   */
+  itemCount: number
+  /**
+   *  The name (not the path) of the source folder holding them, for the
+   *  sentence. When several sources kept something, the first one's name.
+   */
+  folderName: string
+  /**
+   *  How many top-level sources kept something. `1` in the ordinary case; the
+   *  FE reads a higher number as "and others" rather than naming them all.
+   */
+  folderCount: number
+}
+
+/**
  *  What approving a group did, in the terms the dialog acts on.
  *
  *  Every refusal is a typed variant rather than a sentence, because the recoveries genuinely
@@ -13067,6 +13093,12 @@ export type WriteCompleteEvent = {
   filesProcessed: number
   filesSkipped: number
   bytesProcessed: number
+  /**
+   *  What a cross-filesystem move found in the source that its copy phase
+   *  never carried, and therefore left where it was. `None` (the ordinary
+   *  case) means every source went, and the FE says nothing about it.
+   */
+  appearedDuringMove?: AppearedDuringMove | null
 }
 
 // Conflict event payload (emitted when Stop mode encounters a conflict).

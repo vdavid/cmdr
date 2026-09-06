@@ -23,6 +23,9 @@ only as `transfer::volume::<item>` (contracts: `volume/CLAUDE.md`). All four cor
   leave it, report it on `write-cancelled`; an own-partial goes on sight; a move-back never overwrites an occupied
   source (case-only self-collision aside). Only the `Drop` net is unconditional, sweeping from `../ledger.rs`; ❌ don't route
   it through `reversal.rs` (module cycle). § "What a reversal does with that identity".
+- **A cross-FS move's source delete removes the LEDGER of what staged, ❌ never the tree** (`move_op/source_sweep.rs`,
+  dirs by `remove_dir`): what arrived mid-move keeps its original and rides out on `AppearedDuringMove`. DETAILS §
+  "deletes a LEDGER".
 - **A MERGED move is NOT rollbackable, and a cross-FS move journals FINAL paths, never staging ones**
   (`note_not_rollbackable` at every merge and phase-3 conflict; `JournalDestUnder` rebases, created-dir rows included).
   `operation_log/DETAILS.md` § "Why a directory merge isn't reversible".

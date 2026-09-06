@@ -167,6 +167,7 @@ pub(crate) fn start_bulk_rename(
                     files_processed: rows_for_task.len(),
                     files_skipped: run.skipped(),
                     bytes_processed: 0,
+                    appeared_during_move: None,
                 });
                 super::super::journal::finalize_op(&operation_id_for_task, OpKind::Rename, ExecutionStatus::Done);
             }
