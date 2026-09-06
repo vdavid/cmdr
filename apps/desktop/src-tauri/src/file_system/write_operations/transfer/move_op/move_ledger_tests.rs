@@ -50,8 +50,8 @@ fn a_merged_move_records_every_child_it_renamed() {
     .expect("the merge should land");
 
     assert_eq!(files_skipped, 0);
-    assert_eq!(move_tx.renames.len(), 3, "one entry per child renamed");
-    for item in &move_tx.renames {
+    assert_eq!(move_tx.renamed_items().count(), 3, "one entry per child renamed");
+    for item in move_tx.renamed_items() {
         assert_eq!(
             item.landed.identity,
             WrittenIdentity::at_local_path(&item.landed.path),
@@ -66,8 +66,7 @@ fn a_merged_move_records_every_child_it_renamed() {
         );
     }
     let sizes: HashSet<Option<u64>> = move_tx
-        .renames
-        .iter()
+        .renamed_items()
         .map(|item| item.landed.identity.recorded_size())
         .collect();
     assert!(
@@ -75,8 +74,7 @@ fn a_merged_move_records_every_child_it_renamed() {
         "a child renamed inside the recursion carries its own size, got {sizes:?}"
     );
     let renamed_dir = move_tx
-        .renames
-        .iter()
+        .renamed_items()
         .find(|item| item.landed.path.ends_with("fresh"))
         .expect("the directory with no destination counterpart is renamed whole");
     assert!(
@@ -107,7 +105,7 @@ fn a_renamed_top_level_item_is_recorded_with_the_identity_it_kept() {
     );
     fs::rename(&source, dst_dir.join("clip.mov")).unwrap();
 
-    let landed = &move_tx.renames[0].landed;
+    let landed = &move_tx.renamed_items().next().expect("one recorded rename").landed;
     assert_eq!(
         landed.identity, before,
         "the pre-rename snapshot IS the landed identity"
@@ -136,7 +134,11 @@ fn reversing_a_move_drains_its_ledger() {
 
     assert!(source.exists(), "the item came back");
     assert!(!landed.exists());
-    assert!(move_tx.renames.is_empty(), "a reversed rename is no longer claimed");
+    assert_eq!(
+        move_tx.renamed_items().count(),
+        0,
+        "a reversed rename is no longer claimed"
+    );
 }
 
 /// What a same-FS move flushes for durability: the directories whose entries it

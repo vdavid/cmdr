@@ -274,7 +274,7 @@ pub(super) fn move_with_rename(
         log::info!(
             "move_with_rename: rollback requested after loop completion op={}, {} items",
             operation_id,
-            move_tx.renames.len()
+            move_tx.renamed_items().count()
         );
         let rollback = move_tx.rollback().into_cancel_rollback();
         events.emit_cancelled(WriteCancelledEvent {

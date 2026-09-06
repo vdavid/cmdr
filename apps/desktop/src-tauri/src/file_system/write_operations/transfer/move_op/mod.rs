@@ -50,50 +50,87 @@ struct MovedItem {
     landed: WrittenFile,
 }
 
-/// Tracks renames performed during same-FS move for rollback on cancellation.
+/// One thing a move did that a reversal has to undo.
+enum MoveStep {
+    /// An item renamed into place.
+    Renamed(MovedItem),
+    /// A source directory a merge emptied and then removed.
+    ///
+    /// Recorded so a reversal can put it back: without it, every child that used
+    /// to live here fails its rename with `ENOENT` against a parent that no
+    /// longer exists, the move stays merged into the destination, and the person
+    /// who clicked "put it back" is told it was undone.
+    RemovedSourceDir(PathBuf),
+}
+
+/// Tracks what a same-FS move did, for rollback on cancellation.
 ///
-/// A **stack**: [`MoveTransaction::pop`] takes the newest rename off as it's
+/// A **stack**: [`MoveTransaction::pop`] takes the newest step off as it's
 /// reversed, so the ledger claims exactly what this operation currently has
 /// sitting at the destination.
+///
+/// **The order carries the merge's shape.** `merge_move_directory` records a
+/// level's children first and the removal of the emptied directory last, and its
+/// recursion unwinds deepest-first, so popping newest-first recreates the
+/// OUTERMOST directory before the inner one, and both before anything has to
+/// land inside them. Nothing else has to know about the nesting.
 struct MoveTransaction {
-    renames: Vec<MovedItem>,
+    steps: Vec<MoveStep>,
 }
 
 impl MoveTransaction {
     fn new() -> Self {
-        Self { renames: Vec::new() }
+        Self { steps: Vec::new() }
     }
 
     fn record(&mut self, source: PathBuf, landed: WrittenFile) {
-        self.renames.push(MovedItem {
+        self.steps.push(MoveStep::Renamed(MovedItem {
             original_source: source,
             landed,
-        });
+        }));
     }
 
-    /// Take the newest rename off the ledger, to reverse it.
-    fn pop(&mut self) -> Option<MovedItem> {
-        self.renames.pop()
+    /// Note that a merge removed `dir` after emptying it. See
+    /// [`MoveStep::RemovedSourceDir`].
+    fn record_removed_source_dir(&mut self, dir: PathBuf) {
+        self.steps.push(MoveStep::RemovedSourceDir(dir));
     }
 
-    /// The distinct directories whose entries these renames changed, in
-    /// first-seen order: every directory an item left, and every directory one
-    /// landed in. This is the whole durability job of a same-FS move.
+    /// Take the newest step off the ledger, to reverse it.
+    fn pop(&mut self) -> Option<MoveStep> {
+        self.steps.pop()
+    }
+
+    /// Every item this move renamed into place, oldest first.
+    fn renamed_items(&self) -> impl Iterator<Item = &MovedItem> {
+        self.steps.iter().filter_map(|step| match step {
+            MoveStep::Renamed(item) => Some(item),
+            MoveStep::RemovedSourceDir(_) => None,
+        })
+    }
+
+    /// The distinct directories whose entries this move changed, in first-seen
+    /// order: every directory an item left, every directory one landed in, and
+    /// the parent of every directory a merge removed. This is the whole
+    /// durability job of a same-FS move.
     ///
     /// A `rename(2)` moves a directory ENTRY — it takes one out of the source
     /// directory and puts one into the destination directory, touching neither
     /// the file's data blocks nor its inode. So both sides need an `fsync`, and
     /// the moved file itself needs nothing: syncing it would buy a device-level
     /// barrier (`fcntl(F_FULLFSYNC)` on macOS) per file for a write that never
-    /// happened. Measurements: `transfer/DETAILS.md` § Durability.
+    /// happened. A merge's `remove_dir` is an entry change too, in the removed
+    /// directory's PARENT, which no child's rename names. Measurements:
+    /// `transfer/DETAILS.md` § Durability.
     fn touched_directories(&self) -> Vec<PathBuf> {
         let mut seen: HashSet<&Path> = HashSet::new();
         let mut dirs: Vec<PathBuf> = Vec::new();
-        for item in &self.renames {
-            for parent in [item.original_source.parent(), item.landed.path.parent()]
-                .into_iter()
-                .flatten()
-            {
+        for step in &self.steps {
+            let touched: [Option<&Path>; 2] = match step {
+                MoveStep::Renamed(item) => [item.original_source.parent(), item.landed.path.parent()],
+                MoveStep::RemovedSourceDir(dir) => [dir.parent(), None],
+            };
+            for parent in touched.into_iter().flatten() {
                 if seen.insert(parent) {
                     dirs.push(parent.to_path_buf());
                 }
@@ -114,10 +151,40 @@ impl MoveTransaction {
     /// § "Overwrite isn't reversible".
     fn rollback(&mut self) -> ReversalTally {
         let mut tally = ReversalTally::default();
-        while let Some(item) = self.pop() {
-            tally.record(restore_moved_item(&item), &item.landed.path);
+        while let Some(step) = self.pop() {
+            match step {
+                MoveStep::Renamed(item) => tally.record(restore_moved_item(&item), &item.landed.path),
+                MoveStep::RemovedSourceDir(dir) => recreate_removed_source_dir(&dir),
+            }
         }
         tally
+    }
+}
+
+/// Put back a source directory a merge removed once it had emptied it, so the
+/// children this reversal is about to rename back have somewhere to land.
+///
+/// **Deliberately not tallied.** It's plumbing for the entries under it, and
+/// those carry the honest report on their own: a directory that can't be
+/// recreated makes every child beneath it report `Skipped`, which is exactly the
+/// partial rollback the user needs to hear about. Counting the parent as well
+/// would say the same thing twice, and counting a successful recreation would
+/// inflate "put back N items" with a folder the user never counted as an item.
+///
+/// `create_dir`, ❌ never `create_dir_all`: the stack recreates outermost-first,
+/// so a missing parent means the ledger's order is wrong rather than that a
+/// deeper path needs conjuring, and a silent `create_dir_all` would hide it.
+fn recreate_removed_source_dir(dir: &Path) {
+    match fs::create_dir(dir) {
+        Ok(()) => {}
+        // Somebody (or an earlier step) already put it back. The end state a
+        // recreation wanted holds.
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+        Err(e) => log::warn!(
+            "move rollback: couldn't recreate the source folder {}, its children stay where they landed: {}",
+            dir.display(),
+            e
+        ),
     }
 }
 
@@ -491,12 +558,16 @@ fn merge_move_directory(
         }
     }
 
-    // Remove the source directory if it's now empty
+    // Remove the source directory if it's now empty, and tell the ledger: a
+    // reversal has to put this back before it renames the children above back
+    // into it. Recorded AFTER them and after any nested level's own removal, so
+    // the stack pops outermost-first and every parent is there in time.
     if fs::read_dir(source_dir)
         .map(|mut d| d.next().is_none())
         .unwrap_or(false)
+        && fs::remove_dir(source_dir).is_ok()
     {
-        let _ = fs::remove_dir(source_dir);
+        move_tx.record_removed_source_dir(source_dir.to_path_buf());
     }
 
     Ok(())

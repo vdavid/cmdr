@@ -3,7 +3,9 @@
 //! A `#[path]` child of `move_op`, like the other suites here, so it can reach
 //! `MoveTransaction` directly.
 
+use super::test_support::make_state;
 use super::*;
+use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::CancelRollbackOutcome;
 
 /// The item at the landed path isn't the one this move put there any more, so
@@ -139,6 +141,69 @@ fn an_untouched_move_restores_every_item() {
     assert_eq!(report.reversed, 2);
     assert!(report.skips.is_empty());
     assert!(from.join("one.txt").exists() && from.join("two.txt").exists());
+}
+
+/// A folder-into-folder merge empties each source directory and removes it. The
+/// reversal has to put those directories back BEFORE it puts their children
+/// back, or every child's rename fails `ENOENT` against a parent that no longer
+/// exists: the move stays merged into the destination while the person who
+/// clicked "put it back" is told it was undone.
+#[test]
+fn a_rollback_after_a_merge_recreates_the_source_folders_and_brings_the_children_home() {
+    let tmp = tempfile::tempdir().unwrap();
+    let src_dir = tmp.path().join("src").join("d");
+    let dst_dir = tmp.path().join("dst").join("d");
+    fs::create_dir_all(src_dir.join("sub")).unwrap();
+    fs::write(src_dir.join("a.txt"), b"A").unwrap();
+    fs::write(src_dir.join("sub").join("b.txt"), b"B").unwrap();
+    // The destination folder already exists, so the move merges into it.
+    fs::create_dir_all(&dst_dir).unwrap();
+
+    let events = CollectorEventSink::new();
+    let state = make_state(200);
+    let mut move_tx = MoveTransaction::new();
+    let mut apply_to_all = ApplyToAll::default();
+    let mut files_skipped = 0usize;
+    merge_move_directory(
+        &src_dir,
+        &dst_dir,
+        &WriteOperationConfig::default(),
+        &events,
+        "op-merge-then-rollback",
+        &state,
+        &mut apply_to_all,
+        &mut move_tx,
+        &mut files_skipped,
+        &mut None,
+    )
+    .expect("the merge itself succeeds");
+
+    // Precondition: everything crossed, and the emptied source spine is gone.
+    assert!(dst_dir.join("a.txt").exists() && dst_dir.join("sub").join("b.txt").exists());
+    assert!(!src_dir.exists(), "the merge removes the source folder it emptied");
+
+    let report = move_tx.rollback().into_cancel_rollback();
+
+    assert_eq!(
+        report.outcome,
+        CancelRollbackOutcome::RolledBack,
+        "a merge the reversal fully undid reports itself undone, skips: {:?}",
+        report.skips
+    );
+    assert_eq!(
+        fs::read(src_dir.join("a.txt")).unwrap(),
+        b"A",
+        "the child comes home under a recreated parent"
+    );
+    assert_eq!(
+        fs::read(src_dir.join("sub").join("b.txt")).unwrap(),
+        b"B",
+        "and so does one nested a level deeper"
+    );
+    assert!(
+        !dst_dir.join("a.txt").exists() && !dst_dir.join("sub").join("b.txt").exists(),
+        "nothing this move merged in is left at the destination"
+    );
 }
 
 /// The item the move landed is already gone. The end state a restore wanted holds
