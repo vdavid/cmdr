@@ -19,6 +19,9 @@ All under `apps/desktop/src/lib/`.
 - `file-explorer/selection/`: Space/Shift/Cmd selection, range operations
 - `file-explorer/navigation/`: Back/forward history, breadcrumb, path utilities
 - `file-explorer/network/`: Network browser UI (SMB share browsing, login form)
+- `servers/`: Remote places the app dials (SFTP, WebDAV): the `sftp://user@host:port/path` spelling, the connect flow
+  that picks its move by the volume's standing, and the words for a connect that stopped. See
+  `apps/desktop/src/lib/servers/CLAUDE.md`
 - `file-explorer/git/`: Git browser frontend: breadcrumb chip, status columns, reactive `RepoInfo` store, git portal
   icons. Git settings in `settings/sections/GitSection.svelte`
 - `file-explorer/pane/`: Per-pane orchestration: cursor, scroll, dual-pane coordination. Owns the single `navigate.ts`
