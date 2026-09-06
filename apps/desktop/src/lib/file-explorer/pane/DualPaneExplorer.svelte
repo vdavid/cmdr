@@ -61,6 +61,7 @@
         switchToTab as tabOpsSwitchToTab,
     } from './tab-operations'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
+    import type { HubRow } from '../network/servers-hub-rows'
     import { initVolumeStore, getVolumes as getStoreVolumes, cleanupVolumeStore } from '$lib/stores/volume-store.svelte'
     import { initVolumeBusyStore, cleanupVolumeBusyStore } from '$lib/stores/volume-busy-store.svelte'
     import { initRestrictedPathsStore } from '$lib/stores/restricted-paths-store.svelte'
@@ -1184,6 +1185,31 @@
     /** Refresh network hosts in the focused pane (used by ⌘R shortcut). */
     export function refreshNetworkHosts() {
         paneCommands.refreshNetworkHosts()
+    }
+
+    /**
+     * Takes the focused pane to the servers hub.
+     *
+     * Through the same `selectVolume` intent a switcher click raises, so the
+     * pinned-tab fork, focus, and history push all apply. `smb://` is the hub
+     * volume's sentinel path, not a mount.
+     */
+    export function showServersInFocusedPane(): void {
+        const pane = explorerState.getFocusedPane()
+        navigateIntent({ pane, to: { selectVolume: { volumeId: 'network', path: 'smb://' } }, source: 'user' })
+    }
+
+    /**
+     * The hub row under the focused pane's cursor, or `null` when that pane isn't
+     * on the hub (or the cursor is on "Add server…").
+     *
+     * ❗ What the servers commands aim at. The hub IS a pane, so a command that
+     * read "the focused pane's volume" would act on the synthetic hub row rather
+     * than the server the user is looking at.
+     */
+    export function getFocusedPaneServerRow(): HubRow | null {
+        const entry = getPaneRef(explorerState.getFocusedPane())?.getNetworkCursorEntry() ?? null
+        return entry?.kind === 'server' ? entry.row : null
     }
 
     export async function handleMcpSelect(

@@ -2038,6 +2038,27 @@
   "@fileExplorer.navigation.disconnectBusyTooltip": {
     "description": "Accessibility label and tooltip on a disconnect control that is disabled because a file operation is still running against the server."
   },
+  "fileExplorer.navigation.serverPinnedToast": "{name} is in your volume switcher now.",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "description": "Toast confirming that a server now shows in the volume switcher, the list a person picks a disk from.",
+    "placeholders": {
+      "name": "the server''s display name, like \"Naspolya\""
+    }
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "{name} is out of your volume switcher. It''s still saved.",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "description": "Toast confirming that a server no longer shows in the volume switcher. The second sentence matters: nothing was deleted, and the server is still in the servers hub.",
+    "placeholders": {
+      "name": "the server''s display name, like \"Naspolya\""
+    }
+  },
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr couldn''t change where {name} shows.",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "description": "Toast shown when moving a server in or out of the volume switcher didn''t go through.",
+    "placeholders": {
+      "name": "the server''s display name, like \"Naspolya\""
+    }
+  },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr couldn''t disconnect from {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
     "description": "Toast shown when dropping a server's connection didn't go through.",

@@ -214,6 +214,15 @@ export const COMMAND_IDS = [
   'share.back',
   'share.selectShare',
 
+  // Servers: the hub and the actions on one saved server. Each acts on the
+  // hub's cursor row when the focused pane is the hub, and on the focused
+  // pane's own volume otherwise.
+  'servers.show',
+  'servers.togglePin',
+  'servers.disconnect',
+  'servers.forgetSecret',
+  'servers.edit',
+
   // Volume chooser
   'volume.select',
   'volume.close',

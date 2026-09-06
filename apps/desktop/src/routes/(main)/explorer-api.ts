@@ -16,6 +16,7 @@ import type {
   StartRenameOptions,
 } from '$lib/file-explorer/pane/types'
 import type { Initiator } from '$lib/tauri-commands'
+import type { HubRow } from '$lib/file-explorer/network/servers-hub-rows'
 
 /**
  * Closed action set for `handleSelectionAction` (the selection sub-dispatcher).
@@ -212,6 +213,14 @@ export interface ExplorerAPI {
   scrollTo: (pane: 'left' | 'right', index: number) => void
   refreshPane: () => Promise<void>
   refreshNetworkHosts: () => void
+  /** Takes the focused pane to the servers hub (the `servers.show` command). */
+  showServersInFocusedPane: () => void
+  /**
+   * The hub row under the focused pane's cursor, or `null` when that pane isn't
+   * on the hub. What the servers commands aim at before they fall back to the
+   * pane's own volume.
+   */
+  getFocusedPaneServerRow: () => HubRow | null
   injectError: (pane: 'left' | 'right', friendly: FriendlyError) => void
   resetError: (pane: 'left' | 'right' | 'both') => void
   /** E2E only: drive the native drag-and-drop drop entry programmatically (real
