@@ -658,6 +658,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::servers::disconnect_place,
                     crate::commands::servers::set_place_pinned,
                     crate::commands::servers::forget_server,
+                    crate::commands::servers::has_server_secret,
                     crate::commands::servers::forget_server_secret,
                     crate::commands::servers::update_saved_server,
                 ]
