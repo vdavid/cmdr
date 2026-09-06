@@ -9,14 +9,23 @@ const ROOMY: usize = 4_000;
 
 /// One scored folder, with `created` arrivals and a given interest.
 fn scored(folder: &str, created: u32, interest: f64) -> ScoredBundle {
+    scored_in_window(folder, created, interest, 0)
+}
+
+/// The same, in a named coalescing window: what the inbox hands over for a folder that stayed
+/// busy across more than one of them.
+fn scored_in_window(folder: &str, created: u32, interest: f64, window_start: u64) -> ScoredBundle {
     ScoredBundle {
-        bundle: bundle(
-            folder,
-            ChangeCounters {
-                created,
-                ..ChangeCounters::default()
-            },
-        ),
+        bundle: EventBundle {
+            window_start,
+            ..bundle(
+                folder,
+                ChangeCounters {
+                    created,
+                    ..ChangeCounters::default()
+                },
+            )
+        },
         interest: Interest::of(interest),
     }
 }
@@ -43,6 +52,59 @@ fn everything_that_fits_gets_its_own_line() {
     assert_eq!(
         digest.lines[0].folder, "/Users/someone/Downloads",
         "most interesting first"
+    );
+}
+
+/// A folder that stayed busy across several coalescing windows gets ONE line, carrying every
+/// window's counters.
+///
+/// The inbox keys rows by (folder, window) because that is what its deadline merge needs, but
+/// the digest's unit is the FOLDER: a wake over nine minutes of activity in one folder said
+/// `/Users/someone: 3 new` nine times, spending budget nine times over to tell the agent one
+/// thing, and handing the rail a list with nine identical keys.
+#[test]
+fn a_folder_busy_across_windows_gets_one_line() {
+    let digest = compact(
+        &[
+            scored_in_window("/Users/someone/Downloads", 3, 0.4, 60),
+            scored_in_window("/Users/someone/Documents", 1, 0.2, 60),
+            scored_in_window("/Users/someone/Downloads", 5, 0.9, 120),
+            scored_in_window("/Users/someone/Downloads", 4, 0.3, 180),
+        ],
+        ROOMY,
+    );
+
+    assert_eq!(digest.lines.len(), 2, "one line per folder: {digest:?}");
+    let downloads = digest
+        .lines
+        .iter()
+        .find(|line| line.folder == "/Users/someone/Downloads")
+        .expect("the busy folder is named");
+    assert_eq!(downloads.counters.created, 12, "every window's changes are counted");
+    assert!(
+        (downloads.interest.value() - 0.9).abs() < f64::EPSILON,
+        "the strongest window's claim survives the fold, got {}",
+        downloads.interest.value()
+    );
+}
+
+/// Folding by folder must not let one folder's windows crowd out another folder entirely: what
+/// misses a line is still rolled up and counted ONCE, not once per window.
+#[test]
+fn folded_folders_are_counted_once_when_they_roll_up() {
+    let many: Vec<ScoredBundle> = (0..60)
+        .flat_map(|i| {
+            let folder = format!("/Users/someone/code/project-{i:03}/src");
+            (0..3).map(move |window| scored_in_window(&folder, 4, 0.4, window * 60))
+        })
+        .collect();
+
+    let digest = compact(&many, 200);
+
+    assert_eq!(
+        folders_accounted_for(&digest),
+        60,
+        "60 folders, whatever the window count: {digest:?}"
     );
 }
 

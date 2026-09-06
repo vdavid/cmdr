@@ -8,6 +8,8 @@
 //! The writer thread prepares (gates, digest, thread, drain) and hands off here, then goes
 //! straight back to servicing its channel. Nothing on this thread touches the inbox.
 
+use std::collections::HashSet;
+
 use tauri::{AppHandle, Manager};
 use tokio::sync::mpsc::unbounded_channel;
 
@@ -69,9 +71,17 @@ impl BackgroundTurn {
 
     /// The tier and folder count the outcome line reports. A follow-up has neither: it is not
     /// answering the inbox.
+    ///
+    /// ⚠️ DISTINCT folders, not `rows.len()`: the inbox keys its rows by (folder, window), so a
+    /// row count answers "how many folder-minutes" and reads as half again more breadth than
+    /// the digest actually described. The count is what ranks the tuning knobs, so it has to
+    /// mean what the log line says it means.
     fn scale(&self) -> (Option<WakeTier>, usize) {
         match self {
-            BackgroundTurn::Wake(prepared) => (Some(prepared.tier), prepared.rows.len()),
+            BackgroundTurn::Wake(prepared) => {
+                let folders: HashSet<&str> = prepared.rows.iter().map(|row| row.bundle.folder.as_str()).collect();
+                (Some(prepared.tier), folders.len())
+            }
             BackgroundTurn::FollowUp(_) => (None, 0),
         }
     }

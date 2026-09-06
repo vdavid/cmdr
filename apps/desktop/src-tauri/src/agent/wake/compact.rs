@@ -5,7 +5,7 @@
 //! overran would push the rest of the turn out of the window — the same failure that once cost
 //! a rename turn the evidence it was reasoning from (`agent/chat/DETAILS.md`).
 //!
-//! Three properties hold at every budget and input size, and the tests pin each one:
+//! Four properties hold at every budget and input size, and the tests pin each one:
 //!
 //! - **The rendered digest never exceeds its budget.** Lines, rollups, and the degenerate case
 //!   where nothing fits at all.
@@ -13,6 +13,7 @@
 //!   waking for.
 //! - **Nothing is silently dropped.** Whatever misses a line is rolled up and COUNTED, so the
 //!   agent knows the size of what it is not seeing.
+//! - **A folder appears exactly once**, however many coalescing windows it was busy across.
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -99,7 +100,8 @@ pub fn compact(scored: &[ScoredBundle], budget_tokens: usize) -> Digest {
     if scored.is_empty() {
         return Digest::default();
     }
-    let mut ranked: Vec<&ScoredBundle> = scored.iter().collect();
+    let folded = fold_by_folder(scored);
+    let mut ranked: Vec<&ScoredBundle> = folded.iter().collect();
     // Interest first, then folder, so the answer is deterministic even when scores tie.
     ranked.sort_by(|a, b| {
         b.interest
@@ -137,6 +139,41 @@ pub fn compact(scored: &[ScoredBundle], budget_tokens: usize) -> Digest {
         }
         kept -= 1;
     }
+}
+
+/// One bundle per FOLDER, summing what its windows counted and keeping the strongest claim any
+/// of them made.
+///
+/// The inbox keys its rows by (folder, window) because that is what its deadline merge needs,
+/// so a folder busy for nine minutes arrives here as nine bundles. The digest's unit is the
+/// folder: nine lines saying `/Users/someone: 3 new` spend the budget nine times to tell the
+/// agent one thing, overstate the breadth of what happened, and hand the rail a list with nine
+/// identical keys (an `each_key_duplicate` crash in the wake digest block, not a cosmetic
+/// problem).
+///
+/// ⚠️ The fold is by folder ALONE, and `window_start` is deliberately dropped rather than
+/// carried: a folded bundle spans windows, so there is no single one it belongs to, and a
+/// caller reading that field off a digest line would be reading a lie. Nothing downstream of
+/// here wants it (the deadline mechanics are all upstream, on the inbox rows).
+fn fold_by_folder(scored: &[ScoredBundle]) -> Vec<ScoredBundle> {
+    // Sorted, so the digest is the same for the same activity whatever order the rows arrived
+    // in. `ranked`'s tie-break wants that anyway.
+    let mut by_folder: BTreeMap<&str, ScoredBundle> = BTreeMap::new();
+    for candidate in scored {
+        match by_folder.get_mut(candidate.bundle.folder.as_str()) {
+            Some(folded) => {
+                folded.bundle.counters.merge(&candidate.bundle.counters);
+                folded.bundle.last_event_at = folded.bundle.last_event_at.max(candidate.bundle.last_event_at);
+                if candidate.interest.value() > folded.interest.value() {
+                    folded.interest = candidate.interest;
+                }
+            }
+            None => {
+                by_folder.insert(candidate.bundle.folder.as_str(), candidate.clone());
+            }
+        }
+    }
+    by_folder.into_values().collect()
 }
 
 /// The digest with the top `kept` folders as lines and everything else rolled up.

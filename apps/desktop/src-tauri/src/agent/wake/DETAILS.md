@@ -197,6 +197,23 @@ a rollup, and a test sums both sides to prove nothing goes uncounted.
 At an impossible budget the digest is EMPTY rather than over: an overrun would push the rest of the turn out of the
 window, which is the failure that once cost a rename turn the evidence it was reasoning from.
 
+### The digest's unit is the folder, the inbox's is the folder-window
+
+`compact` folds its input by folder before ranking (`fold_by_folder`): counters summed, the strongest window's interest
+kept, `window_start` dropped because a folded bundle spans windows and belongs to none of them.
+
+**Decision**: the fold lives in `compact`, not in the inbox. **Why**: `(folder, window_start)` is the inbox's merge key
+and its deadline mechanics need it (`agent_inbox`'s primary key is the same pair, § "The inbox, and what a restart does"),
+but nothing downstream of the digest wants a window. Folding upstream would mean rewriting the deadline merge; folding
+downstream, in the rail, would leave the prompt wrong.
+
+**What an unfolded digest cost**: a folder busy across nine one-minute windows produced nine identical lines. The
+prompt paid for the folder nine times and read nine folders' worth of breadth where there was one; the wake outcome
+line counted folder-minutes while calling them folders; and the rail's digest block, keyed by path, threw
+`each_key_duplicate`, which escapes the Svelte flush and rolls back the whole batch, taking the panel's rendering down
+for as long as the block stayed expanded. Measured 2026-09-06 on a dev `main.db`: 58 lines for 38 folders in one wake,
+`/Users/veszelovszki` nine times. `a_folder_busy_across_windows_gets_one_line` pins it.
+
 ### The rendered digest is prompt-only
 
 `Digest::render()` is English, and deliberately so: it is a prompt. What gets PERSISTED as the thread's first message is
