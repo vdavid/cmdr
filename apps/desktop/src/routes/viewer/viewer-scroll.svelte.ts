@@ -6,7 +6,7 @@ import { onDebouncedScaleChange } from '$lib/text-size.svelte'
 import { pluralize } from '$lib/utils/pluralize'
 import { ensureVisibleOffset, recenterOffset } from './viewer-search-scroll'
 import { caretRectFor, measureColumnWidth } from './viewer-pointer'
-import type { LineOffset } from './selection.svelte'
+import { EOF_LINE, type LineOffset } from './selection.svelte'
 
 const log = getAppLogger('viewer')
 
@@ -295,9 +295,22 @@ export function createViewerScroll(deps: ScrollDeps) {
    * already-visible line alone. Drives keyboard selection extension: every extend press
    * calls this, including the one whose target line isn't cached yet, because the scroll
    * is what pulls the line into the render window and triggers its fetch.
+   *
+   * ❌ The `EOF_LINE` branch is NOT redundant, however much the arithmetic below looks
+   * like it would cope. `⌘⇧Down` on a file with no line index reports the sentinel as its
+   * target, and it only survives `getLineTop` today through integer overflow plus the
+   * browser clamping an absurd `scrollTop` — don't lean on that. Worse, the obvious later
+   * tidy-up `Math.min(n, totalLines - 1)` yields `NaN` on exactly this branch (the line
+   * count is `null` precisely when the sentinel appears), and `scrollTop = NaN` throws the
+   * view to the TOP of the file. Branching here keeps that visible to whoever reaches for
+   * the clamp.
    */
   function ensureLineVisible(n: number) {
     if (!contentRef) return
+    if (n === EOF_LINE) {
+      scrollToEnd()
+      return
+    }
     const next = ensureVisibleOffset({
       lineTop: getLineTop(n),
       lineHeight: lineHeightAt(n),

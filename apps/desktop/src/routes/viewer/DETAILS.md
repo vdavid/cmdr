@@ -287,8 +287,8 @@ Rules the model encodes:
   on a large file, since the cache only holds fetched windows) → `{ focus: null, targetLine: totalLines - 1 }`, so the
   caller's scroll fetches it and a second press lands it; there's no line count at all (ByteSeek before the index) → the
   `EOF_LINE` sentinel, which `toRangeEnds` maps to `RangeEnd::Eof`. That branch's `targetLine` is the sentinel too, and
-  it names no scrollable row: read it as "scroll to the end of the file" (`scroll.scrollToEnd()`), never as an argument
-  to line arithmetic. ❌ Don't reach for the sentinel merely because the last line isn't cached: that makes it a live,
+  it names no scrollable row; `scroll.ensureLineVisible` reads it as the end of the file, and ❌ nothing may pass it to
+  line arithmetic. ❌ Don't reach for the sentinel merely because the last line isn't cached: that makes it a live,
   movable focus, which is the wedge the precondition below exists to block. And ❌ don't call `selectToEof()` here — it
   sets BOTH endpoints and would silently destroy the user's anchor.
 - **Consequence worth knowing rather than rediscovering**: ⌘+Shift+Down from mid-file, then copy, shows the "unknown
@@ -351,13 +351,19 @@ modifier unconstrained). `extendMotionFor` uses the guard-then-branch shape the 
 
 Every extend press ends in a scroll, on both the landed and the uncached path:
 
-- **Vertically**, `scroll.ensureLineVisible(line)` moves as little as it can, leaving an already-visible line alone. It
-  wraps `ensureVisibleOffset` in `viewer-search-scroll.ts`. Gotcha/Why: that file's other export, `recenterOffset`,
-  speaks **viewport-relative rendered-rect** coordinates while `ensureVisibleOffset` speaks **content-relative scaled**
-  ones (the space `getLineTop` and `scrollTop` live in, compressed by `scrollScale` on files over `MAX_SCROLL_HEIGHT`).
-  They are not interchangeable, and feeding either a `line × lineHeight` estimate mislands it under word wrap, where a
-  wrapped line is one tall row. A line taller than the viewport is left alone while any of it is on screen, so a long
-  wrapped paragraph doesn't get yanked around on every press.
+- **Vertically**, `scroll.ensureLineVisible(line)` moves as little as it can, leaving an already-visible line alone, and
+  it takes the `EOF_LINE` sentinel too: the ONE branch reading that as "the end of the file" lives there, so the
+  keyboard hands it `targetLine` unexamined. Gotcha/Why: the branch looks redundant, because the sentinel currently
+  survives `getLineTop` through integer overflow plus the browser clamping an absurd `scrollTop`. Don't lean on that,
+  and above all don't "tidy" the arithmetic with `Math.min(line, totalLines - 1)`: the line count is `null` exactly when
+  the sentinel appears, so the clamp yields `NaN`, and `scrollTop = NaN` throws the view to the TOP of the file.
+  `viewer-scroll.svelte.test.ts` pins both halves. It wraps `ensureVisibleOffset` in `viewer-search-scroll.ts`.
+  Gotcha/Why: that file's other export, `recenterOffset`, speaks **viewport-relative rendered-rect** coordinates while
+  `ensureVisibleOffset` speaks **content-relative scaled** ones (the space `getLineTop` and `scrollTop` live in,
+  compressed by `scrollScale` on files over `MAX_SCROLL_HEIGHT`). They are not interchangeable, and feeding either a
+  `line × lineHeight` estimate mislands it under word wrap, where a wrapped line is one tall row. A line taller than the
+  viewport is left alone while any of it is on screen, so a long wrapped paragraph doesn't get yanked around on every
+  press.
 - **Horizontally**, `scroll.ensureColumnVisible(focus)` measures the focus character with `caretRectFor` and recentres
   through `recenterOffset` against the content box, exactly as `scrollToMatch` does for a search hit. Without it,
   repeated Shift+Right on a long unwrapped line walks the focus past the right edge with nothing following it:

@@ -13,6 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createViewerScroll } from './viewer-scroll.svelte'
+import { EOF_LINE } from './selection.svelte'
 import type { LineChunk } from '$lib/ipc/bindings'
 import { clearIpcMocks, installIpcMock } from '$lib/ipc/test-helpers'
 
@@ -54,5 +55,49 @@ describe('createViewerScroll fraction seek', () => {
     expect(call?.payload).toMatchObject({ targetType: 'fraction' })
     const targetValue = (call?.payload as { targetValue: number }).targetValue
     expect(Number.isFinite(targetValue)).toBe(true)
+  })
+})
+
+describe('createViewerScroll.ensureLineVisible', () => {
+  /** A scroll composable wired to a fake scroller of `scrollHeight` in a `clientHeight` box. */
+  function wireWithScroller(scrollHeight: number, clientHeight: number) {
+    installIpcMock().mock('viewer_get_lines', () => chunk)
+    const scroll = createViewerScroll({
+      getSessionId: () => 'sess-1',
+      // No line index yet, which is exactly when `⌘⇧Down` mints the sentinel.
+      getTotalLines: () => null,
+      setTotalLines: () => {},
+      getEstimatedLines: () => 1000,
+      getBackendType: () => 'byteSeek',
+      onTimeoutError: () => {},
+      getAllLines: () => null,
+      getTextWidth: () => 0,
+    })
+    const el = document.createElement('div')
+    // jsdom lays nothing out, so the two geometry reads have to be supplied.
+    Object.defineProperty(el, 'scrollHeight', { value: scrollHeight })
+    Object.defineProperty(el, 'clientHeight', { value: clientHeight })
+    scroll.contentRef = el
+    return { scroll, el }
+  }
+
+  it('reads the end-of-file sentinel as the end of the file', () => {
+    const { scroll, el } = wireWithScroller(50_000, 800)
+    el.scrollTop = 0
+
+    scroll.ensureLineVisible(EOF_LINE)
+
+    // Not line arithmetic on `Number.MAX_SAFE_INTEGER`: the bottom of the scroller.
+    expect(el.scrollTop).toBe(49_200)
+  })
+
+  it('never lands on NaN, which would throw the view to the top of the file', () => {
+    const { scroll, el } = wireWithScroller(50_000, 800)
+    el.scrollTop = 1234
+
+    scroll.ensureLineVisible(EOF_LINE)
+
+    expect(Number.isNaN(el.scrollTop)).toBe(false)
+    expect(el.scrollTop).toBeGreaterThan(0)
   })
 })

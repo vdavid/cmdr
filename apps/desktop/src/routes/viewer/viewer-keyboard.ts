@@ -266,16 +266,6 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
   }
 
   /**
-   * Scrolls to a motion's `targetLine`. `docEdge` down with no line count yet reports the
-   * sentinel, which names no scrollable row: it means "the end of the file". ❌ Never
-   * pass it to line arithmetic.
-   */
-  function scrollToTarget(targetLine: number): void {
-    if (targetLine === EOF_LINE) deps.scroll.scrollToEnd()
-    else deps.scroll.ensureLineVisible(targetLine)
-  }
-
-  /**
    * Runs an extend chord if the press is one. Returns `true` when the key was consumed,
    * which includes the deliberate no-ops: letting an unhandled Shift+Down fall through
    * would scroll the view out from under a selection the user is building.
@@ -307,8 +297,9 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
     // Unconditional, so the uncached-line case heals itself: with no offset to land on,
     // the selection stays put and this scroll is what pulls the line into the render
     // window and triggers its fetch, so the next press lands instead of the key being
-    // dead forever.
-    scrollToTarget(result.targetLine)
+    // dead forever. `targetLine` can be the end-of-file sentinel, which `ensureLineVisible`
+    // reads as "the end of the file"; it is the one place that branch lives.
+    deps.scroll.ensureLineVisible(result.targetLine)
     if (result.focus !== null && result.focus.line !== EOF_LINE) deps.scroll.ensureColumnVisible(result.focus)
     return true
   }

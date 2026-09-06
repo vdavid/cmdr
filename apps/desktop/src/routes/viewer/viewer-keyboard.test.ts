@@ -403,9 +403,22 @@ describe('createViewerKeyboard: keyboard selection extension', () => {
     const { keyboard, selection, scroll } = wire({ getTotalLines: () => null })
     press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
     expect(selection.focus).toEqual({ line: EOF_LINE, offset: 0 })
-    // The sentinel names no scrollable row, so it means "the end of the file".
-    expect(scroll.scrollToEnd).toHaveBeenCalledOnce()
-    expect(scroll.ensureLineVisible).not.toHaveBeenCalled()
+    // The sentinel goes straight to `ensureLineVisible`, which owns the one branch that
+    // reads it as "the end of the file". Routing it here instead would put that rule in
+    // two places, and the composable would still be wrong for any other caller.
+    expect(scroll.ensureLineVisible).toHaveBeenCalledWith(EOF_LINE)
+    // It names no measurable character either, so nothing tries to scroll to its column.
+    expect(scroll.ensureColumnVisible).not.toHaveBeenCalled()
+  })
+
+  it('scrolls to the line the focus is ALREADY on when that line is not cached', () => {
+    // The uncached line isn't always a neighbour: a `char` step off a line whose own text
+    // was evicted comes back as `{ focus: null, targetLine: from.line }`.
+    const { keyboard, selection, scroll } = wire({ getLineText: () => undefined })
+    const e = press(keyboard, { key: 'ArrowRight', shiftKey: true })
+    expect(selection.setFocus).not.toHaveBeenCalled()
+    expect(scroll.ensureLineVisible).toHaveBeenCalledWith(2)
+    expect(e.defaultPrevented).toBe(true)
   })
 
   it('resolves a sentinel focus to the last rendered line before moving from it', () => {
