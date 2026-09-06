@@ -94,10 +94,34 @@ The 64-bit digest also bounds the length, which is load-bearing: an ID is a file
 stop at 255 bytes. It's the reason a fully-injective escaping scheme (percent-encode the path) was rejected: reversible
 and elegant, but unbounded, and it renders a mount path with spaces unreadable anyway.
 
+The funnel also mints the APP-ROOT PREFIX of every remote volume (`sftp_app_root`, `webdav_app_root`), beside the id and
+from the same tuple. That is what makes a path and an id agree by construction: a `sftp://ada@nas:22/...` path resolves
+to exactly the id `sftp_volume_id` mints for that account, so a saved row and the volume it becomes share one identity
+across a dial and a restored tab finds its way home. The prefix, the translation between an app path and a server path,
+and why a bare server-absolute path is REFUSED rather than anchored: `src/volume/remote_paths.rs`'s module doc, which is
+canonical for all of it.
+
 Nothing enforces the funnel in the type system. An ID crosses IPC as a `String` in ~3,600 Rust and ~1,600 TypeScript
 sites, so a `VolumeId` newtype would be a very large refactor for a property one module already guarantees; the
 guardrail is instead the never-build-an-ID-by-hand rule in each caller's `CLAUDE.md`, plus `VolumeManager::register`
 logging an error whenever one ID does end up covering two mount roots.
+
+## Three questions a remote volume gets asked, and three types that answer them
+
+Conflating any two of these is the bug `src/volume/connection.rs` exists to prevent, and its module doc is canonical for
+what each variant means. The split itself is worth stating here, because the types are small enough to look
+interchangeable:
+
+- **How live is the SESSION?** `ConnectionState`, via `Volume::connection_state()`. The switcher dot, the pane's connect
+  views, and the reconnect manager read it. Every connecting backend answers; a local disk, an archive, and the git
+  portal answer `None`.
+- **WHICH BACKEND serves it?** `BackendKind`, via `Volume::backend_kind()`. ❗ The one an "is this SMB?" test must ask.
+  A `connection_state().is_some()` used that way hands an SFTP volume to the SMB indexer, which is exactly what happened
+  when one field answered both questions. Backend-side only: the frontend classifies a pane off `fsType` and category,
+  because an OS-mounted SMB share is served by `LocalPosixVolume` and this would answer `Local` for it.
+- **Is the DEVICE there?** `DeviceReadiness`, set by the device providers alone and carried on `LocationInfo`, never on
+  the `Volume`. A phone waiting for its "Allow USB debugging?" tap has no session, so putting it on the session field
+  would enrol it in a backoff loop that dials nothing forever.
 
 ## The four cuts that made the closure finite
 

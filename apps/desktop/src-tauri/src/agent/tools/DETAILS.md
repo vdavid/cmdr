@@ -109,7 +109,10 @@ tool-result JSON the model reads. Every tool maps 1:1 to a `ToolId` variant.
   file the way the viewer does.
 - **`list_volumes`** (`read/volumes.rs`) — every volume with `indexStatus` (`fresh`/`scanning`/`stale`/`off`) and, for
   a remote one, `connectionState` (`direct`/`os_mount`/`disconnected`/`needs_sign_in`/`needs_host_key_approval`/`saved`),
-  straight from `snapshot_volumes` so tokens can't drift.
+  straight from `snapshot_volumes` so tokens can't drift. A DEVICE row carries `deviceReadiness`
+  (`ready`/`waiting_for_authorization`/`unavailable_offline`/`unavailable_no_permissions`) instead: ❗ a phone waiting
+  for its "Allow USB debugging?" tap is listed, so without it the row reads as browsable and every call against it is a
+  refusal you can't explain. Presence is not a session, which is why it isn't on `connectionState`.
   Space rides along as `totalBytes` / `availableBytes` plus `totalHuman` / `availableHuman`, each pair present exactly
   when the poller has a reading (the same pair `cmdr://state`'s `volumes:` renders; see `mcp/DETAILS.md`).
   `mountPath` is what makes a `search` of anything but the boot volume expressible: `search` covers ONE volume per call

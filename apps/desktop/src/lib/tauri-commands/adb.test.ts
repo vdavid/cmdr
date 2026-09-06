@@ -88,7 +88,7 @@ describe('connectAdbDevice', () => {
 })
 
 describe('cancelAdbConnect', () => {
-  it('calls off the dial under the caller\'s own attempt id', async () => {
+  it("calls off the dial under the caller's own attempt id", async () => {
     mocked.cancelAdbConnect.mockResolvedValueOnce(true)
     expect(await cancelAdbConnect('adb-1')).toBe(true)
     expect(mocked.cancelAdbConnect).toHaveBeenCalledWith('adb-1')
