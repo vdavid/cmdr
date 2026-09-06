@@ -15,11 +15,22 @@ import {
   type Selection,
 } from './selection.svelte'
 import { createViewerKeyboard, handleSearchToggleKey, handleTailToggleKey, handleToggleKey } from './viewer-keyboard'
+import { createViewerScroll } from './viewer-scroll.svelte'
 
 type KeyboardDeps = Parameters<typeof createViewerKeyboard>[0]
 
 function makeKey(props: Partial<KeyboardEventInit & { key: string }>): KeyboardEvent {
   return new KeyboardEvent('keydown', { key: 'a', ...props })
+}
+
+/** Sends one cancelable keydown through the router and hands the event back. */
+function press(
+  keyboard: ReturnType<typeof createViewerKeyboard>,
+  init: KeyboardEventInit & { key: string },
+): KeyboardEvent {
+  const e = makeKey({ cancelable: true, ...init })
+  keyboard.handleKeyDown(e)
+  return e
 }
 
 /**
@@ -273,12 +284,6 @@ describe('createViewerKeyboard: keyboard selection extension', () => {
     return { keyboard, selection, scroll }
   }
 
-  function press(keyboard: ReturnType<typeof createViewerKeyboard>, init: KeyboardEventInit & { key: string }) {
-    const e = makeKey({ cancelable: true, ...init })
-    keyboard.handleKeyDown(e)
-    return e
-  }
-
   const chords: Array<[string, KeyboardEventInit & { key: string }, LineOffset]> = [
     ['Shift+Right steps one character', { key: 'ArrowRight', shiftKey: true }, { line: 2, offset: 6 }],
     ['Shift+Left steps one character back', { key: 'ArrowLeft', shiftKey: true }, { line: 2, offset: 4 }],
@@ -493,6 +498,112 @@ describe('createViewerKeyboard: keyboard selection extension', () => {
 
     press(keyboard, { key: 'r', metaKey: true, altKey: true })
     expect(toggleUseRegex).toHaveBeenCalledOnce()
+  })
+})
+
+describe('createViewerKeyboard over a real scroll composable: the phantom trailing-newline line', () => {
+  /**
+   * A file ending in `\n` makes the `lineIndex` backend count one more line than it will
+   * ever emit: `totalLines` is N+1 while `viewer_get_lines` stops at N-1. The template
+   * draws a row for the phantom line anyway, so these press through the same seam the
+   * page wires — the keyboard's `getLineText` reading the composable's `renderedLineText`
+   * — with a real composable behind it.
+   */
+  function wireOverScroll(totalLines: number, cachedThrough: number, focus: LineOffset) {
+    const scroll = createViewerScroll({
+      getSessionId: () => 'sess-1',
+      getTotalLines: () => totalLines,
+      setTotalLines: () => {},
+      getEstimatedLines: () => totalLines,
+      getBackendType: () => 'lineIndex',
+      onTimeoutError: () => {},
+      getAllLines: () => null,
+      getTextWidth: () => 0,
+    })
+    function cacheLines(from: number, to: number) {
+      for (let i = from; i < to; i++) scroll.lineCache.set(i, 'alpha')
+    }
+    cacheLines(0, cachedThrough)
+
+    const selection = makeSelectionDeps({ anchor: { line: 0, offset: 0 }, focus })
+    const spies = makeScrollSpies()
+    const keyboard = createViewerKeyboard(
+      makeKeyboardDeps({
+        getTotalLines: () => totalLines,
+        getLineText: (n: number) => scroll.renderedLineText(n),
+        getLastRenderedLine: () => null,
+        selection: selection.deps,
+        scroll: spies,
+      }),
+    )
+    return { keyboard, selection, spies, scroll, cacheLines }
+  }
+
+  /** Puts the tail of a `totalLines`-line file on screen, as the keyboard's own scroll would. */
+  function scrollToBottom(scroll: ReturnType<typeof createViewerScroll>, totalLines: number) {
+    const el = document.createElement('div')
+    Object.defineProperty(el, 'clientHeight', { value: 600 })
+    scroll.contentRef = el
+    el.scrollTop = totalLines * scroll.scrollLineHeight - 600
+    scroll.handleScroll()
+  }
+
+  it('⌘⇧Down lands on the end of the last REAL line in one press while the phantom row is on screen', () => {
+    // 11 lines by the backend's count, 10 real ones (0-9); line 10 is the phantom.
+    const { keyboard, selection } = wireOverScroll(11, 10, { line: 2, offset: 2 })
+
+    press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+
+    // Offset 0 of the phantom line IS the end of line 9: the range is half-open, so it
+    // takes line 9 in full and nothing of line 10. Same landing the `fullLoad` backend
+    // gives, which emits the phantom line as `''` instead of skipping it.
+    expect(selection.focus).toEqual({ line: 10, offset: 0 })
+  })
+
+  it('Shift+Down onto the phantom row extends instead of going dead', () => {
+    const { keyboard, selection } = wireOverScroll(11, 10, { line: 9, offset: 3 })
+
+    press(keyboard, { key: 'ArrowDown', shiftKey: true })
+
+    expect(selection.focus).toEqual({ line: 10, offset: 0 })
+  })
+
+  it('leaves a target OUTSIDE the rendered range unlanded, so the scroll fetches it first', () => {
+    const { keyboard, selection, spies } = wireOverScroll(40_001, 100, { line: 2, offset: 2 })
+
+    const e = press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+
+    expect(selection.setFocus).not.toHaveBeenCalled()
+    expect(spies.ensureLineVisible).toHaveBeenCalledWith(40_000)
+    expect(e.defaultPrevented).toBe(true)
+  })
+
+  it('lands on the second press, once that scroll has brought the phantom row into the window', () => {
+    const { keyboard, selection, scroll, cacheLines } = wireOverScroll(40_001, 100, { line: 2, offset: 2 })
+
+    press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+    expect(selection.setFocus).not.toHaveBeenCalled()
+
+    // What `ensureLineVisible(40 000)` and the fetch it triggers leave behind: the tail of
+    // the file on screen with every REAL line cached, line 40 000 still absent.
+    scrollToBottom(scroll, 40_001)
+    cacheLines(39_900, 40_000)
+
+    press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+    expect(selection.focus).toEqual({ line: 40_000, offset: 0 })
+  })
+
+  it('a file with NO trailing newline still lands on its real last line in the documented two presses', () => {
+    const { keyboard, selection, scroll, cacheLines } = wireOverScroll(40_000, 100, { line: 2, offset: 2 })
+
+    press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+    expect(selection.setFocus).not.toHaveBeenCalled()
+
+    scrollToBottom(scroll, 40_000)
+    cacheLines(39_900, 40_000)
+
+    press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+    expect(selection.focus).toEqual({ line: 39_999, offset: 'alpha'.length })
   })
 })
 

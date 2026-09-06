@@ -101,3 +101,42 @@ describe('createViewerScroll.ensureLineVisible', () => {
     expect(el.scrollTop).toBeGreaterThan(0)
   })
 })
+
+describe('createViewerScroll.renderedLineText', () => {
+  /** A composable over a `totalLines`-line file, unscrolled, at the default 600px viewport. */
+  function wire(totalLines: number) {
+    return createViewerScroll({
+      getSessionId: () => 'sess-1',
+      getTotalLines: () => totalLines,
+      setTotalLines: () => {},
+      getEstimatedLines: () => totalLines,
+      getBackendType: () => 'lineIndex',
+      onTimeoutError: () => {},
+      getAllLines: () => null,
+      getTextWidth: () => 0,
+    })
+  }
+
+  it('hands back the cached text of a rendered line', () => {
+    const scroll = wire(11)
+    scroll.lineCache.set(3, 'hello')
+
+    expect(scroll.renderedLineText(3)).toBe('hello')
+  })
+
+  it("reads a rendered line the cache doesn't hold as the empty row the template draws for it", () => {
+    // A trailing newline makes the `lineIndex` backend count a last line it never emits:
+    // `totalLines` 11 for real lines 0-9. The template still draws a row for line 10.
+    const scroll = wire(11)
+    for (let i = 0; i < 10; i++) scroll.lineCache.set(i, 'line')
+
+    expect(scroll.renderedLineText(10)).toBe('')
+  })
+
+  it('stays undefined outside the rendered range, so the caller knows to scroll and retry', () => {
+    // 600px of viewport plus the buffer reaches line ~84 of 40 001, nowhere near the end.
+    const scroll = wire(40_001)
+
+    expect(scroll.renderedLineText(40_000)).toBeUndefined()
+  })
+})

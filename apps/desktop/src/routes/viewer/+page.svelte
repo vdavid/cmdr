@@ -483,7 +483,10 @@
     const keyboard = createViewerKeyboard({
         getTotalLines: () => totalLines,
         getTotalBytes: () => totalBytes,
-        getLineText: (line) => scroll.lineCache.get(line),
+        // What the template DRAWS, not what the cache holds: a rendered row the cache
+        // missed shows as empty, and the motion model has to agree with the screen or a
+        // chord aiming at that row is dead forever. See `scroll.renderedLineText`.
+        getLineText: (line) => scroll.renderedLineText(line),
         getLastRenderedLine: () => scroll.visibleLines.at(-1)?.lineNumber ?? null,
         selection,
         scroll,

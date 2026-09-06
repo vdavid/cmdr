@@ -167,7 +167,12 @@ interface KeyboardDeps {
   getTotalLines: () => number | null
   /** Total byte count of the file (drives the ByteSeek-no-index ⌘A fallback). */
   getTotalBytes: () => number
-  /** Reads the cached text of a line, or `undefined` if not cached. */
+  /**
+   * The text the view SHOWS for a line, or `undefined` when no row is drawn for it yet
+   * (scroll to it and the next press lands). ❌ Never the raw line cache: a rendered row
+   * the cache missed draws empty, and a model that calls it non-existent goes dead on a
+   * file ending in a newline. Wire it to `createViewerScroll.renderedLineText`.
+   */
   getLineText: (line: number) => string | undefined
   /**
    * The last line currently rendered, or `null` when nothing is. Only ever read to

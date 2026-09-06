@@ -268,6 +268,9 @@ Three result shapes, and the caller has to handle all three:
 - **`focus` equal to `from`**: the motion hit the edge of the file. Vertical motions clamp rather than jumping to the
   file edge; `docEdge` is the gesture that goes there on purpose.
 
+The second shape is why `getLineText` must be the text the VIEW SHOWS, not the raw line cache: a line the template
+already draws is not "unfetched", and calling it that goes round in circles. See § "The phantom trailing line".
+
 Rules the model encodes:
 
 - **Vertical motion moves one LOGICAL line, not one visual row.** Native moves by visual row under word wrap, but every
@@ -376,6 +379,41 @@ Every extend press ends in a scroll, on both the landed and the uncached path:
 `caretRectFor(content, point)` (a zero-width rect on an EDGE of the character box — see its doc comment for why an edge
 pick rather than a fallback ladder) and `measureColumnWidth(content)` (one column's advance, cached by the scroll
 composable and dropped when the text scale settles).
+
+#### The phantom trailing line
+
+The motion model reads line text through `scroll.renderedLineText(line)`, **not** the raw `lineCache`, and the
+difference is load-bearing.
+
+A file ending in a newline makes the backend count a last line it will not serve. On `lineIndex` / `byteSeek`,
+`viewer_open` reports `totalLines` including that phantom (40 001 for 40 000 real lines), while `viewer_get_lines` never
+emits it at any offset or count; `fullLoad` DOES emit it, which is why small files behave differently. The template
+still draws a row for it, because `getVisibleLines()` renders `lineCache.get(i) ?? ''` — a cache miss and a genuinely
+empty line look identical on screen.
+
+So a model reading the cache directly disagrees with the user's screen about which lines exist, and every motion aimed
+at that row returns `{ focus: null, targetLine }` forever: ⌘+Shift+Down is permanently dead on almost every real text
+file, with no error anywhere. `renderedLineText` closes the divergence at its source by answering `''` for exactly the
+range the template draws (`[visibleFrom, renderedTo)`, the same bounds `getVisibleLines()` iterates).
+
+⌘+Shift+Down then lands on offset 0 of the phantom line, which IS the end of the last real line: the range is half-open,
+so it takes line 39 999 in full and nothing of line 40 000. That's the same landing `fullLoad` already gives, so the two
+backends now agree on screen even though they disagree over the wire. (Backend behavior verified by hand against a
+running app on a 40 000-line file, 2026-09-06.)
+
+The divergence also covers a _transient_ dead press for any motion targeting a rendered line whose fetch is still in
+flight; the phantom is the case where the miss never resolves, which is the one visible enough to get reported.
+
+The cost, and it's the right one: on a rendered line whose fetch is still in flight, Shift+End lands on offset 0,
+because 0 genuinely is the end of the empty row on screen. It agrees with what the user sees, it heals on the next press
+once the text arrives, and 0 is the one offset that stays valid for any line text, so nothing invented crosses into
+`viewer_read_range`.
+
+❌ **Don't widen this past the rendered range**, and ❌ don't give it to the other `lineCache` consumers. Outside the
+range, `undefined` still has to mean "not fetched yet, scroll and retry" — that is what makes `docEdge`'s two-press flow
+work, and answering `''` there would invent an offset for a line nobody has seen. `estimateSelectionBytes` needs the
+bare cache too: it reads `undefined` as "I can't size this, route to the confirm dialog", and a phantom `''` would make
+it under-report a real selection.
 
 ## Text cursor
 

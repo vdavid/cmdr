@@ -91,16 +91,40 @@ export function createViewerScroll(deps: ScrollDeps) {
     heightMap.ready ? heightMap.getLineTop(visibleFrom) * scrollScale : visibleFrom * scrollLineHeight,
   )
 
+  /** One past the last line the template draws. `visibleTo` alone can overshoot the file. */
+  const renderedTo = $derived(Math.min(visibleTo, estimatedTotalLines()))
+
   const visibleLines = $derived(getVisibleLines())
   const gutterWidth = $derived(String(estimatedTotalLines()).length)
 
   function getVisibleLines(): Array<{ lineNumber: number; text: string }> {
     const result: Array<{ lineNumber: number; text: string }> = []
-    const end = Math.min(visibleTo, estimatedTotalLines())
-    for (let i = visibleFrom; i < end; i++) {
+    for (let i = visibleFrom; i < renderedTo; i++) {
       result.push({ lineNumber: i, text: lineCache.get(i) ?? '' })
     }
     return result
+  }
+
+  /**
+   * The text the template SHOWS for a line, which is what the caret motion model has to
+   * reason about, or `undefined` when no row is drawn for it yet.
+   *
+   * Inside the rendered range a cache miss draws as an empty row (`getVisibleLines`
+   * applies the same `?? ''`), so a caller reading the cache directly would disagree with
+   * the user's screen about which lines exist. That divergence is fatal for a file ending
+   * in a newline on the `lineIndex` backend: it counts a last line `viewer_get_lines`
+   * never emits, and ⌘⇧Down would ask for it forever.
+   *
+   * OUTSIDE the range `undefined` keeps its other meaning: not fetched yet, scroll and
+   * retry. `moveFocus` turns that into `{ focus: null, targetLine }`, and the keyboard's
+   * scroll is what pulls the line in so the next press lands. Widening the `''` past the
+   * rendered range would break that two-press flow, and invent an offset for a line
+   * nobody has seen.
+   */
+  function renderedLineText(line: number): string | undefined {
+    const cached = lineCache.get(line)
+    if (cached !== undefined) return cached
+    return line >= visibleFrom && line < renderedTo ? '' : undefined
   }
 
   /** Returns the scaled Y offset for line n. Used by search for scroll-to-match. */
@@ -581,6 +605,7 @@ export function createViewerScroll(deps: ScrollDeps) {
       return heightMap.ready
     },
     estimatedTotalLines,
+    renderedLineText,
     getLineTop,
     handleScroll,
     scrollByLines,
