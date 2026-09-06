@@ -34,18 +34,20 @@ comes only from the servers arm below.
 ### The servers arm
 
 `server_volumes::append_server_volumes` folds into `volume_listing::complete` between the device providers and
-enrichment: one row per REGISTERED SFTP or WebDAV volume, plus one per PINNED saved server that has no registered
-volume (state `Saved`, the greyed row with the hollow dot). `category: Network`, `fs_type: "sftp"` / `"webdav"`,
-`is_ejectable: false` (a server has nothing to unplug; its control says Disconnect), `supports_trash: false`.
+enrichment: one row per SFTP or WebDAV place the app knows, registered or merely saved (state `Saved`, the greyed row
+with the hollow dot). `category: Network`, `fs_type: "sftp"` / `"webdav"`, `is_ejectable: false` (a server has nothing
+to unplug; its control says Disconnect), `supports_trash: false`, `pinned: Some(_)`.
 
 ❗ **A `saved` row and the volume it becomes share ONE id**, minted by `cmdr_fs::volume::sftp_volume_id` /
 `webdav_volume_id` — the same ids the registry keys on. That identity is what makes a tab restorable: a tab stores
 `(volumeId, path)`, the switcher shows the same id greyed, and activating either dials the same saved entry.
 
-❗ **A saved-but-UNPINNED server gets no row**, because pins are the cap that keeps a user with a dozen saved servers
-from scrolling past their own disks, and the user holds it. Such a server is still reachable by path
-(`server_volumes::server_volume_for_path`, which the `sftp://` / `webdav://` resolver arm calls) and still listed in
-the hub.
+❗ **The pin filters the SWITCHER, not this list.** Pins are the cap that keeps a user with a dozen saved servers from
+scrolling past their own disks, and the user holds it — but a volume id with no row is one the app denies exists, and
+Enter on a hub row, a restored tab, a favorite inside a server, and the pane's own lookup all reach for a row by id. So
+every place gets a row carrying its own `pinned`, and `navigation/volume-grouping.ts::belongsInSwitcher` is where the
+cap is applied. `pinned` is `None` on every row the cap was never about (a local disk, a favorite, a mounted SMB
+share), and such a row shows unconditionally.
 
 ❗ **A registered volume nothing has saved still gets a row.** `forget_server` drops the saved entry without dropping
 the session, and a live volume with no row is one a pane can sit on while the switcher denies it exists; the row then

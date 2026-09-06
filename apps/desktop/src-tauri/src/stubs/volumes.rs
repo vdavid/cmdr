@@ -40,6 +40,17 @@ pub struct VolumeInfo {
     /// SMB connection state indicator. Always `None` on stub platforms.
     pub connection_state: Option<ConnectionState>,
     /// Twin of the macOS field: whether the DEVICE behind this row is reachable.
+    /// Whether this place belongs in the volume SWITCHER: the user's own cap on
+    /// how many saved things crowd their disks. `Some` only on a server place
+    /// (`server_volumes.rs`), which is the only row the cap applies to; `None`
+    /// on a local disk, a favorite, and a mounted SMB share, all of which show
+    /// unconditionally.
+    ///
+    /// ❗ The listing publishes EVERY saved place regardless, because a volume id
+    /// with no row is one the app denies exists (a hub Enter and a restored tab
+    /// both land on an id). Hiding is `navigation/volume-grouping.ts`'s job, and
+    /// this field is what it reads.
+    pub pinned: Option<bool>,
     pub device_readiness: Option<cmdr_fs::volume::DeviceReadiness>,
     /// Negotiated USB link speed. Always `None` on stub platforms (no MTP).
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
@@ -84,6 +95,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 mount_is_read_only: false,
                 is_disk_image: false,
                 connection_state: None,
+                pinned: None,
                 device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
@@ -104,6 +116,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         mount_is_read_only: false,
         is_disk_image: false,
         connection_state: None,
+        pinned: None,
         device_readiness: None,
         usb_speed: None,
         capabilities: None,
@@ -122,6 +135,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         mount_is_read_only: false,
         is_disk_image: false,
         connection_state: None,
+        pinned: None,
         device_readiness: None,
         usb_speed: None,
         capabilities: None,

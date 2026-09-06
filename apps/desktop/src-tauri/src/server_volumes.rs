@@ -10,6 +10,11 @@
 //! network traffic. The two saved-server stores and the volume registry are all
 //! this reads.
 //!
+//! ❗ **The list holds every place; the SWITCHER holds the pinned ones.** A
+//! volume id with no row is one the app denies exists, and a hub Enter, a
+//! restored tab, and a favorite all reach for a row by id. So `pinned` rides on
+//! the row and `navigation/volume-grouping.ts` applies the user's cap.
+//!
 //! ❗ **A `saved` row and the volume it becomes share one id**
 //! (`cmdr_fs::volume::sftp_volume_id` / `webdav_volume_id`, the same ids the
 //! registry uses), which is what makes a tab on a server restorable: a tab holds
@@ -44,13 +49,6 @@ pub(crate) struct ServerPlace {
     /// How live the session is: `Direct` for a registered volume, `Saved` for a
     /// server that is only remembered.
     pub state: ConnectionState,
-}
-
-impl ServerPlace {
-    /// Whether a live session is behind this place.
-    fn is_registered(&self) -> bool {
-        self.state != ConnectionState::Saved
-    }
 }
 
 /// Every SFTP and WebDAV place the app knows: one per saved server, marked
@@ -132,8 +130,8 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
             name: volume.name().to_string(),
             app_root: volume.root().to_string_lossy().into_owned(),
             fs_type,
-            // Nothing saved says otherwise, and a live session earns its row
-            // through `is_registered` rather than through a pin.
+            // Nothing saved says otherwise, and a live session earns its
+            // switcher row through the session rather than through a pin.
             pinned: false,
             state: volume.connection_state().unwrap_or(ConnectionState::Direct),
         });
@@ -159,7 +157,9 @@ fn webdav_endpoint(url: &str) -> Option<(String, u16)> {
 /// ❗ `is_ejectable: false` and `supports_trash: false`: a server has nothing to
 /// unplug (its control says "Disconnect") and no trash to move a file to.
 /// `capabilities: None` because enrichment fills that from the registered
-/// `Volume` afterwards, which is why the servers arm folds BEFORE it.
+/// `Volume` afterwards, which is why the servers arm folds BEFORE it. `pinned`
+/// rides along so the SWITCHER can apply the cap without the list hiding an
+/// identity from everything else that resolves one.
 pub(crate) fn location_from_place(place: ServerPlace) -> LocationInfo {
     LocationInfo {
         id: place.id,
@@ -173,30 +173,29 @@ pub(crate) fn location_from_place(place: ServerPlace) -> LocationInfo {
         fs_type: Some(place.fs_type.to_string()),
         supports_trash: false,
         connection_state: Some(place.state),
+        pinned: Some(place.pinned),
         device_readiness: None,
         usb_speed: None,
         capabilities: None,
     }
 }
 
-/// Appends the server rows the volume switcher shows: every REGISTERED SFTP or
-/// WebDAV volume, plus every PINNED saved server that has no registered volume.
+/// Appends a row for EVERY SFTP and WebDAV place the app knows: registered,
+/// saved, pinned, unpinned alike.
 ///
 /// ❗ **Folded BEFORE `enrich_from_volume_registry`**, which copies `capabilities`
 /// and the connection state FROM the registered volume. Anything appended after
 /// it ships `capabilities: None`, and the pane falls back to per-kind defaults
 /// instead of what the backend actually offers.
 ///
-/// ❗ A saved-but-UNPINNED server gets no row. Pins are the cap that keeps a user
-/// with a dozen saved servers from scrolling past their own disks, and the user
-/// holds it. Such a server is still reachable by path
-/// ([`server_volume_for_path`]) and still listed in the hub.
+/// ❗ **The pin filters the SWITCHER, not this list.** The volume list is what
+/// says a volume id exists: the hub's Enter, a restored tab, a favorite, and the
+/// pane's own lookup all reach for a row by id, and an unpinned server with no
+/// row is an id that resolves to nothing and a pane that lands on the boot disk.
+/// So every place gets a row carrying its own `pinned`, and
+/// `navigation/volume-grouping.ts` is where the user's cap is applied.
 pub(crate) fn append_server_volumes(volumes: &mut Vec<LocationInfo>) {
-    for place in server_places() {
-        if place.is_registered() || place.pinned {
-            volumes.push(location_from_place(place));
-        }
-    }
+    volumes.extend(server_places().into_iter().map(location_from_place));
 }
 
 /// The app-facing root of the place `volume_id` names, for an event payload that

@@ -113,12 +113,14 @@ fn a_sibling_root_is_not_this_servers_path() {
 
 // ── The rows the switcher gets ───────────────────────────────────────
 
-/// ❗ **The switcher's Network group holds the CONNECTED and the PINNED places,
-/// and nothing else.** A user with 12 saved buckets scrolling past their own
-/// disks is what the pin exists to prevent, so a saved-but-unpinned server has
-/// no row.
+/// ❗ **Every saved server gets a row, and the row carries its own pin.** The
+/// list is the app's registry of what a volume id MEANS: a hub Enter and a
+/// restored tab both land on an id, and an id with no row is a volume the app
+/// denies exists. The pin rides along as a field so the SWITCHER can apply the
+/// cap (`navigation/volume-grouping.ts`) without the list hiding identities from
+/// everything else.
 #[test]
-fn the_listing_holds_the_connected_and_the_pinned_and_leaves_the_rest_out() {
+fn every_saved_server_gets_a_row_carrying_its_own_pin() {
     let pinned_host = "192.0.2.41";
     let unpinned_host = "192.0.2.42";
     sftp_known_servers::remember(saved_sftp(pinned_host, true));
@@ -137,6 +139,7 @@ fn the_listing_holds_the_connected_and_the_pinned_and_leaves_the_rest_out() {
     assert_eq!(row.name, format!("{pinned_host} server"));
     assert_eq!(row.path, format!("sftp://ada@{pinned_host}:2222/srv/data"));
     assert_eq!(row.connection_state, Some(ConnectionState::Saved));
+    assert_eq!(row.pinned, Some(true));
     assert!(
         !row.is_ejectable,
         "a server has nothing to unplug; its control says Disconnect"
@@ -148,10 +151,42 @@ fn the_listing_holds_the_connected_and_the_pinned_and_leaves_the_rest_out() {
     );
 
     let unpinned_id = cmdr_fs::volume::sftp_volume_id(unpinned_host, 2222, "ada");
-    assert!(
-        !rows.iter().any(|row| row.id == unpinned_id),
-        "a saved-but-unpinned server is reachable by path and absent from the switcher"
+    let unpinned = rows
+        .iter()
+        .find(|row| row.id == unpinned_id)
+        .expect("an unpinned server is still an id something can navigate to");
+    assert_eq!(
+        unpinned.pinned,
+        Some(false),
+        "the switcher is what hides it, and this field is how the switcher knows"
     );
+    assert_eq!(unpinned.connection_state, Some(ConnectionState::Saved));
+}
+
+/// A row nothing saved carries `pinned: Some(false)`: it was never subject to
+/// the cap, and it earns its switcher row through its live session instead.
+#[test]
+fn a_row_for_a_live_session_nothing_saved_reports_no_pin() {
+    let volume_id = cmdr_fs::volume::sftp_volume_id("192.0.2.47", 2222, "ada");
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    manager.register(
+        &volume_id,
+        std::sync::Arc::new(
+            cmdr_fs::volume::InMemoryVolume::new("Forgotten but live")
+                .with_backend_kind(BackendKind::Sftp)
+                .with_connection_state(ConnectionState::Direct),
+        ),
+    );
+
+    let mut rows = Vec::new();
+    append_server_volumes(&mut rows);
+    let row = rows
+        .iter()
+        .find(|row| row.id == volume_id)
+        .expect("a live volume has a row");
+    assert_eq!(row.pinned, Some(false));
+
+    manager.unregister(&volume_id);
 }
 
 /// A pinned WebDAV server gets the same row, with its own `fs_type`.
@@ -194,10 +229,11 @@ fn a_registered_volume_gets_a_row_under_the_id_its_saved_row_carried() {
 
     let mut before = Vec::new();
     append_server_volumes(&mut before);
-    assert!(
-        !before.iter().any(|row| row.id == volume_id),
-        "unpinned and unconnected, so no row yet"
-    );
+    let saved_row = before
+        .iter()
+        .find(|row| row.id == volume_id)
+        .expect("unpinned and unconnected is still a place, so still a row");
+    assert_eq!(saved_row.connection_state, Some(ConnectionState::Saved));
 
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.register(

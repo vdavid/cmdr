@@ -535,14 +535,20 @@ Gotchas for the four other places that name has to match, one of which is Rust.
 ### The three-things rule, and which side enforces it
 
 The Network group holds three things and nothing else: the hub row, every place connected right now, and every PINNED
-place (greyed, hollow dot). ❗ The pin half is decided in Rust
-(`src-tauri/src/server_volumes.rs::append_server_volumes`, `place.is_registered() || place.pinned`), which is the only
-side that can read a pin: `VolumeInfo` carries none, on purpose — a pin governs the switcher, not identity, so the
-RESOLVER still answers for an unpinned server's path.
+place (greyed, hollow dot). `volume-grouping.ts::belongsInSwitcher` is where it is applied, over the `pinned` field the
+listing puts on each server row plus `isLiveSession` / `hasReconnectLoop`.
 
-The frontend's half of the contract is therefore that it renders the listing and synthesizes exactly ONE row of its own,
-the hub. `volume-grouping.test.ts`'s last cell is what catches a future "helpful" `listSavedServers()` fetch here, which
-would put every unpinned server back on screen and undo the user's own cap.
+❗ **The listing hides nothing** (`src-tauri/src/server_volumes.rs::append_server_volumes` publishes every saved place).
+A volume id with no row is one the app denies exists, and four things resolve one: Enter on a hub row, a restored tab, a
+favorite inside a server, and the pane's own lookup. A pin governs the switcher, not identity.
+
+❗ **A row with no `pinned` at all shows unconditionally.** Only a server place carries one. A mounted SMB share was
+never subject to the cap, and on Linux it carries no `connectionState` either, so a rule spelled "live or pinned" would
+drop every CIFS mount off the switcher.
+
+The frontend synthesizes exactly ONE row of its own, the hub. `volume-grouping.test.ts` is what catches a future
+"helpful" `listSavedServers()` fetch here: the row already says whether it is pinned, and a second source of truth is
+how the two drift.
 
 ## `volume-space-manager.svelte.ts`
 

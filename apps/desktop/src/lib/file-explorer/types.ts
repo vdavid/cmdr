@@ -269,6 +269,17 @@ export interface VolumeInfo {
    */
   connectionState?: ConnectionState | null
   /**
+   * Whether this place belongs in the volume SWITCHER: the user's own cap on how
+   * many saved things crowd their disks. Set only on a server place, which is
+   * the only row the cap applies to; absent on a local disk, a favorite, and a
+   * mounted SMB share, all of which show unconditionally.
+   *
+   * ❗ The listing publishes every saved place whatever this says, because a
+   * volume id with no row is one the app denies exists.
+   * `navigation/volume-grouping.ts` is where the cap is applied.
+   */
+  pinned?: boolean | null
+  /**
    * Whether the DEVICE behind this row is reachable, which is a different
    * question from how live a session is. Set by the device providers only: a
    * phone waiting for its "Allow USB debugging?" tap is present, and must never

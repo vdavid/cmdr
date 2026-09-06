@@ -188,6 +188,7 @@ fn build_attached_location(
         mount_is_read_only: mount.is_read_only,
         is_disk_image,
         connection_state: None,
+        pinned: None,
         device_readiness: None,
         usb_speed: None,
         capabilities: None,

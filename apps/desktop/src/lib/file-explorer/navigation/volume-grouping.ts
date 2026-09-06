@@ -1,6 +1,7 @@
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { VolumeInfo, LocationCategory } from '../types'
+import { hasReconnectLoop, isLiveSession } from './connection-state'
 
 export interface VolumeGroup {
   category: LocationCategory
@@ -37,15 +38,11 @@ export function groupByCategory(vols: VolumeInfo[]): VolumeGroup[] {
         groups.push({ category, label, items: mobileItems })
       }
     } else if (category === 'network') {
-      // The Network group holds the hub row plus the places that earned a row:
-      // every live session and every pinned place (the backend's servers arm is
-      // what applies the pin), plus any mounted SMB share.
-      //
       // ❗ The hub row is here whatever `network.enabled` says. That switch gates
       // mDNS discovery and SMB, which is what the macOS Local Network permission
       // is about; SFTP and WebDAV need none of it, and the hub says so in its own
       // list rather than by refusing to open.
-      const networkVolumes = vols.filter((v) => v.category === 'network')
+      const networkVolumes = vols.filter((v) => v.category === 'network' && belongsInSwitcher(v))
 
       const hubRow: VolumeInfo = {
         id: 'network',
@@ -74,6 +71,25 @@ export function groupByCategory(vols: VolumeInfo[]): VolumeGroup[] {
   }
 
   return groups
+}
+
+/**
+ * Whether a Network row earns a place in the switcher: the three-things rule,
+ * minus the hub row, which `groupByCategory` synthesizes.
+ *
+ * A place shows when a session stands behind it (live, or being recovered) or
+ * when the user pinned it. ❗ Only a server place carries a pin at all: a mounted
+ * SMB share was never subject to the cap, and on Linux it carries no connection
+ * state either, so a rule written as "live or pinned" would drop every CIFS
+ * mount off the switcher.
+ *
+ * The listing itself hides nothing (`server_volumes.rs::append_server_volumes`):
+ * an unpinned server still has to be an id the hub, a restored tab, and a
+ * favorite can all resolve.
+ */
+function belongsInSwitcher(volume: VolumeInfo): boolean {
+  if (volume.pinned == null) return true
+  return volume.pinned || isLiveSession(volume.connectionState) || hasReconnectLoop(volume.connectionState)
 }
 
 export function getIconForVolume(volume: VolumeInfo | undefined): string | undefined {
