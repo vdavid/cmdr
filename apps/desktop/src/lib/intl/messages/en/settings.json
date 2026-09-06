@@ -653,12 +653,12 @@
     "description": "Heading above the live per-drive image-indexing progress shown in the Enable indexing card while a pass is running (each drive lists how many images are done, plus a rate and time estimate)."
   },
   "@settings.mediaIndex.privacyNote": {
-    "description": "Privacy reassurance shown in Settings > AI > Image search, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider.",
+    "description": "Privacy reassurance shown in Settings > Indexing > Image indexing, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider.",
     "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.enabled.label": "Index image contents",
   "@settings.mediaIndex.enabled.label": {
-    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > AI > Image search.",
+    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > Indexing > Image indexing.",
     "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.enabled.description": "Read the text inside your images so you can search it. Runs on your Mac and never leaves it. Covers local drives for now.",
@@ -668,7 +668,7 @@
   },
   "settings.mediaIndex.showFileStatusIcons.label": "Show status badges on image files",
   "@settings.mediaIndex.showFileStatusIcons.label": {
-    "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it''s indexed for image search. On by default. In Settings > AI > Image search, under the \"Index image contents\" toggle."
+    "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it''s indexed for image search. On by default. In Settings > Indexing > Image indexing, under the \"Index image contents\" toggle."
   },
   "settings.mediaIndex.showFileStatusIcons.description": "Add a small badge to each image in the file list showing whether it''s been indexed for search.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
@@ -2833,7 +2833,7 @@
 
   "settings.mediaIndex.scope.label": "Which folders to index",
   "@settings.mediaIndex.scope.label": {
-    "description": "Label above the radio group that picks how Cmdr decides which folders to image-index. In Settings > AI > Image search."
+    "description": "Label above the radio group that picks how Cmdr decides which folders to image-index. In Settings > Indexing > Image indexing."
   },
   "settings.mediaIndex.scope.description": "Pick the folders yourself, or let Cmdr work out which ones matter to you.",
   "@settings.mediaIndex.scope.description": {
@@ -2850,7 +2850,7 @@
 
   "settings.mediaIndex.chosenFolders.title": "Folders to index",
   "@settings.mediaIndex.chosenFolders.title": {
-    "description": "Title above the list of folders the user picked for image indexing. In Settings > AI > Image search."
+    "description": "Title above the list of folders the user picked for image indexing. In Settings > Indexing > Image indexing."
   },
   "settings.mediaIndex.chosenFolders.help": "Photos in these folders are indexed whatever else you pick above. Removing a folder stops new indexing; what''s already indexed stays searchable.",
   "@settings.mediaIndex.chosenFolders.help": {
