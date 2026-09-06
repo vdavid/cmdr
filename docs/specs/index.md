@@ -48,6 +48,7 @@ below is met.
       permanently busy. That wipe is a one-way door, so it waits for David.
 
 ## In progress
+
 - [ ] 2026-09-06 `servers-hub-plan.md` - **Three remote backends and one model to reach them.** SFTP and WebDAV are
       finished and invisible, ADB is silent at the one moment the user needs feedback, and SMB signs in inside a pane
       where Tab can't mean two things. One model (an account holds places, the switcher shows pinned places), one modal
