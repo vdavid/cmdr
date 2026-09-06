@@ -77,6 +77,17 @@ pub fn emit_volumes_changed() {
     });
 }
 
+/// How many `volumes-changed` broadcasts have been REQUESTED so far.
+///
+/// Test-only, and a REQUEST count rather than an emission count: the emission
+/// needs a running app, and what a cell about a pin or a forget cares about is
+/// that the republish was asked for at all. Without it, "the switcher never
+/// learns the row left" is a silent regression.
+#[cfg(test)]
+pub(crate) fn volumes_changed_requests() -> u64 {
+    GENERATION.load(std::sync::atomic::Ordering::SeqCst)
+}
+
 /// Tauri command: triggers a fresh `volumes-changed` broadcast.
 /// The result arrives via the event, not as a return value.
 /// Used by the frontend retry button when the initial listing timed out.

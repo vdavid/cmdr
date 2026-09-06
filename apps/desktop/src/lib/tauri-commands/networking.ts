@@ -403,33 +403,38 @@ export async function upgradeToSmbVolumeWithCredentials(
 }
 
 /**
- * Tries to rebuild the smb2 session for a Disconnected `SmbVolume` in place.
+ * Tries to rebuild a Disconnected volume's session in place.
  *
- * Called by the per-volume reconnect manager on each backoff tick (and on
- * "Retry now" / lazy nav-time retry). Backend single-flights concurrent calls.
- * Resolves on success; a refusal throws a `ReconnectFailure` carrying the typed
- * `ReconnectError`, which `asReconnectError` gets back.
+ * Backend-neutral: every remote backend implements this, and the per-volume
+ * reconnect manager drives SMB, SFTP, and WebDAV through it on each backoff tick
+ * (and on "Retry now" / lazy nav-time retry). The backend single-flights
+ * concurrent calls. Resolves on success; a refusal throws a `ReconnectFailure`
+ * carrying the typed `ReconnectError`, which `asReconnectError` gets back.
  */
-export async function reconnectSmbVolume(volumeId: string): Promise<void> {
-  const res = await commands.reconnectSmbVolume(volumeId)
+export async function reconnectVolume(volumeId: string): Promise<void> {
+  const res = await commands.reconnectVolume(volumeId)
   if (res.status === 'error') throwReconnectError(res.error)
 }
 
 /**
- * Reconnects an SMB volume with freshly-entered credentials. Used by the "Sign in"
- * affordance shown when an in-place reconnect gave up on an auth failure (the saved
- * password went stale). The backend persists the new password and reconnects; on
- * success a `volume-connection-changed { state: "connected" }` event follows.
+ * Reconnects a volume with freshly-entered credentials. Used by the "Sign in"
+ * affordance shown when an in-place reconnect gave up on an auth failure (the
+ * saved password went stale). The backend refreshes what it has stored and
+ * reconnects; on success a `volume-connection-changed { state: "connected" }`
+ * event follows.
+ *
+ * Whether the USERNAME may change is the backend's call, not this wrapper's:
+ * `getVolumeSignInState` is what tells the sheet which shape to render.
  *
  * Resolves on success; a refusal throws a `ReconnectFailure` carrying the typed
  * `ReconnectError`, which `asReconnectError` gets back.
  */
-export async function reconnectSmbVolumeWithCredentials(
+export async function reconnectVolumeWithCredentials(
   volumeId: string,
   username: string,
   password: string,
 ): Promise<void> {
-  const res = await commands.reconnectSmbVolumeWithCredentials(volumeId, username, password)
+  const res = await commands.reconnectVolumeWithCredentials(volumeId, username, password)
   if (res.status === 'error') throwReconnectError(res.error)
 }
 

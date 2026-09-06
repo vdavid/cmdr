@@ -201,6 +201,34 @@ pub fn remember(mut server: KnownWebdavServer) {
     save();
 }
 
+/// Moves the pin on `(url, username)`, answering whether an entry was there.
+///
+/// ❗ **Its own writer, ❌ never a read-modify-`remember`.** `remember` preserves
+/// the STORED pin on a replace (so a reconnect can't re-pin a server the user
+/// unpinned), which makes it the one function that cannot change a pin. This
+/// mutates the entry in place under the lock: rebuilding the vec would drop
+/// whatever another thread appended between the read and the write.
+pub fn set_pinned(url: &str, username: &str, pinned: bool) -> bool {
+    let moved = {
+        let mut store = known().lock_ignore_poison();
+        match store
+            .known_webdav_servers
+            .iter_mut()
+            .find(|entry| same_server(entry, url, username))
+        {
+            Some(entry) => {
+                entry.pinned = pinned;
+                true
+            }
+            None => false,
+        }
+    };
+    if moved {
+        save();
+    }
+    moved
+}
+
 /// Drops the entry for `(url, username)`, answering whether one was there.
 ///
 /// ❌ Leaves the secret store alone: forgetting a server from a list is not the

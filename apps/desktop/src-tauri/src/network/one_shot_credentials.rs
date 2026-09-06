@@ -28,7 +28,11 @@ use cmdr_fs::volume::host::credentials::{CredentialStore, CredentialsNotStored, 
 /// ❗ The one carrier a secret may travel in. ❌ No `password` argument on any
 /// connect params: the crates read the store, and this is how a secret that
 /// isn't in the store reaches a dial.
-#[derive(Debug, Clone)]
+///
+/// Crosses IPC: the sign-in sheet is where a person types one, and the backend
+/// reads the store for every dial that isn't answering a sign-in.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct SecretOffer {
     /// The secret itself: a password, a key file's passphrase, whatever the
     /// account's rung wants.

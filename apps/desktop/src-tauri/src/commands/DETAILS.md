@@ -83,9 +83,27 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `attempt_id` is the caller's, reconnect and sign-in go through `network.rs`, and no command returns a stored secret.
   The flow is `network::webdav_volume_wiring`; the contract is `crates/cmdr-webdav/DETAILS.md` § "Connecting from the
   frontend".
+- **`servers.rs`**: the protocol-agnostic server family, a FACADE over the three above. The hub, the switcher, the
+  sign-in sheet, and the pane banner speak about servers rather than about SFTP, WebDAV, and SMB, so this is the
+  surface they call: `list_saved_servers` (the union of the two saved-server stores plus SMB hosts from
+  `known_shares.rs` and `manual_servers.rs`), `connect_saved_place`, `connect_server`, `cancel_server_connect`,
+  `disconnect_place`, `set_place_pinned`, `forget_server`, `forget_server_secret`, `update_saved_server`.
+  - ❗ **`ServerConnectOutcome` is the SUPERSET** of the two per-protocol enums, so a sign-in UI branches once instead
+    of twice. `auth_method_unsupported` stays its own outcome rather than collapsing into `authentication_rejected`: a
+    Digest-only server never saw the password, so "check your password" is the wrong fix to put in front of someone.
+  - ❗ **`connect_saved_place` refuses a REGISTERED id** (`SavedPlaceRefusal::AlreadyConnected`). Re-dialing would
+    register a second volume under the same id; a session that dropped is mended by
+    `network.rs::reconnect_volume_with_credentials`, which is what enforces the read-only username rule and the
+    never-seeds rule. Neither refusal is something a person did, which is why they are an `Err` rather than an outcome.
+  - ❗ **An SMB host lists NO places and cannot be pinned here.** `known_shares.rs` stores no share rows, carries no
+    port, and a mounted share's id comes from `statfs` (an IP where the store holds an mDNS name), so no id derivable
+    from the store would match the mounted volume. SMB places keep reaching the switcher as mounted volumes.
+  - `update_saved_server` takes a `ServerTarget`, the same shape the add sheet collects, because an edit and an add
+    differ only in whether the fields arrived prefilled. It carries no PIN: `set_place_pinned` is the one writer that
+    moves one, because the stores' `remember` deliberately preserves a stored pin on every replace.
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
-  in-place reconnect (`reconnect_smb_volume`: backend single-flighted via `Volume::attempt_reconnect`;
-  `reconnect_smb_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via
+  in-place reconnect (`reconnect_volume`: backend single-flighted via `Volume::attempt_reconnect`;
+  `reconnect_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via
   `Volume::reconnect_with_credentials`), what FORM a sign-in takes (`get_volume_sign_in_state`, via
   `Volume::sign_in_prompt` — a `SignInShape` tagged on `kind`, read live when a banner renders, ❌ never carried on a
   connect result and ❌ never derived from the protocol or the sheet's mode; an unregistered id and a backend with no

@@ -396,6 +396,15 @@ fn get_store_path<R: Runtime>(app: &AppHandle<R>) -> Option<PathBuf> {
         .map(|dir| dir.join(MANUAL_SERVERS_FILENAME))
 }
 
+/// Every manually-typed SMB server, as the store holds it.
+///
+/// ❗ Reads the FILE. There is no in-memory mirror here (the discovery host map
+/// is where a loaded entry ends up, and that map is about what's reachable
+/// rather than what's saved), so a caller on a hot path wants to ask once.
+pub fn all<R: Runtime>(app: &AppHandle<R>) -> Vec<ManualServerEntry> {
+    read_store(app).servers
+}
+
 /// Reads the store from a path on disk.
 fn read_store_from_path(path: &Path) -> ManualServersStore {
     cleanup_tmp_file(path);

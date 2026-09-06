@@ -38,6 +38,10 @@ pub mod restricted_paths;
 pub mod search;
 pub mod selection;
 pub mod settings;
+// The protocol-agnostic server family, over the per-protocol wiring. Same gate
+// as `sftp` and `webdav`, whose commands it faces.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod servers;
 // SFTP works wherever the app does; the gate matches `network`, whose stores and
 // wiring it reaches through. ❌ No stub counterpart: stubbing it would turn SFTP
 // off on Linux, where the Docker E2E lane runs.

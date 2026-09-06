@@ -17,7 +17,7 @@ const mockListen = vi.fn<(handler: (payload: VolumeConnectionChanged) => void) =
 let lastEventHandler: ((payload: VolumeConnectionChanged) => void) | null = null
 
 vi.mock('$lib/tauri-commands', () => ({
-  reconnectSmbVolume: (id: string) => mockReconnect(id),
+  reconnectVolume: (id: string) => mockReconnect(id),
   getVolumeSignInState: (id: string) => mockSignInState(id),
   // The manager subscribes to `volume-connection-changed` through this typed wrapper,
   // so the test captures its unwrapped-payload handler here.
@@ -289,14 +289,14 @@ describe('smbReconnectManager', () => {
   })
 
   it('handleDirect is idempotent: onSuccess fires exactly once per cycle', async () => {
-    // Race scenario: both the `connected` event and the awaited `reconnectSmbVolume`
+    // Race scenario: both the `connected` event and the awaited `reconnectVolume`
     // success path could each trigger `handleConnected`. The idempotency guard
     // ensures `onSuccess` only fires once.
     await smbReconnectManager.init()
     const onSuccess = vi.fn()
     const unsub = smbReconnectManager.subscribe('vol-once', onSuccess)
     smbReconnectManager.startCycle('vol-once')
-    // Resolve `reconnectSmbVolume` AND emit the `connected` event (simulating both
+    // Resolve `reconnectVolume` AND emit the `connected` event (simulating both
     // paths racing to clean up). Only one should win and notify.
     mockReconnect.mockResolvedValueOnce(undefined)
     await vi.advanceTimersByTimeAsync(RECONNECT_DELAYS_MS[0])
