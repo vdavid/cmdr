@@ -47,6 +47,10 @@ from scrolling past their own disks, and the user holds it. Such a server is sti
 (`server_volumes::server_volume_for_path`, which the `sftp://` / `webdav://` resolver arm calls) and still listed in
 the hub.
 
+❗ **A registered volume nothing has saved still gets a row.** `forget_server` drops the saved entry without dropping
+the session, and a live volume with no row is one a pane can sit on while the switcher denies it exists; the row then
+takes its name and root from the volume itself.
+
 ❗ **Cached state only, ❌ never the wire**: the listing runs on every `volumes-changed`, so a probe here would turn a
 refresh into a round of network traffic. The device-provider seam is deliberately NOT reused —
 `crates/cmdr-sftp/DETAILS.md` says why: it lists things that appear and leave on their own.

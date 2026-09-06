@@ -54,7 +54,8 @@ impl ServerPlace {
 }
 
 /// Every SFTP and WebDAV place the app knows: one per saved server, marked
-/// `Direct` when a volume under its id is registered right now.
+/// `Direct` when a volume under its id is registered right now, plus one per
+/// registered volume nothing has saved.
 ///
 /// ❗ Includes UNPINNED servers. Pins govern the switcher, not identity, and a
 /// tab restored onto an unpinned server still has to find its way home. The
@@ -103,6 +104,31 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
             app_root: root.app_root().to_string_lossy().into_owned(),
             fs_type: "webdav",
             pinned: server.pinned,
+        });
+    }
+
+    // ❗ And every REGISTERED server volume the stores don't know about, so a
+    // live session is never a ghost. `forget_server` drops the saved entry
+    // without dropping the session, and a volume with no row is one a pane can
+    // sit on while the switcher denies it exists.
+    for (id, volume) in manager.list_volumes_with_handles() {
+        let fs_type = match volume.backend_kind() {
+            BackendKind::Sftp => "sftp",
+            BackendKind::Webdav => "webdav",
+            _ => continue,
+        };
+        if places.iter().any(|place| place.id == id) {
+            continue;
+        }
+        places.push(ServerPlace {
+            id,
+            name: volume.name().to_string(),
+            app_root: volume.root().to_string_lossy().into_owned(),
+            fs_type,
+            // Nothing saved says otherwise, and a live session earns its row
+            // through `is_registered` rather than through a pin.
+            pinned: false,
+            state: volume.connection_state().unwrap_or(ConnectionState::Direct),
         });
     }
     places
