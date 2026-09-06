@@ -172,6 +172,13 @@ are subscribed individually, so a flip applies live with no restart. Keep the tw
 rather than repeated at each site: a render gate that outlives its work gate is how a hidden surface keeps costing IPC.
 `ImageSearchResults.gating.test.ts` pins all of it (no section, zero IPC, tokens released on a live flip).
 
+**Decision / why `showInSearch` defaults OFF.** David's call (2026-09-06): image match quality isn't good enough yet to
+take that much room above the file results unasked. Two consequences are accepted, not overlooked: a user who already
+had image indexing on loses the grid on upgrade, and a new user who turns indexing on sees nothing in Search until they
+flip the second switch. Adding a hint line under the master toggle to point at the second switch was the considered
+alternative and was NOT built. So don't "fix" the default back, and don't read the silent Search dialog as a bug: flip
+the default only when match quality earns the space.
+
 ### The coverage note
 
 The one-shot path (`search-runners.ts`) clears the note before the IPC and writes the answer's `uncoveredScopes` /
