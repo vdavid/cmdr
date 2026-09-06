@@ -303,9 +303,9 @@ event; see `file-operations/transfer/DETAILS.md` § "`data-scan-state` marker".
 
 **`triggerFileDrop(tauriPage, paths, targetPane, { targetFolderPath?, operation?, recordedIdentity? })`** (helpers.ts)
 drives the native drag-and-drop ENTRY path programmatically — real OS drag can't be synthesized in Playwright. It emits
-the E2E-gated `e2e-trigger-file-drop` Tauri event, which the app's `+page.svelte` listener (gated on
-`getAppMode() === 'e2e'`, set by `CMDR_E2E_MODE=1`, never true in prod) forwards to `ExplorerAPI.triggerFileDrop` → the
-SAME `dragDrop.handleFileDrop` the live `onDragDropEvent` 'drop' branch runs. So the shared destination guard (read-only
+the E2E-gated `e2e-trigger-file-drop` Tauri event, which the app's `listener-setup.ts` listener (gated on `isE2eRun()`,
+set by `CMDR_E2E_MODE=1`, never true in prod) forwards to `ExplorerAPI.triggerFileDrop` → the SAME
+`dragDrop.handleFileDrop` the live `onDragDropEvent` 'drop' branch runs. So the shared destination guard (read-only
 refusal, search-results toast), source-volume resolution, and transfer dialog all run identically to a real drop. The
 dialog opens (or an alert/toast surfaces) exactly as a drop would; assert with the normal dialog/alert helpers.
 
