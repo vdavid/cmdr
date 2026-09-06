@@ -2,10 +2,10 @@
  * E2E tests for the `network.enabled` toggle UX.
  *
  * Covers the user-visible behavior of toggling networking off/on:
- * - Volume picker shows "Network" by default
+ * - Volume picker shows "Servers" by default
  * - Toggling off renames it to "Network (disabled)"
  * - Clicking "Network (disabled)" opens Settings → Network → SMB/Network shares
- * - Toggling back on restores "Network"
+ * - Toggling back on restores "Servers"
  *
  * Uses the `mcp-set-setting` event to write the setting from the test, which
  * triggers the same code path as the Settings UI (cache + cross-window emit +
@@ -38,7 +38,7 @@ async function readNetworkLabel(tauriPage: Parameters<typeof pollUntil>[0]): Pro
       var label = items[i].querySelector('.volume-label');
       if (!label) continue;
       var text = label.textContent || '';
-      if (text === 'Network' || text === 'Network (disabled)') return text;
+      if (text === 'Servers' || text === 'Network (disabled)') return text;
     }
     return null;
   })()`)
@@ -135,11 +135,11 @@ test.describe('Network toggle in volume picker', () => {
     })()`)
   })
 
-  test('shows "Network" by default', async ({ tauriPage }) => {
+  test('shows "Servers" by default', async ({ tauriPage }) => {
     await openVolumePicker(tauriPage)
     await tauriPage.waitForSelector(ANY_VOLUME_ITEM, 3000)
     const label = await readNetworkLabel(tauriPage)
-    expect(label).toBe('Network')
+    expect(label).toBe('Servers')
   })
 
   test('shows "Network (disabled)" when toggle is off', async ({ tauriPage }) => {
@@ -150,13 +150,13 @@ test.describe('Network toggle in volume picker', () => {
     expect(label).toBe('Network (disabled)')
   })
 
-  test('toggling back on restores "Network"', async ({ tauriPage }) => {
+  test('toggling back on restores "Servers"', async ({ tauriPage }) => {
     await setSettingViaBridge(tauriPage, 'network.enabled', false)
     await setSettingViaBridge(tauriPage, 'network.enabled', true)
     await openVolumePicker(tauriPage)
     await tauriPage.waitForSelector(ANY_VOLUME_ITEM, 3000)
-    const label = await pollUntilLabel(tauriPage, 'Network')
-    expect(label).toBe('Network')
+    const label = await pollUntilLabel(tauriPage, 'Servers')
+    expect(label).toBe('Servers')
   })
 
   test('clicking "Network (disabled)" closes the dropdown without changing volume', async ({ tauriPage }) => {

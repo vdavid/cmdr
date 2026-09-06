@@ -57,7 +57,7 @@ pub(crate) enum VolumeKind {
         allow(dead_code, reason = "macOS-path-only today; unconstructed off macOS, see `Smb`")
     )]
     Adb,
-    /// A synthetic entry with no backing device (the `Network` browser root). Also
+    /// A synthetic entry with no backing device (the servers hub row). Also
     /// macOS-path-only today, so off macOS it's unconstructed — see `Smb`.
     #[cfg_attr(
         not(target_os = "macos"),
@@ -111,7 +111,7 @@ pub(crate) struct VolumeSummary {
     pub device_readiness: Option<&'static str>,
     /// Where the volume is mounted, the path a search scope names to cover this
     /// drive. `None` for a volume with no filesystem path (MTP storages, the
-    /// synthetic `Network` root), which is also exactly where a search can't reach.
+    /// synthetic servers hub row), which is also exactly where a search can't reach.
     ///
     /// ❌ Not rendered into the `cmdr://state` YAML: that view redacts home paths,
     /// and a favorite folder's mount path would come out redacted, so an AI client
@@ -283,7 +283,7 @@ fn index_status_token(status: &cmdr_index::VolumeIndexStatus) -> &'static str {
 
 /// Snapshot every volume for the `cmdr://state` `volumes:` section: local / SMB
 /// locations (with SMB connection state and per-volume index freshness) and MTP
-/// device storages, plus the synthetic `Network` browser root. The impure half;
+/// device storages, plus the synthetic servers hub row. The impure half;
 /// [`build_volumes_yaml`] formats the result.
 pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
     let mut out: Vec<VolumeSummary> = Vec::new();
@@ -330,10 +330,10 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 space: space_summary(&loc.id),
             });
         }
-        // The `Network` browser root is a synthetic navigation target, not a
-        // device: no filesystem, ejectability, or index.
+        // The servers hub row is a synthetic navigation target, not a device: no
+        // filesystem, ejectability, or index.
         out.push(VolumeSummary {
-            name: "Network".to_string(),
+            name: crate::volume_listing::SERVERS_VOLUME_NAME.to_string(),
             id: "network".to_string(),
             kind: VolumeKind::Virtual,
             filesystem: None,
@@ -411,6 +411,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::volume_listing::SERVERS_VOLUME_NAME;
 
     fn local(name: &str, id: &str) -> VolumeSummary {
         VolumeSummary {
@@ -581,7 +582,7 @@ mod tests {
     #[test]
     fn virtual_volume_is_name_id_kind_only() {
         let network = VolumeSummary {
-            name: "Network".to_string(),
+            name: SERVERS_VOLUME_NAME.to_string(),
             id: "network".to_string(),
             kind: VolumeKind::Virtual,
             filesystem: None,
@@ -596,14 +597,14 @@ mod tests {
         let yaml = build_volumes_yaml(&[network]);
         assert_eq!(
             yaml,
-            "volumes:\n  - name: Network\n    id: network\n    kind: virtual\n"
+            "volumes:\n  - name: Servers\n    id: network\n    kind: virtual\n"
         );
     }
 
     #[test]
     fn mixed_fixture_keeps_every_entry_uniform_head() {
         let network = VolumeSummary {
-            name: "Network".to_string(),
+            name: SERVERS_VOLUME_NAME.to_string(),
             id: "network".to_string(),
             kind: VolumeKind::Virtual,
             filesystem: None,
@@ -627,7 +628,7 @@ mod tests {
                 "  - name: Macintosh HD",
                 "    id: root",
                 "    kind: local",
-                "  - name: Network",
+                "  - name: Servers",
                 "    id: network",
                 "    kind: virtual",
             ]

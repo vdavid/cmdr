@@ -40,6 +40,24 @@ fn list_locations() -> Vec<LocationInfo> {
 }
 
 // ============================================================================
+// The hub row
+// ============================================================================
+
+/// What the synthetic hub row is called: the row that opens the servers hub.
+///
+/// ❗ **This literal must equal the English `fileExplorer.navigation.networkVolume`
+/// catalog value byte for byte.** Three Rust sites spell the name (this row's own
+/// `VolumeInfo` in `commands/volumes.rs`, the MCP volumes resource, and
+/// `mcp/executor/nav.rs`, which waits for the FRONTEND-pushed pane name to match
+/// it before reporting a volume switch done). A name that differs by a character
+/// makes `select_volume` on the hub time out instead of answering.
+///
+/// The GROUP the row sits in is still called "Network"
+/// (`fileExplorer.navigation.groupNetwork`), and the row's path is still the
+/// `smb://` sentinel: the label grew up, the identity didn't.
+pub(crate) const SERVERS_VOLUME_NAME: &str = "Servers";
+
+// ============================================================================
 // The pipeline
 // ============================================================================
 

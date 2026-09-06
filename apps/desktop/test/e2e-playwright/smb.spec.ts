@@ -180,7 +180,7 @@ describeSmb('SMB host discovery', () => {
     await ensureAppReady(tauriPage)
 
     // Switch left pane to Network
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
 
     // Wait for virtual hosts to appear (injected by smb-e2e feature).
     // 30s: defensive bound. Hosts typically appear within 1-3 s; longer budget covers
@@ -196,7 +196,7 @@ describeSmb('SMB host discovery', () => {
   test('guest host shows share count after discovery', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
 
     // Wait for the guest host to appear and its shares to be prefetched
     await expect
@@ -216,7 +216,7 @@ describeSmb('SMB share browsing', () => {
     await ensureAppReady(tauriPage)
 
     // Switch to Network, wait for hosts
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
     await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
 
     // Move cursor to guest host and open it
@@ -237,14 +237,14 @@ describeSmb('SMB share browsing', () => {
     // failed mount on screen that left an agent with no way out at all.
     await ensureAppReady(tauriPage)
 
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
     await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Guest)' })
     await mcpCall('open_under_cursor', {})
     await expect.poll(async () => shareExistsInPane(tauriPage, SMB_GUEST_SHARE), { timeout: 30000 }).toBeTruthy()
 
     // The tool itself polls for the volume name, so a no-op surfaces as a timeout here.
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
 
     await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
     expect(await shareExistsInPane(tauriPage, SMB_GUEST_SHARE)).toBe(false)
@@ -256,7 +256,7 @@ describeSmb('SMB share browsing', () => {
     // one committed the switch and acked OK while the pane sat on the host list.
     await ensureAppReady(tauriPage)
 
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
     await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
 
     const answer = await mcpCallRaw('nav_to_path', {
@@ -277,7 +277,7 @@ describeSmb('SMB mounting and file browsing', () => {
     // When the app tries to mount it, it gets EEXIST (already mounted) which is treated as success.
 
     // Switch to Network → open guest host → select share
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
     await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Guest)'), { timeout: 15000 }).toBeTruthy()
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Guest)' })
@@ -400,7 +400,7 @@ describeSmb('SMB authentication', () => {
   test('auth host shows share count after discovery', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
 
     // Wait for the auth host to appear and its shares to be prefetched
     await expect
@@ -468,7 +468,7 @@ describeSmb('SMB 50-share server', () => {
   test('50-share host shows correct share count in Network view', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
 
     // Wait for the 50-shares host to appear and prefetch shares
     await expect
@@ -513,7 +513,7 @@ describeSmb('SMB unicode server', () => {
     await ensureAppReady(tauriPage)
 
     // Switch to Network, open unicode host
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
     await expect.poll(async () => hostExistsInPane(tauriPage, 'SMB Test (Unicode)'), { timeout: 15000 }).toBeTruthy()
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'SMB Test (Unicode)' })

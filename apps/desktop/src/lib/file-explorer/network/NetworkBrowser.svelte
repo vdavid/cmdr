@@ -165,7 +165,7 @@
             const state: PaneState = {
                 path: 'smb://',
                 volumeId: 'network',
-                volumeName: 'Network',
+                volumeName: tString('fileExplorer.navigation.networkVolume'),
                 files,
                 cursorIndex,
                 viewMode: 'full',
