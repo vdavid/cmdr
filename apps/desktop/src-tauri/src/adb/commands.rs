@@ -83,8 +83,17 @@ pub async fn get_adb_install_status() -> AdbInstallStatus {
 /// retry `adb start-server`, and a caller must not poll it.
 #[tauri::command]
 #[specta::specta]
-pub async fn recheck_adb_install(app: tauri::AppHandle) -> AdbInstallStatus {
-    super::volume_wiring::recheck_adb_install(&app).await
+pub async fn recheck_adb_install() -> AdbInstallStatus {
+    super::volume_wiring::recheck_adb_install().await
+}
+
+/// Applies `fileOperations.adbEnabled` and `fileOperations.adbBinaryPath`
+/// without a restart: the tracker restarts under the new binary, or stops and
+/// takes its device rows with it.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_adb_settings(enabled: bool, binary_path: Option<String>) {
+    super::volume_wiring::set_adb_settings(enabled, binary_path).await;
 }
 
 /// Dials the device with `serial` and answers its volume id.

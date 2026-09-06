@@ -79,6 +79,22 @@ Format: each line is `English: chosen · sources · confidence`. Confidence is `
   high. A Finder menüparancsa `Visszatevés`, a mondatbeli alak `visszahelyezés`; mi az utóbbit használjuk, mert a
   szövegeink mondatok. NEM `visszaállítás` (az a régi NÉV visszaadása, `askCmdr.renameUndo.*`).
 - go to trash: `Ugrás a Kukába` · mac (Finder `TL_HELP_TCAN` „Go to the Trash” = „Ugrás a Kukába”) · high.
+- debugging: `hibakeresés` · mac (Wireless Diagnostics `WDNotConnected` „további hibakeresési információk”,
+  `Security.framework/authorization.prompts` „a hibakeresés folytatásához”, `Feedback.framework` „Hibakeresési panel”,
+  „hibakeresési eszközök”), Android hu (`SettingsLib` `enable_adb_wireless` „Vezeték nélküli hibakeresés”) · high. NEM
+  `hibajavítás` (az Apple gépiesebb sorai használják csak) és nem `hibaelhárítás` (az a troubleshooting).
+- USB debugging (az Android fejlesztői beállítása): `USB-hibakeresés` · Android hu (`SettingsLib` `enable_adb` „USB
+  hibakeresés”, `clear_adb_keys` „USB-s hibakeresésre vonatkozó engedélyek”) · high. A SZÓ az Androidé (a felhasználó a
+  telefonján ezt látja), a KÖTŐJEL a miénk: az AkH szerint a betűszós összetétel kötőjeles, és a katalógus minden USB-s
+  összetétele az (`USB-kábel`, `USB-eszköz`, `USB-hozzáférés`, `USB-fájlátviteli mód`). Az AOSP kötőjel nélkül írja
+  („USB hibakeresés”), ezt tudatosan nem másoljuk.
+- platform tools (az Android SDK Platform Tools csomag): angolul marad, magyar alaptaggal:
+  `az Android platform tools csomag` · nincs magyar forrás (az Android Studio nem jelenik meg magyarul) · high. Az
+  alaptag (`csomag`) azért kell, mert a `tools` végi `s` nem a kiejtett hangot jelöli, tehát a rag kötőjeles és csúnya
+  lenne (`platform tools-t`); alaptaggal a név ragozatlan marad. ❌ NEM `platformeszközök`: az `eszköz` a katalógusban a
+  `device` szava.
+- Android tooling (a gépre telepített Android-parancssori csomagok): `Android-fejlesztőeszköz` · katalógusbelső döntés ·
+  high. A puszta `Android-eszköz` tilos, mert az `Android device`-t jelentene; a `fejlesztő` előtag oldja fel.
 
 Contested or split, with the per-source evidence:
 
@@ -235,6 +251,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Az `askCmdr.tool.*` címkepár akkor is a családi mintát követi, ha a próza más igét használ**: a hozzájárulási szöveg
   `belenéz`-e az eszközsoron `Fájlok átnézése` / `Fájlok átnézve` lesz, mert a `belenéz`-nek nincs állapotot mondó
   `-va/-ve` alakja. Indoklás: `glossary.md` § Belenézés a fájlokba.
+- **A `Mac` helyhatározós (superessivusi) alakja a katalógusban `Macen`, kötőjel nélkül** (`settings.mediaIndex.*` három
+  helyen), a birtokos alak viszont `Mac-eden` (`settings.updates.emailPrivacyNote`). Új szövegben a többségi `Macen`
+  alakot használd; a kettősség ismert, de egy fordítási menet ne söpörje át a többi kulcsot.
+- **Az „adb”-féle parancsnevek kisbetűsek maradnak, és a ragjuk kötőjeles** (`az adb-t`, mert betűszóként á-dé-bé a
+  kiejtése, tehát a névelő is `az`). Ugyanígy `ADB-n át`, `Android SDK-ban`, `Homebrew-ban` (a `w` néma, ezért kötőjel).
+  Prózában idézőjelbe kerül, ahogy az angol is idézi: `az „adb” parancs`.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

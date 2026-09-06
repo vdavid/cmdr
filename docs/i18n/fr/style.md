@@ -136,6 +136,27 @@ Straightforward (sources agree, `high`):
 - add to (attach something to an existing object) → ajouter à · macOS Finder/AppKit ("Ajouter à la barre latérale",
   "Ajouter au Dock", "Ajouter aux favoris"): French takes the bare `Ajouter à X` with no explicit object, exactly like
   English · high
+- file system / filesystem → système de fichiers · macOS AppKit `DocumentDragging` ("could not be found in the file
+  system" → "est introuvable dans le système de fichiers", mined from the live bundle on macOS 26.6.2 build 25G83,
+  2026-09-06); matches the `settings.section.fileSystems` heading already shipped as "Systèmes de fichiers" · high
+- location (where something lives on disk) → emplacement · macOS Finder ("Indiquez le nom et l'emplacement du dossier
+  intelligent", "Cet emplacement est en lecture seule", "Choisir un emplacement…") · high. The stored VALUE of such a
+  field is a "chemin" (`settings.fileOperations.adbBinaryPath.description`: "Indiquez un chemin si…"): the label names
+  the emplacement, the instruction names the chemin.
+- debugging → débogage · macOS Security.framework authorization prompts ("for debugging to continue" → "pour poursuivre
+  le débogage"), PrintCore/cups ("debug logging" → "journalisation de débogage"), live bundles on macOS 26.6.2 build
+  25G83, 2026-09-06 · high
+- USB debugging (the Android developer option) → débogage USB · Google's own French Android docs
+  (`developer.android.com/studio/debug/dev-options?hl=fr`: "Débogage USB", under "Options pour les développeurs",
+  2026-09-06). Google localizes this feature name, so we localize it too, per the "localize what the vendor localizes"
+  principle; keep `USB` uppercase · high
+- Android platform tools (the SDK component shipping `adb`) → Android Platform Tools, kept English · Google's French
+  docs keep it ("Notes de version du composant SDK Platform Tools", "SDK Platform-Tools",
+  `developer.android.com/tools/releases/platform-tools?hl=fr`, 2026-09-06), and so do `adb` and `fastboot`. Capitalized
+  as the product name even where the English source lowercases it; a second mention in the same screen can shorten to
+  "les Platform Tools" · high
+- Android SDK, Homebrew, ADB, adb → verbatim · product and command names; `adb` stays lowercase (it's the command),
+  `ADB` uppercase (the protocol/feature name, as in the section title) · high
 
 Contested or sense-specific (read the block):
 
@@ -269,6 +290,18 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   de l'appareil photo d'une photo » colle deux `photo` ; on écrit
   `…, et, pour une photo, les détails de l'appareil photo et la localisation`. Termes et preuves : `glossary.md` § Ce
   qu'Ask Cmdr lit à l'intérieur d'un fichier.
+- **La ligne Android (ADB) des réglages.** `settings.fileOperations.adbEnabled.*` et `adbBinaryPath.*` suivent le moule
+  déjà en place pour MTP : le libellé décrit la fonction ("Accès aux fichiers Android via ADB", comme "Prise en charge
+  Android/Kindle/appareil photo"), la description commence à la troisième personne quand elle décrit ce que fait
+  l'option ("Donne accès à…", "Détecte et se connecte…") et passe au « vous » impératif dès qu'elle demande une action
+  ("Laissez ce champ vide et…", "Indiquez un chemin si…"). Le connecteur reste « via » pour un lien matériel ou un
+  protocole, comme dans les clés MTP voisines.
+- **Le tas de références n'est pas sur toutes les machines.** `_ignored/i18n/fr/` est ignoré par git et n'existe que sur
+  le poste principal ; sur une machine d'agent, il est simplement absent (ce n'est PAS le piège du worktree : vérifiez
+  d'abord le chemin absolu du clone principal). Repli documenté et utilisé pour la ligne ADB : miner directement les
+  paquets macOS installés (`.loctable` via `plutil -convert json`, recette dans
+  `docs/i18n/reference-pile/how-to-mine.md`), en datant chaque citation par la version d'OS. Pour un terme qu'Apple n'a
+  pas, la source de premier rang est l'éditeur du produit lui-même (ici la documentation Android en français).
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

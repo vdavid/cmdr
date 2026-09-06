@@ -1041,6 +1041,22 @@
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "834ea99"
   },
+  "settings.fileOperations.adbEnabled.label": "Acceso a archivos de Android por ADB",
+  "@settings.fileOperations.adbEnabled.label": {
+    "sourceHash": "3651356"
+  },
+  "settings.fileOperations.adbEnabled.description": "Accede a todo el sistema de archivos de un teléfono Android que tenga activada la depuración por USB, algo que MTP no puede mostrarte. Necesita las herramientas de plataforma de Android (el comando \"adb\") en este Mac. Dejar esto activado no cuesta nada si no tienes herramientas de Android instaladas.",
+  "@settings.fileOperations.adbEnabled.description": {
+    "sourceHash": "8577083"
+  },
+  "settings.fileOperations.adbBinaryPath.label": "Ubicación de adb",
+  "@settings.fileOperations.adbBinaryPath.label": {
+    "sourceHash": "a67fbbd"
+  },
+  "settings.fileOperations.adbBinaryPath.description": "Déjalo vacío y Cmdr buscará adb en los sitios habituales, incluidos el Android SDK y Homebrew. Indica otra ruta si guardas las herramientas de plataforma en un sitio aparte.",
+  "@settings.fileOperations.adbBinaryPath.description": {
+    "sourceHash": "940ff29"
+  },
   "settings.fileOperations.mtpConnectionWarning.label": "Avisar cuando se conecte un dispositivo",
   "@settings.fileOperations.mtpConnectionWarning.label": {
     "sourceHash": "070b984"

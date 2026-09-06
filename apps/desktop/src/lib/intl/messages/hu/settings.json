@@ -1039,6 +1039,22 @@
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "834ea99"
   },
+  "settings.fileOperations.adbEnabled.label": "Android-fájlok elérése ADB-n át",
+  "@settings.fileOperations.adbEnabled.label": {
+    "sourceHash": "3651356"
+  },
+  "settings.fileOperations.adbEnabled.description": "Eléred egy olyan Android-telefon teljes fájlrendszerét, amelyen be van kapcsolva az USB-hibakeresés; az MTP ezt nem mutatja meg. Ehhez kell az Android platform tools csomag (az „adb” parancs) ezen a Macen. Ha nincs telepítve Android-fejlesztőeszköz, nem kerül semmibe, ha bekapcsolva hagyod.",
+  "@settings.fileOperations.adbEnabled.description": {
+    "sourceHash": "8577083"
+  },
+  "settings.fileOperations.adbBinaryPath.label": "Az adb helye",
+  "@settings.fileOperations.adbBinaryPath.label": {
+    "sourceHash": "a67fbbd"
+  },
+  "settings.fileOperations.adbBinaryPath.description": "Hagyd üresen, és a Cmdr a szokásos módon keresi az adb-t, többek között az Android SDK-ban és a Homebrew-ban. Adj meg másik elérési utat, ha a platform tools csomagot külön helyen tartod.",
+  "@settings.fileOperations.adbBinaryPath.description": {
+    "sourceHash": "940ff29"
+  },
   "settings.fileOperations.mtpConnectionWarning.label": "Figyelmeztetés eszköz csatlakozásakor",
   "@settings.fileOperations.mtpConnectionWarning.label": {
     "sourceHash": "070b984"

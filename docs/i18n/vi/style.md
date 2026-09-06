@@ -112,6 +112,22 @@ Settled terms (sources agree):
 - **download (noun and verb): `tải về`, never `tải xuống`** · macOS vi: 35 hits for `tải về`, zero for `tải xuống`
   (Microsoft's `tải xuống` is the Windows convention). A downloaded item is `bản tải về` (Finder "Remove Download" →
   `Xóa bản tải về`). `high`.
+- **filesystem: `hệ thống tệp`** · macOS vi renders "file system"/"filesystem" as `hệ thống tệp` throughout Disk Utility
+  and ASR (`Localizable.loctable`, `ASRLocalizable.loctable`: "Verifying file system." → `Đang xác minh hệ thống tệp.`),
+  and the Cmdr catalog already uses it in `errors.listing.*`. `high`.
+- **debugging: `gỡ lỗi`; USB debugging: `gỡ lỗi USB`** · macOS vi Safari `DeveloperPreferences.strings` ("Enable … debug
+  mode" → `Bật chế độ gỡ lỗi …`), and the catalog's `settings.advanced.logLlmCalls.description` already says
+  `để gỡ lỗi`. Android's own Vietnamese phone UI shows `Gỡ lỗi USB`, so a Vietnamese reader finds the toggle by this
+  name. (verified on macOS 26.6.2 build 25G83, live-bundle mining, 2026-09-06.) `high`.
+- **command (a shell/CLI command): `lệnh`** · macOS vi loctables ("What command should be run?" → `Nên chạy lệnh nào?`,
+  "Menu Command" → `Lệnh menu`), verified 2026-09-06. Name a specific one as `lệnh "adb"`. `high`.
+- **location (of a file or binary, as a field label): `vị trí`** · macOS Finder vi `Localizable.strings` ("Location" →
+  `Vị trí`, "Go To Location" → `Đi tới vị trí`), verified on macOS 26.6.2, 2026-09-06. Matches the catalog's use of
+  `vị trí` for where something sits, against `đường dẫn` for the path string itself. `high`.
+- **leave (a field) empty: `để trống`** · macOS vi ("You may also leave them blank to bind anonymously." →
+  `Bạn cũng có thể để trống chúng để liên kết ẩn danh.`, `Localizable.loctable`), verified 2026-09-06. `high`.
+- **the usual way: `theo cách thông thường`** · macOS vi uses `thông thường` for "normal/usual" ("as normal disk" →
+  `như ổ đĩa thông thường`), verified 2026-09-06. `high`.
 - **get info: `Lấy thông tin`; the Locked checkbox in that panel: `Đã khóa`** · macOS Finder Tier 1 (`N165`, `TL22`, the
   `"Get Info"` key in `Localizable.json`; `AXNODE1` is the checkbox's own accessibility name, and `NE18` builds our
   exact sentence: `Chọn Tệp > Lấy thông tin, bỏ chọn “Đã khóa” rồi thử lại.`), verified 2026-08-23. Apple DOES localize
@@ -130,6 +146,9 @@ Tentative / needs a native check:
   this catalog uses for an OS process) and MS `Tiến độ`. Progress-the-bar stays `tiến trình`. `tentative`.
 - **"has stopped moving" (running but not advancing): `đang đứng yên`** · plain everyday Vietnamese; no source names the
   state. Avoids `treo` (hung), which reads as a crash. `tentative`.
+- **Android platform tools: `bộ công cụ nền tảng Android`** · the downloadable package Google calls "SDK
+  Platform-Tools"; no macOS/MS/file-manager source names it, so this is a descriptive rendering that keeps `Android` and
+  the command name `adb` verbatim. `tentative`.
 
 ## Brand and do-not-translate
 
@@ -233,6 +252,20 @@ Vietnamese has no grammatical number, so one form covers all counts.
   taken is `vị trí chụp` (never bare `vị trí`, which the catalog uses for a file's path). When "photo" lands right next
   to "camera", write `một bức ảnh` so `ảnh` doesn't double up; elsewhere keep bare `ảnh`. Evidence: `glossary.md` § Ask
   Cmdr xem bên trong tệp.
+- **`gỡ lỗi USB` and `bộ công cụ nền tảng Android` get translated, `adb` / `ADB` / `Android SDK` / `Homebrew` don't.**
+  The `en` `@key.description` on `settings.fileOperations.adbEnabled.*` calls "USB debugging" and "platform tools"
+  product names, but they're descriptive phrases that Android's own Vietnamese UI translates, so a Vietnamese reader
+  looking for the phone toggle needs `Gỡ lỗi USB`. What stays verbatim is the command (`adb`), the acronym (`ADB`), and
+  the packaged product names (`Android SDK`, `Homebrew`), matching how the sibling MTP strings keep quoted on-phone menu
+  labels English while translating the prose around them.
+- **The reference pile can be missing on the machine you're translating from.** The M1 agent box has no
+  `_ignored/i18n/vi/` at all (it lives only on David's laptop). The fallback in
+  `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" works and is Tier 1 all the same: mine the
+  installed macOS bundles directly. On macOS 26 most strings sit in `.loctable` files that carry every language at once,
+  so a scan is:
+  `find /System/Library/{Frameworks,PrivateFrameworks,ExtensionKit} /System/Applications /Applications -name '*.loctable'`,
+  then in Python `plistlib.load(f)['vi']` against `['en']` for the same keys. That's how the six terms above were
+  sourced.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

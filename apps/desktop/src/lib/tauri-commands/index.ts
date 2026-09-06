@@ -565,8 +565,9 @@ export {
   scanVolumeForCopy,
   scanVolumeForConflicts,
 } from './mtp'
-// Android devices over ADB (device list, connect, cancel)
+// Android devices over ADB (device list, connect, cancel, settings)
 export {
+  setAdbSettings,
   listAdbDevices,
   connectAdbDevice,
   cancelAdbConnect,

@@ -9,11 +9,14 @@
 
 use std::net::{Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
+use std::sync::RwLock;
 use std::time::Duration;
 
 use log::{debug, info, warn};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
+
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 
 use crate::errors::AdbConnectError;
 use crate::transport::AdbConnection;
@@ -45,6 +48,30 @@ static SERVER_STARTED: Mutex<Option<bool>> = Mutex::const_new(None);
 /// connect makes a new one. For an explicit user-driven re-check only.
 pub async fn forget_start_attempt() {
     *SERVER_STARTED.lock().await = None;
+}
+
+/// Where the user says their `adb` is, when they have said.
+///
+/// The app seeds it from `fileOperations.adbBinaryPath` at startup and again
+/// whenever that setting changes. ❗ A `RwLock`, not a `OnceLock`: the setting is
+/// live-applied, so this has to be replaceable for the life of the process.
+static BINARY_OVERRIDE: RwLock<Option<PathBuf>> = RwLock::new(None);
+
+/// Points [`locate_adb_binary`] at `path`, or back at the search with `None`.
+///
+/// ❗ The override only WINS while it is runnable: a path that has gone stale
+/// (an SDK moved, a typo saved) falls through to the search, so a bad line in
+/// Settings can't make every Android device vanish.
+pub fn set_adb_binary_override(path: Option<PathBuf>) {
+    let mut slot = BINARY_OVERRIDE.write_ignore_poison();
+    if slot.as_deref() == path.as_deref() {
+        return;
+    }
+    match &path {
+        Some(p) => info!("adb binary set to {}", p.display()),
+        None => debug!("adb binary back to the platform search"),
+    }
+    *slot = path;
 }
 
 /// One ADB server to talk to.
@@ -184,11 +211,19 @@ async fn start_server(binary: PathBuf, port: u16) -> bool {
     }
 }
 
-/// Finds the platform `adb` binary, in this order: `$ADB`, `$PATH`,
+/// Finds the `adb` binary, in this order: the configured override
+/// ([`set_adb_binary_override`]), `$ADB`, `$PATH`,
 /// `$ANDROID_HOME/platform-tools`, `$ANDROID_SDK_ROOT/platform-tools`,
 /// `~/Library/Android/sdk/platform-tools`, `/opt/homebrew/bin`,
 /// `/usr/local/bin`. `None` when nothing executable turns up.
 pub fn locate_adb_binary() -> Option<PathBuf> {
+    let configured = BINARY_OVERRIDE
+        .read_ignore_poison()
+        .clone()
+        .filter(|p| is_executable(p));
+    if let Some(configured) = configured {
+        return Some(configured);
+    }
     if let Some(explicit) = std::env::var_os("ADB").map(PathBuf::from).filter(|p| is_executable(p)) {
         return Some(explicit);
     }

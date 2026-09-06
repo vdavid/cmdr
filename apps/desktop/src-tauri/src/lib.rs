@@ -617,8 +617,15 @@ pub fn run() {
             // only to the local server socket, never to USB, so no TCC prompt and
             // no FDA gate; with no `adb` installed the tracker stops itself
             // rather than retrying for the session (`recheck_adb_install` revives it).
+            // The configured binary path is seeded FIRST, or the first
+            // subscription runs against whatever the environment offered.
             #[cfg(any(target_os = "macos", target_os = "linux"))]
-            adb::start_adb_tracker(app.handle());
+            {
+                adb::set_adb_binary_path(saved_settings.adb_binary_path.clone());
+                if saved_settings.adb_enabled.unwrap_or(true) {
+                    adb::start_adb_tracker();
+                }
+            }
 
             // Emit initial volume list (after watchers start so MTP devices can connect)
             volume_broadcast::emit_volumes_changed_now();

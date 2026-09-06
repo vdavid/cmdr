@@ -137,6 +137,34 @@ Near-calls (one real split, resolved with the macOS-wins rule):
 Add terms as they come up, in this same `chosen · sources · confidence` shape; keep the whole catalog consistent with
 the agreed choice.
 
+### Android over ADB (the `settings.fileOperations.adb*` rows, 2026-09-06)
+
+Evidence for these came from the LIVE macOS bundles, not the pile: `_ignored/i18n/` doesn't exist on every machine (it's
+gitignored and only ever in one clone), and `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" is
+the documented fallback. Anchored to macOS 26.6.2, build 25G83, read 2026-09-06.
+
+- **debugging: `felsökning`** · Apple sv, Safari `sv.lproj/DeveloperPreferences.strings` ("Aktivera felsökningsläge för
+  intelligent skydd mot spårning", "…för privat klickmätning"). `high`.
+- **USB debugging (the Android developer-options switch): `USB-felsökning`** · the `felsökning` root above plus the
+  catalog's settled `USB-` hyphenation (`USB-enhet`, `USB-kabel`, `USB-port`). No Android corpus is in the reference
+  pile, so the exact compound has no first-party source: `tentative`, low risk (it's the standard Swedish compound, and
+  it's what a Swedish Android phone shows in Utvecklaralternativ). Agreement is `en`-gender: "USB-felsökning aktiverad",
+  never "aktiverat".
+- **turned on (a switch on the phone): `aktiverad`** · matches the catalog's own phone-context wording (`errors.*`:
+  "Kontrollera att USB-filöverföringsläge är aktiverat på telefonen") and the settled `enable → aktivera`. `high`.
+- **"Location of adb" (a field holding a path to a binary): `Sökväg till adb`** · `path → sökväg` from the glossary,
+  plus Finder sv `Toolbar.strings` `179/180.title` = "Sökväg" for Path. ❌ Not Finder's "Plats:" (its Get Info "Where:",
+  `InfoWindowGeneralView.strings` `8C4-bd-mis.title`): `plats` names the enclosing folder, so it would read as "which
+  folder", while the field wants the executable itself. `high`.
+- **"Android file access over ADB" (switch label): `Åtkomst till Android-filer via ADB`** · `åtkomst` is the catalog's
+  settled access noun (`errors.listing.*`, `fileExplorer.pane.connectedDirectlyToast`); `via` is what the catalog
+  already uses for a transport ("via en USB-kabel", "via USB"). `high`.
+- **`adb`, `ADB`, `Android SDK`, `Homebrew`, `platform tools` kept verbatim** · command and product names, per the `en`
+  `@key` descriptions. `Android platform tools` takes no genitive `s` in Swedish ("Kräver Android platform tools"), the
+  same reflex as the `macOS`-genitive note below. `high`.
+- **this Mac: `den här Macen`** · already the catalog's form (`settings.terminal.*`: "de terminalappar den hittar på den
+  här Macen"; `main.*`: "den här Macen har en äldre version"). `high`.
+
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style

@@ -1041,6 +1041,22 @@
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "834ea99"
   },
+  "settings.fileOperations.adbEnabled.label": "Åtkomst till Android-filer via ADB",
+  "@settings.fileOperations.adbEnabled.label": {
+    "sourceHash": "3651356"
+  },
+  "settings.fileOperations.adbEnabled.description": "Nå hela filsystemet på en Android-telefon som har USB-felsökning aktiverad, något som MTP inte kan visa dig. Kräver Android platform tools (kommandot ”adb”) på den här Macen. Att låta det vara påslaget kostar ingenting om du inte har några Android-verktyg installerade.",
+  "@settings.fileOperations.adbEnabled.description": {
+    "sourceHash": "8577083"
+  },
+  "settings.fileOperations.adbBinaryPath.label": "Sökväg till adb",
+  "@settings.fileOperations.adbBinaryPath.label": {
+    "sourceHash": "a67fbbd"
+  },
+  "settings.fileOperations.adbBinaryPath.description": "Lämna det tomt, så letar Cmdr efter adb på vanligt sätt, bland annat i Android SDK och Homebrew. Ange en annan sökväg om du har platform tools på en egen plats.",
+  "@settings.fileOperations.adbBinaryPath.description": {
+    "sourceHash": "940ff29"
+  },
   "settings.fileOperations.mtpConnectionWarning.label": "Varna när en enhet ansluter",
   "@settings.fileOperations.mtpConnectionWarning.label": {
     "sourceHash": "070b984"

@@ -1037,6 +1037,22 @@
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "834ea99"
   },
+  "settings.fileOperations.adbEnabled.label": "Truy cập tệp Android qua ADB",
+  "@settings.fileOperations.adbEnabled.label": {
+    "sourceHash": "3651356"
+  },
+  "settings.fileOperations.adbEnabled.description": "Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh \"adb\") trên máy Mac này. Cứ để bật cũng không tốn gì khi bạn chưa cài công cụ Android nào.",
+  "@settings.fileOperations.adbEnabled.description": {
+    "sourceHash": "8577083"
+  },
+  "settings.fileOperations.adbBinaryPath.label": "Vị trí của adb",
+  "@settings.fileOperations.adbBinaryPath.label": {
+    "sourceHash": "a67fbbd"
+  },
+  "settings.fileOperations.adbBinaryPath.description": "Để trống thì Cmdr tìm adb theo cách thông thường, gồm cả Android SDK và Homebrew. Hãy trỏ sang nơi khác nếu bạn để bộ công cụ nền tảng ở chỗ riêng.",
+  "@settings.fileOperations.adbBinaryPath.description": {
+    "sourceHash": "940ff29"
+  },
   "settings.fileOperations.mtpConnectionWarning.label": "Cảnh báo khi một thiết bị kết nối",
   "@settings.fileOperations.mtpConnectionWarning.label": {
     "sourceHash": "070b984"

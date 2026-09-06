@@ -1297,6 +1297,24 @@
     "screenshot": "settings-file-systems-mtp.png"
   },
 
+  "settings.fileOperations.adbEnabled.label": "Android file access over ADB",
+  "@settings.fileOperations.adbEnabled.label": {
+    "description": "Label for the toggle enabling Android Debug Bridge support. \"Android\" is a product name and \"ADB\" is the abbreviation for Android Debug Bridge; keep both as-is. In Settings > File systems > Android (ADB)."
+  },
+  "settings.fileOperations.adbEnabled.description": "Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can''t show you. Needs the Android platform tools (the \"adb\" command) on this Mac. Leaving this on costs nothing when you have no Android tooling installed.",
+  "@settings.fileOperations.adbEnabled.description": {
+    "description": "Help text for the ADB toggle. \"USB debugging\" and \"platform tools\" are labels the reader has to find on their own phone and in Google\u2019s own docs, so render them the way the vendor\u2019s localized Android shows them in your language, ❌ never keep the English. \"Android\", \"MTP\", and the command name \"adb\" stay as-is."
+  },
+
+  "settings.fileOperations.adbBinaryPath.label": "Location of adb",
+  "@settings.fileOperations.adbBinaryPath.label": {
+    "description": "Label for the text field naming where the \"adb\" command lives on disk. \"adb\" is a command name; keep it lowercase and as-is. In Settings > File systems > Android (ADB)."
+  },
+  "settings.fileOperations.adbBinaryPath.description": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and Homebrew. Point it somewhere else if you keep the platform tools in their own place.",
+  "@settings.fileOperations.adbBinaryPath.description": {
+    "description": "Help text for the adb location field. \"adb\", \"Android SDK\", \"Homebrew\", and \"Cmdr\" are product and command names; keep them as-is."
+  },
+
   "settings.fileOperations.mtpConnectionWarning.label": "Warn when a device connects",
   "@settings.fileOperations.mtpConnectionWarning.label": {
     "description": "Label for the toggle that shows a notification when a USB device connects. In Settings > File systems > MTP.",

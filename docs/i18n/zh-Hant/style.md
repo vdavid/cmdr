@@ -290,6 +290,29 @@ and extend it as you settle terms. The highest-traffic head terms, for orientati
 · 書籤 (bookmark) · 喜好項目 (favorite) · 索引 (index) · 佇列 (queue) · 略過 (skip) · 覆寫 (overwrite) ·取消 (cancel)
 · 再試一次 (retry) · 網路 (network) · 伺服器 (server) · 記憶體 (memory) · 可用空間 (free space).
 
+### Android and ADB terms
+
+Settled while translating `settings.fileOperations.adb*`. Google is the vendor here, so its own Traditional Chinese docs
+are the Tier-1 source, the way Apple is for macOS terms; the reference pile carries no Android corpus.
+
+- **USB debugging (the on-phone developer option)** · `「USB 偵錯」`, in corner brackets · Google's zh-TW developer docs
+  (`developer.android.com/tools/adb?hl=zh-tw`) · `high`. It's a label the reader has to find on their own phone, so it
+  takes the phone's own wording, and it's quoted like the other on-phone labels in
+  `settings.fileOperations.mtpEnabled.description` (`「設定 > USB 偏好設定」`, `「檔案傳輸」`).
+- **debug / debugging (the generic verb)** · `除錯` · already shipped in `settings.advanced.logLlmCalls.description` and
+  `errorReporter.dialog.saveToDisk` · `tentative` (unsourced, inherited from an earlier pass). ❗ **The boundary**: the
+  Android option is `偵錯` because that is the string on the device; everything else in the catalog stays `除錯`. Don't
+  unify the two, and don't read `「USB 偵錯」` as a precedent for the generic verb.
+- **Android SDK Platform Tools** · `Android SDK 平台工具` · Google's zh-TW docs localize the descriptor
+  (`developer.android.com/studio/intro/update?hl=zh-tw`: `Android SDK 平台工具`), while keeping `adb` and `fastboot`
+  bare · `high`. A second mention in the same string shortens to `平台工具`, as the English does.
+- **adb / ADB** · kept verbatim, lowercase `adb` for the command and uppercase `ADB` for the protocol · Google keeps
+  both Latin in zh-TW · `high`. Spaced against Han like every Latin run: `adb 指令`, `透過 ADB 存取`.
+- **access (a filesystem, a device)** · `存取` · already the catalog's word throughout `mtp.json` (`無法存取 USB 裝置`,
+  `存取這個裝置的權限`) · `high`.
+- **"costs nothing" (leaving a toggle on)** · `不會有任何代價` · reuses the catalog's own `代價` from
+  `onboarding.stepOptional.mtp.desc` (`代價是 macOS 也想連這些裝置`) · `high`.
+
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, plus the `{system_settings}`-style tokens. The

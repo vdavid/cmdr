@@ -105,6 +105,29 @@ Straightforward (sources agree, `high`):
 
 Add rows as terms come up, each with sources and a confidence.
 
+From the Android (ADB) settings pass (`settings.fileOperations.adb*`; the reference pile is absent on the machine this
+pass ran on, so Tier 1 was mined from the LIVE macOS bundles per `docs/i18n/reference-pile/how-to-mine.md` § "No pile on
+this machine?", all verified on macOS 26.6.2, build 25G83, 2026-09-06):
+
+- location (of a file or command on disk) → locatie · macOS Finder `Localizable.strings` (`Location`→`Locatie`,
+  `Go To Location`→`Ga naar locatie`) · high
+- file system → bestandssysteem · macOS AppKit `DocumentDragging.loctable` ("could not be found in the file system"→"is
+  niet gevonden in het bestandssysteem") · high
+- turned on (a setting that is enabled) → ingeschakeld · macOS System Settings `Localizable.loctable`, dozens of keys
+  ("%@ is turned on but is not connected to a network"→"%@ is ingeschakeld, maar is niet verbonden met een netwerk") ·
+  high. Prefer it over the colloquial `aanstaat`
+- leave (a field) empty → laat dit leeg · macOS `Localizable.loctable` shortcut parameter help ("leave empty to preserve
+  the document type"→"laat dit leeg om het documenttype te behouden"), verbatim including the `dit` · high
+- installed → geïnstalleerd · macOS System Settings ("… is installed with macOS"→"… wordt samen met macOS
+  geïnstalleerd") · high
+- debugging → foutopsporing; USB debugging → USB-foutopsporing · Apple Dutch (Safari `DeveloperPreferences.strings`,
+  "debug mode"→"foutopsporingsmodus"), and it is also what a Dutch Android phone shows under Ontwikkelaarsopties. `USB`
+  stays, the rest is localized, so the user sees their own phone's wording · high
+- Android platform tools → Android platform tools (kept English) · the download package's own name; Google keeps it
+  English in Dutch. Two words, so the Dutch compound-concatenation rule does not apply · tentative
+- Android tooling (the general "you have no Android tooling installed") → Android-tools · distinct from the specific
+  `platform tools` above; hyphen after the English proper name, like `SMB-share` · tentative
+
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style tokens
@@ -164,6 +187,17 @@ second half is now a normal plural with a real verb
 - **No definite article in front of a numeral.** English's "the {countText} items" has no Dutch counterpart
   (`De 1 onderdeel` is wrong), so put the completeness first and the number in an apposition after a colon:
   `Alles is teruggezet: {countText} onderdelen.` That reads correctly at every count, 1 included.
+- **No reference pile on the machine? Mine the live macOS bundles, don't guess.** The `_ignored/i18n/nl/` pile lives
+  only on David's laptop, so a pass running elsewhere (the M1 agent box) finds nothing at the main-clone absolute path
+  either, and that is a genuinely absent pile rather than the worktree trap. Tier 1 is still reachable:
+  `Finder.app`/`Safari.app` `nl.lproj/*.strings` and the framework/System Settings `*.loctable` files carry the same
+  Apple Dutch, keyed by the English string or a stable id. Recipes: `docs/i18n/reference-pile/how-to-mine.md` § "No pile
+  on this machine?". Tier 2 (Microsoft terminology and style guide) has no live equivalent, so a term that would have
+  needed Microsoft to break a tie stays `tentative`.
+- **A vendor's own Dutch UI beats a `@key.description` that says "keep it as-is",** the same way term-choice principle 1
+  works for Apple. `settings.fileOperations.adbEnabled.description`'s English description asks to keep "USB debugging"
+  verbatim, but a Dutch Android phone labels that switch `USB-foutopsporing`; keeping English would leave the user
+  hunting for a string their phone never shows. Keep the acronym, localize the rest, and report the clash upward.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -219,6 +253,14 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   characters against the English 31, on a toast next to the short "Wijzig instellingen". Dutch can't hang one shared
   object in front of both verbs, so each verb carries its own half. The compact "Bekijk of vul het rapport aan" fits
   better but drops the notitie the dialog is for. Confirm which one wins in the real toast, and overflow-check it.
+- **"Android file access over ADB" → "Toegang tot Android-bestanden via ADB"**: the sibling toggle above it reads
+  "Ondersteuning voor Android/Kindle/camera (PTP en MTP)", so the two Android rows open with different words. Confirm
+  the label pair reads as one section rather than two unrelated settings.
+- **"platform tools" kept English, "Android tooling" → "Android-tools"**: no pile source (Google's Dutch pages keep the
+  package name English, and the Tier-2 sources were unreachable on this machine). Confirm the split reads right, and
+  that "de Android platform tools" doesn't want a hyphen.
+- **"USB debugging" translated to "USB-foutopsporing"** against the English `@key.description`'s "keep as-is": it's what
+  a Dutch Android phone shows. Confirm, and consider fixing the `en` description.
 - **"camera details" → `cameragegevens`** (`askCmdr.consent.item.contents`, `contentsRule`, `whatsNew.body`): a coined
   compound for a photo's EXIF block, no source has a collective noun for it. Confirm it reads as "what the camera
   recorded", not "data about the camera". Evidence and the fallback: `glossary.md` § Ask Cmdr looks inside files.

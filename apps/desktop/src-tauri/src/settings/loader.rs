@@ -77,6 +77,15 @@ pub struct Settings {
     pub show_staging_temp_files: Option<bool>,
     #[serde(alias = "fileOperations.mtpEnabled", default)]
     pub mtp_enabled: Option<bool>,
+    /// Whether Cmdr follows the ADB server's device list. Absent means on: the
+    /// tracker only talks to a local socket, so an install without Android
+    /// tooling pays nothing for it.
+    #[serde(alias = "fileOperations.adbEnabled", default)]
+    pub adb_enabled: Option<bool>,
+    /// Where the user says their `adb` binary is. Absent hands it back to the
+    /// platform search (`cmdr_adb::locate_adb_binary`).
+    #[serde(alias = "fileOperations.adbBinaryPath", default)]
+    pub adb_binary_path: Option<String>,
     #[serde(alias = "advanced.diskSpaceChangeThreshold", default)]
     pub disk_space_change_threshold_mb: Option<u64>,
     #[serde(alias = "behavior.fileSystemWatching.lowDiskSpaceNotifications", default)]
@@ -195,6 +204,8 @@ impl Default for Settings {
             show_safe_save_files: None,
             show_staging_temp_files: None,
             mtp_enabled: None,
+            adb_enabled: None,
+            adb_binary_path: None,
             disk_space_change_threshold_mb: None,
             low_disk_space_notifications: None,
             low_disk_space_threshold_percent: None,
@@ -283,6 +294,11 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let show_safe_save_files = json.get("advanced.showSafeSaveFiles").and_then(|v| v.as_bool());
     let show_staging_temp_files = json.get("advanced.showStagingTempFiles").and_then(|v| v.as_bool());
     let mtp_enabled = json.get("fileOperations.mtpEnabled").and_then(|v| v.as_bool());
+    let adb_enabled = json.get("fileOperations.adbEnabled").and_then(|v| v.as_bool());
+    let adb_binary_path = json
+        .get("fileOperations.adbBinaryPath")
+        .and_then(|v| v.as_str())
+        .map(String::from);
     let disk_space_change_threshold_mb = json.get("advanced.diskSpaceChangeThreshold").and_then(|v| v.as_u64());
     let low_disk_space_notifications = json
         .get("behavior.fileSystemWatching.lowDiskSpaceNotifications")
@@ -335,6 +351,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         show_safe_save_files,
         show_staging_temp_files,
         mtp_enabled,
+        adb_enabled,
+        adb_binary_path,
         disk_space_change_threshold_mb,
         low_disk_space_notifications,
         low_disk_space_threshold_percent,

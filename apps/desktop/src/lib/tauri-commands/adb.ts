@@ -19,6 +19,16 @@ export function asAdbConnectError(error: unknown): AdbConnectOutcomeError | null
   return error instanceof AdbConnectFailure ? error.failure : null
 }
 
+/**
+ * Applies both ADB settings without a restart: the device tracker comes back
+ * under `binaryPath`, or stops and takes its device rows with it.
+ *
+ * `binaryPath` is `null` for "look for `adb` the usual way".
+ */
+export async function setAdbSettings(enabled: boolean, binaryPath: string | null): Promise<void> {
+  await commands.setAdbSettings(enabled, binaryPath)
+}
+
 /** Every device the ADB server knows about, whatever its state. */
 export async function listAdbDevices(): Promise<AdbDevice[]> {
   return await commands.listAdbDevices()

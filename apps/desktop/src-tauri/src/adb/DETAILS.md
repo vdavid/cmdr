@@ -28,6 +28,18 @@ itself and says so at `debug`: there is nothing to reconnect to, and retrying wo
 session on the many machines that carry no Android tooling. A machine without the platform tools therefore sees
 nothing and pays nothing after startup.
 
+**Settings** (`fileOperations.adbEnabled`, default on; `fileOperations.adbBinaryPath`, empty for the platform
+search): both are live-applied, and they travel TOGETHER through one `set_adb_settings` command, because the tracker
+restarts under whichever binary the path names and pushing one alone would restart it under a stale one. The frontend's
+`adb-settings.ts` re-reads both and pushes; `settings-applier.ts` wires either change to it. Startup seeds the path
+BEFORE `start_adb_tracker`, or the first subscription runs against whatever the environment offered. ❗ Turning ADB off
+stops the subscription AND empties the cached device list (`apply_device_list(Vec::new())`), which is what retires the
+connected volumes and takes the rows off the switcher: a stopped tracker alone leaves the last list frozen on screen and
+its volumes registered, so a phone looks browsable and answers nothing. The path reaches `cmdr_adb` through
+`set_adb_binary_override`, consulted by `locate_adb_binary` ahead of `$ADB` and the rest of the search; ❗ it only wins
+while it is RUNNABLE, so a path that went stale (an SDK moved, a typo saved) falls through to the search rather than
+making every Android device vanish.
+
 **Re-check** (`recheck_adb_install`): the one path allowed to retry `adb start-server`. It stands for a person saying
 "I installed it now", so it clears the crate's start-attempt memory (`cmdr_adb::forget_start_attempt`), starts a fresh
 tracker, and answers an `AdbInstallStatus` (`binaryPath`, `tracking`) for the settings screen to render.
@@ -94,7 +106,9 @@ for good is unplugged, or revoked on the phone.
 ## IPC and frontend
 
 - `list_adb_devices() -> Vec<AdbDevice>`: the cached list, typed states included.
-- `connect_adb_device(serial) -> Result<volume_id, AdbConnectOutcomeError>`.
+- `connect_adb_device(serial, attempt_id) -> Result<volume_id, AdbConnectOutcomeError>`, and
+  `cancel_adb_connect(attempt_id) -> bool`.
+- `set_adb_settings(enabled, binary_path)`: the live apply above.
 - Frontend: `src/lib/adb/` (`adb-path-utils.ts` for the `adb://` scheme beside `mtp://`, `adb-volume-label.ts`,
   `adb-connect-errors.ts`) and `tauri-commands/adb.ts`. The frontend is a passive consumer of `volumes-changed`, the
   posture `src/lib/mtp/CLAUDE.md` describes for MTP; its one active step is the connect a navigation triggers.
@@ -111,5 +125,4 @@ the tracker's diff and inline retirement, the provider's listing answers, eject,
 - An " (ADB)" name suffix when the same phone is also listed over MTP (`entries()` names the model alone).
 - Index routing for `adb:` volume ids, `go_to_path`, and the MCP `select_volume` tool don't answer for an `adb://`
   path.
-- A settings toggle (the MTP twin is `fileOperations.mtpEnabled`) and the `adb` binary path setting.
 - The real-device pass and the crate's own deferrals: `crates/cmdr-adb/DETAILS.md` § "Known gaps and follow-ups".

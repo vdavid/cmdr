@@ -40,6 +40,9 @@ the `Volume` are `crates/cmdr-adb/` (read its `CLAUDE.md`). Same split as `mtp/v
   ❌ Never a sentence.
 - **❗ `"adb"` has a row in `MAX_CONCURRENT_OPERATIONS_SOURCES`** (`file_system/backend_settings.rs`) answering the
   constant 1; a namespace without one silently gets 2.
+- **❗ Turning `fileOperations.adbEnabled` off empties the cached device list, not only the tracker.** A stopped
+  tracker alone leaves the last list frozen on screen with its volumes registered. The two settings travel together
+  through `set_adb_settings`; the binary path reaches the crate as an override that only wins while it is runnable.
 - **❗ No `adb` binary STOPS the tracker** (at `debug`), rather than retrying: nothing to reconnect to, and a retry
   would warn every 15 s all session on every machine without Android tooling. `recheck_adb_install` is the only way
   back, and the only path allowed to retry `adb start-server`. ❌ Nothing may poll it: one attempt per human action.

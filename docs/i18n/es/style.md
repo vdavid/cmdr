@@ -116,6 +116,34 @@ GNOME/Xfce (Tier 3). Confidence: `confirmed` (human signed off), `high` (authori
 - view (look at something) → ver; show (reveal something) → mostrar · the catalog's own split (`menu.file.view` = "Ver",
   `commands.fileShowInFinder` = "Mostrar en el Finder") · high
 - drive → unidad · the catalog throughout (`askCmdr.renameUndo.unavailable`) · high
+- file system / filesystem → sistema de archivos · macOS AppKit `DocumentDragging.loctable` ("could not be found in the
+  file system" → "no se ha encontrado en el sistema de archivos", verified on macOS 26.6.2 build 25G83, 2026-09-06) ·
+  high
+- location (of a file or a binary on disk) → ubicación · macOS Finder `Localizable.strings` ("Location" → "Ubicación",
+  plus the "Ubicación:" field label in `InfoWindowGeneralView` and `BulkRenameWindow`) · high
+- path → ruta · macOS Finder `Toolbar.strings` ("Path" → "Ruta") and the catalog throughout · high
+- empty (a field or value left blank) → vacío · macOS AppKit `Bindings.loctable` ("Value for %@ cannot be empty" → "El
+  valor de %@ no puede estar vacío") · high
+- debugging (a mode you switch on) → depuración · Apple's own Safari `es` UI ("Enable … debug mode" → "Activar modo de
+  depuración …", verified on macOS 26.6.2, 2026-09-06); the catalog already uses "nivel de depuración"
+  (`settings.developer.verboseLogging.description`) · high
+- USB debugging (the Android developer setting) → depuración por USB · composed: "depuración" from Apple above, and the
+  catalog's own `por USB` attachment (`settings.fileOperations.mtpConnectionWarning.description` "se conecta por USB",
+  `errors.provider.macDroid.needsAction` "el modo de transferencia de archivos por USB") · high
+- over ADB / over USB (the transport in a label) → por ADB / por USB · the catalog's compact `por USB` pattern above;
+  keep "a través de un cable USB" for the physical-cable sense (`settings.fileOperations.mtpEnabled.description`) · high
+- Android phone → teléfono Android · the catalog throughout (`settings.fileOperations.mtpEnabled.description`,
+  `errors.provider.macDroid.*`) · high
+- turned on (a device or app setting) → activado / tenga activada … · the catalog
+  (`errors.provider.macDroid.needsAction` "que el modo … esté activado en tu teléfono") · high
+- command (a shell/CLI command) → comando · the catalog (`mtp.ptpcameradDialog.explanation` "ejecuta el siguiente
+  comando en Terminal") · high. NOT "orden".
+- Android platform tools → herramientas de plataforma de Android · composed; "herramientas" is the catalog's word for a
+  tool set (`settings.developer.mcpPort.description`, `errors.provider.veraCrypt.serious`), and `Android` stays
+  verbatim. Google's own es string is the longer "Herramientas de la plataforma del SDK de Android", which is too heavy
+  for a settings row · tentative
+- the usual way (where a program is normally found) → en los sitios habituales · "habitual" is the catalog's adjective
+  for the default/expected case (`search.systemDirExclude.default` "las carpetas habituales del sistema") · high
 
 Add rows as terms come up, each with sources and a confidence.
 
@@ -170,6 +198,17 @@ strings are counted, so no plural branches are needed there.
   preterite is the form that reads right on both sides of the Atlantic, which is what the pan-regional base wants. A
   future `es-ES` variant is where the compound perfect belongs.
 - **Numbers and dates come from the formatter layer.** Never hardcode separators.
+- **Two kinds of quotation mark, and they don't mix.** Curly `“…”` quotes a label Cmdr itself shows on screen
+  (`settings.behavior.openTerminalHereApp.label` = "“Abrir terminal aquí” usa"). A literal token the English source
+  already quotes (a command name, a value you type, an OS menu choice) keeps the source's straight `\"` so the two
+  catalogs stay diffable: `settings.fileOperations.mtpEnabled.description` quotes \"Transferencia de archivos\", and
+  `settings.fileOperations.adbEnabled.description` quotes \"adb\" the same way.
+- **"Leave this empty and X happens" takes an imperative plus the future.** `Déjalo vacío y Cmdr buscará …`
+  (`settings.fileOperations.adbBinaryPath.description`). The present (`y Cmdr busca`) reads as a statement of fact
+  rather than a consequence; the imperative-plus-future is the idiomatic Spanish pairing.
+- **A settings toggle's description reads the same as an imperative or a third person, so pick the form that works both
+  ways.** `Accede a todo el sistema de archivos …`, `Detecta y conecta con dispositivos Android …`. This dodges the
+  choice English makes for free and keeps the whole Settings screen in one register.
 - **Speed multipliers (`4x`, `100x`) spell the "times" out: `4 veces más lenta`, `(a veces, 100 veces)`.** The `4x`
   notation belongs to English UI prose; Spanish writes `N veces`. Keep the figure in digits (not `cuatro`): these are
   comparative technical numbers and the digits carry the same punch they do in English. Worked example:
@@ -217,6 +256,10 @@ strings are counted, so no plural branches are needed there.
   has two names on screen. English has one ("error report") and one for crashes ("crash report"), so this is ours to
   fix, not a source problem. Copy written since then routes around it (`errorReporter.amend.unavailable` says "envía un
   informe nuevo" without naming the type). Pick one and sweep both families.
+- **"Android platform tools" → "herramientas de plataforma de Android"** (tentative): no macOS or Microsoft source names
+  this Android SDK component, and Google's own Spanish string is "Herramientas de la plataforma del SDK de Android",
+  which is too long for a settings row. The short form is in `settings.fileOperations.adbEnabled.description` and
+  `settings.fileOperations.adbBinaryPath.description`; both would change together if you prefer the full Google wording.
 - **crash report → "informe de fallos"** (tentative): no single canonical source. "fallos" is the gentlest, most natural
   fit for Cmdr's non-alarmist voice; the more technical alternatives are "informe de bloqueos" (matches MS/macOS
   "bloqueo" for crash) or keeping it generic as "informe del problema". Confirm which reads best.

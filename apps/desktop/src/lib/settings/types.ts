@@ -350,6 +350,8 @@ export interface SettingsValues {
   // File operations
   'fileOperations.mtpEnabled': boolean
   'fileOperations.mtpConnectionWarning': boolean
+  'fileOperations.adbEnabled': boolean
+  'fileOperations.adbBinaryPath': string
   'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
   'fileOperations.pasteClipboardAsFile': PasteClipboardAsFileMode
   'fileOperations.progressUpdateInterval': number
