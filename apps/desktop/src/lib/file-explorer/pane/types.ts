@@ -264,7 +264,7 @@ export interface VolumeBreadcrumbAPI {
   handleKeyDown(e: KeyboardEvent): boolean
 }
 
-/** Typed interface for NetworkBrowser/ShareBrowser shared methods. */
+/** Typed interface for ServersHub/PlacesBrowser shared methods. */
 export interface BrowserAPI {
   /**
    * No "handled" return: both browsers sit below the document-level dispatcher, so a
@@ -279,15 +279,15 @@ export interface BrowserAPI {
   getItemCount(): number
 }
 
-/** Typed interface for NetworkBrowser's exported methods (extends BrowserAPI with refresh). */
-export interface NetworkBrowserAPI extends BrowserAPI {
+/** Typed interface for ServersHub's exported methods (extends BrowserAPI with refresh). */
+export interface ServersHubAPI extends BrowserAPI {
   refresh(): void
   /** Host under cursor; `null` when cursor sits on "Connect to server…" or list is empty. */
   getHostUnderCursor(): NetworkHost | null
 }
 
-/** Typed interface for ShareBrowser. */
-export interface ShareBrowserAPI extends BrowserAPI {
+/** Typed interface for PlacesBrowser. */
+export interface PlacesBrowserAPI extends BrowserAPI {
   /** Share under cursor; `null` when login form is up or list is empty. */
   getShareUnderCursor(): ShareInfo | null
 }

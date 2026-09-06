@@ -10,9 +10,9 @@ SMB network discovery UI: host list, per-host share list, login form, and a sing
 - **`direct-connect.ts`**: the whole "Connect directly" flow, shared by every entry point
 - **`smb-login-hosts.ts`**: which pane can render the credential form right now
 - **`os-mount-notice-bridge.ts`** + **`SmbOsMountFallbackToastContent.svelte`**: the slow-connection notice + retry
-- **`NetworkBrowser.svelte`**: Host list table, rendered when pane is on the `network` volume
-- **`ShareBrowser.svelte`**: Share list for a host, handles auth flow
-- **`NetworkLoginForm.svelte`**: Credential form rendered inside `ShareBrowser`
+- **`ServersHub.svelte`**: Host list table, rendered when pane is on the `network` volume
+- **`PlacesBrowser.svelte`**: Share list for a host, handles auth flow
+- **`NetworkLoginForm.svelte`**: Credential form rendered inside `PlacesBrowser`
 - **`ConnectToServerDialog.svelte`**: Modal for manually connecting by address/IP/`smb://` URL
 - **`smb-reconnect-manager.svelte.ts`**: Per-volume backoff cycle on the `volume-connection-changed` event
   (backend-neutral; SMB is its first emitter)
@@ -34,13 +34,13 @@ Full architecture, data flows, auth-flow detail, and decision rationale: `DETAIL
 - **Don't pre-check `hasSmbCredentials` before `getSmbCredentials`.** Each macOS Keychain access can trigger a system
   prompt, so a pre-check doubles the prompts. Call `getSmbCredentials` directly and catch.
 - **Share activation never pre-prompts** (`activateShare`, every path): try stored creds, then mount with whatever we
-  have, and let the mount failure raise the form. A pre-prompt here was a real bug; pinned by `ShareBrowser.test.ts`.
+  have, and let the mount failure raise the form. A pre-prompt here was a real bug; pinned by `PlacesBrowser.test.ts`.
 - **Mount-phase auth failures route to the login form, not a dead-end error pane.** `NetworkMountView.svelte` (in
   `../pane/`) renders `NetworkLoginForm` on auth-class mount errors (`auth_failed` / `auth_required`, including NetAuth
   -6600); non-auth errors keep the error pane. Pinned by `../pane/NetworkMountView.test.ts`.
 - **`NetworkMountView` must propagate its local `currentNetworkHost` via `onNetworkHostChange`.** It's mirrored in the
   parent `FilePane` (`initialNetworkHost` prop). Without propagation, switching volumes away from Network and back
-  re-mounts with a stale host and opens `ShareBrowser` for the wrong host.
+  re-mounts with a stale host and opens `PlacesBrowser` for the wrong host.
 - **Credential status is keyed by lowercase `host.name`** (the stable Bonjour name); IP and hostname both drift.
 - **`network` volume ID is virtual**: the `smb://` path is a sentinel, not a real mount. Mounted shares appear as
   separate `VolumeInfo` entries with real IDs.

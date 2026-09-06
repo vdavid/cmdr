@@ -42,7 +42,7 @@ export type DispatchExemptId =
   | 'nav.firstInFull'
   | 'nav.lastInFull'
   // Family 3 — Component-scoped. Handled inside the component that owns the modal /
-  // sub-view (CommandPalette, VolumeChooser, NetworkBrowser, ShareBrowser, the
+  // sub-view (CommandPalette, VolumeChooser, ServersHub, PlacesBrowser, the
   // context menu), via its own keydown handler — not the global dispatch spine.
   // Registered for the rebinding UI.
   | 'palette.up'

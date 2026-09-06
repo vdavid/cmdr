@@ -208,7 +208,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   it('clears the mirror itself when the error pane goes away', async () => {
     // A `mountError` that outlives its pane misleads a reader worse than the
     // silence it replaced, and the view that comes next can't be relied on to
-    // clear it: `ShareBrowser` only pushes once it has a share list, so a host
+    // clear it: `PlacesBrowser` only pushes once it has a share list, so a host
     // that has since gone quiet pushes nothing at all.
     h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
     const { target, component } = await mountViewAndActivateShare()
@@ -224,7 +224,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     must(backButton, 'the Back button').click()
 
     await vi.waitFor(() => {
-      // An explicit `null`, which only this view sends: `ShareBrowser`'s own push
+      // An explicit `null`, which only this view sends: `PlacesBrowser`'s own push
       // omits the key entirely, so this can't pass on its remount alone.
       expect(h.updateLeftPaneState).toHaveBeenCalledWith(expect.objectContaining({ mountError: null }))
     })

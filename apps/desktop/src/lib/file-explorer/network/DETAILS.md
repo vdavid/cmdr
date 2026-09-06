@@ -34,7 +34,7 @@ Key exported functions: `getNetworkHosts()` (sorted copy), `fetchShares(host)` (
 `getDiscoveryState()`, `isHostResolving(hostId)`, `getShareState(hostId)`, `getShareCount(hostId)`,
 `isListingShares(hostId)`, `isShareDataStale(hostId)`.
 
-## `NetworkBrowser.svelte`
+## `ServersHub.svelte`
 
 Host table (Name, IP, Hostname, Shares, Status), reads from `network-store` getters. A "Connect to server..." pseudo-row
 sits at the bottom (keyboard navigable, "+" icon, italic), firing `onConnectToServer`; not counted in the status-bar
@@ -50,7 +50,7 @@ Exports for parent: `setCursorIndex(index)`, `findItemIndex(name)`, `handleKeyDo
 `getHostUnderCursor()`, `getItemCount()`. `refresh()` is `pane.refresh`'s entry point from the command layer and is the
 same body ⌘R runs locally, which is why the local branch stops propagation (see § Gotchas).
 
-## `ShareBrowser.svelte`
+## `PlacesBrowser.svelte`
 
 Auth flow on mount:
 
@@ -65,7 +65,7 @@ Auth flow on mount:
 `authenticatedCredentials` is passed to `onShareSelect` so the caller mounts without re-prompting.
 
 The stored-creds attempt matters because the share list often loads via the SYSTEM Keychain (`smbutil view -N`) without
-exercising Cmdr's own creds, so `authenticatedCredentials` is null even when a working password is saved. ShareBrowser's
+exercising Cmdr's own creds, so `authenticatedCredentials` is null even when a working password is saved. PlacesBrowser's
 own `NetworkLoginForm` appears ONLY when the share **listing** needs auth (`loadShares`); cancelling returns to the host
 list.
 
@@ -98,16 +98,16 @@ App startup
        └─ startResolution() → resolveNetworkHost()
             └─ startPrefetchShares() → prefetchSharesCmd() → fetchSharesSilent()
 
-User opens Network volume → NetworkBrowser mounts → refreshAllStaleShares()
+User opens Network volume → ServersHub mounts → refreshAllStaleShares()
 
-User double-clicks host → ShareBrowser mounts → loadShares()
+User double-clicks host → PlacesBrowser mounts → loadShares()
        ├─ cache hit → render
        └─ auth required → tryStoredCredentials() → login form if needed
 
 User activates "Connect to server..." row → ConnectToServerDialog opens
        └─ connectToServer(address) → TCP check → inject host
             └─ onConnect(host, sharePath)
-                 ├─ ShareBrowser mounts (host set)
+                 ├─ PlacesBrowser mounts (host set)
                  └─ if sharePath → autoMountShare triggers mount
 ```
 
@@ -244,7 +244,7 @@ Disconnect button: `disconnectSmbVolume(volumeId)` shells out to `diskutil unmou
 3. Sets `network.firstTriggerDone = true` so subsequent launches start mDNS eagerly (returning users get full speed
    without re-prompts).
 
-Call sites: `NetworkBrowser.onMount`, `ConnectToServerDialog.onMount` (manual entry opens a TCP socket to a private IP,
+Call sites: `ServersHub.onMount`, `ConnectToServerDialog.onMount` (manual entry opens a TCP socket to a private IP,
 which triggers the prompt anyway), and `VolumeBreadcrumb.handleSubmenuAction` (the OS-mount → direct-smb2 upgrade also
 opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § "Lazy mDNS startup".
 
@@ -276,11 +276,11 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
 - **Credential status keyed by lowercase `host.name`**: the same physical host can change IP (DHCP) and hostname (mDNS
   vs DNS); the Bonjour service name is the stable identifier. Lowercasing avoids case mismatches.
 - **Tab in `NetworkLoginForm` calls `stopPropagation()`**: the parent reads Tab as pane-switch otherwise.
-- **⌘R in `NetworkBrowser` calls `stopPropagation()` too, and one round of shares depends on it.** The document-level
+- **⌘R in `ServersHub` calls `stopPropagation()` too, and one round of shares depends on it.** The document-level
   dispatcher runs after this handler and has no `defaultPrevented` guard, so `pane.refresh` would ALSO dispatch into
-  `refreshPane` → `refreshNetworkHosts()` → `NetworkBrowser.refresh()` — the same `handleRefreshClick()` the local
+  `refreshPane` → `refreshNetworkHosts()` → `ServersHub.refresh()` — the same `handleRefreshClick()` the local
   branch just ran, giving every host two `clearShareState` + `fetchShares` rounds per keypress. Pinned by
-  `NetworkBrowser.test.ts`; the general rule is in `$lib/shortcuts/DETAILS.md` § "Local handlers resolve through the
+  `ServersHub.test.ts`; the general rule is in `$lib/shortcuts/DETAILS.md` § "Local handlers resolve through the
   registry too".
 - **Neither browser's `handleKeyDown` returns a "handled" boolean** (`BrowserAPI` in `../pane/types.ts`). Nothing above
   them branches on one: `NetworkMountView` and `pane-key-router` hand the network view every key and return either way,

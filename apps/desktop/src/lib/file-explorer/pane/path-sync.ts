@@ -59,7 +59,7 @@ export function resolveInitialPathAction(input: InitialPathSyncInput): InitialPa
   // the transition to a browsable storage volume.
   if (input.isMtpDeviceOnly) return { kind: 'sync-path', path: initialPath }
 
-  // The network view owns its own data (NetworkBrowser / ShareBrowser).
+  // The network view owns its own data (ServersHub / PlacesBrowser).
   if (input.isNetworkView) return { kind: 'none' }
 
   return { kind: 'load', path: initialPath }

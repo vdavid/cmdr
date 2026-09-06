@@ -416,6 +416,18 @@ export interface NetworkHost {
   source?: 'discovered' | 'manual'
 }
 
+/**
+ * The account whose places a `PlacesBrowser` lists.
+ *
+ * ❗ A tagged union with ONE arm today, on purpose: an SMB host's shares and (a
+ * milestone later) a storage account's buckets are the same screen with a
+ * different lister, and the tag is what makes the second one a compile-checked
+ * addition rather than a second component. The hub builds one of these for a
+ * discovered host and for a saved SMB host alike, which is why the browser takes
+ * an account rather than the raw `NetworkHost` it used to.
+ */
+export type PlacesAccount = { protocol: 'smb'; host: NetworkHost }
+
 // ============================================================================
 // SMB share types
 // ============================================================================

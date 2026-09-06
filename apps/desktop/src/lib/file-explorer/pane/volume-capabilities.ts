@@ -131,7 +131,7 @@ export interface VolumeCapabilities {
   hasParentRow: boolean
   /**
    * FilePane mirrors this pane's state to the MCP `PaneState` store. False only
-   * for `network`, where `NetworkBrowser` owns the push and FilePane's would
+   * for `network`, where `ServersHub` owns the push and FilePane's would
    * clobber its host list. Every other kind mirrors, the search-results snapshot
    * included: it's a real pane an agent moves the cursor in and deletes from, and
    * a pane that pushes nothing leaves the store describing wherever it came from.
@@ -210,7 +210,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
   network: Object.freeze({
     kind: 'network',
     // The strictest kind: no listing, no source ops (the host/share list isn't
-    // files), no MCP sync (NetworkBrowser owns that push). The write/source
+    // files), no MCP sync (ServersHub owns that push). The write/source
     // `false`s are structurally-true-no-guard cells (a network pane renders
     // NetworkMountView and never reaches the file-list `{#if}`).
     hasBackendListing: false,

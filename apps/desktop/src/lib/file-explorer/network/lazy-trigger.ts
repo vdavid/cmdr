@@ -8,7 +8,7 @@
  * `network.firstTriggerDone = true` so subsequent launches start mDNS eagerly without
  * surprising the user.
  *
- * Callers: `NetworkBrowser` mount, `ConnectToServerDialog` open, the OS-mount → direct-smb2
+ * Callers: `ServersHub` mount, `ConnectToServerDialog` open, the OS-mount → direct-smb2
  * upgrade click in `VolumeBreadcrumb`.
  *
  * No-op when `network.enabled === false`. The caller doesn't need to gate; this is the

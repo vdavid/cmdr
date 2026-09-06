@@ -1,14 +1,14 @@
 <script lang="ts">
     /**
-     * ShareBrowser - displays shares on a network host.
-     * Shows login form when authentication is required.
+     * The places under one account: an SMB host's shares today, a storage
+     * account's buckets later. Raises the sign-in form when the listing needs one.
      */
     import { onMount } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import CopyBox from '$lib/ui/CopyBox.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
-    import type { AuthMode, NetworkHost, NetworkLoginSubmitPayload, ShareInfo, ShareListError } from '../types'
+    import type { AuthMode, NetworkLoginSubmitPayload, PlacesAccount, ShareInfo, ShareListError } from '../types'
     import {
         getShareState,
         fetchShares,
@@ -47,8 +47,8 @@
     const SHARE_ROW_HEIGHT = 20
 
     interface Props {
-        /** The host we're browsing */
-        host: NetworkHost
+        /** Whose places these are. One SMB arm today; see `PlacesAccount`. */
+        account: PlacesAccount
         /** Which pane this browser lives in (for MCP state sync) */
         paneId?: 'left' | 'right'
         /** Whether this pane is focused */
@@ -61,7 +61,11 @@
         onBack?: () => void
     }
 
-    const { host, paneId, isFocused = false, autoMountShare, onShareSelect, onBack }: Props = $props()
+    const { account, paneId, isFocused = false, autoMountShare, onShareSelect, onBack }: Props = $props()
+
+    // The SMB host behind the account. Everything below still speaks SMB; the
+    // account is the seam a second protocol arrives through, not a rewrite.
+    const host = $derived(account.host)
 
     // Local state
     let shares = $state<ShareInfo[]>([])
@@ -307,7 +311,7 @@
             error = null
             showLoginForm = false
 
-            // Update global share state so NetworkBrowser shows correct info
+            // Update global share state so ServersHub shows correct info
             setShareState(host.id, result)
 
             // Update credential status
@@ -362,7 +366,7 @@
     }
 
     function handleCancel() {
-        // The ShareBrowser login form only appears when the share LISTING itself needs
+        // The PlacesBrowser login form only appears when the share LISTING itself needs
         // auth (see `loadShares`); cancelling it means "don't sign in" → back to the
         // host list. (Share-activation auth is handled by NetworkMountView's
         // mount-failure form, not here.)

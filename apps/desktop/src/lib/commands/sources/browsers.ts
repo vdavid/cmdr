@@ -36,7 +36,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.shareBack.label',
     scope: 'Main window/Places',
     showInPalette: true,
-    // `⌘↑` mirrors the file list's `⌘↑` = parent; ShareBrowser handles all three
+    // `⌘↑` mirrors the file list's `⌘↑` = parent; PlacesBrowser handles all three
     // keys (`handleBackToHostKey`). Display-only — `fixedKey` handling is in-component.
     shortcuts: ['Backspace', 'Escape', '⌘↑'],
     fixedKey: true,

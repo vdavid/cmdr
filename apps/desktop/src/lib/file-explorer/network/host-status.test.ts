@@ -1,5 +1,5 @@
 /**
- * Unit tests for the host-status classification extracted from `NetworkBrowser.svelte`.
+ * Unit tests for the host-status classification extracted from `ServersHub.svelte`.
  *
  * These pin the credential-aware mapping from a `NetworkHost` + network-store state to a typed
  * `HostStatus`, the error/tooltip nuance, and the three lookup maps that feed the UI and the MCP

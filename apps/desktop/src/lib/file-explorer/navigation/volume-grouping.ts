@@ -45,7 +45,7 @@ export function groupByCategory(
         groups.push({ category, label, items: mobileItems })
       }
     } else if (category === 'network') {
-      // Network section: show a single "Network" item that opens NetworkBrowser
+      // Network section: show a single "Network" item that opens ServersHub
       // Also include any pre-mounted network volumes (mounted shares).
       // When networking is disabled in Settings, the synthetic entry is labelled
       // "Network (disabled)": already-mounted shares stay listed (filesystem I/O on

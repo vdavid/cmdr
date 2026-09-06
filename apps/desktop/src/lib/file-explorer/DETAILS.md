@@ -192,8 +192,8 @@ For the full module map, decisions, and gotchas, see `git/CLAUDE.md`.
 
 ## Network browser (`network/`)
 
-- **NetworkBrowser.svelte**: Top-level network view; lists discovered servers
-- **ShareBrowser.svelte**: Lists shares on a selected server
+- **ServersHub.svelte**: Top-level network view; lists discovered servers
+- **PlacesBrowser.svelte**: Lists shares on a selected server
 - **NetworkLoginForm.svelte**: Credential entry for authenticated SMB connections
 - **network-store.svelte.ts**: Reactive state for discovered servers, selected server/share, and auth mode
 

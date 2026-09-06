@@ -4,7 +4,7 @@
  * view re-mounts, and because history navigation tracks the host.
  *
  * Guardrail: leaving the network volume by ANY route clears both, so re-entering
- * Network always lands on the host list. Clearing only on `ShareBrowser`'s Back
+ * Network always lands on the host list. Clearing only on `PlacesBrowser`'s Back
  * button (the obvious place) misses volume switches from the picker, the
  * breadcrumb, history navigation, and MCP, which leaves `NetworkMountView`
  * re-mounting with a stale `initialNetworkHost` and the user staring at the
