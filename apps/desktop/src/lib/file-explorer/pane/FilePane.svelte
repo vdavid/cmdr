@@ -1116,6 +1116,10 @@
         getRowCount: () => effectiveTotalCount,
         // A search-results pane's rows live in the frontend snapshot, not a listing.
         getSnapshotEntries: () => searchSnapshot?.entries ?? null,
+        // And so does their ORDER. The tab's own `sortBy` / `sortOrder` belong to
+        // the folder this pane came from, so reporting them would describe an
+        // order the rows aren't in.
+        getSnapshotSort: () => searchSnapshot?.sort ?? null,
         getHasParent: () => hasParent,
         getVisibleRangeStart: () => visibleRangeStart,
         getVisibleRangeEnd: () => visibleRangeEnd,

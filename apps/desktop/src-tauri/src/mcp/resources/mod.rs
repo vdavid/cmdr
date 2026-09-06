@@ -338,6 +338,12 @@ pub(crate) fn build_pane_yaml_with_options(state: &PaneState, indent: &str, comp
     }
     lines.push(format!("{}path: {}", indent, state.path));
     lines.push(format!("{}view: {}", indent, state.view_mode));
+    // The pane always pushes both halves explicitly (`pane-mcp-sync.svelte.ts`),
+    // INCLUDING the `relevance:desc` a search-results pane in the engine's ranked
+    // order reports. These fallbacks therefore describe only a `PaneState` no pane
+    // ever pushed (a default-constructed one at startup); ❌ don't lean on them to
+    // stand in for a real pane's order, which is how a ranked result set used to
+    // come out claiming `name:asc`.
     lines.push(format!(
         "{}sort: \"{}:{}\"",
         indent,

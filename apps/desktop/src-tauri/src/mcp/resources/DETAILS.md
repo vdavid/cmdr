@@ -68,6 +68,24 @@ A directory's recursive size is a claim of varying strength, and `cmdr://state` 
 
 **Why this is sharper for agents than for people**: someone watching a folder mid-scan sees the hourglass and waits. An agent reads the number and acts on it, so an uncounted total presented as settled becomes a confident wrong answer (a 129 GB tree reported as 28.8 GB).
 
+### The `sort:` line, and the `relevance` value
+
+Every pane block carries `sort: "<field>:<order>"`, where `field` is one of `name`, `ext`, `size`, `modified`,
+`created`, or **`relevance`**, and `order` is `asc` or `desc`.
+
+`relevance` belongs to a **search-results pane showing the search engine's ranked order**, which is the state such a
+pane opens in and returns to after a third click on its active column header. It says the rows are best-match-first,
+which is a real order and the one thing the five column names can't express. A user can sort that pane by column like
+any other, and then it reports that column instead. What the pane is in, and why the tab's own sort is not the answer:
+`apps/desktop/src/lib/search/DETAILS.md` § "The snapshot pane's row order".
+
+❗ Both halves are pushed explicitly by the frontend (`pane-mcp-sync.svelte.ts`). The builder's empty-field fallback to
+`name:asc` therefore describes only a `PaneState` no pane ever pushed; ❌ don't lean on it to stand in for a real pane's
+order, which is how a ranked result set used to come out claiming it was sorted by name.
+
+The `sort` TOOL still takes only the five column names. An agent puts a search-results pane back into its ranked order
+by re-opening the snapshot, not by asking for `relevance`.
+
 ### Pane state includes pagination
 
 Large directories (50k+ files) are paginated. The `totalFiles`, `loadedStart`, `loadedEnd` fields indicate what's currently loaded. Agents must use `scroll_to(index)` to load different regions.

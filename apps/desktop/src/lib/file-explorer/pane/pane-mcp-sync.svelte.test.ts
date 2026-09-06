@@ -59,6 +59,7 @@ function deps(overrides: Partial<PaneMcpSyncDeps> = {}): PaneMcpSyncDeps {
     getTotalCount: () => TOTAL_COUNT,
     getRowCount: () => TOTAL_COUNT,
     getSnapshotEntries: () => null,
+    getSnapshotSort: () => null,
     getHasParent: () => false,
     getVisibleRangeStart: () => TOTAL_COUNT - 100,
     getVisibleRangeEnd: () => TOTAL_COUNT,
@@ -225,6 +226,35 @@ describe('a search-results snapshot pane', () => {
     const sync = createPaneMcpSync(snapshotDeps({ getVisibleRangeStart: () => 1, getVisibleRangeEnd: () => 3 }))
 
     expect((await sync.buildMcpFileList()).map((f) => f.name)).toEqual(['b.txt', 'c.txt'])
+  })
+
+  it('reports relevance while the rows are in the engine ranked order, not the tab own sort', async () => {
+    // The pane's tab still carries the sort of the folder the user came from,
+    // and reporting THAT would tell an agent the rows are in an order they are
+    // not in. A ranked result set is sorted by relevance, so it says so.
+    const sync = createPaneMcpSync(snapshotDeps({ getSortBy: () => 'size', getSortOrder: () => 'ascending' }))
+
+    await sync.syncPaneStateToMcp()
+
+    const state = updateLeftPaneState.mock.calls[0][0] as { sortField: string; sortOrder: string }
+    expect(state.sortField).toBe('relevance')
+    expect(state.sortOrder).toBe('desc')
+  })
+
+  it('reports the column the user actually sorted the snapshot by', async () => {
+    const sync = createPaneMcpSync(
+      snapshotDeps({
+        getSortBy: () => 'size',
+        getSortOrder: () => 'ascending',
+        getSnapshotSort: () => ({ column: 'modified', order: 'descending' }),
+      }),
+    )
+
+    await sync.syncPaneStateToMcp()
+
+    const state = updateLeftPaneState.mock.calls[0][0] as { sortField: string; sortOrder: string }
+    expect(state.sortField).toBe('modified')
+    expect(state.sortOrder).toBe('desc')
   })
 
   it('mirrors the rows in the order the user sorted them into', async () => {

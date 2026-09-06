@@ -8,6 +8,7 @@ import {
 import { type CanonicalPath, parentOf } from '$lib/path/canonical'
 import type { ViewMode } from '$lib/app-status-store'
 import type { SearchResultEntry } from '$lib/ipc/bindings'
+import type { SnapshotSort } from '$lib/search/snapshot-store.svelte'
 import { snapshotMcpRows } from './snapshot-mcp-rows'
 
 export interface PaneMcpSyncDeps {
@@ -36,6 +37,12 @@ export interface PaneMcpSyncDeps {
    * from here instead (`snapshot-mcp-rows.ts`).
    */
   getSnapshotEntries: () => readonly SearchResultEntry[] | null
+  /**
+   * The order a search-results pane's rows are in, or `null` for the search
+   * engine's ranked order. Meaningless on any other pane, which reads its sort
+   * off `getSortBy` / `getSortOrder` instead.
+   */
+  getSnapshotSort: () => SnapshotSort | null
   getHasParent: () => boolean
   getVisibleRangeStart: () => number
   getVisibleRangeEnd: () => number
@@ -80,6 +87,36 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
     size: 'size',
     modified: 'modified',
     created: 'created',
+  }
+
+  /**
+   * The `sort:` line `cmdr://state` renders for this pane, as an explicit
+   * `field` / `order` pair.
+   *
+   * A SEARCH-RESULTS pane answers from its snapshot, never from the tab: the tab
+   * still carries the sort of the folder the user came from, and reporting that
+   * would tell an agent the rows are in an order they are not in. Its ranked
+   * state reports `relevance:desc`, which is what a result set ranked
+   * best-match-first is sorted by, rather than the `name:asc` a silent default
+   * would have shown.
+   *
+   * ❗ Always explicit, never empty: the resource renderer substitutes
+   * `name:asc` for an empty field, and a pane that pushed nothing there would be
+   * described by that substitution instead of by itself.
+   */
+  function mcpSort(): { field: string; order: 'asc' | 'desc' } {
+    if (deps.getSnapshotEntries() !== null) {
+      const snapshotSort = deps.getSnapshotSort()
+      if (!snapshotSort) return { field: 'relevance', order: 'desc' }
+      return {
+        field: sortFieldMap[snapshotSort.column] ?? 'name',
+        order: snapshotSort.order === 'ascending' ? 'asc' : 'desc',
+      }
+    }
+    return {
+      field: sortFieldMap[deps.getSortBy()] ?? 'name',
+      order: deps.getSortOrder() === 'ascending' ? 'asc' : 'desc',
+    }
   }
 
   /**
@@ -229,6 +266,7 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
             }
           : null
 
+      const sort = mcpSort()
       const state: PaneState = {
         path: deps.getCurrentPath(),
         volumeId: deps.getVolumeId(),
@@ -239,8 +277,8 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
         cursorIndex: deps.getCursorIndex(),
         viewMode: deps.getViewMode(),
         selectedIndices: deps.getSelectedIndices(),
-        sortField: sortFieldMap[deps.getSortBy()] ?? 'name',
-        sortOrder: deps.getSortOrder() === 'ascending' ? 'asc' : 'desc',
+        sortField: sort.field,
+        sortOrder: sort.order,
         totalFiles: effectiveTotal,
         // Says whether `totalFiles` counts a `..` row. The backend's empty-pane
         // gate subtracts it before deciding there's nothing to act on, so a
