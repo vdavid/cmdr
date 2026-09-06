@@ -98,6 +98,17 @@ pub struct LocationInfo {
     /// question from how live a session is. Set by the device providers only: a
     /// phone waiting for its "Allow USB debugging?" tap is present and must never
     /// start a reconnect backoff. `None` for everything that isn't a device.
+    /// Whether this place belongs in the volume SWITCHER: the user's own cap on
+    /// how many saved things crowd their disks. `Some` only on a server place
+    /// (`server_volumes.rs`), which is the only row the cap applies to; `None`
+    /// on a local disk, a favorite, and a mounted SMB share, all of which show
+    /// unconditionally.
+    ///
+    /// ❗ The listing publishes EVERY saved place regardless, because a volume id
+    /// with no row is one the app denies exists (a hub Enter and a restored tab
+    /// both land on an id). Hiding is `navigation/volume-grouping.ts`'s job, and
+    /// this field is what it reads.
+    pub pinned: Option<bool>,
     pub device_readiness: Option<cmdr_fs::volume::DeviceReadiness>,
     /// Negotiated USB link speed. Set only for MTP/mobile volumes; everything
     /// else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1" and a
@@ -190,6 +201,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             mount_is_read_only,
             is_disk_image,
             connection_state: None,
+            pinned: None,
             device_readiness: None,
             usb_speed: None,
             capabilities: None,
@@ -278,6 +290,7 @@ fn get_favorites() -> Vec<LocationInfo> {
                 mount_is_read_only: false,
                 is_disk_image: false,
                 connection_state: None,
+                pinned: None,
                 device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
@@ -315,6 +328,7 @@ fn get_main_volume() -> Option<LocationInfo> {
             mount_is_read_only: false,
             is_disk_image: false,
             connection_state: None,
+            pinned: None,
             device_readiness: None,
             usb_speed: None,
             capabilities: None,

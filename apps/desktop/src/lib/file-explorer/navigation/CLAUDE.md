@@ -40,9 +40,10 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `diskutil`'s stderr.
 - **A SERVER row says Disconnect, never Eject**, and is claimed by VOLUME ID (`isServerPlaceRow`), ❌ never by
   `category === 'network'`: a mounted SMB share is one of those, and `disconnectPlace` doesn't speak its OS mount.
-- **The Network group's own rows are the LISTING's**, plus exactly one row this dir synthesizes: the hub. ❗ Don't add a
-  `listSavedServers()` fetch to `volume-grouping.ts` — the pin that keeps unpinned servers out is decided in Rust, and
-  fetching here would put every one of them back and undo the user's own cap. DETAILS § "The three-things rule".
+- **The Network group's own rows are the LISTING's**, filtered by `belongsInSwitcher`, plus exactly one row this dir
+  synthesizes: the hub. The listing carries every saved place and its `pinned`; hiding the unpinned ones is this dir's
+  job. ❗ Don't add a `listSavedServers()` fetch to `volume-grouping.ts`: the row already says. DETAILS § "The
+  three-things rule".
 - **`resolveValidPath` stops at a scheme path's floor and RETURNS it**, never `~`, `/`, or `null`: a remote path answers
   no probe, so the plain walk lands the pane on the boot disk. DETAILS § "Restoring a remote path".
 - **Favorites: mutate ONLY via the `commands.*` wrappers, always stripping the `fav-` prefix.** The favorites group

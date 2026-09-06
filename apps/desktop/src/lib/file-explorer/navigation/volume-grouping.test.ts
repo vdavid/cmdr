@@ -3,12 +3,12 @@
  *
  * The three-things rule (`docs/specs/servers-hub-plan.md` § "The four rules"):
  * the group holds the hub row, every place connected right now, and every
- * pinned place greyed out. ❗ The PIN half is decided in Rust
- * (`server_volumes.rs::append_server_volumes`), which is the only side that can
- * read a pin: `VolumeInfo` carries none. So the frontend's half of the contract
- * is that it renders the listing and synthesizes exactly ONE row of its own —
- * the hub. A future "helpful" fetch of `listSavedServers()` here would put
- * unpinned servers back on screen, and the last cell is what catches it.
+ * pinned place greyed out. ❗ The listing hands over EVERY saved place, pin and
+ * all, because a volume id with no row is one the app denies exists: a hub Enter
+ * and a restored tab both land on an id. So applying the cap is the switcher's
+ * job, and it is this module's half of the contract. The one row it synthesizes
+ * is the hub; a "helpful" fetch of `listSavedServers()` here would be a second
+ * source of truth, and the last cell is what catches it.
  */
 import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
@@ -31,6 +31,7 @@ function serverRow(overrides: Partial<VolumeInfo>): VolumeInfo {
     isEjectable: false,
     fsType: 'sftp',
     connectionState: 'direct',
+    pinned: true,
     ...overrides,
   }
 }
@@ -49,22 +50,49 @@ describe('groupByCategory: the Network group', () => {
   })
 
   it('shows a connected place, pinned or not', () => {
-    // A registered volume earns its row through its session, never through a pin
-    // (`server_volumes.rs`: `place.is_registered() || place.pinned`).
-    const items = networkItems([serverRow({ connectionState: 'direct' })])
+    // A live session earns its row through the session, never through a pin.
+    const items = networkItems([serverRow({ connectionState: 'direct', pinned: false })])
     expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-ada'])
   })
 
   it('shows a pinned place that has no session, as its `saved` row', () => {
-    const items = networkItems([serverRow({ connectionState: 'saved' })])
+    const items = networkItems([serverRow({ connectionState: 'saved', pinned: true })])
     expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-ada'])
     expect(items[1].connectionState).toBe('saved')
   })
 
-  it('invents no row for a saved server the listing left out', () => {
-    // An UNPINNED saved server is absent from the listing on purpose. The
-    // frontend must not put it back: pins are the user's cap on how many saved
-    // things crowd their own disks.
+  it('hides a saved place nobody pinned', () => {
+    // The cap the user holds: 12 saved buckets must not push their own disks off
+    // the switcher. The row is still in the LISTING, so Enter in the hub and a
+    // restored tab both find the volume.
+    const items = networkItems([serverRow({ connectionState: 'saved', pinned: false })])
+    expect(items.map((v) => v.id)).toEqual(['network'])
+  })
+
+  it('keeps an unpinned place whose session is still being recovered', () => {
+    // A dropped session is mid-recovery, and a row that vanishes while the
+    // backoff loop runs takes the user's Disconnect control with it.
+    const items = networkItems([serverRow({ connectionState: 'disconnected', pinned: false })])
+    expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-ada'])
+  })
+
+  it('keeps a row that carries no pin at all', () => {
+    // ❗ Only a server PLACE carries a pin. A mounted SMB share never was subject
+    // to the cap, and on Linux it also carries no connection state, so a rule
+    // written as "live or pinned" would drop it off the switcher entirely.
+    const mounted = serverRow({
+      id: 'smb-naspi-media',
+      name: 'media',
+      path: '/Volumes/media',
+      fsType: 'smbfs',
+      connectionState: undefined,
+      pinned: undefined,
+    })
+    const items = networkItems([mounted])
+    expect(items.map((v) => v.id)).toEqual(['network', 'smb-naspi-media'])
+  })
+
+  it('invents no row of its own beyond the hub', () => {
     const items = networkItems([serverRow({ connectionState: 'direct' })])
     expect(items).toHaveLength(2)
     expect(items.some((v) => v.id === 'webdav-unpinned-server')).toBe(false)
@@ -77,8 +105,9 @@ describe('groupByCategory: the Network group', () => {
       path: '/Volumes/media',
       fsType: 'smbfs',
       connectionState: 'os_mount',
+      pinned: undefined,
     })
-    const items = networkItems([mounted, serverRow({ connectionState: 'saved' })])
+    const items = networkItems([mounted, serverRow({ connectionState: 'saved', pinned: true })])
     expect(items.map((v) => v.id)).toEqual(['network', 'smb-naspi-media', 'sftp-nas-22-ada'])
   })
 })

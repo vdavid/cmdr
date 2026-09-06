@@ -45,7 +45,8 @@ scrolls past their own disks. Pins are the cap, and the user holds it.
   connected right now, and every pinned place, greyed with a hollow dot when disconnected. A new place is pinned on its
   first successful connect. "Unpin" lives in the row's context menu. ❌ No "Connect to server…" row in the switcher:
   adding lives in the hub, the command palette, and ⌘K. (Pins cover SFTP and WebDAV places in this effort; SMB shares
-  are D4's "later".)
+  are D4's "later".) ❗ The rule is the SWITCHER's, applied in `navigation/volume-grouping.ts` over the `pinned` field
+  each row carries; the volume LIST holds every place, because an id with no row is one the app denies exists.
 - **Every row in the switcher is a place. Opening a place that isn't live brings it to life in the pane, with a cancel
   button.** MTP already works this way (`MtpConnectionView`); SFTP, WebDAV, SMB, and ADB inherit it.
 - **Dialogs are for entering data; panes are for waiting.** The sheet exists to type a new server, edit one, or answer a
@@ -221,15 +222,23 @@ commit. The switcher's dot builds its CSS class from the state name, so the thre
 The MCP volumes resource exposes the field as `connectionState` and takes the synthetic row's name from the same source
 the hub does. That field is an agent-facing contract; the rename is stated in `mcp/resources/DETAILS.md`.
 
-### D2. Remote volumes are listed by a servers arm; saved-but-unpinned ones are not
+### D2. Remote volumes are listed by a servers arm; the pin filters the switcher, not the list
 
-`volume_listing::complete` grows a fold BEFORE `enrich_from_volume_registry`: one `LocationInfo` per registered SFTP or
-WebDAV volume, plus one per pinned saved server that has no registered volume (state `saved`). `category: Network`,
-`fs_type: "sftp" | "webdav"`, `is_ejectable: false`, `supports_trash: false`, `name` the saved `displayName`, `path` the
-volume's app root (D3), `id` from `cmdr_fs::volume::ids::sftp_volume_id` / `webdav_volume_id`, which is also the id the
-registry uses, so a `saved` row and the volume it becomes share one id across the dial. ❗ That identity is what makes a
-tab restorable: a tab stores `(volumeId, path)`, the switcher shows the same id greyed, and activating either dials the
-same saved entry.
+`volume_listing::complete` grows a fold BEFORE `enrich_from_volume_registry`: one `LocationInfo` per SFTP or WebDAV
+place the app knows, registered or merely saved (state `saved` when nothing is registered under its id).
+`category: Network`, `fs_type: "sftp" | "webdav"`, `is_ejectable: false`, `supports_trash: false`, `name` the saved
+`displayName`, `path` the volume's app root (D3), `id` from `cmdr_fs::volume::ids::sftp_volume_id` / `webdav_volume_id`,
+which is also the id the registry uses, so a `saved` row and the volume it becomes share one id across the dial. ❗ That
+identity is what makes a tab restorable: a tab stores `(volumeId, path)`, the switcher shows the same id greyed, and
+activating either dials the same saved entry.
+
+❗ **Every saved place gets a row, pinned or not**, and the row carries `pinned: Option<bool>` (`None` for anything the
+cap was never about: a local disk, a favorite, a mounted SMB share). The volume list is the app's registry of what an id
+MEANS, and four things resolve one: Enter on a hub row, a restored tab, a favorite inside a server, and the pane's own
+lookup. An unpinned server with no row is an id that resolves to nothing, and the pane lands on the boot disk. So the
+listing hides nothing and `navigation/volume-grouping.ts` applies the three-things rule itself, over `pinned` plus the
+`isLiveSession` / `hasReconnectLoop` predicates. ❗ A row with no `pinned` shows unconditionally: a Linux CIFS mount
+carries no connection state either, and a rule spelled "live or pinned" would drop it off the switcher.
 
 The device-provider seam is deliberately NOT reused (`crates/cmdr-sftp/DETAILS.md` says why: it lists things that appear
 and leave on their own). The servers arm reads the two stores plus the registry, all cached state; ❌ never the wire,

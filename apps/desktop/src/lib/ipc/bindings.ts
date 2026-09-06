@@ -8400,7 +8400,18 @@ export type LocationInfo = {
    *  question from how live a session is. Set by the device providers only: a
    *  phone waiting for its "Allow USB debugging?" tap is present and must never
    *  start a reconnect backoff. `None` for everything that isn't a device.
+   *  Whether this place belongs in the volume SWITCHER: the user's own cap on
+   *  how many saved things crowd their disks. `Some` only on a server place
+   *  (`server_volumes.rs`), which is the only row the cap applies to; `None`
+   *  on a local disk, a favorite, and a mounted SMB share, all of which show
+   *  unconditionally.
+   *
+   *  ❗ The listing publishes EVERY saved place regardless, because a volume id
+   *  with no row is one the app denies exists (a hub Enter and a restored tab
+   *  both land on an id). Hiding is `navigation/volume-grouping.ts`'s job, and
+   *  this field is what it reads.
    */
+  pinned: boolean | null
   deviceReadiness: DeviceReadiness | null
   /**
    *  Negotiated USB link speed. Set only for MTP/mobile volumes; everything
