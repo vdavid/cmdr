@@ -17,7 +17,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::conflict::{ApplyToAll, resolve_conflict};
+use super::super::conflict::{ApplyToAll, IncomingItem, resolve_conflict};
 use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::{WrittenFile, WrittenIdentity};
@@ -542,6 +542,7 @@ fn merge_move_directory(
             match resolve_conflict(
                 &source_child,
                 &dest_child,
+                IncomingItem::of_local_source(&source_child),
                 config,
                 events,
                 operation_id,

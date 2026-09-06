@@ -95,6 +95,75 @@ pub(super) fn apply_to_all_record(
 }
 
 // ============================================================================
+// Cross-type clashes
+// ============================================================================
+
+/// What is ARRIVING at a destination, told by the caller that knows.
+///
+/// A stat of the source path answers this everywhere but one place: the
+/// folder→file branch in `transfer/copy/single_item.rs` resolves the clash
+/// against the BLOCKING FILE as both source and destination (so the prompt
+/// describes the entry that's in the way), while what's really arriving is a
+/// directory. Asking the caller keeps that site honest instead of quietly
+/// classifying a folder landing as file-on-file.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum IncomingItem {
+    /// A file, or a symlink — a leaf whatever a link points at.
+    Leaf,
+    /// A directory, with its subtree behind it.
+    Directory,
+}
+
+impl IncomingItem {
+    /// What the entry at a local source path is, read with `symlink_metadata`
+    /// so a link stays a leaf (`validation::is_real_directory` holds the why).
+    pub(super) fn of_local_source(source: &Path) -> Self {
+        if super::validation::is_real_directory(source) {
+            Self::Directory
+        } else {
+            Self::Leaf
+        }
+    }
+}
+
+/// The resolution a BLANKET policy is allowed to enact on this clash: itself,
+/// unless it would replace one kind of entry with another, in which case `Skip`.
+///
+/// `Overwrite`, `OverwriteSmaller`, and `OverwriteOlder` are all answers about
+/// two FILES — "the one at the destination is stale, put the source there". The
+/// act behind them across types is a different thing: replacing a folder with a
+/// file throws a whole tree away, and replacing a file with a folder throws the
+/// file away, and nobody picking a policy in the transfer dialog was shown
+/// either. The conditional variants can't even ask their own question there — a
+/// directory's `len()` is its inode's own size, so every ordinary file looks
+/// "bigger" and "Overwrite all smaller" deleted destination folders wholesale.
+///
+/// This governs the policy nobody looked at per item: the configured
+/// `conflict_resolution` and an apply-to-all carry. An Overwrite a person picked
+/// on a Stop prompt for THIS pair still replaces — the dialog names both types,
+/// and that click is the consent a blanket policy lacks. All three engines
+/// (local, cross-volume, in-archive) call this, so the rule is one rule.
+pub(super) fn blanket_resolution_across_types(
+    resolution: ConflictResolution,
+    is_cross_type: bool,
+    destination: &dyn std::fmt::Display,
+) -> ConflictResolution {
+    if !is_cross_type {
+        return resolution;
+    }
+    match resolution {
+        ConflictResolution::Overwrite | ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
+            log::info!(
+                target: "conflict_resolution",
+                "{resolution:?}: skipping {destination} — a folder and a file can't replace each other under a blanket policy"
+            );
+            ConflictResolution::Skip
+        }
+        other => other,
+    }
+}
+
+// ============================================================================
 // Conflict handling helpers
 // ============================================================================
 
@@ -108,6 +177,7 @@ pub(super) fn apply_to_all_record(
 pub(super) fn resolve_conflict(
     source: &Path,
     dest_path: &Path,
+    incoming: IncomingItem,
     config: &WriteOperationConfig,
     events: &dyn OperationEventSink,
     operation_id: &str,
@@ -118,27 +188,28 @@ pub(super) fn resolve_conflict(
     // conditional-variant reduction.
     let source_meta = fs::metadata(source).ok();
     let dest_meta = fs::metadata(dest_path).ok();
-    // "Is this a file landing on a folder?" is asked of the ENTRIES, not of what
-    // they point at: a symlink is a leaf whatever its target is, so a link facing
-    // a real directory is a file→folder clash. `source_meta` / `dest_meta` follow
-    // links and would call that pair folder-on-folder, which is the one answer
-    // that walks into the link. `validation::is_real_directory` holds the why.
-    let is_file_to_folder = matches!(
-        (
-            fs::symlink_metadata(source).map(|m| m.is_dir()).ok(),
-            fs::symlink_metadata(dest_path).map(|m| m.is_dir()).ok()
-        ),
-        (Some(false), Some(true)),
-    );
+    // Whether the destination is a folder is asked of the ENTRY, not of what it
+    // points at: a symlink is a leaf whatever its target is, so a link facing a
+    // real directory is a cross-type clash. `dest_meta` follows links and would
+    // call that pair folder-on-folder, which is the one answer that walks into
+    // the link. `validation::is_real_directory` holds the why.
+    let source_is_directory = incoming == IncomingItem::Directory;
+    let destination_is_real_dir = fs::symlink_metadata(dest_path).map(|m| m.is_dir()).ok();
+    let is_file_to_folder = !source_is_directory && destination_is_real_dir == Some(true);
+    // A destination we couldn't stat is left out of both: an unanswerable type
+    // is never grounds for a destructive cross-type act, and the write below
+    // refuses an occupied name of its own accord.
+    let is_cross_type = is_file_to_folder || (source_is_directory && destination_is_real_dir == Some(false));
 
     // Determine effective conflict resolution
-    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder)
-    {
-        // Use saved "apply to all" resolution
-        saved_resolution
-    } else {
-        config.conflict_resolution
-    };
+    let latched = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder);
+    // A blanket policy — the config's, or one latched by an earlier "* all" —
+    // never replaces a folder with a file or a file with a folder.
+    let resolution = blanket_resolution_across_types(
+        latched.unwrap_or(config.conflict_resolution),
+        is_cross_type,
+        &dest_path.display(),
+    );
 
     match resolution {
         ConflictResolution::Stop => {

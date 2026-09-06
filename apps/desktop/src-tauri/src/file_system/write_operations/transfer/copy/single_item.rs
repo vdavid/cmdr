@@ -15,7 +15,7 @@ use super::super::macos_copy::copy_symlink;
 use super::super::chunked_copy::ChunkedCopyProgressFn;
 use super::super::copy_strategy::copy_file_with_strategy;
 
-use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
+use crate::file_system::write_operations::conflict::{ApplyToAll, IncomingItem, resolve_conflict};
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::ledger::{CopyTransaction, WrittenFile};
@@ -246,6 +246,10 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
                 match resolve_conflict(
                     &blocking,
                     &blocking,
+                    // What's arriving is the DIRECTORY the dest tree needs
+                    // here, even though the pair handed over is the blocking
+                    // file on both sides (so the prompt describes it).
+                    IncomingItem::Directory,
                     config,
                     events,
                     operation_id,
@@ -365,6 +369,8 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             match resolve_conflict(
                 source,
                 &dest_path,
+                // A symlink is a leaf whatever it points at.
+                IncomingItem::Leaf,
                 config,
                 events,
                 operation_id,
@@ -447,6 +453,9 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             match resolve_conflict(
                 source,
                 &dest_path,
+                // `copy_single_item` is the per-FILE copier; a directory source
+                // never reaches here.
+                IncomingItem::Leaf,
                 config,
                 events,
                 operation_id,

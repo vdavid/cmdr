@@ -17,7 +17,7 @@ use std::sync::Arc;
 use super::super::super::ledger::WrittenFile;
 use super::{MoveTransaction, merge_move_directory, move_resolved_into_place, rename_onto_free_name};
 
-use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
+use crate::file_system::write_operations::conflict::{ApplyToAll, IncomingItem, resolve_conflict};
 use crate::file_system::write_operations::durability::flush_touched_directories;
 use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
@@ -147,6 +147,7 @@ pub(super) fn move_with_rename(
                 match resolve_conflict(
                     source,
                     &dest_path,
+                    IncomingItem::of_local_source(source),
                     config,
                     events,
                     operation_id,

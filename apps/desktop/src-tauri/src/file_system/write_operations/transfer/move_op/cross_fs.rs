@@ -26,7 +26,7 @@ use super::rename_onto_free_name;
 use super::source_sweep::{SourceSweep, delete_sources_after_move};
 
 use crate::file_system::write_operations::cancellable::remove_dir_all_in_background;
-use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
+use crate::file_system::write_operations::conflict::{ApplyToAll, IncomingItem, resolve_conflict};
 use crate::file_system::write_operations::durability::flush_created_destinations;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::journal;
@@ -332,6 +332,7 @@ pub(super) fn move_with_staging(
                 match resolve_conflict(
                     source,
                     &final_path,
+                    IncomingItem::of_local_source(source),
                     config,
                     events,
                     operation_id,
