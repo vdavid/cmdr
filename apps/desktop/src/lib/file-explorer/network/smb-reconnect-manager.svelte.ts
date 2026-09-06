@@ -51,7 +51,7 @@ export const TOTAL_DURATION_MS = RECONNECT_DELAYS_MS.reduce((a, b) => a + b, 0)
 /** Number of attempts in a full cycle. */
 export const TOTAL_ATTEMPTS = RECONNECT_DELAYS_MS.length
 
-export type ReconnectStatus = 'waiting' | 'attempting' | 'gave-up' | 'needs-auth'
+export type ReconnectStatus = 'waiting' | 'attempting' | 'gave-up' | 'needs-auth' | 'needs-host-key'
 
 export interface ReconnectState {
   status: ReconnectStatus
@@ -109,13 +109,11 @@ class SmbReconnectManager {
           this.handleConnected(volumeId)
           break
         case 'needs_host_key_approval':
-          // Deliberately ignored for now, and the gap is the point: an SFTP
-          // server whose host key stopped matching must never take the
-          // sign-in path, because a password box in front of a possible
-          // man-in-the-middle is how a password gets typed into one. The
-          // banner that sends the user to look at the key instead is part of
-          // the SFTP sign-in UI, which isn't built yet. Until it is, the
-          // volume simply stops retrying, which is the safe half.
+          // ❗ Its OWN status, ❌ never the sign-in path: a password box in front
+          // of a possible man-in-the-middle is how a password gets typed into
+          // one. The pane renders `host_key_changed` instead, which says what
+          // happened and offers Disconnect.
+          this.handleNeedsHostKey(volumeId)
           break
       }
     })
@@ -296,6 +294,28 @@ class SmbReconnectManager {
     })
   }
 
+  /**
+   * The server presents a host key this Mac doesn't trust, so the backend
+   * stopped. Ends the backoff — retrying can't help, and every attempt is
+   * another handshake with a server whose identity is in question — and flips to
+   * `needs-host-key` so the pane renders the banner rather than a spinner over a
+   * dead session.
+   *
+   * ❗ No `getVolumeSignInState` here, unlike `needs-auth`: nothing about this is
+   * a credential question, and asking one would be the first step toward putting
+   * a password box in front of it.
+   */
+  private handleNeedsHostKey(volumeId: string): void {
+    untrack(() => {
+      const entry = this.map.get(volumeId)
+      if (!entry) return // No subscribers; the next nav re-enters the flow.
+      if (entry.timerId) clearTimeout(entry.timerId)
+      entry.timerId = null
+      entry.state = { ...entry.state, status: 'needs-host-key' }
+      this.map.set(volumeId, entry) // notify subscribers
+    })
+  }
+
   private handleConnected(volumeId: string): void {
     untrack(() => {
       const entry = this.map.get(volumeId)
@@ -373,7 +393,7 @@ class SmbReconnectManager {
       if (!e2) return
       // The backend may have emitted `needs_credentials` during this attempt (stale password).
       // `handleNeedsAuth` already stopped the cycle; don't schedule another doomed retry.
-      if (e2.state.status === 'needs-auth') return
+      if (e2.state.status === 'needs-auth' || e2.state.status === 'needs-host-key') return
       const next = attemptIndex + 1
       if (next >= TOTAL_ATTEMPTS) {
         e2.state = { ...e2.state, status: 'gave-up' }

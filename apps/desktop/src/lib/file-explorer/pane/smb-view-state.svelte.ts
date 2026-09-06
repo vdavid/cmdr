@@ -13,7 +13,13 @@
  */
 
 import { wordEjectRefusal } from '../navigation/eject-error-messages'
-import { disconnectSmbVolume, upgradeToSmbVolumeWithCredentials, type UpgradeResult } from '$lib/tauri-commands'
+import {
+  disconnectPlace,
+  disconnectSmbVolume,
+  upgradeToSmbVolumeWithCredentials,
+  type UpgradeResult,
+} from '$lib/tauri-commands'
+import { openSignInForPlace } from '$lib/servers/open-sign-in'
 import { directConnectionUnavailableMessage } from '../network/upgrade-messages'
 import { registerSmbLoginHost } from '../network/smb-login-hosts'
 import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
@@ -62,6 +68,19 @@ export interface SmbViewState {
   readonly showSmbGaveUp: boolean
   /** Show the sign-in prompt (reconnect gave up because the saved password went stale). */
   readonly showSmbNeedsAuth: boolean
+  /**
+   * Show the changed-host-key banner (SFTP: the server's identity stopped
+   * matching, so the backend stopped).
+   *
+   * ❗ The three above are a POSITIVE list, so a fourth status without its own
+   * derivation renders a plain listing over a dead session rather than saying
+   * anything.
+   */
+  readonly showSmbNeedsHostKey: boolean
+  /** Open the sign-in sheet for this pane's place, from the signed-out banner. */
+  handleSignIn: () => void
+  /** Drop a server place's dead session and leave, so the next open dials afresh. */
+  handleDisconnectPlace: () => void
   /** Cancel the reconnect cycle and walk up to the nearest reachable folder. */
   handleSmbReconnectCancel: () => void
   /** Cancel the cycle, OS-unmount the share, and navigate away immediately. */
@@ -96,6 +115,7 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
   )
   const showSmbGaveUp = $derived(reconnectState !== null && reconnectState.status === 'gave-up')
   const showSmbNeedsAuth = $derived(reconnectState !== null && reconnectState.status === 'needs-auth')
+  const showSmbNeedsHostKey = $derived(reconnectState !== null && reconnectState.status === 'needs-host-key')
 
   // Subscribe to the per-volume reconnect manager whenever this pane is on an SMB
   // share. The subscription is refcounted (multiple panes on the same share share
@@ -131,6 +151,34 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
   // the registration lasts the pane's whole life; `getVolumeId` is read live at
   // prompt time.
   $effect(() => registerSmbLoginHost({ getVolumeId: deps.getVolumeId, open: handleSmbUpgradeLogin }))
+
+  /**
+   * The signed-out banner's button. ❗ `registered: true`: a volume is filed
+   * under this id, so the sheet MENDS it with `reconnectVolumeWithCredentials`
+   * rather than dialing, which would register a second volume under a second id.
+   */
+  function handleSignIn(): void {
+    void openSignInForPlace({ volumeId: deps.getVolumeId(), registered: true })
+  }
+
+  /**
+   * The changed-key banner's button: drop the dead session and leave.
+   *
+   * ❗ This is also the way OUT of a changed key. Nothing here holds the
+   * fingerprint (the backend keeps no pending prompt for a registered volume),
+   * and after this the place is a `saved` row again, so opening it dials afresh
+   * and the dial's host-key outcome is what the sheet's key step renders.
+   */
+  function handleDisconnectPlace(): void {
+    const targetVolumeId = deps.getVolumeId()
+    smbReconnectManager.cancel(targetVolumeId)
+    void disconnectPlace(targetVolumeId).catch((e: unknown) => {
+      log.warn('Disconnecting the place {volumeId} broke down: {error}', { volumeId: targetVolumeId, error: String(e) })
+    })
+    void resolveValidPath(deps.getCurrentPath(), { volumeRoot: deps.getVolumePath() }).then((validPath) => {
+      deps.navigateToFallback(validPath)
+    })
+  }
 
   function handleSmbReconnectCancel(): void {
     smbReconnectManager.cancel(deps.getVolumeId())
@@ -228,6 +276,11 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     get showSmbNeedsAuth() {
       return showSmbNeedsAuth
     },
+    get showSmbNeedsHostKey() {
+      return showSmbNeedsHostKey
+    },
+    handleSignIn,
+    handleDisconnectPlace,
     handleSmbReconnectCancel,
     handleSmbReconnectDisconnect,
     handleSmbUpgradeLogin,

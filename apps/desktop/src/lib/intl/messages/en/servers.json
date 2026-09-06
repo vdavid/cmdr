@@ -313,5 +313,27 @@
   "servers.hostKey.trustNewKey": "Trust the new key",
   "@servers.hostKey.trustNewKey": {
     "description": "Button that records a CHANGED key, behind the disclosure. VERB phrase, imperative."
+  },
+  "servers.paneState.signedOut": "Signed out of {name}",
+  "@servers.paneState.signedOut": {
+    "description": "Heading of the pane view shown when a server's session ended because a password is what's missing. ❗ NOT a rejection and not a fault: the user simply has to sign in again.",
+    "placeholders": {
+      "name": "the server''s display name, like “Naspolya”"
+    }
+  },
+  "servers.paneState.signIn": "Sign in…",
+  "@servers.paneState.signIn": {
+    "description": "Button that opens the form for signing in to the server again. VERB phrase, imperative. The ellipsis is the single character … (U+2026) and means “this opens something”; keep it."
+  },
+  "servers.paneState.hostKeyChanged": "Cmdr stopped connecting to {name}",
+  "@servers.paneState.hostKeyChanged": {
+    "description": "Heading of the pane view shown when an SSH server presents a different identity key than the one this Mac trusts. Serious: it can mean someone is in the middle. “Cmdr” is the product name.",
+    "placeholders": {
+      "name": "the server''s display name, like “Naspolya”"
+    }
+  },
+  "servers.paneState.hostKeyChangedHint": "Its key changed. That can mean the server was reinstalled, or that something is sitting between you and it. Disconnect, then open it again to check the fingerprint.",
+  "@servers.paneState.hostKeyChangedHint": {
+    "description": "One line under that heading, saying both innocent and serious causes and what to do. “Key” is the server''s SSH host key; “fingerprint” is the short string a person compares before trusting it."
   }
 }

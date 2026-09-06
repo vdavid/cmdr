@@ -43,7 +43,6 @@
     import { createVolumeSpace } from './volume-space.svelte'
     import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
-    import SmbReauthView from './SmbReauthView.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import SearchResultsView from './SearchResultsView.svelte'
     import type { CancelLoadingPayload, SearchResultsViewAPI, VolumeChangePayload } from './types'
@@ -1738,10 +1737,14 @@
                 onDisconnect={smbView.handleSmbReconnectDisconnect}
             />
         {:else if smbView.showSmbNeedsAuth}
-            <SmbReauthView
-                {volumeId}
-                serverLabel={currentVolumeInfo?.name ?? volumePath}
-                onCancel={smbView.handleSmbReconnectDisconnect}
+            <RemoteConnectView
+                name={currentVolumeInfo?.name ?? volumePath}
+                state={{ kind: 'signed_out', signIn: smbView.handleSignIn }}
+            />
+        {:else if smbView.showSmbNeedsHostKey}
+            <RemoteConnectView
+                name={currentVolumeInfo?.name ?? volumePath}
+                state={{ kind: 'host_key_changed', disconnect: smbView.handleDisconnectPlace }}
             />
         {:else if smbView.showSmbGaveUp}
             <VolumeUnreachableBanner

@@ -18,9 +18,10 @@
      * shape of failure this replaces: the user can't tell a slow handshake from
      * a wedged one, and has no way out of either.
      *
-     * ❌ No inert buttons. A refusal offers Try again (which really re-dials) and,
-     * where there is a session to drop, Disconnect. The "Sign in…" button lands
-     * with the sheet that can answer it, not before.
+     * ❌ No inert buttons. A refusal offers Try again (which really re-dials),
+     * "Signed out" offers Sign in… (which opens the sheet), and a changed host
+     * key offers Disconnect (which is what lets the next open show the
+     * fingerprint). Every one of them does the thing it says.
      */
     interface Props {
         /** The place's display name, for the sentence and the aria live region. */
@@ -41,6 +42,23 @@
             <div class="actions">
                 <Button variant="secondary" size="mini" onclick={state.cancel}>
                     {tString('servers.paneState.cancel')}
+                </Button>
+            </div>
+        {:else if state.kind === 'signed_out'}
+            <span class="refusal-icon"><Icon name="lock" size={32} aria-hidden="true" /></span>
+            <h2 class="title">{tString('servers.paneState.signedOut', { name })}</h2>
+            <div class="actions">
+                <Button variant="primary" size="mini" onclick={state.signIn}>
+                    {tString('servers.paneState.signIn')}
+                </Button>
+            </div>
+        {:else if state.kind === 'host_key_changed'}
+            <span class="refusal-icon danger"><Icon name="triangle-alert" size={32} aria-hidden="true" /></span>
+            <h2 class="title">{tString('servers.paneState.hostKeyChanged', { name })}</h2>
+            <p class="hint">{tString('servers.paneState.hostKeyChangedHint')}</p>
+            <div class="actions">
+                <Button variant="secondary" size="mini" onclick={state.disconnect}>
+                    {tString('servers.paneState.disconnect')}
                 </Button>
             </div>
         {:else}
@@ -106,6 +124,12 @@
         display: inline-flex;
         align-items: center;
         color: var(--color-warning);
+    }
+
+    /* A changed host key is the shape a man-in-the-middle takes, so it carries
+       more weight than an ordinary refusal. */
+    .refusal-icon.danger {
+        color: var(--color-error);
     }
 
     .actions {
