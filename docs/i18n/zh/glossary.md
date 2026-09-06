@@ -629,10 +629,10 @@ background indexing of the text inside its photos.
 
 - **photo vs image — deliberate register split, mirroring the English source** · warm user-facing photo mentions →
   `照片` (macOS Photos app; measure word `张`, e.g. `张照片` in Finder); the feature name / internal label "image
-  indexing" → `图像` (settled glossary, matching the existing card `settings.mediaIndex.card` = `图像搜索` and
-  `enabled.description` = `读取图像中的文字`). The English copy makes the same split (warm "photos" in the opt-in rows,
-  technical "image" in the card/label); Chinese follows it faithfully. So `图像索引` = the feature, `照片` = the actual
-  pictures. · `high`
+  indexing" → `图像` (settled glossary, matching `fileExplorer.imageIndex.file.excluded` = `未纳入图像搜索` and
+  `settings.mediaIndex.enabled.description` = `读取图像中的文字`). The English copy makes the same split (warm "photos"
+  in the opt-in rows, technical "image" in the card/label); Chinese follows it faithfully. So `图像索引` = the feature,
+  `照片` = the actual pictures. · `high`
 - **network drive** · `网络驱动器` · reused from errors/settings glossary; confirmed in the Total Commander zh-CN pile
   (`网络驱动器`, `映射网络驱动器`, `断开网络驱动器连接`) · `confirmed`
 - **turn on / opt in (a per-drive switch)** · `开启` · standard modern toggle-on verb (macOS/Microsoft); "turn them on
@@ -728,11 +728,12 @@ rename surface. Reuses settled `重命名`/`覆盖`/`移除`/`添加`/`索引`/`
 - **"needs attention" (a rename row blocked by preflight)** · `需要先处理` · the en is deliberately vague about WHAT is
   wrong, so the Chinese stays equally open (`这项重命名需要先处理才能继续。`); no pile source names this state ·
   `tentative`
-- **image, in the image-index surfaces** · `图像`, never `图片` · locale-wide consistency: `settings.mediaIndex.card`
-  `图像搜索`, `settings.section.imageSearch` `图像搜索`, `indexing.enrich.label` `图像索引`, `search.imageResults.*`
-  `图像`. The `fileExplorer.imageIndex.*` status-bar family was reconciled from `图片` to `图像` in this pass. The
-  warm/technical split from the 2026-07-13 network-drive pass still holds: actual pictures the user thinks of as photos
-  → `照片` (`settings.mediaIndex.chosenFolders.*`), the feature and its status labels → `图像` · `high`
+- **image, in the image-index surfaces** · `图像`, never `图片` · locale-wide consistency:
+  `fileExplorer.imageIndex.file.excluded` `未纳入图像搜索`, `settings.section.imageIndexing` and `indexing.enrich.label`
+  both `图像索引`, `search.imageResults.*` `图像`. The `fileExplorer.imageIndex.*` status-bar family was reconciled from
+  `图片` to `图像` in this pass. The warm/technical split from the 2026-07-13 network-drive pass still holds: actual
+  pictures the user thinks of as photos → `照片` (`settings.mediaIndex.chosenFolders.*`), the feature and its status
+  labels → `图像` · `high`
 - **importance (Cmdr''s ranking of how much a folder matters to this user)** · `重要性` · matches
   `askCmdr.tool.folderImportance` (`正在检查文件夹的重要性`); the scope radio reads `自动，按文件夹的重要性` (was
   `重要程度`, reconciled to one noun) · `high`

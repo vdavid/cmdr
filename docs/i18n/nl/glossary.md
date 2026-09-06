@@ -774,9 +774,10 @@ From the network image-indexing pass (`settings.mediaIndex.networkVolumes.*` + `
   "Verbreek verbinding met netwerkschijf…") + glossary drive→`schijf`; Tier 1, preferred over Windows-flavoured
   "netwerkstation" · high
 - photo → `foto` (plural `foto''s`, ICU-doubled apostrophe) · macOS ("Foto''s" app, "^0 foto''s ontvangen") · high.
-  Mirrors the EN source's deliberate register split: internal/technical labels keep `image`→`afbeelding` (matches the
-  already-translated `settings.mediaIndex.card` "Afbeeldingen doorzoeken" / `enabled.label` "Inhoud van afbeeldingen
-  indexeren"), while the warm user-facing network-drive rows say `foto''s` (the network case is a photo archive/NAS).
+  Mirrors the EN source's deliberate register split: internal/technical labels keep `image`→`afbeelding` (matches
+  `settings.section.imageIndexing` "Afbeeldingen indexeren" / `settings.mediaIndex.enabled.label` "Inhoud van
+  afbeeldingen indexeren"), while the warm user-facing network-drive rows say `foto''s` (the network case is a photo
+  archive/NAS).
 - image (technical/label sense) → `afbeelding` (plural `afbeeldingen`) · macOS ("Afbeelding"/"Afbeeldingen") · high.
   "Image indexing" (internal label + the search hint) → "afbeeldingen indexeren" / "het indexeren van afbeeldingen".
 - indexed → `geïndexeerd` (past participle) · glossary index→indexeren; "Not indexed yet"→"Nog niet geïndexeerd", "N
@@ -838,9 +839,9 @@ From the quality pass over the bulk-rename / image-index-scope / Ask Cmdr-tool k
 - convert (file contents) → `converteren` · macOS ("Converting…"→"Converteren…", AppKit "bij het converteren van …") ·
   high
 - temporary → `tijdelijk` · macOS ("temporarily unavailable"→"tijdelijk niet beschikbaar") · high
-- image search (the feature, as referenced from outside Settings) → `het doorzoeken van afbeeldingen` · the Settings
-  card is `settings.mediaIndex.card` "Afbeeldingen doorzoeken", so prose references reuse that verb phrase rather than
-  coining "zoeken in afbeeldingen" · high
+- image search (the feature, as referenced from outside Settings) → `het doorzoeken van afbeeldingen` · the catalog's
+  verb phrase wherever the feature is named (`fileExplorer.imageIndex.drive.off` = "Het doorzoeken van afbeeldingen
+  staat uit voor deze schijf."), rather than coining "zoeken in afbeeldingen" · high
 - "Indexing images" (in-progress status label) → `Afbeeldingen worden geïndexeerd` · the passive-progress form the
   glossary already uses ("wordt gedownload", "wordt geïnstalleerd"); a bare `Afbeeldingen indexeren` would read as the
   infinitive "to index images" and collide with the sibling Settings labels · high
@@ -874,8 +875,8 @@ For the image-search index status badges (11 `fileExplorer.imageIndex.*` + 2
   settled network-image split (image→afbeelding for labels, foto→foto''s for warm network-drive rows). "image
   file"→`afbeeldingsbestand` (compound) in the settings label · high
 - image search (the feature, referenced from tooltips + aria) → reuses the settled `het doorzoeken van afbeeldingen`
-  (Settings card `settings.mediaIndex.card` = "Afbeeldingen doorzoeken"); "Indexed for image search"→"Geïndexeerd voor
-  het doorzoeken van afbeeldingen", "Image search is off …"→"Het doorzoeken van afbeeldingen staat uit …" · high
+  (the image-search row in the rename/status pass above); "Indexed for image search"→"Geïndexeerd voor het doorzoeken
+  van afbeeldingen", "Image search is off …"→"Het doorzoeken van afbeeldingen staat uit …" · high
 - indexed (status) → `geïndexeerd`; re-indexed → `opnieuw geïndexeerd`; "couldn''t be indexed" →
   `Kon niet worden geïndexeerd` (macOS passive "kon niet worden …", gentle, avoids bare "mislukt" per Cmdr voice) · high
 - waiting to be indexed → `Wacht op indexering` · index→indexeren, noun `indexering` (cf. "achtergrondindexering") ·

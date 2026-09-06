@@ -744,8 +744,9 @@ For the image-search index status badges (2026-07-22; the 11 `fileExplorer.image
 `settings.mediaIndex.showFileStatusIcons.*` keys). Small status indicators on image files, folders, and drives showing
 image-search indexing state. Reuses the settled indexing family; new/confirmed terms:
 
-- **image search (the feature): `bildsökning`** · already the catalog's own term (`settings.mediaIndex.card` =
-  "Bildsökning"); definite `bildsökningen`. Compound `bildsökningsstatus` for the drive aria-label. `high`.
+- **image search (the feature): `bildsökning`** · the catalog's term wherever the feature is named
+  (`fileExplorer.imageIndex.file.indexed` = "Indexerad för bildsökning", `askCmdr.consent.contentsRule` = "Bildsökningen
+  fungerar på samma sätt"); definite `bildsökningen`. Compound `bildsökningsstatus` for the drive aria-label. `high`.
 - **indexed (as a status on a `bild`): `indexerad` / `indexerade`** · en-word agreement with `bild` (glossary index
   family + shipped `settings.mediaIndex.networkVolumes.indexed` "{countText} bild indexerad / bilder indexerade"). The
   standalone file badge takes the en-word `Indexerad` (implied subject `bilden`, en-word), NOT Apple's neuter supine

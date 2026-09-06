@@ -704,10 +704,11 @@ disconnect → `ngắt kết nối`, browse → `duyệt`, background → `ở c
 below:
 
 - **photo (vs image): `ảnh`** · macOS (`Chọn ảnh` = Choose Photo, `Cắt ảnh` = Crop photo; Apple's Photos app is `Ảnh`).
-  Deliberately distinct from the feature-level "image" → `hình ảnh` (`settings.mediaIndex.card` = `Tìm kiếm hình ảnh`,
-  `enabled.label` = `Lập chỉ mục nội dung hình ảnh`): the English copy itself splits "image" (feature/card) from
-  "photos" (the concrete per-drive strings), and `ảnh` is the natural concrete word. "photos indexed" →
-  `Đã lập chỉ mục … ảnh`; "photos on {name}" → `ảnh trên {name}`. `high`.
+  Deliberately distinct from the feature-level "image" → `hình ảnh` (`settings.mediaIndex.enabled.label` =
+  `Lập chỉ mục nội dung hình ảnh`, `fileExplorer.imageIndex.drive.ariaLabel` =
+  `Trạng thái tìm kiếm hình ảnh của ổ đĩa này`): the English copy itself splits "image" (feature/card) from "photos"
+  (the concrete per-drive strings), and `ảnh` is the natural concrete word. "photos indexed" → `Đã lập chỉ mục … ảnh`;
+  "photos on {name}" → `ảnh trên {name}`. `high`.
 - **network drive: `ổ đĩa mạng`** · `ổ đĩa` (drive) + `mạng` (network), both settled. `high`.
 - **reconnect: `kết nối lại`** · macOS (`Để kết nối lại, hãy bấm…`). "resumes when this drive reconnects" →
   `sẽ tiếp tục khi ổ đĩa này kết nối lại`. `high`.
@@ -768,10 +769,11 @@ lại, không thể, gỡ, mức độ quan trọng). New or newly-sourced below
 Added during the image-index-indicator pass (2026-07-22): the 13 new keys for the per-file / per-folder / per-drive
 image-search status badges (`fileExplorer.imageIndex.file.*`, `.folder.*`, `.drive.*` +
 `settings.mediaIndex.showFileStatusIcons.*`). Reuses prior terms (image, feature-level → `hình ảnh` per the 2026-07-21
-decision on the whole `fileExplorer.imageIndex.*` family; image search → `tìm kiếm hình ảnh` =
-`settings.mediaIndex.card`; index/indexed/re-index → `lập chỉ mục`/ `đã lập chỉ mục`/`lập chỉ mục lại`; drive → `ổ đĩa`;
-file list → `danh sách tệp`; scope → `phạm vi`; can't → `không thể`; "of" in a count → `trên`, matching
-`settings.mediaIndex.progress.ofTotal`; toggle off → `tắt`). New/confirmed below:
+decision on the whole `fileExplorer.imageIndex.*` family; image search → `tìm kiếm hình ảnh`, as in
+`fileExplorer.imageIndex.drive.off` = `Tìm kiếm hình ảnh đang tắt cho ổ đĩa này.`; index/indexed/re-index →
+`lập chỉ mục`/ `đã lập chỉ mục`/`lập chỉ mục lại`; drive → `ổ đĩa`; file list → `danh sách tệp`; scope → `phạm vi`;
+can't → `không thể`; "of" in a count → `trên`, matching `settings.mediaIndex.progress.ofTotal`; toggle off → `tắt`).
+New/confirmed below:
 
 - **status badge (the small per-file indicator): `huy hiệu`** · reuses the settled toast/chip/**badge** → `huy hiệu`
   rendering. "status badge" → `huy hiệu trạng thái`. `tentative` (descriptive; no single pile source).

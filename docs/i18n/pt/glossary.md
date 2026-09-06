@@ -526,11 +526,11 @@ The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows 
 
 ### Image-index status and scope terms (`fileExplorer.imageIndex.*` + `settings.mediaIndex.scope/chosenFolders.*` + `askCmdr.tool.imageFacts/searchPhotos.*`, 2026-07-20)
 
-- image search (the feature, when named in running text) · **busca de imagens** · matches the shipped card title
-  `settings.mediaIndex.card` "Image search" → "Busca de imagens" and the glossary search → **busca** row · confirmed. ❌
-  Not "pesquisa de imagens" when naming the feature. The adjective **pesquisável** stays where it already ships
-  (`settings.mediaIndex.reclaim.line`, `progress.kept`, `chosenFolders.help`): it's a property of the indexed item, not
-  the feature name.
+- image search (the feature, when named in running text) · **busca de imagens** · the catalog's term wherever the
+  feature is named (`fileExplorer.imageIndex.drive.off` = "A busca de imagens está desativada para este disco.") and the
+  glossary search → **busca** row · confirmed. ❌ Not "pesquisa de imagens" when naming the feature. The adjective
+  **pesquisável** stays where it already ships (`settings.mediaIndex.reclaim.line`, `progress.kept`,
+  `chosenFolders.help`): it's a property of the indexed item, not the feature name.
 - indexing (in progress) · **Indexando** · pt-BR gerund, matching every sibling progress label (Copiando/Movendo/
   Analisando/Baixando) and the shipped `search.imageResults.indexing` ("ainda estão sendo indexadas") · confirmed. ❌
   Never the pt-PT `A indexar` / `está a indexar`. `fileExplorer.imageIndex.indexing`, `indexingTooltip*`.

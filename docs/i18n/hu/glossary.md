@@ -769,13 +769,13 @@ Settled while translating the network-drive image-indexing feature (`settings.me
 `alwaysIndex*` internals in `settings.json`, `search.imageResults.networkOff`/`.paused` in `search.json`, 2026-07-13):
 
 - **photo vs image — MIRROR the EN split: `fotó` (photo) / `kép` (image).** The EN copy deliberately alternates: the
-  settings CARD and global toggle say "image" (already shipped `settings.mediaIndex.card` = `Képkeresés`,
-  `enabled.label` = `Képek tartalmának indexelése`), while the per-network-drive user strings say "photos" (a NAS holds
-  photos). So user-facing per-drive strings and status lines use `fotó` (`fotók`, `fotói`, `fotóarchívum`), and the
-  feature/section-level and INTERNAL developer labels keep `kép`/`képindexelés` (image indexing). `fotó` is Tier-1
-  attested (macOS Photos app = `Fotók`); `kép` is settled (macOS AppKit "Image" = `Kép`). EN itself mixes the two even
-  within one sentence (`search.imageResults.networkOff` = "image indexing … its photos"), so mirroring is faithful, not
-  drift · high.
+  settings SECTION and global toggle say "image" (`settings.section.imageIndexing` = `Képek indexelése`,
+  `settings.mediaIndex.enabled.label` = `Képek tartalmának indexelése`), while the per-network-drive user strings say
+  "photos" (a NAS holds photos). So user-facing per-drive strings and status lines use `fotó` (`fotók`, `fotói`,
+  `fotóarchívum`), and the feature/section-level and INTERNAL developer labels keep `kép`/`képindexelés` (image
+  indexing). `fotó` is Tier-1 attested (macOS Photos app = `Fotók`); `kép` is settled (macOS AppKit "Image" = `Kép`). EN
+  itself mixes the two even within one sentence (`search.imageResults.networkOff` = "image indexing … its photos"), so
+  mirroring is faithful, not drift · high.
 - network drive → `hálózati meghajtó` · macOS (`Hálózati meghajtó`, Tier 1) + settled `drive → meghajtó` · high.
 - image indexing (the feature, internal labels) → `képindexelés` (transparent compound `kép`+`indexelés`, parallel to
   `fájlindexelés`); "Network drive image indexing" = `Hálózati meghajtók képindexelése` · high.
@@ -882,8 +882,8 @@ Settled while translating the image-index indicator badges (`fileExplorer.imageI
   deliberate-user-exclusion term `kizár`/`kizárva` (settled for `settings.mediaIndex.excludedFolders` = `Kizárt mappák`)
   would over-claim. `szerepel` = to appear/be included; `képkeresés` inessive `-ben` (front) · high. Distinct on purpose
   from the folder-level `imageIndex.excluded` (deliberate exclusion) which stays `kizárva`.
-- **image search (feature) → `Képkeresés`** · REUSED verbatim from the already-shipped `settings.mediaIndex.card` /
-  `settings.section.imageSearch` = `Képkeresés` · high. Don''t fork it.
+- **image search (feature) → `Képkeresés`** · the catalog's one term wherever the feature is named
+  (`fileExplorer.imageIndex.drive.off` = `A képkeresés ki van kapcsolva ehhez a meghajtóhoz.`) · high. Don''t fork it.
 - **drive image-search dot aria (`drive.ariaLabel`) → `Meghajtó képkeresési állapota`** · parallels the sibling
   index-status dot `fileExplorer.navigation.driveIndex.ariaLabel` = `Meghajtó indexállapota` (same nominal, no-article,
   no-"this" shape; the two dots sit adjacent) · high. `drive.off` "Image search is off for this drive." =

@@ -835,9 +835,9 @@ Settled for the per-file/folder/drive image-search index status badges in the fi
 every apostrophe is doubled in the catalog:
 
 - image search (the OCR/photo-content search FEATURE) → `recherche d''images` · settled catalog-wide, NOT re-derived:
-  `settings.mediaIndex.card` and `settings.section.imageSearch` both already render "Recherche d''images", and
-  `search.imageResults.*` uses "images". Reused verbatim for every "image search" mention (`file.indexed`,
-  `file.excluded`, `drive.ariaLabel`, `drive.off`) · high.
+  every surface that names the feature renders it (`fileExplorer.imageIndex.drive.off` = "La recherche d''images est
+  désactivée pour ce disque."), and `search.imageResults.*` uses "images". Reused verbatim for every "image search"
+  mention (`file.indexed`, `file.excluded`, `drive.ariaLabel`, `drive.off`) · high.
 - image (the file/noun, feminine: "une image", "les images") → `image` · macOS/pile pervasive; same word as EN but
   genuinely FR and gendered, so agreeing participles are feminine: "image indexée" / "images indexées". The badge sits
   on an image file, so every per-file status agrees feminine (indexée, incluse, modifiée, réindexée) · high.
