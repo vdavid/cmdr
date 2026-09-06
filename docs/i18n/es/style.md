@@ -182,6 +182,12 @@ strings are counted, so no plural branches are needed there.
 - **Los menús nativos siguen el texto del Finder, no el del catálogo.** Donde macOS tiene un equivalente, gana
   (`Visualización`, `Ocultar otras apps`, `Carpeta contenedora`, `Por omisión`), porque el usuario ve la barra de menús
   de Cmdr junto a la del Finder. Evidencia y excepciones: `glossary.md` § Menús nativos.
+- **Un ítem de menú desactivado por estar en uso lleva ` (ocupado)` al final, y nada más.** La forma `…Busy` de un ítem
+  repite palabra por palabra el texto del ítem base y le añade solo ese marcador: `Desconectar (ocupado)`,
+  `Olvidar el servidor (ocupado)`, `Olvidar la contraseña guardada (ocupado)`, siguiendo a `menu.volume.ejectBusy`
+  (`Expulsar ({name}) (ocupado)`), que fijó la convención. `ocupado` aquí concuerda con el volumen o el servidor, no con
+  quien lee, así que la trampa de género de "busy" (más abajo) no se aplica; queda invariable en masculino singular en
+  los cuatro ítems.
 - Roster: Cmdr ships one pan-regional Spanish (archivo not fichero, avoid ordenador, ustedes-safe); a Spain variant
   (es-ES) is deferred. See `../language-selection-decisions.md`.
 - **Quotation marks: macOS Spanish uses `“…”`** (curly), not `«…»`, in its UI strings (verified in `es/macOS/Finder/`,

@@ -88,6 +88,22 @@ pub(crate) fn volumes_changed_requests() -> u64 {
     GENERATION.load(std::sync::atomic::Ordering::SeqCst)
 }
 
+/// The `VolumeUnmounted` events emitted so far, each paired with the
+/// `volumes-changed` generation that was current when it went out.
+///
+/// Test-only, and it records the GENERATION rather than a timestamp because that
+/// is what the ordering rule is about: a gone event stamped with the generation
+/// from before a forget proves the redirect went out ahead of the republish, and
+/// no sleep can make that flaky.
+#[cfg(test)]
+static VOLUMES_GONE: Mutex<Vec<(String, u64)>> = Mutex::new(Vec::new());
+
+/// The last `VolumeUnmounted` this process emitted, as `(volume_id, generation)`.
+#[cfg(test)]
+pub(crate) fn last_volume_gone() -> Option<(String, u64)> {
+    VOLUMES_GONE.lock_ignore_poison().last().cloned()
+}
+
 /// Tauri command: triggers a fresh `volumes-changed` broadcast.
 /// The result arrives via the event, not as a return value.
 /// Used by the frontend retry button when the initial listing timed out.
@@ -127,28 +143,89 @@ pub struct VolumeMounted {
     pub volume_path: String,
 }
 
-/// Typed `volume-unmounted` Tauri event (per-volume, carries the gone path).
-/// `DualPaneExplorer` listens for this to redirect panes off ejected volumes.
+/// Typed `volume-unmounted` Tauri event: one volume is gone, go home if you are
+/// standing on it. `DualPaneExplorer` listens and redirects both panes.
 #[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeUnmounted {
     /// The volume path (like "/Volumes/MyDrive").
     pub volume_path: String,
+    /// The volume's id, when the emitter knows it.
+    ///
+    /// ❗ What the consumer acts on, because a "Forget server" takes the row out
+    /// of the store and a path lookup would then find nothing. The mount
+    /// watchers leave it `None`: they speak in paths, and the id they resolve
+    /// doesn't always mean "gone" (a promoted volume keeps serving from another
+    /// mount).
+    pub volume_id: Option<String>,
+}
+
+/// What the user picked in a volume row's context menu.
+///
+/// ❗ A typed enum, ❌ never a free string: the frontend branches on every one of
+/// these, and a misspelling would go to the one place a compiler never looks. The
+/// wire spelling is kebab-case, which is what the existing consumers already
+/// match on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "kebab-case")]
+pub enum VolumeContextActionKind {
+    /// Navigate the focused pane to the row.
+    Open,
+    /// Unmount a removable disk, or retire a device session.
+    Eject,
+    /// Drop a server's session and leave it as a `saved` row.
+    Disconnect,
+    /// Put a saved place in the switcher.
+    Pin,
+    /// Take it back out. ❗ The place stays saved; the hub still lists it.
+    Unpin,
+    /// Open the sign-in sheet on this server's stored fields.
+    Edit,
+    /// Stop remembering a place's credential, keeping the place.
+    ForgetSecret,
+    /// Drop the server, its places, and their pins.
+    ForgetServer,
+    /// Rename a favorite row.
+    RenameFavorite,
+    /// Remove a favorite row.
+    RemoveFavorite,
 }
 
 /// Typed `volume-context-action` Tauri event. Emitted to the `main` window when
-/// the user picks an action ("eject", "rename-favorite", or "remove-favorite") from
-/// the native breadcrumb / volume-selector row context menu. Window-scoped, so it's
-/// emitted via `Event::emit_to`.
+/// the user picks an item from the native breadcrumb / volume-selector row
+/// context menu. Window-scoped, so it's emitted via `Event::emit_to`.
 #[derive(Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeContextAction {
-    /// The action id ("eject", "rename-favorite", or "remove-favorite").
-    pub action: String,
+    /// Which item was picked.
+    pub action: VolumeContextActionKind,
     /// The target volume's ID.
     pub volume_id: String,
     /// The target volume's display name (for confirmation copy).
     pub volume_name: String,
+}
+
+/// Tells the panes that `volume_id` is gone, so a pane standing on it goes home.
+///
+/// ❗ Call this BEFORE [`emit_volumes_changed`] when the same action also removes
+/// the row: `volumes-changed` is debounced and this is not, so the order only
+/// holds if it is written this way round.
+pub fn emit_volume_gone(volume_id: &str, volume_path: &str) {
+    #[cfg(test)]
+    VOLUMES_GONE
+        .lock_ignore_poison()
+        .push((volume_id.to_string(), volumes_changed_requests()));
+    let Some(app) = APP_HANDLE.get() else {
+        // No app in a unit test; the recording above is what a cell reads.
+        return;
+    };
+    let payload = VolumeUnmounted {
+        volume_path: volume_path.to_string(),
+        volume_id: Some(volume_id.to_string()),
+    };
+    if let Err(e) = payload.emit(app) {
+        error!("Failed to emit volume-unmounted for {volume_id}: {e}");
+    }
 }
 
 // ============================================================================

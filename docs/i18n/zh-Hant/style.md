@@ -374,6 +374,16 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.
+- **A grayed-out "(busy)" menu item is its base label plus `（使用中）`, nothing else.** The `*Busy` keys are the
+  disabled twin of an ordinary menu item, shown while a transfer still holds the volume or server, so they have to read
+  as the same item in a second state. Copy the base key's value character for character and append the marker:
+  `menu.volume.eject` `退出（{name}）` → `menu.volume.ejectBusy` `退出（{name}）（使用中）`, and the same shape for
+  `menu.network.disconnect` → `menu.volume.disconnectBusy` (`中斷連線（使用中）`), `menu.network.forgetServer` →
+  `menu.volume.forgetServerBusy` (`忘記伺服器（使用中）`), and `menu.network.forgetSavedPassword` →
+  `menu.volume.forgetSavedPasswordBusy` (`忘記已儲存的密碼（使用中）`). `使用中` is the catalog's own word for a
+  resource someone else is working on, the same sense `glossary.md` gives it in the `…因此無法…` blocker shape, and
+  full-width parens follow § Punctuation. ❗ Don't invent a second marker (`忙碌中`, `處理中`) for a new pair, and don't
+  reword the base half to make the compound shorter.
 
 ### `*Aria` containment pairs that are load-bearing
 

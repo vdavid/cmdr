@@ -302,6 +302,13 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   paquets macOS installés (`.loctable` via `plutil -convert json`, recette dans
   `docs/i18n/reference-pile/how-to-mine.md`), en datant chaque citation par la version d'OS. Pour un terme qu'Apple n'a
   pas, la source de premier rang est l'éditeur du produit lui-même (ici la documentation Android en français).
+- **La forme grisée « (busy) » d'un élément de menu : le libellé de base, mot pour mot, suivi de ` (occupé)`.** Un seul
+  marqueur pour tout le catalogue, fixé par `menu.volume.ejectBusy` (« Éjecter ({name}) (occupé) ») et repris tel quel
+  par `menu.volume.disconnectBusy`, `forgetSavedPasswordBusy`, et `forgetServerBusy` : « Se déconnecter (occupé) », «
+  Oublier le mot de passe enregistré (occupé) », « Oublier le serveur (occupé) ». La parenthèse ne s'accorde pas : elle
+  qualifie le volume ou le serveur visé (masculin), pas le complément du libellé, donc `(occupé)` reste invariable même
+  après « le mot de passe enregistré ». N'inventez jamais un second marqueur (« en cours d'utilisation », « indisponible
+  ») : la paire actif/grisé doit se lire comme un seul élément dans deux états. Terme : `glossary.md` § busy.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

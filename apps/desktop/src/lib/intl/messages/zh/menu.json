@@ -524,6 +524,18 @@
   "@menu.network.forgetSavedPassword": {
     "sourceHash": "ed68566"
   },
+  "menu.volume.disconnectBusy": "断开连接（占用中）",
+  "@menu.volume.disconnectBusy": {
+    "sourceHash": "598ba81"
+  },
+  "menu.volume.forgetSavedPasswordBusy": "清除保存的密码（占用中）",
+  "@menu.volume.forgetSavedPasswordBusy": {
+    "sourceHash": "2a05847"
+  },
+  "menu.volume.forgetServerBusy": "忘记服务器（占用中）",
+  "@menu.volume.forgetServerBusy": {
+    "sourceHash": "53df26b"
+  },
   "menu.viewer.close": "关闭",
   "@menu.viewer.close": {
     "sourceHash": "7d9eb7a"

@@ -229,6 +229,11 @@ inflection.
   Apple feature names: what the user's own device shows wins. Sources: the glossary table above.
 - **A settings text field that may be left blank opens with `留空则…`.** Settled in
   `settings.askCmdr.interactiveModel.description`, reused for `settings.fileOperations.adbBinaryPath.description`.
+- **A grayed-out menu item's “busy” form is the base label plus `（占用中）`.** Settled in `menu.volume.ejectBusy`
+  (`推出（{name}）（占用中）`) and reused verbatim by `menu.volume.disconnectBusy`,
+  `menu.volume.forgetSavedPasswordBusy`, and `menu.volume.forgetServerBusy`. Keep the base wording byte-identical to the
+  enabled item (`menu.network.disconnect`, `menu.network.forgetSavedPassword`, `menu.network.forgetServer`), append the
+  marker with full-width parens and no space, and never invent a second marker: the two states have to read as one item.
 - **A photo's place is `拍摄地点`, never `位置`.** `位置` is reserved for a file-system location in this catalog
   (`目标位置`, `原来的位置`); Photos.app calls photo places `地点`. Camera EXIF is `相机信息` (Photos.app `无相机信息`).
 

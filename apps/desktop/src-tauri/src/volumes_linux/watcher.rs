@@ -294,6 +294,10 @@ fn emit_volume_unmounted(volume_path: &str) {
     if let Some(app) = APP_HANDLE.get() {
         let payload = VolumeUnmounted {
             volume_path: volume_path.to_string(),
+            // A mount watcher speaks in paths: the id it resolved doesn't always
+            // mean "gone" (a promoted volume keeps serving from another mount),
+            // so the consumer looks the row up as it always has.
+            volume_id: None,
         };
         if let Err(e) = payload.emit(app) {
             error!("Failed to emit volume-unmounted event: {}", e);

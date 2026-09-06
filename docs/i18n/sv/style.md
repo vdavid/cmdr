@@ -137,6 +137,17 @@ Near-calls (one real split, resolved with the macOS-wins rule):
 Add terms as they come up, in this same `chosen · sources · confidence` shape; keep the whole catalog consistent with
 the agreed choice.
 
+### Busy (disabled) menu items
+
+A menu item that's grayed out because a copy or move still needs the volume or server keeps its normal wording and adds
+` (upptagen)` at the end, nothing else. `menu.volume.ejectBusy` set the precedent ("Mata ut ({name}) (upptagen)") and
+`menu.volume.disconnectBusy` / `.forgetSavedPasswordBusy` / `.forgetServerBusy` follow it: "Koppla från (upptagen)",
+"Glöm sparat lösenord (upptagen)", "Glöm servern (upptagen)". One marker for the whole catalog; don't invent a second
+one, and don't reword the base item to fit it. `upptagen` stays uninflected here: it's a parenthetical status tag on the
+action, not an adjective agreeing with a noun in the label, and the thing that's busy (servern, volymen, enheten) is
+`en`-gender anyway. `high` (macOS Finder grays such items out without a marker, so the parenthetical is Cmdr's own; the
+word itself is the standard Swedish "busy").
+
 ### Android over ADB (the `settings.fileOperations.adb*` rows, 2026-09-06)
 
 Evidence for these came from the LIVE macOS bundles, not the pile: `_ignored/i18n/` doesn't exist on every machine (it's

@@ -660,6 +660,21 @@
     "description": "VERB phrase (imperative). Right-click item on a server whose password is stored in the keychain: deletes the stored password, so the next connection asks for it again. The server itself stays in the list, which is what separates this from menu.network.forgetServer."
   },
 
+  "menu.volume.disconnectBusy": "Disconnect (busy)",
+  "@menu.volume.disconnectBusy": {
+    "description": "The grayed-out form of menu.network.disconnect, shown while a copy or move is still reading from or writing to that server, so disconnecting now would break it. \"busy\" means occupied with work. Keep the base wording identical to menu.network.disconnect so the two read as one item in two states, and keep the trailing parenthetical short, exactly as menu.volume.ejectBusy does."
+  },
+
+  "menu.volume.forgetSavedPasswordBusy": "Forget saved password (busy)",
+  "@menu.volume.forgetSavedPasswordBusy": {
+    "description": "The grayed-out form of menu.network.forgetSavedPassword, shown while a copy or move is still using that server, because dropping the stored password now would break the next reconnect. Keep the base wording identical to menu.network.forgetSavedPassword and the trailing parenthetical short, exactly as menu.volume.ejectBusy does."
+  },
+
+  "menu.volume.forgetServerBusy": "Forget server (busy)",
+  "@menu.volume.forgetServerBusy": {
+    "description": "The grayed-out form of menu.network.forgetServer, shown while a copy or move is still using that server, because forgetting it now would drop the session under a running transfer. Keep the base wording identical to menu.network.forgetServer and the trailing parenthetical short, exactly as menu.volume.ejectBusy does."
+  },
+
   "menu.viewer.close": "Close",
   "@menu.viewer.close": {
     "description": "VERB (imperative). The only item in the File menu of a viewer window (the window that previews one file): closes that window. Use the exact word macOS uses for the File > Close item in this language."

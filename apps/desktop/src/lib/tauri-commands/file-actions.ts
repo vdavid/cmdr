@@ -149,12 +149,16 @@ export async function showBreadcrumbContextMenu(
  * @param volumeName - Target row's display name (used in the eject label / rename seed).
  * @param isFavorite - True for a favorite row (Rename / Remove); false for a volume row.
  * @param isEjectable - True when the volume row can be ejected (adds the Eject item).
+ * @param server - Present for a SERVER row, which gets Disconnect / Forget saved password /
+ *   Forget server instead of Eject. The caller decides which apply; the backend fills in
+ *   whether the volume is busy and disables the destructive items itself.
  */
 export async function showVolumeRowContextMenu(
   volumeId: string,
   volumeName: string,
   isFavorite: boolean,
   isEjectable: boolean,
+  server?: ServerRowMenu,
 ): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see the `ipc.rs` manifest)
   await invoke('show_volume_row_context_menu', {
@@ -162,7 +166,25 @@ export async function showVolumeRowContextMenu(
     volumeName,
     isFavorite,
     isEjectable,
+    // `busy` is the backend's own answer, so it is sent as a placeholder and overwritten there.
+    server: server ? { ...server, busy: false } : null,
   })
+}
+
+/**
+ * Which items a SERVER row's context menu offers, as the caller reads the row.
+ *
+ * ❗ Read from the row's own state, never guessed: `showsDisconnect` is
+ * `navigation/connection-state.ts`'s predicate over the volume's connection state,
+ * and the other two come from the saved-server listing.
+ */
+export type ServerRowMenu = {
+  /** Whether there is a session to drop (a `direct` or `disconnected` place). */
+  showsDisconnect: boolean
+  /** Whether a saved entry exists, so "Forget server" has something to forget. */
+  isSaved: boolean
+  /** Whether a credential is remembered for the place. */
+  hasSavedSecret: boolean
 }
 
 /**

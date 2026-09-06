@@ -529,6 +529,18 @@
   "@menu.network.forgetSavedPassword": {
     "sourceHash": "ed68566"
   },
+  "menu.volume.disconnectBusy": "Verbreek (bezet)",
+  "@menu.volume.disconnectBusy": {
+    "sourceHash": "598ba81"
+  },
+  "menu.volume.forgetSavedPasswordBusy": "Vergeet opgeslagen wachtwoord (bezet)",
+  "@menu.volume.forgetSavedPasswordBusy": {
+    "sourceHash": "2a05847"
+  },
+  "menu.volume.forgetServerBusy": "Vergeet server (bezet)",
+  "@menu.volume.forgetServerBusy": {
+    "sourceHash": "53df26b"
+  },
   "menu.viewer.close": "Sluit",
   "@menu.viewer.close": {
     "sourceHash": "7d9eb7a"

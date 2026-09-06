@@ -292,3 +292,71 @@ async fn connecting_a_place_that_is_already_registered_is_refused() {
 
     manager.unregister(&volume_id);
 }
+
+// ── Forgetting a server ──────────────────────────────────────────────
+
+/// ❗ **A forgotten server is GONE, and the pane hears so first.**
+///
+/// `VolumeUnmounted` is what redirects a pane standing on the place;
+/// `volumes-changed` is what takes the row out of the store. The other order
+/// leaves the pane on a volume nothing can name, which is the bug this cell
+/// exists to keep out. Asserting on the recorded GENERATION rather than on
+/// wall-clock order is what makes it un-flaky.
+#[tokio::test]
+async fn forgetting_a_server_tells_the_panes_before_it_takes_the_row_away() {
+    let host = "192.0.2.41";
+    sftp_known_servers::remember(sftp_entry(host, true));
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+
+    let before = crate::volume_broadcast::volumes_changed_requests();
+    assert!(forget_server(volume_id.clone()).await, "the entry was there");
+
+    assert!(
+        !sftp_known_servers::all().iter().any(|e| e.host == host),
+        "the entry left the store"
+    );
+    let (gone_id, gone_at) = crate::volume_broadcast::last_volume_gone().expect("the panes were told");
+    assert_eq!(gone_id, volume_id);
+    assert_eq!(
+        gone_at, before,
+        "❗ the gone event went out BEFORE anything asked for a republish"
+    );
+    assert!(
+        crate::volume_broadcast::volumes_changed_requests() > before,
+        "and the republish followed, so the row leaves the switcher"
+    );
+}
+
+/// An id nothing saved answers no and tells nobody: a spurious `VolumeUnmounted`
+/// would send a pane home for no reason.
+#[tokio::test]
+async fn forgetting_a_server_nothing_saved_is_a_plain_no() {
+    let before = crate::volume_broadcast::last_volume_gone();
+    assert!(!forget_server("sftp-nothing-was-ever-saved-here".to_string()).await);
+    assert_eq!(
+        crate::volume_broadcast::last_volume_gone(),
+        before,
+        "nothing was forgotten, so nothing was announced"
+    );
+}
+
+/// ❗ **Disconnecting a place tells the panes too**, or a pane keeps a volume id
+/// the registry no longer answers for and every listing on it fails instead of
+/// redirecting. Unlike a forget, the ROW survives (it becomes `saved`).
+#[tokio::test]
+async fn disconnecting_a_place_that_has_no_session_announces_nothing() {
+    let host = "192.0.2.42";
+    sftp_known_servers::remember(sftp_entry(host, true));
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+
+    let before = crate::volume_broadcast::last_volume_gone();
+    assert!(
+        !disconnect_place(volume_id).await,
+        "a saved-but-not-connected place has no session to drop"
+    );
+    assert_eq!(
+        crate::volume_broadcast::last_volume_gone(),
+        before,
+        "and nothing was announced, so no pane goes home for nothing"
+    );
+}

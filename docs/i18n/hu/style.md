@@ -257,6 +257,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Az „adb”-féle parancsnevek kisbetűsek maradnak, és a ragjuk kötőjeles** (`az adb-t`, mert betűszóként á-dé-bé a
   kiejtése, tehát a névelő is `az`). Ugyanígy `ADB-n át`, `Android SDK-ban`, `Homebrew-ban` (a `w` néma, ezért kötőjel).
   Prózában idézőjelbe kerül, ahogy az angol is idézi: `az „adb” parancs`.
+- **A kiszürkített („busy”) menüpont az alapcímke + ` (foglalt)`**: az alapváltozat szövege betűre változatlan marad, és
+  csak a záró ` (foglalt)` kerül a végére (`menu.volume.ejectBusy`, `menu.volume.disconnectBusy`,
+  `menu.volume.forgetServerBusy`, `menu.volume.forgetSavedPasswordBusy`). A `(foglalt)` névszói állapotjelző, ezért
+  bármelyik címke után áll, akár ige, akár főnévi szerkezet az alap. Egyetlen jelölő van; új „busy” kulcs ne találjon ki
+  másikat. Forrás: `glossary.md` § busy.
 - Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)

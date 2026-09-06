@@ -266,6 +266,11 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `find /System/Library/{Frameworks,PrivateFrameworks,ExtensionKit} /System/Applications /Applications -name '*.loctable'`,
   then in Python `plistlib.load(f)['vi']` against `['en']` for the same keys. That's how the six terms above were
   sourced.
+- **Dạng "(busy)" của một mục menu: giữ nguyên chữ của mục gốc rồi thêm ` (đang bận)`.** Bốn khóa dùng chung một dấu
+  hiệu: `menu.volume.ejectBusy` (`Tháo ({name}) (đang bận)`), `menu.volume.disconnectBusy` (`Ngắt kết nối (đang bận)`),
+  `menu.volume.forgetSavedPasswordBusy` (`Quên mật khẩu đã lưu (đang bận)`), `menu.volume.forgetServerBusy`
+  (`Quên máy chủ (đang bận)`). Mục gốc và dạng mờ phải khớp từng chữ để người đọc thấy đó là một mục ở hai trạng thái;
+  ❌ đừng nghĩ ra dấu hiệu thứ hai (`đang dùng`, `bận`) cho khóa mới. Thuật ngữ: `glossary.md` § busy.
 - Record any case-by-case rulings here so they aren't relitigated.
 
 ## Glossary

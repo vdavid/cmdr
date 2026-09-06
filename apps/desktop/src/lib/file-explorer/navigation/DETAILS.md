@@ -214,18 +214,23 @@ of each dropdown row and on the right of the closed/header chip. Clicking it cal
 the backend: SMB → `diskutil unmount`, MTP → connection manager disconnect, physical / DMG → `diskutil eject`. Clicking
 the inline button does NOT close the dropdown (`handleEjectClick` leaves `isOpen` alone), so the user can eject several
 drives in a row; each ejected volume vanishes from the list via the existing `volume-unmounted` /
-`mtp-device-disconnected` flow — no extra success toast.
+`mtp-device-disconnected` flow — no extra success toast. ❗ `volume-unmounted` carries an optional `volumeId`, and the
+consumer reads THAT first: a "Forget server" takes the row out of the store, so a path lookup would find nothing if the
+`volumes-changed` refresh won the race. The mount watchers leave it null and the path lookup is their fallback.
 
 Right-clicking a dropdown row opens a NATIVE (muda) context menu via `show_volume_row_context_menu`: a favorite row gets
-`Rename` + `Remove`, an ejectable volume row gets `Eject ({name})`, anything else has no menu. Right-clicking the closed
-header opens the native breadcrumb menu (`show_breadcrumb_context_menu`) that adds `Eject ({name})` alongside "Copy
-path" when the pane's volume is ejectable. All these picks route back through the one `volume-context-action` Tauri
-event (`action` ∈ `eject` / `rename-favorite` / `remove-favorite`): `eject` is handled in `DualPaneExplorer.svelte`
-(calls `ejectVolume`); `rename-favorite` / `remove-favorite` land in `VolumeBreadcrumb.handleVolumeContextAction`, which
-only acts when its own dropdown `isOpen` (both panes' breadcrumbs receive the global event, but only the open one owns
-the menu it spawned). Going native means the webview is frozen while the menu tracks, so the dropdown's
-`highlightedIndex` can't drift onto another row under the cursor or arrow keys — the menu always acts on the
-right-clicked row.
+`Rename` + `Remove`, an ejectable volume row gets `Eject ({name})`, a SERVER row (the `server` argument, a
+`ServerRowMenu` the caller fills from the row's own state) gets `Disconnect` / `Forget saved password` / `Forget server`
+instead, and anything else has no menu. A server never gets `Eject`: that word promises safe-to-unplug and a server has
+nothing to unplug. Right-clicking the closed header opens the native breadcrumb menu (`show_breadcrumb_context_menu`)
+that adds `Eject ({name})` alongside "Copy path" when the pane's volume is ejectable. All these picks route back through
+the one `volume-context-action` Tauri event, whose `action` is the TYPED `VolumeContextActionKind` (`open`, `eject`,
+`disconnect`, `pin`, `unpin`, `edit`, `forget-secret`, `forget-server`, `rename-favorite`, `remove-favorite`), ❌ never
+a free string: `eject` is handled in `DualPaneExplorer.svelte` (calls `ejectVolume`); `rename-favorite` /
+`remove-favorite` land in `VolumeBreadcrumb.handleVolumeContextAction`, which only acts when its own dropdown `isOpen`
+(both panes' breadcrumbs receive the global event, but only the open one owns the menu it spawned). Going native means
+the webview is frozen while the menu tracks, so the dropdown's `highlightedIndex` can't drift onto another row under the
+cursor or arrow keys — the menu always acts on the right-clicked row.
 
 **Busy gating.** While a copy / move / delete reads from or writes to a volume, ejecting it is blocked so a disconnect
 can't truncate an in-flight file. `$lib/stores/volume-busy-store.svelte`'s `isVolumeBusy(id)` (fed by the backend

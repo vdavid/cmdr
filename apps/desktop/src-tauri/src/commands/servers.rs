@@ -446,10 +446,23 @@ pub fn cancel_server_connect(attempt_id: String) -> bool {
 ///
 /// ❗ The place stays SAVED. Disconnecting a pinned place leaves it as a `saved`
 /// row in the switcher; forgetting is [`forget_server`].
+///
+/// ❗ Emits `VolumeUnmounted`, so a pane standing on the place goes home the way
+/// it does after an eject. Without it the pane keeps a volume id the registry no
+/// longer answers for, and every listing on it fails instead of redirecting. ❌
+/// No ordering constraint against `volumes-changed` here, unlike
+/// [`forget_server`]: the ROW survives a disconnect (it becomes `saved`), so the
+/// consumer has nothing to race.
 #[tauri::command]
 #[specta::specta]
 pub async fn disconnect_place(volume_id: String) -> bool {
-    sftp_volume_wiring::disconnect(&volume_id).await || webdav_volume_wiring::disconnect(&volume_id).await
+    let root = crate::server_volumes::place_root(&volume_id);
+    let dropped =
+        sftp_volume_wiring::disconnect(&volume_id).await || webdav_volume_wiring::disconnect(&volume_id).await;
+    if dropped {
+        crate::volume_broadcast::emit_volume_gone(&volume_id, root.as_deref().unwrap_or_default());
+    }
+    dropped
 }
 
 // ============================================================================
@@ -484,24 +497,41 @@ fn set_place_pinned_inner(volume_id: &str, pinned: bool) -> bool {
 
 /// Drops a server from the saved list, answering whether one was there.
 ///
-/// ❗ Emits `volumes-changed`, so a `saved` row leaves the switcher at once. ❌
-/// Leaves the stored secret alone: forgetting a server from a list is not the
+/// ❗ **Also drops the session and unregisters the volume**, because a forgotten
+/// server is gone: leaving the session up would keep a row in the switcher that
+/// no store knows about and no "Forget" can reach a second time. A tab standing
+/// on it becomes a home tab (`docs/specs/servers-hub-plan.md` § D6).
+///
+/// ❗ **`VolumeUnmounted` goes out BEFORE `volumes-changed`.** The pane's
+/// consumer is what redirects it home, and `volumes-changed` is what takes the
+/// row out of the store; the other order would leave the pane standing on a
+/// volume nothing can name. The order is written here rather than relied on:
+/// `volumes-changed` is debounced and this is not, so it holds either way, but a
+/// future undebounce shouldn't be able to break it silently.
+///
+/// ❌ Leaves the stored secret alone: forgetting a server from a list is not the
 /// same request as revoking its credential, and [`forget_server_secret`] is that
 /// one.
 #[tauri::command]
 #[specta::specta]
-pub fn forget_server(id: String) -> bool {
+pub async fn forget_server(id: String) -> bool {
     let Some(saved) = saved_by_id(&id) else {
         return false;
     };
+    let root = crate::server_volumes::place_root(&id);
     let forgotten = match saved {
         SavedEntry::Sftp(entry) => sftp_known_servers::forget(&entry.host, entry.port, &entry.username),
         SavedEntry::Webdav(entry) => webdav_known_servers::forget(&entry.url, &entry.username),
     };
-    if forgotten {
-        crate::volume_broadcast::emit_volumes_changed();
+    if !forgotten {
+        return false;
     }
-    forgotten
+    crate::volume_broadcast::emit_volume_gone(&id, root.as_deref().unwrap_or_default());
+    // ❗ AFTER the gone event: the wiring requests its own `volumes-changed`, so
+    // disconnecting first would put the republish ahead of the redirect.
+    let _ = sftp_volume_wiring::disconnect(&id).await || webdav_volume_wiring::disconnect(&id).await;
+    crate::volume_broadcast::emit_volumes_changed();
+    true
 }
 
 /// Forgets a server's remembered secret, answering whether the store accepted
