@@ -1652,5 +1652,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "A forrás",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Két elem neve egyezik",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Két {name} nevű elemet választottál ki, így mindkettő ugyanoda kerülne: {first} és {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Másold őket egyesével, vagy nevezd át az egyiket.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Helyezd át őket egyesével, vagy nevezd át az egyiket.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

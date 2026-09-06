@@ -572,6 +572,7 @@ export type WriteOperationError =
   | { type: 'permission_denied'; path: string; message: string }
   | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
   | { type: 'destination_inside_source'; source: string; destination: string }
+  | { type: 'duplicate_source_names'; name: string; first: string; second: string }
   | { type: 'symlink_loop'; path: string }
   | { type: 'cancelled'; message: string }
   | { type: 'device_disconnected'; path: string }

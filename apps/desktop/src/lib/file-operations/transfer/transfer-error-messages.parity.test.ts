@@ -127,6 +127,28 @@ const cases: Case[] = [
     },
   },
   {
+    name: 'duplicate_source_names (move)',
+    error: { type: 'duplicate_source_names', name: 'invoices', first: '/a/invoices', second: '/b/invoices' },
+    op: 'move',
+    expected: {
+      title: 'Two items have the same name',
+      message:
+        "You picked two items called invoices, so they'd both land in the same spot: /a/invoices and /b/invoices.",
+      suggestion: 'Move them one at a time, or rename one first.',
+    },
+  },
+  {
+    name: 'duplicate_source_names (copy)',
+    error: { type: 'duplicate_source_names', name: 'invoices', first: '/a/invoices', second: '/b/invoices' },
+    op: 'copy',
+    expected: {
+      title: 'Two items have the same name',
+      message:
+        "You picked two items called invoices, so they'd both land in the same spot: /a/invoices and /b/invoices.",
+      suggestion: 'Copy them one at a time, or rename one first.',
+    },
+  },
+  {
     name: 'symlink_loop',
     error: { type: 'symlink_loop', path: '/p' },
     expected: {

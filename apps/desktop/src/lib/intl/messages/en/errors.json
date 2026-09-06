@@ -2419,5 +2419,34 @@
     "description": "Fallback for the source's name in the read-only-source message when the actual name is unknown. Plain text, used as the subject of \"is read-only\".",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.duplicateSourceNames.title": "Two items have the same name",
+  "@errors.write.duplicateSourceNames.title": {
+    "description": "Title of the copy/move error dialog when the user selected two items that carry the same name, so both would land on one path in the destination. Cmdr refuses before writing anything. Plain text. This is a raw errors.* string (no ICU). Only copy and move reach this error.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.duplicateSourceNames.message": "You picked two items called {name}, so they'd both land in the same spot: {first} and {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "description": "Body of that dialog. Plain text with a contraction (\"they'd\"). This is a raw errors.* string (no ICU), so {name}, {first}, and {second} are literal replacement targets, not ICU syntax: keep them spelled exactly and reorder them freely to suit your grammar.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is.",
+    "placeholders": {
+      "name": "the shared file or folder name, e.g. invoices",
+      "first": "the full path of the first item carrying that name",
+      "second": "the full path of the second one"
+    }
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Copy them one at a time, or rename one first.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "description": "Recovery suggestion for the same-name refusal, copy variant. Plain text. This is a raw errors.* string (no ICU).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Move them one at a time, or rename one first.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "description": "Recovery suggestion for the same-name refusal, move variant. Plain text. This is a raw errors.* string (no ICU).",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   }
 }

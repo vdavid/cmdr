@@ -169,6 +169,9 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   permission_denied: { category: 'needs_action', retryHint: false },
   insufficient_space: { category: 'needs_action', retryHint: false },
   destination_inside_source: { category: 'needs_action', retryHint: false },
+  // No Retry: the same selection can only be refused again. The way out is
+  // picking one of the two, or transferring them one at a time.
+  duplicate_source_names: { category: 'needs_action', retryHint: false },
   read_only_device: { category: 'needs_action', retryHint: false },
   file_locked: { category: 'needs_action', retryHint: false },
   trash_not_supported: { category: 'needs_action', retryHint: false },
@@ -276,6 +279,21 @@ export function getUserFriendlyMessage(
       }
     case 'read_only_device':
       return readOnlyMessage(error)
+    case 'duplicate_source_names':
+      // Two selected items carry one name, so they'd both want
+      // `<destination>/<name>`. Refused before anything is written, and the
+      // message names the name plus one of the two folders it came from, since
+      // "you picked two things called invoices" is only actionable once the user
+      // can see which two.
+      return {
+        title: w('duplicateSourceNames.title'),
+        message: w('duplicateSourceNames.message', {
+          name: escapeHtml(error.name),
+          first: escapeHtml(error.first),
+          second: escapeHtml(error.second),
+        }),
+        suggestion: w(`duplicateSourceNames.suggestion.${operationType}`),
+      }
     case 'file_locked':
       return {
         title: w('fileLocked.title'),
@@ -358,6 +376,10 @@ export function getTechnicalDetails(error: WriteOperationError): string {
   } else if (error.type === 'destination_inside_source') {
     lines.push(`Source: ${error.source}`)
     lines.push(`Destination: ${error.destination}`)
+  } else if (error.type === 'duplicate_source_names') {
+    lines.push(`Name: ${error.name}`)
+    lines.push(`First: ${error.first}`)
+    lines.push(`Second: ${error.second}`)
   } else if (error.type === 'files_too_large_for_filesystem') {
     lines.push(`Filesystem: ${error.filesystem}`)
     lines.push(`Max file size: ${formatByteSize(error.maxSize)}`)

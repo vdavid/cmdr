@@ -187,6 +187,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'permission_denied', label: 'Permission denied' },
       { id: 'insufficient_space', label: 'Not enough space' },
       { id: 'destination_inside_source', label: 'Destination inside source' },
+      { id: 'duplicate_source_names', label: 'Two sources share a name' },
       { id: 'symlink_loop', label: 'Symlink loop' },
       { id: 'cancelled', label: 'Cancelled' },
       { id: 'device_disconnected', label: 'Device disconnected' },

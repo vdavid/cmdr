@@ -77,6 +77,15 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       destination: '/Users/david/Pictures/Photo Library/2026/backup-of-everything',
     },
   },
+  duplicate_source_names: {
+    operationType: 'move',
+    error: {
+      type: 'duplicate_source_names',
+      name: 'invoices',
+      first: '/Users/david/Documents/2025/invoices',
+      second: '/Users/david/Documents/2026/invoices',
+    },
+  },
   symlink_loop: {
     operationType: 'copy',
     error: { type: 'symlink_loop', path: '/Users/david/dev/node_modules/.pnpm/self/node_modules/self' },

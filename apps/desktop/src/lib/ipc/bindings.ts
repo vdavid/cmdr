@@ -13237,6 +13237,14 @@ export type WriteOperationError =
   | { type: 'insufficient_space'; required: number; available: number; volumeName: string | null }
   // Would cause infinite recursion.
   | { type: 'destination_inside_source'; source: string; destination: string }
+  /**
+   *  Two of the selected items carry the same name, so they would land on one
+   *  destination path and fight over it. Refused before anything is written:
+   *  a cross-filesystem move stages both under that one name, and whichever
+   *  arrives second meets the first one's files instead of an empty slot.
+   *  Carries both paths, so the message can show which two clashed.
+   */
+  | { type: 'duplicate_source_names'; name: string; first: string; second: string }
   | { type: 'symlink_loop'; path: string }
   | { type: 'cancelled'; message: string }
   // Device was disconnected during the operation (USB, MTP, etc.).

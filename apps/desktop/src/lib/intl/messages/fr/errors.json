@@ -1652,5 +1652,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "La source",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Deux éléments portent le même nom",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Vous avez choisi deux éléments nommés {name} : ils arriveraient tous les deux au même endroit ({first} et {second}).",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Copiez-les l'un après l'autre, ou renommez-en un d'abord.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Déplacez-les l'un après l'autre, ou renommez-en un d'abord.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

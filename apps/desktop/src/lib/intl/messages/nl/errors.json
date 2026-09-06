@@ -1652,5 +1652,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "De bron",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Twee onderdelen hebben dezelfde naam",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Je hebt twee onderdelen met de naam {name} gekozen, dus ze zouden allebei op dezelfde plek belanden: {first} en {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Kopieer ze een voor een, of hernoem er eerst een.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Verplaats ze een voor een, of hernoem er eerst een.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

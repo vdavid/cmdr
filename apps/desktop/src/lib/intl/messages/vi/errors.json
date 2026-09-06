@@ -1652,5 +1652,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "Nguồn",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Hai mục trùng tên",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Bạn đã chọn hai mục cùng tên {name}, nên cả hai sẽ rơi vào cùng một chỗ: {first} và {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Hãy sao chép từng mục một, hoặc đổi tên một mục trước.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Hãy di chuyển từng mục một, hoặc đổi tên một mục trước.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

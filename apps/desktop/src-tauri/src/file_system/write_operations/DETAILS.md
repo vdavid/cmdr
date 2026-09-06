@@ -88,6 +88,17 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   missing destination (and its ancestors) can never materialize a folder inside a source. The volume-aware pipelines
   mirror both the behavior and the order with `Volume::create_directory_all(dest)`; see `../volume/DETAILS.md`
   § "Recursive destination create".
+- **`validation.rs::validate_source_names_are_distinct` refuses a copy or move whose top-level items share a name**,
+  with the typed `WriteOperationError::DuplicateSourceNames` (carrying the name plus both paths, so the dialog can show
+  which two clashed). Two same-named sources both want `<destination>/<name>` and neither engine has an answer: the
+  cross-FS move stages both under that one name inside `.cmdr-staging-<op>/`, so the second one's children meet the
+  first one's staged files instead of an empty slot and resolve as conflicts against a copy the user never put there,
+  and the rename phase then hunts for a staged tree the first source already carried away. Byte-exact names only: a
+  case- or normalization-only difference is the destination filesystem's call, the same rule `DestNameIndex` follows for
+  a fold-only match, and refusing it here would block a legitimate transfer onto a case-sensitive volume. Runs right
+  after `validate_sources` in both `copy_files_start` and `move_files_start`. Pinned by
+  `validation_integration_test.rs::{two_sources_sharing_a_name_are_refused, sources_differing_only_in_case_are_allowed,
+  distinct_source_names_are_allowed}`.
 - **`unique_name.rs::numbered_name(stem, ext, counter)` is the ONE ` (N)` formatter** (`counter 0` = bare, `1..` = ` (N)`).
   `find_unique_name`, `next_available_name`, `paste_clipboard.rs`, and the volume namer
   (`transfer/volume/naming.rs::find_unique_volume_name`) all go through it, so the numbering paths can't drift.

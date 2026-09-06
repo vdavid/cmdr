@@ -353,6 +353,16 @@ pub enum WriteOperationError {
         source: String,
         destination: String,
     },
+    /// Two of the selected items carry the same name, so they would land on one
+    /// destination path and fight over it. Refused before anything is written:
+    /// a cross-filesystem move stages both under that one name, and whichever
+    /// arrives second meets the first one's files instead of an empty slot.
+    /// Carries both paths, so the message can show which two clashed.
+    DuplicateSourceNames {
+        name: String,
+        first: String,
+        second: String,
+    },
     SymlinkLoop {
         path: String,
     },

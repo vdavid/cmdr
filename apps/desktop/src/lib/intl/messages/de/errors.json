@@ -1652,5 +1652,21 @@
   "errors.write.readOnlyDevice.source.fallbackName": "Die Quelle",
   "@errors.write.readOnlyDevice.source.fallbackName": {
     "sourceHash": "599f98e"
+  },
+  "errors.write.duplicateSourceNames.title": "Zwei Objekte heißen gleich",
+  "@errors.write.duplicateSourceNames.title": {
+    "sourceHash": "518672d"
+  },
+  "errors.write.duplicateSourceNames.message": "Du hast zwei Objekte namens {name} ausgewählt, die beide an derselben Stelle landen würden: {first} und {second}.",
+  "@errors.write.duplicateSourceNames.message": {
+    "sourceHash": "4146d5f"
+  },
+  "errors.write.duplicateSourceNames.suggestion.copy": "Kopiere sie nacheinander, oder benenne eines vorher um.",
+  "@errors.write.duplicateSourceNames.suggestion.copy": {
+    "sourceHash": "8bc2d76"
+  },
+  "errors.write.duplicateSourceNames.suggestion.move": "Bewege sie nacheinander, oder benenne eines vorher um.",
+  "@errors.write.duplicateSourceNames.suggestion.move": {
+    "sourceHash": "8af755e"
   }
 }

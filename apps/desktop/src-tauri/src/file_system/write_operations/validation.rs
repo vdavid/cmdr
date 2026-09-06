@@ -4,7 +4,7 @@
 //! guard, writability and disk-space checks, same-file / same-filesystem inode
 //! comparisons, path/name length limits, and symlink-loop detection.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -16,6 +16,39 @@ pub(crate) fn validate_sources(sources: &[PathBuf]) -> Result<(), WriteOperation
         if fs::symlink_metadata(source).is_err() {
             return Err(WriteOperationError::SourceNotFound {
                 path: source.display().to_string(),
+            });
+        }
+    }
+    Ok(())
+}
+
+/// Refuses a transfer whose top-level items share a name.
+///
+/// Two same-named sources both want `<destination>/<name>`, and neither engine
+/// has an answer for that. A cross-filesystem move stages both under that one
+/// name inside `.cmdr-staging-<op>/`, so the second one's children meet the
+/// first one's staged files rather than an empty slot: they resolve as conflicts
+/// against a copy the user never put there, and the rename phase then looks for
+/// a staged tree the first source already carried away. Refusing up front is the
+/// only outcome that doesn't ask the user about a clash they didn't create.
+///
+/// Byte-exact names only. Whether two names differing in case or normalization
+/// are one file is the destination filesystem's call, not ours — the same rule
+/// `DestNameIndex` follows for a fold-only match — and refusing them here would
+/// block a legitimate transfer onto a case-sensitive volume.
+pub(crate) fn validate_source_names_are_distinct(sources: &[PathBuf]) -> Result<(), WriteOperationError> {
+    let mut seen: HashMap<&std::ffi::OsStr, &PathBuf> = HashMap::with_capacity(sources.len());
+    for source in sources {
+        // A path with no final component (`/`, a trailing `..`) can't be a
+        // selected item; the existence check above already spoke for it.
+        let Some(name) = source.file_name() else {
+            continue;
+        };
+        if let Some(first) = seen.insert(name, source) {
+            return Err(WriteOperationError::DuplicateSourceNames {
+                name: name.to_string_lossy().into_owned(),
+                first: first.display().to_string(),
+                second: source.display().to_string(),
             });
         }
     }
