@@ -78,6 +78,15 @@ suite:
 - `entry-activation.ts`: what opening an entry does (redirect, archive Enter policy, browse, viewer, OS default app).
 - `breadcrumb-bar.ts`: the displayed path plus the segment-click, context-menu, and volume-switch handlers.
 - `deleted-dir-poll.ts` / `mtp-disconnect-watch.svelte.ts`: the two "what I'm showing is gone" recoveries.
+- `snapshot-selection-sync.svelte.ts`: a search-results pane's cursor and selection remapped by PATH whenever its
+  entries array is replaced. It exists because the selection is a set of INDICES and a snapshot pane has no listing to
+  diff, so `listing-diff-sync` never runs for it: delete rows 2 and 3 of five and the selection still reads `{2, 3}`,
+  now naming the fifth row and nothing, and the next F8 takes a file nobody picked. The rules match the diff path's — a
+  surviving row keeps its selection at its new index, a vanished one leaves it, the cursor follows its own row or slides
+  to whatever took its place. ❌ Not a widened `sourcePaneStillShowsBirthFolder` (below): that gate only sees deletes
+  this pane started, and the array also shrinks when another window deletes the same file, when a move purges its
+  sources, and when a result is trashed from a normal pane. It needs `FilePane`'s `searchSnapshot` to read the store's
+  mutation tick, which also keeps `effectiveTotalCount` (Cmd+A, cursor clamping) honest after a purge.
 - `path-sync.ts` / `hidden-files-resync.ts`: the prop-driven reload truth table, and the cursor follow after the
   hidden-files toggle.
 - `entries-snapshot.ts`: the Selection dialog's entry list and the operation's selected-names snapshot.
@@ -648,6 +657,10 @@ that pane is NOW; a plain transfer whose source pane navigated away mid-copy is 
 `clearSourcePaneAfterTransfer` and `adjustSelectionAfterCancel` ask `sourcePaneStillShowsBirthFolder()` first — the
 pane's current folder against the one the operation was born in. Refreshing a listing is harmless whatever the answer
 and still happens; changing a selection the user made somewhere else is not.
+
+A snapshot pane is outside this rule rather than an exception to it: its `search-results://<id>` can never equal an
+operation's `sourceFolderPath`, so neither selection tail ever runs there. Its selection is kept honest by the entries
+array instead, `snapshot-selection-sync.svelte.ts` above.
 
 **❌ No dialog handler purges a search snapshot, in either family.** A dialog holds what the operation was ASKED to do,
 and the purge needs what it DID; a snapshot also outlives every pane and dialog, in every window. So it is a

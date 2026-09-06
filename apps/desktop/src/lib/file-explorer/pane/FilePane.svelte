@@ -47,7 +47,7 @@
     import NetworkMountView from './NetworkMountView.svelte'
     import SearchResultsView from './SearchResultsView.svelte'
     import type { CancelLoadingPayload, SearchResultsViewAPI, VolumeChangePayload } from './types'
-    import { getSnapshot } from '$lib/search/snapshot-store.svelte'
+    import { getMutationTick, getSnapshot } from '$lib/search/snapshot-store.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
     import SmbReconnectingView from './SmbReconnectingView.svelte'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
@@ -92,6 +92,7 @@
     import { resyncAfterHiddenFilesToggle } from './hidden-files-resync'
     import { createNetworkHostState } from './network-host-state.svelte'
     import { createMtpDisconnectWatch } from './mtp-disconnect-watch.svelte'
+    import { createSnapshotSelectionSync } from './snapshot-selection-sync.svelte'
     import { formatByteSize } from '$lib/units'
 
     interface Props {
@@ -407,8 +408,14 @@
             : null,
     )
 
-    /** Live snapshot lookup. Re-derives on path/id change. */
-    const searchSnapshot = $derived(searchSnapshotId ? getSnapshot(searchSnapshotId) : undefined)
+    /**
+     * Live snapshot lookup. Re-derives on path/id change AND on the store's mutation
+     * tick, so the row count, the cursor entry, and `createSnapshotSelectionSync`
+     * below all follow a purge or a still-running walk's appends. Without the tick
+     * read the `Map` mutation is invisible to Svelte (snapshots aren't `$state`, by
+     * design — see the store's header).
+     */
+    const searchSnapshot = $derived(searchSnapshotId ? (void getMutationTick(), getSnapshot(searchSnapshotId)) : undefined)
 
     /** Number of result rows in the active snapshot, or 0 when not on a search-results pane. */
     const searchResultsCount = $derived(searchSnapshot?.entries.length ?? 0)
@@ -1563,6 +1570,21 @@
         fetchListingStats: () => void selectionInfo.fetchStats(),
         onRequestFocus,
         navigateToFallback: loader.navigateToFallback,
+    })
+
+    // A snapshot pane's rows can vanish under a live selection (a delete from this
+    // pane, from another window, or a move purging its sources), and no listing diff
+    // covers it. Remaps cursor + selection by path; inert on every other pane.
+    createSnapshotSelectionSync({
+        getSnapshotEntries: () => searchSnapshot?.entries,
+        getCursorIndex: () => cursorIndex,
+        getSelectedIndices: () => selection.getSelectedIndices(),
+        setSelectedIndices: (indices: number[]) => {
+            selection.setSelectedIndices(indices)
+        },
+        applyCursorIndex: (index: number) => {
+            cursorIndex = index
+        },
     })
 
     // The pane's MTP device being unplugged: the listener re-registers itself on

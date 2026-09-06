@@ -642,8 +642,13 @@ children were partly skipped.
 3. Leaves `totalCount` alone — the existing `entries.length` vs `totalCount` mismatch is the truncation signal.
 
 `SearchResultsView.svelte`'s snapshot lookup reads `getMutationTick()` inside its `$derived` so the view re-renders
-after a purge. Without the tick, the `Map` mutation would be invisible to Svelte reactivity (snapshots aren't `$state`
+after a purge, and `FilePane.svelte`'s does the same so the row count, the cursor entry, and the pane's selection sync
+follow. Without the tick, the `Map` mutation would be invisible to Svelte reactivity (snapshots aren't `$state`
 themselves, by design — see the store's header).
+
+A purge moves rows out from under an index-based selection, so the pane remaps cursor and selection by path as its
+entries array is replaced: `file-explorer/pane/DETAILS.md` § "The FilePane controller modules",
+`snapshot-selection-sync.svelte.ts`.
 
 ### Source-side ops from the snapshot pane
 

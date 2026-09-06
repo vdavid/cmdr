@@ -22,9 +22,10 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **The two ROUTED panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone**
   — an archive or `.git`-portal pane keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z and portal snapshots
   READ-ONLY. Real files under `.git/` keep the drive's row.
-- **The snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false`, AND
-  opening a real entry must LEAVE the snapshot volume. Skip either and selection goes off-by-one, or `search-results`
-  sticks on a real path.
+- **The snapshot pane (`volumeId === 'search-results'`) couples three points**: `computeHasParent` returns `false`,
+  opening a real entry must LEAVE the snapshot volume, and `snapshot-selection-sync.svelte.ts` remaps its index
+  selection by path (no listing diff does). Skip one: an off-by-one selection, a stuck `search-results` path, or a
+  delete on rows nobody picked.
 - **BIRTH CONTEXT and an ADOPTED operation are separate slots in separate MODULES.** `adopted-operation.svelte.ts` and
   `archive-password-flow.svelte.ts` get a read-only `hasBirthContext()` and argument-free commands, ❌ never the props,
   a writer, or a getter, and ❌ never read the progress slot's occupancy off `showTransferProgressDialog`. DETAILS §
