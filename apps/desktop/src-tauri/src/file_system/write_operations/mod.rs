@@ -784,6 +784,8 @@ mod smb_stress_test;
 // (`volume::smb_media_fetch_integration_test` and
 // `listing::smb_pane_close_watch_integration_test`), which reach it by path.
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod sftp_transfer_semantics_test;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 pub(crate) mod smb_test_support;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod smb_transfer_safety_test;

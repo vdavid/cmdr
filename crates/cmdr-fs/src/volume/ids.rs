@@ -235,6 +235,45 @@ pub fn webdav_volume_id(host: &str, port: u16, username: &str) -> String {
     )
 }
 
+/// The `sftp://<user>@<host>:<port>` prefix every app path on an SFTP volume
+/// carries.
+///
+/// Minted here, beside [`sftp_volume_id`], so the crate and the app spell it from
+/// one function and a saved server's row, a restored tab, and the live volume all
+/// agree. The volume's app root is this plus the remote root
+/// (`sftp://ada@nas.local:22/srv/data`).
+///
+/// ❗ **The prefix is what makes a remote path self-describing.** The mount table
+/// answers the LOCAL root for any absolute path it doesn't recognize, on both
+/// platforms, so a scheme-free `/srv/data/x` resolves to the boot disk at every
+/// resolver site. `cmdr_fs::volume::remote_paths` is the translation, and
+/// `commands/volumes.rs::resolve_path_to_volume` is the arm that reads it.
+///
+/// # Case folding
+///
+/// The host is lowercased and the username is not, exactly as in
+/// [`sftp_volume_id`], so a path and the id it resolves to agree on identity.
+pub fn sftp_app_root(host: &str, port: u16, username: &str) -> String {
+    remote_app_root("sftp", host, port, username)
+}
+
+/// The `webdav://<user>@<host>:<port>` prefix every app path on a WebDAV volume
+/// carries. The SFTP twin, for the same reasons: [`sftp_app_root`].
+///
+/// ❗ `webdav://` whatever the transport is. `http` and `https` to one host and
+/// port are the same server (the port tells the two default listeners apart),
+/// which is the same call [`webdav_volume_id`] makes, so the two can't disagree.
+pub fn webdav_app_root(host: &str, port: u16, username: &str) -> String {
+    remote_app_root("webdav", host, port, username)
+}
+
+/// `{scheme}://{username}@{host}:{port}`, with the host folded the way the volume
+/// id folds it.
+fn remote_app_root(scheme: &str, host: &str, port: u16, username: &str) -> String {
+    let host = host.to_lowercase();
+    format!("{scheme}://{username}@{host}:{port}")
+}
+
 /// Build the ID for an MTP device from its (opaque, verbatim) serial.
 ///
 /// Called by [`super::mtp_ids::device_id_for`], which owns the serial-vs-topology

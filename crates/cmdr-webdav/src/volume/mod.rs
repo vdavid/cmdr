@@ -11,12 +11,12 @@
 //! through the [`VolumeHost`] seams handed to [`connect_webdav_volume`].
 //! `CLAUDE.md` has the must-knows, `DETAILS.md` the decisions.
 
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Weak};
 
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
+use cmdr_fs::volume::remote_paths::RemoteRoot;
 use cmdr_fs::volume::{Retirement, VolumeError};
 use reqwest::{RequestBuilder, Response};
 use tokio_util::sync::CancellationToken;
@@ -68,9 +68,12 @@ pub enum UnattendedReconnect {
 pub struct WebdavVolume {
     /// Display name, as the app chose to label the server.
     name: String,
-    /// The collection this volume is rooted at, under the base URL. Immutable:
-    /// a different root is a different instance.
-    root: PathBuf,
+    /// Both spellings of the collection this volume is rooted at: the app's
+    /// (`webdav://ada@nas.local:443/Photos`) and the server's (`/Photos`).
+    /// Immutable: a different root is a different instance. ❗ Every path
+    /// translation goes through it and ❌ nothing here spells a remote path by
+    /// hand (`cmdr_fs::volume::remote_paths`).
+    root: RemoteRoot,
     inner: Arc<WebdavVolumeInner>,
 }
 
@@ -238,7 +241,10 @@ impl WebdavVolume {
         client: WebdavClient,
         host: VolumeHost,
     ) -> Self {
-        let root = PathBuf::from(paths::root_remote_path(&params.remote_root));
+        let root = RemoteRoot::new(
+            cmdr_fs::volume::webdav_app_root(params.host(), params.port(), &params.username),
+            &params.remote_root,
+        );
         let auto_reconnect = params.auto_reconnect;
         Self {
             name: name.to_string(),

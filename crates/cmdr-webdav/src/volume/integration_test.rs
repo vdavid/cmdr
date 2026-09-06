@@ -199,10 +199,7 @@ async fn the_root_listing_tells_files_from_directories_and_knows_sizes() {
     }
     let volume = connect_fixture("APACHE", 13480).await;
 
-    let entries = volume
-        .list_directory(Path::new(FIXTURE_ROOT), None)
-        .await
-        .expect(FIXTURE);
+    let entries = volume.list_directory(volume.root(), None).await.expect(FIXTURE);
     let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
 
     let hello = entries
@@ -232,12 +229,12 @@ async fn the_root_listing_tells_files_from_directories_and_knows_sizes() {
     );
 
     let many = volume
-        .list_directory(&Path::new(FIXTURE_ROOT).join("many"), None)
+        .list_directory(&volume.root().join("many"), None)
         .await
         .expect(FIXTURE);
     assert_eq!(many.len(), 300);
     let empty = volume
-        .list_directory(&Path::new(FIXTURE_ROOT).join("empty"), None)
+        .list_directory(&volume.root().join("empty"), None)
         .await
         .expect(FIXTURE);
     assert!(empty.is_empty());
@@ -254,22 +251,19 @@ async fn a_name_with_spaces_and_utf8_round_trips_through_every_verb() {
     // in a pane or a 404 on a file the listing just showed.
     let (volume, dir) = stock_with_scratch().await;
 
-    let root = volume
-        .list_directory(Path::new(FIXTURE_ROOT), None)
-        .await
-        .expect(FIXTURE);
+    let root = volume.list_directory(volume.root(), None).await.expect(FIXTURE);
     assert!(
         root.iter().any(|e| e.name == "naïve name.txt" && !e.is_directory),
         "found {:?}",
         root.iter().map(|e| &e.name).collect::<Vec<_>>()
     );
     assert_eq!(
-        read_whole(&volume, &Path::new(FIXTURE_ROOT).join("naïve name.txt")).await,
+        read_whole(&volume, &volume.root().join("naïve name.txt")).await,
         b"ok\n"
     );
 
     let summer = volume
-        .list_directory(&Path::new(FIXTURE_ROOT).join("photos/2024 summer"), None)
+        .list_directory(&volume.root().join("photos/2024 summer"), None)
         .await
         .expect(FIXTURE);
     assert!(summer.iter().any(|e| e.name == "beach.txt"));
@@ -296,7 +290,7 @@ async fn a_whole_file_stream_is_byte_exact_and_knows_its_size_up_front() {
     let volume = connect_fixture("APACHE", 13480).await;
 
     let mut stream = volume
-        .open_read_stream(&Path::new(FIXTURE_ROOT).join(FIXTURE_LARGE_FILE))
+        .open_read_stream(&volume.root().join(FIXTURE_LARGE_FILE))
         .await
         .expect(FIXTURE);
     // The transfer layer draws its progress bar from `total_size()` before the
@@ -327,7 +321,7 @@ async fn a_bounded_range_comes_back_exactly_and_never_over_long() {
 
     let expected = fixture_large_bytes(2 * 1024 * 1024);
     let range = volume
-        .read_range(&Path::new(FIXTURE_ROOT).join(FIXTURE_LARGE_FILE), 1_000_000, 300_000)
+        .read_range(&volume.root().join(FIXTURE_LARGE_FILE), 1_000_000, 300_000)
         .await
         .expect(FIXTURE);
     assert_eq!(range.len(), 300_000, "exactly the bytes asked for, never more");
@@ -391,7 +385,7 @@ async fn a_bounded_range_is_exact_even_when_the_server_ignores_the_header() {
     let volume = connect_fixture("NORANGE", 13483).await;
 
     let range = volume
-        .read_range(&Path::new(FIXTURE_ROOT).join(FIXTURE_LARGE_FILE), 1_000_000, 300_000)
+        .read_range(&volume.root().join(FIXTURE_LARGE_FILE), 1_000_000, 300_000)
         .await
         .expect(FIXTURE);
 
@@ -429,7 +423,7 @@ async fn a_resumed_stream_skips_locally_when_the_server_ignores_the_header() {
     let whole = 4 * 1024 * 1024;
 
     let mut stream = volume
-        .open_read_stream_at_offset(&Path::new(FIXTURE_ROOT).join(FIXTURE_LARGE_FILE), offset)
+        .open_read_stream_at_offset(&volume.root().join(FIXTURE_LARGE_FILE), offset)
         .await
         .expect(FIXTURE);
 
@@ -799,10 +793,37 @@ async fn a_reconnect_against_a_live_server_succeeds_and_keeps_listing() {
 
     volume.attempt_reconnect().await.expect(FIXTURE);
 
-    assert!(volume.exists(&Path::new(FIXTURE_ROOT).join("hello.txt")).await);
-    let entries = volume
-        .list_directory(Path::new(FIXTURE_ROOT), None)
-        .await
-        .expect(FIXTURE);
+    assert!(volume.exists(&volume.root().join("hello.txt")).await);
+    let entries = volume.list_directory(volume.root(), None).await.expect(FIXTURE);
     assert!(entries.iter().any(|e| e.name == "docs" && e.is_directory));
+}
+
+/// ❗ **A listing hands out APP paths, and they come straight back in.**
+///
+/// A pane holds what a listing gives it and passes it to the next call, and the
+/// app anchors it against the volume root on the way
+/// (`cmdr_fs::volume::root_anchored`). A bare remote path would be joined ONTO
+/// the root, arrive doubled, and strip back to a real, wrong collection. This is
+/// the cell that would catch that.
+#[tokio::test]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn a_listings_paths_are_what_the_app_hands_back() {
+    if not_for_your_own_server("the seeded landmark `hello.txt`") {
+        return;
+    }
+    let volume = connect_fixture("APACHE", 13480).await;
+
+    let entries = volume.list_directory(volume.root(), None).await.expect(FIXTURE);
+    let hello = entries.iter().find(|e| e.name == "hello.txt").expect(FIXTURE);
+
+    assert_eq!(
+        Path::new(&hello.path),
+        volume.root().join("hello.txt"),
+        "a listing spells an entry the way the volume root is spelled"
+    );
+    // The round trip a pane makes: the listed path, anchored the way the app
+    // anchors it, back into the volume.
+    let handed_back = cmdr_fs::volume::root_anchored(volume.root(), Path::new(&hello.path));
+    assert_eq!(handed_back, volume.root().join("hello.txt"));
+    assert!(volume.exists(&handed_back).await, "and it still names the same file");
 }

@@ -4,12 +4,13 @@
 //! determinable without building, which is what made the SMB extraction's suites
 //! impossible to size in advance.
 
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU8};
 
 use cmdr_fs::volume::Retirement;
 use cmdr_fs::volume::host::VolumeHost;
+use cmdr_fs::volume::remote_paths::RemoteRoot;
 
 use super::state::ConnectionState;
 use super::{AuthRungUsed, SftpConnectionParams, SftpVolume, SftpVolumeInner};
@@ -46,7 +47,10 @@ pub fn make_test_volume_at(root: &str) -> SftpVolume {
 pub fn make_test_volume_with(root: &str, rung: AuthRungUsed, host: VolumeHost) -> SftpVolume {
     SftpVolume {
         name: "data".to_string(),
-        root: PathBuf::from(root),
+        root: RemoteRoot::new(
+            cmdr_fs::volume::sftp_app_root("127.0.0.1", CLOSED_PORT, "ada"),
+            Path::new(root),
+        ),
         inner: Arc::new_cyclic(|me| SftpVolumeInner {
             volume_id: cmdr_fs::volume::sftp_volume_id("127.0.0.1", CLOSED_PORT, "ada"),
             params: SftpConnectionParams::new("127.0.0.1", CLOSED_PORT, "ada", root).without_agent(),

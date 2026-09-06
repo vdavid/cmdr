@@ -1,10 +1,10 @@
-//! Turning the paths the app addresses this volume with into root-relative
-//! remote paths, the string [`crate::transport::WebdavClient::url_for`] encodes.
+//! Turning the paths the app addresses this volume with into the remote paths
+//! [`crate::transport::WebdavClient::url_for`] encodes.
 //!
-//! The rules are `cmdr-sftp`'s (`crates/cmdr-sftp/src/volume/paths.rs`) and for
-//! the same reasons: whole-component root matching, lexical `..` resolution
-//! before the containment check, and a refusal (never anchoring) for anything
-//! outside the root.
+//! The translation itself is `cmdr_fs::volume::remote_paths`, shared with SFTP:
+//! the app root carries the `webdav://<user>@<host>:<port>` prefix, the server's
+//! collection tree hangs under it, and a bare server-absolute path is ❌ REFUSED
+//! rather than anchored. That module's header has the reasoning.
 
 use std::path::{Component, Path, PathBuf};
 
@@ -14,36 +14,33 @@ use super::WebdavVolume;
 
 /// The root as a remote path: `/`, or `/Photos` for a volume opened under a
 /// sub-collection. Empty, `.`, and `/` spellings all normalize to `/`.
+///
+/// ❗ Needed BEFORE a volume exists: `connect_webdav_volume` probes the root
+/// with one PROPFIND to prove the credential, and there is nothing to ask yet.
 pub(super) fn root_remote_path(remote_root: &Path) -> String {
     let normalized = normalize(&Path::new("/").join(remote_root));
     normalized.to_string_lossy().into_owned()
 }
 
 impl WebdavVolume {
-    /// The root-relative remote path for `path`, or `NotFound` when `path`
-    /// isn't on this volume. ❌ Never `root_anchored`: anchoring turns
-    /// `/etc/passwd` into a real path under the root, and quietly the wrong one.
+    /// The remote path for `path`, or `NotFound` when `path` isn't on this
+    /// volume.
     pub(super) fn to_remote_path(&self, path: &Path) -> Result<String, VolumeError> {
-        let root = normalize(&self.root);
-        if path == Path::new("/") {
-            return Ok(root.to_string_lossy().into_owned());
-        }
-        let joined = if path.is_absolute() {
-            normalize(path)
-        } else {
-            normalize(&root.join(path))
-        };
-        if !joined.starts_with(&root) {
-            return Err(VolumeError::NotFound(path.to_string_lossy().into_owned()));
-        }
-        Ok(joined.to_string_lossy().into_owned())
+        self.root
+            .to_remote_path(path)
+            .ok_or_else(|| VolumeError::NotFound(path.to_string_lossy().into_owned()))
     }
 
-    /// The path the APP addresses `path` by, which for this backend is the same
-    /// string the server does. A refusal is "no patch to make": a listing-cache
-    /// patch is a courtesy, and ❌ must never fail a mutation that already landed.
+    /// The path the APP addresses `path` by: the prefixed spelling the panes
+    /// hold, so the listing-cache patcher and a pane agree on what a file is
+    /// called.
+    ///
+    /// A refusal is "no patch to make": a listing-cache patch is a courtesy, and
+    /// ❌ must never fail a mutation that already landed.
     pub(super) fn display_path_for(&self, path: &Path) -> Option<PathBuf> {
-        self.to_remote_path(path).ok().map(PathBuf::from)
+        self.root
+            .to_remote_path(path)
+            .map(|remote| self.root.to_app_path(&remote))
     }
 }
 

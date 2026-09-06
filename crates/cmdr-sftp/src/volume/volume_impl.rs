@@ -70,7 +70,7 @@ impl Volume for SftpVolume {
     }
 
     fn root(&self) -> &Path {
-        &self.root
+        self.root.app_root()
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

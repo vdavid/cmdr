@@ -37,6 +37,18 @@ async fn nextcloud_with_scratch() -> (WebdavVolume, PathBuf) {
     (volume, dir)
 }
 
+/// The scratch dir as the SERVER spells it, relative to the DAV root.
+///
+/// ❗ `dir` is the APP spelling, prefix and all
+/// (`webdav://ada@127.0.0.1:13482/cmdr-test-…`), because that is what a pane
+/// holds. The two cells that go straight at the server need the other half.
+fn server_relative(volume: &WebdavVolume, dir: &Path) -> String {
+    dir.strip_prefix(volume.root())
+        .expect("a scratch dir made under this volume's own root")
+        .display()
+        .to_string()
+}
+
 /// Removes everything a cell built, deepest first, and the scratch dir itself.
 async fn clean(volume: &WebdavVolume, dir: &Path) {
     fn remove<'a>(volume: &'a WebdavVolume, path: &'a Path) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
@@ -170,15 +182,12 @@ async fn a_put_with_no_content_length_is_accepted_rather_than_refused() {
             .collect::<Vec<_>>(),
     ));
 
-    let response = raw(
-        Method::PUT,
-        &format!("{}/{name}", dir.display().to_string().trim_start_matches('/')),
-    )
-    .header(CONTENT_TYPE, "application/octet-stream")
-    .body(body)
-    .send()
-    .await
-    .expect(FIXTURE);
+    let response = raw(Method::PUT, &format!("{}/{name}", server_relative(&volume, &dir)))
+        .header(CONTENT_TYPE, "application/octet-stream")
+        .body(body)
+        .send()
+        .await
+        .expect(FIXTURE);
     let status = response.status();
 
     assert_ne!(
@@ -226,7 +235,7 @@ async fn a_ranged_get_is_answered_with_a_window_rather_than_the_whole_file() {
         .await
         .expect(FIXTURE);
 
-    let at = format!("{}/{name}", dir.display().to_string().trim_start_matches('/'));
+    let at = format!("{}/{name}", server_relative(&volume, &dir));
     let response = raw(Method::GET, &at)
         .header(RANGE, "bytes=100000-199999")
         .send()

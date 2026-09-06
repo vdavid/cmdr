@@ -139,6 +139,16 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
         return (crate::device_volumes::device_volume_for_path(&path).await, false);
     }
 
+    // SFTP and WebDAV paths → the registered volume, or the saved server whose
+    // prefix they carry. ❗ This arm NEVER dials, unlike the `adb://` one above:
+    // a restored tab resolves at launch, and four servers connecting there is
+    // four Keychain reads and four network waits nobody asked for. Activating
+    // the row is what brings it to life.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    if path.starts_with("sftp://") || path.starts_with("webdav://") {
+        return (crate::server_volumes::server_volume_for_path(&path), false);
+    }
+
     // SMB/network protocol paths → return the virtual network volume
     if path.starts_with("smb://") {
         return (
@@ -273,5 +283,51 @@ mod tests {
         // The OS's own name for an SMB mount, so the fs-type predicates recognize it.
         assert_eq!(volume.fs_type.as_deref(), Some(NETWORK_FS_TYPE));
         assert!(!volume.supports_trash, "a network share has no trash");
+    }
+
+    /// ❗ A remote path resolves to its own server, ❌ never to the boot disk.
+    ///
+    /// Without the scheme the mount table answers the LOCAL root for any
+    /// absolute path it doesn't know, on both platforms, which is what would
+    /// send a restored tab, a favorite, a drag, or an MCP row to `/`.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[tokio::test]
+    async fn resolve_location_sftp_path_returns_the_saved_server_without_dialing() {
+        // Routed nowhere (RFC 5737), so a dial would hang rather than reach a
+        // stranger's machine: the answer coming back at all is the assertion.
+        let host = "192.0.2.21";
+        crate::network::sftp_known_servers::remember(crate::network::sftp_known_servers::KnownSftpServer {
+            host: host.to_string(),
+            port: 2222,
+            username: "ada".to_string(),
+            display_name: "Nowhere".to_string(),
+            remote_root: "/srv/data".to_string(),
+            key_file: None,
+            use_agent: false,
+            auto_reconnect: true,
+            pinned: true,
+            last_connected_at: "2026-09-06T00:00:00Z".to_string(),
+        });
+
+        let result = resolve_location_inner(format!("sftp://ada@{host}:2222/srv/data/photos"), TEST_FS_TIMEOUT).await;
+
+        assert!(!result.timed_out);
+        let location = result.location.expect("a saved server's path resolves to that server");
+        assert_eq!(
+            location.volume_id,
+            cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"),
+            "❗ the id a `saved` row carries is the id the dial will register, so a tab survives the dial"
+        );
+        assert_ne!(location.volume_id, DEFAULT_VOLUME_ID, "❌ never the boot disk");
+    }
+
+    /// A remote path nothing saved matches is `None`, ❌ never the boot disk.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[tokio::test]
+    async fn resolve_location_unknown_server_path_returns_none() {
+        let result = resolve_location_inner("webdav://nobody@192.0.2.99:8080/dav/x".to_string(), TEST_FS_TIMEOUT).await;
+
+        assert!(!result.timed_out);
+        assert!(result.location.is_none());
     }
 }
