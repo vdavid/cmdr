@@ -17,6 +17,7 @@
 
 #![cfg(unix)]
 
+use super::super::conflict_responder_test_support::ConflictResponderSink;
 use super::move_same::move_within_same_volume_with_progress;
 use super::rename_merge_test_support::{exists, local_volume, make_state, mkdir, read, write_file};
 use crate::file_system::volume::Volume;
@@ -61,6 +62,31 @@ async fn run_merge(volume: &Arc<dyn Volume>, op_id: &str, resolution: ConflictRe
     .await;
     assert!(result.is_ok(), "{op_id}: expected Ok, got {:?}", result);
     events
+}
+
+/// The same merge under Stop, with every prompt answered `resolution` for that
+/// one pair — a person clicking, rather than a policy picked once for the whole
+/// transfer. The two are no longer interchangeable: a blanket Overwrite refuses
+/// a cross-type clash, so this is how the destructive branch gets exercised.
+async fn run_merge_answering(volume: &Arc<dyn Volume>, op_id: &str, resolution: ConflictResolution) {
+    let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(&state, resolution, false));
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Stop,
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+    let result = move_within_same_volume_with_progress(
+        events,
+        op_id,
+        &state,
+        Arc::clone(volume),
+        &[PathBuf::from("src/album")],
+        Path::new("dst"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "{op_id}: expected Ok, got {:?}", result);
 }
 
 /// Skip: the link stays in the source and its target keeps every byte.
@@ -153,10 +179,14 @@ async fn a_real_dir_child_meeting_a_dir_link_at_the_destination_is_not_merged() 
     assert!(is_link(root, "dst/album/sub"), "the destination link is untouched");
 }
 
-/// The same mirror under Overwrite, which is where the last "is this a
-/// directory?" probe lives: `apply_child_decision` asks `Volume::is_directory`
-/// about the write path, and that follows links too. Answering yes would merge
-/// the source subtree INTO the link's target.
+/// The same mirror under an Overwrite a person answered for THIS pair, which is
+/// where the last "is this a directory?" probe lives: `apply_child_decision`
+/// asks `Volume::is_directory` about the write path, and that follows links too.
+/// Answering yes would merge the source subtree INTO the link's target.
+///
+/// Driven through a Stop prompt rather than the Overwrite policy, because a
+/// BLANKET Overwrite refuses a cross-type clash outright (the cell below) and
+/// would never reach the probe this pins.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_real_dir_child_overwriting_a_dir_link_never_lands_in_the_target() {
     let (volume, dir) = local_volume();
@@ -166,7 +196,7 @@ async fn a_real_dir_child_overwriting_a_dir_link_never_lands_in_the_target() {
     mkdir(root, "dst/album");
     link(root, "dst/album/sub", "outside/target");
 
-    run_merge(
+    run_merge_answering(
         &volume,
         "op-merge-symlink-dest-overwrite",
         ConflictResolution::Overwrite,
@@ -186,6 +216,41 @@ async fn a_real_dir_child_overwriting_a_dir_link_never_lands_in_the_target() {
         read(root, "dst/album/sub/mine.txt"),
         b"MINE",
         "the source subtree lands at the destination itself"
+    );
+}
+
+/// The blanket policy's answer to the same pair: a link is a leaf, so this is a
+/// cross-type clash, and `Overwrite` picked once for a whole transfer never
+/// replaces one kind of entry with another. Both sides stay as they were, and
+/// the source subtree — the only copy of it, on a move — stays home.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_blanket_overwrite_leaves_a_dir_link_and_the_source_dir_alone() {
+    let (volume, dir) = local_volume();
+    let root = dir.path();
+    plant_target(root);
+    write_file(root, "src/album/sub/mine.txt", b"MINE");
+    mkdir(root, "dst/album");
+    link(root, "dst/album/sub", "outside/target");
+
+    run_merge(
+        &volume,
+        "op-merge-symlink-dest-blanket-overwrite",
+        ConflictResolution::Overwrite,
+    )
+    .await;
+
+    assert!(
+        !exists(root, "outside/target/mine.txt"),
+        "nothing may land inside the destination link's target"
+    );
+    assert!(
+        is_link(root, "dst/album/sub"),
+        "the destination link must survive a blanket Overwrite"
+    );
+    assert_eq!(
+        read(root, "src/album/sub/mine.txt"),
+        b"MINE",
+        "the refused source directory keeps its file"
     );
 }
 

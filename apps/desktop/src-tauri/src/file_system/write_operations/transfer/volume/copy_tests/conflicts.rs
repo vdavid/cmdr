@@ -1,8 +1,9 @@
 //! Name clashes during the copy: Skip and Overwrite, the two cross-type
-//! overwrites (file over folder, folder over file), and skipped files still
-//! counting toward progress.
+//! overwrites (file over folder, folder over file) under an answered prompt and
+//! under a blanket policy, and skipped files still counting toward progress.
 
 use super::*;
+use crate::file_system::write_operations::transfer::conflict_responder_test_support::ConflictResponderSink;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_multi_file_copy_skip_conflict() {
@@ -84,10 +85,15 @@ async fn test_multi_file_copy_overwrite_conflict() {
     assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"new version");
 }
 
-/// File→folder overwrite (volume copy): source is a file, dest holds a folder
-/// at the same path. Picking Overwrite must delete the dest folder (recursively)
-/// before the streaming writer lands the source file, otherwise the writer
-/// fails or no-ops because the path isn't writable as a file.
+/// File→folder overwrite (volume copy), answered on a Stop prompt for THIS
+/// pair: source is a file, dest holds a folder at the same path. That answer
+/// must delete the dest folder (recursively) before the streaming writer lands
+/// the source file, otherwise the writer fails or no-ops because the path isn't
+/// writable as a file.
+///
+/// Driven through a prompt, not the Overwrite policy: a BLANKET Overwrite
+/// refuses a cross-type clash outright (the cell below), so a policy-driven run
+/// would never reach the branch this pins.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_volume_overwrite_file_over_existing_folder() {
     let (source, dest) = make_volumes();
@@ -100,10 +106,10 @@ async fn test_volume_overwrite_file_over_existing_folder() {
     dest.create_directory(Path::new("/clash")).await.unwrap();
     dest.create_file(Path::new("/clash/inner.txt"), b"inner").await.unwrap();
 
-    let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Overwrite, false));
     let config = VolumeCopyConfig {
-        conflict_resolution: ConflictResolution::Overwrite,
+        conflict_resolution: ConflictResolution::Stop,
         ..VolumeCopyConfig::default()
     };
 
@@ -130,9 +136,10 @@ async fn test_volume_overwrite_file_over_existing_folder() {
     assert!(!dest.exists(Path::new("/clash/inner.txt")).await);
 }
 
-/// Folder→file overwrite (volume copy): source is a folder, dest is a file at
-/// the same path. Overwrite must delete the dest file before the recursive
-/// copy creates the directory tree.
+/// Folder→file overwrite (volume copy), answered on a Stop prompt for THIS
+/// pair: source is a folder, dest is a file at the same path. That answer must
+/// delete the dest file before the recursive copy creates the directory tree.
+/// A blanket Overwrite refuses this shape too, which the cell below pins.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_volume_overwrite_folder_over_existing_file() {
     let (source, dest) = make_volumes();
@@ -147,10 +154,10 @@ async fn test_volume_overwrite_folder_over_existing_file() {
         .await
         .unwrap();
 
-    let events = Arc::new(CollectorEventSink::new());
     let state = make_state();
+    let events = Arc::new(ConflictResponderSink::new(&state, ConflictResolution::Overwrite, false));
     let config = VolumeCopyConfig {
-        conflict_resolution: ConflictResolution::Overwrite,
+        conflict_resolution: ConflictResolution::Stop,
         ..VolumeCopyConfig::default()
     };
 
@@ -174,6 +181,64 @@ async fn test_volume_overwrite_folder_over_existing_file() {
     );
     let mut stream = dest.open_read_stream(Path::new("/clash/inside.txt")).await.unwrap();
     assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"inside content");
+}
+
+/// The policy's own answer to the same two shapes: `Overwrite` picked once for a
+/// whole transfer never replaces one kind of entry with another, so both sides
+/// survive and the item reports as skipped. Whole-pipeline proof of the rule the
+/// resolver's own suite pins per call
+/// (`conflict.rs::a_blanket_overwrite_never_clears_a_folder_a_file_landed_on`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_volume_blanket_overwrite_refuses_both_cross_type_shapes() {
+    let (source, dest) = make_volumes();
+
+    // A file landing on a folder, and a folder landing on a file.
+    source.create_file(Path::new("/notes"), b"incoming file").await.unwrap();
+    dest.create_directory(Path::new("/notes")).await.unwrap();
+    dest.create_file(Path::new("/notes/precious.txt"), b"precious")
+        .await
+        .unwrap();
+    source.create_directory(Path::new("/thing")).await.unwrap();
+    source
+        .create_file(Path::new("/thing/inside.txt"), b"incoming dir")
+        .await
+        .unwrap();
+    dest.create_file(Path::new("/thing"), b"precious bytes").await.unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-blanket-cross-type",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/notes"), PathBuf::from("/thing")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "copy should succeed: {:?}", result);
+    assert!(
+        dest.is_directory(Path::new("/notes")).await.unwrap_or(false),
+        "the destination folder must survive a blanket Overwrite"
+    );
+    assert!(
+        dest.exists(Path::new("/notes/precious.txt")).await,
+        "and keep everything in it"
+    );
+    let mut stream = dest.open_read_stream(Path::new("/thing")).await.unwrap();
+    assert_eq!(
+        stream.next_chunk().await.unwrap().unwrap(),
+        b"precious bytes",
+        "the destination file must keep its own bytes"
+    );
 }
 
 /// Skipped files must count toward `files_processed` and bump `bytes_done` by the

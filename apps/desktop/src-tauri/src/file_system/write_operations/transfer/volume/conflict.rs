@@ -7,14 +7,19 @@
 //!   delete the original and rename the temp in (`finalize_safe_replace`), so a
 //!   mid-stream failure can't lose both the old and the new copy
 //! - Overwrite (dir→dir): merge into the existing tree (no delete)
-//! - Overwrite (cross-type): delete the dest first, then write
+//! - Overwrite (cross-type): only ever from a Stop prompt a person answered for
+//!   that pair — delete the dest first, then write. A BLANKET Overwrite (the
+//!   config's, or an apply-to-all carry) refuses across types and Skips;
+//!   `../../conflict.rs::blanket_resolution_across_types` holds the rule.
 //! - Rename: Find unique name like "file (1).txt"
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::super::conflict::{ApplyToAll, apply_to_all_effective, apply_to_all_record};
+use super::super::super::conflict::{
+    ApplyToAll, apply_to_all_effective, apply_to_all_record, blanket_resolution_across_types,
+};
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
@@ -136,14 +141,19 @@ pub(super) async fn resolve_volume_conflict(
         }));
     }
 
-    // Determine effective conflict resolution
-    let resolution = if let Some(saved_resolution) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder)
-    {
-        // Use saved "apply to all" resolution
-        saved_resolution
-    } else {
-        config.conflict_resolution
-    };
+    // Dir-vs-dir left above and self-collision left before it, so the two sides
+    // differing means one is a folder and the other a leaf.
+    let is_cross_type = source_is_directory != destination_is_directory;
+
+    // Determine effective conflict resolution. A blanket policy — the config's,
+    // or one latched by an earlier "* all" — never replaces a folder with a file
+    // or a file with a folder; `blanket_resolution_across_types` holds the why.
+    let latched = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder);
+    let resolution = blanket_resolution_across_types(
+        latched.unwrap_or(config.conflict_resolution),
+        is_cross_type,
+        &dest_path.display(),
+    );
 
     match resolution {
         ConflictResolution::Stop => {
@@ -174,6 +184,10 @@ pub(super) async fn resolve_volume_conflict(
             // that resolves this clash too. If so, apply that resolution without
             // prompting — the queued prompt silently collapses.
             if let Some(saved) = apply_to_all_effective(apply_to_all_resolution, is_file_to_folder) {
+                // A carry is a blanket answer, so it stops where the config
+                // policy does. `Skip` from here needs no reduction, but running
+                // it through keeps the one path.
+                let saved = blanket_resolution_across_types(saved, is_cross_type, &dest_path.display());
                 let effective = reduce_volume_conditional_resolution(
                     saved,
                     source_volume,
@@ -502,8 +516,10 @@ async fn apply_volume_conflict_resolution(
             //   must delete it before the source materializes. There's no volume-level temp+rename
             //   atomicity (cross-backend) for a type swap, so a recursive delete is the best we can
             //   do; backends that support it (LocalPosix, MTP, SMB) handle the delete safely under
-            //   their own semantics. These are rare and lower-stakes (a type mismatch already means
-            //   the dest content is being intentionally replaced wholesale).
+            //   their own semantics. This arm is reachable ONLY from an Overwrite a person picked on
+            //   a Stop prompt naming both types: `resolve_volume_conflict` turns every BLANKET
+            //   Overwrite across types into a Skip before it gets here, so nothing a bulk policy
+            //   decided reaches a recursive delete.
             //
             // The same-type dir branch is enforced HERE rather than relying on `Volume::delete`'s
             // "file or empty directory" trait contract. That contract is real — a shared
