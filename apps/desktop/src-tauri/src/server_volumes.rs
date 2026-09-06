@@ -37,9 +37,20 @@ pub(crate) struct ServerPlace {
     /// AHEAD of the `category === 'network'` arm, so a row without it is an SMB
     /// pane.
     pub fs_type: &'static str,
+    /// Whether this place belongs in the volume switcher. ❗ The user's own cap
+    /// on how many saved things crowd their disks, so the listing honors it and
+    /// the resolver ignores it.
+    pub pinned: bool,
     /// How live the session is: `Direct` for a registered volume, `Saved` for a
     /// server that is only remembered.
     pub state: ConnectionState,
+}
+
+impl ServerPlace {
+    /// Whether a live session is behind this place.
+    fn is_registered(&self) -> bool {
+        self.state != ConnectionState::Saved
+    }
 }
 
 /// Every SFTP and WebDAV place the app knows: one per saved server, marked
@@ -70,6 +81,7 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
             name: server.display_name,
             app_root: root.app_root().to_string_lossy().into_owned(),
             fs_type: "sftp",
+            pinned: server.pinned,
         });
     }
     for server in webdav_known_servers::all() {
@@ -90,6 +102,7 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
             name: server.display_name,
             app_root: root.app_root().to_string_lossy().into_owned(),
             fs_type: "webdav",
+            pinned: server.pinned,
         });
     }
     places
@@ -130,6 +143,26 @@ pub(crate) fn location_from_place(place: ServerPlace) -> LocationInfo {
         device_readiness: None,
         usb_speed: None,
         capabilities: None,
+    }
+}
+
+/// Appends the server rows the volume switcher shows: every REGISTERED SFTP or
+/// WebDAV volume, plus every PINNED saved server that has no registered volume.
+///
+/// ❗ **Folded BEFORE `enrich_from_volume_registry`**, which copies `capabilities`
+/// and the connection state FROM the registered volume. Anything appended after
+/// it ships `capabilities: None`, and the pane falls back to per-kind defaults
+/// instead of what the backend actually offers.
+///
+/// ❗ A saved-but-UNPINNED server gets no row. Pins are the cap that keeps a user
+/// with a dozen saved servers from scrolling past their own disks, and the user
+/// holds it. Such a server is still reachable by path
+/// ([`server_volume_for_path`]) and still listed in the hub.
+pub(crate) fn append_server_volumes(volumes: &mut Vec<LocationInfo>) {
+    for place in server_places() {
+        if place.is_registered() || place.pinned {
+            volumes.push(location_from_place(place));
+        }
     }
 }
 

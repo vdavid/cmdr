@@ -28,8 +28,28 @@ Every other ID is minted by `cmdr_fs::volume::ids` (below).
 ## `list_locations()`
 
 Aggregates all `LocationCategory` entries in order and deduplicates by path AND by volume ID, two `HashSet<String>`s.
-The OS-level `/Network` browseable location doesn't surface as a sidebar entry yet, so `LocationCategory::Network` is
-currently unconstructed.
+The OS-level `/Network` browseable location doesn't surface as a sidebar entry yet, so `LocationCategory::Network`
+comes only from the servers arm below.
+
+### The servers arm
+
+`server_volumes::append_server_volumes` folds into `volume_listing::complete` between the device providers and
+enrichment: one row per REGISTERED SFTP or WebDAV volume, plus one per PINNED saved server that has no registered
+volume (state `Saved`, the greyed row with the hollow dot). `category: Network`, `fs_type: "sftp"` / `"webdav"`,
+`is_ejectable: false` (a server has nothing to unplug; its control says Disconnect), `supports_trash: false`.
+
+❗ **A `saved` row and the volume it becomes share ONE id**, minted by `cmdr_fs::volume::sftp_volume_id` /
+`webdav_volume_id` — the same ids the registry keys on. That identity is what makes a tab restorable: a tab stores
+`(volumeId, path)`, the switcher shows the same id greyed, and activating either dials the same saved entry.
+
+❗ **A saved-but-UNPINNED server gets no row**, because pins are the cap that keeps a user with a dozen saved servers
+from scrolling past their own disks, and the user holds it. Such a server is still reachable by path
+(`server_volumes::server_volume_for_path`, which the `sftp://` / `webdav://` resolver arm calls) and still listed in
+the hub.
+
+❗ **Cached state only, ❌ never the wire**: the listing runs on every `volumes-changed`, so a probe here would turn a
+refresh into a round of network traffic. The device-provider seam is deliberately NOT reused —
+`crates/cmdr-sftp/DETAILS.md` says why: it lists things that appear and leave on their own.
 
 ### Enrichment has two twins
 

@@ -75,20 +75,27 @@ pub(crate) async fn discover_local(timeout: Duration) -> ListingOutcome {
 }
 
 /// Completes a local listing into the list every consumer publishes: appends
-/// every device provider's storages (`device_volumes`), then enriches every
-/// entry from the volume registry.
+/// every device provider's storages (`device_volumes`) and every server place
+/// (`server_volumes`), then enriches every entry from the volume registry.
 ///
 /// **The order is the reason this function exists.** Enrichment copies across
-/// what only the registered `Volume` knows (its capability surface, and on macOS
-/// its SMB connection state), and device storages are registered volumes too, so
-/// appending them after enrichment ships mobile devices to the frontend with
-/// `capabilities: None`, and the pane falls back to per-kind defaults instead of
-/// what the backend actually offers. Callers hand over a local listing and get
-/// the finished list back; they can't get the order wrong.
+/// what only the registered `Volume` knows (its capability surface and its
+/// connection state), and device storages and server places are registered
+/// volumes too, so appending them after enrichment ships mobile devices and live
+/// servers to the frontend with `capabilities: None`, and the pane falls back to
+/// per-kind defaults instead of what the backend actually offers. Callers hand
+/// over a local listing and get the finished list back; they can't get the order
+/// wrong.
 pub(crate) async fn complete(local: Vec<LocationInfo>) -> Vec<LocationInfo> {
     let mut volumes = local;
 
     crate::device_volumes::append_device_volumes(&mut volumes).await;
+    // Servers: the registered SFTP and WebDAV volumes, plus the pinned saved
+    // ones. ❗ Before enrichment for the same reason device storages are, and
+    // from CACHED state only: this runs on every `volumes-changed`, and a probe
+    // here would turn a refresh into a round of network traffic.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    crate::server_volumes::append_server_volumes(&mut volumes);
 
     #[cfg(target_os = "macos")]
     crate::volumes::enrich_from_volume_registry(&mut volumes);
