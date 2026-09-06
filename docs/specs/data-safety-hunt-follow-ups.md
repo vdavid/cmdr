@@ -24,9 +24,9 @@ below.
   (`transfer/move_op/source_sweep.rs`). A file rewritten in between (a log, a database, an app saving) is in the ledger
   with its old bytes at the destination, so the sweep removes the source and the newer bytes are gone. Nothing compares
   the source at delete time against what was copied. Scoped out of the #1 fix on purpose.
-- **Impact:** high. Silent loss of the newest writes to a file that lives in a folder being moved to another disk, share,
-  or device, under the same condition as the fixed #1 (something writing into the folder mid-move), which the hunt rated
-  high rather than critical because the move has to overlap the write.
+- **Impact:** high. Silent loss of the newest writes to a file that lives in a folder being moved to another disk,
+  share, or device, under the same condition as the fixed #1 (something writing into the folder mid-move), which the
+  hunt rated high rather than critical because the move has to overlap the write.
 - **Solution:** snapshot size and mtime per file at copy time (the copy already stats the source; keep the pair beside
   the `landed_files` entry, not on the reversal ledger, whose identity rule is deliberately mtime-free). In Phase 4 a
   file whose size or mtime no longer matches is kept, its source directory survives, and it rides out on the same
@@ -58,9 +58,9 @@ below.
 
 - **Problem:** a staged write refuses to clear a destination name nobody resolved a conflict for
   (`staged_write::LandingName::ExpectedFree`, from the #2 fix), but a file under the single-shot threshold on SMB writes
-  at its final name with `FileOverwriteIf`, which truncates whatever is there. The fold-only collision that motivated the
-  guard is now settled before any write (`merge_level` shares `DestNameIndex`), and a failed destination probe no longer
-  reaches a write (#9), so what remains is a file arriving at that name between the level listing and the write.
+  at its final name with `FileOverwriteIf`, which truncates whatever is there. The fold-only collision that motivated
+  the guard is now settled before any write (`merge_level` shares `DestNameIndex`), and a failed destination probe no
+  longer reaches a write (#9), so what remains is a file arriving at that name between the level listing and the write.
 - **Impact:** medium. A silent replacement, but only inside a listing-to-write race window (seconds on a large merge),
   and only on the single-shot path.
 - **Solution:** an exclusive-create disposition through `Volume::write_from_stream` (a `WriteDisposition` beside the
@@ -83,18 +83,18 @@ below.
 - **Solution:** rename the file aside through `StagingTemp::mint_aside` (the `.cmdr-temp-<uuid>` sibling every other
   aside uses), record it in `CreatedPaths` as a displaced entry, discard it when the operation commits, and restore it
   on rollback or failure the way the local `commit_keeping_displaced_aside` does (a ` (recovered)` sibling when the
-  directory has already taken the name). The `ResolvedConflict` type grows an aside field that `merge.rs`, `strategy.rs`,
-  and the three write sites thread through.
+  directory has already taken the name). The `ResolvedConflict` type grows an aside field that `merge.rs`,
+  `strategy.rs`, and the three write sites thread through.
 - **Size:** one day. Mostly plumbing through the volume-side ledger; the mechanism exists locally.
 
 ### 5. The local folder-over-file Stop prompt describes the clash as file-vs-file
 
 - **Problem:** `transfer/copy/single_item.rs` hands the blocking file to `resolve_conflict` as both source and
-  destination, so the dialog renders `source_is_directory: false, destination_is_directory: false`: a file-vs-file prompt
-  for a folder-replacing-a-file decision. Verified live during the #5 work.
-- **Impact:** medium. The blanket-Overwrite refusal (#5) rests on "an explicit Stop answer is informed because the prompt
-  shows both types"; this is the one prompt where it doesn't. Safe on failure now (the aside is kept), but the consent
-  it collects is uninformed.
+  destination, so the dialog renders `source_is_directory: false, destination_is_directory: false`: a file-vs-file
+  prompt for a folder-replacing-a-file decision. Verified live during the #5 work.
+- **Impact:** medium. The blanket-Overwrite refusal (#5) rests on "an explicit Stop answer is informed because the
+  prompt shows both types"; this is the one prompt where it doesn't. Safe on failure now (the aside is kept), but the
+  consent it collects is uninformed.
 - **Solution:** pass the real source directory as the prompt's source (its size from the drive index, as the volume
   prompt already does), so the dialog says folder-over-file and shows the folder's size; keep the destination as the
   blocking file. The `IncomingItem` the #5 fix added is the carrier.
@@ -105,8 +105,8 @@ below.
 ### 6. A merge leaf whose future is dropped keeps its 0-byte placeholder
 
 - **Problem:** the #14 fix takes back a deep-merge Rename placeholder (`name (1).ext`, reserved with `O_EXCL`) when the
-  leaf abandons. A leaf whose FUTURE is dropped by the concurrent driver's cancel-drain deadline runs no abandon path, so
-  its placeholder stays.
+  leaf abandons. A leaf whose FUTURE is dropped by the concurrent driver's cancel-drain deadline runs no abandon path,
+  so its placeholder stays.
 - **Impact:** low. One 0-byte `file (1).ext` per unresolved clash in that window, indistinguishable from a real file.
 - **Solution:** either a `Drop` guard on the reservation (take it back on drop unless committed, the same shape
   `StagedWrite` uses for its temp) or have the driver's drain sweep placeholders the way it sweeps partials
