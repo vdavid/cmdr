@@ -23,6 +23,18 @@
 
     const log = getAppLogger('fileExplorer')
 
+    /**
+     * The hub row's own name, for the `volumeName` this pane pushes to MCP.
+     *
+     * ❗ One source with the switcher's label AND with Rust's
+     * `volume_listing::SERVERS_VOLUME_NAME`: `mcp/executor/nav.rs` waits for this
+     * pushed name to equal that const before it reports a `select_volume` done, so
+     * a second spelling here is a 30 s timeout in the MCP tool.
+     */
+    function serversVolumeName(): string {
+        return tString('fileExplorer.navigation.networkVolume')
+    }
+
     interface Props {
         paneId?: 'left' | 'right'
         isFocused?: boolean
@@ -110,7 +122,7 @@
         void update({
             path: currentNetworkHost ? `smb://${currentNetworkHost.ipAddress ?? currentNetworkHost.name}/` : 'smb://',
             volumeId: 'network',
-            volumeName: currentNetworkHost ? `Network > ${currentNetworkHost.name}` : 'Network',
+            volumeName: currentNetworkHost ? `${serversVolumeName()} > ${currentNetworkHost.name}` : serversVolumeName(),
             files: [],
             cursorIndex: 0,
             viewMode: 'full',

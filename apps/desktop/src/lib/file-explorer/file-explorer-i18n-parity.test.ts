@@ -85,9 +85,11 @@ describe('en-US parity: interpolating / plural / select fileExplorer keys (golde
     )
   })
 
-  it('navigation network volume names', () => {
-    expect(tString('fileExplorer.navigation.networkVolume')).toBe('Network')
-    expect(tString('fileExplorer.navigation.networkVolumeDisabled')).toBe('Network (disabled)')
+  it('the hub row is named exactly what the Rust `SERVERS_VOLUME_NAME` const spells', () => {
+    // `mcp/executor/nav.rs` waits for the frontend-pushed pane name to equal that
+    // const before it reports a `select_volume` done, so a drift here is a 30 s
+    // MCP timeout rather than a wrong word.
+    expect(tString('fileExplorer.navigation.networkVolume')).toBe('Servers')
   })
 
   it('navigation eject labels', () => {

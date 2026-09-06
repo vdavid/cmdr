@@ -154,7 +154,7 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
         return (
             Some(VolumeInfo {
                 id: "network".to_string(),
-                name: "Network".to_string(),
+                name: volume_listing::SERVERS_VOLUME_NAME.to_string(),
                 path: "smb://".to_string(),
                 category: LocationCategory::Network,
                 icon: None,

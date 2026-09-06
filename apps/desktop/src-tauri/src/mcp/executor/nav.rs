@@ -116,7 +116,7 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
             #[cfg(target_os = "macos")]
             {
                 let locations = crate::volumes::list_locations();
-                let is_virtual = volume_name == "Network";
+                let is_virtual = volume_name == crate::volume_listing::SERVERS_VOLUME_NAME;
                 let is_local = locations.iter().any(|loc| loc.name == volume_name);
 
                 // Check MTP volumes if not a local or virtual volume
@@ -145,7 +145,7 @@ pub async fn execute_nav_command_with_params<R: Runtime>(app: &AppHandle<R>, nam
 
                 if !is_virtual && !is_local && !is_mtp {
                     let mut available: Vec<&str> = locations.iter().map(|l| l.name.as_str()).collect();
-                    available.push("Network");
+                    available.push(crate::volume_listing::SERVERS_VOLUME_NAME);
                     return Err(ToolError::invalid_params(format!(
                         "Volume '{}' not found. Available volumes: {}",
                         volume_name,

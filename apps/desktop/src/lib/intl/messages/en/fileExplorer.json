@@ -1975,9 +1975,9 @@
     "description": "Section heading in the volume switcher dropdown for network locations (shared servers and mounted shares).",
     "screenshot": "pane-volume-chooser.png"
   },
-  "fileExplorer.navigation.networkVolume": "Network",
+  "fileExplorer.navigation.networkVolume": "Servers",
   "@fileExplorer.navigation.networkVolume": {
-    "description": "Name of the virtual Network entry in the volume switcher, which opens the network browser. Also shown as the current volume''s name in the breadcrumb when browsing the network.",
+    "description": "Name of the row in the volume switcher that opens the servers hub: the list of every server the user has saved or Cmdr found nearby. Also the current volume''s name in the breadcrumb while the hub is open. The GROUP this row sits in is still called \"Network\" (fileExplorer.navigation.groupNetwork); this is one row inside it.",
     "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.networkVolumeDisabled": "Network (disabled)",

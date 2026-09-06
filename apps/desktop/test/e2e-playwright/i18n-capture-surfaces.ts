@@ -389,7 +389,7 @@ export async function captureMainOverlays(
   // then double-click the connect row (a single click only moves the cursor onto
   // it; `handleConnectRowDoubleClick` is what opens the dialog).
   await mainOverlay('connect-to-server', async () => {
-    await mcpSelectVolume('left', 'Network')
+    await mcpSelectVolume('left', 'Servers')
     await main.waitForSelector('.network-browser .connect-row', 10000)
     await main.evaluate(`(function(){
       var el = document.querySelector('.network-browser .connect-row');
