@@ -524,6 +524,18 @@
   "@menu.network.forgetSavedPassword": {
     "sourceHash": "ed68566"
   },
+  "menu.volume.disconnectBusy": "Leválasztás (foglalt)",
+  "@menu.volume.disconnectBusy": {
+    "sourceHash": "598ba81"
+  },
+  "menu.volume.forgetSavedPasswordBusy": "Mentett jelszó elfelejtése (foglalt)",
+  "@menu.volume.forgetSavedPasswordBusy": {
+    "sourceHash": "2a05847"
+  },
+  "menu.volume.forgetServerBusy": "Szerver elfelejtése (foglalt)",
+  "@menu.volume.forgetServerBusy": {
+    "sourceHash": "53df26b"
+  },
   "menu.viewer.close": "Bezárás",
   "@menu.viewer.close": {
     "sourceHash": "7d9eb7a"

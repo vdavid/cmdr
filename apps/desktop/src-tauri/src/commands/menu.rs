@@ -8,7 +8,8 @@ use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
     CLOSE_TAB_ID, CommandScope, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
     FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FileContextInfo, MenuState,
-    OPEN_TERMINAL_HERE_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SettingsChanged, ViewMode, build_breadcrumb_context_menu,
+    OPEN_TERMINAL_HERE_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, ServerRowMenu, SettingsChanged, ViewMode,
+    build_breadcrumb_context_menu,
     build_context_menu, build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
     build_volume_row_context_menu, frontend_shortcut_to_accelerator, menu_id_to_command, rebuild_view_mode_items,
     sync_view_mode_check_states,
@@ -214,10 +215,16 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
 /// Shows a native context menu for a row in the volume-selector dropdown (fire-and-forget).
 ///
 /// A favorite row (`is_favorite`) gets `Rename` + `Remove`; an ejectable volume row gets
-/// `Eject ({name})`. The picked action is delivered asynchronously via the
-/// `volume-context-action` Tauri event from `on_menu_event` (the same path as the breadcrumb
-/// eject item). The target id + name are stashed in `MenuState.volume_row_context` so the
-/// handler can read them back.
+/// `Eject ({name})`; a SERVER row (`server` present) gets Disconnect / Forget saved password /
+/// Forget server instead, because a server has nothing to unplug. The picked action is delivered
+/// asynchronously via the `volume-context-action` Tauri event from `on_menu_event` (the same path
+/// as the breadcrumb eject item). The target id + name are stashed in
+/// `MenuState.volume_row_context` so the handler can read them back.
+///
+/// ❗ `server` is the CALLER's reading of the row (which items apply), because this command is
+/// synchronous and deciding "is a secret stored?" here would put a secret-store read on the popup
+/// path. `busy` is filled in here, though: `busy_volume_ids()` is the backend's own answer, and the
+/// destructive items are disabled by it exactly like Eject.
 #[tauri::command]
 #[specta::specta]
 pub fn show_volume_row_context_menu<R: Runtime>(
@@ -226,14 +233,18 @@ pub fn show_volume_row_context_menu<R: Runtime>(
     volume_name: String,
     is_favorite: bool,
     is_ejectable: bool,
+    server: Option<ServerRowMenu>,
 ) -> Result<(), String> {
     let app = window.app_handle();
 
     // Disable the eject item while a write op touches this volume (matches the inline
     // eject button and the breadcrumb menu). Favorites are never ejectable.
-    let eject_busy = is_ejectable && crate::file_system::busy_volume_ids().contains(&volume_id);
+    let busy = crate::file_system::busy_volume_ids().contains(&volume_id);
+    let eject_busy = is_ejectable && busy;
     let eject_name = (is_ejectable && !is_favorite).then_some(volume_name.as_str());
-    let menu = build_volume_row_context_menu(app, is_favorite, eject_name, eject_busy).map_err(|e| e.to_string())?;
+    let server = server.map(|s| ServerRowMenu { busy, ..s });
+    let menu = build_volume_row_context_menu(app, is_favorite, eject_name, eject_busy, server.as_ref())
+        .map_err(|e| e.to_string())?;
 
     {
         let state = app.state::<MenuState<R>>();

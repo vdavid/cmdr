@@ -14,16 +14,18 @@ use tauri::Runtime;
 use tauri::{AppHandle, Manager};
 
 use crate::ignore_poison::IgnorePoison;
+use crate::volume_broadcast::VolumeContextActionKind;
 
 use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
     FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID,
     MEDIA_INDEX_INCLUDE_FOLDER_ID, MEDIA_INDEX_REMOVE_FOLDER_ID, MediaIndexFolderChoice, MediaIndexFolderExclusion,
     MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID,
-    SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
-    SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID,
-    TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID,
-    VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
+    SELECT_ALL_ID, SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SHOW_HIDDEN_FILES_ID,
+    SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
+    SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
+    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEWER_WORD_WRAP_ID, ViewMode,
+    ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -314,23 +316,16 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // === Eject volume / favorite rename / favorite remove (volume-selector row menus) ===
     // All three are routed back to the frontend through the same `volume-context-action`
     // event with the target stashed in `volume_row_context`; the action string disambiguates.
-    if id == EJECT_VOLUME_ID || id == FAVORITE_RENAME_ID || id == FAVORITE_REMOVE_ID {
+    if let Some(action) = volume_row_action(id) {
         let menu_state = app.state::<MenuState<tauri::Wry>>();
         let ctx = menu_state.volume_row_context.lock_ignore_poison();
         if ctx.volume_id.is_empty() {
             log::warn!(target: "menu", "Volume row menu item {id} clicked with no volume_id stashed");
             return;
         }
-        let action = if id == FAVORITE_RENAME_ID {
-            "rename-favorite"
-        } else if id == FAVORITE_REMOVE_ID {
-            "remove-favorite"
-        } else {
-            "eject"
-        };
         use tauri_specta::Event as _;
         let payload = crate::volume_broadcast::VolumeContextAction {
-            action: action.to_string(),
+            action,
             volume_id: ctx.volume_id.clone(),
             volume_name: ctx.volume_name.clone(),
         };
@@ -494,4 +489,63 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     }
 
     // Unknown menu ID: no-op (all known IDs are handled above)
+}
+
+/// The action a volume-row menu id stands for, or `None` when the id belongs to
+/// some other menu.
+///
+/// ❗ One table, so the ids the handler recognizes and the actions it emits can't
+/// drift apart: every id that reaches the branch above answers here, and every
+/// answer is a typed variant rather than a string the frontend has to guess.
+fn volume_row_action(id: &str) -> Option<VolumeContextActionKind> {
+    match id {
+        EJECT_VOLUME_ID => Some(VolumeContextActionKind::Eject),
+        FAVORITE_RENAME_ID => Some(VolumeContextActionKind::RenameFavorite),
+        FAVORITE_REMOVE_ID => Some(VolumeContextActionKind::RemoveFavorite),
+        SERVER_DISCONNECT_ID => Some(VolumeContextActionKind::Disconnect),
+        SERVER_FORGET_SECRET_ID => Some(VolumeContextActionKind::ForgetSecret),
+        SERVER_FORGET_ID => Some(VolumeContextActionKind::ForgetServer),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod volume_row_action_tests {
+    use super::*;
+
+    #[test]
+    fn every_volume_row_menu_id_maps_to_its_action() {
+        assert_eq!(volume_row_action(EJECT_VOLUME_ID), Some(VolumeContextActionKind::Eject));
+        assert_eq!(
+            volume_row_action(FAVORITE_RENAME_ID),
+            Some(VolumeContextActionKind::RenameFavorite)
+        );
+        assert_eq!(
+            volume_row_action(FAVORITE_REMOVE_ID),
+            Some(VolumeContextActionKind::RemoveFavorite)
+        );
+        assert_eq!(
+            volume_row_action(SERVER_DISCONNECT_ID),
+            Some(VolumeContextActionKind::Disconnect)
+        );
+        assert_eq!(
+            volume_row_action(SERVER_FORGET_SECRET_ID),
+            Some(VolumeContextActionKind::ForgetSecret)
+        );
+        assert_eq!(
+            volume_row_action(SERVER_FORGET_ID),
+            Some(VolumeContextActionKind::ForgetServer)
+        );
+    }
+
+    /// ❗ The SMB hub's host menu rides its OWN event with a host id, so an id
+    /// from it must not fall into the volume-row branch and emit a volume action
+    /// against whatever id happened to be stashed.
+    #[test]
+    fn a_network_host_menu_id_is_not_a_volume_row_action() {
+        assert_eq!(volume_row_action(NETWORK_HOST_DISCONNECT_ID), None);
+        assert_eq!(volume_row_action(NETWORK_HOST_FORGET_SERVER_ID), None);
+        assert_eq!(volume_row_action(NETWORK_HOST_FORGET_PASSWORD_ID), None);
+        assert_eq!(volume_row_action("tab_close"), None);
+    }
 }

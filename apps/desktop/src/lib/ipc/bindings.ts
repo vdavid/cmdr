@@ -4074,6 +4074,13 @@ export const commands = {
    *
    *  ❗ The place stays SAVED. Disconnecting a pinned place leaves it as a `saved`
    *  row in the switcher; forgetting is [`forget_server`].
+   *
+   *  ❗ Emits `VolumeUnmounted`, so a pane standing on the place goes home the way
+   *  it does after an eject. Without it the pane keeps a volume id the registry no
+   *  longer answers for, and every listing on it fails instead of redirecting. ❌
+   *  No ordering constraint against `volumes-changed` here, unlike
+   *  [`forget_server`]: the ROW survives a disconnect (it becomes `saved`), so the
+   *  consumer has nothing to race.
    */
   disconnectPlace: (volumeId: string) => __TAURI_INVOKE<boolean>('disconnect_place', { volumeId }),
   /**
@@ -4088,8 +4095,19 @@ export const commands = {
   /**
    *  Drops a server from the saved list, answering whether one was there.
    *
-   *  ❗ Emits `volumes-changed`, so a `saved` row leaves the switcher at once. ❌
-   *  Leaves the stored secret alone: forgetting a server from a list is not the
+   *  ❗ **Also drops the session and unregisters the volume**, because a forgotten
+   *  server is gone: leaving the session up would keep a row in the switcher that
+   *  no store knows about and no "Forget" can reach a second time. A tab standing
+   *  on it becomes a home tab (`docs/specs/servers-hub-plan.md` § D6).
+   *
+   *  ❗ **`VolumeUnmounted` goes out BEFORE `volumes-changed`.** The pane's
+   *  consumer is what redirects it home, and `volumes-changed` is what takes the
+   *  row out of the store; the other order would leave the pane standing on a
+   *  volume nothing can name. The order is written here rather than relied on:
+   *  `volumes-changed` is debounced and this is not, so it holds either way, but a
+   *  future undebounce shouldn't be able to break it silently.
+   *
+   *  ❌ Leaves the stored secret alone: forgetting a server from a list is not the
    *  same request as revoking its credential, and [`forget_server_secret`] is that
    *  one.
    */
@@ -13131,18 +13149,47 @@ export type VolumeConnectionChanged = {
 
 /**
  *  Typed `volume-context-action` Tauri event. Emitted to the `main` window when
- *  the user picks an action ("eject", "rename-favorite", or "remove-favorite") from
- *  the native breadcrumb / volume-selector row context menu. Window-scoped, so it's
- *  emitted via `Event::emit_to`.
+ *  the user picks an item from the native breadcrumb / volume-selector row
+ *  context menu. Window-scoped, so it's emitted via `Event::emit_to`.
  */
 export type VolumeContextAction = {
-  // The action id ("eject", "rename-favorite", or "remove-favorite").
-  action: string
+  // Which item was picked.
+  action: VolumeContextActionKind
   // The target volume's ID.
   volumeId: string
   // The target volume's display name (for confirmation copy).
   volumeName: string
 }
+
+/**
+ *  What the user picked in a volume row's context menu.
+ *
+ *  ❗ A typed enum, ❌ never a free string: the frontend branches on every one of
+ *  these, and a misspelling would go to the one place a compiler never looks. The
+ *  wire spelling is kebab-case, which is what the existing consumers already
+ *  match on.
+ */
+export type VolumeContextActionKind =
+  // Navigate the focused pane to the row.
+  | 'open'
+  // Unmount a removable disk, or retire a device session.
+  | 'eject'
+  // Drop a server's session and leave it as a `saved` row.
+  | 'disconnect'
+  // Put a saved place in the switcher.
+  | 'pin'
+  // Take it back out. ❗ The place stays saved; the hub still lists it.
+  | 'unpin'
+  // Open the sign-in sheet on this server's stored fields.
+  | 'edit'
+  // Stop remembering a place's credential, keeping the place.
+  | 'forget-secret'
+  // Drop the server, its places, and their pins.
+  | 'forget-server'
+  // Rename a favorite row.
+  | 'rename-favorite'
+  // Remove a favorite row.
+  | 'remove-favorite'
 
 // Copy operation configuration for volume-to-volume copy.
 export type VolumeCopyConfig = {
@@ -13471,12 +13518,22 @@ export type VolumeSpaceChanged = {
 }
 
 /**
- *  Typed `volume-unmounted` Tauri event (per-volume, carries the gone path).
- *  `DualPaneExplorer` listens for this to redirect panes off ejected volumes.
+ *  Typed `volume-unmounted` Tauri event: one volume is gone, go home if you are
+ *  standing on it. `DualPaneExplorer` listens and redirects both panes.
  */
 export type VolumeUnmounted = {
   // The volume path (like "/Volumes/MyDrive").
   volumePath: string
+  /**
+   *  The volume's id, when the emitter knows it.
+   *
+   *  ❗ What the consumer acts on, because a "Forget server" takes the row out
+   *  of the store and a path lookup would then find nothing. The mount
+   *  watchers leave it `None`: they speak in paths, and the id they resolve
+   *  doesn't always mean "gone" (a promoted volume keeps serving from another
+   *  mount).
+   */
+  volumeId: string | null
 }
 
 /**

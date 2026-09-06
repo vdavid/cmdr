@@ -368,3 +368,41 @@ async fn sftp_integration_a_remembered_secret_is_in_the_store_after_the_dial() {
 
     sftp_volume_wiring::disconnect(&volume_id).await;
 }
+
+/// ❗ **Forgetting a server drops its session too.** Leaving the session up would
+/// keep a switcher row that no store knows about and no second "Forget" can
+/// reach: `docs/specs/servers-hub-plan.md` § D6 settles that a tab on a
+/// forgotten server becomes a home tab.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_forgetting_a_server_drops_its_session_and_unregisters_it() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let params = stock_params();
+    signed_in_already(&params).await;
+    let SftpConnection::Connected { volume_id, .. } =
+        sftp_volume_wiring::connect_and_register("fixture", params, "fixture-forget-attempt", None).await
+    else {
+        panic!("a fixture with its key approved and its password stored must connect");
+    };
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    assert!(manager.get(&volume_id).is_some(), "just registered");
+
+    let forgotten = tokio::time::timeout(
+        Duration::from_secs(5),
+        crate::commands::servers::forget_server(volume_id.clone()),
+    )
+    .await
+    .expect("a hang here means someone reached for `Sftp::close()`");
+
+    assert!(forgotten);
+    assert!(
+        manager.get(&volume_id).is_none(),
+        "a forgotten server is out of the registry, not a live volume no store can name"
+    );
+    assert!(
+        !sftp_known_servers::all()
+            .iter()
+            .any(|e| cmdr_fs::volume::sftp_volume_id(&e.host, e.port, &e.username) == volume_id),
+        "and out of the saved list"
+    );
+}

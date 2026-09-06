@@ -37,8 +37,9 @@ use super::{
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
     FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, ImageIndexMenuState, MenuItems,
     NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
-    SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID,
-    ViewMode, ViewerMenuItems, image_index_menu_items,
+    SERVER_DISCONNECT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID,
+    TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
+    image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -434,6 +435,69 @@ pub fn build_breadcrumb_context_menu<R: Runtime>(
     Ok(menu)
 }
 
+/// What a SERVER row's context menu offers, as the caller sees the row.
+///
+/// ❗ The caller decides, ❌ never this builder: `show_volume_row_context_menu` is
+/// a synchronous command, and answering "is a secret stored for this?" here would
+/// put a secret-store read on the menu-popup path. Same shape as
+/// [`build_network_host_context_menu`]'s `has_credentials`.
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ServerRowMenu {
+    /// Whether there is a session to drop (`showsDisconnect` in
+    /// `navigation/connection-state.ts`: a `direct` or `disconnected` place).
+    pub shows_disconnect: bool,
+    /// Whether a saved entry exists, so "Forget server" has something to forget.
+    pub is_saved: bool,
+    /// Whether a credential is remembered for the place.
+    pub has_saved_secret: bool,
+    /// Whether a write operation is touching the volume right now. ❗ Disables
+    /// every destructive item exactly like the eject item, because dropping the
+    /// session or the credential under a running copy breaks it.
+    pub busy: bool,
+}
+
+/// Appends a server row's items, in the order `docs/specs/servers-hub-plan.md`
+/// § D6 sets: Disconnect (when live), Forget saved password (when one exists),
+/// Forget server (when it is saved).
+///
+/// ❗ A server row shows Disconnect, ❌ never Eject: "Eject" promises
+/// safe-to-unplug, and a server has nothing to unplug.
+fn append_server_row_items<R: Runtime>(
+    app: &AppHandle<R>,
+    menu: &Menu<R>,
+    server: &ServerRowMenu,
+) -> tauri::Result<()> {
+    if server.shows_disconnect {
+        let key = if server.busy {
+            "menu.volume.disconnectBusy"
+        } else {
+            "menu.network.disconnect"
+        };
+        let item = MenuItem::with_id(app, SERVER_DISCONNECT_ID, menu_t(key), !server.busy, None::<&str>)?;
+        menu.append(&item)?;
+    }
+    if server.has_saved_secret {
+        let key = if server.busy {
+            "menu.volume.forgetSavedPasswordBusy"
+        } else {
+            "menu.network.forgetSavedPassword"
+        };
+        let item = MenuItem::with_id(app, SERVER_FORGET_SECRET_ID, menu_t(key), !server.busy, None::<&str>)?;
+        menu.append(&item)?;
+    }
+    if server.is_saved {
+        let key = if server.busy {
+            "menu.volume.forgetServerBusy"
+        } else {
+            "menu.network.forgetServer"
+        };
+        let item = MenuItem::with_id(app, SERVER_FORGET_ID, menu_t(key), !server.busy, None::<&str>)?;
+        menu.append(&item)?;
+    }
+    Ok(())
+}
+
 /// The "Eject (Backup)" label, in its busy variant while a write op still touches
 /// the volume. Shared by the breadcrumb and volume-row menus so the two can't
 /// drift; the volume name is uncontrolled, so it rides in as a literal token.
@@ -632,8 +696,14 @@ pub fn build_volume_row_context_menu<R: Runtime>(
     is_favorite: bool,
     eject_volume_name: Option<&str>,
     eject_busy: bool,
+    server: Option<&ServerRowMenu>,
 ) -> tauri::Result<Menu<R>> {
     let menu = Menu::new(app)?;
+
+    if let Some(server) = server {
+        append_server_row_items(app, &menu, server)?;
+        return Ok(menu);
+    }
 
     if is_favorite {
         let rename_item = MenuItem::with_id(

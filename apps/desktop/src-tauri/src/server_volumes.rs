@@ -60,6 +60,13 @@ impl ServerPlace {
 /// ❗ Includes UNPINNED servers. Pins govern the switcher, not identity, and a
 /// tab restored onto an unpinned server still has to find its way home. The
 /// listing filters; the resolver does not.
+///
+/// ❗ The "registered volume nothing has saved" sweep is DEFENCE IN DEPTH, not
+/// the load-bearing path: `forget_server` drops the session and unregisters the
+/// volume before it removes the entry, so no such orphan should exist. It stays
+/// because the cost is one pass over a registry snapshot, and the failure it
+/// covers (a volume the stores don't know about) is one where the app would
+/// otherwise deny that a volume a pane is standing on exists at all.
 pub(crate) fn server_places() -> Vec<ServerPlace> {
     let manager = crate::file_system::volume::manager::get_volume_manager();
     let registered = |id: &str, kind: BackendKind| {
@@ -190,6 +197,15 @@ pub(crate) fn append_server_volumes(volumes: &mut Vec<LocationInfo>) {
             volumes.push(location_from_place(place));
         }
     }
+}
+
+/// The app-facing root of the place `volume_id` names, for an event payload that
+/// wants to say WHERE as well as which.
+pub(crate) fn place_root(volume_id: &str) -> Option<String> {
+    server_places()
+        .into_iter()
+        .find(|place| place.id == volume_id)
+        .map(|place| place.app_root)
 }
 
 /// The server volume an `sftp://` or `webdav://` path belongs to, registered or

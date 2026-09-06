@@ -14,8 +14,8 @@ import { getAppLogger } from '$lib/logging/logger'
 const log = getAppLogger('adb')
 
 /** Setting keys. Mirror the registry entries. */
-export const ADB_ENABLED_SETTING_KEY = 'fileOperations.adbEnabled'
-export const ADB_BINARY_PATH_SETTING_KEY = 'fileOperations.adbBinaryPath'
+export const ADB_ENABLED_SETTING_KEY = 'fileOperations.adbEnabled' as const
+export const ADB_BINARY_PATH_SETTING_KEY = 'fileOperations.adbBinaryPath' as const
 
 /**
  * Pushes both ADB settings, read fresh. Call it after either one changes.
@@ -24,8 +24,8 @@ export const ADB_BINARY_PATH_SETTING_KEY = 'fileOperations.adbBinaryPath'
  * rather than an empty string.
  */
 export async function pushAdbConfigToBackend(): Promise<void> {
-  const enabled = getSetting<boolean>(ADB_ENABLED_SETTING_KEY) ?? true
-  const binaryPath = (getSetting<string>(ADB_BINARY_PATH_SETTING_KEY) ?? '').trim()
+  const enabled = getSetting(ADB_ENABLED_SETTING_KEY)
+  const binaryPath = getSetting(ADB_BINARY_PATH_SETTING_KEY).trim()
   try {
     await setAdbSettings(enabled, binaryPath === '' ? null : binaryPath)
   } catch (error) {

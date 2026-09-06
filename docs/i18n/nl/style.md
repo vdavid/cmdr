@@ -159,6 +159,12 @@ second half is now a normal plural with a real verb
   (`Archief`, `Voorzieningen`, `Geef snel weer`, `Vergroot/verklein`), omdat de gebruiker Cmdrs menubalk naast die van
   de Finder ziet. De ene uitzondering is `eject`, waar Apples `Verwijder` met _delete_ zou botsen. Bewijs en
   uitzonderingen: `glossary.md` § Native menu's.
+- **The grayed-out menu item keeps its base label and adds ` (bezet)`.** A `*Busy` key is the same command in a second
+  state, so it repeats its base item byte-identically and appends one marker, exactly as `menu.volume.ejectBusy`
+  (`Werp uit ({name}) (bezet)`) does: `Verbreek (bezet)`, `Vergeet server (bezet)`,
+  `Vergeet opgeslagen wachtwoord (bezet)`. `bezet` is the short adjectival form a parenthetical needs and it fits every
+  base label unchanged; the glossary's `in use → in gebruik` is for full sentences about a volume, so don't swap one for
+  the other. Never invent a second marker: if a future base label can't take `(bezet)`, report it.
 - **Sentence case, not title case.** Dutch capitalizes only the first word and proper nouns, which fits the app's
   sentence-case rule directly. "Verstuur crashrapport?" not "Verstuur Crashrapport?".
 - **Quotation marks:** macOS Dutch uses single curly quotes `‘…’` for quoted UI strings ("Klik op 'Ga door' …", and

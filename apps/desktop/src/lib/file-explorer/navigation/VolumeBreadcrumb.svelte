@@ -73,7 +73,7 @@
         driveIndexRefusalMessageKey,
         type DriveIndexMenuAction,
     } from './drive-index-status'
-    import type { SmbIndexGateReason } from '$lib/ipc/bindings'
+    import type { SmbIndexGateReason, VolumeContextActionKind } from '$lib/ipc/bindings'
     import { maybePromptFirstConnect } from '$lib/indexing/first-connect-trigger'
     import { silenceDrive } from '$lib/indexing/drive-index-prefs'
     import { setSetting } from '$lib/settings'
@@ -604,7 +604,7 @@
     // Both panes' breadcrumbs receive this global event, but only the one whose
     // dropdown is open owns the menu it spawned (favorites are global, so the id
     // alone can't tell the panes apart; `isOpen` can). Eject is handled elsewhere.
-    function handleVolumeContextAction(payload: { action: string; volumeId: string }) {
+    function handleVolumeContextAction(payload: { action: VolumeContextActionKind; volumeId: string }) {
         if (!isOpen) return
         if (payload.action !== 'rename-favorite' && payload.action !== 'remove-favorite') return
         const volume = favorites.find((f) => f.id === payload.volumeId)

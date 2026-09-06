@@ -215,6 +215,14 @@ Two mechanics that bite in Portuguese specifically:
   espiar é `olhar dentro de`, os metadados de foto são `detalhes da câmera` e o lugar é `localização` /
   `onde ela foi tirada`. Evidência: `glossary.md` § O que o Ask Cmdr lê dentro de um arquivo.
 
+- **A forma "ocupada" de um item de menu é o item inteiro mais ` (ocupado)` no fim, sem mais nada.** O sufixo é
+  invariável: fica no masculino singular porque descreve o servidor ou o disco, não o usuário nem o item, então serve
+  igual para `Desconectar (ocupado)`, `Esquecer senha salva (ocupado)`, `Esquecer servidor (ocupado)` e
+  `Ejetar ({name}) (ocupado)`, que é o molde original. O texto base copia byte a byte a chave irmã não ocupada
+  (`menu.network.disconnect`, `menu.network.forgetSavedPassword`, `menu.network.forgetServer`, `menu.volume.eject`): as
+  duas linhas se alternam no mesmo lugar do menu, e qualquer diferença de palavra lê como outro comando. Termo:
+  `glossary.md` § busy.
+
 ## Decisions to confirm with David
 
 - None open. (The `pt` = pt-BR question is settled; see the variant section above.)

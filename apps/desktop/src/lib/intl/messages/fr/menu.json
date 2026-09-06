@@ -524,6 +524,18 @@
   "@menu.network.forgetSavedPassword": {
     "sourceHash": "ed68566"
   },
+  "menu.volume.disconnectBusy": "Se déconnecter (occupé)",
+  "@menu.volume.disconnectBusy": {
+    "sourceHash": "598ba81"
+  },
+  "menu.volume.forgetSavedPasswordBusy": "Oublier le mot de passe enregistré (occupé)",
+  "@menu.volume.forgetSavedPasswordBusy": {
+    "sourceHash": "2a05847"
+  },
+  "menu.volume.forgetServerBusy": "Oublier le serveur (occupé)",
+  "@menu.volume.forgetServerBusy": {
+    "sourceHash": "53df26b"
+  },
   "menu.viewer.close": "Fermer",
   "@menu.viewer.close": {
     "sourceHash": "7d9eb7a"

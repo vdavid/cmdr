@@ -647,10 +647,14 @@
         }
 
         // Subscribe to volume unmount events (redirect panes off ejected volumes)
+        // ❗ The id first: a "Forget server" takes the row out of the store, so
+        // looking the path up would find nothing if the `volumes-changed` refresh
+        // won the race. The mount watchers still speak in paths, which is the
+        // fallback.
         unlistenVolumeUnmount = await onVolumeUnmounted((payload) => {
-            const volume = volumes.find((v) => v.path === payload.volumePath)
-            if (volume) {
-                void edgeFlow.handleVolumeUnmount(volume.id)
+            const volumeId = payload.volumeId ?? volumes.find((v) => v.path === payload.volumePath)?.id
+            if (volumeId) {
+                void edgeFlow.handleVolumeUnmount(volumeId)
             }
         })
 

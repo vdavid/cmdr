@@ -275,6 +275,12 @@ Dateien".
   `../reference-pile/how-to-mine.md` § No pile on this machine? Mine the live macOS bundles instead. Fehlt ein Term dort
   auch, ist der Hersteller des Produkts die nächste Instanz (für Android-Begriffe Googles deutsche Doku), mit Abrufdatum
   notiert.
+- **Die ausgegraute „busy“-Form eines Menüeintrags hängt ` (in Benutzung)` an den unveränderten Grundeintrag an.** Der
+  Marker ist über alle `*Busy`-Schlüssel in `menu.json` derselbe und der Grundwortlaut bleibt zeichengleich, damit beide
+  Zustände als ein Eintrag lesbar bleiben: `Auswerfen ({name}) (in Benutzung)`, `Trennen (in Benutzung)`,
+  `Server vergessen (in Benutzung)`, `Gespeichertes Passwort vergessen (in Benutzung)`. Keinen zweiten Marker erfinden.
+  Abgrenzung zur Glossarzeile `in use → in Verwendung`: die gilt für den Fließtext im Finder-Ton („Das Volume ist gerade
+  in Verwendung …“), der Menü-Marker bleibt `in Benutzung`, weil `menu.volume.ejectBusy` ihn gesetzt hat.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
