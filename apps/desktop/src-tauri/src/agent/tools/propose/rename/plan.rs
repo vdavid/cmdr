@@ -386,12 +386,12 @@ fn build_draft<R: Runtime>(
                 "Every source must be in the focused pane's effective scope.",
             ));
         }
-        if cmdr_archive::archive_boundary_candidate(Path::new(&rename.source_path)).is_some() {
+        if is_archive_inner_path(&rename.source_path) {
             return Err(invalid_params("Rename plans can't include files inside an archive."));
         }
         // A repo's snapshots are read-only for the same reason: `.git/branches/…` has
         // no file to rename. Asked separately from the archive line above, which is
-        // deliberately wider (it also refuses the `.zip` file itself).
+        // a different question (a portal path has no archive suffix to find).
         if crate::file_system::git::wiring::portal_serves(Path::new(&rename.source_path)) {
             return Err(invalid_params(
                 "Rename plans can't include files inside a repository's history.",
@@ -454,6 +454,24 @@ pub(super) fn check_row_evidence(
 /// reviewable only when it names a nonexistent direct child of the focused local
 /// folder; preflight then reports `SourceMissing`. Existing out-of-scope files and
 /// every remote path stay rejected at the proposal boundary.
+/// Whether `source_path` names something strictly INSIDE an archive, which a
+/// rename plan has to refuse: an archive-inner path has no file on disk for the
+/// bulk-rename executor to touch.
+///
+/// The archive FILE itself is not that. `/photos/trip.zip` is an ordinary file
+/// and renaming it is an ordinary rename, so this asks the same narrow question
+/// `cmdr_archive::path_is_inside_archive` does (a non-empty inner path) rather
+/// than merely finding an archive-suffixed component. Purely lexical, no I/O:
+/// validation runs per row and shouldn't stat.
+///
+/// Load-bearing now that `.docx` is a browsable container: the wide question
+/// would refuse a bulk rename of every Office document in a folder, which is one
+/// of the things people most want bulk rename FOR.
+pub(super) fn is_archive_inner_path(source_path: &str) -> bool {
+    cmdr_archive::archive_boundary_candidate(Path::new(source_path))
+        .is_some_and(|(_archive, inner)| !inner.as_os_str().is_empty())
+}
+
 pub(super) fn missing_local_child(state: &PaneState, volume_id: &str, source_path: &str) -> bool {
     if !volume_uses_local_paths(volume_id) || std::fs::symlink_metadata(source_path).is_ok() {
         return false;
