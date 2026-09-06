@@ -1,4 +1,5 @@
-//! What the watcher registry promises, asserted without the operating system.
+//! What the watcher registry promises, asserted against a scripted backend
+//! wherever the operating system isn't the thing under test.
 //!
 //! The bookkeeping is this crate's: one watch per repository however many
 //! subscribers it has, torn down with the last one, a change reaching the sink

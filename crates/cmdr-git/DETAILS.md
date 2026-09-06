@@ -165,8 +165,8 @@ the suite's 8 s cap at all (measured 2026-09-05).
 - `watcher_tests::a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`: a scripted backend has no watches
   to LOSE, so only a real one can say what a repository's removal does to them.
 
-❌ Don't add a third for a property either of those already arms a watcher for: a new burst behaviour belongs as another
-act inside the first, which is where its second burst came from, and a new teardown behaviour inside the second.
+❌ Don't add a third for a property either of those already arms a watcher for: a new burst behavior belongs as another
+act inside the first, which is where its second burst came from, and a new teardown behavior inside the second.
 
 **Neither door costs public surface.** `GitPortal::with_scripted_watcher` and `GitPortal::fire_watcher` are methods on a
 type in a private module, so `index-crate-isolation` doesn't measure them, and both are `testing`-gated so a shipped
@@ -184,7 +184,7 @@ Deleting a repo folder is an ordinary thing to do in a file manager, and the pan
 armed the watch. On Linux the removal arrives as `Remove` events on every watched directory plus an `IN_IGNORED` per
 dying watch; on macOS as FSEvents for the same paths. Either way it is a WRITE by any filter, so the recompute runs.
 
-What happens then is the whole behaviour: `recompute_and_report` opens the repository, `RepoCache::discover` fails
+What happens then is the whole behavior: `recompute_and_report` opens the repository, `RepoCache::discover` fails
 because there is nothing there, and it returns without touching the sink. So a repository that is gone raises no
 `git-state-changed` event and drives no `FullRefresh` of a listing that is equally gone.
 
