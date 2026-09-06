@@ -10,6 +10,7 @@ import {
 import { addToast, addToastForPane } from '$lib/ui/toast'
 import { resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
+import { isPlainFilesystemPath } from '$lib/path/canonical'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
@@ -163,15 +164,28 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
 
   /**
    * True when a SEARCH-RESULTS pane's rows can't go on the system clipboard,
-   * the same refusal `isMtpClipboardRefusal` gives a live MTP pane. The kind has
-   * to come from where the rows really LIVE, because the pane's own volume id is
-   * the virtual `search-results`: a search covers any volume with a persisted
-   * index, MTP storages and ADB devices included. Without this, an `mtp://…` row
-   * path reaches `NSURL::fileURLWithPath` (`clipboard/pasteboard.rs`), which
-   * reads a scheme it doesn't know as a RELATIVE path and hands back a file URL
-   * under the process working directory.
+   * the same refusal `isMtpClipboardRefusal` gives a live MTP pane.
+   *
+   * Two gates, and the ORDER matters. The scheme gate runs first and answers
+   * from the row path alone: anything that isn't a plain absolute filesystem
+   * path can't be handed to `NSURL::fileURLWithPath` (`clipboard/pasteboard.rs`),
+   * which reads an unknown scheme as a RELATIVE path and returns a file URL under
+   * the process working directory. It holds when the volume gate can't: unplug a
+   * phone under an open snapshot pane and the device drops off the volume list,
+   * so `resolveSnapshotSourceVolume` falls back to `root` — a kind that copies —
+   * while the rows still read `mtp://…`.
+   *
+   * The volume gate then covers the live device, where the kind has to come from
+   * where the rows really LIVE, because the pane's own volume id is the virtual
+   * `search-results`: a search covers any volume with a persisted index, MTP
+   * storages and ADB devices included.
+   *
+   * ANY offending row refuses the whole set. A partial copy would put a subset on
+   * the clipboard under a toast that says the copy happened, which is worse than
+   * refusing.
    */
   function snapshotClipboardIsRefused(paths: string[]): boolean {
+    if (paths.some((path) => !isPlainFilesystemPath(path))) return true
     return isMtpClipboardRefusal(resolveSnapshotSourceVolume(paths, access.getVolumes()).volumeId)
   }
 

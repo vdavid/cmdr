@@ -5,7 +5,8 @@ shortcut, virtual-volume URL).
 
 ## Module map
 
-- `canonical.ts`: the `CanonicalPath` brand plus `toCanonical` / `parentOf` / `basenameOf`.
+- `canonical.ts`: the `CanonicalPath` brand plus `toCanonical` / `parentOf` / `basenameOf`, and the separate
+  `isPlainFilesystemPath` outbound-path guard.
 
 ## Must-knows
 
@@ -17,6 +18,10 @@ shortcut, virtual-volume URL).
   virtual-volume URLs (`mtp://`, `smb://`, `search-results://`), and excludes `~`-rooted, relative, and other unsafe
   inputs. It's assignable to `string` (flows outward freely) but not vice versa (conversion must be explicit). The brand
   is local: keep every other path-typed variable a plain `string`, no `CanonicalPath | string` unions.
+- **A canonical path is NOT an OS-resolvable one.** The brand admits virtual-volume URLs, so before handing a path to
+  anything that expects a real file (the system clipboard's `NSURL::fileURLWithPath`, a drag-out promise), ask
+  `isPlainFilesystemPath`. An unknown scheme is read as a RELATIVE path there and comes back as a file URL under the
+  process working directory, silently. `DETAILS.md` § "Canonical is not OS-resolvable".
 - **`toCanonical` throws on empty `homeDir`.** `FilePane.svelte`'s `userHomePath` is fetched async on mount and starts
   `''`. The pane-level `canonicalPath` `$derived` returns `null` while it's empty, so reactive callers must guard on
   `canonicalPath !== null` rather than catch the throw.

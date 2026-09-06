@@ -287,12 +287,18 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   network paste would be a new, mis-worded toast. On the live clipboard-time pane id set it's byte-equivalent to the old
   `startsWith('mtp-')` gate, pinned by the equivalence test in `clipboard-operations.test.ts`.
 
-  **The snapshot-clip branch runs that SAME refusal against the resolved row volume** (`snapshotClipboardIsRefused` →
-  `snapshot-source-volume.ts::resolveSnapshotSourceVolume` → `isMtpClipboardRefusal`), because the pane's own volume id
-  is the virtual `search-results` and a search covers any volume with a persisted index, MTP storages included. Without
-  it an `mtp://…` row path reaches `NSURL::fileURLWithPath` (`clipboard/pasteboard.rs`), which reads an unknown scheme
-  as a RELATIVE path and hands back a file URL under the process working directory. **Gotcha:** the refusal is only as
-  good as the resolution, so a device unplugged while its snapshot pane stays open resolves to `root` and falls through.
+  **The snapshot-clip branch gates TWICE, in this order** (`snapshotClipboardIsRefused`). First the PATH SCHEME:
+  `$lib/path/canonical.ts::isPlainFilesystemPath` refuses any row that isn't a plain absolute filesystem path, from the
+  path alone. Then the resolved row VOLUME (`snapshot-source-volume.ts::resolveSnapshotSourceVolume` →
+  `isMtpClipboardRefusal`), because the pane's own volume id is the virtual `search-results` and a search covers any
+  volume with a persisted index, MTP storages included. Either gate refuses the WHOLE set if any row offends; a partial
+  copy under a toast claiming success is worse than a refusal.
+
+  **Why the scheme gate leads:** the volume gate is only as good as the resolution, and a device unplugged while its
+  snapshot pane stays open drops off the volume list, so `resolveSnapshotSourceVolume` answers the `root` fallback — a
+  kind that copies — while the rows still read `mtp://…`. Such a path reaches `NSURL::fileURLWithPath`
+  (`clipboard/pasteboard.rs`), which reads an unknown scheme as a RELATIVE path and hands back a file URL under the
+  process working directory. The scheme gate holds with no volume registered at all, which is the case it exists for.
 
 - **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`.
   `readOnlyRefusal` turns rename / mkdir / mkfile / delete away up front on a read-only routed pane, worded per kind

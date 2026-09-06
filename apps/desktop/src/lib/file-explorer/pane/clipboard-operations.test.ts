@@ -212,6 +212,33 @@ describe('copyToClipboard', () => {
     expect(copyPathsToClipboardSpy).toHaveBeenCalledWith(['/Volumes/Stick/a.txt'])
   })
 
+  it('refuses a snapshot copy of a device row after the device is unplugged, when no volume can place it', async () => {
+    // The device went away under an open snapshot pane, so the volume list no
+    // longer holds it and `resolveSnapshotSourceVolume` answers the `root`
+    // fallback — a kind that copies. The row path is still `mtp://…`, which
+    // `NSURL::fileURLWithPath` reads as RELATIVE, so the scheme itself has to
+    // refuse, ahead of any volume lookup.
+    resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({ paneRef, volumeId: 'search-results', volumes: [] })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files from MTP devices', { level: 'info' })
+    expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses a snapshot copy when only SOME rows carry a scheme, so a mixed set never half-copies', async () => {
+    resolveSnapshotPathsSpy.mockReturnValue(['/Users/x/a.txt', 'adb://serial/sdcard/b.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({ paneRef, volumeId: 'search-results', volumes: [] })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files from MTP devices', { level: 'info' })
+    expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
+  })
+
   it('falls back to the listing-id path when a snapshot resolves to no paths', async () => {
     resolveSnapshotPathsSpy.mockReturnValue([])
     copyFilesToClipboardSpy.mockResolvedValue(3)
@@ -318,6 +345,17 @@ describe('cutToClipboard', () => {
     expect(addToastSpy).toHaveBeenCalledWith('Use F6 to move files from MTP devices', { level: 'info' })
     expect(cutPathsToClipboardSpy).not.toHaveBeenCalled()
     expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses a snapshot cut of a device row after the device is unplugged, when no volume can place it', async () => {
+    resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({ paneRef, volumeId: 'search-results', volumes: [] })
+
+    await createClipboardOperations(access, buildDialogs()).cutToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F6 to move files from MTP devices', { level: 'info' })
+    expect(cutPathsToClipboardSpy).not.toHaveBeenCalled()
   })
 
   it('refuses MTP cut with a toast pointing at F6', async () => {

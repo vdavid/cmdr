@@ -34,6 +34,26 @@ export function toCanonical(raw: string, homeDir: string): CanonicalPath {
   throw new Error(`toCanonical: not absolute or ~-rooted: ${JSON.stringify(raw)}`)
 }
 
+/**
+ * True when `raw` names a file an OS API can open by path on its own: an
+ * absolute POSIX path, with no virtual-volume scheme in front of it.
+ *
+ * The question `CanonicalPath` deliberately does NOT answer. The brand admits
+ * virtual-volume URLs because slash arithmetic is safe on them, but `mtp://…`,
+ * `adb://…`, `smb://…`, and `search-results://…` resolve only inside Cmdr.
+ * Ask this wherever a path LEAVES the app for something that expects a real
+ * file: `NSURL::fileURLWithPath` reads an unknown scheme as a RELATIVE path and
+ * hands back a file URL under the process working directory, silently, so a
+ * caller that skips the check ships a mangled path instead of a refusal.
+ *
+ * `~`-rooted and relative paths answer false too: neither resolves without a
+ * base the OS API doesn't have. Pure, no I/O, and takes a plain `string` on
+ * purpose, since the callers guarding an outbound path hold raw paths.
+ */
+export function isPlainFilesystemPath(raw: string): boolean {
+  return raw.startsWith('/')
+}
+
 /** Returns the parent of a canonical path. `parentOf('/') === '/'`. */
 export function parentOf(p: CanonicalPath): CanonicalPath {
   const i = p.lastIndexOf('/')
