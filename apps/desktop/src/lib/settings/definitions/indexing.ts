@@ -265,13 +265,15 @@ export const indexingSettings: SettingDefinitionSource[] = [
     // inference, so more workers help modestly and only up to ~2). Rendered by `SettingSlider`
     // inside the "Enable indexing" card with a RUNTIME max = this machine's CPU count
     // (`media_index_max_parallelism`); the `constraints.max` here is only a static fallback
-    // for search. `hidden` because it's hand-rendered, not an auto row. Live-applied via the
+    // for search. `hidden` because it's hand-rendered, not an auto row; `hidden` doesn't mean
+    // unsearchable, so it still carries the card title the user reads above it. Live-applied via the
     // `settings-applier.ts` passthrough → `media_index_set_parallelism` (the backend clamps to
     // `1..=CPU-count` and a running pass resizes its pool between images).
     id: 'mediaIndex.parallelism',
     section: ['Indexing', 'Image indexing'],
     labelKey: 'settings.mediaIndex.parallelism.label',
     descriptionKey: 'settings.mediaIndex.parallelism.description',
+    cardKey: 'settings.mediaIndex.cards.enable',
     keywords: ['image', 'photo', 'index', 'parallel', 'workers', 'speed', 'performance', 'cpu', 'cores'],
     type: 'number',
     default: 1,

@@ -207,10 +207,13 @@ describe('card title indexing', () => {
     // ("Enable indexing"), so its rows must carry THAT key. They once carried
     // `settings.mediaIndex.card` ("Image search"), a title no card displays, and searching
     // what the user could actually read returned nothing.
+    // All FOUR rows the card renders count, the `parallelism` slider included: it's
+    // `hidden` only because it's hand-rendered, and the user reads the same title above it.
     const ids = searchSettings('enable indexing').map((r) => r.setting.id)
     expect(ids).toContain('mediaIndex.enabled')
     expect(ids).toContain('mediaIndex.showFileStatusIcons')
     expect(ids).toContain('mediaIndex.showInSearch')
+    expect(ids).toContain('mediaIndex.parallelism')
   })
 
   it('keeps label highlight offsets correct after appending the card title', () => {

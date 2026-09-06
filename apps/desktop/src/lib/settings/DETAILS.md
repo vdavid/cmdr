@@ -424,13 +424,20 @@ subsection). The mechanism:
   `<SectionCard label=…>` displays, so the title is findable. `buildSearchableText` appends the resolved `card` LAST in
   the parts array.
 
-**A `cardKey` naming a title no card renders fails SILENTLY, and has.** Both `mediaIndex.*` rows in the Image indexing
-page's first card that carried a `cardKey` pointed at `settings.mediaIndex.card` ("Image search") while the card renders
+**A `cardKey` naming a title no card renders fails SILENTLY, and has.** The Image indexing rows pointed at
+`settings.mediaIndex.card` ("Image search") long enough for a user to hit it, while the card renders
 `settings.mediaIndex.cards.enable` ("Enable indexing"): searching the title the user can read returned an EMPTY result
-set, and nothing anywhere complained, because a resolvable `MessageKey` is all the type asks for. Nothing structural
-prevents the next one, so `settings-search.test.ts` § "card title indexing" pins the searches by title for that card;
-add a case there when a page grows a card, and check the key against the section's `<SectionCard label=…>` by eye when
-adding a row.
+set, and nothing anywhere complained, because a resolvable `MessageKey` is all the type asks for. Two rules follow, and
+nothing structural enforces either:
+
+- **Every row a titled card renders carries THAT card's key**, checked by eye against the section's
+  `<SectionCard label=…>` when adding a row.
+- **`hidden` rows included.** `hidden` keeps a row out of the auto-render pass; it does NOT keep it out of the search
+  index. So a hand-rendered control inside a titled card (`mediaIndex.parallelism`, a `SettingSlider`) needs the
+  `cardKey` exactly as much as the switches beside it, or it's the one row the card's title can't reach.
+
+`settings-search.test.ts` § "card title indexing" pins the title search for every row of the Image indexing card; add a
+case there when a page grows a card.
 
 **Decision / why: card titles are catalog keys, not literals.** With the i18n runtime in place,
 `no-raw-user-facing-string` forbids literal UI strings, and `card` must be translation-aware (untranslated `keywords`
