@@ -18,10 +18,12 @@ All under `apps/desktop/src/lib/`.
   across a run of files
 - `file-explorer/selection/`: Space/Shift/Cmd selection, range operations
 - `file-explorer/navigation/`: Back/forward history, breadcrumb, path utilities
-- `file-explorer/network/`: Network browser UI (SMB share browsing, login form)
+- `file-explorer/network/`: the servers hub (`ServersHub.svelte`: every saved and nearby server, with its merge, order,
+  and MCP encoding in `servers-hub-*.ts`), the places under one account (`PlacesBrowser.svelte`), the SMB login form,
+  and the mDNS discovery store
 - `servers/`: Remote places the app dials (SFTP, WebDAV): the `sftp://user@host:port/path` spelling, the connect flow
-  that picks its move by the volume's standing, and the words for a connect that stopped. See
-  `apps/desktop/src/lib/servers/CLAUDE.md`
+  that picks its move by the volume's standing, the words for a connect that stopped, and which server the palette's
+  server commands act on. See `apps/desktop/src/lib/servers/CLAUDE.md`
 - `file-explorer/git/`: Git browser frontend: breadcrumb chip, status columns, reactive `RepoInfo` store, git portal
   icons. Git settings in `settings/sections/GitSection.svelte`
 - `file-explorer/pane/`: Per-pane orchestration: cursor, scroll, dual-pane coordination. Owns the single `navigate.ts`

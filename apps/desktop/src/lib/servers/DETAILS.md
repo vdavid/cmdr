@@ -76,3 +76,25 @@ rather than a built string, which is what keeps `desktop-message-keys-unused` ho
   landing with the milestone that can act on it. ❗ A state added before its handler puts a button on screen that does
   nothing.
 - The go-to-path scheme intercept, ⌘K, and the palette entries.
+
+## Which server a command acts on
+
+`server-command-target.ts` is a pure resolver over two readings of "the server in view":
+
+1. **The hub's cursor row** (`ExplorerAPI.getFocusedPaneServerRow()`, which reaches through `NetworkCursorEntry`'s
+   `server` arm). A row with a `volumeId` wins outright.
+2. **The focused pane's own volume**, for a pane standing INSIDE a server, filtered through `isServerPlaceRow` so a
+   mounted SMB share, the synthetic hub row, and a local disk all answer `null`.
+
+Two details are load-bearing:
+
+- **An SMB host row stops the search** rather than falling through to reading 2. Its places are mounted shares whose ids
+  `statfs` mints, so there is nothing for `disconnectPlace` or `setPlacePinned` to act on — and quietly acting on the
+  pane's volume instead would move a server the user isn't pointing at.
+- **A target resolved from the pane's volume reports `pinned: null`**, because a `VolumeInfo` carries no pin (the pin is
+  the switcher's cap, decided in Rust, and deliberately off the wire). `servers.togglePin` reads `listSavedServers()`
+  for that case; a store that doesn't answer reads as unpinned, which makes the command a pin rather than a no-op.
+
+The handlers themselves (`routes/(main)/command-handlers/servers-handlers.ts`) then route through
+`navigation/server-row-actions.ts::runServerRowAction`, the same function the native menu's answer lands in, so a menu
+item and a palette command can't drift on a confirmation or a toast.

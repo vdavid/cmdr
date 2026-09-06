@@ -12,14 +12,15 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   its disk-space state machine, and the favorites interaction layer.
 - `favorites-analytics.ts`: `favorite_opened`, from the two `category === 'favorite'` branches (`navigate()` below them
   sees only the containing volume).
-- `server-row-actions.ts`: what a SERVER row's menu offers and what each item does (the menu, Disconnect, the two
-  Forgets), shared by the switcher and the hub.
+- `server-row-actions.ts`: what a SERVER row's menu offers and what each item does (the menu, Disconnect, Pin/unpin,
+  the two Forgets), shared by the switcher, the hub, and the palette's server commands.
+- `filesystem-label.ts`: the `fsType` → label maps. A NETWORK row answers with its PROTOCOL (`protocolLabel`, which the
+  servers hub's Type column reads too), because a place with no local mount has no filesystem to name.
 
 ## Must-knows
 
-- **History is pushed on listing success AND failure.** `FilePane.svelte`'s `onPathChange?.(loadPath)` fires from both
-  `handleListingComplete` and the `listing-error` handler when the path still exists. Drop the failure branch and a
-  TCC-restricted folder stays absent from history, so `Cmd+[` jumps back two steps.
+- **History is pushed on listing success AND failure.** Drop the `listing-error` branch and a TCC-restricted folder
+  stays absent from history, so `Cmd+[` jumps back two steps. DETAILS § Gotcha.
 - **`push()` vs `pushPath()`.** Callers holding per-entry resources must use `push()`: it returns `droppedEntries` to
   release dropped refs; `pushPath` discards them. A no-op push returns the same `history` ref, so `===` dedup works.
 - **`MAX_HISTORY_PER_TAB = 100`, every volume uniformly.** Don't tighten (hurts power users) or bump.
@@ -31,37 +32,25 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   bumps it and drops a superseded `determineNavigationPath` correction. Not per-pane.
 - **`containingVolumeId` is derived via `resolvePathVolume(currentPath)`, not the `volumeId` prop** (a favorite's
   virtual id), so the checkmark tracks the real containing volume.
-- **The drive-index freshness badge (`DriveIndexBadge.svelte`) renders only on real DRIVE rows** (`isDriveRow`: not
-  favorites, `network` / `search-results`, or disk images). State→color/menu: the pure `drive-index-status.ts`;
-  freshness stays live via `drive-index-manager`'s event subscriptions (NOT polling). The manager owns ONLY
-  freshness/menu facts; LIVE progress comes from `index-state` via `getVolumeActivity`; don't reintroduce a manager-side
-  progress map. The badge is a `<button>` (axe rejects `role="img"`); an enable/rescan answers by typed variant, never
-  text (`driveIndexActionFeedback`, its `error` leg included). Coalesced sweep signals ride in the TOOLTIP, never the
-  dot's color. **While the MASTER switch is off (`getDriveIndexingEnabled()`), `driveIndexMenuActions` returns NOTHING**
-  and the menu shows one note: the backend refuses every start then, so per-drive actions would promise work that can't
-  happen (model: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md`). DETAILS § Drive index freshness badge.
+- **The drive-index badge renders only on real DRIVE rows** (`isDriveRow`), stays live through `drive-index-manager`'s
+  event subscriptions (❌ never polling), and owns freshness facts only — LIVE progress comes from `index-state`. While
+  the MASTER switch is off, `driveIndexMenuActions` returns NOTHING, because the backend refuses every start then.
+  DETAILS § Drive index freshness badge.
 - **Eject refusals are worded by `wordEjectRefusal(e)` from `errors.eject.*`**; ❌ never toast `String(e)` or
   `diskutil`'s stderr.
 - **A SERVER row says Disconnect, never Eject**, and is claimed by VOLUME ID (`isServerPlaceRow`), ❌ never by
-  `category === 'network'`: a mounted SMB share is one of those, and `disconnectPlace` doesn't speak its OS mount. Its
-  dot tooltip and its `volume-fs` protocol label are both `Record`s, so a new state or protocol can't render wordless.
+  `category === 'network'`: a mounted SMB share is one of those, and `disconnectPlace` doesn't speak its OS mount.
+- **The Network group's own rows are the LISTING's**, plus exactly one row this dir synthesizes: the hub. ❗ Don't add a
+  `listSavedServers()` fetch to `volume-grouping.ts` — the pin that keeps unpinned servers out is decided in Rust, and
+  fetching here would put every one of them back and undo the user's own cap. DETAILS § "The three-things rule".
 - **`resolveValidPath` stops at a scheme path's floor and RETURNS it**, never `~`, `/`, or `null`: a remote path answers
   no probe, so the plain walk lands the pane on the boot disk. DETAILS § "Restoring a remote path".
-- **Favorites: mutate ONLY via the `commands.*` wrappers, always stripping the `fav-` prefix** (`stripFavoritePrefix`;
-  the switcher id is `fav-<favoriteId>`, the commands take the bare id). The `volume-grouping.ts` favorites group always
-  renders even when empty (the placeholder row) — don't tidy it into a hide-when-empty branch. "Add to favorites" is in
-  Rust (`FAVORITES_ADD_CONTEXT_ID`), not `favorites.add`.
-- **The favorites interaction layer is `favorites-controller.svelte.ts`** (`createFavoritesController(deps)`, instanced
-  as `fav`). State is getter-exposed, so template reads MUST go through `fav.*` (a snapshot won't stay reactive).
-- **The favorite-rename `<input>` must not leak keystrokes to the panes.** Don't remove any of the four guards:
-  `fav.handleRenameKeyDown` `stopPropagation()`s every key; `VolumeBreadcrumb.handleKeyDown` bails while
-  `fav.renamingFavoriteId !== null`; `routeToVolumeChooser` swallows keys behind an open dropdown; `+page.svelte`'s
-  `isModalDialogOpen()` suppresses central dispatch.
-- **Favorite reorder is POINTER-based and LOCAL-FIRST, not HTML5 drag** (the OS intercepts drag under Tauri's
-  `dragDropEnabled`, so `draggable`/`ondrop` never fire; don't reintroduce them). Keyboard reorder (Alt+↑ / Alt+↓) runs
-  before `handleDropdownKey` consumes the bare arrows. Both paths set `optimisticFavoriteIds` synchronously, then
-  persist the full order via `reorderFavorites(bareIds)` in the background (don't await the IPC first). Full flow + the
-  reorder mechanism: DETAILS § Editable favorites.
+- **Favorites: mutate ONLY via the `commands.*` wrappers, always stripping the `fav-` prefix.** The favorites group
+  renders even when empty (the placeholder row); don't tidy that into a hide-when-empty branch. The interaction layer is
+  `favorites-controller.svelte.ts`, getter-exposed, so template reads go through `fav.*` or lose reactivity.
+- **The favorite-rename `<input>` must not leak keystrokes to the panes**: four guards hold that line, and removing any
+  one reopens it. **Favorite reorder is POINTER-based and LOCAL-FIRST**, ❌ never HTML5 drag (the OS intercepts drag
+  under Tauri's `dragDropEnabled`). Both: DETAILS § Editable favorites.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

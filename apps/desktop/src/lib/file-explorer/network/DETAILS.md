@@ -36,21 +36,75 @@ Key exported functions: `getNetworkHosts()` (sorted copy), `fetchShares(host)` (
 
 ## `ServersHub.svelte`
 
-Host table (Name, IP, Hostname, Shares, Status), reads from `network-store` getters. A "Connect to server..." pseudo-row
-sits at the bottom (keyboard navigable, "+" icon, italic), firing `onConnectToServer`; not counted in the status-bar
-host count, so total navigable items = `hosts.length + 1`. Keyboard nav via `handleNavigationShortcut`
-(`../navigation/keyboard-shortcuts`); Left/Right jump to first/last.
+The pane state behind the switcher's "Servers" row: a table of Name, Type, Address, Status, and Last used over every
+server the user saved plus every host mDNS is seeing, with an "Add server…" pseudo-row at the bottom (keyboard
+navigable, "+" icon, italic), firing `onConnectToServer`. Total navigable items = `rows.length + 1`. Keyboard nav via
+`handleNavigationShortcut` (`../navigation/keyboard-shortcuts`); Left/Right jump to first/last.
 
-F8 on a host row removes manual hosts (with confirmation) or toasts "Can't remove discovered hosts"; ignored on the
-connect row. Right-click shows a native OS context menu (`show_network_host_context_menu`): Disconnect (always), Forget
-server (manual), Forget saved password (hosts with stored creds); credential status is Keychain-checked before showing
-if unknown; actions arrive via the `network-host-context-action` event. Cursor auto-clamps when a host is removed.
+Three inputs, and one of them is a command rather than a store: `listSavedServers()` (re-read whenever the volume list
+is reassigned, which every pin, forget, connect, and disconnect causes through `volumes-changed`), the discovery
+store's hosts, and the volume list, which is where a place's standing lives.
+
+### What Enter does, per row kind
+
+- **An SMB host** opens its places list (`onHostSelect`). A saved host mDNS isn't seeing right now is handed over as a
+  synthesized `NetworkHost` whose `hostname` is the saved address, the only spelling anything has for it.
+- **A one-place server** (SFTP, WebDAV) takes the pane to its place (`onServerSelect` → `NetworkMountView` →
+  `onVolumeChange` with the place's `appRoot`). ❗ The PANE does the dialing, not the hub: landing on a `saved` volume
+  is what `../pane/place-connect.svelte.ts` watches for, so the connecting view and its Cancel render where every other
+  wait does.
+- **The add row** opens `ConnectToServerDialog`, until the sign-in sheet replaces it.
+
+### The three pure modules beside it
+
+`ServersHub.svelte` is the table, the cursor, and the keys. Everything that can go quietly wrong lives next door and is
+unit-tested:
+
+- **`servers-hub-rows.ts`**: the merge, the status derivation, and the order. ❗ The merge is the part that goes wrong:
+  a manually-typed SMB host is BOTH a saved server and a discovered host (adding one injects it into the discovery
+  state), so concatenating the two sources shows a person's NAS twice. The dedup matches on the id first, then on the
+  name or resolved hostname, because `known_shares` files a host under the server name `statfs` reported while mDNS
+  files the same machine under its Bonjour name. Status comes off the VOLUME LIST, ❌ never off `SavedPlace.connected`,
+  which is a snapshot from when the listing was built; the switcher's dot reads the same field, and two surfaces
+  disagreeing about whether a server is up is worse than either being briefly stale. Order: live sessions, then the
+  ones asking something of the user (`signed_out`, `waiting_for_key`), then the rest of what they saved by recency,
+  then what is merely nearby.
+- **`servers-hub-mcp.ts`**: the `name` encoding. MCP's `PaneFileEntry` has only `name` / `path` / `isDirectory`, so the
+  columns are encoded as `protocol=` / `status=` / `address=` tokens (plus `shares=` on an SMB host, which is what
+  `smb.spec.ts` polls on). ❗ The status token is locale-independent even though the column beside it is translated: an
+  agent parses these strings and a translation landing in the wire would break both silently. A one-place row's path is
+  the place's `appRoot` (from `SavedPlace`, which Rust mints in one function); an SMB host keeps the
+  `smb://<address>` spelling the host list has always published; the add row is `+ Add server…` at `smb://add`.
+- **`../navigation/servers-hub-rows` consumers**: `../pane/types.ts`'s `NetworkCursorEntry` gains a `server` arm, which
+  is how the palette's server commands reach the row under the cursor (`$lib/servers/server-command-target.ts` owns the
+  rule: the hub IS a pane, so "the focused pane's volume" would answer the synthetic hub row).
+
+### Discovery off
+
+`network.enabled` gates mDNS and SMB, which is what the macOS Local Network permission is about; SFTP and WebDAV need
+none of it. So the hub opens either way, keeps listing saved servers, and shows one line plus a link to the switch in
+place of the nearby hosts. ❗ There is no "(disabled)" label and no redirect to Settings any more; `network-toggle.spec.ts`
+is the regression guard.
+
+### Context menu and F8
+
+F8 forgets the SAVED server under the cursor: a one-place row through `forgetSavedServer` (so the hub asks exactly what
+the switcher's menu asks), an SMB host through `removeManualServer`, and a host only mDNS knows about gets the "Can't
+remove discovered hosts" toast. Right-click on a one-place row raises the SERVERS menu (`openServerRowMenu`), the same
+one the switcher row raises; an SMB host keeps its own native host menu (`show_network_host_context_menu`: Disconnect,
+Forget server for a manual one, Forget saved password when creds are stored), whose actions arrive on the
+`network-host-context-action` event. Cursor auto-clamps when a row disappears.
 
 Exports for parent: `setCursorIndex(index)`, `findItemIndex(name)`, `handleKeyDown(e)`, `refresh()`,
-`getHostUnderCursor()`, `getItemCount()`. `refresh()` is `pane.refresh`'s entry point from the command layer and is the
-same body ⌘R runs locally, which is why the local branch stops propagation (see § Gotchas).
+`getHostUnderCursor()`, `getRowUnderCursor()`, `getItemCount()`, `openCursorItem()`. `refresh()` is `pane.refresh`'s
+entry point from the command layer and is the same body ⌘R runs locally, which is why the local branch stops
+propagation (see § Gotchas).
 
 ## `PlacesBrowser.svelte`
+
+The places under ONE account: an SMB host's shares today, a storage account's buckets later. ❗ Its `account` prop is a
+tagged union with one arm (`{ protocol: 'smb', host }`), on purpose: the second lister is then a compile-checked
+addition rather than a second component. Inside, `const host = $derived(account.host)` keeps the SMB body untouched.
 
 Auth flow on mount:
 
@@ -98,13 +152,16 @@ App startup
        └─ startResolution() → resolveNetworkHost()
             └─ startPrefetchShares() → prefetchSharesCmd() → fetchSharesSilent()
 
-User opens Network volume → ServersHub mounts → refreshAllStaleShares()
+User opens the Servers volume → ServersHub mounts → listSavedServers() + refreshAllStaleShares()
 
-User double-clicks host → PlacesBrowser mounts → loadShares()
+User double-clicks an SMB host → PlacesBrowser mounts → loadShares()
        ├─ cache hit → render
        └─ auth required → tryStoredCredentials() → login form if needed
 
-User activates "Connect to server..." row → ConnectToServerDialog opens
+User activates a one-place server → onVolumeChange → the pane lands on a `saved`
+       volume → ../pane/place-connect dials, RemoteConnectView renders the wait
+
+User activates the "Add server…" row → ConnectToServerDialog opens
        └─ connectToServer(address) → TCP check → inject host
             └─ onConnect(host, sharePath)
                  ├─ PlacesBrowser mounts (host set)
@@ -284,8 +341,15 @@ opens a private-IP socket). Backend side: `src-tauri/src/network/DETAILS.md` § 
 - **Neither browser's `handleKeyDown` returns a "handled" boolean** (`BrowserAPI` in `../pane/types.ts`). Nothing above
   them branches on one: `NetworkMountView` and `pane-key-router` hand the network view every key and return either way,
   so the claim is `preventDefault()` + `stopPropagation()` on the event.
-- **Host list MCP sync encodes metadata into the `name` field** as a flat string because MCP `PaneFileEntry` has only
+- **The hub's MCP sync encodes metadata into the `name` field** as a flat string because MCP `PaneFileEntry` has only
   `name` / `path` / `isDirectory`; the encoding lets agents read what the UI shows without a schema change.
+  `servers-hub-mcp.ts` owns it, and its status token stays untranslated on purpose.
+- **The hub row's NAME has four spellings to keep in step**, and three of them are not in this directory: the catalog
+  key `fileExplorer.navigation.networkVolume`, Rust's `volume_listing::SERVERS_VOLUME_NAME`,
+  `../pane/volume-selection.ts::selectVolumeByName` (which special-cases the hub because it is synthetic and no
+  `findIndex` over the volume list reaches it), and `DualPaneExplorer`'s `leftVolumeName` / `rightVolumeName`. ❗ A
+  fifth spelling is not a wrong word on screen, it is a 30 s MCP timeout: `mcp/executor/nav.rs` waits for the
+  frontend-pushed pane name to equal the const before it calls a `select_volume` done.
 
 ## Dependencies
 

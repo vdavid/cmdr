@@ -52,11 +52,19 @@ Use this checklist before each release to verify features that cannot be automat
 - [ ] Network volumes appear (if mounted)
 - [ ] Ejecting a volume gracefully switches pane to default
 
-### Connect to server (network)
+### The servers hub
 
-- [ ] Network view shows "Connect to server..." row at the bottom
-- [ ] Arrow keys can navigate to the connect row
-- [ ] Enter on the connect row opens the dialog
+- [ ] The volume switcher's Network group holds one row called "Servers"
+- [ ] It lists saved servers and nearby hosts together, with Name, Type, Address, Status, and Last used
+- [ ] "Add server…" is the last row; arrow keys reach it and Enter opens the dialog
+- [ ] Enter on an SFTP or WebDAV row takes the pane to the server (it dials in the pane, with a Cancel)
+- [ ] Enter on an SMB host opens its places list; Escape / Backspace / ⌘↑ go back to the hub
+- [ ] In the hub, Escape, Backspace, and ⌘↑ do nothing
+- [ ] Right-click an SFTP or WebDAV row: Disconnect, Forget saved password, Forget server
+- [ ] Turning off Settings > File systems > SMB/Network shares > network discovery leaves the hub open, replaces the
+      nearby hosts with "Local network discovery is off.", and the link opens Settings at that switch
+- [ ] Palette: "Show servers", "Pin / unpin server", "Disconnect server", "Forget saved password" act on the row under
+      the hub's cursor, or on the focused pane's own server
 - [ ] Connect with hostname, IP, IP:port, smb:// URL
 - [ ] Error shown for unreachable server
 - [ ] Error shown for unsupported protocol (afp://, nfs://)
