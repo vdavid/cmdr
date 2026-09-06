@@ -32,29 +32,9 @@ import {
 import { smbReconnectManager } from '$lib/file-explorer/network/smb-reconnect-manager.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import type { ConnectionState } from '$lib/file-explorer/types'
+import type { ConnectRefusalKind } from './connect-refusals'
 
 const log = getAppLogger('servers')
-
-/**
- * Why a connect stopped, in the vocabulary the pane words.
- *
- * ❗ One kind per outcome that is a REASON, ❌ never collapsed:
- * `auth_method_unsupported` is not `authentication_rejected` (the server never
- * saw the secret, so "check your password" is the wrong fix), and
- * `needs_credentials` is not one either (telling someone who has never entered a
- * password that theirs is wrong is what collapsing the two does).
- */
-export type ConnectRefusalKind =
-  | 'authentication_rejected'
-  | 'needs_credentials'
-  | 'auth_method_unsupported'
-  | 'certificate_untrusted'
-  | 'not_a_webdav_server'
-  | 'invalid_url'
-  | 'timed_out'
-  | 'unreachable'
-  | 'host_key_untrusted'
-  | 'host_key_revoked'
 
 /** How a connect ended. */
 export type ConnectFlowResult =
@@ -69,8 +49,35 @@ export type ConnectFlowResult =
   /** Nothing to do: the session is already serving. */
   | { kind: 'already_live' }
 
-/** What a sign-in sheet answers. M2 supplies the sheet; this is its seam. */
+/** What a sign-in sheet answers. */
 export type SignInSeamResult = { signedIn: true; volumeId: string } | { signedIn: false }
+
+/** What the flow needs a human for. */
+export interface SignInSeamRequest {
+  /** The place's volume id, the same one a `saved` row carries. */
+  volumeId: string
+  /**
+   * Whether a volume is REGISTERED under that id. It decides which command the
+   * sheet's attempt uses, and getting it wrong is silent: re-dialing a
+   * registered volume registers a second one under a second id.
+   */
+  registered: boolean
+  /**
+   * What the first dial answered, when there was one. It is what opens the sheet
+   * on the host-key step rather than on the credential fields.
+   */
+  firstOutcome?: ServerConnectOutcome
+}
+
+/**
+ * Opens the sign-in sheet and resolves on the user's answer.
+ *
+ * ❗ The sheet, not this flow, owns the ROUNDS: a first connect to a new SFTP
+ * server is three round-trips, and a sheet that closed between them would lose
+ * what the user typed. This flow decides WHEN a human is needed; the sheet
+ * decides how many times to ask.
+ */
+export type SignInSeam = (request: SignInSeamRequest) => Promise<SignInSeamResult>
 
 export interface ConnectPlaceRequest {
   /** The place's volume id, the same one a `saved` row carries. */
@@ -83,11 +90,11 @@ export interface ConnectPlaceRequest {
    */
   onAttemptStarted?: (attemptId: string) => void
   /**
-   * ❗ M2's seam. The sign-in sheet, awaited when the backend says a credential
-   * is what's missing. While it is absent the flow refuses with the reason
-   * instead, and ❌ never renders an inert "Sign in…" button.
+   * The sign-in sheet, awaited when the backend says a human is what's missing.
+   * While it is absent the flow refuses with the reason instead, and ❌ never
+   * renders an inert "Sign in…" button.
    */
-  openSignIn?: (volumeId: string) => Promise<SignInSeamResult>
+  openSignIn?: SignInSeam
 }
 
 /** Brings the place at `volumeId` to life, picking the move by its standing. */
@@ -106,17 +113,18 @@ export async function connectPlace(request: ConnectPlaceRequest): Promise<Connec
   }
 
   if (connectionState === 'needs_sign_in') {
-    // Arm 2.
-    if (!request.openSignIn) return { kind: 'refused', refusal: 'needs_credentials' }
-    const result = await request.openSignIn(volumeId)
-    return result.signedIn ? { kind: 'connected', volumeId: result.volumeId } : { kind: 'cancelled' }
+    // Arm 2. ❗ The volume is REGISTERED, so the sheet mends it with
+    // `reconnectVolumeWithCredentials` rather than dialing: a dial would
+    // register a second volume under a second id.
+    return await handOver(request, { volumeId, registered: true }, 'needs_credentials')
   }
 
   // Arm 3: nothing is registered, so this is a dial by saved entry.
   const attemptId = newServerAttemptId()
   request.onAttemptStarted?.(attemptId)
+  let outcome: ServerConnectOutcome
   try {
-    return readOutcome(await connectSavedPlace(volumeId, attemptId))
+    outcome = await connectSavedPlace(volumeId, attemptId)
   } catch (e) {
     // A typed `SavedPlaceRefusal`: the caller picked the wrong arm for this
     // volume's standing, which is a bug to read in a log, ❌ never a sentence to
@@ -124,6 +132,45 @@ export async function connectPlace(request: ConnectPlaceRequest): Promise<Connec
     log.warn('Dialing the saved place {volumeId} was refused: {error}', { volumeId, error: String(e) })
     return { kind: 'refused', refusal: 'unreachable' }
   }
+
+  if (needsAHuman(outcome)) {
+    // The sheet opens on the step this outcome names, and dials again itself
+    // through the attempt it is handed. ❗ It stays open across those rounds.
+    return await handOver(request, { volumeId, registered: false, firstOutcome: outcome }, refusalFor(outcome))
+  }
+  return readOutcome(outcome)
+}
+
+/**
+ * Whether the backend is waiting on a PERSON rather than reporting a dead end.
+ *
+ * ❗ `auth_method_unsupported` is deliberately out: the server challenged with a
+ * scheme Cmdr doesn't speak, the secret never left, and no typing fixes it.
+ * Opening a password box over it would ask for something that cannot help.
+ */
+function needsAHuman(outcome: ServerConnectOutcome): boolean {
+  return (
+    outcome.outcome === 'needs_host_key_approval' ||
+    outcome.outcome === 'needs_credentials' ||
+    outcome.outcome === 'authentication_rejected'
+  )
+}
+
+/** Hands the place to the sheet, or refuses with `whenNoSheet` when there is none. */
+async function handOver(
+  request: ConnectPlaceRequest,
+  seamRequest: SignInSeamRequest,
+  whenNoSheet: ConnectRefusalKind,
+): Promise<ConnectFlowResult> {
+  if (!request.openSignIn) return { kind: 'refused', refusal: whenNoSheet }
+  const result = await request.openSignIn(seamRequest)
+  return result.signedIn ? { kind: 'connected', volumeId: result.volumeId } : { kind: 'cancelled' }
+}
+
+/** What to say when the outcome needed a human and no sheet was supplied. */
+function refusalFor(outcome: ServerConnectOutcome): ConnectRefusalKind {
+  const result = readOutcome(outcome)
+  return result.kind === 'refused' ? result.refusal : 'needs_credentials'
 }
 
 /** Calls off the attempt `attemptId` names. A cancel that lands late is fine. */

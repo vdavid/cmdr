@@ -51,6 +51,8 @@
     import { errorReportFlow } from '$lib/error-reporter/error-report-flow.svelte'
     import FeedbackDialog from '$lib/feedback/FeedbackDialog.svelte'
     import { feedbackFlow } from '$lib/feedback/feedback-flow.svelte'
+    import SignInSheet from '$lib/servers/SignInSheet.svelte'
+    import { closeSignInSheet, currentSignInRequest } from '$lib/servers/sign-in-sheet-state.svelte'
     import { initAutoSendToastListener, cleanupAutoSendToastListener } from '$lib/error-reporter/auto-send-toast.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     // Dialog gallery harness (Debug > Soft dialogs). Gated below on
@@ -86,6 +88,8 @@
 
     // State for ptpcamerad dialog (macOS)
     let showPtpcameradDialog = $state(false)
+    /** The one sign-in sheet's current request, or `null` when nothing is asking. */
+    const signInRequest = $derived(currentSignInRequest())
     let ptpcameradBlockingProcess = $state<string | undefined>(undefined)
     let pendingDeviceId = $state<string | undefined>(undefined)
 
@@ -334,6 +338,15 @@
 {/if}
 {#if feedbackFlow.open}
     <FeedbackDialog />
+{/if}
+<!-- The one sign-in sheet. Every credential ask in the app opens THIS one
+     (`$lib/servers/sign-in-sheet-state.svelte.ts`), so a second protocol never
+     means a second dialog. Keyed on the request, so a sheet opened while one is
+     already up starts from a clean form rather than inheriting the old one's. -->
+{#if signInRequest}
+    {#key signInRequest}
+        <SignInSheet request={signInRequest} onDone={closeSignInSheet} />
+    {/key}
 {/if}
 {#if showPtpcameradDialog}
     <PtpcameradDialog

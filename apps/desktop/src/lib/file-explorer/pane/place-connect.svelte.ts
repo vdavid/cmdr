@@ -11,7 +11,9 @@
  * `$effect`, the attempt id, and the words.
  */
 
-import { connectPlace, cancelPlaceConnect, type ConnectRefusalKind } from '$lib/servers/connect-flow'
+import { connectPlace, cancelPlaceConnect } from '$lib/servers/connect-flow'
+import { openSignInForPlace } from '$lib/servers/open-sign-in'
+import type { ConnectRefusalKind } from '$lib/servers/connect-refusals'
 import { wordConnectRefusal } from '$lib/servers/connect-refusals'
 import { parseServerPath } from '$lib/servers/server-path-utils'
 import { getAppLogger } from '$lib/logging/logger'
@@ -72,6 +74,9 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
       onAttemptStarted: (id) => {
         attemptId = id
       },
+      // The sheet, for the moment the backend says a person is what's missing.
+      // It owns the rounds from there and stays open across them.
+      openSignIn: openSignInForPlace,
     })
     attemptId = null
     switch (result.kind) {

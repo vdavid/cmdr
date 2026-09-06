@@ -389,12 +389,20 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
 
   // ── Devices, network, and indexing ────────────────────────────────────────
   {
-    dialogId: 'connect-to-server',
-    label: 'Connect to server',
+    dialogId: 'server-sign-in',
+    label: 'Sign in to a server',
     hostWindow: 'main',
     status: 'ready',
-    note: 'ONE state, and it has side effects. Opening it starts real mDNS discovery on purpose (the dialog does that in onMount so the macOS Local Network prompt fires alongside the dialog rather than after Connect), so expect that prompt. Its connecting and error states live in internal component state with no prop to reach them, so what you see here is the idle state only. Typing a real address and pressing Connect opens a real socket.',
-    states: [{ id: 'idle', label: 'Open' }],
+    note: "The `attempt` is a fixture's, so nothing dials: each state answers one canned outcome after a beat, which is how the spinner, the inline refusal, and the two host-key faces get reviewed. Edit mode DOES read the real saved-server stores and the real Keychain (a read), so its form comes up empty unless a server with that address is saved.",
+    states: [
+      { id: 'add', label: 'Add: empty' },
+      { id: 'add-prefilled', label: 'Add: a pasted WebDAV address', note: 'Answers "nothing here speaks WebDAV", so the Nextcloud remedy shows once a username is typed.' },
+      { id: 'sign-in', label: 'Sign in: password' },
+      { id: 'sign-in-guest', label: 'Sign in: username, password, or guest' },
+      { id: 'host-key-first-contact', label: 'Host key: first contact' },
+      { id: 'host-key-changed', label: 'Host key: it changed' },
+      { id: 'edit', label: 'Edit a saved server' },
+    ],
   },
   {
     dialogId: 'move-to-applications',

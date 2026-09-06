@@ -850,6 +850,7 @@ export {
   getKnownSftpServers,
   updateKnownSftpServer,
   forgetKnownSftpServer,
+  getSftpUnattendedReconnect,
 } from './sftp'
 export type {
   ConnectedSftpVolume,
@@ -860,6 +861,8 @@ export type {
   SftpHostKeyApprovalResult,
   SftpHostKeyIdentity,
   SftpTarget,
+  SftpUnattendedReconnect,
+  SavedSftpServer,
 } from './sftp'
 
 // Servers: one command family over SFTP, WebDAV, and SMB hosts

@@ -36,6 +36,7 @@ import { quitFixtures } from './quit'
 import { extensionChangeFixtures, renameConflictFixtures } from './rename'
 import { rollbackConfirmFixtures } from './rollback'
 import { selectionAddFixtures, selectionRemoveFixtures } from './selection'
+import { serverSignInFixtures } from './servers'
 import {
   bulkRenameFixtures,
   errorReportFixtures,
@@ -72,6 +73,7 @@ export const fixtureRecords = {
   'rollback-confirmation': rollbackConfirmFixtures,
   'selection-add': selectionAddFixtures,
   'selection-remove': selectionRemoveFixtures,
+  'server-sign-in': serverSignInFixtures,
   'transfer-confirmation': transferFixtures,
   'transfer-error': transferErrorFixtures,
   'viewer-copy-confirm': viewerCopyConfirmFixtures,
