@@ -98,9 +98,9 @@ SFTP.
   reconnect accepts a new username and rewrites its params, which is how re-auth-as-someone-else works.
 
 **Reserved, ❌ not added until a producer exists** (`crates/cmdr-fs/src/volume/connection.rs` carries the same list):
-`access_keys { sessionToken }` for S3 (access key id, secret access key, optional session token) and `oauth { provider }`
-(a "Continue in your browser" button and a waiting state; "remember" is implicit, since the refresh token is the only
-sane state, and a revoked token surfaces as `needs_sign_in` behind the same banner).
+`access_keys { sessionToken }` for S3 (access key id, secret access key, optional session token) and
+`oauth { provider }` (a "Continue in your browser" button and a waiting state; "remember" is implicit, since the refresh
+token is the only sane state, and a revoked token surfaces as `needs_sign_in` behind the same banner).
 
 ## The refusal table
 
@@ -130,12 +130,12 @@ is an instruction, and the same words above the address are a puzzle.
 ## Add mode, address first
 
 People have an address, not a protocol, so the field comes first and the toggle follows what `address-parser.ts` read.
-The toggle stays editable, and ❗ **it is what decides which target `serverTargetFrom` builds**, not the address: someone
-can type a bare host and say "that one is SFTP". A port the address named for a DIFFERENT protocol is dropped, because
-`445` off a bare hostname is SMB's default and dialing it for HTTP opens a socket nothing answers on.
+The toggle stays editable, and ❗ **it is what decides which target `serverTargetFrom` builds**, not the address:
+someone can type a bare host and say "that one is SFTP". A port the address named for a DIFFERENT protocol is dropped,
+because `445` off a bare hostname is SMB's default and dialing it for HTTP opens a socket nothing answers on.
 
-❗ **A bare hostname reads as SMB**, the one guess that costs nothing: SMB browses with no account, so a wrong guess asks
-the user for nothing, while guessing SFTP would put an account field in front of someone who typed a NAS name off a
+❗ **A bare hostname reads as SMB**, the one guess that costs nothing: SMB browses with no account, so a wrong guess
+asks the user for nothing, while guessing SFTP would put an account field in front of someone who typed a NAS name off a
 sticker. `user@host` reads as SFTP, because an account is what `user@` means.
 
 ❗ **A Nextcloud URL stays whole, path and all.** Nobody can tell where the base URL ends and the collection begins, and

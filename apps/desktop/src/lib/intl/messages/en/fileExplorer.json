@@ -944,14 +944,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Shown while mounting a network share, in the same network-connection flow as the \"Connect to server\" surface pictured here."
   },
-  "fileExplorer.smbReauth.savedPasswordFailed": "Your saved password didn’t work. Sign in to reconnect.",
-  "@fileExplorer.smbReauth.savedPasswordFailed": {
-    "description": "Message in the SMB re-auth view when the saved password was rejected, prompting the user to sign in again. Uses a typographic apostrophe (’)."
-  },
-  "fileExplorer.smbReauth.passwordFailed": "That didn’t work. Check your password and try again.",
-  "@fileExplorer.smbReauth.passwordFailed": {
-    "description": "Message in the SMB re-auth view after a manual sign-in attempt failed, asking the user to recheck the password. Uses a typographic apostrophe (’)."
-  },
   "fileExplorer.smbReconnect.totalSeconds": "{seconds} seconds",
   "@fileExplorer.smbReconnect.totalSeconds": {
     "description": "Total reconnect-cycle duration phrased in seconds, embedded in the \"Will keep trying for a total of …\" sentence.",

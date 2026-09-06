@@ -611,14 +611,6 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReauth.savedPasswordFailed": "保存的密码不起作用了。请登录以重新连接。",
-  "@fileExplorer.smbReauth.savedPasswordFailed": {
-    "sourceHash": "4561fa9"
-  },
-  "fileExplorer.smbReauth.passwordFailed": "这次没成功。请检查密码后重试。",
-  "@fileExplorer.smbReauth.passwordFailed": {
-    "sourceHash": "5e11a2f"
-  },
   "fileExplorer.smbReconnect.totalSeconds": "{seconds} 秒",
   "@fileExplorer.smbReconnect.totalSeconds": {
     "sourceHash": "86d62ab"

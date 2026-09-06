@@ -53,8 +53,8 @@ hosts, and the volume list, which is where a place's standing lives.
   `onVolumeChange` with the place's `appRoot`). ❗ The PANE does the dialing, not the hub: landing on a `saved` volume
   is what `../pane/place-connect.svelte.ts` watches for, so the connecting view and its Cancel render where every other
   wait does.
-- **The add row** opens the one sign-in sheet in add mode (`../../servers/open-sign-in.ts`). An SMB address
-  comes back as a hand-off, and `NetworkMountView` opens the injected host's places.
+- **The add row** opens the one sign-in sheet in add mode (`../../servers/open-sign-in.ts`). An SMB address comes back
+  as a hand-off, and `NetworkMountView` opens the injected host's places.
 
 ### The three pure modules beside it
 
@@ -289,8 +289,8 @@ describes THIS session. The stored value is what the pane's banner has to hand b
 ❗ `needs_host_key_approval` is the fourth `volume-connection-changed` state, and it gets its OWN status
 (`needs-host-key`), ❌ never the sign-in path: it only ever describes an SFTP volume whose host key stopped matching,
 and a password box in front of a possible man-in-the-middle is how a password gets typed into one. `handleNeedsHostKey`
-ends the backoff and flips; ❗ it asks no `getVolumeSignInState`, because nothing about this is a credential question and
-asking one would be the first step toward putting a password box in front of it. The pane renders
+ends the backoff and flips; ❗ it asks no `getVolumeSignInState`, because nothing about this is a credential question
+and asking one would be the first step toward putting a password box in front of it. The pane renders
 `RemoteConnectView`'s `host_key_changed`, which offers Disconnect (`../pane/DETAILS.md` § the connect views says why
 that, and not "Trust it"). `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
 

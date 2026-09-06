@@ -20,6 +20,7 @@ const setPlacePinned = vi.fn(() => Promise.resolve(true))
 const showVolumeRowContextMenu = vi.fn(() => Promise.resolve())
 const addToast = vi.fn()
 const confirmDialog = vi.fn(() => Promise.resolve(true))
+const openEditServerSheet = vi.fn(() => Promise.resolve({ kind: 'cancelled' as const }))
 
 vi.mock('$lib/tauri-commands', () => ({
   disconnectPlace: (...args: unknown[]) => disconnectPlace(...(args as [])),
@@ -39,6 +40,9 @@ vi.mock('$lib/ui/toast', () => ({
   },
 }))
 vi.mock('$lib/utils/confirm-dialog', () => ({ confirmDialog: (...args: unknown[]) => confirmDialog(...(args as [])) }))
+vi.mock('$lib/servers/open-sign-in', () => ({
+  openEditServerSheet: (...args: unknown[]) => openEditServerSheet(...(args as [])),
+}))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
@@ -184,10 +188,33 @@ describe('runServerRowAction', () => {
     expect(confirmDialog).not.toHaveBeenCalled()
   })
 
-  it('takes the two not-yet-built items quietly', async () => {
-    for (const action of ['open', 'edit']) {
-      await runServerRowAction(payload(action))
-    }
+  it('Open navigates through the hook the pane supplies, and is quiet without one', async () => {
+    const onOpen = vi.fn()
+    await runServerRowAction({ ...payload('open'), onOpen })
+    expect(onOpen).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+
+    // The `navigate()` transaction lives in the pane. A menu raised where there
+    // is no pane to move says nothing rather than pretending.
+    await runServerRowAction(payload('open'))
+    expect(addToast).not.toHaveBeenCalled()
+  })
+
+  it('Edit opens the sheet on the SAVED server, never on the row', async () => {
+    await runServerRowAction(payload('edit'))
+    // ❗ From the store: a `VolumeInfo` carries no key file, no remote folder,
+    // and no auto-reconnect switch, so a form seeded from the row would save the
+    // other half away.
+    expect(openEditServerSheet).toHaveBeenCalledWith({
+      id: 'sftp-nas-local-22-ada',
+      places: [{ volumeId: 'sftp-nas-local-22-ada' }],
+    })
+  })
+
+  it('Edit on a server a forget already took says nothing', async () => {
+    listSavedServers.mockResolvedValueOnce([])
+    await runServerRowAction(payload('edit'))
+    expect(openEditServerSheet).not.toHaveBeenCalled()
+    // The row is already gone from the switcher; a toast about it is noise.
     expect(addToast).not.toHaveBeenCalled()
   })
 })
