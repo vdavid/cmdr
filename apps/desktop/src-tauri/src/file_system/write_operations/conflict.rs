@@ -114,14 +114,19 @@ pub(super) fn resolve_conflict(
     state: &Arc<WriteOperationState>,
     apply_to_all_resolution: &mut ApplyToAll,
 ) -> Result<Option<ResolvedDestination>, WriteOperationError> {
-    // Pre-fetch metadata once; reused for the conflict event, the "is file →
-    // folder?" classification, and the conditional-variant reduction.
+    // Pre-fetch metadata once; reused for the conflict event and the
+    // conditional-variant reduction.
     let source_meta = fs::metadata(source).ok();
     let dest_meta = fs::metadata(dest_path).ok();
+    // "Is this a file landing on a folder?" is asked of the ENTRIES, not of what
+    // they point at: a symlink is a leaf whatever its target is, so a link facing
+    // a real directory is a file→folder clash. `source_meta` / `dest_meta` follow
+    // links and would call that pair folder-on-folder, which is the one answer
+    // that walks into the link. `validation::is_real_directory` holds the why.
     let is_file_to_folder = matches!(
         (
-            source_meta.as_ref().map(|m| m.is_dir()),
-            dest_meta.as_ref().map(|m| m.is_dir())
+            fs::symlink_metadata(source).map(|m| m.is_dir()).ok(),
+            fs::symlink_metadata(dest_path).map(|m| m.is_dir()).ok()
         ),
         (Some(false), Some(true)),
     );

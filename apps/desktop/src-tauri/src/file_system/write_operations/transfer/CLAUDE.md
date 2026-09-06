@@ -4,25 +4,27 @@ Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), via `transfer_
 state, intent, cancel/rollback, ETA, conflict mutex, settle: `../CLAUDE.md`. Frontend:
 `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
 
-Local-FS lives in `copy/`, `move_op/`, and `copy_strategy.rs`; the cross-volume engine is `volume/`, a facade reached
-only as `transfer::volume::<item>` (contracts: `volume/CLAUDE.md`). All four cores run through
-`transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
+Local-FS is `copy/`, `move_op/`, `copy_strategy.rs`; cross-volume is `volume/`, a facade reached only as
+`transfer::volume::<item>` (contracts: `volume/CLAUDE.md`). All four cores run through `transfer_driver/CLAUDE.md`.
+File map: `DETAILS.md` § Files.
 
 ## Streaming, cancel, and diagnosis
 
 - **EVERY write stages, local included**: bytes land on a `.cmdr-tmp-<uuid>` SIBLING and take the real name by one
-  same-directory rename, which makes abandoning a wedged worker safe. Local-FS goes through
-  `overwrite::stage_and_land_file` (all four `LocalCopyStrategy` arms, ❌ never straight to the destination);
-  cross-volume asks `resolve_staging`. A non-overwrite landing REFUSES an occupied destination.
+  same-directory rename, so abandoning a wedged worker is safe. Local-FS goes through `overwrite::stage_and_land_file`
+  (all four `LocalCopyStrategy` arms, ❌ never straight to the destination); cross-volume asks `resolve_staging`. A
+  non-overwrite landing REFUSES an occupied destination.
 - **A source that would land on ITSELF is a duplicate, ❌ never a conflict**: settled by `dev+ino` per TOP-LEVEL source
-  before either engine's loop: every answer the conflict machinery has destroys the original or refuses the user. DETAILS § "Self-collision".
+  before either engine's loop; every answer the conflict machinery has destroys the original. DETAILS § "Self-collision".
+- **A symlink is a LEAF to every move engine**: ask `validation::is_real_directory`, ❌ never `Path::is_dir` (it follows
+  links, so a "merge" renames the TARGET's entries out of a folder nobody selected). DETAILS § "Symlinks are opaque".
 - **A ledger entry carries the identity it landed with, ❌ never an mtime** (`../ledger.rs`): local = size +
   `(dev,ino)`, volume = size, a partial marked as ITS OWN. Ledgers POP as they reverse. DETAILS § "What the in-flight
   ledgers record".
 - **A reversal RECHECKS each entry right before acting, ❌ never a batch** (`../reversal.rs`): changed or unprovable ⇒
   leave it, report it on `write-cancelled`; an own-partial goes on sight; a move-back never overwrites an occupied
-  source (case-only self-collision aside). Only the `Drop` net is unconditional, sweeping from `../ledger.rs`; ❌ don't route
-  it through `reversal.rs` (module cycle). § "What a reversal does with that identity".
+  source (case-only self-collision aside). Only the `Drop` net is unconditional, sweeping from `../ledger.rs`; ❌ don't
+  route it through `reversal.rs` (module cycle). § "What a reversal does with that identity".
 - **A cross-FS move's source delete removes the LEDGER of what staged, ❌ never the tree** (`move_op/source_sweep.rs`,
   dirs by `remove_dir`): what arrived mid-move keeps its original and rides out on `AppearedDuringMove`. DETAILS §
   "deletes a LEDGER".
@@ -38,12 +40,12 @@ only as `transfer::volume::<item>` (contracts: `volume/CLAUDE.md`). All four cor
 - **Every phase announces itself to `transfer_probe.rs`, on ALL THREE streaming paths**: ❌ no `.await` without a
   phase, ❌ never derive a stall from FE timing. A new streaming path owes BOTH `register_operation` and a
   `CURRENT_TASK_PROBE` scope (registering without binding reports nothing), plus a `MergeCtx.probe` if it opens a
-  `FileWindow`. The watchdog judges movement by the counters the UI shows; ❌ the probe gets none of its own,
-  since one the drivers must feed is one a driver forgets. DETAILS § "The stall signal".
+  `FileWindow`. The watchdog judges movement by the counters the UI shows; ❌ the probe gets none of its own (one a
+  driver must feed is one a driver forgets). DETAILS § "The stall signal".
 - **Cancel has TWO tiers, and ❌ nothing a user clicks reaches tier 2.** Tier 1 (`state.backend_cancel`) travels via
   `on_progress` so the BACKEND deletes its own partial; ❌ never race a write against it. Tier 2
-  (`state.backend_abort`, the quit deadline's) skips all backend cleanup and leaves the temp to the startup sweep.
-  Drain deadlines are caller-chosen: 15 s cancel, 1 s abort. DETAILS § "Two tiers of cancel".
+  (`state.backend_abort`, the quit deadline's) skips backend cleanup, leaving the temp to the startup sweep. Drain
+  deadlines are caller-chosen: 15 s cancel, 1 s abort. DETAILS § "Two tiers of cancel".
 - **Retry is per-FILE, ONLY inside `stream_pipe_file`** (`retry.rs`): ❌ never higher, ❌ never on a `Cancelled`. **The
   stall watchdog is GATED and inert** (`connection_liveness() == Dead` AND `STALL_ABORT_AFTER`, and nothing answers
   `Dead`), so ❌ never collapse the AND.

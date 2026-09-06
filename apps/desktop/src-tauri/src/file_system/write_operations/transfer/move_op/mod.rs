@@ -28,7 +28,7 @@ use super::super::state::WriteOperationState;
 use super::super::types::{
     SourceItemOutcome, WriteOperationConfig, WriteOperationError, WriteOperationType, WriteSourceItemDoneEvent,
 };
-use super::super::validation::{is_same_file, is_same_filesystem, path_exists_or_is_symlink};
+use super::super::validation::{is_real_directory, is_same_file, is_same_filesystem, path_exists_or_is_symlink};
 use crate::operation_log::rollback::ItemResult;
 use crate::operation_log::types::SkipReason;
 
@@ -244,7 +244,10 @@ fn move_resolved_into_place(
     source_stat: Option<&fs::Metadata>,
     move_tx: &mut MoveTransaction,
 ) -> Result<(), WriteOperationError> {
-    let source_is_dir = source.is_dir();
+    // A symlink counts as a leaf on both sides, whatever it points at: it lands
+    // by one rename, and a link facing a real directory is the type mismatch the
+    // `safe_overwrite_dir` branch below is for.
+    let source_is_dir = is_real_directory(source);
     let is_rename = resolved.path != dest_path;
 
     if is_rename {
@@ -263,7 +266,7 @@ fn move_resolved_into_place(
     }
 
     // Overwrite (`resolved.path == dest_path`).
-    let dest_is_dir = resolved.path.is_dir();
+    let dest_is_dir = is_real_directory(&resolved.path);
     if source_is_dir != dest_is_dir {
         // Type-mismatch overwrite: set the dest aside, move the source in.
         let source_path = source.to_path_buf();
@@ -434,8 +437,11 @@ fn merge_move_directory(
         // the journal marks a directory merge unreversible.
         let child_stat = fs::symlink_metadata(&source_child).ok();
 
-        if source_child.is_dir() && dest_child.exists() && dest_child.is_dir() {
-            // Both are directories, recurse
+        if is_real_directory(&source_child) && is_real_directory(&dest_child) {
+            // Both are real directories, recurse. A symlink on either side is a
+            // leaf, so it falls through to the conflict branch below as a type
+            // mismatch — walking through one would rename entries out of (or
+            // into) a folder that isn't part of this move.
             merge_move_directory(
                 &source_child,
                 &dest_child,
@@ -535,6 +541,12 @@ mod move_ledger_tests;
 #[cfg(test)]
 #[path = "safety_matrix_tests.rs"]
 mod safety_matrix_tests;
+
+/// A symlink is an opaque leaf: renamed, never walked through.
+#[cfg(test)]
+#[cfg(unix)]
+#[path = "move_symlink_tests.rs"]
+mod move_symlink_tests;
 
 #[cfg(test)]
 #[path = "move_journal_tests.rs"]

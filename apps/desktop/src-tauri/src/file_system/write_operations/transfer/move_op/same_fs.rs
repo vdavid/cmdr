@@ -28,7 +28,7 @@ use crate::file_system::write_operations::types::{
     CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteSourceItemDoneEvent,
 };
-use crate::file_system::write_operations::validation::path_exists_or_is_symlink;
+use crate::file_system::write_operations::validation::{is_real_directory, path_exists_or_is_symlink};
 use crate::file_system::write_operations::{journal, journal_search};
 
 /// `already_in_place` counts the top-level sources the caller dropped as already
@@ -111,9 +111,10 @@ pub(super) fn move_with_rename(
                 None
             };
 
-            // When both source and dest are directories, merge recursively
-            // instead of replacing (which would destroy dest-only files).
-            if source.is_dir() && dest_path.exists() && dest_path.is_dir() {
+            // When both source and dest are real directories, merge recursively
+            // instead of replacing (which would destroy dest-only files). A
+            // symlink on either side is a leaf and takes the conflict branch.
+            if is_real_directory(source) && is_real_directory(&dest_path) {
                 // Same-FS merge operates on the original tree directly, so a
                 // skipped child just leaves the source non-empty; no skip-set
                 // bookkeeping is needed (there's no later source-delete phase).

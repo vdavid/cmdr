@@ -37,7 +37,9 @@ use crate::file_system::write_operations::types::{
     SourceItemOutcome, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
     WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
-use crate::file_system::write_operations::validation::validate_file_sizes_for_filesystem;
+use crate::file_system::write_operations::validation::{
+    is_real_directory, path_exists_or_is_symlink, validate_file_sizes_for_filesystem,
+};
 
 /// Performs cross-filesystem move using atomic staging pattern.
 /// This ensures source files remain intact if the operation fails.
@@ -289,10 +291,12 @@ pub(super) fn move_with_staging(
             let staged_path = staging_dir.join(file_name);
             let final_path = destination.join(file_name);
 
-            // When both staged and final are directories, merge recursively.
-            // No MoveTransaction needed here: staging cleanup handles rollback.
+            // When both staged and final are real directories, merge
+            // recursively. No MoveTransaction needed here: staging cleanup
+            // handles rollback. A staged symlink is still a symlink, so it stays
+            // a leaf and takes the conflict branch as a type mismatch.
             let mut staging_move_tx = MoveTransaction::new();
-            if staged_path.is_dir() && final_path.exists() && final_path.is_dir() {
+            if is_real_directory(&staged_path) && is_real_directory(&final_path) {
                 // Collect skipped children as STAGED paths, then remap each from
                 // the staging prefix back to its original source path so Phase 4
                 // preserves the originals that never landed.
@@ -320,8 +324,10 @@ pub(super) fn move_with_staging(
                     operation_id,
                     crate::operation_log::types::NotRollbackableReason::DirectoryMerge,
                 );
-            } else if final_path.exists() {
-                // File conflict (or type mismatch)
+            } else if path_exists_or_is_symlink(&final_path) {
+                // File conflict (or type mismatch). The symlink-aware gate, like
+                // the other two engine branches: `exists()` alone reads a
+                // dangling link at the destination as free.
                 match resolve_conflict(
                     source,
                     &final_path,

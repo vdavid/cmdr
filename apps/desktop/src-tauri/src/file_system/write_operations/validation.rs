@@ -357,6 +357,20 @@ pub(crate) fn path_exists_or_is_symlink(path: &Path) -> bool {
     path.exists() || fs::symlink_metadata(path).is_ok()
 }
 
+/// Is `path` a directory in its own right, rather than a symlink pointing at
+/// one? This is the ONE question a move asks before merging two directories.
+///
+/// `Path::is_dir()` is `fs::metadata`-based, so it says `true` for a link to a
+/// directory. A merge that believes it walks `read_dir` through the link and
+/// renames the TARGET's entries out of a folder the user never selected; a
+/// destination-side link is the mirror image, landing the user's files wherever
+/// it points. So a link is an opaque leaf to every move engine: it's renamed as
+/// a link, and a link meeting a directory is a type mismatch the conflict
+/// resolver decides. `transfer/DETAILS.md` § "Symlinks are opaque to a move".
+pub(crate) fn is_real_directory(path: &Path) -> bool {
+    fs::symlink_metadata(path).map(|m| m.is_dir()).unwrap_or(false)
+}
+
 // ============================================================================
 // Path length validation
 // ============================================================================
