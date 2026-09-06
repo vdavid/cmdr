@@ -2,7 +2,8 @@
 
 The app side of `crates/cmdr-adb/`: how a device reaches the sidebar, when a volume is dialed, what an eject does,
 what the frontend calls, and what is not wired yet. The wire contract, the `Volume` answers, and the error policy are
-the crate's (`crates/cmdr-adb/DETAILS.md`); the design that started this is `docs/specs/android-adb-backend.md`. The
+the crate's (`crates/cmdr-adb/DETAILS.md`); what the backend still owes is
+`docs/specs/android-adb-backend-follow-ups.md`. The
 seam both device backends register through is `device_volumes.rs`, whose module doc is canonical for the trait.
 
 ## Where each thing lives
