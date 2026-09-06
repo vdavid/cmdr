@@ -16,6 +16,7 @@ import type { MessageKey } from '$lib/intl/keys.gen'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
 import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
+import { resolveSnapshotSourceVolume } from './snapshot-source-volume'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
 import { pasteClipboardContentAsFile } from './paste-clipboard-as-file'
@@ -160,12 +161,30 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     return { paths, snapshotId }
   }
 
+  /**
+   * True when a SEARCH-RESULTS pane's rows can't go on the system clipboard,
+   * the same refusal `isMtpClipboardRefusal` gives a live MTP pane. The kind has
+   * to come from where the rows really LIVE, because the pane's own volume id is
+   * the virtual `search-results`: a search covers any volume with a persisted
+   * index, MTP storages and ADB devices included. Without this, an `mtp://…` row
+   * path reaches `NSURL::fileURLWithPath` (`clipboard/pasteboard.rs`), which
+   * reads a scheme it doesn't know as a RELATIVE path and hands back a file URL
+   * under the process working directory.
+   */
+  function snapshotClipboardIsRefused(paths: string[]): boolean {
+    return isMtpClipboardRefusal(resolveSnapshotSourceVolume(paths, access.getVolumes()).volumeId)
+  }
+
   /** Copies selected files (or cursor file) to the system clipboard. */
   async function copyToClipboard() {
     // Search-results pane: paths are already absolute on the snapshot. The
     // regular listing-id path can't apply because there's no backend listing.
     const snapshotClip = getSnapshotClipboardPaths()
     if (snapshotClip) {
+      if (snapshotClipboardIsRefused(snapshotClip.paths)) {
+        addToast(tString('fileExplorer.clipboard.useF5FromMtp'), { level: 'info' })
+        return
+      }
       try {
         const count = await copyPathsToClipboard(snapshotClip.paths)
         addToast(tString('fileExplorer.clipboard.copied', { countText: formatNumber(count), count }), { level: 'info' })
@@ -207,6 +226,10 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
   async function cutToClipboard() {
     const snapshotClip = getSnapshotClipboardPaths()
     if (snapshotClip) {
+      if (snapshotClipboardIsRefused(snapshotClip.paths)) {
+        addToast(tString('fileExplorer.clipboard.useF6FromMtp'), { level: 'info' })
+        return
+      }
       try {
         const count = await cutPathsToClipboard(snapshotClip.paths)
         addToast(tString('fileExplorer.clipboard.cutReady', { countText: formatNumber(count), count }), {

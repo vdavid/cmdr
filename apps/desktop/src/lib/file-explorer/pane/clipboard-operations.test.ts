@@ -177,6 +177,41 @@ describe('copyToClipboard', () => {
     expect(addToastSpy).toHaveBeenCalledWith('Copied 1 item', { level: 'info' })
   })
 
+  it('refuses a snapshot copy whose rows sit on an MTP storage, with the pane refusal wording', async () => {
+    // A search covers any volume with a persisted index, MTP storages included,
+    // so an `mtp://…` row path can reach `NSURL::fileURLWithPath` and come back
+    // mangled. The snapshot pane's own id is virtual, so the kind has to come
+    // from where the rows really live.
+    resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({
+      paneRef,
+      volumeId: 'search-results',
+      volumes: [{ id: 'mtp-0-5:65537', name: 'Pixel', path: 'mtp://0-5/65537' }],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files from MTP devices', { level: 'info' })
+    expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
+    expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('copies a snapshot whose rows sit on an ordinary volume, so the refusal stays narrow', async () => {
+    resolveSnapshotPathsSpy.mockReturnValue(['/Volumes/Stick/a.txt'])
+    copyPathsToClipboardSpy.mockResolvedValue(1)
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({
+      paneRef,
+      volumeId: 'search-results',
+      volumes: [{ id: 'stick', name: 'Stick', path: '/Volumes/Stick' }],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(copyPathsToClipboardSpy).toHaveBeenCalledWith(['/Volumes/Stick/a.txt'])
+  })
+
   it('falls back to the listing-id path when a snapshot resolves to no paths', async () => {
     resolveSnapshotPathsSpy.mockReturnValue([])
     copyFilesToClipboardSpy.mockResolvedValue(3)
@@ -267,6 +302,22 @@ describe('cutToClipboard', () => {
 
     expect(cutPathsToClipboardSpy).toHaveBeenCalledWith(['/a.txt', '/b.txt'])
     expect(addToastSpy).toHaveBeenCalledWith('2 items ready to move. Paste to complete.', { level: 'info' })
+  })
+
+  it('refuses a snapshot cut whose rows sit on an MTP storage, pointing at F6', async () => {
+    resolveSnapshotPathsSpy.mockReturnValue(['mtp://0-5/65537/DCIM/a.jpg'])
+    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
+    const access = buildAccess({
+      paneRef,
+      volumeId: 'search-results',
+      volumes: [{ id: 'mtp-0-5:65537', name: 'Pixel', path: 'mtp://0-5/65537' }],
+    })
+
+    await createClipboardOperations(access, buildDialogs()).cutToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('Use F6 to move files from MTP devices', { level: 'info' })
+    expect(cutPathsToClipboardSpy).not.toHaveBeenCalled()
+    expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
   })
 
   it('refuses MTP cut with a toast pointing at F6', async () => {

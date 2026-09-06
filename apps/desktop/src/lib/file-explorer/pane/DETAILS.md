@@ -286,6 +286,14 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   a "no system clipboard" capability: `network` + `search-results` lack one too, and an MTP-worded toast on a reachable
   network paste would be a new, mis-worded toast. On the live clipboard-time pane id set it's byte-equivalent to the old
   `startsWith('mtp-')` gate, pinned by the equivalence test in `clipboard-operations.test.ts`.
+
+  **The snapshot-clip branch runs that SAME refusal against the resolved row volume** (`snapshotClipboardIsRefused` →
+  `snapshot-source-volume.ts::resolveSnapshotSourceVolume` → `isMtpClipboardRefusal`), because the pane's own volume id
+  is the virtual `search-results` and a search covers any volume with a persisted index, MTP storages included. Without
+  it an `mtp://…` row path reaches `NSURL::fileURLWithPath` (`clipboard/pasteboard.rs`), which reads an unknown scheme
+  as a RELATIVE path and hands back a file URL under the process working directory. **Gotcha:** the refusal is only as
+  good as the resolution, so a device unplugged while its snapshot pane stays open resolves to `root` and falls through.
+
 - **Transfer / delete** (`file-operation-commands.ts`): source routing (snapshot builder) off `!hasBackendListing`.
   `readOnlyRefusal` turns rename / mkdir / mkfile / delete away up front on a read-only routed pane, worded per kind
   (`fileExplorer.readOnly.archive*` for tar/7z, `fileExplorer.readOnly.gitPortal*` for a snapshot). The destination
