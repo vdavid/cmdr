@@ -28,9 +28,9 @@ const stubs = vi.hoisted(() => ({ isMacOS: null as (() => boolean) | null }))
 vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   openPrivacySettings: vi.fn(() => Promise.resolve()),
-  reconnectSmbVolume: vi.fn(),
+  reconnectVolume: vi.fn(),
   // Never resolves: `SmbReauthView` audits the form before any round-trip lands.
-  reconnectSmbVolumeWithCredentials: vi.fn(() => new Promise<never>(() => {})),
+  reconnectVolumeWithCredentials: vi.fn(() => new Promise<never>(() => {})),
   // `NetworkLoginForm` (rendered inside `SmbReauthView`) pre-fills the username from these on mount.
   getUsernameHint: vi.fn(() => Promise.resolve(null)),
 }))

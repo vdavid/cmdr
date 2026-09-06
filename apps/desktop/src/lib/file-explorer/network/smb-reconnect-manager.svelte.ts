@@ -29,7 +29,7 @@
 import { untrack } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { reconnectSmbVolume, getVolumeSignInState, onVolumeConnectionChanged } from '$lib/tauri-commands'
+import { reconnectVolume, getVolumeSignInState, onVolumeConnectionChanged } from '$lib/tauri-commands'
 import type { SignInShape } from '$lib/tauri-commands'
 import { asReconnectError, describeReconnectRefusal } from './reconnect-error'
 import { getAppLogger } from '$lib/logging/logger'
@@ -262,7 +262,7 @@ class SmbReconnectManager {
    * (the server's password changed). Stop the futile backoff — retrying the same
    * stale credentials can't succeed — and flip to `needs-auth` so FilePane shows a
    * "Sign in" prompt instead of the generic "unreachable" banner. The user signs in
-   * via `reconnectSmbVolumeWithCredentials`; success arrives as a `connected` event.
+   * via `reconnectVolumeWithCredentials`; success arrives as a `connected` event.
    */
   private async handleNeedsAuth(volumeId: string): Promise<void> {
     // Everything up to the first `await` runs synchronously with the event, so
@@ -354,7 +354,7 @@ class SmbReconnectManager {
     this.map.set(volumeId, entry) // notify subscribers
 
     try {
-      await reconnectSmbVolume(volumeId)
+      await reconnectVolume(volumeId)
       // Success: defensive backstop in case the `volume-connection-changed`
       // event somehow doesn't arrive (unexpected, but `handleConnected` is
       // idempotent so calling both paths is safe).

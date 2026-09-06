@@ -2,7 +2,7 @@
     /**
      * Sign-in prompt shown when an in-place SMB reconnect gave up on an auth failure
      * (the saved password went stale — `needs-auth`). Reuses `NetworkLoginForm` and
-     * reconnects with the entered credentials via `reconnectSmbVolumeWithCredentials`,
+     * reconnects with the entered credentials via `reconnectVolumeWithCredentials`,
      * which persists the new password so future reconnects are silent. On success the
      * backend emits `volume-connection-changed { state: "connected" }`, which the reconnect
      * manager turns into the pane's reload — so this view just needs to fire the command
@@ -11,7 +11,7 @@
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import type { NetworkHost, NetworkLoginSubmitPayload } from '../types'
-    import { reconnectSmbVolumeWithCredentials } from '$lib/tauri-commands'
+    import { reconnectVolumeWithCredentials } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
 
     interface Props {
@@ -51,7 +51,7 @@
         isConnecting = true
         errorMessage = undefined
         try {
-            await reconnectSmbVolumeWithCredentials(volumeId, username, password)
+            await reconnectVolumeWithCredentials(volumeId, username, password)
             // Success flows back as a `direct` event → reconnect manager → pane reload.
         } catch (e) {
             errorMessage = tString('fileExplorer.smbReauth.passwordFailed')

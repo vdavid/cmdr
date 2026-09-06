@@ -1,7 +1,7 @@
 /**
  * Behavior tests for SmbReauthView — the "Sign in" prompt shown when an SMB reconnect
  * gave up because the saved password went stale (`needs-auth`). Submitting must call
- * `reconnectSmbVolumeWithCredentials`; a failure surfaces inline without dead-ending.
+ * `reconnectVolumeWithCredentials`; a failure surfaces inline without dead-ending.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -9,11 +9,11 @@ import { mount, unmount, tick } from 'svelte'
 import SmbReauthView from './SmbReauthView.svelte'
 
 const h = vi.hoisted(() => ({
-  reconnectSmbVolumeWithCredentials: vi.fn(),
+  reconnectVolumeWithCredentials: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
-  reconnectSmbVolumeWithCredentials: h.reconnectSmbVolumeWithCredentials,
+  reconnectVolumeWithCredentials: h.reconnectVolumeWithCredentials,
   getUsernameHint: vi.fn(() => Promise.resolve(null)),
   getKnownShareByName: vi.fn(() => Promise.resolve(null)),
 }))
@@ -58,7 +58,7 @@ describe('SmbReauthView', () => {
   })
 
   it('reconnects with the entered credentials on submit', async () => {
-    h.reconnectSmbVolumeWithCredentials.mockResolvedValue(undefined)
+    h.reconnectVolumeWithCredentials.mockResolvedValue(undefined)
     const { target, component } = mountView()
     await vi.waitFor(() => {
       expect(target.querySelector('#username')).toBeTruthy()
@@ -67,14 +67,14 @@ describe('SmbReauthView', () => {
     await fillAndSubmit(target, 'david', 'hunter2')
 
     await vi.waitFor(() => {
-      expect(h.reconnectSmbVolumeWithCredentials).toHaveBeenCalledWith('smb-naspolya-445-naspi', 'david', 'hunter2')
+      expect(h.reconnectVolumeWithCredentials).toHaveBeenCalledWith('smb-naspolya-445-naspi', 'david', 'hunter2')
     })
 
     await unmount(component)
   })
 
   it('shows an inline error (no dead end) when the new password is also wrong', async () => {
-    h.reconnectSmbVolumeWithCredentials.mockRejectedValue({ type: 'auth_failed', message: 'bad' })
+    h.reconnectVolumeWithCredentials.mockRejectedValue({ type: 'auth_failed', message: 'bad' })
     const { target, component } = mountView()
     await vi.waitFor(() => {
       expect(target.querySelector('#username')).toBeTruthy()

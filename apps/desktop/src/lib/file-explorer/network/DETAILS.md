@@ -190,7 +190,7 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
 2. **`stores/volume-store.svelte.ts`** patches the matching volume's `connectionState`, keeping the picker dot, the
    breadcrumb, and `currentVolumeInfo` reactive without waiting for the next `volumes-changed`.
 3. **`smb-reconnect-manager.svelte.ts`** (if any subscribers are present) starts a per-volume backoff cycle calling
-   `reconnectSmbVolume(volumeId)` per tick. Resolves when the BE emits a follow-up `state: "connected"` event. Only its
+   `reconnectVolume(volumeId)` per tick. Resolves when the BE emits a follow-up `state: "connected"` event. Only its
    per-tick command is SMB-specific; the cycle itself is backend-agnostic, so it keeps the SMB name until a second
    backend needs it and the command generalizes. A tick that doesn't take arrives as a typed `ReconnectError`
    (`volumeNotFound`, or `volume` wrapping the whole `VolumeError`), thrown as a `ReconnectFailure` by
@@ -206,7 +206,7 @@ When a direct-SMB session drops mid-use, four pieces coordinate to recover:
 Auth-failure give-up → "Sign in", not "unreachable" (`needs-auth` status): when reconnect fails on an auth error the
 saved password can't fix, the backend emits `state: "needs_credentials"`. The manager's `handleNeedsAuth` stops the
 backoff (retrying a stale password is futile) and flips to `needs-auth`; FilePane shows `pane/SmbReauthView.svelte` (a
-thin wrapper over `NetworkLoginForm`). Submitting calls `reconnectSmbVolumeWithCredentials(volumeId, …)`, which persists
+thin wrapper over `NetworkLoginForm`). Submitting calls `reconnectVolumeWithCredentials(volumeId, …)`, which persists
 the new password and reconnects; success arrives as a `connected` event that clears the state and reloads. Pinned by
 `smb-reconnect-manager.svelte.test.ts`.
 

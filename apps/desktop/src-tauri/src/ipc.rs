@@ -594,8 +594,8 @@ macro_rules! ipc_command_manifest {
                     crate::commands::network::upgrade_to_smb_volume_with_credentials,
                     crate::commands::network::system_has_saved_smb_password,
                     crate::commands::network::upgrade_to_smb_volume_using_saved_password,
-                    crate::commands::network::reconnect_smb_volume,
-                    crate::commands::network::reconnect_smb_volume_with_credentials,
+                    crate::commands::network::reconnect_volume,
+                    crate::commands::network::reconnect_volume_with_credentials,
                     crate::commands::network::get_volume_sign_in_state,
                     crate::commands::network::disconnect_smb_volume,
                     crate::commands::eject::eject_volume,
@@ -645,6 +645,22 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // The protocol-agnostic server family, over the two blocks above. Same
+            // gate and same no-stub reasoning.
+            cfg(any(target_os = "macos", target_os = "linux")) {
+                typed: [
+                    crate::commands::servers::list_saved_servers,
+                    crate::commands::servers::connect_saved_place,
+                    crate::commands::servers::connect_server,
+                    crate::commands::servers::cancel_server_connect,
+                    crate::commands::servers::disconnect_place,
+                    crate::commands::servers::set_place_pinned,
+                    crate::commands::servers::forget_server,
+                    crate::commands::servers::forget_server_secret,
+                    crate::commands::servers::update_saved_server,
+                ]
+                dispatch_only: []
+            }
             cfg(not(any(target_os = "macos", target_os = "linux"))) {
                 typed: [
                     crate::stubs::network::ensure_network_discovery_started,
@@ -671,8 +687,8 @@ macro_rules! ipc_command_manifest {
                     crate::stubs::network::upgrade_to_smb_volume_with_credentials,
                     crate::stubs::network::system_has_saved_smb_password,
                     crate::stubs::network::upgrade_to_smb_volume_using_saved_password,
-                    crate::stubs::network::reconnect_smb_volume,
-                    crate::stubs::network::reconnect_smb_volume_with_credentials,
+                    crate::stubs::network::reconnect_volume,
+                    crate::stubs::network::reconnect_volume_with_credentials,
                     crate::stubs::network::get_volume_sign_in_state,
                     crate::stubs::network::disconnect_smb_volume,
                     crate::stubs::network::remove_manual_server,

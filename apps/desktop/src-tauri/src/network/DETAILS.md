@@ -447,6 +447,17 @@ and every connect outcome: `crates/cmdr-webdav/DETAILS.md` § "Connecting from t
 connect finished is ordinary. And a `Cancelled` outcome never reaches `register` or `remember`, so a cancelled connect
 leaves no volume, no saved server, and no secret.
 
+### Moving a pin takes its own writer
+
+`remember` runs on EVERY successful connect and deliberately preserves the STORED `pinned` on a replace, so a pin taken
+from the caller would put an unpinned row back in the switcher the next time the session came back: an unpin that
+undoes itself. That makes `remember` the one function that cannot change a pin, so both stores carry a `set_pinned`.
+
+❗ It mutates the entry IN PLACE under the lock, ❌ never rebuilds the vec: the store is process-global, and a rebuild
+drops whatever another thread appended between the read and the write. `commands/servers.rs::set_place_pinned` is its
+only caller, and it emits `volumes-changed` afterwards, because the switcher's Network group is exactly the pinned and
+the connected places and an unpin the list never hears about leaves a row nothing will remove.
+
 ### A secret used for one dial and never stored
 
 `connect_sftp_volume` and `connect_webdav_volume` take ❌ no password argument, on purpose: a secret that never appears

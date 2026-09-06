@@ -3529,33 +3529,40 @@ export const commands = {
   upgradeToSmbVolumeUsingSavedPassword: (volumeId: string) =>
     typedError<UpgradeResult, string>(__TAURI_INVOKE('upgrade_to_smb_volume_using_saved_password', { volumeId })),
   /**
-   *  Tries to rebuild the smb2 session for a Disconnected `SmbVolume` in place.
+   *  Tries to rebuild a Disconnected volume's session in place.
    *
-   *  Called by the frontend reconnect manager on each backoff tick (and on
-   *  "Retry now" / lazy nav-time retry). Backend single-flights concurrent calls,
-   *  so the FE is free to fire on its own schedule. Returns `Ok(())` on success
-   *  (state is now `Direct`), or a typed [`ReconnectError`] saying why the
-   *  rebuild didn't happen.
+   *  ❗ Backend-neutral: every remote backend implements `attempt_reconnect`, and
+   *  the frontend's reconnect manager drives SMB, SFTP, and WebDAV through this
+   *  one command. Called on each backoff tick (and on "Retry now" / lazy nav-time
+   *  retry). The backend single-flights concurrent calls, so the frontend is free
+   *  to fire on its own schedule. Returns `Ok(())` on success (the volume now
+   *  reports `Direct`), or a typed [`ReconnectError`] saying why the rebuild
+   *  didn't happen.
    *
-   *  Calling this on a non-SMB volume yields `ReconnectError::Volume` carrying
-   *  `VolumeError::NotSupported` (the trait default). The FE only ever invokes
-   *  this for known SMB volumes.
+   *  A volume whose backend can't redial yields `ReconnectError::Volume` carrying
+   *  `VolumeError::NotSupported` (the trait default).
    */
-  reconnectSmbVolume: (volumeId: string) =>
-    typedError<null, ReconnectError>(__TAURI_INVOKE('reconnect_smb_volume', { volumeId })),
+  reconnectVolume: (volumeId: string) =>
+    typedError<null, ReconnectError>(__TAURI_INVOKE('reconnect_volume', { volumeId })),
   /**
-   *  Reconnects an SMB volume with freshly-entered credentials.
+   *  Reconnects a volume with freshly-entered credentials.
    *
-   *  Invoked by the "Sign in" affordance shown when an in-place reconnect gave up on an
-   *  auth failure (a `needs_credentials` `volume-connection-changed` event). The volume persists
-   *  the new password (so future reconnects are silent) and runs the standard reconnect; on
-   *  success the backend emits `volume-connection-changed { state: "connected" }`. On a non-SMB
-   *  volume this yields `ReconnectError::Volume` carrying `VolumeError::NotSupported` (trait
-   *  default); the FE only invokes it for SMB.
+   *  ❗ Backend-neutral, like [`reconnect_volume`]. Invoked by the "Sign in"
+   *  affordance shown when an in-place reconnect gave up on an auth failure (a
+   *  `needs_credentials` `volume-connection-changed` event). The volume refreshes
+   *  what it has stored (so future reconnects are silent) and runs the standard
+   *  reconnect; on success the backend emits
+   *  `volume-connection-changed { state: "connected" }`.
+   *
+   *  ❗ Whether the USERNAME may change is the backend's call, not this command's:
+   *  SMB accepts a new one and rewrites its params, SFTP and WebDAV refuse because
+   *  the volume id IS the account. `SignInShape` is what tells the sheet which it
+   *  is. A backend that can't redial yields `ReconnectError::Volume` carrying
+   *  `VolumeError::NotSupported`.
    */
-  reconnectSmbVolumeWithCredentials: (volumeId: string, username: string, password: string) =>
+  reconnectVolumeWithCredentials: (volumeId: string, username: string, password: string) =>
     typedError<null, ReconnectError>(
-      __TAURI_INVOKE('reconnect_smb_volume_with_credentials', { volumeId, username, password }),
+      __TAURI_INVOKE('reconnect_volume_with_credentials', { volumeId, username, password }),
     ),
   /**
    *  What FORM a "Sign in" affordance on this volume takes, right now: which fields
@@ -3971,6 +3978,119 @@ export const commands = {
       | 'no_stored_secret'
       | null
     >('get_webdav_unattended_reconnect', { volumeId }),
+  /**
+   *  Every server the user has saved, across all three stores.
+   *
+   *  ❗ Cached state only, ❌ never the wire: the hub re-reads this on every
+   *  `volumes-changed`, and a probe here would turn a refresh into a round of
+   *  network traffic.
+   */
+  listSavedServers: () => __TAURI_INVOKE<SavedServer[]>('list_saved_servers'),
+  /**
+   *  Dials a server the user has already saved, by the id its place carries.
+   *
+   *  ❗ **Only for a place with NO registered volume.** The frontend's connect flow
+   *  picks its move by the volume's standing; the two ways of picking wrong are
+   *  refused here rather than silently doing the wrong thing.
+   *
+   *  `attempt_id` is the CALLER's own name for this attempt, made before the call
+   *  so a cancel button is armed from the first millisecond;
+   *  [`cancel_server_connect`] takes the same one.
+   */
+  connectSavedPlace: (
+    volumeId: string,
+    attemptId: string,
+    secret: {
+      /**
+       *  The secret itself: a password, a key file's passphrase, whatever the
+       *  account's rung wants.
+       */
+      secret: string
+      /**
+       *  The "Remember in Keychain" switch as the sheet showed it. `true` writes
+       *  the secret before dialing; `false` keeps it in memory for this attempt
+       *  only.
+       */
+      remember: boolean
+    } | null,
+  ) =>
+    typedError<ServerConnectOutcome, SavedPlaceRefusal>(
+      __TAURI_INVOKE('connect_saved_place', { volumeId, attemptId, secret }),
+    ),
+  /**
+   *  Dials a server the user just typed, in add mode.
+   *
+   *  A successful dial registers the volume AND saves the server, so the second
+   *  use of it costs one keystroke.
+   */
+  connectServer: (
+    target: ServerTarget,
+    attemptId: string,
+    secret: {
+      /**
+       *  The secret itself: a password, a key file's passphrase, whatever the
+       *  account's rung wants.
+       */
+      secret: string
+      /**
+       *  The "Remember in Keychain" switch as the sheet showed it. `true` writes
+       *  the secret before dialing; `false` keeps it in memory for this attempt
+       *  only.
+       */
+      remember: boolean
+    } | null,
+  ) => __TAURI_INVOKE<ServerConnectOutcome>('connect_server', { target, attemptId, secret }),
+  /**
+   *  Calls off the connect running under `attempt_id`, whichever protocol owns it.
+   *
+   *  Each backend holds its OWN attempt table, so this asks both; an id nobody is
+   *  connecting under answers `false`, which a cancel racing a finished connect
+   *  legitimately does.
+   */
+  cancelServerConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_server_connect', { attemptId }),
+  /**
+   *  Drops a place's session and takes it out of the registry, answering whether
+   *  there was one.
+   *
+   *  ❗ The place stays SAVED. Disconnecting a pinned place leaves it as a `saved`
+   *  row in the switcher; forgetting is [`forget_server`].
+   */
+  disconnectPlace: (volumeId: string) => __TAURI_INVOKE<boolean>('disconnect_place', { volumeId }),
+  /**
+   *  Moves a place's pin, answering whether a saved place was there.
+   *
+   *  ❗ Emits `volumes-changed`: the switcher's Network group is exactly the pinned
+   *  and the connected places, so an unpin the list never hears about leaves a row
+   *  on screen that nothing will remove.
+   */
+  setPlacePinned: (volumeId: string, pinned: boolean) =>
+    __TAURI_INVOKE<boolean>('set_place_pinned', { volumeId, pinned }),
+  /**
+   *  Drops a server from the saved list, answering whether one was there.
+   *
+   *  ❗ Emits `volumes-changed`, so a `saved` row leaves the switcher at once. ❌
+   *  Leaves the stored secret alone: forgetting a server from a list is not the
+   *  same request as revoking its credential, and [`forget_server_secret`] is that
+   *  one.
+   */
+  forgetServer: (id: string) => __TAURI_INVOKE<boolean>('forget_server', { id }),
+  /**
+   *  Forgets a server's remembered secret, answering whether the store accepted
+   *  the removal.
+   *
+   *  ❗ Leaves the SERVER saved: "stop remembering my password" and "forget this
+   *  server" are two requests, and the sheet offers them separately.
+   */
+  forgetServerSecret: (id: string) => __TAURI_INVOKE<boolean>('forget_server_secret', { id }),
+  /**
+   *  Saves an edited server, or adds one without connecting.
+   *
+   *  ❗ Takes a [`ServerTarget`], the same shape the add sheet collects, because an
+   *  edit and an add differ only in whether the fields arrived prefilled. A saved
+   *  server's PIN is not in it: `remember` preserves the stored pin on a replace,
+   *  and [`set_place_pinned`] is the one writer that moves one.
+   */
+  updateSavedServer: (server: ServerTarget) => __TAURI_INVOKE<void>('update_saved_server', { server }),
   /**
    *  Tauri command: returns the current macOS accent color as a hex string.
    *
@@ -10228,8 +10348,8 @@ export type ReclaimResult = {
 }
 
 /**
- *  A typed refusal from `reconnect_smb_volume` /
- *  `reconnect_smb_volume_with_credentials`.
+ *  A typed refusal from `reconnect_volume` /
+ *  `reconnect_volume_with_credentials`.
  */
 export type ReconnectError =
   /**
@@ -10615,6 +10735,97 @@ export type RowBeside = 'previous' | 'next'
  *  search hits inside a top-level move/trash unit, and are never reversed.
  */
 export type RowRole = 'rollbackUnit' | 'searchOnly'
+
+/**
+ *  One mountable thing under an account: an SFTP or WebDAV root, later an S3
+ *  bucket or a shared drive. What a tab, a favorite, and a path point at.
+ */
+export type SavedPlace = {
+  /**
+   *  The id the registry files the volume under, and the id a `saved` row in
+   *  the switcher already carries, so activating either dials the same entry.
+   */
+  volumeId: string
+  // What the switcher shows.
+  name: string
+  // Whether it belongs in the volume switcher.
+  pinned: boolean
+  // Whether a session is live right now.
+  connected: boolean
+}
+
+/**
+ *  Why dialing a SAVED place couldn't even start.
+ *
+ *  ❗ Separate from [`ServerConnectOutcome`], because neither of these is
+ *  something a person did: both mean the caller picked the wrong move for this
+ *  volume's standing, which `servers/connect-flow.ts` decides. A user should
+ *  never see one.
+ */
+export type SavedPlaceRefusal =
+  // Nothing saved has that place. A forget racing an activation lands here.
+  | {
+      reason: 'no_such_server'
+      // The id that was asked for.
+      volumeId: string
+    }
+  /**
+   *  ❗ A volume is registered under that id already. Re-dialing would register
+   *  a SECOND volume; a session that dropped is mended by
+   *  `reconnect_volume_with_credentials`, which is what enforces the read-only
+   *  username rule and the never-seeds rule.
+   */
+  | {
+      reason: 'already_connected'
+      // The id that is already live.
+      volumeId: string
+    }
+
+/**
+ *  An endpoint plus an identity, as the hub lists it.
+ *
+ *  ❗ **An SMB host lists NO places and cannot be pinned here.**
+ *  `known_shares.rs` stores no share rows (its only writer leaves `share_name`
+ *  empty), carries no port, and a mounted share's id comes from `statfs`, which
+ *  normalizes an mDNS name to an IP — so no id derivable from the store would
+ *  match the mounted volume, and a pin would point at nothing. SMB places keep
+ *  reaching the switcher as mounted volumes, and the hub opens an SMB host into
+ *  its live places list. A share-level writer at mount time is what pinnable SMB
+ *  shares need, and that is recorded as later work rather than half-built here.
+ */
+export type SavedServer = {
+  /**
+   *  Stable across launches. For a one-place protocol it IS the place's volume
+   *  id; for an SMB host it is the manual-server id shape.
+   */
+  id: string
+  /**
+   *  Which protocol, so the hub can show a Type column without parsing an
+   *  address.
+   */
+  protocol: ServerProtocol
+  // The user's own label, falling back to the address.
+  displayName: string
+  /**
+   *  What the user typed, near enough to paste back: `host:port` for SFTP, the
+   *  base URL for WebDAV, the host for SMB.
+   */
+  address: string
+  /**
+   *  The account, where the protocol has one. `None` for an SMB host, which is
+   *  not an account yet.
+   */
+  username: string | null
+  /**
+   *  Whether this account's place belongs in the switcher. Always `false` for
+   *  SMB, per the type's own note.
+   */
+  pinned: boolean
+  // ISO 8601, so a hub can sort by recency. `None` when nothing recorded one.
+  lastConnectedAt: string | null
+  // The mountable things under it. One for SFTP and WebDAV, none for SMB.
+  places: SavedPlace[]
+}
 
 /**
  *  A conflict detected during pre-copy scanning: a source item that already exists at the
@@ -11216,6 +11427,30 @@ export type SearchStatus =
   | { status: 'invalidQuery'; message: string }
 
 /**
+ *  A secret a person just typed, and what they asked us to do with it.
+ *
+ *  ❗ The one carrier a secret may travel in. ❌ No `password` argument on any
+ *  connect params: the crates read the store, and this is how a secret that
+ *  isn't in the store reaches a dial.
+ *
+ *  Crosses IPC: the sign-in sheet is where a person types one, and the backend
+ *  reads the store for every dial that isn't answering a sign-in.
+ */
+export type SecretOffer = {
+  /**
+   *  The secret itself: a password, a key file's passphrase, whatever the
+   *  account's rung wants.
+   */
+  secret: string
+  /**
+   *  The "Remember in Keychain" switch as the sheet showed it. `true` writes
+   *  the secret before dialing; `false` keeps it in memory for this attempt
+   *  only.
+   */
+  remember: boolean
+}
+
+/**
  *  Which kind of seek the caller is asking for, as a value the wire enforces.
  *
  *  The command pairs it with a numeric `target_value`; keeping the KIND an enum
@@ -11319,6 +11554,120 @@ export type SendFeedbackResult =
 export type SendResult = {
   id: string
 }
+
+/**
+ *  What a connect attempt produced, across every protocol this family speaks.
+ *
+ *  ❗ The superset of the two per-protocol enums, so a sign-in UI branches once.
+ *  Every outcome is a variant, including the ones that read as failures, and ❌
+ *  none may be recovered from a message.
+ *
+ *  ❗ `AuthMethodUnsupported` stops surfacing as `AuthenticationRejected` here: a
+ *  Digest-only server never saw the password, and "check your password" is the
+ *  wrong fix to put in front of someone.
+ */
+export type ServerConnectOutcome =
+  // A live volume, already registered and already in the saved list.
+  | {
+      outcome: 'connected'
+      // The id every listing, tab, and index entry is filed under.
+      volumeId: string
+    }
+  /**
+   *  SFTP only: the server's host key needs a human. ❗ No session is held
+   *  across the prompt; approving is followed by dialing again.
+   */
+  | ({ outcome: 'needs_host_key_approval' } & HostKeyPrompt)
+  /**
+   *  SFTP only: the key is explicitly revoked in `~/.ssh/known_hosts`. ❌ Not
+   *  approvable.
+   */
+  | ({ outcome: 'host_key_revoked' } & SftpHostKeyIdentity)
+  /**
+   *  The credential offered was refused. ❗ Only a freshly typed one moves this
+   *  forward; retrying the same secret can lock the account.
+   */
+  | { outcome: 'authentication_rejected' }
+  /**
+   *  Nothing was ever offered. ❗ Not a rejection: telling someone who has
+   *  never entered a password that theirs is wrong is what collapsing the two
+   *  does.
+   */
+  | { outcome: 'needs_credentials' }
+  /**
+   *  The server challenged with a scheme this app doesn't speak (Digest). ❗
+   *  The secret was never offered, so nothing about it is known to be wrong.
+   */
+  | { outcome: 'auth_method_unsupported' }
+  /**
+   *  WebDAV only: the TLS handshake didn't trust the certificate. ❌ Not
+   *  approvable from here; the fix is trusting the CA in the OS store.
+   */
+  | { outcome: 'certificate_untrusted' }
+  // WebDAV only: the URL answers HTTP but not WebDAV.
+  | { outcome: 'not_a_webdav_server' }
+  // WebDAV only: the address the user typed isn't a `http`/`https` URL.
+  | { outcome: 'invalid_url' }
+  // The handshake didn't finish inside the connect budget.
+  | { outcome: 'timed_out' }
+  // No route, refused, DNS, or a transport-level breakdown.
+  | { outcome: 'unreachable' }
+  // The user called it off. ❗ Nothing was registered, remembered, or stored.
+  | { outcome: 'cancelled' }
+
+// Which protocol an account speaks.
+export type ServerProtocol =
+  // An SMB host. ❗ Listed, never pinned in this effort; see [`SavedServer`].
+  | 'smb'
+  // An SFTP server, one account per entry.
+  | 'sftp'
+  // A WebDAV server, one account per entry.
+  | 'webdav'
+
+/**
+ *  Which server to dial, in add mode.
+ *
+ *  ❗ A tagged union of the two existing param shapes rather than a widened
+ *  common one: an SFTP key file and a WebDAV base URL have no counterpart in the
+ *  other protocol, and a shape carrying both would have every call site guessing
+ *  which half applies. SMB stays on its own commands, because its connect is a
+ *  share mount rather than a session.
+ */
+export type ServerTarget =
+  // An SFTP account, the same fields `connect_sftp_volume` takes.
+  | {
+      protocol: 'sftp'
+      // What to call it in the UI.
+      displayName: string
+      // The server, as the user typed it.
+      host: string
+      // Its port. 22 everywhere but a jump box or a container.
+      port: number
+      // The account to sign in as. ❗ Part of the identity.
+      username: string
+      // The remote directory to open at. Absolute, server-side.
+      remoteRoot: string
+      // A private key file to offer. ❗ A path, ❌ never a secret.
+      keyFile: string | null
+      // Whether the running ssh-agent may be asked.
+      useAgent: boolean
+      // Whether Cmdr may redial unattended when the session drops.
+      autoReconnect: boolean
+    }
+  // A WebDAV account, the same fields `connect_webdav_volume` takes.
+  | {
+      protocol: 'webdav'
+      // What to call it in the UI.
+      displayName: string
+      // The base URL, `http` or `https`.
+      url: string
+      // The account to sign in as. ❗ Part of the identity.
+      username: string
+      // The collection to open at, under the base URL.
+      remoteRoot: string
+      // Whether Cmdr may re-probe unattended when a request finds it gone.
+      autoReconnect: boolean
+    }
 
 /**
  *  `drag-out-session-complete`: the session drained (gesture ended AND no

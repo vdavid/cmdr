@@ -377,14 +377,14 @@ pub async fn upgrade_to_smb_volume_with_credentials(
 /// Reconnects an SMB volume (stub: returns error).
 #[tauri::command]
 #[specta::specta]
-pub async fn reconnect_smb_volume(_volume_id: String) -> Result<(), String> {
+pub async fn reconnect_volume(_volume_id: String) -> Result<(), String> {
     Err("Direct SMB connection not supported on this platform".to_string())
 }
 
 /// Reconnects an SMB volume with credentials (stub: returns error).
 #[tauri::command]
 #[specta::specta]
-pub async fn reconnect_smb_volume_with_credentials(
+pub async fn reconnect_volume_with_credentials(
     _volume_id: String,
     _username: String,
     _password: String,

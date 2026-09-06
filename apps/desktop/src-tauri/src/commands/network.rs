@@ -758,20 +758,21 @@ pub async fn get_volume_sign_in_state(volume_id: String) -> cmdr_fs::volume::Sig
         .map_or(cmdr_fs::volume::SignInShape::Password, |volume| volume.sign_in_prompt())
 }
 
-/// Tries to rebuild the smb2 session for a Disconnected `SmbVolume` in place.
+/// Tries to rebuild a Disconnected volume's session in place.
 ///
-/// Called by the frontend reconnect manager on each backoff tick (and on
-/// "Retry now" / lazy nav-time retry). Backend single-flights concurrent calls,
-/// so the FE is free to fire on its own schedule. Returns `Ok(())` on success
-/// (state is now `Direct`), or a typed [`ReconnectError`] saying why the
-/// rebuild didn't happen.
+/// ❗ Backend-neutral: every remote backend implements `attempt_reconnect`, and
+/// the frontend's reconnect manager drives SMB, SFTP, and WebDAV through this
+/// one command. Called on each backoff tick (and on "Retry now" / lazy nav-time
+/// retry). The backend single-flights concurrent calls, so the frontend is free
+/// to fire on its own schedule. Returns `Ok(())` on success (the volume now
+/// reports `Direct`), or a typed [`ReconnectError`] saying why the rebuild
+/// didn't happen.
 ///
-/// Calling this on a non-SMB volume yields `ReconnectError::Volume` carrying
-/// `VolumeError::NotSupported` (the trait default). The FE only ever invokes
-/// this for known SMB volumes.
+/// A volume whose backend can't redial yields `ReconnectError::Volume` carrying
+/// `VolumeError::NotSupported` (the trait default).
 #[tauri::command]
 #[specta::specta]
-pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), ReconnectError> {
+pub async fn reconnect_volume(volume_id: String) -> Result<(), ReconnectError> {
     use crate::file_system::volume::manager::get_volume_manager;
 
     let volume = get_volume_manager()
@@ -783,17 +784,23 @@ pub async fn reconnect_smb_volume(volume_id: String) -> Result<(), ReconnectErro
     volume.attempt_reconnect().await.map_err(ReconnectError::from)
 }
 
-/// Reconnects an SMB volume with freshly-entered credentials.
+/// Reconnects a volume with freshly-entered credentials.
 ///
-/// Invoked by the "Sign in" affordance shown when an in-place reconnect gave up on an
-/// auth failure (a `needs_credentials` `volume-connection-changed` event). The volume persists
-/// the new password (so future reconnects are silent) and runs the standard reconnect; on
-/// success the backend emits `volume-connection-changed { state: "connected" }`. On a non-SMB
-/// volume this yields `ReconnectError::Volume` carrying `VolumeError::NotSupported` (trait
-/// default); the FE only invokes it for SMB.
+/// ❗ Backend-neutral, like [`reconnect_volume`]. Invoked by the "Sign in"
+/// affordance shown when an in-place reconnect gave up on an auth failure (a
+/// `needs_credentials` `volume-connection-changed` event). The volume refreshes
+/// what it has stored (so future reconnects are silent) and runs the standard
+/// reconnect; on success the backend emits
+/// `volume-connection-changed { state: "connected" }`.
+///
+/// ❗ Whether the USERNAME may change is the backend's call, not this command's:
+/// SMB accepts a new one and rewrites its params, SFTP and WebDAV refuse because
+/// the volume id IS the account. `SignInShape` is what tells the sheet which it
+/// is. A backend that can't redial yields `ReconnectError::Volume` carrying
+/// `VolumeError::NotSupported`.
 #[tauri::command]
 #[specta::specta]
-pub async fn reconnect_smb_volume_with_credentials(
+pub async fn reconnect_volume_with_credentials(
     volume_id: String,
     username: String,
     password: String,

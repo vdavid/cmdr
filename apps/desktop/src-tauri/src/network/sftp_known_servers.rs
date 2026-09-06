@@ -178,6 +178,35 @@ pub fn remember(mut server: KnownSftpServer) {
     save();
 }
 
+/// Moves the pin on `(host, port, username)`, answering whether an entry was
+/// there.
+///
+/// ❗ **Its own writer, ❌ never a read-modify-`remember`.** `remember` preserves
+/// the STORED pin on a replace (so a reconnect can't re-pin a server the user
+/// unpinned), which makes it the one function that cannot change a pin. This
+/// mutates the entry in place under the lock: rebuilding the vec would drop
+/// whatever another thread appended between the read and the write.
+pub fn set_pinned(host: &str, port: u16, username: &str, pinned: bool) -> bool {
+    let moved = {
+        let mut store = known().lock_ignore_poison();
+        match store
+            .known_sftp_servers
+            .iter_mut()
+            .find(|entry| same_server(entry, host, port, username))
+        {
+            Some(entry) => {
+                entry.pinned = pinned;
+                true
+            }
+            None => false,
+        }
+    };
+    if moved {
+        save();
+    }
+    moved
+}
+
 /// Drops the entry for `(host, port, username)`, answering whether one was there.
 ///
 /// ❌ Leaves the secret store and the trusted host key alone: forgetting a server

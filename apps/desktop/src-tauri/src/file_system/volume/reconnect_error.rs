@@ -12,8 +12,8 @@
 use cmdr_fs::volume::VolumeError;
 use serde::{Deserialize, Serialize};
 
-/// A typed refusal from `reconnect_smb_volume` /
-/// `reconnect_smb_volume_with_credentials`.
+/// A typed refusal from `reconnect_volume` /
+/// `reconnect_volume_with_credentials`.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ReconnectError {
