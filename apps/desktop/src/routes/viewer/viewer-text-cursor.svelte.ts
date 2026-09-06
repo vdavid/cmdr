@@ -59,8 +59,8 @@ interface TextCursorDeps {
   getSpacerRef: () => HTMLElement | undefined
   /**
    * Anything that can move a rendered row while the focus stays put: the scroll
-   * position, the rendered line set, the wrap flag, the text scale. Read for its
-   * reactive dependencies only; the value is never inspected.
+   * position, the render window's offset, the rendered line set, the wrap flag. Read
+   * for its reactive dependencies only; the value is never inspected.
    */
   getLayoutKey: () => unknown
 }

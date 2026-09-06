@@ -47,13 +47,19 @@ us (ERR-ADEAR, 0.42.0, viewer window; all four secondary windows were affected).
 Because the viewer has no store access (see `CLAUDE.md`), viewer settings persist through the typed restricted-window
 command pair in `commands/settings.rs`:
 
-- `get_restricted_window_settings`: read allowlist (word wrap, binary-warning suppression, text size, app color).
-- `persist_restricted_window_setting`: write allowlist, a typed enum covering only `viewer.wordWrap` and
-  `fileViewer.suppressBinaryWarning`, forwarded to the main window's `restricted-settings-bridge.ts`, which re-checks
-  the allowlist before persisting through the normal store pipeline.
+- `get_restricted_window_settings`: the read allowlist, one `Option` field per readable setting on
+  `RestrictedWindowSettings` (`src/settings/loader.rs`) — a few viewer preferences plus the appearance settings every
+  window needs to render itself.
+- `persist_restricted_window_setting`: the write allowlist, the `RestrictedWindowPersistableSetting` enum in
+  `commands/settings.rs`, forwarded to the main window's `restricted-settings-bridge.ts`, which re-checks the
+  allowlist before persisting through the normal store pipeline.
 
-The enum is the boundary: a compromised viewer can flip those two booleans and nothing else. Viewer tail mode stays
-deliberately unpersisted (defaults off per session, see `routes/viewer/CLAUDE.md` § Tail mode).
+❌ Neither list is enumerated here on purpose: a count or a copy of it rots the moment a setting lands. Read the two
+types above, and `src/lib/settings/DETAILS.md` § "Restricted-window mode" for the frontend half.
+
+The enum is the boundary: a compromised viewer can flip the handful of view-preference booleans it names and nothing
+else — never licensing, error-report opt-in, MCP, or any other store key. Viewer tail mode stays deliberately
+unpersisted (defaults off per session, see `routes/viewer/CLAUDE.md` § Tail mode).
 
 ## The E2E capability
 
