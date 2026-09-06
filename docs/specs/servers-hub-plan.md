@@ -517,11 +517,15 @@ linking to a short help page, gated by `behavior.adbHintDismissed`.
   Rust resolver is local-only by design (a `std::fs::metadata` walk), a scheme input joins onto the pane's directory
   there and answers `invalid`, and teaching it schemes would mean a resolver that consults stores it has no business
   reading. The intercept parses the scheme, asks `list_saved_servers()` for a match, and hands `navigate()` a
-  `Location`; the pane's own scheme guards decide reachability. ❗ The dialog closes only on a resolution whose kind
-  isn't `invalid`, so the intercept returns a resolution-shaped `{ kind: 'directory' }` for a navigation and a new
-  `{ kind: 'handed_off' }` when it opened the sheet (the dialog closes on both), and the debounced preview is
-  intercepted too, so a scheme input previews "Opens {name}" or "Adds a server" instead of "not found". One cell per
-  scheme, plus one for each return shape.
+  `Location`; the pane's own scheme guards decide reachability. ❗ The dialog calls the Rust resolver from THREE sites
+  (`goToPath` in `go-to-path.ts`, and `GoToPathDialog.svelte`'s own `resolveOrNull` for both the debounced preview and
+  the clipboard prefill), so the intercept is one shared function all three call, ❌ not a branch inside `goToPath`.
+  The dialog closes only on a resolution whose kind isn't `invalid`, so the intercept returns a resolution-shaped
+  `{ kind: 'directory' }` for a navigation and `{ kind: 'handed_off' }` when it opened the sheet; `GoToPathResolution`
+  is Rust-generated, so the frontend declares `GoToPathOutcome = GoToPathResolution | { kind: 'handed_off' }`, widens
+  `onGo` and `goToPath`'s return to it, and keeps `shouldPrefillClipboard` on the narrow type. A scheme input previews
+  "Opens {name}" or "Adds a server" instead of "not found". One cell per scheme, one per return shape, one per call
+  site.
 - **Educational toast**: when the pinned count first reaches five, one persistent toast (`behavior.serversPinHintSeen`)
   teaches right-click → Unpin and the hub, and adds a line about favorites when the user has three or more. Dismiss
   with "Got it".
@@ -536,26 +540,36 @@ four network waits nobody asked for. `initialization.ts::resolveVolumeId` re-res
 `saved` id through the D3 arm. ❗ The walk-to-home is `navigation/path-resolution.ts::resolveValidPath`, which has six
 callers, and restore is not the `listing-loader.ts` one: it is `app-status-store.ts::resolvePersistedPath`, applied to
 every persisted tab and both pane paths before the volume list exists, with a single `volumeId === 'network'`
-exemption. So the rule is PATH-shaped, not state-shaped: `resolvePersistedPath` skips probing any `<scheme>://` path
-(beside the `network` exemption), and `resolveValidPath` itself gains a guard for the other five callers: on a scheme
-path the parent walk stops at the scheme root and never falls through to `~` or `/`. The cell is a
-`loadPersistedPaneTabs` cell restoring `sftp://…/srv/data/photos` and asserting the tab keeps the subpath, plus a
-`resolveValidPath` cell for the stop.
+exemption at four sites. So the rule is PATH-shaped, not state-shaped: `resolvePersistedPath` skips probing any
+`<scheme>://` path (beside each of the four `network` exemptions), and `resolveValidPath` itself gains a guard for the
+other five callers: on a scheme path the parent walk stops at the scheme root and RETURNS THAT ROOT, never `null` and
+never `~` or `/` (four callers hand a `null` to `navigateToFallback`, which turns it into `~` on the root volume, the
+exact thing this decision exists to prevent). The cell is a `loadPaneTabs` cell restoring `sftp://…/srv/data/photos`
+and asserting the tab keeps the subpath, plus a `resolveValidPath` cell asserting the scheme root comes back.
 
 ## Milestones
 
 Sequential, one worktree. Each ends green on the named checks, committed, with docs updated. "TDD" marks a real
 red → green sequence; "after" marks tests written once the shape settles.
 
+❗ **Every milestone that adds English copy ends with a translation pass** into the ten full locales (`de`, `es`, `fr`,
+`hu`, `nl`, `pt`, `sv`, `vi`, `zh`, `zh-Hant`) per `docs/guides/i18n-translation.md`: `desktop-i18n-coverage` is an
+error-level FAST check with no exemption for a missing key, so a milestone without the pass cannot end green. A new
+catalog file (`servers.json`) needs its sibling in every locale dir. The pass is the milestone's last step, by a
+translator agent following that guide, ❌ never a hand-typed placeholder.
+
 ### M0. Backend groundwork (no UI change)
 
 1. D1: `ConnectionState` and `DeviceReadiness` on all three twins and `VolumeInfo`; `Volume::connection_state()`
    implemented by SFTP, WebDAV, ADB; `Volume::backend_kind()` and the conversion of EVERY read of the old accessor
-   (`rg "smb_connection_state\(" --type rust` is the sweep, and the doc comment in `file_system/volume/manager.rs`
-   goes too): `crates/cmdr-index/src/indexing/transports/smb/index.rs`, `transports/local_external/index.rs`,
-   `lifecycle/cover/bootstrap.rs`, `file_system/volume/eject.rs`, `file_system/mod.rs`, `file_viewer/media_session.rs`,
-   `commands/file_system/listing.rs`, `commands/network.rs` (the three direct-upgrade short-circuits),
-   `network/smb_upgrade.rs` (the `matches!(Direct)`), `mcp/resources/volumes.rs` (with its widened token set); the
+   AND field (`rg "smb_connection_state" --type rust` is the sweep, no paren, because two agent surfaces read the
+   FIELD; the doc comment in `file_system/volume/manager.rs` goes too): `crates/cmdr-index/src/indexing/transports/smb/index.rs`,
+   `transports/local_external/index.rs`, `lifecycle/cover/bootstrap.rs`, `file_system/volume/eject.rs`,
+   `file_system/mod.rs`, `file_viewer/media_session.rs`, `commands/file_system/listing.rs`, `commands/network.rs`
+   (the three direct-upgrade short-circuits), `network/smb_upgrade.rs` (the `matches!(Direct)`),
+   `mcp/resources/volumes.rs` (with its widened token set), `agent/tools/read/volumes.rs` (the Ask Cmdr `list_volumes`
+   field) and `agent/chat/session.rs` (the `EnvelopeConnectivity` mapping, widened to the new states so an SFTP session
+   stops reading as "not a network volume" to the in-app agent); the
    Linux enrichment twin copying the state; the frontend predicates in `navigation/connection-state.ts`;
    `toConnectionState` mapping all four wire variants; the `sftp` / `webdav` members of the frontend `VolumeKind` with
    their capability rows, `volumeKindFor`, and the tint; every consumer renamed (store, breadcrumb, `FilePane`,
@@ -653,10 +667,13 @@ Checks: `pnpm check --fast` per step, `pnpm check` at the end, `pnpm check deskt
    each phase returns `cancelled` silently, `remember: false` sends the offer and never `save_*`, a registered
    `needs_sign_in` volume takes `reconnect_volume_with_credentials` and never a dial).
 4. Wire: hub Add row, ⌘K, palette, the go-to-path scheme intercept (D13, TDD: one cell per scheme, one per return
-   shape, and a cell that `resolveGoToPath` is never called for one), `RemoteConnectView`'s remaining states and
-   `signed_out`'s button, the switcher row's Edit…. The reconnect manager gains a `needs-host-key` status with the same
-   hand-off `needs-auth` gets, so a mid-session key change reaches `host_key_changed` (the manager's "ignored on
-   purpose" comment and branch go). Delete `ConnectToServerDialog.svelte`.
+   shape, one per call site, and a cell that `resolveGoToPath` is never called for one), `RemoteConnectView`'s
+   remaining states and `signed_out`'s button, the switcher row's Edit…. The reconnect manager gains a `needs-host-key`
+   status with the same hand-off `needs-auth` gets, PLUS the fourth `show*` derivation in `smb-view-state` and the
+   matching `FilePane` branch rendering `host_key_changed` (the three existing ones are a positive list, so a fourth
+   status otherwise compiles and shows a plain listing over a dead session; the manager's "ignored on purpose" comment
+   and branch go). `servers.refusal.` joins `unusedKeyDynamicPrefixes` in `desktop-message-keys-unused.go`, since the
+   keys are built from the outcome kind. Delete `ConnectToServerDialog.svelte`.
 5. The two remedy buttons (D9).
 
 Tests: above, plus the sheet's component tests (wrong password renders inline and keeps the field's focus; Tab moves
@@ -691,8 +708,10 @@ Docs: `settings/CLAUDE.md`, `navigation/DETAILS.md`. Checks: `pnpm check`.
 
 ### M5. ADB in the pane
 
-1. D12 frontend: non-ready rows, `waiting_for_device` auto-proceed, cancel, the refusal words (`adb-connect-errors.ts`
-   already words the enum; `RemoteConnectView.refused` renders them), Disconnect wording, the `/sdcard` first-path rule.
+1. D12 frontend: non-ready rows, `waiting_for_device` auto-proceed, cancel, a new `adb/adb-connect-errors.ts` wording
+   every `AdbConnectOutcomeError` variant from the `adb.connect.*` keys (nothing words the enum today; the app-side
+   ADB doc says otherwise and is corrected), `RemoteConnectView.refused` rendering them, Disconnect wording, the
+   `/sdcard` first-path rule.
 2. The MTP-header hint.
 3. Wipe `android-adb-ui.md` except decision 1 (moves to M8's entry in `later/` if M8 slips).
 
@@ -753,6 +772,11 @@ Every string below is a draft for David's pass (principle 4). Rules: `docs/style
   same way." Button "Got it".
 - Hub, discovery off: "Local network discovery is off." Link "Turn it on in Settings".
 - ADB hint: "Want the whole filesystem? Turn on USB debugging." Link "How".
+- ADB refusals (`adb.connect.*`): `adbNotInstalled` "Cmdr couldn't find the Android platform tools." + "Open
+  Settings"; `serverUnreachable` "The Android tools on this Mac didn't answer." + "Try again"; `deviceGone` "Your
+  phone isn't connected any more."; `unauthorized` "Check your phone and tap Allow."; `deviceTooOld` "This phone's
+  Android version is too old for Cmdr to browse."; `timedOut` "Your phone didn't answer in time." + "Try again";
+  `transport` "Cmdr lost the connection to your phone." + "Try again"; `cancelled` says nothing.
 - Settings: "Servers (SFTP, WebDAV)", "Trusted host keys", "Forget"; "Android (ADB)", "Enable Android debugging
   (ADB)", "Status", "Found at {path}" / "Not found", "Re-check", "adb location", "Browse…". Tint label: "Servers
   (SMB, SFTP, WebDAV)".
