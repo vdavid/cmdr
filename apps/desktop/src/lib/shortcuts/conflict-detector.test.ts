@@ -269,7 +269,7 @@ describe('conflict-detector', () => {
       // Enter is bound on both network.selectHost and nav.open, but a pane shows
       // the network browser INSTEAD of the file list, so they never coexist.
       setCommands(
-        makeCommand({ id: 'network.selectHost', shortcuts: ['Enter'], scope: 'Main window/Network' }),
+        makeCommand({ id: 'network.selectHost', shortcuts: ['Enter'], scope: 'Main window/Servers' }),
         makeCommand({ id: 'nav.open', shortcuts: ['Enter'], scope: 'Main window/File list' }),
       )
       expect(getAllConflicts()).toEqual([])

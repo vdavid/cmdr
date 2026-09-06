@@ -36,16 +36,16 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.network": "Hálózat",
-  "@shortcuts.scope.network": {
+  "shortcuts.scope.servers": "Hálózat",
+  "@shortcuts.scope.servers": {
     "sourceHash": "1744b96"
   },
   "shortcuts.scope.errorScreen": "Hibaképernyő",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.shareBrowser": "Megosztásböngésző",
-  "@shortcuts.scope.shareBrowser": {
+  "shortcuts.scope.places": "Megosztásböngésző",
+  "@shortcuts.scope.places": {
     "sourceHash": "5cec2a6"
   },
   "shortcuts.scope.commandPalette": "Parancspaletta",

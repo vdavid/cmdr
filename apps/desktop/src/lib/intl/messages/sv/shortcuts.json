@@ -36,16 +36,16 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.network": "Nätverk",
-  "@shortcuts.scope.network": {
+  "shortcuts.scope.servers": "Nätverk",
+  "@shortcuts.scope.servers": {
     "sourceHash": "1744b96"
   },
   "shortcuts.scope.errorScreen": "Felskärm",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.shareBrowser": "Bläddrare för delade mappar",
-  "@shortcuts.scope.shareBrowser": {
+  "shortcuts.scope.places": "Bläddrare för delade mappar",
+  "@shortcuts.scope.places": {
     "sourceHash": "5cec2a6"
   },
   "shortcuts.scope.commandPalette": "Kommandopalett",

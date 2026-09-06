@@ -19,7 +19,7 @@ export type { CommandScope }
  *   mode-scoped key genuinely collides with a File-list key. Brief and Full stay
  *   siblings (neither chain contains the other), so they don't conflict with each
  *   other — the registry binds ←/→ in both on purpose, and the modes never coexist.
- * - `Main window/Network`, `Main window/Share browser`, `Main window/Volume chooser`,
+ * - `Main window/Servers`, `Main window/Places`, `Main window/Volume chooser`,
  *   and `Main window/Error screen` are siblings of `Main window/File list`: a pane
  *   shows one of them INSTEAD of the file list, so their keys don't collide with
  *   File-list keys (they share only `Main window` + `App`). The error screen's ⌘D
@@ -37,8 +37,8 @@ const scopeHierarchy: Record<CommandScope, CommandScope[]> = {
   'Main window/File list': ['Main window/File list', 'Main window', 'App'],
   'Main window/Brief mode': ['Main window/Brief mode', 'Main window/File list', 'Main window', 'App'],
   'Main window/Full mode': ['Main window/Full mode', 'Main window/File list', 'Main window', 'App'],
-  'Main window/Network': ['Main window/Network', 'Main window', 'App'],
-  'Main window/Share browser': ['Main window/Share browser', 'Main window', 'App'],
+  'Main window/Servers': ['Main window/Servers', 'Main window', 'App'],
+  'Main window/Places': ['Main window/Places', 'Main window', 'App'],
   'Main window/Volume chooser': ['Main window/Volume chooser', 'Main window', 'App'],
   'Main window/Error screen': ['Main window/Error screen', 'Main window', 'App'],
   'About window': ['About window', 'App'],

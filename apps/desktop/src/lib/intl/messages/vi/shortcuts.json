@@ -35,16 +35,16 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.network": "Mạng",
-  "@shortcuts.scope.network": {
+  "shortcuts.scope.servers": "Mạng",
+  "@shortcuts.scope.servers": {
     "sourceHash": "1744b96"
   },
   "shortcuts.scope.errorScreen": "Màn hình lỗi",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.shareBrowser": "Trình duyệt chia sẻ",
-  "@shortcuts.scope.shareBrowser": {
+  "shortcuts.scope.places": "Trình duyệt chia sẻ",
+  "@shortcuts.scope.places": {
     "sourceHash": "5cec2a6"
   },
   "shortcuts.scope.commandPalette": "Bảng lệnh",

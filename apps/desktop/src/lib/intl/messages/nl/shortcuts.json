@@ -36,16 +36,16 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.network": "Netwerk",
-  "@shortcuts.scope.network": {
+  "shortcuts.scope.servers": "Netwerk",
+  "@shortcuts.scope.servers": {
     "sourceHash": "1744b96"
   },
   "shortcuts.scope.errorScreen": "Foutmelding",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.shareBrowser": "Sharebrowser",
-  "@shortcuts.scope.shareBrowser": {
+  "shortcuts.scope.places": "Sharebrowser",
+  "@shortcuts.scope.places": {
     "sourceHash": "5cec2a6"
   },
   "shortcuts.scope.commandPalette": "Opdrachtenpalet",

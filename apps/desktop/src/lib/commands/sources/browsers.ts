@@ -12,7 +12,7 @@ export const browsersCommands: CommandSource[] = [
   {
     id: 'network.selectHost',
     nameKey: 'commands.networkSelectHost.label',
-    scope: 'Main window/Network',
+    scope: 'Main window/Servers',
     showInPalette: false,
     shortcuts: ['Enter'],
     fixedKey: true,
@@ -23,7 +23,7 @@ export const browsersCommands: CommandSource[] = [
     // where "Refresh network hosts" says what it does.
     id: 'network.refresh',
     nameKey: 'commands.networkRefresh.label',
-    scope: 'Main window/Network',
+    scope: 'Main window/Servers',
     showInPalette: true,
     shortcuts: [],
   },
@@ -34,7 +34,7 @@ export const browsersCommands: CommandSource[] = [
   {
     id: 'share.back',
     nameKey: 'commands.shareBack.label',
-    scope: 'Main window/Share browser',
+    scope: 'Main window/Places',
     showInPalette: true,
     // `⌘↑` mirrors the file list's `⌘↑` = parent; ShareBrowser handles all three
     // keys (`handleBackToHostKey`). Display-only — `fixedKey` handling is in-component.
@@ -44,7 +44,7 @@ export const browsersCommands: CommandSource[] = [
   {
     id: 'share.selectShare',
     nameKey: 'commands.shareSelectShare.label',
-    scope: 'Main window/Share browser',
+    scope: 'Main window/Places',
     showInPalette: true,
     shortcuts: ['Enter'],
     fixedKey: true,
