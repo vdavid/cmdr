@@ -1,4 +1,74 @@
 {
+  "servers.hub.colName": "Name",
+  "@servers.hub.colName": {
+    "sourceHash": "dcd1d52",
+    "sameAsSourceJustification": "„Name“ ist im Deutschen dasselbe Wort; macOS Finder nennt die Spalte „Name“ (LocalizableMerged `N220`, macOS 26.6.2, 2026-09-06)."
+  },
+  "servers.hub.colType": "Typ",
+  "@servers.hub.colType": {
+    "sourceHash": "baaddf7"
+  },
+  "servers.hub.colAddress": "Adresse",
+  "@servers.hub.colAddress": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.hub.colStatus": "Status",
+  "@servers.hub.colStatus": {
+    "sourceHash": "920e413",
+    "sameAsSourceJustification": "„Status“ ist im Deutschen dasselbe Wort; macOS nutzt es unverändert (CalendarLink `Localizable.loctable`, Finder „iCloud-Status“, „Statusleiste“, macOS 26.6.2, 2026-09-06)."
+  },
+  "servers.hub.colLastUsed": "Zuletzt benutzt",
+  "@servers.hub.colLastUsed": {
+    "sourceHash": "830ec7f"
+  },
+  "servers.hub.addServer": "Server hinzufügen…",
+  "@servers.hub.addServer": {
+    "sourceHash": "9574f8e"
+  },
+  "servers.hub.status.connected": "Verbunden",
+  "@servers.hub.status.connected": {
+    "sourceHash": "2296556"
+  },
+  "servers.hub.status.saved": "Gespeichert",
+  "@servers.hub.status.saved": {
+    "sourceHash": "b5c120b"
+  },
+  "servers.hub.status.foundNearby": "In der Nähe gefunden",
+  "@servers.hub.status.foundNearby": {
+    "sourceHash": "a7fdf7d"
+  },
+  "servers.hub.status.signedOut": "Abgemeldet",
+  "@servers.hub.status.signedOut": {
+    "sourceHash": "80c6e7c"
+  },
+  "servers.hub.status.waitingForKey": "Wartet darauf, dass du den Schlüssel prüfst",
+  "@servers.hub.status.waitingForKey": {
+    "sourceHash": "f0a43e8"
+  },
+  "servers.hub.neverUsed": "Nie",
+  "@servers.hub.neverUsed": {
+    "sourceHash": "6300ef8"
+  },
+  "servers.hub.discoveryOff": "Die Suche im lokalen Netzwerk ist deaktiviert.",
+  "@servers.hub.discoveryOff": {
+    "sourceHash": "cadcceb"
+  },
+  "servers.hub.discoveryOffLink": "In den Einstellungen aktivieren",
+  "@servers.hub.discoveryOffLink": {
+    "sourceHash": "818571b"
+  },
+  "servers.hub.emptyTitle": "Noch keine Server",
+  "@servers.hub.emptyTitle": {
+    "sourceHash": "7846930"
+  },
+  "servers.hub.emptyMessage": "Füge unten einen hinzu, oder schalte einen Mac oder ein NAS in deinem Netzwerk ein, und Cmdr findet das Gerät.",
+  "@servers.hub.emptyMessage": {
+    "sourceHash": "04bdc26"
+  },
+  "servers.hub.rowCount": "{count, plural, one {{countText} Server} other {{countText} Server}}",
+  "@servers.hub.rowCount": {
+    "sourceHash": "7ef87d1"
+  },
   "servers.paneState.connecting": "Verbindung zu {name} wird hergestellt …",
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"

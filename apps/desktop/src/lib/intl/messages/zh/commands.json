@@ -632,6 +632,26 @@
   "@commands.networkSelectHost.label": {
     "sourceHash": "4a9ede5"
   },
+  "commands.serversShow.label": "显示服务器",
+  "@commands.serversShow.label": {
+    "sourceHash": "092283a"
+  },
+  "commands.serversTogglePin.label": "固定/取消固定服务器",
+  "@commands.serversTogglePin.label": {
+    "sourceHash": "7d800c8"
+  },
+  "commands.serversDisconnect.label": "断开服务器连接",
+  "@commands.serversDisconnect.label": {
+    "sourceHash": "8656022"
+  },
+  "commands.serversForgetSecret.label": "清除保存的密码",
+  "@commands.serversForgetSecret.label": {
+    "sourceHash": "ed68566"
+  },
+  "commands.serversEdit.label": "编辑服务器…",
+  "@commands.serversEdit.label": {
+    "sourceHash": "a3282a7"
+  },
   "commands.networkRefresh.label": "刷新网络主机",
   "@commands.networkRefresh.label": {
     "sourceHash": "73966bd"

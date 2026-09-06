@@ -234,6 +234,16 @@ inflection.
   `menu.volume.forgetSavedPasswordBusy`, and `menu.volume.forgetServerBusy`. Keep the base wording byte-identical to the
   enabled item (`menu.network.disconnect`, `menu.network.forgetSavedPassword`, `menu.network.forgetServer`), append the
   marker with full-width parens and no space, and never invent a second marker: the two states have to read as one item.
+- **A table column heading that holds a date or time carries the time noun.** Apple's Chinese column headings are
+  `上次打开日期`, `上次使用时间`, `修改日期`, so "Last used" over a date column is `上次使用时间`, not the bare
+  `上次使用` (which Apple uses mid-sentence). Evidence: the `glossary.md` section on the servers hub.
+- **Status labels are `已…` adjectives, unless the user didn't cause the state.** `已连接` / `已保存` / `已退出登录`
+  read as one set in a Status column. A state the app merely observed takes a plain verb phrase instead (`在附近发现`),
+  because `已…` would make it sound like an action that just finished.
+- **Paired-verb command labels hug the slash: `固定/取消固定服务器`.** The spaced `/` in the catalog is reserved for
+  numeric fractions (`{currentText} / {maxText}`).
+- **`网络` is the volume-switcher GROUP, `服务器` is the row inside it.** Don't let the two drift back together; the row
+  and the Keyboard-shortcuts scope both say `服务器`.
 - **A photo's place is `拍摄地点`, never `位置`.** `位置` is reserved for a file-system location in this catalog
   (`目标位置`, `原来的位置`); Photos.app calls photo places `地点`. Camera EXIF is `相机信息` (Photos.app `无相机信息`).
 

@@ -632,6 +632,26 @@
   "@commands.networkSelectHost.label": {
     "sourceHash": "4a9ede5"
   },
+  "commands.serversShow.label": "顯示伺服器",
+  "@commands.serversShow.label": {
+    "sourceHash": "092283a"
+  },
+  "commands.serversTogglePin.label": "釘選／取消釘選伺服器",
+  "@commands.serversTogglePin.label": {
+    "sourceHash": "7d800c8"
+  },
+  "commands.serversDisconnect.label": "中斷伺服器連線",
+  "@commands.serversDisconnect.label": {
+    "sourceHash": "8656022"
+  },
+  "commands.serversForgetSecret.label": "忘記已儲存的密碼",
+  "@commands.serversForgetSecret.label": {
+    "sourceHash": "ed68566"
+  },
+  "commands.serversEdit.label": "編輯伺服器…",
+  "@commands.serversEdit.label": {
+    "sourceHash": "a3282a7"
+  },
   "commands.networkRefresh.label": "重新整理網路主機",
   "@commands.networkRefresh.label": {
     "sourceHash": "73966bd"

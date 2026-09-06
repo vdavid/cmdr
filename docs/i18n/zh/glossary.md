@@ -1949,3 +1949,80 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **compromised（主机密钥被吊销）→ `已泄露`** · 无 Apple 对应词；`已泄露` 在中文安全语境里通用，且比 `已失陷` 好懂 ·
   `tentative`，建议母语者复核。
 - 28 个值都不含撇号，所以没有 ICU 转义问题；也没有一个与英文相同，不需要 `sameAsSourceJustification`。
+
+## 服务器中心：表格列、状态与固定到宗卷选择器（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.*Pin*`、`shortcuts.scope.servers`/`places`，2026-09-06）
+
+卷切换器里原来的「网络」行改叫「服务器」，点开是一张表：所有保存过的服务器（SFTP / WebDAV /
+SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 / 上次使用时间，最后一行是「添加服务器…」。行所在的**分组**仍叫
+`网络` （`fileExplorer.navigation.groupNetwork`）。
+
+参考堆（`_ignored/i18n/zh-CN/`）在这台机器上不存在，改用指南许可的实时 macOS 包取词（`plutil` 读 `.loctable` /
+`.strings` 的 `zh_CN`，全部验证于 macOS 26.6.2 / 25G83，2026-09-06）。
+
+- **Name（列头）→ `名称`** · Finder zh_CN（`N220`），目录里 `fileExplorer.columns.name`、`menu.sort.name`、
+  `queryUi.results.col.name` 也都是它 · `confirmed`。
+- **Type（协议种类，列头）→ `类型`** · SystemSettings `str_Detail_globalproxy_Type`，目录里 `queryUi.ai.filter.type` ·
+  `confirmed`。⚠️ 不要跟 Finder 的 `种类`（Kind，文件种类）混：那是文件的类别，这里是协议。
+- **Address（列头）→ `地址`** · 全系统统一（Mail 工具栏、通讯录 `ABLabelsAndProperties`、CUPS 打印机 `Address`）·
+  `confirmed`。
+- **Status（列头）→ `状态`** · SystemSettings、Finder（`状态栏`、`iCloud状态`），目录里 `licensing.section.labelStatus`
+  · `confirmed`。
+- **Last used（列头）→ `上次使用时间`** · Apple 在**列头**里带上时间/日期名词：`钥匙串访问`/`Security.prefPane` 的
+  `Last Used` → `上次使用时间`，Mail `AddressHistory` 的同名列头也是它；Finder 的 `Date Last Opened` → `上次打开日期`
+  是同一习惯 · `high`。裸的 `上次使用`（ContactsUICore）用在句中，不用作列头。
+- **Connected（状态）→ `已连接`** · 全系统统一（Finder `Connected servers` →
+  `已连接的服务器`、Wi-Fi、蓝牙、VPN），目录里 `ai.cloud.connected`、`fileExplorer.network.browser.status.connected` ·
+  `confirmed`。
+- **Saved（状态：保存过但没连着）→ `已保存`** · 预览 App `SignatureSaved`，目录里
+  `fileExplorer.navigation.connectionTooltipSaved`（`已保存。打开它即可连接。`）· `confirmed`。与 `已连接` 同为 `已…`
+  的状态形容词，两个状态并排读起来是一组。
+- **Found nearby（状态：本地网络上现在能看到）→ `在附近发现`** · `附近` 是 Apple 的说法（隔空投送 `people nearby` →
+  `附近的用户`，蓝牙 `Nearby Devices` → `附近设备`）· `high`。没写成 `已在附近发现`：这不是用户造成的状态，`已…`
+  会读得像刚刚完成的动作。
+- **Signed out（状态：会话因为缺密码结束了）→ `已退出登录`** · 沿用本文件上一节已定的 `Sign in → 登录` /
+  `Signed out → 已退出登录`（macOS `Sign Out` → `退出登录`）· `confirmed`。❗ 这不是「被拒绝」，别用 `被拒绝` /
+  `认证失败` 一类的词。
+- **Waiting for you to check the key（状态：SSH 主机密钥还没核对）→ `等你核对主机密钥`** · 沿用上一节的
+  `host key → 主机密钥`；`等你…` 保留英文直接对话的口吻，比 `等待用户确认` 亲切 · `high`。状态列里没有上文，所以写全
+  `主机密钥`，不像 `connectionTooltipNeedsHostKey` 那样简称 `密钥`。
+- **Never（「上次使用」列里从没连过）→ `从未`** · 日历 App、`SecurityPrivacyExtension` 的 `Never` · `confirmed`。⚠️ 别用
+  `永不`（那是「以后也不要」的设置选项，见 `SHARE_AGE_OPTION_NEVER_SHARE_TITLE`）。
+- **Local network discovery → `本地网络发现`** · `Local Network` → `本地网络`（`Security.prefPane`、
+  `AppSystemSettingsUI`），`discovery` → `发现` 沿用目录里的 `settings.network.firstTriggerDone.label`
+  （`网络发现已启动`）和 `settings.network.enabled.description`（`发现你本地网络上的 SMB 服务器…`）· `high`。
+- **Turn it on in Settings（链接）→ `在设置中开启`** · `Settings` → `设置`（系统里 App 设置窗口的通名），`在设置中开启…`
+  是目录里现成的句式（`askCmdr.error.notConfigured`、`askCmdr.composer.providerOff`）· `confirmed`。
+- **Add server… → `添加服务器…`** · Finder `Add` → `添加`（`RN21`、`IN_A7`），`Connect to Server` → `连接服务器`
+  的构词 · `confirmed`。省略号保留 U+2026。
+- **Show servers（命令）→ `显示服务器`** · 跟英文的动词走：目录里 `Show X` 一律是 `显示X`
+  （`显示技术详情`、`在 Finder 中显示`），`前往X` 留给英文写 `Go to` 的那几条 · `high`。
+- **Pin / unpin server（命令）→ `固定/取消固定服务器`** · 沿用本文件已定的 Safari `固定标签页` / `取消固定标签页` ·
+  `high`。斜杠不加空格：中文界面里 `开启/关闭` 这类成对动词一向紧贴斜杠，目录里带空格的 `/`
+  只用在数字分数（`{currentText} / {maxText}`）。
+- **Disconnect server（命令）→ `断开服务器连接`** · `disconnect` = `断开连接` 已定；带宾语时拆成 `断开…连接`，与目录里
+  `Cmdr 无法断开与 {name} 的连接。` 一致 · `high`。❗ 不能用 `推出`（Eject）：服务器没有可拔的东西。
+- **Forget saved password（命令）→ `清除保存的密码`** · 与 `menu.network.forgetSavedPassword`、
+  `fileExplorer.network.share.forgetPassword`、`fileExplorer.navigation.forgetSecretConfirmTitle` 一字不差（`i18n-terms`
+  会比）· `confirmed`。
+- **Edit server… → `编辑服务器…`** · `edit` 在目录里是 `编辑`（`commands.fileEdit.label` = `用默认编辑器编辑`）·
+  `high`。
+- **volume switcher（提示条正文里）→ `宗卷选择器`** · 目录里 `shortcuts.scope.volumeChooser`、
+  `commands.paneLeftVolumeChooser.label`（`打开左侧宗卷选择器`）·
+  `confirmed`。英文这里写 switcher、别处写 chooser，中文是同一个控件，用同一个词。
+- **固定/取消固定的两条提示条不说「固定」这个词**：英文是大白话（"is in your volume switcher
+  now"），中文照做（`{name} 现在会出现在你的宗卷选择器里。` / `{name} 已移出你的宗卷选择器。它仍然保存着。`）·
+  `high`。第二句必须留着：它回答「是不是被删了」。
+- **Servers（卷切换器里的行 / 快捷键分区）→ `服务器`** · 两个键英文同字，中文也必须同字 ·
+  `confirmed`。⚠️ 这两个键以前装的是旧英文的译法（都写作 `网络`），这次一起改；`网络` 只留给它们所在的**分组**
+  `fileExplorer.navigation.groupNetwork`。
+- **Places（快捷键分区：一台服务器里面的那层列表）→ `共享位置`** · 今天是 SMB 主机上的共享文件夹（`Sharing.appex`
+  `Shared Folders` → `共享文件夹`），以后会是对象存储的桶 · `tentative`。没有用裸的 `位置`：目录把 `位置`
+  留给文件系统位置；也没有用 `地点`（留给照片的
+  `拍摄地点`）。等桶落地后建议复审，可能要换成更中性的词。这个键以前装的是旧英文 `Share browser` 的译法 `共享浏览器`。
+- **NAS 保持拉丁原样** · 目录通用（`settings.network.smbConcurrency.description`、
+  `onboarding.stepOptional.networking.desc` 都写 `NAS`）· `confirmed`。`turn on a Mac or NAS` 里的 "turn on" 是通电，写
+  `开机`，不是 `打开`。
+- **量词** · 服务器用 `台`（`在下面添加一台`、`{countText} 台服务器`），与本文件上一节的 `这台服务器` 一致 ·
+  `confirmed`。
+- **ICU** · 28 个值都不含撇号，没有转义问题。`servers.hub.rowCount` 只写 `other` 一支（中文 CLDR 只有
+  `other`）。没有一个值与英文相同，不需要 `sameAsSourceJustification`。

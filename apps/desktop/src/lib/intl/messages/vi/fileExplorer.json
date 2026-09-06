@@ -1284,9 +1284,9 @@
   "@fileExplorer.navigation.groupNetwork": {
     "sourceHash": "1744b96"
   },
-  "fileExplorer.navigation.networkVolume": "Mạng",
+  "fileExplorer.navigation.networkVolume": "Máy chủ",
   "@fileExplorer.navigation.networkVolume": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "fileExplorer.navigation.searchResultsVolume": "Kết quả tìm kiếm",
   "@fileExplorer.navigation.searchResultsVolume": {
@@ -1391,6 +1391,18 @@
   "fileExplorer.navigation.disconnectBusyTooltip": "Không thể ngắt kết nối khi còn thao tác đang chạy trên máy chủ này",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
     "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.serverPinnedToast": "{name} giờ đã có trong bộ chọn ổ đĩa của bạn.",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "sourceHash": "d09b133"
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "{name} không còn trong bộ chọn ổ đĩa của bạn. Máy chủ này vẫn được lưu.",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "sourceHash": "3367b4d"
+  },
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr không thể thay đổi nơi {name} hiển thị.",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "sourceHash": "14230e4"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr không thể ngắt kết nối khỏi {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {

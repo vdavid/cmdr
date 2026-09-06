@@ -1,4 +1,72 @@
 {
+  "servers.hub.colName": "Nombre",
+  "@servers.hub.colName": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.hub.colType": "Tipo",
+  "@servers.hub.colType": {
+    "sourceHash": "baaddf7"
+  },
+  "servers.hub.colAddress": "Dirección",
+  "@servers.hub.colAddress": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.hub.colStatus": "Estado",
+  "@servers.hub.colStatus": {
+    "sourceHash": "920e413"
+  },
+  "servers.hub.colLastUsed": "Último uso",
+  "@servers.hub.colLastUsed": {
+    "sourceHash": "830ec7f"
+  },
+  "servers.hub.addServer": "Añadir servidor…",
+  "@servers.hub.addServer": {
+    "sourceHash": "9574f8e"
+  },
+  "servers.hub.status.connected": "Conectado",
+  "@servers.hub.status.connected": {
+    "sourceHash": "2296556"
+  },
+  "servers.hub.status.saved": "Guardado",
+  "@servers.hub.status.saved": {
+    "sourceHash": "b5c120b"
+  },
+  "servers.hub.status.foundNearby": "Encontrado cerca",
+  "@servers.hub.status.foundNearby": {
+    "sourceHash": "a7fdf7d"
+  },
+  "servers.hub.status.signedOut": "Sesión cerrada",
+  "@servers.hub.status.signedOut": {
+    "sourceHash": "80c6e7c"
+  },
+  "servers.hub.status.waitingForKey": "Esperando a que compruebes la clave",
+  "@servers.hub.status.waitingForKey": {
+    "sourceHash": "f0a43e8"
+  },
+  "servers.hub.neverUsed": "Nunca",
+  "@servers.hub.neverUsed": {
+    "sourceHash": "6300ef8"
+  },
+  "servers.hub.discoveryOff": "La detección de servidores en la red local está desactivada.",
+  "@servers.hub.discoveryOff": {
+    "sourceHash": "cadcceb"
+  },
+  "servers.hub.discoveryOffLink": "Actívala en Ajustes",
+  "@servers.hub.discoveryOffLink": {
+    "sourceHash": "818571b"
+  },
+  "servers.hub.emptyTitle": "Aún no hay servidores",
+  "@servers.hub.emptyTitle": {
+    "sourceHash": "7846930"
+  },
+  "servers.hub.emptyMessage": "Añade uno aquí abajo, o enciende un Mac o un NAS de tu red y Cmdr lo encontrará.",
+  "@servers.hub.emptyMessage": {
+    "sourceHash": "04bdc26"
+  },
+  "servers.hub.rowCount": "{count, plural, one {{countText} servidor} many {{countText} servidores} other {{countText} servidores}}",
+  "@servers.hub.rowCount": {
+    "sourceHash": "7ef87d1"
+  },
   "servers.paneState.connecting": "Conectándose a {name}…",
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"

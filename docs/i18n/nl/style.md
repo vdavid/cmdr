@@ -204,6 +204,16 @@ second half is now a normal plural with a real verb
   works for Apple. `settings.fileOperations.adbEnabled.description`'s English description asks to keep "USB debugging"
   verbatim, but a Dutch Android phone labels that switch `USB-foutopsporing`; keeping English would leave the user
   hunting for a string their phone never shows. Keep the acronym, localize the rest, and report the clash upward.
+- **The volume switcher is `de volumekiezer`, in every string.** English calls one UI both "volume switcher" and "volume
+  chooser"; the catalog already gives it a single Dutch name (`commands.volumeClose.label`,
+  `shortcuts.scope.volumeChooser`), so a new string about it reuses that word. The glossary row `switcher → wisselaar`
+  stays unused.
+- **`Wijzig …` opens a form; `Bewerk …` opens an editor.** macOS renders a standalone `Edit…` as `Wijzig…`
+  (`Network.appex`, AppKit, verified on macOS 26.6.2, build 25G83, 2026-09-06), and this catalog reserves `Bewerk` for
+  opening a file in an editor (`commands.fileEdit.label`, `menu.file.edit`). Pick by which of the two the string means.
+- **A feature switched off in Settings, referenced from elsewhere, reads `… staat uit.`** The whole
+  `driveIndex.tooltip*` family already says it that way, and the pointer next to it is `Zet het aan in Instellingen` /
+  `Zet het aan bij <pad>`. The glossary row `turned on → ingeschakeld` is for the Settings label itself.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David
@@ -267,6 +277,15 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   that "de Android platform tools" doesn't want a hyphen.
 - **"USB debugging" translated to "USB-foutopsporing"** against the English `@key.description`'s "keep as-is": it's what
   a Dutch Android phone shows. Confirm, and consider fixing the `en` description.
+- **"Pin / unpin server" → `Zet server vast / maak hem los`**: imperative with the slash kept, against the two existing
+  toggle commands in `commands.json`, which use the infinitive (`Tabblad vastzetten aan/uit`). Confirm which register
+  wins for a toggle whose English is imperative. Evidence: `glossary.md` § De serverhub.
+- **"Places" → `Locaties`**: English picked `Places` over `Locations` on purpose, and Dutch has one word for both.
+  Confirm `Locaties` reads right as a shortcuts-list heading next to `Volumekiezer` and `Servers`.
+- **"Found nearby" → `Gevonden in de buurt`**: `in de buurt` is Apple's own rendering of `nearby`, but the word order is
+  a judgment call and the label runs 20 characters in a narrow status column. Overflow-check it.
+- **"Local network discovery" → `lokale netwerkdetectie`**: both halves are sourced, the compound is not. Confirm it
+  over the looser `Detectie in je lokale netwerk`.
 - **"camera details" → `cameragegevens`** (`askCmdr.consent.item.contents`, `contentsRule`, `whatsNew.body`): a coined
   compound for a photo's EXIF block, no source has a collective noun for it. Confirm it reads as "what the camera
   recorded", not "data about the camera". Evidence and the fallback: `glossary.md` § Ask Cmdr looks inside files.

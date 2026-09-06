@@ -2173,3 +2173,70 @@ machine?” är den dokumenterade reservvägen. Allt nedan är läst på macOS 2
 Inga `sameAsSourceJustification` i det här passet: alla 28 värden skiljer sig från engelskan. Ingen apostrof i något
 värde, så ICU-dubbleringen `''` blir aldrig aktuell. Ingen ny termdrift heller: `Cancel`, `Try again`, `Disconnect`,
 `Forget server` och `Forget saved password` återanvänder exakt de svenska formerna katalogen redan hade.
+
+## Serverhubben: tabellen, statusarna och tomläget (2026-09-06; de 17 `servers.hub.*` + 5 `commands.servers*` + 3 `fileExplorer.navigation.server*Toast`/`.pinRefusedToast` + `navigation.networkVolume` + `shortcuts.scope.servers`/`.places`)
+
+Volymväljarens gamla rad `Nätverk` heter nu `Servrar` och öppnar en tabell över varje sparad server (SFTP, WebDAV, SMB)
+plus dem Cmdr ser i närheten, med kolumnerna Namn / Typ / Adress / Status / Senast använd och en `Lägg till server…`-rad
+sist. GRUPPEN raden ligger i heter fortfarande `Nätverk` (`fileExplorer.navigation.groupNetwork`).
+
+Belägget kommer från de LEVANDE macOS-paketen, inte från referenshögen: `_ignored/i18n/` finns inte på den här maskinen.
+Den dokumenterade reservvägen är `docs/i18n/reference-pile/how-to-mine.md` § ”No pile on this machine?”. Allt nedan är
+läst på macOS 26.6.2, build 25G83, 2026-09-06.
+
+- **servers (plural) → `servrar`** · Finder `LocalizableMerged.strings` sv `SD13` = ”Anslutna servrar”; singularen
+  `server` var redan satt i `style.md` · `high`. Gäller `fileExplorer.navigation.networkVolume`,
+  `shortcuts.scope.servers`, `commands.serversShow.label` (”Visa servrar”) och `one`/`other`-grenarna i
+  `servers.hub.rowCount` (`{countText} server` / `{countText} servrar`).
+- **Places (rubrik för det som ligger UNDER en server) → `Platser`** · Finder sv `FI1` = ”Senaste platser” för Recent
+  Places · `high`. Det är delade mappar på en SMB-värd i dag och hinkar hos en lagringstjänst sedan, så rubriken måste
+  vara vidare än `delade mappar` (som den gamla `shortcuts.scope.places` sa).
+- **Last used (kolumnrubrik) → `Senast använd`** · Finder sv `N228` = ”Senast öppnad” för Last Opened och `N169.32`
+  ”Senast öppnad” för Date Last Opened; samma `Senast` + perfektparticip-mönster · `high`. En-genus (`servern`), alltså
+  `använd`, inte `använt`.
+- **Never (i kolumnen `Senast använd`) → `Aldrig`** · `Keychain Access.app` sv `KeychainFirstAid.loctable` `never` =
+  ”aldrig” · `high`. Versal här bara för att det är cellens första ord.
+- **Address (kolumnrubrik) → `Adress`** · katalogens `fileExplorer.network.connectDialog.addressAriaLabel`
+  (”Serveradress”, från Finder `ConnectToWindow.strings` `YEA-3L-WnW.placeholderString`); kolumnen står redan under
+  rubriken `Servrar`, så förleden behövs inte · `high`.
+- **Type (kolumnrubrik) → `Typ`** · katalogens `queryUi.ai.filter.type` · `high`.
+- **Status (kolumnrubrik) → `Status`, identiskt med engelskan** · katalogens `licensing.section.labelStatus` har redan
+  formen med sin egen `sameAsSourceJustification`; `style.md` listar `Status` bland det som står kvar ordagrant ·
+  `high`. Därav en `sameAsSourceJustification` även på `servers.hub.colStatus`.
+- **Statusarna är en-genus particip, för de beskriver `servern`**: `Ansluten` (Finder sv `SD13` ”Anslutna servrar”),
+  `Sparad`, `Hittad i närheten`, `Utloggad` · `high`. `Utloggad` var redan satt i förra passet (prickens
+  knappbeskrivning); statuscellen tar samma ord utan punkt.
+- **nearby → `i närheten`** · Finder sv `MR19`/`MR21` (”… dela med personer i närheten”) · `high`. ❌ Inte `upptäckt`,
+  som katalogen bär för mDNS-fynd i nätverksbläddraren (`browser.cannotRemoveDiscovered`): engelskan väljer medvetet det
+  enkla `found`, och `hittad` är den svenska motsvarigheten i samma register.
+- **Waiting for you to check the key → `Väntar på att du ska kontrollera nyckeln`** · ramen `Väntar på att X ska VERB`
+  är katalogens egen (`fileOperations.transferProgress.stallWaitingDestination`/`.stallWaitingSource`), och
+  `kontrollera` är dess satta verb för att stämma av något (`errors.listing.connectionRefused.suggestion`) · `high`.
+  `nyckel` utan `värd`-led enligt förra passets beslut om SSH host key.
+- **local network discovery → `sökning i det lokala nätverket`** · katalogens `settings.network.firstTriggerDone.label`
+  = ”Nätverkssökning startad” ger `sökning` som huvudord, och `lokalt nätverk` är macOS namn på behörigheten (se §
+  Inställningar) · `high`. `is off` → `är avstängd` (en-genus, som `sökning`), exakt katalogens formel i
+  `fileExplorer.navigation.driveIndex.tooltipIndexingOff` (”Enhetsindexering är avstängd i Inställningar”).
+- **Turn it on in Settings → `Slå på den i Inställningar`** · samma par som `driveIndex.refusedIndexingOff` (”… Slå på
+  den under Indexering > Enhetsindexering”) och `onboarding.stepAi.off.help` (”slå på det senare i Inställningar”);
+  `den` syftar på `sökning`, en-genus · `high`.
+- **pin / unpin (en server, i volymväljaren) → `Fäst / lossa`** · katalogens `menu.tab.pinTab`/`.unpinTab` (”Fäst
+  flik”/”Lossa flik”) · `high`. Snedstrecket står kvar för att engelskan medvetet packar båda riktningarna i ETT
+  kommando; katalogens `eller`-form (`commands.viewShowHidden.label`) hör till de strängar där engelskan själv skriver
+  ”or”.
+- **volume switcher → `volymväljaren`** · redan satt (`shortcuts.scope.volumeChooser`, `commands.volumeClose.label`) ·
+  `high`. Fäst-toasterna säger `din volymväljare`, som engelskan.
+- **”It's still saved” → `Servern är fortfarande sparad.`** · huvudordet skrivs ut i stället för `den`, samma skäl som
+  förra passets `släpper anslutningen`-not: `volymväljaren` och `servern` är båda en-genus, så ett ensamt `den` blir
+  tvetydigt · `high`.
+- **Cmdr couldn't change where {name} shows → `Cmdr kunde inte ändra var {name} visas.`** · ramen ordagrant från
+  systerraden `fileExplorer.navigation.disconnectRefusedToast` (”Cmdr kunde inte koppla från {name}.”) · `high`.
+- **Add server… → `Lägg till server…`; Edit server… → `Redigera server…`; Disconnect server → `Koppla från server`** ·
+  obestämd form utan artikel, som Finder sv `N84` ”Anslut till server…” och katalogens `commands.volumeSelect.label`
+  (”Välj volym”); `Redigera` från `commands.fileEdit.label`, `Koppla från` från `menu.network.disconnect` · `high`.
+- **NAS står kvar** · katalogen skriver redan `en NAS hemma` (`onboarding.stepOptional.networking.desc`) och
+  `NAS-enheter` (`settings.network.smbConcurrency.description`); en-genus, så `en Mac eller NAS` delar artikel · `high`.
+
+`Forget saved password` återanvänder ordagrant `menu.network.forgetSavedPassword` (”Glöm sparat lösenord”), så samma
+handling heter samma sak i meny och kommandopalett. Ingen apostrof i något värde, så ICU-dubbleringen `''` blir aldrig
+aktuell. Enda `sameAsSourceJustification` i passet är `servers.hub.colStatus`.

@@ -1,4 +1,73 @@
 {
+  "servers.hub.colName": "Nom",
+  "@servers.hub.colName": {
+    "sourceHash": "dcd1d52"
+  },
+  "servers.hub.colType": "Type",
+  "@servers.hub.colType": {
+    "sourceHash": "baaddf7",
+    "sameAsSourceJustification": "French for the protocol/kind column is the identical word \"Type\": macOS Finder renders the \"Kind\" column as \"Type\" (LocalizableMerged.strings keys N224 / N169.35) and Apple's own profile detail panes ship \"Type\" -> \"Type\" (ManagedClient.app mcx/iChat profileDomainPlugin Localizable.loctable, key str_Detail_globalproxy_Type), macOS 26.6.2 build 25G83, 2026-09-06."
+  },
+  "servers.hub.colAddress": "Adresse",
+  "@servers.hub.colAddress": {
+    "sourceHash": "56ef8f2"
+  },
+  "servers.hub.colStatus": "État",
+  "@servers.hub.colStatus": {
+    "sourceHash": "920e413"
+  },
+  "servers.hub.colLastUsed": "Dernière utilisation",
+  "@servers.hub.colLastUsed": {
+    "sourceHash": "830ec7f"
+  },
+  "servers.hub.addServer": "Ajouter un serveur…",
+  "@servers.hub.addServer": {
+    "sourceHash": "9574f8e"
+  },
+  "servers.hub.status.connected": "Connecté",
+  "@servers.hub.status.connected": {
+    "sourceHash": "2296556"
+  },
+  "servers.hub.status.saved": "Enregistré",
+  "@servers.hub.status.saved": {
+    "sourceHash": "b5c120b"
+  },
+  "servers.hub.status.foundNearby": "Découvert à proximité",
+  "@servers.hub.status.foundNearby": {
+    "sourceHash": "a7fdf7d"
+  },
+  "servers.hub.status.signedOut": "Session fermée",
+  "@servers.hub.status.signedOut": {
+    "sourceHash": "80c6e7c"
+  },
+  "servers.hub.status.waitingForKey": "En attente de votre vérification de la clé",
+  "@servers.hub.status.waitingForKey": {
+    "sourceHash": "f0a43e8"
+  },
+  "servers.hub.neverUsed": "Jamais",
+  "@servers.hub.neverUsed": {
+    "sourceHash": "6300ef8"
+  },
+  "servers.hub.discoveryOff": "La découverte du réseau local est désactivée.",
+  "@servers.hub.discoveryOff": {
+    "sourceHash": "cadcceb"
+  },
+  "servers.hub.discoveryOffLink": "Activez-la dans les Réglages",
+  "@servers.hub.discoveryOffLink": {
+    "sourceHash": "818571b"
+  },
+  "servers.hub.emptyTitle": "Pas encore de serveur",
+  "@servers.hub.emptyTitle": {
+    "sourceHash": "7846930"
+  },
+  "servers.hub.emptyMessage": "Ajoutez-en un ci-dessous, ou allumez un Mac ou un NAS sur votre réseau et Cmdr le trouvera.",
+  "@servers.hub.emptyMessage": {
+    "sourceHash": "04bdc26"
+  },
+  "servers.hub.rowCount": "{count, plural, one {{countText} serveur} many {{countText} serveurs} other {{countText} serveurs}}",
+  "@servers.hub.rowCount": {
+    "sourceHash": "7ef87d1"
+  },
   "servers.paneState.connecting": "Connexion à {name}…",
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"

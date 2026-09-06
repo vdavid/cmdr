@@ -1291,9 +1291,10 @@
   "@fileExplorer.navigation.groupNetwork": {
     "sourceHash": "1744b96"
   },
-  "fileExplorer.navigation.networkVolume": "Netwerk",
+  "fileExplorer.navigation.networkVolume": "Servers",
   "@fileExplorer.navigation.networkVolume": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb",
+    "sameAsSourceJustification": "Dutch uses the English loanword: macOS nl says \"Servers\" (AppKit Menus.loctable, Finder ConnectToWindow.strings \"Favoriete servers:\"). Translating it would read as a coined word."
   },
   "fileExplorer.navigation.searchResultsVolume": "Zoekresultaten",
   "@fileExplorer.navigation.searchResultsVolume": {
@@ -1399,6 +1400,18 @@
   "fileExplorer.navigation.disconnectBusyTooltip": "Verbinding verbreken kan niet terwijl er bewerkingen op deze server bezig zijn",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
     "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.serverPinnedToast": "{name} staat nu in je volumekiezer.",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "sourceHash": "d09b133"
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "{name} staat niet meer in je volumekiezer. De server is nog steeds opgeslagen.",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "sourceHash": "3367b4d"
+  },
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr kon niet wijzigen waar {name} te zien is.",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "sourceHash": "14230e4"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr kon de verbinding met {name} niet verbreken.",
   "@fileExplorer.navigation.disconnectRefusedToast": {

@@ -2420,3 +2420,117 @@ dus ook geen ICU-verdubbeling nodig. Merknamen ongemoeid: `Cmdr`, `macOS`, `Mac`
   zoals `style.md` en Apple (`Voeg het lettertype aan de stijl toe`) voorschrijven, maar met een tussengeschoven
   voorzetselgroep is `Voeg het toe in Sleutelhangertoegang` in gesproken Nederlands gangbaarder. Bevestig welke vorm in
   een smal paneel beter leest.
+
+## De serverhub (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.server*Toast`, `shortcuts.scope.servers`/`.places`, 2026-09-06)
+
+Achtentwintig sleutels voor de nieuwe serverhub: de rij `Servers` in de volumekiezer opent een tabel met elke opgeslagen
+server (SFTP, WebDAV, SMB) plus de servers die Cmdr in de buurt vindt, met kolommen Naam / Type / Adres / Status /
+Laatst gebruikt en onderaan een rij `Voeg server toe…`. De GROEP waarin die rij staat blijft `Netwerk`
+(`fileExplorer.navigation.groupNetwork`).
+
+De referentiestapel (`_ignored/i18n/nl/`) ontbreekt op deze machine (de M1-agentbox), dus Tier 1 is gemijnd uit de LIVE
+macOS-bundels volgens `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?". Alles geverifieerd op
+macOS 26.6.2, build 25G83, 2026-09-06. Tier 2 (Microsoft) was onbereikbaar, dus een term die Microsoft nodig had om een
+knoop door te hakken blijft `tentative`.
+
+Termen:
+
+- **server → `server`; servers → `servers`** · macOS AppKit `Menus.loctable` (`Servers`→`Servers`), Finder `nl`
+  `ConnectToWindow.strings` (`Favoriete servers:`, `Wis recente servers…`), Finder `LocalizableMerged`
+  (`Connect to Server…`→`Verbind met server…`) · high. Gelijk aan het Engels, dus `sameAsSourceJustification` op
+  `fileExplorer.navigation.networkVolume`, `shortcuts.scope.servers` en `servers.hub.rowCount`.
+- **Locations (het kopje boven de plekken onder één server) → `Locaties`** · macOS Finder `LocalizableMerged`
+  `SD5`/`FI9` (`Locations`→`Locaties`), het kopje van de navigatiekolom · high. Het Engels zegt hier `Places` in plaats
+  van `Locations`, maar het Nederlands heeft geen tweede kort woord voor hetzelfde begrip, en `Locatie` is al de
+  gevestigde vertaling van `location` in deze catalogus.
+- **Address (kolomkop) → `Adres`** · macOS Network-paneel (`Server Address:`→`Serveradres:`, `IP Address`→`IP-adres`),
+  al in de catalogus als `Serveradres` (`fileExplorer.network.connectDialog.addressAriaLabel`) · high.
+- **Type (kolomkop, het protocol) → `Type`** · macOS Systeeminstellingen `Localizable.loctable` (`Type`→`Type`) · high.
+  ❌ NIET `Soort`: dat is Finders kolom `Kind` voor een bestandssoort, en Apple zelf laat `Type` staan.
+- **Status (kolomkop) → `Status`** · macOS Systeeminstellingen `Localizable.loctable` (`Status`→`Status`) · high.
+- **Last used → `Laatst gebruikt`; Never (in die kolom) → `Nooit`** · macOS Systeeminstellingen `Localizable.loctable`
+  (`Last Used`→`Laatst gebruikt`, `Never`→`Nooit`) · high.
+- **Connected (status) → `Verbonden`** · macOS AppKit `SavePanel.loctable` + Systeeminstellingen
+  (`Connected`→`Verbonden`), al in de catalogus (`fileExplorer.network.browser.status.connected`) · high.
+- **Saved (status: bewaard, nu niet verbonden) → `Opgeslagen`** · de catalogus zegt het al voor precies deze toestand
+  (`fileExplorer.navigation.connectionTooltipSaved` = "Opgeslagen. Open de server om te verbinden.") · high.
+- **Signed out (status) → `Uitgelogd`** · de tegenhanger van `Ingelogd`, en de catalogus gebruikt het al voor deze
+  toestand (`fileExplorer.navigation.connectionTooltipNeedsSignIn` = "Uitgelogd. Open deze server om opnieuw in te
+  loggen.") · high. Het is geen weigering en geen fout, en `Uitgelogd` draagt dat neutraal.
+- **Found nearby (status) → `Gevonden in de buurt`** · Apples vaste weergave van `nearby` is `in de buurt` (Finder
+  AirDrop: "anderen bij jou in de buurt"; Systeeminstellingen: "persoonlijke hotspots in de buurt") · high op
+  `in de buurt`, `tentative` op de woordvolgorde. `In de buurt gevonden` bestaat ook; het deelwoord vooraan leest als
+  een zelfstandig label, zoals Finders `Gedeeld door`.
+- **host key (de identiteitssleutel van een SSH-server) → `de sleutel`** · al gevestigd in de catalogus
+  (`servers.refusal.hostKeyUntrusted` "Cmdr vertrouwt de sleutel van {host} nog niet",
+  `fileExplorer.navigation.connectionTooltipNeedsHostKey`) · high. Geen `hostsleutel`: de context zegt al over welke
+  sleutel het gaat.
+- **"Waiting for you to check the key" → `Wachten tot je de sleutel controleert`** · de gevestigde wachtvorm
+  `Wachten tot <bijzin>` (zie § Vastgelopen overdracht) met `controleren` in plaats van `bekijken`, omdat de gebruiker
+  de vingerafdruk vergelijkt en niet alleen bekijkt (Finder `NE18` "controleer") · high.
+- **local network → `lokaal netwerk`; local network discovery → `lokale netwerkdetectie`** · macOS Systeeminstellingen,
+  privacypaneel (`Local Network`→`Lokaal netwerk`) voor het eerste deel; `detectie` komt uit de catalogus zelf
+  (`settings.network.firstTriggerDone.label` = "Netwerkdetectie gestart") en uit Apples
+  `Auto proxy discovery`→`Automatische proxydetectie` · high op beide delen, `tentative` op de samenstelling
+  `lokale netwerkdetectie`, die nergens als geheel voorkomt.
+- **"… is off." (een functie die in Instellingen uitgezet is) → `… staat uit.`** · de gevestigde vorm in deze catalogus
+  voor precies dit patroon (`driveIndex.tooltipDisabled` "Het indexeren staat uit voor deze schijf",
+  `.tooltipIndexingOff`) · high. De glossariumregel `turned on → ingeschakeld` gaat over het instellingenlabel zelf,
+  niet over deze verwijzing van elders.
+- **"Turn it on in Settings" → `Zet het aan in Instellingen`** · dezelfde zusjesregel als
+  `driveIndex.refusedIndexingOff` ("Zet het aan bij Indexeren > Schijf indexeren"); `Settings` → `Instellingen` is macOS
+  Tier 1 · high.
+- **Edit … (een formulier openen om iets te wijzigen) → `Wijzig …`** · macOS Network-paneel (`Network.appex`:
+  `Edit…`→`Wijzig…`, `Edit`→`Wijzig`) en AppKit (`Edit`→`Wijzig`) · high. ❌ NIET `Bewerk`: dat is in deze catalogus
+  gereserveerd voor een bestand in een editor openen (`commands.fileEdit.label`, `menu.file.edit`).
+- **volume switcher → `volumekiezer`** · het Engels noemt dezelfde UI afwisselend `volume switcher` en `volume chooser`,
+  en de catalogus geeft die al één Nederlandse naam (`commands.volumeClose.label` = "Sluit volumekiezer",
+  `shortcuts.scope.volumeChooser` = "Volumekiezer") · high. Het glossariumrijtje `switcher → wisselaar` blijft
+  ongebruikt: de gebruiker ziet `volumekiezer`.
+- **pin / unpin (een server in de volumekiezer zetten of eruit halen) → `vastzetten` / `losmaken`; opdracht
+  `Zet server vast / maak hem los`** · Safari `nl` (`Maak tabblad vast` / `Maak tabblad los`) en het glossariumrijtje
+  `pin (tab) → vastzetten` · high op het werkwoordpaar, `tentative` op de labelvorm. De schuine streep blijft omdat één
+  opdracht beide richtingen doet; `hem` verwijst naar `de server` en is dus veilig (het is geen ongecontroleerde
+  invoeging).
+- **"Add server…" → `Voeg server toe…`** · de gevestigde `Voeg … toe`-vorm met het partikel achteraan (macOS Finder
+  `Voeg wachtwoord toe`, `Voeg tags toe`) · high.
+- **"No servers yet" → `Nog geen servers`** · de `Nog (niet|geen) …`-vorm die de catalogus al gebruikt
+  (`settings.mediaIndex.networkVolumes.notIndexedYet` = "Nog niet geïndexeerd") · high.
+- **NAS → `NAS`** · onvertaald; de catalogus gebruikt het al (`settings.network.smbConcurrency.description` = "de meeste
+  NAS-hardware thuis") en het is in het Nederlands het gangbare woord · high.
+
+Notities:
+
+- De drie meldingen noemen de server bij naam via `{name}`, een ongecontroleerde invoeging. `serverUnpinnedToast` zegt
+  daarom `De server is nog steeds opgeslagen.` in plaats van een voornaamwoord, en `pinRefusedToast` gebruikt
+  `waar {name} te zien is`, dat bij elk geslacht en elk getal klopt. Zie § Notities en beslissingen in `style.md`.
+- `pinRefusedToast` volgt het zusjespatroon `Cmdr kon … niet …` (`disconnectRefusedToast`, `forgetServerRefusedToast`,
+  `forgetSecretRefusedToast`), dus geen `fout` en geen `mislukt`.
+- `commands.serversForgetSecret.label` is byte-identiek aan het al aanwezige
+  `fileExplorer.navigation.forgetSecretConfirmTitle` en `fileExplorer.network.share.forgetPassword`
+  (`Vergeet opgeslagen wachtwoord`), zodat de opdracht, het menu-item en de bevestiging één ding zeggen.
+- `commands.serversDisconnect.label` gebruikt het glossariumlabel `Verbreek verbinding` en spiegelt Finders
+  `Verbind met server`: `Verbreek verbinding met server`.
+- Geen apostrof in de 28 waarden, dus geen ICU-verdubbeling nodig. De ellips is overal het enkele teken `…` (U+2026).
+- `sameAsSourceJustification` staat op vijf sleutels: `fileExplorer.navigation.networkVolume`,
+  `shortcuts.scope.servers`, `servers.hub.colType`, `servers.hub.colStatus` en `servers.hub.rowCount` (het Nederlandse
+  meervoud van `server` is `servers`, dus beide ICU-takken vallen samen met het Engels).
+
+### Review-vlaggen van deze pass
+
+- **`Gevonden in de buurt`** (`status.foundNearby`): 20 tekens tegen 12 in het Engels, in een smalle statuskolom.
+  Alternatieven: `In de buurt gevonden` (even lang) of het kortere `In de buurt`, dat het `gevonden` laat vallen.
+  Overloop-check dit tegen de pseudolocale.
+- **`Zet server vast / maak hem los`** (`commands.serversTogglePin.label`): 30 tekens tegen 18. De twee bestaande
+  schakelopdrachten in dit bestand kiezen de infinitiefvorm (`Tabblad vastzetten aan/uit`,
+  `Verborgen bestanden aan/uit`), dus `Server vastzetten / losmaken` zou daar beter bij passen; het Engels is hier
+  echter gebiedend, en de rest van deze vijf opdrachten ook. Bevestig welke van de twee registers wint.
+- **`Lokale netwerkdetectie`** (`discoveryOff`): de twee helften zijn allebei gesourcet, de samenstelling niet.
+  `Detectie in je lokale netwerk` is de omschrijvende variant en leest losser, maar is een stuk langer voor één regel
+  onder een lijst.
+- **`Locaties`** (`shortcuts.scope.places`): het Engels koos bewust `Places` boven `Locations`, en het Nederlands kan
+  dat onderscheid niet dragen. Bevestig dat `Locaties` naast `Volumekiezer` en `Servers` in de sneltoetsenlijst geen
+  verwarring geeft met de bestandslocatie in `Ga naar locatie`.
+- **`Wijzig server…`** (`commands.serversEdit.label`): Apple-gesourcet, maar los gelezen kan het klinken als "wissel van
+  server". `Wijzig serverinstellingen…` is ondubbelzinnig en drie woorden lang. Bevestig welke in het opdrachtenpalet
+  beter leest.

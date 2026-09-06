@@ -374,6 +374,14 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.
+- **A status word in a table cell keeps its aspect marker.** The servers hub's Status column reads `已連線` / `已儲存` /
+  `已登出` / `在附近找到` / `等你確認主機金鑰`. Apple's Traditional status labels carry the `已…` marker rather than
+  dropping to a bare verb, and the one blocked-on-the-user state addresses the reader in second person exactly as the
+  English does. ❗ Don't "shorten" `已連線` to `連線`: that reads as the action, not the state.
+- **Where the English gives one UI two names, keep both in Chinese.** The disk picker is "volume chooser" in
+  `shortcuts.scope.volumeChooser` and the two `commands.pane*VolumeChooser.label`, and "volume switcher" in the
+  `fileExplorer.navigation.server*Toast` pair; Chinese follows with `卷宗選擇器` and `卷宗切換器`. Unifying is an
+  English-source fix, not a translation one. Same shape recorded in `glossary.md` § "伺服器中心".
 - **A grayed-out "(busy)" menu item is its base label plus `（使用中）`, nothing else.** The `*Busy` keys are the
   disabled twin of an ordinary menu item, shown while a transfer still holds the volume or server, so they have to read
   as the same item in a second state. Copy the base key's value character for character and append the marker:

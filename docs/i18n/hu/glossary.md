@@ -2447,3 +2447,93 @@ kötetváltó szerversorainak buboréksúgói és a két „elfelejtés” meger
   `fileExplorer.navigation.driveIndex.refusedUpgradeFailed`) · `high`.
 - Nincs `sameAsSourceJustification` ebben a passzban: mind a 28 érték eltér az angoltól. Egyik érték sem tartalmaz
   aposztrófot.
+
+## A szerverközpont táblázata és a kötetváltó rögzítése (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.server*Toast`/`.pinRefusedToast`/`.networkVolume`, `shortcuts.scope.servers`/`.places`, 2026-09-06)
+
+28 kulcs: a kötetváltó „Servers” sora egy táblázatot nyit (Név / Típus / Cím / Állapot / Utolsó használat), alul egy
+`Szerver hozzáadása…` sorral, plusz az öt parancspaletta-parancs, a rögzítés két buboréka és a billentyűparancs-lista
+két új szakaszcíme.
+
+**A források ebben a passzban**: a `_ignored/i18n/hu/` referenciakupac nem elérhető ezen a gépen, ezért az `.lproj` /
+`.loctable` fájlokat közvetlenül az élő rendszerből bányásztuk (macOS 26.6.2, 25G83, `plutil -convert json`), 254 185
+en→hu párt kigyűjtve a `CoreServices`, `Frameworks`, `PrivateFrameworks`, `PreferencePanes`, `ExtensionKit` és
+`/System/Applications` alól. Minden alábbi sor mellett a bundle és a kulcs neve áll.
+
+- **Servers (sor- és szakaszcím) → `Szerverek`** · mac (`AppKit.framework/Menus.loctable` `Servers`,
+  `Sharing.framework/Localizable.loctable` `Servers`, `CoreServices/SystemFolderLocalizations` `Servers` — ez utóbbi
+  maga a macOS „Servers” mappájának neve) · `high`. A `server → szerver` szótári döntés többes száma; a `kiszolgálók` a
+  Microsoft-ág, nem a miénk. Ugyanez az érték áll a `fileExplorer.navigation.networkVolume` és a
+  `shortcuts.scope.servers` kulcsban (az angoljuk betű szerint azonos, `desktop-i18n-term-consistency`). ❗ A CSOPORT,
+  amelyben a sor ül, továbbra is `Hálózat` (`fileExplorer.navigation.groupNetwork`) — a két kulcs most vált szét.
+- **Places (a szerveren belüli helyek listája: SMB-megosztások, később tárolóvödrök) → `Helyek`** · mac (Maps
+  `[PlaceList] Places`, Photos `IPXPlaceBrowserTabLabel`, Journal `Places` — 31 találat, mind `Helyek`) · `high`. A
+  macOS-találatok földrajzi értelműek, de a `Places` egyszavas, általános fogalomcímke, és a magyar `Helyek` ugyanígy
+  általános; a korábbi `Megosztásböngésző` a régi, SMB-re szűkített angol címet fordította, és nem bírja el a
+  tárolóvödröket.
+- **Address (oszlopcím) → `Cím`** · mac (39 találat, például Weather `Address`), és a Finder `ConnectToWindow`
+  `Szervercím` alakjának alaptagja · `high`. A `Név` melletti `Cím` névjegykártya-olvasata pont a kívánt jelentés; a
+  teljes `Szervercím` az oszlopban fölösleges, mert a táblázat egésze a szerverekről szól.
+- **Last used (oszlopcím) → `Utolsó használat`** · mac (`PreferencePanes/Security.prefPane/Localizable.loctable`
+  `Last Used`, 5 találat — ugyanez a szerep: oszlopcím egy táblázatban) · `high`. ⚠️ Tudatos eltérés a fájllista
+  dátumoszlopainak `-va/-ve` mintájától (`Módosítva`, `Létrehozva`): ott nincs Apple-forrás az adott szóra, itt viszont
+  betű szerinti Tier-1 találat van ugyanerre az angol oszlopcímre, és az erősebb bizonyíték nyer. Nem
+  `Utoljára használva`.
+- **Never (az „Utolsó használat” cellában) → `Soha`** · mac (87 találat, például `FamilyOutOfProcessUIExtension`
+  `SHARE_AGE_OPTION_NEVER_SHARE_TITLE`; a PassKit `SE_STORAGE_CLEANUP_LAST_USED_NEVER` = „Legutóbbi használat: soha”
+  pont ebben a szerepben) · `high`.
+- **Found nearby (állapot) → `A közelben felfedezve`** · mac (`IOBluetoothUI.framework` `PROX_PAIRING_OPTIONS_HEADER%@`
+  = „„%@” a közelben felfedezve” — ugyanaz a fogalom: a rendszer a közelben észlelt egy eszközt) · `high`. A `felfedez`
+  tő a katalógusban már él (`fileExplorer.network.browser.cannotRemoveDiscovered` = `A felfedezett gépek…`,
+  `settings.network.permissionWithout` = `nem fedezhetsz fel új szervereket`), és a `-va/-ve` alak illeszkedik a többi
+  állapothoz (`Kapcsolódva`, `Mentve`, `Kijelentkezve`).
+- **local network discovery → `helyi hálózati felderítés`** · a katalógus szállított alakjai
+  (`settings.network.firstTriggerDone.label` = `Hálózati felderítés elindult`, `settings.network.enabled.description` =
+  `SMB-szerverek felderítése a helyi hálózaton`) · `high`. A kikapcsolt állapot mondata a szállított
+  `fileExplorer.navigation.driveIndex.tooltipDisabled` sablonját másolja (`Az indexelés ki van kapcsolva …`), innen
+  `A helyi hálózati felderítés ki van kapcsolva.` és a hozzá tartozó link `Kapcsold be a Beállításokban`. A macOS Tier-1
+  gombalakja `Bekapcsolás`, de ez nem gomb, hanem a mondat folytatása, ezért tegező felszólítás.
+- **Pin / unpin server → `Szerver rögzítése / rögzítés feloldása`** · mac (Notes `Pin or Unpin Notes` = „Jegyzetek
+  rögzítése vagy rögzítés feloldása”, `Unpin Note` = „Jegyzet rögzítésének feloldása”) · `high`. Betű szerinti
+  Apple-minta ugyanerre a kettős szerkezetre, és egybevág a szótár `pin / unpin tab` sorával (`Lap rögzítése` /
+  `Lap rögzítésének feloldása`). A perjel marad, ahogy az angolban, mert egy parancs mindkét irány. ❌ Nem
+  `Rögzítés megszüntetése` (a Music-ág alakja): a `feloldása` az, amit a szótár már visz.
+- **volume switcher → `kötetválasztó`** · a katalógus szállított, látható alakja (`commands.volumeClose.label` =
+  `Kötetválasztó bezárása`, `fileOperations`-beli `kötetválasztóban`, `shortcuts.scope.volumeChooser` = `Kötetválasztó`)
+  · `high`. Az angol két néven hívja ugyanazt a felületet („volume chooser” és „volume switcher”); a magyar egy néven. A
+  `commands.favoritesAdd.description` puszta `váltó` alakja egyedi, ne terjeszd.
+- **A rögzítés két buborékában a `{name}` alanyi helyen áll, toldalék és névelő nélkül**:
+  `{name} mostantól ott van a kötetválasztódban.` / `{name} kikerült a kötetválasztódból. Továbbra is mentve van.` · a
+  szállított `servers.refusal.timedOut` (`{host} nem válaszolt időben.`) mintája · `high`. Így semmi nem függ a beszúrt
+  érték kezdőhangjától vagy hangrendjétől. A második mondat a `Mentve` állapotcímkére rímel, ez viszi az „semmi nem
+  veszett el” jelentést.
+- **`Cmdr couldn't change where {name} shows.` → `A Cmdr nem tudta megváltoztatni, hogy {name} hol jelenjen meg.`** · a
+  `A Cmdr nem tudta …` nyitány a szállított család kötelező alakja (`operationLog.rollback.refusalUnexpected`,
+  `suggestedOps.destinationUnknown`) · `high`. Itt a `{name}` nem tárgy, hanem egy `hogy`-os mellékmondat alanya, ezért
+  nem kell a családi `… ezt: {name}` kettőspontos kitérő: toldalék így sem kerül rá.
+- **Waiting for you to check the key → `Arra vár, hogy ellenőrizd a kulcsot`** · az `ellenőrizd` ige a szállított
+  `ai.translateError.authFailed.body` (`Ellenőrizd a kulcsodat…`) alakja, a `kulcs` pedig a szótár
+  `host key → a szerver kulcsa` sorának alaptagja · `high`. Az `arra` utalószó nélkül a mondat csonka lenne; a
+  szerversoron belül a puszta `a kulcsot` egyértelmű, ahogy az angol `the key` is.
+- **Kényszerített, mert az angol betű szerint azonos egy szállított kulcséval** (`desktop-i18n-term-consistency`):
+  `Name` → `Név` (`fileExplorer.columns.name`), `Type` → `Típus` (`queryUi.ai.filter.type`), `Status` → `Állapot`
+  (`licensing.section.labelStatus`), `Connected` → `Kapcsolódva` (`fileExplorer.network.browser.status.connected`,
+  `ai.cloud.connected`), `Forget saved password` → `Mentett jelszó elfelejtése` (`menu.network.forgetSavedPassword` és
+  két testvére). Mind egybevág a Tier-1 forrásokkal is (mac: `Név`, `Típus`, `Állapot`; AirPort Utility `connected.1` =
+  `Kapcsolódva`).
+- **Saved (állapot) → `Mentve`; Signed out (állapot) → `Kijelentkezve`** · a fenti § A szerverközpont passz döntése,
+  most szállítva; a `Mentve` alakot a Preview `SignatureSaved` (`Mentve`) is hozza, a `Kijelentkezve` töve a mac
+  `Sign Out` = `Kijelentkezés` (54 találat) · `high`. A melléknévi `Mentett` (Podcasts `LIBRARY_SAVED_EPISODES`) jelzői
+  szerepre való, nem állapotcellába.
+- **Parancscímkék főnévi alakban**, a szótár címkeszabálya és a szállított minták szerint: `Szerverek megjelenítése`
+  (`commands.appShowAll.label` = `Összes megjelenítése`), `Szerver leválasztása` (`leválasztás` szótári alak),
+  `Szerver szerkesztése…` (`fileExplorer.functionKeyBar.editAction` = `Fájl szerkesztése`), `Szerver hozzáadása…`
+  (`menu.go.addToFavorites` = `Hozzáadás a kedvencekhez`). A `…` (U+2026) mindkét helyen megmarad.
+- **Az üres állapot a szállított `askCmdr.sessions.empty` (`No chats yet` = `Még nincs csevegés`) mintáját követi**:
+  `Még nincs szerver`. A magyar számnév nélküli főnév egyes számban áll, tehát `szerver`, nem `szerverek`.
+- **A `Mac` tárgyesete `Macet`, kötőjel nélkül** · mac (161 találat, például „nem képes törölni ezt a Macet”) · `high`.
+  Illeszkedik a katalógus `Macen` alakjához. A `NAS` betűszó marad, ragja kötőjeles (`NAS-t`), ahogy az
+  `onboarding.stepOptional.networking.desc` `NAS-hoz` alakja.
+- **`servers.hub.rowCount`: mindkét ág `{countText} szerver`** · a magyar számnév után a főnév egyes számú (style.md §
+  Plurals) · `high`.
+- Nincs `sameAsSourceJustification` ebben a passzban: mind a 28 érték eltér az angoltól. Egyik érték sem tartalmaz
+  aposztrófot, tehát ICU-kettőzés sem kellett.

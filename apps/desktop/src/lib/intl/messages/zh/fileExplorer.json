@@ -1281,9 +1281,9 @@
   "@fileExplorer.navigation.groupNetwork": {
     "sourceHash": "1744b96"
   },
-  "fileExplorer.navigation.networkVolume": "网络",
+  "fileExplorer.navigation.networkVolume": "服务器",
   "@fileExplorer.navigation.networkVolume": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "fileExplorer.navigation.searchResultsVolume": "搜索结果",
   "@fileExplorer.navigation.searchResultsVolume": {
@@ -1388,6 +1388,18 @@
   "fileExplorer.navigation.disconnectBusyTooltip": "此服务器上有操作正在进行，无法断开连接",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
     "sourceHash": "2085de5"
+  },
+  "fileExplorer.navigation.serverPinnedToast": "{name} 现在会出现在你的宗卷选择器里。",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "sourceHash": "d09b133"
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "{name} 已移出你的宗卷选择器。它仍然保存着。",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "sourceHash": "3367b4d"
+  },
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr 无法更改 {name} 的显示位置。",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "sourceHash": "14230e4"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr 无法断开与 {name} 的连接。",
   "@fileExplorer.navigation.disconnectRefusedToast": {

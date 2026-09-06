@@ -35,17 +35,17 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.servers": "网络",
+  "shortcuts.scope.servers": "服务器",
   "@shortcuts.scope.servers": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "shortcuts.scope.errorScreen": "错误屏幕",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.places": "共享浏览器",
+  "shortcuts.scope.places": "共享位置",
   "@shortcuts.scope.places": {
-    "sourceHash": "5cec2a6"
+    "sourceHash": "eb5cfb7"
   },
   "shortcuts.scope.commandPalette": "命令面板",
   "@shortcuts.scope.commandPalette": {

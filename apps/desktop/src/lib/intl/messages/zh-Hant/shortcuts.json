@@ -35,17 +35,17 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.servers": "網路",
+  "shortcuts.scope.servers": "伺服器",
   "@shortcuts.scope.servers": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "shortcuts.scope.errorScreen": "錯誤畫面",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.places": "共享資料夾瀏覽器",
+  "shortcuts.scope.places": "位置",
   "@shortcuts.scope.places": {
-    "sourceHash": "5cec2a6"
+    "sourceHash": "eb5cfb7"
   },
   "shortcuts.scope.commandPalette": "指令面板",
   "@shortcuts.scope.commandPalette": {

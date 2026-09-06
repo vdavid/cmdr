@@ -35,17 +35,17 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "250a34f"
   },
-  "shortcuts.scope.servers": "Mạng",
+  "shortcuts.scope.servers": "Máy chủ",
   "@shortcuts.scope.servers": {
-    "sourceHash": "1744b96"
+    "sourceHash": "68d7beb"
   },
   "shortcuts.scope.errorScreen": "Màn hình lỗi",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
-  "shortcuts.scope.places": "Trình duyệt chia sẻ",
+  "shortcuts.scope.places": "Vị trí",
   "@shortcuts.scope.places": {
-    "sourceHash": "5cec2a6"
+    "sourceHash": "eb5cfb7"
   },
   "shortcuts.scope.commandPalette": "Bảng lệnh",
   "@shortcuts.scope.commandPalette": {

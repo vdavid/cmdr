@@ -2195,3 +2195,80 @@ Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1), nên toàn bộ
   với chuỗi anh em `ejectVolumeAriaLabel` = `Tháo {name}`.
 - **`on this Mac` → `trên máy Mac này`** · macOS `IOBluetoothUI`, `FileProvider` · `high`.
 - Không khóa nào trong 28 khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.
+
+## Trung tâm máy chủ, đợt 2: bảng máy chủ + hàng "Máy chủ" trong bộ chọn ổ đĩa (28 khóa `servers.hub.*` / `commands.servers*` / `fileExplorer.navigation.server*Toast` / `shortcuts.scope.servers`+`.places`, 2026-09-06)
+
+Bề mặt: hàng `Network` cũ trong bộ chọn ổ đĩa (chỉ liệt kê máy chủ SMB mDNS thấy ngay lúc đó) nay là hàng **`Servers`**
+mở ra một cái bảng: mọi máy chủ đã lưu (SFTP, WebDAV, SMB) cộng với những máy tìm thấy quanh đó, các cột Name / Type /
+Address / Status / Last used, và hàng cuối `Add server…`. NHÓM chứa hàng đó vẫn tên là `Network` (`Mạng`).
+
+Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1), nên mọi dẫn chứng Apple lấy trực tiếp từ bundle macOS đang cài
+(`.loctable` + `.lproj/*.strings`, `plistlib.load(f)['vi']` so với `['en']`), macOS 26.6.2 build 25G83, 2026-09-06. Cách
+làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
+
+### Thuật ngữ chốt trong đợt này
+
+- **server (trong tên bề mặt, không chỉ trong câu văn) → `Máy chủ`** · Finder vi gọi `Connect to Server…` là
+  `Kết nối với máy chủ…` (`LocalizableMerged` `N84`), `Connected servers` là `Máy chủ được kết nối` (`SD13`),
+  `Server Volumes` là `Ổ đĩa máy chủ` (`FF22.2`) · `high`. Hai khóa tiếng Anh giống hệt nhau
+  (`fileExplorer.navigation.networkVolume`, `shortcuts.scope.servers`) nên phải chung một giá trị;
+  `desktop-i18n-term-consistency` bắt lỗi nếu lệch.
+- **Name / Type / Address / Status (tiêu đề cột) → `Tên` / `Loại` / `Địa chỉ` / `Trạng thái`** · Finder vi list view
+  (`N220` Name → `Tên`, `N224` Kind → `Loại`), macOS `CGImageSource` (Status → `Trạng thái`), Finder `A20` ("server at
+  the address you specified" → `máy chủ tại địa chỉ bạn đã chỉ định`) · `high`. Cả bốn từ đã có trong catalog ở khóa
+  khác cùng tiếng Anh (`fileExplorer.columns.name`, `queryUi.ai.filter.type`, `licensing.section.labelStatus`), nên đây
+  cũng là ràng buộc của `desktop-i18n-term-consistency`.
+- **Last used → `Dùng cuối`; và ô rỗng của nó, Never → `Chưa từng`** · nguồn khớp ĐÚNG bề mặt: bảng quyền ứng dụng trong
+  Cài đặt hệ thống > Quyền riêng tư & bảo mật có y hệt một cột `Last Used` với giá trị `Never`
+  (`Security.prefPane/Localizable.loctable` và `SecurityPrivacyExtension.appex`: `Last Used` → `Dùng cuối`, `Never` →
+  `Chưa từng`), `PrinterScannerSettings.appex` cũng nói `Dùng cuối` · `high`. ❌ Đừng lấy `Không` hay `Không bao giờ`:
+  đó là `Never` của một Ô CHỌN lịch/lặp lại (Calendar, Mail, Wi‑Fi), nghĩa là "đừng bao giờ làm", không phải "tới giờ
+  vẫn chưa xảy ra". Cột này nói về quá khứ, nên `Chưa từng`. Ghi chú thêm: Finder gọi cột `Last Opened` là
+  `Mở lần cuối`, cùng một khuôn `<động từ> + lần cuối / cuối`.
+- **Connected (nhãn trạng thái) → `Đã kết nối`** · macOS `Localizable.loctable` (`Connected` → `Đã kết nối`), và catalog
+  đã có ở `fileExplorer.network.browser.status.connected`, `ai.cloud.connected` · `high`.
+- **Found nearby → `Tìm thấy ở gần`** · `nearby` là `ở gần` (`MCBrowserViewController` `Nearby` → `Ở gần`,
+  `CopresenceCore` `Nearby Device` → `Thiết bị ở gần`) và `tìm thấy` là từ Apple dùng cho "discovered/findable"
+  (`BTLEMIDILocalizable`: `discoverable` → `có thể tìm thấy`) · `high`. Đây là một trong bốn nhãn của cột Trạng thái,
+  cạnh `Đã kết nối` / `Đã lưu` / `Đã đăng xuất`; nó cố tình KHÔNG mở đầu bằng `Đã` vì máy chủ này chưa hề được lưu hay
+  kết nối, chỉ là Cmdr đang nhìn thấy nó.
+- **pin / unpin (đưa một mục vào hoặc ra khỏi một danh sách) → `Ghim` / `Bỏ ghim`** · macOS thống nhất trên nhiều bundle
+  (`MapKit`, `Shortcuts.app`, `Maps.app`, `WorkflowEditor`, `VideosUI`), và catalog đã có `menu.tab.pinTab` =
+  `Ghim tab`, `menu.tab.unpinTab` = `Bỏ ghim tab` · `high`. ❌ Không dùng `Gỡ ghim` (Notes.app có, nhưng thiểu số).
+- **volume switcher → `bộ chọn ổ đĩa`** · tiếng Anh giờ có HAI tên cho cùng một bề mặt ("volume chooser" ở
+  `shortcuts.scope.volumeChooser` và ba khóa `commands.*VolumeChooser`, "volume switcher" ở hai toast mới), tiếng Việt
+  chỉ dùng một: `bộ chọn ổ đĩa`, đúng như bốn khóa đã ship · `high`. ❌ Đừng nghĩ ra `bộ chuyển ổ đĩa` cho các chuỗi
+  mới; hai tên tiếng Việt cho một danh sách sẽ khiến người đọc đi tìm hai thứ khác nhau.
+- **Places (tên nhóm phím tắt cho danh sách "nơi chốn" bên trong một máy chủ) → `Vị trí`** · Finder vi gọi mục
+  `Locations` ở khung bên là `Vị trí` (`LocalizableMerged` `SD5`, `FI9`) và `Recent Places` là `Vị trí gần đây` (`FI1`)
+  · `high`. ❌ KHÔNG dùng `Địa điểm`: Apple dành riêng từ đó cho nghĩa ĐỊA LÝ (Photos, Maps, Journal đều dịch `Places`
+  là `Địa điểm`), còn ở đây "places" là các bản chia sẻ SMB hôm nay và các bucket lưu trữ sau này. Trùng chữ với
+  `vị trí` = chỗ của một tệp trong catalog là chấp nhận được: cả hai đều là "chỗ để đi tới", và Apple cũng dùng chung
+  một từ.
+- **Edit (động từ, nhãn lệnh) → `Sửa`** · macOS `MainMenu.loctable` (menu `Edit` → `Sửa`), và catalog đã có
+  `shortcuts.window.editInSettings` = `Sửa phím tắt trong Cài đặt` · `high`.
+- **Add server → `Thêm máy chủ`** · macOS `WiFiSettingsKit/Localizable.loctable` (`Add Server` → `Thêm máy chủ`) ·
+  `high`.
+
+### Ghi chú theo chuỗi
+
+- **`servers.hub.discoveryOff` → `Việc tìm máy chủ trên mạng cục bộ đang tắt.`** · "local network discovery" không có
+  một tên riêng trong bundle macOS; cái Apple đặt tên là quyền `Local Network` = `Mạng cục bộ` (catalog đã dùng ở
+  `settings.network.*`). Nên câu này tả việc chứ không dịch thuật ngữ: `Việc <làm gì> đang tắt.`, đúng khuôn đã ship ở
+  `Lập chỉ mục ổ đĩa đang tắt trong Cài đặt` (`driveIndex.tooltipIndexingOff`). Dùng `tìm` (find) chứ không `tìm kiếm`
+  (search): `style.md` đã tách hai từ này, và `tìm kiếm` trong catalog thuộc về việc tìm tệp.
+- **`servers.hub.discoveryOffLink` → `Bật trong Cài đặt`** · tân ngữ của `bật` bỏ trống vì câu ngay trước đã nêu chủ
+  thể; catalog đã ship đúng lối này ở `driveIndex.tooltipDisabled` (`Turn it on to see…` → `Hãy bật để xem…`). Không
+  thêm `Hãy`: đây là nhãn liên kết, không phải lời hướng dẫn. `Settings` là cửa sổ Cài đặt của chính ứng dụng, catalog
+  gọi là `Cài đặt` xuyên suốt.
+- **`servers.hub.status.waitingForKey` → `Đang chờ bạn kiểm tra khóa`** · `khóa` (không phải `dấu vân tay`) đã chốt ở
+  đợt trước cho SSH host key; `Đang chờ` theo `fileExplorer.network.browser.status.waitingForNetwork` = `Đang chờ mạng`.
+  Tiếng Anh xưng hô trực tiếp nên tiếng Việt giữ `bạn`.
+- **`servers.hub.emptyMessage`** · `NAS` giữ nguyên (catalog đã dùng `một NAS ở nhà`, `phần cứng NAS gia đình`),
+  `máy Mac` theo lối catalog + macOS. `sẽ tìm thấy nó` lặp lại `tìm thấy` của nhãn trạng thái `Tìm thấy ở gần`, để hai
+  chuỗi cùng nói về một việc bằng một từ.
+- **`fileExplorer.navigation.serverUnpinnedToast`** · câu thứ hai (`Máy chủ này vẫn được lưu.`) là câu trấn an, viết đủ
+  chủ ngữ chứ không rút thành `Vẫn được lưu.`, vì toast có thể đọc rời khỏi ngữ cảnh.
+- **`servers.hub.rowCount`** · `vi` chỉ có nhánh `other`, nên `{count, plural, other {{countText} máy chủ}}`; danh từ
+  không biến đổi theo số.
+- Không khóa nào trong 28 khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.
