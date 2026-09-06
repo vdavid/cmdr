@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import { wordConnectRefusal } from './connect-refusals'
-import type { ConnectRefusalKind } from './connect-flow'
+import type { ConnectRefusalKind } from './connect-refusals'
 
 /** One value per `ConnectRefusalKind`. Adding a kind makes this fail to typecheck. */
 const KINDS: ConnectRefusalKind[] = [

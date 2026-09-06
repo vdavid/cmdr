@@ -145,5 +145,173 @@
     "placeholders": {
       "host": "the server''s hostname or address, like \"nas.local\""
     }
+  },
+  "servers.sheet.addTitle": "Add server",
+  "@servers.sheet.addTitle": {
+    "description": "Title of the sheet where the user types a new server. VERB phrase, imperative."
+  },
+  "servers.sheet.signInTitle": "Sign in to {name}",
+  "@servers.sheet.signInTitle": {
+    "description": "Title of the sheet when a server is asking for a credential. VERB phrase, imperative.",
+    "placeholders": {
+      "name": "the server''s display name, like “Naspolya”"
+    }
+  },
+  "servers.sheet.editTitle": "Edit {name}",
+  "@servers.sheet.editTitle": {
+    "description": "Title of the sheet when the user is changing a server they already saved. VERB phrase, imperative.",
+    "placeholders": {
+      "name": "the server''s display name, like “Naspolya”"
+    }
+  },
+  "servers.sheet.connect": "Connect",
+  "@servers.sheet.connect": {
+    "description": "The sheet's main button in add mode: it dials the server the user typed. VERB, imperative."
+  },
+  "servers.sheet.signIn": "Sign in",
+  "@servers.sheet.signIn": {
+    "description": "The sheet's main button when a server is asking for a credential. VERB phrase, imperative."
+  },
+  "servers.sheet.save": "Save",
+  "@servers.sheet.save": {
+    "description": "The sheet's main button when the user is editing a saved server. VERB, imperative."
+  },
+  "servers.sheet.cancel": "Cancel",
+  "@servers.sheet.cancel": {
+    "description": "The sheet's secondary button: it closes without connecting or saving. VERB, imperative."
+  },
+  "servers.sheet.connecting": "Connecting…",
+  "@servers.sheet.connecting": {
+    "description": "Replaces the main buttons label while the sheet is waiting for the server. The ellipsis is the single character … (U+2026)."
+  },
+  "servers.sheet.protocolLegend": "Protocol",
+  "@servers.sheet.protocolLegend": {
+    "description": "Accessible name of the SMB / SFTP / WebDAV picker in the add form. Screen readers only; not visible. One word, NOUN."
+  },
+  "servers.sheet.protocolSmb": "SMB",
+  "@servers.sheet.protocolSmb": {
+    "description": "One option of the protocol picker. A protocol name; keep it as-is."
+  },
+  "servers.sheet.protocolSftp": "SFTP",
+  "@servers.sheet.protocolSftp": {
+    "description": "One option of the protocol picker. A protocol name; keep it as-is."
+  },
+  "servers.sheet.protocolWebdav": "WebDAV",
+  "@servers.sheet.protocolWebdav": {
+    "description": "One option of the protocol picker. A protocol name; keep it as-is."
+  },
+  "servers.sheet.address": "Address",
+  "@servers.sheet.address": {
+    "description": "Label of the field where the user types where the server lives. One word, NOUN."
+  },
+  "servers.sheet.addressPlaceholder": "nas.local",
+  "@servers.sheet.addressPlaceholder": {
+    "description": "Placeholder inside the address field. A short example hostname; leave it as-is or use an equally short one."
+  },
+  "servers.sheet.addressHelp": "A hostname, an address you copied, or a whole ssh line. Cmdr picks the protocol.",
+  "@servers.sheet.addressHelp": {
+    "description": "One line under the address field, telling the user they can paste whatever they have. “Cmdr” is the product name; “ssh” is a command name, keep it lowercase and untranslated."
+  },
+  "servers.sheet.username": "Username",
+  "@servers.sheet.username": {
+    "description": "Label of the account field. One word, NOUN."
+  },
+  "servers.sheet.password": "Password",
+  "@servers.sheet.password": {
+    "description": "Label of the password field. One word, NOUN."
+  },
+  "servers.sheet.passphrase": "Key passphrase",
+  "@servers.sheet.passphrase": {
+    "description": "Label of the field for the passphrase that unlocks an SSH key FILE, which is not the account's password. Two words."
+  },
+  "servers.sheet.remember": "Remember in Keychain",
+  "@servers.sheet.remember": {
+    "description": "Checkbox that stores the password in the macOS Keychain. “Keychain” is the macOS feature name, which the OS ships translated; use the name your language's macOS uses."
+  },
+  "servers.sheet.connectionModeLegend": "How to connect",
+  "@servers.sheet.connectionModeLegend": {
+    "description": "Accessible name of the guest-or-account choice for a share that allows both. Screen readers only; not visible."
+  },
+  "servers.sheet.connectAsGuest": "Connect as guest",
+  "@servers.sheet.connectAsGuest": {
+    "description": "One option: open the share without an account, which some servers allow. VERB phrase, imperative."
+  },
+  "servers.sheet.signInWithCredentials": "Sign in with a username and password",
+  "@servers.sheet.signInWithCredentials": {
+    "description": "The other option: open the share as a named account. VERB phrase, imperative."
+  },
+  "servers.sheet.advanced": "Advanced",
+  "@servers.sheet.advanced": {
+    "description": "A collapsed section holding the settings most people never change. One word, ADJECTIVE."
+  },
+  "servers.sheet.name": "Name",
+  "@servers.sheet.name": {
+    "description": "Label of the field for what to call this server in the app. One word, NOUN."
+  },
+  "servers.sheet.remoteFolder": "Remote folder",
+  "@servers.sheet.remoteFolder": {
+    "description": "Label of the field for which folder ON THE SERVER to open at. Two words."
+  },
+  "servers.sheet.keyFile": "Key file",
+  "@servers.sheet.keyFile": {
+    "description": "Label of the field for the SSH private key file to sign in with. “Key” is an SSH key. Two words."
+  },
+  "servers.sheet.browse": "Browse…",
+  "@servers.sheet.browse": {
+    "description": "Button beside the key-file field; it opens the system file picker. VERB, imperative. The ellipsis is the single character … (U+2026) and means “this opens something”; keep it."
+  },
+  "servers.sheet.useAgent": "Use ssh-agent",
+  "@servers.sheet.useAgent": {
+    "description": "Checkbox letting Cmdr ask the running ssh-agent for a key. “ssh-agent” is a program name; keep it as-is."
+  },
+  "servers.sheet.autoReconnect": "Reconnect automatically",
+  "@servers.sheet.autoReconnect": {
+    "description": "Checkbox letting Cmdr redial this server on its own when the connection drops. VERB phrase, imperative."
+  },
+  "servers.sheet.needsStoredSecret": "Reconnecting on its own needs a remembered password. Turn on “Remember in Keychain” and sign in once.",
+  "@servers.sheet.needsStoredSecret": {
+    "description": "Shown in the edit sheet when “Reconnect automatically” is on but nothing is stored, so it can never actually run. Says what to do about it."
+  },
+  "servers.sheet.tryNextcloudAddress": "Try the Nextcloud address",
+  "@servers.sheet.tryNextcloudAddress": {
+    "description": "Button offered when a web address answers but doesn't speak WebDAV. It appends the path Nextcloud and ownCloud keep their files under. “Nextcloud” is a product name; keep it as-is. VERB phrase, imperative."
+  },
+  "servers.hostKey.firstContactTitle": "First time connecting to {host}",
+  "@servers.hostKey.firstContactTitle": {
+    "description": "Heading of the step where the user approves a servers SSH identity key the first time. Routine, not alarming.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like “nas.local”"
+    }
+  },
+  "servers.hostKey.firstContactBody": "Check the fingerprint below against the one the server''s owner gave you, then trust it.",
+  "@servers.hostKey.firstContactBody": {
+    "description": "One line under that heading. “Fingerprint” is the short string that identifies an SSH key; a person compares it character by character."
+  },
+  "servers.hostKey.changedTitle": "{host}''s key changed",
+  "@servers.hostKey.changedTitle": {
+    "description": "Heading of the same step when the server presents a DIFFERENT key than the one already trusted. This one is serious: it can mean someone is in the middle.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like “nas.local”"
+    }
+  },
+  "servers.hostKey.changedBody": "This can mean the server was reinstalled, or that something is sitting between you and it. Check the fingerprint with the server''s owner before trusting it.",
+  "@servers.hostKey.changedBody": {
+    "description": "One line under the changed-key heading. Says both innocent and serious causes, and what to do first."
+  },
+  "servers.hostKey.changedDisclosure": "I''ve checked it",
+  "@servers.hostKey.changedDisclosure": {
+    "description": "A collapsed section holding the button that trusts a CHANGED key. Deliberately behind a click, so trusting one is never a reflex. First person: the user speaking."
+  },
+  "servers.hostKey.fingerprintLabel": "Key fingerprint",
+  "@servers.hostKey.fingerprintLabel": {
+    "description": "Label above the SSH keys algorithm and fingerprint. Two words, NOUN phrase."
+  },
+  "servers.hostKey.trustAndConnect": "Trust and connect",
+  "@servers.hostKey.trustAndConnect": {
+    "description": "Button that records a first-contact key and carries on connecting. VERB phrase, imperative."
+  },
+  "servers.hostKey.trustNewKey": "Trust the new key",
+  "@servers.hostKey.trustNewKey": {
+    "description": "Button that records a CHANGED key, behind the disclosure. VERB phrase, imperative."
   }
 }

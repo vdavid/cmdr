@@ -49,7 +49,7 @@
     import RenameConflictDialog from '$lib/file-explorer/rename/RenameConflictDialog.svelte'
     import ArchivePasswordDialog from '$lib/file-operations/transfer/ArchivePasswordDialog.svelte'
     import TransferErrorDialog from '$lib/file-operations/transfer/TransferErrorDialog.svelte'
-    import ConnectToServerDialog from '$lib/file-explorer/network/ConnectToServerDialog.svelte'
+    import SignInSheet from '$lib/servers/SignInSheet.svelte'
     import CrashReportDialog from '$lib/crash-reporter/CrashReportDialog.svelte'
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
     import DeleteDialog from '$lib/file-operations/delete/DeleteDialog.svelte'
@@ -84,6 +84,7 @@
     import type { MoveToApplicationsFixture } from './fixtures/updates'
     import type { QuitFixture } from './fixtures/quit'
     import type { SelectionFixture } from './fixtures/selection'
+    import type { SignInSheetFixture } from './fixtures/servers'
 
     const log = getAppLogger('dialogGallery')
 
@@ -100,7 +101,7 @@
         | { kind: 'rename-conflict'; props: RenameConflictFixture }
         | { kind: 'archive-password'; props: ArchivePasswordFixture }
         | { kind: 'transfer-error'; props: TransferErrorFixture }
-        | { kind: 'connect-to-server' }
+        | { kind: 'server-sign-in'; props: SignInSheetFixture }
         | { kind: 'mtp-permission' }
         | { kind: 'ptpcamerad'; props: PtpcameradFixture }
         | { kind: 'move-to-applications'; props: MoveToApplicationsFixture }
@@ -180,6 +181,8 @@
             withFixture(fixtureRecords['archive-password'][id], (f) => ({ kind: 'archive-password', props: f })),
         'transfer-error': (id) =>
             withFixture(fixtureRecords['transfer-error'][id], (f) => ({ kind: 'transfer-error', props: f })),
+        'server-sign-in': (id) =>
+            withFixture(fixtureRecords['server-sign-in'][id], (f) => ({ kind: 'server-sign-in', props: f })),
         ptpcamerad: (id) => withFixture(fixtureRecords.ptpcamerad[id], (f) => ({ kind: 'ptpcamerad', props: f })),
         'move-to-applications': (id) =>
             withFixture(fixtureRecords['move-to-applications'][id], (f) => ({ kind: 'move-to-applications', props: f })),
@@ -241,7 +244,6 @@
         acknowledgements: () => ({ kind: 'acknowledgements' }),
         'commercial-reminder': () => ({ kind: 'commercial-reminder' }),
         license: () => ({ kind: 'license' }),
-        'connect-to-server': () => ({ kind: 'connect-to-server' }),
         'mtp-permission': () => ({ kind: 'mtp-permission' }),
     }
 
@@ -325,8 +327,8 @@
         <ArchivePasswordDialog {...plan.props} onSubmit={closeGalleryDialog} onCancel={closeGalleryDialog} />
     {:else if plan?.kind === 'transfer-error'}
         <TransferErrorDialog {...plan.props} onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
-    {:else if plan?.kind === 'connect-to-server'}
-        <ConnectToServerDialog onConnect={closeGalleryDialog} onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'server-sign-in'}
+        <SignInSheet request={plan.props.request} onDone={closeGalleryDialog} />
     {:else if plan?.kind === 'mtp-permission'}
         <MtpPermissionDialog onClose={closeGalleryDialog} onRetry={closeGalleryDialog} />
     {:else if plan?.kind === 'ptpcamerad'}

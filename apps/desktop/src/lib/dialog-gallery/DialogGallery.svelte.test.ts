@@ -29,6 +29,9 @@ import { notifyDialogOpened } from '$lib/tauri-commands'
 // The gallery pulls in 21 shipping dialogs, so this mock covers every IPC any of
 // them touches on mount (or would touch from a button). Resolved values only
 // matter where a dialog renders them; the rest just have to not reject.
+// The sign-in sheet's key-file Browse button reaches for the system picker.
+vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(() => Promise.resolve(null)) }))
+
 vi.mock('$lib/tauri-commands', () => ({
   DEFAULT_VOLUME_ID: 'root',
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -52,6 +55,15 @@ vi.mock('$lib/tauri-commands', () => ({
   resolveGoToPath: vi.fn(() => Promise.resolve({ status: 'ok', data: { kind: 'directory' } })),
   readClipboardText: vi.fn(() => Promise.resolve(null)),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
+  // The sign-in sheet: what it asks the backend before it can render honestly.
+  hasServerSecret: vi.fn(() => Promise.resolve(false)),
+  getKnownSftpServers: vi.fn(() => Promise.resolve([])),
+  getKnownWebdavServers: vi.fn(() => Promise.resolve([])),
+  getSftpUnattendedReconnect: vi.fn(() => Promise.resolve('ready')),
+  getWebdavUnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
+  forgetServerSecret: vi.fn(() => Promise.resolve(true)),
+  updateSavedServer: vi.fn(() => Promise.resolve()),
+  approveSftpHostKey: vi.fn(() => Promise.resolve({ outcome: 'recorded' })),
   openExternalUrl: vi.fn(() => Promise.resolve()),
   markCommercialReminderDismissed: vi.fn(() => Promise.resolve()),
   markExpirationModalShown: vi.fn(() => Promise.resolve()),

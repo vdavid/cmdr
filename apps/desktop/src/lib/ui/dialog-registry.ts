@@ -171,7 +171,11 @@ export const SOFT_DIALOG_REGISTRY = [
     description: 'Reviews the file operations Ask Cmdr has suggested, one group at a time, before any of them run',
     whileOpen: BLOCKS_OPERATIONS,
   },
-  { id: 'connect-to-server', description: 'Manual SMB server address entry', whileOpen: BLOCKS_OPERATIONS },
+  {
+    id: 'server-sign-in',
+    description: 'The one sheet for adding a server, signing in to one, and editing one',
+    whileOpen: BLOCKS_OPERATIONS,
+  },
   {
     id: 'viewer-copy-confirm',
     description: 'Confirms copying a 10 to 100 MB selection from the file viewer',
