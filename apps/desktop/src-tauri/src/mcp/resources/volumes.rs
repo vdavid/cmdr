@@ -396,7 +396,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                     connection_state: None,
                     // Every storage this path lists belongs to a device the session
                     // layer already has open, so there is nothing left to wait for.
-                    device_readiness: Some("ready"),
+                    device_readiness: Some(device_readiness_token(cmdr_fs::volume::DeviceReadiness::Ready)),
                     // An MTP storage has no filesystem path to scope a search with.
                     mount_path: None,
                     space: space_summary(&volume_id),
