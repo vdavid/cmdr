@@ -155,7 +155,7 @@ pub(super) fn blanket_resolution_across_types(
         ConflictResolution::Overwrite | ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
             log::info!(
                 target: "conflict_resolution",
-                "{resolution:?}: skipping {destination} — a folder and a file can't replace each other under a blanket policy"
+                "{resolution:?}: skipping {destination}, because a folder and a file can't replace each other under a blanket policy"
             );
             ConflictResolution::Skip
         }
