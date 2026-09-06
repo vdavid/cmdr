@@ -55,6 +55,7 @@ var allowedUnusedClasses = map[string]bool{
 	// `smb-indicator-{state}` template string, where `state` is the ConnectionState enum value.
 	// The `direct` and `os_mount` rules are also written out literally in the breadcrumb markup,
 	// so only the dropdown-only states need listing here.
+	"smb-indicator-disconnected":            true,
 	"smb-indicator-needs_sign_in":           true,
 	"smb-indicator-needs_host_key_approval": true,
 	"smb-indicator-saved":                   true,

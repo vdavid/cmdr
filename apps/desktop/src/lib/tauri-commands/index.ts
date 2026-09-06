@@ -862,6 +862,29 @@ export type {
   SftpTarget,
 } from './sftp'
 
+// Servers: one command family over SFTP, WebDAV, and SMB hosts
+export {
+  listSavedServers,
+  newServerAttemptId,
+  connectSavedPlace,
+  connectServer,
+  cancelServerConnect,
+  disconnectPlace,
+  setPlacePinned,
+  forgetServer,
+  hasServerSecret,
+  forgetServerSecret,
+  updateSavedServer,
+} from './servers'
+export type {
+  SavedPlace,
+  SavedServer,
+  SecretOffer,
+  ServerConnectOutcome,
+  ServerProtocol,
+  ServerTarget,
+} from './servers'
+
 // WebDAV servers: connecting, secrets, and the saved-server list
 export {
   connectWebdavVolume,

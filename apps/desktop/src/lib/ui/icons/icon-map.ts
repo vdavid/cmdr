@@ -60,6 +60,7 @@ import IconSun from '~icons/lucide/sun'
 import IconTag from '~icons/lucide/tag'
 import IconTrash2 from '~icons/lucide/trash-2'
 import IconTriangleAlert from '~icons/lucide/triangle-alert'
+import IconUnplug from '~icons/lucide/unplug'
 import IconX from '~icons/lucide/x'
 import EjectIcon from './EjectIcon.svelte'
 
@@ -137,6 +138,7 @@ export const ICON_COMPONENTS = {
   tag: IconTag,
   'trash-2': IconTrash2,
   'triangle-alert': IconTriangleAlert,
+  unplug: IconUnplug,
   x: IconX,
 } satisfies Record<string, Component>
 

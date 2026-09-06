@@ -31,6 +31,7 @@
     import type { SortColumn, SortOrder, NetworkHost, WriteOperationError, FriendlyError, FileEntry } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
+    import { runServerRowAction } from '../navigation/server-row-actions'
 
     import { canGoBack, type NavigationHistory } from '../navigation/navigation-history'
     import TabBar from '../tabs/TabBar.svelte'
@@ -663,7 +664,12 @@
         // VolumeBreadcrumb call `ejectVolume` directly; this listener only handles
         // the native-menu case.
         unlistenVolumeContextAction = await onVolumeContextAction((payload) => {
-            if (payload.action !== 'eject') return
+            if (payload.action !== 'eject') {
+                // Everything a SERVER row's menu offers (Disconnect, the two
+                // Forgets) is dispatched from one module, shared with the hub.
+                void runServerRowAction(payload)
+                return
+            }
             void (async () => {
                 try {
                     await ejectVolume(payload.volumeId)

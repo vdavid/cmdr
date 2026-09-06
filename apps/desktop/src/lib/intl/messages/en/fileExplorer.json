@@ -2074,6 +2074,76 @@
   "@fileExplorer.navigation.volumeOptionsTooltip": {
     "description": "Hover tooltip on the breadcrumb options button (the chevron next to an OS-mounted network volume) that opens the connect-directly popup."
   },
+  "fileExplorer.navigation.connectionTooltipDisconnected": "The connection dropped. Cmdr is working on getting it back.",
+  "@fileExplorer.navigation.connectionTooltipDisconnected": {
+    "description": "Hover tooltip on the connection dot of a server row whose session dropped. Cmdr's reconnect loop is running, so this is a statement of what is happening, not something the user has to act on."
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsSignIn": "Signed out. Open this server to sign in again.",
+  "@fileExplorer.navigation.connectionTooltipNeedsSignIn": {
+    "description": "Hover tooltip on the connection dot of a server row where Cmdr stopped reconnecting because a password or passphrase is what's missing. Opening the row is how the user gets back in."
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "This server''s key changed. Open it to look at the key.",
+  "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
+    "description": "Hover tooltip on the connection dot of an SFTP server row whose host key no longer matches the trusted one. \"Key\" is the server's SSH host key, the fingerprint a person checks before trusting the server again."
+  },
+  "fileExplorer.navigation.connectionTooltipSaved": "Saved. Open it to connect.",
+  "@fileExplorer.navigation.connectionTooltipSaved": {
+    "description": "Hover tooltip on the connection dot of a saved server row that isn't connected and has nothing in flight. It's in the switcher because the user pinned it; opening the row dials it."
+  },
+  "fileExplorer.navigation.disconnectPlaceAriaLabel": "Disconnect {name}",
+  "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
+    "description": "Accessibility label and tooltip for the disconnect control on a server row in the volume switcher, in the slot where a removable drive shows Eject. A server has nothing to unplug, so it says Disconnect.",
+    "placeholders": {
+      "name": "the server's display name, like \"Naspolya\""
+    }
+  },
+  "fileExplorer.navigation.disconnectBusyTooltip": "Can''t disconnect while operations are in progress on this server",
+  "@fileExplorer.navigation.disconnectBusyTooltip": {
+    "description": "Accessibility label and tooltip on a disconnect control that is disabled because a file operation is still running against the server."
+  },
+  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr couldn''t disconnect from {name}.",
+  "@fileExplorer.navigation.disconnectRefusedToast": {
+    "description": "Toast shown when dropping a server's connection didn't go through.",
+    "placeholders": {
+      "name": "the server's display name, like \"Naspolya\""
+    }
+  },
+  "fileExplorer.navigation.forgetServerConfirmTitle": "Forget server",
+  "@fileExplorer.navigation.forgetServerConfirmTitle": {
+    "description": "Title of the confirmation dialog shown before Cmdr removes a saved server. VERB phrase: the action the user is confirming."
+  },
+  "fileExplorer.navigation.forgetServerConfirm": "Forget {name}? Cmdr drops the connection and stops listing it. Your files stay on the server.",
+  "@fileExplorer.navigation.forgetServerConfirm": {
+    "description": "Body of the confirmation dialog shown before Cmdr removes a saved server. The last sentence is the reassurance that matters: forgetting is a local act, nothing on the server is touched.",
+    "placeholders": {
+      "name": "the server's display name, like \"Naspolya\""
+    }
+  },
+  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr couldn''t forget {name}.",
+  "@fileExplorer.navigation.forgetServerRefusedToast": {
+    "description": "Toast shown when removing a saved server didn't go through.",
+    "placeholders": {
+      "name": "the server's display name, like \"Naspolya\""
+    }
+  },
+  "fileExplorer.navigation.forgetSecretConfirmTitle": "Forget saved password",
+  "@fileExplorer.navigation.forgetSecretConfirmTitle": {
+    "description": "Title of the confirmation dialog shown before Cmdr forgets a server's remembered password. VERB phrase: the action the user is confirming."
+  },
+  "fileExplorer.navigation.forgetSecretConfirm": "Forget the saved password for {name}? Cmdr asks for it the next time you connect.",
+  "@fileExplorer.navigation.forgetSecretConfirm": {
+    "description": "Body of the confirmation dialog shown before Cmdr forgets a server's remembered password, which lives in the macOS Keychain. The server itself stays saved.",
+    "placeholders": {
+      "name": "the server's display name, like \"Naspolya\""
+    }
+  },
+  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr couldn''t forget the saved password for {name}.",
+  "@fileExplorer.navigation.forgetSecretRefusedToast": {
+    "description": "Toast shown when removing a server's remembered password didn't go through.",
+    "placeholders": {
+      "name": "the server's display name, like \"Naspolya\""
+    }
+  },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Eject {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "description": "Accessibility label and tooltip for the eject button on a volume in the breadcrumb and switcher. {name} is the volume''s display name.",
