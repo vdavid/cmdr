@@ -225,7 +225,16 @@ test.describe('A saved server in the switcher and the pane', () => {
       .toBeTruthy()
     await closeVolumePicker(tauriPage)
 
-    await mcpCall('select_volume', { pane: 'left', name: SYNTHETIC_NAME })
+    // ❗ The `select_volume` TOOL can't reach this row: `mcp/executor/nav.rs`
+    // validates the name against the BACKEND's own listing, and a synthetic
+    // volume exists only in the frontend store. The event the tool emits does
+    // reach it, and `selectVolumeByName` looks the name up in that store.
+    await tauriPage.evaluate(`(function () {
+      window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+        event: 'mcp-volume-select',
+        payload: { pane: 'left', name: ${JSON.stringify(SYNTHETIC_NAME)} },
+      });
+    })()`)
 
     // The pane renders the connect view rather than a listing. The dial can't
     // succeed (nothing is saved under this id, and the host doesn't resolve), so

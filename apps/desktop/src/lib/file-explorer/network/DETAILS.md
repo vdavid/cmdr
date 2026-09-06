@@ -42,8 +42,8 @@ navigable, "+" icon, italic), firing `onConnectToServer`. Total navigable items 
 `handleNavigationShortcut` (`../navigation/keyboard-shortcuts`); Left/Right jump to first/last.
 
 Three inputs, and one of them is a command rather than a store: `listSavedServers()` (re-read whenever the volume list
-is reassigned, which every pin, forget, connect, and disconnect causes through `volumes-changed`), the discovery
-store's hosts, and the volume list, which is where a place's standing lives.
+is reassigned, which every pin, forget, connect, and disconnect causes through `volumes-changed`), the discovery store's
+hosts, and the volume list, which is where a place's standing lives.
 
 ### What Enter does, per row kind
 
@@ -66,15 +66,19 @@ unit-tested:
   name or resolved hostname, because `known_shares` files a host under the server name `statfs` reported while mDNS
   files the same machine under its Bonjour name. Status comes off the VOLUME LIST, ❌ never off `SavedPlace.connected`,
   which is a snapshot from when the listing was built; the switcher's dot reads the same field, and two surfaces
-  disagreeing about whether a server is up is worse than either being briefly stale. Order: live sessions, then the
-  ones asking something of the user (`signed_out`, `waiting_for_key`), then the rest of what they saved by recency,
-  then what is merely nearby.
+  disagreeing about whether a server is up is worse than either being briefly stale. Order: live sessions, then the ones
+  asking something of the user (`signed_out`, `waiting_for_key`), then the rest of what they saved by recency, then what
+  is merely nearby.
 - **`servers-hub-mcp.ts`**: the `name` encoding. MCP's `PaneFileEntry` has only `name` / `path` / `isDirectory`, so the
   columns are encoded as `protocol=` / `status=` / `address=` tokens (plus `shares=` on an SMB host, which is what
   `smb.spec.ts` polls on). ❗ The status token is locale-independent even though the column beside it is translated: an
   agent parses these strings and a translation landing in the wire would break both silently. A one-place row's path is
-  the place's `appRoot` (from `SavedPlace`, which Rust mints in one function); an SMB host keeps the
-  `smb://<address>` spelling the host list has always published; the add row is `+ Add server…` at `smb://add`.
+  the place's `appRoot` (from `SavedPlace`, which Rust mints in one function); an SMB host keeps the `smb://<address>`
+  spelling the host list has always published; the add row is `+ Add server…` at `smb://add`.
+- **`servers-hub-actions.ts`**: F8, the two row menus, and the SMB host menu's answers, behind live getters (❌ never
+  snapshots: the rows change under a menu that is still open). ❗ A one-place row and an SMB host take different paths
+  at every branch, which is why they live in one unit: a one-place row is a PLACE the servers family speaks for, an SMB
+  host is a manual-server entry whose "disconnect" unmounts shares rather than dropping a session.
 - **`../navigation/servers-hub-rows` consumers**: `../pane/types.ts`'s `NetworkCursorEntry` gains a `server` arm, which
   is how the palette's server commands reach the row under the cursor (`$lib/servers/server-command-target.ts` owns the
   rule: the hub IS a pane, so "the focused pane's volume" would answer the synthetic hub row).
@@ -83,8 +87,8 @@ unit-tested:
 
 `network.enabled` gates mDNS and SMB, which is what the macOS Local Network permission is about; SFTP and WebDAV need
 none of it. So the hub opens either way, keeps listing saved servers, and shows one line plus a link to the switch in
-place of the nearby hosts. ❗ There is no "(disabled)" label and no redirect to Settings any more; `network-toggle.spec.ts`
-is the regression guard.
+place of the nearby hosts. ❗ There is no "(disabled)" label and no redirect to Settings any more;
+`network-toggle.spec.ts` is the regression guard.
 
 ### Context menu and F8
 
@@ -97,8 +101,8 @@ Forget server for a manual one, Forget saved password when creds are stored), wh
 
 Exports for parent: `setCursorIndex(index)`, `findItemIndex(name)`, `handleKeyDown(e)`, `refresh()`,
 `getHostUnderCursor()`, `getRowUnderCursor()`, `getItemCount()`, `openCursorItem()`. `refresh()` is `pane.refresh`'s
-entry point from the command layer and is the same body ⌘R runs locally, which is why the local branch stops
-propagation (see § Gotchas).
+entry point from the command layer and is the same body ⌘R runs locally, which is why the local branch stops propagation
+(see § Gotchas).
 
 ## `PlacesBrowser.svelte`
 

@@ -512,10 +512,10 @@ These patterns emerged during the volume picker implementation and should be fol
 ## `volume-grouping.ts`
 
 Logic for organizing volumes into display groups. No own reactive state, but group LABELS and the synthetic hub row's
-NAME are resolved from the message catalog (`tString('fileExplorer.navigation.group*' / '.networkVolume')`), which
-reads the active locale. `VolumeBreadcrumb` calls `groupByCategory` from a `$derived`, so the labels track a locale
-switch. To change a section heading or the hub row's name, edit the catalog, not this file — and see
-`../network/DETAILS.md` § Gotchas for the four other places that name has to match, one of which is Rust.
+NAME are resolved from the message catalog (`tString('fileExplorer.navigation.group*' / '.networkVolume')`), which reads
+the active locale. `VolumeBreadcrumb` calls `groupByCategory` from a `$derived`, so the labels track a locale switch. To
+change a section heading or the hub row's name, edit the catalog, not this file — and see `../network/DETAILS.md` §
+Gotchas for the four other places that name has to match, one of which is Rust.
 
 `groupByCategory(vols)`: groups volumes by category in display order:
 
@@ -523,12 +523,12 @@ switch. To change a section heading or the hub row's name, edit the catalog, not
 2. main_volume + attached_volume: merged into one group
 3. Cloud drives
 4. Mobile (MTP) devices: filtered from unified volume list (`category === 'mobile_device'`)
-5. Network: always includes the synthetic `'network'` hub row (`smb://`, labelled "Servers") plus any mounted SMB
-   shares and every SFTP or WebDAV place the listing carried. ❗ The row is there whatever `network.enabled` says, and
-   opening it always navigates. That switch gates mDNS discovery and SMB, which is what the macOS Local Network
-   permission is about; SFTP and WebDAV need none of it, so refusing to open the hub would hide a person's saved
-   servers over a permission they don't need. The hub says the discovery half is off in its own list instead
-   (`../network/DETAILS.md` § "Discovery off"), with a link to the setting.
+5. Network: always includes the synthetic `'network'` hub row (`smb://`, labelled "Servers") plus any mounted SMB shares
+   and every SFTP or WebDAV place the listing carried. ❗ The row is there whatever `network.enabled` says, and opening
+   it always navigates. That switch gates mDNS discovery and SMB, which is what the macOS Local Network permission is
+   about; SFTP and WebDAV need none of it, so refusing to open the hub would hide a person's saved servers over a
+   permission they don't need. The hub says the discovery half is off in its own list instead (`../network/DETAILS.md` §
+   "Discovery off"), with a link to the setting.
 
 `getIconForVolume(volume)`: returns the appropriate icon path for a volume based on its category.
 
