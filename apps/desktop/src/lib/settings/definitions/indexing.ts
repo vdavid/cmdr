@@ -244,7 +244,7 @@ export const indexingSettings: SettingDefinitionSource[] = [
   },
   {
     // How many parallel workers image indexing runs. Default 1 = today's single worker
-    // (the M2 spike measured a ~1.25x ceiling on current Apple Silicon: the ANE serializes
+    // (a parallelism spike measured a ~1.25x ceiling on current Apple Silicon: the ANE serializes
     // inference, so more workers help modestly and only up to ~2). Rendered by `SettingSlider`
     // inside the "Enable indexing" card with a RUNTIME max = this machine's CPU count
     // (`media_index_max_parallelism`); the `constraints.max` here is only a static fallback

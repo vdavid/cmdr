@@ -156,7 +156,7 @@ and it would delete a USER's thread the moment a rail turn called it. So the han
 delete lives on the wake path, after the turn (`agent/wake/`), and a rail turn calling this changes nothing —
 `wake/tests/job.rs` pins that.
 
-**Why the `reason` never reaches a log.** It exists for the agent's own memory (M3) and is trimmed to
+**Why the `reason` never reaches a log.** It exists for the agent's own memory and is trimmed to
 `MAX_REASON_CHARS`. ❌ It must never be logged verbatim: `cmdr.log` ships inside error reports, including the
 auto-dispatched ones the user never previews, and `redact::redact_line_salted` is path-shaped, so it does nothing to a
 sentence about which of the user's folders were boring. Log that a wake was quiet, never what it said.

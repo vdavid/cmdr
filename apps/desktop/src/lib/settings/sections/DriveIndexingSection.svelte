@@ -71,9 +71,9 @@
 
     // What the index takes up across EVERY drive, read off the files on disk. It
     // has to hold with the master switch off: a search walks the folder it's
-    // pointed at whatever the switch says (`docs/specs/unindexed-search-plan.md`
-    // Decision 13), so the machine that indexes nothing is exactly the one whose
-    // index nobody could see or clear when this read the live `root` instance.
+    // pointed at whatever the switch says and leaves an index behind, so the
+    // machine that indexes nothing is exactly the one whose index nobody could
+    // see or clear when this read the live `root` instance.
     // `null` means there's nothing on disk, which is the one case with no size to
     // show and nothing to clear.
     let indexBytes = $state<number | null>(null)

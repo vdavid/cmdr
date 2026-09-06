@@ -151,7 +151,9 @@ export function createEntryActivation(deps: EntryActivationDeps): EntryActivatio
       // A file INSIDE an archive can't be opened by the OS default app: the
       // inner path doesn't exist on disk, so `openFile` is a silent no-op.
       // Route to the viewer (bounded temp-extract, same as F3) — the honest
-      // interim until the Enter-behavior milestone adds extract-then-open.
+      // interim until extract-then-launch lands, which needs its own
+      // extract-and-persist lifecycle (`crates/cmdr-archive/DETAILS.md` §
+      // "Left for later").
       // Pass the pane's DRIVE volume id (an archive pane keeps its parent
       // drive's id) so a remote-hosted zip previews through that volume.
       void openFileViewer(entry.path, deps.getVolumeId())

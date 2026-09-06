@@ -72,18 +72,13 @@ export interface SettingDefinitionSource extends Omit<
 // ============================================================================
 // Searchable rows (things the Settings search must find that aren't settings)
 //
-// A section renders plenty that no setting models: "Clear index", "Open log
-// file", "Get a license". Search only knows the registry, so those rows were
-// unfindable, and a card gated on `anyVisible(...)` couldn't know to show for
-// them (the blank-pane bug). A `SearchableRow` gives such a row a searchable
-// identity WITHOUT modelling it as a setting: no `SettingsValues` key, no
-// default, nothing read or written.
+// A `SearchableRow` gives a non-setting row ("Clear index", "Open log file",
+// "Get a license") a searchable identity WITHOUT modelling it as a setting: no
+// `SettingsValues` key, no default, nothing read or written. Declarations live
+// in a `<Component>.rows.ts` beside the markup they describe, aggregated by
+// `sections/searchable-rows.ts`; a row NEVER decides what renders.
 //
-// Declarations live in a `<Component>.rows.ts` beside the markup they describe;
-// `sections/searchable-rows.ts` aggregates them for the index. A row NEVER
-// decides what renders — the section keeps hand-rendering its markup and gates
-// it on `shouldShow(id)`, which is what keeps the frame and its contents from
-// disagreeing.
+// The rationale and the guardrails: `DETAILS.md` § "Searchable rows".
 // ============================================================================
 
 /**
@@ -406,7 +401,7 @@ export interface SettingsValues {
   /**
    * Master toggle for image-content indexing (OCR search, off by default). Live-applied
    * to the backend `media_index` scheduler via `set_image_index_enabled`; the scheduler
-   * no-ops until it's on. Local drives only for now (SMB/MTP is a later milestone).
+   * no-ops until it's on. Local drives only for now; SMB/MTP may follow.
    */
   'mediaIndex.enabled': boolean
   /**
@@ -466,7 +461,7 @@ export interface SettingsValues {
   /**
    * How many parallel workers image indexing runs (the "Parallel workers" slider). `1`
    * (the default) is today's single worker; the max is this machine's CPU count, and the
-   * backend clamps to `1..=CPU-count`. The M2 spike measured a ~1.25x ceiling on current
+   * backend clamps to `1..=CPU-count`. A parallelism spike measured a ~1.25x ceiling on current
    * Apple Silicon (the ANE serializes inference), so more workers help modestly and only up
    * to ~2. Live-applied via `media_index_set_parallelism`; a running pass resizes its pool
    * between images. Hand-rendered via `SettingSlider` with a runtime max, so it's `hidden`.

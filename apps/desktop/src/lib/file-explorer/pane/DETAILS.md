@@ -1117,14 +1117,12 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   gets the read-only variant (`canWrite: false`, `canBeSource: true` so extract-out still works). ⌘C/⌘X are refused
   separately and route to F5/F6, since archive-inner paths aren't OS-resolvable URLs. ❌ The archive branch never folds
   in the PARENT drive's published capabilities: they answer for the drive, and the pane is inside a file on it.
-- **A DOCUMENT container (`.docx` / `.xlsx` / `.pptx` / `.jar` / `.apk`) browses but is never writable.** Two suffix
-  tables express that: `SUPPORTED_ARCHIVE_SUFFIXES` (browsable, mirrors the backend's `format_for_name` — a test parses
-  the Rust table and asserts set equality) and `WRITABLE_ARCHIVE_SUFFIXES`, which is `['.zip']` and ❌ must stay that
-  way. **Decision/Why**: a `.docx` IS a zip, so the archive-edit mutator would rewrite one happily; letting a user
-  rename or delete parts while looking around inside a Word file hands them a corrupt document, and "protect the user's
-  data" outranks the convenience. The UI list is the visible half only — the backend refuses by TYPE
-  (`ArchiveFormat::Ooxml` never satisfies `ensure_zip_writable`), so an MCP or IPC caller that never sees a dialog is
-  refused too. Read-only holds by construction, not by hidden buttons.
+- **A DOCUMENT container (`.docx` / `.xlsx` / `.pptx` / `.jar` / `.apk`) browses but is never writable**, and two suffix
+  tables express that here: `SUPPORTED_ARCHIVE_SUFFIXES` (browsable, mirrors the backend's `format_for_name` — a test
+  parses the Rust table and asserts set equality) and `WRITABLE_ARCHIVE_SUFFIXES`, which is `['.zip']` and ❌ must stay
+  that way. These lists are the VISIBLE half only: the backend refuses by TYPE, so an MCP or IPC caller that never sees
+  a dialog is refused too, and read-only holds by construction rather than by hidden buttons. Why the split exists at
+  all is the backend's decision to own: `crates/cmdr-archive/DETAILS.md` § "Why a document container is its own format".
 - **Why `VolumeInfo.mountIsReadOnly` still matters**: the archive pane's `volumeId` is the parent drive. A writable zip
   runs the real managed archive-edit flow, but a zip that lives on a read-only `VolumeInfo` (a locked disk image) can't
   be rewritten in place — the write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`

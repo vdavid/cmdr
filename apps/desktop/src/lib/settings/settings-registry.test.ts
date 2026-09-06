@@ -336,7 +336,7 @@ describe('buildSectionTree', () => {
   })
 
   it('gives every setting exactly one home: Advanced auto-render XOR a non-Advanced tree node', () => {
-    // The M8 invariant. `getAdvancedSettings()` is what AdvancedSection auto-renders;
+    // The one-home invariant. `getAdvancedSettings()` is what AdvancedSection auto-renders;
     // the tree (sans Advanced) is what feature pages hand-render. No id may be in both,
     // and together (plus hidden) they account for the whole registry.
     const advancedIds = new Set(getAdvancedSettings().map((s) => s.id))

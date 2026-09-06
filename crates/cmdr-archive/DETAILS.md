@@ -317,7 +317,7 @@ the `create_directory_all` guard), encrypted/corrupt/non-zip typed errors throug
 (at the archive root). `src/boundary.rs` tests the per-format magic (incl. plain-tar ustar-at-257) and the
 double-extension split. The reading-core, mutation, and watch tests live with their modules.
 
-## Left for the follow-up milestones
+## Left for later
 
 `ArchiveVolume` (browse + extract + `scan_for_copy`) and backend routing (§ "Routing and lifecycle") are landed:
 `VolumeManager::resolve`, the shared `src/boundary.rs` detector, the archive LRU, the read-only write guards, the live

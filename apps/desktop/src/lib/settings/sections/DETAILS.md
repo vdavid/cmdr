@@ -56,17 +56,16 @@ sections compose).
   `disabled` + the "Off with drive indexing" badge, the hand-rendered re-enable row dims with them
   (`.reenable-row.overridden`, matching `SettingRow`'s own disabled opacity), and one `.master-off-note` line says what
   stopped and that each drive keeps its own choice. Clear index stays live on purpose: reclaiming the disk is exactly
-  what someone who turned indexing off may want next, and after this effort there IS something to reclaim there — a
-  search walks whatever folder it's pointed at whichever way the switch is set (`docs/specs/unindexed-search-plan.md`
-  Decision 13). So the size and the button read the whole index's FOOTPRINT off disk (`get_index_disk_usage`, every
-  `index-*.db` plus sidecars, `root` included) instead of the live `root` instance's `db_file_size`, which answers
-  `None` on exactly the machine that most needs the number. Clearing goes just as wide (`clear_drive_index` →
-  `Index::forget_all_volumes`): a walk's disk can belong to a share nobody ever enabled, and per-drive clearing has its
-  own action in the drive's badge menu. ❌ **Don't "fix" `settings.indexing.masterOffNote` without asking David.** It
-  says no drive is indexed and folder sizes stay hidden, which stops being strictly true the moment a search writes
-  coverage for a branch it walked; he read it against that and chose to leave it, since it describes what the switch
-  does rather than what a search may have left behind. It is accepted difference 11 in
-  `apps/desktop/src-tauri/src/search/DETAILS.md`.
+  what someone who turned indexing off may want next, and there IS something to reclaim there: a search walks whatever
+  folder it's pointed at whichever way the switch is set, and leaves an index behind. So the size and the button read
+  the whole index's FOOTPRINT off disk (`get_index_disk_usage`, every `index-*.db` plus sidecars, `root` included)
+  instead of the live `root` instance's `db_file_size`, which answers `None` on exactly the machine that most needs the
+  number. Clearing goes just as wide (`clear_drive_index` → `Index::forget_all_volumes`): a walk's disk can belong to a
+  share nobody ever enabled, and per-drive clearing has its own action in the drive's badge menu. ❌ **Don't "fix"
+  `settings.indexing.masterOffNote` without asking David.** It says no drive is indexed and folder sizes stay hidden,
+  which stops being strictly true the moment a search writes coverage for a branch it walked; he read it against that
+  and chose to leave it, since it describes what the switch does rather than what a search may have left behind. It is
+  accepted difference 11 in `apps/desktop/src-tauri/src/search/DETAILS.md`.
 - **`NotificationsSection.svelte`**: `Behavior > Notifications`: two `SectionCard` card groups — Downloads (BOTH
   Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest
   `Switch` whose description references the live global binding — the combo is edited under Keyboard shortcuts; anchor
@@ -260,20 +259,18 @@ renders them** (`DriveIndexingSection.rows.ts`, `AdvancedSection.rows.ts`, …),
 aggregator `settings-search.ts` imports. Adding or removing a row touches the file next to the markup, plus that
 aggregator line for a brand-new file.
 
-The shape and the whole rationale (why not a hidden setting, how the ids stay out of `SettingId`'s space, the merge into
-the index): `../types.ts` § Searchable rows and `../DETAILS.md` § "Searchable rows". What matters here:
+The shape, the rationale, and the guardrails are single-sourced in `../DETAILS.md` § "Searchable rows"; the authoring
+steps are `docs/guides/adding-a-new-setting.md` § "Adding a searchable non-setting row". What's specific to this
+directory:
 
-- **A row NEVER decides what renders.** It's search metadata. The section keeps hand-rendering its markup and gating it
-  on `shouldShow('row:…')`, exactly as it gates a setting row, and a card that renders one puts the row id in its
-  `anyVisible(...)` guard. Miss that guard and a hit on the row opens a page with every card filtered away — the blank
-  pane the mechanism exists to prevent. ❌ Don't grow this into a renderer: sections stay bespoke Svelte.
-- **Reuse the label key the row already renders**, so a hit matches what the user reads and no new copy is needed.
-- **Register only rows that are there whenever their page is.** A row gated on runtime state (the reclaim offer, the
-  CLIP model's download/delete, anything behind the image-index master toggle) stays unregistered: sending a searcher to
-  a row that isn't rendered is worse than no hit. `MediaIndex*` has no rows file for exactly this reason.
-- **`section` MUST equal the hosting page's**, or the row lands outside that page's section-scoped match set.
-- `searchable-rows.test.ts` fails if a declared row names a label key its sibling component doesn't render, if a
-  filtering section doesn't gate the row on its own id, or if an id collides with a `SettingId`.
+- **A row NEVER decides what renders**, so ❌ don't grow this into a renderer: sections stay bespoke Svelte, and a
+  `.rows.ts` is search metadata sitting beside markup it doesn't own.
+- **`MediaIndex*` has no rows file on purpose.** Everything it renders is gated on runtime state (the reclaim offer, the
+  CLIP model's download/delete, anything behind the image-index master toggle), and a hit that scrolls to a row that
+  isn't rendered is worse than no hit.
+- `searchable-rows.test.ts` lives here, not in `../`, and fails if a declared row names a label key its sibling
+  component doesn't render, if a filtering section doesn't gate the row on its own id, or if an id collides with a
+  `SettingId`.
 
 ### Registry-driven section routing
 

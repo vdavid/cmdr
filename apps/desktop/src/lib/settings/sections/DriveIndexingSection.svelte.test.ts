@@ -7,8 +7,7 @@
  *     prompt toggle + re-enable button, and the stale-notify toggle.
  *   - The clear-index button calls the backend IPC.
  *   - The size and the clear button work with the master switch OFF, since a
- *     search walks whatever folder it's pointed at and leaves an index behind
- *     (`docs/specs/unindexed-search-plan.md` M10).
+ *     search walks whatever folder it's pointed at and leaves an index behind.
  *   - The `row:indexing.indexSize` searchable row keeps the card visible when
  *     searching "index size", so the page never blanks.
  *
