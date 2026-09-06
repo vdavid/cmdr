@@ -1,11 +1,11 @@
 import {
-  DEFAULT_VOLUME_ID,
   copyFilesToClipboard,
   cutFilesToClipboard,
   copyPathsToClipboard,
   cutPathsToClipboard,
   readClipboardFiles,
   clearClipboardCutState,
+  resolvePathVolume,
 } from '$lib/tauri-commands'
 import { addToast, addToastForPane } from '$lib/ui/toast'
 import { resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
@@ -15,7 +15,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
-import { checkTransferDestinationGuard } from './transfer-entry'
+import { checkTransferDestinationGuard, resolveSourceVolumeId } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
 import { pasteClipboardContentAsFile } from './paste-clipboard-as-file'
@@ -323,6 +323,14 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       const destVolId = access.getPaneVolumeId(access.getFocusedPane())
       const sourceFolderPath = getCommonParentPath(result.paths)
 
+      // The volume the sources really sit on, resolved through the same seam the
+      // drop path runs. Everything keyed on the source volume depends on it: the
+      // busy set that keeps Eject disabled while the paste reads off a stick, a
+      // DMG, or a mounted share; the operation's lane; the operation log; and the
+      // progress dialog's source label. `resolveSourceVolumeId` answers root when
+      // the sources span volumes or can't be placed, the honest unknown.
+      const sourceVolumeId = await resolveSourceVolumeId(result.paths, access.getVolumes(), resolvePathVolume)
+
       // Per-type top-level split for the completion toast ("Copied 1 file and 2
       // folders"). `readClipboardFiles` returns each path's kind. We surface the
       // split only when EVERY flag is known; any `null` (stat failed) drops both
@@ -344,7 +352,7 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         sortColumn: sortBy,
         sortOrder,
         previewId: null,
-        sourceVolumeId: DEFAULT_VOLUME_ID,
+        sourceVolumeId,
         destVolumeId: destVolId,
         fileCount: split?.fileCount,
         folderCount: split?.folderCount,
