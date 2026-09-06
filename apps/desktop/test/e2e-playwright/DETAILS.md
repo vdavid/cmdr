@@ -205,6 +205,13 @@ Only the layout facts that none of those carry live here:
   the guard that deletes anything not in the manifest. It also runs on `captureTest` (`fixtures.ts`), the bare `test`
   with no auto fixture: the leak guard's fixture diff is meaningless with no fixtures, and its overlay check is wrong
   for a master that is deliberately a picture of an open dialog.
+- **Splitting a spec buys readability, never parallelism, and each half has to state its own preconditions.**
+  `playwright.config.ts` sets `fullyParallel: false` and `workers: 1`, so every file in a shard runs sequentially
+  against ONE app instance, and a setting one spec writes is still written for every spec that follows. A family of
+  specs therefore shares its primitives through a `<topic>-helpers.ts` (`archive-browsing` + `archive-editing` over
+  `archive-helpers.ts`, `conflict-*` over `conflict-helpers.ts`, `search-*` over `search-helpers.ts`) while each file
+  sets the settings it depends on in its own `beforeEach`, rather than inheriting whatever ran before it. Splitting for
+  the sake of the `file-length` threshold alone is not worth it; split when the halves answer different questions.
 - **The frame anchor reaches the master through `magick`, and splits so CI still asserts something.**
   `marketing-shots-frame.test.ts` checks the focused-margin constants against a REAL capture, but the committed master
   is lossless WebP and nothing here decodes those pixels in JavaScript (`i18n-capture-png.ts` is PNG-only, and a VP8L
