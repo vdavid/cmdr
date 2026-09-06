@@ -6,6 +6,7 @@ use std::time::Duration;
 use super::*;
 use crate::network::sftp_known_servers::KnownSftpServer;
 use crate::network::webdav_known_servers::KnownWebdavServer;
+use cmdr_fs::volume::BackendKind;
 
 /// A host nobody else's cell will use, so this suite can share the
 /// process-global store with whatever runs beside it.
@@ -108,4 +109,148 @@ fn a_sibling_root_is_not_this_servers_path() {
         server_volume_for_path(&format!("sftp://ada@{host}:2222/srv/data-1/photos")).is_none(),
         "`/srv/data-1` is a different tree, however much of `/srv/data` it spells"
     );
+}
+
+// ── The rows the switcher gets ───────────────────────────────────────
+
+/// ❗ **The switcher's Network group holds the CONNECTED and the PINNED places,
+/// and nothing else.** A user with 12 saved buckets scrolling past their own
+/// disks is what the pin exists to prevent, so a saved-but-unpinned server has
+/// no row.
+#[test]
+fn the_listing_holds_the_connected_and_the_pinned_and_leaves_the_rest_out() {
+    let pinned_host = "192.0.2.41";
+    let unpinned_host = "192.0.2.42";
+    sftp_known_servers::remember(saved_sftp(pinned_host, true));
+    sftp_known_servers::remember(saved_sftp(unpinned_host, false));
+
+    let mut rows = Vec::new();
+    append_server_volumes(&mut rows);
+
+    let pinned_id = cmdr_fs::volume::sftp_volume_id(pinned_host, 2222, "ada");
+    let row = rows
+        .iter()
+        .find(|row| row.id == pinned_id)
+        .expect("a pinned server has a row even with no session behind it");
+    assert_eq!(row.category, LocationCategory::Network);
+    assert_eq!(row.fs_type.as_deref(), Some("sftp"));
+    assert_eq!(row.name, format!("{pinned_host} server"));
+    assert_eq!(row.path, format!("sftp://ada@{pinned_host}:2222/srv/data"));
+    assert_eq!(row.connection_state, Some(ConnectionState::Saved));
+    assert!(
+        !row.is_ejectable,
+        "a server has nothing to unplug; its control says Disconnect"
+    );
+    assert!(!row.supports_trash);
+    assert!(
+        row.capabilities.is_none(),
+        "❗ enrichment fills this from the registered volume afterwards, which is why the arm folds BEFORE it"
+    );
+
+    let unpinned_id = cmdr_fs::volume::sftp_volume_id(unpinned_host, 2222, "ada");
+    assert!(
+        !rows.iter().any(|row| row.id == unpinned_id),
+        "a saved-but-unpinned server is reachable by path and absent from the switcher"
+    );
+}
+
+/// A pinned WebDAV server gets the same row, with its own `fs_type`.
+///
+/// ❗ The `fs_type` is load-bearing beyond display: the frontend's `volumeKindFor`
+/// reads it AHEAD of the `category === 'network'` arm, so a row without it is an
+/// SMB pane, with SMB's capability row and Open terminal firing on a
+/// `webdav://` path.
+#[test]
+fn a_pinned_webdav_server_gets_a_row_of_its_own_kind() {
+    let host = "192.0.2.43";
+    webdav_known_servers::remember(KnownWebdavServer {
+        url: format!("http://{host}:8080/dav/"),
+        username: "ada".to_string(),
+        display_name: "Docs".to_string(),
+        remote_root: "/Photos".to_string(),
+        auto_reconnect: true,
+        pinned: true,
+        last_connected_at: "2026-09-06T00:00:00Z".to_string(),
+    });
+
+    let mut rows = Vec::new();
+    append_server_volumes(&mut rows);
+
+    let row = rows
+        .iter()
+        .find(|row| row.id == cmdr_fs::volume::webdav_volume_id(host, 8080, "ada"))
+        .expect("a pinned WebDAV server has a row");
+    assert_eq!(row.fs_type.as_deref(), Some("webdav"));
+    assert_eq!(row.path, format!("webdav://ada@{host}:8080/Photos"));
+}
+
+/// ❗ **A registered volume gets a row whether or not it is pinned**, and it is
+/// the same id the `saved` row carried, so a tab survives the dial.
+#[test]
+fn a_registered_volume_gets_a_row_under_the_id_its_saved_row_carried() {
+    let host = "192.0.2.44";
+    sftp_known_servers::remember(saved_sftp(host, false));
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+
+    let mut before = Vec::new();
+    append_server_volumes(&mut before);
+    assert!(
+        !before.iter().any(|row| row.id == volume_id),
+        "unpinned and unconnected, so no row yet"
+    );
+
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    manager.register(
+        &volume_id,
+        std::sync::Arc::new(
+            cmdr_fs::volume::InMemoryVolume::new("stand-in")
+                .with_backend_kind(BackendKind::Sftp)
+                .with_connection_state(ConnectionState::Direct),
+        ),
+    );
+
+    let mut after = Vec::new();
+    append_server_volumes(&mut after);
+    let row = after
+        .iter()
+        .find(|row| row.id == volume_id)
+        .expect("a live session always has a row, pinned or not");
+    assert_eq!(row.connection_state, Some(ConnectionState::Direct));
+
+    manager.unregister(&volume_id);
+}
+
+/// ❗ **The arm folds BEFORE enrichment**, so a live server reaches the frontend
+/// with the capability surface its backend actually publishes rather than with
+/// the pane's per-kind defaults. This is the cell that pins the ORDER, which is
+/// the whole reason `volume_listing::complete` exists.
+#[tokio::test]
+async fn a_live_servers_row_comes_out_of_the_pipeline_enriched() {
+    let host = "192.0.2.45";
+    sftp_known_servers::remember(saved_sftp(host, true));
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    manager.register(
+        &volume_id,
+        std::sync::Arc::new(
+            cmdr_fs::volume::InMemoryVolume::new("stand-in")
+                .with_backend_kind(BackendKind::Sftp)
+                .with_connection_state(ConnectionState::Direct),
+        ),
+    );
+
+    let volumes = crate::volume_listing::complete(Vec::new()).await;
+    let row = volumes
+        .iter()
+        .find(|row| row.id == volume_id)
+        .expect("a live server is in the published list");
+
+    assert!(
+        row.capabilities.is_some(),
+        "❗ appended after enrichment, a server ships `capabilities: None` and the pane guesses"
+    );
+    assert_eq!(row.connection_state, Some(ConnectionState::Direct));
+
+    manager.unregister(&volume_id);
 }
