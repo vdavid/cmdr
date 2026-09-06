@@ -1,7 +1,7 @@
 # Go to path (frontend)
 
 Frontend half of the "Go to path" action (⌘G, command palette): a small modal that jumps the focused pane to a typed,
-pasted, or recent path. Local filesystem only for v1.
+pasted, or recent path. Local filesystem plus one intercept: a pasted server address.
 
 Backend counterpart: `apps/desktop/src-tauri/src/go_to_path/CLAUDE.md`. The backend's `resolve_go_to_path` owns all path
 reasoning; this frontend is a thin presenter (smart backend, thin frontend).
@@ -10,6 +10,7 @@ reasoning; this frontend is a thin presenter (smart backend, thin frontend).
 
 - `go-to-path.ts`: `goToPath(explorer, input)` handler (resolve → switch on typed `kind` → navigate → record recents) +
   the pure helpers `digitToRecentIndex` and `shouldPrefillClipboard`.
+- `scheme-intercept.ts`: what a `<scheme>://` input means, decided BEFORE the backend is asked.
 - `GoToPathDialog.svelte`: the modal (auto-focused textbox, up to 10 recent rows, live inline ancestor warning).
   `RESOLVE_DEBOUNCE_MS` lives here.
 - `GoToPathAncestorToastContent.svelte`: INFO toast for the nearest-ancestor outcome.
@@ -21,6 +22,12 @@ Navigation primitives are shared one level up in `../file-explorer/navigation/na
 
 ## Must-knows
 
+- **A `<scheme>://` input never reaches the backend resolver**, and the classification is ONE function all three
+  resolving sites call (the jump, the debounced preview, and the clipboard prefill). `resolve_go_to_path` walks
+  `std::fs::metadata` over a path joined onto the pane's directory, so it answers `invalid` for an address that is
+  about to work. ❗ Reading and ACTING are separate: `readSchemeInput` classifies and is safe from the preview,
+  `actOnSchemeInput` opens the sheet and is the jump's alone. A preview that opened a modal would put one on screen
+  mid-keystroke. DETAILS § "The scheme intercept".
 - **Switch on the typed `kind`, never on a message string.** The backend returns one `GoToPathResolution` with a `kind`
   discriminator (`directory` / `file` / `nearestAncestor` / `invalid`); `reason` and toast copy are user-facing only.
   This is the smart-backend principle.
@@ -41,8 +48,8 @@ Navigation primitives are shared one level up in `../file-explorer/navigation/na
 
 ## v1 limitations
 
-- **Local filesystem only.** Typed SMB/MTP paths are out of scope; a relative input on a non-local pane falls back to
-  nearest-ancestor (often `/`). Absolute and `~` paths always work.
+- **Local filesystem, plus the scheme intercept.** A `<scheme>://` address is handled above; anything else is local, so
+  a relative input on a non-local pane falls back to nearest-ancestor (often `/`). Absolute and `~` paths always work.
 - **Case-insensitivity.** Dedupe is a raw path-string compare, so on case-insensitive APFS `/Users/x/Foo` and
   `/Users/x/foo` can show as two recents. Accepted for v1.
 

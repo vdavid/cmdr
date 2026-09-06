@@ -396,7 +396,11 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     note: "The `attempt` is a fixture's, so nothing dials: each state answers one canned outcome after a beat, which is how the spinner, the inline refusal, and the two host-key faces get reviewed. Edit mode DOES read the real saved-server stores and the real Keychain (a read), so its form comes up empty unless a server with that address is saved.",
     states: [
       { id: 'add', label: 'Add: empty' },
-      { id: 'add-prefilled', label: 'Add: a pasted WebDAV address', note: 'Answers "nothing here speaks WebDAV", so the Nextcloud remedy shows once a username is typed.' },
+      {
+        id: 'add-prefilled',
+        label: 'Add: a pasted WebDAV address',
+        note: 'Answers "nothing here speaks WebDAV", so the Nextcloud remedy shows once a username is typed.',
+      },
       { id: 'sign-in', label: 'Sign in: password' },
       { id: 'sign-in-guest', label: 'Sign in: username, password, or guest' },
       { id: 'host-key-first-contact', label: 'Host key: first contact' },

@@ -53,10 +53,7 @@ const log = getAppLogger('go-to-path')
  * Returns the resolution so callers (the dialog) can react (close on success,
  * stay open on `invalid`).
  */
-export async function goToPath(
-  explorer: ExplorerAPI | undefined,
-  input: string,
-): Promise<GoToPathOutcome | undefined> {
+export async function goToPath(explorer: ExplorerAPI | undefined, input: string): Promise<GoToPathOutcome | undefined> {
   if (!explorer) {
     log.debug('goToPath: no explorer; skipping (HMR or pre-mount)')
     return undefined

@@ -7,9 +7,18 @@
  *
  * Rules (see `docs/style-guide.md`): never "error" or "failed", no trivializing
  * words ("just", "simple", "easy").
+ *
+ * ❗ The servers copy is here for the same reason: `servers.refusal.*` and
+ * `servers.paneState.*` are what a person reads when a connect stopped, which
+ * makes them error copy however they're filed, and they reach the screen through
+ * a `Record` rather than the friendly-error pipeline this file was built for.
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeAll, afterAll } from 'vitest'
+import { _setLocaleForTests } from '$lib/intl/locale'
+import { tString } from '$lib/intl/messages.svelte'
+import { wordConnectRefusal, type ConnectRefusalKind } from '$lib/servers/connect-refusals'
+import type { MessageKey } from '$lib/intl/keys.gen'
 import { getListingErrorMessage, type ListingErrorReason } from './listing-error-messages'
 import { getGitErrorMessage, type FriendlyGitErrorKind } from './git-error-messages'
 import { getProviderSuggestion, type Provider, type ProviderCategory } from './provider-error-messages'
@@ -169,5 +178,64 @@ describe('friendly-error copy obeys the writing rules', () => {
         }
       })
     }
+  }
+})
+
+// ── The servers copy ─────────────────────────────────────────────────────────
+
+/**
+ * Every refusal reason. Adding one makes this fail to typecheck, which is what
+ * keeps a new reason from reaching a person unread.
+ */
+const REFUSAL_KINDS: ConnectRefusalKind[] = [
+  'authentication_rejected',
+  'needs_credentials',
+  'auth_method_unsupported',
+  'certificate_untrusted',
+  'not_a_webdav_server',
+  'invalid_url',
+  'timed_out',
+  'unreachable',
+  'host_key_untrusted',
+  'host_key_revoked',
+]
+
+/** The pane's own sentences, which say what is happening rather than why it stopped. */
+const PANE_STATE_KEYS: MessageKey[] = [
+  'servers.paneState.connecting',
+  'servers.paneState.connectingHint',
+  'servers.paneState.cancel',
+  'servers.paneState.tryAgain',
+  'servers.paneState.disconnect',
+  'servers.paneState.signedOut',
+  'servers.paneState.signIn',
+  'servers.paneState.hostKeyChanged',
+  'servers.paneState.hostKeyChangedHint',
+]
+
+describe('servers copy obeys the writing rules', () => {
+  beforeAll(() => {
+    _setLocaleForTests('en-US')
+  })
+  afterAll(() => {
+    _setLocaleForTests(null)
+  })
+
+  for (const kind of REFUSAL_KINDS) {
+    it(`refusal "${kind}" is clean`, () => {
+      const sentence = wordConnectRefusal(kind, { host: 'nas.local', username: 'ada' })
+      for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS]) {
+        expect(containsWord(sentence, word), `servers.refusal.${kind} contains "${word}": ${sentence}`).toBe(false)
+      }
+    })
+  }
+
+  for (const key of PANE_STATE_KEYS) {
+    it(`pane state "${key}" is clean`, () => {
+      const sentence = tString(key, { name: 'Naspolya' })
+      for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS]) {
+        expect(containsWord(sentence, word), `${key} contains "${word}": ${sentence}`).toBe(false)
+      }
+    })
   }
 })

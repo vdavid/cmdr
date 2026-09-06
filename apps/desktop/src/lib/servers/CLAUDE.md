@@ -1,42 +1,42 @@
 # Servers
 
-Everything the app does with a remote place it can dial: the path spelling, the connect flow, and the words for a
-connect that stopped. Up: `../../CLAUDE.md`. Backend contracts: `crates/cmdr-sftp/DETAILS.md`,
+Everything the app does with a remote place it can dial: the path spelling, the connect flow, the one sign-in sheet, and
+the words for a connect that stopped. Up: `../../CLAUDE.md`. Backend contracts: `crates/cmdr-sftp/DETAILS.md`,
 `crates/cmdr-webdav/DETAILS.md`, `apps/desktop/src-tauri/src/server_volumes.rs`.
 
 ## Module map
 
-- `server-path-utils.ts`: reads and writes `<protocol>://<user>@<host>:<port>/<server path>`, plus `isServerPath` and
-  `isServerVolumeId`.
-- `connect-flow.ts`: `connectPlace` picks the move by the volume's standing, and `cancelPlaceConnect` calls it off.
-- `connect-refusals.ts`: one sentence per reason a connect stopped.
-- `server-command-target.ts`: which server the palette's server commands act on.
+- `server-path-utils.ts`: reads and writes `<protocol>://<user>@<host>:<port>/<server path>`.
+- `address-parser.ts`: one pasted string into a protocol and an endpoint. `server-form.ts`: the add form's model, and a
+  `ServerTarget` out of it.
+- `connect-flow.ts`: `connectPlace` picks the move by the volume's standing. `open-sign-in.ts`: the three ways the sheet
+  opens, each with the command that standing needs.
+- `SignInSheet.svelte` (+ `ServerFormFields`, `SignInCredentialFields`, `HostKeyStep`), behind
+  `sign-in-sheet-state.svelte.ts`. `sign-in-contract.ts`: what they hand each other.
+- `connect-refusals.ts`: one sentence per reason, and which field it goes under. `server-command-target.ts`: which
+  server a palette command acts on.
 
 ## Must-knows
 
-- **`connect-flow.ts` is the ONE caller of `connectSavedPlace` and of the reconnect manager's lazy start.** Its three
-  arms are decided by `connectionState`, and picking one wrong is silent: re-dialing a REGISTERED volume registers a
-  second one under a second id, and dialing one the backoff loop already owns races it. Everything that opens a place
-  (the switcher row, the hub, the pane, the sheet) comes through here. DETAILS § "The three arms".
-- **The attempt id is minted before the first dial** and handed out through `onAttemptStarted`, so Cancel is armed from
-  the first millisecond. A dial runs up to 30 s and the promise doesn't settle until it's over.
+- **`connect-flow.ts` is the ONE caller of `connectSavedPlace` and the reconnect manager's lazy start**, and
+  `open-sign-in.ts` is the one that picks between mending a REGISTERED volume and dialing an absent one. Getting that
+  wrong is silent: a dial on a registered volume registers a SECOND one under a second id. DETAILS § "The three arms".
+- **The sheet never dials, and stays open across rounds.** It calls the caller's `attempt` as many times as the user
+  retries; a first connect is three round-trips, and a sheet that closed between them would lose what was typed.
+- **Username editability is the SHAPE VARIANT's property, ❌ never the sheet's mode.** Read either as a mode rule and
+  you break the other protocol. DETAILS § "The renderer table".
+- **The attempt id is minted before the first dial**, so Cancel is armed from the first millisecond. A dial runs up to
+  30 s.
 - **Spell a remote path only through `server-path-utils.ts`**, which mints the prefix exactly as
-  `cmdr_fs::volume::ids::sftp_app_root` does: host lowercased, account left alone, port literal. ❌ Never hand-build
-  one, and ❌ never let a bare server-absolute path (`/srv/data`) out of a pane: Rust's mount table answers the LOCAL
-  root for any absolute path it doesn't know, so a scheme-free remote path resolves to the boot disk at every resolver
-  site.
-- **Every refusal kind carries its own sentence** (`connect-refusals.ts`, a `Record`, so a new kind can't compile
-  wordless). ❌ `needs_credentials` is NOT `authentication_rejected`: telling someone who has never entered a password
-  that theirs is wrong is what collapsing them does. Same for `auth_method_unsupported`, where the secret was never
-  sent.
-- **❌ No inert affordance.** A refused connect offers Try again, which really re-dials. The "Sign in…" button lands
-  with the sheet that can answer it (M2), not before; until then the `needs_sign_in` arm refuses with the reason.
-- **A server command aims at the hub's CURSOR ROW first, the focused pane's volume second**
-  (`server-command-target.ts`). ❗ The hub IS a pane, so reading "the focused pane's volume" alone answers the synthetic
-  hub row rather than the server the user is looking at. It stops at an SMB host row instead of falling through: acting
-  on something other than what someone is pointing at is worse than doing nothing.
+  `cmdr_fs::volume::ids::sftp_app_root` does. ❌ Never hand-build one, and ❌ never let a bare server-absolute path
+  (`/srv/data`) out of a pane: Rust's mount table answers the LOCAL root for any absolute path it doesn't know.
+- **Every refusal kind carries its own sentence AND its own field** (`connect-refusals.ts`, two `Record`s, so a new kind
+  can't compile wordless or homeless). ❌ `needs_credentials` is NOT `authentication_rejected`.
+- **❌ No inert affordance.** Every button does the thing it says. That is why a changed host key offers Disconnect
+  rather than "Trust it": nobody can answer for a fingerprint they haven't been shown.
 - **The pane is where waiting is shown, the sheet is where data is typed.**
   `file-explorer/pane/RemoteConnectView.svelte` renders the states; `pane/place-connect.svelte.ts` owns the `$effect`
   and the one-dial-per-landing rule.
 
-`DETAILS.md` holds the three arms in full, the path grammar and its Rust twin, the refusal table, and what M2 fills in.
+`DETAILS.md` holds the three arms, the sheet contract, the renderer table, the path grammar, the refusal table, the
+reserved S3 and OAuth shapes, and what later milestones fill in.
