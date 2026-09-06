@@ -330,6 +330,12 @@ pub(super) fn resolve_conflict(
 /// strict: equal sizes / equal mtimes / missing metadata all reduce to `Skip`,
 /// so a borderline file is never silently overwritten.
 ///
+/// It compares two files and nothing else. A clash whose sides are different
+/// KINDS never gets here under a blanket policy —
+/// [`blanket_resolution_across_types`] has already turned it into a `Skip` —
+/// which is why a folder's `len()` (its own inode's size, not its contents')
+/// can't decide anything.
+///
 /// Logs the *reason* on Skip (kept vs missing-metadata vs equal) so users
 /// running an SMB / MTP copy who pick "Overwrite all older" against a backend
 /// that doesn't surface `modified_at` can see in the operation log why every

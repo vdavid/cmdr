@@ -29,6 +29,9 @@ Copy, move, delete, trash, and zip edits, as managed background ops.
   deadline's.
 - **Arm `state.conflict_slot` with the QUESTION before emitting `write-conflict`** (emit-first hangs the recv); ❌ the
   dispatch mutex never spans a write.
+- **A BLANKET Overwrite ❌ never crosses types** (config or apply-to-all): file-over-folder and folder-over-file `Skip`
+  on ALL THREE engines (`conflict::blanket_resolution_across_types`); only a Stop answer replaces. What ARRIVES is the
+  caller's word (`IncomingItem`).
 - **An answer NAMES its clash** (`ConflictId`) and `resolve_write_conflict` REPORTS where it LANDS. ❌ Never fuse
   `AlreadyResolved`, `StaleAnswer`, or `NoPendingConflict`, nor leave a settled prompt up: a modal blocks every op.
 - **Emit through `OperationEventSink`, ❌ never `AppHandle`**; `write-settled` fires once, AFTER the terminal event.

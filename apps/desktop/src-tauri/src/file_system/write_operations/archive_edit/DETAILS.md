@@ -166,7 +166,16 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   the OS mount the design routes around); planning inside the op is what keeps a remote plan on the pulled bytes. A
   pre-resolved policy resolves each collision non-interactively (`build_copy_into_changeset`): Skip drops the add;
   Overwrite deletes the existing entry then adds (a clean replace); Rename picks a unique ` (n)` name;
-  OverwriteSmaller/Older compare size/mtime (strict). **The Stop policy prompts interactively**
+  OverwriteSmaller/Older compare size/mtime (strict). **A BLANKET Overwrite variant never crosses types**: an incoming
+  FILE landing on an archive DIRECTORY of that name reduces to Skip, whether the policy is the pre-resolved one or a
+  latched "* all", so it can't delete the directory and everything under it. `conflicts.rs::resolve_effective` routes
+  both through the shared `../conflict.rs::blanket_resolution_across_types`, which the local-FS and cross-volume engines
+  answer with too; the conditional variants had no honest question to ask there anyway (a directory node carries no size
+  and no mtime). Only an answer a person gave on the prompt for that pair replaces. The mirror direction never consults
+  the policy at all: a source DIRECTORY meeting a same-named FILE entry just skips its `mkdir` and adds its children
+  under the name. Pinned by
+  `copy_into_tests.rs::a_blanket_overwrite_never_replaces_an_archive_directory_with_a_file`. **The Stop policy prompts
+  interactively**
   (`build_copy_into_changeset_interactive`): the op is registered so `resolve_write_conflict(op_id)` can reach the
   oneshot, and each FILE collision emits a `write-conflict` and blocks on the answer, reusing the pure `ApplyToAll` latch
   + the oneshot plumbing (store the sender BEFORE the emit). Dir-vs-dir collisions merge silently — only files prompt
