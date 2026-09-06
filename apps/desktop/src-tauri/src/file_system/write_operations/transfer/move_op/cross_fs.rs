@@ -22,6 +22,7 @@ use super::super::copy::{JournalDestUnder, copy_single_item, create_scanned_dirs
 use super::MoveTransaction;
 use super::merge_move_directory;
 use super::move_resolved_into_place;
+use super::rename_onto_free_name;
 use super::source_sweep::{SourceSweep, delete_sources_after_move};
 
 use crate::file_system::write_operations::cancellable::remove_dir_all_in_background;
@@ -388,7 +389,7 @@ pub(super) fn move_with_staging(
             } else {
                 // No conflict, just rename from staging to final
                 crate::downloads::note_pending_write_for_cmdr(&final_path);
-                fs::rename(&staged_path, &final_path).map_err(|e| WriteOperationError::IoError {
+                rename_onto_free_name(&staged_path, &final_path).map_err(|e| WriteOperationError::IoError {
                     path: staged_path.display().to_string(),
                     message: format!("Failed to move from staging: {}", e),
                 })?;

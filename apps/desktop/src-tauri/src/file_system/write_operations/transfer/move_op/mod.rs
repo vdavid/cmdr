@@ -285,6 +285,22 @@ fn occupant_is_the_item_itself(item: &MovedItem, occupant: &fs::Metadata) -> boo
     }
 }
 
+/// Lands a move's item on a destination the engine has just found free.
+///
+/// Every engine here decides "is this name taken?" with a stat and then renames,
+/// and the two aren't one operation: a file another process creates in that
+/// window is in the way by the time the syscall runs. A plain POSIX `rename`
+/// replaces its target without a word, so that file would be destroyed with no
+/// prompt, no conflict, and no backup to put back — the one outcome the conflict
+/// machinery exists to prevent, reached by skipping it. Refusing instead fails
+/// the item and leaves both copies on disk, which the user can still sort out.
+///
+/// The three no-conflict landings (`same_fs`'s top level, `merge_move_directory`
+/// per child, `cross_fs`'s staging-to-final) all come through here.
+fn rename_onto_free_name(source: &Path, dest: &Path) -> std::io::Result<()> {
+    rename_no_replace(source, dest)
+}
+
 /// Lands a move source at the path a `resolve_conflict` result chose, honoring
 /// cmdr's Rename / Overwrite semantics including the type-mismatch directions.
 ///
@@ -553,7 +569,7 @@ fn merge_move_directory(
             // No conflict, just rename
             crate::downloads::note_pending_write_for_cmdr(&source_child);
             crate::downloads::note_pending_write_for_cmdr(&dest_child);
-            fs::rename(&source_child, &dest_child).with_path(&source_child)?;
+            rename_onto_free_name(&source_child, &dest_child).with_path(&source_child)?;
             move_tx.record(source_child, WrittenFile::local_stat(dest_child, child_stat.as_ref()));
         }
     }
@@ -618,6 +634,11 @@ mod safety_matrix_tests;
 #[cfg(unix)]
 #[path = "move_symlink_tests.rs"]
 mod move_symlink_tests;
+
+/// What a landing does with a destination that appeared after the check.
+#[cfg(test)]
+#[path = "move_race_tests.rs"]
+mod move_race_tests;
 
 #[cfg(test)]
 #[path = "move_journal_tests.rs"]

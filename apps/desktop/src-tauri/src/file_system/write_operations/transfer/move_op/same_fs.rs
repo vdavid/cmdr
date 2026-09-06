@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::super::ledger::WrittenFile;
-use super::{MoveTransaction, merge_move_directory, move_resolved_into_place};
+use super::{MoveTransaction, merge_move_directory, move_resolved_into_place, rename_onto_free_name};
 
 use crate::file_system::write_operations::conflict::{ApplyToAll, resolve_conflict};
 use crate::file_system::write_operations::durability::flush_touched_directories;
@@ -176,7 +176,7 @@ pub(super) fn move_with_rename(
                 // No conflict, so just rename
                 crate::downloads::note_pending_write_for_cmdr(source);
                 crate::downloads::note_pending_write_for_cmdr(&dest_path);
-                fs::rename(source, &dest_path).with_path(source)?;
+                rename_onto_free_name(source, &dest_path).with_path(source)?;
                 move_tx.record(
                     source.clone(),
                     WrittenFile::local_stat(dest_path.clone(), source_meta.as_ref()),

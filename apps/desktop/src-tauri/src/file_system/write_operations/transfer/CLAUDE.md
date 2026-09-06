@@ -13,7 +13,8 @@ File map: `DETAILS.md` § Files.
 - **EVERY write stages, local included**: bytes land on a `.cmdr-tmp-<uuid>` SIBLING and take the real name by one
   same-directory rename, so abandoning a wedged worker is safe. Local-FS goes through `overwrite::stage_and_land_file`
   (all four `LocalCopyStrategy` arms, ❌ never straight to the destination); cross-volume asks `resolve_staging`. A
-  non-overwrite landing REFUSES an occupied destination.
+  non-overwrite landing REFUSES an occupied destination, a move's renames included
+  (`move_op::rename_onto_free_name`).
 - **A source that would land on ITSELF is a duplicate, ❌ never a conflict**: settled by `dev+ino` per TOP-LEVEL source
   before either engine's loop; every answer the conflict machinery has destroys the original. DETAILS § "Self-collision".
 - **A symlink is a LEAF to every move engine**: ask `validation::is_real_directory`, ❌ never `Path::is_dir` (it follows
