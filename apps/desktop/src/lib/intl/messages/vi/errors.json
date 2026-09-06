@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Tệp mới của bạn đang mang tên khác",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Tệp {path} mới đã được ghi xong và đầy đủ, nhưng đích không cho nó lấy tên đó, và tệp mà nó định thay thế thì đã không còn. Tệp mới đang ở {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Hãy mở {keptAt} để kiểm tra, rồi đổi tên nó. Nếu đích là thư mục chia sẻ trên mạng hoặc một chiếc điện thoại, hãy kết nối lại trước, khi đó việc đổi tên sẽ thành công.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "Không thể sao chép",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

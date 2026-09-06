@@ -47,7 +47,7 @@ use super::super::transfer_probe::OperationProbe;
 use super::copy::drain_deadline as drain_deadline_for;
 use super::copy_concurrent_task::{CopyTaskFailure, CopyTaskSuccess, run_copy_task};
 use super::preflight::SourceHint;
-use super::transfer_error::{PathRole, WriteFailure};
+use super::transfer_error::{PathedVolumeError, WriteFailure};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 
@@ -159,8 +159,12 @@ enum AwaitStep {
     /// The wind-down window was armed or shortened. Nothing settled; go round
     /// again so the new deadline is the one being waited on.
     Rearmed,
-    /// A task came back.
-    Settled(Result<CopyTaskSuccess, CopyTaskFailure>),
+    /// A task came back. Boxed because the payload dwarfs the other two
+    /// variants (a failure carries its whole per-file rollback ledger), and this
+    /// enum is built once per settled task on a path that has just finished
+    /// streaming a file: one allocation is nothing next to that, while an
+    /// unboxed variant sizes every trip through the await.
+    Settled(Box<Result<CopyTaskSuccess, CopyTaskFailure>>),
     /// The window emptied, or the wind-down deadline expired with tasks still
     /// in it — those are abandoned, and their staged partials are cleaned up by
     /// the caller's post-loop.
@@ -192,14 +196,16 @@ impl<'a> ConcurrentDriver<'a> {
             match self.await_next().await {
                 AwaitStep::Rearmed => continue,
                 AwaitStep::Finished => break,
-                AwaitStep::Settled(Ok(success)) => self.record_success(success),
-                AwaitStep::Settled(Err(failure)) => {
-                    self.record_failure(failure);
-                    // Drop remaining in-flight tasks; their streams close, temp
-                    // files get cleaned up by the per-backend write abort +
-                    // delete path. Partial cleanup is the caller's post-loop.
-                    break;
-                }
+                AwaitStep::Settled(settled) => match *settled {
+                    Ok(success) => self.record_success(success),
+                    Err(failure) => {
+                        self.record_failure(failure);
+                        // Drop remaining in-flight tasks; their streams close, temp
+                        // files get cleaned up by the per-backend write abort +
+                        // delete path. Partial cleanup is the caller's post-loop.
+                        break;
+                    }
+                },
             }
         }
         Ok(())
@@ -313,7 +319,7 @@ impl<'a> ConcurrentDriver<'a> {
             }
         };
         match next {
-            Some(settled) => AwaitStep::Settled(settled),
+            Some(settled) => AwaitStep::Settled(Box::new(settled)),
             None => AwaitStep::Finished,
         }
     }
@@ -421,6 +427,7 @@ impl<'a> ConcurrentDriver<'a> {
             reported_path,
             source_path: done_source,
             error: e,
+            new_data_at,
             cleanup_temp,
             source_is_dir,
             overwrote,
@@ -472,7 +479,14 @@ impl<'a> ConcurrentDriver<'a> {
             // data loss.
             self.last_dest_path = Some(failed_dest);
         }
-        self.copy_error = Some(WriteFailure::from_volume(&reported_path, PathRole::Source, e));
+        // `PathedVolumeError`'s conversion owns the branch: `new_data_at` set
+        // means `reported_path` is the DESTINATION and the user has to be told
+        // where their new file is; unset is the ordinary source-labelled mapping.
+        self.copy_error = Some(WriteFailure::from(PathedVolumeError {
+            path: reported_path,
+            error: e,
+            new_data_at,
+        }));
     }
 
     /// Hand the post-loop what it needs, after letting go of whatever is left in

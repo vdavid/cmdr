@@ -393,8 +393,11 @@ a_backend_without_rename_does_not_delete_what_it_cannot_replace}`, which inject 
 
 **Finding the litter.** A staged temp is listed in `state.in_flight_temps` for exactly as long as it is a PARTIAL:
 `commit` removes it before landing, so a temp that holds committed data after a failed landing is never in the set and
-can never be swept (the contract `finalize_safe_replace`'s caller comment describes, now enforced by construction
-rather than by a `cleanup_temp` flag). Whatever is still listed when the driver's loop ends belongs to a task that was
+can never be swept BY THE LEDGER (the contract `finalize_safe_replace`'s caller comment describes, now enforced by
+construction rather than by a `cleanup_temp` flag). The NAME-based sweep is a separate danger and a separate answer:
+`finalize_safe_replace` renames such a temp to a ` (recovered)` name on the spot, because
+`volume/cleanup.rs::reap_stale_transfer_temps` matches `.cmdr-tmp-` plus an age and knows nothing about any ledger
+(`volume/DETAILS.md` § "The post-write temp is committed data"). Whatever is still listed when the driver's loop ends belongs to a task that was
 DROPPED mid-write — the concurrent driver drops the rest of its window on cancel and on the first failure — so
 `volume::cleanup::clean_abandoned_staged_writes` removes those, and the deep-merge children that were never tracked at
 all are now covered too.

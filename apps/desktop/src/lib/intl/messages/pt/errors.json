@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Seu arquivo novo ficou com outro nome",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "O novo {path} está escrito e completo, mas o destino não deixou ele ficar com esse nome, e o arquivo que ele ia substituir já não está lá. O novo está em {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Abra {keptAt} para conferir e depois renomeie. Se o destino for um compartilhamento de rede ou um telefone, reconecte primeiro e a renomeação vai passar.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "Não foi possível copiar",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

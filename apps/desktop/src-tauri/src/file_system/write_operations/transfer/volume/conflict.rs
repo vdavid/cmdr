@@ -27,8 +27,8 @@ use super::super::super::types::{
 };
 use super::super::super::unique_name::ClaimedNames;
 use super::super::dest_name_index::fold;
-use super::naming::find_unique_volume_name;
-use super::transfer_error::{PathRole, map_volume_error};
+use super::naming::{find_unique_volume_name, rescue_out_of_temp_space};
+use super::transfer_error::{FinalizeFailure, PathRole, map_volume_error};
 use crate::file_system::volume::{Volume, VolumeError};
 
 /// Outcome of resolving a volume conflict.
@@ -642,20 +642,22 @@ pub(super) fn temp_sibling_path(dest_path: &Path) -> PathBuf {
 /// other reason we return the error WITHOUT deleting the temp — the new data
 /// must survive so the user (or a retry) can recover it.
 ///
-/// CALLER CONTRACT: when this returns `Err` (either the delete failed, or — the
-/// nastier case — the delete SUCCEEDED and the rename failed), `temp` holds the
-/// only complete copy of the new data and the original may already be gone. The
-/// caller MUST NOT delete `temp` on this error path: leaving it as a recoverable
-/// `.cmdr-tmp-*` artifact is the safe outcome; cleaning it would be total data
-/// loss. The three write sites enforce this by stopping their partial-cleanup
-/// tracking from designating the temp the moment the streaming write succeeded,
-/// before this function runs. See `transfer/CLAUDE.md` § "The post-write temp is
-/// committed data" and the `*_preserves_new_data_on_finalize_failure` tests.
+/// CALLER CONTRACT: when this returns `Err` the new data is somewhere the caller
+/// must NOT clean up, and [`FinalizeFailure::new_data_at`] says where. If the
+/// DELETE failed, nothing moved: the destination still holds the user's file and
+/// the temp is an ordinary partial. If the delete SUCCEEDED and the rename
+/// failed, the temp holds the only complete copy of the new data and the
+/// original is gone, so this rescues it out of temp space (see
+/// [`rescue_out_of_temp_space`]) and reports where it went. The write sites
+/// enforce the no-cleanup half by stopping their partial-cleanup tracking from
+/// designating the temp the moment the streaming write succeeded, before this
+/// function runs. See `transfer/CLAUDE.md` § "The post-write temp is committed
+/// data" and the `*_preserves_new_data_on_finalize_failure` tests.
 pub(super) async fn finalize_safe_replace(
     dest_volume: &Arc<dyn Volume>,
     temp: &Path,
     orig: &Path,
-) -> Result<(), VolumeError> {
+) -> Result<(), FinalizeFailure> {
     match dest_volume.delete(orig).await {
         Ok(()) => {}
         Err(VolumeError::NotFound(_)) => {
@@ -663,15 +665,33 @@ pub(super) async fn finalize_safe_replace(
         }
         Err(e) => {
             log::warn!(
-                "finalize_safe_replace: failed to delete original {} before rename (temp {} holds the complete new data and is preserved): {}",
+                "finalize_safe_replace: couldn't delete the original {} before the rename, so the destination still holds it and the temp {} is an ordinary partial: {}",
                 orig.display(),
                 temp.display(),
                 e
             );
-            return Err(e);
+            return Err(FinalizeFailure {
+                error: e,
+                new_data_at: None,
+            });
         }
     }
-    dest_volume.rename(temp, orig, false).await
+    match dest_volume.rename(temp, orig, false).await {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            let new_data_at = rescue_out_of_temp_space(dest_volume, temp, orig).await;
+            log::warn!(
+                "finalize_safe_replace: the original {} is gone and the new data couldn't take its name, so it is at {} now: {}",
+                orig.display(),
+                new_data_at.display(),
+                error
+            );
+            Err(FinalizeFailure {
+                error,
+                new_data_at: Some(new_data_at),
+            })
+        }
+    }
 }
 
 /// Whether `source_path` and `dest_path` name the same item: the question

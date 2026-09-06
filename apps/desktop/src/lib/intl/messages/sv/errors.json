@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Din nya fil ligger under ett annat namn",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Den nya {path} är färdigskriven och komplett, men målet lät den inte ta det namnet, och filen den skulle ersätta är redan borta. Den nya ligger på {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Öppna {keptAt} och titta på den, byt sedan namn på den. Om målet är en nätverksresurs eller en telefon, anslut den igen först så går namnbytet igenom.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "Det gick inte att kopiera",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

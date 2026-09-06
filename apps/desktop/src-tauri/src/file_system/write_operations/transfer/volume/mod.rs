@@ -100,6 +100,10 @@ mod self_collision_tests;
 #[cfg(test)]
 mod rename_merge_test_support;
 
+/// Where the new bytes go when a safe-replace finalize can't land them.
+#[cfg(test)]
+mod finalize_recovery_tests;
+
 #[cfg(test)]
 mod preflight_stop_tests;
 #[cfg(test)]

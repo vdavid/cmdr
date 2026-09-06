@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "你的新文件换了个名字",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "新的 {path} 已经完整写好了，但目标位置不让它用这个名字，而它要替换的那个文件已经没了。新文件现在在 {keptAt}。",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "打开 {keptAt} 看一下，然后给它改名。如果目标位置是网络共享或手机，先重新连上，改名就能成。",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "无法拷贝",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

@@ -255,7 +255,7 @@ async fn copy_leaf<'a>(
         Some(orig) => {
             super::conflict::finalize_safe_replace(dest_volume, &write_dest, &orig)
                 .await
-                .at(&child_source)?;
+                .map_err(|e| e.at_destination(&orig))?;
             // A deep-merge child that replaced an existing dest file: record the
             // overwrite so the operation-log eligibility is honest (a copy / move
             // that overwrote isn't rollbackable — the original is gone).

@@ -358,6 +358,22 @@ const cases: Case[] = [
     },
   },
   {
+    name: 'new_data_kept_at',
+    error: {
+      type: 'new_data_kept_at',
+      path: '/Volumes/nas/notes.txt',
+      keptAt: '/Volumes/nas/notes (recovered).txt',
+      message: 'the connection dropped',
+    },
+    expected: {
+      title: 'Your new file is under a different name',
+      message:
+        "The new /Volumes/nas/notes.txt is written and complete, but the destination wouldn't let it take that name, and the file it was replacing is already gone. The new one is at /Volumes/nas/notes (recovered).txt.",
+      suggestion:
+        'Open /Volumes/nas/notes (recovered).txt to check it, then rename it. If the destination is a network share or a phone, reconnect it first and the rename will go through.',
+    },
+  },
+  {
     name: 'delete_pending',
     error: { type: 'delete_pending', path: '/p' },
     expected: {

@@ -2078,6 +2078,31 @@
     "description": "Recovery suggestion when a file is marked for deletion but still held open. Plain text.",
     "screenshot": "transfer-error-delete_pending.png"
   },
+  "errors.write.newDataKeptAt.title": "Your new file is under a different name",
+  "errors.write.newDataKeptAt.message": "The new {path} is written and complete, but the destination wouldn't let it take that name, and the file it was replacing is already gone. The new one is at {keptAt}.",
+  "errors.write.newDataKeptAt.suggestion": "Open {keptAt} to check it, then rename it. If the destination is a network share or a phone, reconnect it first and the rename will go through.",
+  "@errors.write.newDataKeptAt.title": {
+    "description": "Title of the copy/move error dialog when the new file was written completely but couldn't take the destination's name, so it kept a \" (recovered)\" name instead. Plain text."
+  },
+  "@errors.write.newDataKeptAt.message": {
+    "description": "Body of the copy/move error dialog when the new file kept a different name. Plain text. It has to be clear that the new file is intact and that the old one at that name is gone, so this is the only copy.",
+    "placeholders": {
+      "path": {
+        "description": "The full path the file was meant to take, inserted verbatim. Do not translate or reformat it."
+      },
+      "keptAt": {
+        "description": "The full path where the complete new file actually is, inserted verbatim. Do not translate or reformat it."
+      }
+    }
+  },
+  "@errors.write.newDataKeptAt.suggestion": {
+    "description": "Recovery suggestion when the new file kept a different name: look at it, then rename it by hand. Plain text.",
+    "placeholders": {
+      "keptAt": {
+        "description": "The full path where the complete new file actually is, inserted verbatim. Do not translate or reformat it."
+      }
+    }
+  },
   "errors.write.fallback.title.copy": "Couldn't copy",
   "errors.write.fallback.title.move": "Couldn't move",
   "errors.write.fallback.title.delete": "Couldn't delete",

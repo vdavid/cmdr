@@ -445,6 +445,22 @@ pub enum WriteOperationError {
         path: String,
         wrong_attempt: bool,
     },
+    /// A cross-volume Overwrite wrote the new file completely, then couldn't give
+    /// it the destination's name, and the destination it was replacing is
+    /// already gone (the safe-replace deletes it between the last byte and the
+    /// rename). The new data is intact at `kept_at`, under a ` (recovered)` name.
+    ///
+    /// ❗ `kept_at` is the whole point of the variant: it is the only place the
+    /// user's new file exists, and a message that doesn't name it leaves them
+    /// hunting. Typed so nothing has to parse it back out of prose.
+    NewDataKeptAt {
+        /// The name the file was meant to take.
+        path: String,
+        /// Where the complete new data is right now.
+        kept_at: String,
+        /// What the destination said when the rename was refused.
+        message: String,
+    },
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,

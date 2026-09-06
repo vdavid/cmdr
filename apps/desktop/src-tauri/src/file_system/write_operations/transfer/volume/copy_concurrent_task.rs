@@ -87,11 +87,18 @@ pub(super) struct CopyTaskSuccess {
 /// payload carries them: the children this task DID finish are committed files
 /// at the destination, so they get journaled exactly like a completed source's.
 /// An interrupted operation is still a ledger of what it wrote.
+/// `new_data_at` is the one case where `reported_path` names the DESTINATION
+/// instead: a finalize that deleted the original and then couldn't land the new
+/// bytes leaves the user's only complete copy somewhere else, and both paths
+/// together are the message. See `conflict::FinalizeFailure`.
 pub(super) struct CopyTaskFailure {
     pub(super) failed_path: PathBuf,
     pub(super) reported_path: PathBuf,
     pub(super) source_path: PathBuf,
     pub(super) error: VolumeError,
+    /// Where a failed finalize left the complete new bytes, when the original is
+    /// already gone. `None` for every other failure.
+    pub(super) new_data_at: Option<PathBuf>,
     pub(super) cleanup_temp: bool,
     pub(super) source_is_dir: bool,
     pub(super) overwrote: bool,
@@ -306,12 +313,15 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
             if let Some(orig) = replace_after_write {
                 if let Err(e) = super::conflict::finalize_safe_replace(&dest_volume, &dest_path, &orig).await {
                     // Finalize is file→file only (safe-replace), so there's no
-                    // directory ledger to carry.
+                    // directory ledger to carry. The failure is the
+                    // DESTINATION's, and when the original is already gone it
+                    // also says where the new bytes ended up.
                     return Err(CopyTaskFailure {
                         failed_path: dest_path,
-                        reported_path: source_path.clone(),
+                        reported_path: orig,
                         source_path,
-                        error: e,
+                        error: e.error,
+                        new_data_at: e.new_data_at,
                         cleanup_temp: false,
                         source_is_dir: false,
                         overwrote: task_overwrote,
@@ -360,6 +370,9 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
             reported_path: e.path,
             source_path,
             error: e.error,
+            // A deep-merge leaf's finalize failure arrives here too, carrying
+            // where its rescued bytes went.
+            new_data_at: e.new_data_at,
             cleanup_temp: true,
             source_is_dir,
             overwrote: task_overwrote,

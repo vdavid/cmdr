@@ -319,6 +319,19 @@ export function getUserFriendlyMessage(
         message: w('deletePending.message'),
         suggestion: w('deletePending.suggestion'),
       }
+    case 'new_data_kept_at':
+      // The new file landed complete and the one it was replacing is already
+      // gone, so `keptAt` is the ONLY copy in existence. Naming it is the whole
+      // job of this message: without it the user has an intact file they can't
+      // find and an empty slot where their old one was.
+      return {
+        title: w('newDataKeptAt.title'),
+        message: w('newDataKeptAt.message', {
+          path: escapeHtml(error.path),
+          keptAt: escapeHtml(error.keptAt),
+        }),
+        suggestion: w('newDataKeptAt.suggestion', { keptAt: escapeHtml(error.keptAt) }),
+      }
     case 'files_too_large_for_filesystem':
       return tooLargeForFilesystemMessage(error)
     default:
@@ -387,6 +400,10 @@ export function getTechnicalDetails(error: WriteOperationError): string {
     for (const file of error.files) {
       lines.push(`  ${file.name} (${formatByteSize(file.size)})`)
     }
+  } else if (error.type === 'new_data_kept_at') {
+    lines.push(`Path: ${error.path}`)
+    lines.push(`New data kept at: ${error.keptAt}`)
+    lines.push(`Error: ${error.message}`)
   } else if (error.type === 'cancelled') {
     if (error.message) lines.push(`Details: ${error.message}`)
   }

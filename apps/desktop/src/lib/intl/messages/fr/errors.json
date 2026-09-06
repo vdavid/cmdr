@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Votre nouveau fichier porte un autre nom",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Le nouveau {path} est écrit et complet, mais la destination a refusé de lui donner ce nom, et le fichier qu'il devait remplacer a déjà disparu. Le nouveau se trouve dans {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Ouvrez {keptAt} pour le vérifier, puis renommez-le. Si la destination est un partage réseau ou un téléphone, reconnectez-la d'abord et le renommage passera.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "Copie impossible",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Az új fájlod más néven van meg",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Az új {path} teljesen kiírva megvan, de a célhely nem engedte, hogy ezt a nevet kapja, és a fájl, amit lecserélt volna, már nincs meg. Az új itt van: {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Nyisd meg a(z) {keptAt} elemet, nézd át, majd nevezd át. Ha a célhely hálózati megosztás vagy telefon, előbb csatlakoztasd újra, és az átnevezés menni fog.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "Nem sikerült a másolás",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

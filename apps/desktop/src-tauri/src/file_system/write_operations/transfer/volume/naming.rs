@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use super::super::super::unique_name::{ClaimedNames, NameCandidates};
-use crate::file_system::volume::Volume;
+use crate::file_system::volume::{Volume, VolumeError};
 
 /// Finds a unique filename on a volume by appending " (1)", " (2)", etc.
 ///
@@ -115,6 +115,83 @@ pub(super) async fn find_unique_volume_name(
 /// that shared rule IS the guarantee the two paths agree.
 fn resolve_local_path(root: &Path, path: &Path) -> PathBuf {
     cmdr_fs::volume::root_anchored(root, path)
+}
+
+/// The suffix a rescued file wears, so a person meeting it in their pane can
+/// tell what it is. Draft copy: filenames carry no locale here, the same way the
+/// ` (N)` duplicate convention doesn't.
+const RECOVERED_SUFFIX: &str = " (recovered)";
+
+/// Gets the complete new bytes out of `.cmdr-tmp-*` space and into a real
+/// filename next to where they were meant to land.
+///
+/// ❗ **This is what stops the hourly reap from eating them.**
+/// `cleanup.rs::reap_stale_transfer_temps` matches on the `.cmdr-tmp-` marker
+/// plus an age, and it runs at the start of every copy and every volume move
+/// into a directory. A temp left here is committed data with no ledger entry
+/// (`staged_write::commit` deregisters it before landing), so an hour later the
+/// next transfer into the same folder would delete the user's only copy. A file
+/// called `notes (recovered).txt` is one no sweep can match.
+///
+/// Answers where the bytes ARE, which is never nothing: if the rescue rename
+/// fails too (the same dead connection that failed the finalize), the temp path
+/// is the honest answer and the caller reports that instead.
+///
+/// ❗ **Only `AlreadyExists` earns another try.** The rename that brought us here
+/// has already failed once, so a dead link, a read-only share, or a refused name
+/// would fail identically under every candidate: walking eight of them would add
+/// eight timeouts to an error path the user is waiting on. A name that is merely
+/// TAKEN is the one answer a different name fixes.
+pub(super) async fn rescue_out_of_temp_space(dest_volume: &Arc<dyn Volume>, temp: &Path, orig: &Path) -> PathBuf {
+    let recovered = recovered_sibling(orig);
+    match dest_volume.rename(temp, &recovered, false).await {
+        Ok(()) => return recovered,
+        Err(VolumeError::AlreadyExists(_)) => {}
+        Err(_) => return keeps_its_temp_name(temp),
+    }
+    // Taken (an earlier rescue of the same file, or the user's own): continue
+    // the house ` (N)` series off the recovered name.
+    let mut candidates = NameCandidates::for_file(&recovered);
+    while candidates.attempts() < RESCUE_NAME_ATTEMPTS {
+        let candidate = candidates.current();
+        match dest_volume.rename(temp, &candidate, false).await {
+            Ok(()) => return candidate,
+            Err(VolumeError::AlreadyExists(_)) => candidates.advance(),
+            Err(_) => return keeps_its_temp_name(temp),
+        }
+    }
+    keeps_its_temp_name(temp)
+}
+
+/// The rescue couldn't happen, so the bytes stay where they are and the caller
+/// reports THAT path. Says so loudly: this is the one shape in which committed
+/// data still wears a name `cleanup.rs::reap_stale_transfer_temps` matches.
+fn keeps_its_temp_name(temp: &Path) -> PathBuf {
+    log::warn!(
+        "rescue_out_of_temp_space: couldn't move {} to a real filename, so the new data stays under its temp name",
+        temp.display()
+    );
+    temp.to_path_buf()
+}
+
+/// How many ` (N)` variants a rescue tries before leaving the bytes under their
+/// temp name. Deliberately small: a destination holding eight `notes (recovered)
+/// (N)` files is one where something else is very wrong.
+const RESCUE_NAME_ATTEMPTS: u32 = 8;
+
+/// `/dir/notes.txt` → `/dir/notes (recovered).txt`, extension kept where it
+/// belongs.
+fn recovered_sibling(orig: &Path) -> PathBuf {
+    let parent = orig.parent().unwrap_or(Path::new(""));
+    let stem = orig.file_stem().map(|s| s.to_string_lossy().to_string());
+    let name = match (stem, orig.extension()) {
+        (Some(stem), Some(ext)) => format!("{stem}{RECOVERED_SUFFIX}.{}", ext.to_string_lossy()),
+        (Some(stem), None) => format!("{stem}{RECOVERED_SUFFIX}"),
+        // A path with no file name at all can't be helped; the caller's rename
+        // will fail and report the temp.
+        (None, _) => format!("cmdr{RECOVERED_SUFFIX}"),
+    };
+    parent.join(name)
 }
 
 #[cfg(test)]

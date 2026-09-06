@@ -348,6 +348,12 @@ pub(super) async fn clean_abandoned_staged_writes(
 ///   with no reported mtime is treated as fresh and spared.
 /// - **Files only**, and only names carrying the `.cmdr-tmp-` marker.
 ///
+/// ❗ **Nothing may leave committed data under a temp name.** This sweep is
+/// name-and-age based and knows nothing about any ledger, so a `.cmdr-tmp-*`
+/// that holds the only copy of something is deleted here an hour later.
+/// `conflict::finalize_safe_replace` is where that could happen, and it renames
+/// its temp to a ` (recovered)` name before returning for exactly this reason.
+///
 /// Best-effort throughout: a listing or delete failure is logged at debug and
 /// never fails or delays the user's transfer.
 ///
@@ -414,6 +420,7 @@ async fn delete_written_file(volume: &Arc<dyn Volume>, path: &Path) -> Result<()
         Err(error) => Err(PathedVolumeError {
             path: path.to_path_buf(),
             error,
+            new_data_at: None,
         }),
     }
 }
@@ -596,6 +603,7 @@ async fn delete_preserving_inner(
         Err(e) => Err(PathedVolumeError {
             path: path.to_path_buf(),
             error: e,
+            new_data_at: None,
         }),
     }
 }

@@ -560,13 +560,13 @@ pub(crate) async fn move_volumes_with_progress(
                         {
                             log::warn!(
                                 target: "move",
-                                "move_between_volumes: safe-replace finalize failed for {} (temp {} preserved, source {} untouched): {}",
+                                "move_between_volumes: the safe-replace finalize for {} couldn't land (new data at {:?}, source {} untouched): {}",
                                 orig.display(),
-                                dest_item_path.display(),
+                                e.new_data_at,
                                 source_path.display(),
-                                e
+                                e.error
                             );
-                            return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e));
+                            return Err(super::transfer_error::map_finalize_failure(&orig, e));
                         }
 
                     // Delete source. `Volume::delete` is contractually for

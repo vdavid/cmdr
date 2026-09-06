@@ -539,12 +539,11 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                         // destination, so it names the destination
                                         // entry: the source is already fully read and
                                         // untouched, and reporting it here would point
-                                        // the user at an intact file.
-                                        return Err(map_volume_error(
-                                            &dest_item_path.display().to_string(),
-                                            PathRole::Destination,
-                                            e,
-                                        ));
+                                        // the user at an intact file. When the original
+                                        // is already gone the failure also carries where
+                                        // the new bytes were rescued to, and that path is
+                                        // what the user is told.
+                                        return Err(super::transfer_error::map_finalize_failure(&orig, e));
                                     }
                                     orig
                                 }

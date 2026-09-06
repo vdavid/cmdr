@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "你的新檔案換了個名字",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "新的 {path} 已經完整寫好了，但目標位置不讓它用這個名字，而它要取代的那個檔案已經沒了。新檔案現在在 {keptAt}。",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "打開 {keptAt} 看一下，然後幫它改名。如果目標位置是網路共享或手機，先重新連上，改名就會成功。",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "無法複製",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

@@ -62,6 +62,42 @@ impl From<(VolumeError, PathBuf)> for WriteFailure {
     }
 }
 
+/// What a failed `conflict::finalize_safe_replace` leaves behind, and where.
+///
+/// ❗ The path is TYPED data, not prose: it travels to the user through
+/// `WriteOperationError::NewDataKeptAt` so the dialog can name the file they
+/// have to go and look at. ❌ Never parse it back out of a message.
+#[derive(Debug)]
+pub(in crate::file_system::write_operations) struct FinalizeFailure {
+    /// What the destination said.
+    pub error: VolumeError,
+    /// Where the only complete copy of the NEW bytes is now, when the original
+    /// is already gone: the ` (recovered)` name, or the `.cmdr-tmp-*` temp when
+    /// even that rename couldn't happen.
+    ///
+    /// `None` when the original was never deleted, so nothing was rescued and
+    /// nothing was lost.
+    pub new_data_at: Option<PathBuf>,
+}
+
+/// Turns a failed safe-replace finalize into the typed error the user reads.
+///
+/// The rename that failed is entirely the DESTINATION's, so `dest_path` names
+/// the destination entry: the source is fully read and untouched by then, and
+/// pointing the user at it would send them looking at an intact file.
+///
+/// When the finalize rescued the new bytes (or couldn't, and left them under
+/// their temp name), the answer is `NewDataKeptAt` and it carries that path: the
+/// user's complete new file lives ONLY there, so an error that doesn't name it
+/// leaves them hunting. A finalize that failed on the DELETE rescued nothing
+/// and lost nothing, so it maps like any other volume failure.
+pub(in crate::file_system::write_operations) fn map_finalize_failure(
+    dest_path: &Path,
+    failure: FinalizeFailure,
+) -> WriteOperationError {
+    WriteFailure::from(failure.at_destination(dest_path)).error
+}
+
 /// A `VolumeError` plus the path that actually produced it.
 ///
 /// One `copy_single_path` or `remove_tree` call can descend a
@@ -78,9 +114,16 @@ impl From<(VolumeError, PathBuf)> for WriteFailure {
 /// `remove_tree` returns it and `archive_edit` calls that.
 #[derive(Debug, Clone)]
 pub(in crate::file_system::write_operations) struct PathedVolumeError {
-    /// The item that failed, as deep in the tree as the walker got.
+    /// The item that failed, as deep in the tree as the walker got. A SOURCE
+    /// path from every `at()` site; a finalize failure's `at_destination` is the
+    /// one exception, and it says so by also filling `new_data_at`.
     pub path: PathBuf,
     pub error: VolumeError,
+    /// Set only by a failed safe-replace finalize that already deleted the
+    /// original: where the complete new bytes are now. It changes what the user
+    /// is told (`WriteOperationError::NewDataKeptAt`), so it travels with the
+    /// error rather than being reconstructed anywhere.
+    pub new_data_at: Option<PathBuf>,
 }
 
 /// `PathRole::Source` isn't a default here, it's what the carried path IS: every
@@ -88,10 +131,34 @@ pub(in crate::file_system::write_operations) struct PathedVolumeError {
 /// type's whole purpose), so the path a `PathedVolumeError` holds is a source path
 /// even when the failing call was a write. Naming it a destination would attach a
 /// destination verdict to a source path, which is worse than the mismatch it fixes.
+///
+/// The one exception is `new_data_at`, which only a failed finalize sets: there
+/// the carried path IS the destination (see `FinalizeFailure::at_destination`),
+/// and the user needs to be told where their new file ended up rather than which
+/// errno the rename answered.
 impl From<PathedVolumeError> for WriteFailure {
     fn from(e: PathedVolumeError) -> Self {
-        Self {
-            error: map_volume_error(&e.path.display().to_string(), PathRole::Source, e.error),
+        let error = match e.new_data_at {
+            Some(kept_at) => WriteOperationError::NewDataKeptAt {
+                path: e.path.display().to_string(),
+                kept_at: kept_at.display().to_string(),
+                message: e.error.to_string(),
+            },
+            None => map_volume_error(&e.path.display().to_string(), PathRole::Source, e.error),
+        };
+        Self { error }
+    }
+}
+
+impl FinalizeFailure {
+    /// Labels a finalize failure with the destination name the new bytes were
+    /// meant to take. ❌ Never `at()`: that would label it with a source path,
+    /// and the failure is entirely the destination's.
+    pub(super) fn at_destination(self, dest_path: &Path) -> PathedVolumeError {
+        PathedVolumeError {
+            path: dest_path.to_path_buf(),
+            error: self.error,
+            new_data_at: self.new_data_at,
         }
     }
 }
@@ -110,6 +177,7 @@ impl<T> AtPath<T> for Result<T, VolumeError> {
         self.map_err(|error| PathedVolumeError {
             path: path.to_path_buf(),
             error,
+            new_data_at: None,
         })
     }
 }

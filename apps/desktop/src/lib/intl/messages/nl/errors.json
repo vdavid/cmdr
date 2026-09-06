@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Je nieuwe bestand staat onder een andere naam",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "De nieuwe {path} is volledig weggeschreven, maar de bestemming liet hem die naam niet aannemen, en het bestand dat hij zou vervangen is al weg. De nieuwe staat op {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Open {keptAt} om het te bekijken en geef het daarna de juiste naam. Is de bestemming een netwerkshare of een telefoon, verbind die dan eerst opnieuw, dan lukt het hernoemen.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "Kopiëren lukte niet",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"

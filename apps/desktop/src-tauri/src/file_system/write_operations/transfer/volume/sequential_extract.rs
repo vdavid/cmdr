@@ -180,7 +180,7 @@ pub(super) async fn extract_sequential_subtree(
             Some(orig) => {
                 super::conflict::finalize_safe_replace(dest_volume, &planned.dest_path, &orig)
                     .await
-                    .at(&file.source_path)?;
+                    .map_err(|e| e.at_destination(&orig))?;
                 orig
             }
             None => planned.dest_path,

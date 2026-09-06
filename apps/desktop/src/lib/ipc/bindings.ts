@@ -13304,6 +13304,25 @@ export type WriteOperationError =
    *  `set_archive_password` and retries the operation.
    */
   | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
+  /**
+   *  A cross-volume Overwrite wrote the new file completely, then couldn't give
+   *  it the destination's name, and the destination it was replacing is
+   *  already gone (the safe-replace deletes it between the last byte and the
+   *  rename). The new data is intact at `kept_at`, under a ` (recovered)` name.
+   *
+   *  ❗ `kept_at` is the whole point of the variant: it is the only place the
+   *  user's new file exists, and a message that doesn't name it leaves them
+   *  hunting. Typed so nothing has to parse it back out of prose.
+   */
+  | {
+      type: 'new_data_kept_at'
+      // The name the file was meant to take.
+      path: string
+      // Where the complete new data is right now.
+      keptAt: string
+      // What the destination said when the rename was refused.
+      message: string
+    }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

@@ -1437,6 +1437,18 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.newDataKeptAt.title": "Deine neue Datei liegt unter einem anderen Namen",
+  "@errors.write.newDataKeptAt.title": {
+    "sourceHash": "06bc297"
+  },
+  "errors.write.newDataKeptAt.message": "Die neue {path} ist vollständig geschrieben, aber das Ziel wollte ihr diesen Namen nicht geben, und die Datei, die sie ersetzen sollte, ist schon weg. Die neue liegt jetzt unter {keptAt}.",
+  "@errors.write.newDataKeptAt.message": {
+    "sourceHash": "d1dc96b"
+  },
+  "errors.write.newDataKeptAt.suggestion": "Öffne {keptAt} und sieh sie dir an, dann benenne sie um. Wenn das Ziel eine Netzwerkfreigabe oder ein Telefon ist, verbinde es zuerst neu, dann klappt das Umbenennen.",
+  "@errors.write.newDataKeptAt.suggestion": {
+    "sourceHash": "54c279d"
+  },
   "errors.write.fallback.title.copy": "Kopieren nicht möglich",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"
