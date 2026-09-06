@@ -585,6 +585,18 @@ export const roadmapSections: RoadmapSection[] = [
             icon: 'sparkles',
             done: true,
           },
+          {
+            date: '(Sep 5)',
+            title: 'Open terminal here',
+            description: 'Opens current folder in Terminal, Ghostty, Warp, etc.',
+            done: true,
+          },
+          {
+            date: '(Sep 6)',
+            title: 'Browse Office docs',
+            description: 'Enter opens a .docx, .xlsx, or .pptx like a folder (read-only).',
+            done: true,
+          },
         ],
       },
     ],

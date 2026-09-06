@@ -5,6 +5,120 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Thanks for all the bug reports, folks! ❤️ And keep them coming!
+
+Highlights:
+
+- A bunch of important fixes based on feedback and an adversarial hunt: data-safety, file viewer selection, in-pane
+  search results, and more.
+- "Open terminal here" feature. Just right-click to try it!
+- Cmdr now can browse Office documents like .docx files (because those are secretly just zip archives!) — disabled by
+  default, enable in Settings.
+
+### Added
+
+- Add "Open terminal here" (⌥⌘T, File menu, right-click, command palette), pointed at Terminal, Alacritty, Ghostty,
+  Hyper, iTerm2, kitty, Warp, WezTerm, or any app you pick (c6a8e3fc, fe528c27, 840873be, 2d51e7c9, 66792e2c, 2b2396f7,
+  9249cb54, cdb70d24, db8d8a16, 588e0448, cce75b72, 3878363b)
+- Press Enter on a `.docx`, `.xlsx`, `.pptx`, `.jar`, or `.apk` to browse inside it, read-only so the document can't be
+  corrupted from in there (c01a3306, 88c0857e, c656d18e, 41f529d3, 0d54da0d, 02c1141d, 7b1df722)
+- Grow the F3 viewer's selection from the keyboard with Shift+Arrow, ⌥⇧/⌃⇧+Arrow, Shift+Home/End, and ⌘⇧+Up/Down
+  (c1dc7b79, 9a6abc66, e9fabd6a, 6faa54f7)
+- Turn on a blinking text cursor in the viewer (Settings > Viewer) to see where the next Shift+Arrow starts from
+  (71b48296, 00fce080)
+- Ask Cmdr can find a file by name now that search joined its tools, and it reads a search's coverage field by field so
+  a walk still running never reports "no matches" (e5b18e19, d5001db9, 1e1ff369, 56ede48e, bd5a39e7, 95de45f0)
+- Sort a search-results pane by column, with a third click on the active column restoring best-match order (af7ec36a,
+  a6115b10, 9bc5a5f9)
+- Open a file from a repo's history in the viewer, copy one out with F5, and let Ask Cmdr read it, the way you already
+  can from a zip (be252615, 920fb38c, 449ce62a, ba57b5b1)
+- Find 12 more Settings actions by searching for them (Clear index, Open log file, Get a license, Reset all shortcuts,
+  and more), and the License page stops coming up blank (dd369a1e, 1d4f8d06, 03a27e7d, 884e5112)
+- A chat says when its memory size changed, so shrinking the window mid-conversation explains itself (de07399d)
+- Answer a search over MCP with typed fields instead of a text table, bounded so it can't crowd out the caller's turn
+  (9ab59f21, a3af205e, 6b76d2e8, 97d18838)
+
+### Changed
+
+- Image results in Search are off by default now, with a switch in Settings > Indexing to bring them back (fca200d8,
+  234a2cb2, 281a9f09)
+- Raise the smallest local AI window Cmdr accepts to 32,768 tokens, so a local chat that's offered can actually answer
+  (374787e2, ba0fda35)
+- Copying off a share stops spending a round trip per file asking for permissions the share doesn't have (c80a1a65)
+- A burst of git writes reaches the panes as one refresh instead of two (ae2d0627)
+
+### Fixed
+
+- Fix Cmdr dying on launch on macOS 10.15 Catalina, before any of its own code ran (16e064d9)
+- Fix "Overwrite", "Overwrite all smaller", and "Overwrite all older" deleting a destination folder they compared
+  against a file (7ab0ea51, 4914ac6b, 1194fbc2)
+- Fix a folder replacing a file destroying that file before its contents had landed (7dc3f86c, 23367c94)
+- Fix a merge silently replacing a file whose name only differs in case or accents (49e61830, 478528d8)
+- Fix a move between drives destroying files that landed in the source while it ran, and say what it left behind
+  (a59f78de, 212702bd)
+- Fix a move walking through a folder symlink and emptying a folder you never selected (1ad7e9b3, ecaf4841)
+- Fix a copy that fails partway deleting the files it had already replaced (02405134)
+- Fix your only copy of a file being swept away an hour later when an overwrite couldn't finish (aaf8daca, 78396d26,
+  92bddf24)
+- Fix a same-volume Overwrite taking the destination with it when the replacing rename refuses (f0da503b)
+- Fix a flaky NAS or phone reading as "nothing is there" and replacing a file you asked to skip (3c7750fe)
+- Fix an undo after a folder merge reporting success without putting the folder back (14ac49b0)
+- Fix a file that appears at the destination mid-move being overwritten with no prompt (dad8671c)
+- Fix copying two same-named folders from different places fighting over one destination path (1938da25)
+- Fix a cross-volume copy abandoning a half-built destination with no cleanup and no word (f054042c)
+- Fix an empty `file (1).ext` left in your folder when a merged file never lands (0faaa913)
+- Fix compressing onto an existing file Cmdr may not write destroying it first (c687007d)
+- Fix double-clicking the title bar of the viewer, Settings, queue, or shortcuts window doing nothing and sending an
+  error report (726ec617)
+- Fix every plain folder wearing the home folder's icon, and folders with a custom Finder icon showing the generic one
+  (51dbb4f6, 0be67267)
+- Fix the back and forward buttons doing nothing on a Logitech mouse running Logi Options+ (7699015f, d2182e63)
+- Fix F8 in a search-results pane deleting one row instead of everything you selected (566aa5c9)
+- Fix right-clicking a selected search result acting on one row (65d6c0a6)
+- Fix a search-results pane's selection drifting onto the wrong rows after a delete (e056bf37, ca96333a)
+- Fix a delete or move from a search-results pane running against the wrong drive (2bee1bb0, c240bb66)
+- Fix ⌘C on a search result from a phone putting a broken path on the clipboard (0767b693, 2a0c066e)
+- Fix searching a folder's parent returning only the child's files and calling it complete (ea953b6d, 0635b2c7,
+  cc68ca2d)
+- Fix Quick Look refusing a `.zip`, and renaming one skipping its permission check (01277e0d)
+- Fix the AI provider dropdown's top two options being unclickable in Settings (a5c0578d)
+- Fix deleting a repo folder on an external drive, a share, or a phone stopping with `.git/` still on disk (6910f59d)
+- Fix a pane inside a repo's `.git` browser offering renames, new folders, and pastes it then refuses (ae10c6c9,
+  3d0098f1)
+- Fix a `.git` pane losing its six folders on ⌘R or after any finished copy (9f8e77b4, 6ebbb3ec, 9a814a8c)
+- Fix a repo's `.git` panes going stale: a lone branches pane, a repo under a symlinked path, and the portal toggle
+  (a2656b48, 77d03aa3, 6f17e978, 1b428768)
+- Fix the git browser's Size column shipping English to every language, and reading "1 commits" (492e990a, 3bdcf696,
+  06257945, 6edbc721)
+- Fix browsing to a name that isn't in a snapshot claiming the repository is damaged (b460de2c)
+- Fix a script extracted from a zip or copied out of a repo's history arriving without its executable bit (ff501a23)
+- Fix a move off a read-only source telling you to change a destination that was fine (ec22f8a0)
+- Fix a bulk rename asking once per batch and destroying the review you were still reading (a075ed92, da250d43)
+- Fix Ask Cmdr claiming a rename plan was waiting for review when the plan had been refused (e7b41c5a, 05dbc57c,
+  20aabbc0)
+- Fix double-clicking a word then dragging selecting that word alone in the viewer (07c7c506)
+- Fix ⌘A on a huge file with no line index asking about a size the file knew all along (c563ba3d)
+- Fix Eject staying available while a paste was still reading off the drive (bf0821a0)
+- Fix an agent being told a navigation arrived at a folder the pane never reached (45ae307c, dce5404a)
+
+### Non-app
+
+- Extract the MTP backend into `crates/cmdr-mtp`, so the phone-talking code compiles and tests with no app in its
+  dependency graph (da8bd5ec, 516874e7, 7707cdec, 45fef4c3, 6904b9b0, 5e6532be, 392df5da, 7a34ec01, 3a32c44f, 8fba1b51,
+  42b5b083, fec5279a, c194dae2, 78f1dc3f)
+- Extract the git browser into `crates/cmdr-git` and turn the virtual `.git` trees into a routed read-only volume, so no
+  walker can meet a folder with no inode behind it (1d2c34bf, 1ddc41ba, 1850d618, a7c0e28a, e1c00fdc, d63cd277,
+  6910f59d, 1ea4416e, 9fb7cea6)
+- Fail the build on a system framework newer than the macOS version Cmdr promises, the bug class behind the Catalina
+  crash (5dfabd94, 1ed07b6c)
+- Fix the api-server's telemetry size check throwing a false daily alarm since March (f90f7be2)
+- Record an outside contributor's PR as merged on GitHub instead of leaving it open forever after the code lands
+  (92ef4934, 6c783f8c, a88c5b7a)
+- Turn the data-safety hunt's remaining nine follow-ups into a ranked spec, with all 15 original findings closed
+  (9996183f, 96676052, 4fd23e33)
+
 ## [0.42.0] - 2026-09-04
 
 Headline changes:
