@@ -36,13 +36,13 @@ sections compose).
   `SettingToggleGroup`, so this file reads, writes, defaults, and validates nothing of its own. Two labeled
   `SectionCard`s: Archives holds zip AND the zip-based documents and app packages (`.docx`/`.jar`/…), since both are
   things Cmdr browses into; App bundles holds `.app`/`.bundle`/`.framework`, which are folders rather than files. The
-  format list, the matcher behind each id, and the defaults live in
-  `file-explorer/pane/archive-enter-policy.ts`, pinned to these registry entries by the parity test there. Cards gated
-  via `anyVisible(shouldShow, ...)` over their own member ids. The Archives card ALSO holds a "Compression level" row: a
-  registry-backed `behavior.archiveCompressionLevel` slider (1–9, default 6) with "Faster"/"Smaller" `endLabels`,
-  hand-rendered here like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by
-  id, and it governs every user-driven zip write; the effect on the archive is single-sourced in the backend mutation
-  `DETAILS.md` (via `write_operations/DETAILS.md` § "Archive edits").
+  format list, the matcher behind each id, and the defaults live in `file-explorer/pane/archive-enter-policy.ts`, pinned
+  to these registry entries by the parity test there. Cards gated via `anyVisible(shouldShow, ...)` over their own
+  member ids. The Archives card ALSO holds a "Compression level" row: a registry-backed
+  `behavior.archiveCompressionLevel` slider (1–9, default 6) with "Faster"/"Smaller" `endLabels`, hand-rendered here
+  like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by id, and it governs
+  every user-driven zip write; the effect on the archive is single-sourced in the backend mutation `DETAILS.md` (via
+  `write_operations/DETAILS.md` § "Archive edits").
 - **`DriveIndexingSection.svelte`**: `Indexing > Drive indexing`: one unlabeled `SectionCard` (the section title already
   reads "Drive indexing") — the `indexing.enabled` toggle + clear-index action, the per-drive first-connect prompt
   toggle (`askForEachDrive`) with its "re-enable notifications" button, and the stale-drive notification toggle

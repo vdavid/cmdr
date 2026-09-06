@@ -593,9 +593,9 @@ the sparse save can't prune on its own; v5 unpacks the `behavior.archiveEnterBeh
 (`{ zip: 'ask', bundle: 'open' }`) into one `behavior.archiveEnter.<format>` key per archive format and deletes the
 blob, writing nothing for a format the blob never named (so an untouched format stays on its registry default) and
 nothing at all for a blob it can't read (every format then falls to its default, the same answer the resolver already
-gave for an unreadable blob). A migration that changes a BACKEND-read setting also needs the same rule applied
-Rust-side (v3: `media_index::gate::scope_from_settings`), because the backend reads `settings.json` at startup and would
-otherwise see the raw default on the launch before the migration writes the key.
+gave for an unreadable blob). A migration that changes a BACKEND-read setting also needs the same rule applied Rust-side
+(v3: `media_index::gate::scope_from_settings`), because the backend reads `settings.json` at startup and would otherwise
+see the raw default on the launch before the migration writes the key.
 
 ### Settings cache is write-through
 
