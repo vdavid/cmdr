@@ -4,6 +4,39 @@ A read-only bug hunt over the transfer engines, run as a fan-out of one reading 
 finding by finding against the cited code before landing here. Nothing in this note is a fix: it is a ranked triage list
 for principle #1 (protect the user's data), meant to be worked through at leisure before launch.
 
+## Status (2026-09-06)
+
+Nine of the 15 findings are fixed on `main`, each with a regression test that failed before its fix; the cross-type
+Overwrite rule and the folder-over-file aside are policy changes David decided on 2026-09-06 (a blanket policy never
+crosses types; an explicit Stop-prompt answer still does, in both directions).
+
+- **#1, #8** fixed: `fix(move): a cross-filesystem move stops destroying files that arrived in the source while it ran`
+  (Phase 4 deletes a ledger via `move_op/source_sweep.rs`), `feat(move): a move that left files behind says so`, and
+  `fix(transfer): a copy or move of two same-named items refuses cleanly`. #8's exact trigger turned out unreachable
+  (Phase 3 already spared the second same-named source); the underlying gap (a Phase-2 Skip recorded nothing) is closed.
+- **#2** fixed: `fix(copy): a deep merge child whose name only differs in case or normalization stops silently replacing
+  the file it lands on` (`merge_level` shares `DestNameIndex`) and `fix(copy): a staged write stops clearing a
+  destination name nobody resolved a conflict for` (`staged_write::LandingName`). Left open: the SMB single-shot path
+  has no equivalent guard (an exclusive-create disposition through `Volume::write_from_stream` would be a trait change).
+- **#3, #4** fixed: `fix(move): a folder symlink stops being a door the merge walks through` and `fix(move): the
+  same-volume rename-merge stops descending folder symlinks`. Left open: the volume engine's TOP-LEVEL type decision
+  (`move_same.rs`, via `Volume::is_directory`) is still symlink-blind; closing it needs a symlink-aware answer on the
+  `Volume` trait across every backend.
+- **#5, #13** fixed: `fix(copy): "Overwrite all smaller/older" stops deleting a destination folder it compared against a
+  file` (local), `fix(copy): a blanket Overwrite stops clearing a destination folder on the cross-volume engine too`,
+  `fix(archive): a blanket Overwrite stops deleting a folder inside a zip that a file shares a name with` (the archive
+  engine had the same hole), and `fix(copy): a folder replacing a file keeps that file until the whole subtree has
+  landed`. Left open: the volume engine's folder-over-file Overwrite (now reachable only from an explicit prompt) still
+  deletes the file before the directory lands; and the local folder-over-file Stop prompt shows the clash as file-vs-file
+  because `single_item.rs` passes the blocking file as both sides.
+- **#11** fixed in two halves: the false `rolled_back: true` went earlier (`ReversalTally` → `PartiallyRolledBack`), and
+  `fix(move): a rollback after a folder merge actually puts the folder back` records directory removals so the rollback
+  recreates parents.
+- **#15** fixed: `fix(move): a file that appears at the destination mid-move is refused` (`rename_onto_free_name` at all
+  four sites).
+- **Open**: #6, #7, #9, #10, #12, #14. Planned as two batches: copy-engine rollback and temp cleanup (#6, #7, #12,
+  #14), then volume conflict detection and the delete-before-rename (#9, #10).
+
 **Scope, honestly.** The plan was 18 subsystems (both transfer engines, the write-ops umbrella, archive edits,
 delete/trash/clipboard, `cmdr-fs`, SMB, SFTP, MTP, secrets and settings persistence, the file viewer, the operation log,
 four slices of `cmdr-index`, and git/downloads/listing). The run was stopped for budget after **four** hunters returned;
