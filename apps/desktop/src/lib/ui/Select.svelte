@@ -253,7 +253,7 @@
              open menu escapes ancestor `overflow`/`mask`. Ark's Portal forwards the Select context,
              and the content's `bind:ref` works either way. -->
         <Portal disabled={!portal && portalContainer === undefined} container={portalContainer}>
-            <Select.Positioner>
+            <Select.Positioner class="select-positioner">
                 <Select.Content
                     bind:ref={contentEl}
                     class={`select-content${contentClass ? ` ${contentClass}` : ''}`}
@@ -389,6 +389,19 @@
         color: var(--color-text-primary);
     }
 
+    /* The dropdown rung lives on the POSITIONER, not on the content. Zag styles the positioner
+       `position: absolute` + `isolation: isolate`, so the content is a static child inside the
+       positioner's own stacking context: a `z-index` there orders the menu's rows against each
+       other and nothing else, which is why raising it never lifted the menu over a window's drag
+       strip. The positioner is the positioned box — but zag already writes `z-index: var(--z-index)`
+       to its INLINE style, which no class rule can outrank, so the rung goes in through that
+       variable (zag's own hook) rather than a `z-index` declaration that would silently lose the
+       cascade. Portaled, this lands at body level; inside a modal (`portalContainer`) it's relative
+       to the overlay, one rung under `--z-modal`. */
+    :global(.select-positioner) {
+        --z-index: var(--z-dropdown);
+    }
+
     /* Frosted-glass menu. Shared tokens with tooltips / filter-chip popovers so every glass surface
        reads as one material; the blur is dropped under reduced transparency (token flips opaque). */
     :global(.select-content) {
@@ -399,7 +412,6 @@
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-lg);
         padding: var(--spacing-xs);
-        z-index: var(--z-dropdown);
         max-height: 300px;
         overflow-y: auto;
         /* Consistent width regardless of content. */

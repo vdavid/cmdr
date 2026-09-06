@@ -265,7 +265,7 @@
         left: 0;
         right: 0;
         height: var(--titlebar-height);
-        z-index: var(--z-dropdown);
+        z-index: var(--z-sticky);
     }
 
     .queue-header {
