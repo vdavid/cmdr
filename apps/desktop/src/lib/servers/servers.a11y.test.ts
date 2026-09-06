@@ -7,11 +7,18 @@
  * `SignInCredentialFields`, and `HostKeyStep` through the shipping component
  * rather than in isolation, which is the only way the labels, the `aria-invalid`
  * pairings, and the `role="alert"` refusals get checked where they really live.
+ * The three renderers also get their own blocks, for the states the sheet can't
+ * reach without a round-trip: a refusal already on screen, and first contact with
+ * a host key.
  */
 
 import { describe, it, vi, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import SignInSheet from './SignInSheet.svelte'
+import HostKeyStep from './HostKeyStep.svelte'
+import ServerFormFields from './ServerFormFields.svelte'
+import SignInCredentialFields from './SignInCredentialFields.svelte'
+import { emptyServerForm } from './server-form'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { SignInAttemptOutcome, SignInSheetRequest } from './sign-in-contract'
 
@@ -121,5 +128,69 @@ describe('SignInSheet a11y', () => {
       },
     })
     await expectNoA11yViolations()
+  })
+})
+
+describe('the three renderers on their own', () => {
+  it('the add form with a refusal under both fields has no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ServerFormFields, {
+      target,
+      props: {
+        form: { ...emptyServerForm(), protocol: 'sftp', address: 'ada@nas.local' },
+        disabled: false,
+        protocolEditable: true,
+        addressRefusal: 'Nothing at this address answers WebDAV.',
+        onTryNextcloudAddress: () => {},
+        secretRefusal: "That password didn't work for ada.",
+        storedSecretWarning: 'Reconnecting on its own needs a remembered password.',
+        onChange: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the credential fields with a refusal have no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SignInCredentialFields, {
+      target,
+      props: {
+        shape: { kind: 'key_passphrase' },
+        accountLabel: 'ada',
+        username: 'ada',
+        secret: '',
+        remember: false,
+        guest: false,
+        disabled: false,
+        secretRefusal: 'This server asks for a password.',
+        onChange: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('first contact with a host key has no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(HostKeyStep, {
+      target,
+      props: {
+        prompt: {
+          host: 'nas.local',
+          port: 22,
+          algorithm: 'ssh-ed25519',
+          fingerprint: 'SHA256:2Bp0aJ8h5rXKk1vN7qTt3fYw9cLmQzE4sVuG6dRhPxA',
+          kind: 'unknown',
+        },
+        onTrust: () => {},
+        busy: false,
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
   })
 })

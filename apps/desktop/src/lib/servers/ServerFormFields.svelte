@@ -315,7 +315,9 @@
         gap: var(--spacing-sm);
     }
 
-    .path-row :global(.text-field-container) {
+    /* `TextInput`'s own frame is `.text-field`; the Browse button sits beside it
+       and the field takes the rest of the row. */
+    .path-row :global(.text-field) {
         flex: 1 1 auto;
         min-width: 0;
     }

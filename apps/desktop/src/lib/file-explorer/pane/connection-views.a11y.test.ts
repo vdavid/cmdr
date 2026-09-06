@@ -29,9 +29,9 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   openPrivacySettings: vi.fn(() => Promise.resolve()),
   reconnectVolume: vi.fn(),
-  // Never resolves: `SmbReauthView` audits the form before any round-trip lands.
+  // Never resolves: an audit runs before any round-trip lands.
   reconnectVolumeWithCredentials: vi.fn(() => new Promise<never>(() => {})),
-  // `NetworkLoginForm` (rendered inside `SmbReauthView`) pre-fills the username from these on mount.
+  // `NetworkLoginForm` pre-fills the username from these on mount.
   getUsernameHint: vi.fn(() => Promise.resolve(null)),
 }))
 
@@ -62,7 +62,6 @@ vi.mock('$lib/mtp', () => ({
 
 import ErrorPane from './ErrorPane.svelte'
 import MtpConnectionView from './MtpConnectionView.svelte'
-import SmbReauthView from './SmbReauthView.svelte'
 import SmbReconnectingView from './SmbReconnectingView.svelte'
 import RemoteConnectView from './RemoteConnectView.svelte'
 
@@ -178,23 +177,6 @@ describe('ErrorPane a11y', () => {
   })
 })
 
-/**
- * Tier 3 a11y tests for `SmbReauthView.svelte`.
- *
- * The sign-in prompt shown when an SMB reconnect gave up on an auth failure.
- * Audits the default state (stale-password message + login form).
- */
-describe('SmbReauthView a11y', () => {
-  it('default state (stale-password message + form) has no a11y violations', async () => {
-    const target = container()
-    mount(SmbReauthView, {
-      target,
-      props: { volumeId: 'smb-test', serverLabel: 'Test server', onCancel: vi.fn() },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-})
 
 /**
  * Tier 3 a11y tests for `SmbReconnectingView.svelte`.
@@ -345,6 +327,26 @@ describe('RemoteConnectView a11y', () => {
         name: 'Naspolya',
         state: { kind: 'refused' as const, refusal: 'This server asks for a password.', retry: vi.fn() },
       },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('signed out has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: { name: 'Naspolya', state: { kind: 'signed_out' as const, signIn: vi.fn() } },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('a changed host key has no a11y violations', async () => {
+    const target = container()
+    mount(RemoteConnectView, {
+      target,
+      props: { name: 'Naspolya', state: { kind: 'host_key_changed' as const, disconnect: vi.fn() } },
     })
     await tick()
     await expectNoA11yViolations(target)
