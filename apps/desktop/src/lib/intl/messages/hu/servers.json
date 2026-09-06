@@ -1,0 +1,62 @@
+{
+  "servers.paneState.connecting": "Kapcsolódás ide: {name}…",
+  "@servers.paneState.connecting": {
+    "sourceHash": "7fb114e"
+  },
+  "servers.paneState.connectingHint": "Ez eltarthat pár másodpercig.",
+  "@servers.paneState.connectingHint": {
+    "sourceHash": "c830378"
+  },
+  "servers.paneState.cancel": "Mégsem",
+  "@servers.paneState.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.paneState.tryAgain": "Próbáld újra",
+  "@servers.paneState.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "servers.paneState.disconnect": "Leválasztás",
+  "@servers.paneState.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "servers.refusal.authenticationRejected": "Ez a jelszó nem jó ehhez a felhasználóhoz: {username}.",
+  "@servers.refusal.authenticationRejected": {
+    "sourceHash": "b2c42b0"
+  },
+  "servers.refusal.needsCredentials": "Ez a szerver jelszót kér.",
+  "@servers.refusal.needsCredentials": {
+    "sourceHash": "f5f689b"
+  },
+  "servers.refusal.authMethodUnsupported": "Ez a szerver olyan bejelentkezési módot használ, amit a Cmdr még nem támogat.",
+  "@servers.refusal.authMethodUnsupported": {
+    "sourceHash": "62b963e"
+  },
+  "servers.refusal.certificateUntrusted": "A macOS nem bízik meg ennek a szervernek a tanúsítványában. Add hozzá a Kulcskarika-elérés appban, majd próbáld újra.",
+  "@servers.refusal.certificateUntrusted": {
+    "sourceHash": "6db00c6"
+  },
+  "servers.refusal.notAWebdavServer": "Ezen a címen semmi nem válaszol WebDAV-on.",
+  "@servers.refusal.notAWebdavServer": {
+    "sourceHash": "4c702d4"
+  },
+  "servers.refusal.invalidUrl": "Ez nem úgy néz ki, mint egy szervercím.",
+  "@servers.refusal.invalidUrl": {
+    "sourceHash": "9a121ac"
+  },
+  "servers.refusal.timedOut": "{host} nem válaszolt időben.",
+  "@servers.refusal.timedOut": {
+    "sourceHash": "7662825"
+  },
+  "servers.refusal.unreachable": "A Cmdr nem érte el ezt: {host}.",
+  "@servers.refusal.unreachable": {
+    "sourceHash": "ae716c3"
+  },
+  "servers.refusal.hostKeyUntrusted": "A Cmdr még nem tekinti megbízhatónak {host} kulcsát.",
+  "@servers.refusal.hostKeyUntrusted": {
+    "sourceHash": "40a9d28"
+  },
+  "servers.refusal.hostKeyRevoked": "{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a Macen. A Cmdr nem kapcsolódik hozzá.",
+  "@servers.refusal.hostKeyRevoked": {
+    "sourceHash": "47aacda"
+  }
+}

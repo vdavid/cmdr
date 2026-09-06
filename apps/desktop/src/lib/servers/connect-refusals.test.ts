@@ -54,7 +54,7 @@ describe('wordConnectRefusal', () => {
       }
       // ❌ No backend diagnostics in front of a person.
       for (const jargon of ['PROPFIND', 'Digest', 'rung', 'transport', 'Basic auth']) {
-        expect(sentence, `${kind} leaks "${jargon}"`).not.toContain(jargon)
+        expect(sentence, `jargon in ${kind}: "${jargon}"`).not.toContain(jargon)
       }
     }
   })

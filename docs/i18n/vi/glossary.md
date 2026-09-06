@@ -2119,3 +2119,79 @@ Office (.docx, .xlsx, .pptx) và gói ứng dụng (.jar, .apk), nên ngay cả 
   `settings.archives.zip.description` và `settings.archives.bundle.description`, nhưng bỏ dấu phẩy trước `hoặc` theo quy
   ước đã chốt · `high`. ❗ `settings.archives.bundle.description` vẫn còn dấu phẩy đó (`.bundle, hoặc .framework`); nằm
   ngoài phạm vi lần này, nên hai hàng khác nhau về dấu câu cho tới khi có người sửa.
+## Trung tâm máy chủ: khung trạng thái kết nối + quên máy chủ / mật khẩu (`servers.*` 15 khóa, `fileExplorer.navigation.connectionTooltip*` / `.disconnect*` / `.forget*` 13 khóa, 2026-09-06)
+
+Bề mặt mới: một khung riêng cho máy chủ (SMB/SFTP/WebDAV) đang kết nối hoặc bị từ chối, cộng với hàng máy chủ trong bộ
+chuyển ổ đĩa (chấm trạng thái, nút ngắt kết nối ở đúng chỗ mà ổ rời hiện `Tháo`, hai hộp thoại xác nhận `Quên`).
+
+Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1), nên toàn bộ dẫn chứng Apple lấy trực tiếp từ bundle macOS đang cài
+(`.loctable`, `plistlib.load(f)['vi']` so với `['en']`), macOS 26.6.2 build 25G83, 2026-09-06. Cách làm: xem
+`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" và ghi chú cùng tên trong `style.md`.
+
+### Thuật ngữ chốt trong đợt này
+
+- **disconnect (động từ, nhãn nút) → `Ngắt kết nối`; disconnect from X → `ngắt kết nối khỏi X`** · macOS `IOBluetoothUI`
+  (`Disconnect` → `Ngắt kết nối`, `Disconnect from Network` → `Ngắt kết nối khỏi Mạng`), và catalog đã dùng đúng từ này
+  ở `fileExplorer.smbReconnect.disconnect`, `.unreachable.disconnect`, `.pane.disconnectFailedToast` · `high`.
+- **the connection dropped (mất ngoài ý muốn) → `Đã mất kết nối`** · macOS `CFNetwork`
+  (`The network connection was lost.` → `Đã mất kết nối mạng.`) · `high`. ❗ Đừng viết `Kết nối đã bị ngắt`: `ngắt` là
+  từ dành cho hành động CHỦ Ý của người dùng (`Ngắt kết nối`), nên dùng nó cho một cú rớt mạng sẽ khiến hai trạng thái
+  khác hẳn nhau đọc y như nhau.
+- **signed out → `Đã đăng xuất`; sign in again → `đăng nhập lại`** · macOS `StoreKit` (`Sign Out` → `Đăng xuất`),
+  `AppleAccount` (`…require you to sign in again.` → `…yêu cầu bạn đăng nhập lại.`); `Đăng nhập` đã có sẵn ở
+  `fileExplorer.network.signIn` · `high`.
+- **sign-in method → `cách đăng nhập`** · macOS dịch `Authentication Method` là `Phương thức xác thực`
+  (`CoreAudioKit/NetworkMIDILocalizable`, `SingleSignOnService`), nhưng tiếng Anh ở đây cố tình chọn từ đời thường
+  ("sign-in method", không phải "authentication method"), nên tiếng Việt cũng đi từ `đăng nhập` chứ không lên giọng
+  thuật ngữ · `high`. Dùng `phương thức xác thực` nếu sau này có chuỗi thật sự nói về cơ chế xác thực.
+- **key (khóa máy chủ SSH) → `khóa`; khóa của X → `khóa của {host}`** · macOS không có chuỗi "host key" nào trong
+  bundle; `khóa` là từ đã chốt cho key nói chung (`khóa khôi phục` = recovery key trong `AppleAccountUI`, và catalog
+  dùng `khóa API`, `khóa` cho license key) · `high`. ❌ Đừng dùng `dấu vân tay` (Apple dành từ đó cho fingerprint sinh
+  trắc học).
+- **trust / untrusted → `tin cậy` / `không tin cậy`** · macOS `Security.framework` (`“%@” certificate is not trusted` →
+  `Chứng nhận “%@” không được tin cậy`) · `high`.
+- **certificate → `chứng nhận`, không phải `chứng chỉ`** · macOS dùng `chứng nhận` xuyên suốt
+  (`Security/Certificate.loctable`, `SecurityInterface`, Truy cập chuỗi khóa) · `high`. `chứng chỉ` là lối Microsoft.
+- **Keychain Access (tên ứng dụng) → `Truy cập chuỗi khóa`** · chính bundle của ứng dụng
+  (`Keychain Access.app/…/InfoPlist.loctable`: `Keychain Access` → `Truy cập chuỗi khóa`) · `confirmed`. Viết thường chữ
+  `chuỗi` như bundle của ứng dụng và như catalog đã có (`ai.secretError.keychainBody`), dù `SecurityInterface` có chỗ
+  viết hoa `Chuỗi khóa`.
+- **compromised → `bị xâm phạm`; revoked → `bị thu hồi`** · macOS `PassKit/VirtualCard` (`has been compromised` →
+  `đã bị xâm phạm`) và `StoreKit` (`Certificate Revoked` → `Chứng nhận bị thu hồi`) · `high`. `hostKeyRevoked` nói
+  "marked as compromised", nên dùng `bị xâm phạm`, không phải `bị thu hồi`.
+- **forget (bỏ một mục đã lưu khỏi danh sách) → `Quên`** · macOS `WiFiSettingsKit` (`Forget` → `Quên`,
+  `Forget Wi‑Fi Network “%@”?` → `Quên mạng Wi‑Fi “%@”?`), và catalog đã có `menu.network.forgetServer` =
+  `Quên máy chủ`, `menu.network.forgetSavedPassword` = `Quên mật khẩu đã lưu` · `high`. Đây là ngoại lệ có chủ ý của
+  luật `xóa` / `gỡ bỏ` trong `style.md`: khi tiếng Anh gọi hành động là "Forget", tiếng Việt gọi là `Quên` cả trong tiêu
+  đề, thân hộp thoại, lẫn toast hỏng (`Cmdr không thể quên {name}.`).
+- **operations in progress → `thao tác đang chạy`** · `queue.row.status` đã dịch `Running` là `Đang chạy`, nên nút bị
+  tắt phải dùng đúng từ đó thay vì `đang diễn ra` / `đang được tiến hành` của macOS (`FSKit/Errors`) · `high`.
+- **didn't answer in time → `đã không phản hồi kịp thời`** · lặp lại nguyên văn khung câu đã ship ở
+  `fileExplorer.unreachable.detailTimeout` (`didn't respond in time` → `đã không phản hồi kịp thời`); macOS cũng dùng
+  `không phản hồi` cho "did not respond" (`PrintCore/cups`) · `high`.
+- **reach a SERVER → `kết nối được tới`; reach a PATH / drive → `truy cập`** · catalog đã tách sẵn hai lối:
+  `licensing.error.network` ("couldn't reach the license server") → `không kết nối được tới máy chủ giấy phép`, còn
+  `fileExplorer.unreachable.title` và `.locationUnreachableToast` ("couldn't reach {path}" / "that location's drive") →
+  `Không thể truy cập …` · `high`. `servers.refusal.unreachable` nói về một máy chủ nên theo lối thứ nhất.
+- **This can take a few seconds. → `Việc này có thể mất vài giây.`** · macOS `PassKit/Transit_Localizable`
+  (`may take a few seconds` → `có thể mất vài giây`) · `high`.
+
+### Ghi chú theo chuỗi
+
+- **`servers.refusal.authenticationRejected` → `Mật khẩu đó không đúng với {username}.`** · giữ nguyên khung của chuỗi
+  chị em đã ship `errors.volume.passwordRejected` ("That password didn't work." → `Mật khẩu đó không đúng.`) và chỉ thêm
+  người dùng. Hai chuỗi tả cùng một sự kiện nên phải đọc như một.
+- **`servers.refusal.notAWebdavServer` → `Không có gì ở địa chỉ này phản hồi giao thức WebDAV.`** · thêm `giao thức`
+  (protocol) vì `phản hồi WebDAV` trần trụi không thành câu tiếng Việt, và vì người đọc cần biết WebDAV là một giao
+  thức. `WebDAV` giữ nguyên.
+- **`servers.refusal.invalidUrl` → `Cái này trông không giống địa chỉ máy chủ.`** · lấy nguyên khung của
+  `common.attachEmailInvalid` ("That doesn't look like an email address" → `Cái này trông không giống địa chỉ email`) ·
+  `high`.
+- **`fileExplorer.navigation.forgetServerConfirm`: "stops listing it" → `không hiển thị máy chủ này nữa`** · nói về việc
+  biến mất khỏi bộ chuyển ổ đĩa, nên `hiển thị` (từ đã chốt cho "show") tự nhiên hơn `liệt kê`. Câu cuối
+  (`Các tệp của bạn vẫn ở trên máy chủ.`) là câu trấn an quan trọng nhất; đừng rút gọn.
+- **`disconnectPlaceAriaLabel` → `Ngắt kết nối {name}`** · tên phụ trợ chứa nguyên văn nhãn nhìn thấy được
+  `Ngắt kết nối` (`servers.paneState.disconnect`, `fileExplorer.smbReconnect.disconnect`), đúng WCAG 2.5.3. Cùng khuôn
+  với chuỗi anh em `ejectVolumeAriaLabel` = `Tháo {name}`.
+- **`on this Mac` → `trên máy Mac này`** · macOS `IOBluetoothUI`, `FileProvider` · `high`.
+- Không khóa nào trong 28 khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.

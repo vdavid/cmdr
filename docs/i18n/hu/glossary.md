@@ -38,10 +38,10 @@ pass, 2026-06-21).
 - scan (index): `átvizsgálás` · descriptive (ms "vizsgálat") · tentative. "Rescan now" = `Újbóli átvizsgálás`.
 - Keychain → `kulcskarika` · macOS Hungarian · high. The localized Apple feature name (Decision 1: localize what Apple
   localizes, like Quick Look — NOT a verbatim brand). Apple's Hungarian Mac User Guide uses `kulcskarika` for the store
-  (e.g. `iCloud-kulcskarika`) and `Kulcskarika-hozzáférés` for the Keychain Access app (verified on support.apple.com
-  hu-hu Mac User Guide + macmag.hu, web, 2026-06-21). The store sense declines case-by-case (`a kulcskarikában`,
-  `a kulcskarikából`, `a macOS kulcskarika`); the app name is `Kulcskarika-hozzáférés`. System keyring (generic) =
-  `kulcstartó`.
+  (e.g. `iCloud-kulcskarika`). The store sense declines case-by-case (`a kulcskarikában`, `a kulcskarikából`,
+  `a macOS kulcskarika`). The APP name is `Kulcskarika-elérés`, from the live `Keychain Access.app` bundle
+  (`InfoPlist.loctable` `CFBundleDisplayName`, macOS 26.6.2) — see § A szerverközpont for the evidence and the one
+  shipped key still carrying the older web-sourced `Kulcskarika-hozzáférés`. System keyring (generic) = `kulcstartó`.
 
 UI section names captured (volume-switcher group headings, for cross-file consistency): Favorites = `Kedvencek`, Volumes
 = `Kötetek`, Cloud = `Felhő`, Mobile = `Mobil`, Network = `Hálózat`. Settings location referenced in copy:
@@ -2384,3 +2384,66 @@ ezért már az angol sem nevezi meg az Office-t.
 - **A mondat kerete → `Mit tesz az Enter egy …, … vagy … fájlon.`** · pontosan a testvérkulcsok
   (`settings.archives.zip.description`, `settings.archives.bundle.description`) kerete · `high`. Nincs aposztróf az
   értékben.
+## A szerverközpont: kapcsolódási állapotok, elutasítások, elfelejtés (`servers.*`, `fileExplorer.navigation.connectionTooltip*`/`.disconnect*`/`.forget*`, 2026-09-06)
+
+Új felület: egy panelnézet, amely a szerverkapcsolat állapotát mutatja (kapcsolódás, elutasítás, leválasztás), plusz a
+kötetváltó szerversorainak buboréksúgói és a két „elfelejtés” megerősítő párbeszéd.
+
+**A források ebben a passzban**: a `_ignored/i18n/hu/` referenciakupac nem volt elérhető a gépen, ezért az `.lproj` /
+`.loctable` fájlokat közvetlenül az élő rendszerből bányásztuk (macOS 26.6.2, 25G83, `plutil -convert json` és
+`plistlib`). Az így vett szavak mellett ott a bundle és a kulcs neve.
+
+- **Connecting to {name}… → `Kapcsolódás ide: {name}…`** · mac (Finder `LocalizableMerged` `MN1` = „Kapcsolódás ide:
+  ^0…”, macOS 26.6.2) · `high`. Betű szerinti Apple-megfelelő ugyanerre az angol mondatra, és a kettőspontos alak
+  megoldja a ragozási csapdát is (a `{name}` semmilyen toldalékot nem kap). Idézőjel nincs benne: a katalógus akkor
+  idéz, ha az ANGOL is idéz (`fileExplorer.network.login.title`), itt pedig nem.
+- **Disconnect → `Leválasztás`; Cancel → `Mégsem`; Try again → `Próbáld újra`** · a szállított alakok nyernek
+  (`fileExplorer.smbReconnect.disconnect`, `fileExplorer.unreachable.disconnect`, `menu.network.disconnect`; 15+
+  `Mégsem`; 5 `Próbáld újra`), és mind macOS-megerősített (Finder `MR10.1`/`N200` = „Leválasztás”, NetAuthAgent `CANCEL`
+  = „Mégsem” pont a szerverre kapcsolódás lapján) · `high`. A `queue.row.cancel` `Megszakítás` alakja továbbra is a futó
+  művelet megszakítása, nem párbeszédgomb; a szerverpanel gombja az utóbbi, tehát `Mégsem`.
+- **server address → `szervercím`** · mac (Finder `ConnectToWindow` `YEA-3L-WnW.placeholderString` = „Szervercím”) ·
+  `high`.
+- **certificate → `tanúsítvány`; trust (megbízhatóság) → `megbízik benne` / `megbízható`** · mac (Kulcskarika-elérés
+  `Localizable.loctable`: „egyéni megbízhatósági beállításokkal rendelkező tanúsítvány”, „megbízható alkalmazások
+  listája”) · `high`.
+- **host key → `a szerver kulcsa` / `{host} kulcsa`** · mac (`ActionKit.framework/Localizable.loctable`: „A hoszt
+  kulcsának ujjlenyomata %@”, „SSH-kulcs”, „SSH-szerver”) · `high`. A birtokos rag a `kulcs`-ra kerül, nem a helyőrzőre,
+  ezért a `{host}` ragozatlan marad: `{host} kulcsát`, `{host} kulcsa`.
+- **trust a host key (a jóváhagyás aktusa) → `megbízhatónak tekint`** · a mac `megbízható` melléknévre építve · `high`.
+  ❌ NEM `elfogad` (elmossa, hogy bizalmi döntésről van szó), és ❌ nem `visszavont` (az a `revoked`, lásd lent).
+- **compromised (kulcsról) → `kompromittált`** · nincs Apple-forrás rá (a `veszélyeztetett` a hu rendszerben csak
+  „endangered species” értelemben szerepel, a `visszavont` pedig a `revoked` szava: `spext_revoked` = „Visszavont”,
+  `CERT_REVOKED_ERROR`) · `tentative`. A `kompromittál` régi, köznyelvben is meglévő magyar szó, tehát nem szakzsargon,
+  és megőrzi az angol szándékos súlyát: a `hostKeyRevoked` végleges, nincs alóla visszaút. A `visszavont` gyengítene,
+  mert adminisztratív aktust ír le, nem veszélyt. **Anyanyelvi átnézésre jelölve** — ez a passz egyetlen ilyen sora.
+- **Keychain Access (az Apple appja) → `Kulcskarika-elérés`** · mac (a `Keychain Access.app` `InfoPlist.loctable`
+  `CFBundleDisplayName` = „Kulcskarika-elérés”, és a saját `Localizable.loctable` prózája: „nyissa meg a dokumentumot a
+  Kulcskarika-elérés appban”; macOS 26.6.2) · `high`. Ez **javítja** a fenti Terms-blokk `Kulcskarika-hozzáférés` sorát,
+  amely a support.apple.com weboldalra épült; az élő bundle a magasabb rendű forrás, mert a felhasználó azt látja. A tár
+  (store) jelentés marad `kulcskarika`. ⚠️ **Ismert eltérés**: az `ai.secretError.keychainBody` még
+  `Kulcskarika-hozzáférés`-t szállít; egy külön passznak kell ráigazítania (ennek a passznak csak a 28 új kulcshoz volt
+  hozzáférése). Ne relitigáld a terminust, csak igazítsd hozzá a régi kulcsot.
+- **Signed out (állapot) → `Kijelentkezve`; Saved (állapot) → `Mentve`** · a semleges, tárgyhoz igazodó állapotalak (nem
+  „Ki vagy jelentkezve”), ahogy a nemsemlegességi szabály kéri · `high`.
+- **Open X to Y → nem „hogy Y”, hanem célhatározós `-hoz/-hez/-höz`** · a szállított
+  `fileExplorer.smbReauth.savedPasswordFailed` mintája („Jelentkezz be az újracsatlakozáshoz”) · `high`. Innen a három
+  buboréksúgó egységes záró tagmondata: `az újbóli bejelentkezéshez`, `a kulcs megtekintéséhez`, `a kapcsolódáshoz`.
+- **A „busy” súgó a testvére szerkezetét másolja.** `disconnectBusyTooltip` =
+  `Nem választható le, amíg ezen a szerveren műveletek vannak folyamatban`, pontosan a szállított `ejectBusyTooltip`
+  („Nem adható ki, amíg ezen az eszközön műveletek vannak folyamatban”) sablonjára, `eszköz` → `szerver` cserével ·
+  `high`. A kettő egymás mellett jelenik meg ugyanabban a kötetváltóban.
+- **Forget server → `Szerver elfelejtése`; Forget saved password → `Mentett jelszó elfelejtése`** · kényszerítve, mert
+  az angol betű szerint azonos a szállított `menu.network.forgetServer` / `menu.network.forgetSavedPassword` /
+  `fileExplorer.network.share.forgetPassword` kulcsokkal (`desktop-i18n-term-consistency`) · `high`.
+- **A megerősítő kérdés tegező, és a helyőrző alaptagot kap.** `Elfelejted a(z) „{name}” szervert?`,
+  `Elfelejted a(z) „{name}” mentett jelszavát?` — az `a(z)` a házi hedge az ismeretlen kezdőhangra, a `„…”` a
+  felhasználó saját nevét jelöli, a birtokos rag pedig a `jelszó`-ra kerül (`jelszavát`), nem a helyőrzőre.
+- **`{name} leválasztása` az aria-címke** · a szállított `ejectVolumeAriaLabel` („{name} kiadása”) mintája · `high`. A
+  WCAG 2.5.3 tartalmazás a `leválasztás` ⊂ `leválasztása` részkarakterláncon áll (a látható címke a
+  `servers.paneState.disconnect` / `fileExplorer.smbReconnect.disconnect` = `Leválasztás`).
+- **`Cmdr couldn't …` → `A Cmdr nem tudta …`, a helyőrző kettőspont mögé** (`… ezt: {name}`) · a szállított család
+  (`operationLog.rollback.refusalUnexpected`, `suggestedOps.destinationUnknown`,
+  `fileExplorer.navigation.driveIndex.refusedUpgradeFailed`) · `high`.
+- Nincs `sameAsSourceJustification` ebben a passzban: mind a 28 érték eltér az angoltól. Egyik érték sem tartalmaz
+  aposztrófot.

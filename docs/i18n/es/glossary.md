@@ -2094,3 +2094,93 @@ por eso ni el inglés nombra Office.
   `Paquetes de apps` de debajo, la misma separación que hace el inglés con `packages` frente a `app bundles`.
 - **Marco de la frase → `Qué hace pulsar Intro en un …, … o ….`** · el mismo marco que sus claves hermanas
   `settings.archives.zip.description` y `settings.archives.bundle.description` · `high`. Sin apóstrofo en el valor.
+## El hub de servidores: conectar, desconectar y olvidar (`servers.*`, `fileExplorer.navigation.{connectionTooltip*,disconnect*,forget*}`, 2026-09-06)
+
+28 claves nuevas: el panel que enseña el estado de una conexión a un servidor SMB / SFTP / WebDAV, los tooltips del
+punto de conexión en el selector de volúmenes, y los dos diálogos de confirmación de «olvidar». El montón de referencia
+no está en esta máquina, así que las fuentes de Tier 1 se sacaron del propio Mac (macOS 26.6.2, build 25G83,
+`plutil -convert json` sobre los bundles del sistema, 2026-09-06).
+
+### Términos de Tier 1 (macOS en vivo)
+
+- **Disconnect → `Desconectar`** · Finder `es.lproj/LocalizableMerged.strings`, claves `MR10.1` y `N200` · `high`. Ya
+  era la forma del catálogo (`fileExplorer.smbReconnect.disconnect`, `menu.network.disconnect`); esto la reafirma.
+- **Connect → `Conectar`** · Finder `ConnectToWindow.strings` (`46.title`) + `LocalizableMerged` `TL13` · `high`.
+- **Connecting to X… → `Conectándose a X…`** · Finder `MN1` = «Conectándose a ^0 …» (y `PW28`, «Conectándose al
+  servidor») · `high`. Se copia el gerundio reflexivo, no `Conectando a`.
+- **Connect to a server → `Conectarse a un servidor`** · Finder `TL_HELP_CNCT` / `FR15` / `ConnectToWindow` `1.title`;
+  ya asentado en `fileExplorer.network.connectDialog.title` · `high` (se reafirma).
+- **key (la clave criptográfica de un servidor SSH) → `clave`** · Acceso a Llaveros `Localizable.loctable`:
+  `private key` → `clave privada`, `public key` → `clave pública`, `Keys` → `Claves` · `high`. ❌ No `llave`: en el
+  macOS en español `llave` solo aparece en `llaves de acceso` (passkeys) y en `llavero`.
+- **Keychain Access → `Acceso a Llaveros`; keychain → `llavero`** · Acceso a Llaveros `Localizable.loctable`
+  (`Keychain Access` → `Acceso a Llaveros`, `Keychain` → `Llavero`) · `high`. Ya estaba en `ai.secretError.keychainBody`
+  y en `fileExplorer.network.share.forgetPasswordTooltip`.
+- **compromised (una credencial marcada como tal) → `comprometida`** · Apple en español, `PasswordManagerUI.framework` y
+  `SafariShared.framework`, `es.lproj`: «Contraseña comprometida» · `high`. La otra forma de Apple, `filtrada`
+  (`Detectar contraseñas filtradas`), nombra una FUGA concreta; `revoked` en `known_hosts` no es una fuga, es una marca
+  que puso quien administra, así que gana `comprometida`.
+- **trusted → `de confianza`; to trust → `confiar en`** · `SecurityInterface.framework` y Acceso a Llaveros («ajustes de
+  confianza», «un interlocutor de confianza», «si un certificado raíz es de confianza o no») · `high`. Como el inglés
+  pone a macOS y a Cmdr de sujeto activo, aquí se usa la forma verbal:
+  `macOS no confía en el certificado de este servidor`, `Cmdr todavía no confía en la clave de {host}`.
+- **Signed out → `Sesión cerrada`; sign in → `iniciar sesión`** · Finder `NE103` («Se ha cerrado la sesión de “^0”.») y
+  `NE104` («Iniciar sesión…»); ya en el catálogo (`fileExplorer.network.signIn`) · `high`. `Sesión cerrada` concuerda
+  con `sesión`, no con quien lee, así que no expone género.
+- **sign-in method → `método de inicio de sesión`** · compuesto sobre el anterior más
+  `errors.listing.authRequiredEauth.explanation`, que ya dice `el inicio de sesión actual` · `high`.
+
+### Decisiones de consistencia con el propio catálogo
+
+- **Try again (BOTÓN) → `Reintentar`**, no `Inténtalo de nuevo` · el catálogo ya lo resuelve así en las cinco etiquetas
+  de botón que existen (`fileExplorer.errorPane.tryAgain`, `.mtp.tryAgain`, `.networkMount.tryAgain`,
+  `licensing.dialog.tryAgain`, `fileOperations.transferDialog.scanRetry`), y también traduce `Retry` igual · `high`.
+  `Inténtalo de nuevo` / `vuelve a intentarlo` se reservan para la PROSA, que es lo que hace
+  `servers.refusal.certificateUntrusted` («…y vuelve a intentarlo»), siguiendo a `errors.write.*.suggestion`.
+- **«Can't X while operations are in progress on this Y» calca al hermano de expulsar** ·
+  `fileExplorer.navigation.ejectBusyTooltip` ya publicaba «No se puede expulsar mientras hay operaciones en curso en
+  este dispositivo», así que `disconnectBusyTooltip` es la misma frase palabra por palabra con `desconectar` y
+  `servidor` · `high`. Sin punto final, como el inglés.
+- **`Olvidar el servidor` y `Olvidar la contraseña guardada`** (títulos de los diálogos) repiten exactamente
+  `menu.network.forgetServer` / `menu.network.forgetSavedPassword` y `fileExplorer.network.share.forgetPassword`, que ya
+  fijaron la forma con artículo · `high`. Los ítems `…Busy` de la barra de menús les añaden ` (ocupado)`, según la nota
+  de la guía de estilo.
+- **drop the connection → `cortar la conexión`** · `errors.listing.connectionDropped.explanation` ya dice «El servidor o
+  la red cortaron la conexión» · `high`. Se usa en `connectionTooltipDisconnected` y en `forgetServerConfirm`.
+- **reach → `acceder a`; reachable → `accesible`** · el catálogo entero (`errors.listing.*.suggestion`,
+  `fileExplorer.navigation.volumesStillUnreachable`) · `high`.
+- **doesn't support → `no admite`** · el catálogo entero (`errors.volume.notSupported`,
+  `errors.listing.notSupported.explanation`) · `high`.
+- **this Mac → `este Mac`** · `settings.behavior.openTerminalHereApp.description` · `high`.
+
+### Género, agentes y marcadores
+
+- Ningún valor genera a quien lee. Los tres participios que aparecen concuerdan con un sustantivo fijo, no con la
+  persona: `Sesión cerrada` (con `sesión`), `Guardado` (con `servidor`, que es lo único que puede estar guardado en esa
+  fila) y `comprometida` (con `clave`).
+- **Los clíticos solo apuntan a sustantivos de género fijo**: `Ábrelo` y `lo quita de la lista` → `el servidor`;
+  `recuperarla` → `la conexión`; `te la pedirá` → `la contraseña`. La trampa de `{name}` que describe la guía de estilo
+  (un nombre de disco puede ser `archivo` o `carpeta`) no se aplica aquí: en estas 28 claves `{name}` y `{host}` son
+  siempre un servidor, y ningún valor pone un artículo ni un participio a concordar con ellos.
+- **`{username}` y `{host}` van en posición que no pide concordancia**: `no funcionó para {username}`,
+  `{host} no respondió a tiempo`, `la clave de {host}`. Sirve cualquier valor, de cualquier longitud.
+- **`hostKeyRevoked` se reordena para no encadenar dos `en`** · «in your SSH settings on this Mac» daría
+  `en tus ajustes de SSH en este Mac`. Se pasa a activa con los ajustes de sujeto:
+  `Tus ajustes de SSH en este Mac marcan la clave de {host} como comprometida.` La segunda frase nombra el objeto
+  (`a ese servidor`) en vez del pronombre `a él`, que junto a `Mac` quedaba ambiguo · `high`.
+- **`notAWebdavServer` invierte la frase** · «Nothing at this address answers WebDAV» pide en español el giro
+  existencial ya asentado (`askCmdr.renameUndo.unavailable`, «No hay nada que restaurar»):
+  `En esta dirección no hay nada que responda a WebDAV.` · `high`.
+
+### Nombre accesible
+
+- `fileExplorer.navigation.disconnectPlaceAriaLabel` = **`Desconectar {name}`**, calcado de su hermano
+  `fileExplorer.navigation.ejectVolumeAriaLabel` (`Expulsar {name}`). El substring que satisface la contención de WCAG
+  2.5.3 es **`Desconectar`**, la misma palabra exacta que publican `servers.paneState.disconnect`,
+  `fileExplorer.smbReconnect.disconnect` y `menu.network.disconnect`.
+
+### Notas de forma
+
+- Ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`) que hacer.
+- Los 28 valores difieren del inglés, así que ninguno necesita `@key.sameAsSourceJustification`.
+- Verbatim: `Cmdr`, `macOS`, `Mac`, `SSH`, `WebDAV`. Las elipsis copian el `…` (U+2026) del inglés, carácter a carácter.

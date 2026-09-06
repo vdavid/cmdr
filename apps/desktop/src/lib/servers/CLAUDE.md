@@ -30,7 +30,8 @@ connect that stopped. Up: `../../CLAUDE.md`. Backend contracts: `crates/cmdr-sft
   sent.
 - **❌ No inert affordance.** A refused connect offers Try again, which really re-dials. The "Sign in…" button lands
   with the sheet that can answer it (M2), not before; until then the `needs_sign_in` arm refuses with the reason.
-- **The pane is where waiting is shown, the sheet is where data is typed.** `file-explorer/pane/RemoteConnectView.svelte`
-  renders the states; `pane/place-connect.svelte.ts` owns the `$effect` and the one-dial-per-landing rule.
+- **The pane is where waiting is shown, the sheet is where data is typed.**
+  `file-explorer/pane/RemoteConnectView.svelte` renders the states; `pane/place-connect.svelte.ts` owns the `$effect`
+  and the one-dial-per-landing rule.
 
 `DETAILS.md` holds the three arms in full, the path grammar and its Rust twin, the refusal table, and what M2 fills in.

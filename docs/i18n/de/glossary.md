@@ -1982,3 +1982,74 @@ Office-Dokumente (.docx, .xlsx, .pptx) und App-Pakete (.jar, .apk), deshalb nenn
   `app bundles` macht.
 - **Satzrahmen → `Was die Eingabetaste bei einer …, … oder … bewirkt.`** · wörtlich der Rahmen der Geschwisterschlüssel
   `settings.archives.zip.description` und `settings.archives.bundle.description` · `high`. Kein Apostroph im Wert.
+## Der Server-Hub: Verbindungszustände, Trennen und Vergessen (`servers.*`, `fileExplorer.navigation.connectionTooltip*`, `.disconnect*`, `.forget*`)
+
+Neue Fläche: der Bereichszustand beim Verbinden mit einem SMB-/SFTP-/WebDAV-Server, die Absagen des Servers, die
+Verbindungspunkt-Tooltips im Volume-Umschalter und die beiden Bestätigungsdialoge (Server vergessen, gespeichertes
+Passwort vergessen). Belege aus den installierten macOS-Bundles (macOS 26.6.2, Build 25G83, gelesen 2026-09-06), weil
+der Referenz-Stapel auf der M1-Kiste fehlt.
+
+- **„Connecting to {name}…“ → `Verbindung zu {name} wird hergestellt …`** · zeichengleich zum schon ausgelieferten
+  `fileExplorer.network.share.connecting` und zur Glossarzeile `connect → verbinden` · `high`. Leerzeichen vor dem `…`,
+  weil es eine Fortschrittszeile ist (`style.md` § Ellipsis).
+- **„couldn''t disconnect from {name}“ → `Cmdr konnte die Verbindung zu {name} nicht trennen.`** · Apples eigener
+  Satzrahmen: `FileProvider.framework/Errors.loctable` `UnsafeDisconnect` („“%@” couldn’t be disconnected.“ →
+  „Verbindung zu „%@“ konnte nicht getrennt werden.“) · `high`. Cmdr füllt den Subjekt-Slot, statt passiv zu bleiben,
+  wie der Nachbar `fileExplorer.pane.disconnectFailedToast` („Trennen nicht möglich: …“).
+- **`disconnectPlaceAriaLabel` → `Verbindung zu {name} trennen`** · derselbe Apple-Rahmen; enthält `trennen` und erfüllt
+  damit die Aria-Containment-Regel gegenüber der sichtbaren Beschriftung `Trennen` (`servers.paneState.disconnect`,
+  `fileExplorer.smbReconnect.disconnect`), da der Vergleich Groß-/Kleinschreibung ignoriert · `high`. ❌ Nicht
+  `{name} trennen` nach dem Muster von `ejectVolumeAriaLabel` („{name} auswerfen“): ein Server wird nicht getrennt,
+  sondern die Verbindung zu ihm.
+- **`disconnectBusyTooltip` → `Trennen nicht möglich, während auf diesem Server Vorgänge laufen`** · wortgleicher Rahmen
+  wie das Geschwister `fileExplorer.navigation.ejectBusyTooltip` („Auswerfen nicht möglich, während auf diesem Gerät
+  Vorgänge laufen“) · `high`.
+- **„The connection dropped.“ → `Die Verbindung wurde unterbrochen.`** · Apples Rendering von „the connection … was
+  lost“ (`Localizable.loctable` `quhhcv3a9g`, `bzaszpfvpc`, `8c9739tzbr`: „… weil die Verbindung zum iPod unterbrochen
+  wurde.“) · `high`. ❌ Nicht `abgebrochen`: das ist im Katalog der Abbruch-durch-den-Nutzer-Status.
+- **„Cmdr is working on getting it back.“ → `Cmdr stellt sie gerade wieder her.`** · gesetztes
+  `reconnect → Verbindung wiederherstellen` · `high`. `sie` zeigt auf `die Verbindung` im selben String, nicht auf einen
+  Platzhalter, ist also kein Fall der Pronomenregel.
+- **„Keychain Access“ → `Schlüsselbundverwaltung`** · `CFBundleDisplayName` in
+  `/System/Library/CoreServices/Applications/Keychain Access.app/…/InfoPlist.loctable` (macOS 26.6.2, 2026-09-06); deckt
+  sich mit dem schon ausgelieferten `ai.secretError.keychainBody` · `high`.
+- **„doesn''t trust … certificate“ → `vertraut dem Zertifikat … nicht`** · Apples Dativ-Rektion:
+  `Security.framework/Trust.loctable` („“%@” certificate is not trusted“ → „Zertifikat „%@“ wird nicht vertraut“),
+  `Certificate.loctable` („Root certificate is not trusted.“ → „Root-Zertifikat wird nicht vertraut.“) · `high`. Cmdr
+  behält das aktive `macOS vertraut … nicht`, weil die Stimme aktiv ist; die Rektion ist Apples.
+- **SSH-Hostschlüssel im Fließtext → schlicht `der Schlüssel`, mit `von {host}` statt Genitiv** · das Englische
+  vermeidet bewusst den Fachbegriff, und ein `{host}`-Platzhalter darf nie in einem Kasus-Slot stehen (`style.md` §
+  Case-marked placeholders) · `high`. Also `Cmdr vertraut dem Schlüssel von {host} noch nicht.` und
+  `Der Schlüssel von {host} ist … markiert.` ❌ Kein `Hostschlüssel`, ❌ kein `{host}s Schlüssel`.
+- **„marked as compromised“ → `als kompromittiert markiert`** · `kompromittiert` ist Apples Wort für genau diesen Sinn
+  (Wallet, `Localizable.loctable`: „… wenn du den Verdacht hast, dass deine aktuelle Nummer kompromittiert wurde.“) ·
+  `high`.
+- **„sign-in method“ → `Anmeldemethode`** · Kompositum aus dem gesetzten `sign in → anmelden` und Apples
+  `authentication method → Authentifizierungsmethode` (`MailFramework.loctable`, `DMCLocalizable.loctable`,
+  `NetworkMIDILocalizable.loctable`) · `high`. Der Kopf `-methode` ist belegt, das Bestimmungswort kommt aus Cmdrs
+  freundlicherer Stimme; `Authentifizierungsmethode` wäre Apples Wort, liest sich hier aber als Jargon, den der `@key`
+  ausdrücklich vermeiden will.
+- **„not supported yet“ → `unterstützt … noch nicht`** · Apples durchgängiges `wird nicht unterstützt` in aktiver
+  Wendung, damit Cmdr Subjekt bleibt · `high`.
+- **„didn''t answer in time“ → `hat nicht rechtzeitig geantwortet`** · schon gesetzt (siehe § Umbenennen und Anlegen);
+  `servers.refusal.timedOut` nimmt denselben Wortlaut · `high`.
+- **„That password didn''t work for {username}.“ → `Das Passwort hat für {username} nicht geklappt.`** · wortgleich zum
+  ausgelieferten `errors.volume.passwordRejected` („Das Passwort hat nicht geklappt.“), nur um den Kontonamen erweitert
+  · `high`. ❌ Kein `ungültig` wie bei Apple (`EMSG_INVALID_PWD`): der `@key` sagt ausdrücklich, dass niemandem ein
+  Vorwurf gemacht wird.
+- **„server address“ → `Serveradresse`** · Finder `ConnectToWindow.strings` `de` (`YEA-3L-WnW.placeholderString` =
+  „Serveradresse“), deckt sich mit `fileExplorer.network.connectDialog.addressAriaLabel` · `high`.
+- **„stops listing it“ (der Server verschwindet aus dem Umschalter) → `zeigt den Server nicht mehr an`** · gesetztes
+  `show → anzeigen`, und der Rückverweis nimmt das Nomen statt eines Pronomens, weil davor der Platzhalter `{name}`
+  steht (`style.md` § Ein Rückverweis auf `{name}`) · `high`.
+- **„Cmdr asks for it the next time you connect.“ → `Cmdr fragt danach, wenn du dich das nächste Mal verbindest.`** ·
+  `du`-Anrede wie im ganzen Katalog, und Apples `um dich mit „%@“ zu verbinden` (`NetAuthAgent/Localizable.loctable`
+  `GENERIC_MSG_PASS`) belegt das reflexive `sich verbinden` · `high`.
+- **`Server vergessen` / `Gespeichertes Passwort vergessen` als Dialogtitel** · zeichengleich zu den schon
+  ausgelieferten Menüeinträgen `menu.network.forgetServer` und `menu.network.forgetSavedPassword` bzw. zu
+  `fileExplorer.network.share.forgetPassword`; Dialog und Menü müssen dasselbe Wort tragen · `high`.
+- Kein `sameAsSourceJustification` in dieser Familie: alle 28 Werte weichen vom Englischen ab. Kein Apostroph in den
+  Werten, die ICU-Dopplung `''` entfällt.
+- **Der Rückverweis in den Tooltips heißt `den Server`, nicht `ihn`** · in `connectionTooltipNeedsHostKey` stünde `ihn`
+  zwischen zwei maskulinen Bezugswörtern (`der Schlüssel`, `dieses Servers`) und wäre mehrdeutig;
+  `connectionTooltipSaved` hat vor `Öffne …` überhaupt kein Bezugswort · `high`.

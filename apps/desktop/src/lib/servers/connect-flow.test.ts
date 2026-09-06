@@ -110,7 +110,14 @@ describe('arm 3: a saved place with nothing registered', () => {
       [{ outcome: 'unreachable' }, 'unreachable'],
       [{ outcome: 'host_key_revoked', algorithm: 'ssh-ed25519', fingerprint: 'SHA256:x' }, 'host_key_revoked'],
       [
-        { outcome: 'needs_host_key_approval', host: 'nas.local', port: 22, algorithm: 'ssh-ed25519', fingerprint: 'SHA256:x', kind: 'unknown' },
+        {
+          outcome: 'needs_host_key_approval',
+          host: 'nas.local',
+          port: 22,
+          algorithm: 'ssh-ed25519',
+          fingerprint: 'SHA256:x',
+          kind: 'unknown',
+        },
         'host_key_untrusted',
       ],
     ] as const

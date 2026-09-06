@@ -1,0 +1,62 @@
+{
+  "servers.paneState.connecting": "正在連線到 {name}…",
+  "@servers.paneState.connecting": {
+    "sourceHash": "7fb114e"
+  },
+  "servers.paneState.connectingHint": "這可能需要幾秒鐘。",
+  "@servers.paneState.connectingHint": {
+    "sourceHash": "c830378"
+  },
+  "servers.paneState.cancel": "取消",
+  "@servers.paneState.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "servers.paneState.tryAgain": "再試一次",
+  "@servers.paneState.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "servers.paneState.disconnect": "中斷連線",
+  "@servers.paneState.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "servers.refusal.authenticationRejected": "那個密碼對 {username} 不管用。",
+  "@servers.refusal.authenticationRejected": {
+    "sourceHash": "b2c42b0"
+  },
+  "servers.refusal.needsCredentials": "這個伺服器要求輸入密碼。",
+  "@servers.refusal.needsCredentials": {
+    "sourceHash": "f5f689b"
+  },
+  "servers.refusal.authMethodUnsupported": "這個伺服器用的登入方式，Cmdr 還不支援。",
+  "@servers.refusal.authMethodUnsupported": {
+    "sourceHash": "62b963e"
+  },
+  "servers.refusal.certificateUntrusted": "macOS 不信任這個伺服器的憑證。請在「鑰匙圈存取」中加入它，然後再試一次。",
+  "@servers.refusal.certificateUntrusted": {
+    "sourceHash": "6db00c6"
+  },
+  "servers.refusal.notAWebdavServer": "這個位址沒有任何東西回應 WebDAV。",
+  "@servers.refusal.notAWebdavServer": {
+    "sourceHash": "4c702d4"
+  },
+  "servers.refusal.invalidUrl": "這看起來不像伺服器位址。",
+  "@servers.refusal.invalidUrl": {
+    "sourceHash": "9a121ac"
+  },
+  "servers.refusal.timedOut": "{host} 沒有及時回應。",
+  "@servers.refusal.timedOut": {
+    "sourceHash": "7662825"
+  },
+  "servers.refusal.unreachable": "Cmdr 連不上 {host}。",
+  "@servers.refusal.unreachable": {
+    "sourceHash": "ae716c3"
+  },
+  "servers.refusal.hostKeyUntrusted": "Cmdr 還沒有信任 {host} 的主機金鑰。",
+  "@servers.refusal.hostKeyUntrusted": {
+    "sourceHash": "40a9d28"
+  },
+  "servers.refusal.hostKeyRevoked": "在這部 Mac 的 SSH 設定裡，{host} 的主機金鑰被標記為已遭洩漏。Cmdr 不會連線到它。",
+  "@servers.refusal.hostKeyRevoked": {
+    "sourceHash": "47aacda"
+  }
+}

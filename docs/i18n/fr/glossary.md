@@ -2479,3 +2479,58 @@ Office.
   before `ou` (French has no serial comma; see the calqued `virgule avant ou` note above) · `high`. ❗
   `settings.archives.bundle.description` still carries that calqued comma (`un .bundle, ou un .framework`). It was out
   of scope for this pass, so the two rows differ in punctuation until someone fixes it.
+## Le hub des serveurs : panneau de connexion, refus, et oubli (2026-09-06, 15 clés `servers.*` + 13 clés `fileExplorer.navigation.*`)
+
+Nouvelle surface : un panneau qui affiche l'état d'une connexion à un serveur (SMB, SFTP, WebDAV), la raison d'un refus,
+et les confirmations pour oublier un serveur ou son mot de passe. Le tas de références (`_ignored/i18n/fr/`) est absent
+de cette machine ; les termes ci-dessous viennent donc des paquets macOS installés (`plutil -convert json` sur les
+`.strings` / `.loctable`, macOS 26.6.2 build 25G83, 2026-09-06) et du catalogue `fr` déjà livré.
+
+- **Keychain Access (le nom de l'app) → `Trousseaux d''accès`** · `CFBundleDisplayName` de
+  `/System/Library/CoreServices/Applications/Keychain Access.app/Contents/Resources/InfoPlist.loctable`, entrée `fr`
+  (macOS 26.6.2 build 25G83, 2026-09-06) · `high`. Le pluriel est celui d'Apple, gardez-le. À distinguer du `trousseau`
+  au singulier, qui nomme le MAGASIN et que le catalogue emploie déjà (`fileExplorer.network.login.rememberInKeychain`,
+  `ai.secretError.keychainTitle`).
+- **to trust / not trusted (un certificat) → `approuver` / `n''approuve pas`** · Security.framework,
+  `authorization.prompts.loctable` (`is trying to trust a certificate` → `tente d''approuver un certificat`) et
+  `SecErrorMessages.loctable` (`The root or anchor certificate is not valid.` →
+  `Le certificat racine ou de point d''ancrage n''est pas approuvé.`), macOS 26.6.2 build 25G83, 2026-09-06 · `high`.
+  Pas `faire confiance à`, plus long et non attesté chez Apple.
+- **host key (la clé d'hôte SSH) → `la clé de {host}` / `la clé de ce serveur`** · aucun paquet macOS n'expose le terme
+  ; construit sur `clé`, que le catalogue emploie déjà pour une clé d'API (`ai.secretError.*`) · `tentative`. Le génitif
+  anglais `{host}''s key` passe par `la clé de {host}`, ce qui garde le remplacement dans un emplacement neutre.
+- **signed out (l'état, pas la personne) → `Session fermée`** · restructuration exigée par la règle de genre : un
+  participe accordé au sujet donnerait `Déconnecté(e)`. `session` est féminin et porte l'accord, la personne n'apparaît
+  pas · `high`. L'action reste `s''identifier` (glossaire, § Terms).
+- **to forget (un serveur, un mot de passe) → `oublier`** · déjà livré par `menu.network.forgetServer`
+  (`Oublier le serveur`), `menu.network.forgetSavedPassword` et `fileExplorer.network.share.forgetPassword`
+  (`Oublier le mot de passe enregistré`) · `high`. Les deux titres de confirmation reprennent le libellé de menu MOT
+  POUR MOT, sinon `desktop-i18n-term-consistency` compte une divergence.
+- **doesn't support yet → `ne prend pas encore en charge`** · `prendre en charge` est la forme d'Apple
+  (`URLs with the type “%@:” are not supported.` → `Les URL de type « %@: » ne sont pas prises en charge.`, NetAuthAgent
+  `Localizable.loctable`, macOS 26.6.2 build 25G83, 2026-09-06) · `high`.
+- **Connecting to {name}… → `Connexion à {name}…`** · Finder `LocalizableMerged.strings` clé `MN1` :
+  `Connexion à « ^0 »…` (macOS 26.6.2 build 25G83, 2026-09-06), et le voisin déjà livré
+  `fileExplorer.network.share.connecting` · `high`. Sans guillemets, comme la source anglaise et comme le voisin.
+
+Notes de formulation :
+
+- **L'étiquette d'accessibilité `disconnectPlaceAriaLabel` doit CONTENIR le libellé visible** (WCAG 2.5.3). Le libellé
+  de l'action est `Se déconnecter` (`servers.paneState.disconnect`, `fileExplorer.smbReconnect.disconnect`,
+  `fileExplorer.unreachable.disconnect`), donc l'étiquette est `Se déconnecter de {name}` : la sous-chaîne
+  `Se déconnecter` y figure telle quelle et dans l'ordre. ❌ Ne reprenez PAS le `Déconnecter` transitif du Finder
+  (`LocalizableMerged.strings`, clés `MR10.1` / `N200`) : il casse la containment et divergerait des trois clés déjà
+  livrées.
+- **L'info-bulle grisée calque sa sœur `eject`.** `disconnectBusyTooltip` reprend mot pour mot la structure de
+  `fileExplorer.navigation.ejectBusyTooltip`
+  (`Impossible d''éjecter tant que des opérations sont en cours sur cet appareil`), en changeant seulement le verbe et
+  l'objet : `Impossible de se déconnecter tant que des opérations sont en cours sur ce serveur`. Pas de `(occupé)` ici :
+  ce marqueur est réservé aux éléments de MENU (§ busy).
+- **`Cmdr couldn''t …` garde la marque.** Le catalogue a les deux moules : `Nom verbal impossible : {error}` quand une
+  valeur suit un deux-points, et `Cmdr n''a pas pu <verbe>` quand l'anglais nomme le produit
+  (`commands.handler.openTerminalHere.launchRefused`). Les quatre notifications de refus de ce lot prennent le second,
+  sinon `desktop-i18n-dont-translate` signale la marque `Cmdr` perdue.
+- **`Forget {name} ?` prend l'espace ASCII avant le `?`**, comme tout le set `fr` (style guide § Notes).
+  `ne l''affiche plus` évite l'accord : l'élision de `le` rend le pronom neutre quel que soit le nom inséré.
+- Aucune valeur n'est identique à l'anglais, donc aucune `sameAsSourceJustification` dans ce lot. Toutes les apostrophes
+  sont ASCII et doublées (`n''a`, `d''accès`, `d''identification`, `s''y`, `l''affiche`).

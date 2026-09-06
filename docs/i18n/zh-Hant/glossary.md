@@ -210,6 +210,49 @@ Rationale, counts, and the "don't revert this" warning: `style.md` § The Apple-
   = device is standard · `tentative`
 - **eject / device removal** · see `退出` above.
 
+### Server connections, keys, and certificates
+
+Settled while translating the servers hub (`servers.json` and the `fileExplorer.navigation.*` server-row strings). The
+reference pile is absent on the agent box, so these were verified against the LIVE macOS bundles on this Mac (macOS
+26.6.2, build 25G83, 2026-09-06) using `plutil -convert json` over `zh_TW.lproj` / `zh_HK.lproj`.
+
+- **Disconnect (the action)** · `中斷連線` · Finder `LocalizableMerged.strings:MR10.1` = `中斷連線`, TW = HK, and the
+  catalog already ships it in `fileExplorer.smbReconnect.disconnect`, `.unreachable.disconnect`, and
+  `menu.network.disconnect` · `confirmed`. In a sentence with a named target it becomes `中斷與 X 的連線`
+  (`fileExplorer.network.browser.disconnected` already does this), and the failure shape is `無法中斷連線`.
+- **Keychain Access (the macOS app)** · `「鑰匙圈存取」` · `Keychain Access.app/…/InfoPlist.loctable` `CFBundleName` and
+  `CFBundleDisplayName` are both `鑰匙圈存取` in zh_TW AND zh_HK · `confirmed`. Corner brackets, like every app and menu
+  name in running text. ⚠️ The catalog is **inconsistent on the bare word "Keychain"**: `fileExplorer.json` says
+  `鑰匙圈` (Apple's word) while `ai.json` says `金鑰環`. Apple has zero `金鑰環`, so `鑰匙圈` is the right one and the
+  three `ai.*` values should be corrected in a separate pass. Not touched here (out of scope of the servers strings).
+- **certificate** · `憑證` · AP-TW throughout Keychain Access (`Certificates` → 憑證, `root certificate` → 根憑證);
+  **AP-HK says `證書`**, so this is a real TW/HK split and Taiwan-default wins (`style.md` § Which Traditional norm
+  wins) · `high`
+- **trust (a certificate or a host key)** · `信任` · AP-TW Keychain Access (`Trust Settings` → `「信任設定」`,
+  `trusted application list` → `受信任應用程式列表`) · `high`
+- **host key (an SSH server's key)** · `主機金鑰` · **composed** from `主機` (host, `confirmed` above) + `金鑰`, the
+  catalog's reserved word for a cryptographic key · `tentative`. Apple ships no "host key" string in any bundle on this
+  Mac (Terminal only has `SSH通訊協定2` and a `known hosts` line), so nothing attests the compound. The English source
+  says just "key"; Chinese needs the `主機` to keep it from reading as an API key, which is what `金鑰` alone means
+  everywhere else in this catalog. ❗ Don't write `密鑰`: Apple uses it for a _private_ key (`專用密鑰`) and it is the
+  Simplified-leaning form.
+- **compromised (a key)** · `已遭洩漏` · **composed**; unattested in Apple's Traditional bundles · `tentative`. Used in
+  `servers.refusal.hostKeyRevoked` for a key the user's own `known_hosts` marks `@revoked`. ❌ Not `失敗` / `錯誤` (§
+  Voice), and not `遭到入侵`, which is the systems-and-accounts sense.
+- **sign in / signed out** · `登入` / `已登出` · the catalog's own `fileExplorer.network.signIn` = `登入` and
+  `fileExplorer.network.login.title` = `登入「{target}」`; Apple's NetAuthAgent uses `登入` for a file server
+  (`This file server will not allow any additional users to log on.` → `檔案伺服器不允許其他使用者登入。`) · `high`
+- **server address** · `伺服器位址` · the catalog's own `fileExplorer.network.connectDialog.addressAriaLabel` · `high`.
+  ❗ `位址` for a network address, `地址` only for an email address (`common.attachEmail*`). Apple zh-HK's
+  `ConnectToWindow.strings` says `伺服器地址`, and we don't follow it.
+- **"this Mac"** · `這部 Mac` · AP-TW live 8 `這部Mac` / 1 `這台Mac`, and `style.md` § Plurals names `部` as the Mac's
+  classifier · `high`. ⚠️ The catalog has drifted to `這台 Mac` in four values (`main.oldWebkit.body`,
+  `errors.listing.connectionRefused.explanation`, two `settings.*`); `settings.mediaIndex.progress.local` already says
+  `這部 Mac`. New strings take `這部 Mac`.
+- **"Can't <verb> while operations are in progress on this X"** · `這個 X 上有操作正在進行，無法<verb>` · the shipped
+  `fileExplorer.navigation.ejectBusyTooltip` (`這個裝置上有操作正在進行，無法退出`) · `high`. The reason leads and the
+  `無法` clause closes, which is the § Voice failure shape. `disconnectBusyTooltip` copies it exactly.
+
 ### Search, filters, and the query UI
 
 - **regular expression** · `正規表示式`, tight chip `正規式` · TC ships both (`WCMD.LNG` 5616 `正規表示式(&2)`, 5615

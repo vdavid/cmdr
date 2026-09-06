@@ -396,6 +396,11 @@ other way round. Re-wording either half alone breaks it silently, and no check c
 - `queryUi.filters.chip.scope` / `queryUi.scope.popover.label` = `搜尋範圍` ⊂ `queryUi.scope.popover.aria` =
   `搜尋範圍：選擇資料夾` (a literal `在資料夾中搜尋` would NOT have contained it)
 - `queryUi.scope.toggle.caseSensitive` = `區分大小寫` ⊂ `caseSensitiveAria` = `比對時區分大小寫`
+- `servers.paneState.disconnect` / `fileExplorer.smbReconnect.disconnect` = `中斷連線` ⊂
+  `fileExplorer.navigation.disconnectPlaceAriaLabel` = `中斷連線：{name}`. The natural Chinese for "Disconnect X" is
+  `中斷與 {name} 的連線`, which splits the label in half and fails containment, so the aria takes the colon shape
+  `搜尋範圍：選擇資料夾` already uses. Full-width colon, no space before the placeholder, like
+  `fileExplorer.pane.disconnectFailedToast` (`無法中斷連線：{message}`).
 
 The fix shape, whenever a new pair appears: open the aria with the label's exact words, then continue the sentence.
 
