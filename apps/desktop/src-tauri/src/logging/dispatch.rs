@@ -244,6 +244,14 @@ fn default_noise_overrides() -> Vec<(&'static str, log::LevelFilter)> {
         ("tracing::span", log::LevelFilter::Warn),
         ("smb2", log::LevelFilter::Warn),
         ("tao", log::LevelFilter::Warn),
+        // genai warns `EMPTY CHOICE CONTENT` for any streamed delta carrying neither content,
+        // nor reasoning, nor a tool call — which includes the opening `{"role":"assistant"}`
+        // chunk of EVERY response, so a normal turn prints several. Nothing is wrong; upstream
+        // marks the line `// TODO: use tracing debug` itself. Error rather than Warn because
+        // the noise IS the warn; the module's only other line is a real stream failure at
+        // Error, and that one still comes through. (genai 0.6.5,
+        // `adapter/adapters/openai/streamer.rs`, read 2026-09-06.)
+        ("genai::adapter::adapters::openai::streamer", log::LevelFilter::Error),
     ]
 }
 
