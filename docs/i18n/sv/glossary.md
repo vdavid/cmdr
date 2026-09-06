@@ -2094,3 +2094,19 @@ into the search engine's own best-match-first order.
 - **Sentence frame → `Sortera efter relevans`** · exactly the pattern of its sibling keys in `commands.json`
   (`Sortera efter namn`, `Sortera efter storlek`) · `high`. No `sameAsSourceJustification`, and the value carries no
   apostrophe.
+
+## `Documents and packages`: the new OOXML row (`settings.archives.ooxml.*`)
+
+New surface: a row in the same card as `Zip-arkiv`, above the `Appaket` card. It deliberately covers BOTH Office
+documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even the English avoids naming Office.
+
+- **documents (the file kind) → `Dokument`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Dokument`; kinds `RTF-dokument`,
+  `Rent textdokument`) · `high`. Indefinite plural, which in Swedish is the bare form.
+- **packages (generic, not only apps) → `paket`** · macOS Finder (`Visa paketets innehåll`) and the glossary's
+  `bundle → paket` · `high`. Bare `paket` keeps the row broader than the `Appaket` card below it, mirroring English's
+  own `packages` vs `app bundles` split.
+- **Sentence frame → `Vad Enter gör med en …, … eller ….`** · the frame of the sibling keys
+  `settings.archives.zip.description` and `settings.archives.bundle.description`, minus the comma before `eller`
+  (style.md § no comma before `och`/`eller`) · `high`. ❗ `settings.archives.bundle.description` still carries that
+  calqued comma (`.bundle, eller .framework`). It was out of scope for this pass, so the two rows differ in punctuation
+  until someone fixes it.

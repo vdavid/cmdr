@@ -1890,3 +1890,16 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
   `high`。（在 macOS 26.6.2、版本号 25G83 上用 `plutil` 导出随系统附带的本地化文件核对，2026-09-06）
 - **句式 → `按相关性排序`** · 与 `commands.json` 中同类键完全相同的格式（`按名称排序`、`按大小排序`） · `high`。不需要
   `sameAsSourceJustification`，值中也没有撇号。
+
+## `Documents and packages`：新增的 OOXML 行（`settings.archives.ooxml.*`）
+
+新界面：与 `Zip 压缩文件` 同在一张卡片里的一行，下方是 `应用程序包`
+卡片。这一行有意同时覆盖 Office 文档（.docx、.xlsx、.pptx）和应用程序包（.jar、.apk），所以连英文原文也不点名 Office。
+
+- **documents（文件种类）→ `文稿`** · macOS Finder（`TL6`/`GROUP_DOCUMENTS` → `文稿`；种类名 `RTF文稿`、
+  `纯文本文稿`），与词汇表已有的 `document → 文稿` 一致 · `high`。❌ 不写 `文档`：Apple 的简体中文一律用 `文稿`。
+- **packages（泛指，不只是 App）→ `软件包`** · macOS（`iOS Package Archive` → `iOS软件包归档`）· `high`。刻意不用
+  `应用程序包`，那是下方卡片的词；`软件包` 让这一行比下方卡片更宽，正如英文用 `packages` 对 `app bundles`。
+- **连接词 → `和`** · 目录中「X and Y」型标签几乎都用 `和`（`颜色和格式`、`日期和时间`、`提示和警告`）· `high`。
+- **句式 → `在 …、…、… 或 … 上按 Enter 键时的行为。`** · 与同类键 `settings.archives.zip.description`、
+  `settings.archives.bundle.description` 完全相同的格式 · `high`。值中没有撇号。

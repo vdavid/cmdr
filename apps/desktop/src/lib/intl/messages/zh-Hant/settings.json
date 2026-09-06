@@ -401,6 +401,14 @@
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
+  "settings.archives.ooxml.label": "文件和套件",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "在 .docx、.xlsx、.pptx、.jar 或 .apk 上按 Enter 鍵時的行為。",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
+  },
   "settings.archives.bundle.label": "App 套件",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"

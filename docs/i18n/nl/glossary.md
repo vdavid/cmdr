@@ -2325,3 +2325,17 @@ terug in de volgorde van de zoekmachine, met de beste overeenkomst bovenaan.
 - **Zinsframe → `Sorteer op relevantie`** · precies het patroon van de zustersleutels in `commands.json`
   (`Sorteer op naam`, `Sorteer op grootte`) · `high`. Geen `sameAsSourceJustification`, en de waarde bevat geen
   apostrof.
+
+## `Documents and packages`: de nieuwe OOXML-rij (`settings.archives.ooxml.*`)
+
+Nieuw oppervlak: een rij in dezelfde kaart als `Zip-archieven`, boven de kaart `App-pakketten`. De rij dekt met opzet
+ALLEBEI: Office-documenten (.docx, .xlsx, .pptx) en app-pakketten (.jar, .apk). Daarom noemt zelfs het Engels Office
+niet.
+
+- **documents (het bestandssoort) → `Documenten`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documenten`; soorten
+  `RTF-document`, `Platte-tekstdocument`) · `high`.
+- **packages (generiek, niet alleen apps) → `pakketten`** · macOS Finder (`Toon pakketinhoud`) en het glossariumitem
+  `app bundle → pakket` · `high`. Bewust het kale `pakketten`, zodat de rij breder blijft dan de kaart `App-pakketten`
+  eronder — dezelfde scheiding die het Engels maakt met `packages` tegenover `app bundles`.
+- **Zinsframe → `Wat Enter doet bij een …, … of ….`** · precies het frame van de zustersleutels
+  `settings.archives.zip.description` en `settings.archives.bundle.description` · `high`. Geen apostrof in de waarde.

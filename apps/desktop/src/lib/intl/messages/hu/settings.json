@@ -401,6 +401,14 @@
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
+  "settings.archives.ooxml.label": "Dokumentumok és csomagok",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Mit tesz az Enter egy .docx, .xlsx, .pptx, .jar vagy .apk fájlon.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
+  },
   "settings.archives.bundle.label": "Alkalmazáscsomagok",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"

@@ -403,6 +403,14 @@
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
+  "settings.archives.ooxml.label": "Documents et paquets",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Ce que fait la touche Entrée sur un fichier .docx, .xlsx, .pptx, .jar ou .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
+  },
   "settings.archives.bundle.label": "Paquets d''application",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"

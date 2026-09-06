@@ -402,6 +402,14 @@
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
+  "settings.archives.ooxml.label": "Documentos y paquetes",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Qué hace pulsar Intro en un .docx, .xlsx, .pptx, .jar o .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
+  },
   "settings.archives.bundle.label": "Paquetes de apps",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"

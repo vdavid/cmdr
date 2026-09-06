@@ -991,3 +991,16 @@ so the live bundles ARE the Tier-1 source here; read the `zh_TW` key of each `.l
   匯出隨附本地化檔案核對，2026-09-06）
 - **句式 → `依關聯性排序`** · 與 `commands.json` 中同類鍵完全相同的格式（`依名稱排序`、`依大小排序`） · `high`。不需要
   `sameAsSourceJustification`，值中也沒有撇號。
+
+## `Documents and packages`：新增的 OOXML 列（`settings.archives.ooxml.*`）
+
+新介面：與 `Zip 壓縮檔` 同在一張卡片裡的一列，下方是 `App 套件`
+卡片。這一列刻意同時涵蓋 Office 文件（.docx、.xlsx、.pptx）與應用程式套件（.jar、.apk），所以連英文原文也不點名 Office。
+
+- **documents（檔案種類）→ `文件`** · macOS Finder（`TL6`/`GROUP_DOCUMENTS` → `文件`；種類名 `RTF文件`、
+  `純文字文件`），與詞彙表既有的 `document → 文件` 一致 · `high`。❗ 這裡的 `文件` 是 document，不是簡體的 file。
+- **packages（泛指，不只是 App）→ `套件`** · macOS Finder（`顯示套件內容`）· `high`。刻意用不帶 `App` 的
+  `套件`，讓這一列比下方的 `App 套件` 卡片更寬，正如英文用 `packages` 對 `app bundles`。
+- **連接詞 → `和`** · 目錄中「X and Y」型標籤幾乎都用 `和`（`顏色和格式`、`日期和時間`、`提示和警告`）· `high`。
+- **句式 → `在 …、…、… 或 … 上按 Enter 鍵時的行為。`** · 與同類鍵 `settings.archives.zip.description`、
+  `settings.archives.bundle.description` 完全相同的格式 · `high`。值中沒有撇號。

@@ -2104,3 +2104,18 @@ các hàng về đúng thứ tự của bộ tìm kiếm, kết quả khớp nh�
 - **Khung câu → `Sắp xếp theo mức độ liên quan`** · đúng khuôn của các khóa anh em trong `commands.json`
   (`Sắp xếp theo tên`, `Sắp xếp theo kích cỡ`) · `high`. Không cần `sameAsSourceJustification`, và giá trị không có dấu
   nháy đơn.
+
+## `Documents and packages`: hàng OOXML mới (`settings.archives.ooxml.*`)
+
+Bề mặt mới: một hàng trong cùng thẻ với `Tệp nén zip`, nằm trên thẻ `Gói ứng dụng`. Hàng này cố ý bao cả HAI: tài liệu
+Office (.docx, .xlsx, .pptx) và gói ứng dụng (.jar, .apk), nên ngay cả bản tiếng Anh cũng không nêu tên Office.
+
+- **documents (loại tệp) → `Tài liệu`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Tài liệu`; tên loại `Tài liệu RTF`,
+  `Tài liệu văn bản thuần túy`), khớp mục glossary `document → tài liệu` · `high`.
+- **packages (chung, không chỉ ứng dụng) → `gói`** · macOS Finder (`Hiển thị nội dung gói`) và mục glossary
+  `app bundle → gói ứng dụng` · `high`. Giữ `gói` trần để hàng này rộng hơn thẻ `Gói ứng dụng` bên dưới, đúng như tiếng
+  Anh tách `packages` với `app bundles`.
+- **Khung câu → `Nhấn Enter sẽ làm gì với tệp …, … hoặc ….`** · đúng khuôn của các khóa anh em
+  `settings.archives.zip.description` và `settings.archives.bundle.description`, nhưng bỏ dấu phẩy trước `hoặc` theo quy
+  ước đã chốt · `high`. ❗ `settings.archives.bundle.description` vẫn còn dấu phẩy đó (`.bundle, hoặc .framework`); nằm
+  ngoài phạm vi lần này, nên hai hàng khác nhau về dấu câu cho tới khi có người sửa.

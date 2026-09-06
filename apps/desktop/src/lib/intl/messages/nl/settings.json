@@ -403,6 +403,14 @@
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
+  "settings.archives.ooxml.label": "Documenten en pakketten",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Wat Enter doet bij een .docx, .xlsx, .pptx, .jar of .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
+  },
   "settings.archives.bundle.label": "App-pakketten",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"

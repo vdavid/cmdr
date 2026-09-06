@@ -2368,3 +2368,19 @@ a keresőmotor saját sorrendjét, elöl a legjobb találattal.
 - **A mondat kerete → `Rendezés relevancia szerint`** · pontosan a `commands.json` testvérkulcsainak mintája
   (`Rendezés név szerint`, `Rendezés méret szerint`) · `high`. Nincs `sameAsSourceJustification`, és nincs aposztróf az
   értékben.
+
+## `Documents and packages`: az új OOXML-sor (`settings.archives.ooxml.*`)
+
+Új felület: egy sor ugyanabban a kártyában, ahol a `Zip archívumok` áll, az `Alkalmazáscsomagok` kártya fölött.
+Szándékosan MINDKETTŐT lefedi: az Office-dokumentumokat (.docx, .xlsx, .pptx) és az alkalmazáscsomagokat (.jar, .apk),
+ezért már az angol sem nevezi meg az Office-t.
+
+- **documents (a fájlfajta) → `Dokumentumok`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Dokumentumok`; fájlfajták
+  `RTF-dokumentum`, `Egyszerű szöveges dokumentum`) · `high`.
+- **packages (általánosan, nem csak alkalmazások) → `csomagok`** · macOS Finder `Csomag tartalmának megjelenítése`, és a
+  glosszárium `app bundle / package → csomag` bejegyzése · `high`. Szándékosan a puszta `csomagok`, hogy a sor tágabb
+  maradjon, mint az alatta lévő `Alkalmazáscsomagok` kártya — ugyanaz a szétválasztás, amit az angol csinál a `packages`
+  és az `app bundles` között.
+- **A mondat kerete → `Mit tesz az Enter egy …, … vagy … fájlon.`** · pontosan a testvérkulcsok
+  (`settings.archives.zip.description`, `settings.archives.bundle.description`) kerete · `high`. Nincs aposztróf az
+  értékben.

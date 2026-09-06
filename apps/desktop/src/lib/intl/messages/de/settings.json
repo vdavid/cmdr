@@ -403,6 +403,14 @@
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
+  "settings.archives.ooxml.label": "Dokumente und Pakete",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Was die Eingabetaste bei einer .docx, .xlsx, .pptx, .jar oder .apk bewirkt.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
+  },
   "settings.archives.bundle.label": "App-Pakete",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"

@@ -2461,3 +2461,21 @@ into the search engine's own best-match-first order.
   on macOS 26.6.2 build 25G83, `plutil` dump of the shipped localizations, 2026-09-06)
 - **Sentence frame → `Trier par pertinence`** · exactly the pattern of its sibling keys in `commands.json`
   (`Trier par nom`, `Trier par taille`) · `high`. No `sameAsSourceJustification`, and the value carries no apostrophe.
+
+## `Documents and packages`: the new OOXML row (`settings.archives.ooxml.*`)
+
+New surface: a row in the same card as `Archives zip`, above the `Paquets d''application` card. It deliberately covers
+BOTH Office documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even the English avoids naming
+Office.
+
+- **documents (the file kind) → `Documents`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documents`; kinds
+  `Document RTF`, `Document format texte`) · `high`. The whole value differs from English, so no
+  `sameAsSourceJustification` is needed.
+- **packages (generic, not only apps) → `paquets`** · macOS Finder (`Afficher le contenu du paquet`) and the glossary's
+  `app bundle → paquet` · `high`. Bare `paquets` keeps the row broader than the `Paquets d''application` card below it,
+  the same split English makes with `packages` vs `app bundles`.
+- **Sentence frame → `Ce que fait la touche Entrée sur un fichier …, …, … ou ….`** · takes `un fichier` from the sibling
+  `settings.archives.zip.description` (`sur un fichier zip`) instead of repeating `un` five times, and drops the comma
+  before `ou` (French has no serial comma; see the calqued `virgule avant ou` note above) · `high`. ❗
+  `settings.archives.bundle.description` still carries that calqued comma (`un .bundle, ou un .framework`). It was out
+  of scope for this pass, so the two rows differ in punctuation until someone fixes it.

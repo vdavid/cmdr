@@ -1921,3 +1921,17 @@ busca. O clique seguinte devolve as linhas à ordem do próprio buscador, com a 
   incluídas, 2026-09-06)
 - **Moldura da frase → `Ordenar por relevância`** · exatamente o padrão das chaves irmãs em `commands.json`
   (`Ordenar por nome`, `Ordenar por tamanho`) · `high`. Sem `sameAsSourceJustification`, e o valor não tem apóstrofo.
+
+## `Documents and packages`: a nova linha OOXML (`settings.archives.ooxml.*`)
+
+Superfície nova: uma linha no mesmo cartão de `Arquivos zip`, acima do cartão `Pacotes de aplicativo`. Ela cobre de
+propósito AS DUAS coisas: documentos do Office (.docx, .xlsx, .pptx) e pacotes de aplicativo (.jar, .apk). Por isso nem
+o inglês cita o Office.
+
+- **documents (o tipo de arquivo) → `Documentos`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documentos`; tipos
+  `Documento RTF`, `Documento de Texto Simples`) · `high`.
+- **packages (genérico, não só apps) → `pacotes`** · macOS Finder (`Mostrar Conteúdo do Pacote`) e a entrada de
+  glossário `app bundle → pacote` · `high`. Fica o `pacotes` puro, para a linha continuar mais ampla que o cartão
+  `Pacotes de aplicativo` abaixo dela — a mesma separação que o inglês faz entre `packages` e `app bundles`.
+- **Moldura da frase → `O que pressionar Enter faz em um …, … ou ….`** · exatamente a moldura das chaves irmãs
+  `settings.archives.zip.description` e `settings.archives.bundle.description` · `high`. Sem apóstrofo no valor.

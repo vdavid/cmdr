@@ -399,6 +399,14 @@
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
+  "settings.archives.ooxml.label": "Tài liệu và gói",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "Nhấn Enter sẽ làm gì với tệp .docx, .xlsx, .pptx, .jar hoặc .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
+  },
   "settings.archives.bundle.label": "Gói ứng dụng",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"

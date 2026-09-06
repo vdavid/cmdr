@@ -402,6 +402,14 @@
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
+  "settings.archives.ooxml.label": "Documentos e pacotes",
+  "@settings.archives.ooxml.label": {
+    "sourceHash": "76c4431"
+  },
+  "settings.archives.ooxml.description": "O que pressionar Enter faz em um .docx, .xlsx, .pptx, .jar ou .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "af6bd7d"
+  },
   "settings.archives.bundle.label": "Pacotes de aplicativo",
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
