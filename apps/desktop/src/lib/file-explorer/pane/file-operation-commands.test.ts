@@ -1,57 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { PaneAccess } from './pane-access'
-import type { FilePaneAPI } from './types'
-import type { SearchSnapshot } from '$lib/search/snapshot-store.svelte'
-import type { FileEntry, VolumeInfo, TransferOperationType } from '../types'
-import type { ToastContent, ToastOptions } from '$lib/ui/toast/toast-store.svelte'
+import type { TransferOperationType } from '../types'
 
-const {
-  getFileAtSpy,
-  getFilesAtIndicesSpy,
-  addToastSpy,
-  getSnapshotSpy,
-  openFileViewerSpy,
-  getInitialFolderNameSpy,
-  getInitialFileNameSpy,
-  buildFromSelectionSpy,
-  buildFromCursorSpy,
-  logWarnSpy,
-  logDebugSpy,
-} = vi.hoisted(() => ({
-  getFileAtSpy: vi.fn<() => Promise<FileEntry | null>>(),
-  getFilesAtIndicesSpy: vi.fn<() => Promise<FileEntry[]>>(),
-  addToastSpy: vi.fn<(content: ToastContent, options?: ToastOptions) => string>(),
-  getSnapshotSpy: vi.fn<() => SearchSnapshot | undefined>(),
-  openFileViewerSpy: vi.fn<() => Promise<void>>(),
-  getInitialFolderNameSpy: vi.fn<() => Promise<string>>(),
-  getInitialFileNameSpy: vi.fn<() => Promise<string>>(),
-  buildFromSelectionSpy: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
-  buildFromCursorSpy: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
-  logWarnSpy: vi.fn(),
-  logDebugSpy: vi.fn(),
-}))
+// Stubs and fixtures live in `file-operation-commands.test-harness.ts`, shared
+// with `file-operation-commands.search-results.test.ts`. Every factory below
+// reaches the harness through a lazy `await import`, which is what lets the
+// harness stay free of a `vi.hoisted` block.
+vi.mock('$lib/tauri-commands', async () => {
+  const { spies } = await import('./file-operation-commands.test-harness')
+  return { DEFAULT_VOLUME_ID: 'root', getFileAt: spies.getFileAt, getFilesAtIndices: spies.getFilesAtIndices }
+})
 
-vi.mock('$lib/tauri-commands', () => ({
-  DEFAULT_VOLUME_ID: 'root',
-  getFileAt: getFileAtSpy,
-  getFilesAtIndices: getFilesAtIndicesSpy,
-}))
+vi.mock('$lib/ui/toast', async () => ({ addToast: (await import('./file-operation-commands.test-harness')).spies.addToast }))
 
-vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
-
-// `resolveSnapshotEntries` is the store's own index→entry resolution (selection
-// wins, cursor is the fallback, out-of-range dropped), unit-tested in
-// `search/snapshot-store.svelte.ts.test.ts`. Standing it up over the fixture
-// snapshot keeps these tests about which rows the OPENERS act on.
-vi.mock('$lib/search/snapshot-store.svelte', () => ({
-  getSnapshot: getSnapshotSpy,
-  resolveSnapshotEntries: (_id: string, selectedIndices: number[], cursorIndex: number) => {
-    const snap = getSnapshotSpy()
-    if (!snap) return []
-    const indices = selectedIndices.length > 0 ? selectedIndices : [cursorIndex]
-    return indices.flatMap((i) => (i >= 0 && i < snap.entries.length ? [snap.entries[i]] : []))
-  },
-}))
+vi.mock('$lib/search/snapshot-store.svelte', async () => {
+  const { spies, resolveSnapshotEntriesStub } = await import('./file-operation-commands.test-harness')
+  return { getSnapshot: spies.getSnapshot, resolveSnapshotEntries: resolveSnapshotEntriesStub }
+})
 
 // Source/dest routing reads the capability table via `capabilitiesFor`, which
 // resolves fsType/category from the volume store for real ids. The 'search-results'
@@ -64,11 +28,17 @@ vi.mock('$lib/search/capabilities', () => ({
   SEARCH_RESULTS_NOT_A_FOLDER_TOAST: "Search results aren't a folder. Pick a real destination.",
 }))
 
-vi.mock('$lib/file-viewer/open-viewer', () => ({ openFileViewer: openFileViewerSpy }))
+vi.mock('$lib/file-viewer/open-viewer', async () => ({
+  openFileViewer: (await import('./file-operation-commands.test-harness')).spies.openFileViewer,
+}))
 
-vi.mock('$lib/file-operations/mkdir/new-folder-operations', () => ({ getInitialFolderName: getInitialFolderNameSpy }))
+vi.mock('$lib/file-operations/mkdir/new-folder-operations', async () => ({
+  getInitialFolderName: (await import('./file-operation-commands.test-harness')).spies.getInitialFolderName,
+}))
 
-vi.mock('$lib/file-operations/mkfile/new-file-operations', () => ({ getInitialFileName: getInitialFileNameSpy }))
+vi.mock('$lib/file-operations/mkfile/new-file-operations', async () => ({
+  getInitialFileName: (await import('./file-operation-commands.test-harness')).spies.getInitialFileName,
+}))
 
 // Keep the pure helpers (`getDestinationVolumeInfo`, `buildTransferPropsFromSnapshot`)
 // real so the read-only and snapshot assertions exercise the actual props builders;
@@ -77,139 +47,42 @@ vi.mock('$lib/file-operations/mkfile/new-file-operations', () => ({ getInitialFi
 // cursor) ran without standing up a full listing fixture.
 vi.mock('./transfer-operations', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./transfer-operations')>()
+  const { spies } = await import('./file-operation-commands.test-harness')
   return {
     ...actual,
-    buildTransferPropsFromSelection: buildFromSelectionSpy,
-    buildTransferPropsFromCursor: buildFromCursorSpy,
+    buildTransferPropsFromSelection: spies.buildTransferPropsFromSelection,
+    buildTransferPropsFromCursor: spies.buildTransferPropsFromCursor,
   }
 })
 
-vi.mock('$lib/logging/logger', () => ({
-  getAppLogger: () => ({ error: vi.fn(), warn: logWarnSpy, info: vi.fn(), debug: logDebugSpy }),
-}))
+vi.mock('$lib/logging/logger', async () => {
+  const { spies } = await import('./file-operation-commands.test-harness')
+  return { getAppLogger: () => ({ error: vi.fn(), warn: spies.logWarn, info: vi.fn(), debug: spies.logDebug }) }
+})
 
 import { createFileOperationCommands } from './file-operation-commands'
+import {
+  spies,
+  buildAccess,
+  buildDialogs,
+  buildPaneRef,
+  fileEntry,
+  volume,
+  type DialogsStub,
+} from './file-operation-commands.test-harness'
 
-/** Builds a `FilePaneAPI` stub exposing only the members the file-operation band reads. */
-function buildPaneRef(
-  overrides: Partial<{
-    listingId: string | null
-    volumeId: string
-    hasParent: boolean
-    selectedIndices: number[]
-    cursorIndex: number
-    currentPath: string
-    startRename: () => void
-    cancelRename: () => void
-    isRenaming: () => boolean
-  }> = {},
-): FilePaneAPI {
-  const stub = {
-    getListingId: () => ('listingId' in overrides ? overrides.listingId : 'listing-1'),
-    getVolumeId: () => overrides.volumeId ?? 'root',
-    hasParentEntry: () => overrides.hasParent ?? false,
-    getSelectedIndices: () => overrides.selectedIndices ?? [],
-    getCursorIndex: () => overrides.cursorIndex ?? 0,
-    getCurrentPath: () => overrides.currentPath ?? '/Users/x/dir',
-    startRename: overrides.startRename ?? vi.fn(),
-    cancelRename: overrides.cancelRename ?? vi.fn(),
-    isRenaming: overrides.isRenaming ?? (() => false),
-  }
-  return stub as unknown as FilePaneAPI
-}
+const {
+  getFileAt: getFileAtSpy,
+  getFilesAtIndices: getFilesAtIndicesSpy,
+  openFileViewer: openFileViewerSpy,
+  getInitialFolderName: getInitialFolderNameSpy,
+  getInitialFileName: getInitialFileNameSpy,
+  buildTransferPropsFromSelection: buildFromSelectionSpy,
+  buildTransferPropsFromCursor: buildFromCursorSpy,
+} = spies
 
-interface AccessConfig {
-  focusedPane?: 'left' | 'right'
-  paneRefs?: Partial<Record<'left' | 'right', FilePaneAPI | undefined>>
-  volumeIds?: Partial<Record<'left' | 'right', string>>
-  paths?: Partial<Record<'left' | 'right', string>>
-  volumes?: VolumeInfo[]
-  showHiddenFiles?: boolean
-  focusContainer?: () => void
-}
-
-function buildAccess(config: AccessConfig = {}): PaneAccess {
-  const otherPane = (pane: 'left' | 'right'): 'left' | 'right' => (pane === 'left' ? 'right' : 'left')
-  const defaultRef = buildPaneRef()
-  return {
-    getPaneRef: (pane) => (config.paneRefs && pane in config.paneRefs ? config.paneRefs[pane] : defaultRef),
-    getPanePath: (pane) => config.paths?.[pane] ?? (pane === 'left' ? '/left/dir' : '/right/dir'),
-    getPaneVolumeId: (pane) => config.volumeIds?.[pane] ?? 'root',
-    getPaneSort: () => ({ sortBy: 'name', sortOrder: 'ascending' }),
-    getPaneHistory: () => ({ stack: [], currentIndex: 0 }),
-    getFocusedPane: () => config.focusedPane ?? 'left',
-    otherPane,
-    getShowHiddenFiles: () => config.showHiddenFiles ?? true,
-    getVolumes: () => config.volumes ?? [],
-    focusContainer: config.focusContainer ?? (() => {}),
-  }
-}
-
-interface DialogsStub {
-  showAlert: ReturnType<typeof vi.fn>
-  showNewFolder: ReturnType<typeof vi.fn>
-  showNewFile: ReturnType<typeof vi.fn>
-  showTransfer: ReturnType<typeof vi.fn>
-  showDeleteConfirmation: ReturnType<typeof vi.fn>
-  closeConfirmationDialog: ReturnType<typeof vi.fn>
-  isConfirmationDialogOpen: ReturnType<typeof vi.fn>
-}
-
-function buildDialogs(): DialogsStub {
-  return {
-    showAlert: vi.fn(),
-    showNewFolder: vi.fn(),
-    showNewFile: vi.fn(),
-    showTransfer: vi.fn(),
-    showDeleteConfirmation: vi.fn(),
-    closeConfirmationDialog: vi.fn(),
-    isConfirmationDialogOpen: vi.fn(() => false),
-  }
-}
-
-function create(access: PaneAccess, dialogs: DialogsStub) {
+function create(access: ReturnType<typeof buildAccess>, dialogs: DialogsStub) {
   return createFileOperationCommands(access, dialogs as unknown as Parameters<typeof createFileOperationCommands>[1])
-}
-
-/** A minimal VolumeInfo with overridable flags. */
-function volume(overrides: Partial<VolumeInfo> = {}): VolumeInfo {
-  return {
-    id: 'root',
-    name: 'Macintosh HD',
-    mountIsReadOnly: false,
-    supportsTrash: true,
-    ...overrides,
-  } as unknown as VolumeInfo
-}
-
-function snapshotEntry(overrides: Partial<SearchSnapshot['entries'][number]> = {}): SearchSnapshot['entries'][number] {
-  return {
-    name: 'doc.txt',
-    path: '/real/dir/doc.txt',
-    parentPath: '/real/dir',
-    isDirectory: false,
-    size: 42,
-    modifiedAt: null,
-    iconId: 'ext:txt',
-    ...overrides,
-  }
-}
-
-function snapshot(entries: SearchSnapshot['entries']): SearchSnapshot {
-  return { entries } as unknown as SearchSnapshot
-}
-
-function fileEntry(overrides: Partial<FileEntry> = {}): FileEntry {
-  return {
-    name: 'doc.txt',
-    path: '/Users/x/dir/doc.txt',
-    isDirectory: false,
-    isSymlink: false,
-    size: 10,
-    recursiveSize: undefined,
-    recursiveFileCount: undefined,
-    ...overrides,
-  } as unknown as FileEntry
 }
 
 beforeEach(() => {
@@ -509,37 +382,6 @@ describe('openViewerForCursor', () => {
 })
 
 describe('openTransferDialog', () => {
-  it('warns with the search-results destination toast when the opposite pane is a snapshot', async () => {
-    const access = buildAccess({ focusedPane: 'left', volumeIds: { left: 'root', right: 'search-results' } })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openTransferDialog('copy')
-
-    expect(addToastSpy).toHaveBeenCalledWith("Search results aren't a folder. Pick a real destination.", {
-      level: 'warn',
-    })
-    expect(dialogs.showTransfer).not.toHaveBeenCalled()
-  })
-
-  it('does not show the search-results toast for a network destination (PR3: kind-scoped)', async () => {
-    // A network dest also has `canWrite: false`, but the dest-block toast is
-    // scoped to the search-results KIND. Historically a network dest fell through
-    // here silently; converting the gate to `!canWrite` must not start
-    // toasting it. The transfer then proceeds past the guard as before.
-    const access = buildAccess({
-      focusedPane: 'left',
-      volumeIds: { left: 'root', right: 'network' },
-      paneRefs: { left: buildPaneRef({ listingId: null }) },
-    })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openTransferDialog('copy')
-
-    expect(addToastSpy).not.toHaveBeenCalledWith("Search results aren't a folder. Pick a real destination.", {
-      level: 'warn',
-    })
-  })
-
   it('refuses a read-only destination with the device-specific alert', async () => {
     const access = buildAccess({
       focusedPane: 'left',
@@ -628,57 +470,6 @@ describe('openTransferDialog', () => {
       focusedPane: 'left',
       paneRefs: { left: buildPaneRef({ listingId: null }) },
       volumes: [volume()],
-    })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openTransferDialog('move')
-
-    expect(dialogs.showTransfer).not.toHaveBeenCalled()
-  })
-
-  it('builds snapshot transfer props for a search-results source pane', async () => {
-    getSnapshotSpy.mockReturnValue(
-      snapshot([snapshotEntry({ path: '/real/a.txt' }), snapshotEntry({ path: '/real/b.txt' })]),
-    )
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 1] })
-    const access = buildAccess({
-      focusedPane: 'left',
-      paneRefs: { left: paneRef },
-      volumeIds: { left: 'search-results', right: 'root' },
-    })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openTransferDialog('move')
-
-    expect(dialogs.showTransfer).toHaveBeenCalledTimes(1)
-    expect(dialogs.showTransfer.mock.calls[0][0]).toMatchObject({
-      operationType: 'move',
-      sourcePaths: ['/real/a.txt', '/real/b.txt'],
-    })
-  })
-
-  it('does not open a snapshot transfer when the snapshot index is stale (out of range)', async () => {
-    getSnapshotSpy.mockReturnValue(snapshot([snapshotEntry()]))
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [9] })
-    const access = buildAccess({
-      focusedPane: 'left',
-      paneRefs: { left: paneRef },
-      volumeIds: { left: 'search-results', right: 'root' },
-    })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openTransferDialog('move')
-
-    expect(dialogs.showTransfer).not.toHaveBeenCalled()
-  })
-
-  it('does not open a snapshot transfer when the snapshot is missing', async () => {
-    getSnapshotSpy.mockReturnValue(undefined)
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0] })
-    const access = buildAccess({
-      focusedPane: 'left',
-      paneRefs: { left: paneRef },
-      volumeIds: { left: 'search-results', right: 'root' },
     })
     const dialogs = buildDialogs()
 
@@ -827,122 +618,6 @@ describe('openDeleteDialog', () => {
     getFilesAtIndicesSpy.mockResolvedValue([fileEntry({ name: '..' })])
     const paneRef = buildPaneRef({ listingId: 'lst-1', selectedIndices: [0] })
     const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
-
-    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
-  })
-
-  it('builds the delete dialog from the snapshot cursor entry on a search-results pane', async () => {
-    getSnapshotSpy.mockReturnValue(
-      snapshot([snapshotEntry({ name: 'hit.md', path: '/real/hit.md', parentPath: '/real' })]),
-    )
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', cursorIndex: 0 })
-    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openDeleteDialog({ permanent: true })
-
-    expect(dialogs.showDeleteConfirmation).toHaveBeenCalledTimes(1)
-    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
-      sourcePaths: ['/real/hit.md'],
-      sourceFolderPath: '/real',
-      isPermanent: true,
-      supportsTrash: true,
-      isFromCursor: true,
-      sourceVolumeId: 'root',
-    })
-  })
-
-  it('deletes every selected row on a search-results pane, not only the cursor row', async () => {
-    // ERR-Q373S: Cmd+A then F8 in a search-results pane deleted a single file.
-    // The snapshot pane shares `FilePane.selection` with normal panes, so the
-    // delete opener has to honour it exactly like the copy/move opener does.
-    getSnapshotSpy.mockReturnValue(
-      snapshot([
-        snapshotEntry({ name: 'a.txt', path: '/real/a.txt', parentPath: '/real', size: 1 }),
-        snapshotEntry({ name: 'b.txt', path: '/real/b.txt', parentPath: '/real', size: 2 }),
-        snapshotEntry({ name: 'c.txt', path: '/real/c.txt', parentPath: '/real', size: 3 }),
-      ]),
-    )
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 2], cursorIndex: 1 })
-    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
-
-    expect(dialogs.showDeleteConfirmation).toHaveBeenCalledTimes(1)
-    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
-      sourcePaths: ['/real/a.txt', '/real/c.txt'],
-      sourceItems: [
-        { name: 'a.txt', size: 1, isDirectory: false },
-        { name: 'c.txt', size: 3, isDirectory: false },
-      ],
-      isFromCursor: false,
-    })
-  })
-
-  it('reports the common parent when a snapshot selection spans several folders', async () => {
-    // The dialog's "From <path>" line and the trash toast's volume lookup both
-    // read `sourceFolderPath`, so it has to stay a real directory. The common
-    // ancestor is the honest one for a result set gathered from everywhere.
-    getSnapshotSpy.mockReturnValue(
-      snapshot([
-        snapshotEntry({ name: 'a.txt', path: '/Users/me/docs/a.txt', parentPath: '/Users/me/docs' }),
-        snapshotEntry({ name: 'b.txt', path: '/Users/me/photos/b.txt', parentPath: '/Users/me/photos' }),
-      ]),
-    )
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 1] })
-    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
-
-    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
-      sourceFolderPath: '/Users/me',
-    })
-  })
-
-  it('skips a stale selected index on a search-results pane and keeps the rest', async () => {
-    getSnapshotSpy.mockReturnValue(
-      snapshot([snapshotEntry({ name: 'a.txt', path: '/real/a.txt', parentPath: '/real' })]),
-    )
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [0, 9] })
-    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
-
-    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({ sourcePaths: ['/real/a.txt'] })
-  })
-
-  it('bails on a search-results pane whose whole selection is stale', async () => {
-    getSnapshotSpy.mockReturnValue(snapshot([snapshotEntry()]))
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', selectedIndices: [7, 9] })
-    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
-
-    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
-  })
-
-  it('bails on a search-results pane whose cursor is out of range', async () => {
-    getSnapshotSpy.mockReturnValue(snapshot([snapshotEntry()]))
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', cursorIndex: 9 })
-    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
-    const dialogs = buildDialogs()
-
-    await create(access, dialogs).openDeleteDialog({ permanent: false })
-
-    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
-  })
-
-  it('bails on a search-results pane whose snapshot is missing', async () => {
-    getSnapshotSpy.mockReturnValue(undefined)
-    const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1', cursorIndex: 0 })
-    const access = buildAccess({ paneRefs: { left: paneRef }, volumeIds: { left: 'search-results' } })
     const dialogs = buildDialogs()
 
     await create(access, dialogs).openDeleteDialog({ permanent: false })
