@@ -40,6 +40,8 @@ mod copy_integration_test;
 #[cfg(test)]
 mod cross_type_policy_tests;
 #[cfg(test)]
+mod folder_over_file_rollback_tests;
+#[cfg(test)]
 mod hardlink_progress_tests;
 #[cfg(test)]
 pub(crate) mod liveness_test_support;

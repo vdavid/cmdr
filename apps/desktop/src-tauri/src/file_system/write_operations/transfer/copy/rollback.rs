@@ -121,6 +121,12 @@ pub(super) fn rollback_with_progress(
         tally.record(remove_local_dir_if_empty(dir), dir);
     }
 
+    // And the entries this copy renamed out of the way come home, now that the
+    // directories standing on their names are gone. Not tallied: the counters
+    // are about the items the person asked to copy, and one of their own files
+    // returning isn't one of those. `reversal.rs` says the same.
+    transaction.restore_displaced();
+
     // The frame that lands on zero, so a run whose last items fell inside the
     // throttle window still ends where it ended.
     emit(None, 0, 0);

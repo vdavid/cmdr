@@ -162,7 +162,8 @@ pub(crate) fn remove_local_file(file: &WrittenFile) -> ItemResult {
 }
 
 /// Reverse a local copy's whole ledger: every file it still claims, newest
-/// first, then the directories it created deepest-first and empty-only.
+/// first, then the directories it created deepest-first and empty-only, then
+/// the entries it displaced, back to their own names.
 ///
 /// The error-cleanup path's reversal. It rechecks like the Rollback button does
 /// — deleting a file somebody else has modified is wrong whatever brought Cmdr
@@ -181,6 +182,11 @@ pub(crate) fn reverse_copy_transaction(transaction: &mut CopyTransaction) -> Rev
     for dir in transaction.created_dirs.iter().rev() {
         tally.record(remove_local_dir_if_empty(dir), dir);
     }
+    // Last, once the names are free again: an entry a landing renamed out of the
+    // way comes home. Deliberately not tallied — the person counted the items
+    // they asked to copy, and putting one of their own files back isn't one of
+    // them. A restore that can't land says so in the log and leaves the aside.
+    transaction.restore_displaced();
     tally
 }
 
