@@ -7,7 +7,9 @@ const {
   removeRecentPathMock,
   readClipboardTextMock,
   resolveGoToPathMock,
+  readSchemeInputMock,
 } = vi.hoisted(() => ({
+  readSchemeInputMock: vi.fn<() => Promise<unknown>>(() => Promise.resolve(null)),
   getRecentPathsListMock: vi.fn<() => { id: string; path: string; timestamp: number }[]>(() => []),
   loadRecentPathsMock: vi.fn(() => Promise.resolve()),
   removeRecentPathMock: vi.fn(() => Promise.resolve()),
@@ -29,6 +31,13 @@ vi.mock('$lib/tauri-commands', () => ({
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: { resolveGoToPath: resolveGoToPathMock },
+}))
+
+// The two sites in this component that resolve: the debounced preview and the
+// clipboard prefill. Both must ask the intercept BEFORE the local resolver.
+vi.mock('./scheme-intercept', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  readSchemeInput: readSchemeInputMock,
 }))
 
 vi.mock('./recent-paths-state.svelte', () => ({
@@ -79,6 +88,7 @@ describe('GoToPathDialog', () => {
     loadRecentPathsMock.mockReset().mockResolvedValue(undefined)
     removeRecentPathMock.mockReset().mockResolvedValue(undefined)
     readClipboardTextMock.mockReset().mockResolvedValue(null)
+    readSchemeInputMock.mockReset().mockResolvedValue(null)
     resolveGoToPathMock.mockReset().mockResolvedValue({ status: 'ok', data: { kind: 'invalid', reason: 'empty' } })
   })
 
@@ -227,6 +237,36 @@ describe('GoToPathDialog', () => {
     await flush()
     const input = target.querySelector('input') as HTMLInputElement
     expect(input.value).toBe('/Users/me/Documents')
+    cleanup()
+  })
+
+  it('previews what a pasted server address will do, and asks no local resolver', async () => {
+    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://naspolya' })
+    const { target, cleanup } = setup()
+    await flush()
+    const input = target.querySelector('input') as HTMLInputElement
+    input.value = 'smb://naspolya'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    // Past the preview debounce.
+    await new Promise((resolve) => setTimeout(resolve, 260))
+    await flush()
+
+    // ❗ "Adds a server", ❌ never "this path doesn't exist": the local resolver
+    // would say the second about an address that is about to work.
+    expect(target.textContent).toContain('Adds a server')
+    expect(resolveGoToPathMock).not.toHaveBeenCalled()
+    cleanup()
+  })
+
+  it('prefills the box from a copied server address', async () => {
+    readClipboardTextMock.mockResolvedValue('sftp://ada@nas.local:22/srv')
+    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'sftp://ada@nas.local:22/srv' })
+    const { target, cleanup } = setup()
+    await flush()
+    const input = target.querySelector('input') as HTMLInputElement
+    // An address someone copied is exactly what this box was opened to paste.
+    expect(input.value).toBe('sftp://ada@nas.local:22/srv')
+    expect(resolveGoToPathMock).not.toHaveBeenCalled()
     cleanup()
   })
 

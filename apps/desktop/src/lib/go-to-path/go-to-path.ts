@@ -25,6 +25,9 @@ import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 import GoToPathAncestorToastContent from './GoToPathAncestorToastContent.svelte'
 import { GO_TO_PATH_ANCESTOR_TOAST_ID } from './go-to-path-ids'
 import { addRecentPath } from './recent-paths-state.svelte'
+import { actOnSchemeInput, readSchemeInput, type GoToPathOutcome } from './scheme-intercept'
+
+export type { GoToPathOutcome }
 
 export { GO_TO_PATH_ANCESTOR_TOAST_ID }
 
@@ -39,6 +42,9 @@ const log = getAppLogger('go-to-path')
  * - `nearestAncestor` → navigate to the nearest existing ancestor, then fire an
  *   INFO toast whose back-shortcut is snapshotted at toast-creation.
  * - `invalid` → no-op (empty/unresolvable input; the dialog gates this anyway).
+ * - a `<scheme>://` input → `scheme-intercept.ts` owns it, BEFORE the backend is
+ *   asked: a saved server or a device navigates, any other server address opens
+ *   the sign-in sheet and answers `handed_off`.
  *
  * On `directory` / `file` / `nearestAncestor` success the resolved target is
  * recorded into recents. The helper is a no-op when `explorer` is `undefined`
@@ -50,10 +56,24 @@ const log = getAppLogger('go-to-path')
 export async function goToPath(
   explorer: ExplorerAPI | undefined,
   input: string,
-): Promise<GoToPathResolution | undefined> {
+): Promise<GoToPathOutcome | undefined> {
   if (!explorer) {
     log.debug('goToPath: no explorer; skipping (HMR or pre-mount)')
     return undefined
+  }
+
+  // ❗ Before the local resolver, always. A `sftp://` or `smb://` input joins onto
+  // the pane's directory there and answers `invalid`; here it navigates to the
+  // saved place, or opens the sheet on the address.
+  const intent = await readSchemeInput(input)
+  if (intent) {
+    const outcome = await actOnSchemeInput(intent)
+    if (outcome.kind !== 'directory') return outcome
+    const location = await resolveLocationOrToast(outcome.path)
+    if (!location) return outcome
+    await navigateToDirInPane(explorer, explorer.getFocusedPane(), location)
+    await recordRecent(outcome.path)
+    return outcome
   }
 
   const baseDir = getFocusedPanePath()

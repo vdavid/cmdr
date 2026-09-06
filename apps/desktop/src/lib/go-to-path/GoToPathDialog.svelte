@@ -25,6 +25,7 @@
     import type { GoToPathResolution } from '$lib/ipc/bindings'
     import { getAppLogger } from '$lib/logging/logger'
     import { digitToRecentIndex, shouldPrefillClipboard } from './go-to-path'
+    import { previewSchemeInput, readSchemeInput, type GoToPathOutcome } from './scheme-intercept'
     import {
         getRecentPathsList,
         loadRecentPaths,
@@ -37,7 +38,7 @@
         /** The focused pane's current path; relative input resolves against it. */
         baseDir: string
         /** Jump handler. Closes the dialog on a successful (non-invalid) jump. */
-        onGo: (input: string) => Promise<GoToPathResolution | undefined>
+        onGo: (input: string) => Promise<GoToPathOutcome | undefined>
         onCancel: () => void
     }
 
@@ -75,6 +76,16 @@
             ancestorHint = ''
             return
         }
+        // ❗ A scheme input never reaches the local resolver, here or on the jump:
+        // it would answer "this path doesn't exist" about an address that is
+        // about to work.
+        const intent = await withTimeout(readSchemeInput(trimmed), RESOLVE_TIMEOUT_MS, null)
+        if (value !== inputValue) return
+        if (intent) {
+            ancestorHint = previewSchemeInput(intent)
+            return
+        }
+
         const resolution = await withTimeout(resolveOrNull(trimmed), RESOLVE_TIMEOUT_MS, null)
         // A later keystroke may have changed the box while we awaited; only
         // apply if the value we resolved is still current.
@@ -176,6 +187,17 @@
             // value each time so the post-await re-check is honoured (a literal
             // `inputValue === ''` would be narrowed to "always true" by TS).
             if (clip && boxIsEmpty()) {
+                // A copied server address is exactly what someone opened this
+                // box to paste, so it prefills without asking the local resolver
+                // (which would call it unresolvable).
+                if (await readSchemeInput(clip)) {
+                    if (boxIsEmpty()) {
+                        inputValue = clip
+                        await tick()
+                        inputRef?.select()
+                    }
+                    return
+                }
                 const resolution = await resolveOrNull(clip)
                 if (resolution && shouldPrefillClipboard(resolution) && boxIsEmpty()) {
                     inputValue = clip

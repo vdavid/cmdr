@@ -13,7 +13,11 @@ const {
   navigateToFileMock,
   getFocusedPaneMock,
   getFocusedPanePathMock,
+  readSchemeInputMock,
+  actOnSchemeInputMock,
 } = vi.hoisted(() => ({
+  readSchemeInputMock: vi.fn<() => Promise<unknown>>(() => Promise.resolve(null)),
+  actOnSchemeInputMock: vi.fn<() => Promise<unknown>>(),
   resolveGoToPathMock: vi.fn(),
   resolveLocationOrToastMock: vi.fn(),
   addRecentPathStateMock: vi.fn(() => Promise.resolve()),
@@ -55,6 +59,13 @@ vi.mock('./recent-paths-state.svelte', () => ({
   addRecentPath: addRecentPathStateMock,
 }))
 
+// The scheme intercept is its own module with its own suite; here we only pin
+// that the jump asks it FIRST and acts on what it says.
+vi.mock('./scheme-intercept', () => ({
+  readSchemeInput: readSchemeInputMock,
+  actOnSchemeInput: actOnSchemeInputMock,
+}))
+
 // `goToPath` reads the focused pane's path from the explorer store, not the
 // `explorerRef` getter, so the base dir comes through this module.
 vi.mock('$lib/file-explorer/pane/focused-pane-reads', () => ({
@@ -94,6 +105,36 @@ describe('goToPath handler', () => {
     navigateToFileMock.mockReset().mockResolvedValue(undefined)
     getFocusedPaneMock.mockReset().mockReturnValue('left')
     getFocusedPanePathMock.mockReset().mockReturnValue('/home/me')
+    readSchemeInputMock.mockReset().mockResolvedValue(null)
+    actOnSchemeInputMock.mockReset()
+  })
+
+  describe('a pasted server address', () => {
+    it('navigates to a saved place, and ❌ never asks the local resolver', async () => {
+      const path = 'sftp://ada@nas.local:22/srv/data'
+      readSchemeInputMock.mockResolvedValue({ kind: 'place', path, label: 'Naspolya' })
+      actOnSchemeInputMock.mockResolvedValue({ kind: 'directory', path })
+
+      const outcome = await goToPath(makeExplorerStub(), path)
+
+      expect(outcome).toEqual({ kind: 'directory', path })
+      expect(navigateToDirMock).toHaveBeenCalledWith(expect.anything(), 'left', { volumeId: 'root', path })
+      expect(addRecentPathStateMock).toHaveBeenCalled()
+      // ❗ `resolve_go_to_path` walks `std::fs::metadata`: given this it would
+      // answer `invalid`, and the user would be told their NAS doesn't exist.
+      expect(resolveGoToPathMock).not.toHaveBeenCalled()
+    })
+
+    it('hands an unsaved address to the sheet, and navigates nowhere', async () => {
+      readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://naspolya' })
+      actOnSchemeInputMock.mockResolvedValue({ kind: 'handed_off' })
+
+      const outcome = await goToPath(makeExplorerStub(), 'smb://naspolya')
+
+      expect(outcome).toEqual({ kind: 'handed_off' })
+      expect(navigateToDirMock).not.toHaveBeenCalled()
+      expect(resolveGoToPathMock).not.toHaveBeenCalled()
+    })
   })
 
   it('resolves against the focused pane path', async () => {
