@@ -1,5 +1,6 @@
 <script lang="ts">
     import { tick } from 'svelte'
+    import { openAddServerSheet } from '$lib/servers/open-sign-in'
     import type { MountError, NetworkHost, NetworkLoginSubmitPayload, PlacesAccount, ShareInfo } from '../types'
     import {
         mountNetworkShare,
@@ -15,7 +16,6 @@
     import type { HubRow } from '../network/servers-hub-rows'
     import PlacesBrowser from '../network/PlacesBrowser.svelte'
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
-    import ConnectToServerDialog from '../network/ConnectToServerDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -71,7 +71,6 @@
     )
 
     // Connect-to-server dialog
-    let showConnectDialog = $state(false)
     let autoMountShare = $state<string | undefined>(initialAutoMountShare)
 
     // Mounting state
@@ -173,19 +172,21 @@
         onVolumeChange?.({ volumeId: row.volumeId, volumePath: path, targetPath: path })
     }
 
-    function handleConnectToServerSuccess(host: NetworkHost, sharePath: string | null) {
-        showConnectDialog = false
-        currentNetworkHost = host
-        onNetworkHostChange?.(host)
-        if (sharePath) {
-            autoMountShare = sharePath
-        }
-    }
-
-    async function handleConnectDialogClose() {
-        showConnectDialog = false
+    /**
+     * The Add row opens the ONE sign-in sheet. An SMB address lands back here as
+     * a hand-off: its connect is a share MOUNT rather than a session, so the
+     * host is injected and this view opens its places list.
+     */
+    async function openAddServer() {
+        await openAddServerSheet({
+            onSmbHandOff: (handOff) => {
+                currentNetworkHost = handOff.host
+                onNetworkHostChange?.(handOff.host)
+                if (handOff.sharePath) autoMountShare = handOff.sharePath
+            },
+        })
         await tick()
-        // Restore focus to the explorer container so keyboard navigation resumes
+        // Focus goes back to the explorer container so keyboard navigation resumes.
         document.querySelector<HTMLElement>('.dual-pane-explorer')?.focus()
     }
 
@@ -452,14 +453,7 @@
         {isFocused}
         onHostSelect={handleNetworkHostSelect}
         onServerSelect={handleServerSelect}
-        onConnectToServer={() => (showConnectDialog = true)}
-    />
-{/if}
-
-{#if showConnectDialog}
-    <ConnectToServerDialog
-        onConnect={handleConnectToServerSuccess}
-        onClose={handleConnectDialogClose}
+        onConnectToServer={() => void openAddServer()}
     />
 {/if}
 

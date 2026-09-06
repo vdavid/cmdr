@@ -27,6 +27,7 @@ import { confirmDialog } from '$lib/utils/confirm-dialog'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { isServerVolumeId } from '$lib/servers/server-path-utils'
+import { openEditServerSheet } from '$lib/servers/open-sign-in'
 import { showsDisconnect } from './connection-state'
 import type { VolumeContextActionKind } from '$lib/ipc/bindings'
 import type { VolumeInfo } from '../types'
@@ -160,6 +161,11 @@ export async function runServerRowAction(payload: {
   action: VolumeContextActionKind
   volumeId: string
   volumeName: string
+  /**
+   * Navigates the focused pane onto the place. Supplied by the surface that owns
+   * a `navigate()` transaction; without one, Open logs rather than pretending.
+   */
+  onOpen?: (volumeId: string) => void
 }): Promise<void> {
   const { action, volumeId, volumeName } = payload
   switch (action) {
@@ -177,12 +183,14 @@ export async function runServerRowAction(payload: {
       await setServerPinned(volumeId, volumeName, action === 'pin')
       return
     case 'open':
+      // The `navigate()` transaction lives in the pane, so the caller supplies
+      // it. A menu raised somewhere with no pane to move logs rather than
+      // pretending it did something.
+      if (payload.onOpen) payload.onOpen(volumeId)
+      else log.info('Open on {volumeId} had no pane to navigate', { volumeId })
+      return
     case 'edit':
-      // No producer yet. `open` is Enter in the hub and a click in the switcher,
-      // both of which run the `navigate()` transaction this module can't reach;
-      // `edit` waits for the sign-in sheet. They log rather than silently doing
-      // nothing, so the first menu that emits one says so.
-      log.info('A server row asked for {action} on {volumeId}, which has no handler yet', { action, volumeId })
+      await editServer(volumeId, volumeName)
       return
     case 'eject':
     case 'rename-favorite':
@@ -212,4 +220,27 @@ function refused(
 ): void {
   log.warn('{what} {volumeId} broke down: {error}', { what, volumeId, error: String(error) })
   addToast(tString(key, { name: volumeName }), { level: 'error' })
+}
+
+/**
+ * Opens the sign-in sheet on this server, prefilled.
+ *
+ * ❗ Looked up in the saved list rather than reconstructed from the row: a
+ * `VolumeInfo` carries no key file, no remote folder, and no auto-reconnect
+ * switch, and an edit form seeded from half a server would save the other half
+ * away.
+ */
+async function editServer(volumeId: string, volumeName: string): Promise<void> {
+  const saved = await listSavedServers().catch((e: unknown) => {
+    log.warn('Reading the saved servers to edit {volumeId} broke down: {error}', { volumeId, error: String(e) })
+    return []
+  })
+  const server = saved.find((entry) => entry.places.some((place) => place.volumeId === volumeId))
+  if (!server) {
+    // A forget that raced the menu. Nothing to edit and nothing worth saying:
+    // the row is already gone from the switcher.
+    log.info('Editing {volumeName} found no saved server behind it', { volumeName })
+    return
+  }
+  await openEditServerSheet(server)
 }

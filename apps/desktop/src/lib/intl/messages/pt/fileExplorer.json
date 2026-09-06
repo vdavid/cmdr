@@ -313,22 +313,6 @@
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "fileExplorer.network.connectDialog.title": "Conectar ao servidor",
-  "@fileExplorer.network.connectDialog.title": {
-    "sourceHash": "de6cce0"
-  },
-  "fileExplorer.network.connectDialog.addressAriaLabel": "Endereço do servidor",
-  "@fileExplorer.network.connectDialog.addressAriaLabel": {
-    "sourceHash": "8be8971"
-  },
-  "fileExplorer.network.connectDialog.addressPlaceholder": "nome do host, endereço IP ou URL smb://",
-  "@fileExplorer.network.connectDialog.addressPlaceholder": {
-    "sourceHash": "60c33b2"
-  },
-  "fileExplorer.network.connectDialog.examples": "Exemplos: mynas.local, 192.168.1.100, smb://server/share",
-  "@fileExplorer.network.connectDialog.examples": {
-    "sourceHash": "10794ec"
-  },
   "fileExplorer.network.browser.searching": "Buscando...",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"

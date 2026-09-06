@@ -84,6 +84,16 @@ export const browsersCommands: CommandSource[] = [
     shortcuts: [],
   },
   {
+    // ⌘K, Finder's binding for the same thing. ❗ Window-wide, ❌ not the hub's
+    // scope: adding a server is about no server in particular, so it works from
+    // a file list as readily as from the hub.
+    id: 'servers.connect',
+    nameKey: 'commands.serversConnect.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘K'],
+  },
+  {
     // ⌘E lives in the hub's own scope, a sibling of the file list's, so it can
     // never meet a file-list binding.
     id: 'servers.edit',

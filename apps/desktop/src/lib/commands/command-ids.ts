@@ -222,6 +222,7 @@ export const COMMAND_IDS = [
   'servers.disconnect',
   'servers.forgetSecret',
   'servers.edit',
+  'servers.connect',
 
   // Volume chooser
   'volume.select',
