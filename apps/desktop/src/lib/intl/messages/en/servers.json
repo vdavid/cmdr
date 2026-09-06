@@ -1,0 +1,77 @@
+{
+  "servers.paneState.connecting": "Connecting to {name}…",
+  "@servers.paneState.connecting": {
+    "description": "Heading of the pane view shown while Cmdr opens a connection to a server. {name} is the server''s display name. The ellipsis is the single character … (U+2026)."
+  },
+  "servers.paneState.connectingHint": "This can take a few seconds.",
+  "@servers.paneState.connectingHint": {
+    "description": "One line under the connecting heading, setting the expectation that a server handshake is not instant. Reassurance, not an instruction."
+  },
+  "servers.paneState.cancel": "Cancel",
+  "@servers.paneState.cancel": {
+    "description": "Button that calls off a connection Cmdr is in the middle of opening. VERB, imperative."
+  },
+  "servers.paneState.tryAgain": "Try again",
+  "@servers.paneState.tryAgain": {
+    "description": "Button that starts the same connection over after it was refused. VERB phrase, imperative."
+  },
+  "servers.paneState.disconnect": "Disconnect",
+  "@servers.paneState.disconnect": {
+    "description": "Button that drops the server''s session and leaves the pane. VERB, imperative. A server has nothing to unplug, so it says Disconnect rather than Eject."
+  },
+  "servers.refusal.authenticationRejected": "That password didn''t work for {username}.",
+  "@servers.refusal.authenticationRejected": {
+    "description": "Shown in the pane when the server refused the credential Cmdr offered. Factual, not accusing: the password may have changed on the server side.",
+    "placeholders": {
+      "username": "the account name on the server, like \"ada\""
+    }
+  },
+  "servers.refusal.needsCredentials": "This server asks for a password.",
+  "@servers.refusal.needsCredentials": {
+    "description": "Shown in the pane when the server wants a credential and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don''t word it as a wrong password."
+  },
+  "servers.refusal.authMethodUnsupported": "This server uses a sign-in method Cmdr doesn''t support yet.",
+  "@servers.refusal.authMethodUnsupported": {
+    "description": "Shown in the pane when the server challenged with an authentication scheme Cmdr doesn''t speak. The secret was never sent, so nothing about it is known to be wrong. ❌ Don''t name the scheme: it means nothing to the reader."
+  },
+  "servers.refusal.certificateUntrusted": "macOS doesn''t trust this server''s certificate. Add it in Keychain Access, then try again.",
+  "@servers.refusal.certificateUntrusted": {
+    "description": "Shown in the pane when a WebDAV server''s TLS certificate isn''t trusted by the operating system. \"Keychain Access\" is the macOS app name, which the OS ships translated; use the name your language''s macOS uses."
+  },
+  "servers.refusal.notAWebdavServer": "Nothing at this address answers WebDAV.",
+  "@servers.refusal.notAWebdavServer": {
+    "description": "Shown in the pane when the address answers as a web server but doesn''t speak WebDAV. \"WebDAV\" is a protocol name; don''t translate it."
+  },
+  "servers.refusal.invalidUrl": "That doesn''t look like a server address.",
+  "@servers.refusal.invalidUrl": {
+    "description": "Shown in the pane when the saved address isn''t a usable web address at all."
+  },
+  "servers.refusal.timedOut": "{host} didn''t answer in time.",
+  "@servers.refusal.timedOut": {
+    "description": "Shown in the pane when the server didn''t finish the handshake inside Cmdr''s budget.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like \"nas.local\""
+    }
+  },
+  "servers.refusal.unreachable": "Cmdr couldn''t reach {host}.",
+  "@servers.refusal.unreachable": {
+    "description": "Shown in the pane when there was no route to the server at all: it''s off, the name doesn''t resolve, or the network is down. \"Cmdr\" is the product name.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like \"nas.local\""
+    }
+  },
+  "servers.refusal.hostKeyUntrusted": "Cmdr hasn''t trusted {host}''s key yet.",
+  "@servers.refusal.hostKeyUntrusted": {
+    "description": "Shown in the pane when an SSH server presents a host key this Mac hasn''t approved. \"Key\" is the server''s SSH host key, the fingerprint a person checks before trusting the server.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like \"nas.local\""
+    }
+  },
+  "servers.refusal.hostKeyRevoked": "{host}''s key is marked as compromised in your SSH settings on this Mac. Cmdr won''t connect to it.",
+  "@servers.refusal.hostKeyRevoked": {
+    "description": "Shown in the pane when the server''s SSH host key is listed as revoked in the user''s own known_hosts file. This one is deliberately final: there is no button that can safely undo it. \"SSH\" is a protocol name; don''t translate it.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like \"nas.local\""
+    }
+  }
+}
