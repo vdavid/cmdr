@@ -89,3 +89,34 @@ fn ensure_zip_writable_allows_zip_and_refuses_read_only_formats() {
         );
     }
 }
+
+/// A DOCUMENT container refuses every mutation, from both sides.
+///
+/// This is the data-safety property that makes browsing into a `.docx` safe to
+/// offer at all: a user who steps inside a Word file to look around must not be
+/// able to rename, delete, or paste over its parts and hand themselves a corrupt
+/// document. A `.docx` is byte-identical to a zip, so nothing about the FORMAT
+/// stops the zip mutator — `ArchiveFormat::Ooxml` being a separate variant is
+/// the entire mechanism, and this is where it's pinned.
+///
+/// Every archive-edit route (create, rename, delete, copy-in, move-out) funnels
+/// through this one guard, so refusing here refuses all of them. The refusal is
+/// by CONSTRUCTION, not by the UI hiding buttons: it holds for an MCP call and a
+/// direct IPC call just as much as for a keypress.
+#[test]
+fn ensure_zip_writable_refuses_every_document_container() {
+    use std::path::Path;
+    for name in ["report.docx", "sheet.xlsx", "deck.pptx", "lib.jar", "app.apk"] {
+        let path = format!("/x/{name}");
+        for side in [ReadOnlySide::Destination, ReadOnlySide::Source] {
+            let err = ensure_zip_writable(Path::new(&path), side).expect_err(name);
+            assert!(
+                matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
+                "{name} ({side:?}): {err:?}"
+            );
+        }
+    }
+    // The control: a real `.zip` next to them stays writable, so this test fails
+    // if the guard were "fixed" by refusing everything.
+    assert!(ensure_zip_writable(Path::new("/x/real.zip"), ReadOnlySide::Destination).is_ok());
+}

@@ -308,7 +308,7 @@ export function capabilitiesFor(volumeId: string): VolumeCapabilities {
  * navigation. Suffix-based (not just the last `.ext`) so `.tar.gz` matches while
  * a bare `.gz` doesn't. Longest-first so `.tar.gz` wins over `.tar`.
  */
-const SUPPORTED_ARCHIVE_SUFFIXES: readonly string[] = [
+export const SUPPORTED_ARCHIVE_SUFFIXES: readonly string[] = [
   '.tar.gz',
   '.tar.bz2',
   '.tar.xz',
@@ -321,14 +321,28 @@ const SUPPORTED_ARCHIVE_SUFFIXES: readonly string[] = [
   '.tar',
   '.zip',
   '.7z',
+  // Zip containers that are a DOCUMENT or an app package rather than an archive
+  // the user assembled. Browsable, never writable — see below.
+  '.docx',
+  '.xlsx',
+  '.pptx',
+  '.jar',
+  '.apk',
 ]
 
 /**
  * The WRITABLE archive suffixes: only zip. tar and 7z are browse + extract only,
  * so a pane inside one gets the read-only archive capability. Mirrors the backend
  * write chokepoint (`archive_edit::ensure_zip_writable`).
+ *
+ * A DOCUMENT container (`.docx`, `.jar`, …) is absent for a stronger reason than
+ * tar and 7z are: those simply have no mutator, while a `.docx` IS a zip and the
+ * mutator would happily rewrite one. Letting a user rename or delete parts while
+ * wandering inside a Word file hands them a corrupt document, so the backend
+ * refuses it by TYPE (`ArchiveFormat::Ooxml` never satisfies `ensure_zip_writable`)
+ * and this list keeps the UI honest about it. ❌ Never add one here.
  */
-const WRITABLE_ARCHIVE_SUFFIXES: readonly string[] = ['.zip']
+export const WRITABLE_ARCHIVE_SUFFIXES: readonly string[] = ['.zip']
 
 /** Whether `name` ends with `suffix` and has a real stem before it. */
 function nameHasSuffix(name: string, suffix: string): boolean {

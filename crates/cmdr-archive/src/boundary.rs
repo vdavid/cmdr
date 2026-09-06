@@ -41,7 +41,9 @@ pub use cmdr_fs::archive_format::has_supported_archive_extension;
 /// `VolumeManager`, so both agree on what "is a `<format>`" means.
 pub fn bytes_match_archive_magic(format: ArchiveFormat, header: &[u8]) -> bool {
     match format {
-        ArchiveFormat::Zip => bytes_start_with_zip_signature(header),
+        // A document container carries the same `PK\x03\x04` header, so the
+        // magic confirm is the zip one; only writability differs.
+        ArchiveFormat::Zip | ArchiveFormat::Ooxml => bytes_start_with_zip_signature(header),
         // A plain tar has no signature at offset 0; the ustar magic sits at 257.
         // (A pre-POSIX v7 tar has none at all — those are accepted by extension +
         // a successful parse rather than magic, but modern tars are ustar/GNU/pax.)

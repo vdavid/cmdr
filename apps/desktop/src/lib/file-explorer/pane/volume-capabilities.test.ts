@@ -15,6 +15,8 @@
  * the tint-render suites; those must stay green alongside this file.
  */
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect, vi } from 'vitest'
 import type { VolumeInfo } from '$lib/file-explorer/types'
 
@@ -45,6 +47,8 @@ import {
   pathCrossesArchiveBoundary,
   pathInsideArchive,
   archiveNameFromPath,
+  SUPPORTED_ARCHIVE_SUFFIXES,
+  WRITABLE_ARCHIVE_SUFFIXES,
 } from './volume-capabilities'
 
 function vol(partial: Partial<VolumeInfo> & { id: string }): VolumeInfo {
@@ -380,6 +384,43 @@ describe('pathInsideArchive — the NARROW, operate-on check', () => {
   })
 })
 
+/**
+ * The two suffix tables are one decision written twice, in two languages, and
+ * nothing but this test makes them agree. Drift is silent and asymmetric: a
+ * suffix the backend browses but the FE doesn't know is a pane whose write
+ * affordances stay ON inside a read-only container, which is the direction that
+ * costs a user their data.
+ *
+ * Reading the Rust source is the same trick `archive-enter-policy.test.ts` uses
+ * to pin a claim about a file it can't import.
+ */
+describe('archive suffix table ↔ the backend`s `format_for_name`', () => {
+  it('knows exactly the suffixes the Rust table does', () => {
+    const rust = readFileSync(
+      resolve(process.cwd(), '../../crates/cmdr-fs/src/archive_format.rs'),
+      'utf8',
+    )
+    // The `SUFFIXES` const's entries: `(".tar.gz", ArchiveFormat::…)`.
+    const table = rust.slice(rust.indexOf('const SUFFIXES'), rust.indexOf('];', rust.indexOf('const SUFFIXES')))
+    const backendSuffixes = [...table.matchAll(/\("(\.[^"]+)"/g)].map((m) => m[1])
+    expect(backendSuffixes.length, 'failed to parse the Rust SUFFIXES table').toBeGreaterThan(10)
+
+    for (const suffix of backendSuffixes) {
+      expect(SUPPORTED_ARCHIVE_SUFFIXES, `backend browses ${suffix}, the FE does not`).toContain(suffix)
+    }
+    expect([...SUPPORTED_ARCHIVE_SUFFIXES].sort()).toEqual([...backendSuffixes].sort())
+  })
+
+  it('treats every document container as browsable but NOT writable', () => {
+    // The asymmetry that makes browsing a `.docx` safe to offer at all.
+    for (const suffix of ['.docx', '.xlsx', '.pptx', '.jar', '.apk']) {
+      expect(SUPPORTED_ARCHIVE_SUFFIXES, suffix).toContain(suffix)
+      expect(WRITABLE_ARCHIVE_SUFFIXES, suffix).not.toContain(suffix)
+    }
+    expect(WRITABLE_ARCHIVE_SUFFIXES).toEqual(['.zip'])
+  })
+})
+
 describe('capabilitiesForPane — kind-from-path resolution', () => {
   it('returns the writable archive row when the PATH is inside a zip', () => {
     volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
@@ -428,6 +469,46 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
       expect(caps.canBeSource, path).toBe(true)
       expect(caps.hasBackendListing, path).toBe(true)
     }
+  })
+
+  it('returns the READ-ONLY archive row inside a DOCUMENT container, on a writable drive', () => {
+    // The data-safety property, at the UI layer. A `.docx` is a zip, so nothing
+    // about the format stops the mutator — only the refusal does. A user who
+    // steps inside a Word file to look around must find every write affordance
+    // off, so they can't hand themselves a corrupt document.
+    //
+    // The drive underneath is deliberately writable and exporting: if this row
+    // ever folded in the parent's answer, the pane would go writable and this
+    // would catch it. The backend refuses too (`ensure_zip_writable` admits
+    // `ArchiveFormat::Zip` alone), so an MCP or IPC caller is stopped as well —
+    // this is the visible half of a guarantee, not the whole of it.
+    volumes.list = [
+      vol({
+        id: 'root',
+        fsType: 'apfs',
+        category: 'main_volume',
+        capabilities: { backendCanWrite: true, canExport: true },
+      }),
+    ]
+    for (const path of [
+      '/x/report.docx/word/document.xml',
+      '/x/sheet.xlsx/xl',
+      '/x/deck.pptx/ppt/slides',
+      '/x/lib.jar/META-INF',
+      '/x/app.apk/res',
+    ]) {
+      const caps = capabilitiesForPane('root', path)
+      expect(caps.kind, path).toBe('archive')
+      expect(caps.canWrite, path).toBe(false)
+      // Reading out still works: browse it, copy a part out, preview it.
+      expect(caps.canBeSource, path).toBe(true)
+      expect(caps.hasBackendListing, path).toBe(true)
+    }
+  })
+
+  it('keeps a real `.zip` writable, so read-only did not become a blanket refusal', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    expect(capabilitiesForPane('root', '/x/real.zip/inner').canWrite).toBe(true)
   })
 
   it('returns the read-only git-portal row for a path inside a virtual `.git` category', () => {

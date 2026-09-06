@@ -129,6 +129,40 @@ describe('dispatchTransferOperation: routing', () => {
     expect(moveBetweenVolumes).not.toHaveBeenCalled()
   })
 
+  it('keeps a move of an Office document on the local fast-path', async () => {
+    // A `.docx` is a browsable zip container, so the boundary check sees it. It's
+    // still a plain file: moving one is an ordinary same-drive move, and the
+    // narrow check is what keeps every Office-document move off the slow route.
+    await dispatchTransferOperation(
+      makeConfig({
+        operationType: 'move',
+        sourceVolumeId: 'root',
+        destVolumeId: 'root',
+        sourcePaths: ['/left/report.docx', '/left/sheet.xlsx'],
+        destinationPath: '/right',
+      }),
+    )
+    expect(moveFiles).toHaveBeenCalledTimes(1)
+    expect(moveBetweenVolumes).not.toHaveBeenCalled()
+  })
+
+  it('routes a move out of a DOCUMENT container cross-volume, where the backend refuses it', async () => {
+    // Read-only is the backend's to enforce, not the dispatcher's: this reaches
+    // `moveBetweenVolumes`, where `ensure_zip_writable` returns `ReadOnlyDevice`
+    // because a `.docx` is `ArchiveFormat::Ooxml`, never `Zip`.
+    await dispatchTransferOperation(
+      makeConfig({
+        operationType: 'move',
+        sourceVolumeId: 'root',
+        destVolumeId: 'root',
+        sourcePaths: ['/left/report.docx/word/document.xml'],
+        destinationPath: '/right',
+      }),
+    )
+    expect(moveBetweenVolumes).toHaveBeenCalledTimes(1)
+    expect(moveFiles).not.toHaveBeenCalled()
+  })
+
   it('dispatches delete through deleteFiles', async () => {
     await dispatchTransferOperation(makeConfig({ operationType: 'delete' }))
     expect(deleteFiles).toHaveBeenCalledTimes(1)

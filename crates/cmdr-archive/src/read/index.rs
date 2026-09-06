@@ -234,7 +234,9 @@ impl ArchiveIndex {
         password: Option<&str>,
     ) -> Result<Self, ArchiveError> {
         match format {
-            ArchiveFormat::Zip => {
+            // A document container IS a zip, so it reads through the identical
+            // path. The two part company only at the write guard.
+            ArchiveFormat::Zip | ArchiveFormat::Ooxml => {
                 let entries = super::zip::parse(source.as_ref())?;
                 Ok(build_index(entries)?.into_index(EntryStore::Zip))
             }
