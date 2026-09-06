@@ -252,7 +252,7 @@ describe('anyVisible', () => {
     // `createShouldShow('')` returns a predicate that is true for every id, so a
     // card built from any member ids is visible on a non-search page.
     const showAll = createShouldShow('')
-    expect(anyVisible(showAll, 'indexing.enabled', 'indexing.indexSize')).toBe(true)
+    expect(anyVisible(showAll, 'indexing.enabled', 'row:indexing.indexSize')).toBe(true)
   })
 })
 

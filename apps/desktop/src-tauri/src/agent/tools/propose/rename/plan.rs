@@ -450,10 +450,6 @@ pub(super) fn check_row_evidence(
     if rejections.is_empty() { Ok(()) } else { Err(rejections) }
 }
 
-/// A model may invent a filename that is not in the pane cache. Keep that row
-/// reviewable only when it names a nonexistent direct child of the focused local
-/// folder; preflight then reports `SourceMissing`. Existing out-of-scope files and
-/// every remote path stay rejected at the proposal boundary.
 /// Whether `source_path` names something strictly INSIDE an archive, which a
 /// rename plan has to refuse: an archive-inner path has no file on disk for the
 /// bulk-rename executor to touch.
@@ -472,6 +468,10 @@ pub(super) fn is_archive_inner_path(source_path: &str) -> bool {
         .is_some_and(|(_archive, inner)| !inner.as_os_str().is_empty())
 }
 
+/// A model may invent a filename that is not in the pane cache. Keep that row
+/// reviewable only when it names a nonexistent direct child of the focused local
+/// folder; preflight then reports `SourceMissing`. Existing out-of-scope files and
+/// every remote path stay rejected at the proposal boundary.
 pub(super) fn missing_local_child(state: &PaneState, volume_id: &str, source_path: &str) -> bool {
     if !volume_uses_local_paths(volume_id) || std::fs::symlink_metadata(source_path).is_ok() {
         return false;

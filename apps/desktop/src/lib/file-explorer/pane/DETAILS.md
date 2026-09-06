@@ -1130,7 +1130,7 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   backend `ReadOnlyDevice` rejection is the safety net behind them.
 - **Edits are managed ops, not instant.** A zip mutation is an O(archive) temp+rename rewrite, so mkdir/mkfile/rename
   inside a zip return an OPERATION handle, not a landed path, and copy/move into or out of a zip route through
-  `copyBetweenVolumes`/`moveBetweenVolumes` (never the local `moveFiles` fast-path — `transfer-progress-state`'s
+  `copyBetweenVolumes`/`moveBetweenVolumes` (never the local `moveFiles` fast-path — `transfer/transfer-dispatch.ts`'s
   `isVolumeMove` OR-s in `pathInsideArchive(sourcePaths | destinationPath)`, the NARROW check, so a same-drive move of
   something INSIDE an archive still crosses while a move of the `.zip` file itself keeps the fast path). The cursor
   lands on the new/renamed entry when the backing `.zip`'s live-watch refresh arrives (the durable `pendingCursorName`
