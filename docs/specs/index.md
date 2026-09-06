@@ -8,14 +8,18 @@ plus deferred work under `later/`.
 Each spec below states the problem it solves and what finishing it costs. ❌ None of them narrates what already shipped:
 that lives beside the code, and git holds the history.
 
-## In progress
+## Shipped, kept for review
 
-- [x] 2026-09-05 `viewer-selection-plan.md` - **DONE, and ready to wipe.** The three reported F3-viewer selection gaps
-      (a double-click drag stuck on one word, Shift+Arrow dead, Option+Shift+Arrow dead) are fixed, along with keyboard
-      extension, horizontal scroll on the bare arrows, and the optional `viewer.showTextCursor`. Everything durable is
-      already in `apps/desktop/src/routes/viewer/DETAILS.md` (§ "Selection granularity", § "Keyboard motion model", §
-      "Text cursor") and `apps/desktop/src/lib/settings/DETAILS.md` § "Restricted-window mode", so nothing here is worth
-      keeping: run `DETAILS.md` § "Wiping a shipped spec" and drop both the file and this entry.
+Wipe each of these as soon as David has read it (`DETAILS.md` § "Wiping a shipped spec"): the durable intent is already
+beside the code, and the file survives only so he can judge the work against the plan it came from.
+
+- [x] 2026-09-05 `viewer-selection-plan.md` - the three reported F3-viewer selection gaps (a double-click drag stuck on
+      one word, Shift+Arrow dead, Option+Shift+Arrow dead), plus keyboard extension, horizontal scroll on the bare
+      arrows, and the optional `viewer.showTextCursor`. Durable intent lives in
+      `apps/desktop/src/routes/viewer/DETAILS.md` (§ "Selection granularity", § "Keyboard motion model", § "Text
+      cursor") and `apps/desktop/src/lib/settings/DETAILS.md` § "Restricted-window mode".
+
+## In progress
 - [ ] 2026-09-03 `mtp-crate-extraction.md` - **MTP is the last backend that still reaches sideways into the app.** Its
       session layer holds a `tauri::AppHandle`, emits seven frontend events itself, writes the listing cache and the
       index directly, and gates real behavior on nine inline `cfg(test)`s, so the backend on the flakiest hardware is
