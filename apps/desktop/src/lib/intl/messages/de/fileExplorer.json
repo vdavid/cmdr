@@ -329,52 +329,9 @@
   "@fileExplorer.network.connectDialog.examples": {
     "sourceHash": "10794ec"
   },
-  "fileExplorer.network.browser.colName": "Name",
-  "@fileExplorer.network.browser.colName": {
-    "sourceHash": "dcd1d52",
-    "sameAsSourceJustification": "German column header is 'Name', identical to English; matches fileExplorer.columns.name and the other col headers in the de catalog."
-  },
-  "fileExplorer.network.browser.colIp": "IP-Adresse",
-  "@fileExplorer.network.browser.colIp": {
-    "sourceHash": "0302a46"
-  },
-  "fileExplorer.network.browser.colHostname": "Hostname",
-  "@fileExplorer.network.browser.colHostname": {
-    "sourceHash": "2db5335",
-    "sameAsSourceJustification": "German keeps 'Hostname' (MS renders host as 'Host'; 'Hostname' is the standard DE compound, spelled identically). Matches the existing de network col header."
-  },
-  "fileExplorer.network.browser.colShares": "Freigaben",
-  "@fileExplorer.network.browser.colShares": {
-    "sourceHash": "d4ea333"
-  },
-  "fileExplorer.network.browser.colStatus": "Status",
-  "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413",
-    "sameAsSourceJustification": "German keeps 'Status' (style guide glossary; macOS/MS DE both use 'Status'); spelled identically."
-  },
-  "fileExplorer.network.browser.fetching": "wird abgerufen …",
-  "@fileExplorer.network.browser.fetching": {
-    "sourceHash": "9e6ab8c"
-  },
-  "fileExplorer.network.browser.unknown": "(unbekannt)",
-  "@fileExplorer.network.browser.unknown": {
-    "sourceHash": "8fe7794"
-  },
   "fileExplorer.network.browser.searching": "Wird gesucht …",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
-  },
-  "fileExplorer.network.browser.connectToServerRow": "Mit Server verbinden …",
-  "@fileExplorer.network.browser.connectToServerRow": {
-    "sourceHash": "1bf4858"
-  },
-  "fileExplorer.network.browser.noHostsTitle": "Keine Netzwerk-Hosts gefunden",
-  "@fileExplorer.network.browser.noHostsTitle": {
-    "sourceHash": "e8dfaf2"
-  },
-  "fileExplorer.network.browser.noHostsMessage": "Stell sicher, dass du in einem Netzwerk mit SMB-fähigen Geräten bist.",
-  "@fileExplorer.network.browser.noHostsMessage": {
-    "sourceHash": "b1cb7ba"
   },
   "fileExplorer.network.browser.refresh": "Aktualisieren",
   "@fileExplorer.network.browser.refresh": {
@@ -387,10 +344,6 @@
   "fileExplorer.network.browser.refreshHint": "Drücke <key></key> oder klicke hier zum Aktualisieren",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
-  },
-  "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} Host} other {{countText} Hosts}}",
-  "@fileExplorer.network.browser.hostCount": {
-    "sourceHash": "41843ee"
   },
   "fileExplorer.network.browser.status.resolving": "Wird aufgelöst …",
   "@fileExplorer.network.browser.status.resolving": {
@@ -1336,10 +1289,6 @@
   "fileExplorer.navigation.networkVolume": "Netzwerk",
   "@fileExplorer.navigation.networkVolume": {
     "sourceHash": "1744b96"
-  },
-  "fileExplorer.navigation.networkVolumeDisabled": "Netzwerk (deaktiviert)",
-  "@fileExplorer.navigation.networkVolumeDisabled": {
-    "sourceHash": "4ccfa47"
   },
   "fileExplorer.navigation.searchResultsVolume": "Suchergebnisse",
   "@fileExplorer.navigation.searchResultsVolume": {

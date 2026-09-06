@@ -62,6 +62,7 @@
         'rotate-ccw': 'Reset-to-default button on a settings row.',
         'rotate-cw': 'Retry control for a timed-out volume refresh in the volume breadcrumb, and the "changed since indexing" (stale) file-icon image-index overlay.',
         search: 'Search-field leading icon in the settings sidebar and the shared query bar.',
+        server: 'Row icon for an SFTP or WebDAV server in the servers hub.',
         'shield-check': 'Privacy-reassurance banner in the onboarding AI step.',
         'shield-off': 'Privacy-warning banner in the onboarding AI step.',
         sparkles: 'AI-suggestion marker in the onboarding AI step, and the Ask Cmdr rail header and empty state.',

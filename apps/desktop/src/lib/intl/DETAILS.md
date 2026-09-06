@@ -33,8 +33,8 @@ side, which looks complete in review and passes every other check — the catalo
 locales to each other rather than to the component, and nothing throws. `i18n-trans-snippets` closes that by comparing
 each call site's snippet keys against the English message's tags in both directions, so a half-finished rename names its
 own other half. It resolves what it can read statically and SKIPS the rest (a computed `key={…}`, or a snippets prop
-naming a variable rather than an inline object, as `ServersHub` does), reporting the skipped count rather than
-guessing: a false positive would cost the check the only thing that makes it useful, that a failure means a real bug.
+naming a variable rather than an inline object, as `ServersHub` does), reporting the skipped count rather than guessing:
+a false positive would cost the check the only thing that makes it useful, that a failure means a real bug.
 
 ### The resolver: per-locale catalogs + fallback chain
 

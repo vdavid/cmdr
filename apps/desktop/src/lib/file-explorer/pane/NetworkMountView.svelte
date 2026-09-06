@@ -12,6 +12,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import type { ServersHubAPI, PlacesBrowserAPI, NetworkCursorEntry } from './types'
     import ServersHub from '../network/ServersHub.svelte'
+    import type { HubRow } from '../network/servers-hub-rows'
     import PlacesBrowser from '../network/PlacesBrowser.svelte'
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import ConnectToServerDialog from '../network/ConnectToServerDialog.svelte'
@@ -92,7 +93,7 @@
     )
 
     // Component refs for keyboard navigation
-    let networkBrowserRef: ServersHubAPI | undefined = $state()
+    let serversHubRef: ServersHubAPI | undefined = $state()
     let placesBrowserRef: PlacesBrowserAPI | undefined = $state()
 
     // Whether the last state we pushed carried a `mountError`, so the clear below
@@ -154,6 +155,22 @@
     function handleNetworkHostSelect(host: NetworkHost) {
         currentNetworkHost = host
         onNetworkHostChange?.(host)
+    }
+
+    /**
+     * Enter on a one-place server in the hub: take the pane to its place.
+     *
+     * ❗ The pane does the dialing, not the hub. Landing on a `saved` volume is
+     * what `place-connect` watches for, so the connecting view and its Cancel
+     * render where every other wait does.
+     */
+    function handleServerSelect(row: HubRow) {
+        const path = row.saved?.places[0]?.appRoot
+        if (!row.volumeId || !path) {
+            log.warn('The hub row {name} has no place to open', { name: row.name })
+            return
+        }
+        onVolumeChange?.({ volumeId: row.volumeId, volumePath: path, targetPath: path })
     }
 
     function handleConnectToServerSuccess(host: NetworkHost, sharePath: string | null) {
@@ -317,7 +334,7 @@
         if (currentNetworkHost) {
             placesBrowserRef?.handleKeyDown(e)
         } else {
-            networkBrowserRef?.handleKeyDown(e)
+            serversHubRef?.handleKeyDown(e)
         }
     }
 
@@ -326,7 +343,7 @@
         if (currentNetworkHost) {
             placesBrowserRef?.setCursorIndex(index)
         } else {
-            networkBrowserRef?.setCursorIndex(index)
+            serversHubRef?.setCursorIndex(index)
         }
     }
 
@@ -338,7 +355,7 @@
     export function getItemCount(): number {
         if (isMounting || mountError) return 0
         if (currentNetworkHost) return placesBrowserRef?.getItemCount() ?? 0
-        return networkBrowserRef?.getItemCount() ?? 0
+        return serversHubRef?.getItemCount() ?? 0
     }
 
     /** Find an item by name, returns its index or -1. */
@@ -346,7 +363,7 @@
         if (currentNetworkHost) {
             return placesBrowserRef?.findItemIndex(name) ?? -1
         }
-        return networkBrowserRef?.findItemIndex(name) ?? -1
+        return serversHubRef?.findItemIndex(name) ?? -1
     }
 
     /**
@@ -361,8 +378,10 @@
             const share = placesBrowserRef?.getShareUnderCursor() ?? null
             return share ? { kind: 'share', share } : null
         }
-        const host = networkBrowserRef?.getHostUnderCursor() ?? null
-        return host ? { kind: 'host', host } : null
+        const host = serversHubRef?.getHostUnderCursor() ?? null
+        if (host) return { kind: 'host', host }
+        const row = serversHubRef?.getRowUnderCursor() ?? null
+        return row ? { kind: 'server', row } : null
     }
 
     /** Opens the host or share under the cursor — same action Enter triggers. */
@@ -371,13 +390,13 @@
         if (currentNetworkHost) {
             placesBrowserRef?.openCursorItem()
         } else {
-            networkBrowserRef?.openCursorItem()
+            serversHubRef?.openCursorItem()
         }
     }
 
     /** Refresh network hosts (used by ⌘R shortcut). */
     export function refreshNetworkHosts() {
-        networkBrowserRef?.refresh()
+        serversHubRef?.refresh()
     }
 
     export function setNetworkHost(host: NetworkHost | null) {
@@ -428,10 +447,11 @@
     />
 {:else}
     <ServersHub
-        bind:this={networkBrowserRef}
+        bind:this={serversHubRef}
         {paneId}
         {isFocused}
         onHostSelect={handleNetworkHostSelect}
+        onServerSelect={handleServerSelect}
         onConnectToServer={() => (showConnectDialog = true)}
     />
 {/if}

@@ -329,49 +329,9 @@
   "@fileExplorer.network.connectDialog.examples": {
     "sourceHash": "10794ec"
   },
-  "fileExplorer.network.browser.colName": "Nom",
-  "@fileExplorer.network.browser.colName": {
-    "sourceHash": "dcd1d52"
-  },
-  "fileExplorer.network.browser.colIp": "Adresse IP",
-  "@fileExplorer.network.browser.colIp": {
-    "sourceHash": "0302a46"
-  },
-  "fileExplorer.network.browser.colHostname": "Nom d''hôte",
-  "@fileExplorer.network.browser.colHostname": {
-    "sourceHash": "2db5335"
-  },
-  "fileExplorer.network.browser.colShares": "Partages",
-  "@fileExplorer.network.browser.colShares": {
-    "sourceHash": "d4ea333"
-  },
-  "fileExplorer.network.browser.colStatus": "État",
-  "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413"
-  },
-  "fileExplorer.network.browser.fetching": "chargement...",
-  "@fileExplorer.network.browser.fetching": {
-    "sourceHash": "9e6ab8c"
-  },
-  "fileExplorer.network.browser.unknown": "(inconnu)",
-  "@fileExplorer.network.browser.unknown": {
-    "sourceHash": "8fe7794"
-  },
   "fileExplorer.network.browser.searching": "Recherche...",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
-  },
-  "fileExplorer.network.browser.connectToServerRow": "Se connecter au serveur...",
-  "@fileExplorer.network.browser.connectToServerRow": {
-    "sourceHash": "1bf4858"
-  },
-  "fileExplorer.network.browser.noHostsTitle": "Aucun hôte réseau trouvé",
-  "@fileExplorer.network.browser.noHostsTitle": {
-    "sourceHash": "e8dfaf2"
-  },
-  "fileExplorer.network.browser.noHostsMessage": "Vérifiez que vous êtes sur un réseau avec des appareils compatibles SMB.",
-  "@fileExplorer.network.browser.noHostsMessage": {
-    "sourceHash": "b1cb7ba"
   },
   "fileExplorer.network.browser.refresh": "Actualiser",
   "@fileExplorer.network.browser.refresh": {
@@ -384,10 +344,6 @@
   "fileExplorer.network.browser.refreshHint": "Appuyez sur <key></key> ou cliquez ici pour actualiser",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
-  },
-  "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} hôte} many {{countText} hôtes} other {{countText} hôtes}}",
-  "@fileExplorer.network.browser.hostCount": {
-    "sourceHash": "41843ee"
   },
   "fileExplorer.network.browser.status.resolving": "Résolution...",
   "@fileExplorer.network.browser.status.resolving": {
@@ -1337,10 +1293,6 @@
   "fileExplorer.navigation.networkVolume": "Réseau",
   "@fileExplorer.navigation.networkVolume": {
     "sourceHash": "1744b96"
-  },
-  "fileExplorer.navigation.networkVolumeDisabled": "Réseau (désactivé)",
-  "@fileExplorer.navigation.networkVolumeDisabled": {
-    "sourceHash": "4ccfa47"
   },
   "fileExplorer.navigation.searchResultsVolume": "Résultats de recherche",
   "@fileExplorer.navigation.searchResultsVolume": {

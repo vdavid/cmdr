@@ -78,6 +78,8 @@ export type SettingsSurface =
   | 'enter-menu'
   /** The volume breadcrumb's SMB/network-shares entry. */
   | 'volume-breadcrumb'
+  /** The servers hub's "Turn it on in Settings" link, deep-linking to `network.enabled`. */
+  | 'servers-hub'
   /** The downloads "Stop showing these" notification toast. */
   | 'downloads-toast'
   /** The low-disk-space "Stop showing these" notification toast. */

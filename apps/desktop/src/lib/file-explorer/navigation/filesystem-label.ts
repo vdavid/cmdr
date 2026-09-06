@@ -61,6 +61,17 @@ const PROTOCOL_LABELS: Record<string, string> = {
   cifs: 'SMB',
 }
 
+/**
+ * The protocol name for an `fsType`, or `null` when it isn't one of ours.
+ *
+ * Exported because the servers hub's Type column asks the same question about a
+ * row that isn't a `VolumeInfo` yet; one map means the switcher and the hub can't
+ * disagree about what to call SFTP.
+ */
+export function protocolLabel(fsType: string): string | null {
+  return PROTOCOL_LABELS[fsType.toLowerCase()] ?? null
+}
+
 /** Whether a volume represents a real local filesystem worth labeling. */
 function isRealFilesystemVolume(volume: VolumeInfo): boolean {
   if (volume.isDiskImage) return false
@@ -74,7 +85,7 @@ function isRealFilesystemVolume(volume: VolumeInfo): boolean {
 export function filesystemLabel(volume: VolumeInfo): string | null {
   const raw = volume.fsType?.toLowerCase()
   if (!raw) return null
-  if (volume.category === 'network') return PROTOCOL_LABELS[raw] ?? null
+  if (volume.category === 'network') return protocolLabel(raw)
   if (!isRealFilesystemVolume(volume)) return null
   return FS_LABELS[raw] ?? null
 }

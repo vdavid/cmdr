@@ -329,49 +329,9 @@
   "@fileExplorer.network.connectDialog.examples": {
     "sourceHash": "10794ec"
   },
-  "fileExplorer.network.browser.colName": "Név",
-  "@fileExplorer.network.browser.colName": {
-    "sourceHash": "dcd1d52"
-  },
-  "fileExplorer.network.browser.colIp": "IP-cím",
-  "@fileExplorer.network.browser.colIp": {
-    "sourceHash": "0302a46"
-  },
-  "fileExplorer.network.browser.colHostname": "Gépnév",
-  "@fileExplorer.network.browser.colHostname": {
-    "sourceHash": "2db5335"
-  },
-  "fileExplorer.network.browser.colShares": "Megosztások",
-  "@fileExplorer.network.browser.colShares": {
-    "sourceHash": "d4ea333"
-  },
-  "fileExplorer.network.browser.colStatus": "Állapot",
-  "@fileExplorer.network.browser.colStatus": {
-    "sourceHash": "920e413"
-  },
-  "fileExplorer.network.browser.fetching": "lekérés…",
-  "@fileExplorer.network.browser.fetching": {
-    "sourceHash": "9e6ab8c"
-  },
-  "fileExplorer.network.browser.unknown": "(ismeretlen)",
-  "@fileExplorer.network.browser.unknown": {
-    "sourceHash": "8fe7794"
-  },
   "fileExplorer.network.browser.searching": "Keresés…",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "78c9d9f"
-  },
-  "fileExplorer.network.browser.connectToServerRow": "Kapcsolódás szerverre…",
-  "@fileExplorer.network.browser.connectToServerRow": {
-    "sourceHash": "1bf4858"
-  },
-  "fileExplorer.network.browser.noHostsTitle": "Nem található hálózati gép",
-  "@fileExplorer.network.browser.noHostsTitle": {
-    "sourceHash": "e8dfaf2"
-  },
-  "fileExplorer.network.browser.noHostsMessage": "Győződj meg róla, hogy olyan hálózaton vagy, ahol vannak SMB-képes eszközök.",
-  "@fileExplorer.network.browser.noHostsMessage": {
-    "sourceHash": "b1cb7ba"
   },
   "fileExplorer.network.browser.refresh": "Frissítés",
   "@fileExplorer.network.browser.refresh": {
@@ -384,10 +344,6 @@
   "fileExplorer.network.browser.refreshHint": "A frissítéshez nyomd meg ezt: <key></key>, vagy kattints ide",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
-  },
-  "fileExplorer.network.browser.hostCount": "{count, plural, one {{countText} gép} other {{countText} gép}}",
-  "@fileExplorer.network.browser.hostCount": {
-    "sourceHash": "41843ee"
   },
   "fileExplorer.network.browser.status.resolving": "Feloldás…",
   "@fileExplorer.network.browser.status.resolving": {
@@ -1331,10 +1287,6 @@
   "fileExplorer.navigation.networkVolume": "Hálózat",
   "@fileExplorer.navigation.networkVolume": {
     "sourceHash": "1744b96"
-  },
-  "fileExplorer.navigation.networkVolumeDisabled": "Hálózat (kikapcsolva)",
-  "@fileExplorer.navigation.networkVolumeDisabled": {
-    "sourceHash": "4ccfa47"
   },
   "fileExplorer.navigation.searchResultsVolume": "Keresési találatok",
   "@fileExplorer.navigation.searchResultsVolume": {

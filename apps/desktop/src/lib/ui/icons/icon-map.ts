@@ -51,6 +51,7 @@ import IconPlus from '~icons/lucide/plus'
 import IconRotateCcw from '~icons/lucide/rotate-ccw'
 import IconRotateCw from '~icons/lucide/rotate-cw'
 import IconSearch from '~icons/lucide/search'
+import IconServer from '~icons/lucide/server'
 import IconShieldCheck from '~icons/lucide/shield-check'
 import IconShieldOff from '~icons/lucide/shield-off'
 import IconSparkles from '~icons/lucide/sparkles'
@@ -129,6 +130,7 @@ export const ICON_COMPONENTS = {
   'rotate-ccw': IconRotateCcw,
   'rotate-cw': IconRotateCw,
   search: IconSearch,
+  server: IconServer,
   'shield-check': IconShieldCheck,
   'shield-off': IconShieldOff,
   sparkles: IconSparkles,

@@ -59,6 +59,14 @@ pub struct SavedPlace {
     pub pinned: bool,
     /// Whether a session is live right now.
     pub connected: bool,
+    /// The app-facing root this place addresses its files by
+    /// (`sftp://ada@nas.local:22/srv`), which is what a tab, a favorite, and an
+    /// MCP row point at.
+    ///
+    /// ❗ Read from `server_volumes::server_places()`, the one place that mints
+    /// the spelling, ❌ never re-derived here: a second spelling of the prefix
+    /// misses the volume its own id names.
+    pub app_root: String,
 }
 
 /// An endpoint plus an identity, as the hub lists it.
@@ -234,16 +242,27 @@ pub fn list_saved_servers(app: tauri::AppHandle) -> Vec<SavedServer> {
 /// and the union itself is a pure fold that a cell can drive.
 fn saved_servers(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedServer> {
     let manager = crate::file_system::volume::manager::get_volume_manager();
+    // The app roots, from the module that mints them for the volume listing, so
+    // the hub's rows and the switcher's rows spell one prefix.
+    let app_roots: std::collections::HashMap<String, String> = crate::server_volumes::server_places()
+        .into_iter()
+        .map(|place| (place.id, place.app_root))
+        .collect();
     let mut servers = Vec::new();
 
     for entry in sftp_known_servers::all() {
         let volume_id = cmdr_fs::volume::sftp_volume_id(&entry.host, entry.port, &entry.username);
+        let Some(app_root) = app_roots.get(&volume_id).cloned() else {
+            log::warn!(target: "volume", "a saved SFTP server has no place in the volume listing; leaving it out");
+            continue;
+        };
         servers.push(SavedServer {
             places: vec![SavedPlace {
                 connected: manager.get(&volume_id).is_some(),
                 volume_id: volume_id.clone(),
                 name: entry.display_name.clone(),
                 pinned: entry.pinned,
+                app_root,
             }],
             id: volume_id,
             protocol: ServerProtocol::Sftp,
@@ -261,12 +280,17 @@ fn saved_servers(manual: Vec<manual_servers::ManualServerEntry>) -> Vec<SavedSer
             continue;
         };
         let volume_id = cmdr_fs::volume::webdav_volume_id(params.host(), params.port(), &entry.username);
+        let Some(app_root) = app_roots.get(&volume_id).cloned() else {
+            log::warn!(target: "volume", "a saved WebDAV server has no place in the volume listing; leaving it out");
+            continue;
+        };
         servers.push(SavedServer {
             places: vec![SavedPlace {
                 connected: manager.get(&volume_id).is_some(),
                 volume_id: volume_id.clone(),
                 name: entry.display_name.clone(),
                 pinned: entry.pinned,
+                app_root,
             }],
             id: volume_id,
             protocol: ServerProtocol::Webdav,

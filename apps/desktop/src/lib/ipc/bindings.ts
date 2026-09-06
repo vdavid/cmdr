@@ -10800,6 +10800,16 @@ export type SavedPlace = {
   pinned: boolean
   // Whether a session is live right now.
   connected: boolean
+  /**
+   *  The app-facing root this place addresses its files by
+   *  (`sftp://ada@nas.local:22/srv`), which is what a tab, a favorite, and an
+   *  MCP row point at.
+   *
+   *  ❗ Read from `server_volumes::server_places()`, the one place that mints
+   *  the spelling, ❌ never re-derived here: a second spelling of the prefix
+   *  misses the volume its own id names.
+   */
+  appRoot: string
 }
 
 /**
