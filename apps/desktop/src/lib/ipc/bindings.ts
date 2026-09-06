@@ -3229,6 +3229,13 @@ export const commands = {
    */
   scanMtpForCopy: (deviceId: string, storageId: number, path: string) =>
     typedError<MtpScanResult, MtpConnectionError>(__TAURI_INVOKE('scan_mtp_for_copy', { deviceId, storageId, path })),
+  /**
+   *  Applies `fileOperations.adbEnabled` and `fileOperations.adbBinaryPath`
+   *  without a restart: the tracker restarts under the new binary, or stops and
+   *  takes its device rows with it.
+   */
+  setAdbSettings: (enabled: boolean, binaryPath: string | null) =>
+    __TAURI_INVOKE<void>('set_adb_settings', { enabled, binaryPath }),
   // The ADB devices the server last reported, from the cache the tracker keeps.
   listAdbDevices: () => __TAURI_INVOKE<AdbDevice[]>('list_adb_devices'),
   /**

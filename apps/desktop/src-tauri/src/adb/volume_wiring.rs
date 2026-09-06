@@ -5,11 +5,11 @@
 //! and the volume registry, and neither of those knows this module: the same
 //! shape `mtp::volume_wiring` and `network::sftp_volume_wiring` take.
 
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use cmdr_adb::{AdbConnectError, AdbConnectionParams, AdbEndpoint, DeviceTracker};
 use cmdr_fs::ignore_poison::IgnorePoison;
-use tauri::AppHandle;
 
 use super::device_provider::{self, AdbDeviceProvider};
 use crate::device_volumes::{notify_devices_changed, register_device_provider};
@@ -26,6 +26,52 @@ pub(crate) fn install_device_provider() {
     register_device_provider(Arc::new(AdbDeviceProvider));
 }
 
+/// Points the crate at the `adb` the user named in Settings, or back at the
+/// platform search when the setting is empty.
+///
+/// ❗ Startup seeds this BEFORE the tracker starts, or the first subscription
+/// runs against whatever the environment happened to offer.
+pub fn set_adb_binary_path(configured: Option<String>) {
+    let path = configured
+        .map(|p| p.trim().to_string())
+        .filter(|p| !p.is_empty())
+        .map(PathBuf::from);
+    cmdr_adb::set_adb_binary_override(path);
+}
+
+/// Applies both ADB settings live: where the binary is, and whether Cmdr
+/// follows the device list at all.
+///
+/// Turning it off stops the subscription AND empties the cached list, which is
+/// what retires the connected volumes and takes the rows off the switcher: a
+/// stopped tracker on its own would leave the last list frozen on screen.
+/// Turning it on (or changing the path) clears the crate's start-attempt memory
+/// first, because a newly named binary deserves the one attempt an existing one
+/// already spent.
+pub async fn set_adb_settings(enabled: bool, binary_path: Option<String>) {
+    apply_settings_at(AdbEndpoint::default_local(), enabled, binary_path).await;
+}
+
+/// [`set_adb_settings`] against whichever server `endpoint` names.
+pub(crate) async fn apply_settings_at(endpoint: AdbEndpoint, enabled: bool, binary_path: Option<String>) {
+    set_adb_binary_path(binary_path);
+    stop_adb_tracker();
+    if !enabled {
+        log::info!(target: "volume", "ADB support turned off");
+        device_provider::apply_device_list(Vec::new());
+        return;
+    }
+    cmdr_adb::forget_start_attempt().await;
+    start_tracker_at(endpoint);
+}
+
+/// Ends the `host:track-devices` subscription, if one is running.
+fn stop_adb_tracker() {
+    if let Some(tracker) = TRACKER.lock_ignore_poison().take() {
+        tracker.stop();
+    }
+}
+
 /// Starts following the ADB server's device list. A second call while one is
 /// already running is a no-op.
 ///
@@ -33,13 +79,18 @@ pub(crate) fn install_device_provider() {
 /// installed the tracker stops itself and says so at debug, so nothing reaches
 /// the user at startup and nothing retries for the rest of the session;
 /// [`recheck_adb_install`] is how it comes back.
-pub fn start_adb_tracker(_app: &AppHandle) {
+pub fn start_adb_tracker() {
+    start_tracker_at(AdbEndpoint::default_local());
+}
+
+/// [`start_adb_tracker`] against whichever server `endpoint` names.
+pub(crate) fn start_tracker_at(endpoint: AdbEndpoint) {
     let mut slot = TRACKER.lock_ignore_poison();
     if slot.as_ref().is_some_and(DeviceTracker::is_running) {
         return;
     }
     *slot = Some(cmdr_adb::track_devices(
-        AdbEndpoint::default_local(),
+        endpoint,
         tauri::async_runtime::handle().inner().clone(),
         Arc::new(device_provider::apply_device_list),
     ));
@@ -75,9 +126,9 @@ pub fn adb_install_status() -> AdbInstallStatus {
 /// ❗ The one entry point allowed to retry `adb start-server`: it stands for a
 /// person saying "I installed it now", so it is one attempt per click, never a
 /// loop.
-pub async fn recheck_adb_install(app: &AppHandle) -> AdbInstallStatus {
+pub async fn recheck_adb_install() -> AdbInstallStatus {
     cmdr_adb::forget_start_attempt().await;
-    start_adb_tracker(app);
+    start_adb_tracker();
     adb_install_status()
 }
 

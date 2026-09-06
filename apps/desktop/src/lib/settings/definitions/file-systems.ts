@@ -135,6 +135,30 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
   },
 
   // ========================================================================
+  // File systems › Android (ADB)
+  // ========================================================================
+  {
+    id: 'fileOperations.adbEnabled',
+    section: ['File systems', 'Android (ADB)'],
+    labelKey: 'settings.fileOperations.adbEnabled.label',
+    descriptionKey: 'settings.fileOperations.adbEnabled.description',
+    keywords: ['adb', 'android', 'usb debugging', 'developer options', 'phone', 'device', 'platform-tools'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    id: 'fileOperations.adbBinaryPath',
+    section: ['File systems', 'Android (ADB)'],
+    labelKey: 'settings.fileOperations.adbBinaryPath.label',
+    descriptionKey: 'settings.fileOperations.adbBinaryPath.description',
+    keywords: ['adb', 'android', 'path', 'binary', 'platform-tools', 'sdk', 'location'],
+    type: 'string',
+    default: '',
+    component: 'text-input',
+  },
+
+  // ========================================================================
   // File systems › Git
   // ========================================================================
   {

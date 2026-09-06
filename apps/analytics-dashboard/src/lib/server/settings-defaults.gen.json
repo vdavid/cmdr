@@ -1398,6 +1398,7 @@
     "fileExplorer.suppressQuickLookHint": false,
     "fileExplorer.tabs.closedTabHistorySize": 10,
     "fileExplorer.typeToJump.resetDelay": 1000,
+    "fileOperations.adbEnabled": true,
     "fileOperations.allowFileExtensionChanges": "ask",
     "fileOperations.maxConflictsToShow": 100,
     "fileOperations.mtpConnectionWarning": true,

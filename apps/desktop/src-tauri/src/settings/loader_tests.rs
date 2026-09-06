@@ -279,3 +279,24 @@ fn the_wake_delay_reads_seconds_and_rejects_what_is_not_a_cadence() {
         );
     }
 }
+
+/// ❗ The keys are dot-shaped and hand-parsed, so a `#[serde(alias)]` that looks
+/// right proves nothing: this is what says the two ADB settings actually reach
+/// the tracker at startup.
+#[test]
+fn the_adb_settings_read_their_dot_keys() {
+    let json =
+        r#"{ "fileOperations.adbEnabled": false, "fileOperations.adbBinaryPath": "/opt/sdk/platform-tools/adb" }"#;
+    let settings = parse_settings(json).unwrap();
+    assert_eq!(settings.adb_enabled, Some(false));
+    assert_eq!(settings.adb_binary_path.as_deref(), Some("/opt/sdk/platform-tools/adb"));
+}
+
+/// Absent means "nobody has touched it", which startup reads as ADB on and the
+/// platform search in charge. Persistence is sparse, so this is the common case.
+#[test]
+fn absent_adb_settings_leave_the_defaults_to_the_caller() {
+    let settings = parse_settings("{}").unwrap();
+    assert_eq!(settings.adb_enabled, None);
+    assert_eq!(settings.adb_binary_path, None);
+}

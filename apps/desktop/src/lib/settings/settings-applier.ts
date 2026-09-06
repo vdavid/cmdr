@@ -47,6 +47,7 @@ import { refreshSystemStrings } from '$lib/system-strings.svelte'
 import { pushConfigToBackend } from './ai-config'
 import { noteSlotSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
+import { pushAdbConfigToBackend } from '$lib/adb/adb-settings'
 import { applyAutoCheckEnabled } from '$lib/updates/updater.svelte'
 
 const log = getAppLogger('settings-applier')
@@ -205,6 +206,10 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'mediaIndex.scope': (v) => void mediaIndexSetScope(v as string),
   'mediaIndex.semanticSearch.enabled': (v) => void mediaIndexSetSemanticSearchEnabled(v as boolean),
   'fileOperations.mtpEnabled': (v) => void setMtpEnabled(v as boolean),
+  // ADB pair: the tracker restarts under whichever binary the path names, so
+  // either change re-pushes both. The helper re-reads them fresh.
+  'fileOperations.adbEnabled': () => void pushAdbConfigToBackend(),
+  'fileOperations.adbBinaryPath': () => void pushAdbConfigToBackend(),
   'advanced.diskSpaceChangeThreshold': (v) => void setDiskSpaceThreshold(v as number),
   // Low-disk-space pair: either change re-pushes the full config. The helper
   // re-reads both settings fresh at call time (same shape as the AI triplet

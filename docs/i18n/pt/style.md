@@ -106,6 +106,28 @@ Defer the full glossary until the variant is chosen (every row depends on it). T
 | put back     | colocar de volta           | macOS Finder `Put Back`; not `restaurar` (that is a name) |
 | go to trash  | Ir para o Lixo             | macOS Finder `Go to the Trash`                            |
 
+Termos decididos na rodada do ADB (`settings.fileOperations.adb*`), no formato escolhido · fontes · confiança. A pilha
+de referência não existe na máquina onde esta rodada correu, então as fontes vêm do macOS instalado, o caminho de
+recurso que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" descreve:
+
+- file system / filesystem · **sistema de arquivos** · macOS pt-BR, `Utilitário de Disco` (`Localizable.loctable`:
+  `File system` → `Sistema de arquivos`, lido no macOS 26.6.2 build 25G83, 2026-09-06); o catálogo já usava a forma em
+  `settings.advanced.fileWatcherDebounce.description` · confirmed
+- location (de um arquivo ou comando) · **localização** · macOS pt-BR Finder (`LocalizableMerged.strings`: `FI12`
+  `This location is read-only` → `Esta localização é somente leitura`; `BU39` `Choose Location…` →
+  `Escolher Localização…`; macOS 26.6.2, 2026-09-06). Rótulo em caixa de frase: `Localização do adb` · confirmed
+- debugging / debug mode · **depuração** · Apple pt-BR, Safari `pt.lproj/DeveloperPreferences.strings`
+  (`Enable … debug mode` → `Ativar modo de depuração de …`, macOS 26.6.2, 2026-09-06). Daí `USB debugging` → **depuração
+  USB**, que também é o rótulo do próprio Android em pt-BR · high
+- (Android) platform tools · **ferramentas de plataforma (do Android)** · sem fonte no macOS nem na Microsoft (é termo
+  do Google), e a pilha de referência não está nesta máquina; forma descritiva, com o comando `adb` como âncora concreta
+  na mesma frase · tentative
+- over ADB / via ADB · **por ADB** · segue o `por USB` / `pelo USB` que o catálogo já publica
+  (`settings.fileOperations.mtpConnectionWarning.description`, `fileExplorer.navigation.spaceMtpHint`) · high
+- Leave this empty · **Deixe em branco** · molde já publicado em `settings.askCmdr.interactiveModel.description` · high
+- `adb`, `ADB`, `Android`, `Android SDK`, `Homebrew`, `Mac`, `USB`, `MTP` ficam verbatim; `adb` em minúsculas, que é o
+  nome do comando.
+
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
@@ -181,6 +203,12 @@ Two mechanics that bite in Portuguese specifically:
 - **Nada concorda com um `{name}`**: ele pode ser arquivo ou pasta, então nenhum particípio, adjetivo ou possessivo pode
   se apoiar nele; só verbos e preposições sem artigo. Quando a linha precisa do gênero, ela escreve o substantivo
   (`a pasta {name}`). Mesma lógica dos tokens de painel do macOS, § acima.
+
+- **Android por ADB: `depuração USB` e `ferramentas de plataforma` traduzem; `adb`, `ADB`, `Android SDK` e `Homebrew`
+  ficam.** As duas linhas de `settings.fileOperations.adb*` chamam o campo de `Localização do adb` (o `localização` do
+  Finder), o alvo de `sistema de arquivos` (o termo do Utilitário de Disco) e o interruptor de
+  `Acesso aos arquivos do Android por ADB`, no molde `por USB` que o catálogo já usa. Evidência e confiança na §
+  Terminology and glossary acima.
 
 - **O Ask Cmdr agora lê partes de um arquivo, e nenhuma frase pode prometer o contrário.** A tela de consentimento diz
   `arquivos inteiros, fotos ou miniaturas` (nunca enviados) e `uma parte limitada dele` (o que pode sair); o verbo de

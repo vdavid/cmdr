@@ -131,6 +131,33 @@ Contested or sense-specific (read the block):
     Objekte", "Objekte komprimieren", "^0 Objekte werden sofort gelöscht"). Use Objekt for the generic file-or-folder
     entity.
 
+- file system → Dateisystem · macOS AppKit `DocumentDragging.loctable` („… kann im Dateisystem nicht gefunden werden.“),
+  `ErrnoErrors.loctable` („Read-only file system“ → „Dateisystem ist schreibgeschützt“), `InfoPlist.loctable` („File
+  System Plug-in“ → „Dateisystem-Plug-in“); Finder `NE29` („Das Objekt ist zu groß für dieses Dateisystem.“) (live macOS
+  26.6.2, build 25G83, 2026-09-06) · high
+- file access → Dateizugriff (Kompositum) bzw. „Zugriff auf Dateien“ (analytisch) · macOS TCC `Localizable.loctable`
+  schreibt durchweg analytisch (`„%@“ möchte Zugriff auf Dateien auf einem Wechselmedium.`); das Kompositum
+  `Dateizugriff` kommt in macOS `de` nicht vor, ist aber normale deutsche Wortbildung und hält ein Schalter-Label kurz.
+  Für Fließtext die analytische Form nehmen, für ein Label das Kompositum (`settings.fileOperations.adbEnabled.label` =
+  „Dateizugriff auf Android über ADB“) · high
+- location (a place on disk a user picks or names) → Speicherort · macOS Finder `BU39` („Choose Location…“ →
+  „Speicherort wählen …“), `BU37_V1` („at its original location“ → „am ursprünglichen Speicherort“) · high. Abgrenzung:
+  der ALLGEMEINE Ort im Dateisystem heißt schlicht `Ort` (Finder `FI12` „Dieser Ort ist schreibgeschützt.“, `SD5`/`FI9`
+  „Locations“ → „Orte“), und `PV56`/`PV5` „Location“ → „Standort“ ist der GEO-Ort eines Fotos. Für ein Feld, in das der
+  Nutzer einen Programmpfad einträgt, gewinnt `Speicherort` (`settings.fileOperations.adbBinaryPath.label` =
+  „Speicherort von adb“)
+- USB debugging → USB-Debugging · Googles deutsche Android-Doku, die Entwickleroptionen-Bezeichnung im Gerät
+  („Aktivieren Sie **USB-Debugging** in den Geräteeinstellungen unter **Entwickleroptionen**.“,
+  developer.android.com/studio/debug/dev-options?hl=de, abgerufen 2026-09-06) · high. Der Feature-Name aus Googles
+  Sprachhoheit, nicht übersetzen; Googles `Sie`-Register aus derselben Quelle NICHT übernehmen (Cmdr siezt nie).
+- Android platform tools → Android Platform Tools · Googles deutsche adb-Doku nennt das Paket „Android SDK Platform
+  Tools“ (developer.android.com/tools/adb?hl=de, abgerufen 2026-09-06); der englische Katalogtext sagt „Android platform
+  tools“, also bleibt der Name unübersetzt und ohne `SDK`, damit er zum Nachbarschlüssel passt, der `Android SDK`
+  separat nennt · high
+- tooling (generisch, nicht als Produktname) → Tools · der Katalog selbst („Backup-Tools“ in
+  `errors.listing.lockUnavailable.suggestion`, „externe Tools“ in `settings.developer.mcpPort.description`); NICHT
+  `Werkzeuge`, das der Katalog für die Werkzeuge eines KI-Agenten reserviert (`askCmdr.tool.unknown.done`) · high
+
 Add rows as terms come up, each with sources and a confidence.
 
 ## Brand and do-not-translate
@@ -240,6 +267,14 @@ Dateien".
 - **Metadaten heißen `…angaben`, nicht `…daten` oder `…details`.** Der Katalog nennt Dateimetadaten `Dateiangaben`
   („Dateiangaben, nicht der Inhalt“) und die EXIF-Daten eines Fotos entsprechend `Kameraangaben`. Neue Metadaten-Arten
   folgen dem Muster. Belege: `glossary.md` § Ask Cmdr schaut jetzt in Dateien hinein.
+- **Ist der Referenz-Stapel auf dieser Maschine nicht da, gilt der dokumentierte Ersatz: die installierten macOS-Bundles
+  direkt auslesen.** `_ignored/i18n/de/` liegt nur auf Davids Laptop; auf der M1-Agentenkiste fehlt es komplett, und das
+  ist NICHT die Worktree-Falle (der Hauptklon hat dort gar kein `_ignored/`). Die Tier-1-Belege sind trotzdem
+  erreichbar: `Finder.app/Contents/Resources/{en,de}.lproj/*.strings` über `plutil -convert json` und, seit macOS 26,
+  `*.loctable` in AppKit/TCC/CoreTypes (eine Datei, alle Sprachen, `jq '.de'`). Rezepte:
+  `../reference-pile/how-to-mine.md` § No pile on this machine? Mine the live macOS bundles instead. Fehlt ein Term dort
+  auch, ist der Hersteller des Produkts die nächste Instanz (für Android-Begriffe Googles deutsche Doku), mit Abrufdatum
+  notiert.
 - Record case-by-case rulings here.
 
 ## Decisions to confirm with David

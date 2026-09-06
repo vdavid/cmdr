@@ -144,22 +144,27 @@ against the reference pile (`_ignored/i18n/zh-CN`) on 2026-06-20.
 Taiwan-vs-Hong-Kong rulings, and it lives in `../zh-Hant/glossary.md`. A second column here would be a copy that rots:
 several Traditional terms are deliberately NOT Apple's zh-TW word.
 
-| English term  | Simplified (zh) | Notes                                                                        |
-| ------------- | --------------- | ---------------------------------------------------------------------------- |
-| file          | 文件            | macOS. `high`.                                                               |
-| folder        | 文件夹          | macOS. `high`.                                                               |
-| copy          | 拷贝            | macOS Finder. Imperative on buttons. `high`.                                 |
-| move          | 移动            | macOS. `high`.                                                               |
-| delete        | 删除            | macOS. `high`.                                                               |
-| open          | 打开            | macOS. `high`.                                                               |
-| cancel        | 取消            | macOS. `high`.                                                               |
-| Trash         | 废纸篓          | macOS. A real term split from Traditional, not just character shape. `high`. |
-| eject         | 推出            | macOS. `high`.                                                               |
-| search        | 搜索            | macOS. `high`.                                                               |
-| settings      | 设置            | macOS. `high`.                                                               |
-| volume (disk) | 宗卷            | macOS (mounted-disk sense, NOT audio loudness `音量`). `high`.               |
-| tab           | 标签页          | macOS. `high`.                                                               |
-| new folder    | 新建文件夹      | macOS. `high`.                                                               |
+| English term                 | Simplified (zh) | Notes                                                                                         |
+| ---------------------------- | --------------- | --------------------------------------------------------------------------------------------- |
+| file                         | 文件            | macOS. `high`.                                                                                |
+| folder                       | 文件夹          | macOS. `high`.                                                                                |
+| copy                         | 拷贝            | macOS Finder. Imperative on buttons. `high`.                                                  |
+| move                         | 移动            | macOS. `high`.                                                                                |
+| delete                       | 删除            | macOS. `high`.                                                                                |
+| open                         | 打开            | macOS. `high`.                                                                                |
+| cancel                       | 取消            | macOS. `high`.                                                                                |
+| Trash                        | 废纸篓          | macOS. A real term split from Traditional, not just character shape. `high`.                  |
+| eject                        | 推出            | macOS. `high`.                                                                                |
+| search                       | 搜索            | macOS. `high`.                                                                                |
+| settings                     | 设置            | macOS. `high`.                                                                                |
+| volume (disk)                | 宗卷            | macOS (mounted-disk sense, NOT audio loudness `音量`). `high`.                                |
+| tab                          | 标签页          | macOS. `high`.                                                                                |
+| new folder                   | 新建文件夹      | macOS. `high`.                                                                                |
+| location                     | 位置            | macOS Finder `zh_CN.lproj` (macOS 26.6.2, 25G83, 2026-09-06). `high`.                         |
+| file system                  | 文件系统        | macOS Finder (`APFS (Apple File System)` -> `APFS（Apple文件系统）`). `high`.                 |
+| USB debugging                | USB 调试        | Android docs zh-CN (`dev-options?hl=zh-cn`, 2026-09-06). What the phone itself shows. `high`. |
+| platform tools (Android SDK) | 平台工具        | Android docs zh-CN (`SDK 平台工具版本说明`, 2026-09-06). Write `Android 平台工具`. `high`.    |
+| adb / ADB                    | adb / ADB       | Kept Latin; Google's zh-CN docs never translate either (`adb 命令`). `high`.                  |
 
 Pane, listing, transfer, bookmark, viewer: triangulate during the first pass and record here with sources + confidence.
 
@@ -218,6 +223,12 @@ inflection.
   `askCmdr.tool.*.doing` opens with `正在` and its `.done` twin with `已`, on the same verb phrase (`正在查看文件内容` /
   `已查看文件内容`). Reading what's inside something is `查看…内容` (or `读取` for the photo facts tool); keep `显示`
   for the View menu. Per-term evidence: `glossary.md` § Ask Cmdr inspect-file consent.
+- **Android over ADB: translate the Android-side feature names, keep the command names Latin.** A Chinese Android phone
+  shows `开发者选项 > USB 调试`, so `USB debugging` is `USB 调试` and `platform tools` is `平台工具`, while the tool and
+  command names (`ADB`, `adb`, `Android SDK`, `Homebrew`) stay Latin, matching Google's own zh-CN docs. Same rule as
+  Apple feature names: what the user's own device shows wins. Sources: the glossary table above.
+- **A settings text field that may be left blank opens with `留空则…`.** Settled in
+  `settings.askCmdr.interactiveModel.description`, reused for `settings.fileOperations.adbBinaryPath.description`.
 - **A photo's place is `拍摄地点`, never `位置`.** `位置` is reserved for a file-system location in this catalog
   (`目标位置`, `原来的位置`); Photos.app calls photo places `地点`. Camera EXIF is `相机信息` (Photos.app `无相机信息`).
 
