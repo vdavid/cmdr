@@ -424,6 +424,14 @@ subsection). The mechanism:
   `<SectionCard label=…>` displays, so the title is findable. `buildSearchableText` appends the resolved `card` LAST in
   the parts array.
 
+**A `cardKey` naming a title no card renders fails SILENTLY, and has.** Every `mediaIndex.*` row in the Image indexing
+page's first card pointed at `settings.mediaIndex.card` ("Image search") while the card had come to render
+`settings.mediaIndex.cards.enable` ("Enable indexing"): searching the title the user can read returned an EMPTY result
+set, and nothing anywhere complained, because a resolvable `MessageKey` is all the type asks for. Nothing structural
+prevents the next one, so `settings-search.test.ts` § "card title indexing" pins the searches by title for that card;
+add a case there when a page grows a card, and check the key against the section's `<SectionCard label=…>` by eye when
+adding a row.
+
 **Decision / why: card titles are catalog keys, not literals.** With the i18n runtime in place,
 `no-raw-user-facing-string` forbids literal UI strings, and `card` must be translation-aware (untranslated `keywords`
 couldn't make a card title findable in another locale). So the field is a `MessageKey`, resolved through `tString` at
