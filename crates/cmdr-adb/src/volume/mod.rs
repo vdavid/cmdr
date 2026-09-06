@@ -123,8 +123,13 @@ impl AdbVolume {
         self.inner.features
     }
 
-    /// Where the connection stands right now.
-    pub fn connection_state(&self) -> ConnectionState {
+    /// Where the device's own connection stands right now.
+    ///
+    /// Named apart from [`Volume::connection_state`](cmdr_fs::volume::Volume::connection_state),
+    /// which this type also implements: an inherent method shadows a trait one,
+    /// so two same-named accessors returning two different enums would resolve by
+    /// receiver type and silently hand a caller the wrong one.
+    pub fn session_state(&self) -> ConnectionState {
         self.inner.connection_state()
     }
 

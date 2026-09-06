@@ -97,6 +97,10 @@ impl Volume for GitPortalVolume {
         ".git"
     }
 
+    fn backend_kind(&self) -> cmdr_fs::volume::BackendKind {
+        cmdr_fs::volume::BackendKind::GitPortal
+    }
+
     fn root(&self) -> &Path {
         &self.dot_git
     }

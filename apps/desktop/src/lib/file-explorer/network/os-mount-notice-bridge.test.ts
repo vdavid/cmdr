@@ -31,8 +31,8 @@ vi.mock('$lib/tauri-commands', () => ({
 import { startOsMountNoticeBridge, osMountNoticeToastId } from './os-mount-notice-bridge'
 import SmbOsMountFallbackToastContent from './SmbOsMountFallbackToastContent.svelte'
 
-function volume(id: string, smbConnectionState: VolumeInfo['smbConnectionState']): VolumeInfo {
-  return { id, name: id, path: `/Volumes/${id}`, smbConnectionState } as VolumeInfo
+function volume(id: string, connectionState: VolumeInfo['connectionState']): VolumeInfo {
+  return { id, name: id, path: `/Volumes/${id}`, connectionState } as VolumeInfo
 }
 
 beforeEach(async () => {

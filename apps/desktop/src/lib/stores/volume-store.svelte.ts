@@ -11,7 +11,7 @@
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { listVolumes, refreshVolumes, onVolumesChanged, onVolumeConnectionChanged } from '$lib/tauri-commands'
 import type { VolumeConnection } from '$lib/ipc/bindings'
-import type { SmbConnectionState, VolumeInfo } from '$lib/file-explorer/types'
+import type { ConnectionState, VolumeInfo } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 
@@ -94,26 +94,31 @@ function dedupeById(list: VolumeInfo[]): VolumeInfo[] {
 }
 
 /**
- * Narrows a `volume-connection-changed` state to the `smbConnectionState` the volume
- * picker renders, or `null` when the picker has nothing to show for it.
+ * Widens a `volume-connection-changed` transition into the standing
+ * `connectionState` the volume picker renders.
  *
- * The two unions overlap only partly, in both directions. `needs_credentials` and
- * `needs_host_key_approval` are reconnect-manager-only signals (an attempt gave up on a
- * stale password, or on a host key that no longer matches; the session's health didn't
- * change), so the picker keeps showing whatever it had. `os_mount` runs the other way:
- * only the backend's `enrich_smb_connection_state` decides it, so it never arrives on
- * this event.
+ * ❗ Total: every wire variant lands on a state. The two sign-in variants used to
+ * fall to `null` (the picker kept showing whatever it had), which is wrong now
+ * that a row can rest in one: a server whose backend stopped retrying has to reach
+ * the dot and the pane between `volumes-changed` broadcasts, and the pane's
+ * signed-out view rides on exactly this mapping.
+ *
+ * The unions still differ the other way: `os_mount` and `saved` are decided by the
+ * backend's volume listing alone (`enrich_from_volume_registry` and the servers
+ * arm), so neither ever arrives on this event.
+ *
+ * Exported for its own test; the subscription below is its only production caller.
  */
-function toSmbConnectionState(state: VolumeConnection): SmbConnectionState | null {
+export function toConnectionState(state: VolumeConnection): ConnectionState {
   switch (state) {
     case 'connected':
       return 'direct'
     case 'disconnected':
       return 'disconnected'
     case 'needs_credentials':
-      return null
+      return 'needs_sign_in'
     case 'needs_host_key_approval':
-      return null
+      return 'needs_host_key_approval'
   }
 }
 
@@ -156,19 +161,18 @@ export async function initVolumeStore(): Promise<void> {
   })
 
   // Subscribe to per-volume connection changes so the picker dot, the
-  // `currentVolumeInfo.smbConnectionState` field, and any pane-level UI keying
+  // `currentVolumeInfo.connectionState` field, and any pane-level UI keying
   // off this volume update the moment a session flips connected/disconnected,
   // without waiting for the next `volumes-changed` (which may not fire, as the
   // volume itself didn't appear or disappear, just its session quality).
   unlistenVolumeConnectionChanged = await onVolumeConnectionChanged((payload) => {
     const { volumeId } = payload
-    const state = toSmbConnectionState(payload.state)
-    if (state === null) return
+    const state = toConnectionState(payload.state)
     const idx = volumes.findIndex((v) => v.id === volumeId)
     if (idx < 0) return
     // Replace the entry so consumers using `$derived` over `getVolumes()` re-run.
     const next = [...volumes]
-    next[idx] = { ...next[idx], smbConnectionState: state }
+    next[idx] = { ...next[idx], connectionState: state }
     volumes = next
     logger.debug('volume-connection-changed: {volumeId} → {state}', { volumeId, state })
   })

@@ -369,6 +369,24 @@ impl Volume for SftpVolume {
         });
     }
 
+    /// Where this session stands, for the switcher dot and the pane's connect
+    /// views. The two resting states (`NeedsSignIn`, `NeedsHostKeyApproval`) are
+    /// the ones only a person moves forward.
+    fn connection_state(&self) -> Option<cmdr_fs::volume::ConnectionState> {
+        use crate::volume::ConnectionState;
+        use cmdr_fs::volume::ConnectionState as Published;
+        Some(match self.inner.connection_state() {
+            ConnectionState::Connected => Published::Direct,
+            ConnectionState::Disconnected => Published::Disconnected,
+            ConnectionState::NeedsCredentials => Published::NeedsSignIn,
+            ConnectionState::NeedsHostKeyApproval => Published::NeedsHostKeyApproval,
+        })
+    }
+
+    fn backend_kind(&self) -> cmdr_fs::volume::BackendKind {
+        cmdr_fs::volume::BackendKind::Sftp
+    }
+
     /// What an attended sign-in may ask for, ❗ derived from the rung the LAST
     /// dial landed on rather than the first.
     ///

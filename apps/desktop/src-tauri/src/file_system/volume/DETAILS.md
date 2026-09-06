@@ -16,7 +16,7 @@ in-memory test fixture. Callers never touch the filesystem directly; they call `
 ## Key files
 
 - **`mod.rs`**: `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`) plus the `VolumeReadStream` and `SequentialExtract` sub-traits. Re-exports `types::*` and `ids::*`
-- **`types.rs`**: the data types the trait exchanges (`VolumeError` + its `Display`/`Error` impls and its `from_io_at` / `from_io_without_path` constructors, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`, `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `SmbConnectionState`)
+- **`types.rs`**: the data types the trait exchanges (`VolumeError` + its `Display`/`Error` impls and its `from_io_at` / `from_io_without_path` constructors, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`, `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `ConnectionState`)
 - **`ids.rs`** (in `cmdr-fs`): the funnel every volume ID is built through (`local_volume_id`, `path_volume_id`,
   `smb_volume_id`, `mtp_device_id`, `is_legacy_volume_id`). Which constructor a macOS mount goes through is
   `crate::volumes::ids`; the Linux twin is `volumes_linux::volume_id_for_mount`
@@ -171,7 +171,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `paths_are_os_visible()`: whether ANOTHER app can open a `file://` URL built from a path this volume hands out. Defaults to whatever `supports_local_fs_access()` says, which is right wherever the two coincide. `SmbVolume` is the one backend that splits them: it answers `false` above (its own I/O rides smb2, never `std::fs`) and `true` here, because the sneaky mount keeps the share OS-mounted and every path it yields is an ordinary `/Volumes/…` path. Consumed by the macOS drag-out path (`commands/file_system/drag.rs::locality_for_volume`) to pick the pasteboard layout: `false` means promise-only items, which only Finder accepts, so a backend that answers it wrong makes drags into browsers and mail clients silently do nothing while Finder keeps working. It is a claim about the MOUNT, not the backend kind, so it has to track the mount going away — see `note_root_mount_gone` below.
 - `note_root_mount_gone()`: the registry telling a volume that its active mount root is gone and there was no live sibling to promote it to (§ "A volume ID owns a set of mount roots"). Default no-op; only `SmbVolume` overrides, latching `paths_are_os_visible()` to `false` while its smb2 session keeps browsing. A volume can't work this out for itself — nothing may probe a mount — and the failure it prevents is silent: paths that still list fine in Cmdr, and a drag out of them that does nothing.
 - `notify_mutation(volume_id, parent_path, mutation)`: called after a successful mutation (create, delete, rename, and `write_from_stream`) to update the listing cache immediately. Fire-and-forget, no error propagation. See "Mutation notification" below.
-- `smb_connection_state()`: returns `Some(SmbConnectionState)` for SMB volumes (green/yellow indicator in volume picker). Default `None`. Only `SmbVolume` implements it.
+- `connection_state()`: how live this volume's session is, for the switcher dot and the reconnect manager. Default `None`. Every connecting backend implements it: `SmbVolume` (`Direct` / `Disconnected`; the `OsMount` variant is attached by `enrich_from_volume_registry`, never by a volume), `SftpVolume` (all four, including `NeedsHostKeyApproval`), `WebdavVolume`, and `AdbVolume`. ❗ `is_some()` is NOT an "is this SMB" test — that's `backend_kind()`.
 - `attempt_reconnect()`: tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. Only `SmbVolume` overrides today; the Tauri command `reconnect_smb_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
 - `reconnect_with_credentials(username, password)`: reconnect with freshly-entered credentials, replacing whatever was cached. Default `Err(NotSupported)`; `SmbVolume` persists the new password (so the next reconnect is silent) then runs `attempt_reconnect`. Invoked by the Tauri command `reconnect_smb_volume_with_credentials` behind the "Sign in" prompt shown after an auth-failure reconnect give-up.
 - `on_unmount()`: lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
@@ -319,7 +319,8 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `rerooted` | yes: new instance | `None` (device-anchored) | yes: new instance, shared session | `None` (default) | `None` (inner paths) |
 | `on_unmount` | default | default | yes: drops smb2 session | default | default |
 | `on_superseded` | default | default | yes: retires id, keeps session | default | default |
-| `smb_connection_state` | `None` | `None` | yes | `None` | `None` |
+| `connection_state` | `None` | `None` | yes | `None` | `None` |
+| `backend_kind` | `Local` (default) | `Mtp` | `Smb` | `Archive` | `GitPortal` |
 | `space_poll_interval` | 2 s (default) | 5 s | 5 s | `None` | `None` |
 | `lane_key` / `get_space_info` | mount root / statvfs+NSURL | device serial / device | server+share / smb2 | root or override / configured | **parent's** / **parent's** |
 | `max_concurrent_ops` | 4..=16 (core-based) | 1 (USB bulk serial) | `network.smbConcurrency` | 32 | 1 (initial cap) |
@@ -417,7 +418,7 @@ trait it dispatches over. `commands::eject::eject_volume` is a thin delegate; th
    a transfer can't be truncated. The picker already disables Eject for busy volumes; this defends against a race or an
    MCP/automation caller.
 2. **Classify**: a device volume (a `device_volumes::DeviceVolumeProvider` answers `owns_volume_id` from live state;
-   MTP, ADB) → that provider's `eject`; a registered `SmbVolume` (`smb_connection_state().is_some()`) → `diskutil unmount` (FSEvents drives smb2
+   MTP, ADB) → that provider's `eject`; a registered `SmbVolume` (`backend_kind() == Smb`) → `diskutil unmount` (FSEvents drives smb2
    teardown via `on_unmount`); otherwise NSURL/`/sys/block` ejectability → `diskutil eject` (powers down USB, detaches
    DMGs). The pure `decide_eject_action` makes this choice and is unit-tested without touching the FS.
 3. **Execute**: the provider's eject (MTP closes the session; ADB only retires the volume, since `adb` has no

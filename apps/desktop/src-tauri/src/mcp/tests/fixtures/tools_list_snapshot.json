@@ -998,7 +998,7 @@
       "name": "remove_manual_server"
     },
     {
-      "description": "Upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O. Uses Keychain creds. Returns OK, NeedsCredentials, or NetworkError. See cmdr://state volumes for each SMB share's smbConnectionState.",
+      "description": "Upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O. Uses Keychain creds. Returns OK, NeedsCredentials, or NetworkError. See cmdr://state volumes for each SMB share's connectionState.",
       "inputSchema": {
         "properties": {
           "volumeId": {

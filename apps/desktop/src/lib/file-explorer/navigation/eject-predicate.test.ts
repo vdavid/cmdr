@@ -22,16 +22,16 @@ describe('isVolumeEjectable', () => {
     expect(isVolumeEjectable(makeVolume({ id: 'root', category: 'main_volume' }))).toBe(false)
   })
 
-  it('returns false when smbConnectionState is null (Rust None → JSON null)', () => {
+  it('returns false when connectionState is null (Rust None → JSON null)', () => {
     // Regression: an earlier version checked `!== undefined`, which is true for
     // null too, so every non-SMB volume falsely qualified as ejectable. The
-    // bindings type says `SmbConnectionState | undefined` but the wire value is
+    // bindings type says `ConnectionState | undefined` but the wire value is
     // null. The predicate must reject both.
     const v = makeVolume({ id: 'root', category: 'main_volume' })
-    // The bindings type only allows `SmbConnectionState | undefined`. We need
+    // The bindings type only allows `ConnectionState | undefined`. We need
     // to inject the actual wire shape (null), so we widen to a writable index
     // signature for this one assignment.
-    ;(v as unknown as { smbConnectionState: null }).smbConnectionState = null
+    ;(v as unknown as { connectionState: null }).connectionState = null
     expect(isVolumeEjectable(v)).toBe(false)
   })
 
@@ -41,16 +41,28 @@ describe('isVolumeEjectable', () => {
 
   it('returns true for an SMB volume in Direct state, even when isEjectable is false', () => {
     // NSURL reports false for SMB mounts; the SMB connection state is the signal.
-    expect(isVolumeEjectable(makeVolume({ smbConnectionState: 'direct' }))).toBe(true)
+    expect(isVolumeEjectable(makeVolume({ connectionState: 'direct' }))).toBe(true)
   })
 
   it('returns true for an SMB volume in OsMount state', () => {
-    expect(isVolumeEjectable(makeVolume({ smbConnectionState: 'os_mount' }))).toBe(true)
+    expect(isVolumeEjectable(makeVolume({ connectionState: 'os_mount' }))).toBe(true)
   })
 
   it('returns true for an SMB volume in Disconnected state', () => {
     // Lets the user dismiss a disconnected share that's still mounted by the OS.
-    expect(isVolumeEjectable(makeVolume({ smbConnectionState: 'disconnected' }))).toBe(true)
+    expect(isVolumeEjectable(makeVolume({ connectionState: 'disconnected' }))).toBe(true)
+  })
+
+  it('returns false for a saved server that was never connected', () => {
+    // The greyed row with the hollow dot: nothing is mounted and no session is
+    // open, so neither Eject nor Disconnect has a subject. Under the old
+    // `!= null` test every saved server would have offered one.
+    expect(isVolumeEjectable(makeVolume({ connectionState: 'saved' }))).toBe(false)
+  })
+
+  it('returns false for a server waiting on a sign-in or a host key', () => {
+    expect(isVolumeEjectable(makeVolume({ connectionState: 'needs_sign_in' }))).toBe(false)
+    expect(isVolumeEjectable(makeVolume({ connectionState: 'needs_host_key_approval' }))).toBe(false)
   })
 
   it('returns false for cloud drives (iCloud / Dropbox / etc.)', () => {

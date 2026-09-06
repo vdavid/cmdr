@@ -5423,6 +5423,52 @@ export type ConnectionDiagnosticsDto = {
 // Connection mode used for the last successful connection.
 export type ConnectionMode = 'guest' | 'credentials'
 
+/**
+ *  How live a remote volume's SESSION is, for the switcher dot, the pane's
+ *  connect views, and the reconnect manager. Every connecting backend answers it
+ *  (SMB, SFTP, WebDAV, ADB); a local disk, an archive, and the git portal return
+ *  `None` from [`Volume::connection_state`](super::Volume::connection_state).
+ *
+ *  ❗ **A value here says nothing about WHICH backend serves the volume.** Ask
+ *  [`Volume::backend_kind`](super::Volume::backend_kind) for that: a `Some(_)`
+ *  used as an "is this SMB" test hands an SFTP volume to the SMB indexer.
+ *
+ *  Device PRESENCE is a different question and lives on [`DeviceReadiness`]: a
+ *  phone waiting for its "Allow USB debugging?" tap has no session to reconnect,
+ *  and must never start a backoff loop.
+ */
+export type ConnectionState =
+  /**
+   *  A live session Cmdr owns: an smb2 session, an SFTP channel, a WebDAV
+   *  server answering, a dialed ADB device. The fast path (green indicator).
+   */
+  | 'direct'
+  /**
+   *  SMB only: the kernel mount is alive but Cmdr has no smb2 session of its
+   *  own, so I/O goes through the OS. The slower fallback (yellow indicator).
+   */
+  | 'os_mount'
+  // The session dropped. The backoff loop is running, or it gave up.
+  | 'disconnected'
+  /**
+   *  The backend stopped retrying because a credential is what's missing.
+   *  Retrying costs an authentication attempt and buys nothing, so only the
+   *  user moves this forward.
+   */
+  | 'needs_sign_in'
+  /**
+   *  SFTP only: the server's host key isn't the one trusted for it. ❌ Never
+   *  collapsed into [`NeedsSignIn`](Self::NeedsSignIn): putting a password box
+   *  in front of a possible man-in-the-middle is how a password gets typed
+   *  into one.
+   */
+  | 'needs_host_key_approval'
+  /**
+   *  A saved place that isn't connected and has nothing in flight: the greyed
+   *  switcher row with the hollow dot. Activating it dials.
+   */
+  | 'saved'
+
 // A thread's last measured context usage, on the wire. Both figures are `chars/4` estimates.
 export type ContextUsageView = {
   estimatedTokens: number
@@ -5763,6 +5809,46 @@ export type DestinationState =
   | 'willBeCreated'
   // The volume didn't answer in time, or isn't mounted.
   | 'unknown'
+
+/**
+ *  Whether the DEVICE behind a volume is reachable at all, which is a different
+ *  question from how live a session is ([`ConnectionState`]).
+ *
+ *  Set by the device providers only (MTP, ADB). A phone sitting on its "Allow USB
+ *  debugging?" prompt is present and answering the daemon, so there is nothing to
+ *  reconnect and no backoff loop to start; the pane waits for the tap instead.
+ */
+export type DeviceReadiness =
+  // The device answers and its storage is browsable.
+  | { kind: 'ready' }
+  /**
+   *  The device is there but hasn't authorized this host yet: the user has to
+   *  tap "Allow" on the phone. Openable — the pane waits and navigates itself
+   *  the moment the row turns ready.
+   */
+  | { kind: 'waiting_for_authorization' }
+  /**
+   *  The device is visible to the daemon but can't be used. The row is
+   *  disabled and the reason is its tooltip.
+   */
+  | {
+      kind: 'unavailable'
+      // Why the device can't be used.
+      reason: DeviceUnavailableReason
+    }
+
+// Why a listed device can't be used right now ([`DeviceReadiness::Unavailable`]).
+export type DeviceUnavailableReason =
+  /**
+   *  The daemon lists the device but it isn't responding (a sleeping phone, a
+   *  half-seated cable).
+   */
+  | 'offline'
+  /**
+   *  The daemon can't claim the USB device (a permissions or driver problem on
+   *  this machine).
+   */
+  | 'no_permissions'
 
 export type DfsCacheEntryDto = {
   path_prefix: string
@@ -8088,8 +8174,21 @@ export type LocationInfo = {
    *  `disk_image::is_disk_image_mount`. Always `false` off macOS and for non-volume locations.
    */
   isDiskImage: boolean
-  // SMB connection state indicator. Only set for volumes with an active `SmbVolume`.
-  smbConnectionState: SmbConnectionState | null
+  /**
+   *  How live this volume's SESSION is: the switcher dot, the pane's connect
+   *  views, and the reconnect subscription all read it. Set for every volume a
+   *  connecting backend serves (SMB, SFTP, WebDAV, ADB) plus a saved-but-not-
+   *  connected server; `None` for a local disk, a favorite, and the hub row.
+   *  ❗ Not an "is this SMB" test — that is `Volume::backend_kind()`, backend-side.
+   */
+  connectionState: ConnectionState | null
+  /**
+   *  Whether the DEVICE behind this row is reachable, which is a different
+   *  question from how live a session is. Set by the device providers only: a
+   *  phone waiting for its "Allow USB debugging?" tap is present and must never
+   *  start a reconnect backoff. `None` for everything that isn't a device.
+   */
+  deviceReadiness: DeviceReadiness | null
   /**
    *  Negotiated USB link speed. Set only for MTP/mobile volumes; everything
    *  else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1" and a
@@ -11551,29 +11650,6 @@ export type SkipReason =
   // A backend error prevented reversing this item.
   | 'failed'
 
-/**
- *  SMB connection state for the frontend indicator and the reconnect UI.
- *
- *  `Direct` means Cmdr's smb2 session is active (fast path).
- *  `OsMount` means only the OS mount is alive (fallback path).
- *  `Disconnected` means an SmbVolume exists but its smb2 session is broken. The
- *  frontend reconnect manager owns the recovery cycle.
- *
- *  Non-SMB volumes return `None` from `Volume::smb_connection_state()` (trait
- *  default). The frontend uses this to distinguish "this isn't an SMB volume"
- *  (no value) from "this is an SMB volume in trouble" (Some(Disconnected)).
- */
-export type SmbConnectionState =
-  // smb2 session active: fast path (green indicator).
-  | 'direct'
-  // Using OS mount only: slower fallback (yellow indicator).
-  | 'os_mount'
-  /**
-   *  Cmdr's smb2 session has dropped. The frontend swaps to `SmbReconnectingView`
-   *  and the per-volume reconnect manager runs the backoff cycle.
-   */
-  | 'disconnected'
-
 // Credentials for SMB authentication.
 export type SmbCredentials = {
   // Username for authentication
@@ -11594,7 +11670,7 @@ export type SmbDiagnosticsDto = {
  *  with its own smb2 session is staying on the macOS kernel mount instead.
  *
  *  This is the one moment nothing else in the app announces. The yellow
- *  `smbConnectionState` dot shows the resulting STATE, but a fallback that happens
+ *  `connectionState` dot shows the resulting STATE, but a fallback that happens
  *  while the user is elsewhere (the startup pass, an auto-remount) is otherwise
  *  silent, and the share keeps working at a fraction of the speed. The frontend
  *  raises a notice with a retry button.
@@ -11622,7 +11698,10 @@ export type SmbFellBackToOsMount = {
 export type SmbIndexGateReason =
   // No volume is registered for this id (unmounted, or never seen).
   | 'not_registered'
-  // The volume isn't an SMB share at all (no `smb_connection_state`).
+  /**
+   *  The volume isn't an SMB share at all: a different backend serves it, or
+   *  it's an ordinary local disk on no network mount.
+   */
   | 'not_an_smb_volume'
   /**
    *  The share is OS-mounted but the upgrade to a direct smb2 session failed
@@ -12554,7 +12633,7 @@ export type VolumeCapabilities = {
  *  `Direct ⇄ Disconnected`, and widens into `Connected` / `Disconnected` through a
  *  `From` impl there. `NeedsCredentials` has no counterpart in it: no backend ever
  *  rests in that state, it rides alongside a failed reconnect attempt. The OS-mount
- *  fallback likewise lives only at the outer `SmbConnectionState` layer (driven by
+ *  fallback likewise lives only at the outer `ConnectionState` layer (driven by
  *  `enrich_from_volume_registry`), never here.
  */
 export type VolumeConnection =

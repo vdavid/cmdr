@@ -36,7 +36,7 @@ pub(crate) use smb::parse_gvfs_smb_dirname;
     unused_imports,
     reason = "API parity with macOS volumes module; used once SMB enrichment lands on Linux"
 )]
-pub use crate::file_system::volume::SmbConnectionState;
+pub use crate::file_system::volume::ConnectionState;
 
 use crate::file_system::linux_mounts::{self, MountEntry};
 use serde::{Deserialize, Serialize};
@@ -75,7 +75,9 @@ pub struct LocationInfo {
     /// mirrors the macOS shape so the shared `LocationInfo`/`VolumeInfo` type stays identical.
     pub is_disk_image: bool,
     /// SMB connection state indicator. Always `None` on Linux (no smb2 session tracking yet).
-    pub smb_connection_state: Option<String>,
+    pub connection_state: Option<ConnectionState>,
+    /// Twin of the macOS field: whether the DEVICE behind this row is reachable.
+    pub device_readiness: Option<cmdr_fs::volume::DeviceReadiness>,
     /// Negotiated USB link speed. Set only for MTP/mobile volumes; everything
     /// else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1".
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
@@ -183,7 +185,8 @@ fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 supports_trash,
                 mount_is_read_only: false,
                 is_disk_image: false,
-                smb_connection_state: None,
+                connection_state: None,
+                device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
             }
@@ -206,7 +209,8 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
         supports_trash,
         mount_is_read_only: false,
         is_disk_image: false,
-        smb_connection_state: None,
+        connection_state: None,
+        device_readiness: None,
         usb_speed: None,
         capabilities: None,
     })
@@ -236,7 +240,8 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         supports_trash,
         mount_is_read_only: false,
         is_disk_image: false,
-        smb_connection_state: None,
+        connection_state: None,
+        device_readiness: None,
         usb_speed: None,
         capabilities: None,
     })

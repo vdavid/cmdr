@@ -37,7 +37,7 @@ fn the_device_anchored_answers() {
     assert_eq!(volume.space_poll_interval(), Some(Duration::from_secs(30)));
     assert_eq!(volume.sign_in_prompt(), SignInPrompt::Nothing);
     assert!(volume.retirement().is_some());
-    assert_eq!(volume.connection_state(), ConnectionState::Connected);
+    assert_eq!(volume.session_state(), ConnectionState::Connected);
     // The pure fold the frontend reads agrees with the predicates.
     let capabilities = volume.capabilities();
     assert!(capabilities.can_export);
@@ -208,7 +208,7 @@ async fn a_lost_device_is_reported_once_and_a_reconnect_reports_the_way_back() {
 
     volume.note_device_gone();
     volume.note_device_gone();
-    assert_eq!(volume.connection_state(), ConnectionState::Disconnected);
+    assert_eq!(volume.session_state(), ConnectionState::Disconnected);
     assert_eq!(
         events.transitions(),
         vec![(volume.volume_id().to_string(), VolumeConnection::Disconnected)],
@@ -216,7 +216,7 @@ async fn a_lost_device_is_reported_once_and_a_reconnect_reports_the_way_back() {
     );
 
     volume.attempt_reconnect().await.expect("the fake is still there");
-    assert_eq!(volume.connection_state(), ConnectionState::Connected);
+    assert_eq!(volume.session_state(), ConnectionState::Connected);
     assert_eq!(events.transitions().len(), 2);
     assert_eq!(events.transitions()[1].1, VolumeConnection::Connected);
 }

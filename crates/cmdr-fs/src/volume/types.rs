@@ -120,26 +120,122 @@ pub struct ExtractedFile {
     pub size: u64,
 }
 
-/// SMB connection state for the frontend indicator and the reconnect UI.
+/// How live a remote volume's SESSION is, for the switcher dot, the pane's
+/// connect views, and the reconnect manager. Every connecting backend answers it
+/// (SMB, SFTP, WebDAV, ADB); a local disk, an archive, and the git portal return
+/// `None` from [`Volume::connection_state`](super::Volume::connection_state).
 ///
-/// `Direct` means Cmdr's smb2 session is active (fast path).
-/// `OsMount` means only the OS mount is alive (fallback path).
-/// `Disconnected` means an SmbVolume exists but its smb2 session is broken. The
-/// frontend reconnect manager owns the recovery cycle.
+/// ❗ **A value here says nothing about WHICH backend serves the volume.** Ask
+/// [`Volume::backend_kind`](super::Volume::backend_kind) for that: a `Some(_)`
+/// used as an "is this SMB" test hands an SFTP volume to the SMB indexer.
 ///
-/// Non-SMB volumes return `None` from `Volume::smb_connection_state()` (trait
-/// default). The frontend uses this to distinguish "this isn't an SMB volume"
-/// (no value) from "this is an SMB volume in trouble" (Some(Disconnected)).
+/// Device PRESENCE is a different question and lives on [`DeviceReadiness`]: a
+/// phone waiting for its "Allow USB debugging?" tap has no session to reconnect,
+/// and must never start a backoff loop.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
-pub enum SmbConnectionState {
-    /// smb2 session active: fast path (green indicator).
+pub enum ConnectionState {
+    /// A live session Cmdr owns: an smb2 session, an SFTP channel, a WebDAV
+    /// server answering, a dialed ADB device. The fast path (green indicator).
     Direct,
-    /// Using OS mount only: slower fallback (yellow indicator).
+    /// SMB only: the kernel mount is alive but Cmdr has no smb2 session of its
+    /// own, so I/O goes through the OS. The slower fallback (yellow indicator).
     OsMount,
-    /// Cmdr's smb2 session has dropped. The frontend swaps to `SmbReconnectingView`
-    /// and the per-volume reconnect manager runs the backoff cycle.
+    /// The session dropped. The backoff loop is running, or it gave up.
     Disconnected,
+    /// The backend stopped retrying because a credential is what's missing.
+    /// Retrying costs an authentication attempt and buys nothing, so only the
+    /// user moves this forward.
+    NeedsSignIn,
+    /// SFTP only: the server's host key isn't the one trusted for it. ❌ Never
+    /// collapsed into [`NeedsSignIn`](Self::NeedsSignIn): putting a password box
+    /// in front of a possible man-in-the-middle is how a password gets typed
+    /// into one.
+    NeedsHostKeyApproval,
+    /// A saved place that isn't connected and has nothing in flight: the greyed
+    /// switcher row with the hollow dot. Activating it dials.
+    Saved,
+}
+
+impl ConnectionState {
+    /// Whether the session is serving requests right now
+    /// ([`Direct`](Self::Direct) or [`OsMount`](Self::OsMount)).
+    ///
+    /// The frontend's `isLiveSession` is the same predicate; both exist so a
+    /// caller asking "can I trust an answer this volume just gave me" never
+    /// spells out a variant list that a new state would silently fall out of.
+    pub fn is_live(self) -> bool {
+        matches!(self, Self::Direct | Self::OsMount)
+    }
+}
+
+/// Whether the DEVICE behind a volume is reachable at all, which is a different
+/// question from how live a session is ([`ConnectionState`]).
+///
+/// Set by the device providers only (MTP, ADB). A phone sitting on its "Allow USB
+/// debugging?" prompt is present and answering the daemon, so there is nothing to
+/// reconnect and no backoff loop to start; the pane waits for the tap instead.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "snake_case", rename_all_fields = "camelCase")]
+pub enum DeviceReadiness {
+    /// The device answers and its storage is browsable.
+    Ready,
+    /// The device is there but hasn't authorized this host yet: the user has to
+    /// tap "Allow" on the phone. Openable — the pane waits and navigates itself
+    /// the moment the row turns ready.
+    WaitingForAuthorization,
+    /// The device is visible to the daemon but can't be used. The row is
+    /// disabled and the reason is its tooltip.
+    Unavailable {
+        /// Why the device can't be used.
+        reason: DeviceUnavailableReason,
+    },
+}
+
+/// Why a listed device can't be used right now ([`DeviceReadiness::Unavailable`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum DeviceUnavailableReason {
+    /// The daemon lists the device but it isn't responding (a sleeping phone, a
+    /// half-seated cable).
+    Offline,
+    /// The daemon can't claim the USB device (a permissions or driver problem on
+    /// this machine).
+    NoPermissions,
+}
+
+/// Which backend serves a volume, for the handful of app decisions that are
+/// genuinely about the transport: which indexer transport may walk it, whether
+/// the file viewer treats its paths as local, whether an SMB upgrade has anything
+/// to do.
+///
+/// ❗ **Backend-side only.** The FRONTEND classifies a pane off `fsType` and
+/// category and ❌ never off this: an OS-mounted SMB share that hasn't been
+/// upgraded is served by `LocalPosixVolume`, so this would answer `Local` for a
+/// share that is plainly SMB to the user
+/// (`file-explorer/pane/volume-capabilities.ts` carries the rule).
+///
+/// The default is [`Local`](Self::Local) so a test double compiles without
+/// naming one, which is also the safe way to be wrong: `Local` grants no remote
+/// treatment to anything.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BackendKind {
+    /// A real filesystem reached through `std::fs` (also the default).
+    Local,
+    /// An SMB share over Cmdr's own smb2 session.
+    Smb,
+    /// An SFTP server.
+    Sftp,
+    /// A WebDAV server.
+    Webdav,
+    /// A phone or camera over MTP/PTP.
+    Mtp,
+    /// An Android device over ADB.
+    Adb,
+    /// The inside of a zip, tar, or 7z.
+    Archive,
+    /// One of the virtual `.git` category trees.
+    GitPortal,
 }
 
 /// What a "Sign in" affordance on a volume may ask a person for.

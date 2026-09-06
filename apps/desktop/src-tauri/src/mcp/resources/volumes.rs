@@ -2,8 +2,9 @@
 //!
 //! Every volume renders through one uniform shape so agents stop guessing which
 //! entries carry ids or what a bare string meant: `name`, `id`, and `kind`
-//! (`local` / `smb` / `mtp` / `virtual`) always, plus the present-when-known
-//! `filesystem`, `readOnly`, `ejectable`, `indexStatus`, `smbConnectionState`,
+//! (`local` / `smb` / `sftp` / `webdav` / `mtp` / `adb` / `virtual`) always, plus
+//! the present-when-known
+//! `filesystem`, `readOnly`, `ejectable`, `indexStatus`, `connectionState`,
 //! `totalBytes` / `availableBytes`, and their spelled-out twins `totalHuman` /
 //! `availableHuman`.
 //!
@@ -36,8 +37,18 @@ pub(crate) enum VolumeKind {
         )
     )]
     Smb,
+    /// An SFTP server.
+    Sftp,
+    /// A WebDAV server.
+    Webdav,
     /// An MTP device storage (Android / camera over USB).
     Mtp,
+    /// An Android device over ADB.
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(dead_code, reason = "macOS-path-only today; unconstructed off macOS, see `Smb`")
+    )]
+    Adb,
     /// A synthetic entry with no backing device (the `Network` browser root). Also
     /// macOS-path-only today, so off macOS it's unconstructed — see `Smb`.
     #[cfg_attr(
@@ -52,7 +63,10 @@ impl VolumeKind {
         match self {
             VolumeKind::Local => "local",
             VolumeKind::Smb => "smb",
+            VolumeKind::Sftp => "sftp",
+            VolumeKind::Webdav => "webdav",
             VolumeKind::Mtp => "mtp",
+            VolumeKind::Adb => "adb",
             VolumeKind::Virtual => "virtual",
         }
     }
@@ -75,8 +89,10 @@ pub(crate) struct VolumeSummary {
     /// Index freshness token (`fresh` / `scanning` / `stale` / `off`), shared with
     /// `cmdr://indexing`. `None` for kinds that are never indexed (virtual).
     pub index_status: Option<&'static str>,
-    /// SMB connection state (`direct` / `os_mount` / `disconnected`); `None` off SMB.
-    pub smb_connection_state: Option<&'static str>,
+    /// How live the volume's session is (`direct` / `os_mount` / `disconnected` /
+    /// `needs_sign_in` / `needs_host_key_approval` / `saved`). `None` for anything
+    /// with no session: a local disk, a favorite, the hub row.
+    pub connection_state: Option<&'static str>,
     /// Where the volume is mounted, the path a search scope names to cover this
     /// drive. `None` for a volume with no filesystem path (MTP storages, the
     /// synthetic `Network` root), which is also exactly where a search can't reach.
@@ -104,6 +120,41 @@ pub(crate) fn space_summary(volume_id: &str) -> Option<SpaceInfo> {
     crate::space_poller::cached_space(volume_id)
 }
 
+/// The agent-facing token for a session state. One mapping, so `cmdr://state`,
+/// the agent's `list_volumes`, and the chat envelope can't drift apart.
+pub(crate) fn connection_state_token(state: cmdr_fs::volume::ConnectionState) -> &'static str {
+    use cmdr_fs::volume::ConnectionState as S;
+    match state {
+        S::Direct => "direct",
+        S::OsMount => "os_mount",
+        S::Disconnected => "disconnected",
+        S::NeedsSignIn => "needs_sign_in",
+        S::NeedsHostKeyApproval => "needs_host_key_approval",
+        S::Saved => "saved",
+    }
+}
+
+/// Which `kind` token a discovered location gets, off its `fs_type` — the same
+/// rule the frontend classifier uses, and for the same reason: an un-upgraded SMB
+/// share is served by `LocalPosixVolume`, so the BACKEND's own identity would call
+/// it local.
+///
+/// `has_session` is the fallback for the one shape `fs_type` can't name: a volume
+/// carrying a live session whose mount didn't report a filesystem we recognize.
+/// ❗ It is checked LAST, so a server's own `fs_type` always wins; four backends
+/// carry a session now, and a session alone has never meant "SMB".
+fn kind_for_location(fs_type: Option<&str>, has_session: bool) -> VolumeKind {
+    match fs_type {
+        Some("sftp") => VolumeKind::Sftp,
+        Some("webdav") => VolumeKind::Webdav,
+        Some("adb") => VolumeKind::Adb,
+        Some("mtp") => VolumeKind::Mtp,
+        other if crate::volumes::is_smb_fs_type(other) => VolumeKind::Smb,
+        _ if has_session => VolumeKind::Smb,
+        _ => VolumeKind::Local,
+    }
+}
+
 /// Push one volume's YAML block. `name`, `id`, and `kind` always render; the rest
 /// only when known, so a bare local disk stays terse and an SMB share carries its
 /// connection state.
@@ -123,8 +174,8 @@ fn push_volume(lines: &mut Vec<String>, v: &VolumeSummary) {
     if let Some(status) = v.index_status {
         lines.push(format!("    indexStatus: {}", status));
     }
-    if let Some(state) = v.smb_connection_state {
-        lines.push(format!("    smbConnectionState: {}", state));
+    if let Some(state) = v.connection_state {
+        lines.push(format!("    connectionState: {}", state));
     }
     // Raw bytes AND a formatted size, never one instead of the other. The raw pair
     // is what a reader does arithmetic with ("is 40 GB of downloads worth
@@ -204,13 +255,8 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             _ => Vec::new(),
         };
         for loc in &locations {
-            let smb_connection_state = loc.smb_connection_state.map(|state| match state {
-                crate::volumes::SmbConnectionState::Direct => "direct",
-                crate::volumes::SmbConnectionState::OsMount => "os_mount",
-                crate::volumes::SmbConnectionState::Disconnected => "disconnected",
-            });
-            let is_smb = smb_connection_state.is_some() || crate::volumes::is_smb_fs_type(loc.fs_type.as_deref());
-            let kind = if is_smb { VolumeKind::Smb } else { VolumeKind::Local };
+            let connection_state = loc.connection_state.map(connection_state_token);
+            let kind = kind_for_location(loc.fs_type.as_deref(), loc.connection_state.is_some());
             // Path-based status resolution routes each volume to its OWN index (see
             // `indexing::routing::volume_id_for_local_path`): a mounted-but-unindexed
             // external drive (`/Volumes/X`) reports `off`, not `root`'s freshness, so
@@ -224,7 +270,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                 read_only: Some(loc.mount_is_read_only),
                 ejectable: Some(loc.is_ejectable),
                 index_status: Some(index_status_token(&status)),
-                smb_connection_state,
+                connection_state,
                 mount_path: Some(loc.path.clone()),
                 space: space_summary(&loc.id),
             });
@@ -239,7 +285,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             read_only: None,
             ejectable: None,
             index_status: None,
-            smb_connection_state: None,
+            connection_state: None,
             mount_path: None,
             space: None,
         });
@@ -255,7 +301,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             read_only: None,
             ejectable: None,
             index_status: Some(status_token(status.enabled, status.freshness)),
-            smb_connection_state: None,
+            connection_state: None,
             mount_path: Some("/".to_string()),
             space: space_summary(cmdr_index::ROOT_VOLUME_ID),
         });
@@ -290,7 +336,7 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
                     read_only: Some(storage.is_read_only),
                     ejectable: Some(true),
                     index_status: Some(index_status_token(&status)),
-                    smb_connection_state: None,
+                    connection_state: None,
                     // An MTP storage has no filesystem path to scope a search with.
                     mount_path: None,
                     space: space_summary(&volume_id),
@@ -315,7 +361,7 @@ mod tests {
             read_only: Some(false),
             ejectable: Some(false),
             index_status: Some("fresh"),
-            smb_connection_state: None,
+            connection_state: None,
             mount_path: Some("/".to_string()),
             space: None,
         }
@@ -385,13 +431,13 @@ mod tests {
             read_only: Some(false),
             ejectable: Some(true),
             index_status: Some("stale"),
-            smb_connection_state: Some("direct"),
+            connection_state: Some("direct"),
             mount_path: Some("/Volumes/naspi".to_string()),
             space: None,
         };
         let yaml = build_volumes_yaml(&[smb]);
         assert!(yaml.contains("kind: smb"));
-        assert!(yaml.contains("smbConnectionState: direct"));
+        assert!(yaml.contains("connectionState: direct"));
         assert!(yaml.contains("indexStatus: stale"));
         assert!(yaml.contains("ejectable: true"));
     }
@@ -406,7 +452,7 @@ mod tests {
             read_only: Some(true),
             ejectable: Some(true),
             index_status: Some("off"),
-            smb_connection_state: None,
+            connection_state: None,
             mount_path: None,
             space: None,
         };
@@ -415,7 +461,7 @@ mod tests {
         assert!(yaml.contains("id: mtp-336592896:65537"));
         assert!(yaml.contains("readOnly: true"));
         assert!(!yaml.contains("filesystem:"));
-        assert!(!yaml.contains("smbConnectionState:"));
+        assert!(!yaml.contains("connectionState:"));
     }
 
     #[test]
@@ -428,7 +474,7 @@ mod tests {
             read_only: None,
             ejectable: None,
             index_status: None,
-            smb_connection_state: None,
+            connection_state: None,
             mount_path: None,
             space: None,
         };
@@ -449,7 +495,7 @@ mod tests {
             read_only: None,
             ejectable: None,
             index_status: None,
-            smb_connection_state: None,
+            connection_state: None,
             mount_path: None,
             space: None,
         };

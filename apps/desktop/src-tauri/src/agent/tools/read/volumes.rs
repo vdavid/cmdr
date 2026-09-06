@@ -1,6 +1,6 @@
-//! The `list_volumes` agent tool: every volume with its index freshness and,
-//! for SMB, its connectivity — so the agent can voice "the NAS is disconnected,
-//! so this answer is from a stale index" honestly (spec §2.4).
+//! The `list_volumes` agent tool: every volume with its index freshness and, for
+//! a remote one, how live its session is — so the agent can voice "the NAS is
+//! disconnected, so this answer is from a stale index" honestly (spec §2.4).
 //!
 //! It is also where a `search` of anything but the boot volume starts: `search`
 //! takes ONE volume per call, addressed by a path in `scope`, so `mount_path` is
@@ -21,8 +21,9 @@ use crate::search::format_size;
 
 /// One volume as the agent sees it. The honesty-bearing fields are `index_status`
 /// (`fresh` / `scanning` / `stale` / `off` — only `fresh` is authoritative) and
-/// `smb_connection_state` (`direct` / `os_mount` / `disconnected`), both straight
-/// from the shipped snapshot so they match every other surface.
+/// `connection_state` (`direct` / `os_mount` / `disconnected` / `needs_sign_in` /
+/// `needs_host_key_approval` / `saved`), both straight from the shipped snapshot
+/// so they match every other surface.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeSnapshot {
@@ -39,9 +40,12 @@ pub struct VolumeSnapshot {
     /// the volume isn't indexed; only `fresh` is authoritative.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub index_status: Option<String>,
-    /// SMB connection state: `direct` / `os_mount` / `disconnected`. Absent off SMB.
+    /// How live the volume's session is: `direct` / `os_mount` / `disconnected` /
+    /// `needs_sign_in` / `needs_host_key_approval` / `saved`. Absent for anything
+    /// with no session (a local disk, a favorite, the hub row). ❗ Present on
+    /// every remote backend, so it is not an "is this SMB" test; `kind` is.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub smb_connection_state: Option<String>,
+    pub connection_state: Option<String>,
     /// Where the volume is mounted, and the path `search`'s `scope` names to cover
     /// this drive rather than the boot one. Absent for a volume with no filesystem
     /// path (MTP storages, the `Network` root), which is also where a search can't
@@ -79,7 +83,7 @@ pub(crate) fn to_volume_snapshots(summaries: &[VolumeSummary]) -> Vec<VolumeSnap
             read_only: v.read_only,
             ejectable: v.ejectable,
             index_status: v.index_status.map(|s| s.to_string()),
-            smb_connection_state: v.smb_connection_state.map(|s| s.to_string()),
+            connection_state: v.connection_state.map(|s| s.to_string()),
             mount_path: v.mount_path.clone(),
             total_bytes: v.space.and_then(|s| s.total_bytes()),
             total_human: v.space.and_then(|s| s.total_bytes()).map(format_size),
@@ -120,7 +124,7 @@ mod tests {
             read_only: None,
             ejectable: None,
             index_status,
-            smb_connection_state: smb,
+            connection_state: smb,
             mount_path: Some(format!("/Volumes/{name}")),
             space: None,
         }
@@ -136,10 +140,10 @@ mod tests {
         ]);
         assert_eq!(out[0].kind, "smb");
         assert_eq!(out[0].index_status.as_deref(), Some("stale"));
-        assert_eq!(out[0].smb_connection_state.as_deref(), Some("disconnected"));
+        assert_eq!(out[0].connection_state.as_deref(), Some("disconnected"));
         assert_eq!(out[1].kind, "local");
         assert_eq!(out[1].index_status.as_deref(), Some("off"));
-        assert_eq!(out[1].smb_connection_state, None);
+        assert_eq!(out[1].connection_state, None);
     }
 
     #[test]
@@ -200,7 +204,7 @@ mod tests {
         assert_eq!(json["indexStatus"], "fresh");
         assert_eq!(json["kind"], "local");
         // Absent optionals don't clutter the payload the model reads.
-        assert!(json.get("smbConnectionState").is_none());
+        assert!(json.get("connectionState").is_none());
         assert!(json.get("filesystem").is_none());
     }
 }

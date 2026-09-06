@@ -13,7 +13,7 @@ use super::state::ConnectionState;
 use super::streams::InlineReadStream;
 use super::{SmbVolume, foreground_yield};
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::SmbConnectionState;
+
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, LaneKey, MutationEvent, ScanBoundary, ScanConflict, SourceItemInfo, SpaceInfo,
     Volume, VolumeError, VolumeReadStream, WatchCoverage,
@@ -231,7 +231,7 @@ impl Volume for SmbVolume {
             Ok(guard) => guard.is_some(),
             Err(_) => return WatchCoverage::None,
         };
-        if has_watcher && self.connection_state() == ConnectionState::Direct {
+        if has_watcher && self.session_state() == ConnectionState::Direct {
             WatchCoverage::EveryWriter
         } else {
             WatchCoverage::None
@@ -510,17 +510,19 @@ impl Volume for SmbVolume {
         self.write_from_stream_impl(dest, size, stream, on_progress)
     }
 
-    fn smb_connection_state(&self) -> Option<SmbConnectionState> {
-        // SmbVolume always returns `Some` so the frontend can distinguish
-        // "not an SMB volume" (None) from "SMB volume in trouble"
-        // (Some(Disconnected)). The reconnect manager keys off the latter.
-        // The internal state machine is binary; the outer `OsMount` variant
-        // is only attached by `enrich_from_volume_registry` for SMB shares
-        // that have an OS mount but no Cmdr smb2 session at all.
-        Some(match self.connection_state() {
-            ConnectionState::Direct => SmbConnectionState::Direct,
-            ConnectionState::Disconnected => SmbConnectionState::Disconnected,
+    fn connection_state(&self) -> Option<cmdr_fs::volume::ConnectionState> {
+        // Always `Some`: the switcher dot and the reconnect manager both key off
+        // this value. The internal state machine is binary; the outer `OsMount`
+        // variant is only attached by `enrich_from_volume_registry` for SMB
+        // shares that have an OS mount but no Cmdr smb2 session at all.
+        Some(match self.session_state() {
+            ConnectionState::Direct => cmdr_fs::volume::ConnectionState::Direct,
+            ConnectionState::Disconnected => cmdr_fs::volume::ConnectionState::Disconnected,
         })
+    }
+
+    fn backend_kind(&self) -> cmdr_fs::volume::BackendKind {
+        cmdr_fs::volume::BackendKind::Smb
     }
 
     fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {

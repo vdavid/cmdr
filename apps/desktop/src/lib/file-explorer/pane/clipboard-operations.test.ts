@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { VolumeInfo } from '$lib/file-explorer/types'
 import type { PaneAccess } from './pane-access'
 import type { FilePaneAPI } from './types'
 import type { TransferProgressPropsData } from './dialog-props'
@@ -79,7 +80,8 @@ vi.mock('./transfer-operations', () => ({
 // virtual ids ('network' / 'search-results') short-circuit before the lookup;
 // MTP ids ('mtp-…') classify via `isMtpVolumeId` without needing the store.
 // An empty store is enough for every id this suite exercises.
-vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
+const volumeStore = vi.hoisted(() => ({ list: [] as VolumeInfo[] }))
+vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => volumeStore.list }))
 
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ error: logErrorSpy, warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
@@ -152,6 +154,7 @@ function buildDialogs() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  volumeStore.list = []
   // The real `resolvePathVolume` swallows its own IPC failure and answers "no
   // volume" (`tauri-commands/storage.ts`), so an unplaceable path is the default
   // here too: the paste resolves to `root`, the honest unknown.
@@ -264,6 +267,21 @@ describe('copyToClipboard', () => {
 
     expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files from MTP devices', { level: 'info' })
     expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
+
+  it('refuses an SFTP copy the same way, rather than putting an `sftp://` path on the clipboard', async () => {
+    // A server pane's paths mean nothing to the OS clipboard, exactly like MTP's.
+    // The wording stays the MTP one until the servers work gives it its own.
+    const access = buildAccess({
+      volumeId: 'sftp-nas-22-ada',
+      volumes: [{ id: 'sftp-nas-22-ada', name: 'photos' }],
+    })
+    volumeStore.list = [{ id: 'sftp-nas-22-ada', fsType: 'sftp', category: 'network' } as unknown as VolumeInfo]
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
+    expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
   })
 
   it('copies via listing id on a regular pane and forwards hasParent + showHiddenFiles', async () => {

@@ -19,7 +19,8 @@ fn volume(id: &str) -> LocationInfo {
         is_disk_image: false,
         fs_type: None,
         supports_trash: true,
-        smb_connection_state: None,
+        connection_state: None,
+        device_readiness: None,
         usb_speed: None,
         capabilities: None,
     }

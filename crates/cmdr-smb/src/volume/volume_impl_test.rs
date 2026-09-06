@@ -60,7 +60,7 @@ fn rerooting_addresses_the_new_mount_over_the_same_session() {
     // means, and it's why a running copy survives a promotion.
     vol.inner.transition_to_direct();
     assert_eq!(
-        promoted_smb.connection_state(),
+        promoted_smb.session_state(),
         ConnectionState::Direct,
         "both instances read one live session's state"
     );

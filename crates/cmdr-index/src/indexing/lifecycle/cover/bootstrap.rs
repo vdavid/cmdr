@@ -167,7 +167,10 @@ fn classify_external(volume_id: &str) -> Result<WalkableVolume, NoCoverContext> 
         return Ok(via_trait(IndexVolumeKind::Smb));
     }
     let facts = probe_mount(&root);
-    if !routes_to_local_external(volume.smb_connection_state().is_some(), facts.is_network) {
+    if !routes_to_local_external(
+        volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb,
+        facts.is_network,
+    ) {
         return Ok(via_trait(IndexVolumeKind::Smb));
     }
     Ok(WalkableVolume {

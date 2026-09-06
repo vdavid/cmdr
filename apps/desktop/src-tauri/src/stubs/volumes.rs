@@ -38,7 +38,9 @@ pub struct VolumeInfo {
     /// mirrors the macOS shape so the shared `LocationInfo`/`VolumeInfo` type stays identical.
     pub is_disk_image: bool,
     /// SMB connection state indicator. Always `None` on stub platforms.
-    pub smb_connection_state: Option<String>,
+    pub connection_state: Option<ConnectionState>,
+    /// Twin of the macOS field: whether the DEVICE behind this row is reachable.
+    pub device_readiness: Option<cmdr_fs::volume::DeviceReadiness>,
     /// Negotiated USB link speed. Always `None` on stub platforms (no MTP).
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
     /// What the backend registered for this volume can do (writable? can it be a
@@ -81,7 +83,8 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 supports_trash: true,
                 mount_is_read_only: false,
                 is_disk_image: false,
-                smb_connection_state: None,
+                connection_state: None,
+                device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
             });
@@ -100,7 +103,8 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         supports_trash: true,
         mount_is_read_only: false,
         is_disk_image: false,
-        smb_connection_state: None,
+        connection_state: None,
+        device_readiness: None,
         usb_speed: None,
         capabilities: None,
     });
@@ -117,7 +121,8 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         supports_trash: true,
         mount_is_read_only: false,
         is_disk_image: false,
-        smb_connection_state: None,
+        connection_state: None,
+        device_readiness: None,
         usb_speed: None,
         capabilities: None,
     });

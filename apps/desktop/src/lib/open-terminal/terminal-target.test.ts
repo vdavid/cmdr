@@ -19,8 +19,10 @@ describe('canOpenTerminalIn', () => {
     expect(canOpenTerminalIn('smb')).toBe(true)
   })
 
-  it('says no for the device kinds and the two virtual kinds', () => {
-    const refused: VolumeKind[] = ['mtp', 'adb', 'network', 'search-results']
+  it('says no for the device kinds, the two server kinds, and the two virtual kinds', () => {
+    // SFTP and WebDAV keep no OS mount, so `cd` has nowhere to go; without their
+    // own kind they would classify as `smb` and fire with an `sftp://` path.
+    const refused: VolumeKind[] = ['mtp', 'adb', 'sftp', 'webdav', 'network', 'search-results']
     for (const kind of refused) {
       expect(canOpenTerminalIn(kind), kind).toBe(false)
     }

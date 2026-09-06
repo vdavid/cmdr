@@ -14,9 +14,11 @@ to below — this area owns ENABLE + WATCH.
 
 Indexing an SMB share requires Cmdr's own smb2 (`direct`) session, NOT the macOS `os_mount`: `CHANGE_NOTIFY` watching
 runs over smb2 anyway, and smb2 parallelizes listing far better than per-`readdir` round trips through the kernel mount.
-An `os_mount` share is registered as a `LocalPosixVolume` on an `smbfs` mount (its `smb_connection_state()` is `None`);
-a direct one is an `SmbVolume` returning `Some(Direct)`. `ensure_direct_smb` therefore: `Direct` → index now;
-`Disconnected` → refuse (reconnect first); `os_mount` → trigger/await `upgrade_to_smb_volume_inner`, then re-check.
+An `os_mount` share is registered as a `LocalPosixVolume` on an `smbfs` mount (its `backend_kind()` is `Local`); a
+direct one is an `SmbVolume` returning `Some(Direct)`. `ensure_direct_smb` therefore refuses any other `backend_kind()`
+outright (❗ SFTP, WebDAV, and a dialed phone report a healthy `connection_state()` too, and walking an `sftp://` root
+over smb2 is what the kind check prevents), then: `Direct` → index now; anything else on an `SmbVolume` → refuse
+(reconnect first); a `Local` volume on an `smbfs` mount → trigger/await `upgrade_to_smb_volume_inner`, then re-check.
 
 Every refusal is a TYPED `SmbIndexGateReason` (`NotRegistered` / `NotAnSmbVolume` / `UpgradeFailed` /
 `CredentialsNeeded` / `Disconnected`) that crosses IPC as a snake_case tag, never a message substring. FDA-independent:
@@ -198,9 +200,9 @@ connection gate (a local mount is already directly readable) and NO typed refusa
 
 **Classification (`classify`)** decides local-external vs fall-through from TYPED facts, never a volume-id/path
 substring: resolve the volume through `host::volumes`, read its mount root, and check two things — a live smb2 session
-(`smb_connection_state().is_some()`) and whether the mount's filesystem is a network type (`is_network_fs_type` over the
-fs-type from `detect_filesystem_for_path`). Either ⇒ fall through to the SMB gate (a network mount must never run the
-local guarded walker). Neither ⇒ `LocalExternal`, indexed via `start_indexing_for_local_external_inner` →
+(`backend_kind() == Smb`) and whether the mount's filesystem is a network type (`is_network_fs_type` over the fs-type
+from `detect_filesystem_for_path`). Either ⇒ fall through to the SMB gate (a network mount must never run the local
+guarded walker). Neither ⇒ `LocalExternal`, indexed via `start_indexing_for_local_external_inner` →
 `start_indexing_for(.., LocalExternal, inodes_trustworthy)`, then `enforce_external_index_cap` (retention, owned by
 `../resources/DETAILS.md`). The pure routing decision (`routes_to_local_external`) is split from the wiring so it's
 unit-testable against a `FakeVolumeProvider`. Disk images are INCLUDED: a mounted DMG is a real local filesystem; the

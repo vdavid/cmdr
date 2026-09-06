@@ -238,12 +238,12 @@ volume-id string. The record has two halves, and which half answers is the whole
 - **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite` + `canExport` per volume; they
   ride on `VolumeInfo.capabilities` and land on the record as `canWrite` / `canBeSource` via `withBackendCapabilities`.
   Canonical: `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
-- **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `mtp` / `adb` /
-  `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults carrying the per-namespace
-  UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`, `syncsToMcp`) plus the fallback
-  write/source answers. It's NOT a `Record<string, boolean>` bag — `kind` is the discriminant. The two ROUTED kinds
-  (`archive`, `git-portal`) are in the same table but come from the PATH, resolved one layer up in
-  `capabilitiesForPane`.
+- **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `sftp` /
+  `webdav` / `mtp` / `adb` / `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults
+  carrying the per-namespace UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`,
+  `sortsRows`, `syncsToMcp`) plus the fallback write/source answers. It's NOT a `Record<string, boolean>` bag — `kind`
+  is the discriminant. The two ROUTED kinds (`archive`, `git-portal`) are in the same table but come from the PATH,
+  resolved one layer up in `capabilitiesForPane`.
 
 - **❌ Never source KIND from the backend.** An OS-mounted SMB share that hasn't been upgraded to a direct smb2 session
   is served by `LocalPosixVolume`, so a backend-published kind would say `local` for a share that's plainly SMB to the
@@ -254,8 +254,8 @@ volume-id string. The record has two halves, and which half answers is the whole
   enters FE state so it has no `VolumeInfo` either — and `ArchiveVolume` itself declares `backend_can_write: false`,
   because zip editing is the app's managed archive-edit rewrite), a favorite id, and the window before a discovered
   volume's backend registers. Where the backend HAS answered, its answer wins.
-- **Per-KIND vs per-VOLUME.** The other per-volume runtime flags (`mountIsReadOnly`, `supportsTrash`,
-  `smbConnectionState`) stay on `VolumeInfo` and layer on top. `mountIsReadOnly` is a claim about the MOUNT and
+- **Per-KIND vs per-VOLUME.** The other per-volume runtime flags (`mountIsReadOnly`, `supportsTrash`, `connectionState`,
+  `deviceReadiness`) stay on `VolumeInfo` and layer on top. `mountIsReadOnly` is a claim about the MOUNT and
   `capabilities.backendCanWrite` a claim about the BACKEND, so they're separate on purpose; both combinations occur (a
   writable backend on a read-only mount, a read-only backend on a writable disk), which is why the names say which is
   which. Only the transfer-destination guard reads `mountIsReadOnly` today.
@@ -271,7 +271,13 @@ volume-id string. The record has two halves, and which half answers is the whole
   the path first (archive by suffix, git portal by `isVirtualGitPath` gated on the live `showVirtualGitPortal` toggle),
   and otherwise defers to `capabilitiesFor`. ❌ Neither routed branch folds in the parent drive's published
   capabilities: those answer for the drive, and the pane is inside something ON it.
-- **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch — no codebase sweep.
+- **❗ Nothing switches exhaustively over `VolumeKind`.** Every consumer is a positive-list comparison, so a new member
+  compiles clean everywhere and silently falls out of each list. The four to walk when you add one:
+  `pane/clipboard-operations.ts` (the system-clipboard refusal — a missed kind puts an unusable scheme path on the OS
+  clipboard), `volume-tint.svelte.ts::tintForKind` (falls through to `'none'`), `search/search-target-volume.ts` (a
+  missed remote kind gets the LOCAL coverage voice), and `open-terminal/terminal-target.ts::canOpenTerminalIn`.
+- **To add virtual volume #3:** add a `VolumeKind` member, a table row, and a `volumeKindOf` branch, then walk those
+  four.
 - **To add a real backend:** override `is_writable` in Rust and there's nothing to do on this side.
 
 Consumers read the record directly: `SearchResultsView.svelte` reads `capabilitiesForKind('search-results')` (it always
@@ -353,9 +359,10 @@ hits, and every one is a classifier input, a namespace mechanic, or a display ch
 capability record is the "differently complicated" failure mode to avoid:
 
 - **Classifier internals (the inputs that FEED `volumeKindOf`).** `volume-capabilities.ts` (the two virtual-id checks),
-  `volume-tint.svelte.ts::volumeKindFor` (`category === 'network' || fsType === 'smbfs'`), `volume-grouping.ts`
-  (`category === 'network'` sidebar grouping), `mtp-path-utils.ts::isMtpVolumeId` (`startsWith('mtp-')`). These ARE the
-  classifier — converting them would be circular.
+  `volume-tint.svelte.ts::volumeKindFor` (`fsType === 'sftp'` / `'webdav'` first, then
+  `category === 'network' || fsType === 'smbfs'`), `volume-grouping.ts` (`category === 'network'` sidebar grouping),
+  `mtp-path-utils.ts::isMtpVolumeId` (`startsWith('mtp-')`). These ARE the classifier — converting them would be
+  circular.
 - **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` (the on-network / on-MTP
   refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix + `validateMtpNavigation` path
   parse), `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the network-mirror /

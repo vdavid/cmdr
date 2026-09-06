@@ -215,14 +215,22 @@ describe('createSmbViewState', () => {
   })
 
   it('subscribes to the manager and kick-starts a cycle on a landed-broken SMB share', () => {
-    create({ volumeInfo: { smbConnectionState: 'disconnected' } as unknown as VolumeInfo })
+    create({ volumeInfo: { connectionState: 'disconnected' } as unknown as VolumeInfo })
     expect(manager.subscribe).toHaveBeenCalledWith('smb-vol', expect.any(Function))
     expect(manager.startCycle).toHaveBeenCalledWith('smb-vol')
   })
 
-  it('does not subscribe off an SMB volume', () => {
-    create({ volumeInfo: { smbConnectionState: null } as unknown as VolumeInfo })
+  it('does not subscribe off a volume with a session', () => {
+    create({ volumeInfo: { connectionState: null } as unknown as VolumeInfo })
     expect(manager.subscribe).not.toHaveBeenCalled()
+  })
+
+  it('does not subscribe a saved server that was never connected', () => {
+    // The greyed row: nothing is in flight, so there is no cycle to join, and
+    // enrolling it would start a backoff loop against a server nobody dialed.
+    create({ volumeInfo: { connectionState: 'saved' } as unknown as VolumeInfo })
+    expect(manager.subscribe).not.toHaveBeenCalled()
+    expect(manager.startCycle).not.toHaveBeenCalled()
   })
 
   it('reloads the current directory when the reconnect success callback fires', () => {
@@ -232,7 +240,7 @@ describe('createSmbViewState', () => {
       return vi.fn()
     })
     const { loadDirectory } = create({
-      volumeInfo: { smbConnectionState: 'connected' } as unknown as VolumeInfo,
+      volumeInfo: { connectionState: 'direct' } as unknown as VolumeInfo,
     })
     capturedOnSuccess?.()
     expect(loadDirectory).toHaveBeenCalledWith('/smb-vol/dir')

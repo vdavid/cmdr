@@ -118,13 +118,19 @@ impl EnvelopeFreshness {
     }
 }
 
-/// SMB connectivity of a volume, as the envelope voices it (only SMB volumes carry
-/// one). A pure mirror of the live `SmbConnectionState`.
+/// How live a volume's session is, as the envelope voices it (only a volume a
+/// connecting backend serves carries one). A pure mirror of the live
+/// `ConnectionState`, ❗ every variant of it: an SFTP session missing from this
+/// enum would reach the model as "not a network volume", which is the opposite of
+/// what it means.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EnvelopeConnectivity {
     Direct,
     OsMount,
     Disconnected,
+    NeedsSignIn,
+    NeedsHostKeyApproval,
+    Saved,
 }
 
 impl EnvelopeConnectivity {
@@ -133,12 +139,15 @@ impl EnvelopeConnectivity {
             EnvelopeConnectivity::Direct => "direct",
             EnvelopeConnectivity::OsMount => "os_mount",
             EnvelopeConnectivity::Disconnected => "disconnected",
+            EnvelopeConnectivity::NeedsSignIn => "needs_sign_in",
+            EnvelopeConnectivity::NeedsHostKeyApproval => "needs_host_key_approval",
+            EnvelopeConnectivity::Saved => "saved",
         }
     }
 }
 
-/// One volume as the envelope lists it: a name, its index freshness, and (SMB only)
-/// its connectivity.
+/// One volume as the envelope lists it: a name, its index freshness, and (remote
+/// volumes only) how live its session is.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EnvelopeVolume {
     pub name: String,

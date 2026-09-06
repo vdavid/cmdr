@@ -51,6 +51,13 @@ var allowedUnusedClasses = map[string]bool{
 	"hidden-pills": true,
 	"hidden-pill":  true,
 	"hidden-sep":   true,
+	// VolumeBreadcrumb.svelte - connection-indicator state classes applied dynamically via
+	// `smb-indicator-{state}` template string, where `state` is the ConnectionState enum value.
+	// The `direct` and `os_mount` rules are also written out literally in the breadcrumb markup,
+	// so only the dropdown-only states need listing here.
+	"smb-indicator-needs_sign_in":           true,
+	"smb-indicator-needs_host_key_approval": true,
+	"smb-indicator-saved":                   true,
 	// VolumeBreadcrumb.svelte - USB-speed indicator tier classes applied dynamically via
 	// `usb-speed-indicator-{tier}` template string, where `tier` is the UsbSpeed enum value.
 	"usb-speed-indicator-low":        true,

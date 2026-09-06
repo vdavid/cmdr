@@ -92,7 +92,9 @@ async fn turning_indexing_on_for_an_offline_share_records_the_choice_anyway() {
     let share = ColdDrive::with_volume("cover-enable-offline-share-test", |volume| {
         // A share whose smb2 session is down: the gate refuses before any upgrade,
         // which is the shape an asleep NAS and a share wanting credentials share.
-        volume.with_smb_connection_state(cmdr_fs::volume::SmbConnectionState::Disconnected)
+        volume
+            .with_connection_state(cmdr_fs::volume::ConnectionState::Disconnected)
+            .with_backend_kind(cmdr_fs::volume::BackendKind::Smb)
     });
 
     let outcome = share

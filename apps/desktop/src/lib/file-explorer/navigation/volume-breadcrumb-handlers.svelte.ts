@@ -1,5 +1,5 @@
 import { tString } from '$lib/intl/messages.svelte'
-import type { SmbConnectionState, VolumeInfo } from '../types'
+import type { ConnectionState, VolumeInfo } from '../types'
 
 /** Owns the keyboard-vs-mouse mode toggle for the dropdown. Mouse moves >5px exit
  *  keyboard mode (and we may want to update highlight to the item under the cursor). */
@@ -104,7 +104,14 @@ export function createBreadcrumbPopupController() {
 }
 
 /** Tooltip text for the SMB connection indicator. */
-export function getConnectionTooltip(state: SmbConnectionState): string {
+/**
+ * The dot's tooltip. ❗ Two words for six states today: `direct` gets its own,
+ * everything else falls to the OS-mount wording. The remaining states carry no
+ * copy of their own yet, because a new English string owes ten translations and
+ * M0 is a backend milestone — the servers-hub switcher milestone gives them one
+ * each. Until then a `disconnected` share reads the way it always has.
+ */
+export function getConnectionTooltip(state: ConnectionState): string {
   return state === 'direct'
     ? tString('fileExplorer.navigation.connectionTooltipDirect')
     : tString('fileExplorer.navigation.connectionTooltipSystem')

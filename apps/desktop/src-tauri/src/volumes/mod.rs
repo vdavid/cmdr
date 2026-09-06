@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::Path;
 
-pub use crate::file_system::volume::SmbConnectionState;
+pub use crate::file_system::volume::ConnectionState;
 
 pub use cloud::get_cloud_drives;
 pub(crate) use cloud::resolve_cloud_drive_for_path;
@@ -88,8 +88,17 @@ pub struct LocationInfo {
     /// prompt) and both free-space bars for them. Detected via DiskArbitration; see
     /// `disk_image::is_disk_image_mount`. Always `false` off macOS and for non-volume locations.
     pub is_disk_image: bool,
-    /// SMB connection state indicator. Only set for volumes with an active `SmbVolume`.
-    pub smb_connection_state: Option<SmbConnectionState>,
+    /// How live this volume's SESSION is: the switcher dot, the pane's connect
+    /// views, and the reconnect subscription all read it. Set for every volume a
+    /// connecting backend serves (SMB, SFTP, WebDAV, ADB) plus a saved-but-not-
+    /// connected server; `None` for a local disk, a favorite, and the hub row.
+    /// ❗ Not an "is this SMB" test — that is `Volume::backend_kind()`, backend-side.
+    pub connection_state: Option<ConnectionState>,
+    /// Whether the DEVICE behind this row is reachable, which is a different
+    /// question from how live a session is. Set by the device providers only: a
+    /// phone waiting for its "Allow USB debugging?" tap is present and must never
+    /// start a reconnect backoff. `None` for everything that isn't a device.
+    pub device_readiness: Option<cmdr_fs::volume::DeviceReadiness>,
     /// Negotiated USB link speed. Set only for MTP/mobile volumes; everything
     /// else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1" and a
     /// theoretical max MB/s for the volume switcher.
@@ -180,7 +189,8 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             supports_trash,
             mount_is_read_only,
             is_disk_image,
-            smb_connection_state: None,
+            connection_state: None,
+            device_readiness: None,
             usb_speed: None,
             capabilities: None,
         })
@@ -267,7 +277,8 @@ fn get_favorites() -> Vec<LocationInfo> {
                 supports_trash,
                 mount_is_read_only: false,
                 is_disk_image: false,
-                smb_connection_state: None,
+                connection_state: None,
+                device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
             }
@@ -303,7 +314,8 @@ fn get_main_volume() -> Option<LocationInfo> {
             supports_trash,
             mount_is_read_only: false,
             is_disk_image: false,
-            smb_connection_state: None,
+            connection_state: None,
+            device_readiness: None,
             usb_speed: None,
             capabilities: None,
         })

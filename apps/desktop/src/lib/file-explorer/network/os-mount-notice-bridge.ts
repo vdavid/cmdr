@@ -69,6 +69,6 @@ function raiseNotice(payload: SmbFellBackToOsMount): void {
  */
 function retireNoticesForDirectVolumes(volumes: VolumeInfo[]): void {
   for (const volume of volumes) {
-    if (volume.smbConnectionState === 'direct') dismissToast(osMountNoticeToastId(volume.id))
+    if (volume.connectionState === 'direct') dismissToast(osMountNoticeToastId(volume.id))
   }
 }

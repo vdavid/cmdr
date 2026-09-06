@@ -31,6 +31,14 @@ Aggregates all `LocationCategory` entries in order and deduplicates by path AND 
 The OS-level `/Network` browseable location doesn't surface as a sidebar entry yet, so `LocationCategory::Network` is
 currently unconstructed.
 
+### Enrichment has two twins
+
+`smb.rs::enrich_from_volume_registry` is the only place a `LocationInfo` learns anything from the `VolumeManager`, and
+`volumes_linux/smb.rs` carries the twin. Both copy `capabilities()` and `connection_state()`; only the macOS one adds
+the `OsMount` fallback, because that fallback is a `mount_smbfs` the Linux build never performs. ❗ A field filled on one
+twin and not the other is a pane whose buttons differ by OS, which is exactly what the Docker E2E lane would have hit
+with a registered SFTP volume greying out under Linux while it stayed live on a Mac. Each twin has a cell for that.
+
 ### One volume ID publishes one mount root
 
 **Decision**: `get_attached_volumes` collapses mounts that share a volume ID
@@ -86,7 +94,7 @@ flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
 2. **Skip blocking enrichment for network mounts.** `build_attached_location` runs the blocking NSURL / NSWorkspace /
    DiskArbitration enrichment (`resolve_local`) ONLY for local mounts. Network mounts (`is_network_fs_type`) derive
    everything from the getfsstat snapshot: id/name from `f_mntfromname` (SMB → "share on server"), `is_ejectable = false`
-   (cosmetically moot — the eject affordance keys on `smbConnectionState` and `eject.rs` forces it true for SMB), no icon,
+   (cosmetically moot — the eject affordance keys on `connectionState` and `eject.rs` forces it true for SMB), no icon,
    never a disk image. So a dead network mount contributes its entry and never blocks discovery of the healthy volumes
    beside it.
 3. **Off-main + timeout-guarded callers.** `init_volume_manager` registers root synchronously (cheap, `/` never hangs)

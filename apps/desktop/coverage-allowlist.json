@@ -193,9 +193,6 @@
     "shortcuts/shortcuts-window.ts": {
       "reason": "Depends on Tauri WebviewWindow API (same as settings-window.ts / open-viewer.ts)"
     },
-    "stores/volume-store.svelte.ts": {
-      "reason": "Depends on Tauri listen/invoke APIs, integration point between backend events and frontend state"
-    },
     "tauri-commands/ai.ts": {
       "reason": "Thin typed-event listener wrappers over events.ai*.listen; exercised via integration (ai-state.svelte.ts, AiLocalSection.svelte)"
     },
