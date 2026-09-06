@@ -37,7 +37,7 @@ carry live here:
 - **`git-browser-sync.svelte.ts::cleanup()` has to drop the SETTING listeners too**, not just the repo subscription, or
   they leak per pane.
 - **Two independent MCP mirrors, so a change to one doesn't cover the other**: `pane-mcp-sync.svelte.ts` mirrors pane
-  state and deliberately skips network + search-results panes (`NetworkBrowser` owns the MCP push for the network view
+  state and deliberately skips network + search-results panes (`ServersHub` owns the MCP push for the network view
   and would get clobbered; a snapshot is local dialog state, not a directory agents query), while
   `tab-mcp-sync.svelte.ts` debounce-mirrors each pane's tab structure via `updatePaneTabs`.
 - **The pane mirror fetches its visible range in ONE `getFileRange`**, capped at `MAX_MIRRORED_ROWS`. A row at a time
@@ -329,7 +329,7 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   snapshot pane's click goes and why: `../../search/DETAILS.md` § "The snapshot pane's row order".
 - **MCP sync** (`pane-mcp-sync.svelte.ts`): the network skip off `!syncsToMcp`. The deps interface carries a single
   `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps). Only `network` is false, because
-  `NetworkBrowser` owns that pane's push. A search-results pane DOES mirror even with no backend listing: its rows come
+  `ServersHub` owns that pane's push. A search-results pane DOES mirror even with no backend listing: its rows come
   off the frontend snapshot through `snapshot-mcp-rows.ts` (basename in `name`, absolute path in `path`, no recursive
   fields), its `totalFiles` is the snapshot's own count, and `hasParentRow: false` tells the backend gate that one
   counted row is one real file. ❌ Don't turn that push back off: MCP's copy/move/delete pre-check reasons on this
@@ -780,7 +780,7 @@ registration.
 — the "Couldn't mount share" pane and the login form an auth-class failure routes to alike. Without it a failed mount is
 invisible from `cmdr://state`: the pane's `path` and `files` still describe the share list either view replaced, so a
 reader sees a pane that simply didn't move. The clear is an explicit push of its own rather than something the next view
-is trusted to do: `ShareBrowser` only pushes once it has a share list, so a host that went quiet between the failure and
+is trusted to do: `PlacesBrowser` only pushes once it has a share list, so a host that went quiet between the failure and
 Back pushes nothing at all, and a `mountError` outliving its pane misleads a reader worse than the silence the mirror
 replaced. `NetworkMountView.test.ts` holds that line.
 

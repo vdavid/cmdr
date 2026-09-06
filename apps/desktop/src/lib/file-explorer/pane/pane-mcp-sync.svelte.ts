@@ -16,7 +16,7 @@ export interface PaneMcpSyncDeps {
   /**
    * Whether this pane's kind mirrors to the MCP `PaneState` store
    * (`VolumeCapabilities.syncsToMcp`). `false` only for the network kind, whose
-   * push `NetworkBrowser` owns (see `syncPaneStateToMcp`). FilePane supplies this
+   * push `ServersHub` owns (see `syncPaneStateToMcp`). FilePane supplies this
    * from its derived caps, so the gate reads the kind capability, not a
    * `getIsNetworkView()` derivation off a raw `volumeId ===` derived.
    */
@@ -69,7 +69,7 @@ export interface PaneMcpSyncDeps {
  * Mirrors a `FilePane`'s state into the MCP `PaneState` store so `cmdr://state`
  * reflects navigation, selection, and type-to-jump for MCP-driven tests/agents.
  *
- * Only the network pane is skipped: `NetworkBrowser` owns the MCP push for that
+ * Only the network pane is skipped: `ServersHub` owns the MCP push for that
  * view, and FilePane's sync would clobber its host list.
  */
 /**
@@ -121,7 +121,7 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
 
   /**
    * Returns true when MCP shouldn't carry a BACKEND-listing file list for this
-   * pane: the network pane (NetworkBrowser owns that push) or no listing yet. A
+   * pane: the network pane (ServersHub owns that push) or no listing yet. A
    * search-results pane also has no listing id, and its rows come from the
    * snapshot branch in `buildMcpFileList` before this is consulted. Extracted to
    * keep that function under the cyclomatic complexity cap.
@@ -220,16 +220,16 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
    * Sync pane state to Rust for MCP context tools.
    * Called when files load, cursor position changes, or view mode changes.
    *
-   * Skipped entirely on the Network virtual volume: `NetworkBrowser`
+   * Skipped entirely on the Network virtual volume: `ServersHub`
    * (mounted inside `NetworkMountView`) owns the pane-state push for that
    * view and writes the host list as `files`. Without this guard, FilePane's
-   * own sync races NetworkBrowser's and overwrites it with stale local-pane
+   * own sync races ServersHub's and overwrites it with stale local-pane
    * data (empty `files`, the old fixture `path`, and a leftover
    * `totalFiles`/`loadedRange`). That clobber is why three SMB tests
    * (`guest host shows share count`, `auth host shows share count`,
    * `50-share host shows correct share count`) used to time out at the 30s
    * pollUntil deadline — `cmdr://state` never contained the host entries
-   * NetworkBrowser had just pushed.
+   * ServersHub had just pushed.
    *
    * MTP volumes are not affected: their file list comes from a normal
    * `list_directory` against the volume, so FilePane's sync is the right

@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * NetworkBrowser - displays discovered network hosts in a list view.
+     * ServersHub - displays discovered network hosts in a list view.
      * Rendered when user selects "Network" in the volume selector.
      * Uses the shared network-store for host data (initialized at app startup).
      */

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { tick } from 'svelte'
-    import type { MountError, NetworkHost, NetworkLoginSubmitPayload, ShareInfo } from '../types'
+    import type { MountError, NetworkHost, NetworkLoginSubmitPayload, PlacesAccount, ShareInfo } from '../types'
     import {
         mountNetworkShare,
         resolvePathVolume,
@@ -10,9 +10,9 @@
     } from '$lib/tauri-commands'
     import { getMountTimeoutMs } from '$lib/settings/network-settings'
     import { getAppLogger } from '$lib/logging/logger'
-    import type { NetworkBrowserAPI, ShareBrowserAPI, NetworkCursorEntry } from './types'
-    import NetworkBrowser from '../network/NetworkBrowser.svelte'
-    import ShareBrowser from '../network/ShareBrowser.svelte'
+    import type { ServersHubAPI, PlacesBrowserAPI, NetworkCursorEntry } from './types'
+    import ServersHub from '../network/ServersHub.svelte'
+    import PlacesBrowser from '../network/PlacesBrowser.svelte'
     import NetworkLoginForm from '../network/NetworkLoginForm.svelte'
     import ConnectToServerDialog from '../network/ConnectToServerDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -64,6 +64,11 @@
     // eslint-disable-next-line svelte/prefer-writable-derived -- bidirectional sync with local overrides
     let currentNetworkHost = $state<NetworkHost | null>(initialNetworkHost)
 
+    /** The open host as an account, which is what `PlacesBrowser` takes. */
+    const currentAccount = $derived<PlacesAccount | null>(
+        currentNetworkHost ? { protocol: 'smb', host: currentNetworkHost } : null,
+    )
+
     // Connect-to-server dialog
     let showConnectDialog = $state(false)
     let autoMountShare = $state<string | undefined>(initialAutoMountShare)
@@ -87,8 +92,8 @@
     )
 
     // Component refs for keyboard navigation
-    let networkBrowserRef: NetworkBrowserAPI | undefined = $state()
-    let shareBrowserRef: ShareBrowserAPI | undefined = $state()
+    let networkBrowserRef: ServersHubAPI | undefined = $state()
+    let placesBrowserRef: PlacesBrowserAPI | undefined = $state()
 
     // Whether the last state we pushed carried a `mountError`, so the clear below
     // fires exactly once. Deliberately not `$state`: writing it inside the effect
@@ -103,7 +108,7 @@
      * still describe the share list either view replaced, so a reader sees a pane
      * that simply didn't move and no reason anywhere in the resource.
      *
-     * The clear is explicit, ❌ not left to whichever view comes next. `ShareBrowser`
+     * The clear is explicit, ❌ not left to whichever view comes next. `PlacesBrowser`
      * only pushes once it has a share list, so a host that has since gone quiet
      * pushes nothing at all — and a `mountError` outliving its pane misleads a reader
      * worse than the silence it replaced.
@@ -137,8 +142,8 @@
         currentNetworkHost = initialNetworkHost
     })
 
-    // Push a new auto-mount target down into ShareBrowser. Used by "Copy path
-    // between panes" with cursor on a share. ShareBrowser dedupes repeat values,
+    // Push a new auto-mount target down into PlacesBrowser. Used by "Copy path
+    // between panes" with cursor on a share. PlacesBrowser dedupes repeat values,
     // so re-passing the same name is harmless.
     $effect(() => {
         if (initialAutoMountShare && initialAutoMountShare !== autoMountShare) {
@@ -212,8 +217,8 @@
             // Navigate to the mounted share
             // Clear current network host first (also propagate up so the parent
             // pane's state doesn't hold onto a stale host; otherwise the next
-            // time the user switches back to Network, ShareBrowser for the old
-            // host would render instead of the NetworkBrowser list).
+            // time the user switches back to Network, PlacesBrowser for the old
+            // host would render instead of the ServersHub list).
             currentNetworkHost = null
             lastMountAttempt = null
             onNetworkHostChange?.(null)
@@ -310,7 +315,7 @@
             return
         }
         if (currentNetworkHost) {
-            shareBrowserRef?.handleKeyDown(e)
+            placesBrowserRef?.handleKeyDown(e)
         } else {
             networkBrowserRef?.handleKeyDown(e)
         }
@@ -319,7 +324,7 @@
     /** Move cursor to a specific index (used by MCP move_cursor tool). */
     export function setCursorIndex(index: number) {
         if (currentNetworkHost) {
-            shareBrowserRef?.setCursorIndex(index)
+            placesBrowserRef?.setCursorIndex(index)
         } else {
             networkBrowserRef?.setCursorIndex(index)
         }
@@ -332,14 +337,14 @@
      */
     export function getItemCount(): number {
         if (isMounting || mountError) return 0
-        if (currentNetworkHost) return shareBrowserRef?.getItemCount() ?? 0
+        if (currentNetworkHost) return placesBrowserRef?.getItemCount() ?? 0
         return networkBrowserRef?.getItemCount() ?? 0
     }
 
     /** Find an item by name, returns its index or -1. */
     export function findItemIndex(name: string): number {
         if (currentNetworkHost) {
-            return shareBrowserRef?.findItemIndex(name) ?? -1
+            return placesBrowserRef?.findItemIndex(name) ?? -1
         }
         return networkBrowserRef?.findItemIndex(name) ?? -1
     }
@@ -353,7 +358,7 @@
     export function getNetworkCursorEntry(): NetworkCursorEntry | null {
         if (isMounting || mountError) return null
         if (currentNetworkHost) {
-            const share = shareBrowserRef?.getShareUnderCursor() ?? null
+            const share = placesBrowserRef?.getShareUnderCursor() ?? null
             return share ? { kind: 'share', share } : null
         }
         const host = networkBrowserRef?.getHostUnderCursor() ?? null
@@ -364,7 +369,7 @@
     // noinspection JSUnusedGlobalSymbols -- used dynamically by FilePane / MCP
     export function openCursorItem(): void {
         if (currentNetworkHost) {
-            shareBrowserRef?.openCursorItem()
+            placesBrowserRef?.openCursorItem()
         } else {
             networkBrowserRef?.openCursorItem()
         }
@@ -411,10 +416,10 @@
             <Button variant="secondary" onclick={handleMountErrorBack}>{tString('fileExplorer.networkMount.back')}</Button>
         </div>
     </div>
-{:else if currentNetworkHost}
-    <ShareBrowser
-        bind:this={shareBrowserRef}
-        host={currentNetworkHost}
+{:else if currentAccount}
+    <PlacesBrowser
+        bind:this={placesBrowserRef}
+        account={currentAccount}
         {paneId}
         {isFocused}
         {autoMountShare}
@@ -422,7 +427,7 @@
         onBack={handleNetworkBack}
     />
 {:else}
-    <NetworkBrowser
+    <ServersHub
         bind:this={networkBrowserRef}
         {paneId}
         {isFocused}

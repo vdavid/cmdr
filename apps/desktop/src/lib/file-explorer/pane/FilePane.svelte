@@ -1069,7 +1069,7 @@
     }
 
     /**
-     * Queues a share to auto-mount once `NetworkMountView`'s `ShareBrowser` is ready.
+     * Queues a share to auto-mount once `NetworkMountView`'s `PlacesBrowser` is ready.
      * Survives a not-yet-mounted view because the value is held here and re-passed
      * via the `initialAutoMountShare` prop. Cleared automatically when the pane
      * leaves the network volume.
@@ -1338,7 +1338,7 @@
     // noinspection JSUnusedGlobalSymbols -- Used dynamically by DualPaneExplorer/MCP
     export async function openCursorItem(): Promise<void> {
         if (isNetworkView) {
-            // Network view: cursor lives in NetworkBrowser/ShareBrowser, not the file list.
+            // Network view: cursor lives in ServersHub/PlacesBrowser, not the file list.
             // Delegate to NetworkMountView, which forwards to whichever child is active.
             networkMountViewRef?.openCursorItem()
             return
@@ -1625,7 +1625,7 @@
         diskSpace.startListening()
 
         // Skip directory loading for:
-        // - Network views (they handle their own data via NetworkBrowser/ShareBrowser)
+        // - Network views (they handle their own data via ServersHub/PlacesBrowser)
         // - Device-only MTP views (they need connection first, handled by auto-connect effect)
         // But DO load for connected MTP views (storage-specific volume ID)
         log.debug(

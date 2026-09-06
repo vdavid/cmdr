@@ -390,7 +390,7 @@ describeSmb('SMB cross-storage copy', () => {
 //
 // The auth Docker container (smb-auth, `guest ok = no`) allows guest share
 // LISTING via IPC$ (Samba default: `map to guest = bad user`). Only share
-// ACCESS (mounting) requires credentials. The ShareBrowser shows the share
+// ACCESS (mounting) requires credentials. The PlacesBrowser shows the share
 // list directly without a login prompt when opening the auth host.
 //
 // These tests verify the auth host's share discovery and the share listing

@@ -1,10 +1,10 @@
 /**
  * Tier 3 a11y tests for `NetworkMountView.svelte`.
  *
- * The component renders one of three inner views: NetworkBrowser (no
- * host), ShareBrowser (host selected), mounting spinner, or a mount
+ * The component renders one of three inner views: ServersHub (no
+ * host), PlacesBrowser (host selected), mounting spinner, or a mount
  * error state. Mounting/error states are deterministic and inline in
- * this file; NetworkBrowser + ShareBrowser have their own a11y tests,
+ * this file; ServersHub + PlacesBrowser have their own a11y tests,
  * so we audit the shell with no host first and skip the two list
  * states that are blocked upstream by the same aria-required-parent
  * issue.
@@ -78,7 +78,7 @@ vi.mock('$lib/ui/toast', () => ({
 }))
 
 describe('NetworkMountView a11y', () => {
-  // TODO: NetworkBrowser and ShareBrowser both emit `aria-required-parent`
+  // TODO: ServersHub and PlacesBrowser both emit `aria-required-parent`
   // axe violations (host/share rows are role="listitem" without a parent
   // role="list"). Both are tracked in their own a11y test files. Once
   // fixed upstream, enable the "no host" and "host selected" cases here.

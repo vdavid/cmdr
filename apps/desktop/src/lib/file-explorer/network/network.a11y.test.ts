@@ -18,9 +18,9 @@
 import { describe, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import ConnectToServerDialog from './ConnectToServerDialog.svelte'
-import NetworkBrowser from './NetworkBrowser.svelte'
+import ServersHub from './ServersHub.svelte'
 import NetworkLoginForm from './NetworkLoginForm.svelte'
-import ShareBrowser from './ShareBrowser.svelte'
+import PlacesBrowser from './PlacesBrowser.svelte'
 import SmbOsMountFallbackToastContent from './SmbOsMountFallbackToastContent.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
@@ -132,20 +132,20 @@ describe('ConnectToServerDialog a11y', () => {
 })
 
 /**
- * Tier 3 a11y tests for `NetworkBrowser.svelte`.
+ * Tier 3 a11y tests for `ServersHub.svelte`.
  *
  * Discovered-host list with a "Connect to server..." pseudo-row. Tauri
  * IPC, network-store getters, and the context-menu listener are stubbed
  * so the component can mount. Tests cover an empty list and a
  * populated list.
  */
-describe('NetworkBrowser a11y', () => {
+describe('ServersHub a11y', () => {
   beforeEach(() => {
     mockShareState = undefined
   })
 
   // TODO: Host rows are `<div role="listitem">` but their parent container
-  // has no `role="list"` (see NetworkBrowser.svelte around the .host-list
+  // has no `role="list"` (see ServersHub.svelte around the .host-list
   // block). Axe flags every row including the "Connect to server..."
   // pseudo-row as `aria-required-parent`. Fix: add `role="list"` to the
   // parent `.host-list` `<div>` (or replace with a proper `<ul>/<li>`
@@ -154,7 +154,7 @@ describe('NetworkBrowser a11y', () => {
     mockHosts = []
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(NetworkBrowser, {
+    mount(ServersHub, {
       target,
       props: { paneId: 'left', isFocused: false, onHostSelect: () => {}, onConnectToServer: () => {} },
     })
@@ -169,7 +169,7 @@ describe('NetworkBrowser a11y', () => {
     ]
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(NetworkBrowser, {
+    mount(ServersHub, {
       target,
       props: { paneId: 'left', isFocused: true, onHostSelect: () => {}, onConnectToServer: () => {} },
     })
@@ -257,14 +257,14 @@ describe('NetworkLoginForm a11y', () => {
 })
 
 /**
- * Tier 3 a11y tests for `ShareBrowser.svelte`.
+ * Tier 3 a11y tests for `PlacesBrowser.svelte`.
  *
  * Share listing for a host. Covers the loaded-with-shares state and
  * (via authMode via NetworkLoginForm) the auth-required state. Auto-
  * mount and autoMountAttempted paths are not exercised; those flow
  * through the network-store into async mount IPC which we just stub.
  */
-describe('ShareBrowser a11y', () => {
+describe('PlacesBrowser a11y', () => {
   beforeEach(() => {
     mockShareState = {
       status: 'loaded',
@@ -280,16 +280,19 @@ describe('ShareBrowser a11y', () => {
   })
 
   // TODO: Share rows are `<div role="listitem">` without a parent
-  // `role="list"` (ShareBrowser.svelte around the .share-list block).
-  // Same fix as NetworkBrowser: add `role="list"` to the container
+  // `role="list"` (PlacesBrowser.svelte around the .share-list block).
+  // Same fix as ServersHub: add `role="list"` to the container
   // or replace with a proper `<ul>/<li>` structure.
   it.skip('loaded with shares has no a11y violations (BLOCKED: aria-required-parent)', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(ShareBrowser, {
+    mount(PlacesBrowser, {
       target,
       props: {
-        host: { id: 'h1', name: 'nas.local', hostname: 'nas.local', ipAddress: '10.0.0.10', port: 445 },
+        account: {
+          protocol: 'smb',
+          host: { id: 'h1', name: 'nas.local', hostname: 'nas.local', ipAddress: '10.0.0.10', port: 445 },
+        },
         paneId: 'left',
         isFocused: true,
         onShareSelect: () => {},

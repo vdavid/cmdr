@@ -1,5 +1,5 @@
 /**
- * Behavior tests for ShareBrowser's credential gate.
+ * Behavior tests for PlacesBrowser's credential gate.
  *
  * Regression (the "Naspolya dead end"): a share list can load successfully while Cmdr
  * holds no credentials. On macOS, the listing fallback (`smbutil view -N`) reads the
@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
-import ShareBrowser from './ShareBrowser.svelte'
+import PlacesBrowser from './PlacesBrowser.svelte'
 import type { NetworkHost, ShareInfo } from '../types'
 
 const h = vi.hoisted(() => ({
@@ -61,8 +61,8 @@ const host: NetworkHost = {
 
 const naspi: ShareInfo = { name: 'naspi', isDisk: true, comment: null }
 
-/** The exported ShareBrowser API surface the tests drive. */
-interface ShareBrowserApi {
+/** The exported PlacesBrowser API surface the tests drive. */
+interface PlacesBrowserApi {
   openCursorItem: () => void
   handleKeyDown: (e: KeyboardEvent) => void
 }
@@ -73,8 +73,11 @@ function mountBrowser(
 ) {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  const component = mount(ShareBrowser, { target, props: { host, onShareSelect, onBack } })
-  const api = component as unknown as ShareBrowserApi
+  const component = mount(PlacesBrowser, {
+    target,
+    props: { account: { protocol: 'smb', host }, onShareSelect, onBack },
+  })
+  const api = component as unknown as PlacesBrowserApi
   return { target, component, api }
 }
 
@@ -93,7 +96,7 @@ beforeAll(() => {
 })
 afterAll(() => navigatorSpy.mockReset())
 
-describe('ShareBrowser credential gate', () => {
+describe('PlacesBrowser credential gate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
@@ -157,7 +160,7 @@ describe('ShareBrowser credential gate', () => {
   })
 })
 
-describe('ShareBrowser back-navigation', () => {
+describe('PlacesBrowser back-navigation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''

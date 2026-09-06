@@ -3,7 +3,7 @@
  *
  * Pure logic that turns a `NetworkHost` plus the network store's current state into a typed
  * status descriptor, the matching Lucide glyph and localized text key, a stable MCP token, and
- * an error tooltip. Kept out of `NetworkBrowser.svelte` so the component stays presentation-only,
+ * an error tooltip. Kept out of `ServersHub.svelte` so the component stays presentation-only,
  * following the sibling `network-store.svelte.ts` "pure logic → a `*.ts` helper" convention.
  */
 import type { IconName } from '$lib/ui/icons/icon-map'

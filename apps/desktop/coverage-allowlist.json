@@ -43,11 +43,11 @@
     "file-explorer/network/ConnectToServerDialog.svelte": {
       "reason": "Network dialog, depends on Tauri connectToServer command"
     },
-    "file-explorer/network/NetworkBrowser.svelte": {
-      "reason": "Network component, needs Tauri integration"
+    "file-explorer/network/PlacesBrowser.svelte": {
+      "reason": "Network component, needs integration tests (renamed from ShareBrowser.svelte)"
     },
-    "file-explorer/network/ShareBrowser.svelte": {
-      "reason": "Network component, needs integration tests"
+    "file-explorer/network/ServersHub.svelte": {
+      "reason": "Network component, needs Tauri integration (renamed from NetworkBrowser.svelte)"
     },
     "file-explorer/network/network-store.svelte.ts": {
       "reason": "Depends on Tauri APIs"

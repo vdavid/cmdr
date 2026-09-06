@@ -1,11 +1,11 @@
 /**
- * Behavior tests for `NetworkBrowser`'s keyboard handling.
+ * Behavior tests for `ServersHub`'s keyboard handling.
  *
  * The refresh key (⌘R, `pane.refresh`) has two handlers on its path: the pane's
- * own element-level one, which reaches `NetworkBrowser.handleKeyDown`, and the
+ * own element-level one, which reaches `ServersHub.handleKeyDown`, and the
  * document-level dispatcher in `+page.svelte`, registered bubble-phase with no
  * `defaultPrevented` guard, which routes `pane.refresh` back into the same
- * component through `refreshNetworkHosts()` → `NetworkBrowser.refresh()`.
+ * component through `refreshNetworkHosts()` → `ServersHub.refresh()`.
  *
  * The local handler therefore has to stop propagation, or one keypress re-reads
  * every host's shares twice. These tests wire both handlers the way the app does
@@ -14,7 +14,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
-import NetworkBrowser from './NetworkBrowser.svelte'
+import ServersHub from './ServersHub.svelte'
 import { resolveGlobalKeyAction } from '../../../routes/(main)/global-keydown'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { initShortcutDispatch, destroyShortcutDispatch } from '$lib/shortcuts/shortcut-dispatch'
@@ -70,8 +70,8 @@ function refreshKeyEvent(): KeyboardEvent {
   return new KeyboardEvent('keydown', { key: 'r', bubbles: true, ...modifier })
 }
 
-/** The exported `NetworkBrowser` API surface these tests drive. */
-interface NetworkBrowserApi {
+/** The exported `ServersHub` API surface these tests drive. */
+interface ServersHubApi {
   handleKeyDown: (e: KeyboardEvent) => void
   refresh: () => void
 }
@@ -85,11 +85,11 @@ interface NetworkBrowserApi {
 function mountBehindBothHandlers() {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  const component = mount(NetworkBrowser, {
+  const component = mount(ServersHub, {
     target,
     props: { paneId: 'left', isFocused: true, onHostSelect: () => {}, onConnectToServer: () => {} },
   })
-  const api = component as unknown as NetworkBrowserApi
+  const api = component as unknown as ServersHubApi
 
   const paneHandler = (e: KeyboardEvent) => {
     api.handleKeyDown(e)
@@ -109,7 +109,7 @@ function mountBehindBothHandlers() {
   return { target, api, cleanup }
 }
 
-describe('NetworkBrowser refresh key', () => {
+describe('ServersHub refresh key', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
