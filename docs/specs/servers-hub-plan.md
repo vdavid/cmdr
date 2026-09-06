@@ -12,7 +12,7 @@ one modal sheet for every sign-in (backend tells the sheet what to ask, the shee
 migrates onto all four so the next backend (S3, then an OAuth provider) inherits them instead of adding a fifth dialog.
 
 This plan supersedes `servers-in-the-sidebar.md` (wipe it when M3 lands) and absorbs the frontend half of
-`android-adb-ui.md` (wipe it when M6 lands; its eight decisions are restated below only where this plan changes them).
+`android-adb-ui.md` (wipe it when M5 lands; its eight decisions are restated below only where this plan changes them).
 The backend contracts this builds on are canonical elsewhere and ❌ not restated here: `crates/cmdr-sftp/DETAILS.md` §
 "Connecting from the frontend", `crates/cmdr-webdav/DETAILS.md` § the same, `apps/desktop/src-tauri/src/adb/DETAILS.md`,
 `apps/desktop/src/lib/file-explorer/network/DETAILS.md` (the SMB flows being migrated).
@@ -61,81 +61,118 @@ scrolls past their own disks. Pins are the cap, and the user holds it.
   `commands/webdav.rs`. Cancel ids are the caller's. The reconnect manager and `getVolumeSignInState` are backend-neutral
   despite SMB names (`network/DETAILS.md` § "SMB live-reconnect flow").
 - The volume list is built by `volume_listing::complete` (device providers folded in, then
-  `enrich_from_volume_registry`; ❗ anything appended after enrichment ships `capabilities: None`).
-- Path resolution is `commands/volumes.rs::resolve_path_to_volume`, prefix-dispatched on `adb://`, `mtp://`, `smb://`.
-  ❗ SFTP and WebDAV paths carry no scheme (`/srv/data/x`), so prefix dispatch cannot work for them.
+  `enrich_from_volume_registry`, which copies `capabilities` and the connection state FROM the registered volume; ❗
+  anything appended after it ships `capabilities: None`, and anything whose `Volume` impl doesn't answer the
+  connection-state accessor comes out `None`).
+- Path resolution is `commands/volumes.rs::resolve_path_to_volume`, prefix-dispatched on `adb://`, `mtp://`, `smb://`,
+  then the mount table, which on both platforms walks up to `/` and answers the root volume for ANY absolute path it
+  doesn't know. ❗ SFTP and WebDAV paths carry no scheme today (`/srv/data/x`), so every un-hinted resolver call (tab
+  restore, favorites, drag between panes, go-to-path, MCP, trash) would land them on the local root. D3 is the fix.
+- The volume manager hands a volume the path as given (`manager/routing.rs::resolve` routes archives and the git
+  portal, nothing else), and each crate maps app paths to backend paths itself: MTP is rooted at `mtp://<dev>/<storage>`
+  and strips that; SFTP's `to_remote_path` treats an absolute path as a server path.
 - Four saved-server stores with no shared type: `sftp_known_servers.rs`, `webdav_known_servers.rs`, `known_shares.rs`
   (SMB, keyed `(server, share)`), `manual_servers.rs` (SMB hosts typed by hand). ❗ SFTP's and WebDAV's `remember`
   replaces the whole entry on every connect, so any new field is clobbered unless the connect path reads the existing
   entry first.
-- `SignInPrompt` (`crates/cmdr-fs/src/volume/types.rs`) is `Nothing | Password | KeyPassphrase`, read live through
-  `Volume::sign_in_prompt`; the reconnect manager already stores the answer per volume and renders nothing.
+- `SignInPrompt` (`crates/cmdr-fs/src/volume/types.rs`) is `Nothing | Password | KeyPassphrase`, a bare string union on
+  the wire, read live through `Volume::sign_in_prompt`; the reconnect manager already stores the answer per volume and
+  renders nothing. ❗ Its variant doc comments claim a password is persisted on sign-in and a passphrase never saved;
+  both contradict the SFTP contract and get rewritten with the enum.
 - The SMB sign-in form (`NetworkLoginForm.svelte`) is rendered from three sites: `ShareBrowser` (listing auth),
   `NetworkMountView` (mount-phase auth), `SmbReauthView` (reconnect re-auth); plus `FilePane`'s `smbUpgradeLogin`
-  branch. `smb-login-hosts.ts` exists only to find a pane that can host it.
+  branch. `smb-login-hosts.ts` exists only to find a pane that can host it. The pane's `isSmbVolume` test is
+  `smbConnectionState != null` (`smb-view-state.svelte.ts`), and the eject predicate is `isEjectable || smbConnectionState != null`.
+- The MCP volumes resource derives `kind: Smb` from `smb_connection_state.is_some() || is_smb_fs_type` and hardcodes
+  the synthetic row's name "Network" (`mcp/resources/volumes.rs`).
 - Dialog registration is a three-step contract (`SOFT_DIALOG_REGISTRY`, `ModalDialog` `dialogId`, a gallery row +
   fixture). App-level dialogs mount from `routes/(main)/+page.svelte` or `+layout.svelte`; `ConnectToServerDialog` is
-  the outlier, mounted inside `NetworkMountView`.
+  the outlier, mounted inside `NetworkMountView`. The main window's capability file grants `dialog:allow-ask` only;
+  `dialog:allow-open` is the settings window's.
 - ⌘K is unbound. The palette is ⌘⇧P. Commands are data in `commands/sources/*.ts` plus a handler; four places per
-  command.
-- ADB: `AdbDeviceProvider::entries()` lists `Ready` devices only; `list_adb_devices` returns every state typed;
-  `get_adb_install_status` / `recheck_adb_install` exist; the connect is not cancelable from the pane; no settings.
+  command. `network.selectHost` and `share.back` (Backspace, Escape, ⌘↑) are the browsers' commands, with user-visible
+  scope labels in shortcut settings.
+- Row context menus are native (`commands/menu.rs::show_volume_row_context_menu`) and answer on `volume-context-action`
+  with `action: String`; eject disables itself while `busy_volume_ids()` names the volume; panes leave an unmounted
+  volume through the `VolumeUnmounted` broadcast. There is no keyboard opener for a row menu.
+- ADB: `AdbDeviceProvider::entries()` lists `Ready` devices only, at path `adb://<serial>`; `list_adb_devices`
+  returns every state typed; `get_adb_install_status` / `recheck_adb_install` exist; the connect is not cancelable from
+  the pane; no settings.
+- The Playwright lane's `smb-e2e` feature is an in-process fake; the SFTP and WebDAV Docker fixtures are leased by the
+  Rust integration lane only. No `fast-check` on the frontend; `proptest` is Rust-only.
 - Toasts: `addToast` with `dismissal: 'persistent'`, dedup `id`, component content; the once-ever precedent is
   `behavior.doubleClickOnPaneNotificationSeen`.
 
 ## Decisions
 
-### D1. One connection-state field for every row
+### D1. Session health is one field; device presence is another
 
-`LocationInfo.smb_connection_state: Option<SmbConnectionState>` (`direct | os_mount | disconnected`) becomes
-`connection_state: Option<ConnectionState>`, on both platform twins and the TS `VolumeInfo`, with these variants:
+`LocationInfo.smb_connection_state: Option<SmbConnectionState>` becomes `connection_state: Option<ConnectionState>`,
+on both platform twins (the Linux one is `Option<String>` today and becomes the enum) and the TS `VolumeInfo`:
 
 - `direct`: a live session Cmdr owns (SMB smb2, SFTP, WebDAV, ADB dialed).
 - `os_mount`: SMB's kernel-mount fallback. Unchanged meaning.
-- `disconnected`: the session dropped and the backoff loop is running or gave up.
-- `needs_sign_in`: the backend stopped retrying because a credential is what's missing. Replaces the manager's
-  `needs-auth` derivation as the row's source of truth.
+- `disconnected`: the session dropped; the backoff loop is running or gave up.
+- `needs_sign_in`: the backend stopped retrying because a credential is what's missing.
 - `needs_host_key_approval`: SFTP only; the row shows it, the pane sends the user to look at the key.
 - `saved`: pinned, not connected, nothing in flight. The greyed row with the hollow dot.
-- `waiting_for_device`: an ADB row that is plugged in and not `Ready` (`unauthorized`, `authorizing`, `connecting`).
-- `unavailable`: an ADB row in `offline` or `no permissions`. Disabled, with the reason in a tooltip.
 
-**Why one enum and not a second field beside `smbConnectionState`.** Every consumer (the dot, the tooltip, the eject
-predicate, the reconnect subscription in `FilePane`, the volume-store patch on `volume-connection-changed`) asks "how
-live is this row", and two fields answering the same question is how the ADB row and the SFTP row end up with different
-dots for the same state. The Linux twin currently types it as `Option<String>`; it becomes the enum there too.
+The trait accessor `Volume::smb_connection_state()` becomes `Volume::connection_state()`, and SFTP, WebDAV, and ADB
+implement it (SMB already does). ❗ This is what keeps `enrich_from_volume_registry` from wiping the servers arm's
+`direct` back to `None`.
 
-The rename is mechanical and wide (`smbConnectionState` appears in the store, the breadcrumb, `FilePane`, the eject
-predicate, `direct-connect`, tests, and two E2E specs). Do it in one commit with `bindings.ts` regenerated, before any
-feature work, so every later diff is small.
+Device presence is NOT a session and stays off this field: `LocationInfo.device_readiness: Option<DeviceReadiness>`
+with `ready | waiting_for_authorization | unavailable { reason: offline | no_permissions }`, set by the device
+providers only (D12).
+
+**Why the split.** Every consumer of the old field asks "how live is this session" (the dot, the tooltip, the reconnect
+subscription, the volume-store patch on `volume-connection-changed`), and the SMB view-state's `!= null` test enrolls
+whatever is non-null into the reconnect manager. A phone waiting for its Allow tap must never start a backoff loop.
+Consumers get explicit predicates in `navigation/connection-state.ts`: `hasReconnectLoop(state)` (`direct`, `os_mount`,
+`disconnected`, `needs_sign_in`), `isLiveSession(state)`, `showsDisconnect(state)` (`direct` and `disconnected`; ❌ not
+`saved`, there is nothing to disconnect). The eject predicate becomes `isEjectable || showsDisconnect(connectionState)`
+in the same commit.
+
+The MCP volumes resource derives `kind` from `fs_type` alone (`smb | sftp | webdav | adb | mtp | local`), exposes the
+field as `connectionState`, and takes the synthetic row's name from the same source the hub does. That field is an
+agent-facing contract; the rename is stated in `mcp/resources/DETAILS.md`.
 
 ### D2. Remote volumes are listed by a servers arm; saved-but-unpinned ones are not
 
 `volume_listing::complete` grows a fold BEFORE `enrich_from_volume_registry`: one `LocationInfo` per registered SFTP
 or WebDAV volume, plus one per pinned saved server that has no registered volume (state `saved`). `category: Network`,
-`fs_type: "sftp" | "webdav"`, `is_ejectable: false` (D6 says what the row's action is), `supports_trash: false`, `name`
-the saved `displayName`, `path` the volume's root (`remoteRoot`), `id` from `cmdr_fs::volume::ids::sftp_volume_id` /
-`webdav_volume_id`, which is also the id the registry uses, so a `saved` row and the volume it becomes share one id
-across the dial. ❗ That identity is what makes a tab restorable: a tab stores `(volumeId, path)`, the switcher shows the
-same id greyed, and activating either dials the same saved entry.
+`fs_type: "sftp" | "webdav"`, `is_ejectable: false`, `supports_trash: false`, `name` the saved `displayName`, `path`
+the volume's app root (D3), `id` from `cmdr_fs::volume::ids::sftp_volume_id` / `webdav_volume_id`, which is also the id
+the registry uses, so a `saved` row and the volume it becomes share one id across the dial. ❗ That identity is what
+makes a tab restorable: a tab stores `(volumeId, path)`, the switcher shows the same id greyed, and activating either
+dials the same saved entry.
 
 The device-provider seam is deliberately NOT reused (`crates/cmdr-sftp/DETAILS.md` says why: it lists things that
 appear and leave on their own). The servers arm reads the two stores plus the registry, all cached state; ❌ never the
 wire, because the listing runs on every `volumes-changed`.
 
-### D3. Path resolution takes the pane's volume as a hint
+### D3. Remote paths carry a scheme, the way MTP's and ADB's do
 
-`resolve_path_volume(path)` and `resolve_location(path)` gain an optional `volume_hint: Option<String>`. When the hint
-names a registered remote volume whose paths are scheme-free (SFTP, WebDAV) and `path` is absolute, the answer is that
-volume. The frontend passes the pane's current volume id from the two call sites that matter: the breadcrumb's
-`containingVolumeId` derivation and `navigate()`'s `goTo` arm. Everything else (favorites, go-to-path with a plain
-absolute path on a local pane) passes nothing and resolves as today.
+An SFTP place's app-facing paths are `sftp://<user>@<host>:<port>/<server path>`; a WebDAV place's are
+`webdav://<user>@<host>:<port>/<remote path>`. `cmdr_fs::volume::ids` mints the prefix beside the id it already mints
+(`sftp_app_root(host, port, username)`), so the crate and the app spell it from one function. The crate's volume is
+rooted at `<prefix><remote_root>` and `to_remote_path` strips the prefix before today's logic (a bare server-absolute
+path stays accepted, since inside one volume it is unambiguous). WebDAV mirrors it.
 
-**Why a hint and not a scheme.** The crates spell remote paths exactly like local ones by design (the SFTP path doc
-explains the `to_remote_path` stance), and inventing an `sftp://` display scheme would leak into every breadcrumb,
-copy-path, and MCP row. A hint is the honest statement of what the pane already knows. **Why not resolve by the
-registry alone**: two servers can both have `/home/ada`, and a local disk certainly does; the hint is what breaks the
-tie.
+**Why a scheme and not a hint.** The mount table answers the local root for any absolute path it doesn't know, on both
+platforms, so a scheme-free remote path is wrong at every resolver site the plan doesn't reach (eleven today, and the
+next one would forget). A scheme makes the path self-describing: `resolve_path_to_volume` gains an `sftp://` /
+`webdav://` arm that answers the registered volume, or the pinned saved server, whose prefix matches; tab restore's
+`initialization.ts::resolveVolumeId` (which distrusts the stored id and re-resolves by path) lands on the right volume
+without an exemption; a favorite inside a server is unambiguous by path alone; copy-path yields something a person can
+paste back; MCP rows are unambiguous. It is also the convention the app already has for every volume without a local
+mount. **Why not resolve by the registry alone**: two servers can both have `/home/ada`, and a local disk certainly
+does.
+
+The frontend gets `servers/server-path-utils.ts` (parse, construct, `isServerPath`) beside `adb-path-utils.ts`, and
+`navigate.ts` gets a server twin of `validateAdbNavigation`. The `network` volume's sentinel stays `smb://`; the label
+changes, the path does not (nine sites and every user's persisted tab state depend on it, and a rename buys nothing the
+label doesn't).
 
 ### D4. One command family for "a server", protocol-agnostic where the UI is
 
@@ -146,13 +183,17 @@ A new `commands/servers.rs` (app side, over the existing per-protocol wiring):
   lastConnectedAt?, places: Vec<SavedPlace> }` where a place is `{ volumeId, name, pinned, connected }`. SFTP and WebDAV
   have one place; SMB hosts list their known shares.
 - `connect_saved_place(volume_id, attempt_id, secret: Option<SecretOffer>) -> ServerConnectOutcome`: dials by saved
-  entry, so the frontend never re-plumbs eight target fields to reopen a server. `SecretOffer { secret, remember }`; see
-  D5.
+  entry, so the frontend never re-plumbs eight target fields to reopen a server. ❗ Only for a place with NO registered
+  volume; a registered volume that dropped is mended by `reconnect_volume_with_credentials` (D8), which is what
+  enforces the read-only username rule and the never-seeds rule, and re-dialing it would register a second volume.
 - `connect_server(target: ServerTarget, attempt_id, secret: Option<SecretOffer>) -> ServerConnectOutcome`: the
   add-mode dial. `ServerTarget` is a tagged union of the two existing param shapes (`sftp { … }`, `webdav { … }`); SMB
   stays on its own commands (its connect is a share mount, not a session).
 - `cancel_server_connect(attempt_id)`, `disconnect_place(volume_id)`, `forget_server(id)`,
-  `forget_server_secret(id)`, `set_place_pinned(volume_id, pinned)`, `update_saved_server(SavedServerPatch)`.
+  `forget_server_secret(id)`, `set_place_pinned(volume_id, pinned)`, `update_saved_server(SavedServerPatch)`. Pin and
+  forget emit `volumes-changed`.
+- `reconnect_smb_volume` / `reconnect_smb_volume_with_credentials` are renamed `reconnect_volume` /
+  `reconnect_volume_with_credentials` on both sides (they were backend-neutral with the wrong name; an adjacent win).
 - `ServerConnectOutcome` is the superset, tagged on `outcome`:
   `connected { volumeId } | needs_host_key_approval { host, port, algorithm, fingerprint, kind } | host_key_revoked { algorithm, fingerprint } | authentication_rejected | needs_credentials | auth_method_unsupported | certificate_untrusted | not_a_webdav_server | invalid_url | timed_out | unreachable | cancelled`.
   ❗ `AuthMethodUnsupported` stops surfacing as `authentication_rejected` here: a Digest-only server never saw the
@@ -167,7 +208,7 @@ on a superset is one `switch` instead of two half-matching ones. The facade is a
 
 `connect_sftp_volume` and `connect_webdav_volume` deliberately take no secret; the dial reads the store. That leaves
 "connect once without remembering" as save → dial → delete, and a Keychain entry that exists for a second is not the
-user's choice. So the wiring gets a `SecretOffer`:
+user's choice. So the wiring gets a `SecretOffer { secret, remember }`:
 
 - `remember: true` → `save_*_credentials` first, then dial. Identical to today's flow, one round-trip shorter.
 - `remember: false` → the dial runs with a `CredentialStore` wrapper that answers this one `(service, scope)` from
@@ -181,19 +222,26 @@ params.
 
 ### D6. Servers say "Disconnect"; disconnecting keeps the row
 
-The eject slot on a remote row is a Disconnect control (an unplug icon, tooltip "Disconnect"), mirroring
-`android-adb-ui.md` decision 8: "Eject" promises safe-to-unplug and a server has nothing to unplug. Disconnecting a
-pinned place leaves it as a `saved` row; "Forget server" (removes the entry and its places) and "Forget saved password"
-are separate context-menu items, both confirmed. MTP keeps "Eject": it earns it by closing the device session.
+The eject slot on a remote row is a Disconnect control (an unplug icon, tooltip "Disconnect"), shown by
+`showsDisconnect` (D1), mirroring `android-adb-ui.md` decision 8: "Eject" promises safe-to-unplug and a server has
+nothing to unplug. It is disabled while `busy_volume_ids()` names the volume, exactly like Eject, and so are the
+Disconnect and Forget items in the menu. Disconnecting a pinned place leaves it as a `saved` row; "Forget server"
+(removes the entry, its places, and their pins) and "Forget saved password" are separate context-menu items, both
+confirmed. MTP keeps "Eject": it earns it by closing the device session.
+
+**What the panes do.** Both Disconnect and Forget ride the existing `VolumeUnmounted` broadcast, so a pane sitting on
+the volume goes home the way it does after an eject, in both panes, and a tab on a forgotten server becomes a home tab.
+❌ No new "you disconnected" pane state: a `saved` row dials on activation, always, and a pane left standing on one
+would either dial again (wrong right after a Disconnect) or need a third state nobody asked for.
 
 The row's context menu, in order: Open, Disconnect (when live), Pin to switcher / Unpin, Edit…, Forget saved password
-(when one exists), Forget server. The native menu is `commands/menu.rs::show_volume_row_context_menu`'s sibling, with
-actions arriving on the existing `volume-context-action` event as typed `action` values (❌ never a label).
+(when one exists), Forget server. It opens from right-click and from ⇧F10 or the Menu key on the highlighted row, in
+the switcher and in the hub. `VolumeContextAction.action` becomes a typed enum on both sides (a wire change with
+existing consumers: `eject`, `rename-favorite`, `remove-favorite`, plus the six above).
 
 ### D7. The hub is a pane state, and it is the "Network" row grown up
 
-The synthetic `network` volume keeps its id; its label becomes "Servers" and its sentinel path becomes `network://`
-(the hub lists non-SMB accounts, so `smb://` as its root is wrong; SMB hosts keep `smb://<host>` paths). `NetworkBrowser`
+The synthetic `network` volume keeps its id and its `smb://` sentinel; its label becomes "Servers". `NetworkBrowser`
 becomes `ServersHub.svelte`: a table with columns Name, Type (SFTP / WebDAV / SMB), Address, Status, Last used, sourced
 from `list_saved_servers()` merged with the discovered SMB hosts in `network-store`, plus an "Add server…" row at the
 bottom (the `+` pseudo-row today). Status words: Connected, Saved, Found nearby, Signed out, Waiting for the key.
@@ -201,10 +249,13 @@ bottom (the `+` pseudo-row today). Status words: Connected, Saved, Found nearby,
 - Enter on an SFTP or WebDAV account navigates the pane to its one place (dialing if needed, D8). Enter on an SMB host
   opens its places list (`ShareBrowser`, renamed `PlacesBrowser` and given an `account` prop rather than a `host`, so an
   S3 account's buckets render through the same component later).
-- F8 forgets a saved server (confirmed) or toasts "Can't remove discovered hosts" as today. ⌘E and the context menu
-  edit. Right-click shows the same native menu as D6 plus "Pin" per place.
+- Keyboard: the command ids `network.selectHost` and `share.back` stay (they are persisted in users' shortcut
+  settings); their scope labels become "Main window/Servers" and "Main window/Places" and their message keys follow.
+  In the hub, Backspace and Escape do nothing (it is a volume root; ⌘↑ likewise). In the places list they go back to
+  the hub, as today. F8 forgets a saved server (confirmed) or toasts "Can't remove discovered hosts" as today. ⌘E and
+  the D6 menu edit.
 - The hub row pushes MCP rows the way `NetworkBrowser` does today, one encoded `name` per row with `protocol=`,
-  `status=`, `address=` tokens, and the add row as `+ Add server…` at `network://add`.
+  `status=`, `address=` tokens, and the add row as `+ Add server…` at `smb://add`.
 - A pane on the hub keeps `syncsToMcp: false`, `canWrite: false`, and the rest of the `network` capability row.
 
 **Why a pane state and not a settings list.** David is considering settings-as-pane-state generally; this is the pilot,
@@ -219,8 +270,11 @@ Three new modules under `apps/desktop/src/lib/servers/`:
   `needs_host_key_approval` open the sheet's key step → approve (re-check semantics per the SFTP doc) → dial again; on
   `needs_credentials` or `authentication_rejected` open the sheet's sign-in step → dial with the offer → loop; terminal
   outcomes return. The attempt id is minted here before the first dial, so cancel is armed from the first millisecond.
-  ❗ It is the only caller of `connect_server` / `connect_saved_place`; the hub, the switcher, the sheet's Connect
-  button, and the pane banner all go through it. A `cancelled` outcome returns silently: the user pressed the button.
+  ❗ It is the only caller of `connect_server` / `connect_saved_place` / `reconnect_volume_with_credentials`; the hub,
+  the switcher, the sheet's Connect button, and the pane banner all go through it. ❗ It picks the command by whether
+  the volume is registered: registered and `needs_sign_in` → `reconnect_volume_with_credentials` (username read-only,
+  refreshes but never seeds a secret); absent → a dial. A `cancelled` outcome returns silently: the user pressed the
+  button.
 - **`RemoteConnectView.svelte`** (in `file-explorer/pane/`): the non-interactive pane states, replacing
   `SmbReconnectingView`, `SmbReauthView`, `MtpConnectionView`'s connecting branch, and the ADB view the spec never
   built. Typed `state` prop: `connecting { cancel }`, `waiting_for_device { reason }`, `signed_out { shape, signIn }`,
@@ -241,6 +295,11 @@ owns the form, the inline refusal under the field it is about, and the retry; th
 lets SMB's three sites (a share listing, a share mount, a reconnect) reuse it with their own commands, and what lets S3
 plug in with one more renderer.
 
+**"Remember in Keychain" per mode.** `add`: default on. `sign-in` and `edit`: seeded from `has*Credentials`, and a
+change is written explicitly through `save_*` / `delete_*` when the user flips it, never as a side effect of the dial.
+❗ An attended sign-in refreshes a remembered secret and never seeds one (the SFTP contract); a default-on box in
+sign-in mode would seed a secret the user already declined.
+
 **The backend tells the sheet what to ask.** `SignInPrompt` widens into `SignInShape` (D10), and the sheet has one
 renderer per variant. ❌ The frontend never derives the shape from a rung, a protocol, or a connect result: the SFTP doc's
 "asked when the banner renders" rule stands.
@@ -248,13 +307,14 @@ renderer per variant. ❌ The frontend never derives the shape from a rung, a pr
 ### D9. Add mode is address-first
 
 People paste what they have: an `ssh` line, `user@host`, `sftp://host:2222/srv`, a Nextcloud URL, `https://nas:5006/`,
-`smb://naspolya`. `servers/address-parser.ts` (pure, proptested) turns one string into `{ protocol, host, port,
+`smb://naspolya`. `servers/address-parser.ts` (pure, tested against an example table; there is no property-testing
+library on the frontend and adding one is not this effort's call) turns one string into `{ protocol, host, port,
 username?, path? }` and the sheet flips a `ToggleGroup` (SMB / SFTP / WebDAV) to match, leaving it editable. Fields per
-protocol, in order: Address, Username, Password (with "Remember in Keychain", default on), then an "Advanced"
-disclosure: Name, Remote folder, and for SFTP a Key file (a path field with a Browse button through
-`@tauri-apps/plugin-dialog`, which already has its capability) plus "Use ssh-agent" (default on), and "Reconnect
-automatically" (default on). The Connect button arms cancel before the call and the sheet stays open while dialing so
-a refusal lands beside the field it is about.
+protocol, in order: Address, Username, Password (with "Remember in Keychain"), then an "Advanced" disclosure: Name,
+Remote folder, and for SFTP a Key file (a path field with a Browse button through `@tauri-apps/plugin-dialog`'s
+`open()`, which needs `dialog:allow-open` added to the main window's capability file) plus "Use ssh-agent" (default on),
+and "Reconnect automatically" (default on). The Connect button arms cancel before the call and the sheet stays open
+while dialing so a refusal lands beside the field it is about.
 
 Two refusals get a remedy button because they are where real users stall:
 
@@ -268,26 +328,29 @@ its places; no credentials are asked until a listing or mount refuses.
 
 ### D10. `SignInShape` replaces `SignInPrompt`
 
-`crates/cmdr-fs/src/volume/types.rs`:
+`crates/cmdr-fs/src/volume/types.rs`, internally tagged the way the outcome enums are
+(`#[serde(tag = "kind", rename_all = "snake_case", rename_all_fields = "camelCase")]`), so the TS side is a
+discriminated union on `kind`:
 
 ```
 SignInShape =
-  | nothing
-  | password                              // SFTP password / keyboard-interactive, WebDAV
-  | key_passphrase                        // SFTP encrypted key file
-  | username_password { guest_allowed }   // SMB (username editable; the share is the identity)
+  | { kind: 'nothing' }
+  | { kind: 'password' }                                   // SFTP password / keyboard-interactive, WebDAV
+  | { kind: 'key_passphrase' }                             // SFTP encrypted key file
+  | { kind: 'username_password', guestAllowed: boolean }   // SMB (username editable; the share is the identity)
 ```
 
 Reserved, documented here and in the type's doc comment, ❌ not added until a producer exists:
 
-- `access_keys { session_token: bool }`: S3. Access key id, secret access key, optional session token.
+- `access_keys { sessionToken: bool }`: S3. Access key id, secret access key, optional session token.
 - `oauth { provider }`: a "Continue in your browser" button and a waiting state; the callback comes home on a loopback
   listener on a random high port or a `cmdr://` deep link, backend-owned; "remember" is implicit (the refresh token is
   the only sane state), and a revoked token surfaces as `needs_sign_in` with the same banner.
 
-SMB's `SmbVolume::sign_in_prompt` returns `username_password { guest_allowed }` from its known auth options. The
-default stays `password` (the safe way to be wrong, per the trait doc). The reconnect manager's stored answer becomes
-the `shape` the `signed_out` pane state hands the sheet.
+SMB's `SmbVolume::sign_in_prompt` returns `username_password` with `guestAllowed` from its known auth options. The
+default stays `password` (the safe way to be wrong, per the trait doc). The variant doc comments are rewritten to match
+the SFTP contract. The reconnect manager's stored answer becomes the `shape` the `signed_out` pane state hands the
+sheet; its test compares on `kind`.
 
 ### D11. Settings
 
@@ -304,16 +367,17 @@ the `shape` the `signed_out` pane state hands the sheet.
 
 ### D12. ADB rows and the phone's Allow tap
 
-`DeviceVolumeEntry` grows `connection_state: Option<ConnectionState>` and `AdbDeviceProvider::entries()` lists every
-device except `recovery`, `bootloader`, and `sideload`: `Ready` as today, `unauthorized` / `authorizing` / `connecting`
-as `waiting_for_device`, `offline` / `no permissions` as `unavailable`. This resolves the contradiction between
-`android-adb-ui.md` decisions 2 and 3: `waiting_for_device` rows ARE openable and lead to `RemoteConnectView`'s
-`waiting_for_device` state, which subscribes to `volumes-changed` and navigates on its own the moment the row turns
-`direct`; `unavailable` rows are disabled with the reason as tooltip.
+`DeviceVolumeEntry` grows `device_readiness: Option<DeviceReadiness>` (D1) and `AdbDeviceProvider::entries()` lists
+every device except `recovery`, `bootloader`, and `sideload`: `Ready` as today, `unauthorized` / `authorizing` /
+`connecting` as `waiting_for_authorization`, `offline` / `no permissions` as `unavailable`. This resolves the
+contradiction between `android-adb-ui.md` decisions 2 and 3: `waiting_for_authorization` rows ARE openable and lead to
+`RemoteConnectView`'s `waiting_for_device` state, which subscribes to `volumes-changed` and navigates on its own the
+moment the row turns `ready`; `unavailable` rows are disabled with the reason as tooltip.
 
-Also from that spec, unchanged: panes open at `/sdcard`; ADB is not indexed; the connect becomes cancelable
-(`connect_adb_device` takes the caller's attempt id like SFTP does). The merged one-row-per-phone item (decision 1) is
-M8, last, and `adb.volumeLabelWithSuffix` dies with it.
+Also from that spec: the provider's root stays `adb://<serial>`, and the FIRST navigation onto a device (no last-used
+path) lands on `adb://<serial>/sdcard`, a `path-navigation.ts` rule rather than a root change; ADB is not indexed; the
+connect becomes cancelable (`connect_adb_device` takes the caller's attempt id like SFTP does). The merged
+one-row-per-phone item (decision 1) is M8, last, and `adb.volumeLabelWithSuffix` dies with it.
 
 **Discoverability**, the one thing that spec left out: a phone with USB debugging off is a plain MTP row, and nobody
 will find ADB. The MTP pane header gets one quiet dismissible line, "Want the whole filesystem? Turn on USB debugging",
@@ -324,19 +388,22 @@ linking to a short help page, gated by `behavior.adbHintDismissed`.
 - **⌘K** opens the sheet in add mode (Finder's binding for the same thing). Palette: "Connect to server…" and "Show
   servers" (navigates the focused pane to the hub). Both via the four-place command contract.
 - **Go to path** (⌘G) accepts a pasted `sftp://`, `ssh://`, `webdav://`, `davs://`, `https://`, or `smb://` address and
-  opens the sheet prefilled. `adb://` and `mtp://` short-circuit to the device (`android-adb-backend-follow-ups.md` § 3,
-  an adjacent clear win, taken here).
+  opens the sheet prefilled; an `sftp://` or `webdav://` path that matches a saved place navigates to it instead.
+  `adb://` and `mtp://` short-circuit to the device (`android-adb-backend-follow-ups.md` § 3, an adjacent clear win,
+  taken here).
 - **Educational toast**: when the pinned count first reaches five, one persistent toast (`behavior.serversPinHintSeen`)
-  teaches right-click → Unpin, and adds a line about favorites when the user has three or more. Dismiss with "Got it".
-- **A favorite inside a server** is a path favorite whose containing volume is a place; opening it dials. No new
-  concept; it falls out of D2 + D3 and gets one E2E.
+  teaches the row menu (right-click, or ⇧F10 on the highlighted row) and Unpin, and adds a line about favorites when
+  the user has three or more. Dismiss with "Got it".
+- **A favorite inside a server** is a path favorite whose path carries the scheme (D3), so it resolves to the saved
+  place by prefix and opening it dials. One E2E.
 
 ### D14. Restore behavior
 
 A restored tab on a remote place comes back as `saved` and dials when ACTIVATED (the pane shows `connecting` with
 cancel). ❌ Launch never dials a server in the background: four servers dialing at startup is four Keychain reads and
-four network waits nobody asked for. `path-navigation.ts`'s initial-path pick treats a `saved` volume as "path exists,
-don't probe" so a restored tab doesn't fall back to home before the user has pressed anything.
+four network waits nobody asked for. `initialization.ts::resolveVolumeId` re-resolves the stored path and lands on the
+`saved` id through the D3 arm; `path-navigation.ts`'s initial-path pick treats a `saved` volume as "path exists, don't
+probe" so a restored tab doesn't fall back to home before the user has pressed anything.
 
 ## Milestones
 
@@ -345,11 +412,13 @@ red → green sequence; "after" marks tests written once the shape settles.
 
 ### M0. Backend groundwork (no UI change)
 
-1. D1: `ConnectionState` on both platform twins and `VolumeInfo`; rename every consumer; `bindings.ts` regenerated.
-   Tests after: the enrichment cells in `volumes/smb.rs`, `volume-store` patch test, breadcrumb tests, the two E2E specs
-   keyed on the dot.
+1. D1: `ConnectionState` and `DeviceReadiness` on both platform twins and `VolumeInfo`; `Volume::connection_state()`
+   implemented by SFTP, WebDAV, ADB; the frontend predicates in `navigation/connection-state.ts`; every consumer renamed
+   (store, breadcrumb, `FilePane`, `smb-view-state`, eject predicate, `direct-connect`, MCP resource, tests, the two E2E
+   specs keyed on the dot); `bindings.ts` regenerated. TDD: a listing cell proving a registered SFTP volume survives
+   enrichment as `direct`; the predicate table; the eject predicate on `saved`. After: the rest.
 2. D10: `SignInShape`; SMB's producer; `get_volume_sign_in_state` answers it. TDD: `commands/network_test.rs` default
-   cell, an SMB cell for `guest_allowed`, and the SFTP rung table in `reconnect_test.rs` updated by variant name.
+   cell, an SMB cell for `guestAllowed`, and the SFTP rung table in `reconnect_test.rs` updated by variant.
 3. `pinned` on `KnownSftpServer`, `KnownWebdavServer`, `KnownNetworkShare` (`#[serde(default)]`, default `false`; the
    connect path sets `true` only when the entry is NEW, and otherwise preserves the stored value). TDD: the
    "field-absent file" cell each store already has, copied for `pinned`, plus a "reconnect preserves an unpinned entry"
@@ -357,66 +426,76 @@ red → green sequence; "after" marks tests written once the shape settles.
 4. D5: `one_shot_credentials.rs` and `SecretOffer` on both wirings. TDD: a wrapper cell (answers the one key, forwards
    the rest, never writes), a wiring cell per backend against the Docker fixture (`--run-ignored only` lane) proving a
    `remember: false` dial leaves the store empty afterwards.
-5. D4: `commands/servers.rs` with `list_saved_servers`, `connect_saved_place`, `connect_server`, cancel, disconnect,
-   forget, forget-secret, pin, update. TDD: `commands/servers_test.rs` cells for the union listing (three stores, one
-   pinned, one connected), the outcome mapping (every WebDAV and SFTP variant lands on its superset twin,
-   `AuthMethodUnsupported` included), and pin round-trips.
-6. D2: the servers arm in `volume_listing::complete`. TDD: a listing cell with one registered SFTP volume, one pinned
+5. D3 backend: `sftp_app_root` / `webdav_app_root` in `ids.rs`; the crates' roots and `to_remote_path` prefix
+   stripping (TDD in each crate's `paths_test.rs`: prefixed, relative, and bare-absolute spellings all land on the same
+   server path; a prefixed path outside the root is refused); the `sftp://` / `webdav://` arm in
+   `resolve_path_to_volume` (TDD: registered volume, pinned saved server, unknown prefix → `None`, and the existing
+   local cells untouched).
+6. D4: `commands/servers.rs` and the reconnect-command rename. TDD: `commands/servers_test.rs` cells for the union
+   listing (three stores, one pinned, one connected), the outcome mapping (every WebDAV and SFTP variant lands on its
+   superset twin, `AuthMethodUnsupported` included), pin round-trips emitting `volumes-changed`, and
+   `connect_saved_place` refusing a registered id.
+7. D2: the servers arm in `volume_listing::complete`. TDD: a listing cell with one registered SFTP volume, one pinned
    WebDAV entry, one unpinned entry (absent), asserting id equality between the `saved` row and the id
-   `sftp_volume_id` mints.
-7. D3: the `volume_hint`. TDD: `commands/volumes.rs` cells: hint names a registered SFTP volume + absolute path → that
-   volume; hint names a local volume → today's answer; no hint → today's answer.
-8. D12 backend half: `DeviceVolumeEntry.connection_state`, the provider listing all states, `connect_adb_device`
-   taking an attempt id, `/sdcard` as the provider's `path`. TDD: `adb/device_provider.rs` cells per state, a cancel
-   cell against `FakeAdbServer`.
-9. D11 backend half: `adb_enabled` / `adb_binary_path` settings plumbing and `set_adb_settings`. Tests after: the
-   loader parse cell, a tracker restart cell.
-10. Docs: `crates/cmdr-fs` (the shape), `network/DETAILS.md` (servers family, one-shot wrapper), `volumes/DETAILS.md`
-    (the arm, the hint), `adb/DETAILS.md`, `commands/DETAILS.md`. Wipe the "not wired yet" bullets these close.
+   `sftp_volume_id` mints, and `capabilities: Some` on the registered one.
+8. D12 backend half: `DeviceVolumeEntry.device_readiness`, the provider listing all states, `connect_adb_device`
+   taking an attempt id. TDD: `adb/device_provider.rs` cells per state, a cancel cell against `FakeAdbServer`.
+9. D11 backend half: `adb_enabled` / `adb_binary_path` settings plumbing and `set_adb_settings`. After: the loader
+   parse cell, a tracker restart cell.
+10. D6 backend half: the typed `VolumeContextAction.action`, the Disconnect / Forget items with the busy guard, the
+    `VolumeUnmounted` broadcast on disconnect and forget. After: `commands/menu.rs` cells.
+11. Docs: `crates/cmdr-fs` (the shape, the app roots), each crate's `DETAILS.md` § paths, `network/DETAILS.md`
+    (servers family, one-shot wrapper), `volumes/DETAILS.md` (the arm, the scheme arm), `adb/DETAILS.md`,
+    `commands/DETAILS.md`, `mcp/resources/DETAILS.md`. Wipe the "not wired yet" bullets these close.
 
-Checks: `pnpm check rust`, `pnpm check --include-slow` once at the end of M0 (the fixture lanes).
+Checks: `pnpm check rust` per step, `pnpm check` after step 1 (it touches the frontend), `pnpm check --include-slow`
+once at the end of M0 (the fixture lanes).
 
 ### M1. Switcher rows and the hub
 
-1. D7: `ServersHub.svelte` replacing `NetworkBrowser.svelte` (keep the file history: rename, then edit), the
-   `network://` sentinel, `PlacesBrowser` (renamed `ShareBrowser` with an `account` prop), the MCP row encoding, the
-   status column. `volume-grouping.ts` applies the three-things rule; the switcher row renders the `saved` dot, the
-   protocol in the `volume-fs` slot, and the Disconnect control (D6). The context menu (D6) with its Rust sibling.
-2. `handleVolumeSelect` on a `saved` row navigates to the volume id; `FilePane` gates `connectionState === 'saved'` in
+1. D7: `ServersHub.svelte` replacing `NetworkBrowser.svelte` (rename, then edit, to keep file history),
+   `PlacesBrowser` (renamed `ShareBrowser` with an `account` prop), the MCP row encoding, the status column, the scope
+   labels. `volume-grouping.ts` applies the three-things rule; the switcher row renders the `saved` dot, the protocol in
+   the `volume-fs` slot, and the Disconnect control (D6). The context menu (D6) with its keyboard opener.
+2. D3 frontend: `server-path-utils.ts`, the `navigate.ts` guard, `initialization.ts::resolveVolumeId` verified against
+   a `saved` id (TDD: a restore cell with an `sftp://` path).
+3. `handleVolumeSelect` on a `saved` row navigates to the volume id; `FilePane` gates `connectionState === 'saved'` in
    front of kind and renders `RemoteConnectView` `connecting`, which calls `connect-flow` (M2 delivers the sheet; until
    then a `needs_credentials` outcome renders `refused` with a "Sign in…" button that does nothing but is present, so
    M1 is demoable on a server with a stored secret).
-3. D14 restore.
+4. D14 restore.
 
 Tests: TDD for `volume-grouping` (three-things rule, pinned-only, connected-unpinned appears, "Connect to server…" row
-gone), `address-free` hub sorting; after: `ServersHub.test.ts` (rename of `NetworkBrowser.test.ts`, with new rows),
-`PlacesBrowser.test.ts`, breadcrumb tests, MCP encoding test, an E2E happy path against the Docker SFTP fixture (pin →
-restart → greyed row → activate → connected), added to `smb.spec.ts`'s sibling `servers.spec.ts` under the existing
-`--features playwright-e2e,smb-e2e` gate widened to the SFTP fixture. Docs: `network/CLAUDE.md` + `DETAILS.md` (rename
-the module to what it is: `file-explorer/servers/`? ❌ no: keep `network/` and rename the files; a directory move is
-churn without a win), `navigation/CLAUDE.md`, `pane/CLAUDE.md`.
+gone), hub sorting; after: `ServersHub.test.ts` (rename of `NetworkBrowser.test.ts`, with new rows),
+`PlacesBrowser.test.ts`, breadcrumb tests (Disconnect on `direct`, nothing on `saved`, ⇧F10 opens the menu), MCP
+encoding test. E2E: `servers.spec.ts` on the Playwright lane drives the hub, the switcher rows, and the pane view
+through `emitBackendEvent('volumes-changed', …)` with a `saved` SFTP row and through the `smb-e2e` fake for a real
+mount; ❗ the SFTP wire itself is proven in the Rust integration lane, not in Playwright (no SFTP fixture is leased
+there). Docs: `network/CLAUDE.md` + `DETAILS.md` (the dir keeps its name; a move is churn without a win),
+`navigation/CLAUDE.md`, `pane/CLAUDE.md`.
 
 Checks: `pnpm check --fast` per step, `pnpm check` at the end, `pnpm check desktop-e2e-playwright` for the spec.
 
 ### M2. The sign-in sheet and the connect flow
 
-1. `address-parser.ts` (TDD, proptest-style with `fast-check` if present, else example tables: every shape in D9
-   round-trips; `user@host` is SFTP; a bare `https://` origin is WebDAV; `smb://` is SMB; garbage is `unparsed`).
+1. `address-parser.ts` (TDD, example table: every shape in D9 round-trips; `user@host` is SFTP; a bare `https://`
+   origin is WebDAV; `smb://` is SMB; garbage is `unparsed`).
 2. `SignInSheet.svelte` with the four renderers (`nothing` never opens the sheet), the host-key step (both `kind`
-   values, revoked, `superseded` restart, `unreachable` no-write), the add mode fields, the edit mode with the two
-   switches and the `needs_stored_secret` warning (`getSftpUnattendedReconnect` / the WebDAV twin, asked when the sheet
-   renders). Dialog registry, gallery rows (one per mode, fixtures), a11y block in `network.a11y.test.ts`.
+   values, revoked, `superseded` restart, `unreachable` no-write), the add mode fields, `dialog:allow-open` in the main
+   capability file, the edit mode with the two switches and the `needs_stored_secret` warning
+   (`getSftpUnattendedReconnect` / the WebDAV twin, asked when the sheet renders), the per-mode Remember seeding.
+   Dialog registry, gallery rows (one per mode, fixtures), a11y block in `network.a11y.test.ts`.
 3. `connect-flow.ts` (TDD with `installIpcMock`: the three-round first connection, `superseded` restart, cancel from
-   each phase returns `cancelled` silently, `remember: false` sends the offer and never `save_*`).
+   each phase returns `cancelled` silently, `remember: false` sends the offer and never `save_*`, a registered
+   `needs_sign_in` volume takes `reconnect_volume_with_credentials` and never a dial).
 4. Wire: hub Add row, ⌘K, palette, go-to-path URL branch (D13), `RemoteConnectView.signed_out`'s button, the switcher
    row's Edit…. Delete `ConnectToServerDialog.svelte`.
 5. The two remedy buttons (D9).
 
-Tests: above, plus an E2E: add an SFTP server through the sheet against the fixture with a wrong password first
-(`authentication_rejected` renders inline, the field keeps focus), then the right one, then `remember` off leaves
-`hasSftpCredentials` false. Docs: `servers/CLAUDE.md` + `DETAILS.md` (new dir: the flow, the sheet contract, the
-renderer table, the reserved shapes), `docs/guides/building-ui.md` gains one line pointing at the sheet for any
-credential ask, `docs/architecture.md` row.
+Tests: above, plus the sheet's component tests (wrong password renders inline and keeps the field's focus; Tab moves
+between fields, never switches panes). Docs: `servers/CLAUDE.md` + `DETAILS.md` (new dir: the flow, the sheet
+contract, the renderer table, the reserved shapes), `docs/guides/building-ui.md` gains one line pointing at the sheet
+for any credential ask, `docs/architecture.md` row.
 
 ### M3. SMB moves onto the sheet and the pane view
 
@@ -425,15 +504,15 @@ credential ask, `docs/architecture.md` row.
    `direct-connect.ts`'s `raiseCredentialsForm` becomes a call into the sheet; `smb-login-hosts.ts` and
    `NetworkLoginForm.svelte`'s in-pane rendering are deleted (the form's field logic moves into the renderer, including
    the username-hint lookup and the guest radio, which becomes a `RadioGroup` inside the renderer with the same
-   `$derived.by` rule).
+   `$derived.by` rule; the in-pane focus-trap `eslint-disable` goes rather than being carried over).
 2. `SmbReconnectingView` and `SmbReauthView` are replaced by `RemoteConnectView` states; the reconnect manager's
    `needs-auth` maps to `signed_out { shape }`. `VolumeUnreachableBanner`'s `smbGaveUp` variant becomes `gave_up`.
 3. Wipe `servers-in-the-sidebar.md` from `docs/specs/` (its intent now lives in `servers/DETAILS.md`).
 
 Tests: the three site tests rewritten to assert the sheet request (not a rendered form); `smb-reconnect-manager` test
 for the shape hand-off; a11y blocks updated; the SMB E2E spec's login steps retargeted to the sheet. Docs:
-`network/CLAUDE.md` loses five must-knows (Tab guard, `connectionMode` rule, login-hosts, pre-prompt rule stays),
-`pane/CLAUDE.md`, `DETAILS.md`s.
+`network/CLAUDE.md` loses the Tab guard, `connectionMode`, and login-hosts must-knows (the never-pre-prompt rule
+stays), `pane/CLAUDE.md`, `DETAILS.md`s.
 
 ### M4. Pins, the toast, Settings
 
@@ -448,20 +527,21 @@ Docs: `settings/CLAUDE.md`, `navigation/DETAILS.md`. Checks: `pnpm check`.
 ### M5. ADB in the pane
 
 1. D12 frontend: non-ready rows, `waiting_for_device` auto-proceed, cancel, the refusal words (`adb-connect-errors.ts`
-   already words the enum; `RemoteConnectView.refused` renders them), Disconnect wording, `/sdcard`.
+   already words the enum; `RemoteConnectView.refused` renders them), Disconnect wording, the `/sdcard` first-path rule.
 2. The MTP-header hint.
 3. Wipe `android-adb-ui.md` except decision 1 (moves to M8's entry in `later/` if M8 slips).
 
 Tests: `connection-views.a11y.test.ts` blocks, an E2E driving `emitBackendEvent` for `volumes-changed` with a
-`waiting_for_device` → `direct` transition (the real-device pass stays David's: `android-adb-backend-follow-ups.md`
-§ 1). Docs: `adb/CLAUDE.md` (frontend), `pane/CLAUDE.md`.
+`waiting_for_authorization` → `ready` transition (the real-device pass stays David's:
+`android-adb-backend-follow-ups.md` § 1). Docs: `adb/CLAUDE.md` (frontend), `pane/CLAUDE.md`.
 
 ### M6. Reconcile, docs pass, spec wipe
 
 1. Rebase on `main`, resolve, full `pnpm check --include-slow`.
 2. `docs/architecture.md`, every touched `C.md` at 300–400 words, `docs/specs/index.md` updated, the two superseded
    specs wiped per `docs/specs/DETAILS.md` § "Wiping a shipped spec", `later/sftp-follow-ups.md` § 1 and
-   `webdav-backend-follow-ups.md` § 1 rewritten to point at `servers/DETAILS.md`.
+   `webdav-backend-follow-ups.md` § 1 rewritten to point at `servers/DETAILS.md`, the `~/.ssh/config` autocomplete idea
+   recorded in `later/sftp-follow-ups.md`.
 
 ### M7. Real-server pass (David, by hand; recorded here for the QA)
 
@@ -486,11 +566,11 @@ Every string below is a draft for David's pass (principle 4). Rules: `docs/style
 - Remember: "Remember in Keychain". Advanced: "Name", "Remote folder", "Key file", "Use ssh-agent", "Reconnect
   automatically".
 - Refusals: `authentication_rejected` "That password didn't work for {username}." `needs_credentials` "This server asks
-  for a password." `auth_method_unsupported` "This server only accepts a sign-in method Cmdr doesn't speak yet (Digest).
-  Basic auth over HTTPS works." `certificate_untrusted` "macOS doesn't trust this server's certificate. Add it in
-  Keychain Access, then try again." `not_a_webdav_server` "Nothing at this address answers WebDAV." + "Try the
-  Nextcloud address". `unreachable` "Cmdr couldn't reach {host}." `timed_out` "{host} didn't answer in time."
-  `invalid_url` "That doesn't look like a server address."
+  for a password." `auth_method_unsupported` "This server uses a sign-in method Cmdr doesn't support yet."
+  `certificate_untrusted` "macOS doesn't trust this server's certificate. Add it in Keychain Access, then try again."
+  `not_a_webdav_server` "Nothing at this address answers WebDAV." + "Try the Nextcloud address". `unreachable` "Cmdr
+  couldn't reach {host}." `timed_out` "{host} didn't answer in time." `invalid_url` "That doesn't look like a server
+  address."
 - Host key, first contact: "First time connecting to {host}. Its key fingerprint is {fingerprint}. Trust it?" Button
   "Trust and connect". Changed: "{host}'s key changed. This can mean the server was reinstalled, or that something is
   sitting between you and it. Check the fingerprint with the server's owner before trusting it." Secondary, behind a
@@ -500,13 +580,14 @@ Every string below is a draft for David's pass (principle 4). Rules: `docs/style
   "Couldn't reach {name}", "Cmdr stopped trying to reconnect to {name}". Buttons: "Cancel", "Sign in…", "Try again",
   "Disconnect", "Look at the key".
 - Context menu: "Open", "Disconnect", "Pin to switcher", "Unpin", "Edit…", "Forget saved password", "Forget server".
-- Toast at five pins: "Your Network group is getting long. Right-click a server to unpin it; it stays in Servers."
-  Extra line with ≥3 favorites: "Favorites work the same way." Button "Got it".
+- Toast at five pins: "Your Network group is getting long. Right-click a server (or press ⇧F10 on it) and choose
+  Unpin; it stays in Servers." Extra line with ≥3 favorites: "Favorites work the same way." Button "Got it".
 - ADB hint: "Want the whole filesystem? Turn on USB debugging." Link "How".
 - Settings: "Servers (SFTP, WebDAV)", "Trusted host keys", "Forget"; "Android (ADB)", "Enable Android debugging
   (ADB)", "Status", "Found at {path}" / "Not found", "Re-check", "adb location", "Browse…".
 
-❌ Never expose "adb server", "sync service", "transport", "rung", "PROPFIND", or a backend diagnostic.
+❌ Never expose "adb server", "sync service", "transport", "rung", "PROPFIND", "Basic", "Digest", or a backend
+diagnostic.
 
 ## Not in this effort
 
@@ -516,8 +597,9 @@ Every string below is a draft for David's pass (principle 4). Rules: `docs/style
   `later/sftp-follow-ups.md` at M6.
 - Wireless ADB pairing. Decided out (`android-adb-backend-follow-ups.md` § 5).
 - S3 and OAuth code. Their contracts are D4 (`ServerTarget` arm), D8 (one renderer), D10 (the reserved shapes).
+- A property-testing library on the frontend.
 
 ## Parallelism
 
-None worth the risk. M0's steps 3, 4, and 8 are independent of each other and could run as three subagents in one
+None worth the risk. M0's steps 3, 4, 8, and 9 are independent of each other and could run as subagents in one
 worktree touching disjoint files, but the `bindings.ts` regeneration serializes them anyway. Run everything in order.
