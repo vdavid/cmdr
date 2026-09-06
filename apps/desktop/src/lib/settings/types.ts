@@ -68,6 +68,61 @@ export interface SettingDefinitionSource extends Omit<
   constraints?: SettingConstraintsSource
 }
 
+// ============================================================================
+// Searchable rows (things the Settings search must find that aren't settings)
+//
+// A section renders plenty that no setting models: "Clear index", "Open log
+// file", "Get a license". Search only knows the registry, so those rows were
+// unfindable, and a card gated on `anyVisible(...)` couldn't know to show for
+// them (the blank-pane bug). A `SearchableRow` gives such a row a searchable
+// identity WITHOUT modelling it as a setting: no `SettingsValues` key, no
+// default, nothing read or written.
+//
+// Declarations live in a `<Component>.rows.ts` beside the markup they describe;
+// `sections/searchable-rows.ts` aggregates them for the index. A row NEVER
+// decides what renders — the section keeps hand-rendering its markup and gates
+// it on `shouldShow(id)`, which is what keeps the frame and its contents from
+// disagreeing.
+// ============================================================================
+
+/**
+ * A searchable row's id. The `row:` prefix is what keeps row ids out of
+ * `SettingId`'s space; `NoRowPrefixedSettingId` (in `searchable-rows.test.ts`)
+ * fails to compile if a `SettingsValues` key ever takes the prefix, and
+ * `settingAnchorId(SettingId)` rejects a row id for the same reason.
+ */
+export type SearchableRowId = `row:${string}`
+
+/** A non-setting row, as authored in its section's `<Component>.rows.ts`. */
+export interface SearchableRow {
+  id: SearchableRowId
+  /**
+   * MUST equal the hosting page's section, or the row lands outside that page's
+   * section-scoped match set and the page comes up blank on a hit.
+   */
+  section: string[]
+  /** The SAME key the row's rendered label displays, so a hit matches what the user reads. */
+  labelKey: MessageKey
+  /** i18n KEY of the `SectionCard` title the row sits in (the key that card renders). */
+  cardKey?: MessageKey
+  /** Extra English search terms, like a setting's `keywords`. */
+  keywords?: string[]
+}
+
+/**
+ * One entry in the Settings search index: a setting or a searchable row.
+ * `SettingDefinition` satisfies this structurally, so merging the two sources is
+ * a concatenation.
+ */
+export interface SearchableEntry {
+  id: string
+  section: string[]
+  label: string
+  description: string
+  keywords: string[]
+  card?: string
+}
+
 export interface SettingConstraints {
   // For 'number' type
   min?: number
@@ -329,12 +384,6 @@ export interface SettingsValues {
 
   // Indexing
   'indexing.enabled': boolean
-  /**
-   * Hidden search anchor for the "Index size / Clear index" action row, which is
-   * hand-rendered (not a real control). Never read or written; exists only so the
-   * row is searchable ("index size") and its card can show. See settings-registry.ts.
-   */
-  'indexing.indexSize': boolean
   /** Gates the per-drive first-connect "turn on indexing?" notification (D6). On by default. */
   'indexing.askForEachDrive': boolean
   /** Gates the one-time "your drive went stale" dialog (D2). The yellow badge shows regardless. On by default. */
@@ -546,7 +595,8 @@ export type SettingId = keyof SettingsValues
 // ============================================================================
 
 export interface SettingSearchResult {
-  setting: SettingDefinition
+  /** The setting or searchable row that matched. */
+  entry: SearchableEntry
   matchedIndices: number[]
   searchableText: string
 }

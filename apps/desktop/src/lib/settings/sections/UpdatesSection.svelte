@@ -45,8 +45,11 @@
 </script>
 
 <SettingsSection title={tString('settings.section.updatesAndPrivacy')}>
-    {#if anyVisible(shouldShow, 'updates.autoCheck', 'whatsNew.showOnUpdate')}
+    {#if anyVisible(shouldShow, 'row:updates.checkForUpdates', 'updates.autoCheck', 'whatsNew.showOnUpdate')}
         <SectionCard label={tString('settings.updates.card.updates')}>
+            <!-- Not a setting, so it carries a searchable-row id (`UpdatesSection.rows.ts`)
+                 and rides the same `shouldShow` gate as the switches below it. -->
+            {#if shouldShow('row:updates.checkForUpdates')}
             <div class="check-row">
                 <Button variant="secondary" size="mini" onclick={handleCheckForUpdates} disabled={buttonDisabled}>
                     {tString('settings.updates.checkForUpdates')}
@@ -64,6 +67,7 @@
                     {/if}
                 </div>
             </div>
+            {/if}
             {#if shouldShow('updates.autoCheck')}
                 <SettingRow
                     id="updates.autoCheck"

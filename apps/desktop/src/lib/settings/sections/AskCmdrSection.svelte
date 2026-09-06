@@ -12,7 +12,7 @@
     import TextInput from '$lib/ui/TextInput.svelte'
     import { getBadgeStatus } from '$lib/feature-status'
     import { getSetting, setSetting, onSpecificSettingChange, getSettingDefinition, type AiProvider } from '$lib/settings'
-    import { createShouldShow } from '$lib/settings/settings-search'
+    import { anyVisible, createShouldShow } from '$lib/settings/settings-search'
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { getAppLogger } from '$lib/logging/logger'
@@ -203,7 +203,10 @@
     <p class="intro">{tString('settings.askCmdr.intro')}</p>
 
     <!-- Enable / consent. Three states, not two: "paused" is somebody who said yes to
-         wording that has since changed, and a bare "off" at them loses that entirely. -->
+         wording that has since changed, and a bare "off" at them loses that entirely.
+         Consent lives in `main.db`, not the registry, so the row is searchable through
+         `AskCmdrSection.rows.ts` rather than a setting. -->
+    {#if shouldShow('row:askCmdr.consent')}
     <div class="enable-row">
         <div class="enable-status">
             <span class="status-label">
@@ -233,6 +236,7 @@
             {/if}
         </Button>
     </div>
+    {/if}
 
     <!-- What Ask Cmdr sends (the same copy as the opt-in screen). Open by default for
          somebody being asked again: the button above says "read what's new below". -->
@@ -340,19 +344,26 @@
     {/if}
 
     <!-- What Ask Cmdr remembers: the notes are about the user, so they get to read them and
-         to throw them away. -->
-    <h3 class="group-title">{tString('settings.askCmdr.memory.title')}</h3>
-    <p class="provider-hint">{tString('settings.askCmdr.memory.description')}</p>
-    <div class="memory-actions">
-        <Button variant="secondary" onclick={() => void openMemoryFolder()}>
-            {tString('settings.askCmdr.memory.open')}
-        </Button>
-        <Button variant="secondary" onclick={() => (forgetOpen = true)}>
-            {tString('askCmdr.forget.confirm')}
-        </Button>
-    </div>
-    {#if forgotten}
-        <p class="memory-forgotten" role="status">{tString('settings.askCmdr.memory.forgotten')}</p>
+         to throw them away. Neither button is a setting; both are searchable rows
+         (`AskCmdrSection.rows.ts`), and the heading follows whichever one a search kept. -->
+    {#if anyVisible(shouldShow, 'row:askCmdr.openMemoryFolder', 'row:askCmdr.forgetMemory')}
+        <h3 class="group-title">{tString('settings.askCmdr.memory.title')}</h3>
+        <p class="provider-hint">{tString('settings.askCmdr.memory.description')}</p>
+        <div class="memory-actions">
+            {#if shouldShow('row:askCmdr.openMemoryFolder')}
+                <Button variant="secondary" onclick={() => void openMemoryFolder()}>
+                    {tString('settings.askCmdr.memory.open')}
+                </Button>
+            {/if}
+            {#if shouldShow('row:askCmdr.forgetMemory')}
+                <Button variant="secondary" onclick={() => (forgetOpen = true)}>
+                    {tString('askCmdr.forget.confirm')}
+                </Button>
+            {/if}
+        </div>
+        {#if forgotten}
+            <p class="memory-forgotten" role="status">{tString('settings.askCmdr.memory.forgotten')}</p>
+        {/if}
     {/if}
 
     <!-- Spend -->

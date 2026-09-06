@@ -24,30 +24,13 @@ export const indexingSettings: SettingDefinitionSource[] = [
     labelKey: 'settings.indexing.enabled.label',
     descriptionKey: 'settings.indexing.enabled.description',
     // The Drive-indexing card has no dedicated `card*` key; it reuses this row-label key
-    // as its title (DriveIndexingSection.svelte). Same key as `indexing.indexSize`.
+    // as its title (DriveIndexingSection.svelte), and so do the card's searchable rows
+    // (`DriveIndexingSection.rows.ts`).
     cardKey: 'settings.indexing.enabled.label',
     keywords: ['index', 'drive', 'scan', 'size', 'directory', 'folder', 'background'],
     type: 'boolean',
     default: true,
     component: 'switch',
-  },
-  {
-    // Hidden search anchor (not a control). The "Index size / Clear index" action row is
-    // hand-rendered in DriveIndexingSection.svelte with no registry entry of its own,
-    // so search couldn't reach it and its card couldn't know to show. This anchor gives it
-    // a searchable identity: `buildSearchIndex` keeps hidden entries, `buildSectionTree`
-    // skips them, so it never adds a nav row. Never read or written. Its `section` MUST
-    // equal the hosting page's, or the blank-page fix breaks (the anchor must land in that
-    // page's section-scoped match set). Reuses the existing `indexSize` label key (no new
-    // string). Additive key, so no SCHEMA_VERSION bump (defaults rebuild from the registry).
-    id: 'indexing.indexSize',
-    section: ['Indexing', 'Drive indexing'],
-    labelKey: 'settings.fileSystemWatching.indexSize',
-    cardKey: 'settings.indexing.enabled.label',
-    keywords: ['clear index', 'index database'],
-    type: 'boolean',
-    default: false,
-    hidden: true,
   },
   {
     // Gates the per-drive first-connect "turn on indexing?" notification (D6).

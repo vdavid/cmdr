@@ -30,14 +30,14 @@ describe('searchSettings', () => {
   it('should find settings by label', () => {
     const results = searchSettings('density')
     expect(results.length).toBeGreaterThan(0)
-    expect(results.some((r) => r.setting.id === 'appearance.uiDensity')).toBe(true)
+    expect(results.some((r) => r.entry.id === 'appearance.uiDensity')).toBe(true)
   })
 
   it('should find settings by section name', () => {
     const results = searchSettings('appearance')
     expect(results.length).toBeGreaterThan(0)
     // At least one result should be in the Appearance section
-    const hasAppearance = results.some((r) => r.setting.section[0] === 'Appearance')
+    const hasAppearance = results.some((r) => r.entry.section[0] === 'Appearance')
     expect(hasAppearance).toBe(true)
   })
 
@@ -65,7 +65,7 @@ describe('advanced settings in the global search index', () => {
   // (the Advanced page groups them into cards on the same `shouldShow`
   // predicate), so they MUST be findable in the main settings search.
   it('finds an Advanced-only setting in the global search', () => {
-    const ids = searchSettings('prefetch').map((r) => r.setting.id)
+    const ids = searchSettings('prefetch').map((r) => r.entry.id)
     expect(ids).toContain('advanced.prefetchBufferSize')
   })
 
@@ -75,13 +75,13 @@ describe('advanced settings in the global search index', () => {
   })
 
   it('finds dragThreshold by label in the global search', () => {
-    const ids = searchSettings('drag threshold').map((r) => r.setting.id)
+    const ids = searchSettings('drag threshold').map((r) => r.entry.id)
     expect(ids).toContain('advanced.dragThreshold')
   })
 
   it('surfaces an Advanced setting by its card title', () => {
     // "Performance" is the shared card title for the three buffer-size rows.
-    const ids = searchSettings('performance').map((r) => r.setting.id)
+    const ids = searchSettings('performance').map((r) => r.entry.id)
     expect(ids).toContain('advanced.prefetchBufferSize')
     expect(ids).toContain('advanced.virtualizationBufferRows')
   })
@@ -181,7 +181,7 @@ describe('card title indexing', () => {
 
   it('appends a setting`s resolved card title to its searchable text', () => {
     const results = searchSettings('')
-    const downloads = results.find((r) => r.setting.id === 'behavior.fileSystemWatching.downloadsNotifications')
+    const downloads = results.find((r) => r.entry.id === 'behavior.fileSystemWatching.downloadsNotifications')
     // The card title resolves to "Downloads" (settings.fileSystemWatching.cardDownloads).
     expect(downloads?.searchableText).toContain('downloads')
     // It MUST be appended last (after keywords), so label highlight offsets stay correct.
@@ -190,14 +190,14 @@ describe('card title indexing', () => {
 
   it('does not append anything for a setting without a cardKey', () => {
     const results = searchSettings('')
-    const density = results.find((r) => r.setting.id === 'appearance.uiDensity')
+    const density = results.find((r) => r.entry.id === 'appearance.uiDensity')
     // The card title was undefined, so searchableText is just section/label/desc/keywords.
-    expect(density?.setting.card).toBeUndefined()
+    expect(density?.entry.card).toBeUndefined()
   })
 
   it('surfaces a setting when searching its card title', () => {
     // "Low disk space" is the card title shared by the two low-disk-space settings.
-    const ids = searchSettings('low disk space').map((r) => r.setting.id)
+    const ids = searchSettings('low disk space').map((r) => r.entry.id)
     expect(ids).toContain('behavior.fileSystemWatching.lowDiskSpaceNotifications')
     expect(ids).toContain('behavior.fileSystemWatching.lowDiskSpaceThresholdPercent')
   })
@@ -209,7 +209,7 @@ describe('card title indexing', () => {
     // what the user could actually read returned nothing.
     // All FOUR rows the card renders count, the `parallelism` slider included: it's
     // `hidden` only because it's hand-rendered, and the user reads the same title above it.
-    const ids = searchSettings('enable indexing').map((r) => r.setting.id)
+    const ids = searchSettings('enable indexing').map((r) => r.entry.id)
     expect(ids).toContain('mediaIndex.enabled')
     expect(ids).toContain('mediaIndex.showFileStatusIcons')
     expect(ids).toContain('mediaIndex.showInSearch')
@@ -256,14 +256,14 @@ describe('anyVisible', () => {
   })
 })
 
-describe('index-size hidden anchor search', () => {
+describe('index-size searchable row', () => {
   beforeEach(() => {
     clearSearchIndex()
   })
 
-  it('returns the indexing.indexSize anchor when searching "index size"', () => {
-    const ids = searchSettings('index size').map((r) => r.setting.id)
-    expect(ids).toContain('indexing.indexSize')
+  it('returns the index-size row when searching "index size"', () => {
+    const ids = searchSettings('index size').map((r) => r.entry.id)
+    expect(ids).toContain('row:indexing.indexSize')
   })
 
   it('adds the Drive indexing section to the sidebar match set for "index size"', () => {

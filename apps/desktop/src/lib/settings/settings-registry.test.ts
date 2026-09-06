@@ -430,30 +430,28 @@ describe('cardKey resolution (resolveDefinition)', () => {
   })
 })
 
-describe('indexing.indexSize hidden search anchor', () => {
-  it('is a fully-modeled, hidden boolean under the Drive indexing page', () => {
-    const def = getSettingDefinition('indexing.indexSize')
-    expect(def).toBeDefined()
-    expect(def?.hidden).toBe(true)
-    expect(def?.type).toBe('boolean')
-    expect(getDefaultValue('indexing.indexSize')).toBe(false)
-    // Guardrail: section MUST equal the hosting page`s, or the blank-page fix breaks.
-    expect(def?.section).toEqual(['Indexing', 'Drive indexing'])
-    expect(def?.component).toBeUndefined()
+describe('the index-size row is not a setting', () => {
+  it('models no setting for the hand-rendered "Index size / Clear index" row', () => {
+    // It used to be a fully-modeled `indexing.indexSize` boolean that nothing ever
+    // read or wrote, invented only so search could reach the row. Rows have their
+    // own mechanism now (`sections/DriveIndexingSection.rows.ts`), so the registry
+    // is back to holding settings alone.
+    expect(getSettingDefinition('indexing.indexSize')).toBeUndefined()
+    expect(settingsRegistry.some((s) => s.section.includes('Drive indexing') && s.id.includes('indexSize'))).toBe(false)
   })
 
-  it('is excluded from the nav section tree (it is hidden)', () => {
+  it('adds no nav row for the searchable row that replaced it', () => {
     const tree = buildSectionTree()
     const indexing = tree.find((s) => s.name === 'Indexing')
     const driveIndexing = indexing?.subsections.find((s) => s.name === 'Drive indexing')
     expect(driveIndexing).toBeDefined()
-    expect(driveIndexing?.settings.some((s) => s.id === 'indexing.indexSize')).toBe(false)
+    expect(driveIndexing?.settings.some((s) => s.id.startsWith('row:'))).toBe(false)
   })
 
-  it('is included in the search index (the whole registry is indexed; hidden is searchable)', () => {
+  it('is in the search index all the same', () => {
     clearSearchIndex()
-    const ids = searchSettings('').map((r) => r.setting.id)
-    expect(ids).toContain('indexing.indexSize')
+    const ids = searchSettings('').map((r) => r.entry.id)
+    expect(ids).toContain('row:indexing.indexSize')
   })
 })
 

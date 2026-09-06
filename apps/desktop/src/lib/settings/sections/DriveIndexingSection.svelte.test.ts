@@ -9,7 +9,7 @@
  *   - The size and the clear button work with the master switch OFF, since a
  *     search walks whatever folder it's pointed at and leaves an index behind
  *     (`docs/specs/unindexed-search-plan.md` M10).
- *   - The hidden `indexing.indexSize` search anchor keeps the card visible when
+ *   - The `row:indexing.indexSize` searchable row keeps the card visible when
  *     searching "index size", so the page never blanks.
  *
  * The section calls two backend IPCs (the index's disk use, clear index). Both
