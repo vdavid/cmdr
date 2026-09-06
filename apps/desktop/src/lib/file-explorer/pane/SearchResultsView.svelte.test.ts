@@ -171,6 +171,108 @@ describe('SearchResultsView', () => {
     target.remove()
   })
 
+  describe('column sort', () => {
+    /** Row labels in render order. The Name column carries the `~`-shortened full path. */
+    function rowLabels(target: HTMLElement): string[] {
+      return [...target.querySelectorAll('.file-entry')].map((el) => el.getAttribute('data-filename') ?? '')
+    }
+
+    it("keeps the snapshot's own order whatever the pane is sorted by", async () => {
+      // The pane's `sortBy` / `sortOrder` reach `FullList` and light its header
+      // indicator, but `staticEntries` are rendered as given: the search engine
+      // already ranked them, and re-ordering them in the view would break the
+      // whole subsystem's invariant, that a selected index and `snapshot.entries[i]`
+      // name the same row. Every source-side op resolves through that index.
+      const id = 'sr-sorted'
+      getOrCreate(id, makeSnapshot(id, [makeEntry('zeta.txt'), makeEntry('alpha.txt'), makeEntry('mid.txt')]))
+
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      mount(SearchResultsView, {
+        target,
+        props: {
+          path: `search-results://${id}`,
+          cursorIndex: 0,
+          isFocused: true,
+          sortBy: 'size',
+          sortOrder: 'descending',
+          onNavigate: () => {},
+          onSelect: () => {},
+        },
+      })
+      await tick()
+
+      expect(rowLabels(target)).toEqual(['~/zeta.txt', '~/alpha.txt', '~/mid.txt'])
+      target.remove()
+    })
+
+    it('leaves the header sort buttons inert, because there is no `onSortChange` to hand them', async () => {
+      // `FullListHeader` falls back to a no-op when the callback is absent, and
+      // this view deliberately passes none. Clicking a column header therefore
+      // does nothing at all. That is safe (the rows can't reorder under an
+      // index-based selection) but it is not visible: the header still renders a
+      // live-looking sort control and an indicator on whichever column the pane
+      // last sorted by. See the audit finding in `search/DETAILS.md`.
+      const id = 'sr-header'
+      getOrCreate(id, makeSnapshot(id, [makeEntry('b.txt'), makeEntry('a.txt')]))
+
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      mount(SearchResultsView, {
+        target,
+        props: {
+          path: `search-results://${id}`,
+          cursorIndex: 0,
+          isFocused: true,
+          sortBy: 'name',
+          sortOrder: 'ascending',
+          onNavigate: () => {},
+          onSelect: () => {},
+        },
+      })
+      await tick()
+
+      const before = rowLabels(target)
+      const headers = [...target.querySelectorAll<HTMLElement>('.sortable-header')]
+      expect(headers.length).toBeGreaterThan(0)
+      for (const header of headers) header.click()
+      await tick()
+
+      expect(rowLabels(target)).toEqual(before)
+      target.remove()
+    })
+
+    it('still lights the indicator on whichever column the pane was sorted by', async () => {
+      // The visible half of the same gap: the Size header comes up `is-active`
+      // with a direction arrow while the rows sit in the engine's order and the
+      // button does nothing. A user reading the header is told the list is sorted
+      // by size. Reported as a finding rather than fixed here, because what the
+      // header SHOULD say on a result set is a product call.
+      const id = 'sr-indicator'
+      getOrCreate(id, makeSnapshot(id, [makeEntry('b.txt'), makeEntry('a.txt')]))
+
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      mount(SearchResultsView, {
+        target,
+        props: {
+          path: `search-results://${id}`,
+          cursorIndex: 0,
+          isFocused: true,
+          sortBy: 'size',
+          sortOrder: 'descending',
+          onNavigate: () => {},
+          onSelect: () => {},
+        },
+      })
+      await tick()
+
+      const active = target.querySelector('.sortable-header.is-active')
+      expect(active?.textContent).toContain('Size')
+      target.remove()
+    })
+  })
+
   it('renders the friendly missing-snapshot pane when the id does not resolve', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
