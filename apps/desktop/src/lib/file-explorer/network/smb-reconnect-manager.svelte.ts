@@ -21,7 +21,7 @@
  * - `cancel(volumeId)` clears the cycle without touching the connection.
  *
  * On a `needs_credentials` event the cycle stops and the manager asks the backend
- * what a sign-in on that volume would want (`getSignInPrompt` reads it back).
+ * what a sign-in on that volume would want (`getSignInShape` reads it back).
  * Asked at the flip and never carried over: the credential a remote volume comes
  * back on is decided per dial. `DETAILS.md` § "SMB live-reconnect flow".
  */
@@ -30,7 +30,7 @@ import { untrack } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { reconnectSmbVolume, getVolumeSignInState, onVolumeConnectionChanged } from '$lib/tauri-commands'
-import type { SignInPrompt } from '$lib/tauri-commands'
+import type { SignInShape } from '$lib/tauri-commands'
 import { asReconnectError, describeReconnectRefusal } from './reconnect-error'
 import { getAppLogger } from '$lib/logging/logger'
 import { tString } from '$lib/intl/messages.svelte'
@@ -70,13 +70,17 @@ interface VolumeEntry {
    * What a sign-in on this volume would ask for, as of the last `needs-auth`
    * flip. `null` until one happens.
    *
-   * Nothing renders this yet, and that's deliberate: the SFTP sign-in UI is
-   * David's next piece of work, and this is the value it reads (the same shape
-   * as the `needs_host_key_approval` state, which is also stored and not shown).
+   * Nothing renders this yet, and that's deliberate: the sign-in sheet is the
+   * next piece of work, and this is the value it reads (the same shape as the
+   * `needs_host_key_approval` state, which is also stored and not shown).
    * Recorded here rather than kept from the connect result because the credential
    * a remote volume comes back on is decided per dial.
+   *
+   * ❗ A tagged union: switch on `kind` and ❌ never derive the form from the
+   * protocol or from the mode the sheet is in. Whether the username is editable
+   * is the VARIANT's answer (`crates/cmdr-fs/src/volume/types.rs`).
    */
-  signIn: SignInPrompt | null
+  signIn: SignInShape | null
   /** Active `setTimeout` handle for the next attempt, if `status === 'waiting'`. */
   timerId: ReturnType<typeof setTimeout> | null
   /** Subscribers' success callbacks. Fired when state transitions back to Direct. */
@@ -175,7 +179,7 @@ class SmbReconnectManager {
    * What a sign-in on this volume would ask for, as of the last `needs-auth`
    * flip, or `null` if there hasn't been one (or the answer is still in flight).
    */
-  getSignInPrompt(volumeId: string): SignInPrompt | null {
+  getSignInShape(volumeId: string): SignInShape | null {
     return this.map.get(volumeId)?.signIn ?? null
   }
 
@@ -277,7 +281,7 @@ class SmbReconnectManager {
     // Asked here, and asked again on every later flip: the credential a remote
     // volume comes back on is decided per dial, so a value kept from the connect
     // that opened it describes a session that has since ended.
-    let prompt: SignInPrompt
+    let prompt: SignInShape
     try {
       prompt = await getVolumeSignInState(volumeId)
     } catch (e) {

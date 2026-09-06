@@ -14,7 +14,7 @@ use cmdr_fs::volume::patching;
 use cmdr_fs::volume::scan_walk;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
-    ScanBoundary, ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    ScanBoundary, ScanConflict, SignInShape, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
     WatchCoverage,
 };
 use tokio_util::sync::CancellationToken;
@@ -295,8 +295,8 @@ impl Volume for WebdavVolume {
     }
 
     /// One rung, one prompt: a password always mends this backend.
-    fn sign_in_prompt(&self) -> SignInPrompt {
-        SignInPrompt::Password
+    fn sign_in_prompt(&self) -> SignInShape {
+        SignInShape::Password
     }
 
     fn attempt_reconnect<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {

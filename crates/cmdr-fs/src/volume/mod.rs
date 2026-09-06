@@ -583,13 +583,13 @@ pub trait Volume: Send + Sync {
     /// value is a prediction, and by the time anything reads it the session it
     /// described is gone.
     ///
-    /// The default is [`SignInPrompt::Password`], which is what every backend
+    /// The default is [`SignInShape::Password`], which is what every backend
     /// that asks for one uses, and it is the safe way to be wrong: a needless
-    /// password box is recoverable, while a wrong [`SignInPrompt::Nothing`]
+    /// password box is recoverable, while a wrong [`SignInShape::Nothing`]
     /// leaves a volume the user can't sign in to at all. Override it where a
     /// backend has rungs a password can't mend (`SftpVolume`).
-    fn sign_in_prompt(&self) -> SignInPrompt {
-        SignInPrompt::Password
+    fn sign_in_prompt(&self) -> SignInShape {
+        SignInShape::Password
     }
 
     /// This volume's [`Retirement`] flag, when it keeps one.

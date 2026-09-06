@@ -211,7 +211,7 @@ the new password and reconnects; success arrives as a `connected` event that cle
 `smb-reconnect-manager.svelte.test.ts`.
 
 ❗ **`handleNeedsAuth` also asks `getVolumeSignInState(volumeId)` and stores the answer on the entry**
-(`getSignInPrompt(volumeId)` reads it back). It is asked HERE, at the flip, and ❌ never carried over from earlier: the
+(`getSignInShape(volumeId)` reads it back). It is asked HERE, at the flip, and ❌ never carried over from earlier: the
 credential a remote volume comes back on is decided per dial, so an answer kept from the connect that opened it
 describes a session that has since ended. On SFTP that is the difference between a volume the user can sign in to and
 one with no way in at all; the reasoning and the per-rung table are `crates/cmdr-sftp/DETAILS.md` § "What the banner

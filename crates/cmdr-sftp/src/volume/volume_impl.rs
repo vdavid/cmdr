@@ -17,7 +17,7 @@ use cmdr_fs::volume::patching;
 use cmdr_fs::volume::scan_walk;
 use cmdr_fs::volume::{
     BatchScanResult, CopyScanResult, DirectoryCreation, LaneKey, ListingProgress, MutationEvent, Retirement,
-    ScanBoundary, ScanConflict, SignInPrompt, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    ScanBoundary, ScanConflict, SignInShape, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream,
     WatchCoverage,
 };
 
@@ -51,16 +51,16 @@ impl SftpVolume {
 /// ❗ The backend owns this mapping rather than the frontend deriving it from the
 /// rung: getting it wrong ships a sign-in button that can only ever answer
 /// `NotSupported`, or no button where one was the only way back in.
-fn prompt_for(rung: AuthRungUsed) -> SignInPrompt {
+fn prompt_for(rung: AuthRungUsed) -> SignInShape {
     match rung {
         AuthRungUsed::Agent
         | AuthRungUsed::KeyFile {
             passphrase_protected: false,
-        } => SignInPrompt::Nothing,
+        } => SignInShape::Nothing,
         AuthRungUsed::KeyFile {
             passphrase_protected: true,
-        } => SignInPrompt::KeyPassphrase,
-        AuthRungUsed::Password | AuthRungUsed::KeyboardInteractive => SignInPrompt::Password,
+        } => SignInShape::KeyPassphrase,
+        AuthRungUsed::Password | AuthRungUsed::KeyboardInteractive => SignInShape::Password,
     }
 }
 
@@ -395,7 +395,7 @@ impl Volume for SftpVolume {
     /// this reads [`SftpVolume::auth_rung`] every time it is asked, and the app
     /// asks it when the banner renders. `DETAILS.md` § "What the banner shows,
     /// per rung".
-    fn sign_in_prompt(&self) -> SignInPrompt {
+    fn sign_in_prompt(&self) -> SignInShape {
         prompt_for(self.auth_rung())
     }
 

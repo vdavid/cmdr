@@ -22,7 +22,7 @@ use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::{CredentialStore, CredentialsNotStored, StoredCredentials};
 use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection, VolumeEventSink};
 use cmdr_fs::volume::host::host_keys::InMemoryHostKeys;
-use cmdr_fs::volume::{SignInPrompt, Volume};
+use cmdr_fs::volume::{SignInShape, Volume};
 
 use super::super::SftpVolume;
 use super::super::test_support::{TEST_ROOT, make_test_volume_with};
@@ -297,21 +297,21 @@ async fn signing_in_as_a_different_account_is_refused() {
 #[test]
 fn every_rung_offers_only_the_secret_that_could_mend_it() {
     for (rung, expected) in [
-        (AuthRungUsed::Agent, SignInPrompt::Nothing),
+        (AuthRungUsed::Agent, SignInShape::Nothing),
         (
             AuthRungUsed::KeyFile {
                 passphrase_protected: false,
             },
-            SignInPrompt::Nothing,
+            SignInShape::Nothing,
         ),
         (
             AuthRungUsed::KeyFile {
                 passphrase_protected: true,
             },
-            SignInPrompt::KeyPassphrase,
+            SignInShape::KeyPassphrase,
         ),
-        (AuthRungUsed::Password, SignInPrompt::Password),
-        (AuthRungUsed::KeyboardInteractive, SignInPrompt::Password),
+        (AuthRungUsed::Password, SignInShape::Password),
+        (AuthRungUsed::KeyboardInteractive, SignInShape::Password),
     ] {
         let (_events, _credentials, volume) = offline_volume(rung);
         let asked_the_way_the_app_asks: &dyn Volume = &volume;
@@ -337,7 +337,7 @@ fn the_prompt_follows_the_rung_the_last_dial_landed_on() {
     let asked_the_way_the_app_asks: &dyn Volume = &volume;
     assert_eq!(
         asked_the_way_the_app_asks.sign_in_prompt(),
-        SignInPrompt::Nothing,
+        SignInShape::Nothing,
         "an agent session is missing nothing a person could type"
     );
 
@@ -347,7 +347,7 @@ fn the_prompt_follows_the_rung_the_last_dial_landed_on() {
 
     assert_eq!(
         asked_the_way_the_app_asks.sign_in_prompt(),
-        SignInPrompt::Password,
+        SignInShape::Password,
         "a volume that wants a password now has to say so, or the banner has no way back in"
     );
 }

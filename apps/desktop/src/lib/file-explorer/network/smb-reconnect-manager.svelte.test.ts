@@ -8,11 +8,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { SignInPrompt, VolumeConnection, VolumeConnectionChanged } from '$lib/ipc/bindings'
+import type { SignInShape, VolumeConnection, VolumeConnectionChanged } from '$lib/ipc/bindings'
 
 // Hoisted mocks: must run before importing the module under test.
 const mockReconnect = vi.fn<(volumeId: string) => Promise<void>>()
-const mockSignInState = vi.fn<(volumeId: string) => Promise<SignInPrompt>>()
+const mockSignInState = vi.fn<(volumeId: string) => Promise<SignInShape>>()
 const mockListen = vi.fn<(handler: (payload: VolumeConnectionChanged) => void) => Promise<() => void>>()
 let lastEventHandler: ((payload: VolumeConnectionChanged) => void) | null = null
 
@@ -46,7 +46,7 @@ describe('smbReconnectManager', () => {
     vi.useFakeTimers()
     mockReconnect.mockReset()
     mockSignInState.mockReset()
-    mockSignInState.mockResolvedValue('password')
+    mockSignInState.mockResolvedValue({ kind: 'password' })
     mockListen.mockReset()
     mockListen.mockResolvedValue(() => {
       lastEventHandler = null
@@ -147,13 +147,15 @@ describe('smbReconnectManager', () => {
   it('asks what a sign-in would want when a volume needs auth', async () => {
     await smbReconnectManager.init()
     const unsub = smbReconnectManager.subscribe('vol-prompt')
-    mockSignInState.mockResolvedValue('key_passphrase')
+    mockSignInState.mockResolvedValue({ kind: 'key_passphrase' })
 
     emit('vol-prompt', 'needs_credentials')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(mockSignInState).toHaveBeenCalledWith('vol-prompt')
-    expect(smbReconnectManager.getSignInPrompt('vol-prompt')).toBe('key_passphrase')
+    // Compared on `kind`: the shape is a tagged union, and a variant that grows a
+    // field must not change how the others read.
+    expect(smbReconnectManager.getSignInShape('vol-prompt')?.kind).toBe('key_passphrase')
 
     smbReconnectManager.cancel('vol-prompt')
     unsub()
@@ -168,18 +170,23 @@ describe('smbReconnectManager', () => {
     await smbReconnectManager.init()
     const unsub = smbReconnectManager.subscribe('vol-prompt-again')
 
-    mockSignInState.mockResolvedValue('nothing')
+    mockSignInState.mockResolvedValue({ kind: 'nothing' })
     emit('vol-prompt-again', 'needs_credentials')
     await vi.advanceTimersByTimeAsync(0)
-    expect(smbReconnectManager.getSignInPrompt('vol-prompt-again')).toBe('nothing')
+    expect(smbReconnectManager.getSignInShape('vol-prompt-again')?.kind).toBe('nothing')
 
     emit('vol-prompt-again', 'connected')
-    mockSignInState.mockResolvedValue('password')
+    mockSignInState.mockResolvedValue({ kind: 'username_password', guestAllowed: true })
     emit('vol-prompt-again', 'needs_credentials')
     await vi.advanceTimersByTimeAsync(0)
 
     expect(mockSignInState).toHaveBeenCalledTimes(2)
-    expect(smbReconnectManager.getSignInPrompt('vol-prompt-again')).toBe('password')
+    // A share answers `username_password` and carries whether guests are welcome,
+    // so the sheet can render an editable username and a guest button off ONE read.
+    expect(smbReconnectManager.getSignInShape('vol-prompt-again')).toEqual({
+      kind: 'username_password',
+      guestAllowed: true,
+    })
 
     smbReconnectManager.cancel('vol-prompt-again')
     unsub()

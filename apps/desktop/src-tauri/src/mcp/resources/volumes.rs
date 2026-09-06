@@ -143,6 +143,12 @@ pub(crate) fn connection_state_token(state: cmdr_fs::volume::ConnectionState) ->
 /// carrying a live session whose mount didn't report a filesystem we recognize.
 /// ❗ It is checked LAST, so a server's own `fs_type` always wins; four backends
 /// carry a session now, and a session alone has never meant "SMB".
+///
+/// ❗ macOS-only, because `is_smb_fs_type` is: `volumes/fs_type.rs` is gated to it,
+/// and the Linux snapshot surfaces only root plus MTP today. Moving the SMB
+/// fs-type test somewhere both platforms reach is what that gap needs
+/// (`DETAILS.md` § "`cmdr://state` lists no real volumes on Linux").
+#[cfg(target_os = "macos")]
 fn kind_for_location(fs_type: Option<&str>, has_session: bool) -> VolumeKind {
     match fs_type {
         Some("sftp") => VolumeKind::Sftp,

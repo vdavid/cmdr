@@ -6,6 +6,7 @@
 
 use super::*;
 use crate::volume::test_support::*;
+use cmdr_fs::volume::SignInShape;
 use cmdr_fs::volume::host::VolumeHost;
 use std::sync::Arc;
 
@@ -303,4 +304,38 @@ fn a_roomy_window_never_raises_the_users_setting() {
 fn concurrency_never_falls_below_one() {
     assert_eq!(volume_with_credit_capacity(10, 1).max_concurrent_ops(), 1);
     assert_eq!(volume_with_credit_capacity(1, 8).max_concurrent_ops(), 1);
+}
+
+/// ❗ **The share is the identity, so the username is a FIELD on it.** SMB's
+/// `reconnect_with_credentials` accepts a new username and rewrites its params,
+/// which is how "sign in as someone else" works on a share; the sheet only offers
+/// that where the backend says so, and the default `Password` shape would render
+/// the username read-only and quietly take the affordance away.
+#[test]
+fn a_share_asks_for_a_username_alongside_the_password() {
+    let vol = make_test_volume();
+
+    assert_eq!(
+        vol.sign_in_prompt(),
+        SignInShape::UsernamePassword { guest_allowed: true },
+        "the test double holds a guest session, which is the only guest fact a volume knows",
+    );
+}
+
+/// A share opened with real credentials says nothing about guests: it never
+/// tried. The sheet then shows two fields and no guest button, which is the
+/// honest rendering of "we don't know".
+#[test]
+fn a_share_opened_with_credentials_offers_no_guest_option() {
+    let vol = make_test_volume();
+    {
+        let mut params = vol.inner.params.try_write().expect("nothing else holds the params");
+        params.username = "ada".to_string();
+        params.password = "hunter2".to_string();
+    }
+
+    assert_eq!(
+        vol.sign_in_prompt(),
+        SignInShape::UsernamePassword { guest_allowed: false }
+    );
 }

@@ -211,7 +211,7 @@ export {
   reconnectSmbVolumeWithCredentials,
   getVolumeSignInState,
   disconnectSmbVolume,
-  type SignInPrompt,
+  type SignInShape,
   type UpgradeResult,
   connectToServer,
   removeManualServer,

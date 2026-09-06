@@ -178,7 +178,7 @@ the store and re-probes. A refusal latches `auth_attempt_spent`, moves to `Needs
 `attempt_reconnect` probes now; `reconnect_with_credentials(username, password)` requires the volume's own username
 (another account is another volume: `NotSupported`), refreshes a REMEMBERED secret (never seeds one), and probes with
 the typed password. `UnattendedReconnect` is `SwitchOff`, `NoStoredSecret`, or `Possible`. `sign_in_prompt` is always
-`Password`.
+`SignInShape::Password`, so the sheet renders one field under a read-only username.
 
 ## Connecting from the frontend
 

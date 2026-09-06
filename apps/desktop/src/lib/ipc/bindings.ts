@@ -3558,7 +3558,8 @@ export const commands = {
       __TAURI_INVOKE('reconnect_smb_volume_with_credentials', { volumeId, username, password }),
     ),
   /**
-   *  What a "Sign in" affordance on this volume may ask a person for, right now.
+   *  What FORM a "Sign in" affordance on this volume takes, right now: which fields
+   *  the sheet renders, and whether the username among them is editable.
    *
    *  ❗ **Asked when the affordance renders, ❌ never carried on a connect result.**
    *  A backend that authenticates per connection can prove itself with a different
@@ -3570,8 +3571,12 @@ export const commands = {
    *  under, both answer `Password` (`Volume::sign_in_prompt`'s default): the one
    *  safe way to be wrong here is a needless password box, because a wrong
    *  `Nothing` is a volume the user can't sign in to at all.
+   *
+   *  ❗ The answer is a tagged union, so the frontend switches on `kind` and
+   *  ❌ never derives the form from the protocol, the mode the sheet is in, or the
+   *  rung a connect result mentioned.
    */
-  getVolumeSignInState: (volumeId: string) => __TAURI_INVOKE<SignInPrompt>('get_volume_sign_in_state', { volumeId }),
+  getVolumeSignInState: (volumeId: string) => __TAURI_INVOKE<SignInShape>('get_volume_sign_in_state', { volumeId }),
   /**
    *  Disconnects a single SMB volume by tearing down its OS mount.
    *
@@ -11540,7 +11545,9 @@ export type ShareListResult = {
 }
 
 /**
- *  What a "Sign in" affordance on a volume may ask a person for.
+ *  What a "Sign in" affordance on a volume asks a person for: the FORM the sheet
+ *  renders, decided by the backend rather than by the sheet's mode or the
+ *  protocol's name.
  *
  *  ❗ **Read from the live volume at the moment the affordance renders**, ❌
  *  never captured when the volume was opened. A backend that authenticates per
@@ -11550,24 +11557,60 @@ export type ShareListResult = {
  *  volume that now wants a password with no way in, and a stale
  *  [`KeyPassphrase`](Self::KeyPassphrase) asks for a secret the session doesn't
  *  use. [`Volume::sign_in_prompt`](super::Volume::sign_in_prompt) is the read.
+ *
+ *  ❗ **Whether the username is editable is a property of the VARIANT, not of the
+ *  sheet's mode.** [`Password`](Self::Password) and
+ *  [`KeyPassphrase`](Self::KeyPassphrase) render it read-only, because SFTP's and
+ *  WebDAV's `reconnect_with_credentials` refuse a changed username: the volume id
+ *  IS the account, and authenticating as somebody else under this volume's name
+ *  would index another account's files.
+ *  [`UsernamePassword`](Self::UsernamePassword) renders it editable, because SMB
+ *  accepts a new username and rewrites its params, which is how re-auth-as-
+ *  someone-else works. One implementer reading "read-only" as a mode rule would
+ *  break SMB; one reading "editable" as a mode rule would break SFTP.
+ *
+ *  **Reserved, ❌ not added until a producer exists**:
+ *  - `AccessKeys { session_token: bool }` for S3: an access key id, a secret
+ *    access key, and optionally a session token.
+ *  - `Oauth { provider }`: a "Continue in your browser" button and a waiting
+ *    state, with the callback coming home backend-side; "remember" is implicit
+ *    there (the refresh token is the only sane state), and a revoked token
+ *    surfaces as [`ConnectionState::NeedsSignIn`] behind the same banner.
  */
-export type SignInPrompt =
+export type SignInShape =
   /**
    *  ❌ Nothing to ask, so ❌ no sign-in button. The session comes back on its
    *  own (an ssh-agent identity, an unencrypted key file), and there is no
    *  secret a person could type that would help.
    */
-  | 'nothing'
+  | { kind: 'nothing' }
   /**
-   *  The account's password. Persisted on a successful sign-in, so the next
-   *  reconnect is silent.
+   *  The account's password, under a read-only username.
+   *
+   *  ❗ An attended sign-in REFRESHES a remembered secret and ❌ never seeds
+   *  one: the store is written only where it already holds a secret for this
+   *  account, so a user who declined to remember it stays declined
+   *  (`crates/cmdr-sftp/DETAILS.md` § "The two switches").
    */
-  | 'password'
+  | { kind: 'password' }
   /**
-   *  The passphrase on a key file. ❗ Used for that session and ❌ never saved:
-   *  persisting it would undo what encrypting the key asked for.
+   *  The passphrase on a key file, under a read-only username.
+   *
+   *  ❗ Same rule as [`Password`](Self::Password), refresh included: this is
+   *  NOT a never-save variant. Encrypting a key asks that the passphrase not be
+   *  left lying around, and a user who chose to remember it has already
+   *  answered that question themselves.
    */
-  | 'key_passphrase'
+  | { kind: 'key_passphrase' }
+  /**
+   *  A username AND a password, both editable: SMB, where the SHARE is the
+   *  identity and the account is a field on it.
+   */
+  | {
+      kind: 'username_password'
+      // Whether the sheet offers "Connect as guest" beside the two fields.
+      guestAllowed: boolean
+    }
 
 export type SigningInfoDto = {
   active: boolean

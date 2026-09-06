@@ -730,7 +730,8 @@ pub async fn disconnect_network_host(
 // is registered under the id, so an SFTP volume goes through them unchanged. The
 // frontend's reconnect manager calls all three and never branches on backend.
 
-/// What a "Sign in" affordance on this volume may ask a person for, right now.
+/// What FORM a "Sign in" affordance on this volume takes, right now: which fields
+/// the sheet renders, and whether the username among them is editable.
 ///
 /// ❗ **Asked when the affordance renders, ❌ never carried on a connect result.**
 /// A backend that authenticates per connection can prove itself with a different
@@ -742,17 +743,19 @@ pub async fn disconnect_network_host(
 /// under, both answer `Password` (`Volume::sign_in_prompt`'s default): the one
 /// safe way to be wrong here is a needless password box, because a wrong
 /// `Nothing` is a volume the user can't sign in to at all.
+///
+/// ❗ The answer is a tagged union, so the frontend switches on `kind` and
+/// ❌ never derives the form from the protocol, the mode the sheet is in, or the
+/// rung a connect result mentioned.
 #[tauri::command]
 #[specta::specta]
 // No timeout wrapper: this reads a lock and a map, and reaches no device.
-pub async fn get_volume_sign_in_state(volume_id: String) -> cmdr_fs::volume::SignInPrompt {
+pub async fn get_volume_sign_in_state(volume_id: String) -> cmdr_fs::volume::SignInShape {
     use crate::file_system::volume::manager::get_volume_manager;
 
     get_volume_manager()
         .get(&volume_id)
-        .map_or(cmdr_fs::volume::SignInPrompt::Password, |volume| {
-            volume.sign_in_prompt()
-        })
+        .map_or(cmdr_fs::volume::SignInShape::Password, |volume| volume.sign_in_prompt())
 }
 
 /// Tries to rebuild the smb2 session for a Disconnected `SmbVolume` in place.

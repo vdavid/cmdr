@@ -7,7 +7,7 @@ use std::time::Duration;
 use cmdr_fs::volume::SpaceInfo;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::events::{RecordingVolumeEvents, VolumeConnection};
-use cmdr_fs::volume::{LaneKey, SignInPrompt, Volume, WatchCoverage, adb_volume_id};
+use cmdr_fs::volume::{LaneKey, SignInShape, Volume, WatchCoverage, adb_volume_id};
 use tokio_util::sync::CancellationToken;
 
 use super::testing::{FIXTURE_SERIAL, connect_fake, detached_volume};
@@ -35,7 +35,7 @@ fn the_device_anchored_answers() {
     assert!(volume.local_path().is_none());
     assert!(!volume.create_directory_errors_on_existing_dir());
     assert_eq!(volume.space_poll_interval(), Some(Duration::from_secs(30)));
-    assert_eq!(volume.sign_in_prompt(), SignInPrompt::Nothing);
+    assert_eq!(volume.sign_in_prompt(), SignInShape::Nothing);
     assert!(volume.retirement().is_some());
     assert_eq!(volume.session_state(), ConnectionState::Connected);
     // The pure fold the frontend reads agrees with the predicates.
