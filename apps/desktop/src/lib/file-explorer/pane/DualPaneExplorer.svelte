@@ -479,12 +479,16 @@
     const rightVolumePath = $derived(
         rightVolumeId === 'network' ? 'smb://' : (volumes.find((v) => v.id === rightVolumeId)?.path ?? '/'),
     )
-    // Derived volume names for MCP state sync
+    // Derived volume names for MCP state sync. ❗ The hub row's name comes from the
+    // catalog, the one place the switcher label, this push, and Rust's
+    // `volume_listing::SERVERS_VOLUME_NAME` agree: `mcp/executor/nav.rs` waits for
+    // this pushed name to equal that const before it calls a volume switch done.
+    const serversVolumeName = $derived(tString('fileExplorer.navigation.networkVolume'))
     const leftVolumeName = $derived(
-        leftVolumeId === 'network' ? 'Network' : volumes.find((v) => v.id === leftVolumeId)?.name,
+        leftVolumeId === 'network' ? serversVolumeName : volumes.find((v) => v.id === leftVolumeId)?.name,
     )
     const rightVolumeName = $derived(
-        rightVolumeId === 'network' ? 'Network' : volumes.find((v) => v.id === rightVolumeId)?.name,
+        rightVolumeId === 'network' ? serversVolumeName : volumes.find((v) => v.id === rightVolumeId)?.name,
     )
 
     // --- Unified handler functions ---

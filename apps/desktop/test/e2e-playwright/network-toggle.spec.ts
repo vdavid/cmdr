@@ -1,18 +1,23 @@
 /**
- * E2E tests for the `network.enabled` toggle UX.
+ * What turning `network.enabled` off does to the servers hub.
  *
- * Covers the user-visible behavior of toggling networking off/on:
- * - Volume picker shows "Servers" by default
- * - Toggling off renames it to "Network (disabled)"
- * - Clicking "Network (disabled)" opens Settings → Network → SMB/Network shares
- * - Toggling back on restores "Servers"
+ * The switch gates mDNS discovery and SMB, which is what the macOS Local Network
+ * permission is about; SFTP and WebDAV need none of it. So the hub stays open and
+ * keeps listing saved servers, and the only thing that changes is that the hosts
+ * it would have found nearby are replaced by one line and a link back to the
+ * switch.
+ *
+ * Covered here:
+ * - The switcher row is called "Servers" whatever the switch says.
+ * - Selecting it opens the hub in both states, rather than deflecting to Settings.
+ * - With discovery off, the hub says so and offers the way back.
  *
  * Uses the `mcp-set-setting` event to write the setting from the test, which
  * triggers the same code path as the Settings UI (cache + cross-window emit +
- * `settings-applier` live-apply). This keeps the test focused on the picker
- * UX without coupling it to settings-page navigation.
+ * `settings-applier` live-apply). This keeps the test focused on the hub's UX
+ * without coupling it to settings-page navigation.
  *
- * Out of scope: macOS Local Network OS prompt timing (TCC dialog isn't
+ * Out of scope: macOS Local Network OS prompt timing (the TCC dialog isn't
  * driveable from automation). Validated manually.
  */
 
@@ -26,30 +31,31 @@ import { initMcpClient, mcpCall, mcpReadResource } from '../e2e-shared/mcp-clien
 // pane on a virtual MTP volume (mcp-nav-to-path won't cross volume boundaries).
 const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
 
+/** The hub row's label, which is also Rust's `SERVERS_VOLUME_NAME` const. */
+const SERVERS_VOLUME_NAME = 'Servers'
+
 const PICKER_TRIGGER = '.volume-name'
 const PICKER_DROPDOWN = '.volume-dropdown'
 const ANY_VOLUME_ITEM = '.volume-item'
+const HUB = '.servers-hub'
+const DISCOVERY_OFF = '.servers-hub .discovery-off'
 
-/** Reads the visible label of the synthetic Network volume entry. */
-async function readNetworkLabel(tauriPage: Parameters<typeof pollUntil>[0]): Promise<string | null> {
+/** Reads the visible label of the servers hub row in the switcher. */
+async function readServersLabel(tauriPage: Parameters<typeof pollUntil>[0]): Promise<string | null> {
   return tauriPage.evaluate<string | null>(`(function() {
     var items = document.querySelectorAll('.volume-item');
     for (var i = 0; i < items.length; i++) {
       var label = items[i].querySelector('.volume-label');
       if (!label) continue;
       var text = label.textContent || '';
-      if (text === 'Servers' || text === 'Network (disabled)') return text;
+      if (text === ${JSON.stringify(SERVERS_VOLUME_NAME)}) return text;
     }
     return null;
   })()`)
 }
 
 /** Sets a setting through the MCP bridge (same code path the UI uses). */
-async function setSettingViaBridge(
-  _tauriPage: Parameters<typeof pollUntil>[0],
-  settingId: string,
-  value: unknown,
-): Promise<void> {
+async function setSettingViaBridge(settingId: string, value: unknown): Promise<void> {
   // The `set_setting` MCP tool uses `mcp_round_trip` and only returns after the
   // frontend handler has acknowledged the change. This replaces the prior
   // emit-and-sleep dance; no fixed-duration wait needed.
@@ -71,7 +77,14 @@ async function closeVolumePicker(tauriPage: Parameters<typeof pollUntil>[0]): Pr
   await escapeOverlayUntilGone(tauriPage, PICKER_DROPDOWN)
 }
 
-test.describe('Network toggle in volume picker', () => {
+/** Puts the left pane on the hub and waits for it to render. */
+async function openHub(tauriPage: Parameters<typeof pollUntil>[0]): Promise<void> {
+  await closeVolumePicker(tauriPage)
+  await mcpCall('select_volume', { pane: 'left', name: SERVERS_VOLUME_NAME })
+  await expect.poll(async () => tauriPage.isVisible(HUB), { timeout: 15000 }).toBeTruthy()
+}
+
+test.describe('Local network discovery off', () => {
   test.beforeEach(async ({ tauriPage }) => {
     // Force both panes back to a local volume in case a prior MTP test left a pane on
     // a virtual MTP volume; `ensureAppReady`'s `mcp-nav-to-path` doesn't cross volume
@@ -107,7 +120,7 @@ test.describe('Network toggle in volume picker', () => {
     await ensureAppReady(tauriPage)
 
     // Reset the toggle to its default in case a prior test left it off.
-    await setSettingViaBridge(tauriPage, 'network.enabled', true)
+    await setSettingViaBridge('network.enabled', true)
     await closeVolumePicker(tauriPage)
   })
 
@@ -116,116 +129,49 @@ test.describe('Network toggle in volume picker', () => {
     // dropdown's label and have no reason to dismiss it themselves, but the
     // fixtures safety-net afterEach (which runs AFTER this one — Playwright runs
     // afterEach hooks inner-to-outer) fails the test on a leaked `.volume-dropdown`.
-    // Without this explicit close the tests were flaky: the `setSettingViaBridge`
-    // re-render below sometimes dropped focus and closed the picker (pass), sometimes
-    // didn't (leak → fail). `closeVolumePicker` is a no-op when nothing's open.
     await closeVolumePicker(tauriPage)
-    // Restore the default so the next spec file starts clean.
-    await setSettingViaBridge(tauriPage, 'network.enabled', true)
-    // Close any settings window the click test may have opened. Best-effort; the
-    // Tauri webviewWindow API is the same module the app uses to open it.
-    await tauriPage.evaluate(`(async function() {
-      try {
-        var mod = await import('@tauri-apps/api/webviewWindow');
-        var win = await mod.WebviewWindow.getByLabel('settings');
-        if (win) await win.close();
-      } catch (e) {
-        // ignore
-      }
-    })()`)
+    // Restore the default so the next spec file starts clean, and leave the pane
+    // off the hub so the next spec doesn't inherit it.
+    await setSettingViaBridge('network.enabled', true)
+    await mcpCall('select_volume', { pane: 'left', name: LOCAL_VOLUME_NAME })
   })
 
-  test('shows "Servers" by default', async ({ tauriPage }) => {
+  test('the switcher row is called "Servers" whether discovery is on or off', async ({ tauriPage }) => {
     await openVolumePicker(tauriPage)
     await tauriPage.waitForSelector(ANY_VOLUME_ITEM, 3000)
-    const label = await readNetworkLabel(tauriPage)
-    expect(label).toBe('Servers')
-  })
+    expect(await readServersLabel(tauriPage)).toBe(SERVERS_VOLUME_NAME)
 
-  test('shows "Network (disabled)" when toggle is off', async ({ tauriPage }) => {
-    await setSettingViaBridge(tauriPage, 'network.enabled', false)
+    await closeVolumePicker(tauriPage)
+    await setSettingViaBridge('network.enabled', false)
     await openVolumePicker(tauriPage)
     await tauriPage.waitForSelector(ANY_VOLUME_ITEM, 3000)
-    const label = await pollUntilLabel(tauriPage, 'Network (disabled)')
-    expect(label).toBe('Network (disabled)')
+    // Pre-hub this said "Network (disabled)" and the row refused to open. The
+    // saved servers behind it never needed the permission the switch is about.
+    expect(await readServersLabel(tauriPage)).toBe(SERVERS_VOLUME_NAME)
   })
 
-  test('toggling back on restores "Servers"', async ({ tauriPage }) => {
-    await setSettingViaBridge(tauriPage, 'network.enabled', false)
-    await setSettingViaBridge(tauriPage, 'network.enabled', true)
-    await openVolumePicker(tauriPage)
-    await tauriPage.waitForSelector(ANY_VOLUME_ITEM, 3000)
-    const label = await pollUntilLabel(tauriPage, 'Servers')
-    expect(label).toBe('Servers')
-  })
+  test('the hub opens with discovery off, and says so in place of the nearby hosts', async ({ tauriPage }) => {
+    await setSettingViaBridge('network.enabled', false)
+    await openHub(tauriPage)
 
-  test('clicking "Network (disabled)" closes the dropdown without changing volume', async ({ tauriPage }) => {
-    await setSettingViaBridge(tauriPage, 'network.enabled', false)
-
-    // Capture the visible breadcrumb label BEFORE the click. The picker's `.volume-name`
-    // shows the active volume; if `handleVolumeSelect` had taken the navigate-to-volume
-    // branch (i.e. our early-return guard didn't fire), this label would change after the
-    // click. So path-stability is our proxy for "the early-return branch ran": the only
-    // branch that fits the disabled-network condition.
-    const labelBefore = await tauriPage.evaluate<string>(
-      `(function() { var bc = document.querySelector('.volume-name'); return bc ? bc.textContent || '' : ''; })()`,
+    await expect.poll(async () => tauriPage.isVisible(DISCOVERY_OFF), { timeout: 5000 }).toBeTruthy()
+    const text = await tauriPage.evaluate<string>(
+      `(document.querySelector(${JSON.stringify(DISCOVERY_OFF)})?.textContent ?? '')`,
     )
+    expect(text).toContain('Local network discovery is off.')
+    // The way back is a link, ❗ not an instruction to go find the setting.
+    expect(text).toContain('Turn it on in Settings')
 
-    await openVolumePicker(tauriPage)
-    await tauriPage.waitForSelector(ANY_VOLUME_ITEM, 3000)
+    // The rest of the hub is untouched: the add row is still the last one.
+    expect(await tauriPage.isVisible('.servers-hub .add-row')).toBe(true)
+  })
 
-    // Click the synthetic Network entry. Find it by label since `data-index` is
-    // volatile. Retry on miss: setSettingViaBridge has already returned, but the
-    // dropdown's `.volume-item` list may still be re-rendering with the new
-    // label. A one-shot click against an in-flight render would silently no-op
-    // and then we'd wait for a dropdown-close that won't come.
-    await expect
-      .poll(
-        async () =>
-          tauriPage.evaluate<boolean>(`(function() {
-          var items = document.querySelectorAll('.volume-item');
-          for (var i = 0; i < items.length; i++) {
-            var label = items[i].querySelector('.volume-label');
-            if (label && label.textContent === 'Network (disabled)') {
-              items[i].click();
-              return true;
-            }
-          }
-          return false;
-        })()`),
-        { timeout: 2000 },
-      )
-      .toBeTruthy()
+  test('turning discovery back on takes the line away', async ({ tauriPage }) => {
+    await setSettingViaBridge('network.enabled', false)
+    await openHub(tauriPage)
+    await expect.poll(async () => tauriPage.isVisible(DISCOVERY_OFF), { timeout: 5000 }).toBeTruthy()
 
-    // The dropdown should close. `handleVolumeSelect` sets `isOpen = false` up front, so
-    // both the early-return and the navigate paths close the dropdown, but only the
-    // early-return path leaves the breadcrumb unchanged (next assertion).
-    await expect.poll(async () => !(await tauriPage.isVisible(PICKER_DROPDOWN)), { timeout: 3000 }).toBeTruthy()
-    expect(await tauriPage.isVisible(PICKER_DROPDOWN)).toBe(false)
-
-    // Active volume must NOT have changed: the disabled-network branch returns early
-    // without calling `onVolumeChange`, so the breadcrumb stays put. We don't assert
-    // that the settings window actually opened; `openSettingsWindow` is fire-and-forget,
-    // and inspecting other webviews from the test webview is awkward via `evaluate()`.
-    // The breadcrumb-stability check is enough to prove our branch was the one that ran.
-    const labelAfter = await tauriPage.evaluate<string>(
-      `(function() { var bc = document.querySelector('.volume-name'); return bc ? bc.textContent || '' : ''; })()`,
-    )
-    expect(labelAfter).toBe(labelBefore)
+    await setSettingViaBridge('network.enabled', true)
+    await expect.poll(async () => !(await tauriPage.isVisible(DISCOVERY_OFF)), { timeout: 5000 }).toBeTruthy()
   })
 })
-
-/** Polls the Network entry label until it matches the expected value, then returns it. */
-async function pollUntilLabel(tauriPage: Parameters<typeof pollUntil>[0], expected: string): Promise<string | null> {
-  let label: string | null = null
-  await expect
-    .poll(
-      async () => {
-        label = await readNetworkLabel(tauriPage)
-        return label === expected
-      },
-      { timeout: 3000 },
-    )
-    .toBeTruthy()
-  return label
-}

@@ -32,9 +32,12 @@ function setup(volumes: VolumeInfo[]) {
 describe('createVolumeSelection', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('selectVolumeByName("Network") navigates to the virtual network volume', async () => {
+  it('selectVolumeByName("Servers") navigates to the synthetic hub volume', async () => {
+    // ❗ The name is read from the catalog, ❌ never a literal: the hub row is
+    // synthesized by `volume-grouping.ts`, so no `findIndex` over the volume list
+    // can reach it, and a second spelling makes `select_volume` time out.
     const { ops, navigate } = setup([])
-    const ok = await ops.selectVolumeByName('left', 'Network')
+    const ok = await ops.selectVolumeByName('left', 'Servers')
     expect(ok).toBe(true)
     expect(navigate).toHaveBeenCalledWith({
       pane: 'left',
