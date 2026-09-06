@@ -698,6 +698,10 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
 - **Post-move snapshot cleanup**: covered by the cross-snapshot purge above. After F6 or F8 from the snapshot pane, the
   rows the operation actually took disappear from every snapshot that referenced them; a skipped one stays.
 
+**MCP sees the pane, so an agent's delete acts on the rows on screen.** The snapshot pane mirrors to the MCP `PaneState`
+store like any other pane, with its rows read off the frontend snapshot instead of a backend listing. Plumbing and the
+guardrail: `file-explorer/pane/DETAILS.md` § "Volume capabilities".
+
 **The column header claims no sort, because the pane performs none.** The rows go to `FullList` as `staticEntries` and
 render in the order the search engine ranked them, so the pane's `sortBy` / `sortOrder` govern nothing here. The header
 therefore comes through `sortable={caps.sortsRows}` (false for this kind): the four column labels stay, the sort

@@ -114,7 +114,9 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       // The rows arrive in the search engine's ranked order and stay in it:
       // every source-side op resolves a selected index against `snapshot.entries[i]`.
       sortsRows: false,
-      syncsToMcp: false,
+      // Mirrors to MCP off the frontend snapshot: no backend listing needed, and
+      // the copy/move/delete gate reads this pane's state.
+      syncsToMcp: true,
     },
     archive: {
       kind: 'archive',

@@ -9588,6 +9588,15 @@ export type PaneState = {
   sortField?: string
   sortOrder?: string
   totalFiles?: number
+  /**
+   *  Whether the pane renders a `..` row, which `total_files` counts. Without
+   *  it, "one counted row" is ambiguous: an empty folder pushes zero rendered
+   *  files with `total_files: 1` (the parent), while a parentless pane — a
+   *  search-results snapshot, or any pane at a volume root — counting one row
+   *  holds one real file. The gate in `executor::file_ops` reads it to tell the
+   *  two apart instead of guessing from the count.
+   */
+  hasParentRow?: boolean
   loadedStart?: number
   loadedEnd?: number
   showHidden?: boolean

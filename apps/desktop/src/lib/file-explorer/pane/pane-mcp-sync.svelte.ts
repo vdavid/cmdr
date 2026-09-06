@@ -7,20 +7,35 @@ import {
 } from '$lib/tauri-commands'
 import { type CanonicalPath, parentOf } from '$lib/path/canonical'
 import type { ViewMode } from '$lib/app-status-store'
+import type { SearchResultEntry } from '$lib/ipc/bindings'
+import { snapshotMcpRows } from './snapshot-mcp-rows'
 
 export interface PaneMcpSyncDeps {
   paneId: 'left' | 'right'
   /**
    * Whether this pane's kind mirrors to the MCP `PaneState` store
-   * (`VolumeCapabilities.syncsToMcp`). `false` for the network + search-results
-   * kinds — they have other owners (see `skipMcpFileSync` / `syncPaneStateToMcp`).
-   * FilePane supplies this from its derived caps, so the gate reads the kind
-   * capability, not a `getIsNetworkView() || getIsSearchResultsView()` derivation
-   * off raw `volumeId ===` deriveds.
+   * (`VolumeCapabilities.syncsToMcp`). `false` only for the network kind, whose
+   * push `NetworkBrowser` owns (see `syncPaneStateToMcp`). FilePane supplies this
+   * from its derived caps, so the gate reads the kind capability, not a
+   * `getIsNetworkView()` derivation off a raw `volumeId ===` derived.
    */
   getSyncsToMcp: () => boolean
   getListingId: () => string
+  /** Rows the BACKEND listing holds (no `..`). Zero on a pane with no listing. */
   getTotalCount: () => number
+  /**
+   * Rows the pane DISPLAYS, `..` included — FilePane's `effectiveTotalCount`. It
+   * differs from `getTotalCount()` twice over: a pane with a parent row counts one
+   * more, and a search-results pane counts its snapshot's entries while the backend
+   * count sits at zero. This is what reaches `totalFiles`.
+   */
+  getRowCount: () => number
+  /**
+   * The search-results snapshot's entries when this pane is showing one, else
+   * `null`. A snapshot pane has no listing to fetch rows from, so its rows come
+   * from here instead (`snapshot-mcp-rows.ts`).
+   */
+  getSnapshotEntries: () => readonly SearchResultEntry[] | null
   getHasParent: () => boolean
   getVisibleRangeStart: () => number
   getVisibleRangeEnd: () => number
@@ -47,9 +62,8 @@ export interface PaneMcpSyncDeps {
  * Mirrors a `FilePane`'s state into the MCP `PaneState` store so `cmdr://state`
  * reflects navigation, selection, and type-to-jump for MCP-driven tests/agents.
  *
- * Network and search-results panes are skipped: `NetworkBrowser` owns the MCP
- * push for the network view (FilePane's sync would clobber its host list), and
- * a search-results snapshot is local dialog state, not a directory agents query.
+ * Only the network pane is skipped: `NetworkBrowser` owns the MCP push for that
+ * view, and FilePane's sync would clobber its host list.
  */
 /**
  * How many rows of the visible range `cmdr://state` carries. A cap rather than
@@ -69,10 +83,11 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
   }
 
   /**
-   * Returns true when MCP shouldn't carry a file list for this pane. Either it's
-   * a virtual-volume pane (network / search-results — the snapshot or NetworkBrowser
-   * owns that pane state) or there's no listing yet. Extracted from `buildMcpFileList`
-   * to keep that function under the cyclomatic complexity cap.
+   * Returns true when MCP shouldn't carry a BACKEND-listing file list for this
+   * pane: the network pane (NetworkBrowser owns that push) or no listing yet. A
+   * search-results pane also has no listing id, and its rows come from the
+   * snapshot branch in `buildMcpFileList` before this is consulted. Extracted to
+   * keep that function under the cyclomatic complexity cap.
    */
   function skipMcpFileSync(): boolean {
     return !deps.getSyncsToMcp() || !deps.getListingId() || deps.getTotalCount() === 0
@@ -111,6 +126,12 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
   /** Build file list for MCP state sync */
   async function buildMcpFileList(): Promise<PaneFileEntry[]> {
     const files: PaneFileEntry[] = []
+    // A search-results pane's rows are already in the frontend, so they never go
+    // through the listing cache. Same visible-range window and same row cap.
+    const snapshotEntries = deps.getSnapshotEntries()
+    if (snapshotEntries) {
+      return snapshotMcpRows(snapshotEntries, deps.getVisibleRangeStart(), deps.getVisibleRangeEnd(), MAX_MIRRORED_ROWS)
+    }
     if (skipMcpFileSync()) return files
 
     const listingId = deps.getListingId()
@@ -178,19 +199,20 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
    * source of truth there.
    */
   async function syncPaneStateToMcp() {
-    // Search-results panes don't sync to MCP either: the snapshot is local
-    // dialog state, not a directory MCP agents are expected to query. Both the
-    // network and search-results skips fold into the `syncsToMcp` capability
-    // (false for both kinds), supplied by FilePane's derived caps.
+    // The network skip folds into the `syncsToMcp` capability, supplied by
+    // FilePane's derived caps. A search-results pane DOES sync: it is a real pane
+    // an agent can move the cursor in and delete from, and while it pushed nothing
+    // the store went on describing the directory the pane came from.
     if (!deps.getSyncsToMcp()) return
     try {
       const files = await buildMcpFileList()
       const hasParent = deps.getHasParent()
-      const totalCount = deps.getTotalCount()
       const visibleRangeStart = deps.getVisibleRangeStart()
       const visibleRangeEnd = deps.getVisibleRangeEnd()
       const typeToJump = deps.getTypeToJump()
-      const effectiveTotal = hasParent ? totalCount + 1 : totalCount
+      // Rows on screen, `..` included. FilePane already folds the parent row and
+      // the snapshot's own count into one derived, so this doesn't redo either.
+      const effectiveTotal = deps.getRowCount()
       // Use actual visible range, clamped to valid bounds
       const loadedStart = Math.max(0, visibleRangeStart)
       const loadedEnd = Math.min(effectiveTotal, visibleRangeEnd)
@@ -220,6 +242,10 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
         sortField: sortFieldMap[deps.getSortBy()] ?? 'name',
         sortOrder: deps.getSortOrder() === 'ascending' ? 'asc' : 'desc',
         totalFiles: effectiveTotal,
+        // Says whether `totalFiles` counts a `..` row. The backend's empty-pane
+        // gate subtracts it before deciding there's nothing to act on, so a
+        // parentless pane holding one file isn't read as an empty folder.
+        hasParentRow: hasParent,
         loadedStart,
         loadedEnd,
         showHidden: deps.getShowHiddenFiles(),

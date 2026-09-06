@@ -130,7 +130,13 @@ export interface VolumeCapabilities {
    * all. See `pane/DETAILS.md` § "Volume capabilities".
    */
   sortsRows: boolean
-  /** Mirrors pane state to the MCP `PaneState` store (network/search panes are skipped — they have other owners). */
+  /**
+   * FilePane mirrors this pane's state to the MCP `PaneState` store. False only
+   * for `network`, where `NetworkBrowser` owns the push and FilePane's would
+   * clobber its host list. Every other kind mirrors, the search-results snapshot
+   * included: it's a real pane an agent moves the cursor in and deletes from, and
+   * a pane that pushes nothing leaves the store describing wherever it came from.
+   */
   syncsToMcp: boolean
 }
 
@@ -206,7 +212,11 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // `sortsRows: false`: the rows arrive ranked by the search engine and render
     // in that order, so the column header names the columns and claims no sort.
     sortsRows: false,
-    syncsToMcp: false,
+    // `syncsToMcp: true` despite having no backend listing: the rows come from the
+    // frontend snapshot instead (`snapshot-mcp-rows.ts`), and MCP's copy/move/delete
+    // gate reasons on this pane's state, so a pane that pushed nothing left the
+    // store describing the directory it came from.
+    syncsToMcp: true,
   }),
   archive: Object.freeze({
     kind: 'archive',

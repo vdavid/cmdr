@@ -1110,12 +1110,16 @@
     // pass reactive reads via getters so the factory lives in a plain `.svelte.ts`.
     const mcpSync = createPaneMcpSync({
         paneId,
-        // The network + search-results skip folds into the kind's `syncsToMcp`
-        // capability (false for both), read off the pane's derived `caps` rather
-        // than the two `volumeId ===` deriveds.
+        // The network skip folds into the kind's `syncsToMcp` capability, read off
+        // the pane's derived `caps` rather than a `volumeId ===` derived.
         getSyncsToMcp: () => caps.syncsToMcp,
         getListingId: () => listingId,
         getTotalCount: () => totalCount,
+        // Rows on screen (`..` included; the snapshot's own count on a search pane),
+        // against the backend listing count above.
+        getRowCount: () => effectiveTotalCount,
+        // A search-results pane's rows live in the frontend snapshot, not a listing.
+        getSnapshotEntries: () => searchSnapshot?.entries ?? null,
         getHasParent: () => hasParent,
         getVisibleRangeStart: () => visibleRangeStart,
         getVisibleRangeEnd: () => visibleRangeEnd,

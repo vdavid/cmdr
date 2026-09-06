@@ -300,8 +300,15 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   its four column labels as plain `<span>`s: no button, no active column, no direction caret, and no caret allowance in
   the measured column tracks (`measure-column-widths::chromeFor`). WHY the snapshot pane's rows can't follow a sort:
   `../../search/DETAILS.md` § "Source-side ops from the snapshot pane".
-- **MCP sync** (`pane-mcp-sync.svelte.ts`): the network/search skip off `!syncsToMcp`. The deps interface carries a
-  single `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps).
+- **MCP sync** (`pane-mcp-sync.svelte.ts`): the network skip off `!syncsToMcp`. The deps interface carries a single
+  `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps). Only `network` is false, because
+  `NetworkBrowser` owns that pane's push. A search-results pane DOES mirror even with no backend listing: its rows come
+  off the frontend snapshot through `snapshot-mcp-rows.ts` (basename in `name`, absolute path in `path`, no recursive
+  fields), its `totalFiles` is the snapshot's own count, and `hasParentRow: false` tells the backend gate that one
+  counted row is one real file. ❌ Don't turn that push back off: MCP's copy/move/delete pre-check reasons on this
+  store, so a pane that pushes nothing leaves it describing whatever directory the pane came FROM, and an old cursor
+  parked on that directory's `..` refused a delete over rows the user could see. Gate:
+  `src-tauri/src/mcp/executor/DETAILS.md` § "Empty-operation fast-fail".
 - **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
   (`=== '/'`, `=== root`) stay.
 - **FilePane alt-view chain** (`FilePane.svelte`): the kind-structural view selection resolves through a `paneViewKind`

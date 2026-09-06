@@ -34,6 +34,7 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 import type { CanonicalPath } from '$lib/path/canonical'
+import type { SearchResultEntry } from '$lib/ipc/bindings'
 import { createPaneMcpSync, type PaneMcpSyncDeps } from './pane-mcp-sync.svelte'
 
 const TOTAL_COUNT = 74_144
@@ -56,6 +57,8 @@ function deps(overrides: Partial<PaneMcpSyncDeps> = {}): PaneMcpSyncDeps {
     getSyncsToMcp: () => true,
     getListingId: () => 'listing-1',
     getTotalCount: () => TOTAL_COUNT,
+    getRowCount: () => TOTAL_COUNT,
+    getSnapshotEntries: () => null,
     getHasParent: () => false,
     getVisibleRangeStart: () => TOTAL_COUNT - 100,
     getVisibleRangeEnd: () => TOTAL_COUNT,
@@ -130,5 +133,134 @@ describe('buildMcpFileList', () => {
 
     expect(await sync.buildMcpFileList()).toEqual([])
     expect(getFileRange).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * A search-results snapshot pane. It has no backend listing to fetch rows from, so
+ * for a long time it pushed nothing at all and the MCP store kept describing the
+ * directory the pane came FROM. An MCP delete then reasoned on that stale state and
+ * refused ("the cursor is on the parent entry") over a pane holding a real cursor row.
+ */
+describe('a search-results snapshot pane', () => {
+  function result(name: string): SearchResultEntry {
+    return {
+      name,
+      path: `/Users/test/${name}`,
+      parentPath: '/Users/test',
+      isDirectory: false,
+      size: 12,
+      modifiedAt: 1_700_000_000,
+      iconId: 'ext:txt',
+    }
+  }
+
+  const ROWS = [result('a.txt'), result('b.txt'), result('c.txt')]
+
+  function snapshotDeps(overrides: Partial<PaneMcpSyncDeps> = {}): PaneMcpSyncDeps {
+    return deps({
+      getListingId: () => '',
+      getTotalCount: () => 0,
+      getRowCount: () => ROWS.length,
+      getSnapshotEntries: () => ROWS,
+      getHasParent: () => false,
+      getCurrentPath: () => 'search-results://snap-1',
+      getVolumeId: () => 'search-results',
+      getVisibleRangeStart: () => 0,
+      getVisibleRangeEnd: () => 100,
+      getCursorIndex: () => 1,
+      getSelectedIndices: () => [],
+      ...overrides,
+    })
+  }
+
+  beforeEach(() => {
+    getFileRange.mockReset()
+    updateLeftPaneState.mockClear()
+  })
+
+  it('mirrors its rows without asking the backend for a listing', async () => {
+    const sync = createPaneMcpSync(snapshotDeps())
+
+    const files = await sync.buildMcpFileList()
+
+    expect(files.map((f) => f.name)).toEqual(['a.txt', 'b.txt', 'c.txt'])
+    // The Name column shows the friendly full path, but MCP reports the basename
+    // and carries the absolute path separately, the way every other pane does.
+    expect(files[0]?.path).toBe('/Users/test/a.txt')
+    expect(getFileRange).not.toHaveBeenCalled()
+  })
+
+  it('pushes the snapshot path, its row count, and its parentless shape', async () => {
+    const sync = createPaneMcpSync(snapshotDeps())
+
+    await sync.syncPaneStateToMcp()
+
+    expect(updateLeftPaneState).toHaveBeenCalledTimes(1)
+    const state = updateLeftPaneState.mock.calls[0][0] as {
+      path: string
+      volumeId: string
+      totalFiles: number
+      hasParentRow: boolean
+      cursorIndex: number
+    }
+    expect(state.path).toBe('search-results://snap-1')
+    expect(state.volumeId).toBe('search-results')
+    expect(state.totalFiles).toBe(3)
+    // No `..` row, so the backend gate can't read "one counted row" as "empty folder".
+    expect(state.hasParentRow).toBe(false)
+    expect(state.cursorIndex).toBe(1)
+  })
+
+  it('carries the live selection, which is what an MCP delete acts on', async () => {
+    const sync = createPaneMcpSync(snapshotDeps({ getSelectedIndices: () => [0, 2] }))
+
+    await sync.syncPaneStateToMcp()
+
+    const state = updateLeftPaneState.mock.calls[0][0] as { selectedIndices: number[] }
+    expect(state.selectedIndices).toEqual([0, 2])
+  })
+
+  it('follows the visible range rather than serializing the whole result set', async () => {
+    const sync = createPaneMcpSync(snapshotDeps({ getVisibleRangeStart: () => 1, getVisibleRangeEnd: () => 3 }))
+
+    expect((await sync.buildMcpFileList()).map((f) => f.name)).toEqual(['b.txt', 'c.txt'])
+  })
+
+  it('pushes an empty file list for an empty snapshot, so the gate can say so', async () => {
+    const sync = createPaneMcpSync(snapshotDeps({ getSnapshotEntries: () => [], getRowCount: () => 0 }))
+
+    await sync.syncPaneStateToMcp()
+
+    const state = updateLeftPaneState.mock.calls[0][0] as { files: unknown[]; totalFiles: number }
+    expect(state.files).toEqual([])
+    expect(state.totalFiles).toBe(0)
+  })
+})
+
+/**
+ * A normal pane's `totalFiles` still counts its `..` row, and `hasParentRow` says so.
+ * The two travel together: the backend's empty-pane gate subtracts one from the count
+ * only where the flag is set.
+ */
+describe('the parent row a normal pane counts', () => {
+  it('reports its `..` row in both the count and the flag', async () => {
+    getFileRange.mockResolvedValue([])
+    updateLeftPaneState.mockClear()
+    const sync = createPaneMcpSync(
+      deps({
+        getHasParent: () => true,
+        getTotalCount: () => 4,
+        getRowCount: () => 5,
+        getVisibleRangeStart: () => 0,
+        getVisibleRangeEnd: () => 5,
+      }),
+    )
+
+    await sync.syncPaneStateToMcp()
+
+    const state = updateLeftPaneState.mock.calls[0][0] as { totalFiles: number; hasParentRow: boolean }
+    expect(state.totalFiles).toBe(5)
+    expect(state.hasParentRow).toBe(true)
   })
 })
