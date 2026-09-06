@@ -739,6 +739,10 @@ mod probe_row_tests;
 #[cfg(test)]
 #[path = "move_progress_tests.rs"]
 mod progress_tests;
+/// What a same-volume Overwrite leaves behind when its replacing rename refuses.
+#[cfg(test)]
+#[path = "move_same_overwrite_tests.rs"]
+mod same_overwrite_tests;
 #[cfg(test)]
 #[path = "move_same_tests.rs"]
 mod same_tests;

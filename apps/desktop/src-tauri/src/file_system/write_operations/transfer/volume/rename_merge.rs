@@ -59,8 +59,9 @@ use std::sync::Mutex;
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
 use super::super::super::state::{WriteOperationState, is_cancelled};
-use super::super::super::types::{VolumeCopyConfig, WriteOperationError};
+use super::super::super::types::{RecoveredOriginal, VolumeCopyConfig, WriteOperationError};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
+use super::displaced_destination::{DisplacedDestination, displace_destination};
 use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -388,57 +389,89 @@ async fn apply_child_decision(
         if write_path_is_dir {
             return Box::pin(rename_merge_directory(ctx, child_source, &write_path, note_both_halves)).await;
         }
-        if ctx.volume.exists(&write_path).await {
-            // Replacing a dest FILE with this dir subtree destroys it: an overwrite.
+        // Replacing a dest FILE with this dir subtree destroys it: an overwrite.
+        // ❗ It goes ASIDE, never straight to a delete — the rename that replaces
+        // it is a separate call the backend can refuse.
+        let displaced = displace_destination(ctx.volume, &write_path, ctx.state.liveness_token()).await?;
+        if displaced.is_some() {
             ctx.overwrote.store(true, std::sync::atomic::Ordering::Relaxed);
-            match ctx.volume.delete(&write_path).await {
-                Ok(()) | Err(VolumeError::NotFound(_)) => {}
-                Err(e) => return Err(map_rename_error(&write_path, e)),
-            }
         }
         note_both_halves(child_source, &write_path);
-        return match ctx.volume.rename(child_source, &write_path, false).await {
-            Ok(()) => Ok(()),
-            Err(e) => Err(map_rename_error(child_source, e)),
-        };
+        return rename_replacing(ctx, child_source, &write_path, displaced).await;
     }
 
     // File child. For a file→file safe-replace (Overwrite), delete the original
     // first then rename onto it (atomic-ish; the rename is the commit). For
     // Rename / a fresh path, rename straight across — clearing a reserved
     // placeholder first.
-    let target = match replace {
-        // Overwrite: `orig` is the existing dest. Delete it, then rename the
-        // source straight onto the now-absent slot. `rename(force=false)` can't
-        // replace, and MTP's `rename(force=true)` wouldn't delete it either, so
-        // an explicit delete-then-rename is the only shape correct across all
-        // backends — the same legacy delete-first shape the top-level
-        // same-volume overwrite uses.
+    let (target, displaced) = match replace {
+        // Overwrite: `orig` is the existing dest, and the name has to be free
+        // before the source can be renamed onto it (`rename(force=false)` can't
+        // replace, and MTP's `rename(force=true)` wouldn't delete it either).
+        // ❗ Free it by renaming the file ASIDE, never by deleting it: the
+        // replacing rename is a separate call, and a backend that refuses it
+        // after a delete leaves the user with neither copy.
         Some(orig) => {
-            // A file→file safe-replace: the existing dest is deleted below. Mark
-            // the op as having overwritten (not rollbackable).
-            ctx.overwrote.store(true, std::sync::atomic::Ordering::Relaxed);
-            orig
+            let displaced = displace_destination(ctx.volume, &orig, ctx.state.liveness_token()).await?;
+            // A file→file safe-replace: mark the op as having overwritten (not
+            // rollbackable).
+            if displaced.is_some() {
+                ctx.overwrote.store(true, std::sync::atomic::Ordering::Relaxed);
+            }
+            (orig, displaced)
         }
         // Rename / fresh: `write_path` is the resolved (unique) name. On a
         // local-FS dest the resolver RESERVED it with an O_CREAT|O_EXCL
         // placeholder (the TOCTOU guard the streaming writer would truncate),
         // so `rename(force=false)` would collide with our own placeholder.
         // Clear it first; the name stays reserved logically and the rename lands
-        // the source there. On non-local dests no placeholder exists and the
-        // delete is a benign `NotFound`.
-        None => write_path,
-    };
-    if ctx.volume.exists(&target).await {
-        match ctx.volume.delete(&target).await {
-            Ok(()) | Err(VolumeError::NotFound(_)) => {}
-            Err(e) => return Err(map_rename_error(&target, e)),
+        // the source there. A plain delete is right here and only here: that
+        // zero-byte file is OURS, not the user's. On non-local dests no
+        // placeholder exists and the delete is a benign `NotFound`.
+        None => {
+            if ctx.volume.exists(&write_path).await {
+                match ctx.volume.delete(&write_path).await {
+                    Ok(()) | Err(VolumeError::NotFound(_)) => {}
+                    Err(e) => return Err(map_rename_error(&write_path, e)),
+                }
+            }
+            (write_path, None)
         }
-    }
+    };
     note_both_halves(child_source, &target);
-    match ctx.volume.rename(child_source, &target, false).await {
-        Ok(()) => Ok(()),
-        Err(e) => Err(map_rename_error(child_source, e)),
+    rename_replacing(ctx, child_source, &target, displaced).await
+}
+
+/// Renames `child_source` onto `target`, answering for the entry the rename is
+/// replacing: dropped once the rename lands, put back when it doesn't.
+///
+/// The put-back can refuse too (the same dead link that refused the rename), and
+/// then the user's file wears a ` (recovered)` name beside where it belongs. That
+/// path is typed onto the failure, because it is the only place their file is.
+async fn rename_replacing(
+    ctx: &RenameMergeCtx<'_>,
+    child_source: &Path,
+    target: &Path,
+    displaced: Option<DisplacedDestination>,
+) -> Result<(), WriteOperationError> {
+    match ctx.volume.rename(child_source, target, false).await {
+        Ok(()) => {
+            if let Some(displaced) = displaced {
+                displaced.discard(ctx.volume).await;
+            }
+            Ok(())
+        }
+        Err(e) => {
+            let cause = map_rename_error(child_source, e);
+            let Some(displaced) = displaced else { return Err(cause) };
+            Err(match displaced.restore(ctx.volume).await {
+                None => cause,
+                Some(kept_at) => WriteOperationError::OriginalsKeptAside {
+                    cause: Box::new(cause),
+                    recovered: vec![RecoveredOriginal::new(target, &kept_at)],
+                },
+            })
+        }
     }
 }
 

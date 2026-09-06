@@ -6,9 +6,9 @@ for principle #1 (protect the user's data), meant to be worked through at leisur
 
 ## Status (2026-09-06)
 
-Thirteen of the 15 findings are fixed, each with a regression test that failed before its fix; the cross-type Overwrite
-rule and the folder-over-file aside are policy changes David decided on 2026-09-06 (a blanket policy never crosses
-types; an explicit Stop-prompt answer still does, in both directions).
+All 15 findings are fixed, each with a regression test that failed before its fix; the cross-type Overwrite rule and the
+folder-over-file aside are policy changes David decided on 2026-09-06 (a blanket policy never crosses types; an explicit
+Stop-prompt answer still does, in both directions).
 
 - **#1, #8** fixed: `fix(move): a cross-filesystem move stops destroying files that arrived in the source while it ran`
   (Phase 4 deletes a ledger via `move_op/source_sweep.rs`), `feat(move): a move that left files behind says so`, and
@@ -61,7 +61,18 @@ types; an explicit Stop-prompt answer still does, in both directions).
   (1).ext` in the user's folder` (`find_unique_volume_name` answers a `ClaimedName`; `copy_leaf` takes the reservation
   back on its failure path). Left open: a leaf whose FUTURE is dropped at the cancel-drain deadline runs no cleanup, and
   `sequential_extract`'s plan mode reserves in one pass and streams in another.
-- **Open**: #9, #10 (volume conflict detection and the delete-before-rename).
+- **#9** fixed:
+  `fix(transfer): a destination that won't say whether a name is taken stops being read as "nothing is there"`. The
+  driver's `FetchFut` carries a `Result`, so `Ok(None)` (the destination said the name is free) and a refusal can't be
+  confused; `conflict.rs::size_of_whatever_is_at` is the one rule all four sites share. No retry layer was added: the
+  per-file one in `retry.rs` is deliberate and a second would multiply the wait on a dead link.
+- **#10** fixed:
+  `fix(move): a same-volume Overwrite whose replacing rename refuses stops taking the destination with it` (the
+  destination is renamed to a `.cmdr-temp-<uuid>` aside and put back, at both the top-level and the deep rename-merge
+  site). Left open: nothing here. The `Rename`-policy branch's delete stays a delete, since that zero-byte file is our
+  own `O_EXCL` placeholder.
+- **Open**: nothing from the ranked list. What each fix left open is noted with it above, and the
+  [Not covered](#not-covered) section still lists the 14 subsystems the run never reached.
 
 **Scope, honestly.** The plan was 18 subsystems (both transfer engines, the write-ops umbrella, archive edits,
 delete/trash/clipboard, `cmdr-fs`, SMB, SFTP, MTP, secrets and settings persistence, the file viewer, the operation log,

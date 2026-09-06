@@ -18,6 +18,9 @@ mod copy_concurrent;
 mod copy_concurrent_source;
 mod copy_concurrent_task;
 mod copy_serial;
+/// The destination a same-volume Overwrite is replacing, held aside until the
+/// rename that replaces it lands.
+mod displaced_destination;
 /// What mode a file lands with on a LOCAL destination. The volumes report a
 /// mode; this is the layer that applies it.
 mod landed_mode;
