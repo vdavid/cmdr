@@ -614,14 +614,6 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReauth.savedPasswordFailed": "Je opgeslagen wachtwoord werkte niet. Log in om opnieuw te verbinden.",
-  "@fileExplorer.smbReauth.savedPasswordFailed": {
-    "sourceHash": "4561fa9"
-  },
-  "fileExplorer.smbReauth.passwordFailed": "Dat werkte niet. Controleer je wachtwoord en probeer opnieuw.",
-  "@fileExplorer.smbReauth.passwordFailed": {
-    "sourceHash": "5e11a2f"
-  },
   "fileExplorer.smbReconnect.totalSeconds": "{seconds} seconden",
   "@fileExplorer.smbReconnect.totalSeconds": {
     "sourceHash": "86d62ab"

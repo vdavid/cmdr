@@ -33,6 +33,7 @@ import { smbReconnectManager } from '$lib/file-explorer/network/smb-reconnect-ma
 import { getAppLogger } from '$lib/logging/logger'
 import type { ConnectionState } from '$lib/file-explorer/types'
 import type { ConnectRefusalKind } from './connect-refusals'
+import { needsAHuman, readConnectOutcome, type ServerDialOutcome } from './server-outcomes'
 
 const log = getAppLogger('servers')
 
@@ -133,27 +134,13 @@ export async function connectPlace(request: ConnectPlaceRequest): Promise<Connec
     return { kind: 'refused', refusal: 'unreachable' }
   }
 
-  if (needsAHuman(outcome)) {
+  const dialed = readConnectOutcome(outcome)
+  if (needsAHuman(dialed)) {
     // The sheet opens on the step this outcome names, and dials again itself
     // through the attempt it is handed. ❗ It stays open across those rounds.
-    return await handOver(request, { volumeId, registered: false, firstOutcome: outcome }, refusalFor(outcome))
+    return await handOver(request, { volumeId, registered: false, firstOutcome: outcome }, refusalFor(dialed))
   }
-  return readOutcome(outcome)
-}
-
-/**
- * Whether the backend is waiting on a PERSON rather than reporting a dead end.
- *
- * ❗ `auth_method_unsupported` is deliberately out: the server challenged with a
- * scheme Cmdr doesn't speak, the secret never left, and no typing fixes it.
- * Opening a password box over it would ask for something that cannot help.
- */
-function needsAHuman(outcome: ServerConnectOutcome): boolean {
-  return (
-    outcome.outcome === 'needs_host_key_approval' ||
-    outcome.outcome === 'needs_credentials' ||
-    outcome.outcome === 'authentication_rejected'
-  )
+  return readOutcome(dialed)
 }
 
 /** Hands the place to the sheet, or refuses with `whenNoSheet` when there is none. */
@@ -168,7 +155,7 @@ async function handOver(
 }
 
 /** What to say when the outcome needed a human and no sheet was supplied. */
-function refusalFor(outcome: ServerConnectOutcome): ConnectRefusalKind {
+function refusalFor(outcome: ServerDialOutcome): ConnectRefusalKind {
   const result = readOutcome(outcome)
   return result.kind === 'refused' ? result.refusal : 'needs_credentials'
 }
@@ -183,36 +170,23 @@ export async function cancelPlaceConnect(attemptId: string): Promise<void> {
 }
 
 /**
- * The dial's answer, in the flow's own words.
+ * The dial's answer, folded into the flow's own result.
  *
- * ❗ Exhaustive over `ServerConnectOutcome`: a new outcome fails to compile here
- * rather than falling into a default arm that words it as something else.
+ * ❗ Folds `server-outcomes.ts`'s reading rather than re-reading the wire enum: a
+ * second switch over `ServerConnectOutcome` would be a second chance to word one
+ * outcome differently.
  */
-function readOutcome(outcome: ServerConnectOutcome): ConnectFlowResult {
-  switch (outcome.outcome) {
+function readOutcome(outcome: ServerDialOutcome): ConnectFlowResult {
+  switch (outcome.kind) {
     case 'connected':
       return { kind: 'connected', volumeId: outcome.volumeId }
     case 'cancelled':
       return { kind: 'cancelled' }
-    case 'needs_host_key_approval':
+    case 'needs_host_key':
       return { kind: 'refused', refusal: 'host_key_untrusted' }
     case 'host_key_revoked':
       return { kind: 'refused', refusal: 'host_key_revoked' }
-    case 'authentication_rejected':
-      return { kind: 'refused', refusal: 'authentication_rejected' }
-    case 'needs_credentials':
-      return { kind: 'refused', refusal: 'needs_credentials' }
-    case 'auth_method_unsupported':
-      return { kind: 'refused', refusal: 'auth_method_unsupported' }
-    case 'certificate_untrusted':
-      return { kind: 'refused', refusal: 'certificate_untrusted' }
-    case 'not_a_webdav_server':
-      return { kind: 'refused', refusal: 'not_a_webdav_server' }
-    case 'invalid_url':
-      return { kind: 'refused', refusal: 'invalid_url' }
-    case 'timed_out':
-      return { kind: 'refused', refusal: 'timed_out' }
-    case 'unreachable':
-      return { kind: 'refused', refusal: 'unreachable' }
+    case 'refused':
+      return { kind: 'refused', refusal: outcome.refusal }
   }
 }

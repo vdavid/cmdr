@@ -613,14 +613,6 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReauth.savedPasswordFailed": "Mật khẩu đã lưu của bạn không hoạt động. Hãy đăng nhập để kết nối lại.",
-  "@fileExplorer.smbReauth.savedPasswordFailed": {
-    "sourceHash": "4561fa9"
-  },
-  "fileExplorer.smbReauth.passwordFailed": "Vẫn chưa được. Hãy kiểm tra mật khẩu và thử lại.",
-  "@fileExplorer.smbReauth.passwordFailed": {
-    "sourceHash": "5e11a2f"
-  },
   "fileExplorer.smbReconnect.totalSeconds": "{seconds} giây",
   "@fileExplorer.smbReconnect.totalSeconds": {
     "sourceHash": "86d62ab"

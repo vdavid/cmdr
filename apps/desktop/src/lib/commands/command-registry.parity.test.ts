@@ -147,6 +147,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'servers.togglePin': 'Pin / unpin server',
   'servers.disconnect': 'Disconnect server',
   'servers.forgetSecret': 'Forget saved password',
+  'servers.connect': 'Connect to server…',
   'servers.edit': 'Edit server…',
   'volume.select': 'Select volume',
   'volume.close': 'Close volume chooser',

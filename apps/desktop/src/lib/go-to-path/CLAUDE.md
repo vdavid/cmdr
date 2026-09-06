@@ -24,8 +24,8 @@ Navigation primitives are shared one level up in `../file-explorer/navigation/na
 
 - **A `<scheme>://` input never reaches the backend resolver**, and the classification is ONE function all three
   resolving sites call (the jump, the debounced preview, and the clipboard prefill). `resolve_go_to_path` walks
-  `std::fs::metadata` over a path joined onto the pane's directory, so it answers `invalid` for an address that is
-  about to work. ❗ Reading and ACTING are separate: `readSchemeInput` classifies and is safe from the preview,
+  `std::fs::metadata` over a path joined onto the pane's directory, so it answers `invalid` for an address that is about
+  to work. ❗ Reading and ACTING are separate: `readSchemeInput` classifies and is safe from the preview,
   `actOnSchemeInput` opens the sheet and is the jump's alone. A preview that opened a modal would put one on screen
   mid-keystroke. DETAILS § "The scheme intercept".
 - **Switch on the typed `kind`, never on a message string.** The backend returns one `GoToPathResolution` with a `kind`

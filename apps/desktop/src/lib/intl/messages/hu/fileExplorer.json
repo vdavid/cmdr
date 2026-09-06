@@ -613,14 +613,6 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReauth.savedPasswordFailed": "A mentett jelszó nem működött. Jelentkezz be az újracsatlakozáshoz.",
-  "@fileExplorer.smbReauth.savedPasswordFailed": {
-    "sourceHash": "4561fa9"
-  },
-  "fileExplorer.smbReauth.passwordFailed": "Ez nem működött. Ellenőrizd a jelszavadat, és próbáld újra.",
-  "@fileExplorer.smbReauth.passwordFailed": {
-    "sourceHash": "5e11a2f"
-  },
   "fileExplorer.smbReconnect.totalSeconds": "{seconds} másodperc",
   "@fileExplorer.smbReconnect.totalSeconds": {
     "sourceHash": "86d62ab"

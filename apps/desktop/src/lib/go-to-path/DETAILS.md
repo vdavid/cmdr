@@ -104,8 +104,8 @@ over a tilde-expanded, base-dir-joined path). A scheme input joins onto the pane
 
 **What each scheme means.**
 
-- `adb://`, `mtp://`: a device path already resolves, so it navigates
-  (`docs/specs/android-adb-backend-follow-ups.md` § 3).
+- `adb://`, `mtp://`: a device path already resolves, so it navigates (`docs/specs/android-adb-backend-follow-ups.md` §
+  3).
 - `sftp://`, `webdav://` matching a saved place's app root by whole components: navigates, showing the place's name.
 - `sftp://`, `webdav://` matching nothing, plus `smb://`, `ssh://`, `davs://`, `dav://`, `http://`, `https://`: opens
   the sign-in sheet in add mode, prefilled. ❗ A server path nothing saved is an ADDRESS, not a dead end: someone pasted
@@ -113,8 +113,8 @@ over a tilde-expanded, base-dir-joined path). A scheme input joins onto the pane
 - Everything else, including a bare hostname: `null`, and the local resolver owns it. A bare hostname is a legal
   RELATIVE path, and Go to path has always resolved those.
 
-❗ **A saved list that won't answer opens the sheet rather than guessing**: one extra step for the user, ❌ never a wrong
-destination.
+❗ **A saved list that won't answer opens the sheet rather than guessing**: one extra step for the user, ❌ never a
+wrong destination.
 
 **The return type.** `GoToPathResolution` is Rust-generated, so the frontend declares
 `GoToPathOutcome = GoToPathResolution | { kind: 'handed_off' }` and widens `goToPath` and the dialog's `onGo` to it. The

@@ -24,7 +24,6 @@ import {
   newServerAttemptId,
   reconnectVolumeWithCredentials,
   type SavedServer,
-  type ServerConnectOutcome,
 } from '$lib/tauri-commands'
 import { asReconnectError } from '$lib/file-explorer/network/reconnect-error'
 import type { NetworkHost } from '$lib/file-explorer/types'
@@ -39,6 +38,7 @@ import type {
   SignInSheetResult,
   SignInSubmission,
 } from './sign-in-contract'
+import { readConnectOutcome } from './server-outcomes'
 import { openSignInSheet } from './sign-in-sheet-state.svelte'
 
 const log = getAppLogger('servers')
@@ -117,7 +117,7 @@ async function attemptAdd(
   if (submission.mode !== 'add') return { kind: 'refused', refusal: 'needs_credentials' }
 
   const attemptId = newServerAttemptId()
-  return readAttempt(await connectServer(submission.target, attemptId, submission.secret))
+  return readConnectOutcome(await connectServer(submission.target, attemptId, submission.secret))
 }
 
 /** An absent place: the first dial, now carrying whatever the user typed. */
@@ -126,7 +126,7 @@ function dialSavedPlaceAttempt(volumeId: string): SignInAttempt {
     if (submission.mode !== 'sign-in') return { kind: 'refused', refusal: 'needs_credentials' }
     const attemptId = newServerAttemptId()
     try {
-      return readAttempt(await connectSavedPlace(volumeId, attemptId, submission.secret))
+      return readConnectOutcome(await connectSavedPlace(volumeId, attemptId, submission.secret))
     } catch (e) {
       // A typed `SavedPlaceRefusal`: the wrong move for this volume's standing.
       // A bug to read in a log, ❌ never a sentence to put in front of a person.
@@ -204,39 +204,4 @@ async function endpointFor(volumeId: string): Promise<SignInEndpoint> {
  */
 function unknownEndpoint(volumeId: string): SignInEndpoint {
   return { protocol: 'sftp', displayName: volumeId, address: volumeId, host: volumeId }
-}
-
-/**
- * One dial's answer, keeping the two host-key payloads.
- *
- * ❗ Exhaustive over `ServerConnectOutcome`: a new outcome fails to compile here
- * rather than falling into a default arm that words it as something else.
- */
-function readAttempt(outcome: ServerConnectOutcome): SignInAttemptOutcome {
-  switch (outcome.outcome) {
-    case 'connected':
-      return { kind: 'connected', volumeId: outcome.volumeId }
-    case 'cancelled':
-      return { kind: 'cancelled' }
-    case 'needs_host_key_approval':
-      return { kind: 'needs_host_key', prompt: outcome }
-    case 'host_key_revoked':
-      return { kind: 'host_key_revoked', key: outcome }
-    case 'authentication_rejected':
-      return { kind: 'refused', refusal: 'authentication_rejected' }
-    case 'needs_credentials':
-      return { kind: 'refused', refusal: 'needs_credentials' }
-    case 'auth_method_unsupported':
-      return { kind: 'refused', refusal: 'auth_method_unsupported' }
-    case 'certificate_untrusted':
-      return { kind: 'refused', refusal: 'certificate_untrusted' }
-    case 'not_a_webdav_server':
-      return { kind: 'refused', refusal: 'not_a_webdav_server' }
-    case 'invalid_url':
-      return { kind: 'refused', refusal: 'invalid_url' }
-    case 'timed_out':
-      return { kind: 'refused', refusal: 'timed_out' }
-    case 'unreachable':
-      return { kind: 'refused', refusal: 'unreachable' }
-  }
 }

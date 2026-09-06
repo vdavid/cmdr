@@ -613,14 +613,6 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.smbReauth.savedPasswordFailed": "Tu contraseña guardada no funcionó. Inicia sesión para volver a conectar.",
-  "@fileExplorer.smbReauth.savedPasswordFailed": {
-    "sourceHash": "4561fa9"
-  },
-  "fileExplorer.smbReauth.passwordFailed": "Eso no funcionó. Revisa tu contraseña e inténtalo de nuevo.",
-  "@fileExplorer.smbReauth.passwordFailed": {
-    "sourceHash": "5e11a2f"
-  },
   "fileExplorer.smbReconnect.totalSeconds": "{seconds} segundos",
   "@fileExplorer.smbReconnect.totalSeconds": {
     "sourceHash": "86d62ab"

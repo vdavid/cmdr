@@ -1407,8 +1407,6 @@ export type MessageKey =
   | 'fileExplorer.selectionTooltip.ofTotal'
   | 'fileExplorer.selectionTooltip.onDiskHeader'
   | 'fileExplorer.selectionTooltip.selected'
-  | 'fileExplorer.smbReauth.passwordFailed'
-  | 'fileExplorer.smbReauth.savedPasswordFailed'
   | 'fileExplorer.smbReconnect.cancel'
   | 'fileExplorer.smbReconnect.cancelTooltip'
   | 'fileExplorer.smbReconnect.disconnect'
