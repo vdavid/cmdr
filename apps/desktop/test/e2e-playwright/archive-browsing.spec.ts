@@ -1,17 +1,22 @@
 /**
- * E2E tests for archive browsing AND editing (zip-as-folder).
+ * E2E tests for READING an archive: what Enter does, and what browsing one shows.
  *
  * Verifies the user-visible flows: pressing Enter on a `.zip` steps inside it
  * like a folder with a transparent path, navigating out exits the archive, a
- * real directory merely NAMED like a zip stays a plain folder, a file inside the
- * zip previews and copies out, and — now that zips are writable — creating,
- * renaming, deleting, pasting into, and moving out of a zip all run the managed
- * archive-edit flow, with a permanent (no-Trash) delete confirm and an intact
- * original when a paste is cancelled.
+ * real directory merely NAMED like a zip stays a plain folder, a file inside
+ * previews and copies out, the Enter-behavior popup offers Browse | Open |
+ * Configure per format, and the read-only formats (OOXML documents, tar.gz)
+ * browse but refuse every write.
+ *
+ * Rewriting a zip in place (mkdir, rename, delete, paste, move-out, conflicts)
+ * is `archive-editing.spec.ts`; the two share `archive-helpers.ts`.
  *
  * Fixture (at $CMDR_E2E_START_PATH, recreated per test):
  *   left/
  *     sample.zip            <- a real zip: inner.txt + nested/deep.txt
+ *     sample.tar.gz         <- the same tree, read-only
+ *     sample.docx           <- a real Word file (a zip of document parts)
+ *     report.docx           <- a `.docx` in name only (plain text), for the Open default
  *     decoy.zip/            <- a real DIRECTORY named like a zip (marker.txt inside)
  *     file-a.txt, file-b.txt, sub-dir/, bulk/, ...
  *   right/                  <- empty
@@ -22,10 +27,9 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureMcpClient, mcpReadResource, mcpCall } from '../e2e-shared/mcp-client.js'
+import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
-  flushFileWatcher,
   getFixtureRoot,
   getFocusedPaneActiveTabPath,
   settleFocusedPaneOnLeft,
@@ -37,17 +41,12 @@ import {
   dismissOverlay,
   getOpenedPaths,
   clearOpenedPaths,
-  pollUntil,
   TRANSFER_DIALOG,
   MKDIR_DIALOG,
 } from './helpers.js'
+import { ENTER_MENU, enterEntry, setArchiveEnterBehavior, settleOnFixtureLeft } from './archive-helpers.js'
 
-import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
-
-type PageLike = TauriPage | BrowserPageAdapter
-
-const DELETE_DIALOG = '[data-dialog-id="delete-confirmation"]'
-const TRANSFER_PROGRESS = '[data-dialog-id="transfer-progress"]'
+import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 test.beforeEach(() => {
   recreateFixtures(getFixtureRoot())
@@ -60,89 +59,6 @@ test.afterEach(() => {
   restoreFixtureTree(getFixtureRoot())
 })
 
-/** Dismisses every open toast. For flows whose completion-toast wording is
- *  timing-dependent (a cancel that may or may not have caught the write; a
- *  conflict resolution), so the global afterEach doesn't fail on a leaked toast. */
-async function clearAllToasts(tauriPage: PageLike): Promise<void> {
-  await tauriPage.evaluate(`(function(){
-      var closes = document.querySelectorAll('.toast .toast-close');
-      for (var i = 0; i < closes.length; i++) closes[i].click();
-  })()`)
-  await expect
-    .poll(async () => tauriPage.evaluate<boolean>(`document.querySelectorAll('.toast').length === 0`), {
-      timeout: 3000,
-    })
-    .toBeTruthy()
-}
-
-/**
- * Moves the cursor to `name` in the focused pane and presses Enter to open it.
- *
- * The Enter is effect-probed and retried (bounded): the suite's `beforeEach`
- * wipes and recreates `left/` on disk, and the file-watcher's remove/create
- * diffs can drain AFTER `moveCursorToFile` confirmed the cursor — briefly
- * emptying/replacing the listing (the same window `moveCursorToFile`'s own
- * doc describes). An Enter landing in that window is a silent no-op: no path
- * change, no overlay, no error — the long-standing "Enter on an archive did
- * nothing" flake. Each retry re-confirms the cursor is on the target before
- * pressing again, so this never masks a genuinely broken Enter: with the bug
- * present the probe exhausts its retries and fails loudly.
- */
-async function enterEntry(tauriPage: PageLike, name: string): Promise<void> {
-  const startPath = await getFocusedPaneActiveTabPath()
-  const startOpened = (await getOpenedPaths(tauriPage)).length
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const found = await moveCursorToFile(tauriPage, name)
-    expect(found, `entry "${name}" should be in the focused pane`).toBe(true)
-    await tauriPage.keyboard.press('Enter')
-    // Probe for ANY effect of the keystroke: an in-place navigation (path
-    // change), an opened overlay/menu/dialog, or an external open recorded by
-    // the mock (`getOpenedPaths` — the docx default-Open case). No effect
-    // within the window ⇒ the keystroke hit the mid-refresh empty listing;
-    // re-verify the cursor and press again.
-    const hadEffect = await pollUntil(
-      tauriPage,
-      async () => {
-        const path = await getFocusedPaneActiveTabPath()
-        if (path !== startPath) return true
-        if ((await getOpenedPaths(tauriPage)).length > startOpened) return true
-        return tauriPage.evaluate<boolean>(`(function() {
-              return !!document.querySelector('.menu-content, .modal-overlay, [role="dialog"], [role="alertdialog"]');
-          })()`)
-      },
-      700,
-    )
-    if (hadEffect) return
-  }
-  throw new Error(
-    `enterEntry: Enter on "${name}" produced no effect after 3 attempts (path stayed ${startPath ?? '<unknown>'})`,
-  )
-}
-
-/** Navigate a pane to a path via the same `mcp-nav-to-path` event the MCP server uses. */
-async function navigatePaneTo(tauriPage: PageLike, pane: 'left' | 'right', targetPath: string): Promise<void> {
-  await tauriPage.evaluate(`(function () {
-        window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
-            event: 'mcp-nav-to-path',
-            payload: { pane: ${JSON.stringify(pane)}, path: ${JSON.stringify(targetPath)} }
-        });
-    })()`)
-}
-
-const ENTER_MENU = '.menu-content'
-
-/**
- * Sets the Enter behavior of one or more formats through the same MCP `set_setting`
- * path the UI uses — one call per format, since each is its own
- * `behavior.archiveEnter.<format>` setting. `set_setting` round-trips, so every
- * setting is live by the time this resolves.
- */
-async function setArchiveEnterBehavior(behavior: Record<string, string>): Promise<void> {
-  for (const [format, action] of Object.entries(behavior)) {
-    await mcpCall('set_setting', { id: `behavior.archiveEnter.${format}`, value: action })
-  }
-}
-
 test.describe('Archive browsing', () => {
   // These tests browse INTO archives directly, so force the zip Enter behavior to
   // Browse (the default is Ask, which would pop the menu instead — that flow is
@@ -150,22 +66,7 @@ test.describe('Archive browsing', () => {
   test.beforeEach(async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
-    // Return the focused pane to `left/` and confirm it landed: a prior test may have
-    // left it browsing INSIDE the archive, and `ensureAppReady` doesn't reliably back
-    // out of an archive volume, so start each test from a known directory.
-    await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
-    await settleFocusedPaneOnLeft(tauriPage, `${getFixtureRoot()}/left`)
-    // Wait for the listing to actually repopulate before a test reads it. The top-level
-    // beforeEach wipes and rewrites `left/`, so the path can already read `left/` (a prior
-    // test ended here, making the nav a no-op) while the pane still shows the mid-refresh
-    // empty view. Poll for a known fixture entry so the file-watcher has caught up.
-    //
-    // ❗ Flush FIRST rather than only polling. `restoreFixtureTree` rewrites `sample.zip`
-    // whenever the preceding test mutated it, and a remove/create of the same name inside
-    // one debounce window is exactly the burst whose diff can land out of order — the poll
-    // then spends its whole budget on a listing that has already stopped moving.
-    await flushFileWatcher(tauriPage)
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.zip'), { timeout: 5000 }).toBeTruthy()
+    await settleOnFixtureLeft(tauriPage, 'sample.zip')
     await setArchiveEnterBehavior({ zip: 'browse', bundle: 'browse' })
   })
 
@@ -271,7 +172,7 @@ test.describe('Archive browsing', () => {
   })
 
   // Extract-out: copy a file from inside the archive to the local pane. The scan
-  // preview now routes the archive-inner source through its `ArchiveVolume`
+  // preview routes the archive-inner source through its `ArchiveVolume`
   // (`scan_preview_source_volume`), so the cached preview has the real file count
   // instead of the 0-file `std::fs` result that stalled the copy at "0 files".
   test('copying a file out of the archive extracts it to the other pane', async ({ tauriPage }) => {
@@ -325,293 +226,13 @@ test.describe('Archive browsing', () => {
 
     await expectAndDismissToast(tauriPage, 'Copied 1 file')
   })
-
-  test('creating a folder inside the archive adds it and shows it', async ({ tauriPage }) => {
-    await ensureAppReady(tauriPage)
-    await ensureMcpClient(tauriPage)
-
-    await enterEntry(tauriPage, 'sample.zip')
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
-
-    // F7 inside a zip now runs the real managed archive-edit flow (no refusal).
-    const folderName = `zip-folder-${String(Date.now())}`
-    await tauriPage.keyboard.press('F7')
-    await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
-    await tauriPage.fill(`${MKDIR_DIALOG} input.text-field-control`, folderName)
-    await expect.poll(async () => tauriPage.isEnabled(`${MKDIR_DIALOG} .btn-primary`), { timeout: 2000 }).toBeTruthy()
-    await tauriPage.click(`${MKDIR_DIALOG} .btn-primary`)
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
-
-    // The archive rewrite lands async; the live-watch refresh then shows the new
-    // folder inside the zip. Probe for it, don't sleep.
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, folderName), { timeout: 10000 }).toBeTruthy()
-  })
-
-  test('renaming a file inside the archive works', async ({ tauriPage }) => {
-    await ensureAppReady(tauriPage)
-    await ensureMcpClient(tauriPage)
-
-    await enterEntry(tauriPage, 'sample.zip')
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
-
-    const found = await moveCursorToFile(tauriPage, 'inner.txt')
-    expect(found).toBe(true)
-    await tauriPage.keyboard.press('F2')
-    await tauriPage.waitForSelector('.rename-input', 3000)
-    // Clear the input (native setter + input event) then type the new name.
-    await tauriPage.evaluate(`(function() {
-            var input = document.querySelector('.rename-input');
-            if (!input) return;
-            input.focus();
-            var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
-            if (desc && desc.set) desc.set.call(input, ''); else input.value = '';
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-        })()`)
-    await expect
-      .poll(async () => tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === ''`), {
-        timeout: 2000,
-      })
-      .toBeTruthy()
-    await tauriPage.type('.rename-input', 'inner-renamed.txt')
-    await expect
-      .poll(
-        async () =>
-          tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'inner-renamed.txt'`),
-        { timeout: 3000 },
-      )
-      .toBeTruthy()
-    await tauriPage.press('.rename-input', 'Enter')
-    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
-
-    // The rewrite lands async; the refresh shows the new name and drops the old.
-    await expect
-      .poll(async () => fileExistsInFocusedPane(tauriPage, 'inner-renamed.txt'), { timeout: 10000 })
-      .toBeTruthy()
-    await expect
-      .poll(async () => !(await fileExistsInFocusedPane(tauriPage, 'inner.txt')), { timeout: 10000 })
-      .toBeTruthy()
-  })
-
-  test('deleting a file inside the archive is permanent (no Trash) and removes it', async ({ tauriPage }) => {
-    await ensureAppReady(tauriPage)
-    await ensureMcpClient(tauriPage)
-
-    await enterEntry(tauriPage, 'sample.zip')
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
-
-    const found = await moveCursorToFile(tauriPage, 'inner.txt')
-    expect(found).toBe(true)
-    // F8 preselects Trash, but an archive forces permanent: the dialog shows the
-    // archive warning and no "Move to trash" switch.
-    await tauriPage.keyboard.press('F8')
-    await tauriPage.waitForSelector(DELETE_DIALOG, 5000)
-    const bannerText = await tauriPage.textContent(`${DELETE_DIALOG} .warning-banner`)
-    expect(bannerText).toContain('no trash inside an archive')
-    expect(await tauriPage.isVisible(`${DELETE_DIALOG} .trash-choice`)).toBe(false)
-
-    // Confirm the permanent delete (danger button) and wait for the rewrite.
-    await expect.poll(async () => tauriPage.isEnabled(`${DELETE_DIALOG} .btn-danger`), { timeout: 5000 }).toBeTruthy()
-    await tauriPage.click(`${DELETE_DIALOG} .btn-danger`)
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 10000 }).toBeTruthy()
-    await expectAndDismissToast(tauriPage, 'Delete complete')
-    await expect
-      .poll(async () => !(await fileExistsInFocusedPane(tauriPage, 'inner.txt')), { timeout: 10000 })
-      .toBeTruthy()
-    // A sibling entry survives the edit (an edit never drops an untouched sibling).
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'nested'), { timeout: 5000 }).toBeTruthy()
-  })
-
-  test('pasting a file into the archive lands it inside the zip', async ({ tauriPage }) => {
-    await ensureAppReady(tauriPage)
-    await ensureMcpClient(tauriPage)
-    const fixtureRoot = getFixtureRoot()
-
-    // Right pane inside the zip (the copy destination).
-    await navigatePaneTo(tauriPage, 'right', `${fixtureRoot}/left/sample.zip`)
-    await expect
-      .poll(async () => (await mcpReadResource('cmdr://state?compact=true')).includes('sample.zip'), { timeout: 5000 })
-      .toBeTruthy()
-
-    // Navigating the right pane focuses it (focus follows the navigated pane), so
-    // re-focus the left source pane before the F5 copy reads from it.
-    await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
-    await settleFocusedPaneOnLeft(tauriPage, `${fixtureRoot}/left`)
-
-    const found = await moveCursorToFile(tauriPage, 'file-a.txt')
-    expect(found).toBe(true)
-    await tauriPage.keyboard.press('F5')
-    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
-    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 15000 }).toBeTruthy()
-    await expectAndDismissToast(tauriPage, 'file')
-
-    // Re-read the zip from disk in the LEFT pane (still at `left/`, cursor on
-    // `file-a.txt`): entering it lists the inner entries, which now include the
-    // pasted file — proof it landed inside the archive.
-    await enterEntry(tauriPage, 'sample.zip')
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'file-a.txt'), { timeout: 10000 }).toBeTruthy()
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
-  })
-
-  test('cancelling a paste into the archive leaves the zip contents intact', async ({ tauriPage }) => {
-    await ensureAppReady(tauriPage)
-    await ensureMcpClient(tauriPage)
-    const fixtureRoot = getFixtureRoot()
-
-    // A large source file gives a window to cancel mid-write. Create it directly
-    // (the shared bulk cache isn't populated for a single manual instance).
-    // This spec runs ~4 s, well over the sub-second suite norm, and that's
-    // inherent, not a stray sleep: pinning a MID-TRANSFER cancel needs a transfer
-    // long enough to catch mid-write, so the 24 MB write + zip-compress window is
-    // load-bearing. Don't shrink it to "speed it up" — a file small enough to
-    // finish before the cancel lands turns this into a completed-copy test and
-    // stops exercising the cancel path.
-    const bigName = 'big-to-cancel.dat'
-    fs.writeFileSync(path.join(fixtureRoot, 'left', bigName), Buffer.alloc(24 * 1024 * 1024, 7))
-    // The pane has to SEE this write before the F5 below can cursor it, and an
-    // external 24 MB create reaches it only via FSEvents, which can lag or drop it
-    // under load. `flushFileWatcher` re-reads the listing through the Volume trait
-    // instead of waiting on delivery, so the wait can't be lost. Same missing step
-    // that made `compress-basic:151` flake on its own 24 MB write.
-    await flushFileWatcher(tauriPage)
-
-    await navigatePaneTo(tauriPage, 'right', `${fixtureRoot}/left/sample.zip`)
-    await expect
-      .poll(async () => (await mcpReadResource('cmdr://state?compact=true')).includes('sample.zip'), { timeout: 5000 })
-      .toBeTruthy()
-
-    // Navigating the right pane focuses it (focus follows the navigated pane), so
-    // re-focus the left source pane (still at `left/` from the beforeEach) before
-    // cursoring the big file for the F5 copy.
-    await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
-    await settleFocusedPaneOnLeft(tauriPage, `${fixtureRoot}/left`)
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, bigName), { timeout: 5000 }).toBeTruthy()
-    const found = await moveCursorToFile(tauriPage, bigName)
-    expect(found).toBe(true)
-
-    await tauriPage.keyboard.press('F5')
-    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
-    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
-    // Cancel as soon as the progress dialog appears (temp+rename means the original
-    // is untouched until the final atomic rename, so cancel can't corrupt it).
-    await tauriPage.waitForSelector(TRANSFER_PROGRESS, 5000)
-    await tauriPage
-      .waitForSelector(`${TRANSFER_PROGRESS} .btn-cancel, ${TRANSFER_PROGRESS} button.cancel`, 3000)
-      .catch(() => {})
-    await tauriPage.evaluate(`(function(){
-        var dlg = document.querySelector('${TRANSFER_PROGRESS}');
-        var btns = dlg ? Array.prototype.slice.call(dlg.querySelectorAll('button')) : [];
-        var cancel = btns.find(function(b){ return /cancel/i.test((b.textContent||'')); });
-        if (cancel) cancel.click();
-    })()`)
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 20000 }).toBeTruthy()
-    await clearAllToasts(tauriPage)
-
-    // The zip's prior contents are fully intact regardless of when the cancel
-    // caught the edit (temp+rename never mutates the original until the final
-    // atomic rename): re-enter and assert both original entries survive.
-    await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left/sample.zip`)
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 10000 }).toBeTruthy()
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'nested'), { timeout: 5000 }).toBeTruthy()
-  })
-
-  test('moving a file OUT of the archive removes it from the zip and lands it locally', async ({ tauriPage }) => {
-    await ensureAppReady(tauriPage)
-    await ensureMcpClient(tauriPage)
-    const fixtureRoot = getFixtureRoot()
-
-    await enterEntry(tauriPage, 'sample.zip')
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
-
-    const found = await moveCursorToFile(tauriPage, 'inner.txt')
-    expect(found).toBe(true)
-    // F6 moves the entry OUT to the right pane (a compound extract + archive delete).
-    await tauriPage.keyboard.press('F6')
-    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
-    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 15000 }).toBeTruthy()
-    await expectAndDismissToast(tauriPage, 'file')
-
-    // Landed on disk in the right pane's folder...
-    await expect
-      .poll(() => fs.existsSync(path.join(fixtureRoot, 'right', 'inner.txt')), { timeout: 10000 })
-      .toBeTruthy()
-    // ...and removed from the zip (the focused pane is still inside it; the live
-    // watch refreshes the listing).
-    await expect
-      .poll(async () => !(await fileExistsInFocusedPane(tauriPage, 'inner.txt')), { timeout: 10000 })
-      .toBeTruthy()
-  })
-
-  test('pasting a name that already exists inside the zip prompts a conflict', async ({ tauriPage }) => {
-    await ensureAppReady(tauriPage)
-    await ensureMcpClient(tauriPage)
-    const fixtureRoot = getFixtureRoot()
-
-    // A source file whose name collides with an existing zip entry (`inner.txt`).
-    fs.writeFileSync(path.join(fixtureRoot, 'left', 'inner.txt'), 'local copy that clashes')
-    // Re-read the listing rather than waiting on FSEvents to deliver the external
-    // create; see the sibling cancel test above.
-    await flushFileWatcher(tauriPage)
-
-    await navigatePaneTo(tauriPage, 'right', `${fixtureRoot}/left/sample.zip`)
-    await expect
-      .poll(async () => (await mcpReadResource('cmdr://state?compact=true')).includes('sample.zip'), { timeout: 5000 })
-      .toBeTruthy()
-
-    // Navigating the right pane focuses it (focus follows the navigated pane), so
-    // re-focus the left source pane before cursoring the clashing file.
-    await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
-    await settleFocusedPaneOnLeft(tauriPage, `${fixtureRoot}/left`)
-
-    const found = await moveCursorToFile(tauriPage, 'inner.txt')
-    expect(found).toBe(true)
-    await tauriPage.keyboard.press('F5')
-    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
-    // Default policy is "Ask for each", so starting surfaces the inline conflict UI.
-    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
-    await tauriPage.waitForSelector(TRANSFER_PROGRESS, 5000)
-    await expect.poll(async () => tauriPage.isVisible('.conflict-section'), { timeout: 8000 }).toBeTruthy()
-    const conflictName = await tauriPage.textContent('.conflict-section .conflict-filename')
-    expect(conflictName).toContain('inner.txt')
-
-    // The prompt appearing is the point of this test. Resolve it (overwrite) so
-    // the op settles and the dialog closes, then clear the completion toast.
-    await tauriPage.evaluate(`(function(){
-        var btns = Array.prototype.slice.call(document.querySelectorAll('.conflict-buttons-row button'));
-        var pick = btns.find(function(b){ return /^overwrite$/i.test((b.textContent||'').trim()); }) || btns[0];
-        if (pick) pick.click();
-    })()`)
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 15000 }).toBeTruthy()
-    await clearAllToasts(tauriPage)
-  })
 })
 
 test.describe('Archive Enter-behavior menu', () => {
   test.beforeEach(async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
-    // Return the focused pane to `left/` and confirm it landed: a prior test may have
-    // left it browsing INSIDE the archive, and `ensureAppReady` doesn't reliably back
-    // out of an archive volume, so start each menu test from a known directory.
-    await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
-    await settleFocusedPaneOnLeft(tauriPage, `${getFixtureRoot()}/left`)
-    // Wait for the listing to actually repopulate before a test reads it. The top-level
-    // beforeEach wipes and rewrites `left/`, so the path can already read `left/` (a prior
-    // test ended here, making the nav a no-op) while the pane still shows the mid-refresh
-    // empty view. Poll for a known fixture entry so the file-watcher has caught up.
-    //
-    // ❗ Flush FIRST rather than only polling. `restoreFixtureTree` rewrites `sample.zip`
-    // whenever the preceding test mutated it, and a remove/create of the same name inside
-    // one debounce window is exactly the burst whose diff can land out of order — the poll
-    // then spends its whole budget on a listing that has already stopped moving.
-    await flushFileWatcher(tauriPage)
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.zip'), { timeout: 5000 }).toBeTruthy()
+    await settleOnFixtureLeft(tauriPage, 'sample.zip')
     // The headline flow: zip set to Ask (the default), so Enter pops the menu.
     // `ooxml` is set EXPLICITLY rather than left alone: settings persist across
     // tests in one app instance, so the OOXML suite's `browse` would otherwise
@@ -719,10 +340,7 @@ test.describe('Archive browsing — read-only OOXML documents', () => {
   test.beforeEach(async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
-    await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
-    await settleFocusedPaneOnLeft(tauriPage, `${getFixtureRoot()}/left`)
-    await flushFileWatcher(tauriPage)
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.docx'), { timeout: 5000 }).toBeTruthy()
+    await settleOnFixtureLeft(tauriPage, 'sample.docx')
     // The default is Open (a document is a document), so Browse has to be asked for.
     await setArchiveEnterBehavior({ ooxml: 'browse' })
   })
@@ -796,11 +414,9 @@ test.describe('Archive browsing — read-only tar.gz', () => {
   test.beforeEach(async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
-    await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
-    await settleFocusedPaneOnLeft(tauriPage, `${getFixtureRoot()}/left`)
+    await settleOnFixtureLeft(tauriPage, 'sample.tar.gz')
     // tar/7z ride the same `zip` Enter policy (backend `is_archive`), so Browse
-    // steps into them too. Wait for the fixture so the watcher has caught up.
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.tar.gz'), { timeout: 5000 }).toBeTruthy()
+    // steps into them too.
     await setArchiveEnterBehavior({ zip: 'browse', bundle: 'browse' })
   })
 
