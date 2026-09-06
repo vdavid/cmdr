@@ -121,6 +121,10 @@ pub async fn connect_and_register(
         key_file: params.key_file.as_ref().map(|p| p.to_string_lossy().to_string()),
         use_agent: params.use_agent,
         auto_reconnect: params.auto_reconnect,
+        // A first connect pins the new place; `remember` carries the stored value
+        // across for a server that is already saved, so a reconnect can't re-pin
+        // one the user unpinned.
+        pinned: true,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
     });
     log::info!(target: "volume", "registered SFTP volume {volume_id}");

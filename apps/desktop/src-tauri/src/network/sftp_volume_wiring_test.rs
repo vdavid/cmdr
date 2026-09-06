@@ -88,6 +88,48 @@ async fn sftp_integration_connecting_registers_the_volume_and_remembers_the_serv
     sftp_volume_wiring::disconnect(&volume_id).await;
 }
 
+/// ❗ **A reconnect never puts an unpinned server back in the switcher.**
+///
+/// The connect path asks for `pinned: true`, which is how a NEW place lands in
+/// the switcher on its first successful connect. A server the user has since
+/// unpinned has to survive the next connect unpinned, or the unpin undoes itself
+/// the moment the session comes back. `sftp_known_servers::remember` is where the
+/// stored value wins.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_reconnecting_leaves_an_unpinned_server_unpinned() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let params = stock_params();
+    signed_in_already(&params).await;
+
+    let first = sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt").await;
+    let SftpConnection::Connected { volume_id, .. } = first else {
+        panic!("a fixture with its key approved and its password stored must connect");
+    };
+    let saved = |params: &SftpConnectionParams| {
+        sftp_known_servers::all()
+            .into_iter()
+            .find(|entry| entry.host == params.host && entry.port == params.port && entry.username == params.username)
+            .expect("a successful connect remembers the server")
+    };
+    assert!(saved(&params).pinned, "a first connect pins the new place");
+
+    // The user unpins it, then the session drops and comes back.
+    let mut unpinned = saved(&params);
+    unpinned.pinned = false;
+    sftp_known_servers::forget(&params.host, params.port, &params.username);
+    sftp_known_servers::remember(unpinned);
+    sftp_volume_wiring::disconnect(&volume_id).await;
+
+    let again = sftp_volume_wiring::connect_and_register("Fixture server", params.clone(), "fixture-attempt-2").await;
+    let SftpConnection::Connected { volume_id, .. } = again else {
+        panic!("the same fixture connects again");
+    };
+    assert!(!saved(&params).pinned, "the unpin survives the reconnect");
+
+    sftp_volume_wiring::disconnect(&volume_id).await;
+}
+
 /// ❗ **Disconnecting DROPS the session; it never closes it.**
 ///
 /// `Sftp::close()` awaits a read task that only ends at reader EOF, which an SSH

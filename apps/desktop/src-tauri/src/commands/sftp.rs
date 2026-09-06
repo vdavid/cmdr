@@ -467,6 +467,10 @@ pub fn update_known_sftp_server(
         key_file,
         use_agent,
         auto_reconnect,
+        // Only reachable for a NEW entry: editing a saved server leaves its pin
+        // alone, which is `remember`'s rule, and a server nobody saved yet is
+        // being saved for the first time here.
+        pinned: true,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
     });
 }

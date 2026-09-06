@@ -20,6 +20,7 @@ fn server(url: &str, username: &str) -> KnownWebdavServer {
         display_name: url.to_string(),
         remote_root: "/".to_string(),
         auto_reconnect: true,
+        pinned: false,
         last_connected_at: "2026-09-01T10:00:00Z".to_string(),
     }
 }
@@ -177,4 +178,86 @@ fn the_switch_round_trips_through_the_stored_file() {
     let read: KnownWebdavServersStore = serde_json::from_str(&written).expect("parseable");
 
     assert!(!read.known_webdav_servers[0].auto_reconnect);
+}
+
+/// ❗ **A server saved before pins existed is NOT pinned.**
+///
+/// The opposite default from `auto_reconnect`, and for the same reason: read the
+/// missing field the way the behavior already shipping reads. Nothing was in the
+/// switcher before pins, so defaulting to `true` would drop every saved server
+/// into it at once — the exact crowding the pin cap exists to prevent.
+#[test]
+fn a_server_saved_before_pins_existed_is_not_pinned() {
+    let stored = r#"{
+      "knownWebdavServers": [
+        {
+          "url": "https://nextcloud.example/remote.php/dav/files/ada/",
+          "username": "ada",
+          "displayName": "Nextcloud",
+          "remoteRoot": "/",
+          "autoReconnect": true,
+          "lastConnectedAt": "2026-09-01T10:00:00Z"
+        }
+      ]
+    }"#;
+
+    let store: KnownWebdavServersStore = serde_json::from_str(stored).expect("an older file still parses");
+
+    assert!(
+        !store.known_webdav_servers[0].pinned,
+        "a file written before pins says nothing about them, and nothing is what it meant"
+    );
+}
+
+/// ❗ **A reconnect never re-pins a server the user unpinned.**
+///
+/// `remember` runs on EVERY successful connect, so a pin taken from the caller
+/// would put an unpinned row back in the switcher the next time the session came
+/// back — an unpin that undoes itself the moment the server answers.
+#[test]
+fn remembering_an_existing_server_carries_its_pin_across() {
+    let url = url_for("pin-preserved");
+
+    let mut first = server(&url, "ada");
+    first.pinned = true;
+    remember(first);
+
+    // The user unpins it. Mutated in place under the lock, the way the writer for
+    // that will: the store is process-global, and rebuilding the whole vec here
+    // would drop entries other cells are appending in parallel.
+    let normalized = normalize_url(&url);
+    {
+        let mut store = known().lock_ignore_poison();
+        for entry in store
+            .known_webdav_servers
+            .iter_mut()
+            .filter(|entry| same_server(entry, &normalized, "ada"))
+        {
+            entry.pinned = false;
+        }
+    }
+
+    // A later connect remembers the server again, pin flag and all.
+    let mut reconnected = server(&url, "ada");
+    reconnected.pinned = true;
+    reconnected.display_name = "Renamed".to_string();
+    remember(reconnected);
+
+    let found = entries_for(&url);
+    assert_eq!(found.len(), 1);
+    assert!(!found[0].pinned, "the stored pin wins over whatever the connect passed");
+    assert_eq!(found[0].display_name, "Renamed", "every other field still updates");
+}
+
+/// A server nobody has saved yet takes the pin the caller asked for, which is how
+/// "a new place is pinned on its first successful connect" happens at all.
+#[test]
+fn a_first_connect_pins_the_new_server() {
+    let url = url_for("pin-on-first-connect");
+
+    let mut fresh = server(&url, "ada");
+    fresh.pinned = true;
+    remember(fresh);
+
+    assert!(entries_for(&url)[0].pinned);
 }

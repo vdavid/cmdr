@@ -862,7 +862,13 @@ is that a sign-in UI genuinely branches on all of it.
   `forgetKnownSftpServer(host, port, username)` → `boolean`. A successful connect already calls the middle one, so the
   update command is for editing a server without connecting (renaming it, changing its root or key file, or moving the
   `autoReconnect` switch). ❗ `updateKnownSftpServer` also pushes `autoReconnect` into a volume that happens to be
-  mounted, so the switch takes effect now rather than on the next connect.
+  mounted, so the switch takes effect now rather than on the next connect. ❗ **Neither command can change `pinned`.**
+  `sftp_known_servers::remember` honors the caller's value only when the entry is NEW (which is what pins a place on its
+  first successful connect) and carries the stored value across on a replace. It runs on EVERY successful connect, so a
+  caller-supplied pin would put an unpinned row back in the switcher the next time the session came back. Changing a pin
+  is its own writer's job. `pinned` is `serde(default)` and defaults to FALSE — the opposite of `autoReconnect`, and for
+  the same reason: nothing was in the switcher before pins existed. `getKnownSftpServers` in `tauri-commands/sftp.ts` is
+  the one place both defaults are spelled on the frontend.
 - `getSftpUnattendedReconnect(volumeId)` → `SftpUnattendedReconnect | null`, the backend's answer to "the switch is on
   and nothing comes back". ❗ Ask it when the banner renders, the same way `getVolumeSignInState` is asked, and ❌ never
   derive it in the frontend from a rung plus a `hasSftpCredentials` call: the rung is decided per DIAL, so a derivation
@@ -875,8 +881,8 @@ is that a sign-in UI genuinely branches on all of it.
 `Volume::sign_in_prompt` on whatever is registered, so they work on an SFTP volume as they stand. For the passphrase
 rung, `password` carries the key passphrase. `getVolumeSignInState` answers a `SignInShape` tagged on `kind`, and both
 SFTP variants (`password`, `key_passphrase`) render the username READ-ONLY, which is the same rule
-`reconnect_with_credentials` enforces: the volume id is the account. All three live in `apps/desktop/src-tauri/src/commands/network.rs` and are
-wrapped in `apps/desktop/src/lib/tauri-commands/networking.ts`.
+`reconnect_with_credentials` enforces: the volume id is the account. All three live in
+`apps/desktop/src-tauri/src/commands/network.rs` and are wrapped in `apps/desktop/src/lib/tauri-commands/networking.ts`.
 
 `SftpConnectResult` is tagged on `outcome`:
 
@@ -992,9 +998,10 @@ With `autoReconnect` on (off makes every "unattended reconnect" cell `NotSupport
 | `keyboard_interactive` | `NeedsCredentials` without dialing         | `password`       | refreshes a remembered secret, dials |
 
 A volume that is not SFTP, and an id nothing is registered under, both answer `password` (`Volume::sign_in_prompt`'s
-default; a share answers `username_password { guestAllowed }` instead). That is the safe way to be wrong: this is only ever asked about a volume that just reported
-`needs_credentials`, so a needless password box is recoverable while a wrong `nothing` is a volume nobody can sign in
-to. The rung-by-rung cells are `crates/cmdr-sftp/src/volume/reconnect_test.rs`; the default's are
+default; a share answers `username_password { guestAllowed }` instead). That is the safe way to be wrong: this is only
+ever asked about a volume that just reported `needs_credentials`, so a needless password box is recoverable while a
+wrong `nothing` is a volume nobody can sign in to. The rung-by-rung cells are
+`crates/cmdr-sftp/src/volume/reconnect_test.rs`; the default's are
 `apps/desktop/src-tauri/src/commands/network_test.rs`.
 
 - ❗ **The username field in a sign-in form is read-only, and it is the volume's own account.**
