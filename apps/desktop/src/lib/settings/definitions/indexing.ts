@@ -106,8 +106,10 @@ export const indexingSettings: SettingDefinitionSource[] = [
   //
   // On-device image-content (OCR) search. Runs entirely on the user's Mac via
   // Apple's Vision framework — no cloud, no AI provider, no API key. Rendered by
-  // `ImageIndexingSection.svelte`; only `mediaIndex.enabled` is a visible row,
-  // the rest back the bespoke slider / network-volume components.
+  // `ImageIndexingSection.svelte`: `mediaIndex.enabled`, the two display toggles
+  // (`showFileStatusIcons`, `showInSearch`), and `parallelism` are visible rows in
+  // its "Enable indexing" card; the rest are `hidden`, backing the bespoke scope /
+  // slider / chosen-folder / network-volume / CLIP components.
   // ========================================================================
   {
     // Master toggle for image-content (OCR) indexing. Off by default; live-applied to

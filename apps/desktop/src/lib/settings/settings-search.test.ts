@@ -202,6 +202,17 @@ describe('card title indexing', () => {
     expect(ids).toContain('behavior.fileSystemWatching.lowDiskSpaceThresholdPercent')
   })
 
+  it('surfaces the image-indexing rows when searching the card title the card renders', () => {
+    // `ImageIndexingSection.svelte` titles card 1 with `settings.mediaIndex.cards.enable`
+    // ("Enable indexing"), so its rows must carry THAT key. They once carried
+    // `settings.mediaIndex.card` ("Image search"), a title no card displays, and searching
+    // what the user could actually read returned nothing.
+    const ids = searchSettings('enable indexing').map((r) => r.setting.id)
+    expect(ids).toContain('mediaIndex.enabled')
+    expect(ids).toContain('mediaIndex.showFileStatusIcons')
+    expect(ids).toContain('mediaIndex.showInSearch')
+  })
+
   it('keeps label highlight offsets correct after appending the card title', () => {
     // Regression guard: card title appended last must not shift label-relative indices.
     // Search the low-disk-space row by its own label and confirm the highlighted span
