@@ -51,6 +51,12 @@ const archiveFixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)
 const archiveFixtures = [
   { rel: 'left/sample.zip', source: 'sample.zip' },
   { rel: 'left/sample.tar.gz', source: 'sample.tar.gz' },
+  // A REAL OOXML document (`[Content_Types].xml` + `_rels/` + `word/` +
+  // `docProps/`, a genuine `PK\x03\x04` zip). Browsable, and read-only however
+  // the write is reached: `ArchiveFormat::Ooxml` never satisfies the write
+  // guard. Committed, like the others, so the bytes the backend magic-sniffs
+  // stay deterministic.
+  { rel: 'left/sample.docx', source: 'sample.docx' },
 ] as const
 
 function copyArchiveFixtures(rootPath: string): void {
@@ -65,9 +71,10 @@ const fixtureLayout = {
   textFiles: [
     { rel: 'left/file-a.txt', content: smallFileContent },
     { rel: 'left/file-b.txt', content: smallFileContent },
-    // A document package (`.docx`): the archive Enter-policy defaults these to
-    // Open (not browse), so Enter opens it in the default app with no popup. The
-    // bytes don't matter — only the extension drives the policy.
+    // A document package (`.docx`) whose bytes are PLAIN TEXT, not a zip: the
+    // Enter policy defaults these to Open, so Enter opens it in the default app
+    // with no popup, and the bytes never come up. The real, browsable one is
+    // `left/sample.docx`.
     { rel: 'left/report.docx', content: smallFileContent },
     { rel: 'left/sub-dir/nested-file.txt', content: smallFileContent },
     { rel: 'left/.hidden-file', content: smallFileContent },

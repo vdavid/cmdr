@@ -19,8 +19,11 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   (`VolumeInfo.capabilities` → `canWrite` / `canBeSource`); `volume-capabilities.ts` classifies what it IS. ❌ Never
   source KIND from the backend: an un-upgraded SMB share is served by a local one.
 - **The two ROUTED panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone**
-  — an archive or `.git`-portal pane keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z and portal snapshots
-  READ-ONLY. Real files under `.git/` keep the drive's row.
+  — an archive or `.git`-portal pane keeps the parent DRIVE's `volumeId`. Zip is WRITABLE; tar/7z, OOXML docs, and
+  portal snapshots READ-ONLY. Real files under `.git/` keep the drive's row.
+- **Two archive path predicates**: `pathCrossesArchiveBoundary` (at-or-inside) for a PANE path;`pathInsideArchive`
+  (strictly inside) for a site acting ON one — a `.zip`/`.docx` file itself previews, moves, and renames normally. ❌
+  Never add a document suffix to `WRITABLE_ARCHIVE_SUFFIXES`; a `.docx` is a zip the mutator would rewrite.
 - **The snapshot pane (`volumeId === 'search-results'`) couples five points**: `computeHasParent` is `false`, opening a
   real entry must LEAVE the snapshot volume, `snapshot-selection-sync.svelte.ts` remaps its selection by path (no
   listing diff does), it mirrors to MCP off the snapshot, and its header sorts the SNAPSHOT, ❌ never `setPaneSort`.

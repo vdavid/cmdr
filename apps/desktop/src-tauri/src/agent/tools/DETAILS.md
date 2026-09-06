@@ -258,6 +258,14 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   path whose owning volume (`VolumeManager::mount_id_for_path`, else `root`) reports
   `!supports_local_fs_access()`. A `missing` there would be a lie the model relays. An OS-mounted share
   (`/Volumes/share`) is a real path and flows through; the timeout is what protects the turn.
+- **An OOXML document inspects as an ARCHIVE, deliberately.** `.docx` / `.xlsx` / `.pptx` / `.jar` / `.apk` are
+  browsable archive suffixes, so `inspect_file` on a Word document returns its PARTS (`[Content_Types].xml`, `word/`,
+  `docProps/`) rather than treating it as one opaque file. **Decision/Why**: there is no Office-document reader
+  anywhere in the agent or viewer, so the alternative answer is "binary, unreadable" — the part listing is strictly more
+  useful, `word/document.xml` is genuinely where the text lives, and the whole path is read-only. It follows from the
+  suffix table rather than from anything here, and it is NOT gated on the user's `behavior.archiveEnter.ooxml` setting:
+  that setting steers the Enter KEY, while this is the tool's own read. Egress is unchanged — entry names, as for any
+  archive. If an Office reader ever lands, revisit this branch first.
 - **Archives** (`archive.rs`): the pane's own routing, before any `std::fs`. A path with an archive-named component
   (`cmdr_archive::archive_boundary_candidate`, a pure string check) goes through `VolumeManager::resolve(volume_id,
   path)` (`block_on` from the blocking thread, as `routed_extract` does): the shared boundary detector confirms the

@@ -396,10 +396,7 @@ describe('pathInsideArchive — the NARROW, operate-on check', () => {
  */
 describe('archive suffix table ↔ the backend`s `format_for_name`', () => {
   it('knows exactly the suffixes the Rust table does', () => {
-    const rust = readFileSync(
-      resolve(process.cwd(), '../../crates/cmdr-fs/src/archive_format.rs'),
-      'utf8',
-    )
+    const rust = readFileSync(resolve(process.cwd(), '../../crates/cmdr-fs/src/archive_format.rs'), 'utf8')
     // The `SUFFIXES` const's entries: `(".tar.gz", ArchiveFormat::…)`.
     const table = rust.slice(rust.indexOf('const SUFFIXES'), rust.indexOf('];', rust.indexOf('const SUFFIXES')))
     const backendSuffixes = [...table.matchAll(/\("(\.[^"]+)"/g)].map((m) => m[1])

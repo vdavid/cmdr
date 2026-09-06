@@ -613,7 +613,11 @@ test.describe('Archive Enter-behavior menu', () => {
     await flushFileWatcher(tauriPage)
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.zip'), { timeout: 5000 }).toBeTruthy()
     // The headline flow: zip set to Ask (the default), so Enter pops the menu.
-    await setArchiveEnterBehavior({ zip: 'ask', bundle: 'ask' })
+    // `ooxml` is set EXPLICITLY rather than left alone: settings persist across
+    // tests in one app instance, so the OOXML suite's `browse` would otherwise
+    // leak in and turn "defaults to Open" into a browse. Stating the premise also
+    // stops that test from silently depending on which suite ran before it.
+    await setArchiveEnterBehavior({ zip: 'ask', bundle: 'ask', ooxml: 'open' })
     await clearOpenedPaths(tauriPage)
   })
 
@@ -702,6 +706,82 @@ test.describe('Archive Enter-behavior menu', () => {
     } finally {
       await closeScopedWindow(main, settings, settingsLabel)
     }
+  })
+})
+
+// Document containers: an OOXML file (`.docx` / `.xlsx` / `.pptx` / `.jar` /
+// `.apk`) IS a zip, so Browse steps inside and shows the parts a document is made
+// of. It is READ-ONLY, and for a stronger reason than tar and 7z are: those have
+// no mutator at all, while a `.docx` is a zip the mutator would happily rewrite.
+// A user who wanders in to look around must not be able to walk out with a
+// corrupt document, which is what makes offering Browse safe in the first place.
+test.describe('Archive browsing — read-only OOXML documents', () => {
+  test.beforeEach(async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
+    await settleFocusedPaneOnLeft(tauriPage, `${getFixtureRoot()}/left`)
+    await flushFileWatcher(tauriPage)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.docx'), { timeout: 5000 }).toBeTruthy()
+    // The default is Open (a document is a document), so Browse has to be asked for.
+    await setArchiveEnterBehavior({ ooxml: 'browse' })
+  })
+
+  test('pressing Enter on a .docx set to Browse steps inside and lists its parts', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const docxPath = `${getFixtureRoot()}/left/sample.docx`
+
+    await enterEntry(tauriPage, 'sample.docx')
+
+    // Transparent path, exactly like a zip: the tab keeps the parent drive's id.
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(docxPath)
+    // The parts a Word file is actually made of.
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'word'), { timeout: 5000 }).toBeTruthy()
+    await expect
+      .poll(async () => fileExistsInFocusedPane(tauriPage, '[Content_Types].xml'), { timeout: 5000 })
+      .toBeTruthy()
+  })
+
+  test('creating a folder inside a .docx is refused, so a document can never be rewritten', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+
+    await enterEntry(tauriPage, 'sample.docx')
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'word'), { timeout: 5000 }).toBeTruthy()
+
+    // The read-only alert up front, never the mkdir dialog. The pane's capability
+    // row refuses here, and `ensure_zip_writable` refuses in the backend too, so
+    // this holds for an MCP or IPC caller that never sees a dialog at all.
+    await tauriPage.keyboard.press('F7')
+    await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
+    expect(await tauriPage.isVisible(MKDIR_DIALOG)).toBe(false)
+
+    await dismissOverlay(tauriPage)
+    expect(await fileExistsInFocusedPane(tauriPage, 'word')).toBe(true)
+  })
+
+  test('renaming a part inside a .docx is refused', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const docxPath = `${getFixtureRoot()}/left/sample.docx`
+    const before = fs.readFileSync(docxPath)
+
+    await enterEntry(tauriPage, 'sample.docx')
+    await expect
+      .poll(async () => fileExistsInFocusedPane(tauriPage, '[Content_Types].xml'), { timeout: 5000 })
+      .toBeTruthy()
+
+    const found = await moveCursorToFile(tauriPage, '[Content_Types].xml')
+    expect(found).toBe(true)
+    await tauriPage.keyboard.press('F2')
+
+    // No rename editor opens: the pane can't write, so the command is refused
+    // before it starts.
+    await expect.poll(async () => tauriPage.isVisible('.rename-input'), { timeout: 2000 }).toBeFalsy()
+
+    // The document's bytes are untouched — the assertion that actually matters.
+    expect(fs.readFileSync(docxPath).equals(before)).toBe(true)
   })
 })
 

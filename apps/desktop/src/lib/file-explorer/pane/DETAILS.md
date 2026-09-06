@@ -1090,14 +1090,34 @@ move out). The design keeps the frontend simple: the tab keeps ONE `volumeId` �
 volume ids never enter FE state, history, persistence, or MCP sync. Archive-ness is derived from the PATH; all I/O
 routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
 
-- **`pathInsideArchive(path)` + `capabilitiesForPane(volumeId, path)`** (`volume-capabilities.ts`) are the seam. The
-  first is a pure, extension-only check mirroring the backend's `archive_format::format_for_name`; the second returns
-  the `archive` capability row when the path is inside an archive, else defers to `capabilitiesFor(volumeId)`. The
-  pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so `hasBackendListing` / `hasParentRow` /
-  `syncsToMcp` / `canWrite` are all true for a zip; a tar or 7z boundary gets the read-only variant (`canWrite: false`,
-  `canBeSource: true` so extract-out still works). ⌘C/⌘X are refused separately and route to F5/F6, since archive-inner
-  paths aren't OS-resolvable URLs. ❌ The archive branch never folds in the PARENT drive's published capabilities: they
-  answer for the drive, and the pane is inside a file on it.
+- **TWO path predicates, and picking the wrong one is a real bug** (`volume-capabilities.ts`), mirroring the backend's
+  own pair in `crates/cmdr-archive/src/boundary.rs`:
+  - `pathCrossesArchiveBoundary(path)` — AT or inside an archive (any component carries a supported suffix). The
+    ENTER-IT question, for sites reading a PANE path: capability rows, the git-repo lookup, disk space, the terminal
+    target, the Enter policy's already-inside check.
+  - `pathInsideArchive(path)` — strictly inside (a non-empty inner path). The OPERATE-ON question, for sites acting on a
+    path: Quick Look and its cursor-follow, `isVolumeMove`, the rename permission pre-flight. The archive FILE itself is
+    an ordinary file that must be previewed, copied, moved, and renamed like any other, which is the backend's rule too.
+
+  **Why it matters, and why the frontend once got it wrong**: a single wide predicate refused Quick Look on a plain
+  `.zip` and pulled its same-drive move off the local fast path. Harmless-looking until `.docx` became a browsable
+  suffix, at which point the same predicate would have killed Quick Look on every Office document. A trailing slash
+  still reads as the archive ROOT (`/a/foo.zip/` has an empty inner path), which the naive length check gets wrong.
+
+- **`capabilitiesForPane(volumeId, path)`** returns the `archive` capability row when the path crosses an archive, else
+  defers to `capabilitiesFor(volumeId)`. The pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so
+  `hasBackendListing` / `hasParentRow` / `syncsToMcp` / `canWrite` are all true for a zip; a tar, 7z, or OOXML boundary
+  gets the read-only variant (`canWrite: false`, `canBeSource: true` so extract-out still works). ⌘C/⌘X are refused
+  separately and route to F5/F6, since archive-inner paths aren't OS-resolvable URLs. ❌ The archive branch never folds
+  in the PARENT drive's published capabilities: they answer for the drive, and the pane is inside a file on it.
+- **A DOCUMENT container (`.docx` / `.xlsx` / `.pptx` / `.jar` / `.apk`) browses but is never writable.** Two suffix
+  tables express that: `SUPPORTED_ARCHIVE_SUFFIXES` (browsable, mirrors the backend's `format_for_name` — a test parses
+  the Rust table and asserts set equality) and `WRITABLE_ARCHIVE_SUFFIXES`, which is `['.zip']` and ❌ must stay that
+  way. **Decision/Why**: a `.docx` IS a zip, so the archive-edit mutator would rewrite one happily; letting a user
+  rename or delete parts while looking around inside a Word file hands them a corrupt document, and "protect the user's
+  data" outranks the convenience. The UI list is the visible half only — the backend refuses by TYPE
+  (`ArchiveFormat::Ooxml` never satisfies `ensure_zip_writable`), so an MCP or IPC caller that never sees a dialog is
+  refused too. Read-only holds by construction, not by hidden buttons.
 - **Why `VolumeInfo.mountIsReadOnly` still matters**: the archive pane's `volumeId` is the parent drive. A writable zip
   runs the real managed archive-edit flow, but a zip that lives on a read-only `VolumeInfo` (a locked disk image) can't
   be rewritten in place — the write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`
@@ -1106,13 +1126,14 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
 - **Edits are managed ops, not instant.** A zip mutation is an O(archive) temp+rename rewrite, so mkdir/mkfile/rename
   inside a zip return an OPERATION handle, not a landed path, and copy/move into or out of a zip route through
   `copyBetweenVolumes`/`moveBetweenVolumes` (never the local `moveFiles` fast-path — `transfer-progress-state`'s
-  `isVolumeMove` OR-s in `pathInsideArchive(sourcePaths | destinationPath)` so a same-drive archive move still crosses).
-  The cursor lands on the new/renamed entry when the backing `.zip`'s live-watch refresh arrives (the durable
-  `pendingCursorName` channel in `listing-diff-sync`, consumed on the refresh diff — no timer). `handleNewFileCreated`
-  skips its open-in-editor for an archive target (the file is created async and an archive-inner path isn't editable in
-  place). Deleting inside a zip is PERMANENT (no Trash inside an archive): `openDeleteDialog` forces
-  `isPermanent`/`isArchive` and drops `supportsTrash`, and `DeleteDialog` shows the archive warning. The queue row for a
-  zip edit is the `archive_edit` `WriteOperationType` (`file-archive` glyph, "Editing archive" label; no scan phase).
+  `isVolumeMove` OR-s in `pathInsideArchive(sourcePaths | destinationPath)`, the NARROW check, so a same-drive move of
+  something INSIDE an archive still crosses while a move of the `.zip` file itself keeps the fast path). The cursor
+  lands on the new/renamed entry when the backing `.zip`'s live-watch refresh arrives (the durable `pendingCursorName`
+  channel in `listing-diff-sync`, consumed on the refresh diff — no timer). `handleNewFileCreated` skips its
+  open-in-editor for an archive target (the file is created async and an archive-inner path isn't editable in place).
+  Deleting inside a zip is PERMANENT (no Trash inside an archive): `openDeleteDialog` forces `isPermanent`/`isArchive`
+  and drops `supportsTrash`, and `DeleteDialog` shows the archive warning. The queue row for a zip edit is the
+  `archive_edit` `WriteOperationType` (`file-archive` glyph, "Editing archive" label; no scan phase).
 - **Navigation is nearly free.** `handleNavigate` forks on `entry.isDirectory || entry.isArchive` (a zip stays
   `isDirectory:false`; `isArchive` is backend-computed, extension-only, crosses IPC on `FileEntry`), routing in-place
   (same parent-drive volume) via `browseIntoEntry`. The Enter-behavior policy (below) runs FIRST and can divert to a
@@ -1122,8 +1143,9 @@ routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
   archive, NOT the `.zip` path the backend emits as the listing's `volume_root` — otherwise the archive root would read
   as a volume root and hide its `..` row.
 - **Opt-outs that `hasBackendListing:true` doesn't cover**: `git-browser-sync` skips inside archives
-  (`pathInsideArchive` — a repo can't live in a zip); `volume-space` queries the parent mount path inside an archive (an
-  archive-inner path isn't NSURL-resolvable, and the archive borrows the parent's space).
+  (`pathCrossesArchiveBoundary` — a repo can't live in a zip); `volume-space` queries the parent mount path inside an
+  archive (an archive-inner path isn't NSURL-resolvable, and the archive borrows the parent's space). Both read the PANE
+  path, so both take the wide check.
 - **Path bar** renders the transparent `…/foo.zip/inner` for free: `breadcrumbDisplayPath` strips the parent
   `volumePath` prefix and `enrichBreadcrumbSegments` rebuilds ancestor targets from it, both path-agnostic.
 - **Persistence/restore** is archive-safe with no FE change: the tab stores `(parentDriveId, fullPath)`; on restore
