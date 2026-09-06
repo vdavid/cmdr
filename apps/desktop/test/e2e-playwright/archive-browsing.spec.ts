@@ -776,9 +776,13 @@ test.describe('Archive browsing — read-only OOXML documents', () => {
     expect(found).toBe(true)
     await tauriPage.keyboard.press('F2')
 
-    // No rename editor opens: the pane can't write, so the command is refused
-    // before it starts.
-    await expect.poll(async () => tauriPage.isVisible('.rename-input'), { timeout: 2000 }).toBeFalsy()
+    // The refusal is LOUD, not a silent no-op: the read-only alert comes up and
+    // no rename editor opens, so the user is told why rather than left pressing
+    // a dead key.
+    await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
+    expect(await tauriPage.isVisible('.rename-input')).toBe(false)
+
+    await dismissOverlay(tauriPage)
 
     // The document's bytes are untouched — the assertion that actually matters.
     expect(fs.readFileSync(docxPath).equals(before)).toBe(true)
