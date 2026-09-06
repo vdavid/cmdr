@@ -131,6 +131,67 @@ function charBoxes(lineText: HTMLElement): { length: number; measure: MeasureCha
 }
 
 /**
+ * The caret box at `point`: a zero-width rect on one EDGE of the character box there, in
+ * viewport coordinates. `null` when the line isn't rendered or nothing can be measured.
+ *
+ * ❌ This is an edge pick, NOT a fallback ladder, and the difference is the whole
+ * correctness of it. `measureChar` clamps its probe to `length - 1`, so at
+ * `offset === length` it hands back a perfectly good box: the LAST character's. Treat
+ * that as "measurement failed" and you don't get a visible symptom, you get a caret one
+ * glyph too far left at every line end, which is exactly where Shift+End and every
+ * rightward walk park it. Probing `min(offset, length - 1)` and then picking `left` at
+ * or before the box's start and `right` at or after its end covers line start, line end,
+ * and everything between with one rule. The only true fallbacks are an empty line and an
+ * unmeasurable rect.
+ *
+ * Height comes from the measured character box, ❌ never the row: under word wrap
+ * `.line` has `height: auto`, so a wrapped line's row is several visual rows tall and a
+ * row-height box would span the whole paragraph.
+ *
+ * At an interior offset landing exactly on a wrap boundary the box is the first glyph of
+ * the next visual row, so the caret sits at the start of row N+1 rather than the end of
+ * row N. That follows `rangeRect`'s preference for the rect with width and matches
+ * native downstream affinity; it's correct, leave it.
+ */
+export function caretRectFor(content: HTMLElement, point: LineOffset): CaretRect | null {
+  const lineText = content.querySelector<HTMLElement>(`[data-line="${String(point.line)}"] .line-text`)
+  if (lineText === null) return null
+
+  const { length, measure } = charBoxes(lineText)
+  if (length === 0) {
+    const row = lineText.getBoundingClientRect()
+    return { left: row.left, right: row.left, top: row.top, bottom: row.bottom }
+  }
+
+  const box = measure(clamp(point.offset, 0, length - 1))
+  if (box === null) return null
+  const x = point.offset >= box.end ? box.rect.right : box.rect.left
+  return { left: x, right: x, top: box.rect.top, bottom: box.rect.bottom }
+}
+
+/**
+ * The advance width of one column, measured off the first rendered row that has text.
+ * `null` when nothing is rendered or every rendered row is empty, in which case there is
+ * nothing to scroll horizontally anyway.
+ *
+ * The viewer's content font is monospace, so any character answers for all of them. The
+ * caller caches this and drops the cache when the text scale settles; it costs one
+ * `Range` measurement.
+ */
+export function measureColumnWidth(content: HTMLElement): number | null {
+  const rows = content.querySelectorAll<HTMLElement>('[data-line] .line-text')
+  for (const row of rows) {
+    const { length, measure } = charBoxes(row)
+    if (length === 0) continue
+    const box = measure(0)
+    if (box === null) continue
+    const width = box.rect.right - box.rect.left
+    if (width > 0) return width
+  }
+  return null
+}
+
+/**
  * Measures the codepoint covering `offset`. The offset is snapped onto a codepoint
  * boundary first, so an astral character is measured (and reported) as one two-unit box
  * and the caret can never land between its surrogates. The snap is per text node, so a

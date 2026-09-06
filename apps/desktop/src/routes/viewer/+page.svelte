@@ -328,13 +328,25 @@
         getFileName: () => fileName,
     })
 
+    // Each pointer setter also ends the keyboard's vertical run: a click or drag picks a
+    // new column, so the next Shift+Up/Down aims from there rather than from wherever an
+    // earlier run was heading. `keyboard` is defined below and read lazily here.
     const pointerDrag = createViewerPointerDrag({
         getContentRef: () => scroll.contentRef,
         getLineText: (line) => scroll.lineCache.get(line),
         hasSelection: () => selection.selection !== null,
-        setAnchor: selection.setAnchor,
-        setFocus: selection.setFocus,
-        setRange: selection.setRange,
+        setAnchor: (point) => {
+            keyboard.resetDesiredColumn()
+            selection.setAnchor(point)
+        },
+        setFocus: (point) => {
+            keyboard.resetDesiredColumn()
+            selection.setFocus(point)
+        },
+        setRange: (range) => {
+            keyboard.resetDesiredColumn()
+            selection.setRange(range)
+        },
         takeFocus: () => scroll.containerRef?.focus({ preventScroll: true }),
     })
 
@@ -448,7 +460,8 @@
         getTotalLines: () => totalLines,
         getTotalBytes: () => totalBytes,
         getLineText: (line) => scroll.lineCache.get(line),
-        selection: { selectAll: selection.selectAll, selectToEof: selection.selectToEof },
+        getLastRenderedLine: () => scroll.visibleLines.at(-1)?.lineNumber ?? null,
+        selection,
         scroll,
         search: {
             get searchVisible() {

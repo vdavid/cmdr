@@ -1,20 +1,38 @@
-import type { SelectAllArgs } from './selection.svelte'
+import { EOF_LINE, type LineOffset, type SelectAllArgs, type Selection } from './selection.svelte'
+import { moveFocus, type CaretMotion, type MotionDirection } from './viewer-caret-motion'
 
-interface NavigationActions {
+/** Scroll actions the unmodified navigation keys drive. */
+interface ScrollActions {
   scrollByLines: (n: number) => void
   scrollByPages: (n: number) => void
   scrollToStart: () => void
   scrollToEnd: () => void
+  /** Horizontal scroll by `n` columns. A no-op under word wrap (nothing overflows). */
+  scrollByColumns: (n: number) => void
+}
+
+/** Everything the keyboard asks of the scroll composable. */
+interface NavigationActions extends ScrollActions {
+  /** Scrolls a line just into view vertically, leaving an already-visible one alone. */
+  ensureLineVisible: (line: number) => void
+  /** Scrolls the character at `point` into view horizontally. */
+  ensureColumnVisible: (point: LineOffset) => void
 }
 
 /** Maps Arrow / Page / Home / End keys to viewer scroll actions. Returns true if handled. */
-export function handleNavigationKey(key: string, actions: NavigationActions): boolean {
+export function handleNavigationKey(key: string, actions: ScrollActions): boolean {
   switch (key) {
     case 'ArrowUp':
       actions.scrollByLines(-1)
       return true
     case 'ArrowDown':
       actions.scrollByLines(1)
+      return true
+    case 'ArrowLeft':
+      actions.scrollByColumns(-1)
+      return true
+    case 'ArrowRight':
+      actions.scrollByColumns(1)
       return true
     case 'PageUp':
       actions.scrollByPages(-1)
@@ -31,6 +49,67 @@ export function handleNavigationKey(key: string, actions: NavigationActions): bo
     default:
       return false
   }
+}
+
+/**
+ * The motion a pressed chord asks for, or `null` when it isn't an extend chord.
+ *
+ * The guard-then-branch shape is deliberate: switch on the key FIRST, then read the
+ * modifiers in a separate statement, the way the Shift+Enter branch below already does.
+ * ❌ Never fold the two together as `e.shiftKey && e.key === 'ArrowLeft'`. That pairs a
+ * required modifier read with a literal key test while leaving ⌘/⌃/⌥ unconstrained, which
+ * is the modifier-superset bug `cmdr/no-raw-key-match` (an ERROR here) exists for; its
+ * header names this window's case, "in a window with no command registry (the viewer),
+ * match locally but split on 'carries ⌘/⌃/⌥' up front".
+ */
+function extendMotionFor(e: KeyboardEvent): CaretMotion | null {
+  switch (e.key) {
+    case 'ArrowLeft':
+      return horizontalMotion(e, -1)
+    case 'ArrowRight':
+      return horizontalMotion(e, 1)
+    case 'ArrowUp':
+      return verticalMotion(e, -1)
+    case 'ArrowDown':
+      return verticalMotion(e, 1)
+    case 'Home':
+      return lineEdgeMotion(e, -1)
+    case 'End':
+      return lineEdgeMotion(e, 1)
+    default:
+      return null
+  }
+}
+
+/**
+ * Shift+Arrow steps a character; ⌥ (macOS) or ⌃ (Linux, Windows) promotes it to a word.
+ * macOS usually eats ⌃⇧Arrow at the system level, which costs nothing to support.
+ */
+function horizontalMotion(e: KeyboardEvent, direction: MotionDirection): CaretMotion | null {
+  if (!e.shiftKey) return null
+  if (e.metaKey) return null
+  const byWord = e.altKey || e.ctrlKey
+  return { kind: byWord ? 'word' : 'char', direction }
+}
+
+/** Shift+Up/Down steps a logical line; ⌘ promotes it to the file edge. */
+function verticalMotion(e: KeyboardEvent, direction: MotionDirection): CaretMotion | null {
+  if (!e.shiftKey) return null
+  if (e.metaKey) return { kind: 'docEdge', direction }
+  if (e.altKey || e.ctrlKey) return null
+  return { kind: 'line', direction }
+}
+
+/**
+ * Shift+Home/End extends to the LINE edge, while bare Home/End scroll to the file edge.
+ * That difference is on purpose: unmodified Home/End are scroll-view navigation (what
+ * macOS does in a document view), and a selection gesture works on the line in every
+ * editor; ⌘ then promotes it back to the whole file. Don't harmonize them.
+ */
+function lineEdgeMotion(e: KeyboardEvent, direction: MotionDirection): CaretMotion | null {
+  if (!e.shiftKey) return null
+  if (e.metaKey || e.altKey || e.ctrlKey) return null
+  return { kind: 'lineEdge', direction }
 }
 
 /** Handles single-letter toggles (word wrap on `W`). Returns true if handled. */
@@ -90,11 +169,20 @@ interface KeyboardDeps {
   getTotalBytes: () => number
   /** Reads the cached text of a line, or `undefined` if not cached. */
   getLineText: (line: number) => string | undefined
+  /**
+   * The last line currently rendered, or `null` when nothing is. Only ever read to
+   * resolve an end-of-file sentinel focus onto a real line (see `resolveFrom`).
+   */
+  getLastRenderedLine: () => number | null
   selection: {
+    /** The current selection, so an extend chord has an anchor to keep and a focus to move. */
+    readonly selection: Selection | null
     /** Selects the whole file given its total line count and the last line's length. */
     selectAll: (args: SelectAllArgs) => void
     /** Selects the whole file when its line count isn't known yet (ByteSeek, no index). */
     selectToEof: () => void
+    /** Moves the focus, keeping the anchor. The whole of keyboard extension. */
+    setFocus: (point: LineOffset) => void
   }
   scroll: NavigationActions
   search: {
@@ -145,7 +233,90 @@ interface KeyboardDeps {
  * pattern), so this stays a plain `.ts` module with no `$state` of its own.
  */
 export function createViewerKeyboard(deps: KeyboardDeps) {
+  /**
+   * The column a run of vertical extend presses is aiming for, so walking down through a
+   * short line and back returns to the original column. `moveFocus` clears it after any
+   * non-`line` motion, so nothing here has to reset it; a pointer gesture does, through
+   * `resetDesiredColumn`.
+   */
+  let desiredColumn: number | null = null
+
+  /** Clears the vertical run's aim. The page calls this from its pointer-drag deps. */
+  function resetDesiredColumn(): void {
+    desiredColumn = null
+  }
+
+  /**
+   * Where `moveFocus` starts from, with the end-of-file sentinel resolved away.
+   *
+   * ❌ `moveFocus` THROWS on a sentinel `from`, and this is reachable today: ⌘A in
+   * ByteSeek-no-index mode parks the focus on `EOF_LINE`. The sentinel names a line that
+   * can never be cached, so the refusal has to happen here rather than in the pure
+   * module, which knows nothing about what's on screen and could only hand the sentinel
+   * back as its own `targetLine` — slamming the view to the bottom on every press with no
+   * way to shrink the selection. Reaching the sentinel always scrolled to the bottom, so
+   * the last rendered line is the practical end of the file. Returns `null` (a no-op
+   * press) when nothing is rendered.
+   */
+  function resolveFrom(focus: LineOffset): LineOffset | null {
+    if (focus.line !== EOF_LINE) return focus
+    const line = deps.getLastRenderedLine()
+    if (line === null) return null
+    return { line, offset: deps.getLineText(line)?.length ?? 0 }
+  }
+
+  /**
+   * Scrolls to a motion's `targetLine`. `docEdge` down with no line count yet reports the
+   * sentinel, which names no scrollable row: it means "the end of the file". ❌ Never
+   * pass it to line arithmetic.
+   */
+  function scrollToTarget(targetLine: number): void {
+    if (targetLine === EOF_LINE) deps.scroll.scrollToEnd()
+    else deps.scroll.ensureLineVisible(targetLine)
+  }
+
+  /**
+   * Runs an extend chord if the press is one. Returns `true` when the key was consumed,
+   * which includes the deliberate no-ops: letting an unhandled Shift+Down fall through
+   * would scroll the view out from under a selection the user is building.
+   *
+   * With no selection at all this does nothing: a plain click already leaves a collapsed
+   * selection at the click point, so click-then-Shift+Arrow is the discoverable path,
+   * while seeding an anchor off-screen would start a selection the user can't see.
+   */
+  function tryExtendSelection(e: KeyboardEvent): boolean {
+    const motion = extendMotionFor(e)
+    if (motion === null) return false
+
+    const current = deps.selection.selection
+    if (current === null) return true
+    const from = resolveFrom(current.focus)
+    if (from === null) return true
+
+    const result = moveFocus({
+      from,
+      motion,
+      getLineText: deps.getLineText,
+      getTotalLines: deps.getTotalLines,
+      desiredColumn,
+    })
+    desiredColumn = result.desiredColumn
+
+    if (result.focus !== null) deps.selection.setFocus(result.focus)
+
+    // Unconditional, so the uncached-line case heals itself: with no offset to land on,
+    // the selection stays put and this scroll is what pulls the line into the render
+    // window and triggers its fetch, so the next press lands instead of the key being
+    // dead forever.
+    scrollToTarget(result.targetLine)
+    if (result.focus !== null && result.focus.line !== EOF_LINE) deps.scroll.ensureColumnVisible(result.focus)
+    return true
+  }
+
   function handleSelectAllShortcut(): void {
+    // ⌘A is a fresh gesture, so a Shift+Up right after it aims from the new focus rather
+    // than from whatever column an earlier run was heading for.
+    resetDesiredColumn()
     const totalLines = deps.getTotalLines()
     if (totalLines !== null && totalLines > 0) {
       const lastLineText = deps.getLineText(totalLines - 1) ?? ''
@@ -287,6 +458,14 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
       return
     }
 
+    // ⌥⇧/⌃⇧+Arrow (word) and ⌘⇧+Up/Down (file edge). Gated on focus by hand, because
+    // unlike the unmodified path this handler runs even while the search input has it,
+    // and without the gate it would steal the input's own ⌥⇧Arrow.
+    if (!searchInputFocused && tryExtendSelection(e)) {
+      e.preventDefault()
+      return
+    }
+
     // Exactly ⌘/⌃ + letter: ⌘⌥C is the chord above and ⌘⇧A means nothing here.
     if (!e.altKey && !e.shiftKey) handleModifierShortcut(e, searchInputFocused)
   }
@@ -300,7 +479,8 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
       return
     }
 
-    // Everything below is an unmodified key; Shift stays free (it picks findPrev).
+    // Everything below is an unmodified key. Shift is a modifier we DO read here: it
+    // picks findPrev on Enter and extends the selection on the arrows and Home/End.
     if (e.key === 'Escape') {
       e.preventDefault()
       if (tryConsumeEscapeForCopy()) return
@@ -317,8 +497,16 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
 
     if (searchInputFocused) return
 
+    // Plain Shift+Arrow and Shift+Home/End land here. AFTER the focus guard, or this
+    // would steal the search input's own Shift+Arrow; BEFORE `handleBareKey`, or
+    // Shift+Up would keep scrolling instead of extending.
+    if (tryExtendSelection(e)) {
+      e.preventDefault()
+      return
+    }
+
     if (handleBareKey(e)) e.preventDefault()
   }
 
-  return { handleKeyDown, handleSelectAllShortcut }
+  return { handleKeyDown, handleSelectAllShortcut, resetDesiredColumn }
 }

@@ -4,6 +4,9 @@ import { getAppLogger } from '$lib/logging/logger'
 import { createLineHeightMap, getLineHeight } from './viewer-line-heights.svelte'
 import { onDebouncedScaleChange } from '$lib/text-size.svelte'
 import { pluralize } from '$lib/utils/pluralize'
+import { ensureVisibleOffset, recenterOffset } from './viewer-search-scroll'
+import { caretRectFor, measureColumnWidth } from './viewer-pointer'
+import type { LineOffset } from './selection.svelte'
 
 const log = getAppLogger('viewer')
 
@@ -274,6 +277,72 @@ export function createViewerScroll(deps: ScrollDeps) {
     }
   }
 
+  /**
+   * The rendered height of line `n`, in the same scaled space `getLineTop` speaks. The
+   * height map holds the real per-line height once it's ready (a wrapped line is several
+   * rows tall); before that every line is one row.
+   */
+  function lineHeightAt(n: number): number {
+    if (heightMap.ready) {
+      const measured = (heightMap.getLineTop(n + 1) - heightMap.getLineTop(n)) * scrollScale
+      if (measured > 0) return measured
+    }
+    return scrollLineHeight
+  }
+
+  /**
+   * Scrolls line `n` just into view, with one line of breathing room, and leaves an
+   * already-visible line alone. Drives keyboard selection extension: every extend press
+   * calls this, including the one whose target line isn't cached yet, because the scroll
+   * is what pulls the line into the render window and triggers its fetch.
+   */
+  function ensureLineVisible(n: number) {
+    if (!contentRef) return
+    const next = ensureVisibleOffset({
+      lineTop: getLineTop(n),
+      lineHeight: lineHeightAt(n),
+      scrollTop: contentRef.scrollTop,
+      viewportHeight: contentRef.clientHeight,
+      margin: scrollLineHeight,
+    })
+    if (next !== null) contentRef.scrollTop = next
+  }
+
+  /**
+   * Brings the character at `point` into view horizontally, the way search does for a
+   * match: measure the real rect, recentre against the content box, set `scrollLeft`.
+   * Without it, repeated Shift+Right on a long unwrapped line walks the focus past the
+   * right edge with nothing following it. Word wrap has no horizontal overflow, so it's
+   * a no-op there.
+   */
+  function ensureColumnVisible(point: LineOffset) {
+    if (!contentRef || wordWrap) return
+    const caret = caretRectFor(contentRef, point)
+    if (caret === null) return
+    const view = contentRef.getBoundingClientRect()
+    const left = recenterOffset({
+      markStart: caret.left,
+      markEnd: caret.right,
+      viewStart: view.left,
+      viewEnd: view.right,
+      currentScroll: contentRef.scrollLeft,
+    })
+    if (left !== null && Math.abs(left - contentRef.scrollLeft) > 2) contentRef.scrollLeft = left
+  }
+
+  /**
+   * One column's advance width, measured once off a rendered row and dropped when the
+   * text scale settles (the only thing that changes it). `null` until a row with text
+   * exists, which is also when there's nothing to scroll.
+   */
+  let columnWidth: number | null = null
+  function scrollByColumns(columns: number) {
+    if (!contentRef || wordWrap) return
+    columnWidth ??= measureColumnWidth(contentRef)
+    if (columnWidth === null) return
+    contentRef.scrollLeft = Math.max(0, contentRef.scrollLeft + columns * columnWidth)
+  }
+
   function runFetchEffect() {
     const from = visibleFrom
     const to = visibleTo
@@ -425,6 +494,8 @@ export function createViewerScroll(deps: ScrollDeps) {
   // event the file-list column-width path uses, so we don't thrash mid-drag.
   const unsubscribeScaleChange = onDebouncedScaleChange(() => {
     heightMap.recomputeForLineHeightChange()
+    // A new font size means a new column advance; re-measure it on the next press.
+    columnWidth = null
   })
 
   function destroy() {
@@ -503,6 +574,9 @@ export function createViewerScroll(deps: ScrollDeps) {
     scrollByPages,
     scrollToStart,
     scrollToEnd,
+    scrollByColumns,
+    ensureLineVisible,
+    ensureColumnVisible,
     runFetchEffect,
     fetchVisibleNow,
     runContentWidthEffect,

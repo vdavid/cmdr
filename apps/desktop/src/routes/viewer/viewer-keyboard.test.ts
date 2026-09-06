@@ -6,7 +6,14 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { createViewerSelection, isWholeFileSelection, toRangeEnds } from './selection.svelte'
+import {
+  createViewerSelection,
+  EOF_LINE,
+  isWholeFileSelection,
+  toRangeEnds,
+  type LineOffset,
+  type Selection,
+} from './selection.svelte'
 import { createViewerKeyboard, handleSearchToggleKey, handleTailToggleKey, handleToggleKey } from './viewer-keyboard'
 
 type KeyboardDeps = Parameters<typeof createViewerKeyboard>[0]
@@ -26,8 +33,17 @@ function makeKeyboardDeps(overrides: Partial<KeyboardDeps> = {}): KeyboardDeps {
     getTotalLines: () => 10,
     getTotalBytes: () => 100,
     getLineText: () => 'line',
-    selection: { selectAll: noop, selectToEof: noop },
-    scroll: { scrollByLines: noop, scrollByPages: noop, scrollToStart: noop, scrollToEnd: noop },
+    getLastRenderedLine: () => 9,
+    selection: { selection: null, selectAll: noop, selectToEof: noop, setFocus: noop },
+    scroll: {
+      scrollByLines: noop,
+      scrollByPages: noop,
+      scrollToStart: noop,
+      scrollToEnd: noop,
+      scrollByColumns: noop,
+      ensureLineVisible: noop,
+      ensureColumnVisible: noop,
+    },
     search: {
       searchVisible: false,
       searchStatus: 'idle',
@@ -191,7 +207,7 @@ describe('createViewerKeyboard: ⌘A in ByteSeek-no-index mode', () => {
         // No index yet, so there is no line count to select up to; the file is non-empty.
         getTotalLines: () => null,
         getTotalBytes: () => 1,
-        selection: { selectAll: selection.selectAll, selectToEof: selection.selectToEof },
+        selection,
       }),
     )
 
@@ -205,5 +221,289 @@ describe('createViewerKeyboard: ⌘A in ByteSeek-no-index mode', () => {
       anchor: { kind: 'line', line: 0, offset: 0 },
       focus: { kind: 'eof' },
     })
+  })
+})
+
+/** A mutable selection cell plus the `KeyboardDeps.selection` view over it. */
+function makeSelectionDeps(initial: Selection | null) {
+  let current = initial
+  const setFocus = vi.fn((point: LineOffset) => {
+    current = { anchor: current === null ? point : current.anchor, focus: point }
+  })
+  return {
+    setFocus,
+    get focus(): LineOffset | null {
+      return current === null ? null : current.focus
+    },
+    deps: {
+      get selection() {
+        return current
+      },
+      selectAll: vi.fn(),
+      selectToEof: vi.fn(),
+      setFocus,
+    },
+  }
+}
+
+/** Every scroll action the keyboard can reach, each a spy. */
+function makeScrollSpies() {
+  return {
+    scrollByLines: vi.fn(),
+    scrollByPages: vi.fn(),
+    scrollToStart: vi.fn(),
+    scrollToEnd: vi.fn(),
+    scrollByColumns: vi.fn(),
+    ensureLineVisible: vi.fn(),
+    ensureColumnVisible: vi.fn(),
+  }
+}
+
+describe('createViewerKeyboard: keyboard selection extension', () => {
+  // Offsets: `alpha` 0-5, `beta` 6-10, `gamma` 11-16.
+  const line = 'alpha beta gamma'
+
+  /** A 10-line file of `line`s, the focus parked mid-file at the space after `alpha`. */
+  function wire(overrides: Partial<KeyboardDeps> = {}) {
+    const selection = makeSelectionDeps({ anchor: { line: 2, offset: 0 }, focus: { line: 2, offset: 5 } })
+    const scroll = makeScrollSpies()
+    const keyboard = createViewerKeyboard(
+      makeKeyboardDeps({ getLineText: () => line, selection: selection.deps, scroll, ...overrides }),
+    )
+    return { keyboard, selection, scroll }
+  }
+
+  function press(keyboard: ReturnType<typeof createViewerKeyboard>, init: KeyboardEventInit & { key: string }) {
+    const e = makeKey({ cancelable: true, ...init })
+    keyboard.handleKeyDown(e)
+    return e
+  }
+
+  const chords: Array<[string, KeyboardEventInit & { key: string }, LineOffset]> = [
+    ['Shift+Right steps one character', { key: 'ArrowRight', shiftKey: true }, { line: 2, offset: 6 }],
+    ['Shift+Left steps one character back', { key: 'ArrowLeft', shiftKey: true }, { line: 2, offset: 4 }],
+    ['Shift+Down steps one logical line', { key: 'ArrowDown', shiftKey: true }, { line: 3, offset: 5 }],
+    ['Shift+Up steps one logical line back', { key: 'ArrowUp', shiftKey: true }, { line: 1, offset: 5 }],
+    [
+      '⌥⇧Right lands on the end of the next word',
+      { key: 'ArrowRight', shiftKey: true, altKey: true },
+      { line: 2, offset: 10 },
+    ],
+    [
+      '⌥⇧Left lands on the start of the previous word',
+      { key: 'ArrowLeft', shiftKey: true, altKey: true },
+      { line: 2, offset: 0 },
+    ],
+    [
+      '⌃⇧Right is the same word motion, for Linux and Windows',
+      { key: 'ArrowRight', shiftKey: true, ctrlKey: true },
+      { line: 2, offset: 10 },
+    ],
+    [
+      '⌃⇧Left is the same word motion, for Linux and Windows',
+      { key: 'ArrowLeft', shiftKey: true, ctrlKey: true },
+      { line: 2, offset: 0 },
+    ],
+    ['Shift+Home extends to the line start', { key: 'Home', shiftKey: true }, { line: 2, offset: 0 }],
+    ['Shift+End extends to the line end', { key: 'End', shiftKey: true }, { line: 2, offset: 16 }],
+    [
+      '⌘⇧Up extends to the start of the file',
+      { key: 'ArrowUp', shiftKey: true, metaKey: true },
+      { line: 0, offset: 0 },
+    ],
+    [
+      '⌘⇧Down extends to the end of the file',
+      { key: 'ArrowDown', shiftKey: true, metaKey: true },
+      { line: 9, offset: 16 },
+    ],
+  ]
+
+  it.each(chords)('%s', (_name, init, expected) => {
+    const { keyboard, selection } = wire()
+    const e = press(keyboard, init)
+    expect(selection.focus).toEqual(expected)
+    expect(e.defaultPrevented).toBe(true)
+  })
+
+  it('keeps the anchor where it was: extension moves the focus only', () => {
+    const { keyboard, selection } = wire()
+    press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+    expect(selection.deps.selection?.anchor).toEqual({ line: 2, offset: 0 })
+    expect(selection.deps.selectToEof).not.toHaveBeenCalled()
+  })
+
+  it('scrolls the new focus line into view, on both axes', () => {
+    const { keyboard, scroll } = wire()
+    press(keyboard, { key: 'ArrowDown', shiftKey: true })
+    expect(scroll.ensureLineVisible).toHaveBeenCalledWith(3)
+    expect(scroll.ensureColumnVisible).toHaveBeenCalledWith({ line: 3, offset: 5 })
+  })
+
+  it('Shift+Up / Down extend instead of scrolling, which is what they used to do', () => {
+    const { keyboard, scroll } = wire()
+    press(keyboard, { key: 'ArrowDown', shiftKey: true })
+    press(keyboard, { key: 'ArrowUp', shiftKey: true })
+    expect(scroll.scrollByLines).not.toHaveBeenCalled()
+  })
+
+  it('keeps the desired column while walking down through a short line and back out', () => {
+    const selection = makeSelectionDeps({ anchor: { line: 2, offset: 0 }, focus: { line: 2, offset: 16 } })
+    const keyboard = createViewerKeyboard(
+      makeKeyboardDeps({
+        // Line 3 is two characters long; every other line is the full 16.
+        getLineText: (n: number) => (n === 3 ? 'ab' : line),
+        selection: selection.deps,
+        scroll: makeScrollSpies(),
+      }),
+    )
+
+    press(keyboard, { key: 'ArrowDown', shiftKey: true })
+    expect(selection.focus).toEqual({ line: 3, offset: 2 })
+    press(keyboard, { key: 'ArrowDown', shiftKey: true })
+    expect(selection.focus).toEqual({ line: 4, offset: 16 })
+
+    // A horizontal motion ends the run, so the next vertical step starts a new column.
+    press(keyboard, { key: 'ArrowLeft', shiftKey: true })
+    press(keyboard, { key: 'ArrowDown', shiftKey: true })
+    press(keyboard, { key: 'ArrowDown', shiftKey: true })
+    expect(selection.focus).toEqual({ line: 6, offset: 15 })
+  })
+
+  it('drops the desired column on a fresh gesture, so a stale run cannot aim the next one', () => {
+    const selection = makeSelectionDeps({ anchor: { line: 2, offset: 0 }, focus: { line: 2, offset: 16 } })
+    const keyboard = createViewerKeyboard(
+      makeKeyboardDeps({
+        getLineText: (n: number) => (n === 3 ? 'ab' : line),
+        selection: selection.deps,
+        scroll: makeScrollSpies(),
+      }),
+    )
+
+    // Park a desired column of 16 by stepping down through the short line 3.
+    press(keyboard, { key: 'ArrowDown', shiftKey: true })
+    expect(selection.focus).toEqual({ line: 3, offset: 2 })
+
+    // ⌘A restarts the gesture, and the run's aim goes with it. The stubbed `selectAll`
+    // leaves the focus at (3, 2), so the next step reads the reset: column 2, not 16.
+    keyboard.handleSelectAllShortcut()
+    press(keyboard, { key: 'ArrowUp', shiftKey: true })
+    expect(selection.focus).toEqual({ line: 2, offset: 2 })
+  })
+
+  it('consumes the key but leaves the selection alone when the target line is not cached', () => {
+    const { keyboard, selection, scroll } = wire({ getLineText: (n: number) => (n === 2 ? line : undefined) })
+    const e = press(keyboard, { key: 'ArrowDown', shiftKey: true })
+    expect(selection.setFocus).not.toHaveBeenCalled()
+    // The scroll is what fetches the line, so the next press can land.
+    expect(scroll.ensureLineVisible).toHaveBeenCalledWith(3)
+    expect(e.defaultPrevented).toBe(true)
+  })
+
+  it('⌘⇧Down with no line count yet selects to the end-of-file sentinel and scrolls there', () => {
+    const { keyboard, selection, scroll } = wire({ getTotalLines: () => null })
+    press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+    expect(selection.focus).toEqual({ line: EOF_LINE, offset: 0 })
+    // The sentinel names no scrollable row, so it means "the end of the file".
+    expect(scroll.scrollToEnd).toHaveBeenCalledOnce()
+    expect(scroll.ensureLineVisible).not.toHaveBeenCalled()
+  })
+
+  it('resolves a sentinel focus to the last rendered line before moving from it', () => {
+    // ⌘A in ByteSeek-no-index mode parks the focus on the sentinel, and `moveFocus`
+    // throws on one. Shift+Up from there steps off line 7, the last line on screen.
+    const selection = makeSelectionDeps({ anchor: { line: 0, offset: 0 }, focus: { line: EOF_LINE, offset: 0 } })
+    const keyboard = createViewerKeyboard(
+      makeKeyboardDeps({
+        getTotalLines: () => null,
+        getLastRenderedLine: () => 7,
+        getLineText: () => line,
+        selection: selection.deps,
+        scroll: makeScrollSpies(),
+      }),
+    )
+    press(keyboard, { key: 'ArrowUp', shiftKey: true })
+    expect(selection.focus).toEqual({ line: 6, offset: 16 })
+  })
+
+  it('is a no-op when the focus is on the sentinel and nothing is rendered', () => {
+    const selection = makeSelectionDeps({ anchor: { line: 0, offset: 0 }, focus: { line: EOF_LINE, offset: 0 } })
+    const scroll = makeScrollSpies()
+    const keyboard = createViewerKeyboard(
+      makeKeyboardDeps({ getLastRenderedLine: () => null, selection: selection.deps, scroll }),
+    )
+    press(keyboard, { key: 'ArrowUp', shiftKey: true })
+    expect(selection.setFocus).not.toHaveBeenCalled()
+    expect(scroll.ensureLineVisible).not.toHaveBeenCalled()
+  })
+
+  it('does nothing with no selection at all: a click is the discoverable way to start one', () => {
+    const selection = makeSelectionDeps(null)
+    const scroll = makeScrollSpies()
+    const keyboard = createViewerKeyboard(makeKeyboardDeps({ selection: selection.deps, scroll }))
+    const e = press(keyboard, { key: 'ArrowRight', shiftKey: true })
+    expect(selection.setFocus).not.toHaveBeenCalled()
+    // Still consumed, so the view doesn't scroll out from under the user instead.
+    expect(e.defaultPrevented).toBe(true)
+    expect(scroll.scrollByColumns).not.toHaveBeenCalled()
+  })
+
+  it('leaves the search input its own Shift+Arrow and ⌥⇧Arrow', () => {
+    const input = document.createElement('input')
+    document.body.append(input)
+    input.focus()
+    const selection = makeSelectionDeps({ anchor: { line: 2, offset: 0 }, focus: { line: 2, offset: 5 } })
+    const base = makeKeyboardDeps({ getLineText: () => line, selection: selection.deps })
+    const keyboard = createViewerKeyboard({
+      ...base,
+      search: { ...base.search, searchVisible: true, searchInputRef: input },
+    })
+
+    press(keyboard, { key: 'ArrowRight', shiftKey: true })
+    press(keyboard, { key: 'ArrowRight', shiftKey: true, altKey: true })
+
+    expect(selection.setFocus).not.toHaveBeenCalled()
+    document.body.innerHTML = ''
+  })
+
+  it('leaves Shift+Enter and ⌘⌥R to the search bar', () => {
+    const findPrev = vi.fn()
+    const toggleUseRegex = vi.fn()
+    const selection = makeSelectionDeps({ anchor: { line: 2, offset: 0 }, focus: { line: 2, offset: 5 } })
+    const base = makeKeyboardDeps({ selection: selection.deps })
+    const keyboard = createViewerKeyboard({
+      ...base,
+      search: { ...base.search, searchVisible: true, findPrev, toggleUseRegex },
+    })
+
+    press(keyboard, { key: 'Enter', shiftKey: true })
+    expect(findPrev).toHaveBeenCalledOnce()
+
+    press(keyboard, { key: 'r', metaKey: true, altKey: true })
+    expect(toggleUseRegex).toHaveBeenCalledOnce()
+  })
+})
+
+describe('createViewerKeyboard: unmodified arrows scroll', () => {
+  it('Left / Right scroll horizontally by one column', () => {
+    const scroll = makeScrollSpies()
+    const keyboard = createViewerKeyboard(makeKeyboardDeps({ scroll }))
+
+    keyboard.handleKeyDown(makeKey({ key: 'ArrowLeft', cancelable: true }))
+    keyboard.handleKeyDown(makeKey({ key: 'ArrowRight', cancelable: true }))
+
+    expect(scroll.scrollByColumns.mock.calls).toEqual([[-1], [1]])
+  })
+
+  it('Up / Down still scroll by a line and Home / End still jump to the file edges', () => {
+    const scroll = makeScrollSpies()
+    const keyboard = createViewerKeyboard(makeKeyboardDeps({ scroll }))
+
+    keyboard.handleKeyDown(makeKey({ key: 'ArrowDown', cancelable: true }))
+    keyboard.handleKeyDown(makeKey({ key: 'Home', cancelable: true }))
+    keyboard.handleKeyDown(makeKey({ key: 'End', cancelable: true }))
+
+    expect(scroll.scrollByLines).toHaveBeenCalledWith(1)
+    expect(scroll.scrollToStart).toHaveBeenCalledOnce()
+    expect(scroll.scrollToEnd).toHaveBeenCalledOnce()
   })
 })

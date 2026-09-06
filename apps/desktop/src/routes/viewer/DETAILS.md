@@ -18,14 +18,16 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   (`ResizeObserver` width tracker), **`viewer-tail`** (`viewer:file-changed:<sid>` → reload toasts).
 - **`viewer-indexing-poll.ts`**: `viewer_get_status` poll during line-index build.
 - **`viewer-keyboard.ts`**: pure key helpers + `createViewerKeyboard`, the keydown router (modifiers, Escape ladder, ⌘A,
-  bare-key dispatch).
+  bare-key dispatch, and the twelve selection-extension chords).
 - Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-caret-geometry.ts`**
-  (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter: row hit-test + character
-  rects), **`viewer-pointer-drag.svelte.ts`** (pointer/drag/context-menu controller), **`viewer-word.ts`**
-  (word-boundary via `Intl.Segmenter`: the word under a caret, and the next boundary in either direction),
-  **`viewer-selection-granularity.ts`** (pure caret → word/line range snapping and the two-range union),
-  **`viewer-caret-motion.ts`** (pure `moveFocus`: the five keyboard motions).
-- **`viewer-search-scroll.ts`**: pure per-axis scroll-to-match centring (`recenterOffset`, rect-based).
+  (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter and the ONE place line text is
+  measured: row hit-test, character rects, `caretRectFor`, `measureColumnWidth`), **`viewer-pointer-drag.svelte.ts`**
+  (pointer/drag/context-menu controller), **`viewer-word.ts`** (word-boundary via `Intl.Segmenter`: the word under a
+  caret, and the next boundary in either direction), **`viewer-selection-granularity.ts`** (pure caret → word/line range
+  snapping and the two-range union), **`viewer-caret-motion.ts`** (pure `moveFocus`: the five keyboard motions).
+- **`viewer-search-scroll.ts`**: pure per-axis scroll math. `recenterOffset` centres a search match from its rendered
+  rect; `ensureVisibleOffset` nudges a line just into view for keyboard extension. Different coordinate spaces, see §
+  "Keyboard motion model".
 - Copy: **`viewer-copy.ts`** (pure silent/confirm/refuse policy + thresholds), **`viewer-copy.svelte.ts`**
   (`createViewerCopy` + `createViewerCopyOrchestrator`). Autoscroll: **`viewer-autoscroll.ts`** (curve) +
   **`.svelte.ts`** (RAF controller).
@@ -204,8 +206,8 @@ Decision/Why: the count comes from the controller's own `pointerdown` stream, an
 all. Before that, the same handler read a `click` event's `detail`, and triple-click selected nothing in the app while
 double-click worked; since the two branches shared every line but the `detail` comparison, `detail` never reached 3
 there. The whole gesture vocabulary now rests on the one event stream the drag already depends on, which also makes it
-reachable from a test that dispatches plain `PointerEvent`s (`viewer.spec.ts` § "multi-click selection"): a synthetic
-`click` with a hand-set `detail` would have passed against the broken code.
+reachable from a test that dispatches plain `PointerEvent`s (`viewer-selection-gestures.spec.ts`): a synthetic `click`
+with a hand-set `detail` would have passed against the broken code.
 
 Gotcha/Why: which part of the native pipeline dropped that count is NOT established, so don't reach back for `detail` on
 the theory that some documented rule explains it. `preventDefault()` on `pointerdown` suppresses the compatibility
@@ -272,7 +274,7 @@ Rules the model encodes:
   build it now.
 - **Vertical motion keeps a desired column** so walking down through a short line and back returns to the original
   column. It's a logical UTF-16 offset, matching the rule above; horizontal motions return `desiredColumn: null`, and
-  the caller also clears it on a pointer gesture.
+  the caller clears it on any fresh gesture too (a pointer press or ⌘A), through `resetDesiredColumn`.
 - **`char` steps one grapheme**, so an emoji, a ZWJ sequence like 👨‍👩‍👧, or a base letter plus a combining mark is one
   press. Offsets stay UTF-16 code units throughout; grapheme stepping only decides how many of them a press covers.
   `viewer-pointer.ts` keeps caret geometry on codepoint boundaries, and grapheme boundaries strictly refine those, so
@@ -297,10 +299,75 @@ Gotcha/Why: **`moveFocus` never receives the `EOF_LINE` sentinel as its `from`, 
 ByteSeek-no-index mode parks the focus on the sentinel, and it names a line that can never be cached, so one Shift+Up
 from there would ask to step onto it forever. The refusal can't live inside the module: it knows nothing about what's on
 screen, so the only `targetLine` it could hand back is the sentinel itself, and the caller would slam the view to the
-bottom on every press with no way to shrink the selection. The caller resolves a sentinel focus to the last line it is
-currently rendering (at that line's cached length) before calling in, and treats the press as a no-op when nothing is
-rendered. That works because reaching the sentinel always scrolled the view to the bottom, so the last rendered line is
-the practical end of the file. Keeping the module total is what makes its exhaustive-switch test worth anything.
+bottom on every press with no way to shrink the selection. `resolveFrom` in `viewer-keyboard.ts` replaces a sentinel
+focus with the last line the scroll composable is rendering (at that line's cached length) before calling in, and treats
+the press as a no-op when nothing is rendered. That works because reaching the sentinel always scrolled the view to the
+bottom, so the last rendered line is the practical end of the file. Keeping the module total is what makes its
+exhaustive-switch test worth anything.
+
+#### The key map
+
+Twelve extend chords, all routed by `extendMotionFor` in `viewer-keyboard.ts`:
+
+- **Shift+Left / Right** → `char`, one grapheme, crossing line boundaries.
+- **Shift+Up / Down** → `line`, one logical line, keeping the desired column.
+- **⌥⇧Left / Right** and **⌃⇧Left / Right** → `word`. Same motion twice: ⌥ is macOS, ⌃ is Linux and Windows (macOS
+  usually eats ⌃⇧Arrow at the system level, which costs nothing to support).
+- **Shift+Home / End** → `lineEdge`.
+- **⌘⇧Up / Down** → `docEdge`; down is the two-press case above.
+
+Beside them, **unmodified Left / Right scroll horizontally by one column** (`scroll.scrollByColumns`), a natural no-op
+under word wrap where nothing overflows. Unmodified Home / End still scroll to the file edges.
+
+Decision/Why: **Shift+Home means the LINE edge while bare Home means the FILE edge**, and that's deliberate. Unmodified
+Home / End are scroll-view navigation, which is what macOS does in a document view and what the viewer already did; a
+selection gesture works on the line in every editor, and ⌘ promotes it back to the whole file. Don't harmonize them.
+
+Decision/Why: **unmodified arrows always scroll rather than moving a cursor.** The viewer's job is looking at a file,
+not editing one, and a key map that changes meaning when a setting flips is worse than a slightly non-editor-like one.
+
+Decision/Why: **extending with no selection at all is a no-op** (the key is still consumed, so the view doesn't scroll
+out from under the gesture). A plain click already leaves a collapsed selection at the click point, so
+click-then-Shift+Arrow is the discoverable path; seeding an anchor from the top of the viewport would start a selection
+the user can't see.
+
+#### Routing, and the two traps
+
+Gotcha/Why: the two entry points sit in different halves of `handleKeyDown`, and each is placement-sensitive.
+
+- **Unmodified Shift+Arrow / Home / End** arrive on the bare-key path. The extend branch goes **after the
+  `if (searchInputFocused) return` guard and before `handleBareKey`**. Before that guard it steals the search input's
+  own Shift+Arrow; after `handleBareKey` Shift+Up keeps scrolling instead of extending.
+- **⌥⇧ / ⌃⇧ / ⌘⇧ chords** arrive in `handleModifiedKey`, which runs **regardless of focus**. The branch sits after the
+  search chords (so ⌘⌥R / ⌘⌥C still win) and before the `if (!e.altKey && !e.shiftKey)` bail, and **gates on
+  `!searchInputFocused` itself** — without that gate it steals ⌥⇧← / ⌥⇧→ from a focused search input.
+
+Gotcha/Why: ❌ never write `e.shiftKey && e.key === 'ArrowLeft'`. `cmdr/no-raw-key-match` is an **error** here and fires
+on exactly that shape (a required modifier read sharing a boolean expression with a literal key test while leaving a
+modifier unconstrained). `extendMotionFor` uses the guard-then-branch shape the rule deliberately doesn't catch:
+`switch (e.key)` first, modifier flags read in a separate statement inside the branch.
+
+#### Following the focus with the view
+
+Every extend press ends in a scroll, on both the landed and the uncached path:
+
+- **Vertically**, `scroll.ensureLineVisible(line)` moves as little as it can, leaving an already-visible line alone. It
+  wraps `ensureVisibleOffset` in `viewer-search-scroll.ts`. Gotcha/Why: that file's other export, `recenterOffset`,
+  speaks **viewport-relative rendered-rect** coordinates while `ensureVisibleOffset` speaks **content-relative scaled**
+  ones (the space `getLineTop` and `scrollTop` live in, compressed by `scrollScale` on files over `MAX_SCROLL_HEIGHT`).
+  They are not interchangeable, and feeding either a `line × lineHeight` estimate mislands it under word wrap, where a
+  wrapped line is one tall row. A line taller than the viewport is left alone while any of it is on screen, so a long
+  wrapped paragraph doesn't get yanked around on every press.
+- **Horizontally**, `scroll.ensureColumnVisible(focus)` measures the focus character with `caretRectFor` and recentres
+  through `recenterOffset` against the content box, exactly as `scrollToMatch` does for a search hit. Without it,
+  repeated Shift+Right on a long unwrapped line walks the focus past the right edge with nothing following it:
+  `handleScroll` tracks only `scrollTop` / `viewportHeight`, and the viewer's only other horizontal scroll is search's.
+  Skipped under word wrap.
+
+`viewer-pointer.ts` is the one module allowed to measure line text geometry, so both new measurements live there:
+`caretRectFor(content, point)` (a zero-width rect on an EDGE of the character box — see its doc comment for why an edge
+pick rather than a fallback ladder) and `measureColumnWidth(content)` (one column's advance, cached by the scroll
+composable and dropped when the text scale settles).
 
 ## Title-bar overlay toolbar
 
