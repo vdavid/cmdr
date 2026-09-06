@@ -229,7 +229,7 @@ pub async fn connect_sftp_volume(
     params.use_agent = use_agent;
     params.auto_reconnect = auto_reconnect;
 
-    match sftp_volume_wiring::connect_and_register(&display_name, params, &attempt_id).await {
+    match sftp_volume_wiring::connect_and_register(&display_name, params, &attempt_id, None).await {
         SftpConnection::Connected { volume_id, rung } => SftpConnectResult::Connected(ConnectedSftpVolume {
             volume_id,
             rung: SftpAuthRung::from(rung),

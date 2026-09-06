@@ -142,6 +142,12 @@ UI copy edit change what a backend means.
 `(service, scope)` generalizes that pair: `(hostname, share)` for SMB, `("host:port", username)` for SFTP, and
 `(endpoint, bucket)` for S3. `secret` rather than `password` because S3's is an access key.
 
+`VolumeHost::with_credentials` is the one seam with a per-dial override, and it exists so a connect can answer its own
+credential without the store ever holding it: the app wraps its real store for one attempt
+(`apps/desktop/src-tauri/src/network/one_shot_credentials.rs`). ❗ Rebuilding a host from `builder()` instead would
+silently drop every other seam, which is why this carries them across. ❗ The volume a dial builds KEEPS that host, so
+a wrapper handing out a secret has to disarm itself when the attempt ends; the app owns that guard.
+
 ### `HostKeys`
 
 ⇐ nothing that existed before: SFTP is the first backend whose security depends on recognizing a server across sessions,

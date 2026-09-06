@@ -17,6 +17,7 @@ use cmdr_sftp::volume::HostKeyApproval;
 use cmdr_sftp::{SftpConnectError, SftpConnectOutcome, SftpConnectionParams, SftpVolume};
 
 use super::connect_wiring::{self, AttemptTable};
+use super::one_shot_credentials::{self, SecretOffer};
 use super::sftp_known_servers::{self, KnownSftpServer};
 
 /// What a connect attempt produced, in the terms a sign-in UI branches on.
@@ -82,6 +83,13 @@ pub fn cancel_connect(attempt_id: &str) -> bool {
 /// [`cancel_connect`] needs to call it off. ❗ A cancelled connect leaves
 /// nothing behind: no volume, no saved server, no secret.
 ///
+/// `secret` is what a sign-in sheet just collected, and `None` is every dial
+/// that isn't answering one (the dial then reads the store, as it always has).
+/// ❗ `remember: false` runs the dial against a store wrapper that answers this
+/// one account from memory and forgets it when the attempt ends, so ❌ no secret
+/// reaches the Keychain and none is held by the volume:
+/// `one_shot_credentials.rs`.
+///
 /// ❗ Every dial goes through `cmdr_sftp::connect_sftp_volume`, and a connect the
 /// caller walks away from leaves the far end nothing: the SFTP hello's teardown
 /// runs from a guard's `Drop` rather than from anyone's `await`. Calling one OFF
@@ -92,17 +100,13 @@ pub async fn connect_and_register(
     display_name: &str,
     params: SftpConnectionParams,
     attempt_id: &str,
+    secret: Option<SecretOffer>,
 ) -> SftpConnection {
     let volume_id = cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username);
+    let (host, _offer) =
+        one_shot_credentials::host_for_dial(&params.credential_service(), &params.username, secret).await;
     let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
-    let outcome = cmdr_sftp::connect_sftp_volume(
-        display_name,
-        &volume_id,
-        params.clone(),
-        crate::volume_host::host(),
-        cancel,
-    )
-    .await;
+    let outcome = cmdr_sftp::connect_sftp_volume(display_name, &volume_id, params.clone(), host, cancel).await;
 
     let volume = match outcome {
         Ok(SftpConnectOutcome::Connected(volume)) => volume,
