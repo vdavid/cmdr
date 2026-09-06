@@ -12,6 +12,8 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   its disk-space state machine, and the favorites interaction layer.
 - `favorites-analytics.ts`: `favorite_opened`, from the two `category === 'favorite'` branches (`navigate()` below them
   sees only the containing volume).
+- `server-row-actions.ts`: what a SERVER row's menu offers and what each item does (the menu, Disconnect, the two
+  Forgets), shared by the switcher and the hub.
 
 ## Must-knows
 
@@ -40,6 +42,11 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   happen (model: `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md`). DETAILS § Drive index freshness badge.
 - **Eject refusals are worded by `wordEjectRefusal(e)` from `errors.eject.*`**; ❌ never toast `String(e)` or
   `diskutil`'s stderr.
+- **A SERVER row says Disconnect, never Eject**, and is claimed by VOLUME ID (`isServerPlaceRow`), ❌ never by
+  `category === 'network'`: a mounted SMB share is one of those, and `disconnectPlace` doesn't speak its OS mount. Its
+  dot tooltip and its `volume-fs` protocol label are both `Record`s, so a new state or protocol can't render wordless.
+- **`resolveValidPath` stops at a scheme path's floor and RETURNS it**, never `~`, `/`, or `null`: a remote path answers
+  no probe, so the plain walk lands the pane on the boot disk. DETAILS § "Restoring a remote path".
 - **Favorites: mutate ONLY via the `commands.*` wrappers, always stripping the `fav-` prefix** (`stripFavoritePrefix`;
   the switcher id is `fav-<favoriteId>`, the commands take the bare id). The `volume-grouping.ts` favorites group always
   renders even when empty (the placeholder row) — don't tidy it into a hide-when-empty branch. "Add to favorites" is in

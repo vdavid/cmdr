@@ -343,8 +343,9 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   device-only connection sub-state, which the table doesn't carry — it's a runtime connection state, not a kind). The
   `{#if}` chain branches on `paneViewKind` for the three alt-views (NetworkMountView / SearchResultsView /
   MtpConnectionView) and the SelectionInfo footer (`paneViewKind === 'normal'`). The RUNTIME-state branches
-  (`unreachable`, SMB reconnecting / gave-up / needs-auth sign-in, the inline SMB upgrade login, `loading` /
-  `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical precedence. This is a
+  (`unreachable`, the SAVED-place dial, SMB reconnecting / gave-up / needs-auth sign-in, the inline SMB upgrade login,
+  `loading` / `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical
+  precedence. This is a
   derived discriminant, NOT a new component. The per-feature gates (git lookup, type-to-jump keystroke, dir-exists poll)
   read `!caps.hasBackendListing` for the "is there a real directory" half; the MTP-path-specific checks
   (`isMtpVolumeId(volumeId)` for git-skip, `isMtpView` for the dir-poll, `isMtpDeviceOnly` for the jump) STAY — MTP has
@@ -352,6 +353,23 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   sub-state isn't a kind capability. `caps` is derived once per pane
   (`caps = $derived(capabilitiesForPane(volumeId, currentPath))`); the named `isNetworkView` / `isSearchResultsView`
   deriveds re-source off `caps.kind`.
+
+### A pane on a saved place
+
+`place-connect.svelte.ts` is the pane's half of "opening a place that isn't live brings it to life in the pane, with a
+cancel". Its `$effect` fires when the pane's `VolumeInfo` carries `connectionState === 'saved'` — a real volume id with
+no session behind it, so every listing on it would refuse until something dials.
+
+- **One dial per landing.** The effect re-runs on every `volumes-changed` refresh, so a `dialed` guard keyed on the
+  volume id is what stops a dial per refresh against a server the user opened once.
+- **The attempt id is held outside `$state`**: nothing renders it, and it exists so Cancel has something to aim at
+  before the dial returns (`$lib/servers/CLAUDE.md`).
+- **`connected` reloads the pane** rather than waiting for the row to flip to `direct` on the next broadcast, which is
+  what makes the place feel like it opened rather than waited. `cancelled` clears the view and says nothing.
+  `reconnecting` KEEPS the spinner: the backoff loop owns it, and `smb-view-state`'s own views take over once the row
+  reaches `disconnected`.
+- The listing still runs underneath and fails, setting `friendlyError`. That branch sits BEHIND this one in the chain,
+  so it never shows, and the reload on connect clears it.
 
 **The volume-id string compares that REMAIN are not guards — don't "finish the sweep".** A grep for
 `=== 'search-results'` / `=== 'network'` / `startsWith('mtp-')` (and the `!==` forms) across `apps/desktop/src/` returns

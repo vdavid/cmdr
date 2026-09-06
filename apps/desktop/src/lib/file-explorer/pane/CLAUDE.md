@@ -42,6 +42,9 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   pane layout.
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
   switches, bare paths resolve to a `Location` at the edge.
+- **A pane on a SAVED place dials it, in the pane, with a cancel** (`place-connect.svelte.ts`, whose `$effect` holds the
+  one-dial-per-landing rule). The gate is the CONNECTION STATE, in FRONT of the kind chain. ❌ Never add a
+  `RemoteConnectState` variant before the milestone that can act on it. DETAILS § "A pane on a saved place".
 - **`DualPaneExplorer.svelte` / `FilePane.svelte` are at their size cap**: extract cross-cutting state to a
   `*.svelte.ts` factory or pure logic to a `*.ts` helper, ❌ never a child component.
 

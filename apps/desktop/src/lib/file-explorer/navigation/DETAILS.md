@@ -95,6 +95,24 @@ timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrap
 Lives in its own module so `app-status-store.ts` can import it without forming a cycle; `path-navigation.ts` itself
 imports `getLastUsedPathForVolume` from `app-status-store.ts`.
 
+### Restoring a remote path
+
+A `<scheme>://` path names a volume with no local mount, so EVERY `pathExists` probe on it answers false. The plain walk
+then chops the scheme itself (`sftp://ada@nas:22` → `sftp:/` → `sftp:`), runs out, and answers `~` — the boot disk's
+home folder, on the root volume. `null` is the same failure spelled differently: four of this function's six callers
+hand it to `navigateToFallback`, which turns it into `~` on the root volume.
+
+So `walkUp` carries a SCHEME FLOOR (`schemeFloorFor`) and returns it rather than falling through. The floor is the
+caller's `volumeRoot` when that is on the same scheme, because a volume can sit BELOW its scheme root: an MTP storage is
+`mtp://<device>/<storage>`, and stopping at `mtp://<device>` would leave the pane off its own volume. Otherwise it is
+the scheme root itself.
+
+The restore path has a second rule, PATH-shaped rather than state-shaped, in `app-status-store.ts::resolvePersistedPath`:
+a `<scheme>://` path is returned UNPROBED. Launch must not dial a server to find out whether it is reachable — four
+saved servers waking a Mac would be four Keychain reads and four network waits nobody asked for. The tab comes back on
+its subpath, greyed as `saved`, and dials when the user activates it (`docs/specs/servers-hub-plan.md` § D14). The four
+`volumeId === 'network'` exemptions at that function's call sites are the same idea, one fixed volume id at a time.
+
 ### Non-blocking navigation pattern
 
 All `pathExists` calls are guarded by two timeout layers:
@@ -504,13 +522,25 @@ heading or the Network entry's name, edit the catalog, not this file.
 2. main_volume + attached_volume: merged into one group
 3. Cloud drives
 4. Mobile (MTP) devices: filtered from unified volume list (`category === 'mobile_device'`)
-5. Network: always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares. The synthetic entry's
+5. Network: always includes a synthetic `'network'` entry (`smb://`) plus any mounted SMB shares and every SFTP or
+   WebDAV place the listing carried. The synthetic entry's
    name flips from the `networkVolume` catalog key to `networkVolumeDisabled` ("Network (disabled)") when
    `options.networkEnabled === false`. `VolumeBreadcrumb` reads `getNetworkEnabled()` from reactive settings to set the
    option, and intercepts clicks on the disabled entry to open Settings → File systems → SMB/Network shares (via
    `openSettingsWindow('volume-breadcrumb', ['File systems', 'SMB/Network shares'])`) instead of navigating.
 
 `getIconForVolume(volume)`: returns the appropriate icon path for a volume based on its category.
+
+### The three-things rule, and which side enforces it
+
+The Network group holds three things and nothing else: the hub row, every place connected right now, and every PINNED
+place (greyed, hollow dot). ❗ The pin half is decided in Rust (`src-tauri/src/server_volumes.rs::append_server_volumes`,
+`place.is_registered() || place.pinned`), which is the only side that can read a pin: `VolumeInfo` carries none, on
+purpose — a pin governs the switcher, not identity, so the RESOLVER still answers for an unpinned server's path.
+
+The frontend's half of the contract is therefore that it renders the listing and synthesizes exactly ONE row of its own,
+the hub. `volume-grouping.test.ts`'s last cell is what catches a future "helpful" `listSavedServers()` fetch here, which
+would put every unpinned server back on screen and undo the user's own cap.
 
 ## `volume-space-manager.svelte.ts`
 
