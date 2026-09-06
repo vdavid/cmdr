@@ -42,14 +42,22 @@ and for every serial that left and had a volume, calls the volume's `note_device
 crate reconnects with backoff (1 s doubling to 15 s) and redelivers the list, so a change missed while it was down is
 caught up. That backoff is for a server that exists and went away; a MISSING `adb` binary ends the loop instead.
 
-**Connect**: `connect_adb_device(serial)` answers an already-dialed volume's id without a second dial; otherwise
+**Connect**: `connect_adb_device(serial, attempt_id)` answers an already-dialed volume's id without a second dial;
+otherwise it files `attempt_id` in this module's own `AttemptTable` (`network/connect_wiring.rs`, ADB's table is its
+own so a stray cancel from another backend's sign-in can't reach in) and
 `cmdr_adb::connect_adb_volume(params, host, cancel)` runs the crate's four phases, the volume goes in through
 `VolumeManager::register_if_absent` (never `register`: no OS mount can pre-register the id, and a repeated connect
 must not retire a volume a pane is using), is remembered by serial, and `notify_devices_changed("adb")` lets
 `volume_listing::complete` enrich the entry with its capabilities. Errors cross IPC as `AdbConnectOutcomeError`, a
 typed mirror of `AdbConnectError` (`AdbNotInstalled`, `ServerUnreachable`, `DeviceGone`, `Unauthorized`,
-`DeviceTooOld`, `TimedOut`, `Cancelled`, `Transport`); the frontend words each one in `adb-connect-errors.ts`. The
-cancel token handed to the crate is a fresh one today (§ "Not wired yet").
+`DeviceTooOld`, `TimedOut`, `Cancelled`, `Transport`); the frontend words each one in `adb-connect-errors.ts`.
+
+**Cancel**: the id is the CALLER's, minted before the call, because a phone can sit on its "Allow USB debugging?"
+prompt for as long as nobody picks it up and the pane has to arm its cancel button while that is happening.
+`cancel_adb_connect(attempt_id)` answers whether a dial was running; a `false` is ordinary (a cancel racing a dial
+that just finished finds nothing filed). A called-off dial leaves nothing behind: no volume registered, nothing
+remembered, no `volumes-changed`. The one dial nobody mints an id for is a pane walking onto an `adb://` path, which
+files under `adb-navigation:<serial>` so a repeat navigation replaces only its own entry.
 
 **Eject**: `eject.rs` asks `provider_for_volume_id`, gets this provider, and answers
 `EjectAction::DeviceDisconnect { provider: "adb", volume_id }`. `AdbDeviceProvider::eject` forgets the volume and
@@ -62,10 +70,23 @@ for good is unplugged, or revoked on the phone.
 `AdbDeviceProvider` answers from the cache, never the wire:
 
 - `id`: `"adb"`.
-- `entries()`: one entry per device in state `Ready` (`device` on the wire), dialed or not: id `adb:<serial>`, path
+- `entries()`: one entry per device that has a filesystem to offer, dialed or not: id `adb:<serial>`, path
   `adb://<serial>`, `fs_type: "adb"`, name = `AdbDevice::display_name()` (the model, falling back to the serial),
-  `mount_is_read_only: false`, `usb_speed: None`. `unauthorized`, `offline`, `recovery`, and the rest are not listed;
-  `list_adb_devices` still returns them with their typed state, so a device switcher can say "tap Allow on the phone".
+  `mount_is_read_only: false`, `usb_speed: None`, and a `device_readiness` from `readiness_of`:
+  - `device` → `ready`.
+  - `unauthorized`, `authorizing`, `connecting` → `waiting_for_authorization`. All three end at the same place the
+    user is looking, the phone's own prompt, and hiding the row is what made that moment silent.
+  - `offline` → `unavailable { offline }`; `no permissions` → `unavailable { no_permissions }`. The row is there so
+    the reason can be its tooltip.
+  - `recovery`, `bootloader`, `sideload`, and a state word the crate can't read are NOT listed: a phone that isn't
+    running Android has no filesystem, and a row that can never open is worse than no row. `list_adb_devices` still
+    returns them with their typed state.
+
+  ❗ `device_readiness` is PRESENCE, never session health: `connection_state` stays `None` on a device row, so nothing
+  enrolls a phone waiting for its Allow tap in the reconnect backoff (`cmdr_fs::volume::connection` carries the split).
+  ❗ A `waiting_for_authorization` row resolving through `commands/volumes.rs::resolve_path_to_volume` still dials and
+  the dial answers `Unauthorized`; the pane state that waits for the row to turn ready is frontend work
+  (`docs/specs/servers-hub-plan.md` § D12, M5).
 - `owns_volume_id`: any cached serial's id matches.
 - `space_for_path`: the connected volume's `get_space_info` (`df -k` on the device), `None` until it is dialed.
 - `eject`: above.
@@ -91,7 +112,4 @@ the tracker's diff and inline retirement, the provider's listing answers, eject,
 - Index routing for `adb:` volume ids, `go_to_path`, and the MCP `select_volume` tool don't answer for an `adb://`
   path.
 - A settings toggle (the MTP twin is `fileOperations.mtpEnabled`) and the `adb` binary path setting.
-- The connect isn't cancelable from the pane: `connect_adb_device` hands the crate a fresh `CancellationToken`. The
-  crate honors one; the four lines that wire a cancel button are SFTP's (`crates/cmdr-sftp/DETAILS.md` § "Wiring the
-  cancel button").
 - The real-device pass and the crate's own deferrals: `crates/cmdr-adb/DETAILS.md` § "Known gaps and follow-ups".

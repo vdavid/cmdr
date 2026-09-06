@@ -88,10 +88,24 @@ pub async fn recheck_adb_install(app: tauri::AppHandle) -> AdbInstallStatus {
 }
 
 /// Dials the device with `serial` and answers its volume id.
+///
+/// ❗ `attempt_id` is the CALLER's own name for this dial, made before the call
+/// so a cancel button is armed while the phone is still showing its "Allow USB
+/// debugging?" prompt. [`cancel_adb_connect`] takes the same id.
 #[tauri::command]
 #[specta::specta]
-pub async fn connect_adb_device(serial: String) -> Result<String, AdbConnectOutcomeError> {
-    super::volume_wiring::connect_adb_device(&serial)
+pub async fn connect_adb_device(serial: String, attempt_id: String) -> Result<String, AdbConnectOutcomeError> {
+    super::volume_wiring::connect_adb_device(&serial, &attempt_id)
         .await
         .map_err(AdbConnectOutcomeError::from)
+}
+
+/// Calls off the dial running under `attempt_id`, answering whether one was.
+///
+/// A `false` is ordinary, never a problem to report: a cancel racing a dial that
+/// just finished finds nothing filed.
+#[tauri::command]
+#[specta::specta]
+pub async fn cancel_adb_connect(attempt_id: String) -> bool {
+    super::volume_wiring::cancel_connect(&attempt_id)
 }

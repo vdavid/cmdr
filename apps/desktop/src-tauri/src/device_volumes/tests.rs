@@ -38,6 +38,7 @@ fn entry(id: &str, path: &str, fs_type: &'static str) -> DeviceVolumeEntry {
         path: path.to_string(),
         fs_type,
         mount_is_read_only: false,
+        device_readiness: Some(DeviceReadiness::Ready),
         usb_speed: None,
     }
 }

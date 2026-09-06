@@ -10,11 +10,11 @@ use std::sync::{Arc, Mutex};
 use cmdr_adb::{AdbConnectError, AdbConnectionParams, AdbEndpoint, DeviceTracker};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use tauri::AppHandle;
-use tokio_util::sync::CancellationToken;
 
 use super::device_provider::{self, AdbDeviceProvider};
 use crate::device_volumes::{notify_devices_changed, register_device_provider};
 use crate::file_system::volume::manager::get_volume_manager;
+use crate::network::connect_wiring::AttemptTable;
 
 /// The `host:track-devices` subscription. Replaceable, not a `OnceLock`: the
 /// tracker gives up when no `adb` binary exists, and a re-check has to be able
@@ -81,26 +81,62 @@ pub async fn recheck_adb_install(app: &AppHandle) -> AdbInstallStatus {
     adb_install_status()
 }
 
+// ============================================================================
+// Calling a connect off
+// ============================================================================
+
+/// The dials a user could still call off. ADB's OWN table, never a shared one,
+/// for the reason `network/connect_wiring.rs` gives: one table would let a stray
+/// cancel from another backend's sign-in reach in here.
+static ATTEMPTS: AttemptTable = AttemptTable::new("an adb");
+
+/// Calls off the dial filed under `attempt_id`, answering whether one was
+/// running. An id nobody is holding is a plain `false`.
+pub fn cancel_connect(attempt_id: &str) -> bool {
+    ATTEMPTS.cancel(attempt_id)
+}
+
+/// The id a navigation's own dial is filed under.
+///
+/// A pane that walks onto `adb://<serial>` dials without anyone having minted an
+/// attempt id, and per-serial keeps a second navigation onto the same device
+/// from cancelling the first: [`AttemptTable`]'s serial makes the repeat replace
+/// only its own entry.
+fn navigation_attempt_id(serial: &str) -> String {
+    format!("adb-navigation:{serial}")
+}
+
 /// Dials the device with `serial`, registers its volume, and answers the volume
 /// id. Already connected is answered without a second dial.
 ///
+/// `attempt_id` is the CALLER's own name for this dial, and what
+/// [`cancel_connect`] needs to call it off: a phone can sit on its "Allow USB
+/// debugging?" prompt for as long as nobody picks it up, so the pane has to be
+/// able to arm a cancel button before this answers.
+pub async fn connect_adb_device(serial: &str, attempt_id: &str) -> Result<String, AdbConnectError> {
+    connect_device_at(AdbConnectionParams::new(serial), attempt_id).await
+}
+
+/// The dial itself, against whichever server `params` names.
+///
 /// `register_if_absent`, never `register`: an ADB device has no OS mount, so
 /// nothing else can pre-register its id, and a repeated connect must not retire
-/// a volume the pane is using.
-pub async fn connect_adb_device(serial: &str) -> Result<String, AdbConnectError> {
-    if let Some(volume) = device_provider::connected_volume(serial) {
+/// a volume the pane is using. ❗ A called-off dial leaves nothing behind: no
+/// volume registered, nothing remembered, no `volumes-changed`.
+pub(crate) async fn connect_device_at(
+    params: AdbConnectionParams,
+    attempt_id: &str,
+) -> Result<String, AdbConnectError> {
+    if let Some(volume) = device_provider::connected_volume(&params.serial) {
         return Ok(volume.volume_id().to_string());
     }
-    let volume = cmdr_adb::connect_adb_volume(
-        AdbConnectionParams::new(serial),
-        crate::volume_host::host(),
-        CancellationToken::new(),
-    )
-    .await?;
+    let serial = params.serial.clone();
+    let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
+    let volume = cmdr_adb::connect_adb_volume(params, crate::volume_host::host(), cancel).await?;
     let volume_id = volume.volume_id().to_string();
     let volume = Arc::new(volume);
     get_volume_manager().register_if_absent(&volume_id, Arc::clone(&volume) as Arc<dyn cmdr_fs::volume::Volume>);
-    device_provider::remember_volume(serial, volume);
+    device_provider::remember_volume(&serial, volume);
     log::info!(target: "volume", "registered ADB volume {volume_id}");
     notify_devices_changed("adb");
     Ok(volume_id)
@@ -110,5 +146,9 @@ pub async fn connect_adb_device(serial: &str) -> Result<String, AdbConnectError>
 /// use. `None` for a path that isn't `adb://` at all.
 pub async fn volume_id_for_path(path: &str) -> Option<Result<String, AdbConnectError>> {
     let serial = device_provider::serial_of_path(path)?;
-    Some(connect_adb_device(serial).await)
+    Some(connect_adb_device(serial, &navigation_attempt_id(serial)).await)
 }
+
+#[cfg(test)]
+#[path = "volume_wiring_test.rs"]
+mod volume_wiring_test;
