@@ -16,7 +16,14 @@ vi.mock('$lib/ui/toast', async () => ({
 
 vi.mock('$lib/search/snapshot-store.svelte', async () => {
   const { spies, resolveSnapshotEntriesStub } = await import('./file-operation-commands.test-harness')
-  return { getSnapshot: spies.getSnapshot, resolveSnapshotEntries: resolveSnapshotEntriesStub }
+  return {
+    getSnapshot: spies.getSnapshot,
+    resolveSnapshotEntries: resolveSnapshotEntriesStub,
+    // Pure namespace arithmetic with no store state behind it, so the mock keeps
+    // the real shape rather than a spy.
+    snapshotIdFromPanePath: (path: string) =>
+      path.startsWith('search-results://') ? path.slice('search-results://'.length) : null,
+  }
 })
 
 // Source/dest routing reads the capability table via `capabilitiesFor`, which

@@ -2081,3 +2081,16 @@ av macOS, så bara etiketterna översätts här.
   redan säger `app` · `confirmed`.
 - **terminal app → `terminalapp`** · sammansatt, som katalogens övriga `app`-sammansättningar · `high`. Inga apostrofer
   i värdena, så ICU-dubbleringen `''` blir aldrig aktuell.
+
+## `Sort by relevance`: the search-results column tooltip (`fileExplorer.columns.sortByRelevance`)
+
+New surface: the hover tooltip on the active column header of a search-results pane. The next click puts the rows back
+into the search engine's own best-match-first order.
+
+- **relevance (how well a result matches the search) → `relevans`** · all four macOS sources agree: WorkflowKit
+  (`Relevance (WFSearchSortOrder)` → `Relevans`), AppStoreKit (`SEARCH_FACET_RELEVANCE` → `Relevans`), Automator
+  (`%1$[Relevans]@ …`), and Musik · `high`. Indefinite form, matching the sibling sort labels (`efter namn`,
+  `efter storlek`). (verified on macOS 26.6.2 build 25G83, `plutil` dump of the shipped localizations, 2026-09-06)
+- **Sentence frame → `Sortera efter relevans`** · exactly the pattern of its sibling keys in `commands.json`
+  (`Sortera efter namn`, `Sortera efter storlek`) · `high`. No `sameAsSourceJustification`, and the value carries no
+  apostrophe.

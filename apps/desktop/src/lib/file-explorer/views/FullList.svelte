@@ -92,7 +92,12 @@
         parentPath: string
         /** Path of the directory currently being listed (used to show its total on the ".." row). */
         currentPath: string
-        sortBy: SortColumn
+        /**
+         * The column the rows are in. `null` means they are in no column's order:
+         * the search-results pane's ranked state, where every header is clickable
+         * but none is active.
+         */
+        sortBy: SortColumn | null
         sortOrder: SortOrder
         /**
          * Repo root for the optional Git status column. `null` when the path
@@ -140,15 +145,11 @@
          */
         staticEntries?: FileEntry[]
         /**
-         * Whether this pane's rows follow its `sortBy` / `sortOrder`
-         * (`caps.sortsRows`). The default is the ordinary listing, which does. A
-         * `staticEntries` pane that renders a FIXED order (the search-results
-         * snapshot, ranked by the search engine) passes `false`, and the column
-         * header drops its sort triggers, its active column, and its caret rather
-         * than name an order the rows are not in. It also stops reserving the
-         * caret's width in the measured column tracks.
+         * Passed to the ACTIVE column's header, naming what its next click does
+         * when that isn't sorting by it. The search-results pane sets it so a third
+         * click reads "Sort by relevance". See `SortableHeader`'s prop.
          */
-        sortable?: boolean
+        clearsSortLabel?: string
     }
 
     const {
@@ -189,7 +190,7 @@
         onStartRename,
         onDragInitiate,
         staticEntries,
-        sortable = true,
+        clearsSortLabel,
     }: Props = $props()
 
     /**
@@ -432,7 +433,6 @@
             isSizeUpdating,
             showSizeMismatchWarning,
             sortBy,
-            sortable,
             sizeFormatOpts,
             isRestricted,
             showExtensionInName,
@@ -644,7 +644,7 @@
         {gitColumnVisible}
         {skipTransition}
         {scrollbarWidth}
-        {sortable}
+        {clearsSortLabel}
         {onSortChange}
     />
     <!-- Scrollable file list. `role="listbox"` lives on the inner rows wrapper

@@ -2352,3 +2352,19 @@ A listát a macOS építi; itt csak a feliratok fordulnak.
 - **Choose an app… → `App kiválasztása…`** · az Apple `Choose Application…` (`N137`) `Alkalmazás kiválasztása…`-t ad;
   `app`, mert a katalógus végig azt írja · `high`.
 - **terminal app → `terminálapp`** · egybeírt összetétel · `high`. Egyik érték sem tartalmaz aposztrófot.
+
+## `Sort by relevance`: a találati oszlop elemleírása (`fileExplorer.columns.sortByRelevance`)
+
+Új felület: a keresési találatokat mutató panel aktív oszlopfejlécének elemleírása. A következő kattintás visszaállítja
+a keresőmotor saját sorrendjét, elöl a legjobb találattal.
+
+- **relevance (mennyire illik egy találat a keresésre) → `relevancia`** · az Apple WorkflowKitje
+  (`Relevance (WFSearchSortOrder)` → `Relevancia`), amely pontosan ugyanezt a fogalmat, egy keresési rendezési sorrendet
+  nevezi meg · `tentative`. Az Apple magyar katalógusai négyfélét mondanak, közös szótő nélkül: `Relevancia`
+  (WorkflowKit), `Fontosság` (Automator), `Találati pontosság` (AppStoreKit), `Témábavágóság` (Zene és TV), ezért marad
+  `tentative`. A `relevancia` mellett szól, hogy a magyar felületek bevett szava a találati jóságra, és egyedül ez a
+  fogalmat nevezi meg, nem egy szomszédosat (fontosság, pontosság). (macOS 26.6.2, 25G83 verzión ellenőrizve, a
+  mellékelt honosítások `plutil`-kiírásával, 2026-09-06)
+- **A mondat kerete → `Rendezés relevancia szerint`** · pontosan a `commands.json` testvérkulcsainak mintája
+  (`Rendezés név szerint`, `Rendezés méret szerint`) · `high`. Nincs `sameAsSourceJustification`, és nincs aposztróf az
+  értékben.

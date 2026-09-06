@@ -94,20 +94,15 @@ describe('computeFullListColumnWidths', () => {
     expect(extSorted.size).toBe(nameSorted.size)
   })
 
-  it('reserves no caret room on a pane whose rows do not follow its sort', () => {
+  it('reserves no caret room on a pane in no column order', () => {
     _setMeasureForTests(fakeMeasure)
-    // `sortable: false` (the search-results snapshot pane) renders plain labels
-    // with no caret, so the active column must not reserve the caret's width
-    // either — otherwise the header track is 12px wider than anything drawn in it.
+    // `sortBy: null` (a search-results pane showing the engine's ranked rows)
+    // draws no caret anywhere, so no column may reserve the caret's width —
+    // otherwise the header track is 12px wider than anything drawn in it.
     const sorted = computeFullListColumnWidths({ ...baseArgs, entries: [], sortBy: 'extension' })
-    const unsorted = computeFullListColumnWidths({
-      ...baseArgs,
-      entries: [],
-      sortBy: 'extension',
-      sortable: false,
-    })
-    expect(unsorted.ext).toBeLessThan(sorted.ext)
-    expect(unsorted.ext).toBe(computeFullListColumnWidths({ ...baseArgs, entries: [] }).ext)
+    const ranked = computeFullListColumnWidths({ ...baseArgs, entries: [], sortBy: null })
+
+    expect(ranked.ext).toBeLessThan(sorted.ext)
   })
 
   it('widens size column when a large file is present', () => {

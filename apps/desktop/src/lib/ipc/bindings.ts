@@ -2450,6 +2450,27 @@ export const commands = {
    */
   searchFiles: (query: SearchQuery) => typedError<SearchResult, string>(__TAURI_INVOKE('search_files', { query })),
   /**
+   *  Orders a search-results pane's rows, answering with `rows`' own indices in the
+   *  order they should render.
+   *
+   *  The pane's rows arrive ranked by the search engine and the user can re-order
+   *  them by column, exactly like a directory listing. It runs through
+   *  [`entry_comparator`], the SAME comparator every directory listing sorts by, so
+   *  the two can never drift: natural number ordering, case folding, directories
+   *  first, and the user's `directorySortMode` all come along for free.
+   *
+   *  Indices rather than rows because the frontend already holds the full entries;
+   *  shipping them back would double the round trip for no new information. The sort
+   *  is STABLE, so rows equal under the chosen column keep the engine's ranked order
+   *  between them, which makes a re-sort reproducible instead of shuffling ties.
+   */
+  sortSearchResults: (
+    rows: SearchSortRow[],
+    sortBy: SortColumn,
+    sortOrder: SortOrder,
+    dirSortMode: DirectorySortMode,
+  ) => __TAURI_INVOKE<number[]>('sort_search_results', { rows, sortBy, sortOrder, dirSortMode }),
+  /**
    *  Search the scope's volume, walking whatever its index can't answer for yet.
    *
    *  Returns as soon as routing has picked a volume; everything else arrives as
@@ -11013,6 +11034,27 @@ export type SearchRunError =
  *  biggest matches means the biggest ones that exist.
  */
 export type SearchSort = 'relevance' | 'size' | 'modified'
+
+/**
+ *  One search-results row, carrying only what ordering it needs.
+ *
+ *  A deliberate subset of `SearchResultEntry`: the path, parent path, and icon id
+ *  decide nothing about order, and leaving them out keeps a full 10,000-row
+ *  snapshot's round trip small. The frontend holds the rows and re-orders them by
+ *  the index list this command answers with, so nothing is shipped back.
+ */
+export type SearchSortRow = {
+  /**
+   *  The file's own name (the last path component), which the Name and
+   *  Extension columns order by. Not the full path the pane DISPLAYS: a row's
+   *  name is its name everywhere else in the pane too (type-to-jump, the
+   *  context menu, the MCP rows), and one notion of it stays true here.
+   */
+  name: string
+  isDirectory: boolean
+  size: number | null
+  modifiedAt: number | null
+}
 
 /**
  *  Status of an ongoing search.

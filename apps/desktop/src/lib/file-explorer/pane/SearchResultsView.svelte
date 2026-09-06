@@ -21,9 +21,15 @@
      * defensively we render a small "snapshot not available" pane rather than throwing.
      */
 
-    import type { FileEntry, SelectPayload, SortColumn, SortOrder, VisibleRangePayload } from '../types'
+    import type { FileEntry, SelectPayload, SortColumn, VisibleRangePayload } from '../types'
     import FullList from '../views/FullList.svelte'
-    import { getSnapshot, getMutationTick, type SearchSnapshot } from '$lib/search/snapshot-store.svelte'
+    import {
+        getSnapshot,
+        getMutationTick,
+        snapshotIdFromPanePath,
+        type SearchSnapshot,
+    } from '$lib/search/snapshot-store.svelte'
+    import { nextSnapshotSort, sortSnapshot } from '$lib/search/snapshot-sort.svelte'
     import { capabilitiesForKind } from './volume-capabilities'
     import { showFileContextMenu } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
@@ -36,8 +42,6 @@
         path: string
         cursorIndex: number
         isFocused?: boolean
-        sortBy: SortColumn
-        sortOrder: SortOrder
         /**
          * Selected indices within the snapshot's entries. The snapshot pane shares
          * `FilePane.selection` state with normal panes; indices are 0-based (no `..`
@@ -59,17 +63,14 @@
         path,
         cursorIndex,
         isFocused = false,
-        sortBy,
-        sortOrder,
         selectedIndices = new Set<number>(),
         onNavigate,
         onSelect,
         onVisibleRangeChange,
     }: Props = $props()
 
-    /** Pull the snapshot id out of `search-results://<id>`. Returns `null` for any other shape. */
-    const SEARCH_RESULTS_PREFIX = 'search-results://'
-    const snapshotId = $derived(path.startsWith(SEARCH_RESULTS_PREFIX) ? path.slice(SEARCH_RESULTS_PREFIX.length) : null)
+    /** The snapshot id in `search-results://<id>`. `null` for any other path shape. */
+    const snapshotId = $derived(snapshotIdFromPanePath(path))
 
     /**
      * Live snapshot lookup. Re-derives if the id changes (which happens on pane
@@ -83,13 +84,33 @@
     )
 
     /**
-     * Capability flags driving the row context menu and the column header. This
-     * view always renders a `search-results` pane, so it reads the
-     * `search-results` row of the per-kind defaults directly (capabilities, not a
-     * `volumeId === 'search-results'` string compare). The pure
-     * `capabilitiesForKind` needs no store lookup.
+     * Capability flags driving the row context menu. This view always renders a
+     * `search-results` pane, so it reads the `search-results` row of the per-kind
+     * defaults directly (capabilities, not a `volumeId === 'search-results'`
+     * string compare). The pure `capabilitiesForKind` needs no store lookup.
      */
     const caps = capabilitiesForKind('search-results')
+
+    /**
+     * The snapshot's own order, NOT the pane's persisted directory sort. A
+     * snapshot pane borrows a tab whose `sortBy` / `sortOrder` belong to the
+     * folder the user came from, and a header click here must never write back
+     * into those: navigating away and back finds that folder in the order it was
+     * left. `null` is the engine's ranked order, so no column is active.
+     */
+    const snapshotSort = $derived(snapshot?.sort ?? null)
+
+    /**
+     * The tooltip for the active column when clicking it goes BACK to the ranked
+     * order rather than flipping direction. Named "relevance" because that is what
+     * a ranked result set is ordered by, and the same word `cmdr://state` reports
+     * to agents.
+     */
+    const clearsSortLabel = $derived(
+        snapshotSort && nextSnapshotSort(snapshotSort, snapshotSort.column) === null
+            ? tString('fileExplorer.columns.sortByRelevance')
+            : undefined,
+    )
 
     /**
      * Adapt `SearchResultEntry` (the wire-typed search result) into `FileEntry` (the
@@ -184,13 +205,11 @@
 </script>
 
 {#if snapshot}
-    <!-- `sortable={caps.sortsRows}` is FALSE for this kind. The pane's `sortBy` /
-         `sortOrder` still cross (FullList wants them for its size-column format), but
-         the rows render in the search engine's ranked order, so the header names its
-         columns and claims no sort: no active column, no caret, no click target. An
-         actual sort would have to reach the ops too, which resolve a selected index
-         against `snapshot.entries[i]`. See `search/DETAILS.md` § "Source-side ops from
-         the snapshot pane". -->
+    <!-- The header sorts the SNAPSHOT, never the pane's tab. `sortSnapshot` replaces
+         `snapshot.entries` in the store, so every consumer that resolves the index the
+         user sees against `snapshot.entries[i]` (F5/F6/F8, the clipboard, the context
+         menu, the MCP mirror, the selection remap) follows without knowing a sort
+         happened. See `search/DETAILS.md` § "The snapshot pane's row order". -->
     <FullList
         bind:this={fullListRef}
         listingId=""
@@ -203,9 +222,12 @@
         hasParent={false}
         parentPath=""
         currentPath={path}
-        {sortBy}
-        {sortOrder}
-        sortable={caps.sortsRows}
+        sortBy={snapshotSort?.column ?? null}
+        sortOrder={snapshotSort?.order ?? 'ascending'}
+        {clearsSortLabel}
+        onSortChange={(column: SortColumn) => {
+            if (snapshotId) void sortSnapshot(snapshotId, nextSnapshotSort(snapshotSort, column))
+        }}
         {onSelect}
         {onNavigate}
         {onVisibleRangeChange}

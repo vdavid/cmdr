@@ -278,6 +278,26 @@ a trade to take without measuring first.
 **What is still O(entries), by path**: nothing. The single-path callers walk only on a listing that has no map yet,
 which is what the threshold deliberately buys.
 
+## Sorting
+
+`sorting.rs` holds the comparator every list in the app is ordered by. `entry_comparator(sort_by, sort_order,
+dir_sort_mode)` is generic over the `SortableEntry` trait, which names the seven fields ordering reads: name,
+is_directory, size, modified_at, created_at, and the two recursive-size fields the Size column's directory rule needs.
+
+Two implementors. `FileEntry` answers from its own fields. `commands::search::SearchSortRow` is a search-results pane's
+row, and it answers `None` for the creation time and recursive size a search result doesn't carry, which lands it on the
+comparator's existing unknown-value arms rather than on a second set of rules: ordering such rows by Created falls back
+to the name, and under Size the directories are all unknown and sort by name among themselves.
+
+**Why a trait and not a conversion.** Building a fabricated `FileEntry` per search row would be a second place where the
+mapping from "a row" to "what orders it" is decided, and that mapping is the thing that must not drift. The trait makes
+the shared fields the contract and the generic monomorphizes, so the listing's hot path pays nothing.
+
+`sort_search_results` (`commands/search.rs`) is the frontend's way in: it answers with the input indices in sorted
+order, and the caller re-orders the rows it already holds. The frontend deliberately has NO comparator of its own; the
+snapshot store's sort round-trips through this command. `apps/desktop/src/lib/search/DETAILS.md` § "The snapshot pane's
+row order".
+
 ## Decisions
 
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.

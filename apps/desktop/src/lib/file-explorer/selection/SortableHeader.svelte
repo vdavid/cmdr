@@ -7,7 +7,13 @@
     interface Props {
         column: SortColumn
         label: string
-        currentSortColumn: SortColumn
+        /**
+         * The column this pane's rows are currently in, or `null` when they are in
+         * no column's order at all: the search-results pane's RANKED state, where
+         * the engine's ordering is the answer. Every header stays clickable then;
+         * none is active and none draws a caret.
+         */
+        currentSortColumn: SortColumn | null
         currentSortOrder: SortOrder
         onClick: (column: SortColumn) => void
         /** Alignment: 'left' (default), 'right' for numeric columns */
@@ -18,15 +24,13 @@
          * itself always shows. */
         isFocused?: boolean
         /**
-         * Whether this pane's rows follow its sort at all (`caps.sortsRows`). Off
-         * for a pane that renders a fixed row order (the search-results snapshot),
-         * where the header becomes a plain LABEL: no button, no tooltip, no active
-         * highlight, and no direction caret, because every one of those would name
-         * an order the rows are not in or promise a click that can't do anything.
-         * The label, its alignment, and its column track are unchanged, so the
-         * measured column widths still line up with the data cells below.
+         * What clicking the ACTIVE column does next, when that is something other
+         * than sorting by it. The search-results pane cycles a third click back to
+         * the engine's ranked order, so its active header says "Sort by relevance"
+         * rather than promising a sort it won't perform. Absent on every pane whose
+         * header only ever toggles a direction.
          */
-        sortable?: boolean
+        clearsSortLabel?: string
     }
 
     const {
@@ -37,7 +41,7 @@
         onClick,
         align = 'left',
         isFocused = true,
-        sortable = true,
+        clearsSortLabel,
     }: Props = $props()
 
     const columnToCommandIdMap: Record<SortColumn, CommandId> = {
@@ -55,6 +59,13 @@
     const shortcut = $derived(isFocused ? getFirstShortcutReactive(commandId) : undefined)
 
     const isActive = $derived(column === currentSortColumn)
+    /**
+     * The tooltip names what the NEXT click does. That is normally this column's
+     * sort command; on the active column of a pane that cycles back to an unsorted
+     * state, it's `clearsSortLabel`. The shortcut stays either way, because the key
+     * runs the same cycle the click does.
+     */
+    const tooltipText = $derived(isActive && clearsSortLabel !== undefined ? clearsSortLabel : commandName)
 
     function handleClick() {
         onClick(column)
@@ -68,30 +79,20 @@
     }
 </script>
 
-{#if sortable}
-    <button
-        class="sortable-header"
-        class:is-active={isActive}
-        class:align-right={align === 'right'}
-        onclick={handleClick}
-        onkeydown={handleKeyDown}
-        type="button"
-        use:tooltip={{ text: commandName, shortcut }}
-    >
-        <span class="label">{label}</span>
-        <span class="sort-indicator" class:invisible={!isActive} aria-hidden="true">
-            {isActive ? (currentSortOrder === 'ascending' ? '▲' : '▼') : '▲'}
-        </span>
-    </button>
-{:else}
-    <!-- The pane's rows don't follow its sort, so this is a column NAME and nothing
-         more. Same class (the two parents' grid alignment keys off it, and the label
-         has to sit exactly where the sorted one does) on a plain `<span>`: no button
-         semantics, no hover affordance (that rule is scoped to `button`), no caret. -->
-    <span class="sortable-header" class:align-right={align === 'right'}>
-        <span class="label">{label}</span>
+<button
+    class="sortable-header"
+    class:is-active={isActive}
+    class:align-right={align === 'right'}
+    onclick={handleClick}
+    onkeydown={handleKeyDown}
+    type="button"
+    use:tooltip={{ text: tooltipText, shortcut }}
+>
+    <span class="label">{label}</span>
+    <span class="sort-indicator" class:invisible={!isActive} aria-hidden="true">
+        {isActive ? (currentSortOrder === 'ascending' ? '▲' : '▼') : '▲'}
     </span>
-{/if}
+</button>
 
 <style>
     .sortable-header {

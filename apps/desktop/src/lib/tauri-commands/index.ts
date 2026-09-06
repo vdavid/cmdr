@@ -686,6 +686,7 @@ export type { ClipboardReadResult, PastedClipboardFile } from './clipboard-files
 export {
   prepareSearchIndex,
   searchFiles,
+  sortSearchResults,
   searchFilesStreaming,
   cancelSearch,
   onSearchProgress,

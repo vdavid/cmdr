@@ -41,6 +41,11 @@ and the `recent-items/` family) lives in `../query-ui/CLAUDE.md`, over the app-w
 - **`capabilities.ts` owns only the `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` string.** The capabilities themselves come from
   the per-kind table in `lib/file-explorer/pane/volume-capabilities.ts`; there is deliberately no Search-specific
   capability shim, so don't add one.
+- **`snapshot-sort.svelte.ts` owns the ROUND TRIP, `snapshot-store.svelte.ts` owns the MUTATION.** The store stays free
+  of the IPC layer and its `applySnapshotSort` stays synchronous; the sorter holds the request bookkeeping and the
+  tri-state cycle. § "The snapshot pane's row order".
+- **`snapshotIdFromPanePath` is the ONE parse of `search-results://<id>`.** Six call sites across the pane, the tab
+  manager, and the scope ladder went through their own copy of the prefix arithmetic; they now all ask the store.
 - **`snapshot-store.svelte.ts` carries the `.svelte.ts` extension for ONE `$state` cell**, `mutationTick`. The snapshot
   map itself is deliberately plain module state, because consumers read snapshots imperatively at render time and
   nothing should re-render when the map changes; the tick exists so a rendered snapshot can subscribe to a change under
@@ -572,8 +577,10 @@ first 30" is a product call for David, so ❌ don't pick one on your own.
 ## Snapshot store
 
 `snapshot-store.svelte.ts` holds `SearchSnapshot` records (query, mode, filters, scope, capped 10,000 entries,
-totalCount, createdAt, friendly label) under monotonic `sr-N` ids, plus a per-record refcount. The store has no hard cap
-on its own — **refcount is the only authority**. Refs come from two sources:
+totalCount, createdAt, friendly label, row order) under monotonic `sr-N` ids, plus a per-record refcount. Each record
+keeps TWO arrays: the `entries` the pane renders and the `rankedEntries` the engine produced, which are the same array
+until a sort splits them (§ "The snapshot pane's row order"). The store has no hard cap on its own — **refcount is the
+only authority**. Refs come from two sources:
 
 - **Pane history entries** whose `path` starts with `search-results://<id>` hold +1 per occurrence. The tab-state
   manager (`pushHistoryEntry` and the closed-tab lifecycle) drives inc/dec — `navigation-history.ts` itself stays pure
@@ -728,18 +735,69 @@ store like any other pane, with its rows read off the frontend snapshot instead 
 Both that and the header rule below are cells on the per-kind capability table; plumbing and guardrails:
 `file-explorer/pane/DETAILS.md` § "Volume capabilities".
 
-**The column header claims no sort, because the pane performs none.** The rows go to `FullList` as `staticEntries` and
-render in the order the search engine ranked them, so the pane's `sortBy` / `sortOrder` govern nothing here. The header
-therefore comes through `sortable={caps.sortsRows}` (false for this kind): the four column labels stay, the sort
-buttons, the `is-active` column, and the direction caret go. ❌ Don't wire a real sort in by re-ordering `entries`
-instead: every source-side op above resolves a selected index against `snapshot.entries[i]`, so a view-only reorder
-would hand a delete the wrong file. A genuine sort has to reach the ops too, which means resolving through the SORTED
-view rather than the store's array.
+**The column header sorts the SNAPSHOT**, which is why every op above keeps working across a sort: they all resolve an
+index against `snapshot.entries[i]`, and that array is what moves. § "The snapshot pane's row order" below.
 
 Destination-side write ops are still blocked: pasting INTO a search-results pane shows the canonical
 `SEARCH_RESULTS_NOT_A_FOLDER_TOAST` (via the F-bar disablement, the menu item omission, and the dispatcher's
 `blockedByCapabilities` guard). `openTransferDialog` also blocks F5/F6 when the OPPOSITE pane is a snapshot, so the
 shortcut path can't accidentally route a copy/move INTO a snapshot.
+
+### The snapshot pane's row order
+
+A snapshot carries a `sort: { column, order } | null`. `null` is the search engine's RANKED order, the state every
+snapshot opens in, and for an AI-mode result set that ordering IS the answer, so it stays a state the user can get back
+to rather than a corner they fall out of.
+
+**The sort lives on the SNAPSHOT, in the store, never on the view or the pane.** Sorting replaces `snapshot.entries`
+with a permutation of the ranked rows and bumps the mutation tick, exactly like every other mutator. Every consumer (the
+rendered rows, F5/F6/F8, ⌘C/⌘X, drag-out, the context menu, the keyboard cursor, the Selection dialog, the MCP mirror,
+the selection remap) resolves the index the user sees against that one array, so all of them follow with no wiring of
+their own. ❌ No view-side reorder and no per-pane permutation: either would hand a delete the wrong file.
+
+**The pane's persisted directory sort is a different thing.** A snapshot pane borrows a tab whose `sortBy` / `sortOrder`
+belong to the folder the user came from, and a header click here never reaches `setPaneSort` or `resortListing`, so
+navigating away and back finds that folder in the order it was left. Both entry points check for a snapshot before
+anything else: the header click in `SearchResultsView`, and the keyboard sort commands in
+`file-explorer/pane/sort-operations.ts`.
+
+**The cycle is tri-state**, shared by the header click and the keyboard commands through
+`snapshot-sort.svelte.ts::nextSnapshotSort`: a fresh column takes its default order, the same column flips, a third
+press goes back to ranked. On that third state the active header's tooltip reads "Sort by relevance" instead of naming
+the column, because that is what the click will actually do. Ranked shows no active column and no caret, which is
+`FullList`'s `sortBy: null`.
+
+**The comparator is Rust's, not a copy of it.** `sort_search_results` (`src-tauri/src/commands/search.rs`) runs
+`file_system::listing::sorting::entry_comparator`, the SAME comparator every directory listing sorts by, over a
+`SearchSortRow` that implements the shared `SortableEntry` trait. Natural number ordering, case folding,
+directories-first, and the user's `directorySortMode` all come along, and there is no second implementation to drift. A
+frontend comparator would have had to reproduce `alphanumeric_sort`'s leading-zero and non-ASCII rules by hand.
+
+Two consequences of that trait's `None` answers, both deliberate. A search result carries no CREATION time, so
+`sort.byCreated` lands on the comparator's both-unknown arm and orders by name (the header has no Created column to
+claim either way). And it carries no RECURSIVE size, so under Size the directories are all "unknown" and sort by name
+among themselves, matching the `<dir>` their Size cell renders.
+
+**Ties keep the ranked order.** Both `Vec::sort_by` and the frontend's array are stable, and the input is the ranked
+array, so rows equal under the chosen column stay in the engine's ranking. That makes a re-sort reproducible instead of
+shuffling equal rows on every click, and it is the same rule a directory listing follows.
+
+**The round trip is async; the store mutation is not.** `snapshot-sort.svelte.ts::sortSnapshot` owns the IPC and calls
+the synchronous `applySnapshotSort`, so `entries` is a complete array at every moment and never half-reordered. Two
+things can go stale in between: a LATER sort request supersedes this one and the answer is dropped, while the ROWS
+changing (a walk appending, a delete purging) invalidates the order rather than the intent, so the request re-runs
+against the rows that exist now.
+
+**A still-running walk keeps the sort.** The store holds a `rankedEntries` array beside `entries`, kept in step with
+every append and purge, so `sort: null` restores the engine's order EXACTLY rather than approximating it. An append on a
+SORTED pane grows `rankedEntries` and leaves `entries` alone until the re-sort lands one round trip later: a fully
+sorted array that lags a tick beats a half-sorted one nobody can read an index off. ❗ That is why every caller of
+`appendSnapshotEntries` must follow it with `resortSnapshotIfSorted` (`walk-handoff.svelte.ts` is the only one today);
+skip it and a sorted pane silently stops growing. A purge needs no round trip, because filtering preserves relative
+order in both arrays.
+
+**Two panes on one snapshot id share the order.** They are one result set, so one order is the honest answer. The sort
+dies with the snapshot, since the store is module state.
 
 ## Search-specific decisions
 

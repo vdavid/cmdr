@@ -2,7 +2,7 @@ import { createDirectory, createFile, getFileAt, getFilesAtIndices, type Initiat
 import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
-import { getSnapshot, resolveSnapshotEntries } from '$lib/search/snapshot-store.svelte'
+import { getSnapshot, resolveSnapshotEntries, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
 import { resolveSnapshotSourceVolume } from './snapshot-source-volume'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 import { getAppLogger } from '$lib/logging/logger'
@@ -307,10 +307,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     sourcePaneRef: FilePaneAPI | undefined,
     pane: 'left' | 'right',
   ) {
-    const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-    const SEARCH_RESULTS_PREFIX = 'search-results://'
-    if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
-    const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
+    const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
+    if (snapshotId === null) return null
 
     const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
@@ -480,13 +478,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    */
   function openDeleteFromSearchResults({ permanent, autoConfirm, mcpRequestId, initiator }: OpenDeleteDialogArgs) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
-    const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-    const SEARCH_RESULTS_PREFIX = 'search-results://'
-    if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) {
+    const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
+    if (snapshotId === null) {
       log.warn('openDeleteFromSearchResults: focused pane volume is search-results but path is not. Bailing.')
       return
     }
-    const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
     const snapshot = getSnapshot(snapshotId)
     if (!snapshot) {
       log.warn('openDeleteFromSearchResults: snapshot {id} not found, bailing', { id: snapshotId })

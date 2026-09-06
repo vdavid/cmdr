@@ -1063,6 +1063,7 @@ export type MessageKey =
   | 'fileExplorer.columns.modified'
   | 'fileExplorer.columns.name'
   | 'fileExplorer.columns.size'
+  | 'fileExplorer.columns.sortByRelevance'
   | 'fileExplorer.dateTooltip.created'
   | 'fileExplorer.dateTooltip.lastModified'
   | 'fileExplorer.dateTooltip.lastMoved'

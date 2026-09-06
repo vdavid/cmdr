@@ -227,6 +227,18 @@ describe('a search-results snapshot pane', () => {
     expect((await sync.buildMcpFileList()).map((f) => f.name)).toEqual(['b.txt', 'c.txt'])
   })
 
+  it('mirrors the rows in the order the user sorted them into', async () => {
+    // The pane's rows ARE `snapshot.entries`, which `sortSnapshot` replaces in
+    // the store, so the MCP mirror follows a header click with no wiring of its
+    // own. It has to: an agent's `move_cursor` / `select` / delete reasons about
+    // the indices this list publishes, and a mirror in a different order than the
+    // screen would make every one of them act on the wrong row.
+    const sorted = [result('c.txt'), result('a.txt'), result('b.txt')]
+    const sync = createPaneMcpSync(snapshotDeps({ getSnapshotEntries: () => sorted }))
+
+    expect((await sync.buildMcpFileList()).map((f) => f.name)).toEqual(['c.txt', 'a.txt', 'b.txt'])
+  })
+
   it('pushes an empty file list for an empty snapshot, so the gate can say so', async () => {
     const sync = createPaneMcpSync(snapshotDeps({ getSnapshotEntries: () => [], getRowCount: () => 0 }))
 

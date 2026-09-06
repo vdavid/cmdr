@@ -9,6 +9,7 @@ use serde::Serialize;
 use genai::chat::ChatOptions;
 
 use crate::ai::AiTranslateError;
+use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, SortableEntry, entry_comparator};
 use crate::search::{self, ParsedScope, SearchQuery, SearchResult, VolumeLoad};
 
 use crate::search::ai::{self, query_builder as ai_query_builder};
@@ -331,6 +332,81 @@ pub fn apply_recent_searches_max_count(app: tauri::AppHandle, max_count: u32) ->
     Ok(())
 }
 
+/// One search-results row, carrying only what ordering it needs.
+///
+/// A deliberate subset of `SearchResultEntry`: the path, parent path, and icon id
+/// decide nothing about order, and leaving them out keeps a full 10,000-row
+/// snapshot's round trip small. The frontend holds the rows and re-orders them by
+/// the index list this command answers with, so nothing is shipped back.
+#[derive(Debug, Clone, serde::Deserialize, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchSortRow {
+    /// The file's own name (the last path component), which the Name and
+    /// Extension columns order by. Not the full path the pane DISPLAYS: a row's
+    /// name is its name everywhere else in the pane too (type-to-jump, the
+    /// context menu, the MCP rows), and one notion of it stays true here.
+    pub name: String,
+    pub is_directory: bool,
+    pub size: Option<u64>,
+    pub modified_at: Option<u64>,
+}
+
+impl SortableEntry for SearchSortRow {
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn is_directory(&self) -> bool {
+        self.is_directory
+    }
+    fn size(&self) -> Option<u64> {
+        self.size
+    }
+    fn modified_at(&self) -> Option<u64> {
+        self.modified_at
+    }
+    /// A search result carries no creation time, so ordering by Created lands on
+    /// the comparator's both-unknown arm and falls back to the name.
+    fn created_at(&self) -> Option<u64> {
+        None
+    }
+    /// Nor a recursive size: the search never walked into the directories it
+    /// matched, which is also why the pane renders `<dir>` in their Size cell.
+    /// Both directories being "unknown" orders them by name among themselves.
+    fn recursive_size(&self) -> Option<u64> {
+        None
+    }
+    fn recursive_size_complete(&self) -> Option<bool> {
+        None
+    }
+}
+
+/// Orders a search-results pane's rows, answering with `rows`' own indices in the
+/// order they should render.
+///
+/// The pane's rows arrive ranked by the search engine and the user can re-order
+/// them by column, exactly like a directory listing. It runs through
+/// [`entry_comparator`], the SAME comparator every directory listing sorts by, so
+/// the two can never drift: natural number ordering, case folding, directories
+/// first, and the user's `directorySortMode` all come along for free.
+///
+/// Indices rather than rows because the frontend already holds the full entries;
+/// shipping them back would double the round trip for no new information. The sort
+/// is STABLE, so rows equal under the chosen column keep the engine's ranked order
+/// between them, which makes a re-sort reproducible instead of shuffling ties.
+#[tauri::command]
+#[specta::specta]
+pub fn sort_search_results(
+    rows: Vec<SearchSortRow>,
+    sort_by: SortColumn,
+    sort_order: SortOrder,
+    dir_sort_mode: DirectorySortMode,
+) -> Vec<u32> {
+    let comparator = entry_comparator::<SearchSortRow>(sort_by, sort_order, dir_sort_mode);
+    let mut order: Vec<u32> = (0..rows.len() as u32).collect();
+    order.sort_by(|a, b| comparator(&rows[*a as usize], &rows[*b as usize]));
+    order
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -371,5 +447,98 @@ mod tests {
         assert!(json.contains("patternType"));
         assert!(json.contains("2025-01-01"));
         assert!(json.contains("\"label\":\"Big PDFs from 2025\""));
+    }
+
+    // ── `sort_search_results` ────────────────────────────────────────────
+
+    use crate::commands::search::{SearchSortRow, sort_search_results};
+    use crate::file_system::listing::{DirectorySortMode, SortColumn, SortOrder};
+
+    fn row(name: &str, is_directory: bool, size: Option<u64>, modified_at: Option<u64>) -> SearchSortRow {
+        SearchSortRow {
+            name: name.to_string(),
+            is_directory,
+            size,
+            modified_at,
+        }
+    }
+
+    /// The rows a search-results pane holds, in the engine's ranked order.
+    fn ranked_rows() -> Vec<SearchSortRow> {
+        vec![
+            row("img_10.png", false, Some(300), Some(30)),
+            row("Notes", true, None, Some(10)),
+            row("img_2.png", false, Some(100), Some(20)),
+            row("archive", true, None, Some(50)),
+            row("README", false, Some(200), Some(40)),
+        ]
+    }
+
+    fn names_in_order(rows: &[SearchSortRow], order: &[u32]) -> Vec<String> {
+        order.iter().map(|i| rows[*i as usize].name.clone()).collect()
+    }
+
+    #[test]
+    fn sorting_search_results_by_name_puts_directories_first_and_orders_numbers_naturally() {
+        let rows = ranked_rows();
+        let order = sort_search_results(
+            rows.clone(),
+            SortColumn::Name,
+            SortOrder::Ascending,
+            DirectorySortMode::LikeFiles,
+        );
+        assert_eq!(
+            names_in_order(&rows, &order),
+            // Case-folded, so `img_…` sorts before `readme`, and `img_2` before
+            // `img_10` because the digit run compares numerically.
+            vec!["archive", "Notes", "img_2.png", "img_10.png", "README"]
+        );
+    }
+
+    #[test]
+    fn sorting_search_results_by_size_descending_keeps_directories_ahead_of_files() {
+        let rows = ranked_rows();
+        let order = sort_search_results(
+            rows.clone(),
+            SortColumn::Size,
+            SortOrder::Descending,
+            DirectorySortMode::LikeFiles,
+        );
+        // Directories lead whatever the column; a snapshot row carries no
+        // recursive size, so the two dirs are both unknown and fall back to name.
+        assert_eq!(
+            names_in_order(&rows, &order),
+            vec!["Notes", "archive", "img_10.png", "README", "img_2.png"]
+        );
+    }
+
+    #[test]
+    fn sorting_search_results_leaves_ties_in_the_order_they_arrived() {
+        // Two rows that are equal under the column: the engine's ranked order
+        // decides, because the sort is stable. That is what makes a re-sort
+        // reproducible instead of shuffling equal rows on every click.
+        let rows = vec![
+            row("b.txt", false, Some(10), Some(1)),
+            row("a.txt", false, Some(10), Some(2)),
+            row("c.txt", false, Some(10), Some(3)),
+        ];
+        let order = sort_search_results(
+            rows.clone(),
+            SortColumn::Size,
+            SortOrder::Ascending,
+            DirectorySortMode::LikeFiles,
+        );
+        assert_eq!(order, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn sorting_an_empty_search_result_set_answers_an_empty_order() {
+        let order = sort_search_results(
+            vec![],
+            SortColumn::Modified,
+            SortOrder::Descending,
+            DirectorySortMode::LikeFiles,
+        );
+        assert!(order.is_empty());
     }
 }

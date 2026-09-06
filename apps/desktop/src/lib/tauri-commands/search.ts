@@ -5,6 +5,7 @@ import { commands, events } from '$lib/ipc/bindings'
 import type { ParsedScope, PrepareResult, SearchResult } from './ipc-types'
 import { throwIpcError } from './ipc-types'
 import type {
+  DirectorySortMode,
   HistoryEntry,
   LiveSearchStart,
   SearchCancelledEvent,
@@ -12,6 +13,9 @@ import type {
   SearchErrorEvent,
   SearchProgressEvent,
   SearchQuery,
+  SearchSortRow,
+  SortColumn,
+  SortOrder,
   TranslateResult,
 } from '$lib/ipc/bindings'
 
@@ -31,6 +35,23 @@ export async function searchFiles(query: SearchQuery): Promise<SearchResult> {
   const res = await commands.searchFiles(query)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
+}
+
+/**
+ * Orders a search-results pane's rows, answering with the input indices in the
+ * order they should render.
+ *
+ * The one place a snapshot pane's order is decided, and it runs the SAME
+ * comparator every directory listing sorts by, so the two can't drift. Callers go
+ * through `$lib/search/snapshot-sort.svelte.ts` rather than here directly.
+ */
+export async function sortSearchResults(
+  rows: SearchSortRow[],
+  sortBy: SortColumn,
+  sortOrder: SortOrder,
+  dirSortMode: DirectorySortMode,
+): Promise<number[]> {
+  return commands.sortSearchResults(rows, sortBy, sortOrder, dirSortMode)
 }
 
 /**

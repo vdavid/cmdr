@@ -44,6 +44,7 @@ function makeSnapshot(id: string, overrides: Partial<SearchSnapshot> = {}): Sear
     totalCount: 2,
     createdAt: 1_700_000_000_000,
     label: 'Search: foo',
+    sort: null,
     ...overrides,
   }
 }

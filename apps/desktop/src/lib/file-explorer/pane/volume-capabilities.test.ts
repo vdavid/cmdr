@@ -64,7 +64,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: true,
       canBeSource: true,
       hasParentRow: true,
-      sortsRows: true,
       syncsToMcp: true,
     },
     smb: {
@@ -73,7 +72,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: true,
       canBeSource: true,
       hasParentRow: true,
-      sortsRows: true,
       syncsToMcp: true,
     },
     mtp: {
@@ -82,7 +80,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: true,
       canBeSource: true,
       hasParentRow: true,
-      sortsRows: true,
       syncsToMcp: true,
     },
     adb: {
@@ -91,7 +88,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: true,
       canBeSource: true,
       hasParentRow: true,
-      sortsRows: true,
       syncsToMcp: true,
     },
     network: {
@@ -102,7 +98,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: false,
       // No file list at all (NetworkMountView renders instead), so there is
       // nothing for a sort to order.
-      sortsRows: false,
       syncsToMcp: false,
     },
     'search-results': {
@@ -113,7 +108,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       hasParentRow: false,
       // The rows arrive in the search engine's ranked order and stay in it:
       // every source-side op resolves a selected index against `snapshot.entries[i]`.
-      sortsRows: false,
       // Mirrors to MCP off the frontend snapshot: no backend listing needed, and
       // the copy/move/delete gate reads this pane's state.
       syncsToMcp: true,
@@ -125,7 +119,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canWrite: true,
       canBeSource: true,
       hasParentRow: true,
-      sortsRows: true,
       syncsToMcp: true,
     },
     'git-portal': {
@@ -137,7 +130,6 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       // ...but the rows are real content, so copying OUT works.
       canBeSource: true,
       hasParentRow: true,
-      sortsRows: true,
       syncsToMcp: true,
     },
   }

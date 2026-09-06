@@ -21,32 +21,32 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 - **The two ROUTED panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone**
   — an archive or `.git`-portal pane keeps the parent DRIVE's `volumeId`. Zip is WRITABLE, tar/7z and portal snapshots
   READ-ONLY. Real files under `.git/` keep the drive's row.
-- **The snapshot pane (`volumeId === 'search-results'`) couples four points**: `computeHasParent` returns `false`,
-  opening a real entry must LEAVE the snapshot volume, `snapshot-selection-sync.svelte.ts` remaps its index selection by
-  path (no listing diff does), and it mirrors to MCP off the snapshot. Skip one: an off-by-one selection, a stuck
-  `search-results` path, a delete on rows nobody picked, or an MCP delete refused by stale pane state.
+- **The snapshot pane (`volumeId === 'search-results'`) couples five points**: `computeHasParent` is `false`, opening a
+  real entry must LEAVE the snapshot volume, `snapshot-selection-sync.svelte.ts` remaps its selection by path (no
+  listing diff does), it mirrors to MCP off the snapshot, and its header sorts the SNAPSHOT, ❌ never `setPaneSort`.
+  Skip one: an off-by-one selection, a stuck path, a delete on rows nobody picked, an MCP delete on stale state, or a
+  folder re-sorted from a pane that isn't it.
 - **BIRTH CONTEXT and an ADOPTED operation are separate slots in separate MODULES.** `adopted-operation.svelte.ts` and
   `archive-password-flow.svelte.ts` get a read-only `hasBirthContext()` and argument-free commands, ❌ never the props,
-  a writer, or a getter, and ❌ never read the progress slot's occupancy off `showTransferProgressDialog`. DETAILS §
-  "Birth context".
+  a writer, or a getter, and ❌ never read the progress slot off `showTransferProgressDialog`. DETAILS § "Birth
+  context".
 - **A dialog on screen refuses the commands that START a file operation, ❌ never the ones that STEER a running one.**
-  Cancel, pause, rollback, queue, and answering a clash keep working with the progress dialog up. Which dialogs block is
+  Cancel, pause, rollback, queue, and answering a clash keep working under the progress dialog. Which dialogs block is
   declared per entry in `$lib/ui/dialog-registry.ts` (a new one won't compile without a verdict); the four refusal
   layers are DETAILS § "The operation-start gate".
 - **Every dialog renders inside ONE `<svelte:boundary>` in `DialogManager.svelte`**: `show*` flips before the dialog
-  renders and suppresses pane keys, so a mid-render throw would wedge the keyboard with a blank screen.
+  renders and suppresses pane keys, so a mid-render throw would wedge the keyboard behind a blank screen.
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5): mutate the store and let
   it react; ❌ don't scatter `saveAppStatus` / `saveTabsForPaneSide` across nav paths.
 - **Three first-run-layout guardrails, each looking like a tidy-up. ❌ Never "simplify" one away.** `markAlreadyLaidOut`
-  leaves an install that already has pane state untouched; `~/Downloads` is probed only after Full Disk Access is
-  confirmed; `loadPersistedState` persists an applied layout itself. DETAILS § "First-run pane layout".
+  leaves an install that already has pane state alone; `~/Downloads` is probed only after Full Disk Access is confirmed;
+  `loadPersistedState` persists an applied layout itself. DETAILS § "First-run pane layout".
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
   switches. Resolve bare paths to a `Location` at the edge. Refusal `message` strings are byte-pinned. `network`
-  navigates only `smb://`; a switch there clears the pane's open host.
+  navigates only `smb://`.
 - **`DualPaneExplorer.svelte` and `FilePane.svelte` are `file-length`-flagged**: don't add to them, and ❌ don't carve
   child components either. Cross-cutting state → a `*.svelte.ts` factory, pure logic → a `*.ts` helper.
 
 `DETAILS.md` holds the file table, the classifiers' totality rule, the key-dispatch focus guard, the walk-up volume
 re-resolve, `getTabMgr`'s live `$state` holder, the select-only cursor jump, the MTP clipboard gate, self-drag identity,
-the volume tint fallback, `ErrorPane`'s ways out, and why the remaining volume-id compares are not guards. Read it
-before any non-trivial work here.
+the volume tint fallback, `ErrorPane`'s ways out, and why the remaining volume-id compares aren't guards. Read it first.

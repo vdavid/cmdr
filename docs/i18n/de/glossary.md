@@ -1952,3 +1952,19 @@ Die Liste baut macOS; hier werden nur die Beschriftungen übersetzt.
   `Programm auswählen …`; `App` statt `Programm`, weil der Katalog durchgehend `App` schreibt · `high`.
 - **terminal app → `Terminal-App`** · Bindestrich-Komposition wie die übrigen `App`-Komposita · `high`. Kein Apostroph
   in den Werten, die ICU-Dopplung `''` entfällt.
+
+## `Sort by relevance`: der Tooltip der Suchergebnis-Spalte (`fileExplorer.columns.sortByRelevance`)
+
+Neue Fläche: der Hover-Tooltip auf der aktiven Spaltenüberschrift eines Suchergebnis-Bereichs. Der nächste Klick stellt
+die Reihenfolge der Suchmaschine wieder her, bester Treffer zuerst.
+
+- **relevance (Güte eines Suchtreffers) → `Relevanz`** · Apples Automator
+  (`Automator.framework/…/LibrarySmartGroupsEditor.loctable`, `%[Relevance]@ …` → `%1$[Relevanz]@ …`) · `tentative`. ❌
+  Nicht `Häufigkeit`, obwohl Apples übrige deutsche Kataloge dort genau das schreiben (WorkflowKit
+  `Relevance (WFSearchSortOrder)`, AppStoreKit `SEARCH_FACET_RELEVANCE`, Musik und TV): das Wort heißt „Frequenz“ und
+  benennt damit einen anderen Begriff, „Nach Häufigkeit sortieren“ würde dem Lesenden etwas Falsches versprechen.
+  `Relevanz` ist das Standardwort der deutschen Oberfläche für die Suchtreffergüte. Die Quellen widersprechen sich,
+  daher `tentative`. (geprüft auf macOS 26.6.2, Build 25G83, `plutil`-Auszug der mitgelieferten Lokalisierungen,
+  2026-09-06)
+- **Satzrahmen → `Nach Relevanz sortieren`** · genau das Muster der Geschwisterschlüssel in `commands.json`
+  (`Nach Name sortieren`, `Nach Größe sortieren`) · `high`. Kein `sameAsSourceJustification`, kein Apostroph im Wert.

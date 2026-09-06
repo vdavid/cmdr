@@ -114,6 +114,17 @@ Apple rewords between releases.
 > `Keychain Access.app` (`CFBundleDisplayName` gives the localized app name). Verified on macOS 26.6.2, build 25G83,
 > 2026-08-29.
 
+**Don't know which bundle holds the term?** Sweep the whole system by ENGLISH VALUE instead of guessing a bundle: walk
+`/System/Library/CoreServices`, `/System/Applications`, `/System/Library/{Private,}Frameworks`, and `/Applications`,
+`plutil -convert json` every `*.loctable` plus every `en.lproj/*.strings`, and filter the English side for the word.
+That is how `relevance` was sourced for all 10 locales at once: the search-sort-order sense lives in
+`WorkflowKit.framework/…/Localizable.loctable` (key `Relevance (WFSearchSortOrder)`),
+`AppStoreKit.framework/…/<lang>.lproj/Localizable.strings` (`SEARCH_FACET_RELEVANCE`),
+`Automator.framework/…/LibrarySmartGroupsEditor.loctable`, and `Music.app` / `TV.app` (hashed keys). Finder itself has
+no such string, so the per-`.lproj` Finder recipe alone would have read as "Apple doesn't localize this". Expect the
+sweep to surface genuine per-bundle disagreement: German renders that sort order `Häufigkeit` in three of the four and
+`Relevanz` in Automator. Verified on macOS 26.6.2, build 25G83, 2026-09-06.
+
 ### Menu-bar labels: read the per-nib `.strings`, with `en_GB.lproj` as the English side
 
 The Finder menu bar (and every other nib-driven surface: the Get Info window, the compress sheet, the bulk-rename

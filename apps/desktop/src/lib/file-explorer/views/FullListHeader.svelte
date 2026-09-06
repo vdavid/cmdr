@@ -8,7 +8,8 @@
         /** The row's grid tracks, mirrored from the data rows so columns line up. */
         gridTemplate: string
         isFocused: boolean
-        sortBy: SortColumn
+        /** The column the rows are in, or `null` for a pane in no column's order. */
+        sortBy: SortColumn | null
         sortOrder: SortOrder
         /**
          * When on, the Name column carries the full filename and there's no Ext
@@ -25,14 +26,8 @@
          * adds this to its own right padding to stay column-aligned with the rows.
          */
         scrollbarWidth: number
-        /**
-         * Whether the pane's rows actually follow its `sortBy` / `sortOrder`
-         * (`caps.sortsRows`). Off for the search-results snapshot pane, whose rows
-         * render in the search engine's ranked order: the labels stay, the sort
-         * triggers, the active column, and the direction caret go. See
-         * `SortableHeader`'s `sortable` prop.
-         */
-        sortable?: boolean
+        /** Passed to the ACTIVE column's header. See `SortableHeader`'s prop. */
+        clearsSortLabel?: string
         onSortChange?: (column: SortColumn) => void
     }
 
@@ -45,7 +40,7 @@
         gitColumnVisible,
         skipTransition,
         scrollbarWidth,
-        sortable = true,
+        clearsSortLabel,
         onSortChange,
     }: Props = $props()
 
@@ -53,8 +48,7 @@
 </script>
 
 <!-- Role/aria intentionally omitted: `role="toolbar"` here would be a lie about a
-     row of column labels. The sort buttons inside remain individually focusable —
-     and with `sortable={false}` there are no buttons at all, only labels. -->
+     row of column labels. The sort buttons inside remain individually focusable. -->
 <div
     class="header-row"
     class:no-transition={skipTransition}
@@ -74,7 +68,7 @@
             <SortableHeader
                 column="name"
                 {isFocused}
-                {sortable}
+                {clearsSortLabel}
                 label={tString('fileExplorer.columns.name')}
                 currentSortColumn={sortBy}
                 currentSortOrder={sortOrder}
@@ -83,7 +77,7 @@
             <SortableHeader
                 column="extension"
                 {isFocused}
-                {sortable}
+                {clearsSortLabel}
                 label={tString('fileExplorer.columns.ext')}
                 align="right"
                 currentSortColumn={sortBy}
@@ -95,7 +89,7 @@
         <SortableHeader
             column="name"
             {isFocused}
-            {sortable}
+            {clearsSortLabel}
             label={tString('fileExplorer.columns.name')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
@@ -109,7 +103,7 @@
         <SortableHeader
             column="extension"
             {isFocused}
-            {sortable}
+            {clearsSortLabel}
             label={tString('fileExplorer.columns.ext')}
             currentSortColumn={sortBy}
             currentSortOrder={sortOrder}
@@ -119,7 +113,7 @@
     <SortableHeader
         column="size"
         {isFocused}
-        {sortable}
+        {clearsSortLabel}
         label={tString('fileExplorer.columns.size')}
         align="right"
         currentSortColumn={sortBy}
@@ -129,7 +123,7 @@
     <SortableHeader
         column="modified"
         {isFocused}
-        {sortable}
+        {clearsSortLabel}
         label={tString('fileExplorer.columns.modified')}
         align="right"
         currentSortColumn={sortBy}

@@ -54,7 +54,13 @@ vi.mock('$lib/ui/toast', () => ({
 // `paste-clipboard-as-file.test.ts`); here we only assert the DISPATCH into it.
 vi.mock('./paste-clipboard-as-file', () => ({ pasteClipboardContentAsFile: pasteClipboardContentAsFileSpy }))
 
-vi.mock('$lib/search/snapshot-store.svelte', () => ({ resolveSnapshotPaths: resolveSnapshotPathsSpy }))
+vi.mock('$lib/search/snapshot-store.svelte', () => ({
+  resolveSnapshotPaths: resolveSnapshotPathsSpy,
+  // Pure namespace arithmetic with no store state behind it, so the mock keeps
+  // the real shape rather than a spy.
+  snapshotIdFromPanePath: (path: string) =>
+    path.startsWith('search-results://') ? path.slice('search-results://'.length) : null,
+}))
 
 // `transfer-entry` (the shared guard chain) imports `getDestinationVolumeInfo`
 // from here too, so the mock must export it. Keep it a thin lookup matching the

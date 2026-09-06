@@ -8,7 +8,7 @@ import {
   resolvePathVolume,
 } from '$lib/tauri-commands'
 import { addToast, addToastForPane } from '$lib/ui/toast'
-import { resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
+import { resolveSnapshotPaths, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { isPlainFilesystemPath } from '$lib/path/canonical'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
@@ -150,11 +150,8 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     // `volumeId === 'search-results'` string compare.
     if (capabilitiesFor(focusedVolId).kind !== 'search-results') return null
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
-    const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
-    // Extract the snapshot id from the URL — pure namespace mechanics, kept as-is.
-    const SEARCH_RESULTS_PREFIX = 'search-results://'
-    if (!currentPath.startsWith(SEARCH_RESULTS_PREFIX)) return null
-    const snapshotId = currentPath.slice(SEARCH_RESULTS_PREFIX.length)
+    const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
+    if (snapshotId === null) return null
     const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
     const paths = resolveSnapshotPaths(snapshotId, selectedIndices, cursorIndex)

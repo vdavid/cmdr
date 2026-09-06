@@ -2312,3 +2312,16 @@ macOS bouwt de lijst; hier worden alleen de labels vertaald.
 - **Choose an app… → `Kies app…`** · letterlijk Apples eigen `Choose Application…` (sleutel `N137`) in de Nederlandse
   Finder, die al `app` zegt · `confirmed`.
 - **terminal app → `terminal-app`** · streepje, zoals de rest van de catalogus · `high`. Geen apostrof in de waarden.
+
+## `Sort by relevance`: de tooltip van de zoekresultatenkolom (`fileExplorer.columns.sortByRelevance`)
+
+Nieuw oppervlak: de tooltip op de actieve kolomkop van een paneel met zoekresultaten. De volgende klik zet de rijen
+terug in de volgorde van de zoekmachine, met de beste overeenkomst bovenaan.
+
+- **relevance (hoe goed een resultaat bij de zoekopdracht past) → `relevantie`** · alle vier de macOS-bronnen zijn het
+  eens: WorkflowKit (`Relevance (WFSearchSortOrder)` → `Relevantie`), AppStoreKit (`SEARCH_FACET_RELEVANCE` →
+  `Relevantie`), Automator (`%1$[Relevantie]@ …`) en Muziek · `high`. Kleine letter na `op`, zoals elders in de
+  catalogus. (gecontroleerd op macOS 26.6.2, build 25G83, `plutil`-uitvoer van de meegeleverde lokalisaties, 2026-09-06)
+- **Zinsframe → `Sorteer op relevantie`** · precies het patroon van de zustersleutels in `commands.json`
+  (`Sorteer op naam`, `Sorteer op grootte`) · `high`. Geen `sameAsSourceJustification`, en de waarde bevat geen
+  apostrof.

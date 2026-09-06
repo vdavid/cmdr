@@ -2449,3 +2449,15 @@ commande. C’est macOS qui construit la liste ; seules les étiquettes se tradu
 - **Choose an app… → `Choisir une app…`** · le `Choose Application…` d’Apple (clé `N137`) dit `Choisir une application…`
   ; `app` plutôt qu’`application`, comme partout dans le catalogue · `high`.
 - Les apostrophes des valeurs sont doublées pour ICU (`qu''il`, `l''astuce`, `d''une`).
+
+## `Sort by relevance`: the search-results column tooltip (`fileExplorer.columns.sortByRelevance`)
+
+New surface: the hover tooltip on the active column header of a search-results pane. The next click puts the rows back
+into the search engine's own best-match-first order.
+
+- **relevance (how well a result matches the search) → `pertinence`** · all four macOS sources agree: WorkflowKit
+  (`Relevance (WFSearchSortOrder)` → `Pertinence`), AppStoreKit (`SEARCH_FACET_RELEVANCE` → `Pertinence`), Automator
+  (`%1$[La pertinence]@ …`), and Musique · `high`. Lowercase after `par`, as everywhere else in the catalog. (verified
+  on macOS 26.6.2 build 25G83, `plutil` dump of the shipped localizations, 2026-09-06)
+- **Sentence frame → `Trier par pertinence`** · exactly the pattern of its sibling keys in `commands.json`
+  (`Trier par nom`, `Trier par taille`) · `high`. No `sameAsSourceJustification`, and the value carries no apostrophe.

@@ -2067,3 +2067,16 @@ terminal que abre el comando. La lista la construye macOS; aquí solo se traduce
 - **Choose an app… → `Seleccionar app…`** · el `Choose Application…` de Apple (clave `N137`) dice
   `Seleccionar aplicación…`; `app` en vez de `aplicación`, como en todo el catálogo · `high`.
 - Ningún valor lleva apóstrofo, así que no hay duplicación ICU (`''`).
+
+## `Sort by relevance`: la ayuda emergente de la columna de resultados (`fileExplorer.columns.sortByRelevance`)
+
+Superficie nueva: la ayuda emergente sobre la cabecera de columna activa de un panel de resultados de búsqueda. El clic
+siguiente devuelve las filas al orden del buscador, con la mejor coincidencia primero.
+
+- **relevance (lo bien que un resultado coincide con la búsqueda) → `relevancia`** · las cuatro fuentes de macOS
+  coinciden: WorkflowKit (`Relevance (WFSearchSortOrder)` → `Relevancia`), AppStoreKit (`SEARCH_FACET_RELEVANCE` →
+  `Relevancia`), Automator (`%1$[La relevancia]@ …`) y Música · `high`. En minúscula tras `por`, como en el resto del
+  catálogo. (verificado en macOS 26.6.2, compilación 25G83, volcado con `plutil` de las localizaciones incluidas,
+  2026-09-06)
+- **Marco de la frase → `Ordenar por relevancia`** · el mismo patrón que sus claves hermanas de `commands.json`
+  (`Ordenar por nombre`, `Ordenar por tamaño`) · `high`. Sin `sameAsSourceJustification`, y el valor no lleva apóstrofo.

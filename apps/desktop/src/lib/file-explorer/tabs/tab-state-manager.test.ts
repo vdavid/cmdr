@@ -627,6 +627,7 @@ describe('tab-state-manager', () => {
         totalCount: 0,
         createdAt: 0,
         label: `Search: ${id}`,
+        sort: null,
       }
     }
 

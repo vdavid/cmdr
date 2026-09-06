@@ -30,13 +30,13 @@ function mountHeader(props: Partial<Parameters<typeof mountHeaderRaw>[0]> = {}) 
 function mountHeaderRaw(props: {
   gridTemplate: string
   isFocused: boolean
-  sortBy: SortColumn
+  sortBy: SortColumn | null
   sortOrder: 'ascending' | 'descending'
   showExtensionInName: boolean
   gitColumnVisible: boolean
   skipTransition: boolean
   scrollbarWidth: number
-  sortable?: boolean
+  clearsSortLabel?: string
   onSortChange?: (column: SortColumn) => void
 }) {
   const target = document.createElement('div')
@@ -124,24 +124,29 @@ describe('sorting', () => {
  * all go, because a click here would do nothing and the arrow would name an order
  * the rows are not in.
  */
-describe('a pane whose rows do not follow its sort', () => {
+/**
+ * A pane in NO column's order: the search-results pane before its header is ever
+ * clicked, showing the search engine's ranked rows. Every header still sorts,
+ * because a click is what puts the pane in a column's order.
+ */
+describe('a pane in no column order', () => {
   it('keeps the four column labels', () => {
-    expect(labels(mountHeader({ sortable: false }))).toEqual(['Name', 'Ext', 'Size', 'Modified'])
+    expect(labels(mountHeader({ sortBy: null }))).toEqual(['Name', 'Ext', 'Size', 'Modified'])
   })
 
-  it('renders no buttons, so nothing promises a click will do something', () => {
-    expect(mountHeader({ sortable: false }).querySelectorAll('button')).toHaveLength(0)
+  it('keeps every header clickable, because a click is what sorts the pane', () => {
+    expect(mountHeader({ sortBy: null }).querySelectorAll('button')).toHaveLength(4)
   })
 
-  it('lights no column and draws no direction arrow, whatever the pane last sorted by', () => {
-    const target = mountHeader({ sortable: false, sortBy: 'size' as SortColumn })
+  it('lights no column and draws no direction arrow', () => {
+    const target = mountHeader({ sortBy: null })
 
     expect(target.querySelector('.sortable-header.is-active')).toBeNull()
-    expect(target.querySelector('.sort-indicator')).toBeNull()
+    expect(target.querySelector('.sort-indicator:not(.invisible)')).toBeNull()
   })
 
   it('still folds Ext into the Name track when the extension rides in the name', () => {
-    const target = mountHeader({ sortable: false, showExtensionInName: true })
+    const target = mountHeader({ sortBy: null, showExtensionInName: true })
 
     expect(labels(target)).toEqual(['Name', 'Ext', 'Size', 'Modified'])
     expect(target.querySelectorAll('.header-name-ext .sortable-header')).toHaveLength(2)

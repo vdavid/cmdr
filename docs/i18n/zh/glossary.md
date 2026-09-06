@@ -1880,3 +1880,13 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **working tree（泛指工作区）→ `工作树`** · `errors.git.bareRepo`、`blobTooLarge`、 `gitDirPermissionDenied`
   里是普通行文，保持 `工作树` 不变 · `high`。
 - 拉丁词前后留空格（`个关联 worktree`），与目录里其余拉丁词一致；量词仍是 `个`。`git worktree prune` 是命令，原样。
+
+## `Sort by relevance`：搜索结果列的悬停提示（`fileExplorer.columns.sortByRelevance`）
+
+新界面：搜索结果面板中当前排序列的列头悬停提示。再点一次会把行恢复成搜索引擎自己的顺序，最匹配的排在最前。
+
+- **relevance（结果与搜索的匹配程度）→ `相关性`** · macOS 的四个来源一致：WorkflowKit（`Relevance (WFSearchSortOrder)` →
+  `相关性`）、AppStoreKit（`SEARCH_FACET_RELEVANCE` → `相关性`）、Automator（`%1$[相关性]@ …`）和“音乐” ·
+  `high`。（在 macOS 26.6.2、版本号 25G83 上用 `plutil` 导出随系统附带的本地化文件核对，2026-09-06）
+- **句式 → `按相关性排序`** · 与 `commands.json` 中同类键完全相同的格式（`按名称排序`、`按大小排序`） · `high`。不需要
+  `sameAsSourceJustification`，值中也没有撇号。

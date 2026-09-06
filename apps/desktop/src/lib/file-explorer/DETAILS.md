@@ -212,9 +212,9 @@ via `staticEntries`. No backend listing exists, no IPC traffic. Each adapted ent
 path (home folder shown as `~`); the col-name cell mid-truncates via `useShortenMiddle` and surfaces the full path on
 hover. There's no separate Path column anymore. The view exports a small API (`setCursorIndex` / `findItemIndex` /
 `openCursorItem` / `isMissing`) used by FilePane's keyboard handler; `findItemIndex` matches on the basename of `path`
-so type-to-jump / MCP keep working with plain filenames. The column header names its columns and claims no sort
-(`caps.sortsRows`), because the rows render in the engine's ranked order: `../search/DETAILS.md` § "Source-side ops from
-the snapshot pane".
+so type-to-jump / MCP keep working with plain filenames. The column header sorts the SNAPSHOT rather than the pane's
+tab, cycling back to the engine's ranked order on a third click: `../search/DETAILS.md` § "The snapshot pane's row
+order".
 
 Navigation:
 

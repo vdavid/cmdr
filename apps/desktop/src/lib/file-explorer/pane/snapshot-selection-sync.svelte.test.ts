@@ -14,6 +14,7 @@ import { createSelectionState } from './selection-state.svelte'
 import { createSnapshotSelectionSync, remapSnapshotSelection } from './snapshot-selection-sync.svelte'
 import {
   _resetForTesting,
+  applySnapshotSort,
   getMutationTick,
   getOrCreate,
   getSnapshot,
@@ -48,6 +49,7 @@ function makeSnapshot(id: string, names: string[]): SearchSnapshot {
     totalCount: names.length,
     createdAt: 0,
     label: 'q',
+    sort: null,
   }
 }
 
@@ -254,6 +256,38 @@ describe('createSnapshotSelectionSync', () => {
     flushSync()
 
     expect(pane.selection.getSelectedIndices()).toEqual([0, 1])
+  })
+
+  it('follows the selected rows and the cursor through a re-sort', () => {
+    // The rows don't shrink here, they MOVE. Same failure mode as a purge: the
+    // selection is a set of indices into an array the sort replaced, so without
+    // the remap the next F8 deletes whatever slid into those slots.
+    getOrCreate('sr-sort', makeSnapshot('sr-sort', ['c.txt', 'a.txt', 'b.txt']))
+    const pane = wire('sr-sort')
+    pane.selection.setSelectedIndices([0, 2])
+    pane.setCursor(0)
+
+    // Name-ascending over that ranked order: a, b, c.
+    applySnapshotSort('sr-sort', { column: 'name', order: 'ascending' }, [1, 2, 0])
+    flushSync()
+
+    // `c.txt` moved to index 2 and `b.txt` to index 1, and the selection went with them.
+    expect(pane.selection.getSelectedIndices()).toEqual([1, 2])
+    expect(pane.getCursor()).toBe(2)
+  })
+
+  it('brings the selection home when the pane goes back to the ranked order', () => {
+    getOrCreate('sr-back', makeSnapshot('sr-back', ['c.txt', 'a.txt', 'b.txt']))
+    const pane = wire('sr-back')
+    applySnapshotSort('sr-back', { column: 'name', order: 'ascending' }, [1, 2, 0])
+    flushSync()
+    pane.selection.setSelectedIndices([0])
+
+    applySnapshotSort('sr-back', null, [])
+    flushSync()
+
+    // `a.txt` sat at index 0 sorted and sits at index 1 ranked.
+    expect(pane.selection.getSelectedIndices()).toEqual([1])
   })
 
   it('touches nothing on a pane that is not showing a snapshot', () => {

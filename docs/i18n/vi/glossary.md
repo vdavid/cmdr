@@ -2090,3 +2090,17 @@ lệnh sẽ mở. macOS dựng danh sách; ở đây chỉ dịch các nhãn.
 - **Choose an app… → `Chọn ứng dụng…`** · đúng nguyên văn `Choose Application…` của Apple (khóa `N137`) trong Finder
   tiếng Việt · `confirmed`.
 - Không giá trị nào chứa dấu nháy đơn.
+
+## `Sort by relevance`: chú giải của cột kết quả tìm kiếm (`fileExplorer.columns.sortByRelevance`)
+
+Bề mặt mới: chú giải hiện ra khi rê chuột lên tiêu đề cột đang sắp xếp của khung kết quả tìm kiếm. Cú nhấp tiếp theo đưa
+các hàng về đúng thứ tự của bộ tìm kiếm, kết quả khớp nhất lên đầu.
+
+- **relevance (mức khớp giữa một kết quả và truy vấn) → `mức độ liên quan`** · Apple WorkflowKit
+  (`Relevance (WFSearchSortOrder)` → `Mức độ liên quan`) và Automator (`%1$[Mức độ liên quan]@ …`); Nhạc và TV rút gọn
+  thành `Liên quan`, tức là ba trên bốn nguồn dùng chung gốc `liên quan`, nên chọn dạng đầy đủ · `high`. AppStoreKit
+  (`SEARCH_FACET_RELEVANCE`) lại nói `Độ phù hợp`, một gốc khác, ghi lại ở đây để lần sau khỏi phải tra lại. (kiểm chứng
+  trên macOS 26.6.2, bản dựng 25G83, kết xuất `plutil` các bản địa hóa đi kèm, 2026-09-06)
+- **Khung câu → `Sắp xếp theo mức độ liên quan`** · đúng khuôn của các khóa anh em trong `commands.json`
+  (`Sắp xếp theo tên`, `Sắp xếp theo kích cỡ`) · `high`. Không cần `sameAsSourceJustification`, và giá trị không có dấu
+  nháy đơn.

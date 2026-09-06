@@ -47,7 +47,7 @@
     import NetworkMountView from './NetworkMountView.svelte'
     import SearchResultsView from './SearchResultsView.svelte'
     import type { CancelLoadingPayload, SearchResultsViewAPI, VolumeChangePayload } from './types'
-    import { getMutationTick, getSnapshot } from '$lib/search/snapshot-store.svelte'
+    import { getMutationTick, getSnapshot, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
     import MtpConnectionView from './MtpConnectionView.svelte'
     import SmbReconnectingView from './SmbReconnectingView.svelte'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
@@ -402,11 +402,7 @@
      * or `null` for any other pane / unparseable path. Drives the breadcrumb label, the
      * row-count for keyboard cursor clamping, and the view's snapshot lookup.
      */
-    const searchSnapshotId = $derived(
-        isSearchResultsView && currentPath.startsWith('search-results://')
-            ? currentPath.slice('search-results://'.length)
-            : null,
-    )
+    const searchSnapshotId = $derived(isSearchResultsView ? snapshotIdFromPanePath(currentPath) : null)
 
     /**
      * Live snapshot lookup. Re-derives on path/id change AND on the store's mutation
@@ -1753,8 +1749,6 @@
                 path={currentPath}
                 {cursorIndex}
                 {isFocused}
-                {sortBy}
-                {sortOrder}
                 selectedIndices={selection.selectedIndices}
                 onNavigate={(entry: FileEntry) => { void handleNavigate(entry) }}
                 onSelect={({ index, shiftKey, metaKey }: SelectPayload) => {

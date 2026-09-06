@@ -233,9 +233,9 @@ volume-id string. The record has two halves, and which half answers is the whole
   Canonical: `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
 - **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `mtp` / `adb` /
   `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults carrying the per-namespace
-  UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`, `sortsRows`, `syncsToMcp`) plus the
-  fallback write/source answers. It's NOT a `Record<string, boolean>` bag — `kind` is the discriminant. The two ROUTED
-  kinds (`archive`, `git-portal`) are in the same table but come from the PATH, resolved one layer up in
+  UI structure Rust has nothing to say about (`hasBackendListing`, `hasParentRow`, `syncsToMcp`) plus the fallback
+  write/source answers. It's NOT a `Record<string, boolean>` bag — `kind` is the discriminant. The two ROUTED kinds
+  (`archive`, `git-portal`) are in the same table but come from the PATH, resolved one layer up in
   `capabilitiesForPane`.
 
 - **❌ Never source KIND from the backend.** An OS-mounted SMB share that hasn't been upgraded to a direct smb2 session
@@ -309,11 +309,11 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   `file-operations/transfer/CLAUDE.md` § "One transfer entry seam". The `search-results://` URL parses stay (namespace
   mechanics).
 - **`pane-commands.ts`**: `isSnapshotPane` (the Selection-dialog banner flag) off `!hasBackendListing`.
-- **The column header** (`views/FullList.svelte` → `FullListHeader` → `SortableHeader`): the `sortable` prop off
-  `sortsRows`. `SearchResultsView` is the only caller that passes it, and it passes `false`. A `false` header renders
-  its four column labels as plain `<span>`s: no button, no active column, no direction caret, and no caret allowance in
-  the measured column tracks (`measure-column-widths::chromeFor`). WHY the snapshot pane's rows can't follow a sort:
-  `../../search/DETAILS.md` § "Source-side ops from the snapshot pane".
+- **The column header** (`views/FullList.svelte` → `FullListHeader` → `SortableHeader`) reads no capability at all:
+  every pane that renders a file list sorts one. What varies is `sortBy: SortColumn | null`, where `null` means the rows
+  are in no column's order (the snapshot pane's ranked state): every header stays clickable, none is active, no caret
+  draws, and no column claims the caret allowance in the measured tracks (`measure-column-widths::chromeFor`). Where a
+  snapshot pane's click goes and why: `../../search/DETAILS.md` § "The snapshot pane's row order".
 - **MCP sync** (`pane-mcp-sync.svelte.ts`): the network skip off `!syncsToMcp`. The deps interface carries a single
   `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps). Only `network` is false, because
   `NetworkBrowser` owns that pane's push. A search-results pane DOES mirror even with no backend listing: its rows come

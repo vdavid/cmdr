@@ -1908,3 +1908,16 @@ pelo comando. O macOS monta a lista; aqui só os rótulos são traduzidos.
 - **Choose an app… → `Escolher app…`** · o `Choose Application…` da Apple (chave `N137`) diz `Escolher Aplicativo…`;
   `app` no lugar de `aplicativo`, como no resto do catálogo, e em caixa de frase · `high`.
 - Nenhum valor tem apóstrofo.
+
+## `Sort by relevance`: a dica da coluna de resultados de busca (`fileExplorer.columns.sortByRelevance`)
+
+Superfície nova: a dica que aparece ao passar o cursor sobre o cabeçalho de coluna ativo de um painel de resultados de
+busca. O clique seguinte devolve as linhas à ordem do próprio buscador, com a melhor correspondência primeiro.
+
+- **relevance (o quanto um resultado corresponde à busca) → `relevância`** · as quatro fontes do macOS concordam, tanto
+  em pt-BR quanto em pt-PT: WorkflowKit (`Relevance (WFSearchSortOrder)` → `Relevância`), AppStoreKit
+  (`SEARCH_FACET_RELEVANCE` → `Relevância`), Automator (`%1$[Relevância]@ …`) e Música · `high`. Minúscula depois de
+  `por`, como no resto do catálogo. (verificado no macOS 26.6.2, build 25G83, extração com `plutil` das localizações
+  incluídas, 2026-09-06)
+- **Moldura da frase → `Ordenar por relevância`** · exatamente o padrão das chaves irmãs em `commands.json`
+  (`Ordenar por nome`, `Ordenar por tamanho`) · `high`. Sem `sameAsSourceJustification`, e o valor não tem apóstrofo.
