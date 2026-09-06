@@ -16,7 +16,7 @@ use super::super::conflict::ApplyToAll;
 use super::super::durability::flush_created_destinations;
 use super::super::event_sinks::OperationEventSink;
 use super::super::ledger::CopyTransaction;
-use super::super::scan::{SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
+use super::super::scan::{FileVerdict, SourceItemTracker, handle_dry_run, scan_sources, top_level_source_path};
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{OperationIntent, WriteOperationState, load_intent, update_operation_status};
 use super::super::types::{
@@ -476,7 +476,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             // consistent across iterations.
             let mut local_files = ctx.files_done_so_far;
             let mut local_bytes = ctx.bytes_done_so_far;
-            copy_single_item(
+            let landed = copy_single_item(
                 &file_info.path,
                 file_info.dest_path(destination),
                 // A plain copy writes where it records.
@@ -501,13 +501,13 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             )?;
             let bytes_delta = local_bytes.saturating_sub(ctx.bytes_done_so_far);
 
-            if let Some(source_path) = tracker.record(file_info) {
+            if let Some(finished) = tracker.record(file_info, landed) {
                 ctx.events.emit_source_item_done(WriteSourceItemDoneEvent {
                     operation_id: operation_id.to_string(),
-                    source_path: source_path.display().to_string(),
+                    source_path: finished.source_path.display().to_string(),
                     // A copy leaves its source exactly where it was.
                     source_removed: false,
-                    outcome: SourceItemOutcome::Done,
+                    outcome: finished.outcome,
                 });
             }
 
@@ -522,7 +522,16 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 std::thread::sleep(Duration::from_millis(ms));
             }
 
-            Ok(TransferOutcome::Transferred { bytes: bytes_delta })
+            // A conflict resolved INSIDE `copy_single_item` is the only skip
+            // the driver's pre-flight pass never saw, so this is where it
+            // learns about one. Reporting `Transferred` for it is what made a
+            // refused cross-type item read as copied in the toast.
+            Ok(match landed {
+                FileVerdict::CarriedOut => TransferOutcome::Transferred { bytes: bytes_delta },
+                FileVerdict::Skipped => TransferOutcome::Skipped {
+                    bytes_accounted: bytes_delta,
+                },
+            })
         },
     );
 

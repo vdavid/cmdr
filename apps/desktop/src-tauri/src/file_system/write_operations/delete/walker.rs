@@ -7,13 +7,13 @@ use std::time::{Duration, Instant};
 
 use super::super::error_classification::IoResultExt;
 use super::super::event_sinks::OperationEventSink;
-use super::super::scan::{SourceItemTracker, scan_sources};
+use super::super::scan::{FileVerdict, SourceItemTracker, scan_sources};
 use super::super::scan_cache::take_cached_scan_result;
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::transfer::volume::{PathRole, map_volume_error};
 use super::super::types::{
-    CancelRollback, DryRunResult, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
-    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    CancelRollback, DryRunResult, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig, WriteOperationError,
+    WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::listing::caching::try_get_authoritative_listing;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -170,14 +170,17 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
         files_done += 1;
         bytes_done += progress_bytes;
 
-        if let Some(source_path) = tracker.record(file_info) {
+        // Delete has no Skip: reaching here means the entry is unlinked, so
+        // every file is a `CarriedOut` and the tracker's verdict is always
+        // `Done`.
+        if let Some(finished) = tracker.record(file_info, FileVerdict::CarriedOut) {
             events.emit_source_item_done(WriteSourceItemDoneEvent {
                 operation_id: operation_id.to_string(),
-                source_path: source_path.display().to_string(),
+                source_path: finished.source_path.display().to_string(),
                 // Every file under this top-level item is unlinked. Delete has no
                 // Skip, so there is no way for it to still be there.
                 source_removed: true,
-                outcome: SourceItemOutcome::Done,
+                outcome: finished.outcome,
             });
         }
 

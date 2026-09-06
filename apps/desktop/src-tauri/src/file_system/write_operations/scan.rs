@@ -14,7 +14,8 @@ use super::error_classification::IoResultExt;
 use super::event_sinks::OperationEventSink;
 use super::state::{FileInfo, ScanResult, WriteOperationState, update_operation_status};
 use super::types::{
-    ConflictInfo, ScanProgressEvent, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
+    ConflictInfo, ScanProgressEvent, SourceItemOutcome, WriteOperationError, WriteOperationPhase, WriteOperationType,
+    WriteProgressEvent,
 };
 use super::validation::is_symlink_loop;
 use crate::file_system::listing::caching::try_get_authoritative_listing;
@@ -594,10 +595,40 @@ pub(super) fn top_level_source_path(file_info: &FileInfo) -> PathBuf {
     file_info.path.clone()
 }
 
+/// What an engine did with ONE file it processed.
+///
+/// ❗ Every engine that resolves conflicts mid-flight owes this upward. A copy
+/// decides per-file Skips inside `copy_single_item`, after the driver's
+/// pre-flight skip pass has run, so returning "done" for both outcomes is what
+/// let a refused item be counted as copied: the toast said "Copied 2 files."
+/// having copied one, and `write-source-item-done` said `Done`.
+///
+/// ⚠️ It says what the POLICY decided, ❌ never what is on disk. A caller
+/// authorizing a destructive act — a cross-FS move deciding whether to delete
+/// an original — asks the LEDGER, which records what actually landed.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum FileVerdict {
+    /// The operation was carried out on it: bytes copied, entry unlinked.
+    CarriedOut,
+    /// Walked past untouched: a conflict resolved to Skip, a type-mismatch
+    /// parent Skip, or a source that already IS its destination.
+    Skipped,
+}
+
+/// A top-level source whose last file has just been processed, and the verdict
+/// to report for it.
+pub(super) struct FinishedSource {
+    pub source_path: PathBuf,
+    pub outcome: SourceItemOutcome,
+}
+
 /// Tracks per-source-item file counts and emits when all files for a source are done.
 pub(super) struct SourceItemTracker {
     totals: std::collections::HashMap<PathBuf, usize>,
     processed: std::collections::HashMap<PathBuf, usize>,
+    /// Sources at least one of whose files actually landed. A source missing
+    /// here when its count completes had every file walked past.
+    landed_something: HashSet<PathBuf>,
 }
 
 impl SourceItemTracker {
@@ -605,20 +636,32 @@ impl SourceItemTracker {
         Self {
             totals: build_source_file_counts(files),
             processed: std::collections::HashMap::new(),
+            landed_something: HashSet::new(),
         }
     }
 
-    /// Records a processed file. Returns `Some(source_path)` when all files for that source are
-    /// done.
-    pub fn record(&mut self, file_info: &FileInfo) -> Option<PathBuf> {
+    /// Records a processed file and what happened to it. Returns the source
+    /// when all of its files are done.
+    ///
+    /// A source counts as `Done` if ANY of its files landed: the skip is
+    /// per-file, so one refused child inside a folder doesn't make the whole
+    /// folder a skip. Only a source that landed nothing reports `Skipped`.
+    pub fn record(&mut self, file_info: &FileInfo, verdict: FileVerdict) -> Option<FinishedSource> {
         let source_path = top_level_source_path(file_info);
+        if verdict == FileVerdict::CarriedOut {
+            self.landed_something.insert(source_path.clone());
+        }
         let count = self.processed.entry(source_path.clone()).or_insert(0);
         *count += 1;
-        if self.totals.get(&source_path) == Some(count) {
-            Some(source_path)
-        } else {
-            None
+        if self.totals.get(&source_path) != Some(count) {
+            return None;
         }
+        let outcome = if self.landed_something.contains(&source_path) {
+            SourceItemOutcome::Done
+        } else {
+            SourceItemOutcome::Skipped
+        };
+        Some(FinishedSource { source_path, outcome })
     }
 }
 

@@ -20,6 +20,7 @@ use crate::file_system::write_operations::error_classification::IoResultExt;
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::ledger::{CopyTransaction, WrittenFile};
 use crate::file_system::write_operations::overwrite::{displace_with_directory, safe_overwrite_dir};
+use crate::file_system::write_operations::scan::FileVerdict;
 use crate::file_system::write_operations::state::{WriteOperationState, is_cancelled, update_operation_status};
 use crate::file_system::write_operations::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
@@ -172,7 +173,7 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
     // reflink). The end-of-op flush pass skips these so a long chunked batch
     // isn't fsynced twice. See `durability::flush_created_destinations`.
     already_synced: &mut HashSet<PathBuf>,
-) -> Result<(), WriteOperationError> {
+) -> Result<FileVerdict, WriteOperationError> {
     let progress_ctx = PerFileCtx {
         events,
         state,
@@ -310,7 +311,7 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
                         // in by scan stays consistent across skip paths.
                         let _ = fs::symlink_metadata(source).with_path(source)?;
                         record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
-                        return Ok(());
+                        return Ok(FileVerdict::Skipped);
                     }
                 }
             }
@@ -377,7 +378,7 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
                 None => {
                     // Skip this file but still count it toward progress
                     record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
-                    return Ok(());
+                    return Ok(FileVerdict::Skipped);
                 }
             }
         } else {
@@ -462,7 +463,7 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
                 None => {
                     // Skip this file but still count it toward progress
                     record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
-                    return Ok(());
+                    return Ok(FileVerdict::Skipped);
                 }
             }
         } else {
@@ -479,7 +480,7 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
                 source.display()
             );
             record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
-            return Ok(());
+            return Ok(FileVerdict::Skipped);
         }
 
         // Check cancellation before copy
@@ -583,5 +584,5 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
         record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
     }
 
-    Ok(())
+    Ok(FileVerdict::CarriedOut)
 }

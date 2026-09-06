@@ -35,8 +35,8 @@ use crate::file_system::write_operations::scan::{SourceItemTracker, scan_sources
 use crate::file_system::write_operations::scan_cache::take_cached_scan_result;
 use crate::file_system::write_operations::state::{WriteOperationState, update_operation_status};
 use crate::file_system::write_operations::types::{
-    SourceItemOutcome, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError,
-    WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase,
+    WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::write_operations::validation::{
     is_real_directory, path_exists_or_is_symlink, validate_file_sizes_for_filesystem,
@@ -188,7 +188,7 @@ pub(super) fn move_with_staging(
             );
             // Copy to staging directory instead of final destination
             let staged_before = transaction.created_files().len();
-            copy_single_item(
+            let verdict = copy_single_item(
                 &file_info.path,
                 file_info.dest_path(&staging_dir),
                 // Phase 3 renames the staging tree into place, so the journal
@@ -218,25 +218,29 @@ pub(super) fn move_with_staging(
                 &mut already_synced,
             )?;
 
-            // The ledger is the witness: `copy_single_item` records a file it
-            // wrote and records nothing at all for one it walked past (a Skip on
-            // a clash inside the staging area, a type-mismatch parent Skip, a
-            // same-file no-op). An original nothing was written for must stay.
+            // ❗ The LEDGER is the witness here, ❌ never `verdict`. Deleting an
+            // original is destructive, so what authorizes it is what actually
+            // landed on disk, not what the policy decided: `copy_single_item`
+            // records a file it wrote and records nothing at all for one it
+            // walked past (a Skip on a clash inside the staging area, a
+            // type-mismatch parent Skip, a same-file no-op). An original nothing
+            // was written for must stay. `verdict` speaks only to REPORTING
+            // below, where being wrong costs a wrong label rather than a file.
             if transaction.created_files().len() > staged_before {
                 landed_files.push(file_info.path.clone());
             } else {
                 skipped_source_paths.insert(file_info.path.clone());
             }
 
-            if let Some(source_path) = tracker.record(file_info) {
+            if let Some(finished) = tracker.record(file_info, verdict) {
                 events.emit_source_item_done(WriteSourceItemDoneEvent {
                     operation_id: operation_id.to_string(),
-                    source_path: source_path.display().to_string(),
+                    source_path: finished.source_path.display().to_string(),
                     // Staging only: the source is still on disk, and a Skip in
                     // the rename phase can mean it stays for good. Phase 4 emits
                     // again with `source_removed: true` for the ones it deletes.
                     source_removed: false,
-                    outcome: SourceItemOutcome::Done,
+                    outcome: finished.outcome,
                 });
             }
         }

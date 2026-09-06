@@ -23,7 +23,7 @@ use std::time::Duration;
 
 use super::super::event_sinks::CollectorEventSink;
 use super::super::state::WriteOperationState;
-use super::super::types::{ConflictResolution, WriteOperationConfig};
+use super::super::types::{ConflictResolution, SourceItemOutcome, WriteOperationConfig};
 use super::conflict_responder_test_support::ConflictResponderSink;
 use super::copy::copy_files_with_progress_inner;
 use super::move_op::move_files_with_progress_inner;
@@ -196,6 +196,92 @@ fn overwrite_smaller_never_deletes_a_file_a_folder_landed_on() {
     .expect("the copy should finish, having skipped the cross-type clash");
 
     assert_file_survived(&dst_root);
+}
+
+// ============================================================================
+// A refused item is REPORTED as skipped
+// ============================================================================
+
+/// Refusing quietly is its own bug. The local copy engine decides these skips
+/// mid-flight inside `copy_single_item`, which used to `record_file_done` them
+/// and return, so the driver counted a skip as a copy: the toast said "Copied 1
+/// file." for an operation that copied nothing, and `write-source-item-done`
+/// said `Done`. The refusal only protects the user if the report is honest.
+#[test]
+fn a_refused_cross_type_item_reports_as_skipped_not_copied() {
+    let dir = temp("refused_is_reported");
+    let (src_root, dst_root) = file_over_folder_fixture(&dir);
+    let events = CollectorEventSink::new();
+
+    copy_files_with_progress_inner(
+        &events,
+        "op-refused-reporting",
+        &state(),
+        &[src_root.join("notes")],
+        &dst_root,
+        &policy(ConflictResolution::Overwrite),
+    )
+    .expect("the copy should finish, having skipped the cross-type clash");
+
+    let complete = events.complete.lock_ignore_poison();
+    let event = complete.last().expect("a finished copy emits one complete event");
+    assert_eq!(
+        event.files_skipped, 1,
+        "the item the policy refused has to be counted as skipped"
+    );
+    assert_eq!(
+        event.files_processed, 1,
+        "it still counts as considered: processed is transferred + skipped"
+    );
+
+    let outcomes = events.source_items_done.lock_ignore_poison();
+    assert_eq!(
+        outcomes.iter().map(|e| e.outcome).collect::<Vec<_>>().last().copied(),
+        Some(SourceItemOutcome::Skipped),
+        "the per-source verdict must say Skipped, not Done"
+    );
+}
+
+/// A folder source whose children DID land still reports `Done`: the skip is
+/// per file, and one refused child doesn't make the whole source a skip.
+#[test]
+fn a_source_that_partly_landed_still_reports_done() {
+    let dir = temp("partly_landed");
+    let src_root = dir.join("src");
+    let dst_root = dir.join("dst");
+    // `tree/kept.txt` lands; `tree/notes` is a file over a destination folder.
+    fs::create_dir_all(src_root.join("tree")).unwrap();
+    fs::write(src_root.join("tree/kept.txt"), "lands fine").unwrap();
+    fs::write(src_root.join("tree/notes"), "x".repeat(100_000)).unwrap();
+    fs::create_dir_all(dst_root.join("tree/notes")).unwrap();
+    fs::write(dst_root.join("tree/notes/precious.txt"), "precious user data").unwrap();
+    let events = CollectorEventSink::new();
+
+    copy_files_with_progress_inner(
+        &events,
+        "op-partly-landed",
+        &state(),
+        &[src_root.join("tree")],
+        &dst_root,
+        &policy(ConflictResolution::Overwrite),
+    )
+    .expect("the copy should finish");
+
+    let complete = events.complete.lock_ignore_poison();
+    let event = complete.last().expect("a finished copy emits one complete event");
+    assert_eq!(event.files_skipped, 1, "the refused child is one skip");
+    assert_eq!(event.files_processed, 2, "both children were considered");
+
+    let outcomes = events.source_items_done.lock_ignore_poison();
+    assert_eq!(
+        outcomes.last().map(|e| e.outcome),
+        Some(SourceItemOutcome::Done),
+        "a source with a landed child is Done, whatever one of its files did"
+    );
+    assert_eq!(
+        fs::read_to_string(dst_root.join("tree/kept.txt")).unwrap(),
+        "lands fine"
+    );
 }
 
 // ============================================================================
