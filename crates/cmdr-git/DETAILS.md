@@ -159,15 +159,14 @@ the suite's 8 s cap at all (measured 2026-09-05).
 
 **Two cells in the repo take the real backend**, and each one is about something only an operating system does.
 
-- `file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`: the
-  debounce is `notify`'s own, and so is the watch surviving git's rename over `HEAD`, so a fake standing in for either
-  would assert the fake's arithmetic.
-- `watcher_tests::a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`: a scripted backend has no
-  watches to LOSE, so only a real one can say what a repository's removal does to them.
+- `file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`: the debounce
+  is `notify`'s own, and so is the watch surviving git's rename over `HEAD`, so a fake standing in for either would
+  assert the fake's arithmetic.
+- `watcher_tests::a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`: a scripted backend has no watches
+  to LOSE, so only a real one can say what a repository's removal does to them.
 
-❌ Don't add a third for a property either of those already arms a watcher for: a new burst behaviour belongs as
-another act inside the first, which is where its second burst came from, and a new teardown behaviour inside the
-second.
+❌ Don't add a third for a property either of those already arms a watcher for: a new burst behaviour belongs as another
+act inside the first, which is where its second burst came from, and a new teardown behaviour inside the second.
 
 **Neither door costs public surface.** `GitPortal::with_scripted_watcher` and `GitPortal::fire_watcher` are methods on a
 type in a private module, so `index-crate-isolation` doesn't measure them, and both are `testing`-gated so a shipped
@@ -192,8 +191,8 @@ because there is nothing there, and it returns without touching the sink. So a r
 ❗ The registry hold SURVIVES the deletion, on purpose. The subscriber has not left, and only its own
 `unsubscribe_state` may free the slot; freeing it here would drop a hold somebody still owes back and unbalance the
 refcount for the next repository at that path. The `notify` debouncer is dropped with the subscription as always, and
-dropping a watch whose inode is gone is fine. `watcher_tests::a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`
-pins all of it.
+dropping a watch whose inode is gone is fine.
+`watcher_tests::a_deleted_repository_stops_reporting_and_still_gives_its_hold_back` pins all of it.
 
 ## Watcher path set
 

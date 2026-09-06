@@ -17,8 +17,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
 use crate::repo::RepoInfo;
+use crate::test_fixtures::{Fixture, cleanup, discover_repo, temp_dir};
 use crate::{GitPortal, GitStateSink, RecordingGitStateSink, no_git_state_sink};
 use cmdr_fs::volume::host::VolumeHost;
 
